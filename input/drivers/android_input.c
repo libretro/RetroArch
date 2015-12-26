@@ -23,6 +23,7 @@
 
 #include <dynamic/dylib.h>
 #include <retro_inline.h>
+#include <string/stdstring.h>
 
 #include "../../frontend/drivers/platform_linux.h"
 #include "../input_autodetect.h"
@@ -822,7 +823,7 @@ static void handle_hotplug(android_input_data_t *android_data,
    else if (strstr(device_name, "MOGA"))
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
 
-   else if (device_name[0] != '\0')
+   else if (!string_is_empty(device_name))
       strlcpy(name_buf, device_name, sizeof(name_buf));
 
    if (strstr(android_app->current_ime, "net.obsidianx.android.mogaime"))
@@ -859,7 +860,7 @@ static void handle_hotplug(android_input_data_t *android_data,
       }
    }
 
-   if (name_buf[0] != '\0')
+   if (!string_is_empty(name_buf))
    {
       strlcpy(settings->input.device_names[*port],
             name_buf, sizeof(settings->input.device_names[*port]));

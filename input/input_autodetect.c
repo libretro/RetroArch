@@ -20,6 +20,7 @@
 
 #include <file/dir_list.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "input_config.h"
 #include "input_autodetect.h"
@@ -107,7 +108,7 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    }
    else
    {
-      if (ident[0] != '\0' && !strncmp(params->name, ident, strlen(ident)))
+      if (!string_is_empty(ident) && !strncmp(params->name, ident, strlen(ident)))
       {
          score += 1;
 #if 0
@@ -147,7 +148,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf, autoconfig_param
 
    if (!strcmp(device_type,"remote"))
    {
-      if (display_name[0] != '\0' || strcmp(display_name, ""))
+      if (!string_is_empty(display_name) || strcmp(display_name, ""))
          snprintf(msg, sizeof(msg), "%s configured",
             display_name);
       else
@@ -160,7 +161,7 @@ static void input_autoconfigure_joypad_add(config_file_t *conf, autoconfig_param
    }
    else
    {
-      if (display_name[0] != '\0' || strcmp(display_name, ""))
+      if (!string_is_empty(display_name) || strcmp(display_name, ""))
          snprintf(msg, sizeof(msg), "%s configured in port #%u.",
                display_name, params->idx);
       else
@@ -297,9 +298,9 @@ static bool input_config_autoconfigure_joypad_init(autoconfig_params_t *params)
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      settings->input.autoconf_binds[params->idx][i].joykey = NO_BTN;
-      settings->input.autoconf_binds[params->idx][i].joyaxis = AXIS_NONE;
-      settings->input.autoconf_binds[params->idx][i].joykey_label[0] = '\0';
+      settings->input.autoconf_binds[params->idx][i].joykey           = NO_BTN;
+      settings->input.autoconf_binds[params->idx][i].joyaxis          = AXIS_NONE;
+      settings->input.autoconf_binds[params->idx][i].joykey_label[0]  = '\0';
       settings->input.autoconf_binds[params->idx][i].joyaxis_label[0] = '\0';
    }
    settings->input.autoconfigured[params->idx] = false;

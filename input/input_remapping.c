@@ -13,9 +13,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "input_remapping.h"
 #include <file/config_file.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
+
+#include "input_remapping.h"
 
 #include "../general.h"
 
@@ -33,7 +35,7 @@ bool input_remapping_load_file(void *data, const char *path)
    config_file_t *conf  = (config_file_t*)data;
    settings_t *settings = config_get_ptr();
 
-   if (!conf ||  path[0] == '\0')
+   if (!conf ||  string_is_empty(path))
       return false;
 
    strlcpy(settings->input.remapping_path, path,

@@ -15,12 +15,13 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boolean.h>
+#include <string/stdstring.h>
+
 #include <screen/screen.h>
 #include <bps/event.h>
 #include <bps/navigator.h>
 #include <sys/keycodes.h>
-
-#include <boolean.h>
 
 #include "../../general.h"
 #include "../../driver.h"
@@ -200,7 +201,7 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
 #endif
    }
 
-   if (name_buf[0] != '\0')
+   if (!string_is_empty(name_buf))
    {
       autoconfig_params_t params = {{0}};
 

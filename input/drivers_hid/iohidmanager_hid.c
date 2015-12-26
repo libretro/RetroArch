@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string/stdstring.h>
+
 #include <IOKit/hid/IOHIDManager.h>
 #include <IOKit/hid/IOHIDKeys.h>
 
@@ -340,7 +342,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
       IOHIDDeviceRegisterInputValueCallback(device,
             iohidmanager_hid_device_input_callback, adapter);
 
-   if (adapter->name[0] == '\0')
+   if (string_is_empty(adapter->name))
       return;
 
    strlcpy(settings->input.device_names[adapter->slot],

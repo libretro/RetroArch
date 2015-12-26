@@ -21,6 +21,7 @@
 #include <rthreads/rthreads.h>
 #include <compat/strl.h>
 #include <queues/fifo_buffer.h>
+#include <string/stdstring.h>
 
 #include "../connect/joypad_connection.h"
 #include "../input_autodetect.h"
@@ -264,7 +265,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    device_name   = (const char*)adapter->name;
 
-   if (adapter->name[0] == '\0')
+   if (string_is_empty((const char*)adapter->name))
       goto error;
 
    adapter->send_control_lock = slock_new();

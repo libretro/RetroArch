@@ -28,6 +28,7 @@
 #include <linux/input.h>
 
 #include <retro_inline.h>
+#include <string/stdstring.h>
 
 #include "../input_autodetect.h"
 #include "../../general.h"
@@ -375,7 +376,7 @@ static void udev_free_pad(unsigned pad)
    if (udev_pads[pad].path)
       free(udev_pads[pad].path);
    udev_pads[pad].path = NULL;
-   if (udev_pads[pad].ident[0] != '\0')
+   if (!string_is_empty(udev_pads[pad].ident))
       udev_pads[pad].ident[0] = '\0';
 
    memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
