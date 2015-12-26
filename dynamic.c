@@ -635,9 +635,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             struct retro_variable *var = (struct retro_variable*)data;
 
             if (var) {
-               RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
+               RARCH_LOG("Environ GET_VARIABLE %s: not implemented.\n", var->key);
                var->value = NULL;
-               RARCH_LOG("\t%s\n", var->value ? var->value : "N/A");
             }
          }
 
