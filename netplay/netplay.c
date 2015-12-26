@@ -36,6 +36,8 @@ enum
    CMD_OPT_REQUIRE_SYNC             = 0x10
 };
 
+void *netplay_data;
+
 /**
  * warn_hangup:
  *
