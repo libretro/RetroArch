@@ -147,6 +147,7 @@ static void handle_touch_event(NSArray* touches)
 @end
 
 @interface UIApplication(iOS7Keyboard)
+- (void)handleKeyUIEvent:(UIEvent*)event;
 - (id)_keyCommandForEvent:(UIEvent*)event;
 @end
 
@@ -172,6 +173,58 @@ enum
    NSDeviceIndependentModifierFlagsMask = 0xffff0000U
 };
 
+// This is specifically for iOS 9, according to the private headers
+-(void)handleKeyUIEvent:(UIEvent *)event {
+    /* This gets called twice with the same timestamp
+     * for each keypress, that's fine for polling
+     * but is bad for business with events. */
+    static double last_time_stamp;
+    
+    if (last_time_stamp == event.timestamp) {
+        return [super handleKeyUIEvent:event];
+    }
+    
+    last_time_stamp = event.timestamp;
+    
+    /* If the _hidEvent is null, [event _keyCode] will crash.
+     * (This happens with the on screen keyboard). */
+    if (event._hidEvent)
+    {
+        NSString       *ch = (NSString*)event._privateInput;
+        uint32_t character = 0;
+        uint32_t mod       = 0;
+        
+        mod |= (event._modifierFlags & NSAlphaShiftKeyMask) ? RETROKMOD_CAPSLOCK : 0;
+        mod |= (event._modifierFlags & NSShiftKeyMask     ) ? RETROKMOD_SHIFT    : 0;
+        mod |= (event._modifierFlags & NSControlKeyMask   ) ? RETROKMOD_CTRL     : 0;
+        mod |= (event._modifierFlags & NSAlternateKeyMask ) ? RETROKMOD_ALT      : 0;
+        mod |= (event._modifierFlags & NSCommandKeyMask   ) ? RETROKMOD_META     : 0;
+        mod |= (event._modifierFlags & NSNumericPadKeyMask) ? RETROKMOD_NUMLOCK  : 0;
+        
+        if (ch && ch.length != 0)
+        {
+            unsigned i;
+            character = [ch characterAtIndex:0];
+            
+            apple_input_keyboard_event(event._isKeyDown,
+                                       (uint32_t)event._keyCode, 0, mod,
+                                       RETRO_DEVICE_KEYBOARD);
+            
+            for (i = 1; i < ch.length; i++)
+                apple_input_keyboard_event(event._isKeyDown,
+                                           0, [ch characterAtIndex:i], mod,
+                                           RETRO_DEVICE_KEYBOARD);
+        }
+        
+        apple_input_keyboard_event(event._isKeyDown,
+                                   (uint32_t)event._keyCode, character, mod,
+                                   RETRO_DEVICE_KEYBOARD);
+    }
+    
+    [super handleKeyUIEvent:event];
+}
+
+// This is for iOS versions < 9.0
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
    /* This gets called twice with the same timestamp 
