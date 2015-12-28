@@ -425,6 +425,8 @@ float video_driver_get_aspect_ratio(void);
 void video_driver_set_aspect_ratio_value(float value);
 
 struct retro_hw_render_callback *video_driver_callback(void);
+void video_driver_unset_callback(void);
+void video_driver_callback_destroy_context(void);
 
 rarch_softfilter_t *video_driver_frame_filter_get_ptr(void);
 
