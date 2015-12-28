@@ -404,15 +404,6 @@ static void uninit_drivers(int flags)
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT, NULL);
 
-   if (flags & DRIVER_VIDEO)
-   {
-      const struct retro_hw_render_callback *hw_render = 
-         (const struct retro_hw_render_callback*)video_driver_callback();
-
-      if (hw_render->context_destroy && !video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
-         hw_render->context_destroy();
-   }
-
    if ((flags & DRIVER_VIDEO) && !video_driver_ctl(RARCH_DISPLAY_CTL_OWNS_DRIVER, NULL))
       video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY_DATA, NULL);
 

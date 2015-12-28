@@ -376,6 +376,12 @@ static void event_init_controllers(void)
    }
 }
 
+static void event_deinit_core_interfaces(void)
+{
+   video_driver_callback_destroy_context();
+   video_driver_unset_callback();
+}
+
 static void event_deinit_core(bool reinit)
 {
 #ifdef HAVE_CHEEVOS
@@ -383,14 +389,15 @@ static void event_deinit_core(bool reinit)
    cheevos_unload();
 #endif
 
+   event_deinit_core_interfaces();
    core.retro_unload_game();
    core.retro_deinit();
 
    if (reinit)
       event_command(EVENT_CMD_DRIVERS_DEINIT);
 
-  /* auto overrides: reload the original config */
-   if(runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   /* auto overrides: reload the original config */
+   if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
       config_unload_override();
       runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
