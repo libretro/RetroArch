@@ -33,16 +33,16 @@
 
 static int qstrcmp_plain(const void *a_, const void *b_)
 {
-   const struct string_list_elem *a = (const struct string_list_elem*)a_; 
-   const struct string_list_elem *b = (const struct string_list_elem*)b_; 
+   const struct string_list_elem *a = (const struct string_list_elem*)a_;
+   const struct string_list_elem *b = (const struct string_list_elem*)b_;
 
    return strcasecmp(a->data, b->data);
 }
 
 static int qstrcmp_dir(const void *a_, const void *b_)
 {
-   const struct string_list_elem *a = (const struct string_list_elem*)a_; 
-   const struct string_list_elem *b = (const struct string_list_elem*)b_; 
+   const struct string_list_elem *a = (const struct string_list_elem*)a_;
+   const struct string_list_elem *b = (const struct string_list_elem*)b_;
    int a_type = a->attr.i;
    int b_type = b->attr.i;
 
@@ -182,12 +182,13 @@ struct string_list *dir_list_new(const char *dir,
    while (retro_readdir(entry))
    {
       char file_path[PATH_MAX_LENGTH];
+      bool is_dir;
       int ret                         = 0;
       const char *name                = retro_dirent_get_name(entry);
-      bool is_dir                     = retro_dirent_is_dir(entry, file_path);
       const char *file_ext            = path_get_extension(name);
 
       fill_pathname_join(file_path, dir, name, sizeof(file_path));
+      is_dir = retro_dirent_is_dir(entry, file_path);
 
       ret    = parse_dir_entry(name, file_path, is_dir,
             include_dirs, include_compressed, list, ext_list, file_ext);
