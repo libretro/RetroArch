@@ -734,6 +734,11 @@ static int deferred_push_video_font_path(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_FONTS);
 }
 
+static int deferred_push_xmb_font_path(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_FONTS);
+}
+
 static int deferred_push_content_history_path(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_CONTENT_HISTORY);
@@ -942,6 +947,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
             break;
          case MENU_LABEL_VIDEO_FONT_PATH:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_font_path);
+            break;
+         case MENU_LABEL_XMB_FONT:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_xmb_font_path);
             break;
          case MENU_LABEL_CONTENT_HISTORY_PATH:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);

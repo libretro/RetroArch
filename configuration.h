@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include <boolean.h>
+#include <string/stdstring.h>
 
 #include "gfx/video_driver.h"
 #include "driver.h"

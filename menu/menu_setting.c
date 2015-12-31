@@ -5806,6 +5806,20 @@ static bool setting_append_list_menu_options(
             general_write_handler,
             general_read_handler);
       menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
+
+      CONFIG_PATH(
+            list, list_info,
+            settings->menu.xmb_font,
+            sizeof(settings->menu.xmb_font),
+            menu_hash_to_str(MENU_LABEL_XMB_FONT),
+            menu_hash_to_str(MENU_LABEL_VALUE_XMB_FONT),
+            settings->menu.xmb_font,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
    }
 
    CONFIG_BOOL(

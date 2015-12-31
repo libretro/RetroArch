@@ -2744,7 +2744,7 @@ bool config_save_file(const char *path)
          !string_is_empty(settings->menu.xmb_font) ?
          settings->menu.xmb_font : "");
    config_set_string(conf, "xmb_theme", !string_is_empty(settings->menu.xmb_theme) ?
-         settings->menu.xmb_theme : "monochrome");
+         settings->menu.xmb_theme : "");
    config_set_path(conf, "rgui_browser_directory",
          *settings->menu_content_directory ?
          settings->menu_content_directory : "default");
