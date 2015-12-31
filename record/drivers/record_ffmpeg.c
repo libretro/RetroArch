@@ -513,6 +513,10 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf,
          video->pix_fmt, param->out_width, param->out_height);
 
+   video->conv_frame->width  = param->out_width;
+   video->conv_frame->height = param->out_height;
+   video->conv_frame->format = video->pix_fmt;
+
    return true;
 }
 
