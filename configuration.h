@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include <boolean.h>
+#include <string/stdstring.h>
 
 #include "gfx/video_driver.h"
 #include "driver.h"
@@ -163,6 +164,11 @@ typedef struct settings
       unsigned entry_normal_color;
       unsigned entry_hover_color;
       unsigned title_color;
+
+      unsigned xmb_scale_factor;
+      unsigned xmb_alpha_factor;
+      char xmb_theme[PATH_MAX_LENGTH];
+      char xmb_font[PATH_MAX_LENGTH];
    } menu;
 #endif
 

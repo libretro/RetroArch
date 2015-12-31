@@ -46,10 +46,6 @@
 
 #include "../../tasks/tasks.h"
 
-#ifndef XMB_THEME
-#define XMB_THEME "monochrome"
-#endif
-
 #ifndef XMB_DELAY
 #define XMB_DELAY 10
 #endif
@@ -150,6 +146,7 @@ typedef struct xmb_handle
    float boxart_height;
    char background_file_path[PATH_MAX_LENGTH];
    char boxart_file_path[PATH_MAX_LENGTH];
+   char theme[PATH_MAX_LENGTH];
 
    struct
    {
@@ -241,7 +238,8 @@ static void xmb_fill_default_background_path(xmb_handle_t *xmb, char *path, size
     
     fill_pathname_join(mediapath, settings->assets_directory,
                        "xmb", sizeof(mediapath));
-    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+    fill_pathname_join(themepath, mediapath, xmb->theme, sizeof(themepath));
+
     fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
     fill_pathname_slash(iconpath, sizeof(iconpath));
     
@@ -509,6 +507,18 @@ end:
    string_list_free(list);
 }
 
+static void xmb_theme(xmb_handle_t *xmb)
+{
+   menu_entry_t entry;
+   settings_t *settings       = config_get_ptr();
+
+   if(!string_is_empty(settings->menu.xmb_theme))
+      strlcpy(xmb->theme, settings->menu.xmb_theme, sizeof(xmb->theme));
+   else
+      strlcpy(xmb->theme, "monochrome",sizeof(xmb->theme));
+
+}
+
 static void xmb_update_boxart_path(xmb_handle_t *xmb, unsigned i)
 {
    menu_entry_t entry;
@@ -585,6 +595,7 @@ static void xmb_selection_pointer_changed(xmb_handle_t *xmb, bool allow_animatio
          {
             xmb_update_boxart_path(xmb, i);
             xmb_update_boxart_image(xmb);
+            xmb_theme(xmb);
          }
       }
 
@@ -1104,7 +1115,7 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
    settings_t *settings = config_get_ptr();
 
    fill_pathname_join(mediapath, settings->assets_directory, "xmb", sizeof(mediapath));
-   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+   fill_pathname_join(themepath, mediapath, xmb->theme, sizeof(themepath));
 
    xmb_context_destroy_horizontal_list(xmb);
    if (xmb->horizontal_list)
@@ -1663,7 +1674,7 @@ static void xmb_frame(void *data)
    }
 
    /* set alpha components of colors */
-   coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  = (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
+   coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  = ((float)settings->menu.xmb_alpha_factor/100 > xmb->alpha) ? xmb->alpha : (float)settings->menu.xmb_alpha_factor/100;
    coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] = xmb->alpha;
 
    menu_display_draw_bg(
@@ -1793,7 +1804,7 @@ static void xmb_frame(void *data)
 }
 
 
-static void xmb_font(void)
+static void xmb_font(xmb_handle_t *xmb)
 {
    int font_size;
    char mediapath[PATH_MAX_LENGTH], themepath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
@@ -1802,8 +1813,12 @@ static void xmb_font(void)
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
    fill_pathname_join(mediapath, settings->assets_directory, "xmb", sizeof(mediapath));
-   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
-   fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
+   fill_pathname_join(themepath, mediapath, xmb->theme, sizeof(themepath));
+
+   if (string_is_empty(settings->menu.xmb_font))
+      fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
+   else
+      strlcpy(fontpath, settings->menu.xmb_font,sizeof(fontpath));
 
    if (!menu_display_init_main_font(fontpath, font_size))
       RARCH_WARN("Failed to load font.");
@@ -1816,13 +1831,14 @@ static void xmb_layout(xmb_handle_t *xmb)
    float scale_factor;
    unsigned width, height, i, current, end, new_header_height;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   settings_t *settings = config_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
    video_driver_get_size(&width, &height);
 
-   scale_factor                 = width / 1920.0;
+   scale_factor                 = (settings->menu.xmb_scale_factor * width) / (1920.0 * 100);
    new_font_size                = 32.0  * scale_factor;
    new_header_height            = 128.0 * scale_factor;
 
@@ -1948,7 +1964,7 @@ static void *xmb_init(void **userdata)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
 
    xmb_init_horizontal_list(xmb);
-   xmb_font();
+   xmb_font(xmb);
 
    return menu;
 
@@ -2203,17 +2219,20 @@ static void xmb_context_reset(void *data)
    if (!xmb)
       return;
 
+   xmb_theme(xmb);
+
    strlcpy(xmb->icon.dir, "png", sizeof(xmb->icon.dir));
    xmb_fill_default_background_path(xmb, xmb->background_file_path, sizeof(xmb->background_file_path));
 
    fill_pathname_join(mediapath, settings->assets_directory,
          "xmb", sizeof(mediapath));
-   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+   fill_pathname_join(themepath, mediapath, xmb->theme, sizeof(themepath));
+
    fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    xmb_layout(xmb);
-   xmb_font();
+   xmb_font(xmb);
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb, themepath);

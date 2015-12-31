@@ -5748,32 +5748,80 @@ static bool setting_append_list_menu_options(
 
    START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
-   CONFIG_BOOL(
-         list, list_info,
-         &settings->menu.dpi.override_enable,
-         menu_hash_to_str(MENU_LABEL_DPI_OVERRIDE_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_DPI_OVERRIDE_ENABLE),
-         menu_dpi_override_enable,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
+   /* only glui uses these values, don't show them on other drivers */
+   if (!strcmp(settings->menu.driver,"glui"))
+   {
+      CONFIG_BOOL(
+            list, list_info,
+            &settings->menu.dpi.override_enable,
+            menu_hash_to_str(MENU_LABEL_DPI_OVERRIDE_ENABLE),
+            menu_hash_to_str(MENU_LABEL_VALUE_DPI_OVERRIDE_ENABLE),
+            menu_dpi_override_enable,
+            menu_hash_to_str(MENU_VALUE_OFF),
+            menu_hash_to_str(MENU_VALUE_ON),
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
 
-   CONFIG_UINT(
-         list, list_info,
-         &settings->menu.dpi.override_value,
-         menu_hash_to_str(MENU_LABEL_DPI_OVERRIDE_VALUE),
-         menu_hash_to_str(MENU_LABEL_VALUE_DPI_OVERRIDE_VALUE),
-         menu_dpi_override_value,
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 72, 999, 1, true, true);
+      CONFIG_UINT(
+            list, list_info,
+            &settings->menu.dpi.override_value,
+            menu_hash_to_str(MENU_LABEL_DPI_OVERRIDE_VALUE),
+            menu_hash_to_str(MENU_LABEL_VALUE_DPI_OVERRIDE_VALUE),
+            menu_dpi_override_value,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      menu_settings_list_current_add_range(list, list_info, 72, 999, 1, true, true);
+   }
+
+   /* only XMB uses these values, don't show them on other drivers */
+   if (!strcmp(settings->menu.driver,"xmb"))
+   {
+      CONFIG_UINT(
+            list, list_info,
+            &settings->menu.xmb_alpha_factor,
+            menu_hash_to_str(MENU_LABEL_XMB_ALPHA_FACTOR),
+            menu_hash_to_str(MENU_LABEL_VALUE_XMB_ALPHA_FACTOR),
+            xmb_alpha_factor,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
+
+      CONFIG_UINT(
+            list, list_info,
+            &settings->menu.xmb_scale_factor,
+            menu_hash_to_str(MENU_LABEL_XMB_SCALE_FACTOR),
+            menu_hash_to_str(MENU_LABEL_VALUE_XMB_SCALE_FACTOR),
+            xmb_scale_factor,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      menu_settings_list_current_add_range(list, list_info, 0, 100, 1, true, true);
+
+      CONFIG_PATH(
+            list, list_info,
+            settings->menu.xmb_font,
+            sizeof(settings->menu.xmb_font),
+            menu_hash_to_str(MENU_LABEL_XMB_FONT),
+            menu_hash_to_str(MENU_LABEL_VALUE_XMB_FONT),
+            settings->menu.xmb_font,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+   }
 
    CONFIG_BOOL(
          list, list_info,
