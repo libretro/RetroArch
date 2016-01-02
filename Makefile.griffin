@@ -6,6 +6,7 @@ BIG_STACK		            = 1
 PC_DEVELOPMENT_IP_ADDRESS	= 255.255.255.255
 PC_DEVELOPMENT_UDP_PORT		= 3490
 RARCH_CONSOLE					= 0
+USBGECKO                   = 0
 
 ifneq ($(EMSCRIPTEN),)
    platform = emscripten
