@@ -334,9 +334,6 @@ INPUT
 #include "../input/drivers_joypad/ctr_joypad.c"
 #include "../input/autoconf/builtin_ctr.c"
 #elif defined(GEKKO)
-#ifdef HAVE_LIBSICKSAXIS
-#include "../input/drivers_joypad/gx_sicksaxis.c"
-#endif
 #include "../input/drivers/gx_input.c"
 #include "../input/drivers_joypad/gx_joypad.c"
 #include "../input/autoconf/builtin_gx.c"

@@ -34,11 +34,7 @@
 #define WPAD_EXP_NOCONTROLLER  254
 
 #ifdef HW_RVL
-#ifdef HAVE_LIBSICKSAXIS
-#define NUM_DEVICES 5
-#else
 #define NUM_DEVICES 4
-#endif
 #else
 #define NUM_DEVICES 1
 #endif
@@ -95,25 +91,6 @@ enum
    GX_NUNCHUK_DOWN         = 42,
    GX_NUNCHUK_LEFT         = 43,
    GX_NUNCHUK_RIGHT        = 44,
-#ifdef HAVE_LIBSICKSAXIS
-   GX_SIXAXIS_CIRCLE       = 45,
-   GX_SIXAXIS_CROSS        = 46,
-   GX_SIXAXIS_TRIANGLE     = 47,
-   GX_SIXAXIS_SQUARE       = 48,
-   GX_SIXAXIS_L1           = 49,
-   GX_SIXAXIS_R1           = 50,
-   GX_SIXAXIS_L2           = 51,
-   GX_SIXAXIS_R2           = 52,
-   GX_SIXAXIS_L3           = 53,
-   GX_SIXAXIS_R3           = 54,
-   GX_SIXAXIS_START        = 55,
-   GX_SIXAXIS_SELECT       = 56,
-   GX_SIXAXIS_PS           = 57,
-   GX_SIXAXIS_UP           = 58,
-   GX_SIXAXIS_DOWN         = 59,
-   GX_SIXAXIS_LEFT         = 60,
-   GX_SIXAXIS_RIGHT        = 61,
-#endif
 #endif
    GX_QUIT_KEY             = 62,
 };
@@ -133,12 +110,6 @@ static void power_callback(void)
 {
    g_quit = true;
 }
-
-#ifdef HAVE_LIBSICKSAXIS
-# define USB_SLOTS 1
-struct ss_device sixaxis[USB_SLOTS];
-#endif
-
 #endif
 
 static void reset_cb(void)
@@ -157,10 +128,6 @@ static const char *gx_joypad_name(unsigned pad)
          return "Nunchuk Controller";
       case WPAD_EXP_CLASSIC:
          return "Classic Controller";
-#ifdef HAVE_LIBSICKSAXIS
-      case WPAD_EXP_SICKSAXIS:
-         return "Sixaxis Controller";
-#endif
 #endif
       case WPAD_EXP_GAMECUBE:
          return "GameCube Controller";
@@ -406,44 +373,6 @@ static void gx_joypad_poll(void)
          ptype = WPAD_EXP_GAMECUBE;
       }
 #ifdef HW_RVL
-#ifdef HAVE_LIBSICKSAXIS
-      else if (port < USB_SLOTS && ss_is_ready(&sixaxis[port]))/* Only defined 1 port for now */
-      {
-         int16_t ls_x, ls_y, rs_x, rs_y;
-
-         ss_read_pad(&sixaxis[port]);
-
-         *state_cur |= (sixaxis[port].pad.buttons.PS)       ? (UINT64_C(1) << GX_SIXAXIS_PS) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.cross)    ? (UINT64_C(1) << GX_SIXAXIS_CROSS) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.square)   ? (UINT64_C(1) << GX_SIXAXIS_SQUARE) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.select)   ? (UINT64_C(1) << GX_SIXAXIS_SELECT) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.start)    ? (UINT64_C(1) << GX_SIXAXIS_START) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.up)       ? (UINT64_C(1) << GX_SIXAXIS_UP) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.down)     ? (UINT64_C(1) << GX_SIXAXIS_DOWN) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.left)     ? (UINT64_C(1) << GX_SIXAXIS_LEFT) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.right)    ? (UINT64_C(1) << GX_SIXAXIS_RIGHT) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.circle)   ? (UINT64_C(1) << GX_SIXAXIS_CIRCLE) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.triangle) ? (UINT64_C(1) << GX_SIXAXIS_TRIANGLE) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.L1)       ? (UINT64_C(1) << GX_SIXAXIS_L1) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.R1)       ? (UINT64_C(1) << GX_SIXAXIS_R1) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.L2)       ? (UINT64_C(1) << GX_SIXAXIS_L2) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.R2)       ? (UINT64_C(1) << GX_SIXAXIS_R2) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.L3)       ? (UINT64_C(1) << GX_SIXAXIS_L3) : 0;
-         *state_cur |= (sixaxis[port].pad.buttons.R3)       ? (UINT64_C(1) << GX_SIXAXIS_R3) : 0;
-
-         ls_x = (int16_t)(sixaxis[port].pad.left_analog.x - 128) << 8;
-         ls_y = (int16_t)(sixaxis[port].pad.left_analog.y - 128) << 8;
-         rs_x = (int16_t)(sixaxis[port].pad.right_analog.x - 128) << 8;
-         rs_y = (int16_t)(sixaxis[port].pad.right_analog.y - 128) << 8;
-
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
-
-         ptype = WPAD_EXP_SICKSAXIS;
-      }
-#endif
       else if (WPADProbe(port, &ptype) == WPAD_ERR_NONE)
       {
          WPADData *wpaddata = (WPADData*)WPAD_Data(port);
@@ -530,9 +459,6 @@ static void gx_joypad_poll(void)
 #ifdef HW_RVL
    check_menu_toggle = (check_menu_toggle| (UINT64_C(1) << GX_WIIMOTE_HOME)
          | (UINT64_C(1) << GX_CLASSIC_HOME));
-#ifdef HAVE_LIBSICKSAXIS
-   check_menu_toggle = (check_menu_toggle | (UINT64_C(1) << GX_SIXAXIS_PS));
-#endif
 #endif
 
    if (check_menu_toggle)
@@ -555,9 +481,6 @@ static bool gx_joypad_init(void *data)
    PAD_Init();
 #ifdef HW_RVL
    WPADInit();
-#ifdef HAVE_LIBSICKSAXIS
-   ss_init(sixaxis, USB_SLOTS);
-#endif
 #endif
 
    gx_joypad_poll();
@@ -580,9 +503,6 @@ static void gx_joypad_destroy(void)
    //   WPAD_Flush(i);
    //   WPADDisconnect(i);
    }
-#ifdef HAVE_LIBSICKSAXIS
-    ss_shutdown();
-#endif
 #endif
 }
 

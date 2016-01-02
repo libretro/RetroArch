@@ -93,34 +93,6 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
 
-#ifdef HAVE_LIBSICKSAXIS
-#define GXINPUT_SIXAXIS_DEFAULT_BINDS \
-DECL_BTN(a, 45) \
-DECL_BTN(b, 46) \
-DECL_BTN(x, 47) \
-DECL_BTN(y, 48) \
-DECL_BTN(start, 55) \
-DECL_BTN(select, 56) \
-DECL_BTN(up, 58) \
-DECL_BTN(down, 59) \
-DECL_BTN(left, 60) \
-DECL_BTN(right, 61) \
-DECL_BTN(l, 49) \
-DECL_BTN(r, 50) \
-DECL_BTN(l2, 51) \
-DECL_BTN(r2, 52) \
-DECL_BTN(l3, 53) \
-DECL_BTN(r3, 54) \
-DECL_AXIS(l_x_plus,  +0) \
-DECL_AXIS(l_x_minus, -0) \
-DECL_AXIS(l_y_plus,  +1) \
-DECL_AXIS(l_y_minus, -1) \
-DECL_AXIS(r_x_plus,  +2) \
-DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
-#endif
-
 const char* const input_builtin_autoconfs[] =
 {
    DECL_AUTOCONF_DEVICE("GameCube Controller", "gx", GXINPUT_GAMECUBE_DEFAULT_BINDS),
@@ -128,9 +100,6 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("Wiimote Controller", "gx", GXINPUT_WIIMOTE_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("Nunchuk Controller", "gx", GXINPUT_NUNCHUK_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("Classic Controller", "gx", GXINPUT_CLASSIC_DEFAULT_BINDS),
-#ifdef HAVE_LIBSICKSAXIS
-   DECL_AUTOCONF_DEVICE("Sixaxis Controller", "gx", GXINPUT_SIXAXIS_DEFAULT_BINDS),
-#endif
 #endif
    NULL
 };

@@ -137,7 +137,6 @@ ifeq ($(platform), wii)
   HAVE_RARCH_EXEC          := 1
   HAVE_RSOUND              := 1
   HAVE_LIBRETRO_MANAGEMENT := 1
-  HAVE_LIBSICKSAXIS        := 1
 
   APP_BOOTER_DIR = wii/app_booter
   PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
@@ -251,10 +250,6 @@ endif
 
 ifeq ($(HAVE_KERNEL_PRX), 1)
 CFLAGS      += -DHAVE_KERNEL_PRX
-endif
-
-ifeq ($(HAVE_LIBSICKSAXIS), 1)
-CFLAGS		+= -DHAVE_LIBSICKSAXIS
 endif
 
 ifeq ($(HAVE_WIIUSB_HID), 1)
