@@ -23,6 +23,7 @@
 #include <file/file_path.h>
 #include <file/dir_list.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 
 #include "frontend_driver.h"
 #include "../defaults.h"

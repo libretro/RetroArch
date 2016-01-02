@@ -61,7 +61,9 @@ static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
    NULL
 };
 
+#ifndef IS_SALAMANDER
 static frontend_ctx_driver_t *current_frontend_ctx;
+#endif
 
 /**
  * frontend_ctx_find_driver:
