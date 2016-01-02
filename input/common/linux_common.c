@@ -68,8 +68,6 @@ bool linux_terminal_init(void)
    if (tcsetattr(0, TCSAFLUSH, &newTerm) < 0)
       return false;
 
-   if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) < 0)
-      return false;
 
    return true;
 }
@@ -101,6 +99,9 @@ bool linux_terminal_disable_input(void)
       return false;
 
    if (!linux_terminal_init())
+      return false;
+
+   if (ioctl(0, KDSKBMODE, K_MEDIUMRAW) < 0)
    {
       linux_terminal_flush();
       return false;

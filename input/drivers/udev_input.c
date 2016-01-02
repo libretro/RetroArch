@@ -697,6 +697,7 @@ static void *udev_input_init(void)
    input_keymaps_init_keyboard_lut(rarch_key_map_linux);
 
    linux_terminal_disable_input();
+
    return udev;
 
 error:
