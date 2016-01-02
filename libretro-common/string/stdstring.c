@@ -45,6 +45,14 @@ char *string_to_upper(char *s)
    return s;
 }
 
+char *string_to_lower(char *s)
+{
+   unsigned char *ucs = (unsigned char *)s;
+   for ( ; *ucs != '\0'; ucs++)
+      *ucs = tolower(*ucs);
+   return s;
+}
+
 char *string_replace_substring(const char *in, const char *pattern, const char *replacement)
 {
    char *needle           = NULL;
