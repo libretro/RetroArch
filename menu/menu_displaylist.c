@@ -1400,24 +1400,21 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             goto error;
       }
 
-      snprintf(tmp, sizeof(tmp),
-            "%s : %s",
-            "Analog supported",
-            (db_info_entry->analog_supported == 1)  ? menu_hash_to_str(MENU_VALUE_TRUE) :
-            (db_info_entry->analog_supported == -1) ? menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE)  :
-            menu_hash_to_str(MENU_VALUE_FALSE));
-      menu_entries_push(info->list, tmp,
-            menu_hash_to_str(MENU_LABEL_RDB_ENTRY_ANALOG),
-            0, 0, 0);
-      snprintf(tmp, sizeof(tmp),
-            "%s : %s",
-            "Rumble supported",
-            (db_info_entry->rumble_supported == 1)  ? menu_hash_to_str(MENU_VALUE_TRUE) :
-            (db_info_entry->rumble_supported == -1) ? menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE)  :
-            menu_hash_to_str(MENU_VALUE_FALSE));
-      menu_entries_push(info->list, tmp,
-            menu_hash_to_str(MENU_LABEL_RDB_ENTRY_RUMBLE),
-            0, 0, 0);
+      if (db_info_entry->analog_supported == 1)
+      {
+         if (create_string_list_rdb_entry_string("Analog supported",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_ANALOG),
+                  menu_hash_to_str(MENU_VALUE_TRUE), info->path, info->list) == -1)
+            goto error;
+	  }
+
+      if (db_info_entry->rumble_supported == 1)
+      {
+         if (create_string_list_rdb_entry_string("Rumble supported",
+                  menu_hash_to_str(MENU_LABEL_RDB_ENTRY_RUMBLE),
+                  menu_hash_to_str(MENU_VALUE_TRUE), info->path, info->list) == -1)
+            goto error;
+	  }
 
       if (!show_advanced_settings)
          continue;
