@@ -660,28 +660,30 @@ static void handle_hotplug(android_input_data_t *android_data,
          /* remove the remote if it is mapped */
          if (strstr(android_data->pad_states[0].name,"SHIELD Remote"))
          {
-            id_1 = -1;
-            id_2 = -1;
             android_data->pads_connected = 0;
             *port = 0;
-            strlcpy(name_buf, device_name, sizeof(name_buf));
          }
-         /* early return, we don't want this to be mapped unless the actual controller has been mapped*/
-         if (strstr(device_name, "Virtual") && android_data->pads_connected==0)
-            return;
 
-         /* apply the hack only for the first controller
-          * store the id for later use
-         */
-         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03") && android_data->pads_connected==0)
-            id_1 = id;
-         else if (strstr(device_name, "Virtual") && id_1 != -1)
+         /* if normal controller button was pressed */ 
+         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03"))
          {
-            id = id_1;
-            return;
+            strlcpy(name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
+
+            /*if controller extras are mapped to port 0 replace with normal controller and decrement pads_connected to keep same number of pads */
+            if  (strstr(android_data->pad_states[0].name,"NVIDIA SHIELD Controller Extra"))
+            {
+               android_data->pads_connected--;
+               *port = 0;
+            }
          }
 
-         strlcpy (name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
+         /* if controller extra button was pressed map controller extras to port 0 and decrement pads_connected to keep same number of pads */
+         if (strstr(device_name, "Virtual"))
+         {
+             if(android_data->pads_connected>0) android_data->pads_connected--;
+            *port = 0;
+            strlcpy(name_buf, "NVIDIA SHIELD Controller Extra", sizeof(name_buf));
+         }
       }
    }
 
@@ -869,7 +871,7 @@ static void handle_hotplug(android_input_data_t *android_data,
    if (!back_mapped && settings->input.back_as_menu_toggle_enable)
       settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
 
-   android_data->pad_states[android_data->pads_connected].id = id;
+   android_data->pad_states[*port].id = id;
    android_data->pad_states[android_data->pads_connected].port = *port;
    strlcpy(android_data->pad_states[*port].name, name_buf,
          sizeof(android_data->pad_states[*port].name));
