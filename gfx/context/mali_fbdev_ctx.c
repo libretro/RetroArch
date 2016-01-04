@@ -19,7 +19,6 @@
 #include "../gl_common.h"
 
 #include <EGL/egl.h>
-#include <EGL/fbdev_window.h>
 #include <signal.h>
 
 //Includes and defines for framebuffer size retrieval
