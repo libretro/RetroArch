@@ -498,7 +498,7 @@ static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
 #elif defined(RARCH_CONSOLE)
 static unsigned aspect_ratio_idx = ASPECT_RATIO_4_3;
 #else
-static unsigned aspect_ratio_idx = ASPECT_RATIO_CONFIG;
+static unsigned aspect_ratio_idx = ASPECT_RATIO_CORE;
 #endif
 
 /* Save configuration file on exit. */
