@@ -872,7 +872,7 @@ static void handle_hotplug(android_input_data_t *android_data,
       settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
 
    android_data->pad_states[*port].id = id;
-   android_data->pad_states[android_data->pads_connected].port = *port;
+   android_data->pad_states[*port].port = *port;
    strlcpy(android_data->pad_states[*port].name, name_buf,
          sizeof(android_data->pad_states[*port].name));
 
