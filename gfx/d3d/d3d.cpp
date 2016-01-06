@@ -834,10 +834,7 @@ static void d3d_free(void *data)
 #endif
 #endif
 
-   if (d3d->dev)
-      d3d->dev->Release();
-   if (d3d->g_pD3D)
-      d3d->g_pD3D->Release();
+   d3d_device_free(d3d->dev);
 
    win32_monitor_from_window(window, true);
 

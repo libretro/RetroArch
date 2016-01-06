@@ -111,6 +111,8 @@ void d3d_set_render_state(void *data, D3DRENDERSTATETYPE state, DWORD value);
 
 bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp);
 
+void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d);
+
 #ifdef __cplusplus
 }
 #endif
