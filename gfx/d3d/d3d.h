@@ -85,12 +85,6 @@ typedef struct Vertex
 } Vertex;
 #endif
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#ifdef _XBOX
-typedef struct gl_shader_backend gl_shader_backend_t;
-#endif
-#endif
-
 typedef struct d3d_video
 {
    uint64_t frame_count;
@@ -109,11 +103,7 @@ typedef struct d3d_video
 
    std::string shader_path;
 
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-#ifndef _XBOX
    struct video_shader shader;
-#endif
-#endif
    video_info_t video_info;
 
    bool needs_restore;
