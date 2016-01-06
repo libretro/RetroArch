@@ -600,7 +600,6 @@ static bool d3d_construct(d3d_video_t *d3d,
       video_driver_set_size(&new_width, &new_height);
    }
 
-#ifndef _XBOX
 #ifdef HAVE_WINDOW
    DWORD style;
    unsigned win_width, win_height;
@@ -683,7 +682,6 @@ static bool d3d_construct(d3d_video_t *d3d,
 
    if (!d3d_process_shader(d3d))
       return false;
-#endif
 #endif
 
    d3d->video_info = *info;
