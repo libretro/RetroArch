@@ -834,7 +834,7 @@ static void d3d_free(void *data)
 #endif
 #endif
 
-   d3d_device_free(d3d->dev);
+   d3d_device_free(d3d->dev, d3d->g_pD3D);
 
    win32_monitor_from_window(window, true);
 
