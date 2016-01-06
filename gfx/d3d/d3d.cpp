@@ -100,15 +100,16 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
-   if (d3d && d3d->renderchain_driver && d3d->renderchain_driver->chain_free)
-   d3d->renderchain_driver->chain_free(d3d->renderchain_data);
+   if (!d3d)
+      return;
+   if (!d3d->renderchain_driver)
+      return;
+
+   if (d3d->renderchain_driver->chain_free)
+      d3d->renderchain_driver->chain_free(d3d->renderchain_data);
 
    d3d->renderchain_driver = NULL;
    d3d->renderchain_data   = NULL;
-
-#ifndef _XBOX
-   d3d->needs_restore      = false;
-#endif
 }
 
 static void d3d_deinitialize(d3d_video_t *d3d)
@@ -118,6 +119,10 @@ static void d3d_deinitialize(d3d_video_t *d3d)
 
    font_driver_free(NULL);
    d3d_deinit_chain(d3d);
+
+#ifndef _XBOX
+   d3d->needs_restore      = false;
+#endif
 }
 
 void d3d_make_d3dpp(void *data,
