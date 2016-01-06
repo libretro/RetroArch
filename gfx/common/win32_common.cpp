@@ -230,7 +230,6 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          g_resize_width  = LOWORD(lparam);
          g_resize_height = HIWORD(lparam);
          g_resized       = true;
-         *quit           = true;
 
          if (g_resize_width && g_resize_height)
             gfx_ctx_set_resize(g_resize_width, g_resize_height);
