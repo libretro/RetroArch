@@ -446,6 +446,9 @@ static void d3d_set_nonblock_state(void *data, bool state)
    d3d->video_info.vsync = !state;
 
    gfx_ctx_swap_interval(state ? 0 : 1);
+#ifndef _XBOX
+   d3d_restore();
+#endif
 }
 
 static bool d3d_alive(void *data)

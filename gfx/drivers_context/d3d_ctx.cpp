@@ -297,8 +297,6 @@ static void gfx_ctx_d3d_swap_interval(void *data, unsigned interval)
       D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
    d3d_set_render_state(d3d->dev, XBOX_PRESENTATIONINTERVAL, d3d_interval);
-#else
-   d3d_restore(d3d);
 #endif
 }
 
