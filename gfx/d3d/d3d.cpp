@@ -600,6 +600,7 @@ static bool d3d_construct(d3d_video_t *d3d,
       video_driver_set_size(&new_width, &new_height);
    }
 
+#ifndef _XBOX
 #ifdef HAVE_WINDOW
    DWORD style;
    unsigned win_width, win_height;
@@ -670,6 +671,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 
    win32_show_cursor(!info->fullscreen);
 
+
 #ifdef HAVE_SHADERS
    /* This should only be done once here
     * to avoid set_shader() to be overridden
@@ -681,6 +683,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 
    if (!d3d_process_shader(d3d))
       return false;
+#endif
 #endif
 
    d3d->video_info = *info;
@@ -824,7 +827,9 @@ static void d3d_free(void *data)
    d3d_free_overlays(d3d);
 #endif
 
+#ifdef _XBOX
    gfx_ctx_free();
+#else
 
 #ifdef HAVE_MENU
    d3d_free_overlay(d3d, d3d->menu);
@@ -980,6 +985,8 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    return true;
 }
 
+#ifdef _XBOX
+
 #ifdef _XBOX1
 #include <formats/image.h>
 
@@ -1038,6 +1045,8 @@ static bool texture_image_render(d3d_video_t *d3d,
 
    return true;
 }
+#endif
+
 #endif
 
 #ifdef HAVE_FBO
