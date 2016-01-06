@@ -1444,12 +1444,16 @@ static bool d3d_frame(void *data, const void *frame,
    retro_perf_start(&d3d_frame);
 
    /* We cannot recover in fullscreen. */
-   if (d3d->needs_restore && IsIconic(window))
-      return true;
-   if (d3d->needs_restore && !d3d_restore(d3d))
+   if (d3d->needs_restore)
    {
-      RARCH_ERR("[D3D]: Failed to restore.\n");
-      return false;
+      if (IsIconic(window))
+         return true;
+
+      if (!d3d_restore(d3d))
+      {
+         RARCH_ERR("[D3D]: Failed to restore.\n");
+         return false;
+      }
    }
 
    if (d3d->should_resize)
