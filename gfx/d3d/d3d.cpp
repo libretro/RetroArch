@@ -64,28 +64,24 @@
 /* forward declarations */
 static bool d3d_init_luts(d3d_video_t *d3d)
 {
-#ifndef _XBOX
    unsigned i;
-#endif
    settings_t *settings = config_get_ptr();
 
    if (!d3d->renderchain_driver->add_lut)
       return true;
 
-#ifndef _XBOX
    for (i = 0; i < d3d->shader.luts; i++)
    {
       bool ret = d3d->renderchain_driver->add_lut(
             d3d->renderchain_data,
-			d3d->shader.lut[i].id, d3d->shader.lut[i].path,
-         d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
+            d3d->shader.lut[i].id, d3d->shader.lut[i].path,
+            d3d->shader.lut[i].filter == RARCH_FILTER_UNSPEC ?
             settings->video.smooth :
             (d3d->shader.lut[i].filter == RARCH_FILTER_LINEAR));
 
       if (!ret)
          return ret;
    }
-#endif
 
    return true;
 }
