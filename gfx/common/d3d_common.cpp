@@ -24,10 +24,14 @@ static bool d3d_restore_device(LPDIRECT3DDEVICE dev)
    if (!dev)
    {
       if (!d3d_wrapper_dev)
+      {
+         RARCH_ERR("[D3D]: restore device failed.\n");
          return false;
+      }
       dev = d3d_wrapper_dev;
    }
    d3d_wrapper_dev = dev;
+   RARCH_LOG("[D3D]: restore device succeeded.\n");
    return true;
 }
 
