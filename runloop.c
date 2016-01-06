@@ -1359,13 +1359,14 @@ int runloop_iterate(unsigned *sleep_ms)
       if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(cmd.state[0], cmd.state[2])) == -1)
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
+      if (focused || !is_idle)
+         menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+
       if (!focused || is_idle)
       {
          *sleep_ms = 10;
          return 1;
       }
-
-      menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
       goto end;
    }
