@@ -225,6 +225,16 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
 
    switch (message)
    {
+      case WM_SIZE:
+         /* Do not send resize message if we minimize. */
+         g_resize_width  = LOWORD(lparam);
+         g_resize_height = HIWORD(lparam);
+         g_resized       = true;
+         *quit           = true;
+
+         if (g_resize_width && g_resize_height)
+            gfx_ctx_set_resize(g_resize_width, g_resize_height);
+         return 0;
       case WM_SYSCOMMAND:
       case WM_CHAR:
       case WM_KEYDOWN:
@@ -234,7 +244,6 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
-      case WM_SIZE:
       case WM_COMMAND:
          ret = WndProcCommon(&quit, hwnd, message, wparam, lparam);
          if (quit)
