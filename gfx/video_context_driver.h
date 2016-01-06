@@ -103,7 +103,7 @@ typedef struct gfx_ctx_driver
 
    /* Acknowledge a resize event. This is needed for some APIs. 
     * Most backends will ignore this. */
-   void (*set_resize)(void*, unsigned, unsigned);
+   bool (*set_resize)(void*, unsigned, unsigned);
 
    /* Checks if window has input focus. */
    bool (*has_focus)(void*);
@@ -229,7 +229,7 @@ void gfx_ctx_update_window_title(void);
 
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 
-void gfx_ctx_set_resize(unsigned width, unsigned height);
+bool gfx_ctx_set_resize(unsigned width, unsigned height);
 
 void gfx_ctx_swap_interval(unsigned interval);
 

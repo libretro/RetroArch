@@ -513,11 +513,12 @@ static void cocoagl_gfx_ctx_check_window(void *data, bool *quit,
    }
 }
 
-static void cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static bool cocoagl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
+   return false;
 }
 
 static void cocoagl_gfx_ctx_input_driver(void *data, const input_driver_t **input, void **input_data)

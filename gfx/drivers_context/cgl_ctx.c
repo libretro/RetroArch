@@ -104,11 +104,12 @@ static void gfx_ctx_cgl_swap_buffers(void *data)
    CGLFlushDrawable(cgl->glCtx);
 }
 
-static void gfx_ctx_cgl_set_resize(void *data, unsigned width, unsigned height)
+static bool gfx_ctx_cgl_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
+   return false;
 }
 
 static void gfx_ctx_cgl_update_window_title(void *data)

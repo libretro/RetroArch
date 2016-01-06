@@ -48,26 +48,20 @@ static bool widescreen_mode = false;
 void *curD3D = NULL;
 void *dinput;
 
-extern bool d3d_restore(d3d_video_t *data);
-
-static void d3d_resize(void *data, unsigned new_width, unsigned new_height)
+static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_height)
 {
    d3d_video_t *d3d      = (d3d_video_t*)curD3D;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
-   if (!d3dr)
-      return;
+   /* No changes? */
+   if (new_width == d3d->video_info.width && new_height == d3d->video_info.height)
+      return false;
 
-   (void)data;
+   RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
+   d3d->video_info.width  = new_width;
+   d3d->video_info.height = new_height;
+   video_driver_set_size(&new_width, &new_height);
 
-   if (new_width != d3d->video_info.width || new_height != d3d->video_info.height)
-   {
-      RARCH_LOG("[D3D]: Resize %ux%u.\n", new_width, new_height);
-      d3d->video_info.width  = new_width;
-      d3d->video_info.height = new_height;
-      video_driver_set_size(&new_width, &new_height);
-      d3d_restore(d3d);
-   }
+   return true;
 }
 
 static void gfx_ctx_d3d_swap_buffers(void *data)
@@ -320,7 +314,7 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    NULL,
    gfx_ctx_d3d_update_title,
    gfx_ctx_d3d_check_window,
-   d3d_resize,
+   gfx_ctx_d3d_set_resize,
    gfx_ctx_d3d_has_focus,
    gfx_ctx_d3d_suppress_screensaver,
    gfx_ctx_d3d_has_windowed,

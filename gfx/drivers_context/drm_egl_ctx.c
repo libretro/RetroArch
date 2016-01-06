@@ -226,12 +226,14 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
    wait_flip(true);  
 }
 
-static void gfx_ctx_drm_egl_set_resize(void *data,
+static bool gfx_ctx_drm_egl_set_resize(void *data,
       unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
+
+   return false;
 }
 
 static void gfx_ctx_drm_egl_update_window_title(void *data)

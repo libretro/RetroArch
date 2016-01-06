@@ -69,12 +69,13 @@ static void gfx_ctx_emscripten_swap_buffers(void *data)
 #endif
 }
 
-static void gfx_ctx_emscripten_set_resize(void *data,
+static bool gfx_ctx_emscripten_set_resize(void *data,
       unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
+   return false;
 }
 
 static void gfx_ctx_emscripten_update_window_title(void *data)

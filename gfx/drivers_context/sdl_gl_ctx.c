@@ -334,11 +334,12 @@ static void sdl_ctx_check_window(void *data, bool *quit, bool *resize,unsigned *
    sdl->g_frame_count = frame_count;
 }
 
-static void sdl_ctx_set_resize(void *data, unsigned width, unsigned height)
+static bool sdl_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
+   return false;
 }
 
 static bool sdl_ctx_has_focus(void *data)

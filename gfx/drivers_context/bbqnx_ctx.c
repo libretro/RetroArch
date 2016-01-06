@@ -256,11 +256,12 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
       *quit = true;
 }
 
-static void gfx_ctx_qnx_set_resize(void *data, unsigned width, unsigned height)
+static bool gfx_ctx_qnx_set_resize(void *data, unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
+   return false;
 }
 
 static void gfx_ctx_qnx_update_window_title(void *data)

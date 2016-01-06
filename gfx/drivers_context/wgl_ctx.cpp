@@ -247,12 +247,13 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    SwapBuffers(g_hdc);
 }
 
-static void gfx_ctx_wgl_set_resize(void *data,
+static bool gfx_ctx_wgl_set_resize(void *data,
       unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
+   return false;
 }
 
 static void gfx_ctx_wgl_update_window_title(void *data)

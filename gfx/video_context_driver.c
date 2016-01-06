@@ -263,10 +263,12 @@ void gfx_ctx_swap_interval(unsigned interval)
       current_video_context->swap_interval(video_context_data, interval);
 }
 
-void gfx_ctx_set_resize(unsigned width, unsigned height)
+bool gfx_ctx_set_resize(unsigned width, unsigned height)
 {
-   if (current_video_context)
-      current_video_context->set_resize(video_context_data, width, height);
+   if (!current_video_context)
+      return false;
+
+   return current_video_context->set_resize(video_context_data, width, height);
 }
 
 void gfx_ctx_input_driver(

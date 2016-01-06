@@ -132,12 +132,14 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
       *quit = true;
 }
 
-static void android_gfx_ctx_set_resize(void *data,
+static bool android_gfx_ctx_set_resize(void *data,
       unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
+
+   return false;
 }
 
 static void android_gfx_ctx_update_window_title(void *data)

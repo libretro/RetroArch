@@ -160,12 +160,13 @@ static void gfx_ctx_glx_swap_buffers(void *data)
       glXSwapBuffers(g_x11_dpy, glx->g_glx_win);
 }
 
-static void gfx_ctx_glx_set_resize(void *data,
+static bool gfx_ctx_glx_set_resize(void *data,
       unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
+   return false;
 }
 
 static void *gfx_ctx_glx_init(void *data)

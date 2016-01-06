@@ -217,6 +217,8 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
    return 0;
 }
 
+extern bool d3d_restore(d3d_video_t *data);
+
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
@@ -232,7 +234,8 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          g_resized       = true;
 
          if (g_resize_width && g_resize_height)
-            gfx_ctx_set_resize(g_resize_width, g_resize_height);
+            if (gfx_ctx_set_resize(g_resize_width, g_resize_height))
+               d3d_restore(curD3D);
          return 0;
       case WM_SYSCOMMAND:
       case WM_CHAR:

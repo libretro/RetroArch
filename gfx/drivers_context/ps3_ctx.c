@@ -187,8 +187,11 @@ static void gfx_ctx_ps3_swap_buffers(void *data)
 #endif
 }
 
-static void gfx_ctx_ps3_set_resize(void *data,
-      unsigned width, unsigned height) { }
+static bool gfx_ctx_ps3_set_resize(void *data,
+      unsigned width, unsigned height)
+{
+   return false;
+}
 
 static void gfx_ctx_ps3_update_window_title(void *data)
 {

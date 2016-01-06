@@ -129,12 +129,13 @@ static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
    *quit = g_egl_quit;
 }
 
-static void gfx_ctx_mali_fbdev_set_resize(void *data,
+static bool gfx_ctx_mali_fbdev_set_resize(void *data,
       unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
    (void)height;
+   return false;
 }
 
 static void gfx_ctx_mali_fbdev_update_window_title(void *data)
