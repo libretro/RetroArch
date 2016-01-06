@@ -130,7 +130,7 @@ typedef struct menu_input
    {
       const char **buffer;
       const char *label;
-      const char *label_setting;
+      char label_setting[256];
       bool display;
       unsigned type;
       unsigned idx;
@@ -303,11 +303,12 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
       case MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING:
          {
             char **ptr = (char**)data;
-            menu_input->keyboard.label_setting = *ptr;
+            strlcpy(menu_input->keyboard.label_setting,
+            *ptr, sizeof(menu_input->keyboard.label_setting));
          }
          return true;
       case MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING:
-         menu_input->keyboard.label_setting = NULL;
+         menu_input->keyboard.label_setting[0] = '\0';
          return true;
    }
 
