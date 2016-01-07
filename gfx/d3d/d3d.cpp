@@ -753,8 +753,8 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
 static void *d3d_init(const video_info_t *info,
       const input_driver_t **input, void **input_data)
 {
-   d3d_video_t            *d3d = NULL;
-   const gfx_ctx_driver_t *ctx = NULL;
+   d3d_video_t            *d3d        = NULL;
+   const gfx_ctx_driver_t *ctx_driver = NULL;
 
 #ifdef _XBOX
    if (video_driver_get_ptr(false))
@@ -780,8 +780,8 @@ static void *d3d_init(const video_info_t *info,
    if (!d3d)
       goto error;
 
-   ctx = d3d_get_context(d3d);
-   if (!ctx)
+   ctx_driver = d3d_get_context(d3d);
+   if (!ctx_driver)
       goto error;
 
    /* Default values */
@@ -799,7 +799,7 @@ static void *d3d_init(const video_info_t *info,
 #endif
 #endif
 
-   gfx_ctx_set(ctx);
+   gfx_ctx_set(ctx_driver);
 
    if (!d3d_construct(d3d, info, input, input_data))
    {
@@ -816,9 +816,9 @@ static void *d3d_init(const video_info_t *info,
    return d3d;
 
 error:
+   gfx_ctx_destroy(ctx_driver);
    if (d3d)
       delete d3d;
-   gfx_ctx_destroy(ctx);
    return NULL;
 }
 
