@@ -94,7 +94,6 @@ typedef struct d3d_video
 
    struct video_viewport vp;
    WNDCLASSEX windowClass;
-   LPDIRECT3D g_pD3D;
    LPDIRECT3DDEVICE dev;
    HRESULT d3d_err;
    unsigned cur_mon_id;

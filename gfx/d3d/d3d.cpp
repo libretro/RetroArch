@@ -61,6 +61,8 @@
 #endif
 #endif
 
+static LPDIRECT3D g_pD3D;
+
 /* forward declarations */
 static bool d3d_init_luts(d3d_video_t *d3d)
 {
@@ -243,8 +245,8 @@ static bool d3d_init_base(void *data, const video_info_t *info)
 
    d3d_make_d3dpp(d3d, info, &d3dpp);
 
-   d3d->g_pD3D = D3DCREATE_CTX(D3D_SDK_VERSION);
-   if (!d3d->g_pD3D)
+   g_pD3D = D3DCREATE_CTX(D3D_SDK_VERSION);
+   if (!g_pD3D)
    {
       RARCH_ERR("Failed to create D3D interface.\n");
       return false;
@@ -254,7 +256,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    d3d->cur_mon_id = 0;
 #endif
 
-   if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
+   if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
             d3d->cur_mon_id,
             D3DDEVTYPE_HAL,
             win32_get_window(),
@@ -265,7 +267,7 @@ static bool d3d_init_base(void *data, const video_info_t *info)
       RARCH_WARN("[D3D]: Failed to init device with hardware vertex processing (code: 0x%x). Trying to fall back to software vertex processing.\n",
                  (unsigned)d3d->d3d_err);
 
-      if (FAILED(d3d->d3d_err = d3d->g_pD3D->CreateDevice(
+      if (FAILED(d3d->d3d_err = g_pD3D->CreateDevice(
                   d3d->cur_mon_id,
                   D3DDEVTYPE_HAL,
                   win32_get_window(),
@@ -375,7 +377,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    if (!d3d)
       return false;
 
-   if (!d3d->g_pD3D)
+   if (!g_pD3D)
       ret = d3d_init_base(d3d, info);
    else if (d3d->needs_restore)
    {
@@ -386,8 +388,8 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
       if (!d3d_reset(d3d->dev, &d3dpp))
       {
          d3d_deinitialize(d3d);
-         d3d->g_pD3D->Release();
-         d3d->g_pD3D = NULL;
+         g_pD3D->Release();
+         g_pD3D = NULL;
 
          ret = d3d_init_base(d3d, info);
          if (ret)
@@ -785,7 +787,6 @@ static void *d3d_init(const video_info_t *info,
       goto error;
 
    /* Default values */
-   vid->g_pD3D               = NULL;
    vid->dev                  = NULL;
    vid->dev_rotation         = 0;
    vid->needs_restore        = false;
@@ -845,7 +846,7 @@ static void d3d_free(void *data)
 #endif
 #endif
 
-   d3d_device_free(d3d->dev, d3d->g_pD3D);
+   d3d_device_free(d3d->dev, g_pD3D);
 
    win32_monitor_from_window(window, true);
 
