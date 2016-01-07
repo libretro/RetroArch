@@ -505,13 +505,8 @@ bool d3d_reset(LPDIRECT3DDEVICE dev, D3DPRESENT_PARAMETERS *d3dpp)
 
 void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d)
 {
-   if (!dev)
-      return;
-
-   dev->Release();
-
-   if (!pd3d)
-      return;
-
-   pd3d->Release();
+   if (dev)
+      dev->Release();
+   if (pd3d)
+      pd3d->Release();
 }

@@ -388,7 +388,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
       if (!d3d_reset(d3d->dev, &d3dpp))
       {
          d3d_deinitialize(d3d);
-         g_pD3D->Release();
+         d3d_device_free(NULL, g_pD3D);
          g_pD3D = NULL;
 
          ret = d3d_init_base(d3d, info);
@@ -847,7 +847,8 @@ static void d3d_free(void *data)
 #endif
 
    d3d_device_free(d3d->dev, g_pD3D);
-   g_pD3D = NULL;
+   d3d->dev = NULL;
+   g_pD3D   = NULL;
 
    win32_monitor_from_window(window, true);
 
