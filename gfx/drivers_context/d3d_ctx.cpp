@@ -53,7 +53,7 @@ static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_
    d3d_video_t *d3d      = (d3d_video_t*)curD3D;
 
    if (!d3d->dev)
-      return;
+      return false;
 
    /* No changes? */
    if (new_width == d3d->video_info.width && new_height == d3d->video_info.height)
