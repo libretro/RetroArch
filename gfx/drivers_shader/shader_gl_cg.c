@@ -35,6 +35,7 @@
 #include <rhash.h>
 
 #include "../video_shader_driver.h"
+#include "../video_shader_parse.h"
 #include "../../dynamic.h"
 #include "../../rewind.h"
 #include "../video_state_tracker.h"
@@ -110,7 +111,6 @@ struct cg_fbo_params
    CGparameter coord;
 };
 
-#define MAX_VARIABLES 64
 #define PREV_TEXTURES (GFX_MAX_TEXTURES - 1)
 
 struct cg_program
@@ -344,12 +344,12 @@ static void gl_cg_set_params(void *data, void *shader_data,
    if (cg_data->state_tracker)
    {
       /* Only query uniforms in first pass. */
-      static struct state_tracker_uniform tracker_info[MAX_VARIABLES];
+      static struct state_tracker_uniform tracker_info[GFX_MAX_VARIABLES];
       static unsigned cnt = 0;
 
       if (cg_data->active_idx == 1)
          cnt = state_tracker_get_uniform(cg_data->state_tracker, tracker_info,
-               MAX_VARIABLES, frame_count);
+               GFX_MAX_VARIABLES, frame_count);
 
       for (i = 0; i < cnt; i++)
       {
