@@ -869,17 +869,14 @@ static bool renderchain_create_first_pass(cg_renderchain_t *chain,
    unsigned i;
    Pass pass;
    D3DXMATRIX ident;
-   LPDIRECT3DDEVICE d3dr = NULL;
 
    if (!chain)
 	   return false;
    
-   d3dr = (LPDIRECT3DDEVICE)chain->dev;
-
    D3DXMatrixIdentity(&ident);
 
-   d3d_set_transform(d3dr, D3DTS_WORLD, &ident);
-   d3d_set_transform(d3dr, D3DTS_VIEW, &ident);
+   d3d_set_transform(chain->dev, D3DTS_WORLD, &ident);
+   d3d_set_transform(chain->dev, D3DTS_VIEW, &ident);
 
    pass.info        = *info;
    pass.last_width  = 0;
@@ -892,12 +889,12 @@ static bool renderchain_create_first_pass(cg_renderchain_t *chain,
       chain->prev.last_width[i]  = 0;
       chain->prev.last_height[i] = 0;
       chain->prev.vertex_buf[i]  = d3d_vertex_buffer_new(
-            d3dr, 4 * sizeof(Vertex), 0, 0, D3DPOOL_DEFAULT, NULL);
+            chain->dev, 4 * sizeof(Vertex), 0, 0, D3DPOOL_DEFAULT, NULL);
 
       if (!chain->prev.vertex_buf[i])
          return false;
 
-      chain->prev.tex[i] = d3d_texture_new(d3dr, NULL,
+      chain->prev.tex[i] = d3d_texture_new(chain->dev, NULL,
             info->tex_w, info->tex_h, 1, 0,
       (fmt == RETRO_PIXEL_FORMAT_RGB565) ? D3DFMT_R5G6B5 : D3DFMT_X8R8G8B8,
       D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL);
@@ -905,14 +902,14 @@ static bool renderchain_create_first_pass(cg_renderchain_t *chain,
       if (!chain->prev.tex[i])
          return false;
 
-      d3d_set_texture(d3dr, 0, chain->prev.tex[i]);
-      d3d_set_sampler_minfilter(d3dr, 0,
+      d3d_set_texture(chain->dev, 0, chain->prev.tex[i]);
+      d3d_set_sampler_minfilter(chain->dev, 0,
             translate_filter(info->pass->filter));
-      d3d_set_sampler_magfilter(d3dr, 0,
+      d3d_set_sampler_magfilter(chain->dev, 0,
             translate_filter(info->pass->filter));
-      d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
-      d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
-      d3d_set_texture(d3dr, 0, NULL);
+      d3d_set_sampler_address_u(chain->dev, 0, D3DTADDRESS_BORDER);
+      d3d_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
+      d3d_set_texture(chain->dev, 0, NULL);
    }
 
    renderchain_compile_shaders(chain, &pass.fPrg,
@@ -958,7 +955,6 @@ static bool cg_d3d9_renderchain_init(void *data,
 static bool renderchain_set_pass_size(cg_renderchain_t *chain,
       unsigned pass_index, unsigned width, unsigned height)
 {
-   LPDIRECT3DDEVICE d3dr = chain->dev;
    Pass *pass = (Pass*)&chain->passes[pass_index];
 
    if (width != pass->info.tex_w || height != pass->info.tex_h)
@@ -967,7 +963,7 @@ static bool renderchain_set_pass_size(cg_renderchain_t *chain,
 
       pass->info.tex_w = width;
       pass->info.tex_h = height;
-      pass->tex        = d3d_texture_new(d3dr, NULL,
+      pass->tex        = d3d_texture_new(chain->dev, NULL,
             width, height, 1,
             D3DUSAGE_RENDERTARGET,
             chain->passes.back().info.pass->fbo.fp_fbo ? 
@@ -978,10 +974,10 @@ static bool renderchain_set_pass_size(cg_renderchain_t *chain,
       if (!pass->tex)
          return false;
 
-      d3d_set_texture(d3dr, 0, pass->tex);
-      d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
-      d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
-      d3d_set_texture(d3dr, 0, NULL);
+      d3d_set_texture(chain->dev, 0, pass->tex);
+      d3d_set_sampler_address_u(chain->dev, 0, D3DTADDRESS_BORDER);
+      d3d_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
+      d3d_set_texture(chain->dev, 0, NULL);
    }
 
    return true;
@@ -1094,7 +1090,6 @@ static bool cg_d3d9_renderchain_add_pass(void *data, const void *info_data)
    Pass pass;
    const LinkInfo *info     = (const LinkInfo*)info_data;
    cg_renderchain_t *chain  = (cg_renderchain_t*)data;
-   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)chain->dev;
 
    pass.info                = *info;
    pass.last_width          = 0;
@@ -1106,25 +1101,30 @@ static bool cg_d3d9_renderchain_add_pass(void *data, const void *info_data)
    if (!cg_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
 
-   pass.vertex_buf = d3d_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
+   pass.vertex_buf = d3d_vertex_buffer_new(chain->dev, 4 * sizeof(Vertex),
 	   0, 0, D3DPOOL_DEFAULT, NULL);
 
    if (!pass.vertex_buf)
       return false;
 
-   pass.tex = d3d_texture_new(d3dr, NULL, info->tex_w, info->tex_h, 1,
-               D3DUSAGE_RENDERTARGET,
-               chain->passes.back().info.pass->fbo.fp_fbo 
-               ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
-               D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL);
+   pass.tex = d3d_texture_new(
+         chain->dev,
+         NULL,
+         info->tex_w,
+         info->tex_h,
+         1,
+         D3DUSAGE_RENDERTARGET,
+         chain->passes.back().info.pass->fbo.fp_fbo 
+         ? D3DFMT_A32B32G32R32F : D3DFMT_A8R8G8B8,
+         D3DPOOL_DEFAULT, 0, 0, 0, NULL, NULL);
 
    if (!pass.tex)
       return false;
 
-   d3d_set_texture(d3dr, 0, pass.tex);
-   d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
-   d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
-   d3d_set_texture(d3dr, 0, NULL);
+   d3d_set_texture(chain->dev, 0, pass.tex);
+   d3d_set_sampler_address_u(chain->dev, 0, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
+   d3d_set_texture(chain->dev, 0, NULL);
 
    chain->passes.push_back(pass);
 
@@ -1137,8 +1137,8 @@ static bool cg_d3d9_renderchain_add_lut(void *data,
 {
    lut_info info;
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
-   LPDIRECT3DDEVICE d3dr = chain->dev;
-   LPDIRECT3DTEXTURE lut = d3d_texture_new(d3dr,
+   LPDIRECT3DTEXTURE lut = d3d_texture_new(
+         chain->dev,
             path,
             D3DX_DEFAULT_NONPOW2,
             D3DX_DEFAULT_NONPOW2,
@@ -1161,10 +1161,10 @@ static bool cg_d3d9_renderchain_add_lut(void *data,
    if (!lut)
       return false;
 
-   d3d_set_texture(d3dr, 0, lut);
-   d3d_set_sampler_address_u(d3dr, 0, D3DTADDRESS_BORDER);
-   d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
-   d3d_set_texture(d3dr, 0, NULL);
+   d3d_set_texture(chain->dev, 0, lut);
+   d3d_set_sampler_address_u(chain->dev, 0, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
+   d3d_set_texture(chain->dev, 0, NULL);
 
    chain->luts.push_back(info);
 
@@ -1299,15 +1299,13 @@ static void renderchain_set_vertices(
 
 static void renderchain_set_viewport(void *data, void *viewport_data)
 {
-   LPDIRECT3DDEVICE d3dr;
    D3DVIEWPORT       *vp = (D3DVIEWPORT*)viewport_data;
    cg_renderchain_t  *chain = (cg_renderchain_t*)data;
 
    if (!chain)
       return;
 
-   d3dr = (LPDIRECT3DDEVICE)chain->dev;
-   d3d_set_viewport(d3dr, vp);
+   d3d_set_viewport(chain->dev, vp);
 }
 
 static void renderchain_blit_to_texture(
@@ -1334,22 +1332,21 @@ static void renderchain_blit_to_texture(
 static void renderchain_unbind_all(cg_renderchain_t *chain)
 {
    unsigned i;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)chain->dev;
 
    /* Have to be a bit anal about it.
     * Render targets hate it when they have filters apparently.
     */
    for (i = 0; i < chain->bound_tex.size(); i++)
    {
-      d3d_set_sampler_minfilter(d3dr,
+      d3d_set_sampler_minfilter(chain->dev,
             chain->bound_tex[i], D3DTEXF_POINT);
-      d3d_set_sampler_magfilter(d3dr,
+      d3d_set_sampler_magfilter(chain->dev,
             chain->bound_tex[i], D3DTEXF_POINT);
-      d3d_set_texture(d3dr, chain->bound_tex[i], NULL);
+      d3d_set_texture(chain->dev, chain->bound_tex[i], NULL);
    }
 
    for (i = 0; i < chain->bound_vert.size(); i++)
-      d3d_set_stream_source(d3dr, chain->bound_vert[i], 0, 0, 0);
+      d3d_set_stream_source(chain->dev, chain->bound_vert[i], 0, 0, 0);
 
    chain->bound_tex.clear();
    chain->bound_vert.clear();
@@ -1361,24 +1358,21 @@ static void renderchain_render_pass(
       unsigned pass_index)
 {
    unsigned i;
-   LPDIRECT3DDEVICE d3dr;
 
    if (!chain)
       return;
    
-   d3dr = (LPDIRECT3DDEVICE)chain->dev;
-
    renderchain_set_shaders(chain, &pass->fPrg, &pass->vPrg);
 
-   d3d_set_texture(d3dr, 0, pass->tex);
-   d3d_set_sampler_minfilter(d3dr, 0,
+   d3d_set_texture(chain->dev, 0, pass->tex);
+   d3d_set_sampler_minfilter(chain->dev, 0,
          translate_filter(pass->info.pass->filter));
-   d3d_set_sampler_magfilter(d3dr, 0,
+   d3d_set_sampler_magfilter(chain->dev, 0,
          translate_filter(pass->info.pass->filter));
 
-   d3d_set_vertex_declaration(d3dr, pass->vertex_decl);
+   d3d_set_vertex_declaration(chain->dev, pass->vertex_decl);
    for (i = 0; i < 4; i++)
-      d3d_set_stream_source(d3dr, i,
+      d3d_set_stream_source(chain->dev, i,
             pass->vertex_buf, 0, sizeof(Vertex));
 
    renderchain_bind_orig(chain, pass);
@@ -1387,12 +1381,12 @@ static void renderchain_render_pass(
    renderchain_bind_luts(chain, pass);
    renderchain_bind_tracker(chain, pass, pass_index);
 
-   d3d_draw_primitive(d3dr, D3DPT_TRIANGLESTRIP, 0, 2);
+   d3d_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
    /* So we don't render with linear filter into render targets,
     * which apparently looked odd (too blurry). */
-   d3d_set_sampler_minfilter(d3dr, 0, D3DTEXF_POINT);
-   d3d_set_sampler_magfilter(d3dr, 0, D3DTEXF_POINT);
+   d3d_set_sampler_minfilter(chain->dev, 0, D3DTEXF_POINT);
+   d3d_set_sampler_magfilter(chain->dev, 0, D3DTEXF_POINT);
 
    renderchain_unbind_all(chain);
 }
@@ -1534,7 +1528,8 @@ static bool cg_d3d9_renderchain_read_viewport(void *data, uint8_t *buffer)
    LPDIRECT3DSURFACE target = NULL;
    LPDIRECT3DSURFACE dest   = NULL;
    bool ret                 = true;
-   d3d_video_t *d3d         = (d3d_video_t*)data; LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
+   d3d_video_t *d3d         = (d3d_video_t*)data;
+   LPDIRECT3DDEVICE d3dr    = (LPDIRECT3DDEVICE)d3d->dev;
    static struct retro_perf_counter d3d_read_viewport = {0};
 
    video_driver_get_size(&width, &height);
