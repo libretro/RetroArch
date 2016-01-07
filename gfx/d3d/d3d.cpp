@@ -1528,7 +1528,10 @@ static bool d3d_frame(void *data, const void *frame,
 
 #ifdef HAVE_MENU
    if (d3d->menu && d3d->menu->enabled)
+   {
       d3d_overlay_render(d3d, d3d->menu);
+      menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
+   }
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -1537,10 +1540,6 @@ static bool d3d_frame(void *data, const void *frame,
       for (i = 0; i < d3d->overlays.size(); i++)
          d3d_overlay_render(d3d, &d3d->overlays[i]);
    }
-#endif
-
-#ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_FRAME, NULL);
 #endif
 
    retro_perf_stop(&d3d_frame);
