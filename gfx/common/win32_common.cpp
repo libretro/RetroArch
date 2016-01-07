@@ -59,7 +59,7 @@ static bool g_quit;
 static HWND g_hwnd;
 
 extern void *dinput_wgl;
-extern void *curD3D;
+static void *curD3D = NULL;
 extern void *dinput;
 
 /* Power Request APIs */

@@ -45,14 +45,13 @@
 static bool widescreen_mode = false;
 #endif
 
-void *curD3D = NULL;
 void *dinput;
 
 static bool gfx_ctx_d3d_set_resize(void *data, unsigned new_width, unsigned new_height)
 {
-   d3d_video_t *d3d      = (d3d_video_t*)curD3D;
+   d3d_video_t *d3d      = (d3d_video_t*)video_driver_get_ptr(false);
 
-   if (!d3d->dev)
+   if (!d3d || !d3d->dev)
       return false;
 
    /* No changes? */
