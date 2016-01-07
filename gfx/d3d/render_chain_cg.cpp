@@ -82,12 +82,7 @@ typedef struct cg_renderchain
    std::vector<lut_info> luts;
    D3DVIEWPORT *final_viewport;
    unsigned frame_count;
-   struct
-   {
-      unsigned list[GFX_MAX_TEXTURES];
-      unsigned current;
-      unsigned size;
-   } bound_tex;
+   std::vector<unsigned> bound_tex;
    std::vector<unsigned> bound_vert;
    CGcontext cgCtx;
 } cg_renderchain_t;
@@ -519,7 +514,7 @@ static void renderchain_bind_orig(cg_renderchain_t *chain, void *pass_data)
             translate_filter(chain->passes[0].info.pass->filter));
       d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
       d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
-      chain->bound_tex.list[chain->bound_tex.current++] = index;
+      chain->bound_tex.push_back(index);
    }
 
    param = cgGetNamedParameter(pass->vPrg, "ORIG.tex_coord");
@@ -583,7 +578,7 @@ static void renderchain_bind_prev(cg_renderchain_t *chain, void *pass_data)
             chain->prev.tex[(chain->prev.ptr - (i + 1)) & TEXTURESMASK];
 
          d3d_set_texture(chain->dev, index, tex);
-         chain->bound_tex.list[chain->bound_tex.current++] = index;
+         chain->bound_tex.push_back(index);
 
          d3d_set_sampler_magfilter(chain->dev, index,
                translate_filter(chain->passes[0].info.pass->filter));
@@ -622,7 +617,7 @@ static void cg_d3d9_renderchain_add_lut(void *data,
          translate_filter(chain->luts[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
    d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
-   chain->bound_tex.list[chain->bound_tex.current++] = index;
+   chain->bound_tex.push_back(index);
 }
 
 static void renderchain_bind_luts(cg_renderchain_t *chain,
@@ -694,7 +689,7 @@ static void renderchain_bind_pass(cg_renderchain_t *chain,
       if (param)
       {
          index = cgGetParameterResourceIndex(param);
-         chain->bound_tex.list[chain->bound_tex.current++] = index;
+         chain->bound_tex.push_back(index);
 
          d3d_set_texture(chain->dev, index, chain->passes[i].tex);
          d3d_set_sampler_magfilter(chain->dev, index,
@@ -1344,21 +1339,19 @@ static void renderchain_unbind_all(cg_renderchain_t *chain)
    /* Have to be a bit anal about it.
     * Render targets hate it when they have filters apparently.
     */
-   for (i = 0; i < chain->bound_tex.size; i++)
+   for (i = 0; i < chain->bound_tex.size(); i++)
    {
       d3d_set_sampler_minfilter(d3dr,
-            chain->bound_tex.list[i], D3DTEXF_POINT);
+            chain->bound_tex[i], D3DTEXF_POINT);
       d3d_set_sampler_magfilter(d3dr,
-            chain->bound_tex.list[i], D3DTEXF_POINT);
-      d3d_set_texture(d3dr, chain->bound_tex.list[i], NULL);
-      chain->bound_tex.list[i] = 0;
+            chain->bound_tex[i], D3DTEXF_POINT);
+      d3d_set_texture(d3dr, chain->bound_tex[i], NULL);
    }
 
    for (i = 0; i < chain->bound_vert.size(); i++)
       d3d_set_stream_source(d3dr, chain->bound_vert[i], 0, 0, 0);
 
-   chain->bound_tex.current = 0;
-   chain->bound_tex.size    = 0;
+   chain->bound_tex.clear();
    chain->bound_vert.clear();
 }
 
