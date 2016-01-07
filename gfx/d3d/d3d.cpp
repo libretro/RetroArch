@@ -361,7 +361,7 @@ static void d3d_set_viewport(void *data,
 
    d3d->final_viewport = viewport;
 
-   if (d3d && d3d->renderchain_driver && d3d->renderchain_data)
+   if (d3d->renderchain_driver && d3d->renderchain_data)
    {
       if (d3d->renderchain_driver->set_font_rect)
          d3d->renderchain_driver->set_font_rect(d3d, NULL);
