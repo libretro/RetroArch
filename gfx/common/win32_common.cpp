@@ -217,7 +217,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
    return 0;
 }
 
-extern bool d3d_restore(d3d_video_t *data);
+extern bool d3d_restore(void *data);
 
 LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)

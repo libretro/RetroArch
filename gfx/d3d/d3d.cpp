@@ -422,10 +422,13 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    return true;
 }
 
-
-
-bool d3d_restore(d3d_video_t *d3d)
+bool d3d_restore(void *data)
 {
+   d3d_video_t            *d3d = (d3d_video_t*)data;
+
+   if (!d3d)
+      return false;
+
    d3d_deinitialize(d3d);
    d3d->needs_restore = !d3d_initialize(d3d, &d3d->video_info);
 
