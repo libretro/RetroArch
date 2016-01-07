@@ -753,72 +753,71 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
 static void *d3d_init(const video_info_t *info,
       const input_driver_t **input, void **input_data)
 {
-   d3d_video_t            *vid = NULL;
+   d3d_video_t            *d3d = NULL;
    const gfx_ctx_driver_t *ctx = NULL;
 
 #ifdef _XBOX
    if (video_driver_get_ptr(false))
    {
-      d3d_video_t *vid = (d3d_video_t*)video_driver_get_ptr(false);
+      d3d = (d3d_video_t*)video_driver_get_ptr(false);
 
       /* Reinitialize renderchain as we
        * might have changed pixel formats.*/
-      if (vid->renderchain_driver->reinit(vid, (const void*)info))
+      if (d3d->renderchain_driver->reinit(d3d, (const void*)info))
       {
-         d3d_deinit_chain(vid);
-         d3d_init_chain(vid, info);
+         d3d_deinit_chain(d3d);
+         d3d_init_chain(d3d, info);
 
          input_driver_set(input, input_data);
 
          video_driver_ctl(RARCH_DISPLAY_CTL_SET_OWN_DRIVER, NULL);
-         return vid;
+         return d3d;
       }
    }
 #endif
 
-   vid = new d3d_video_t();
-   if (!vid)
+   d3d = new d3d_video_t();
+   if (!d3d)
       goto error;
 
-   ctx = d3d_get_context(vid);
+   ctx = d3d_get_context(d3d);
    if (!ctx)
       goto error;
 
    /* Default values */
-   vid->dev                  = NULL;
-   vid->dev_rotation         = 0;
-   vid->needs_restore        = false;
+   d3d->dev                  = NULL;
+   d3d->dev_rotation         = 0;
+   d3d->needs_restore        = false;
 #ifdef HAVE_OVERLAY
-   vid->overlays_enabled     = false;
+   d3d->overlays_enabled     = false;
 #endif
 #ifdef _XBOX
-   vid->should_resize        = false;
+   d3d->should_resize        = false;
 #else
 #ifdef HAVE_MENU
-   vid->menu                 = NULL;
+   d3d->menu                 = NULL;
 #endif
 #endif
 
    gfx_ctx_set(ctx);
 
-   if (!d3d_construct(vid, info, input, input_data))
+   if (!d3d_construct(d3d, info, input, input_data))
    {
       RARCH_ERR("[D3D]: Failed to init D3D.\n");
       goto error;
    }
 
-   vid->keep_aspect       = info->force_aspect;
-
+   d3d->keep_aspect       = info->force_aspect;
 #ifdef _XBOX
    video_driver_ctl(RARCH_DISPLAY_CTL_SET_OWN_DRIVER, NULL);
    video_driver_ctl(RARCH_INPUT_CTL_SET_OWN_DRIVER, NULL);
 #endif
 
-   return vid;
+   return d3d;
 
 error:
-   if (vid)
-      delete vid;
+   if (d3d)
+      delete d3d;
    gfx_ctx_destroy(ctx);
    return NULL;
 }
