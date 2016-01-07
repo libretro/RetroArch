@@ -432,12 +432,16 @@ bool d3d_restore(void *data)
       return false;
 
    d3d_deinitialize(d3d);
-   d3d->needs_restore = !d3d_initialize(d3d, &d3d->video_info);
 
-   if (d3d->needs_restore)
+   if (!d3d_initialize(d3d, &d3d->video_info))
+   {
       RARCH_ERR("[D3D]: Restore error.\n");
+      return false;
+   }
 
-   return !d3d->needs_restore;
+   d3d->needs_restore = false;
+
+   return true;
 }
 
 
