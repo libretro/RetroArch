@@ -130,7 +130,7 @@ static void menu_display_d3d_draw(
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
 
-   d3d_set_viewport(d3d->dev, &vp);
+   d3d_set_viewports(d3d->dev, &vp);
    d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE)texture);
 
    d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)menu_display_prim_to_d3d_enum(prim_type), 0, coords->vertices);
