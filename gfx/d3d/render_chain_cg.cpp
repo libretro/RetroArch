@@ -772,7 +772,7 @@ static void cg_d3d9_renderchain_deinit_shader(cg_renderchain_t *chain)
 static void cg_d3d9_renderchain_deinit(cg_renderchain_t *chain)
 {
    if (chain)
-      free(chain);
+      delete chain;
 }
 
 void cg_d3d9_renderchain_free(void *data)
@@ -790,7 +790,7 @@ void cg_d3d9_renderchain_free(void *data)
 
 static void *cg_d3d9_renderchain_new(void)
 {
-   cg_renderchain_t *renderchain = (cg_renderchain_t*)calloc(1, sizeof(*renderchain));
+   cg_renderchain_t *renderchain = new cg_renderchain_t();
    if (!renderchain)
       return NULL;
 
