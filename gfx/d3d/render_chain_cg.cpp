@@ -79,8 +79,7 @@ typedef struct cg_renderchain
    } prev;
    std::vector<Pass> passes;
    CGprogram vStock, fStock;
-   lut_info *luts[GFX_MAX_TEXTURES];
-   unsigned luts_count;
+   std::vector<lut_info> luts;
    D3DVIEWPORT *final_viewport;
    unsigned frame_count;
    struct
@@ -616,11 +615,11 @@ static void cg_d3d9_renderchain_add_lut(void *data,
    if (!chain)
       return;
 
-   d3d_set_texture(chain->dev, index, chain->luts[i]->tex);
+   d3d_set_texture(chain->dev, index, chain->luts[i].tex);
    d3d_set_sampler_magfilter(chain->dev, index,
-         translate_filter(chain->luts[i]->smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
+         translate_filter(chain->luts[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    d3d_set_sampler_minfilter(chain->dev, index, 
-         translate_filter(chain->luts[i]->smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
+         translate_filter(chain->luts[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
    d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
    chain->bound_tex.list[chain->bound_tex.current++] = index;
@@ -631,10 +630,10 @@ static void renderchain_bind_luts(cg_renderchain_t *chain,
 {
    unsigned i, index;
 
-   for (i = 0; i < chain->luts_count; i++)
+   for (i = 0; i < chain->luts.size(); i++)
    {
       CGparameter vparam;
-      CGparameter fparam = cgGetNamedParameter(pass->fPrg, chain->luts[i]->id);
+      CGparameter fparam = cgGetNamedParameter(pass->fPrg, chain->luts[i].id);
       int bound_index    = -1;
 
       if (fparam)
@@ -645,7 +644,7 @@ static void renderchain_bind_luts(cg_renderchain_t *chain,
          cg_d3d9_renderchain_add_lut(chain, index, i);
       }
 
-      vparam             = cgGetNamedParameter(pass->vPrg, chain->luts[i]->id);
+      vparam             = cgGetNamedParameter(pass->vPrg, chain->luts[i].id);
 
       if (vparam)
       {
@@ -750,12 +749,10 @@ static void cg_d3d9_renderchain_clear(cg_renderchain_t *chain)
 
    cg_d3d9_renderchain_clear_passes(chain);
 
-   for (i = 0; i < chain->luts_count; i++)
+   for (i = 0; i < chain->luts.size(); i++)
    {
-      if (chain->luts[i]->tex)
-         d3d_texture_free(chain->luts[i]->tex);
-	  chain->luts[i]->tex = NULL;
-     chain->luts_count--;
+      if (chain->luts[i].tex)
+         d3d_texture_free(chain->luts[i].tex);
    }
 
 #if 0
@@ -763,6 +760,7 @@ static void cg_d3d9_renderchain_clear(cg_renderchain_t *chain)
       state_tracker_free(chain->tracker);
    chain->tracker = NULL;
 #endif
+   chain->luts.clear();
 }
 
 static void cg_d3d9_renderchain_deinit_shader(cg_renderchain_t *chain)
@@ -1142,6 +1140,7 @@ static bool cg_d3d9_renderchain_add_pass(void *data, const void *info_data)
 static bool cg_d3d9_renderchain_add_lut(void *data,
       const char *id, const char *path, bool smooth)
 {
+   lut_info info;
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
    LPDIRECT3DDEVICE d3dr = chain->dev;
    LPDIRECT3DTEXTURE lut = d3d_texture_new(d3dr,
@@ -1161,6 +1160,9 @@ static bool cg_d3d9_renderchain_add_lut(void *data,
 
    RARCH_LOG("[D3D]: LUT texture loaded: %s.\n", path);
 
+   info.tex    = lut;
+   info.smooth = smooth;
+   strcpy(info.id, id);
    if (!lut)
       return false;
 
@@ -1169,17 +1171,8 @@ static bool cg_d3d9_renderchain_add_lut(void *data,
    d3d_set_sampler_address_v(d3dr, 0, D3DTADDRESS_BORDER);
    d3d_set_texture(d3dr, 0, NULL);
 
-   chain->luts[chain->luts_count] = (lut_info*)malloc(sizeof(lut_info));
+   chain->luts.push_back(info);
 
-   if (!chain->luts[chain->luts_count])
-      return false;
-
-   chain->luts[chain->luts_count]->tex    = lut;
-   chain->luts[chain->luts_count]->smooth = smooth;
-   strlcpy(chain->luts[chain->luts_count]->id, id, sizeof(chain->luts[chain->luts_count]->id));
-
-   chain->luts_count++;
-   
    return true;
 }
 
