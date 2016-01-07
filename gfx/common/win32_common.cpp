@@ -255,6 +255,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          {
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
             curD3D                = p_cs->lpCreateParams;
+            g_inited              = true;
          }
          return 0;
    }
