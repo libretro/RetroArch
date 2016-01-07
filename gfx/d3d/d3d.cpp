@@ -361,11 +361,8 @@ static void d3d_set_viewport(void *data,
 
    d3d->final_viewport = viewport;
 
-   if (d3d->renderchain_driver && d3d->renderchain_data)
-   {
-      if (d3d->renderchain_driver->set_font_rect)
-         d3d->renderchain_driver->set_font_rect(d3d, NULL);
-   }
+   if (d3d->renderchain_driver && d3d->renderchain_driver->set_font_rect)
+      d3d->renderchain_driver->set_font_rect(d3d, NULL);
 }
 
 static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
