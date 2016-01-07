@@ -1267,7 +1267,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 
    /* Restore previous state. */
    d3d_disable_blend_func(d3d->dev);
-   d3d_set_viewport(d3d->dev, width, height, false, false);
+   d3d_set_viewport(d3d, width, height, false, false);
 }
 
 static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
@@ -1485,7 +1485,7 @@ static bool d3d_frame(void *data, const void *frame,
    screen_vp.MaxZ = 1;
    screen_vp.Width = width;
    screen_vp.Height = height;
-   d3d_set_viewport(d3d->dev, &screen_vp);
+   d3d_set_viewports(d3d->dev, &screen_vp);
    d3d_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we

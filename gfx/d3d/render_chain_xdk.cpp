@@ -376,7 +376,7 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    renderchain_set_vertices(d3d, 1, frame_width, frame_height, *frame_count);
 
    d3d_set_texture(d3dr, 0, chain->tex);
-   d3d_set_viewport(chain->dev, &d3d->final_viewport);
+   d3d_set_viewports(chain->dev, &d3d->final_viewport);
    d3d_set_sampler_minfilter(d3dr, 0, settings->video.smooth ?
          D3DTEXF_LINEAR : D3DTEXF_POINT);
    d3d_set_sampler_magfilter(d3dr, 0, settings->video.smooth ?

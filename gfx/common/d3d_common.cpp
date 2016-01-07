@@ -304,7 +304,7 @@ void d3d_lock_rectangle_clear(LPDIRECT3DTEXTURE tex,
    d3d_unlock_rectangle(tex);
 }
 
-void d3d_set_viewport(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
+void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
 {
 #if defined(_XBOX360)
    D3DDevice_SetViewport(dev, vp);

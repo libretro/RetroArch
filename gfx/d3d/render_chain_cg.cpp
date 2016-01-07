@@ -1305,7 +1305,7 @@ static void renderchain_set_viewport(void *data, void *viewport_data)
    if (!chain)
       return;
 
-   d3d_set_viewport(chain->dev, vp);
+   d3d_set_viewports(chain->dev, vp);
 }
 
 static void renderchain_blit_to_texture(
@@ -1440,7 +1440,7 @@ static bool cg_d3d9_renderchain_render(
       viewport.MinZ   = 0.0f;
       viewport.MaxZ   = 1.0f;
 
-      d3d_set_viewport(d3dr, &viewport);
+      d3d_set_viewports(d3dr, &viewport);
       d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
       
       viewport.Width  = out_width;
