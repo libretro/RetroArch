@@ -905,7 +905,6 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
    unsigned current_width, current_height, out_width, out_height;
    unsigned i            = 0;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    LinkInfo link_info    = {0};
 
    (void)i;
@@ -943,7 +942,7 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
          !d3d->renderchain_driver->init(
             d3d,
             &d3d->video_info,
-            d3dr, &d3d->final_viewport, &link_info,
+            d3d->dev, &d3d->final_viewport, &link_info,
             d3d->video_info.rgb32)
       )
    {
@@ -1009,7 +1008,6 @@ static bool texture_image_render(d3d_video_t *d3d,
    LPDIRECT3DTEXTURE d3dt;
    LPDIRECT3DVERTEXBUFFER d3dv;
    void *verts           = NULL;
-   LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
    float fX              = (float)(x);
    float fY              = (float)(y);
 
@@ -1046,14 +1044,14 @@ static bool texture_image_render(d3d_video_t *d3d,
    d3d_enable_alpha_blend_texture_func(d3d->dev);
 
    /* Draw the quad. */
-   d3d_set_texture(d3dr, 0, d3dt);
-   d3d_set_stream_source(d3dr, 0,
+   d3d_set_texture(d3d->dev, 0, d3dt);
+   d3d_set_stream_source(d3d->dev, 0,
          d3dv, 0, sizeof(Vertex));
-   d3d_set_vertex_shader(d3dr, D3DFVF_CUSTOMVERTEX, NULL);
+   d3d_set_vertex_shader(d3d->dev, D3DFVF_CUSTOMVERTEX, NULL);
 
    if (force_fullscreen)
       d3d_set_viewport(d3d, w, h, force_fullscreen, false);
-   d3d_draw_primitive(d3dr, D3DPT_QUADLIST, 0, 1);
+   d3d_draw_primitive(d3d->dev, D3DPT_QUADLIST, 0, 1);
 
    return true;
 }
@@ -1446,7 +1444,6 @@ static bool d3d_frame(void *data, const void *frame,
    static struct retro_perf_counter d3d_frame = {0};
    unsigned i                          = 0;
    d3d_video_t *d3d                    = (d3d_video_t*)data;
-   LPDIRECT3DDEVICE d3dr               = (LPDIRECT3DDEVICE)d3d->dev;
    settings_t *settings                = config_get_ptr();
    HWND window                         = win32_get_window();
 
@@ -1492,16 +1489,16 @@ static bool d3d_frame(void *data, const void *frame,
    screen_vp.MaxZ = 1;
    screen_vp.Width = width;
    screen_vp.Height = height;
-   d3d_set_viewport(d3dr, &screen_vp);
-   d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+   d3d_set_viewport(d3d->dev, &screen_vp);
+   d3d_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
 
    /* Insert black frame first, so we
     * can screenshot, etc. */
    if (settings->video.black_frame_insertion)
    {
-      if (!d3d_swap(d3d, d3dr) || d3d->needs_restore)
+      if (!d3d_swap(d3d, d3d->dev) || d3d->needs_restore)
          return true;
-      d3d_clear(d3dr, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
+      d3d_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
    if (
