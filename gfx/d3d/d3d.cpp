@@ -565,9 +565,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    d3d->should_resize = false;
 
 #if defined(HAVE_MENU)
-   if (d3d->menu)
-      delete d3d->menu;
-
    d3d->menu                = new overlay_t();
 
    if (!d3d->menu)
@@ -847,6 +844,8 @@ static void d3d_free(void *data)
 #ifndef _XBOX
 #ifdef HAVE_MENU
    d3d_free_overlay(d3d, d3d->menu);
+   if (d3d->menu)
+      delete d3d->menu;
 #endif
 #endif
 
