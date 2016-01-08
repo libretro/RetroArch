@@ -183,7 +183,7 @@ void texture_image_free(struct texture_image *img)
 
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
-   D3DXIMAGE_INFO m_imageInfo;
+   D3DXIMAGE_INFO image_info;
    d3d_video_t *d3d     = (d3d_video_t*)video_driver_get_ptr(false);
    LPDIRECT3DTEXTURE d3dt = (LPDIRECT3DTEXTURE)out_img->texture_buf;
    LPDIRECT3DVERTEXBUFFER d3dv = (LPDIRECT3DVERTEXBUFFER)out_img->vertex_buf;
@@ -193,7 +193,7 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
    d3dt = d3d_texture_new(d3d->dev, path,
          D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0,
          D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, D3DX_DEFAULT,
-         D3DX_DEFAULT, 0, &m_imageInfo, NULL);
+         D3DX_DEFAULT, 0, &image_info, NULL);
 
    if (!d3dt)
       return false;
@@ -204,15 +204,16 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
          D3DPOOL_MANAGED, NULL);
 
    if (!d3dv)
-   {
-      d3d_texture_free(d3dt);
-      return false;
-   }
+      goto error;
 
-   out_img->width       = m_imageInfo.Width;
-   out_img->height      = m_imageInfo.Height;
+   out_img->width       = image_info.Width;
+   out_img->height      = image_info.Height;
 
    return true;
+
+error:
+   d3d_texture_free(d3dt);
+   return false;
 }
 #else
 bool texture_image_load(struct texture_image *out_img, const char *path)
