@@ -1067,6 +1067,9 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb, const char *the
       if (!path)
          continue;
 
+      if (!strstr(path, ".lpl"))
+         continue;
+
       strlcpy(sysname, path, sizeof(sysname));
       path_remove_extension(sysname);
 
