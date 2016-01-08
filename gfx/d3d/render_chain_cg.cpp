@@ -69,6 +69,8 @@ typedef struct cg_renderchain
    unsigned pixel_size;
    const video_info_t *video_info;
    state_tracker_t *tracker;
+   CGprofile cgVProf;
+   CGprofile cgFProf;
    struct state_tracker_uniform uniform_info[MAX_VARIABLES];
    struct
    {
@@ -200,25 +202,20 @@ static bool renderchain_compile_shaders(cg_renderchain_t *chain,
 {
    CGprogram *fPrg            = (CGprogram*)fragment_data;
    CGprogram *vPrg            = (CGprogram*)vertex_data;
-   CGprofile vertex_profile   = cgD3D9GetLatestVertexProfile();
-   CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
-   const char **fragment_opts = cgD3D9GetOptimalOptions(fragment_profile);
-   const char **vertex_opts   = cgD3D9GetOptimalOptions(vertex_profile);
-
-   RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
-   RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
+   const char **fragment_opts = cgD3D9GetOptimalOptions(chain->cgFProf);
+   const char **vertex_opts   = cgD3D9GetOptimalOptions(chain->cgVProf);
 
    if (shader.length() > 0)
    {
       RARCH_LOG("[D3D Cg]: Compiling shader: %s.\n", shader.c_str());
       *fPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
-            shader.c_str(), fragment_profile, "main_fragment", fragment_opts);
+            shader.c_str(), chain->cgFProf, "main_fragment", fragment_opts);
 
       if (cgGetLastListing(chain->cgCtx))
          RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(chain->cgCtx));
 
       *vPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
-            shader.c_str(), vertex_profile, "main_vertex", vertex_opts);
+            shader.c_str(), chain->cgVProf, "main_vertex", vertex_opts);
 
       if (cgGetLastListing(chain->cgCtx))
          RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(chain->cgCtx));
@@ -228,13 +225,13 @@ static bool renderchain_compile_shaders(cg_renderchain_t *chain,
       RARCH_LOG("[D3D Cg]: Compiling stock shader.\n");
 
       *fPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_program,
-            fragment_profile, "main_fragment", fragment_opts);
+            chain->cgFProf, "main_fragment", fragment_opts);
 
       if (cgGetLastListing(chain->cgCtx))
          RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(chain->cgCtx));
 
       *vPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_program,
-            vertex_profile, "main_vertex", vertex_opts);
+            chain->cgVProf, "main_vertex", vertex_opts);
 
       if (cgGetLastListing(chain->cgCtx))
          RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(chain->cgCtx));
@@ -812,20 +809,35 @@ static void *cg_d3d9_renderchain_new(void)
    return renderchain;
 }
 
-static bool cg_d3d9_renderchain_init_shader(void *data,
+static bool d3d9_cg_init(void *data,
       void *renderchain_data)
 {
    d3d_video_t *d3d              = (d3d_video_t*)data;
-   cg_renderchain_t *renderchain = (cg_renderchain_t*)renderchain_data;
+   cg_renderchain_t *cg_data     = (cg_renderchain_t*)renderchain_data;
 
-   if (!d3d || !renderchain)
+   if (!d3d || !cg_data)
       return false;
 
-   renderchain->cgCtx = cgCreateContext();
-   if (!renderchain->cgCtx)
+   cg_data->cgCtx = cgCreateContext();
+   if (!cg_data->cgCtx)
+   {
+      RARCH_ERR("Failed to create Cg context.\n");
       return false;
+   }
 
-   RARCH_LOG("[D3D]: Created shader context.\n");
+   cg_data->cgVProf   = cgD3D9GetLatestVertexProfile();
+   cg_data->cgFProf   = cgD3D9GetLatestPixelProfile();
+
+   RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(cg_data->cgVProf));
+   RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(cg_data->cgFProf));
+
+   if (
+         cg_data->cgFProf == CG_PROFILE_UNKNOWN ||
+         cg_data->cgVProf == CG_PROFILE_UNKNOWN)
+   {
+      RARCH_ERR("Invalid profile type\n");
+      return false;
+   }
 
    HRESULT ret = cgD3D9SetDevice((IDirect3DDevice9*)d3d->dev);
    if (FAILED(ret))
@@ -930,7 +942,7 @@ static bool renderchain_create_first_pass(cg_renderchain_t *chain,
    renderchain_compile_shaders(chain, &pass.fPrg,
          &pass.vPrg, info->pass->source.path);
 
-   if (!cg_d3d9_renderchain_init_shader_fvf(chain, &pass))
+   if (!d3d9_cg_init(chain, &pass))
       return false;
    chain->passes.push_back(pass);
    return true;
@@ -1632,7 +1644,7 @@ static void cg_d3d9_renderchain_viewport_info(void *data, struct video_viewport 
 renderchain_driver_t cg_d3d9_renderchain = {
    cg_d3d9_renderchain_free,
    cg_d3d9_renderchain_new,
-   cg_d3d9_renderchain_init_shader,
+   d3d9_cg_init,
    cg_d3d9_renderchain_init_shader_fvf,
    NULL,
    cg_d3d9_renderchain_init,
