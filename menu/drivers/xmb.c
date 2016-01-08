@@ -973,9 +973,19 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
 
    for (i = 0; i < list_size; i++)
    {
+      const char *path = NULL;
       xmb_node_t *node = xmb_get_userdata_from_horizontal_list(xmb, i);
 
       if (!node)
+         continue;
+
+      file_list_get_at_offset(xmb->horizontal_list, i,
+            &path, NULL, NULL, NULL);
+      
+      if (!path)
+         continue;
+
+      if (!strstr(path, ".lpl"))
          continue;
 
       menu_display_texture_unload((uintptr_t*)&node->icon);
