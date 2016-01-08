@@ -40,6 +40,9 @@
 #include "../../rewind.h"
 #include "../video_state_tracker.h"
 
+#define set_param_2f(param, x, y)    if (param) cgGLSetParameter2f(param, x, y)
+#define cg_gl_set_param_1f(param, x) if (param) cgGLSetParameter1f(param, x)
+
 #if 0
 #define RARCH_CG_DEBUG
 #endif
@@ -210,10 +213,6 @@ fallback:
    return false;
 }
 
-#define set_param_2f(param, x, y) \
-   if (param) cgGLSetParameter2f(param, x, y)
-#define set_param_1f(param, x) \
-   if (param) cgGLSetParameter1f(param, x)
 
 static void gl_cg_set_texture_info(void *data, 
       const struct cg_fbo_params *params, const struct gfx_tex_info *info)
@@ -270,13 +269,13 @@ static void gl_cg_set_params(void *data, void *shader_data,
    set_param_2f(cg_data->prg[cg_data->active_idx].vid_size_f, width, height);
    set_param_2f(cg_data->prg[cg_data->active_idx].tex_size_f, tex_width, tex_height);
    set_param_2f(cg_data->prg[cg_data->active_idx].out_size_f, out_width, out_height);
-   set_param_1f(cg_data->prg[cg_data->active_idx].frame_dir_f,
+   cg_gl_set_param_1f(cg_data->prg[cg_data->active_idx].frame_dir_f,
          state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    set_param_2f(cg_data->prg[cg_data->active_idx].vid_size_v, width, height);
    set_param_2f(cg_data->prg[cg_data->active_idx].tex_size_v, tex_width, tex_height);
    set_param_2f(cg_data->prg[cg_data->active_idx].out_size_v, out_width, out_height);
-   set_param_1f(cg_data->prg[cg_data->active_idx].frame_dir_v,
+   cg_gl_set_param_1f(cg_data->prg[cg_data->active_idx].frame_dir_v,
          state_manager_frame_is_reversed() ? -1.0 : 1.0);
 
    if (cg_data->prg[cg_data->active_idx].frame_cnt_f || cg_data->prg[cg_data->active_idx].frame_cnt_v)
@@ -285,8 +284,8 @@ static void gl_cg_set_params(void *data, void *shader_data,
       if (modulo)
          frame_count %= modulo;
 
-      set_param_1f(cg_data->prg[cg_data->active_idx].frame_cnt_f, (float)frame_count);
-      set_param_1f(cg_data->prg[cg_data->active_idx].frame_cnt_v, (float)frame_count);
+      cg_gl_set_param_1f(cg_data->prg[cg_data->active_idx].frame_cnt_f, (float)frame_count);
+      cg_gl_set_param_1f(cg_data->prg[cg_data->active_idx].frame_cnt_v, (float)frame_count);
    }
 
    /* Set orig texture. */
@@ -336,8 +335,8 @@ static void gl_cg_set_params(void *data, void *shader_data,
             cg_data->prg[cg_data->active_idx].vprg, cg_data->shader->parameters[i].id);
       CGparameter param_f = cgGetNamedParameter(
             cg_data->prg[cg_data->active_idx].fprg, cg_data->shader->parameters[i].id);
-      set_param_1f(param_v, cg_data->shader->parameters[i].current);
-      set_param_1f(param_f, cg_data->shader->parameters[i].current);
+      cg_gl_set_param_1f(param_v, cg_data->shader->parameters[i].current);
+      cg_gl_set_param_1f(param_f, cg_data->shader->parameters[i].current);
    }
 
    /* Set state parameters. */
@@ -357,8 +356,8 @@ static void gl_cg_set_params(void *data, void *shader_data,
                cg_data->prg[cg_data->active_idx].vprg, tracker_info[i].id);
          CGparameter param_f = cgGetNamedParameter(
                cg_data->prg[cg_data->active_idx].fprg, tracker_info[i].id);
-         set_param_1f(param_v, tracker_info[i].value);
-         set_param_1f(param_f, tracker_info[i].value);
+         cg_gl_set_param_1f(param_v, tracker_info[i].value);
+         cg_gl_set_param_1f(param_f, tracker_info[i].value);
       }
    }
 }

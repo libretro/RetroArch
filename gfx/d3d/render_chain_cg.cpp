@@ -35,6 +35,8 @@
 #include "../../verbosity.h"
 #include "d3d.h"
 
+#define cg_d3d9_set_param_1f(param, x) if (param) cgD3D9SetUniform(param, x)
+
 struct lut_info
 {
    LPDIRECT3DTEXTURE tex;
@@ -68,7 +70,6 @@ typedef struct cg_renderchain
    const video_info_t *video_info;
    state_tracker_t *tracker;
    struct state_tracker_uniform uniform_info[MAX_VARIABLES];
-   unsigned uniform_cnt;
    struct
    {
       LPDIRECT3DTEXTURE tex[TEXTURES];
@@ -159,8 +160,9 @@ static INLINE bool validate_param_name(const char *name)
 static INLINE CGparameter find_param_from_semantic(
       CGparameter param, const char *sem)
 {
-   while (param)
+   for (; param; param = cgGetNextParameter(param))
    {
+      const char *semantic = NULL;
       if (cgGetParameterType(param) == CG_STRUCT)
       {
          CGparameter ret = find_param_from_semantic(
@@ -169,16 +171,18 @@ static INLINE CGparameter find_param_from_semantic(
          if (ret)
             return ret;
       }
-      else
-      {
-         if (cgGetParameterSemantic(param) &&
-               !strcmp(sem, cgGetParameterSemantic(param)) &&
-               cgGetParameterDirection(param) == CG_IN &&
-               cgGetParameterVariability(param) == CG_VARYING &&
-               validate_param_name(cgGetParameterName(param)))
-            return param;
-      }
-      param = cgGetNextParameter(param);
+
+      if (cgGetParameterDirection(param) != CG_IN 
+            || cgGetParameterVariability(param) != CG_VARYING)
+         continue;
+
+      semantic = cgGetParameterSemantic(param);
+      if (!semantic)
+         continue;
+
+      if (!strcmp(sem, semantic) &&
+            validate_param_name(cgGetParameterName(param)))
+         return param;
    }
 
    return NULL;
@@ -323,23 +327,25 @@ static void renderchain_set_shader_params(cg_renderchain_t *chain,
    set_cg_param(pass->vPrg, "IN.frame_count", frame_cnt);
 }
 
+
 static void renderchain_bind_tracker(cg_renderchain_t *chain,
       Pass *pass, unsigned pass_index)
 {
    unsigned i;
+   unsigned cnt = 0;
    if (!chain || !chain->tracker || !pass)
       return;
 
    if (pass_index == 1)
-      chain->uniform_cnt = state_tracker_get_uniform(chain->tracker,
+      cnt = state_tracker_get_uniform(chain->tracker,
             chain->uniform_info, MAX_VARIABLES, chain->frame_count);
 
-   for (i = 0; i < chain->uniform_cnt; i++)
+   for (i = 0; i < cnt; i++)
    {
-      set_cg_param(pass->fPrg, chain->uniform_info[i].id,
-            chain->uniform_info[i].value);
-      set_cg_param(pass->vPrg, chain->uniform_info[i].id,
-            chain->uniform_info[i].value);
+      CGparameter param_f = cgGetNamedParameter(pass->fPrg, chain->uniform_info[i].id);
+      CGparameter param_v = cgGetNamedParameter(pass->vPrg, chain->uniform_info[i].id);
+      cg_d3d9_set_param_1f(param_f, &chain->uniform_info[i].value);
+      cg_d3d9_set_param_1f(param_v, &chain->uniform_info[i].value);
    }
 }
 
