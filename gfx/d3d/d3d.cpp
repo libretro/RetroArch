@@ -498,7 +498,7 @@ static bool d3d_alive(void *data)
       {
          d3d->should_resize = true;
          gfx_ctx_set_resize(temp_width, temp_height);
-         d3d_restore(curD3D);
+         d3d_restore(d3d);
       }
 
       ret = !quit;
