@@ -283,31 +283,27 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    return true;
 }
 
-static void d3d_set_viewport(void *data,
-      unsigned width, unsigned height,
+static bool d3d_calculate_rect(void *data,
+      unsigned *width, unsigned *height,
+      int *x, int *y,
       bool force_full,
       bool allow_rotate)
 {
-   D3DVIEWPORT viewport;
-   d3d_video_t *d3d = (d3d_video_t*)data;
-   int x               = 0;
-   int y               = 0;
-   float device_aspect = (float)width / height;
+   float device_aspect = (float)*width / *height;
    settings_t *settings = config_get_ptr();
    float desired_aspect = video_driver_get_aspect_ratio();
 
-   video_driver_get_size(&width, &height);
-
-   gfx_ctx_translate_aspect(&device_aspect, width, height);
+   video_driver_get_size(width, height);
+   gfx_ctx_translate_aspect(&device_aspect, *width, *height);
 
    if (settings->video.scale_integer && !force_full)
    {
       struct video_viewport vp = {0};
-      video_viewport_get_scaled_integer(&vp, width, height, desired_aspect, d3d->keep_aspect);
-      x          = vp.x;
-      y          = vp.y;
-      width  = vp.width;
-      height = vp.height;
+      video_viewport_get_scaled_integer(&vp, *width, *height, desired_aspect, d3d->keep_aspect);
+      *x          = vp.x;
+      *y          = vp.y;
+      *width  = vp.width;
+      *height = vp.height;
    }
    else if (d3d->keep_aspect && !force_full)
    {
@@ -317,10 +313,10 @@ static void d3d_set_viewport(void *data,
 
          if (custom)
          {
-            x          = custom->x;
-            y          = custom->y;
-            width      = custom->width;
-            height     = custom->height;
+            *x          = custom->x;
+            *y          = custom->y;
+            *width      = custom->width;
+            *height     = custom->height;
          }
       }
       else
@@ -331,20 +327,33 @@ static void d3d_set_viewport(void *data,
          else if (device_aspect > desired_aspect)
          {
             delta       = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x           = int(roundf(width * (0.5f - delta)));
-            y           = 0;
-            width       = unsigned(roundf(2.0f * width * delta));
+            *x           = int(roundf(*width * (0.5f - delta)));
+            *y           = 0;
+            *width       = unsigned(roundf(2.0f * (*width) * delta));
          }
          else
          {
             delta       = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            x           = 0;
-            y           = int(roundf(height * (0.5f - delta)));
-            height      = unsigned(roundf(2.0f * height * delta));
+            *x           = 0;
+            *y           = int(roundf(*height * (0.5f - delta)));
+            *height      = unsigned(roundf(2.0f * (*height) * delta));
          }
       }
    }
+}
 
+static void d3d_set_viewport(void *data,
+      unsigned width, unsigned height,
+      bool force_full,
+      bool allow_rotate)
+{
+   D3DVIEWPORT viewport;
+   int x               = 0;
+   int y               = 0;
+   d3d_video_t *d3d = (d3d_video_t*)data;
+
+   d3d_calculate_rect(data, &width, &height, &x, &y,
+         force_full, allow_rotate);
 
    /* D3D doesn't support negative X/Y viewports ... */
    if (x < 0)
