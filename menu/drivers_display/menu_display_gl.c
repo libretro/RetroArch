@@ -116,7 +116,7 @@ static void menu_display_gl_draw(
    glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
 
    video_shader_driver_set_coords(gl, coords);
-   video_shader_driver_set_mvp(video_driver_get_ptr(false), mat);
+   video_shader_driver_set_mvp(gl, mat);
 
    glDrawArrays(menu_display_prim_to_gl_enum(prim_type), 0, coords->vertices);
 
