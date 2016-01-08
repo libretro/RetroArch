@@ -417,9 +417,7 @@ static const struct retro_keybind *libretro_input_binds[MAX_USERS];
 void input_poll(void)
 {
    size_t i;
-#ifdef HAVE_OVERLAY
    settings_t *settings           = config_get_ptr();
-#endif
 
    input_driver_ctl(RARCH_INPUT_CTL_POLL, NULL);
 
