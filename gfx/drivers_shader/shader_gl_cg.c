@@ -40,6 +40,13 @@
 #include "../../rewind.h"
 #include "../video_state_tracker.h"
 
+#define SEMANTIC_TEXCOORD     0x92ee91cdU
+#define SEMANTIC_TEXCOORD0    0xf0c0cb9dU
+#define SEMANTIC_TEXCOORD1    0xf0c0cb9eU
+#define SEMANTIC_COLOR        0x0ce809a4U
+#define SEMANTIC_COLOR0       0xa9e93e54U
+#define SEMANTIC_POSITION     0xd87309baU
+
 #define set_param_2f(param, x, y)    if (param) cgGLSetParameter2f(param, x, y)
 #define cg_gl_set_param_1f(param, x) if (param) cgGLSetParameter1f(param, x)
 
@@ -506,9 +513,57 @@ end:
    return ret;
 }
 
-static void set_program_base_attrib(void *data, unsigned i);
+static void gl_cg_set_program_base_attrib(void *data, unsigned i)
+{
+   cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
+   CGparameter         param = cgGetFirstParameter(cg_data->prg[i].vprg, CG_PROGRAM);
 
-static bool load_stock(void *data)
+   for (; param; param = cgGetNextParameter(param))
+   {
+      uint32_t semantic_hash;
+      const char *semantic = NULL;
+      if (cgGetParameterDirection(param) != CG_IN 
+            || cgGetParameterVariability(param) != CG_VARYING)
+         continue;
+
+      semantic = cgGetParameterSemantic(param);
+      if (!semantic)
+         continue;
+
+      RARCH_LOG("CG: Found semantic \"%s\" in prog #%u.\n", semantic, i);
+
+      semantic_hash = djb2_calculate(semantic);
+
+      switch (semantic_hash)
+      {
+         case SEMANTIC_TEXCOORD:
+         case SEMANTIC_TEXCOORD0:
+            cg_data->prg[i].tex     = param;
+            break;
+         case SEMANTIC_COLOR:
+         case SEMANTIC_COLOR0:
+            cg_data->prg[i].color   = param;
+            break;
+         case SEMANTIC_POSITION:
+            cg_data->prg[i].vertex  = param;
+            break;
+         case SEMANTIC_TEXCOORD1:
+            cg_data->prg[i].lut_tex = param;
+            break;
+      }
+   }
+
+   if (!cg_data->prg[i].tex)
+      cg_data->prg[i].tex = cgGetNamedParameter  (cg_data->prg[i].vprg, "IN.tex_coord");
+   if (!cg_data->prg[i].color)
+      cg_data->prg[i].color = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.color");
+   if (!cg_data->prg[i].vertex)
+      cg_data->prg[i].vertex = cgGetNamedParameter   (cg_data->prg[i].vprg, "IN.vertex_coord");
+   if (!cg_data->prg[i].lut_tex)
+      cg_data->prg[i].lut_tex = cgGetNamedParameter  (cg_data->prg[i].vprg, "IN.lut_tex_coord");
+}
+
+static bool gl_cg_load_stock(void *data)
 {
    if (!gl_cg_load_program(data, 0, stock_cg_program, false))
    {
@@ -516,15 +571,15 @@ static bool load_stock(void *data)
       return false;
    }
 
-   set_program_base_attrib(data, 0);
+   gl_cg_set_program_base_attrib(data, 0);
 
    return true;
 }
 
-static bool load_plain(void *data, const char *path)
+static bool gl_cg_load_plain(void *data, const char *path)
 {
    cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
-   if (!load_stock(cg_data))
+   if (!gl_cg_load_stock(cg_data))
       return false;
 
    cg_data->shader = (struct video_shader*)calloc(1, sizeof(*cg_data->shader));
@@ -618,13 +673,13 @@ static bool gl_cg_load_shader(void *data, unsigned i)
    return true;
 }
 
-static bool load_preset(void *data, const char *path)
+static bool gl_cg_load_preset(void *data, const char *path)
 {
    unsigned i;
    config_file_t *conf = NULL;
    cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
 
-   if (!load_stock(cg_data))
+   if (!gl_cg_load_stock(cg_data))
       return false;
 
    RARCH_LOG("Loading Cg meta-shader: %s\n", path);
@@ -691,64 +746,7 @@ static bool load_preset(void *data, const char *path)
    return true;
 }
 
-#define SEMANTIC_TEXCOORD     0x92ee91cdU
-#define SEMANTIC_TEXCOORD0    0xf0c0cb9dU
-#define SEMANTIC_TEXCOORD1    0xf0c0cb9eU
-#define SEMANTIC_COLOR        0x0ce809a4U
-#define SEMANTIC_COLOR0       0xa9e93e54U
-#define SEMANTIC_POSITION     0xd87309baU
-
-static void set_program_base_attrib(void *data, unsigned i)
-{
-   cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
-   CGparameter         param = cgGetFirstParameter(cg_data->prg[i].vprg, CG_PROGRAM);
-
-   for (; param; param = cgGetNextParameter(param))
-   {
-      uint32_t semantic_hash;
-      const char *semantic = NULL;
-      if (cgGetParameterDirection(param) != CG_IN 
-            || cgGetParameterVariability(param) != CG_VARYING)
-         continue;
-
-      semantic = cgGetParameterSemantic(param);
-      if (!semantic)
-         continue;
-
-      RARCH_LOG("CG: Found semantic \"%s\" in prog #%u.\n", semantic, i);
-
-      semantic_hash = djb2_calculate(semantic);
-
-      switch (semantic_hash)
-      {
-         case SEMANTIC_TEXCOORD:
-         case SEMANTIC_TEXCOORD0:
-            cg_data->prg[i].tex     = param;
-            break;
-         case SEMANTIC_COLOR:
-         case SEMANTIC_COLOR0:
-            cg_data->prg[i].color   = param;
-            break;
-         case SEMANTIC_POSITION:
-            cg_data->prg[i].vertex  = param;
-            break;
-         case SEMANTIC_TEXCOORD1:
-            cg_data->prg[i].lut_tex = param;
-            break;
-      }
-   }
-
-   if (!cg_data->prg[i].tex)
-      cg_data->prg[i].tex = cgGetNamedParameter  (cg_data->prg[i].vprg, "IN.tex_coord");
-   if (!cg_data->prg[i].color)
-      cg_data->prg[i].color = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.color");
-   if (!cg_data->prg[i].vertex)
-      cg_data->prg[i].vertex = cgGetNamedParameter   (cg_data->prg[i].vprg, "IN.vertex_coord");
-   if (!cg_data->prg[i].lut_tex)
-      cg_data->prg[i].lut_tex = cgGetNamedParameter  (cg_data->prg[i].vprg, "IN.lut_tex_coord");
-}
-
-static void set_pass_attrib(struct cg_program *program, struct cg_fbo_params *fbo,
+static void gl_cg_set_pass_attrib(struct cg_program *program, struct cg_fbo_params *fbo,
       const char *attr)
 {
    char attr_buf[64] = {0};
@@ -774,7 +772,7 @@ static void set_pass_attrib(struct cg_program *program, struct cg_fbo_params *fb
       fbo->coord = cgGetNamedParameter(program->vprg, attr_buf);
 }
 
-static void set_program_attributes(void *data, unsigned i)
+static void gl_cg_set_program_attributes(void *data, unsigned i)
 {
    unsigned j;
    cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
@@ -785,7 +783,7 @@ static void set_program_attributes(void *data, unsigned i)
    cgGLBindProgram(cg_data->prg[i].fprg);
    cgGLBindProgram(cg_data->prg[i].vprg);
 
-   set_program_base_attrib(cg_data, i);
+   gl_cg_set_program_base_attrib(cg_data, i);
 
    cg_data->prg[i].vid_size_f = cgGetNamedParameter (cg_data->prg[i].fprg, "IN.video_size");
    cg_data->prg[i].tex_size_f = cgGetNamedParameter (cg_data->prg[i].fprg, "IN.texture_size");
@@ -821,7 +819,7 @@ static void set_program_attributes(void *data, unsigned i)
       char pass_str[64] = {0};
 
       snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i);
-      set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].orig, pass_str);
+      gl_cg_set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].orig, pass_str);
    }
 
    for (j = 0; j < PREV_TEXTURES; j++)
@@ -869,12 +867,13 @@ static void set_program_attributes(void *data, unsigned i)
       char pass_str[64] = {0};
 
       snprintf(pass_str, sizeof(pass_str), "PASS%u", j + 1);
-      set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], pass_str);
       snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i - (j + 1));
-      set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], pass_str);
+
+      gl_cg_set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], pass_str);
+      gl_cg_set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], pass_str);
 
       if (*cg_data->shader->pass[j].alias)
-         set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], cg_data->shader->pass[j].alias);
+         gl_cg_set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], cg_data->shader->pass[j].alias);
    }
 }
 
@@ -928,18 +927,18 @@ static void *gl_cg_init(void *data, const char *path)
 
    if (path && !strcmp(path_get_extension(path), "cgp"))
    {
-      if (!load_preset(cg_data, path))
+      if (!gl_cg_load_preset(cg_data, path))
          goto error;
    }
    else
    {
-      if (!load_plain(cg_data, path))
+      if (!gl_cg_load_plain(cg_data, path))
          goto error;
    }
 
    cg_data->prg[0].mvp = cgGetNamedParameter(cg_data->prg[0].vprg, "IN.mvp_matrix");
    for (i = 1; i <= cg_data->shader->passes; i++)
-      set_program_attributes(cg_data, i);
+      gl_cg_set_program_attributes(cg_data, i);
 
    /* If we aren't using last pass non-FBO shader, 
     * this shader will be assumed to be "fixed-function".
