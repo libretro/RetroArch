@@ -718,11 +718,17 @@ static void renderchain_bind_pass(cg_renderchain_t *chain,
    }
 }
 
-static void cg_d3d9_renderchain_clear_passes(cg_renderchain_t *chain)
+static void d3d9_cg_deinit_progs(void *data)
 {
    unsigned i;
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
+
+   if (!chain)
+      return;
    if (chain->passes.size() == 0)
 	   return;
+
+   RARCH_LOG("CG: Destroying programs.\n");
 
    d3d_vertex_buffer_free(NULL, chain->passes[0].vertex_decl);
 
@@ -748,7 +754,7 @@ static void cg_d3d9_renderchain_clear(cg_renderchain_t *chain)
          d3d_vertex_buffer_free(chain->prev.vertex_buf[i], NULL);
    }
 
-   cg_d3d9_renderchain_clear_passes(chain);
+   d3d9_cg_deinit_progs(chain);
 
    for (i = 0; i < chain->luts.size(); i++)
    {
@@ -756,22 +762,23 @@ static void cg_d3d9_renderchain_clear(cg_renderchain_t *chain)
          d3d_texture_free(chain->luts[i].tex);
    }
 
-#if 0
-   if (chain->tracker)
-      state_tracker_free(chain->tracker);
-   chain->tracker = NULL;
-#endif
    chain->luts.clear();
+
+   if (chain->tracker)
+   {
+      state_tracker_free(chain->tracker);
+      chain->tracker = NULL;
+   }
 }
 
-static void cg_d3d9_renderchain_deinit_shader(cg_renderchain_t *chain)
+static void d3d9_cg_deinit_context_state(void *data)
 {
-   if (!chain || !chain->cgCtx)
-      return;
-
-   cgD3D9UnloadAllPrograms();
-   cgD3D9SetDevice(NULL);
-   cgDestroyContext(chain->cgCtx);
+   cg_renderchain_t *chain = (cg_renderchain_t*)data;
+   if (chain->cgCtx)
+   {
+      RARCH_LOG("CG: Destroying context.\n");
+      cgDestroyContext(chain->cgCtx);
+   }
    chain->cgCtx = NULL;
 }
 
@@ -789,7 +796,9 @@ void cg_d3d9_renderchain_free(void *data)
       return;
 
    cg_d3d9_renderchain_clear(chain);
-   cg_d3d9_renderchain_deinit_shader(chain);
+   cgD3D9UnloadAllPrograms();
+   cgD3D9SetDevice(NULL);
+   d3d9_cg_deinit_context_state(chain);
    cg_d3d9_renderchain_destroy_stock_shader(chain);
    cg_d3d9_renderchain_deinit(chain);
 }
