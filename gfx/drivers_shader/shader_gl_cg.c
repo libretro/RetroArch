@@ -449,7 +449,7 @@ static void gl_cg_deinit(void *data)
       listing_##type = strdup(list); \
 }
 
-static bool load_program(void *data, unsigned idx, const char *prog, bool path_is_file)
+static bool gl_cg_load_program(void *data, unsigned idx, const char *prog, bool path_is_file)
 {
    const char *argv[2 + GFX_MAX_SHADERS];
    bool ret         = true;
@@ -510,7 +510,7 @@ static void set_program_base_attrib(void *data, unsigned i);
 
 static bool load_stock(void *data)
 {
-   if (!load_program(data, 0, stock_cg_program, false))
+   if (!gl_cg_load_program(data, 0, stock_cg_program, false))
    {
       RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
@@ -538,7 +538,7 @@ static bool load_plain(void *data, const char *path)
       RARCH_LOG("Loading Cg file: %s\n", path);
       strlcpy(cg_data->shader->pass[0].source.path, path,
             sizeof(cg_data->shader->pass[0].source.path));
-      if (!load_program(data, 1, path, true))
+      if (!gl_cg_load_program(data, 1, path, true))
          return false;
    }
    else
@@ -604,14 +604,14 @@ static bool gl_cg_load_imports(void *data)
    return true;
 }
 
-static bool load_shader(void *data, unsigned i)
+static bool gl_cg_load_shader(void *data, unsigned i)
 {
    cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
 
    RARCH_LOG("Loading Cg shader: \"%s\".\n",
          cg_data->shader->pass[i].source.path);
 
-   if (!load_program(data, i + 1,
+   if (!gl_cg_load_program(data, i + 1,
             cg_data->shader->pass[i].source.path, true))
       return false;
 
@@ -669,7 +669,7 @@ static bool load_preset(void *data, const char *path)
 
    for (i = 0; i < cg_data->shader->passes; i++)
    {
-      if (!load_shader(cg_data, i))
+      if (!gl_cg_load_shader(cg_data, i))
       {
          RARCH_ERR("Failed to load shaders ...\n");
          return false;
