@@ -283,13 +283,14 @@ static bool d3d_init_base(void *data, const video_info_t *info)
    return true;
 }
 
-static bool d3d_calculate_rect(void *data,
+static void d3d_calculate_rect(void *data,
       unsigned *width, unsigned *height,
       int *x, int *y,
       bool force_full,
       bool allow_rotate)
 {
-   float device_aspect = (float)*width / *height;
+   float device_aspect  = (float)*width / *height;
+   d3d_video_t *d3d     = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
    float desired_aspect = video_driver_get_aspect_ratio();
 
