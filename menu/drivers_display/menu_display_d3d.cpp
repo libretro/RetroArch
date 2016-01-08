@@ -53,8 +53,8 @@ static d3d_video_t *d3d_get_ptr(void)
 static void *menu_display_d3d_get_default_mvp(void)
 {
 #ifndef _XBOX
-   static D3DXMATRIX mvp;
-   D3DXMATRIX ortho;
+   static math_matrix_4x4 default_mvp;
+   D3DXMATRIX ortho, mvp;
 #endif
    d3d_video_t *d3d = d3d_get_ptr();
 
@@ -65,8 +65,9 @@ static void *menu_display_d3d_get_default_mvp(void)
 #else
    D3DXMatrixOrthoOffCenterLH(&ortho, 0, d3d->final_viewport.Width, 0, d3d->final_viewport.Height, 0, 1);
    D3DXMatrixTranspose(&mvp, &ortho);
+   memcpy(default_mvp.data, (FLOAT*)mvp, sizeof(default_mvp.data));
 
-   return (FLOAT*)mvp;
+   return &default_mvp;
 #endif
 }
 
