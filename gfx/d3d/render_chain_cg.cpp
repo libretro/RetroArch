@@ -68,8 +68,7 @@ typedef struct cg_renderchain
    LPDIRECT3DDEVICE dev;
    unsigned pixel_size;
    const video_info_t *video_info;
-   state_tracker_t *tracker;
-   struct state_tracker_uniform uniform_info[MAX_VARIABLES];
+   state_tracker_t *state_tracker;
    struct
    {
       LPDIRECT3DTEXTURE tex[TEXTURES];
@@ -317,27 +316,6 @@ static void renderchain_set_shader_params(cg_renderchain_t *chain,
 }
 
 
-static void renderchain_bind_tracker(cg_renderchain_t *chain,
-      Pass *pass, unsigned pass_index)
-{
-   unsigned i;
-   unsigned cnt = 0;
-   if (!chain || !chain->tracker || !pass)
-      return;
-
-   if (pass_index == 1)
-      cnt = state_tracker_get_uniform(chain->tracker,
-            chain->uniform_info, MAX_VARIABLES, chain->frame_count);
-
-   for (i = 0; i < cnt; i++)
-   {
-      CGparameter param_f = cgGetNamedParameter(pass->fPrg, chain->uniform_info[i].id);
-      CGparameter param_v = cgGetNamedParameter(pass->vPrg, chain->uniform_info[i].id);
-      cg_d3d9_set_param_1f(param_f, &chain->uniform_info[i].value);
-      cg_d3d9_set_param_1f(param_v, &chain->uniform_info[i].value);
-   }
-}
-
 #define DECL_FVF_POSITION(stream) \
    { (WORD)(stream), 0 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_POSITION, 0 }
@@ -522,7 +500,7 @@ static void renderchain_bind_orig(cg_renderchain_t *chain, void *pass_data)
    }
 }
 
-static void renderchain_bind_prev(cg_renderchain_t *chain, void *pass_data)
+static void renderchain_bind_prev(void *data, void *pass_data)
 {
    unsigned i, index;
    D3DXVECTOR2 texture_size;
@@ -530,6 +508,7 @@ static void renderchain_bind_prev(cg_renderchain_t *chain, void *pass_data)
    char attr_input_size[64] = {0};
    char attr_tex_size[64]   = {0};
    char attr_coord[64]      = {0};
+   cg_renderchain_t *chain  = (cg_renderchain_t*)data;
    Pass               *pass = (Pass*)pass_data;
    static const char *prev_names[] = {
       "PREV",
@@ -613,36 +592,6 @@ static void cg_d3d9_renderchain_add_lut(void *data,
    d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
    d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
    chain->bound_tex.push_back(index);
-}
-
-static void renderchain_bind_luts(cg_renderchain_t *chain,
-      Pass *pass)
-{
-   unsigned i, index;
-
-   for (i = 0; i < chain->luts.size(); i++)
-   {
-      CGparameter vparam;
-      CGparameter fparam = cgGetNamedParameter(pass->fPrg, chain->luts[i].id);
-      int bound_index    = -1;
-
-      if (fparam)
-      {
-         index           = cgGetParameterResourceIndex(fparam);
-         bound_index     = index;
-
-         cg_d3d9_renderchain_add_lut(chain, index, i);
-      }
-
-      vparam             = cgGetNamedParameter(pass->vPrg, chain->luts[i].id);
-
-      if (vparam)
-      {
-         index           = cgGetParameterResourceIndex(vparam);
-         if (index != (unsigned)bound_index)
-            cg_d3d9_renderchain_add_lut(chain, index, i);
-      }
-   }
 }
 
 static void renderchain_bind_pass(cg_renderchain_t *chain,
@@ -760,10 +709,10 @@ static void d3d9_cg_destroy_resources(void *data)
 
    cg_data->luts.clear();
 
-   if (cg_data->tracker)
+   if (cg_data->state_tracker)
    {
-      state_tracker_free(cg_data->tracker);
-      cg_data->tracker = NULL;
+      state_tracker_free(cg_data->state_tracker);
+      cg_data->state_tracker = NULL;
    }
 
    cgD3D9UnloadAllPrograms();
@@ -943,7 +892,7 @@ static bool cg_d3d9_renderchain_init(void *data,
 
    chain->dev            = (LPDIRECT3DDEVICE)dev_;
    chain->video_info     = video_info;
-   chain->tracker        = NULL;
+   chain->state_tracker  = NULL;
    chain->final_viewport = (D3DVIEWPORT*)final_viewport_;
    chain->frame_count    = 0;
    chain->pixel_size     = (fmt == RETRO_PIXEL_FORMAT_RGB565) ? 2 : 4;
@@ -1181,9 +1130,9 @@ static void cg_d3d9_renderchain_add_state_tracker(
 {
    state_tracker_t *tracker = (state_tracker_t*)tracker_data;
    cg_renderchain_t     *chain = (cg_renderchain_t*)data;
-   if (chain->tracker)
-      state_tracker_free(chain->tracker);
-   chain->tracker = tracker;
+   if (chain->state_tracker)
+      state_tracker_free(chain->state_tracker);
+   chain->state_tracker = tracker;
 }
 
 static void renderchain_start_render(cg_renderchain_t *chain)
@@ -1362,7 +1311,7 @@ static void renderchain_render_pass(
       Pass *pass,
       unsigned pass_index)
 {
-   unsigned i;
+   unsigned i, index;
 
    if (!chain)
       return;
@@ -1381,10 +1330,58 @@ static void renderchain_render_pass(
             pass->vertex_buf, 0, sizeof(Vertex));
 
    renderchain_bind_orig(chain, pass);
+
    renderchain_bind_prev(chain, pass);
+
    renderchain_bind_pass(chain, pass, pass_index);
-   renderchain_bind_luts(chain, pass);
-   renderchain_bind_tracker(chain, pass, pass_index);
+
+   /* Set lookup textures */
+   for (i = 0; i < chain->luts.size(); i++)
+   {
+      CGparameter vparam;
+      CGparameter fparam = cgGetNamedParameter(
+            pass->fPrg, chain->luts[i].id);
+      int bound_index    = -1;
+
+      if (fparam)
+      {
+         index           = cgGetParameterResourceIndex(fparam);
+         bound_index     = index;
+
+         cg_d3d9_renderchain_add_lut(chain, index, i);
+      }
+
+      vparam             = cgGetNamedParameter(pass->vPrg, chain->luts[i].id);
+
+      if (vparam)
+      {
+         index           = cgGetParameterResourceIndex(vparam);
+         if (index != (unsigned)bound_index)
+            cg_d3d9_renderchain_add_lut(chain, index, i);
+      }
+   }
+
+   /* Set state parameters. */
+   if (chain->state_tracker)
+   {
+      /* Only query uniforms in first pass. */
+      static struct state_tracker_uniform tracker_info[MAX_VARIABLES];
+      static unsigned cnt = 0;
+
+      if (pass_index == 1)
+         cnt = state_tracker_get_uniform(chain->state_tracker, tracker_info,
+               MAX_VARIABLES, chain->frame_count);
+
+      for (i = 0; i < cnt; i++)
+      {
+         CGparameter param_f = cgGetNamedParameter(
+               pass->fPrg, tracker_info[i].id);
+         CGparameter param_v = cgGetNamedParameter(
+               pass->vPrg, tracker_info[i].id);
+         cg_d3d9_set_param_1f(param_f, &tracker_info[i].value);
+         cg_d3d9_set_param_1f(param_v, &tracker_info[i].value);
+      }
+   }
 
    d3d_draw_primitive(chain->dev, D3DPT_TRIANGLESTRIP, 0, 2);
 
