@@ -87,7 +87,6 @@ typedef struct Vertex
 
 typedef struct d3d_video
 {
-   uint64_t frame_count;
    bool keep_aspect;
    bool should_resize;
    bool quitting;
