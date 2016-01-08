@@ -493,9 +493,11 @@ static void renderchain_bind_orig(cg_renderchain_t *chain, void *pass_data)
    param = cgGetNamedParameter(pass->vPrg, "ORIG.tex_coord");
    if (param)
    {
+      LPDIRECT3DVERTEXBUFFER vert_buf = (LPDIRECT3DVERTEXBUFFER)chain->passes[0].vertex_buf;
+
       index = pass->attrib_map[cgGetParameterResourceIndex(param)];
 
-      d3d_set_stream_source(chain->dev, index, chain->passes[0].vertex_buf, 0, sizeof(Vertex));
+      d3d_set_stream_source(chain->dev, index, vert_buf, 0, sizeof(Vertex));
       chain->bound_vert.push_back(index);
    }
 }
@@ -570,9 +572,8 @@ static void renderchain_bind_prev(void *data, void *pass_data)
 
          index = pass->attrib_map[cgGetParameterResourceIndex(param)];
 
-         chain->bound_vert.push_back(index);
-
          d3d_set_stream_source(chain->dev, index, vert_buf, 0, sizeof(Vertex));
+         chain->bound_vert.push_back(index);
       }
    }
 }
