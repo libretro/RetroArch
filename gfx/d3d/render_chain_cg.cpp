@@ -254,17 +254,6 @@ static INLINE void renderchain_set_shaders(void *data, CGprogram *fPrg, CGprogra
    cgD3D9BindProgram(*vPrg);
 }
 
-static void cg_d3d9_renderchain_destroy_stock_shader(cg_renderchain_t *chain)
-{
-   if (!chain)
-      return;
-
-   if (chain->fStock)
-      cgDestroyProgram(chain->fStock);
-   if (chain->vStock)
-      cgDestroyProgram(chain->vStock);
-}
-
 static void renderchain_destroy_shader(cg_renderchain_t *chain, int i)
 {
    if (!chain)
@@ -721,86 +710,87 @@ static void renderchain_bind_pass(cg_renderchain_t *chain,
 static void d3d9_cg_deinit_progs(void *data)
 {
    unsigned i;
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
+   cg_renderchain_t *cg_data = (cg_renderchain_t*)data;
 
-   if (!chain)
-      return;
-   if (chain->passes.size() == 0)
+   if (!cg_data)
 	   return;
 
    RARCH_LOG("CG: Destroying programs.\n");
 
-   d3d_vertex_buffer_free(NULL, chain->passes[0].vertex_decl);
-
-   for (i = 1; i < chain->passes.size(); i++)
+   if (cg_data->passes.size() >= 1)
    {
-      if (chain->passes[i].tex)
-         d3d_texture_free(chain->passes[i].tex);
-      chain->passes[i].tex = NULL;
-      d3d_vertex_buffer_free(chain->passes[i].vertex_buf, chain->passes[i].vertex_decl);
-      renderchain_destroy_shader(chain, i);
+      d3d_vertex_buffer_free(NULL, cg_data->passes[0].vertex_decl);
+
+      for (i = 1; i < cg_data->passes.size(); i++)
+      {
+         if (cg_data->passes[i].tex)
+            d3d_texture_free(cg_data->passes[i].tex);
+         cg_data->passes[i].tex = NULL;
+         d3d_vertex_buffer_free(cg_data->passes[i].vertex_buf, cg_data->passes[i].vertex_decl);
+         renderchain_destroy_shader(cg_data, i);
+      }
    }
+
+   if (cg_data->fStock)
+      cgDestroyProgram(cg_data->fStock);
+   if (cg_data->vStock)
+      cgDestroyProgram(cg_data->vStock);
 }
 
-static void cg_d3d9_renderchain_clear(cg_renderchain_t *chain)
+static void d3d9_cg_destroy_resources(void *data)
 {
    unsigned i;
+   cg_renderchain_t *cg_data = (cg_renderchain_t*)data;
 
    for (i = 0; i < TEXTURES; i++)
    {
-      if (chain->prev.tex[i])
-         d3d_texture_free(chain->prev.tex[i]);
-      if (chain->prev.vertex_buf[i])
-         d3d_vertex_buffer_free(chain->prev.vertex_buf[i], NULL);
+      if (cg_data->prev.tex[i])
+         d3d_texture_free(cg_data->prev.tex[i]);
+      if (cg_data->prev.vertex_buf[i])
+         d3d_vertex_buffer_free(cg_data->prev.vertex_buf[i], NULL);
    }
 
-   d3d9_cg_deinit_progs(chain);
+   d3d9_cg_deinit_progs(cg_data);
 
-   for (i = 0; i < chain->luts.size(); i++)
+   for (i = 0; i < cg_data->luts.size(); i++)
    {
-      if (chain->luts[i].tex)
-         d3d_texture_free(chain->luts[i].tex);
+      if (cg_data->luts[i].tex)
+         d3d_texture_free(cg_data->luts[i].tex);
    }
 
-   chain->luts.clear();
+   cg_data->luts.clear();
 
-   if (chain->tracker)
+   if (cg_data->tracker)
    {
-      state_tracker_free(chain->tracker);
-      chain->tracker = NULL;
+      state_tracker_free(cg_data->tracker);
+      cg_data->tracker = NULL;
    }
+
+   cgD3D9UnloadAllPrograms();
+   cgD3D9SetDevice(NULL);
 }
 
 static void d3d9_cg_deinit_context_state(void *data)
 {
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
-   if (chain->cgCtx)
+   cg_renderchain_t *cg_data = (cg_renderchain_t*)data;
+   if (cg_data->cgCtx)
    {
       RARCH_LOG("CG: Destroying context.\n");
-      cgDestroyContext(chain->cgCtx);
+      cgDestroyContext(cg_data->cgCtx);
    }
-   chain->cgCtx = NULL;
-}
-
-static void cg_d3d9_renderchain_deinit(cg_renderchain_t *chain)
-{
-   if (chain)
-      delete chain;
+   cg_data->cgCtx = NULL;
 }
 
 void cg_d3d9_renderchain_free(void *data)
 {
-   cg_renderchain_t *chain = (cg_renderchain_t*)data;
+   cg_renderchain_t *cg_data = (cg_renderchain_t*)data;
 
-   if (!chain)
+   if (!cg_data)
       return;
 
-   cg_d3d9_renderchain_clear(chain);
-   cgD3D9UnloadAllPrograms();
-   cgD3D9SetDevice(NULL);
-   d3d9_cg_deinit_context_state(chain);
-   cg_d3d9_renderchain_destroy_stock_shader(chain);
-   cg_d3d9_renderchain_deinit(chain);
+   d3d9_cg_destroy_resources(cg_data);
+   d3d9_cg_deinit_context_state(cg_data);
+   delete cg_data;
 }
 
 static void *cg_d3d9_renderchain_new(void)
