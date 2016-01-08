@@ -526,7 +526,7 @@ bool win32_set_video_mode(void *data,
       g_resize_height = height = rect.bottom - rect.top;
    }
 
-   if (!win32_window_create(NULL, style, &mon_rect, width, height, fullscreen))
+   if (!win32_window_create(data, style, &mon_rect, width, height, fullscreen))
       return false;
 
    if (!fullscreen || windowed_full)

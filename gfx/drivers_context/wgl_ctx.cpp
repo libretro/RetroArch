@@ -363,7 +363,7 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
-   if (!win32_set_video_mode(data, width, height, fullscreen))
+   if (!win32_set_video_mode(NULL, width, height, fullscreen))
       goto error;
 
    p_swap_interval = (BOOL (APIENTRY *)(int))wglGetProcAddress("wglSwapIntervalEXT");
