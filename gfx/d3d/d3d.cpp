@@ -1765,7 +1765,6 @@ static uintptr_t d3d_load_texture(void *video_data, void *data,
 
       switch (filter_type)
       {
-#ifdef HAVE_D3D
          case TEXTURE_FILTER_MIPMAP_LINEAR:
          case TEXTURE_FILTER_MIPMAP_NEAREST:
             func = video_texture_load_wrap_d3d_mipmap;
@@ -1773,7 +1772,6 @@ static uintptr_t d3d_load_texture(void *video_data, void *data,
          default:
             func = video_texture_load_wrap_d3d;
             break;
-#endif
       }
 
       return rarch_threaded_video_texture_load(data, func);
