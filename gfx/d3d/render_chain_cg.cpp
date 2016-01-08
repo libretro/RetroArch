@@ -1365,12 +1365,12 @@ static void renderchain_render_pass(
    if (chain->state_tracker)
    {
       /* Only query uniforms in first pass. */
-      static struct state_tracker_uniform tracker_info[MAX_VARIABLES];
+      static struct state_tracker_uniform tracker_info[GFX_MAX_VARIABLES];
       static unsigned cnt = 0;
 
       if (pass_index == 1)
          cnt = state_tracker_get_uniform(chain->state_tracker, tracker_info,
-               MAX_VARIABLES, chain->frame_count);
+               GFX_MAX_VARIABLES, chain->frame_count);
 
       for (i = 0; i < cnt; i++)
       {
