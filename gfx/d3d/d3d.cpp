@@ -102,9 +102,7 @@ static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
-   if (!d3d)
-      return;
-   if (!d3d->renderchain_driver)
+   if (!d3d || !d3d->renderchain_driver)
       return;
 
    if (d3d->renderchain_driver->chain_free)
@@ -440,7 +438,7 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
    return true;
 }
 
-bool d3d_restore(void *data)
+static bool d3d_restore(void *data)
 {
    d3d_video_t            *d3d = (d3d_video_t*)data;
 
