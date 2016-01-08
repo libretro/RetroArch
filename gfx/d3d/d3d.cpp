@@ -1278,7 +1278,17 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
    video_driver_get_size(&width, &height);
 
    if (overlay->fullscreen)
-      d3d_set_viewport(d3d, width, height, true, false);
+   {
+      D3DVIEWPORT vp_full;
+
+      vp_full.X      = 0;
+      vp_full.Y      = 0;
+      vp_full.Width  = width;
+      vp_full.Height = height;
+      vp_full.MinZ   = 0.0f;
+      vp_full.MaxZ   = 1.0f;
+      d3d_set_viewports(d3d->dev, &vp_full);
+   }
 
    /* Render overlay. */
    d3d_set_texture(d3d->dev, 0, overlay->tex);
@@ -1290,7 +1300,7 @@ static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 
    /* Restore previous state. */
    d3d_disable_blend_func(d3d->dev);
-   d3d_set_viewport(d3d, width, height, false, false);
+   d3d_set_viewports(d3d->dev, &d3d->final_viewport);
 }
 
 static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
