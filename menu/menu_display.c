@@ -18,7 +18,6 @@
 #include <retro_assert.h>
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
-#include <gfx/math/matrix_4x4.h>
 #include <formats/image.h>
 
 #include "../config.def.h"
@@ -544,20 +543,16 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
 
 
 
-void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
+void menu_display_matrix_4x4_rotate_z(math_matrix_4x4 *matrix, float rotation,
       float scale_x, float scale_y, float scale_z, bool scale_enable)
 {
-   math_matrix_4x4 *matrix, *b;
-   math_matrix_4x4 matrix_rotated;
-   math_matrix_4x4 matrix_scaled;
+   math_matrix_4x4 matrix_rotated, matrix_scaled;
+   math_matrix_4x4 *b                   = NULL;
    menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp || !menu_disp->get_default_mvp)
+   if (!matrix || !menu_disp || !menu_disp->get_default_mvp)
       return;
 
-   matrix = (math_matrix_4x4*)data;
-   b      = (math_matrix_4x4*)menu_disp->get_default_mvp();
-   if (!matrix)
-      return;
+   b = (math_matrix_4x4*)menu_disp->get_default_mvp();
 
    matrix_4x4_rotate_z(&matrix_rotated, rotation);
    matrix_4x4_multiply(matrix, &matrix_rotated, b);

@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <boolean.h>
 
+#include <gfx/math/matrix_4x4.h>
+
 #include "../gfx/video_context_driver.h"
 #include "../gfx/font_driver.h"
 #include "../gfx/video_common.h"
@@ -163,7 +165,7 @@ void menu_display_draw_bg(
       enum menu_display_prim_type prim_type
       );
 
-void menu_display_matrix_4x4_rotate_z(void *data, float rotation,
+void menu_display_matrix_4x4_rotate_z(math_matrix_4x4 *matrix, float rotation,
       float scale_x, float scale_y, float scale_z, bool scale_enable);
 
 unsigned menu_display_texture_load(void *data,
