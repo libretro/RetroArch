@@ -1728,11 +1728,12 @@ static void d3d_set_menu_texture_enable(void *data,
 }
 #endif
 
-static void video_texture_load_d3d(struct texture_image *ti,
+static void video_texture_load_d3d(d3d_video_t *d3d,
+      struct texture_image *ti,
       enum texture_filter_type filter_type,
       uintptr_t *id)
 {
-   *id = (uintptr_t)d3d_texture_new(NULL, NULL,
+   *id = (uintptr_t)d3d_texture_new(d3d->dev, NULL,
          ti->width, ti->height, 1, 
          0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 0, 0, 0,
          NULL, NULL);
@@ -1741,14 +1742,14 @@ static void video_texture_load_d3d(struct texture_image *ti,
 static int video_texture_load_wrap_d3d_mipmap(void *data)
 {
    uintptr_t id = 0;
-   video_texture_load_d3d((struct texture_image*)data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
+   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true), (struct texture_image*)data, TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return id;
 }
 
 static int video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
-   video_texture_load_d3d((struct texture_image*)data, TEXTURE_FILTER_LINEAR, &id);
+   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(true), (struct texture_image*)data, TEXTURE_FILTER_LINEAR, &id);
    return id;
 }
 
@@ -1775,12 +1776,15 @@ static uintptr_t d3d_load_texture(void *video_data, void *data,
       return rarch_threaded_video_texture_load(data, func);
    }
 
-   video_texture_load_d3d((struct texture_image*)data, filter_type, &id);
+   video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(false), (struct texture_image*)data, filter_type, &id);
    return id;
 }
 
 static void d3d_unload_texture(void *data, uintptr_t *id)
 {
+   if (!id)
+	   return;
+
    d3d_texture_free((LPDIRECT3DTEXTURE)id);
 }
 
