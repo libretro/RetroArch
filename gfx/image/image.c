@@ -23,9 +23,6 @@
 #include <formats/rpng.h>
 #endif
 #include <formats/tga.h>
-#ifdef _XBOX1
-#include "../common/d3d_common.h"
-#endif
 #include "../../file_ops.h"
 #include "../../verbosity.h"
 
@@ -162,60 +159,14 @@ static bool rpng_gx_convert_texture32(struct texture_image *image)
 
 void texture_image_free(struct texture_image *img)
 {
-#ifdef _XBOX1
-   LPDIRECT3DTEXTURE d3dt = (LPDIRECT3DTEXTURE)img->texture_buf;
-   LPDIRECT3DVERTEXBUFFER d3dv = (LPDIRECT3DVERTEXBUFFER)img->vertex_buf;
-#endif
    if (!img)
       return;
 
-#ifdef _XBOX1
-   d3d_vertex_buffer_free(d3dv, NULL);
-   d3d_texture_free(d3dt);
-#endif
    if (img->pixels)
       free(img->pixels);
    memset(img, 0, sizeof(*img));
 }
 
-#ifdef _XBOX1
-#include "../d3d/d3d.h"
-
-bool texture_image_load(struct texture_image *out_img, const char *path)
-{
-   D3DXIMAGE_INFO image_info;
-   d3d_video_t *d3d     = (d3d_video_t*)video_driver_get_ptr(false);
-   LPDIRECT3DTEXTURE d3dt = (LPDIRECT3DTEXTURE)out_img->texture_buf;
-   LPDIRECT3DVERTEXBUFFER d3dv = (LPDIRECT3DVERTEXBUFFER)out_img->vertex_buf;
-
-   d3dv = NULL;
-
-   d3dt = d3d_texture_new(d3d->dev, path,
-         D3DX_DEFAULT, D3DX_DEFAULT, D3DX_DEFAULT, 0,
-         D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, D3DX_DEFAULT,
-         D3DX_DEFAULT, 0, &image_info, NULL);
-
-   if (!d3dt)
-      return false;
-
-   /* create a vertex buffer for the quad that will display the texture */
-   d3dv = (LPDIRECT3DVERTEXBUFFER)d3d_vertex_buffer_new(
-         d3d->dev, 4 * sizeof(Vertex), D3DUSAGE_WRITEONLY, D3DFVF_CUSTOMVERTEX,
-         D3DPOOL_MANAGED, NULL);
-
-   if (!d3dv)
-      goto error;
-
-   out_img->width       = image_info.Width;
-   out_img->height      = image_info.Height;
-
-   return true;
-
-error:
-   d3d_texture_free(d3dt);
-   return false;
-}
-#else
 bool texture_image_load(struct texture_image *out_img, const char *path)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;
@@ -269,4 +220,3 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 
    return ret;
 }
-#endif

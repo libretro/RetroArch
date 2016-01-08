@@ -36,12 +36,6 @@ struct texture_image
 {
    unsigned width;
    unsigned height;
-#ifdef _XBOX1
-   unsigned x;
-   unsigned y;
-   void *texture_buf;
-   void *vertex_buf;
-#endif
    uint32_t *pixels;
 };
 
