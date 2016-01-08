@@ -229,13 +229,18 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
    {
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
-         g_resize_width  = LOWORD(lparam);
-         g_resize_height = HIWORD(lparam);
-         g_resized       = true;
+         if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
+         {
+            g_resize_width  = LOWORD(lparam);
+            g_resize_height = HIWORD(lparam);
+            g_resized       = true;
 
-         if (g_resize_width && g_resize_height)
-            if (gfx_ctx_set_resize(g_resize_width, g_resize_height))
-               d3d_restore(curD3D);
+#if 0
+            if (g_resize_width && g_resize_height)
+               if (gfx_ctx_set_resize(g_resize_width, g_resize_height))
+                  d3d_restore(curD3D);
+#endif
+         }
          return 0;
       case WM_SYSCOMMAND:
       case WM_CHAR:
