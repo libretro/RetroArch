@@ -407,6 +407,8 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
    return true;
 }
 
+static const struct retro_keybind *libretro_input_binds[MAX_USERS];
+
 /**
  * input_poll:
  *
@@ -414,11 +416,15 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
  **/
 void input_poll(void)
 {
+   size_t i;
 #ifdef HAVE_OVERLAY
    settings_t *settings           = config_get_ptr();
 #endif
 
    input_driver_ctl(RARCH_INPUT_CTL_POLL, NULL);
+
+   for (i = 0; i < MAX_USERS; i++)
+      libretro_input_binds[i] = settings->input.binds[i];
 
 #ifdef HAVE_OVERLAY
    input_poll_overlay(settings->input.overlay_opacity);
@@ -450,13 +456,9 @@ void input_poll(void)
 int16_t input_state(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
-   size_t i;
-   const struct retro_keybind *libretro_input_binds[MAX_USERS];
    int16_t res                     = 0;
    settings_t *settings            = config_get_ptr();
    
-   for (i = 0; i < MAX_USERS; i++)
-      libretro_input_binds[i] = settings->input.binds[i];
 
    device &= RETRO_DEVICE_MASK;
 
