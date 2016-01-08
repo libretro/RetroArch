@@ -145,6 +145,11 @@ static void menu_display_d3d_draw(
    d3d_set_viewports(d3d->dev, &vp);
    d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE)texture);
 
+#if 0
+   video_shader_driver_set_coords(d3d, coords);
+   video_shader_driver_set_mvp(d3d, mat);
+#endif
+
    d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)menu_display_prim_to_d3d_enum(prim_type), 0, coords->vertices);
 
 #if 0
