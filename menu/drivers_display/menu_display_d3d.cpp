@@ -52,11 +52,22 @@ static d3d_video_t *d3d_get_ptr(void)
 
 static void *menu_display_d3d_get_default_mvp(void)
 {
+#ifndef _XBOX
+   static D3DXMATRIX mvp;
+   D3DXMATRIX ortho;
+#endif
    d3d_video_t *d3d = d3d_get_ptr();
 
    if (!d3d)
       return NULL;
+#ifdef _XBOX
    return NULL; /* TODO/FIXME */
+#else
+   D3DXMatrixOrthoOffCenterLH(&ortho, 0, d3d->final_viewport.Width, 0, d3d->final_viewport.Height, 0, 1);
+   D3DXMatrixTranspose(&mvp, &ortho);
+
+   return (FLOAT*)mvp;
+#endif
 }
 
 static unsigned menu_display_prim_to_d3d_enum(enum menu_display_prim_type prim_type)
