@@ -493,8 +493,13 @@ static bool d3d_alive(void *data)
    {
       if (quit)
          d3d->quitting = quit;
-      else if (resize)
+
+      if (resize)
+      {
          d3d->should_resize = true;
+         gfx_ctx_set_resize(temp_width, temp_height);
+         d3d_restore(curD3D);
+      }
 
       ret = !quit;
    }
