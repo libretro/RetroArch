@@ -121,10 +121,6 @@ static void d3d_deinitialize(d3d_video_t *d3d)
 
    font_driver_free(NULL);
    d3d_deinit_chain(d3d);
-
-#ifndef _XBOX
-   d3d->needs_restore      = false;
-#endif
 }
 
 void d3d_make_d3dpp(void *data,
@@ -476,6 +472,7 @@ static void d3d_set_nonblock_state(void *data, bool state)
 
    gfx_ctx_swap_interval(state ? 0 : 1);
 #ifndef _XBOX
+   d3d->needs_restore = true;
    d3d_restore(d3d);
 #endif
 }
@@ -1737,7 +1734,7 @@ static void video_texture_load_d3d(struct texture_image *ti,
       enum texture_filter_type filter_type,
       uintptr_t *id)
 {
-   id = (uintptr_t*)d3d_texture_new(NULL, NULL,
+   *id = (uintptr_t)d3d_texture_new(NULL, NULL,
          ti->width, ti->height, 1, 
          0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 0, 0, 0,
          NULL, NULL);
