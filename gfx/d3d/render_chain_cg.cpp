@@ -763,9 +763,10 @@ static bool cg_d3d9_renderchain_init_shader(void *data,
 
    renderchain->cgCtx = cgCreateContext();
    if (!renderchain->cgCtx)
+   {
+      RARCH_ERR("Failed to create Cg context.\n");
       return false;
-
-   RARCH_LOG("[D3D]: Created shader context.\n");
+   }
 
    HRESULT ret = cgD3D9SetDevice((IDirect3DDevice9*)d3d->dev);
    if (FAILED(ret))

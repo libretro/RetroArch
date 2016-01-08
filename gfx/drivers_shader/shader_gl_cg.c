@@ -895,7 +895,7 @@ static void *gl_cg_init(void *data, const char *path)
 
    if (!cg_data->cgCtx)
    {
-      RARCH_ERR("Failed to create Cg context\n");
+      RARCH_ERR("Failed to create Cg context.\n");
       goto error;
    }
 
