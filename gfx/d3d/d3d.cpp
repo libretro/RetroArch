@@ -292,15 +292,20 @@ static void d3d_calculate_rect(void *data,
    float device_aspect  = (float)*width / *height;
    d3d_video_t *d3d     = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
-   float desired_aspect = video_driver_get_aspect_ratio();
 
    video_driver_get_size(width, height);
    gfx_ctx_translate_aspect(&device_aspect, *width, *height);
 
+   *x = 0;
+   *y = 0;
+
    if (settings->video.scale_integer && !force_full)
    {
       struct video_viewport vp = {0};
-      video_viewport_get_scaled_integer(&vp, *width, *height, desired_aspect, d3d->keep_aspect);
+      video_viewport_get_scaled_integer(&vp,
+            *width,
+            *height,
+            video_driver_get_aspect_ratio(), d3d->keep_aspect);
       *x          = vp.x;
       *y          = vp.y;
       *width  = vp.width;
@@ -308,6 +313,9 @@ static void d3d_calculate_rect(void *data,
    }
    else if (d3d->keep_aspect && !force_full)
    {
+      float desired_aspect = video_driver_get_aspect_ratio();
+
+#if defined(HAVE_MENU)
       if (settings->video.aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
       {
          video_viewport_t *custom = video_viewport_get_custom();
@@ -321,21 +329,26 @@ static void d3d_calculate_rect(void *data,
          }
       }
       else
+#endif
       {
          float delta;
 
-         if (fabsf(device_aspect - desired_aspect) < 0.0001f) { }
+         if (fabsf(device_aspect - desired_aspect) < 0.0001f)
+         {
+            /* If the aspect ratios of screen and desired aspect 
+             * ratio are sufficiently equal (floating point stuff), 
+             * assume they are actually equal.
+             */
+         }
          else if (device_aspect > desired_aspect)
          {
             delta       = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
             *x           = int(roundf(*width * (0.5f - delta)));
-            *y           = 0;
             *width       = unsigned(roundf(2.0f * (*width) * delta));
          }
          else
          {
             delta       = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            *x           = 0;
             *y           = int(roundf(*height * (0.5f - delta)));
             *height      = unsigned(roundf(2.0f * (*height) * delta));
          }
