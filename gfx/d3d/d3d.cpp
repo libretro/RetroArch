@@ -1782,10 +1782,12 @@ static uintptr_t d3d_load_texture(void *video_data, void *data,
 
 static void d3d_unload_texture(void *data, uintptr_t *id)
 {
+   LPDIRECT3DTEXTURE texid = (LPDIRECT3DTEXTURE)id;
    if (!id)
 	   return;
 
-   d3d_texture_free((LPDIRECT3DTEXTURE)id);
+   d3d_texture_free(texid);
+   *id = NULL;
 }
 
 static const video_poke_interface_t d3d_poke_interface = {

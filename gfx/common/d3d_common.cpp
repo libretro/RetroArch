@@ -79,7 +79,6 @@ void d3d_texture_free(LPDIRECT3DTEXTURE tex)
 {
    if (tex)
       tex->Release();
-   tex = NULL;
 }
 
 bool d3d_vertex_declaration_new(LPDIRECT3DDEVICE dev,
