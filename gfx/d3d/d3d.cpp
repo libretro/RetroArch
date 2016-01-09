@@ -88,8 +88,94 @@ static bool d3d_init_luts(d3d_video_t *d3d)
    return true;
 }
 
-static bool d3d_init_chain(d3d_video_t *d3d,
-      const video_info_t *video_info);
+static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
+{
+   unsigned current_width, current_height, out_width, out_height;
+   unsigned i            = 0;
+   LinkInfo link_info    = {0};
+
+   (void)i;
+   (void)current_width;
+   (void)current_height;
+   (void)out_width;
+   (void)out_height;
+
+   /* Setup information for first pass. */
+#ifndef _XBOX
+   link_info.pass  = &d3d->shader.pass[0];
+#endif
+   link_info.tex_w = link_info.tex_h =
+      video_info->input_scale * RARCH_SCALE_BASE;
+
+   if (!renderchain_init_first(&d3d->renderchain_driver,
+	   &d3d->renderchain_data))
+   {
+	   RARCH_ERR("Renderchain could not be initialized.\n");
+	   return false;
+   }
+
+   if (!d3d->renderchain_driver || !d3d->renderchain_data)
+	   return false;
+
+   if (
+         !d3d->renderchain_driver->init(
+            d3d,
+            &d3d->video_info,
+            d3d->dev, &d3d->final_viewport, &link_info,
+            d3d->video_info.rgb32)
+      )
+   {
+      RARCH_ERR("[D3D]: Failed to init render chain.\n");
+      return false;
+   }
+
+   RARCH_LOG("Renderchain driver: %s\n", d3d->renderchain_driver->ident);
+
+#ifndef _XBOX
+   current_width  = link_info.tex_w;
+   current_height = link_info.tex_h;
+   out_width      = 0;
+   out_height     = 0;
+
+   for (i = 1; i < d3d->shader.passes; i++)
+   {
+      d3d->renderchain_driver->convert_geometry(d3d->renderchain_data,
+		    &link_info,
+            &out_width, &out_height,
+            current_width, current_height, &d3d->final_viewport);
+
+      link_info.pass  = &d3d->shader.pass[i];
+      link_info.tex_w = next_pow2(out_width);
+      link_info.tex_h = next_pow2(out_height);
+
+      current_width = out_width;
+      current_height = out_height;
+
+      if (!d3d->renderchain_driver->add_pass(d3d->renderchain_data, &link_info))
+      {
+         RARCH_ERR("[D3D9]: Failed to add pass.\n");
+         return false;
+      }
+   }
+
+   if (!d3d_init_luts(d3d))
+   {
+      RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
+      return false;
+   }
+
+#ifndef DONT_HAVE_STATE_TRACKER
+   if (!d3d_init_imports(d3d))
+   {
+      RARCH_ERR("[D3D9]: Failed to init imports.\n");
+      return false;
+   }
+#endif
+
+#endif
+
+   return true;
+}
 
 static bool d3d_init_singlepass(d3d_video_t *d3d)
 {
@@ -1158,94 +1244,6 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 }
 #endif
 
-static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
-{
-   unsigned current_width, current_height, out_width, out_height;
-   unsigned i            = 0;
-   LinkInfo link_info    = {0};
-
-   (void)i;
-   (void)current_width;
-   (void)current_height;
-   (void)out_width;
-   (void)out_height;
-
-   /* Setup information for first pass. */
-#ifndef _XBOX
-   link_info.pass  = &d3d->shader.pass[0];
-#endif
-   link_info.tex_w = link_info.tex_h =
-      video_info->input_scale * RARCH_SCALE_BASE;
-
-   if (!renderchain_init_first(&d3d->renderchain_driver,
-	   &d3d->renderchain_data))
-   {
-	   RARCH_ERR("Renderchain could not be initialized.\n");
-	   return false;
-   }
-
-   if (!d3d->renderchain_driver || !d3d->renderchain_data)
-	   return false;
-
-   if (
-         !d3d->renderchain_driver->init(
-            d3d,
-            &d3d->video_info,
-            d3d->dev, &d3d->final_viewport, &link_info,
-            d3d->video_info.rgb32)
-      )
-   {
-      RARCH_ERR("[D3D]: Failed to init render chain.\n");
-      return false;
-   }
-
-   RARCH_LOG("Renderchain driver: %s\n", d3d->renderchain_driver->ident);
-
-#ifndef _XBOX
-   current_width  = link_info.tex_w;
-   current_height = link_info.tex_h;
-   out_width      = 0;
-   out_height     = 0;
-
-   for (i = 1; i < d3d->shader.passes; i++)
-   {
-      d3d->renderchain_driver->convert_geometry(d3d->renderchain_data,
-		    &link_info,
-            &out_width, &out_height,
-            current_width, current_height, &d3d->final_viewport);
-
-      link_info.pass  = &d3d->shader.pass[i];
-      link_info.tex_w = next_pow2(out_width);
-      link_info.tex_h = next_pow2(out_height);
-
-      current_width = out_width;
-      current_height = out_height;
-
-      if (!d3d->renderchain_driver->add_pass(d3d->renderchain_data, &link_info))
-      {
-         RARCH_ERR("[D3D9]: Failed to add pass.\n");
-         return false;
-      }
-   }
-
-   if (!d3d_init_luts(d3d))
-   {
-      RARCH_ERR("[D3D9]: Failed to init LUTs.\n");
-      return false;
-   }
-
-#ifndef DONT_HAVE_STATE_TRACKER
-   if (!d3d_init_imports(d3d))
-   {
-      RARCH_ERR("[D3D9]: Failed to init imports.\n");
-      return false;
-   }
-#endif
-
-#endif
-
-   return true;
-}
 
 #ifdef _XBOX
 
