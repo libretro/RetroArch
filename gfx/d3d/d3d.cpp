@@ -713,7 +713,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    enum rarch_shader_type type =
       video_shader_parse_type(settings->video.shader_path, RARCH_SHADER_NONE);
    if (settings->video.shader_enable && type == RARCH_SHADER_CG)
-      d3d->shader_path = settings->video.shader_path;
+      strlcpy(d3d->shader_path, settings->video.shader_path, sizeof(d3d->shader_path));
 
    if (!d3d_process_shader(d3d))
       return false;
