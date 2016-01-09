@@ -898,6 +898,8 @@ static bool cg_d3d9_renderchain_init(void *data,
    if (!d3d9_cg_load_program(chain, &chain->fStock, &chain->vStock, NULL, false))
       return false;
 
+   renderchain_set_shaders(chain, &chain->fStock, &chain->vStock);
+
    return true;
 }
 
