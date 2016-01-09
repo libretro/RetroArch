@@ -63,7 +63,6 @@
 
 static LPDIRECT3D g_pD3D;
 
-/* forward declarations */
 static bool d3d_init_luts(d3d_video_t *d3d)
 {
    unsigned i;
@@ -1244,8 +1243,6 @@ static void d3d_free(void *data)
    win32_destroy_window();
 }
 
-
-
 #ifdef _XBOX
 
 #ifdef _XBOX1
@@ -1309,10 +1306,7 @@ static bool texture_image_render(d3d_video_t *d3d,
 
 #endif
 
-
-
 #ifdef HAVE_OVERLAY
-
 static void d3d_overlay_tex_geom(
       void *data,
       unsigned index,
@@ -1517,8 +1511,7 @@ static bool d3d_frame(void *data, const void *frame,
       d3d_clear(d3d->dev, 0, 0, D3DCLEAR_TARGET, 0, 1, 0);
    }
 
-   if (
-         !d3d->renderchain_driver->render(
+   if (!d3d->renderchain_driver->render(
             d3d,
             frame, frame_width, frame_height,
             pitch, d3d->dev_rotation))
@@ -1561,9 +1554,9 @@ static bool d3d_frame(void *data, const void *frame,
    }
 #endif
 
-   retro_perf_stop(&d3d_frame);
-
    gfx_ctx_update_window_title();
+
+   retro_perf_stop(&d3d_frame);
 
    gfx_ctx_swap_buffers();
 
