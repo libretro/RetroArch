@@ -246,18 +246,6 @@ static INLINE void renderchain_set_shaders(void *data, CGprogram *fPrg, CGprogra
    cgD3D9BindProgram(*vPrg);
 }
 
-static void renderchain_destroy_shader(cg_renderchain_t *chain, int i)
-{
-   if (!chain)
-      return;
-
-   if (chain->passes[i].fPrg)
-      cgDestroyProgram(chain->passes[i].fPrg);
-   if (chain->passes[i].vPrg)
-      cgDestroyProgram(chain->passes[i].vPrg);
-}
-
-
 static void renderchain_set_shader_mvp(cg_renderchain_t *chain, void *shader_data, void *matrix_data)
 {
    CGprogram              *vPrg = (CGprogram*)shader_data;
@@ -670,7 +658,11 @@ static void d3d9_cg_deinit_progs(void *data)
             d3d_texture_free(cg_data->passes[i].tex);
          cg_data->passes[i].tex = NULL;
          d3d_vertex_buffer_free(cg_data->passes[i].vertex_buf, cg_data->passes[i].vertex_decl);
-         renderchain_destroy_shader(cg_data, i);
+
+         if (chain->passes[i].fPrg)
+            cgDestroyProgram(chain->passes[i].fPrg);
+         if (chain->passes[i].vPrg)
+            cgDestroyProgram(chain->passes[i].vPrg);
       }
    }
 
