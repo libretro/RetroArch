@@ -46,7 +46,6 @@ typedef struct renderchain_driver
    void (*chain_free)(void *data);
    void *(*chain_new)(void);
    bool (*init_shader)(void *data, void *renderchain_data);
-   bool (*init_shader_fvf)(void *data, void *pass_data);
    bool (*reinit)(void *data, const void *info_data);
    bool (*init)(void *data,
          const void *video_info_data,

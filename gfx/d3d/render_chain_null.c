@@ -83,14 +83,6 @@ static bool null_renderchain_render(void *data, const void *frame,
    return true;
 }
 
-static bool null_renderchain_init_shader_fvf(void *data, void *pass_data)
-{
-   (void)data;
-   (void)pass_data;
-
-   return true;
-}
-
 static bool null_renderchain_add_lut(void *data,
       const char *id, const char *path, bool smooth)
 {
@@ -135,7 +127,6 @@ renderchain_driver_t null_renderchain = {
    null_renderchain_free,
    null_renderchain_new,
    null_renderchain_init_shader,
-   null_renderchain_init_shader_fvf,
    NULL,
    null_renderchain_init,
    null_renderchain_set_final_viewport,

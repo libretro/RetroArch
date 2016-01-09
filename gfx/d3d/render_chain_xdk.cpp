@@ -468,7 +468,6 @@ renderchain_driver_t xdk_renderchain = {
    xdk_renderchain_free,
    xdk_renderchain_new,
    xdk_renderchain_init_shader,
-   xdk_renderchain_init_shader_fvf,
    xdk_renderchain_reinit,
    xdk_renderchain_init,
    xdk_renderchain_set_final_viewport,
