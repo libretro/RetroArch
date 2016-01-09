@@ -659,10 +659,10 @@ static void d3d9_cg_deinit_progs(void *data)
          cg_data->passes[i].tex = NULL;
          d3d_vertex_buffer_free(cg_data->passes[i].vertex_buf, cg_data->passes[i].vertex_decl);
 
-         if (chain->passes[i].fPrg)
-            cgDestroyProgram(chain->passes[i].fPrg);
-         if (chain->passes[i].vPrg)
-            cgDestroyProgram(chain->passes[i].vPrg);
+         if (cg_data->passes[i].fPrg)
+            cgDestroyProgram(cg_data->passes[i].fPrg);
+         if (cg_data->passes[i].vPrg)
+            cgDestroyProgram(cg_data->passes[i].vPrg);
       }
    }
 
