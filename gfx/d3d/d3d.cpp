@@ -1583,8 +1583,9 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
 static bool d3d_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
-   d3d_video_t *d3d   = (d3d_video_t*)data;
-   std::string shader = "";
+   d3d_video_t *d3d       = (d3d_video_t*)data;
+   std::string old_shader = d3d ? d3d->shader_path : "";
+   std::string shader     = "";
 
    switch (type)
    {
@@ -1599,7 +1600,6 @@ static bool d3d_set_shader(void *data,
          break;
    }
 
-   std::string old_shader = d3d->shader_path;
    d3d->shader_path       = shader;
 
    if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
