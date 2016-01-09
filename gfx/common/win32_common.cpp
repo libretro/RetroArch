@@ -446,6 +446,31 @@ bool win32_suppress_screensaver(void *data, bool enable)
 #endif
 }
 
+void win32_set_window(unsigned *width, unsigned *height,
+      bool fullscreen, bool windowed_full)
+{
+   settings_t *settings  = config_get_ptr();
+
+   if (!fullscreen || windowed_full)
+   {
+      if (!fullscreen && settings->ui.menubar_enable)
+      {
+         RECT rc_temp = {0, 0, (LONG)*height, 0x7FFF};
+         SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+         SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
+         g_resize_height = *height += rc_temp.top + rect.top;
+         SetWindowPos(g_hwnd, NULL, 0, 0, *width, *height, SWP_NOMOVE);
+      }
+
+      ShowWindow(g_hwnd, SW_RESTORE);
+      UpdateWindow(g_hwnd);
+      SetForegroundWindow(g_hwnd);
+      SetFocus(g_hwnd);
+   }
+
+   win32_show_cursor(!fullscreen);
+}
+
 bool win32_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
@@ -511,25 +536,8 @@ bool win32_set_video_mode(void *data,
 
    if (!win32_window_create(data, style, &mon_rect, width, height, fullscreen))
       return false;
-
-   if (!fullscreen || windowed_full)
-   {
-      if (!fullscreen && settings->ui.menubar_enable)
-      {
-         RECT rc_temp = {0, 0, (LONG)height, 0x7FFF};
-         SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
-         SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
-         g_resize_height = height += rc_temp.top + rect.top;
-         SetWindowPos(g_hwnd, NULL, 0, 0, width, height, SWP_NOMOVE);
-      }
-
-      ShowWindow(g_hwnd, SW_RESTORE);
-      UpdateWindow(g_hwnd);
-      SetForegroundWindow(g_hwnd);
-      SetFocus(g_hwnd);
-   }
-
-   win32_show_cursor(!fullscreen);
+   
+   win32_set_window(&width, &height, fullscreen, windowed_full);
 
    /* Wait until context is created (or failed to do so ...) */
    while (!g_inited && !g_quit && GetMessage(&msg, g_hwnd, 0, 0))

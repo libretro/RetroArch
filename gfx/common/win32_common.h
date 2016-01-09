@@ -95,6 +95,9 @@ bool win32_has_focus(void);
 void win32_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height);
 
+void win32_set_window(unsigned *width, unsigned *height,
+      bool fullscreen, bool windowed_full);
+
 void win32_window_reset(void);
 
 void win32_destroy_window(void);
