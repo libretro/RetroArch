@@ -446,6 +446,53 @@ bool win32_suppress_screensaver(void *data, bool enable)
 #endif
 }
 
+void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
+	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
+	RECT *rect, RECT *mon_rect, DWORD *style)
+{
+#ifndef _XBOX
+   settings_t *settings = config_get_ptr();
+
+   /* Windows only reports the refresh rates for modelines as 
+    * an integer, so video.refresh_rate needs to be rounded. Also, account 
+    * for black frame insertion using video.refresh_rate set to half
+    * of the display refresh rate, as well as higher vsync swap intervals. */
+   float refresh_mod    = settings->video.black_frame_insertion ? 2.0f : 1.0f;
+   unsigned refresh     = roundf(settings->video.refresh_rate * refresh_mod * settings->video.swap_interval);
+
+   if (fullscreen)
+   {
+      if (windowed_full)
+      {
+         *style          = WS_EX_TOPMOST | WS_POPUP;
+         g_resize_width  = *width  = mon_rect->right  - mon_rect->left;
+         g_resize_height = *height = mon_rect->bottom - mon_rect->top;
+      }
+      else
+      {
+         *style          = WS_POPUP | WS_VISIBLE;
+
+         if (!win32_monitor_set_fullscreen(*width, *height,
+                  refresh, current_mon->szDevice))
+			 {}
+
+         /* Display settings might have changed, get new coordinates. */
+         GetMonitorInfo(*hm_to_use, (MONITORINFO*)&current_mon);
+         *mon_rect = current_mon->rcMonitor;
+      }
+   }
+   else
+   {
+      *style       = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+      rect->right  = *width;
+      rect->bottom = *height;
+      AdjustWindowRect(rect, *style, FALSE);
+      g_resize_width  = *width   = rect->right  - rect->left;
+      g_resize_height = *height  = rect->bottom - rect->top;
+   }
+#endif
+}
+
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data)
 {

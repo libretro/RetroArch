@@ -98,6 +98,10 @@ void win32_check_window(bool *quit,
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);
 
+void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
+	unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
+	RECT *rect, RECT *mon_rect, DWORD *style);
+
 void win32_window_reset(void);
 
 void win32_destroy_window(void);

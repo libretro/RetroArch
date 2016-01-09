@@ -997,46 +997,11 @@ static bool d3d_construct(d3d_video_t *d3d,
 #ifdef HAVE_WINDOW
    DWORD style;
    unsigned win_width, win_height;
-   RECT rect = {0};
-   /* Windows only reports the refresh rates for modelines as 
-    * an integer, so video.refresh_rate needs to be rounded. Also, account 
-    * for black frame insertion using video.refresh_rate set to half
-    * of the display refresh rate, as well as higher vsync swap intervals. */
-   float refresh_mod = settings->video.black_frame_insertion ? 2.0f : 1.0f;
-   unsigned refresh     = roundf(settings->video.refresh_rate * refresh_mod * settings->video.swap_interval);
+   RECT rect            = {0};
 
    video_driver_get_size(&win_width, &win_height);
 
-   if (info->fullscreen)
-   {
-      if (windowed_full)
-      {
-         style = WS_EX_TOPMOST | WS_POPUP;
-         g_resize_width  = win_width  = mon_rect.right - mon_rect.left;
-         g_resize_height = win_height = mon_rect.bottom - mon_rect.top;
-      }
-      else
-      {
-         style = WS_POPUP | WS_VISIBLE;
-
-         if (!win32_monitor_set_fullscreen(win_width, win_height,
-                  refresh, current_mon.szDevice))
-			 {}
-
-         /* Display settings might have changed, get new coordinates. */
-         GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
-         mon_rect = current_mon.rcMonitor;
-      }
-   }
-   else
-   {
-      style = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-      rect.right  = win_width;
-      rect.bottom = win_height;
-      AdjustWindowRect(&rect, style, FALSE);
-      g_resize_width  = win_width   = rect.right - rect.left;
-      g_resize_height = win_height  = rect.bottom - rect.top;
-   }
+   win32_set_style(&current_mon, &hm_to_use, &win_width, &win_height, info->fullscreen, windowed_full, &rect, &mon_rect, &style);
 
    win32_window_create(d3d, style, &mon_rect, win_width,
          win_height, info->fullscreen);
