@@ -1084,7 +1084,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
    unsigned i;
    bool use_extra_pass;
    video_shader_pass *pass = NULL;
-   config_file_t *conf     = config_file_new(d3d->shader_path);
+   config_file_t *conf     = config_file_new(d3d->shader_path.c_str());
 
    if (!conf)
    {
@@ -1103,7 +1103,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 
    config_file_free(conf);
 
-   video_shader_resolve_relative(&d3d->shader, d3d->shader_path);
+   video_shader_resolve_relative(&d3d->shader, d3d->shader_path.c_str());
 
    RARCH_LOG("[D3D9 Meta-Cg] Found %u shaders.\n", d3d->shader.passes);
 
@@ -1162,7 +1162,7 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    pass->fbo.type_y                      = RARCH_SCALE_VIEWPORT;
    pass->fbo.scale_x                     = pass->fbo.scale_y;
    pass->fbo.type_x                      = pass->fbo.type_y;
-   strlcpy(pass->source.path, d3d->shader_path,
+   strlcpy(pass->source.path, d3d->shader_path.c_str(),
          sizeof(pass->source.path));
 #endif
 
@@ -1172,7 +1172,8 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
 static bool d3d_process_shader(d3d_video_t *d3d)
 {
 #ifdef HAVE_FBO
-   if (strcmp(path_get_extension(d3d->shader_path), "cgp") == 0)
+   if (strcmp(path_get_extension(
+               d3d->shader_path.c_str()), "cgp") == 0)
       return d3d_init_multipass(d3d);
 #endif
 
@@ -1597,14 +1598,13 @@ static bool d3d_set_shader(void *data,
 {
    bool restore_old   = false;
    d3d_video_t *d3d   = (d3d_video_t*)data;
-   char old_shader[PATH_MAX_LENGTH];
-   char shader[PATH_MAX_LENGTH];
+   std::string shader = "";
 
    switch (type)
    {
       case RARCH_SHADER_CG:
          if (path)
-            strlcpy(shader, path, sizeof(shader));
+            shader   = path;
 #ifdef HAVE_HLSL
          d3d->shader = &hlsl_backend;
 #endif
@@ -1613,8 +1613,8 @@ static bool d3d_set_shader(void *data,
          break;
    }
 
-   strlcpy(old_shader, d3d->shader_path, sizeof(old_shader));
-   strlcpy(d3d->shader_path, shader, sizeof(d3d->shader_path));
+   std::string old_shader = d3d->shader_path;
+   d3d->shader_path       = shader;
 
    if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
    {
@@ -1624,7 +1624,7 @@ static bool d3d_set_shader(void *data,
 
    if (restore_old)
    {
-      strlcpy(d3d->shader_path, old_shader, sizeof(d3d->shader_path));
+      d3d->shader_path = old_shader;
       d3d_process_shader(d3d);
       d3d_restore(d3d);
    }
