@@ -17,8 +17,9 @@
 #ifndef __D3DVIDEO_INTF_H__
 #define __D3DVIDEO_INTF_H__
 
-#include <string>
 #include <vector>
+
+#include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -99,7 +100,7 @@ typedef struct d3d_video
    unsigned dev_rotation;
    D3DVIEWPORT final_viewport;
 
-   std::string shader_path;
+   char shader_path[PATH_MAX_LENGTH];
 
    struct video_shader shader;
    video_info_t video_info;
