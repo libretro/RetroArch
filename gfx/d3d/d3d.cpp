@@ -1045,9 +1045,6 @@ static bool d3d_construct(d3d_video_t *d3d,
 	   windowed_full, &rect);
 #endif
 
-   win32_show_cursor(!info->fullscreen);
-
-
 #ifdef HAVE_SHADERS
    /* This should only be done once here
     * to avoid set_shader() to be overridden
