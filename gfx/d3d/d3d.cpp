@@ -88,9 +88,44 @@ static bool d3d_init_luts(d3d_video_t *d3d)
    return true;
 }
 
-static bool d3d_process_shader(d3d_video_t *d3d);
 static bool d3d_init_chain(d3d_video_t *d3d,
       const video_info_t *video_info);
+
+static bool d3d_init_singlepass(d3d_video_t *d3d)
+{
+#ifndef _XBOX
+   video_shader_pass *pass = NULL;
+
+   if (!d3d)
+      return false;
+
+   memset(&d3d->shader, 0, sizeof(d3d->shader));
+   d3d->shader.passes                    = 1;
+
+   pass                                  = (video_shader_pass*)&d3d->shader.pass[0];
+
+   pass->fbo.valid                       = true;
+   pass->fbo.scale_y                     = 1.0;
+   pass->fbo.type_y                      = RARCH_SCALE_VIEWPORT;
+   pass->fbo.scale_x                     = pass->fbo.scale_y;
+   pass->fbo.type_x                      = pass->fbo.type_y;
+   strlcpy(pass->source.path, d3d->shader_path.c_str(),
+         sizeof(pass->source.path));
+#endif
+
+   return true;
+}
+
+static bool d3d_process_shader(d3d_video_t *d3d)
+{
+#ifdef HAVE_FBO
+   if (strcmp(path_get_extension(
+               d3d->shader_path.c_str()), "cgp") == 0)
+      return d3d_init_multipass(d3d);
+#endif
+
+   return d3d_init_singlepass(d3d);
+}
 
 static void d3d_viewport_info(void *data, struct video_viewport *vp)
 {
@@ -1275,41 +1310,6 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 }
 #endif
 
-static bool d3d_init_singlepass(d3d_video_t *d3d)
-{
-#ifndef _XBOX
-   video_shader_pass *pass = NULL;
-
-   if (!d3d)
-      return false;
-
-   memset(&d3d->shader, 0, sizeof(d3d->shader));
-   d3d->shader.passes                    = 1;
-
-   pass                                  = (video_shader_pass*)&d3d->shader.pass[0];
-
-   pass->fbo.valid                       = true;
-   pass->fbo.scale_y                     = 1.0;
-   pass->fbo.type_y                      = RARCH_SCALE_VIEWPORT;
-   pass->fbo.scale_x                     = pass->fbo.scale_y;
-   pass->fbo.type_x                      = pass->fbo.type_y;
-   strlcpy(pass->source.path, d3d->shader_path.c_str(),
-         sizeof(pass->source.path));
-#endif
-
-   return true;
-}
-
-static bool d3d_process_shader(d3d_video_t *d3d)
-{
-#ifdef HAVE_FBO
-   if (strcmp(path_get_extension(
-               d3d->shader_path.c_str()), "cgp") == 0)
-      return d3d_init_multipass(d3d);
-#endif
-
-   return d3d_init_singlepass(d3d);
-}
 
 #ifdef HAVE_OVERLAY
 
