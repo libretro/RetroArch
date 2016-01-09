@@ -116,6 +116,72 @@ static bool d3d_init_singlepass(d3d_video_t *d3d)
    return true;
 }
 
+#ifdef HAVE_FBO
+static bool d3d_init_multipass(d3d_video_t *d3d)
+{
+   unsigned i;
+   bool use_extra_pass;
+   video_shader_pass *pass = NULL;
+   config_file_t *conf     = config_file_new(d3d->shader_path.c_str());
+
+   if (!conf)
+   {
+      RARCH_ERR("Failed to load preset.\n");
+      return false;
+   }
+
+   memset(&d3d->shader, 0, sizeof(d3d->shader));
+
+   if (!video_shader_read_conf_cgp(conf, &d3d->shader))
+   {
+      config_file_free(conf);
+      RARCH_ERR("Failed to parse CGP file.\n");
+      return false;
+   }
+
+   config_file_free(conf);
+
+   video_shader_resolve_relative(&d3d->shader, d3d->shader_path.c_str());
+
+   RARCH_LOG("[D3D9 Meta-Cg] Found %u shaders.\n", d3d->shader.passes);
+
+   for (i = 0; i < d3d->shader.passes; i++)
+   {
+      if (d3d->shader.pass[i].fbo.valid)
+         continue;
+
+      d3d->shader.pass[i].fbo.scale_y = 1.0f;
+      d3d->shader.pass[i].fbo.scale_x = 1.0f;
+      d3d->shader.pass[i].fbo.type_x  = RARCH_SCALE_INPUT;
+      d3d->shader.pass[i].fbo.type_y  = RARCH_SCALE_INPUT;
+   }
+
+   use_extra_pass       = d3d->shader.passes < GFX_MAX_SHADERS &&
+      d3d->shader.pass[d3d->shader.passes - 1].fbo.valid;
+
+   if (use_extra_pass)
+   {
+      d3d->shader.passes++;
+      pass              = (video_shader_pass*)
+         &d3d->shader.pass[d3d->shader.passes - 1];
+
+      pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
+      pass->fbo.type_x  = pass->fbo.type_y = RARCH_SCALE_VIEWPORT;
+      pass->filter      = RARCH_FILTER_UNSPEC;
+   }
+   else
+   {
+      pass              = (video_shader_pass*)
+         &d3d->shader.pass[d3d->shader.passes - 1];
+
+      pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
+      pass->fbo.type_x  = pass->fbo.type_y = RARCH_SCALE_VIEWPORT;
+   }
+
+   return true;
+}
+#endif
+
 static bool d3d_process_shader(d3d_video_t *d3d)
 {
 #ifdef HAVE_FBO
@@ -1244,71 +1310,6 @@ static bool texture_image_render(d3d_video_t *d3d,
 
 #endif
 
-#ifdef HAVE_FBO
-static bool d3d_init_multipass(d3d_video_t *d3d)
-{
-   unsigned i;
-   bool use_extra_pass;
-   video_shader_pass *pass = NULL;
-   config_file_t *conf     = config_file_new(d3d->shader_path.c_str());
-
-   if (!conf)
-   {
-      RARCH_ERR("Failed to load preset.\n");
-      return false;
-   }
-
-   memset(&d3d->shader, 0, sizeof(d3d->shader));
-
-   if (!video_shader_read_conf_cgp(conf, &d3d->shader))
-   {
-      config_file_free(conf);
-      RARCH_ERR("Failed to parse CGP file.\n");
-      return false;
-   }
-
-   config_file_free(conf);
-
-   video_shader_resolve_relative(&d3d->shader, d3d->shader_path.c_str());
-
-   RARCH_LOG("[D3D9 Meta-Cg] Found %u shaders.\n", d3d->shader.passes);
-
-   for (i = 0; i < d3d->shader.passes; i++)
-   {
-      if (d3d->shader.pass[i].fbo.valid)
-         continue;
-
-      d3d->shader.pass[i].fbo.scale_y = 1.0f;
-      d3d->shader.pass[i].fbo.scale_x = 1.0f;
-      d3d->shader.pass[i].fbo.type_x  = RARCH_SCALE_INPUT;
-      d3d->shader.pass[i].fbo.type_y  = RARCH_SCALE_INPUT;
-   }
-
-   use_extra_pass       = d3d->shader.passes < GFX_MAX_SHADERS &&
-      d3d->shader.pass[d3d->shader.passes - 1].fbo.valid;
-
-   if (use_extra_pass)
-   {
-      d3d->shader.passes++;
-      pass              = (video_shader_pass*)
-         &d3d->shader.pass[d3d->shader.passes - 1];
-
-      pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
-      pass->fbo.type_x  = pass->fbo.type_y = RARCH_SCALE_VIEWPORT;
-      pass->filter      = RARCH_FILTER_UNSPEC;
-   }
-   else
-   {
-      pass              = (video_shader_pass*)
-         &d3d->shader.pass[d3d->shader.passes - 1];
-
-      pass->fbo.scale_x = pass->fbo.scale_y = 1.0f;
-      pass->fbo.type_x  = pass->fbo.type_y = RARCH_SCALE_VIEWPORT;
-   }
-
-   return true;
-}
-#endif
 
 
 #ifdef HAVE_OVERLAY
