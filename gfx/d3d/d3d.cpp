@@ -102,10 +102,6 @@ static void d3d_viewport_info(void *data, struct video_viewport *vp)
    d3d->renderchain_driver->viewport_info(d3d, vp);
 }
 
-#ifdef HAVE_OVERLAY
-static void d3d_free_overlays(d3d_video_t *d3d);
-#endif
-
 static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
 {
    struct video_viewport vp;
@@ -972,6 +968,20 @@ error:
    return NULL;
 }
 
+#ifdef HAVE_OVERLAY
+static void d3d_free_overlays(d3d_video_t *d3d)
+{
+   unsigned i;
+
+   if (!d3d)
+      return;
+
+   for (i = 0; i < d3d->overlays.size(); i++)
+      d3d_free_overlay(d3d, &d3d->overlays[i]);
+   d3d->overlays.clear();
+}
+#endif
+
 static void d3d_free(void *data)
 {
    d3d_video_t   *d3d = (d3d_video_t*)data;
@@ -1308,17 +1318,6 @@ static bool d3d_process_shader(d3d_video_t *d3d)
 }
 
 #ifdef HAVE_OVERLAY
-static void d3d_free_overlays(d3d_video_t *d3d)
-{
-   unsigned i;
-
-   if (!d3d)
-      return;
-
-   for (i = 0; i < d3d->overlays.size(); i++)
-      d3d_free_overlay(d3d, &d3d->overlays[i]);
-   d3d->overlays.clear();
-}
 
 static void d3d_overlay_tex_geom(
       void *data,
