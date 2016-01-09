@@ -195,7 +195,7 @@ static INLINE CGparameter find_param_from_semantic(
 }
 
 static bool d3d9_cg_load_program(void *data,
-      void *fragment_data, void *vertex_data, const std::string &shader)
+      void *fragment_data, void *vertex_data, const char *prog, bool path_is_file)
 {
    char *listing_f            = NULL;
    char *listing_v            = NULL;
@@ -210,22 +210,22 @@ static bool d3d9_cg_load_program(void *data,
    RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
    RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
 
-   if (shader.length() > 0)
+   if (path_is_file)
    {
       *fPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
-            shader.c_str(), fragment_profile, "main_fragment", fragment_opts);
+            prog, fragment_profile, "main_fragment", fragment_opts);
       CG_D3D_SET_LISTING(cg_data, f);
       *vPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
-            shader.c_str(), vertex_profile, "main_vertex", vertex_opts);
+            prog, vertex_profile, "main_vertex", vertex_opts);
       CG_D3D_SET_LISTING(cg_data, v);
    }
    else
    {
-      *fPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_cg_d3d9_program,
-            fragment_profile, "main_fragment", fragment_opts);
+      *fPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
+            prog, fragment_profile, "main_fragment", fragment_opts);
       CG_D3D_SET_LISTING(cg_data, f);
-      *vPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_cg_d3d9_program,
-            vertex_profile, "main_vertex", vertex_opts);
+      *vPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
+            prog, vertex_profile, "main_vertex", vertex_opts);
       CG_D3D_SET_LISTING(cg_data, v);
    }
 
@@ -862,7 +862,7 @@ static bool renderchain_create_first_pass(cg_renderchain_t *chain,
    }
 
    d3d9_cg_load_program(chain, &pass.fPrg,
-         &pass.vPrg, info->pass->source.path);
+         &pass.vPrg, info->pass->source.path.c_str(), true);
 
    if (!cg_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
@@ -895,7 +895,7 @@ static bool cg_d3d9_renderchain_init(void *data,
    if (!renderchain_create_first_pass(chain, info, fmt))
       return false;
    renderchain_log_info(chain, info);
-   if (!d3d9_cg_load_program(chain, &chain->fStock, &chain->vStock, ""))
+   if (!d3d9_cg_load_program(chain, &chain->fStock, &chain->vStock, stock_cg_d3d9_program, false))
       return false;
 
    return true;
@@ -1045,7 +1045,7 @@ static bool cg_d3d9_renderchain_add_pass(void *data, const void *info_data)
    pass.last_height         = 0;
 
    d3d9_cg_load_program(chain, &pass.fPrg, 
-        &pass.vPrg, info->pass->source.path);
+        &pass.vPrg, info->pass->source.path.c_str(), true);
 
    if (!cg_d3d9_renderchain_init_shader_fvf(chain, &pass))
       return false;
