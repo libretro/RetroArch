@@ -1780,7 +1780,7 @@ static void d3d_unload_texture(void *data, uintptr_t *id)
 	   return;
 
    d3d_texture_free(texid);
-   *id = NULL;
+   *id = 0;
 }
 
 static const video_poke_interface_t d3d_poke_interface = {
