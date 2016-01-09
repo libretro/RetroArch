@@ -187,13 +187,6 @@ static INLINE CGparameter find_param_from_semantic(
    return NULL;
 }
 
-static INLINE CGparameter find_param_from_semantic(CGprogram prog,
-      const char *sem)
-{
-   CGparameter param = cgGetFirstParameter(prog, CG_PROGRAM);
-   return find_param_from_semantic(param, sem);
-}
-
 static bool renderchain_compile_shaders(cg_renderchain_t *chain,
       void *fragment_data, void *vertex_data, const std::string &shader)
 {
@@ -366,9 +359,9 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    std::vector<bool> indices(count);
 
-   param = find_param_from_semantic(pass->vPrg, "POSITION");
+   param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "POSITION");
    if (!param)
-      param = find_param_from_semantic(pass->vPrg, "POSITION0");
+      param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "POSITION0");
 
    if (param)
    {
@@ -379,9 +372,9 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
       indices[index]  = true;
    }
 
-   param = find_param_from_semantic(pass->vPrg, "TEXCOORD");
+   param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD");
    if (!param)
-      param = find_param_from_semantic(pass->vPrg, "TEXCOORD0");
+      param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD0");
 
    if (param)
    {
@@ -393,7 +386,7 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
       indices[index]  = true;
    }
 
-   param = find_param_from_semantic(pass->vPrg, "TEXCOORD1");
+   param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD1");
    if (param)
    {
       stream_taken[2] = true;
@@ -404,9 +397,9 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
       indices[index]  = true;
    }
 
-   param = find_param_from_semantic(pass->vPrg, "COLOR");
+   param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "COLOR");
    if (!param)
-      param = find_param_from_semantic(pass->vPrg, "COLOR0");
+      param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "COLOR0");
 
    if (param)
    {
