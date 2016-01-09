@@ -988,6 +988,11 @@ static bool d3d_construct(d3d_video_t *d3d,
 #else
    gfx_ctx_get_video_size(&full_x, &full_y);
 #endif
+   {
+      unsigned new_width  = info->fullscreen ? full_x : info->width;
+      unsigned new_height = info->fullscreen ? full_y : info->height;
+      video_driver_set_size(&new_width, &new_height);
+   }
 
 #ifdef HAVE_WINDOW
    DWORD style;
@@ -1004,13 +1009,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    win32_set_window(&win_width, &win_height, info->fullscreen,
 	   windowed_full, &rect);
 #endif
-
-   if (!info->fullscreen)
-   {
-      full_x = info->width;
-      full_y = info->height;
-   }
-   video_driver_set_size(&full_x, &full_y);
 
 #ifdef HAVE_SHADERS
    /* This should only be done once here
