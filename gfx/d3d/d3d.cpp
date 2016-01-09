@@ -1041,25 +1041,8 @@ static bool d3d_construct(d3d_video_t *d3d,
    win32_window_create(d3d, style, &mon_rect, win_width,
          win_height, info->fullscreen);
 
-   if (!info->fullscreen || windowed_full)
-   {
-      HWND window = win32_get_window();
-
-      if (!info->fullscreen && settings->ui.menubar_enable)
-      {
-         RECT rc_temp = {0, 0, (LONG)win_height, 0x7FFF};
-
-         SetMenu(window, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
-         SendMessage(window, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
-         g_resize_height = win_height += rc_temp.top + rect.top;
-         SetWindowPos(window, NULL, 0, 0, win_width, win_height, SWP_NOMOVE);
-      }
-
-      ShowWindow(window, SW_RESTORE);
-      UpdateWindow(window);
-      SetForegroundWindow(window);
-      SetFocus(window);
-   }
+   win32_set_window(&win_width, &win_height, info->fullscreen,
+	   windowed_full, &rect);
 #endif
 
    win32_show_cursor(!info->fullscreen);

@@ -449,6 +449,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data)
 {
+#ifndef _XBOX
    settings_t *settings  = config_get_ptr();
    RECT *rect            = (RECT*)rect_data;
 
@@ -470,6 +471,7 @@ void win32_set_window(unsigned *width, unsigned *height,
    }
 
    win32_show_cursor(!fullscreen);
+#endif
 }
 
 bool win32_set_video_mode(void *data,
