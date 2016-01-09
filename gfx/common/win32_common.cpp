@@ -531,8 +531,6 @@ bool win32_set_video_mode(void *data,
    RECT mon_rect;
    unsigned mon_id;
    MONITORINFOEX current_mon;
-   float refresh_mod;
-   unsigned refresh;
    bool windowed_full;
    RECT rect             = {0};
    HMONITOR hm_to_use    = NULL;
@@ -544,45 +542,9 @@ bool win32_set_video_mode(void *data,
    g_resize_width  = width;
    g_resize_height = height;
 
-   /* Windows only reports the refresh rates for modelines as 
-    * an integer, so video.refresh_rate needs to be rounded. Also, account 
-    * for black frame insertion using video.refresh_rate set to half
-    * of the display refresh rate, as well as higher vsync swap intervals. */
-   refresh_mod = settings->video.black_frame_insertion ? 2.0f : 1.0f;
-   refresh     = roundf(settings->video.refresh_rate * refresh_mod * settings->video.swap_interval);
-
    windowed_full   = settings->video.windowed_fullscreen;
 
-   if (fullscreen)
-   {
-      if (windowed_full)
-      {
-         style = WS_EX_TOPMOST | WS_POPUP;
-         g_resize_width  = width  = mon_rect.right - mon_rect.left;
-         g_resize_height = height = mon_rect.bottom - mon_rect.top;
-      }
-      else
-      {
-         style = WS_POPUP | WS_VISIBLE;
-
-         if (!win32_monitor_set_fullscreen(width, height, refresh, current_mon.szDevice))
-            return false;
-
-         /* Display settings might have changed, get new coordinates. */
-         GetMonitorInfo(hm_to_use, (MONITORINFO*)&current_mon);
-         mon_rect = current_mon.rcMonitor;
-         g_restore_desktop = true;
-      }
-   }
-   else
-   {
-      style = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
-      rect.right  = width;
-      rect.bottom = height;
-      AdjustWindowRect(&rect, style, FALSE);
-      g_resize_width  = width  = rect.right - rect.left;
-      g_resize_height = height = rect.bottom - rect.top;
-   }
+   win32_set_style(&current_mon, &hm_to_use, &width, &height, fullscreen, windowed_full, &rect, &mon_rect, &style);
 
    if (!win32_window_create(data, style, &mon_rect, width, height, fullscreen))
       return false;
