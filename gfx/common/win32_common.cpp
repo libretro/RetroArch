@@ -447,9 +447,10 @@ bool win32_suppress_screensaver(void *data, bool enable)
 }
 
 void win32_set_window(unsigned *width, unsigned *height,
-      bool fullscreen, bool windowed_full)
+      bool fullscreen, bool windowed_full, void *rect_data)
 {
    settings_t *settings  = config_get_ptr();
+   RECT *rect            = (RECT*)rect_data;
 
    if (!fullscreen || windowed_full)
    {
@@ -458,7 +459,7 @@ void win32_set_window(unsigned *width, unsigned *height,
          RECT rc_temp = {0, 0, (LONG)*height, 0x7FFF};
          SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
          SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
-         g_resize_height = *height += rc_temp.top + rect.top;
+         g_resize_height = *height += rc_temp.top + rect->top;
          SetWindowPos(g_hwnd, NULL, 0, 0, *width, *height, SWP_NOMOVE);
       }
 
@@ -537,7 +538,7 @@ bool win32_set_video_mode(void *data,
    if (!win32_window_create(data, style, &mon_rect, width, height, fullscreen))
       return false;
    
-   win32_set_window(&width, &height, fullscreen, windowed_full);
+   win32_set_window(&width, &height, fullscreen, windowed_full, &rect);
 
    /* Wait until context is created (or failed to do so ...) */
    while (!g_inited && !g_quit && GetMessage(&msg, g_hwnd, 0, 0))

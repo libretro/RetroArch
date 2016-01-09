@@ -96,7 +96,7 @@ void win32_check_window(bool *quit,
       bool *resize, unsigned *width, unsigned *height);
 
 void win32_set_window(unsigned *width, unsigned *height,
-      bool fullscreen, bool windowed_full);
+      bool fullscreen, bool windowed_full, void *rect_data);
 
 void win32_window_reset(void);
 
