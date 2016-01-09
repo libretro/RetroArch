@@ -571,7 +571,7 @@ static void renderchain_bind_prev(void *data, void *pass_data)
    }
 }
 
-static void cg_d3d9_renderchain_add_lut(void *data,
+static void cg_d3d9_renderchain_add_lut_internal(void *data,
       unsigned index, unsigned i)
 {
    cg_renderchain_t *chain = (cg_renderchain_t*)data;
@@ -1343,7 +1343,7 @@ static void renderchain_render_pass(
          index           = cgGetParameterResourceIndex(fparam);
          bound_index     = index;
 
-         cg_d3d9_renderchain_add_lut(chain, index, i);
+         cg_d3d9_renderchain_add_lut_internal(chain, index, i);
       }
 
       vparam             = cgGetNamedParameter(pass->vPrg, chain->luts[i].id);
@@ -1352,7 +1352,7 @@ static void renderchain_render_pass(
       {
          index           = cgGetParameterResourceIndex(vparam);
          if (index != (unsigned)bound_index)
-            cg_d3d9_renderchain_add_lut(chain, index, i);
+            cg_d3d9_renderchain_add_lut_internal(chain, index, i);
       }
    }
 
