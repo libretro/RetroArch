@@ -1324,11 +1324,11 @@ static void renderchain_render_pass(
       d3d_set_stream_source(chain->dev, i,
             pass->vertex_buf, 0, sizeof(Vertex));
 
+   /* Set orig texture. */
    renderchain_bind_orig(chain, pass);
 
+   /* Set prev textures. */
    renderchain_bind_prev(chain, pass);
-
-   renderchain_bind_pass(chain, pass, pass_index);
 
    /* Set lookup textures */
    for (i = 0; i < chain->luts.size(); i++)
@@ -1355,6 +1355,8 @@ static void renderchain_render_pass(
             cg_d3d9_renderchain_add_lut_internal(chain, index, i);
       }
    }
+
+   renderchain_bind_pass(chain, pass, pass_index);
 
    /* Set state parameters. */
    if (chain->state_tracker)
