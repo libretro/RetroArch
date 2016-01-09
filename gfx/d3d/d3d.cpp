@@ -1583,7 +1583,6 @@ static bool d3d_read_viewport(void *data, uint8_t *buffer)
 static bool d3d_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
-   bool restore_old   = false;
    d3d_video_t *d3d   = (d3d_video_t*)data;
    std::string shader = "";
 
@@ -1606,17 +1605,13 @@ static bool d3d_set_shader(void *data,
    if (!d3d_process_shader(d3d) || !d3d_restore(d3d))
    {
       RARCH_ERR("[D3D]: Setting shader failed.\n");
-      restore_old = true;
-   }
-
-   if (restore_old)
-   {
       d3d->shader_path = old_shader;
       d3d_process_shader(d3d);
       d3d_restore(d3d);
+      return false;
    }
 
-   return !restore_old;
+   return true;
 }
 
 #ifdef HAVE_MENU
