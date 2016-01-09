@@ -187,56 +187,64 @@ static INLINE CGparameter find_param_from_semantic(
    return NULL;
 }
 
-static bool renderchain_compile_shaders(cg_renderchain_t *chain,
+#define CG_D3D_SET_LISTING(cg_data, type) \
+{ \
+   const char *list = cgGetLastListing(cg_data->cgCtx); \
+   if (list) \
+      listing_##type = strdup(list); \
+}
+
+static bool renderchain_compile_shaders(void *data,
       void *fragment_data, void *vertex_data, const std::string &shader)
 {
+   char *listing_f            = NULL;
+   char *listing_v            = NULL;
    CGprogram *fPrg            = (CGprogram*)fragment_data;
    CGprogram *vPrg            = (CGprogram*)vertex_data;
    CGprofile vertex_profile   = cgD3D9GetLatestVertexProfile();
    CGprofile fragment_profile = cgD3D9GetLatestPixelProfile();
    const char **fragment_opts = cgD3D9GetOptimalOptions(fragment_profile);
    const char **vertex_opts   = cgD3D9GetOptimalOptions(vertex_profile);
+   cg_renderchain_t *cg_data  = (cg_renderchain_t*)data;
 
    RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
    RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
 
    if (shader.length() > 0)
    {
-      RARCH_LOG("[D3D Cg]: Compiling shader: %s.\n", shader.c_str());
-      *fPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
+      *fPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
             shader.c_str(), fragment_profile, "main_fragment", fragment_opts);
-
-      if (cgGetLastListing(chain->cgCtx))
-         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(chain->cgCtx));
-
-      *vPrg = cgCreateProgramFromFile(chain->cgCtx, CG_SOURCE,
+      CG_D3D_SET_LISTING(cg_data, f);
+      *vPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
             shader.c_str(), vertex_profile, "main_vertex", vertex_opts);
-
-      if (cgGetLastListing(chain->cgCtx))
-         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(chain->cgCtx));
+      CG_D3D_SET_LISTING(cg_data, v);
    }
    else
    {
-      RARCH_LOG("[D3D Cg]: Compiling stock shader.\n");
-
-      *fPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_program,
+      *fPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_program,
             fragment_profile, "main_fragment", fragment_opts);
-
-      if (cgGetLastListing(chain->cgCtx))
-         RARCH_ERR("[D3D Cg]: Fragment error:\n%s\n", cgGetLastListing(chain->cgCtx));
-
-      *vPrg = cgCreateProgram(chain->cgCtx, CG_SOURCE, stock_program,
+      CG_D3D_SET_LISTING(cg_data, f);
+      *vPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_program,
             vertex_profile, "main_vertex", vertex_opts);
-
-      if (cgGetLastListing(chain->cgCtx))
-         RARCH_ERR("[D3D Cg]: Vertex error:\n%s\n", cgGetLastListing(chain->cgCtx));
+      CG_D3D_SET_LISTING(cg_data, v);
    }
 
    if (!fPrg || !vPrg)
+   {
+      RARCH_ERR("CG error: %s\n", cgGetErrorString(cgGetError()));
+      if (listing_f)
+         RARCH_ERR("Fragment:\n%s\n", listing_f);
+      else if (listing_v)
+         RARCH_ERR("Vertex:\n%s\n", listing_v);
+      free(listing_f);
+      free(listing_v);
       return false;
+   }
 
    cgD3D9LoadProgram(*fPrg, true, 0);
    cgD3D9LoadProgram(*vPrg, true, 0);
+   free(listing_f);
+   free(listing_v);
    return true;
 }
 

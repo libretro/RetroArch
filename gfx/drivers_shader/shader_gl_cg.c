@@ -449,7 +449,7 @@ static void gl_cg_deinit(void *data)
    free(cg_data);
 }
 
-#define SET_LISTING(cg_data, type) \
+#define CG_GL_SET_LISTING(cg_data, type) \
 { \
    const char *list = cgGetLastListing(cg_data->cgCtx); \
    if (list) \
@@ -477,19 +477,19 @@ static bool gl_cg_load_program(void *data, unsigned idx, const char *prog, bool 
    {
       cg_data->prg[idx].fprg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
             prog, cg_data->cgFProf, "main_fragment", argv);
-      SET_LISTING(cg_data, f);
+      CG_GL_SET_LISTING(cg_data, f);
       cg_data->prg[idx].vprg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
             prog, cg_data->cgVProf, "main_vertex", argv);
-      SET_LISTING(cg_data, v);
+      CG_GL_SET_LISTING(cg_data, v);
    }
    else
    {
       cg_data->prg[idx].fprg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
             prog, cg_data->cgFProf, "main_fragment", argv);
-      SET_LISTING(cg_data, f);
+      CG_GL_SET_LISTING(cg_data, f);
       cg_data->prg[idx].vprg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
             prog, cg_data->cgVProf, "main_vertex", argv);
-      SET_LISTING(cg_data, v);
+      CG_GL_SET_LISTING(cg_data, v);
    }
 
    if (!cg_data->prg[idx].fprg || !cg_data->prg[idx].vprg)
