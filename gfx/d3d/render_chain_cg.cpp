@@ -106,7 +106,7 @@ static INLINE D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
    return D3DTEXF_POINT;
 }
 
-static const char *stock_program =
+static const char *stock_cg_d3d9_program =
     "void main_vertex"
     "("
     "	float4 position : POSITION,"
@@ -221,10 +221,10 @@ static bool d3d9_cg_load_program(void *data,
    }
    else
    {
-      *fPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_program,
+      *fPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_cg_d3d9_program,
             fragment_profile, "main_fragment", fragment_opts);
       CG_D3D_SET_LISTING(cg_data, f);
-      *vPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_program,
+      *vPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_cg_d3d9_program,
             vertex_profile, "main_vertex", vertex_opts);
       CG_D3D_SET_LISTING(cg_data, v);
    }

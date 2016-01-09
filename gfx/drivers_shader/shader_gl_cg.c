@@ -56,7 +56,7 @@
 
 /* Used when we call deactivate() since just unbinding 
  * the program didn't seem to work... */
-static const char *stock_cg_program =
+static const char *stock_cg_gl_program =
       "struct input"
       "{"
       "  float2 tex_coord;"
@@ -565,7 +565,7 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
 
 static bool gl_cg_load_stock(void *data)
 {
-   if (!gl_cg_load_program(data, 0, stock_cg_program, false))
+   if (!gl_cg_load_program(data, 0, stock_cg_gl_program, false))
    {
       RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
