@@ -1086,14 +1086,6 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
    if (!d3d->renderchain_driver || !d3d->renderchain_data)
 	   return false;
 
-   RARCH_LOG("Renderchain driver: %s\n", d3d->renderchain_driver->ident);
-
-   if (!d3d->renderchain_driver->init_shader(d3d, d3d->renderchain_data))
-   {
-      RARCH_ERR("Failed to initialize shader subsystem.\n");
-      return false;
-   }
-
    if (
          !d3d->renderchain_driver->init(
             d3d,
@@ -1105,6 +1097,8 @@ static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
       RARCH_ERR("[D3D]: Failed to init render chain.\n");
       return false;
    }
+
+   RARCH_LOG("Renderchain driver: %s\n", d3d->renderchain_driver->ident);
 
 #ifndef _XBOX
    current_width  = link_info.tex_w;

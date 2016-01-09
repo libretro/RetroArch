@@ -881,9 +881,14 @@ static bool cg_d3d9_renderchain_init(void *data,
    cg_renderchain_t *chain        = (cg_renderchain_t*)d3d->renderchain_data;
    const video_info_t *video_info = (const video_info_t*)_video_info;
    unsigned fmt                   = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
-
+   
    if (!chain)
       return false;
+   if (!cg_d3d9_renderchain_init_shader(d3d, chain))
+   {
+      RARCH_ERR("Failed to initialize shader subsystem.\n");
+      return false;
+   }
 
    chain->dev            = (LPDIRECT3DDEVICE)dev_;
    chain->video_info     = video_info;
@@ -1618,7 +1623,6 @@ static void cg_d3d9_renderchain_viewport_info(void *data, struct video_viewport 
 renderchain_driver_t cg_d3d9_renderchain = {
    cg_d3d9_renderchain_free,
    cg_d3d9_renderchain_new,
-   cg_d3d9_renderchain_init_shader,
    NULL,
    cg_d3d9_renderchain_init,
    cg_d3d9_renderchain_set_final_viewport,

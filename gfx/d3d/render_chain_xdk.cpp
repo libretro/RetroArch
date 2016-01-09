@@ -292,6 +292,7 @@ static bool xdk_renderchain_init_shader(void *data, void *renderchain_data)
    const char *shader_path = NULL;
    settings_t *settings    = config_get_ptr();
 #endif
+   (void)renderchain_data;
 
    if (!d3d)
       return false;
@@ -324,6 +325,9 @@ static bool xdk_renderchain_init(void *data,
    unsigned fmt                 = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
    struct video_viewport *custom_vp = video_viewport_get_custom();
    (void)final_viewport_data;
+   
+   if (!xdk_renderchain_init_shader(d3d, NULL))
+      return false;
 
    video_driver_get_size(&width, &height);
 

@@ -36,13 +36,6 @@ static void *null_renderchain_new(void)
    return renderchain;
 }
 
-static bool null_renderchain_init_shader(void *data, void *renderchain_data)
-{
-   (void)data;
-
-   return true;
-}
-
 static bool null_renderchain_init(void *data,
       const void *info,
       void *dev_data,
@@ -126,7 +119,6 @@ static void null_renderchain_convert_geometry(
 renderchain_driver_t null_renderchain = {
    null_renderchain_free,
    null_renderchain_new,
-   null_renderchain_init_shader,
    NULL,
    null_renderchain_init,
    null_renderchain_set_final_viewport,
