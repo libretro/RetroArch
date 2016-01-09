@@ -194,7 +194,7 @@ static INLINE CGparameter find_param_from_semantic(
       listing_##type = strdup(list); \
 }
 
-static bool renderchain_compile_shaders(void *data,
+static bool d3d9_cg_load_program(void *data,
       void *fragment_data, void *vertex_data, const std::string &shader)
 {
    char *listing_f            = NULL;
@@ -861,7 +861,7 @@ static bool renderchain_create_first_pass(cg_renderchain_t *chain,
       d3d_set_texture(chain->dev, 0, NULL);
    }
 
-   renderchain_compile_shaders(chain, &pass.fPrg,
+   d3d9_cg_load_program(chain, &pass.fPrg,
          &pass.vPrg, info->pass->source.path);
 
    if (!cg_d3d9_renderchain_init_shader_fvf(chain, &pass))
@@ -895,7 +895,7 @@ static bool cg_d3d9_renderchain_init(void *data,
    if (!renderchain_create_first_pass(chain, info, fmt))
       return false;
    renderchain_log_info(chain, info);
-   if (!renderchain_compile_shaders(chain, &chain->fStock, &chain->vStock, ""))
+   if (!d3d9_cg_load_program(chain, &chain->fStock, &chain->vStock, ""))
       return false;
 
    return true;
@@ -1044,7 +1044,7 @@ static bool cg_d3d9_renderchain_add_pass(void *data, const void *info_data)
    pass.last_width          = 0;
    pass.last_height         = 0;
 
-   renderchain_compile_shaders(chain, &pass.fPrg, 
+   d3d9_cg_load_program(chain, &pass.fPrg, 
         &pass.vPrg, info->pass->source.path);
 
    if (!cg_d3d9_renderchain_init_shader_fvf(chain, &pass))
