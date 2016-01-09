@@ -18,7 +18,6 @@
 #include <string.h>
 #include <math.h>
 
-#include <string>
 #include <vector>
 
 #include <Cg/cg.h>
