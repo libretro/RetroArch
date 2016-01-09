@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #include "d3d_common.h"
