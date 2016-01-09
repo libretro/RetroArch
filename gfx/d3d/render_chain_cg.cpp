@@ -195,7 +195,7 @@ static INLINE CGparameter find_param_from_semantic(
 }
 
 static bool d3d9_cg_load_program(void *data,
-      void *fragment_data, void *vertex_data, const char *shader, bool path_is_file)
+      void *fragment_data, void *vertex_data, const char *prog, bool path_is_file)
 {
    char *listing_f            = NULL;
    char *listing_v            = NULL;
@@ -210,13 +210,13 @@ static bool d3d9_cg_load_program(void *data,
    RARCH_LOG("[D3D Cg]: Vertex profile: %s\n", cgGetProfileString(vertex_profile));
    RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
 
-   if (path_is_file && !string_is_empty(shader))
+   if (path_is_file && !string_is_empty(prog))
    {
       *fPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
-            shader, fragment_profile, "main_fragment", fragment_opts);
+            prog, fragment_profile, "main_fragment", fragment_opts);
       CG_D3D_SET_LISTING(cg_data, f);
       *vPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
-            shader, vertex_profile, "main_vertex", vertex_opts);
+            prog, vertex_profile, "main_vertex", vertex_opts);
       CG_D3D_SET_LISTING(cg_data, v);
    }
    else
