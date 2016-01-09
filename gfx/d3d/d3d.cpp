@@ -88,6 +88,46 @@ static bool d3d_init_luts(d3d_video_t *d3d)
    return true;
 }
 
+#ifndef DONT_HAVE_STATE_TRACKER
+static bool d3d_init_imports(d3d_video_t *d3d)
+{
+   state_tracker_t *state_tracker = NULL;
+   state_tracker_info tracker_info = {0};
+
+   if (!d3d->shader.variables)
+      return true;
+   if (!d3d->renderchain_driver->add_state_tracker)
+      return true;
+
+   tracker_info.wram      = (uint8_t*)
+      core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+   tracker_info.info      = d3d->shader.variable;
+   tracker_info.info_elem = d3d->shader.variables;
+
+#ifdef HAVE_PYTHON
+   if (*d3d->shader.script_path)
+   {
+      tracker_info.script = d3d->shader.script_path;
+      tracker_info.script_is_file = true;
+   }
+
+   tracker_info.script_class =
+      *d3d->shader.script_class ? d3d->shader.script_class : NULL;
+#endif
+
+   state_tracker = state_tracker_init(&tracker_info);
+   if (!state_tracker)
+   {
+      RARCH_ERR("Failed to initialize state tracker.\n");
+      return false;
+   }
+
+   d3d->renderchain_driver->add_state_tracker(d3d->renderchain_data, state_tracker);
+
+   return true;
+}
+#endif
+
 static bool d3d_init_chain(d3d_video_t *d3d, const video_info_t *video_info)
 {
    unsigned current_width, current_height, out_width, out_height;
@@ -1204,45 +1244,6 @@ static void d3d_free(void *data)
    win32_destroy_window();
 }
 
-#ifndef DONT_HAVE_STATE_TRACKER
-static bool d3d_init_imports(d3d_video_t *d3d)
-{
-   state_tracker_t *state_tracker = NULL;
-   state_tracker_info tracker_info = {0};
-
-   if (!d3d->shader.variables)
-      return true;
-   if (!d3d->renderchain_driver->add_state_tracker)
-      return true;
-
-   tracker_info.wram      = (uint8_t*)
-      core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
-   tracker_info.info      = d3d->shader.variable;
-   tracker_info.info_elem = d3d->shader.variables;
-
-#ifdef HAVE_PYTHON
-   if (*d3d->shader.script_path)
-   {
-      tracker_info.script = d3d->shader.script_path;
-      tracker_info.script_is_file = true;
-   }
-
-   tracker_info.script_class =
-      *d3d->shader.script_class ? d3d->shader.script_class : NULL;
-#endif
-
-   state_tracker = state_tracker_init(&tracker_info);
-   if (!state_tracker)
-   {
-      RARCH_ERR("Failed to initialize state tracker.\n");
-      return false;
-   }
-
-   d3d->renderchain_driver->add_state_tracker(d3d->renderchain_data, state_tracker);
-
-   return true;
-}
-#endif
 
 
 #ifdef _XBOX
