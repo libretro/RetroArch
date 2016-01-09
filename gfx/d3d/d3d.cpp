@@ -92,13 +92,150 @@ static bool d3d_process_shader(d3d_video_t *d3d);
 static bool d3d_init_chain(d3d_video_t *d3d,
       const video_info_t *video_info);
 
+static void d3d_viewport_info(void *data, struct video_viewport *vp)
+{
+   d3d_video_t *d3d   = (d3d_video_t*)data;
+
+   if (!d3d || !d3d->renderchain_driver || !d3d->renderchain_driver->viewport_info)
+      return;
+
+   d3d->renderchain_driver->viewport_info(d3d, vp);
+}
+
 #ifdef HAVE_OVERLAY
 static void d3d_free_overlays(d3d_video_t *d3d);
 #endif
 
-#ifdef HAVE_MENU
-static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay);
+static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
+{
+   struct video_viewport vp;
+   unsigned width, height;
+   void *verts;
+   unsigned i;
+   float vert[4][9];
+   float overlay_width, overlay_height;
+#ifndef _XBOX1
+   LPDIRECT3DVERTEXDECLARATION vertex_decl;
+   /* set vertex declaration for overlay. */
+   D3DVERTEXELEMENT vElems[4] = {
+      {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_POSITION, 0},
+      {0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_TEXCOORD, 0},
+      {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT,
+         D3DDECLUSAGE_COLOR, 0},
+      D3DDECL_END()
+   };
 #endif
+
+   if (!d3d)
+      return;
+   if (!overlay || !overlay->tex)
+      return;
+
+   if (!overlay->vert_buf)
+   {
+      overlay->vert_buf = d3d_vertex_buffer_new(
+      d3d->dev, sizeof(vert), 0, 0, D3DPOOL_MANAGED, NULL);
+
+	  if (!overlay->vert_buf)
+		  return;
+   }
+
+   for (i = 0; i < 4; i++)
+   {
+      vert[i][2]   = 0.5f;
+      vert[i][5]   = 1.0f;
+      vert[i][6]   = 1.0f;
+      vert[i][7]   = 1.0f;
+      vert[i][8]   = overlay->alpha_mod;
+   }
+   
+   d3d_viewport_info(d3d, &vp);
+
+   overlay_width  = vp.width;
+   overlay_height = vp.height;
+
+   vert[0][0]      = overlay->vert_coords[0] * overlay_width;
+   vert[1][0]      = (overlay->vert_coords[0] + overlay->vert_coords[2])
+      * overlay_width;
+   vert[2][0]      = overlay->vert_coords[0] * overlay_width;
+   vert[3][0]      = (overlay->vert_coords[0] + overlay->vert_coords[2])
+      * overlay_width;
+   vert[0][1]      = overlay->vert_coords[1] * overlay_height;
+   vert[1][1]      = overlay->vert_coords[1] * overlay_height;
+   vert[2][1]      = (overlay->vert_coords[1] + overlay->vert_coords[3])
+      * overlay_height;
+   vert[3][1]      = (overlay->vert_coords[1] + overlay->vert_coords[3])
+      * overlay_height;
+
+   vert[0][3]      = overlay->tex_coords[0];
+   vert[1][3]      = overlay->tex_coords[0] + overlay->tex_coords[2];
+   vert[2][3]      = overlay->tex_coords[0];
+   vert[3][3]      = overlay->tex_coords[0] + overlay->tex_coords[2];
+   vert[0][4]      = overlay->tex_coords[1];
+   vert[1][4]      = overlay->tex_coords[1];
+   vert[2][4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
+   vert[3][4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
+
+   /* Align texels and vertices. */
+   for (i = 0; i < 4; i++)
+   {
+      vert[i][0]  -= 0.5f;
+      vert[i][1]  += 0.5f;
+   }
+
+   overlay->vert_buf->Lock(0, sizeof(vert), &verts, 0);
+   memcpy(verts, vert, sizeof(vert));
+   d3d_vertex_buffer_unlock(overlay->vert_buf);
+
+   d3d_enable_blend_func(d3d->dev);
+
+#ifndef _XBOX1
+   d3d->dev->CreateVertexDeclaration(vElems, &vertex_decl);
+   d3d_set_vertex_declaration(d3d->dev, vertex_decl);
+   vertex_decl->Release();
+#endif
+
+   d3d_set_stream_source(d3d->dev, 0, overlay->vert_buf,
+         0, sizeof(*vert));
+
+   video_driver_get_size(&width, &height);
+
+   if (overlay->fullscreen)
+   {
+      D3DVIEWPORT vp_full;
+
+      vp_full.X      = 0;
+      vp_full.Y      = 0;
+      vp_full.Width  = width;
+      vp_full.Height = height;
+      vp_full.MinZ   = 0.0f;
+      vp_full.MaxZ   = 1.0f;
+      d3d_set_viewports(d3d->dev, &vp_full);
+   }
+
+   /* Render overlay. */
+   d3d_set_texture(d3d->dev, 0, overlay->tex);
+   d3d_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_BORDER);
+   d3d_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_BORDER);
+   d3d_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_LINEAR);
+   d3d_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_LINEAR);
+   d3d_draw_primitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
+
+   /* Restore previous state. */
+   d3d_disable_blend_func(d3d->dev);
+   d3d_set_viewports(d3d->dev, &d3d->final_viewport);
+}
+
+static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
+{
+   if (!d3d)
+      return;
+
+   d3d_texture_free(overlay->tex);
+   d3d_vertex_buffer_free(overlay->vert_buf, NULL);
+}
 
 static void d3d_deinit_chain(d3d_video_t *d3d)
 {
@@ -729,16 +866,6 @@ static bool d3d_construct(d3d_video_t *d3d,
    return true;
 }
 
-static void d3d_viewport_info(void *data, struct video_viewport *vp)
-{
-   d3d_video_t *d3d   = (d3d_video_t*)data;
-
-   if (!d3d || !d3d->renderchain_driver || !d3d->renderchain_driver->viewport_info)
-      return;
-
-   d3d->renderchain_driver->viewport_info(d3d, vp);
-}
-
 static void d3d_set_rotation(void *data, unsigned rot)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
@@ -1179,139 +1306,6 @@ static bool d3d_process_shader(d3d_video_t *d3d)
 
    return d3d_init_singlepass(d3d);
 }
-
-#ifdef HAVE_MENU
-static void d3d_overlay_render(d3d_video_t *d3d, overlay_t *overlay)
-{
-   struct video_viewport vp;
-   unsigned width, height;
-   void *verts;
-   unsigned i;
-   float vert[4][9];
-   float overlay_width, overlay_height;
-#ifndef _XBOX1
-   LPDIRECT3DVERTEXDECLARATION vertex_decl;
-   /* set vertex declaration for overlay. */
-   D3DVERTEXELEMENT vElems[4] = {
-      {0, 0,  D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT,
-         D3DDECLUSAGE_POSITION, 0},
-      {0, 12, D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT,
-         D3DDECLUSAGE_TEXCOORD, 0},
-      {0, 20, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT,
-         D3DDECLUSAGE_COLOR, 0},
-      D3DDECL_END()
-   };
-#endif
-
-   if (!d3d)
-      return;
-   if (!overlay || !overlay->tex)
-      return;
-
-   if (!overlay->vert_buf)
-   {
-      overlay->vert_buf = d3d_vertex_buffer_new(
-      d3d->dev, sizeof(vert), 0, 0, D3DPOOL_MANAGED, NULL);
-
-	  if (!overlay->vert_buf)
-		  return;
-   }
-
-   for (i = 0; i < 4; i++)
-   {
-      vert[i][2]   = 0.5f;
-      vert[i][5]   = 1.0f;
-      vert[i][6]   = 1.0f;
-      vert[i][7]   = 1.0f;
-      vert[i][8]   = overlay->alpha_mod;
-   }
-   
-   d3d_viewport_info(d3d, &vp);
-
-   overlay_width  = vp.width;
-   overlay_height = vp.height;
-
-   vert[0][0]      = overlay->vert_coords[0] * overlay_width;
-   vert[1][0]      = (overlay->vert_coords[0] + overlay->vert_coords[2])
-      * overlay_width;
-   vert[2][0]      = overlay->vert_coords[0] * overlay_width;
-   vert[3][0]      = (overlay->vert_coords[0] + overlay->vert_coords[2])
-      * overlay_width;
-   vert[0][1]      = overlay->vert_coords[1] * overlay_height;
-   vert[1][1]      = overlay->vert_coords[1] * overlay_height;
-   vert[2][1]      = (overlay->vert_coords[1] + overlay->vert_coords[3])
-      * overlay_height;
-   vert[3][1]      = (overlay->vert_coords[1] + overlay->vert_coords[3])
-      * overlay_height;
-
-   vert[0][3]      = overlay->tex_coords[0];
-   vert[1][3]      = overlay->tex_coords[0] + overlay->tex_coords[2];
-   vert[2][3]      = overlay->tex_coords[0];
-   vert[3][3]      = overlay->tex_coords[0] + overlay->tex_coords[2];
-   vert[0][4]      = overlay->tex_coords[1];
-   vert[1][4]      = overlay->tex_coords[1];
-   vert[2][4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
-   vert[3][4]      = overlay->tex_coords[1] + overlay->tex_coords[3];
-
-   /* Align texels and vertices. */
-   for (i = 0; i < 4; i++)
-   {
-      vert[i][0]  -= 0.5f;
-      vert[i][1]  += 0.5f;
-   }
-
-   overlay->vert_buf->Lock(0, sizeof(vert), &verts, 0);
-   memcpy(verts, vert, sizeof(vert));
-   d3d_vertex_buffer_unlock(overlay->vert_buf);
-
-   d3d_enable_blend_func(d3d->dev);
-
-#ifndef _XBOX1
-   d3d->dev->CreateVertexDeclaration(vElems, &vertex_decl);
-   d3d_set_vertex_declaration(d3d->dev, vertex_decl);
-   vertex_decl->Release();
-#endif
-
-   d3d_set_stream_source(d3d->dev, 0, overlay->vert_buf,
-         0, sizeof(*vert));
-
-   video_driver_get_size(&width, &height);
-
-   if (overlay->fullscreen)
-   {
-      D3DVIEWPORT vp_full;
-
-      vp_full.X      = 0;
-      vp_full.Y      = 0;
-      vp_full.Width  = width;
-      vp_full.Height = height;
-      vp_full.MinZ   = 0.0f;
-      vp_full.MaxZ   = 1.0f;
-      d3d_set_viewports(d3d->dev, &vp_full);
-   }
-
-   /* Render overlay. */
-   d3d_set_texture(d3d->dev, 0, overlay->tex);
-   d3d_set_sampler_address_u(d3d->dev, 0, D3DTADDRESS_BORDER);
-   d3d_set_sampler_address_v(d3d->dev, 0, D3DTADDRESS_BORDER);
-   d3d_set_sampler_minfilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   d3d_set_sampler_magfilter(d3d->dev, 0, D3DTEXF_LINEAR);
-   d3d_draw_primitive(d3d->dev, D3DPT_TRIANGLESTRIP, 0, 2);
-
-   /* Restore previous state. */
-   d3d_disable_blend_func(d3d->dev);
-   d3d_set_viewports(d3d->dev, &d3d->final_viewport);
-}
-
-static void d3d_free_overlay(d3d_video_t *d3d, overlay_t *overlay)
-{
-   if (!d3d)
-      return;
-
-   d3d_texture_free(overlay->tex);
-   d3d_vertex_buffer_free(overlay->vert_buf, NULL);
-}
-#endif
 
 #ifdef HAVE_OVERLAY
 static void d3d_free_overlays(d3d_video_t *d3d)
