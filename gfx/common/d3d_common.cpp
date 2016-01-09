@@ -509,3 +509,22 @@ void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d)
    if (pd3d)
       pd3d->Release();
 }
+
+D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type)
+{
+   settings_t *settings = config_get_ptr();
+
+   switch (type)
+   {
+      case RARCH_FILTER_UNSPEC:
+         if (!settings->video.smooth)
+            break;
+         /* fall-through */
+      case RARCH_FILTER_LINEAR:
+         return D3DTEXF_LINEAR;
+      case RARCH_FILTER_NEAREST:
+         break;
+   }
+
+   return D3DTEXF_POINT;
+}

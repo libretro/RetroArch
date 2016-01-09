@@ -87,24 +87,6 @@ typedef struct cg_renderchain
    CGcontext cgCtx;
 } cg_renderchain_t;
 
-static INLINE D3DTEXTUREFILTERTYPE translate_filter(unsigned type)
-{
-   settings_t *settings = config_get_ptr();
-
-   switch (type)
-   {
-      case RARCH_FILTER_UNSPEC:
-         if (!settings->video.smooth)
-            break;
-         /* fall-through */
-      case RARCH_FILTER_LINEAR:
-         return D3DTEXF_LINEAR;
-      case RARCH_FILTER_NEAREST:
-         break;
-   }
-
-   return D3DTEXF_POINT;
-}
 
 static const char *stock_cg_d3d9_program =
     "void main_vertex"
@@ -156,7 +138,7 @@ static INLINE bool validate_param_name(const char *name)
    return true;
 }
 
-static INLINE CGparameter find_param_from_semantic(
+static INLINE CGparameter d3d9_cg_find_param_from_semantic(
       CGparameter param, const char *sem)
 {
    for (; param; param = cgGetNextParameter(param))
@@ -471,9 +453,9 @@ static void renderchain_bind_orig(cg_renderchain_t *chain, void *pass_data)
       index = cgGetParameterResourceIndex(param);
       d3d_set_texture(chain->dev, index, chain->passes[0].tex);
       d3d_set_sampler_magfilter(chain->dev, index,
-            translate_filter(chain->passes[0].info.pass->filter));
+            d3d_translate_filter(chain->passes[0].info.pass->filter));
       d3d_set_sampler_minfilter(chain->dev, index, 
-            translate_filter(chain->passes[0].info.pass->filter));
+            d3d_translate_filter(chain->passes[0].info.pass->filter));
       d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
       d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       chain->bound_tex.push_back(index);
@@ -546,9 +528,9 @@ static void renderchain_bind_prev(void *data, void *pass_data)
          chain->bound_tex.push_back(index);
 
          d3d_set_sampler_magfilter(chain->dev, index,
-               translate_filter(chain->passes[0].info.pass->filter));
+               d3d_translate_filter(chain->passes[0].info.pass->filter));
          d3d_set_sampler_minfilter(chain->dev, index, 
-               translate_filter(chain->passes[0].info.pass->filter));
+               d3d_translate_filter(chain->passes[0].info.pass->filter));
          d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
          d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
@@ -576,9 +558,9 @@ static void cg_d3d9_renderchain_add_lut_internal(void *data,
 
    d3d_set_texture(chain->dev, index, chain->luts[i].tex);
    d3d_set_sampler_magfilter(chain->dev, index,
-         translate_filter(chain->luts[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
+         d3d_translate_filter(chain->luts[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    d3d_set_sampler_minfilter(chain->dev, index, 
-         translate_filter(chain->luts[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
+         d3d_translate_filter(chain->luts[i].smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST));
    d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
    d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
    chain->bound_tex.push_back(index);
@@ -627,9 +609,9 @@ static void renderchain_bind_pass(cg_renderchain_t *chain,
 
          d3d_set_texture(chain->dev, index, chain->passes[i].tex);
          d3d_set_sampler_magfilter(chain->dev, index,
-               translate_filter(chain->passes[i].info.pass->filter));
+               d3d_translate_filter(chain->passes[i].info.pass->filter));
          d3d_set_sampler_minfilter(chain->dev, index, 
-               translate_filter(chain->passes[i].info.pass->filter));
+               d3d_translate_filter(chain->passes[i].info.pass->filter));
          d3d_set_sampler_address_u(chain->dev, index, D3DTADDRESS_BORDER);
          d3d_set_sampler_address_v(chain->dev, index, D3DTADDRESS_BORDER);
       }
@@ -853,9 +835,9 @@ static bool renderchain_create_first_pass(cg_renderchain_t *chain,
 
       d3d_set_texture(chain->dev, 0, chain->prev.tex[i]);
       d3d_set_sampler_minfilter(chain->dev, 0,
-            translate_filter(info->pass->filter));
+            d3d_translate_filter(info->pass->filter));
       d3d_set_sampler_magfilter(chain->dev, 0,
-            translate_filter(info->pass->filter));
+            d3d_translate_filter(info->pass->filter));
       d3d_set_sampler_address_u(chain->dev, 0, D3DTADDRESS_BORDER);
       d3d_set_sampler_address_v(chain->dev, 0, D3DTADDRESS_BORDER);
       d3d_set_texture(chain->dev, 0, NULL);
@@ -1322,9 +1304,9 @@ static void renderchain_render_pass(
 
    d3d_set_texture(chain->dev, 0, pass->tex);
    d3d_set_sampler_minfilter(chain->dev, 0,
-         translate_filter(pass->info.pass->filter));
+         d3d_translate_filter(pass->info.pass->filter));
    d3d_set_sampler_magfilter(chain->dev, 0,
-         translate_filter(pass->info.pass->filter));
+         d3d_translate_filter(pass->info.pass->filter));
 
    d3d_set_vertex_declaration(chain->dev, pass->vertex_decl);
    for (i = 0; i < 4; i++)
