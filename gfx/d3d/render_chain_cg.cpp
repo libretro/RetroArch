@@ -146,7 +146,7 @@ static INLINE CGparameter d3d9_cg_find_param_from_semantic(
       const char *semantic = NULL;
       if (cgGetParameterType(param) == CG_STRUCT)
       {
-         CGparameter ret = find_param_from_semantic(
+         CGparameter ret = d3d9_cg_find_param_from_semantic(
                cgGetFirstStructParameter(param), sem);
 
          if (ret)
@@ -337,9 +337,9 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    std::vector<bool> indices(count);
 
-   param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "POSITION");
+   param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "POSITION");
    if (!param)
-      param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "POSITION0");
+      param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "POSITION0");
 
    if (param)
    {
@@ -350,9 +350,9 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
       indices[index]  = true;
    }
 
-   param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD");
+   param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD");
    if (!param)
-      param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD0");
+      param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD0");
 
    if (param)
    {
@@ -364,7 +364,7 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
       indices[index]  = true;
    }
 
-   param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD1");
+   param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD1");
    if (param)
    {
       stream_taken[2] = true;
@@ -375,9 +375,9 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
       indices[index]  = true;
    }
 
-   param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "COLOR");
+   param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "COLOR");
    if (!param)
-      param = find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "COLOR0");
+      param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "COLOR0");
 
    if (param)
    {
