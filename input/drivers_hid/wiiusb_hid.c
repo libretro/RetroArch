@@ -1,5 +1,5 @@
 /*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2015 - Sergi Granell (xerpi)
+ *  Copyright (C) 2015-2016 - Sergi Granell (xerpi)
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
