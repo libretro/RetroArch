@@ -72,7 +72,7 @@ endif
 
 ifeq ($(findstring Haiku,$(OS)),)
    LIBS += -lm
-   #DEBUG_FLAG = -g
+   DEBUG_FLAG = -g
 else
    LIBS += -lroot -lnetwork
    # stable and nightly haiku builds are stuck on gdb 6.x but we use gcc4
