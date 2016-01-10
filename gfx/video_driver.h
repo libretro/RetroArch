@@ -186,6 +186,7 @@ extern video_driver_t video_sdl2;
 extern video_driver_t video_vg;
 extern video_driver_t video_omap;
 extern video_driver_t video_exynos;
+extern video_driver_t video_sunxi;
 extern video_driver_t video_null;
 
 enum rarch_display_type

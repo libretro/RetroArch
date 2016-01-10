@@ -25,6 +25,7 @@ HAVE_OMAP=no            # Enable OMAP video support
 HAVE_XINERAMA=auto      # Disable Xinerama support.
 HAVE_KMS=auto           # Enable KMS context support
 HAVE_EXYNOS=no          # Enable Exynos video support
+HAVE_SUNXI=no           # Enable Sunxi video support
 HAVE_EGL=auto           # Enable EGL context support
 HAVE_VG=auto            # Enable OpenVG support
 HAVE_CG=auto            # Enable Cg shader support

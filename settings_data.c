@@ -1969,6 +1969,12 @@ int setting_data_get_description(const char *label, char *msg,
                " \n"
                "Performance for software rendered cores \n"
                "should be optimal.");
+      else if (!strcmp(g_settings.video.driver, "sunxi"))
+         snprintf(msg, sizeof_msg,
+               " -- Sunxi-G2D Video Driver. \n"
+               " \n"
+               "This is a low-level Sunxi video driver. \n"
+               "Uses the G2D block in Allwinner SoCs.");
       else
          snprintf(msg, sizeof_msg,
                " -- Current Video driver.");
