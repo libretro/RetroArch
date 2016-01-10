@@ -393,7 +393,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
        RARCH_LOG("Assets ZIP found at [%s], setting up bundle assets extraction...\n", bundle_path_buf);
         strlcpy(settings->bundle_assets_src_path, assets_zip_path, sizeof(settings->bundle_assets_src_path));
        strlcpy(settings->bundle_assets_dst_path, home_dir_buf, sizeof(settings->bundle_assets_dst_path));
-       settings->bundle_assets_extract_last_version = 130; /* TODO/FIXME: Just hardcode this for now */
+       settings->bundle_assets_extract_version_current = 130; /* TODO/FIXME: Just hardcode this for now */
     }
 #endif
 #endif
