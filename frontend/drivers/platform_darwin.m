@@ -385,7 +385,8 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 
     NSString *path = [[NSBundle mainBundle] pathForResource:@"assets" ofType:@"zip"];
     NSURL    *url  = [NSURL fileURLWithPath:path];
-    NSLog(@"url from bundle: %@", url);
+    if (url)
+       NSLog(@"url from bundle: %@", url);
 #endif
 
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
