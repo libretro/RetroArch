@@ -383,10 +383,12 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
     if (major > 8)
        strlcpy(g_defaults.path.buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path.buildbot_server_url));
 
+#if 0
     NSString *path = [[NSBundle mainBundle] pathForResource:@"assets" ofType:@"zip"];
     NSURL    *url  = [NSURL fileURLWithPath:path];
     if (url)
        NSLog(@"url from bundle: %@", url);
+#endif
 #endif
 
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
