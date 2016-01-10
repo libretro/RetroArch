@@ -351,7 +351,7 @@ static const bool pointer_enable = false;
  * we need to extract to a user-writable directory on first boot.
  *
  * Examples include: Android, iOS/OSX) */
-#if defined(ANDROID)
+#if defined(ANDROID) || defined(IOS)
 static bool bundle_assets_extract_enable = true;
 #else
 static bool bundle_assets_extract_enable = false;
