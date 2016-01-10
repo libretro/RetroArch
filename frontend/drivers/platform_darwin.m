@@ -321,6 +321,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    char bundle_path_buf[PATH_MAX_LENGTH] = {0};
    char home_dir_buf[PATH_MAX_LENGTH]    = {0};
    CFBundleRef bundle = CFBundleGetMainBundle();
+   settings_t *settings = config_get_ptr();
 
    (void)temp_dir;
 
@@ -383,11 +384,17 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
     if (major > 8)
        strlcpy(g_defaults.path.buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path.buildbot_server_url));
 
-#if 0
-    NSString *path = [[NSBundle mainBundle] pathForResource:@"assets" ofType:@"zip"];
-    NSURL    *url  = [NSURL fileURLWithPath:path];
-    if (url)
-       NSLog(@"url from bundle: %@", url);
+#if 1
+    char assets_zip_path[PATH_MAX_LENGTH];
+    fill_pathname_join(assets_zip_path, bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
+    
+    if (path_file_exists(assets_zip_path))
+    {
+       RARCH_LOG("Assets ZIP found at [%s], setting up bundle assets extraction...\n", bundle_path_buf);
+        strlcpy(settings->bundle_assets_src_path, assets_zip_path, sizeof(settings->bundle_assets_src_path));
+       strlcpy(settings->bundle_assets_dst_path, home_dir_buf, sizeof(settings->bundle_assets_dst_path));
+       settings->bundle_assets_extract_last_version = 130; /* TODO/FIXME: Just hardcode this for now */
+    }
 #endif
 #endif
 
