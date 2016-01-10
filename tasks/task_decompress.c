@@ -222,6 +222,8 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
       return false;
    }
 
+   RARCH_LOG("[decompress] File '%s.\n", source_file);
+
    s = (decompress_state_t*)calloc(1, sizeof(*s));
 
    s->source_file = strdup(source_file);
