@@ -1,6 +1,6 @@
 /* RetroArch - A frontend for libretro.
  * Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- * Copyright (C) 2011-2015 - Daniel De Matteis
+ * Copyright (C) 2011-2016 - Daniel De Matteis
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -13,15 +13,6 @@
  * You should have received a copy of the GNU General Public License along with RetroArch.
  * If not, see <http://www.gnu.org/licenses/>.
  */
-
-// Thanks and credit to everlame, Team Evox, and Woodoo.
-//
-// This file contains declarations for accessing the internal NT API.
-// Some calls have changed from NT, so be careful!
-//
-// For the most part, all NT calls use ANSI instead of Unicode strings now.
-//
-// It is not known which flags work.  You will have to experiment.
 
 #ifndef __XBOX_INTERNAL_H__
 #define __XBOX_INTERNAL_H__
