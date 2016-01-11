@@ -601,26 +601,24 @@ void *menu_init(const void *data)
       goto error;
 #endif
 
-   menu->push_help_screen           = settings->menu_show_start_screen;
-   menu->help_screen_type           = MENU_HELP_WELCOME;
-   settings->menu_show_start_screen = false;
+   if (settings->menu_show_start_screen)
+   {
+      menu->push_help_screen           = true;
+      menu->help_screen_type           = MENU_HELP_WELCOME;
+      settings->menu_show_start_screen = false;
+   }
 
-   if (
-             settings->bundle_assets_extract_enable
+   if (      settings->bundle_assets_extract_enable
          && !string_is_empty(settings->bundle_assets_src_path) 
          && !string_is_empty(settings->bundle_assets_dst_path)
-#ifdef IOS
          && menu->push_help_screen
-#else
-         && settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version
+#ifndef IOS
+         && (settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version)
 #endif
       )
    {
       menu->help_screen_type           = MENU_HELP_EXTRACT;
       menu->push_help_screen           = true;
-#ifdef IOS
-      settings->menu_show_start_screen = false;
-#endif
 #ifdef HAVE_ZLIB
       rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path,
          settings->bundle_assets_dst_path_subdir, NULL, bundle_decompressed, NULL);
