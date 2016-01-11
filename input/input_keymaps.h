@@ -56,6 +56,7 @@ extern const struct rarch_key_map rarch_key_map_dinput[];
 extern const struct rarch_key_map rarch_key_map_rwebinput[];
 extern const struct rarch_key_map rarch_key_map_linux[];
 extern const struct rarch_key_map rarch_key_map_apple_hid[];
+extern const struct rarch_key_map rarch_key_map_android[];
 
 /**
  * input_keymaps_init_keyboard_lut:
