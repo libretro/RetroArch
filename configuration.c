@@ -446,6 +446,7 @@ static void config_set_defaults(void)
    const char *def_camera          = config_get_default_camera();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
+   static bool first_initialized   = true;
 
    if (def_camera)
       strlcpy(settings->camera.driver,
@@ -589,7 +590,8 @@ static void config_set_defaults(void)
    settings->libretro_log_level                = libretro_log_level;
 
 #ifdef HAVE_MENU
-   settings->menu_show_start_screen            = default_menu_show_start_screen;
+   if (first_initialized)
+      settings->menu_show_start_screen         = default_menu_show_start_screen;
    settings->menu.pause_libretro               = true;
    settings->menu.mouse.enable                 = false;
    settings->menu.pointer.enable               = pointer_enable;
@@ -897,6 +899,8 @@ static void config_set_defaults(void)
       rarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
    else
       rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+   
+   first_initialized = false;
 }
 
 #ifndef GLOBAL_CONFIG_DIR
