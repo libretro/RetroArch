@@ -606,6 +606,7 @@ void *menu_init(const void *data)
       menu->push_help_screen           = true;
       menu->help_screen_type           = MENU_HELP_WELCOME;
       settings->menu_show_start_screen = false;
+      event_command(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
    }
 
    if (      settings->bundle_assets_extract_enable
