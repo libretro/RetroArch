@@ -5780,7 +5780,7 @@ static bool setting_append_list_menu_options(
          &settings->menu_show_start_screen,
          menu_hash_to_str(MENU_LABEL_RGUI_SHOW_START_SCREEN),
          menu_hash_to_str(MENU_LABEL_VALUE_RGUI_SHOW_START_SCREEN),
-         menu_show_start_screen,
+         default_menu_show_start_screen,
          menu_hash_to_str(MENU_VALUE_OFF),
          menu_hash_to_str(MENU_VALUE_ON),
          &group_info,

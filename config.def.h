@@ -711,7 +711,7 @@ static const uint16_t network_remote_base_port = 55400;
 static const unsigned default_content_history_size = 100;
 
 /* Show Menu start-up screen on boot. */
-static const bool menu_show_start_screen = true;
+static const bool default_menu_show_start_screen = true;
 
 #ifdef RARCH_MOBILE
 static const bool menu_dpi_override_enable = false;

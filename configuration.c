@@ -589,7 +589,7 @@ static void config_set_defaults(void)
    settings->libretro_log_level                = libretro_log_level;
 
 #ifdef HAVE_MENU
-   settings->menu_show_start_screen            = menu_show_start_screen;
+   settings->menu_show_start_screen            = default_menu_show_start_screen;
    settings->menu.pause_libretro               = true;
    settings->menu.mouse.enable                 = false;
    settings->menu.pointer.enable               = pointer_enable;
