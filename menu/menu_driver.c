@@ -609,7 +609,11 @@ void *menu_init(const void *data)
              settings->bundle_assets_extract_enable
          && !string_is_empty(settings->bundle_assets_src_path) 
          && !string_is_empty(settings->bundle_assets_dst_path)
+#ifdef IOS
+         && menu->push_help_screen
+#else
          && settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version
+#endif
       )
    {
       menu->help_screen_type           = MENU_HELP_EXTRACT;

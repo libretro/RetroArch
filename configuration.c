@@ -718,9 +718,11 @@ static void config_set_defaults(void)
 
    settings->bundle_assets_extract_version_current = 0;
    settings->bundle_assets_extract_last_version    = 0;
+#ifndef IOS
    *settings->bundle_assets_src_path = '\0';
    *settings->bundle_assets_dst_path = '\0';
    *settings->bundle_assets_dst_path_subdir = '\0';
+#endif
    *settings->playlist_names = '\0';
    *settings->playlist_cores = '\0';
    *settings->core_options_path = '\0';
