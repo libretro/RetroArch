@@ -1,6 +1,8 @@
 package com.retroarch.browser.retroactivity;
 
 import android.view.View;
+import android.view.WindowManager;
+import android.content.Intent;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
@@ -25,6 +27,17 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 					| View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
 					| API_SYSTEM_UI_FLAG_FULLSCREEN
 					| API_SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+
+			// Check for REFRESH parameter
+			Intent retro = getIntent();
+			String refresh = retro.getStringExtra("REFRESH");
+
+			// If REFRESH parameter is provided then try to set refreshrate accordingly
+			if(refresh != null) {
+				WindowManager.LayoutParams params = getWindow().getAttributes();
+				params.preferredRefreshRate = Integer.parseInt(refresh);
+				getWindow().setAttributes(params);
+			}
 		}
 	}
 
