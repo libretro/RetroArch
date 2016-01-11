@@ -274,8 +274,10 @@ int rarch_main(int argc, char *argv[], void *data)
    
    if (frontend_driver_is_inited())
    {
-      if (!(ret = (main_load_content(argc, argv, args,
-                     frontend_driver_environment_get_ptr()))))
+      ret = main_load_content(argc, argv, args,
+            frontend_driver_environment_get_ptr());
+
+      if (!ret)
          return ret;
    }
 
