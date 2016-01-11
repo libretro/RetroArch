@@ -2907,4 +2907,3 @@ bool config_save_file(const char *path)
    config_file_free(conf);
    return ret;
 }
-
