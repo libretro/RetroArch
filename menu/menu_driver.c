@@ -618,6 +618,9 @@ void *menu_init(const void *data)
    {
       menu->help_screen_type           = MENU_HELP_EXTRACT;
       menu->push_help_screen           = true;
+#ifdef IOS
+      settings->menu_show_start_screen = false;
+#endif
 #ifdef HAVE_ZLIB
       rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path,
          settings->bundle_assets_dst_path_subdir, NULL, bundle_decompressed, NULL);
