@@ -1074,7 +1074,6 @@ STBTT_DEF int stbtt_FindGlyphIndex(const stbtt_fontinfo *info, int unicode_codep
       return 0; /* not found */
    }
    /* @TODO */
-   retro_assert(0);
    return 0;
 }
 
