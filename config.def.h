@@ -122,7 +122,6 @@ enum
    OSK_NULL,
 
    MENU_RGUI,
-   MENU_RMENU,
    MENU_XUI,
    MENU_MATERIALUI,
    MENU_XMB,
