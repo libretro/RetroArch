@@ -123,7 +123,7 @@ enum
 
    MENU_RGUI,
    MENU_RMENU,
-   MENU_RMENU_XUI,
+   MENU_XUI,
    MENU_MATERIALUI,
    MENU_XMB,
 
@@ -319,8 +319,8 @@ enum
 #define OSK_DEFAULT_DRIVER OSK_NULL
 #endif
 
-#if defined(HAVE_RMENU_XUI)
-#define MENU_DEFAULT_DRIVER MENU_RMENU_XUI
+#if defined(HAVE_XUI)
+#define MENU_DEFAULT_DRIVER MENU_XUI
 #elif defined(IOS) || defined(ANDROID)
 #define MENU_DEFAULT_DRIVER MENU_MATERIALUI
 #elif defined(MAC_OS_X_VERSION_10_6) || defined(__CELLOS_LV2__)

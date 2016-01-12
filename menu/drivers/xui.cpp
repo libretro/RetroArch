@@ -266,7 +266,7 @@ cleanup:
    return hr;
 }
 
-static void* rmenu_xui_init(void **userdata)
+static void* xui_init(void **userdata)
 {
    HRESULT hr;
    d3d_video_t *d3d            = NULL;
@@ -351,7 +351,7 @@ error:
    return NULL;
 }
 
-static void rmenu_xui_free(void *data)
+static void xui_free(void *data)
 {
    (void)data;
    app.Uninit();
@@ -398,7 +398,7 @@ end:
    string_list_free(list);
 }
 
-static void rmenu_xui_frame(void *data)
+static void xui_frame(void *data)
 {
    XUIMessage msg;
    XUIMessageRender msgRender;
@@ -449,7 +449,7 @@ static void blit_line(int x, int y, const char *message, bool green)
 {
 }
 
-static void rmenu_xui_render_background(void)
+static void xui_render_background(void)
 {
    bool libretro_running           = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
 
@@ -459,13 +459,13 @@ static void rmenu_xui_render_background(void)
 		XuiElementSetShow(m_background, TRUE);
 }
 
-static void rmenu_xui_render_messagebox(void *data, const char *message)
+static void xui_render_messagebox(void *data, const char *message)
 {
    msg_queue_clear(xui_msg_queue);
    msg_queue_push(xui_msg_queue, message, 2, 1);
 }
 
-static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
+static void xui_set_list_text(int index, const wchar_t* leftText,
       const wchar_t* rightText)
 {
    LPCWSTR currText;
@@ -522,7 +522,7 @@ static void rmenu_xui_set_list_text(int index, const wchar_t* leftText,
    }
 }
 
-static void rmenu_xui_render(void *data)
+static void xui_render(void *data)
 {
    uint64_t *frame_count;
    bool display_kb, msg_force;
@@ -548,7 +548,7 @@ static void rmenu_xui_render(void *data)
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG, NULL);
    menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
-	rmenu_xui_render_background();
+	xui_render_background();
 
 	if (XuiHandleIsValid(m_menutitle))
 	{
@@ -581,7 +581,7 @@ static void rmenu_xui_render(void *data)
 
       mbstowcs(msg_left,  entry_path,  sizeof(msg_left)  / sizeof(wchar_t));
       mbstowcs(msg_right, entry_value, sizeof(msg_right) / sizeof(wchar_t));
-      rmenu_xui_set_list_text(i, msg_left, msg_right);
+      xui_set_list_text(i, msg_left, msg_right);
    }
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
@@ -599,11 +599,11 @@ static void rmenu_xui_render(void *data)
 		if (!str)
 			str = "";
       snprintf(msg, sizeof(msg), "%s\n%s", label, str);
-		rmenu_xui_render_messagebox(msg);			
+		xui_render_messagebox(msg);			
 	}
 }
 
-static void rmenu_xui_populate_entries(const char *path,
+static void xui_populate_entries(const char *path,
       const char *label, unsigned i)
 {
    size_t selection;
@@ -616,7 +616,7 @@ static void rmenu_xui_populate_entries(const char *path,
    XuiListSetCurSelVisible(m_menulist, selection);
 }
 
-static void rmenu_xui_navigation_clear(void *data, bool pending_push)
+static void xui_navigation_clear(void *data, bool pending_push)
 {
    size_t selection;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
@@ -625,7 +625,7 @@ static void rmenu_xui_navigation_clear(void *data, bool pending_push)
    XuiListSetCurSelVisible(m_menulist, selection);
 }
 
-static void rmenu_xui_navigation_set_visible(void *data)
+static void xui_navigation_set_visible(void *data)
 {
    size_t selection;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
@@ -634,12 +634,12 @@ static void rmenu_xui_navigation_set_visible(void *data)
    XuiListSetCurSelVisible(m_menulist, selection);
 }
 
-static void rmenu_xui_navigation_alphabet(void *data, size_t *ptr_out)
+static void xui_navigation_alphabet(void *data, size_t *ptr_out)
 {
    XuiListSetCurSelVisible(m_menulist, *ptr_out);
 }
 
-static void rmenu_xui_list_insert(void *data,
+static void xui_list_insert(void *data,
       file_list_t *list,
       const char *path, const char *, size_t list_size)
 {
@@ -650,7 +650,7 @@ static void rmenu_xui_list_insert(void *data,
    XuiListSetText(m_menulist, list_size, buf);
 }
 
-static void rmenu_xui_list_free(file_list_t *list, size_t idx,
+static void xui_list_free(file_list_t *list, size_t idx,
       size_t list_size)
 {
    int x = XuiListGetItemCount( m_menulist );
@@ -663,18 +663,18 @@ static void rmenu_xui_list_free(file_list_t *list, size_t idx,
       XuiListDeleteItems(m_menulist, 0, list_size);
 }
 
-static void rmenu_xui_list_clear(file_list_t *list)
+static void xui_list_clear(file_list_t *list)
 {
    XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
 }
 
-static void rmenu_xui_list_set_selection(void *data, file_list_t *list)
+static void xui_list_set_selection(void *data, file_list_t *list)
 {
    if (list)
       XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
 }
 
-static int rmenu_xui_environ(menu_environ_cb_t type, void *data)
+static int xui_environ(menu_environ_cb_t type, void *data)
 {
    switch (type)
    {
@@ -686,38 +686,38 @@ static int rmenu_xui_environ(menu_environ_cb_t type, void *data)
    return 0;
 }
 
-menu_ctx_driver_t menu_ctx_rmenu_xui = {
+menu_ctx_driver_t menu_ctx_xui = {
    NULL,
-   rmenu_xui_render_messagebox,
+   xui_render_messagebox,
    generic_menu_iterate,
-   rmenu_xui_render,
-   rmenu_xui_frame,
-   rmenu_xui_init,
-   rmenu_xui_free,
+   xui_render,
+   xui_frame,
+   xui_init,
+   xui_free,
    NULL,
    NULL,
-   rmenu_xui_populate_entries,
+   xui_populate_entries,
    NULL,
-   rmenu_xui_navigation_clear,
-   rmenu_xui_navigation_set_visible,
-   rmenu_xui_navigation_set_visible,
-   rmenu_xui_navigation_clear,
-   rmenu_xui_navigation_set_visible,
-   rmenu_xui_navigation_alphabet,
-   rmenu_xui_navigation_alphabet,
+   xui_navigation_clear,
+   xui_navigation_set_visible,
+   xui_navigation_set_visible,
+   xui_navigation_clear,
+   xui_navigation_set_visible,
+   xui_navigation_alphabet,
+   xui_navigation_alphabet,
    generic_menu_init_list,
-   rmenu_xui_list_insert,
-   rmenu_xui_list_free,
-   rmenu_xui_list_clear,
+   xui_list_insert,
+   xui_list_free,
+   xui_list_clear,
    NULL,
    NULL,
    NULL,
    NULL,
    NULL,
-   rmenu_xui_list_set_selection,
+   xui_list_set_selection,
    NULL,
    NULL,
-   "rmenu_xui",
-   rmenu_xui_environ,
+   "xui",
+   xui_environ,
    NULL,
 };

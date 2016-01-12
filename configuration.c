@@ -363,8 +363,8 @@ const char *config_get_default_menu(void)
          return "rgui";
       case MENU_RMENU:
          return "rmenu";
-      case MENU_RMENU_XUI:
-         return "rmenu_xui";
+      case MENU_XUI:
+         return "xui";
       case MENU_MATERIALUI:
          return "glui";
       case MENU_XMB:

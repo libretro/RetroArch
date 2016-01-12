@@ -309,7 +309,7 @@ typedef struct menu_ctx_driver
          menu_entry_t *entry, unsigned action);
 } menu_ctx_driver_t;
 
-extern menu_ctx_driver_t menu_ctx_rmenu_xui;
+extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
 extern menu_ctx_driver_t menu_ctx_xmb;

@@ -55,8 +55,8 @@ UI COMMON CONTEXT
 /*============================================================
 MENU
 ============================================================ */
-#ifdef HAVE_RMENU_XUI
-#include "../menu/drivers/rmenu_xui.cpp"
+#ifdef HAVE_XUI
+#include "../menu/drivers/xui.cpp"
 #endif
 
 #if defined(HAVE_D3D)
