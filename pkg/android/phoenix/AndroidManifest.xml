@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.retroarch"
-    android:versionCode="42"
+    android:versionCode="43"
     android:versionName="1.3.0"
     android:installLocation="preferExternal">
     <uses-feature android:glEsVersion="0x00020000" />
