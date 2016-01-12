@@ -2611,7 +2611,6 @@ static int xmb_list_push(void *data, void *userdata, menu_displaylist_info_t *in
 
 static bool xmb_menu_init_list(void *data)
 {
-   int ret;
    menu_displaylist_info_t info = {0};
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -2624,8 +2623,6 @@ static bool xmb_menu_init_list(void *data)
    menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
 
    info.need_push = true;
-
-   (void)ret;
 
    menu_displaylist_push_list_process(&info);
 
