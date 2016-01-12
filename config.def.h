@@ -319,9 +319,7 @@ enum
 #define OSK_DEFAULT_DRIVER OSK_NULL
 #endif
 
-#if defined(HAVE_RMENU)
-#define MENU_DEFAULT_DRIVER MENU_RMENU
-#elif defined(HAVE_RMENU_XUI)
+#if defined(HAVE_RMENU_XUI)
 #define MENU_DEFAULT_DRIVER MENU_RMENU_XUI
 #elif defined(IOS) || defined(ANDROID)
 #define MENU_DEFAULT_DRIVER MENU_MATERIALUI

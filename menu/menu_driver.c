@@ -35,9 +35,6 @@
 #include "../verbosity.h"
 
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {
-#if defined(HAVE_RMENU)
-   &menu_ctx_rmenu,
-#endif
 #if defined(HAVE_RMENU_XUI)
    &menu_ctx_rmenu_xui,
 #endif

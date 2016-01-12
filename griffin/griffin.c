@@ -825,11 +825,6 @@ MENU
 
 #endif
 
-
-#ifdef HAVE_RMENU
-#include "../menu/drivers/rmenu.c"
-#endif
-
 #ifdef HAVE_RGUI
 #include "../menu/drivers/rgui.c"
 #endif
