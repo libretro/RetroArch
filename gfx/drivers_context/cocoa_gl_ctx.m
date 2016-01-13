@@ -129,11 +129,11 @@ void *get_chosen_screen(void)
    if (settings->video.monitor_index >= RAScreen.screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
-      return (__bridge void*)RAScreen.mainScreen;
+      return (void*)RAScreen.mainScreen;
    }
 	
    NSArray *screens = [RAScreen screens];
-   return ((__bridge void*)[screens objectAtIndex:settings->video.monitor_index]);
+   return ((void*)[screens objectAtIndex:settings->video.monitor_index]);
 #endif
 }
 
@@ -316,8 +316,8 @@ static float cocoagl_gfx_ctx_get_scale_from_selector(RAScreen *screen, SEL selec
 float cocoagl_gfx_ctx_get_native_scale(void)
 {
     static float ret = 0.0f;
-    SEL selector = NSSelectorFromString(BOXSTRING("nativeScale"));
-    RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
+    SEL selector     = NSSelectorFromString(BOXSTRING("nativeScale"));
+    RAScreen *screen = (RAScreen*)get_chosen_screen();
     
     if (ret != 0.0f)
        return ret;
@@ -335,8 +335,8 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 
 static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
-   RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
-   CGRect size = screen.bounds;
+   RAScreen *screen  = (RAScreen*)get_chosen_screen();
+   CGRect size       = screen.bounds;
    float screenscale = cocoagl_gfx_ctx_get_native_scale();
 	
 #if defined(HAVE_COCOA)
@@ -381,7 +381,7 @@ static void cocoagl_gfx_ctx_update_window_title(void *data)
 static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
             float *value)
 {
-   RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
+   RAScreen *screen               = (RAScreen*)get_chosen_screen();
 #if defined(HAVE_COCOA)
     NSDictionary *description     = [screen deviceDescription];
     NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
