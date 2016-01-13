@@ -293,7 +293,9 @@ static void frontend_darwin_get_name(char *s, size_t len)
    strlcpy(s, buffer.machine, len);
 #elif defined(OSX)
    size_t length = 0;
-   sysctlbyname("hw.model", s, &length, NULL, 0);
+   sysctlbyname("hw.model", NULL, &length, NULL, 0);
+    if (length)
+        sysctlbyname("hw.model", s, &length, NULL, 0);
 #endif
 }
 
