@@ -55,6 +55,7 @@ struct input_pointer
 
 static int id_1 = -1;
 static int id_2 = -1;
+static int id_3 = -1;
 
 enum
 {
@@ -470,7 +471,9 @@ static void *android_input_init(void)
    android->copy.pads_connected = 0;
    android->joypad         = input_joypad_init_driver(
          settings->input.joypad_driver, android);
-
+ 
+   input_keymaps_init_keyboard_lut(rarch_key_map_android);
+ 
    frontend_android_get_version_sdk(&sdk);
 
    RARCH_LOG("sdk version: %d\n", sdk);
@@ -544,6 +547,25 @@ static INLINE int android_input_poll_event_type_motion(
    }
 
    return 0;
+}
+
+static INLINE void android_input_poll_event_type_keyboard(
+      AInputEvent *event, int keycode, int *handled)
+{
+   int keydown = (AKeyEvent_getAction(event) == AKEY_EVENT_ACTION_DOWN);
+   unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(keycode);
+                     
+   // Set keyboard modifier based on shift,ctrl and alt state
+   uint16_t mod = 0;
+   int meta = AKeyEvent_getMetaState(event);
+   if(meta & AMETA_ALT_ON) mod |= RETROKMOD_ALT;
+   if(meta & AMETA_CTRL_ON) mod |= RETROKMOD_CTRL;
+   if(meta & AMETA_SHIFT_ON) mod |= RETROKMOD_SHIFT;
+
+   input_keyboard_event(keydown, keyboardcode, keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
+
+   if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
+      *handled = 0;
 }
 
 static INLINE void android_input_poll_event_type_key(
@@ -823,6 +845,18 @@ static void handle_hotplug(android_input_data_t *android_data,
    else if (strstr(device_name, "MOGA"))
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
 
+   // if device is keyboard only and didn't match any of the devices above
+   // then assume it is a keyboard, register the id, and return unless another
+   // keyboard is already registered
+   else if(source == AINPUT_SOURCE_KEYBOARD && id_3 == -1)
+   {
+      id_3 = id;
+      return;
+   }
+
+   // if device was not keyboard only, yet did not match any of the devices
+   // above or another keyboard was already mapped, then try to autoconfigure
+   // as gamepad based on device_name
    else if (!string_is_empty(device_name))
       strlcpy(name_buf, device_name, sizeof(name_buf));
 
@@ -906,10 +940,10 @@ static void android_input_poll_input(void *data)
          int            id = android_input_get_id(event);
          int          port = android_input_get_id_port(android_data, id, source);
 
-         if (port < 0)
+         if (port < 0 && id != id_3)
             handle_hotplug(android_data, android_app,
             &port, id, source);
-
+ 
          switch (type_event)
          {
             case AINPUT_EVENT_TYPE_MOTION:
@@ -920,7 +954,11 @@ static void android_input_poll_input(void *data)
             case AINPUT_EVENT_TYPE_KEY:
                {
                   int keycode = AKeyEvent_getKeyCode(event);
-                  android_input_poll_event_type_key(android_app,
+
+                  if (id == id_3 && !predispatched)
+                     android_input_poll_event_type_keyboard(event, keycode, &handled);
+                  else
+                     android_input_poll_event_type_key(android_app,
                         event, port, keycode, source, type_event, &handled);
                }
                break;
