@@ -297,8 +297,10 @@ extern void action_ok_push_quick_menu(void);
     NSString *startdir   = BOXSTRING(settings->libretro_directory);
     [panel setMessage:BOXSTRING("Load Core")];
     [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
-    [panel beginWithCompletionHandler:^(NSInteger result)
+    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
      {
+         [[NSApplication sharedApplication] stopModal];
+         
          switch (result)
          {
             case NSOKButton:
@@ -330,8 +332,8 @@ extern void action_ok_push_quick_menu(void);
      }];
 #else
     [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
-    [[NSApplication sharedApplication] runModalForWindow:panel];
 #endif
+    [[NSApplication sharedApplication] runModalForWindow:panel];
 }
 
 - (void)openDocument:(id)sender
@@ -344,8 +346,10 @@ extern void action_ok_push_quick_menu(void);
         startdir         = BOXSTRING("/");
     [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
     [panel setMessage:BOXSTRING("Load Content")];
-   [panel beginWithCompletionHandler:^(NSInteger result)
+   [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
+      [[NSApplication sharedApplication] stopModal];
+
       switch (result)
       {
          case NSOKButton:
@@ -373,8 +377,8 @@ extern void action_ok_push_quick_menu(void);
    }];
 #else
    [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
-   [[NSApplication sharedApplication] runModalForWindow:panel];
 #endif
+   [[NSApplication sharedApplication] runModalForWindow:panel];
 }
 
 - (void)unloadingCore
