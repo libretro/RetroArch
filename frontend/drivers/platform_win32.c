@@ -181,7 +181,7 @@ static void frontend_win32_init(void *data)
 
 enum frontend_powerstate frontend_win32_get_powerstate(int *seconds, int *percent)
 {
-    SYSTEM_POWER_STATUS status;
+   SYSTEM_POWER_STATUS status;
 	enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
 
 	if (!GetSystemPowerStatus(&status))
