@@ -321,7 +321,6 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    char bundle_path_buf[PATH_MAX_LENGTH] = {0};
    char home_dir_buf[PATH_MAX_LENGTH]    = {0};
    CFBundleRef bundle = CFBundleGetMainBundle();
-   settings_t *settings = config_get_ptr();
 
    (void)temp_dir;
 
@@ -379,24 +378,25 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
 #endif
 
 #if TARGET_OS_IPHONE
+    char assets_zip_path[PATH_MAX_LENGTH];
     int major, minor;
+
     get_ios_version(&major, &minor);
     if (major > 8)
        strlcpy(g_defaults.path.buildbot_server_url, "http://buildbot.libretro.com/nightly/apple/ios9/latest/", sizeof(g_defaults.path.buildbot_server_url));
 
-#if 1
-    char assets_zip_path[PATH_MAX_LENGTH];
     fill_pathname_join(assets_zip_path, bundle_path_buf, "assets.zip", sizeof(assets_zip_path));
     
     if (path_file_exists(assets_zip_path))
     {
+       settings_t *settings = config_get_ptr();
+
        RARCH_LOG("Assets ZIP found at [%s], setting up bundle assets extraction...\n", assets_zip_path);
        RARCH_LOG("Extraction dir will be: %s\n", home_dir_buf);
        strlcpy(settings->bundle_assets_src_path, assets_zip_path, sizeof(settings->bundle_assets_src_path));
        strlcpy(settings->bundle_assets_dst_path, home_dir_buf, sizeof(settings->bundle_assets_dst_path));
        settings->bundle_assets_extract_version_current = 130; /* TODO/FIXME: Just hardcode this for now */
     }
-#endif
 #endif
 
    CFTemporaryDirectory(temp_dir, sizeof(temp_dir));
