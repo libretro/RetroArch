@@ -52,75 +52,76 @@ void apple_rarch_exited(void)
    [super sendEvent:event];
 
    event_type = event.type;
-   
+
    switch ((int32_t)event_type)
    {
       case NSKeyDown:
-      case NSKeyUp:
-      {
-         NSString* ch = (NSString*)event.characters;
-         uint32_t character = 0;
-         uint32_t mod = 0;
-         
-         if (ch && ch.length != 0)
+        case NSKeyUp:
          {
-            uint32_t i;
-            character = [ch characterAtIndex:0];
+            NSString* ch = (NSString*)event.characters;
+            uint32_t character = 0;
+            uint32_t mod = 0;
 
-            if (event.modifierFlags & NSAlphaShiftKeyMask)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (event.modifierFlags & NSShiftKeyMask)
-               mod |=  RETROKMOD_SHIFT;
-            if (event.modifierFlags & NSControlKeyMask)
-               mod |=  RETROKMOD_CTRL;
-            if (event.modifierFlags & NSAlternateKeyMask)
-               mod |= RETROKMOD_ALT;
-            if (event.modifierFlags & NSCommandKeyMask)
-               mod |= RETROKMOD_META;
-            if (event.modifierFlags & NSNumericPadKeyMask)
-               mod |=  RETROKMOD_NUMLOCK;
-            
-            for (i = 1; i < ch.length; i++)
-               apple_input_keyboard_event(event_type == NSKeyDown,
-                     0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD);
+            if (ch && ch.length != 0)
+            {
+               uint32_t i;
+               character = [ch characterAtIndex:0];
+
+               if (event.modifierFlags & NSAlphaShiftKeyMask)
+                  mod |= RETROKMOD_CAPSLOCK;
+               if (event.modifierFlags & NSShiftKeyMask)
+                  mod |=  RETROKMOD_SHIFT;
+               if (event.modifierFlags & NSControlKeyMask)
+                  mod |=  RETROKMOD_CTRL;
+               if (event.modifierFlags & NSAlternateKeyMask)
+                  mod |= RETROKMOD_ALT;
+               if (event.modifierFlags & NSCommandKeyMask)
+                  mod |= RETROKMOD_META;
+               if (event.modifierFlags & NSNumericPadKeyMask)
+                  mod |=  RETROKMOD_NUMLOCK;
+
+               for (i = 1; i < ch.length; i++)
+                  apple_input_keyboard_event(event_type == NSKeyDown,
+                        0, [ch characterAtIndex:i], mod, RETRO_DEVICE_KEYBOARD);
+            }
+
+            apple_input_keyboard_event(event_type == NSKeyDown,
+                  event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD);
          }
-         
-         apple_input_keyboard_event(event_type == NSKeyDown,
-               event.keyCode, character, mod, RETRO_DEVICE_KEYBOARD);
-      }
          break;
-      case NSFlagsChanged:
-      {
-         static uint32_t old_flags = 0;
-         uint32_t new_flags = event.modifierFlags;
-         bool down = (new_flags & old_flags) == old_flags;
-         old_flags = new_flags;
+        case NSFlagsChanged:
+         {
+            static uint32_t old_flags = 0;
+            uint32_t new_flags = event.modifierFlags;
+            bool down = (new_flags & old_flags) == old_flags;
+            old_flags = new_flags;
 
-         apple_input_keyboard_event(down, event.keyCode,
-               0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
-      }
+            apple_input_keyboard_event(down, event.keyCode,
+                  0, event.modifierFlags, RETRO_DEVICE_KEYBOARD);
+         }
          break;
-      case NSMouseMoved:
-      case NSLeftMouseDragged:
-      case NSRightMouseDragged:
-      case NSOtherMouseDragged:
+        case NSMouseMoved:
+  case NSLeftMouseDragged:
+ case NSRightMouseDragged:
+ case NSOtherMouseDragged:
          {
             NSPoint pos;
             NSPoint mouse_pos;
+            CGFloat backing_scale_factor = 1.0f;
+            NSScreen *screen             = (NSScreen*)get_chosen_screen();
 
             apple = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
                return;
+
+            (void)screen;
 
             /* Relative */
             apple->mouse_rel_x = event.deltaX;
             apple->mouse_rel_y = event.deltaY;
 
 #if MAC_OS_X_VERSION_10_7
-            NSScreen *screen = (NSScreen*)get_chosen_screen();
-            CGFloat backing_scale_factor = screen.backingScaleFactor;
-#else
-            CGFloat backing_scale_factor = 1.0f;
+            backing_scale_factor = screen.backingScaleFactor;
 #endif
 
             /* Absolute */
@@ -128,31 +129,24 @@ void apple_rarch_exited(void)
             apple->touches[0].screen_x = pos.x * backing_scale_factor;
             apple->touches[0].screen_y = pos.y * backing_scale_factor;
 
-            //window is a variable containing your window
-            //mouse_pos = [self.window mouseLocationOutsideOfEventStream];
-            //convert to screen coordinates
-            //mouse_pos = [[self.window convertBaseToScreen:mouse_pos];
-
-            //mouse_pos = [event locationInWindow];
-            //mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:[CocoaView get] ];
             mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
             apple->window_pos_x = (int16_t)mouse_pos.x * backing_scale_factor;
             apple->window_pos_y = (int16_t)mouse_pos.y * backing_scale_factor;
          }
          break;
-       case NSScrollWheel:
-           /* TODO/FIXME - properly implement. */
-           break;
-      case NSLeftMouseDown:
-      case NSRightMouseDown:
-      case NSOtherMouseDown:
+ case NSScrollWheel:
+         /* TODO/FIXME - properly implement. */
+         break;
+ case NSLeftMouseDown:
+case NSRightMouseDown:
+case NSOtherMouseDown:
          apple = (cocoa_input_data_t*)input_driver_get_data();
          if (!apple)
             return;
          apple->mouse_buttons |= 1 << event.buttonNumber;
          apple->touch_count = 1;
          break;
-      case NSLeftMouseUp:
+case NSLeftMouseUp:
       case NSRightMouseUp:
       case NSOtherMouseUp:
          apple = (cocoa_input_data_t*)input_driver_get_data();
@@ -303,26 +297,31 @@ extern void action_ok_push_quick_menu(void);
      {
          [[NSApplication sharedApplication] stopModal];
          
-         if (result == NSOKButton && panel.URL)
+         switch (result)
          {
-             settings_t *settings = config_get_ptr();
-             NSURL *url = (NSURL*)panel.URL;
-             NSString *__core = url.path;
-             
-             if (__core)
-             {
-                runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
-                ui_companion_event_command(EVENT_CMD_LOAD_CORE);
+            case NSOKButton:
+               if (panel.URL)
+               {
+                  settings_t *settings = config_get_ptr();
+                  NSURL *url           = (NSURL*)panel.URL;
+                  NSString *__core     = url.path;
 
-                if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->core.set_supports_no_game_enable)
-                {
-                   int ret = 0;
-                   runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-                   ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
-                   if (ret == -1)
-                      action_ok_push_quick_menu();
-                }
-             }
+                  if (!__core)
+                     return;
+
+                  runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
+                  ui_companion_event_command(EVENT_CMD_LOAD_CORE);
+
+                  if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->core.set_supports_no_game_enable)
+                  {
+                     int ret = 0;
+                     runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+                     ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
+                     if (ret == -1)
+                        action_ok_push_quick_menu();
+                  }
+               }
+               break;
          }
      }];
 #else
@@ -339,22 +338,27 @@ extern void action_ok_push_quick_menu(void);
    {
       [[NSApplication sharedApplication] stopModal];
 
-      if (result == NSOKButton && panel.URL)
+      switch (result)
       {
-         struct retro_system_info          *system = NULL;
-         NSURL *url = (NSURL*)panel.URL;
-         NSString *__core = url.path;
-         const char *core_name = NULL;
-         
-         menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
-         
-         if (system)
-            core_name = system->library_name;
-			
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
+         case NSOKButton:
+            if (panel.URL)
+            {
+               struct retro_system_info *system = NULL;
+               NSURL                       *url = (NSURL*)panel.URL;
+               NSString                 *__core = url.path;
+               const char            *core_name = NULL;
 
-         if (core_name)
-            ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
+               menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
+
+               if (system)
+                  core_name = system->library_name;
+
+               runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
+
+               if (core_name)
+                  ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
+            }
+            break;
       }
    }];
 #else
