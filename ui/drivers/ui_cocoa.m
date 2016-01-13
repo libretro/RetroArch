@@ -322,6 +322,8 @@ extern void action_ok_push_quick_menu(void);
                   }
                }
                break;
+            case NSCancelButton:
+               break;
          }
      }];
 #else
@@ -358,6 +360,8 @@ extern void action_ok_push_quick_menu(void);
                if (core_name)
                   ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
             }
+            break;
+         case NSCancelButton:
             break;
       }
    }];
