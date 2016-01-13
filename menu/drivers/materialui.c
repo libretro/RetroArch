@@ -38,6 +38,7 @@
 
 #include "../../core_info.h"
 #include "../../configuration.h"
+#include "../../system.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks.h"
@@ -666,6 +667,40 @@ static void bgcolor_setalpha(float *bg, float alpha)
    bg[15] = alpha;
 }
 
+static int mui_get_core_title(char *s, size_t len)
+{
+   struct retro_system_info    *system = NULL;
+   rarch_system_info_t      *info = NULL;
+   settings_t *settings           = config_get_ptr();
+   const char *core_name          = NULL;
+   const char *core_version       = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+         &system);
+   
+   core_name    = system->library_name;
+   core_version = system->library_version;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+
+   if (!settings->menu.core_enable)
+      return -1; 
+
+   if (string_is_empty(core_name))
+      core_name = info->info.library_name;
+   if (string_is_empty(core_name))
+      core_name = menu_hash_to_str(MENU_VALUE_NO_CORE);
+
+   if (!core_version)
+      core_version = info->info.library_version;
+   if (!core_version)
+      core_version = "";
+
+   snprintf(s, len, "%s %s", core_name, core_version);
+
+   return 0;
+}
+
 static void mui_frame(void *data)
 {
    unsigned header_height;
@@ -722,6 +757,7 @@ static void mui_frame(void *data)
    char msg[256];
    char title[256];
    char title_buf[256];
+   char title_msg[256];
    size_t selection;
    size_t title_margin;
    uint64_t *frame_count;
@@ -745,6 +781,7 @@ static void mui_frame(void *data)
    msg[0]       = '\0';
    title[0]     = '\0';
    title_buf[0] = '\0';
+   title_msg[0] = '\0';
 
    video_driver_get_size(&width, &height);
 
@@ -842,6 +879,13 @@ static void mui_frame(void *data)
          *frame_count / 100, title, true);
 
    /* Title */
+   if (mui_get_core_title(title_msg, sizeof(title_msg)) == 0)
+   {
+      char title_buf_msg[256];
+      strlcpy(title_buf_msg, title_buf, sizeof(title_buf_msg));
+      snprintf(title_buf, sizeof(title_buf), "%s (Core: %s)", title_buf_msg, title_msg);
+   }
+
    mui_blit_line(title_margin, header_height / 2, width, height,
          title_buf, title_color, TEXT_ALIGN_LEFT);
 
