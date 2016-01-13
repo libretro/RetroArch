@@ -607,7 +607,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
 
       entry_selected = selection == i;
 
-      mui_render_label_value(mui, y, width, height, *frame_count / 40,
+      mui_render_label_value(mui, y, width, height, *frame_count / 20,
          entry_selected ? hover_color : normal_color, entry_selected,
          entry.path, entry.value, pure_white);
    }
@@ -881,9 +881,18 @@ static void mui_frame(void *data)
    /* Title */
    if (mui_get_core_title(title_msg, sizeof(title_msg)) == 0)
    {
+      char title_buf_msg_tmp[256];
       char title_buf_msg[256];
-      strlcpy(title_buf_msg, title_buf, sizeof(title_buf_msg));
-      snprintf(title_buf, sizeof(title_buf), "%s (Core: %s)", title_buf_msg, title_msg);
+      size_t usable_width = width - (mui->margin * 2);
+      int ticker_limit, value_len;
+      
+      snprintf(title_buf_msg, sizeof(title_buf), "%s (Core: %s)", title_buf, title_msg);
+      value_len = strlen(title_buf);
+      ticker_limit = (usable_width / mui->glyph_width) - (value_len + 2);
+
+      menu_animation_ticker_str(title_buf_msg_tmp, ticker_limit, *frame_count / 20, title_buf_msg, true);
+
+      strlcpy(title_buf, title_buf_msg_tmp, sizeof(title_buf));
    }
 
    mui_blit_line(title_margin, header_height / 2, width, height,
