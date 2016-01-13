@@ -141,31 +141,27 @@ static void gx_devthread(void *a)
 }
 #endif
 
-#ifdef HAVE_LOGGER
-int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
+static int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
 {
+#ifdef HAVE_LOGGER
    static char temp[4000];
    size_t l = len >= 4000 ? 3999 : len - 1;
    memcpy(temp, ptr, l);
    temp[l] = 0;
    logger_send("%s", temp);
-   return len;
-}
 #elif defined(HAVE_FILE_LOGGER)
-int gx_logger_file(struct _reent *r, int fd, const char *ptr, size_t len)
-{
    fwrite(ptr, 1, len, retro_main_log_file());
+#endif
    return len;
 }
-#endif
-
 #endif
 
 #ifdef IS_SALAMANDER
 extern char gx_rom_path[PATH_MAX_LENGTH];
 #endif
 
-static void frontend_gx_get_environment_settings(int *argc, char *argv[],
+static void frontend_gx_get_environment_settings(
+      int *argc, char *argv[],
       void *args, void *params_data)
 {
 #ifndef IS_SALAMANDER
@@ -364,7 +360,6 @@ static void frontend_gx_process_args(int *argc, char *argv[])
    }
 #endif
 }
-
 
 static void frontend_gx_set_fork(bool exitspawn, bool start_game)
 {
