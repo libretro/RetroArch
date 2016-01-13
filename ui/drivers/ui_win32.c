@@ -506,7 +506,6 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   title       = "Load Core";
 #endif
                   initial_dir = settings->libretro_directory;
-                  cmd         = EVENT_CMD_LOAD_CORE;
                   break;
                case ID_M_LOAD_CONTENT:
                   extensions  = "All Files\0*.*\0\0";
@@ -516,7 +515,6 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   title       = "Load Content";
 #endif
                   initial_dir = settings->menu_content_directory;
-                  cmd         = EVENT_CMD_LOAD_CONTENT;
                   break;
             }
 
@@ -526,9 +524,11 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                {
                   case ID_M_LOAD_CORE:
                      runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, win32_file);
+                     cmd         = EVENT_CMD_LOAD_CORE;
                      break;
                   case ID_M_LOAD_CONTENT:
                      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, win32_file);
+                     cmd         = EVENT_CMD_LOAD_CONTENT;
                      do_wm_close = true;
                      break;
                }
