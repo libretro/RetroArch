@@ -886,7 +886,7 @@ static void mui_frame(void *data)
       size_t usable_width = width - (mui->margin * 2);
       int ticker_limit, value_len;
       
-      snprintf(title_buf_msg, sizeof(title_buf), "%s (Core: %s)", title_buf, title_msg);
+      snprintf(title_buf_msg, sizeof(title_buf), "%s (%s)", title_buf, title_msg);
       value_len = strlen(title_buf);
       ticker_limit = (usable_width / mui->glyph_width) - (value_len + 2);
 
