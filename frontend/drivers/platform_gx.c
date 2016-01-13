@@ -141,11 +141,12 @@ static void gx_devthread(void *a)
 }
 #endif
 
+#ifdef HAVE_LOGGER
 static int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
 {
 #ifdef HAVE_LOGGER
    static char temp[4000];
-   size_t l = len >= 4000 ? 3999 : len - 1;
+   size_t l = (len >= 4000) ? 3999 : len - 1;
    memcpy(temp, ptr, l);
    temp[l] = 0;
    logger_send("%s", temp);
@@ -154,6 +155,8 @@ static int gx_logger_net(struct _reent *r, int fd, const char *ptr, size_t len)
 #endif
    return len;
 }
+#endif
+
 #endif
 
 #ifdef IS_SALAMANDER

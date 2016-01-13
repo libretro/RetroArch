@@ -102,9 +102,10 @@ extern uint64_t lifecycle_state;
 static uint64_t pad_state[MAX_PADS];
 static uint32_t pad_type[MAX_PADS] = { WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER };
 static int16_t analog_state[MAX_PADS][2][2];
-static bool g_menu;
+static bool g_menu = false;
+
 #ifdef HW_RVL
-static bool g_quit;
+static bool g_quit = false;
 
 static void power_callback(void)
 {
@@ -326,6 +327,12 @@ static void gx_joypad_poll(void)
    gcpad = PAD_ScanPads();
 
 #ifdef HW_RVL
+   if (g_quit)
+   {
+      runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+      return;
+   }
+
    WPAD_ReadPending(WPAD_CHAN_ALL, NULL);
 #endif
 
