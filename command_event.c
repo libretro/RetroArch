@@ -1314,14 +1314,7 @@ bool event_command(enum event_command cmd)
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          break;
       case EVENT_CMD_RESTART_RETROARCH:
-         {
-#if defined(GEKKO) && defined(HW_RVL)
-            char new_path[PATH_MAX_LENGTH];
-            fill_pathname_join(new_path, g_defaults.dir.core, SALAMANDER_FILE, sizeof(new_path));
-            runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
-#endif
-            frontend_driver_set_fork(true, false);
-         }
+         frontend_driver_set_fork(true, false);
          break;
       case EVENT_CMD_MENU_SAVE_CURRENT_CONFIG:
          event_save_current_config();

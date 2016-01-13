@@ -366,8 +366,18 @@ static void frontend_gx_process_args(int *argc, char *argv[])
 
 static void frontend_gx_set_fork(bool exitspawn, bool start_game)
 {
-   exit_spawn = exitspawn;
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
+   char new_path[PATH_MAX_LENGTH];
+   fill_pathname_join(new_path, g_defaults.dir.core, SALAMANDER_FILE, sizeof(new_path));
+   runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
+#endif
+
+   exit_spawn           = exitspawn;
    exitspawn_start_game = start_game;
+
+#ifndef IS_SALAMANDER
+   rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+#endif
 }
 
 static int frontend_gx_get_rating(void)
