@@ -109,23 +109,27 @@ static volatile bool gx_stop_dev_thread;
 
 static void gx_devthread(void *a)
 {
+   unsigned i;
+
    while (!gx_stop_dev_thread)
    {
-      unsigned i;
-
       slock_lock(gx_device_mutex);
 
-      for (i = 0; i < GX_DEVICE_END; i++) {
-         if (gx_devices[i].mounted) {
-            if (!gx_devices[i].interface->isInserted()) {
-               gx_devices[i].mounted = false;
+      for (i = 0; i < GX_DEVICE_END; i++)
+      {
+         if (gx_devices[i].mounted)
+         {
+            if (!gx_devices[i].interface->isInserted())
+            {
                char n[8];
+
+               gx_devices[i].mounted = false;
                snprintf(n, sizeof(n), "%s:", gx_devices[i].name);
                fatUnmount(n);
             }
-         } else if (gx_devices[i].interface->startup() && gx_devices[i].interface->isInserted()) {
-            gx_devices[i].mounted = fatMountSimple(gx_devices[i].name, gx_devices[i].interface);
          }
+         else if (gx_devices[i].interface->startup() && gx_devices[i].interface->isInserted())
+            gx_devices[i].mounted = fatMountSimple(gx_devices[i].name, gx_devices[i].interface);
       }
 
       slock_unlock(gx_device_mutex);
