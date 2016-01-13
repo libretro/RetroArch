@@ -317,7 +317,12 @@ static void frontend_gx_deinit(void *data)
 #endif
 }
 
-static void frontend_gx_exec(const char *path, bool should_load_game);
+static void frontend_gx_exec(const char *path, bool should_load_game)
+{
+#ifdef HW_RVL
+   system_exec_wii(path, should_load_game);
+#endif
+}
 
 static void frontend_gx_exitspawn(char *s, size_t len)
 {
@@ -334,7 +339,8 @@ static void frontend_gx_exitspawn(char *s, size_t len)
    frontend_gx_exec(s, should_load_game);
 
    /* FIXME/TODO - hack
-    * direct loading failed (out of memory), try to jump to Salamander,
+    * direct loading failed (out of memory), 
+    * try to jump to Salamander,
     * then load the correct core */
    fill_pathname_join(s, g_defaults.dir.core,
          "boot.dol", len);
@@ -345,6 +351,7 @@ static void frontend_gx_exitspawn(char *s, size_t len)
 static void frontend_gx_process_args(int *argc, char *argv[])
 {
 #ifndef IS_SALAMANDER
+   char path[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
 
    /* A big hack: sometimes Salamander doesn't save the new core
@@ -352,19 +359,12 @@ static void frontend_gx_process_args(int *argc, char *argv[])
     * settings->libretro is set here. */
    if (!settings->libretro[0] && *argc >= 1 && strrchr(argv[0], '/'))
    {
-      char path[PATH_MAX_LENGTH];
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
       rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, path);
    }
 #endif
 }
 
-static void frontend_gx_exec(const char *path, bool should_load_game)
-{
-#ifdef HW_RVL
-   system_exec_wii(path, should_load_game);
-#endif
-}
 
 static void frontend_gx_set_fork(bool exitspawn, bool start_game)
 {
