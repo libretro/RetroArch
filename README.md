@@ -195,6 +195,6 @@ NOTE: A pre-existing libretro library needs to be present in the root directory 
 
 You will need to have the libogc libraries and a working Devkit PPC toolchain installed in order to compile RetroArch Wii.
 
-<tt>make -f Makefile.wii</tt>
+<tt>make -f Makefile.griffin platform=wii</tt>
 
 NOTE: A pre-existing libretro library needs to be present in the root directory in order to link RetroArch Wii. This file needs to be called <em><b>`libretro_wii.a`</b></em>.
