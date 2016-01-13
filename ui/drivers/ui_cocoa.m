@@ -334,6 +334,7 @@ extern void action_ok_push_quick_menu(void);
     [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
 #endif
     [[NSApplication sharedApplication] runModalForWindow:panel];
+    [g_context makeCurrentContext];
 }
 
 - (void)openDocument:(id)sender
@@ -379,6 +380,7 @@ extern void action_ok_push_quick_menu(void);
    [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
 #endif
    [[NSApplication sharedApplication] runModalForWindow:panel];
+    [g_context makeCurrentContext];
 }
 
 - (void)unloadingCore
