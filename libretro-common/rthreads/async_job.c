@@ -47,7 +47,7 @@ struct async_job
 
 static void async_job_processor(void *userdata)
 {
-   async_job_node_t *node;
+   async_job_node_t *node = NULL;
    async_job_t      *ajob = (async_job_t*)userdata;
    
    for (;;)
@@ -73,39 +73,47 @@ async_job_t *async_job_new(void)
 {
    async_job_t *ajob = (async_job_t*)calloc(1, sizeof(*ajob));
    
+   if (!ajob)
+      return NULL;
+
+   ajob->lock   = slock_new();
+
+   if (!ajob->lock)
+      goto error;
+
+   ajob->sem = ssem_new(0);
+
+   if (!ajob->sem)
+      goto error;
+
+   ajob->thread = sthread_create(async_job_processor, (void*)ajob);
+
+   if (!ajob->thread)
+      goto error;
+
+   return ajob;
+
+error:
+   if (ajob->lock)
+      slock_free(ajob->lock);
+   ajob->lock = NULL;
+   if (ajob->sem)
+      ssem_free(ajob->sem);
    if (ajob)
-   {
-      ajob->lock   = slock_new();
-      
-      if (ajob->lock)
-      {
-         ajob->sem = ssem_new(0);
-         
-         if (ajob->sem)
-         {
-            ajob->thread = sthread_create(async_job_processor, (void*)ajob);
-            
-            if (ajob->thread)
-               return ajob;
-            
-            ssem_free(ajob->sem);
-         }
-         
-         slock_free(ajob->lock);
-      }
-      
       free((void*)ajob);
-   }
-   
    return NULL;
 }
 
 void async_job_free(async_job_t *ajob)
 {
+   if (!ajob)
+      return;
+
    ajob->finish = 1;
    ssem_signal(ajob->sem);
    sthread_join(ajob->thread);
    ssem_free(ajob->sem);
+
    free((void*)ajob);
 }
 

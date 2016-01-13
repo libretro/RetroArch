@@ -39,27 +39,31 @@ struct ssem
 
 ssem_t *ssem_new(int value)
 {
-   ssem_t *semaphore = (ssem_t*)malloc(sizeof(*semaphore));
+   ssem_t *semaphore = (ssem_t*)calloc(1, sizeof(*semaphore));
 
+   if (!semaphore)
+      goto error;
+   
+   semaphore->value   = value;
+   semaphore->wakeups = 0;
+   semaphore->mutex   = slock_new();
+
+   if (!semaphore->mutex)
+      goto error;
+
+   semaphore->cond = scond_new();
+
+   if (!semaphore->cond)
+      goto error;
+
+   return semaphore;
+
+error:
+   if (semaphore->mutex)
+      slock_free(semaphore->mutex);
+   semaphore->mutex = NULL;
    if (semaphore)
-   {
-      semaphore->value = value;
-      semaphore->wakeups = 0;
-      semaphore->mutex = slock_new();
-
-      if (semaphore->mutex)
-      {
-         semaphore->cond = scond_new();
-
-         if (semaphore->cond)
-            return semaphore;
-
-         slock_free(semaphore->mutex);
-      }
-
       free((void*)semaphore);
-   }
-
    return NULL;
 }
 
@@ -75,6 +79,9 @@ void ssem_free(ssem_t *semaphore)
 
 void ssem_wait(ssem_t *semaphore)
 {
+   if (!semaphore)
+      return;
+
    slock_lock(semaphore->mutex);
    semaphore->value--;
 
@@ -93,6 +100,9 @@ void ssem_wait(ssem_t *semaphore)
 
 void ssem_signal(ssem_t *semaphore)
 {
+   if (!semaphore)
+      return;
+
    slock_lock(semaphore->mutex);
    semaphore->value++;
 
