@@ -364,12 +364,15 @@ static void frontend_gx_process_args(int *argc, char *argv[])
 #endif
 }
 
-static void frontend_gx_set_fork(bool exitspawn, bool start_game)
+static void frontend_gx_set_fork(bool exitspawn, bool start_game, bool restart)
 {
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
-   char new_path[PATH_MAX_LENGTH];
-   fill_pathname_join(new_path, g_defaults.dir.core, SALAMANDER_FILE, sizeof(new_path));
-   runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
+   if (restart)
+   {
+      char new_path[PATH_MAX_LENGTH];
+      fill_pathname_join(new_path, g_defaults.dir.core, SALAMANDER_FILE, sizeof(new_path));
+      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
+   }
 #endif
 
    exit_spawn           = exitspawn;
@@ -413,6 +416,13 @@ static int frontend_gx_parse_drive_list(void *data)
    return 0;
 }
 
+static void frontend_gx_shutdown(bool unused)
+{
+#ifndef IS_SALAMANDER
+   exit(0);
+#endif
+}
+
 frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_environment_settings,
    frontend_gx_init,
@@ -421,7 +431,7 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_process_args,
    frontend_gx_exec,
    frontend_gx_set_fork,
-   NULL,                            /* shutdown */
+   frontend_gx_shutdown,
    NULL,                            /* get_name */
    NULL,                            /* get_os */
    frontend_gx_get_rating,

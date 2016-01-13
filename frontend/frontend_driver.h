@@ -64,7 +64,7 @@ typedef struct frontend_ctx_driver
 
    process_args_t process_args;
    void (*exec)(const char *, bool);
-   void (*set_fork)(bool exitspawn, bool start_game);
+   void (*set_fork)(bool exitspawn, bool start_game, bool restart);
    void (*shutdown)(bool);
    void (*get_name)(char *, size_t);
    void (*get_os)(char *, size_t, int *major, int *minor);
@@ -116,7 +116,7 @@ int frontend_driver_parse_drive_list(void *data);
 
 void frontend_driver_content_loaded(void);
 
-void frontend_driver_set_fork(bool a, bool b);
+void frontend_driver_set_fork(bool a, bool b, bool restart);
 
 void frontend_driver_process_args(int *argc, char *argv[]);
 

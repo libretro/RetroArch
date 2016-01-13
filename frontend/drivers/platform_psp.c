@@ -273,7 +273,7 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #endif
 }
 
-static void frontend_psp_set_fork(bool exit, bool start_game)
+static void frontend_psp_set_fork(bool exit, bool start_game, bool restart)
 {
    exit_spawn = true;
    exitspawn_start_game = start_game;

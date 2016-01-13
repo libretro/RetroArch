@@ -1231,7 +1231,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
 
 #if defined(RARCH_CONSOLE)
-            frontend_driver_set_fork(true, true);
+            frontend_driver_set_fork(true, true, false);
 #elif defined(HAVE_DYNAMIC)
             rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
 #endif
