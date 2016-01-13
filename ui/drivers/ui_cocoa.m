@@ -293,6 +293,9 @@ extern void action_ok_push_quick_menu(void);
 - (IBAction)openCore:(id)sender {
     NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
 #if defined(MAC_OS_X_VERSION_10_6)
+    settings_t *settings = config_get_ptr();
+    NSString *startdir   = BOXSTRING(settings->libretro_directory);
+    [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
     [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
      {
          [[NSApplication sharedApplication] stopModal];
@@ -336,6 +339,11 @@ extern void action_ok_push_quick_menu(void);
 {
    NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
 #if defined(MAC_OS_X_VERSION_10_6)
+    settings_t *settings = config_get_ptr();
+    NSString *startdir   = BOXSTRING(settings->menu_content_directory);
+    if (!startdir.length)
+        startdir         = BOXSTRING("/");
+    [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
       [[NSApplication sharedApplication] stopModal];
