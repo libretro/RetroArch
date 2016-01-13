@@ -302,11 +302,6 @@ static void frontend_darwin_get_name(char *s, size_t len)
 
 static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
-   (void)s;
-   (void)len;
-   (void)major;
-   (void)minor;
-
 #if defined(IOS)
    get_ios_version(major, minor);
    strlcpy(s, "iOS", len);
