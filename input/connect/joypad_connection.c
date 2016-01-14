@@ -67,50 +67,50 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,
    void *data, send_control_t ptr)
 {
-   int pad = pad_connection_find_vacant_pad(joyconn);
-
-   if (pad != -1)
+   static const struct
    {
-      joypad_connection_t *s = (joypad_connection_t*)&joyconn[pad];
+      const char* name;
+      uint16_t vid;
+      uint16_t pid;
+      pad_connection_interface_t *iface;
+   } pad_map[] =
+   {
+      { "Nintendo RVL-CNT-01",         1406,  816,    &pad_connection_wii },
+      { "Nintendo RVL-CNT-01-UC",      1406,  816,    &pad_connection_wiiupro },
+      { "Wireless Controller",         1356,  1476,   &pad_connection_ps4 },
+      { "PLAYSTATION(R)3 Controller",  1356,  616,    &pad_connection_ps3 },
+      { "PLAYSTATION(R)3 Controller",  22421, 8406,   &pad_connection_ps3 },
+      { 0, 0}
+   };
+   joypad_connection_t *s = NULL;
+   int                pad = pad_connection_find_vacant_pad(joyconn);
 
-      static const struct
-      {
-         const char* name;
-         uint16_t vid;
-         uint16_t pid;
-         pad_connection_interface_t *iface;
-      } pad_map[] =
-      {
-          { "Nintendo RVL-CNT-01",         1406,  816,    &pad_connection_wii },
-          { "Nintendo RVL-CNT-01-UC",      1406,  816,    &pad_connection_wiiupro },
-          { "Wireless Controller",         1356,  1476,   &pad_connection_ps4 },
-          { "PLAYSTATION(R)3 Controller",  1356,  616,    &pad_connection_ps3 },
-          { "PLAYSTATION(R)3 Controller",  22421, 8406,   &pad_connection_ps3 },
-          { 0, 0}
-      };
+   if (pad == -1)
+      return -1;
+
+   s = (joypad_connection_t*)&joyconn[pad];
        
-      if (s)
+   if (s)
+   {
+      unsigned i;
+
+      for (i = 0; name && pad_map[i].name; i++)
       {
-          unsigned i;
-          
-          for (i = 0; name && pad_map[i].name; i++)
-          {
-              const char *name_match = strstr(pad_map[i].name, name);
-              
-              if(pad_map[i].vid == 1406 && pad_map[i].pid == 816)  /* Never change, Nintendo. */
-              {
-                  if(strcmp(pad_map[i].name, name) != 0)
-                      continue;
-              }
-              
-              if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
-              {
-                  s->iface      = pad_map[i].iface;
-                  s->data       = s->iface->init(data, pad, ptr);
-                  s->connected  = true;
-                  return pad;
-              }
-          }
+         const char *name_match = strstr(pad_map[i].name, name);
+
+         if(pad_map[i].vid == 1406 && pad_map[i].pid == 816)  /* Never change, Nintendo. */
+         {
+            if(strcmp(pad_map[i].name, name) != 0)
+               continue;
+         }
+
+         if (name_match || (pad_map[i].vid == vid && pad_map[i].pid == pid))
+         {
+            s->iface      = pad_map[i].iface;
+            s->data       = s->iface->init(data, pad, ptr);
+            s->connected  = true;
+            return pad;
+         }
       }
    }
 
@@ -179,9 +179,7 @@ bool pad_connection_rumble(joypad_connection_t *joyconn,
 {
    if (!joyconn->connected)
       return false;
-   if (!joyconn->iface)
-      return false;
-   if (!joyconn->iface->set_rumble)
+   if (!joyconn->iface || !joyconn->iface->set_rumble)
       return false;
 
    joyconn->iface->set_rumble(joyconn->data, effect, strength);
