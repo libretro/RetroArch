@@ -88,7 +88,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    if (pad == -1)
       return -1;
 
-   s = (joypad_connection_t*)&joyconn[pad];
+   s = &joyconn[pad];
        
    if (s)
    {
