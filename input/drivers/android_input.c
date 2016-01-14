@@ -965,8 +965,10 @@ static void android_input_poll_input(void *data)
                {
                   int keycode = AKeyEvent_getKeyCode(event);
 
-                  if (is_keyboard_id(id) && !predispatched)
-                     android_input_poll_event_type_keyboard(event, keycode, &handled);
+                  if (is_keyboard_id(id))
+                  {
+                     if (!predispatched) android_input_poll_event_type_keyboard(event, keycode, &handled);
+                  }
                   else
                      android_input_poll_event_type_key(android_app,
                         event, port, keycode, source, type_event, &handled);
