@@ -39,6 +39,7 @@
 #endif
 
 #define MAX_TOUCH 16
+#define MAX_NUM_KEYBOARDS 3
 
 typedef struct
 {
@@ -53,9 +54,10 @@ struct input_pointer
    int16_t full_x, full_y;
 };
 
-static int id_1 = -1;
-static int id_2 = -1;
-static int id_3 = -1;
+static int pad_id1 = -1;
+static int pad_id2 = -1;
+static int kbd_id[MAX_NUM_KEYBOARDS];
+static int kbd_num = 0;
 
 enum
 {
@@ -450,8 +452,8 @@ static bool android_input_init_handle(void)
       RARCH_LOG("Set engine_handle_dpad to 'Get Axis Value' (for reading extra analog sticks)");
       engine_handle_dpad = engine_handle_dpad_getaxisvalue;
    }
-   id_1 = -1;
-   id_2 = -1;
+   pad_id1 = -1;
+   pad_id2 = -1;
 
    return true;
 }
@@ -547,6 +549,14 @@ static INLINE int android_input_poll_event_type_motion(
    }
 
    return 0;
+}
+
+bool is_keyboard_id(int id)
+{
+   for(int i=0; i<kbd_num; i++)
+      if (id == kbd_id[i]) return true;
+
+   return false;
 }
 
 static INLINE void android_input_poll_event_type_keyboard(
@@ -677,13 +687,13 @@ static void handle_hotplug(android_input_data_t *android_data,
       RARCH_LOG("Special Device Detected: %s\n", device_model);
       {
 #if 0
-         RARCH_LOG("- Pads Mapped: %d\n- Device Name: %s\n- IDS: %d, %d, %d", android_data->pads_connected, device_name, id, id_1, id_2);
+         RARCH_LOG("- Pads Mapped: %d\n- Device Name: %s\n- IDS: %d, %d, %d", android_data->pads_connected, device_name, id, pad_id1, pad_id2);
 #endif
          /* remove the remote if it is mapped */
          if (strstr(android_data->pad_states[0].name,"SHIELD Remote"))
          {
-            id_1 = -1;
-            id_2 = -1;
+            pad_id1 = -1;
+            pad_id2 = -1;
             android_data->pads_connected = 0;
             *port = 0;
             strlcpy(name_buf, device_name, sizeof(name_buf));
@@ -696,10 +706,10 @@ static void handle_hotplug(android_input_data_t *android_data,
           * store the id for later use
          */
          if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03") && android_data->pads_connected==0)
-            id_1 = id;
-         else if (strstr(device_name, "Virtual") && id_1 != -1)
+            pad_id1 = id;
+         else if (strstr(device_name, "Virtual") && pad_id1 != -1)
          {
-            id = id_1;
+            id = pad_id1;
             return;
          }
 
@@ -718,12 +728,12 @@ static void handle_hotplug(android_input_data_t *android_data,
       /* only use the hack if the device is one of the built-in devices */
       RARCH_LOG("Special Device Detected: %s\n", device_model);
       {
-         if ( id_1 < 0 )
-            id_1 = id;
+         if ( pad_id1 < 0 )
+            pad_id1 = id;
          else
-            id_2 = id;
+            pad_id2 = id;
 
-         if ( id_2 > 0)
+         if ( pad_id2 > 0)
             return;
 
          strlcpy (name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
@@ -741,12 +751,12 @@ static void handle_hotplug(android_input_data_t *android_data,
       /* only use the hack if the device is one of the built-in devices */
       RARCH_LOG("Special Device Detected: %s\n", device_model);
       {
-         if ( id_1 < 0 )
-            id_1 = id;
+         if ( pad_id1 < 0 )
+            pad_id1 = id;
          else
-            id_2 = id;
+            pad_id2 = id;
 
-         if ( id_2 > 0)
+         if ( pad_id2 > 0)
             return;
 
          strlcpy (name_buf, "GPD XD", sizeof(name_buf));
@@ -764,12 +774,12 @@ static void handle_hotplug(android_input_data_t *android_data,
       /* only use the hack if the device is one of the built-in devices */
       RARCH_LOG("Special Device Detected: %s\n", device_model);
       {
-         if ( id_1 < 0 )
-            id_1 = id;
+         if ( pad_id1 < 0 )
+            pad_id1 = id;
          else
-            id_2 = id;
+            pad_id2 = id;
 
-         if ( id_2 > 0)
+         if ( pad_id2 > 0)
             return;
 
          strlcpy (name_buf, "XPERIA Play", sizeof(name_buf));
@@ -787,12 +797,12 @@ static void handle_hotplug(android_input_data_t *android_data,
       /* only use the hack if the device is one of the built-in devices */
       RARCH_LOG("ARCHOS GAMEPAD Detected: %s\n", device_model);
       {
-         if ( id_1 < 0 )
-            id_1 = id;
+         if ( pad_id1 < 0 )
+            pad_id1 = id;
          else
-            id_2 = id;
+            pad_id2 = id;
 
-         if ( id_2 > 0)
+         if ( pad_id2 > 0)
             return;
 
          strlcpy (name_buf, "ARCHOS GamePad", sizeof(name_buf));
@@ -846,17 +856,17 @@ static void handle_hotplug(android_input_data_t *android_data,
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
 
    // if device is keyboard only and didn't match any of the devices above
-   // then assume it is a keyboard, register the id, and return unless another
-   // keyboard is already registered
-   else if(source == AINPUT_SOURCE_KEYBOARD && id_3 == -1)
+   // then assume it is a keyboard, register the id, and return unless the
+   // maximum number of keyboards are already registered
+   else if(source == AINPUT_SOURCE_KEYBOARD && kbd_num < MAX_NUM_KEYBOARDS)
    {
-      id_3 = id;
+      kbd_id[kbd_num] = id;
+      kbd_num++;
       return;
    }
 
    // if device was not keyboard only, yet did not match any of the devices
-   // above or another keyboard was already mapped, then try to autoconfigure
-   // as gamepad based on device_name
+   // then try to autoconfigure as gamepad based on device_name
    else if (!string_is_empty(device_name))
       strlcpy(name_buf, device_name, sizeof(name_buf));
 
@@ -915,8 +925,8 @@ static int android_input_get_id(AInputEvent *event)
 {
    int id = AInputEvent_getDeviceId(event);
 
-   if (id == id_2)
-      id = id_1;
+   if (id == pad_id2)
+      id = pad_id1;
 
    return id;
 }
@@ -940,7 +950,7 @@ static void android_input_poll_input(void *data)
          int            id = android_input_get_id(event);
          int          port = android_input_get_id_port(android_data, id, source);
 
-         if (port < 0 && id != id_3)
+         if (port < 0 && !is_keyboard_id(id))
             handle_hotplug(android_data, android_app,
             &port, id, source);
  
@@ -955,7 +965,7 @@ static void android_input_poll_input(void *data)
                {
                   int keycode = AKeyEvent_getKeyCode(event);
 
-                  if (id == id_3 && !predispatched)
+                  if (is_keyboard_id(id) && !predispatched)
                      android_input_poll_event_type_keyboard(event, keycode, &handled);
                   else
                      android_input_poll_event_type_key(android_app,
