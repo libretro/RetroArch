@@ -306,14 +306,14 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
    get_ios_version(major, minor);
    strlcpy(s, "iOS", len);
 #elif defined(OSX)
-    typedef struct
-    {
-        NSInteger majorVersion;
-        NSInteger minorVersion;
-        NSInteger patchVersion;
-    } NSMyOSVersion;
     if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
     {
+        typedef struct
+        {
+            NSInteger majorVersion;
+            NSInteger minorVersion;
+            NSInteger patchVersion;
+        } NSMyOSVersion;
         NSMyOSVersion version = ((NSMyOSVersion(*)(id, SEL))objc_msgSend_stret)([NSProcessInfo processInfo], @selector(operatingSystemVersion));
         *major = version.majorVersion;
         *minor = version.minorVersion;
