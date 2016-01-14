@@ -1576,7 +1576,9 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             return false;
          return video_driver_cached_frame();
       case RARCH_DISPLAY_CTL_IS_ALIVE:
-         return current_video->alive(video_driver_data);
+         if (current_video)
+            return current_video->alive(video_driver_data);
+         break;
       case RARCH_DISPLAY_CTL_IS_FOCUSED:
          return current_video->focus(video_driver_data);
       case RARCH_DISPLAY_CTL_HAS_WINDOWED:
