@@ -386,8 +386,8 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
     fill_pathname_join(g_defaults.dir.assets, bundle_path_buf, "Contents/Resources/assets", sizeof(g_defaults.dir.assets));
     fill_pathname_join(g_defaults.dir.menu_config, bundle_path_buf, "Contents/Resources/configs", sizeof(g_defaults.dir.menu_config));
     fill_pathname_join(g_defaults.path.config, g_defaults.dir.menu_config, "retroarch.cfg", sizeof(g_defaults.path.config));
-    fill_pathname_join(g_defaults.dir.database, bundle_path_buf, "Contents/Resources/rdb", sizeof(g_defaults.dir.database));
-    fill_pathname_join(g_defaults.dir.cursor, bundle_path_buf, "Contents/Resources/cursors", sizeof(g_defaults.dir.cursor));
+    fill_pathname_join(g_defaults.dir.database, bundle_path_buf, "Contents/Resources/database/rdb", sizeof(g_defaults.dir.database));
+    fill_pathname_join(g_defaults.dir.cursor, bundle_path_buf, "Contents/Resources/database/cursors", sizeof(g_defaults.dir.cursor));
     fill_pathname_join(g_defaults.dir.cheats, bundle_path_buf, "Contents/Resources/cht", sizeof(g_defaults.dir.cheats));
 #endif
 #endif
