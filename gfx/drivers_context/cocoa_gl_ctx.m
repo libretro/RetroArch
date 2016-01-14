@@ -129,11 +129,19 @@ void *get_chosen_screen(void)
    if (settings->video.monitor_index >= RAScreen.screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
+#if __has_feature(objc_arc)
+      return (__bridge void*)RAScreen.mainScreen;
+#else
       return (void*)RAScreen.mainScreen;
+#endif
    }
 	
    NSArray *screens = [RAScreen screens];
+#if __has_feature(objc_arc)
+   return ((__bridge void*)[screens objectAtIndex:settings->video.monitor_index]);
+#else
    return ((void*)[screens objectAtIndex:settings->video.monitor_index]);
+#endif
 #endif
 }
 
@@ -317,7 +325,11 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 {
     static float ret = 0.0f;
     SEL selector     = NSSelectorFromString(BOXSTRING("nativeScale"));
+#if __has_feature(objc_arc)
+    RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
+#else
     RAScreen *screen = (RAScreen*)get_chosen_screen();
+#endif
     
     if (ret != 0.0f)
        return ret;
@@ -335,7 +347,11 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 
 static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
+#if __has_feature(objc_arc)
+   RAScreen *screen  = (__bridge RAScreen*)get_chosen_screen();
+#else
    RAScreen *screen  = (RAScreen*)get_chosen_screen();
+#endif
    CGRect size       = screen.bounds;
    float screenscale = cocoagl_gfx_ctx_get_native_scale();
 	
@@ -381,7 +397,11 @@ static void cocoagl_gfx_ctx_update_window_title(void *data)
 static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types type,
             float *value)
 {
-   RAScreen *screen               = (RAScreen*)get_chosen_screen();
+#if __has_feature(objc_arc)
+    RAScreen *screen               = (__bridge RAScreen*)get_chosen_screen();
+#else
+    RAScreen *screen               = (RAScreen*)get_chosen_screen();
+#endif
 #if defined(HAVE_COCOA)
     NSDictionary *description     = [screen deviceDescription];
     NSSize  display_pixel_size    = [[description objectForKey:NSDeviceSize] sizeValue];
