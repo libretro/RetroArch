@@ -127,7 +127,11 @@ enum
    XMB_SYSTEM_TAB_ADD
 };
 
+#ifdef HAVE_LIBRETRODB
 #define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_ADD
+#else
+#define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_HISTORY
+#endif
 
 struct xmb_texture_item
 {
