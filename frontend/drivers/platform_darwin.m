@@ -320,11 +320,8 @@ static void frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
     }
     else
     {
-        UInt32 version = 0;
-        OSStatus err = Gestalt(gestaltSystemVersion, (SInt32*)&version);
-        (void)err;
-        
-        sscanf(version, "%d.%d", major, minor);
+        Gestalt(gestaltSystemVersionMinor, (SInt32*)minor);
+        Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
     }
    strlcpy(s, "OSX", len);
 #endif
