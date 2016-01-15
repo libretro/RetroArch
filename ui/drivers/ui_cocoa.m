@@ -34,7 +34,7 @@
 static id apple_platform;
 
 extern void *get_chosen_screen(void);
-extern float get_backing_scale_factor(void)
+extern float get_backing_scale_factor(void);
 
 void apple_rarch_exited(void)
 {
@@ -108,10 +108,9 @@ void apple_rarch_exited(void)
          {
             NSPoint pos;
             NSPoint mouse_pos;
-            CGFloat backing_scale_factor = 1.0f;
             apple                        = (cocoa_input_data_t*)input_driver_get_data();
             float   backing_scale_factor = get_backing_scale_factor();
-            if (!apple || (backing_scale_factor == 0.0)
+            if (!apple || (backing_scale_factor == 0.0))
                return;
 
             /* Relative */
