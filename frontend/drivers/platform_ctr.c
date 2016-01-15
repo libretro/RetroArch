@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-
+#include <ctype.h>
 #include <boolean.h>
 
 #include <3ds.h>
@@ -89,7 +89,8 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
       *argc = 0;
       while (i)
       {
-         if(argv[i] && argv[i][0])
+         if(argv[i] && isalnum(argv[i][0])
+            && strncmp(argv[i], "3dslink:/", 9))
          {
             argv[1] = argv[i];
             argv[2] = NULL;

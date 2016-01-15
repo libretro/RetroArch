@@ -30,6 +30,7 @@ __system_runflags:
 startup:
 	@ Save return address
 	mov r4, lr
+   bics sp, sp, #7
 
 	@ Clear the BSS section
 	ldr r0, =__bss_start__
@@ -39,7 +40,6 @@ startup:
 
 	@ System initialization
 	mov r0, r4
-	and r4, sp, #7
 	bl initSystem
 
 	@ Set up argc/argv arguments for main()
@@ -50,8 +50,6 @@ startup:
 
 	@ Jump to user code
 	ldr r3, =main
-	cmp r4, #0
-	ldrne r3, =ctr_request_update
 	ldr lr, =__ctru_exit
 	bx  r3
 
