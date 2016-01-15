@@ -108,7 +108,12 @@ void apple_rarch_exited(void)
             NSPoint pos;
             NSPoint mouse_pos;
             CGFloat backing_scale_factor = 1.0f;
-            NSScreen *screen             = (NSScreen*)get_chosen_screen();
+
+#if __has_feature(objc_arc)
+            RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
+#else
+            RAScreen *screen = (RAScreen*)get_chosen_screen();
+#endif
 
             apple = (cocoa_input_data_t*)input_driver_get_data();
             if (!apple)
