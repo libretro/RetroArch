@@ -147,8 +147,10 @@ static void cocoa_input_poll(void *data)
 
    for (i = 0; i < apple->touch_count; i++)
    {
+#ifndef IOS
       apple->touches[i].screen_x *= backing_scale_factor;
       apple->touches[i].screen_y *= backing_scale_factor;
+#endif
       input_translate_coord_viewport(
             apple->touches[i].screen_x,
             apple->touches[i].screen_y,
@@ -192,19 +194,27 @@ static int16_t cocoa_mouse_state(cocoa_input_data_t *apple,
 static int16_t cocoa_mouse_state_screen(cocoa_input_data_t *apple,
                                         unsigned id)
 {
+   int16_t val;
+#ifndef IOS
    float   backing_scale_factor = get_backing_scale_factor();
+#endif
 
     switch (id)
     {
         case RETRO_DEVICE_ID_MOUSE_X:
-            return (apple->window_pos_x * backing_scale_factor);
-        case RETRO_DEVICE_ID_MOUSE_Y:
-            return (apple->window_pos_y * backing_scale_factor);
-        default:
+            val = apple->window_pos_x;
             break;
+        case RETRO_DEVICE_ID_MOUSE_Y:
+            val = apple->window_pos_y;
+            break;
+        default:
+            return cocoa_mouse_state(apple, id);
     }
-    
-    return cocoa_mouse_state(apple, id);
+
+#ifndef IOS
+    val *= backing_scale_factor;
+#endif
+    return val;
 }
 
 static int16_t cocoa_pointer_state(cocoa_input_data_t *apple,
