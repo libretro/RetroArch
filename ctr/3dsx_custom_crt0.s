@@ -30,7 +30,7 @@ __system_runflags:
 startup:
 	@ Save return address
 	mov r4, lr
-   bics sp, sp, #7
+	bics sp, sp, #7
 
 	@ Clear the BSS section
 	ldr r0, =__bss_start__
