@@ -131,7 +131,7 @@ void *get_chosen_screen(void)
 #else
    settings_t *settings = config_get_ptr();
    NSArray *screens = [RAScreen screens];
-   if (!screens)
+   if (!screens || !settings)
       return NULL;
 
    if (settings->video.monitor_index >= screens.count)
