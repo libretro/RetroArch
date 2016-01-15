@@ -116,10 +116,8 @@ void apple_rarch_exited(void)
 #endif
 
             apple = (cocoa_input_data_t*)input_driver_get_data();
-            if (!apple)
+            if (!apple || !screen)
                return;
-
-            (void)screen;
 
             /* Relative */
             apple->mouse_rel_x = event.deltaX;
