@@ -141,7 +141,11 @@ static void cocoa_input_poll(void *data)
    uint32_t i;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
 
+
    for (i = 0; i < apple->touch_count; i++)
+   {
+      apple->touches[i].screen_x *= backing_scale_factor;
+      apple->touches[i].screen_y *= backing_scale_factor;
       input_translate_coord_viewport(
             apple->touches[i].screen_x,
             apple->touches[i].screen_y,
@@ -149,6 +153,7 @@ static void cocoa_input_poll(void *data)
             &apple->touches[i].fixed_y,
             &apple->touches[i].full_x,
             &apple->touches[i].full_y);
+   }
 
    if (apple->joypad)
       apple->joypad->poll();
@@ -184,12 +189,14 @@ static int16_t cocoa_mouse_state(cocoa_input_data_t *apple,
 static int16_t cocoa_mouse_state_screen(cocoa_input_data_t *apple,
                                         unsigned id)
 {
+   float   backing_scale_factor = get_backing_scale_factor();
+
     switch (id)
     {
         case RETRO_DEVICE_ID_MOUSE_X:
-            return apple->window_pos_x;
+            return (apple->window_pos_x * backing_scale_factor);
         case RETRO_DEVICE_ID_MOUSE_Y:
-            return apple->window_pos_y;
+            return (apple->window_pos_y * backing_scale_factor);
         default:
             break;
     }

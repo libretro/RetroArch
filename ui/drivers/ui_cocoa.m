@@ -33,9 +33,6 @@
 
 static id apple_platform;
 
-extern void *get_chosen_screen(void);
-extern float get_backing_scale_factor(void);
-
 void apple_rarch_exited(void)
 {
    [[NSApplication sharedApplication] terminate:nil];
@@ -109,8 +106,7 @@ void apple_rarch_exited(void)
             NSPoint pos;
             NSPoint mouse_pos;
             apple                        = (cocoa_input_data_t*)input_driver_get_data();
-            float   backing_scale_factor = get_backing_scale_factor();
-            if (!apple || (backing_scale_factor == 0.0))
+            if (!apple)
                return;
 
             /* Relative */
@@ -119,12 +115,12 @@ void apple_rarch_exited(void)
 
             /* Absolute */
             pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];
-            apple->touches[0].screen_x = pos.x * backing_scale_factor;
-            apple->touches[0].screen_y = pos.y * backing_scale_factor;
+            apple->touches[0].screen_x = pos.x;
+            apple->touches[0].screen_y = pos.y;
 
             mouse_pos = [[CocoaView get] convertPoint:[event locationInWindow]  fromView:nil];
-            apple->window_pos_x = (int16_t)mouse_pos.x * backing_scale_factor;
-            apple->window_pos_y = (int16_t)mouse_pos.y * backing_scale_factor;
+            apple->window_pos_x = (int16_t)mouse_pos.x;
+            apple->window_pos_y = (int16_t)mouse_pos.y;
          }
          break;
  case NSScrollWheel:
