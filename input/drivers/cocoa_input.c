@@ -26,6 +26,9 @@
 
 #include "../drivers_keyboard/keyboard_event_apple.h"
 
+/* Forward declarations */
+extern float get_backing_scale_factor(void);
+
 int32_t cocoa_input_find_any_key(void)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)input_driver_get_data();
@@ -140,7 +143,7 @@ static void cocoa_input_poll(void *data)
 {
    uint32_t i;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
-
+   float   backing_scale_factor = get_backing_scale_factor();
 
    for (i = 0; i < apple->touch_count; i++)
    {
