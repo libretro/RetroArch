@@ -41,6 +41,10 @@
 #define GLFrameworkID CFSTR("com.apple.opengles")
 #define RAScreen UIScreen
 
+#ifndef UIUserInterfaceIdiomTV
+#define UIUserInterfaceIdiomTV 2
+#endif
+
 @interface EAGLContext (OSXCompat) @end
 @implementation EAGLContext (OSXCompat)
 + (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
@@ -431,11 +435,17 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
 
     switch (UI_USER_INTERFACE_IDIOM())
     {
+       case UIUserInterfaceIdiomUnspecified:
+          /* TODO */
+          break;
        case UIUserInterfaceIdiomPad:
           dpi = 132 * scale;
           break;
        case UIUserInterfaceIdiomPhone:
           dpi = 163 * scale;
+          break;
+       case UIUserInterfaceIdiomTV:
+          /* TODO */
           break;
     }
 #endif
