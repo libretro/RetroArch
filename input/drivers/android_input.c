@@ -678,6 +678,14 @@ static void handle_hotplug(android_input_data_t *android_data,
     * Also group the NVIDIA button on the controller with the
     * main controller inputs so it's usable. It's mapped to
     * menu by default
+    *
+    * The NVIDIA button is identified as "Virtual" device when first
+    * pressed. CEC remote input is also identified as "Virtual" device.
+    * If a virtual device is detected before a controller then it will
+    * be assigned to port 0 as "SHIELD Virtual Controller". When a real
+    * controller is detected it will overwrite the virtual controller
+    * and be grouped with the NVIDIA button of the virtual device.
+    *
     */
    if(strstr(device_model, "SHIELD Android TV") && (
       strstr(device_name, "Virtual") ||
@@ -689,8 +697,9 @@ static void handle_hotplug(android_input_data_t *android_data,
 #if 0
          RARCH_LOG("- Pads Mapped: %d\n- Device Name: %s\n- IDS: %d, %d, %d", android_data->pads_connected, device_name, id, pad_id1, pad_id2);
 #endif
-         /* remove the remote if it is mapped */
-         if (strstr(android_data->pad_states[0].name,"SHIELD Remote"))
+         /* remove the remote or virtual controller device if it is mapped */
+         if (strstr(android_data->pad_states[0].name,"SHIELD Remote") || 
+            strstr(android_data->pad_states[0].name,"SHIELD Virtual Controller"))
          {
             pad_id1 = -1;
             pad_id2 = -1;
@@ -698,9 +707,11 @@ static void handle_hotplug(android_input_data_t *android_data,
             *port = 0;
             strlcpy(name_buf, device_name, sizeof(name_buf));
          }
-         /* early return, we don't want this to be mapped unless the actual controller has been mapped*/
+         /* if the actual controller has not been mapped yet, then configure Virtual device for now */
          if (strstr(device_name, "Virtual") && android_data->pads_connected==0)
-            return;
+            strlcpy (name_buf, "SHIELD Virtual Controller", sizeof(name_buf));
+         else
+            strlcpy (name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
 
          /* apply the hack only for the first controller
           * store the id for later use
@@ -712,8 +723,6 @@ static void handle_hotplug(android_input_data_t *android_data,
             id = pad_id1;
             return;
          }
-
-         strlcpy (name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
       }
    }
 
