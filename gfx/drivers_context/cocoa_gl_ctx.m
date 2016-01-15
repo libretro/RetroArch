@@ -126,7 +126,11 @@ void *get_chosen_screen(void)
 	return [RAScreen mainScreen];
 #else
    settings_t *settings = config_get_ptr();
-   if (settings->video.monitor_index >= RAScreen.screens.count)
+   NSArray *screens = [RAScreen screens];
+   if (!screens)
+      return NULL;
+
+   if (settings->video.monitor_index >= screens.count)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
 #if __has_feature(objc_arc)
@@ -136,7 +140,6 @@ void *get_chosen_screen(void)
 #endif
    }
 	
-   NSArray *screens = [RAScreen screens];
 #if __has_feature(objc_arc)
    return ((__bridge void*)[screens objectAtIndex:settings->video.monitor_index]);
 #else
