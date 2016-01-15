@@ -191,6 +191,8 @@ static char** waiting_argv;
       apple_rarch_exited();
 
    waiting_argc = 0;
+
+   [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
 static void poll_iteration(void)
@@ -224,7 +226,6 @@ static void poll_iteration(void)
 
 - (void)applicationDidBecomeActive:(NSNotification *)notification
 {
-   [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
 - (void)applicationWillResignActive:(NSNotification *)notification
