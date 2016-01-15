@@ -418,25 +418,25 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
 #if MAC_OS_X_VERSION_10_7
     float   scale                 = screen.backingScaleFactor;
 #else
-	float   scale                 = 1.0f;
+	 float   scale                 = 1.0f;
 #endif
     float   dpi                   = (display_width/ physical_width) * 25.4f * scale;
 #elif defined(HAVE_COCOATOUCH)
     float   scale                 = cocoagl_gfx_ctx_get_native_scale();
     CGRect  screen_rect           = [screen bounds];
-    
-    //float   display_width         = screen_rect.size.width;
     float   display_height        = screen_rect.size.height;
     float   physical_width        = screen_rect.size.width  * scale;
     float   physical_height       = screen_rect.size.height * scale;
-    float   dpi = 0;
+    float   dpi                   = 160                     * scale;
 
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-      dpi = 132 * scale;
-    } else if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
-      dpi = 163 * scale;
-    } else {
-      dpi = 160 * scale;
+    switch (UI_USER_INTERFACE_IDIOM())
+    {
+       case UIUserInterfaceIdiomPad:
+          dpi = 132 * scale;
+          break;
+       case UIUserInterfaceIdiomPhone:
+          dpi = 163 * scale;
+          break;
     }
 #endif
     
