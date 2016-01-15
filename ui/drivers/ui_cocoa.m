@@ -33,7 +33,8 @@
 
 static id apple_platform;
 
-void *get_chosen_screen(void);
+extern void *get_chosen_screen(void);
+extern float get_backing_scale_factor(void)
 
 void apple_rarch_exited(void)
 {
@@ -108,24 +109,14 @@ void apple_rarch_exited(void)
             NSPoint pos;
             NSPoint mouse_pos;
             CGFloat backing_scale_factor = 1.0f;
-
-#if __has_feature(objc_arc)
-            RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
-#else
-            RAScreen *screen = (RAScreen*)get_chosen_screen();
-#endif
-
-            apple = (cocoa_input_data_t*)input_driver_get_data();
-            if (!apple || !screen)
+            apple                        = (cocoa_input_data_t*)input_driver_get_data();
+            float   backing_scale_factor = get_backing_scale_factor();
+            if (!apple || (backing_scale_factor == 0.0)
                return;
 
             /* Relative */
             apple->mouse_rel_x = event.deltaX;
             apple->mouse_rel_y = event.deltaY;
-
-#if MAC_OS_X_VERSION_10_7
-            backing_scale_factor = screen.backingScaleFactor;
-#endif
 
             /* Absolute */
             pos = [[CocoaView get] convertPoint:[event locationInWindow] fromView:nil];

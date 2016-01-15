@@ -152,6 +152,22 @@ void *get_chosen_screen(void)
 #endif
 }
 
+float get_backing_scale_factor(void)
+{
+#if __has_feature(objc_arc)
+   RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
+#else
+   RAScreen *screen = (RAScreen*)get_chosen_screen();
+#endif
+   if (!screen)
+      return 0.0;
+#if MAC_OS_X_VERSION_10_7
+   return screen.backingScaleFactor;
+#else
+   return 1.0f;
+#endif
+}
+
 void cocoagl_gfx_ctx_update(void)
 {
 #if defined(HAVE_COCOA)
@@ -419,11 +435,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
     float   display_height        = display_pixel_size.height;
     float   physical_width        = display_physical_size.width;
     float   physical_height       = display_physical_size.height;
-#if MAC_OS_X_VERSION_10_7
-    float   scale                 = screen.backingScaleFactor;
-#else
-	 float   scale                 = 1.0f;
-#endif
+    float   scale                 = get_backing_scale_factor();
     float   dpi                   = (display_width/ physical_width) * 25.4f * scale;
 #elif defined(HAVE_COCOATOUCH)
     float   scale                 = cocoagl_gfx_ctx_get_native_scale();
