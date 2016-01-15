@@ -161,7 +161,7 @@ float get_backing_scale_factor(void)
 #endif
    if (!screen)
       return 0.0;
-#if MAC_OS_X_VERSION_10_7
+#if MAC_OS_X_VERSION_10_7 && !defined(IOS)
    return screen.backingScaleFactor;
 #else
    return 1.0f;

@@ -143,7 +143,9 @@ static void cocoa_input_poll(void *data)
 {
    uint32_t i;
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
+#ifndef IOS
    float   backing_scale_factor = get_backing_scale_factor();
+#endif
 
    for (i = 0; i < apple->touch_count; i++)
    {
