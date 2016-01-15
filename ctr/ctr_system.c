@@ -195,23 +195,6 @@ void __attribute__((noreturn)) __ctru_exit(int rc)
    __libctru_exit(rc);
 }
 
-int ctr_request_update(void)
-{
-   gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);
-   gfxSet3D(false);
-   consoleInit(GFX_BOTTOM, NULL);
-
-   printf("\n\nunsupported version\n\n");
-   printf("Please update your payload\n");
-
-   wait_for_input();
-
-   gfxExit();
-
-   return 0;
-}
-
-
 typedef union{
    struct
    {
@@ -263,10 +246,6 @@ void wait_for_input(void)
    }
 }
 
-int usleep (useconds_t us)
-{
-   svcSleepThread((int64_t)us * 1000);
-}
 
 long sysconf(int name)
 {
