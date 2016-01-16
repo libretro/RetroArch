@@ -370,11 +370,6 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 
 static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
-#if __has_feature(objc_arc)
-   RAScreen *screen                = (__bridge RAScreen*)get_chosen_screen();
-#else
-   RAScreen *screen                = (RAScreen*)get_chosen_screen();
-#endif
    float screenscale               = cocoagl_gfx_ctx_get_native_scale();
 #if defined(HAVE_COCOA)
    CocoaView *g_view               = (CocoaView*)nsview_get_ptr();
