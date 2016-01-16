@@ -124,6 +124,17 @@ void cocoagl_bind_game_view_fbo(void)
 }
 #endif
 
+static float get_from_selector(RAScreen *screen, SEL selector, float *ret)
+{
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
+    [[screen class] instanceMethodSignatureForSelector:selector]];
+    [invocation setSelector:selector];
+    [invocation setTarget:screen];
+    [invocation invoke];
+    [invocation getReturnValue:ret];
+    return *ret;
+}
+
 void *get_chosen_screen(void)
 {
 #if defined(HAVE_COCOA) && !defined(MAC_OS_X_VERSION_10_6)
@@ -333,17 +344,6 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
    return true;
 }
 
-static float cocoagl_gfx_ctx_get_scale_from_selector(RAScreen *screen, SEL selector, float *ret)
-{
-    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
-                                [[screen class] instanceMethodSignatureForSelector:selector]];
-    [invocation setSelector:selector];
-    [invocation setTarget:screen];
-    [invocation invoke];
-    [invocation getReturnValue:ret];
-    return *ret;
-}
-
 float cocoagl_gfx_ctx_get_native_scale(void)
 {
     static float ret = 0.0f;
@@ -360,7 +360,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
        return 0.0f;
     
    if ([screen respondsToSelector:selector])
-       return cocoagl_gfx_ctx_get_scale_from_selector(screen, selector, &ret);
+       return get_from_selector(screen, selector, &ret);
     
    ret = 1.0f;
    if ([screen respondsToSelector:@selector(scale)])
