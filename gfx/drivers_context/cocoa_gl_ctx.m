@@ -121,7 +121,7 @@ void *glkitview_init(void)
 void cocoagl_bind_game_view_fbo(void)
 {
    // implicitly initializes your audio session
-   [AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+   AVAudioSession *audioSession = [AVAudioSession sharedInstance];
    [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
    [audioSession setActive:YES error:nil];
    if (g_context)
