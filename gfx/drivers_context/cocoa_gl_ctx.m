@@ -124,12 +124,12 @@ void cocoagl_bind_game_view_fbo(void)
 }
 #endif
 
-static float get_from_selector(RAScreen *screen, SEL selector, float *ret)
+static float get_from_selector(Class obj_class, id obj_id, SEL selector, float *ret)
 {
     NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
-    [[screen class] instanceMethodSignatureForSelector:selector]];
+    [obj_class instanceMethodSignatureForSelector:selector]];
     [invocation setSelector:selector];
-    [invocation setTarget:screen];
+    [invocation setTarget:obj_id];
     [invocation invoke];
     [invocation getReturnValue:ret];
     return *ret;
@@ -360,7 +360,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
        return 0.0f;
     
    if ([screen respondsToSelector:selector])
-       return get_from_selector(screen, selector, &ret);
+       return get_from_selector([screen class], screen, selector, &ret);
     
    ret = 1.0f;
    if ([screen respondsToSelector:@selector(scale)])
