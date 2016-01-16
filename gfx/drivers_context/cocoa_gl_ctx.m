@@ -173,6 +173,7 @@ float get_backing_scale_factor(void)
    if (!screen)
       return 0.0;
 #if MAC_OS_X_VERSION_10_7 && !defined(IOS)
+    
    return screen.backingScaleFactor;
 #else
    return 1.0f;
@@ -363,7 +364,8 @@ float cocoagl_gfx_ctx_get_native_scale(void)
        return get_from_selector([screen class], screen, selector, &ret);
     
    ret = 1.0f;
-   if ([screen respondsToSelector:@selector(scale)])
+   selector     = NSSelectorFromString(BOXSTRING("scale"));
+   if ([screen respondsToSelector:selector])
       ret = screen.scale;
    return ret;
 }
