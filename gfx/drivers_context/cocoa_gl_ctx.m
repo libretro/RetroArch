@@ -363,10 +363,10 @@ float cocoagl_gfx_ctx_get_native_scale(void)
    if ([screen respondsToSelector:selector])
        return get_from_selector([screen class], screen, selector, &ret);
     
-   ret = 1.0f;
+   ret          = 1.0f;
    selector     = NSSelectorFromString(BOXSTRING("scale"));
    if ([screen respondsToSelector:selector])
-      ret = screen.scale;
+      ret       = screen.scale;
    return ret;
 }
 
