@@ -400,7 +400,6 @@ enum
 {
    NSString *filename = (NSString*)url.path.lastPathComponent;
    NSError     *error = nil;
-  [self supportOtherAudioSessions];
     
    [[NSFileManager defaultManager] moveItemAtPath:[url path] toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];
    
