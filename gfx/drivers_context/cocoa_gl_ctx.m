@@ -376,9 +376,11 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
    GLsizei backingPixelWidth, backingPixelHeight;
    CocoaView *g_view               = (CocoaView*)nsview_get_ptr();
    CGRect cgrect                   = NSRectToCGRect([g_view frame]);
+#if MAC_OS_X_VERSION_10_7
    SEL selector                    = NSSelectorFromString(BOXSTRING("convertRectToBacking:"));
    if ([g_view respondsToSelector:selector])
       cgrect                       = NSRectToCGRect([g_view convertRectToBacking:[g_view bounds]]);
+#endif
    backingPixelWidth               = CGRectGetWidth(cgrect);
    backingPixelHeight              = CGRectGetHeight(cgrect);
    size                            = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
