@@ -524,10 +524,8 @@ static gfx_ctx_proc_t cocoagl_gfx_ctx_get_proc_address(const char *symbol_name)
 {
    return (gfx_ctx_proc_t)CFBundleGetFunctionPointerForName(CFBundleGetBundleWithIdentifier(GLFrameworkID),
    (
-#if MAC_OS_X_VERSION_10_7
 #if __has_feature(objc_arc)
          __bridge
-#endif
 #endif
 CFStringRef)BOXSTRING(symbol_name)
          );
