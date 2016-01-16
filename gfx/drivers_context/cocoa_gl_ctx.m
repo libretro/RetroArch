@@ -372,7 +372,7 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 {
    float screenscale               = cocoagl_gfx_ctx_get_native_scale();
 #if defined(HAVE_COCOA)
-   CGRect cgrect, size;
+   CGRect size;
    GLsizei backingPixelWidth, backingPixelHeight;
    CocoaView *g_view               = (CocoaView*)nsview_get_ptr();
    CGRect cgrect                   = NSRectToCGRect([g_view frame]);
