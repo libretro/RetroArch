@@ -27,7 +27,9 @@
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../retroarch.h"
+#ifdef HAVE_AVFOUNDATION
 #import <AVFoundation/AVFoundation.h>
+#endif
 #include "../../frontend/frontend.h"
 #include "../../runloop.h"
 
@@ -44,9 +46,11 @@ void apple_rarch_exited(void);
 
 static void rarch_enable_ui(void)
 {
+#ifdef HAVE_AVFOUNDATION
    AVAudioSession *audioSession = [AVAudioSession sharedInstance];
    [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
    [audioSession setActive:YES error:nil];
+#endif
     
    bool boolean = true;
 
@@ -66,9 +70,11 @@ static void rarch_disable_ui(void)
    runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
    runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
    rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+#ifdef HAVE_AVFOUNDATION
    AVAudioSession *audioSession = [AVAudioSession sharedInstance];
    [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
    [audioSession setActive:YES error:nil];
+#endif
 }
 
 static void ui_companion_cocoatouch_event_command(
@@ -321,10 +327,12 @@ enum
 
 + (RetroArch_iOS*)get
 {
-   // implicitly initializes your audio session
+#ifdef HAVE_AVFOUNDATION
+   /* Implicitly initializes your audio session. */
    AVAudioSession *audioSession = [AVAudioSession sharedInstance];
    [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
    [audioSession setActive:YES error:nil];
+#endif
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
 }
 
@@ -336,8 +344,12 @@ enum
     
    if (rarch_main(0, NULL, NULL))
        apple_rarch_exited();
+
+#ifdef HAVE_AVFOUNDATION
     /* Other background audio check */
    [self supportOtherAudioSessions];
+#endif
+
    /* Setup window */
    self.window      = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
@@ -348,7 +360,10 @@ enum
 
    [self refreshSystemConfig];
    [self showGameView];
+
+#ifdef HAVE_AVFOUNDATION
    [self supportOtherAudioSessions];
+#endif
 
    if (rarch_main(0, NULL, NULL))
       apple_rarch_exited();
@@ -365,7 +380,9 @@ enum
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
+#ifdef HAVE_AVFOUNDATION
     [self supportOtherAudioSessions];
+#endif
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application
@@ -379,7 +396,9 @@ enum
 {
    settings_t *settings = config_get_ptr();
    
+#ifdef HAVE_AVFOUNDATION
    [self supportOtherAudioSessions];
+#endif
    if (settings->ui.companion_start_on_boot)
       return;
     
@@ -388,7 +407,9 @@ enum
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
+#ifdef HAVE_AVFOUNDATION
    [self supportOtherAudioSessions];
+#endif
    dispatch_async(dispatch_get_main_queue(),
                   ^{
                   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
@@ -417,8 +438,10 @@ enum
 
 - (void)showGameView
 {
-    // implicitly initializes your audio session
+#ifdef HAVE_AVFOUNDATION
+    /* implicitly initializes your audio session */
    [self supportOtherAudioSessions];
+#endif
    [self popToRootViewControllerAnimated:NO];
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
@@ -431,7 +454,9 @@ enum
 
 - (IBAction)showPauseMenu:(id)sender
 {
-   //ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_STOP);
+#ifndef HAVE_AVFOUNDATION
+   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_STOP);
+#endif
    rarch_enable_ui();
 
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
@@ -450,7 +475,9 @@ enum
    {
       [self showPauseMenu:self];
    }
+#ifdef HAVE_AVFOUNDATION
    [self supportOtherAudioSessions];
+#endif
 }
 
 - (void)refreshSystemConfig
@@ -491,10 +518,12 @@ enum
 
 - (void)supportOtherAudioSessions
 {
-    // implicitly initializes your audio session
+#ifdef HAVE_AVFOUNDATION
+    /* implicitly initializes your audio session */
     AVAudioSession *audioSession = [AVAudioSession sharedInstance];
     [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
     [audioSession setActive:YES error:nil];
+#endif
 }
 
 - (void)mainMenuRenderMessageBox:(NSString *)msg
@@ -527,7 +556,9 @@ void apple_rarch_exited(void)
     
     if (!ap)
         return;
+#ifdef HAVE_AVFOUNDATION
     [ap supportOtherAudioSessions];
+#endif
     [ap showPauseMenu:ap];
 }
 

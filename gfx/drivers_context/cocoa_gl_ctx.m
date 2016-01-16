@@ -26,7 +26,9 @@
 #include <AppKit/NSOpenGL.h>
 #elif defined(HAVE_COCOATOUCH)
 #include <GLKit/GLKit.h>
+#ifdef HAVE_AVFOUNDATION
 #import <AVFoundation/AVFoundation.h>
+#endif
 #endif
 
 #include <retro_assert.h>
@@ -120,10 +122,12 @@ void *glkitview_init(void)
 #if defined(HAVE_COCOATOUCH)
 void cocoagl_bind_game_view_fbo(void)
 {
-   // implicitly initializes your audio session
+#ifdef HAVE_AVFOUNDATION
+   /*  Implicitly initializes your audio session */
    AVAudioSession *audioSession = [AVAudioSession sharedInstance];
    [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
    [audioSession setActive:YES error:nil];
+#endif
    if (g_context)
       [g_view bindDrawable];
 }
