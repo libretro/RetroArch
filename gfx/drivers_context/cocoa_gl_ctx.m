@@ -375,9 +375,7 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 #else
    RAScreen *screen                = (RAScreen*)get_chosen_screen();
 #endif
-   CGRect size                     = screen.bounds;
    float screenscale               = cocoagl_gfx_ctx_get_native_scale();
-
 #if defined(HAVE_COCOA)
    CocoaView *g_view               = (CocoaView*)nsview_get_ptr();
 #if MAC_OS_X_VERSION_10_7
@@ -389,9 +387,9 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
    GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
    GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
 #endif
-   size                            = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
+   CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
 #else
-   size                            = g_view.bounds;
+   CGRect size                     = g_view.bounds;
 #endif
    *width                          = CGRectGetWidth(size)  * screenscale;
    *height                         = CGRectGetHeight(size) * screenscale;
