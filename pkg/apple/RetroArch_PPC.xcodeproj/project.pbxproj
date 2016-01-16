@@ -314,7 +314,7 @@
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
 					"-DHAVE_MMAP",
-               "-DHAVE_LIBRETRODB",
+					"-DHAVE_LIBRETRODB",
 					"-DHAVE_FILTERS_BUILTIN",
 				);
 				OTHER_LDFLAGS = "-lz";

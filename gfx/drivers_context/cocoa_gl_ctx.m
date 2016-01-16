@@ -137,9 +137,6 @@ static float get_from_selector(Class obj_class, id obj_id, SEL selector, CGFloat
 
 void *get_chosen_screen(void)
 {
-#if defined(HAVE_COCOA) && !defined(MAC_OS_X_VERSION_10_6)
-	return [RAScreen mainScreen];
-#else
    settings_t *settings = config_get_ptr();
    NSArray *screens = [RAScreen screens];
    if (!screens || !settings)
@@ -149,9 +146,9 @@ void *get_chosen_screen(void)
    {
       RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
 #if __has_feature(objc_arc)
-      return (__bridge void*)RAScreen.mainScreen;
+      return (__bridge void*)screens;
 #else
-      return (void*)RAScreen.mainScreen;
+      return (void*)screens;
 #endif
    }
 	
@@ -159,7 +156,6 @@ void *get_chosen_screen(void)
    return ((__bridge void*)[screens objectAtIndex:settings->video.monitor_index]);
 #else
    return ((void*)[screens objectAtIndex:settings->video.monitor_index]);
-#endif
 #endif
 }
 
