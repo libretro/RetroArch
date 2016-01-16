@@ -371,31 +371,30 @@ float cocoagl_gfx_ctx_get_native_scale(void)
 static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned* height)
 {
 #if __has_feature(objc_arc)
-   RAScreen *screen  = (__bridge RAScreen*)get_chosen_screen();
+   RAScreen *screen                = (__bridge RAScreen*)get_chosen_screen();
 #else
-   RAScreen *screen  = (RAScreen*)get_chosen_screen();
+   RAScreen *screen                = (RAScreen*)get_chosen_screen();
 #endif
-   CGRect size       = screen.bounds;
-   float screenscale = cocoagl_gfx_ctx_get_native_scale();
-	
+   CGRect size                     = screen.bounds;
+   float screenscale               = cocoagl_gfx_ctx_get_native_scale();
+
 #if defined(HAVE_COCOA)
-   CocoaView *g_view = (CocoaView*)nsview_get_ptr();
-   #if MAC_OS_X_VERSION_10_7
-      NSRect backingBounds = [g_view convertRectToBacking:[g_view bounds]];
-      GLsizei backingPixelWidth = (GLsizei)(backingBounds.size.width),
-		      backingPixelHeight = (GLsizei)(backingBounds.size.height);
-   #else
-      CGRect cgrect = NSRectToCGRect([g_view frame]);
-      GLsizei backingPixelWidth  = CGRectGetWidth(cgrect);
-      GLsizei backingPixelHeight = CGRectGetHeight(cgrect);
-   #endif
-      size = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
+   CocoaView *g_view               = (CocoaView*)nsview_get_ptr();
+#if MAC_OS_X_VERSION_10_7
+   NSRect backingBounds            = [g_view convertRectToBacking:[g_view bounds]];
+   GLsizei backingPixelWidth       = (GLsizei)(backingBounds.size.width);
+   GLsizei backingPixelHeight      = (GLsizei)(backingBounds.size.height);
 #else
-   size = g_view.bounds;
+   CGRect              cgrect      = NSRectToCGRect([g_view frame]);
+   GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
+   GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
 #endif
-    
-   *width  = CGRectGetWidth(size)  * screenscale;
-   *height = CGRectGetHeight(size) * screenscale;
+   size                            = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
+#else
+   size                            = g_view.bounds;
+#endif
+   *width                          = CGRectGetWidth(size)  * screenscale;
+   *height                         = CGRectGetHeight(size) * screenscale;
 }
 
 static void cocoagl_gfx_ctx_update_window_title(void *data)
