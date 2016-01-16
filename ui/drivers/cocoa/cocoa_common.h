@@ -74,6 +74,7 @@ extern apple_frontend_settings_t apple_frontend_settings;
 
 - (void)showGameView;
 - (void)toggleUI;
+- (void)supportOtherAudioSessions;
 
 - (void)refreshSystemConfig;
 - (void)mainMenuPushPop: (bool)pushp;

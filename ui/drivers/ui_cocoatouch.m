@@ -27,7 +27,7 @@
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../retroarch.h"
-
+#import <AVFoundation/AVFoundation.h>
 #include "../../frontend/frontend.h"
 #include "../../runloop.h"
 
@@ -44,6 +44,10 @@ void apple_rarch_exited(void);
 
 static void rarch_enable_ui(void)
 {
+   AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+   [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
+   [audioSession setActive:YES error:nil];
+    
    bool boolean = true;
 
    ui_companion_set_foreground(true);
@@ -62,6 +66,9 @@ static void rarch_disable_ui(void)
    runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
    runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
    rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
+   AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+   [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
+   [audioSession setActive:YES error:nil];
 }
 
 static void ui_companion_cocoatouch_event_command(
@@ -314,6 +321,10 @@ enum
 
 + (RetroArch_iOS*)get
 {
+   // implicitly initializes your audio session
+   AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+   [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
+   [audioSession setActive:YES error:nil];
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
 }
 
@@ -325,7 +336,8 @@ enum
     
    if (rarch_main(0, NULL, NULL))
        apple_rarch_exited();
-
+    /* Other background audio check */
+   [self supportOtherAudioSessions];
    /* Setup window */
    self.window      = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
    [self.window makeKeyAndVisible];
@@ -336,6 +348,7 @@ enum
 
    [self refreshSystemConfig];
    [self showGameView];
+   [self supportOtherAudioSessions];
 
    if (rarch_main(0, NULL, NULL))
       apple_rarch_exited();
@@ -352,7 +365,7 @@ enum
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-    
+    [self supportOtherAudioSessions];
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application
@@ -365,7 +378,8 @@ enum
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
    settings_t *settings = config_get_ptr();
-    
+   
+   [self supportOtherAudioSessions];
    if (settings->ui.companion_start_on_boot)
       return;
     
@@ -374,6 +388,7 @@ enum
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {
+   [self supportOtherAudioSessions];
    dispatch_async(dispatch_get_main_queue(),
                   ^{
                   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
@@ -385,7 +400,7 @@ enum
 {
    NSString *filename = (NSString*)url.path.lastPathComponent;
    NSError     *error = nil;
-
+    
    [[NSFileManager defaultManager] moveItemAtPath:[url path] toPath:[self.documentsDirectory stringByAppendingPathComponent:filename] error:&error];
    
    if (error)
@@ -402,6 +417,8 @@ enum
 
 - (void)showGameView
 {
+    // implicitly initializes your audio session
+   [self supportOtherAudioSessions];
    [self popToRootViewControllerAnimated:NO];
    [self setToolbarHidden:true animated:NO];
    [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
@@ -414,7 +431,7 @@ enum
 
 - (IBAction)showPauseMenu:(id)sender
 {
-   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_STOP);
+   //ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_STOP);
    rarch_enable_ui();
 
    [[UIApplication sharedApplication] setStatusBarHidden:false withAnimation:UIStatusBarAnimationNone];
@@ -433,6 +450,7 @@ enum
    {
       [self showPauseMenu:self];
    }
+   [self supportOtherAudioSessions];
 }
 
 - (void)refreshSystemConfig
@@ -471,6 +489,14 @@ enum
   }
 }
 
+- (void)supportOtherAudioSessions
+{
+    // implicitly initializes your audio session
+    AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+    [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
+    [audioSession setActive:YES error:nil];
+}
+
 - (void)mainMenuRenderMessageBox:(NSString *)msg
 {
   [self.mainmenu renderMessageBox:msg];
@@ -501,6 +527,7 @@ void apple_rarch_exited(void)
     
     if (!ap)
         return;
+    [ap supportOtherAudioSessions];
     [ap showPauseMenu:ap];
 }
 
