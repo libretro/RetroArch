@@ -124,7 +124,7 @@ void cocoagl_bind_game_view_fbo(void)
 }
 #endif
 
-static float get_from_selector(Class obj_class, id obj_id, SEL selector, float *ret)
+static float get_from_selector(Class obj_class, id obj_id, SEL selector, CGFloat *ret)
 {
     NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:
     [obj_class instanceMethodSignatureForSelector:selector]];
@@ -172,12 +172,14 @@ float get_backing_scale_factor(void)
 #endif
    if (!screen)
       return 0.0;
-#if MAC_OS_X_VERSION_10_7 && !defined(IOS)
-    
-   return screen.backingScaleFactor;
-#else
-   return 1.0f;
+#ifdef HAVE_COCOA
+   CGFloat ret;
+    CocoaView *g_view = (CocoaView*)nsview_get_ptr();
+   SEL selector     = NSSelectorFromString(BOXSTRING("backingScaleFactor"));
+   if ([screen respondsToSelector:selector])
+        return (float)get_from_selector([[g_view window] class], [g_view window], selector, &ret);
 #endif
+   return 1.0f;
 }
 
 void cocoagl_gfx_ctx_update(void)
@@ -347,7 +349,7 @@ static bool cocoagl_gfx_ctx_set_video_mode(void *data,
 
 float cocoagl_gfx_ctx_get_native_scale(void)
 {
-    static float ret = 0.0f;
+    static CGFloat ret = 0.0f;
     SEL selector     = NSSelectorFromString(BOXSTRING("nativeScale"));
 #if __has_feature(objc_arc)
     RAScreen *screen = (__bridge RAScreen*)get_chosen_screen();
@@ -361,7 +363,7 @@ float cocoagl_gfx_ctx_get_native_scale(void)
        return 0.0f;
     
    if ([screen respondsToSelector:selector])
-       return get_from_selector([screen class], screen, selector, &ret);
+       return (float)get_from_selector([screen class], screen, selector, &ret);
     
    ret          = 1.0f;
    selector     = NSSelectorFromString(BOXSTRING("scale"));
