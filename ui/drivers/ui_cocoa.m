@@ -376,8 +376,8 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
    if (!startdir.length)
       startdir           = BOXSTRING("/");
 #if defined(MAC_OS_X_VERSION_10_6)
-   [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
    [panel setMessage:BOXSTRING("Load Content")];
+   [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
       [[NSApplication sharedApplication] stopModal];
@@ -385,7 +385,15 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
    }];
    [[NSApplication sharedApplication] runModalForWindow:panel];
 #else
-   [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
+    [panel setTitle:NSLocalizedString(BOXSTRING("Load Core"), BOXSTRING("open panel"))];
+    [panel setDirectory:startdir];
+    [panel setCanChooseDirectories:NO];
+    [panel setCanChooseFiles:YES];
+    [panel setAllowsMultipleSelection:NO];
+    [panel setTreatsFilePackagesAsDirectories:NO];
+    NSInteger result = [panel runModal];
+    if (result == 1)
+        open_document_handler(panel, result);
 #endif
     [g_context makeCurrentContext];
 }
