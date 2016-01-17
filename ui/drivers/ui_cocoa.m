@@ -339,49 +339,54 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
     [g_context makeCurrentContext];
 }
 
+static void open_document_handler(NSOpenPanel *panel, NSInteger result)
+{
+    switch (result)
+    {
+        case NSOKButton:
+            if (panel.URL)
+            {
+                struct retro_system_info *system = NULL;
+                NSURL                       *url = (NSURL*)panel.URL;
+                NSString                 *__core = url.path;
+                const char            *core_name = NULL;
+                
+                menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
+                
+                if (system)
+                    core_name = system->library_name;
+                
+                runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
+                
+                if (core_name)
+                    ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
+            }
+            break;
+        case NSCancelButton:
+            break;
+    }
+}
+
 - (void)openDocument:(id)sender
 {
-   NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
+   NSOpenPanel* panel    = (NSOpenPanel*)[NSOpenPanel openPanel];
+   settings_t *settings  = config_get_ptr();
+   NSString *startdir    = BOXSTRING(settings->menu_content_directory);
+    
+   if (!startdir.length)
+      startdir           = BOXSTRING("/");
 #if defined(MAC_OS_X_VERSION_10_6)
-    settings_t *settings = config_get_ptr();
-    NSString *startdir   = BOXSTRING(settings->menu_content_directory);
-    if (!startdir.length)
-        startdir         = BOXSTRING("/");
-    [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
-    [panel setMessage:BOXSTRING("Load Content")];
+   [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
+   [panel setMessage:BOXSTRING("Load Content")];
    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
    {
       [[NSApplication sharedApplication] stopModal];
-
-      switch (result)
-      {
-         case NSOKButton:
-            if (panel.URL)
-            {
-               struct retro_system_info *system = NULL;
-               NSURL                       *url = (NSURL*)panel.URL;
-               NSString                 *__core = url.path;
-               const char            *core_name = NULL;
-
-               menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
-
-               if (system)
-                  core_name = system->library_name;
-
-               runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
-
-               if (core_name)
-                  ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
-            }
-            break;
-         case NSCancelButton:
-            break;
-      }
+      open_document_handler(panel, result);
    }];
+   [[NSApplication sharedApplication] runModalForWindow:panel];
 #else
    [panel beginSheetForDirectory:nil file:nil modalForWindopw:[self window] modalDelegate:self didEndSelector:@selector(didEndSaveSheet:returnCode:contextInfo:) contextInfo:NULL];
 #endif
-   [[NSApplication sharedApplication] runModalForWindow:panel];
     [g_context makeCurrentContext];
 }
 
