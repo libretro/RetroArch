@@ -162,14 +162,20 @@ static char** waiting_argv;
    [super dealloc];
 }
 
+#ifndef NSWindowCollectionBehaviorFullScreenPrimary
+#define NSWindowCollectionBehaviorFullScreenPrimary (1 << 7)
+#endif
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    unsigned i;
-   apple_platform = self;
-   
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
-   [self.window setCollectionBehavior:[self.window collectionBehavior] | NSWindowCollectionBehaviorFullScreenPrimary];
-#endif
+   SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
+   apple_platform   = self;
+    
+   if ([self.window respondsToSelector:selector])
+   {
+       [self.window setCollectionBehavior:[self.window collectionBehavior] | NSWindowCollectionBehaviorFullScreenPrimary];
+   }
    
    [self.window setAcceptsMouseMovedEvents: YES];
 
