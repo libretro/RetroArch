@@ -162,19 +162,19 @@ static char** waiting_argv;
    [super dealloc];
 }
 
-#ifndef NSWindowCollectionBehaviorFullScreenPrimary
-#define NSWindowCollectionBehaviorFullScreenPrimary (1 << 7)
-#endif
+#define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 17)
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    unsigned i;
    SEL selector     = NSSelectorFromString(BOXSTRING("setCollectionBehavior:"));
+   SEL fsselector   = NSSelectorFromString(BOXSTRING("toggleFullScreen:"));
    apple_platform   = self;
     
    if ([self.window respondsToSelector:selector])
    {
-       [self.window setCollectionBehavior:[self.window collectionBehavior] | NSWindowCollectionBehaviorFullScreenPrimary];
+       if ([self.window respondsToSelector:fsselector])
+          [self.window setCollectionBehavior:NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
    }
    
    [self.window setAcceptsMouseMovedEvents: YES];
