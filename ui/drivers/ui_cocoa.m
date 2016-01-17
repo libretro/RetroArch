@@ -326,13 +326,13 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
      }];
     [[NSApplication sharedApplication] runModalForWindow:panel];
 #else
-	[panel setTitle:NSLocalizedString(@"Load Core", @"open panel")];
+	[panel setTitle:NSLocalizedString(BOXSTRING("Load Core"), BOXSTRING("open panel"))];
 	[panel setDirectory:startdir];
 	[panel setCanChooseDirectories:NO];
 	[panel setCanChooseFiles:YES];
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTreatsFilePackagesAsDirectories:NO];
-	NSInteger result = [panel runModalForTypes:[NSArray arrayWithObject:@"dylib"]];
+	NSInteger result = [panel runModalForTypes:[NSArray arrayWithObject:BOXSTRING("dylib")]];
 	if (result == 1)
        open_core_handler(panel, result);
 #endif
