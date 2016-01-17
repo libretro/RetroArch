@@ -350,6 +350,8 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
     NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
     settings_t *settings = config_get_ptr();
     NSString *startdir   = BOXSTRING(settings->libretro_directory);
+	NSArray *filetypes   = [[NSArray alloc] initWithObjects:BOXSTRING("dylib"), BOXSTRING("Core"), nil];
+	[panel setAllowedFileTypes:filetypes];
 #if defined(MAC_OS_X_VERSION_10_6)
     [panel setMessage:BOXSTRING("Load Core")];
     [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
@@ -366,7 +368,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 	[panel setCanChooseFiles:YES];
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTreatsFilePackagesAsDirectories:NO];
-	NSInteger result = [panel runModalForTypes:[NSArray arrayWithObject:BOXSTRING("dylib")]];
+	NSInteger result = [panel runModal];
 	if (result == 1)
        open_core_handler(panel, result);
 #endif
