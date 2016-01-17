@@ -448,8 +448,12 @@ extern void action_ok_push_quick_menu(void);
 
 int main(int argc, char *argv[])
 {
+   if (!strncmp(argv[1], "-psn", 4) && (argc==2))
+      argc = 1;
+    
    waiting_argc = argc;
    waiting_argv = argv;
+
    return NSApplicationMain(argc, (const char **) argv);
 }
 
