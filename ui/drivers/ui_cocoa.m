@@ -280,6 +280,38 @@ extern void action_ok_push_quick_menu(void);
    }
 }
 
+static void open_core_handler(NSOpenPanel *panel, NSInteger result)
+{
+    switch (result)
+    {
+        case NSOKButton:
+            if (panel.URL)
+            {
+                settings_t *settings = config_get_ptr();
+                NSURL *url           = (NSURL*)panel.URL;
+                NSString *__core     = url.path;
+                
+                if (!__core)
+                    return;
+                
+                runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
+                ui_companion_event_command(EVENT_CMD_LOAD_CORE);
+                
+                if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->core.set_supports_no_game_enable)
+                {
+                    int ret = 0;
+                    runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+                    ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
+                    if (ret == -1)
+                        action_ok_push_quick_menu();
+                }
+            }
+            break;
+        case NSCancelButton:
+            break;
+    }
+}
+
 - (IBAction)openCore:(id)sender {
     NSOpenPanel* panel = (NSOpenPanel*)[NSOpenPanel openPanel];
     settings_t *settings = config_get_ptr();
@@ -290,35 +322,7 @@ extern void action_ok_push_quick_menu(void);
     [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
      {
          [[NSApplication sharedApplication] stopModal];
-         
-         switch (result)
-         {
-            case NSOKButton:
-               if (panel.URL)
-               {
-                  settings_t *settings = config_get_ptr();
-                  NSURL *url           = (NSURL*)panel.URL;
-                  NSString *__core     = url.path;
-
-                  if (!__core)
-                     return;
-
-                  runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
-                  ui_companion_event_command(EVENT_CMD_LOAD_CORE);
-
-                  if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->core.set_supports_no_game_enable)
-                  {
-                     int ret = 0;
-                     runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-                     ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
-                     if (ret == -1)
-                        action_ok_push_quick_menu();
-                  }
-               }
-               break;
-            case NSCancelButton:
-               break;
-         }
+         open_core_handler(panel, result);
      }];
     [[NSApplication sharedApplication] runModalForWindow:panel];
 #else
@@ -328,38 +332,9 @@ extern void action_ok_push_quick_menu(void);
 	[panel setCanChooseFiles:YES];
 	[panel setAllowsMultipleSelection:NO];
 	[panel setTreatsFilePackagesAsDirectories:NO];
-	int result = [panel runModalForTypes:[NSArray arrayWithObject:@"dylib"]];
+	NSInteger result = [panel runModalForTypes:[NSArray arrayWithObject:@"dylib"]];
 	if (result == 1)
-	{
-		switch (result)
-		{
-            case NSOKButton:
-				if (panel.URL)
-				{
-					settings_t *settings = config_get_ptr();
-					NSURL *url           = (NSURL*)panel.URL;
-					NSString *__core     = url.path;
-					
-					if (!__core)
-						return;
-					
-					runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
-					ui_companion_event_command(EVENT_CMD_LOAD_CORE);
-					
-					if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->core.set_supports_no_game_enable)
-					{
-						int ret = 0;
-						runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-						ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
-						if (ret == -1)
-							action_ok_push_quick_menu();
-					}
-				}
-				break;
-            case NSCancelButton:
-				break;
-		}		
-	}
+       open_core_handler(panel, result);
 #endif
     [g_context makeCurrentContext];
 }
