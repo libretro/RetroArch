@@ -385,7 +385,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
    }];
    [[NSApplication sharedApplication] runModalForWindow:panel];
 #else
-    [panel setTitle:NSLocalizedString(BOXSTRING("Load Core"), BOXSTRING("open panel"))];
+    [panel setTitle:NSLocalizedString(BOXSTRING("Load Content"), BOXSTRING("open panel"))];
     [panel setDirectory:startdir];
     [panel setCanChooseDirectories:NO];
     [panel setCanChooseFiles:YES];
