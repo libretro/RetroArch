@@ -290,6 +290,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "pause_nonactive";
       case MENU_LABEL_UI_COMPANION_START_ON_BOOT:
          return "ui_companion_start_on_boot";
+      case MENU_LABEL_UI_COMPANION_ENABLE:
+         return "ui_companion_enable";
       case MENU_LABEL_UI_MENUBAR_ENABLE:
          return "ui_menubar_enable";
       case MENU_LABEL_ARCHIVE_MODE:
@@ -1008,6 +1010,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Don't run in background";
       case MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
          return "UI Companion Start On Boot";
+      case MENU_LABEL_VALUE_UI_COMPANION_ENABLE:
+         return "UI Companion Enable";
       case MENU_LABEL_VALUE_UI_MENUBAR_ENABLE:
          return "Menubar";
       case MENU_LABEL_VALUE_ARCHIVE_MODE:

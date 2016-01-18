@@ -46,11 +46,10 @@ void apple_rarch_exited(void);
 
 static void rarch_enable_ui(void)
 {
+   bool boolean = true;
 #ifdef HAVE_AVFOUNDATION
    [[RetroArch_iOS get] supportOtherAudioSessions];
 #endif
-    
-   bool boolean = true;
 
    ui_companion_set_foreground(true);
 

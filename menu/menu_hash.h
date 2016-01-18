@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_UI_COMPANION_ENABLE                                         0xb2d7a20cU
+#define MENU_LABEL_VALUE_UI_COMPANION_ENABLE                                   0xee4933ceU
+
 #define MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL                                     0xa1ae28f0U
 #define MENU_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL                               0x0698e665U
 

@@ -112,6 +112,7 @@ typedef struct settings
       bool menubar_enable;
       bool suspend_screensaver_enable;
       bool companion_start_on_boot;
+      bool companion_enable;
    } ui;
 
 #ifdef HAVE_MENU

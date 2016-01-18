@@ -612,6 +612,7 @@ static void config_set_defaults(void)
 #endif
 
    settings->ui.companion_start_on_boot             = ui_companion_start_on_boot;
+   settings->ui.companion_enable                    = ui_companion_enable;
    settings->ui.menubar_enable                      = true;
    settings->ui.suspend_screensaver_enable          = true;
 
@@ -1436,6 +1437,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, input.input_descriptor_hide_unbound, "input_descriptor_hide_unbound");
 
    CONFIG_GET_BOOL_BASE(conf, settings, ui.companion_start_on_boot, "ui_companion_start_on_boot");
+   CONFIG_GET_BOOL_BASE(conf, settings, ui.companion_enable, "ui_companion_enable");
 
    config_get_path(conf, "core_updater_buildbot_url",
          settings->network.buildbot_url, sizeof(settings->network.buildbot_url));
@@ -2532,6 +2534,7 @@ bool config_save_file(const char *path)
    config_set_float(conf, "input_axis_threshold",
          settings->input.axis_threshold);
    config_set_bool(conf, "ui_companion_start_on_boot", settings->ui.companion_start_on_boot);
+   config_set_bool(conf, "ui_companion_enable", settings->ui.companion_enable);
    config_set_bool(conf, "video_gpu_record", settings->video.gpu_record);
    config_set_bool(conf, "input_remap_binds_enable",
          settings->input.remap_binds_enable);

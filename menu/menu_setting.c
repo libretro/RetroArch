@@ -5942,6 +5942,21 @@ static bool setting_append_list_ui_options(
          parent_group,
          general_write_handler,
          general_read_handler);
+
+   CONFIG_BOOL(
+         list, list_info,
+         &settings->ui.companion_enable,
+         menu_hash_to_str(MENU_LABEL_UI_COMPANION_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_UI_COMPANION_ENABLE),
+         ui_companion_enable,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         &group_info,
+         &subgroup_info,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
    
    CONFIG_BOOL(
          list, list_info,

@@ -757,6 +757,8 @@ static const bool ui_companion_start_on_boot = false;
 static const bool ui_companion_start_on_boot = true;
 #endif
 
+static const bool ui_companion_enable = false;
+
 #if defined(ANDROID)
 #if defined(ANDROID_ARM)
 static char buildbot_server_url[] = "http://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/";
