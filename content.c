@@ -508,8 +508,6 @@ static bool load_content(const struct retro_subsystem_info *special,
          if (!load_content_need_fullpath(&info[i], i,
                   additional_path_allocs, need_fullpath, path))
             goto end;
-#else
-         return true;
 #endif
       }
    }
