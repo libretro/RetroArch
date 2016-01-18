@@ -382,12 +382,12 @@ static bool load_content_dont_need_fullpath(
    return true;
 }
 
+#ifdef HAVE_COMPRESSION
 static bool load_content_need_fullpath(
       struct retro_game_info *info, unsigned i,
       struct string_list* additional_path_allocs,
       bool need_fullpath, const char *path)
 {
-#ifdef HAVE_COMPRESSION
    ssize_t len;
    union string_list_elem_attr attributes;
    char new_path[PATH_MAX_LENGTH]    = {0};
@@ -395,7 +395,7 @@ static bool load_content_need_fullpath(
    bool ret                          = false;
    settings_t *settings              = config_get_ptr();
    rarch_system_info_t      *sys_info= NULL;
-   
+
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 
    if (sys_info && sys_info->info.block_extract)
@@ -447,9 +447,9 @@ static bool load_content_need_fullpath(
    string_list_append(temporary_content,
          new_path, attributes);
 
-#endif
    return true;
 }
+#endif
 
 /**
  * load_content:
@@ -504,9 +504,13 @@ static bool load_content(const struct retro_subsystem_info *special,
          RARCH_LOG("Content loading skipped. Implementation will"
                " load it on its own.\n");
 
+#ifdef HAVE_COMPRESSION
          if (!load_content_need_fullpath(&info[i], i,
                   additional_path_allocs, need_fullpath, path))
             goto end;
+#else
+         return true;
+#endif
       }
    }
 
@@ -588,7 +592,6 @@ static bool init_content_file_extract(
    unsigned i;
    settings_t *settings = config_get_ptr();
 
-   /* Try to extract all content we're going to load if appropriate. */
    for (i = 0; i < content->size; i++)
    {
       const char *ext       = NULL;
@@ -630,6 +633,44 @@ static bool init_content_file_extract(
    return true;
 }
 
+static void init_content_file_set_attribs(
+      struct string_list *content,
+      rarch_system_info_t *system,
+      const struct retro_subsystem_info *special,
+      union string_list_elem_attr *attr)
+{
+   global_t *global = global_get_ptr();
+   attr->i          = 0;
+
+   if (*global->subsystem)
+   {
+      unsigned i;
+
+      for (i = 0; i < global->subsystem_fullpaths->size; i++)
+      {
+         attr->i  = special->roms[i].block_extract;
+         attr->i |= special->roms[i].need_fullpath << 1;
+         attr->i |= special->roms[i].required      << 2;
+         string_list_append(content,
+               global->subsystem_fullpaths->elems[i].data, *attr);
+      }
+   }
+   else
+   {
+      char       *fullpath = NULL;
+      settings_t *settings = config_get_ptr();
+
+      runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+
+      attr->i  = system->info.block_extract;
+      attr->i |= system->info.need_fullpath << 1;
+      attr->i |= (!system->no_content)      << 2;
+      string_list_append(content,
+            (global->inited.core.no_content 
+             && settings->core.set_supports_no_game_enable) ? "" : fullpath, *attr);
+   }
+}
+
 /**
  * init_content_file:
  *
@@ -664,39 +705,14 @@ bool init_content_file(void)
 
    content = string_list_new();
 
-   attr.i = 0;
 
    if (!content)
       goto error;
 
-   if (*global->subsystem)
-   {
-      unsigned i;
-
-      for (i = 0; i < global->subsystem_fullpaths->size; i++)
-      {
-         attr.i  = special->roms[i].block_extract;
-         attr.i |= special->roms[i].need_fullpath << 1;
-         attr.i |= special->roms[i].required << 2;
-         string_list_append(content,
-               global->subsystem_fullpaths->elems[i].data, attr);
-      }
-   }
-   else
-   {
-      char *fullpath = NULL;
-
-      runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-      attr.i  = system->info.block_extract;
-      attr.i |= system->info.need_fullpath << 1;
-      attr.i |= (!system->no_content) << 2;
-      string_list_append(content,
-            (global->inited.core.no_content 
-             && settings->core.set_supports_no_game_enable) ? "" : fullpath, attr);
-   }
+   init_content_file_set_attribs(content, system, special, &attr);
 
 #ifdef HAVE_ZLIB
+   /* Try to extract all content we're going to load if appropriate. */
    if (!init_content_file_extract(content, system, special, &attr))
       goto error;
 #endif
