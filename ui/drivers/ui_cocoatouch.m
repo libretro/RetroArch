@@ -47,9 +47,7 @@ void apple_rarch_exited(void);
 static void rarch_enable_ui(void)
 {
 #ifdef HAVE_AVFOUNDATION
-   AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-   [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
-   [audioSession setActive:YES error:nil];
+   [[RetroArch_iOS get] supportOtherAudioSessions];
 #endif
     
    bool boolean = true;
@@ -71,9 +69,7 @@ static void rarch_disable_ui(void)
    runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
    rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 #ifdef HAVE_AVFOUNDATION
-   AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-   [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
-   [audioSession setActive:YES error:nil];
+   [[RetroArch_iOS get] supportOtherAudioSessions];
 #endif
 }
 
@@ -329,9 +325,7 @@ enum
 {
 #ifdef HAVE_AVFOUNDATION
    /* Implicitly initializes your audio session. */
-   AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-   [audioSession setCategory: AVAudioSessionCategoryAmbient error: nil];
-   [audioSession setActive:YES error:nil];
+   [(RetroArch_iOS*)[[UIApplication sharedApplication] delegate] supportOtherAudioSessions];
 #endif
    return (RetroArch_iOS*)[[UIApplication sharedApplication] delegate];
 }
