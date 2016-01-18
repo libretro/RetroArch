@@ -208,15 +208,13 @@ RCVOpenGLTextureCacheRef textureCache;
 GLuint outputTexture;
 static bool newFrame = false;
 
-extern void event_process_camera_frame(void* pixelBufferPtr);
-
-void event_process_camera_frame(void* pixelBufferPtr)
+static void event_process_camera_frame(void *pbuf_ptr)
 {
     CVReturn ret;
     RCVOpenGLTextureRef renderTexture;
-    CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)pixelBufferPtr;
-    size_t width  = CVPixelBufferGetWidth(pixelBuffer);
-    size_t height = CVPixelBufferGetHeight(pixelBuffer);
+    CVPixelBufferRef pixelBuffer = (CVPixelBufferRef)pbuf_ptr;
+    size_t width                 = CVPixelBufferGetWidth(pixelBuffer);
+    size_t height                = CVPixelBufferGetHeight(pixelBuffer);
     
     CVPixelBufferLockBaseAddress(pixelBuffer, 0);
     
