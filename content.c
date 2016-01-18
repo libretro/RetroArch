@@ -536,6 +536,48 @@ end:
    return ret;
 }
 
+static bool init_content_file_subsystem(
+      const struct retro_subsystem_info *special,
+      rarch_system_info_t *system
+      )
+{
+   global_t *global = global_get_ptr();
+   special = libretro_find_subsystem_info(system->special,
+         system->num_special, global->subsystem);
+
+   if (!special)
+   {
+      RARCH_ERR(
+            "Failed to find subsystem \"%s\" in libretro implementation.\n",
+            global->subsystem);
+      return false;
+   }
+
+   if (special->num_roms && !global->subsystem_fullpaths)
+   {
+      RARCH_ERR("libretro core requires special content, but none were provided.\n");
+      return false;
+   }
+   else if (special->num_roms && special->num_roms
+         != global->subsystem_fullpaths->size)
+   {
+      RARCH_ERR("libretro core requires %u content files for subsystem \"%s\", but %u content files were provided.\n",
+            special->num_roms, special->desc,
+            (unsigned)global->subsystem_fullpaths->size);
+      return false;
+   }
+   else if (!special->num_roms && global->subsystem_fullpaths
+         && global->subsystem_fullpaths->size)
+   {
+      RARCH_ERR("libretro core takes no content for subsystem \"%s\", but %u content files were provided.\n",
+            special->desc,
+            (unsigned)global->subsystem_fullpaths->size);
+      return false;
+   }
+
+   return true;
+}
+
 /**
  * init_content_file:
  *
@@ -565,40 +607,8 @@ bool init_content_file(void)
       goto error;
 
    if (*global->subsystem)
-   {
-      special = libretro_find_subsystem_info(system->special,
-            system->num_special, global->subsystem);
-
-      if (!special)
-      {
-         RARCH_ERR(
-               "Failed to find subsystem \"%s\" in libretro implementation.\n",
-               global->subsystem);
+      if (!init_content_file_subsystem(special, system))
          goto error;
-      }
-
-      if (special->num_roms && !global->subsystem_fullpaths)
-      {
-         RARCH_ERR("libretro core requires special content, but none were provided.\n");
-         goto error;
-      }
-      else if (special->num_roms && special->num_roms
-            != global->subsystem_fullpaths->size)
-      {
-         RARCH_ERR("libretro core requires %u content files for subsystem \"%s\", but %u content files were provided.\n",
-               special->num_roms, special->desc,
-               (unsigned)global->subsystem_fullpaths->size);
-         goto error;
-      }
-      else if (!special->num_roms && global->subsystem_fullpaths
-            && global->subsystem_fullpaths->size)
-      {
-         RARCH_ERR("libretro core takes no content for subsystem \"%s\", but %u content files were provided.\n",
-               special->desc,
-               (unsigned)global->subsystem_fullpaths->size);
-         goto error;
-      }
-   }
 
    content = string_list_new();
 
@@ -628,7 +638,8 @@ bool init_content_file(void)
       attr.i |= system->info.need_fullpath << 1;
       attr.i |= (!system->no_content) << 2;
       string_list_append(content,
-            (global->inited.core.no_content && settings->core.set_supports_no_game_enable) ? "" : fullpath, attr);
+            (global->inited.core.no_content 
+             && settings->core.set_supports_no_game_enable) ? "" : fullpath, attr);
    }
 
 #ifdef HAVE_ZLIB
@@ -646,7 +657,10 @@ bool init_content_file(void)
       valid_ext = special ? special->roms[i].valid_extensions :
          system->info.valid_extensions;
 
-      if (ext && !strcasecmp(ext, "zip"))
+      if (!ext)
+         continue;
+
+      if (!strcasecmp(ext, "zip"))
       {
          char temp_content[PATH_MAX_LENGTH] = {0};
 
