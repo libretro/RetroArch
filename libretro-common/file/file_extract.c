@@ -216,7 +216,7 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
 
    size *= 8;
    for (i = 0; i < size; i += 8)
-      val |= *data++ << i;
+      val |= (uint32_t)*data++ << i;
 
    return val;
 }
