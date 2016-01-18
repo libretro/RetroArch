@@ -228,8 +228,10 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
             "overlays", sizeof(g_defaults.dir.overlay));
       fill_pathname_join(g_defaults.dir.assets,   g_defaults.dir.core,
             "assets", sizeof(g_defaults.dir.assets));
+      fill_pathname_join(g_defaults.dir.cursor,   g_defaults.dir.core,
+            "database/cursors", sizeof(g_defaults.dir.cursor));
       fill_pathname_join(g_defaults.dir.database,   g_defaults.dir.core,
-            "rdb", sizeof(g_defaults.dir.database));
+            "database/rdb", sizeof(g_defaults.dir.database));
       fill_pathname_join(g_defaults.dir.playlist,   g_defaults.dir.core,
             "playlists", sizeof(g_defaults.dir.playlist));
    }
