@@ -115,7 +115,7 @@ static void dump_to_file_desperate(const void *data,
 {
    time_t time_;
    char timebuf[256];
-   char path[PATH_MAX_LENGTH]    = {0};
+   char path[PATH_MAX_LENGTH];
 #if defined(_WIN32) && !defined(_XBOX)
    const char *base = getenv("APPDATA");
 #elif defined(__CELLOS_LV2__) || defined(_XBOX)
@@ -390,8 +390,8 @@ static bool load_content_need_fullpath(
 {
    ssize_t len;
    union string_list_elem_attr attributes;
-   char new_path[PATH_MAX_LENGTH]    = {0};
-   char new_basedir[PATH_MAX_LENGTH] = {0};
+   char new_path[PATH_MAX_LENGTH];
+   char new_basedir[PATH_MAX_LENGTH];
    bool ret                          = false;
    settings_t *settings              = config_get_ptr();
    rarch_system_info_t      *sys_info= NULL;
