@@ -124,7 +124,9 @@ void cocoagl_bind_game_view_fbo(void)
 {
 #ifdef HAVE_AVFOUNDATION
    /*  Implicitly initializes your audio session */
-   [[RetroArch_iOS get] supportOtherAudioSessions];
+   AVAudioSession *audio_session = [AVAudioSession sharedInstance];
+   [audio_session setCategory:AVAudioSessionCategoryAmbient error:nil];
+   [audio_session setActive:YES error:nil];
 #endif
    if (g_context)
       [g_view bindDrawable];
