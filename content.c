@@ -354,14 +354,14 @@ void save_ram_file(const char *path, int type)
          path);
 }
 
+/* Load the content into memory. */
+
+/* First content file is significant, attempt to do patching,
+ * CRC checking, etc. */
 static bool load_content_dont_need_fullpath(
       struct retro_game_info *info, unsigned i, const char *path)
 {
    ssize_t len;
-   /* Load the content into memory. */
-
-   /* First content file is significant, attempt to do patching,
-    * CRC checking, etc. */
    bool ret = false;
 
    if (i == 0)
@@ -688,11 +688,10 @@ bool init_content_file(void)
    struct string_list *content                = NULL;
    const struct retro_subsystem_info *special = NULL;
    rarch_system_info_t *system                = NULL;
-   settings_t *settings                       = config_get_ptr();
    global_t *global                           = global_get_ptr();
    temporary_content                          = string_list_new();
 
-   global->inited.content = false;
+   global->inited.content                     = false;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
