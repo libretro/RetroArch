@@ -64,32 +64,6 @@ extern void *dinput;
 
 /* Power Request APIs */
 
-#if (_WIN32_WINNT < 0x0601) //_WIN32_WINNT_WIN7
-typedef struct _REASON_CONTEXT {
-  ULONG Version;
-  DWORD Flags;
-  union {
-    struct {
- HMODULE LocalizedReasonModule;
- ULONG LocalizedReasonId;
- ULONG ReasonStringCount;
- LPWSTR *ReasonStrings;
-    } Detailed;
-    LPWSTR SimpleReasonString;
-  } Reason;
-} REASON_CONTEXT, *PREASON_CONTEXT;
-
-typedef enum _POWER_REQUEST_TYPE {
-  PowerRequestDisplayRequired,
-  PowerRequestSystemRequired,
-  PowerRequestAwayModeRequired
-} POWER_REQUEST_TYPE, *PPOWER_REQUEST_TYPE;
-
-#define POWER_REQUEST_CONTEXT_VERSION            0
-#define POWER_REQUEST_CONTEXT_SIMPLE_STRING      0x00000001
-#define POWER_REQUEST_CONTEXT_DETAILED_STRING    0x00000002
-#endif
-
 typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_REQUEST_CONTEXT;
 
 #ifndef MAX_MONITORS
