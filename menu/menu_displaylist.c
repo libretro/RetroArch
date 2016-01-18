@@ -3120,10 +3120,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          strlcpy(info->path, settings->content_database, sizeof(info->path));
          break;
       case DISPLAYLIST_ARCHIVE_ACTION:
+#ifdef HAVE_COMPRESSION
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_OPEN_ARCHIVE),
                menu_hash_to_str(MENU_LABEL_OPEN_ARCHIVE),
                0, 0, 0);
+#endif
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_LOAD_ARCHIVE),
                menu_hash_to_str(MENU_LABEL_LOAD_ARCHIVE),
@@ -3131,10 +3133,12 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_push = true;
          break;
       case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
+#ifdef HAVE_COMPRESSION
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_OPEN_ARCHIVE),
                menu_hash_to_str(MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE),
                0, 0, 0);
+#endif
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_LOAD_ARCHIVE),
                menu_hash_to_str(MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE),
