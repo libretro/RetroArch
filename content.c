@@ -608,7 +608,7 @@ static bool init_content_file_extract(
 
       if (!strcasecmp(ext, "zip"))
       {
-         char temp_content[PATH_MAX_LENGTH] = {0};
+         char temp_content[PATH_MAX_LENGTH];
 
          strlcpy(temp_content, content->elems[i].data,
                sizeof(temp_content));
