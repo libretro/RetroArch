@@ -578,71 +578,16 @@ static bool init_content_file_subsystem(
    return true;
 }
 
-/**
- * init_content_file:
- *
- * Initializes and loads a content file for the currently
- * selected libretro core.
- *
- * global->content_is_init will be set to the return value
- * on exit.
- *
- * Returns : true if successful, otherwise false.
- **/
-bool init_content_file(void)
+static bool init_content_file_extract(
+      struct string_list *content,
+      rarch_system_info_t *system,
+      const struct retro_subsystem_info *special,
+      union string_list_elem_attr *attr
+      )
 {
    unsigned i;
-   union string_list_elem_attr attr;
-   bool ret                                   = false;
-   struct string_list *content                = NULL;
-   const struct retro_subsystem_info *special = NULL;
-   rarch_system_info_t *system                = NULL;
-   settings_t *settings                       = config_get_ptr();
-   global_t *global                           = global_get_ptr();
-   temporary_content                          = string_list_new();
+   settings_t *settings = config_get_ptr();
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   if (!temporary_content)
-      goto error;
-
-   if (*global->subsystem)
-      if (!init_content_file_subsystem(special, system))
-         goto error;
-
-   content = string_list_new();
-
-   attr.i = 0;
-
-   if (!content)
-      goto error;
-
-   if (*global->subsystem)
-   {
-      for (i = 0; i < global->subsystem_fullpaths->size; i++)
-      {
-         attr.i  = special->roms[i].block_extract;
-         attr.i |= special->roms[i].need_fullpath << 1;
-         attr.i |= special->roms[i].required << 2;
-         string_list_append(content,
-               global->subsystem_fullpaths->elems[i].data, attr);
-      }
-   }
-   else
-   {
-      char *fullpath = NULL;
-
-      runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-      attr.i  = system->info.block_extract;
-      attr.i |= system->info.need_fullpath << 1;
-      attr.i |= (!system->no_content) << 2;
-      string_list_append(content,
-            (global->inited.core.no_content 
-             && settings->core.set_supports_no_game_enable) ? "" : fullpath, attr);
-   }
-
-#ifdef HAVE_ZLIB
    /* Try to extract all content we're going to load if appropriate. */
    for (i = 0; i < content->size; i++)
    {
@@ -674,24 +619,102 @@ bool init_content_file(void)
          {
             RARCH_ERR("Failed to extract content from zipped file: %s.\n",
                   temp_content);
-            goto error;
+            return false;
          }
          string_list_set(content, i, temp_content);
          string_list_append(temporary_content,
-               temp_content, attr);
+               temp_content, *attr);
       }
    }
+   
+   return true;
+}
+
+/**
+ * init_content_file:
+ *
+ * Initializes and loads a content file for the currently
+ * selected libretro core.
+ *
+ * global->content_is_init will be set to the return value
+ * on exit.
+ *
+ * Returns : true if successful, otherwise false.
+ **/
+bool init_content_file(void)
+{
+   union string_list_elem_attr attr;
+   struct string_list *content                = NULL;
+   const struct retro_subsystem_info *special = NULL;
+   rarch_system_info_t *system                = NULL;
+   settings_t *settings                       = config_get_ptr();
+   global_t *global                           = global_get_ptr();
+   temporary_content                          = string_list_new();
+
+   global->inited.content = false;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+   if (!temporary_content)
+      goto error;
+
+   if (*global->subsystem)
+      if (!init_content_file_subsystem(special, system))
+         goto error;
+
+   content = string_list_new();
+
+   attr.i = 0;
+
+   if (!content)
+      goto error;
+
+   if (*global->subsystem)
+   {
+      unsigned i;
+
+      for (i = 0; i < global->subsystem_fullpaths->size; i++)
+      {
+         attr.i  = special->roms[i].block_extract;
+         attr.i |= special->roms[i].need_fullpath << 1;
+         attr.i |= special->roms[i].required << 2;
+         string_list_append(content,
+               global->subsystem_fullpaths->elems[i].data, attr);
+      }
+   }
+   else
+   {
+      char *fullpath = NULL;
+
+      runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+
+      attr.i  = system->info.block_extract;
+      attr.i |= system->info.need_fullpath << 1;
+      attr.i |= (!system->no_content) << 2;
+      string_list_append(content,
+            (global->inited.core.no_content 
+             && settings->core.set_supports_no_game_enable) ? "" : fullpath, attr);
+   }
+
+#ifdef HAVE_ZLIB
+   if (!init_content_file_extract(content, system, special, &attr))
+      goto error;
 #endif
 
    /* Set attr to need_fullpath as appropriate. */
-   ret = load_content(special, content);
+   if (!load_content(special, content))
+      goto error;
 
-error:
-   global->inited.content = (ret) ? true : false;
+   global->inited.content = true;
 
    if (content)
       string_list_free(content);
-   return ret;
+   return true;
+
+error:
+   if (content)
+      string_list_free(content);
+   return false;
 }
 
 /**
