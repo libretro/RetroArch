@@ -137,6 +137,8 @@ void *glkitview_init(void);
    [g_pause_indicator_view viewWithTag:1].frame = CGRectMake(0, 0, tenpctw * 2.0f, tenpcth);
 }
 
+#define ALMOST_INVISIBLE (.021f)
+
 - (void)hidePauseButton
 {
    [UIView animateWithDuration:0.2
