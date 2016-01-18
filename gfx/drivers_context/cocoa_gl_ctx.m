@@ -72,9 +72,8 @@
 #endif
 
 #if defined(HAVE_COCOATOUCH)
-#define ALMOST_INVISIBLE (.021f)
 static GLKView *g_view;
-static UIView *g_pause_indicator_view;
+UIView *g_pause_indicator_view;
 #endif
 
 static GLContextClass* g_hw_ctx;
