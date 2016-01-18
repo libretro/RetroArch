@@ -64,30 +64,33 @@ extern void *dinput;
 
 /* Power Request APIs */
 
+#if (_WIN32_WINNT < 0x0601) //_WIN32_WINNT_WIN7
+typedef struct _REASON_CONTEXT {
+  ULONG Version;
+  DWORD Flags;
+  union {
+    struct {
+ HMODULE LocalizedReasonModule;
+ ULONG LocalizedReasonId;
+ ULONG ReasonStringCount;
+ LPWSTR *ReasonStrings;
+    } Detailed;
+    LPWSTR SimpleReasonString;
+  } Reason;
+} REASON_CONTEXT, *PREASON_CONTEXT;
+
+typedef enum _POWER_REQUEST_TYPE {
+  PowerRequestDisplayRequired,
+  PowerRequestSystemRequired,
+  PowerRequestAwayModeRequired
+} POWER_REQUEST_TYPE, *PPOWER_REQUEST_TYPE;
+
+#define POWER_REQUEST_CONTEXT_VERSION            0
+#define POWER_REQUEST_CONTEXT_SIMPLE_STRING      0x00000001
+#define POWER_REQUEST_CONTEXT_DETAILED_STRING    0x00000002
+#endif
+
 typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_REQUEST_CONTEXT;
-
-extern "C" WINBASEAPI
-HANDLE
-WINAPI
-PowerCreateRequest (
-    PREASON_CONTEXT Context
-    );
-
-WINBASEAPI
-BOOL
-WINAPI
-PowerSetRequest (
-    HANDLE PowerRequest,
-    POWER_REQUEST_TYPE RequestType
-    );
-
-WINBASEAPI
-BOOL
-WINAPI
-PowerClearRequest (
-    HANDLE PowerRequest,
-    POWER_REQUEST_TYPE RequestType
-    );
 
 #ifndef MAX_MONITORS
 #define MAX_MONITORS 9
@@ -429,7 +432,7 @@ bool win32_suppress_screensaver(void *data, bool enable)
          RequestContext.Flags = POWER_REQUEST_CONTEXT_SIMPLE_STRING;
          RequestContext.Reason.SimpleReasonString = (LPWSTR)L"RetroArch running";
 
-         Request = PowerCreateRequest(&RequestContext);
+         Request = powerCreateRequest(&RequestContext);
 
          powerSetRequest( Request, PowerRequestDisplayRequired);
          return true;
