@@ -1310,6 +1310,11 @@ bool event_command(enum event_command cmd)
          system("shutdown -P now");
 #endif
          break;
+      case EVENT_CMD_REBOOT:
+         runloop_msg_queue_push("Rebooting...", 1, 180, true);
+         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+         system("shutdown -r now");
+         break;
       case EVENT_CMD_RESUME:
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          break;

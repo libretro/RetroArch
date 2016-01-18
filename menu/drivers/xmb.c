@@ -2606,6 +2606,8 @@ static int xmb_list_push(void *data, void *userdata, menu_displaylist_info_t *in
 #endif
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_SHUTDOWN), PARSE_ACTION, false);
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_REBOOT), PARSE_ACTION, false);
          info->need_push    = true;
          ret = 0;
          break;
