@@ -399,7 +399,7 @@ static bool load_content_append_to_temporary_content(const char *elem,
 }
 
 #ifdef HAVE_COMPRESSION
-static bool load_content_need_fullpath(
+static bool load_content_from_compressed_archive(
       struct retro_game_info *info, unsigned i,
       struct string_list* additional_path_allocs,
       bool need_fullpath, const char *path)
@@ -512,7 +512,7 @@ static bool load_content(
                " load it on its own.\n");
 
 #ifdef HAVE_COMPRESSION
-         if (!load_content_need_fullpath(&info[i], i,
+         if (!load_content_from_compressed_archive(&info[i], i,
                   additional_path_allocs, need_fullpath, path))
             return false;
 #endif
