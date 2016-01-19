@@ -464,16 +464,15 @@ static bool load_content(const struct retro_subsystem_info *special,
       const struct string_list *content)
 {
    unsigned i;
-   bool ret = true;
-   struct string_list* additional_path_allocs = string_list_new();
-   struct retro_game_info *info = (struct retro_game_info*)
+   bool ret                                   = true;
+   struct string_list* additional_path_allocs = NULL;
+   struct retro_game_info               *info = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
 
    if (!info)
-   {
-      string_list_free(additional_path_allocs);
       return false;
-   }
+
+   additional_path_allocs = string_list_new();
 
    for (i = 0; i < content->size; i++)
    {
@@ -717,6 +716,7 @@ bool init_content_file(void)
    /* Set attr to need_fullpath as appropriate. */
    if (!load_content(special, content))
       goto error;
+
 
    global->inited.content = true;
 
