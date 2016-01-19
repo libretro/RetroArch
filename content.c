@@ -654,17 +654,22 @@ static void init_content_file_set_attribs(
    }
    else
    {
-      char       *fullpath = NULL;
       settings_t *settings = config_get_ptr();
-
-      runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
       attr->i  = system->info.block_extract;
       attr->i |= system->info.need_fullpath << 1;
       attr->i |= (!system->no_content)      << 2;
-      string_list_append(content,
-            (global->inited.core.no_content 
-             && settings->core.set_supports_no_game_enable) ? "" : fullpath, *attr);
+
+      if (global->inited.core.no_content 
+            && settings->core.set_supports_no_game_enable)
+         string_list_append(content, "", *attr);
+      else
+      {
+         char *fullpath = NULL;
+         runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+
+         string_list_append(content, fullpath, *attr);
+      }
    }
 }
 
