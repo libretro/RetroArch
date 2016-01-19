@@ -460,19 +460,18 @@ static bool load_content_need_fullpath(
  *
  * Returns : true if successful, otherwise false.
  **/
-static bool load_content(const struct retro_subsystem_info *special,
-      const struct string_list *content)
+static bool load_content(
+      struct retro_game_info *info,
+      const struct string_list *content,
+      const struct retro_subsystem_info *special,
+      struct string_list* additional_path_allocs
+      )
 {
    unsigned i;
-   bool ret                                   = true;
-   struct string_list* additional_path_allocs = NULL;
-   struct retro_game_info               *info = (struct retro_game_info*)
-      calloc(content->size, sizeof(*info));
+   bool ret    = true;
 
-   if (!info)
+   if (!info || !additional_path_allocs)
       return false;
-
-   additional_path_allocs = string_list_new();
 
    for (i = 0; i < content->size; i++)
    {
@@ -484,8 +483,7 @@ static bool load_content(const struct retro_subsystem_info *special,
       if (require_content && !*path)
       {
          RARCH_LOG("libretro core requires content, but nothing was provided.\n");
-         ret = false;
-         goto end;
+         return false;
       }
 
       info[i].path = NULL;
@@ -496,7 +494,7 @@ static bool load_content(const struct retro_subsystem_info *special,
       if (!need_fullpath && *path)
       {
          if (!load_content_dont_need_fullpath(&info[i], i, path))
-            goto end;
+            return false;
       }
       else
       {
@@ -506,7 +504,7 @@ static bool load_content(const struct retro_subsystem_info *special,
 #ifdef HAVE_COMPRESSION
          if (!load_content_need_fullpath(&info[i], i,
                   additional_path_allocs, need_fullpath, path))
-            goto end;
+            return false;
 #endif
       }
    }
@@ -527,14 +525,7 @@ static bool load_content(const struct retro_subsystem_info *special,
    if (!ret)
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
 
-end:
-   for (i = 0; i < content->size; i++)
-      free((void*)info[i].data);
-
-   string_list_free(additional_path_allocs);
-   if (info)
-      free(info);
-   return ret;
+   return true;
 }
 
 static bool init_content_file_subsystem(
@@ -681,7 +672,13 @@ static void init_content_file_set_attribs(
  **/
 bool init_content_file(void)
 {
+   unsigned i;
    union string_list_elem_attr attr;
+   struct retro_game_info               *info = NULL;
+   
+
+   bool ret                                   = false;
+   struct string_list* additional_path_allocs = NULL;
    struct string_list *content                = NULL;
    const struct retro_subsystem_info *special = NULL;
    rarch_system_info_t *system                = NULL;
@@ -713,10 +710,21 @@ bool init_content_file(void)
       goto error;
 #endif
 
-   /* Set attr to need_fullpath as appropriate. */
-   if (!load_content(special, content))
-      goto error;
+   info                   = (struct retro_game_info*)
+      calloc(content->size, sizeof(*info));
+   additional_path_allocs = string_list_new();
 
+   ret = load_content(info, content, special, additional_path_allocs);
+
+   for (i = 0; i < content->size; i++)
+      free((void*)info[i].data);
+
+   string_list_free(additional_path_allocs);
+   if (info)
+      free(info);
+
+   if (!ret)
+      goto error;
 
    global->inited.content = true;
 
