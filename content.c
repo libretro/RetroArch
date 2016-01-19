@@ -630,14 +630,14 @@ static bool init_content_file_extract(
 }
 #endif
 
-static void init_content_file_set_attribs(
+static bool init_content_file_set_attribs(
       struct string_list *content,
       rarch_system_info_t *system,
       const struct retro_subsystem_info *special,
       union string_list_elem_attr *attr)
 {
-   global_t *global = global_get_ptr();
-   attr->i          = 0;
+   global_t *global        = global_get_ptr();
+   attr->i                 = 0;
 
    if (*global->subsystem)
    {
@@ -645,9 +645,10 @@ static void init_content_file_set_attribs(
 
       for (i = 0; i < global->subsystem_fullpaths->size; i++)
       {
-         attr->i  = special->roms[i].block_extract;
-         attr->i |= special->roms[i].need_fullpath << 1;
-         attr->i |= special->roms[i].required      << 2;
+         attr->i           = special->roms[i].block_extract;
+         attr->i          |= special->roms[i].need_fullpath << 1;
+         attr->i          |= special->roms[i].required      << 2;
+
          string_list_append(content,
                global->subsystem_fullpaths->elems[i].data, *attr);
       }
@@ -656,21 +657,28 @@ static void init_content_file_set_attribs(
    {
       settings_t *settings = config_get_ptr();
 
-      attr->i  = system->info.block_extract;
-      attr->i |= system->info.need_fullpath << 1;
-      attr->i |= (!system->no_content)      << 2;
+      attr->i              = system->info.block_extract;
+      attr->i             |= system->info.need_fullpath << 1;
+      attr->i             |= (!system->no_content)      << 2;
 
       if (global->inited.core.no_content 
             && settings->core.set_supports_no_game_enable)
          string_list_append(content, "", *attr);
       else
       {
-         char *fullpath = NULL;
+         char *fullpath    = NULL;
          runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
          string_list_append(content, fullpath, *attr);
       }
    }
+
+#ifdef HAVE_ZLIB
+   /* Try to extract all content we're going to load if appropriate. */
+   if (!init_content_file_extract(content, system, special, attr))
+      return false;
+#endif
+   return true;
 }
 
 /**
@@ -709,13 +717,8 @@ bool init_content_file(void)
    if (!content)
       goto error;
 
-   init_content_file_set_attribs(content, system, special, &attr);
-
-#ifdef HAVE_ZLIB
-   /* Try to extract all content we're going to load if appropriate. */
-   if (!init_content_file_extract(content, system, special, &attr))
+   if (!init_content_file_set_attribs(content, system, special, &attr))
       goto error;
-#endif
 
    info                   = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
