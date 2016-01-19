@@ -590,15 +590,16 @@ static bool init_content_file_extract(
    for (i = 0; i < content->size; i++)
    {
       const char *ext       = NULL;
-      const char *valid_ext = NULL;
+      const char *valid_ext = system->info.valid_extensions;
 
       /* Block extract check. */
       if (content->elems[i].attr.i & 1)
          continue;
 
-      ext       = path_get_extension(content->elems[i].data);
-      valid_ext = special ? special->roms[i].valid_extensions :
-         system->info.valid_extensions;
+      ext                   = path_get_extension(content->elems[i].data);
+
+      if (special)
+         valid_ext          = special->roms[i].valid_extensions;
 
       if (!ext)
          continue;
