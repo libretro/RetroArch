@@ -353,7 +353,7 @@ void save_ram_file(const char *path, int type)
 }
 
 /* Load the content into memory. */
-static bool load_content_dont_need_fullpath(
+static bool load_content_into_memory(
       struct retro_game_info *info,
       unsigned i,
       const char *path)
@@ -503,7 +503,7 @@ static bool load_content(
 
       if (!need_fullpath && *path)
       {
-         if (!load_content_dont_need_fullpath(&info[i], i, path))
+         if (!load_content_into_memory(&info[i], i, path))
             return false;
       }
       else
