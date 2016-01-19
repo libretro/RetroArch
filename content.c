@@ -750,34 +750,39 @@ bool init_content_file(void)
 error:
    if (content)
       string_list_free(content);
-   content_temporary_free();
+   content_ctl(CONTENT_CTL_TEMPORARY_FREE, NULL);
    return false;
 }
 
-/**
- * content_free_temporary:
- *
- * Frees temporary content handle.
- **/
-void content_temporary_free(void)
+bool content_ctl(enum content_ctl_state state, void *data)
 {
    unsigned i;
 
-   if (!temporary_content)
-      return;
-
-   for (i = 0; i < temporary_content->size; i++)
+   switch(state)
    {
-      const char *path = temporary_content->elems[i].data;
+      case CONTENT_CTL_TEMPORARY_FREE:
+         if (!temporary_content)
+            return false;
 
-      RARCH_LOG("%s: %s.\n",
-            msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
-      if (remove(path) < 0)
-         RARCH_ERR("%s: %s.\n",
-               msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
-               path);
+         for (i = 0; i < temporary_content->size; i++)
+         {
+            const char *path = temporary_content->elems[i].data;
+
+            RARCH_LOG("%s: %s.\n",
+                  msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
+            if (remove(path) < 0)
+               RARCH_ERR("%s: %s.\n",
+                     msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
+                     path);
+         }
+         string_list_free(temporary_content);
+
+         temporary_content = NULL;
+         break;
+      case CONTENT_CTL_NONE:
+      default:
+         break;
    }
-   string_list_free(temporary_content);
 
-   temporary_content = NULL;
+   return true;
 }

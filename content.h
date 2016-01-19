@@ -27,6 +27,14 @@
 extern "C" {
 #endif
 
+enum content_ctl_state
+{
+   CONTENT_CTL_NONE = 0,
+
+   /* Frees temporary content handle. */
+   CONTENT_CTL_TEMPORARY_FREE
+};
+
 /* Handles files related to libretro. */
 
 /**
@@ -83,7 +91,7 @@ void save_ram_file(const char *path, int type);
  **/
 bool init_content_file(void);
 
-void content_temporary_free(void);
+bool content_ctl(enum content_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

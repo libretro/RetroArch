@@ -1482,7 +1482,7 @@ bool event_command(enum event_command cmd)
          input_driver_ctl(RARCH_INPUT_CTL_REMOTE_INIT, NULL);
          break;
       case EVENT_CMD_TEMPORARY_CONTENT_DEINIT:
-         content_temporary_free();
+         content_ctl(CONTENT_CTL_TEMPORARY_FREE, NULL);
          break;
       case EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT:
          if (!global)
