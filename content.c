@@ -33,6 +33,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <file/file_extract.h>
+#include <string/stdstring.h>
 #include <retro_file.h>
 #include <retro_stat.h>
 
@@ -427,8 +428,7 @@ static bool load_content_from_compressed_archive(
    strlcpy(new_basedir, settings->cache_directory,
          sizeof(new_basedir));
 
-   if ((!strcmp(new_basedir, "")) ||
-         !path_is_directory(new_basedir))
+   if (string_is_empty(new_basedir) || !path_is_directory(new_basedir))
    {
       RARCH_WARN("Tried extracting to cache directory, but "
             "cache directory was not set or found. "
@@ -442,7 +442,7 @@ static bool load_content_from_compressed_archive(
    fill_pathname_join(new_path, new_basedir,
          path_basename(path), sizeof(new_path));
 
-   ret = read_compressed_file(path,NULL,new_path, &len);
+   ret = read_compressed_file(path, NULL, new_path, &len);
 
    if (!ret || len < 0)
    {
@@ -493,7 +493,7 @@ static bool load_content(
       bool need_fullpath   = attr & 2;
       bool require_content = attr & 4;
 
-      if (require_content && !*path)
+      if (require_content && string_is_empty(path))
       {
          RARCH_LOG("libretro core requires content, but nothing was provided.\n");
          return false;
@@ -504,7 +504,7 @@ static bool load_content(
       if (*path)
          info[i].path = path;
 
-      if (!need_fullpath && *path)
+      if (!need_fullpath && !string_is_empty(path))
       {
          if (!load_content_into_memory(&info[i], i, path))
             return false;
