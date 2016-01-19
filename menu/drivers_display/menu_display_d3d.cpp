@@ -18,7 +18,7 @@
 #include <gfx/math/matrix_4x4.h>
 
 #include "../../config.def.h"
-#include "../../content.h"
+#include "../../retroarch.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/d3d/d3d.h"
