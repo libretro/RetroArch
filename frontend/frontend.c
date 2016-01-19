@@ -27,6 +27,7 @@
 #include "../ui/ui_companion_driver.h"
 
 #include "../defaults.h"
+#include "../content.h"
 #include "../driver.h"
 #include "../system.h"
 #include "../driver.h"
@@ -60,11 +61,10 @@ int rarch_main_async_job_add(async_task_t task, void *payload)
 void main_exit(void *args)
 {
    settings_t *settings                  = config_get_ptr();
-   global_t   *global                    = global_get_ptr();
 
    event_command(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
 
-   if (global->inited.main)
+   if (content_ctl(CONTENT_CTL_IS_INITED, NULL))
    {
 #ifdef HAVE_MENU
       /* Do not want menu context to live any more. */
@@ -288,14 +288,12 @@ int rarch_main(int argc, char *argv[], void *data)
    if (settings->history_list_enable)
    {
       char *fullpath              = NULL;
-      global_t *global            = global_get_ptr();
       rarch_system_info_t *system = NULL;
       
-      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET,  &system);
       runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-      if (global->inited.content || system->no_content)
+      if (content_ctl(CONTENT_CTL_IS_INITED, NULL) || system->no_content)
          history_playlist_push(
                g_defaults.history,
                fullpath,

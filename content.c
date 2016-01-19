@@ -753,6 +753,7 @@ bool content_ctl(enum content_ctl_state state, void *data)
 {
    unsigned i;
    static struct string_list *temporary_content = NULL;
+   static bool content_is_inited                = false;
 
    switch(state)
    {
@@ -770,17 +771,20 @@ bool content_ctl(enum content_ctl_state state, void *data)
                return false;
             return content_save_state(path);
          }
+      case CONTENT_CTL_IS_INITED:
+         return content_is_inited;
+      case CONTENT_CTL_DEINIT:
+         content_ctl(CONTENT_CTL_TEMPORARY_FREE, NULL);
+         content_is_inited = false;
+         return true;
       case CONTENT_CTL_INIT:
+         content_is_inited = false;
+         if (content_init_file(temporary_content))
          {
-            global_t *global = global_get_ptr();
-            if (content_init_file(temporary_content))
-            {
-               global->inited.content = true;
-               return true;
-            }
-            global->inited.content = false;
-            /* fall-through */
+            content_is_inited = true;
+            return true;
          }
+         /* fall-through */
       case CONTENT_CTL_TEMPORARY_FREE:
          if (!temporary_content)
             return false;

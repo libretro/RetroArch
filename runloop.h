@@ -285,7 +285,6 @@ typedef struct global
    struct
    {
       bool main;
-      bool content;
       struct
       {
          bool no_content;

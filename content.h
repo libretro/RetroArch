@@ -31,9 +31,13 @@ enum content_ctl_state
 {
    CONTENT_CTL_NONE = 0,
 
+   CONTENT_CTL_IS_INITED,
+
    /* Initializes and loads a content file for the currently
     * selected libretro core. */
    CONTENT_CTL_INIT,
+
+   CONTENT_CTL_DEINIT,
 
    /* Load a state from disk to memory. */
    CONTENT_CTL_LOAD_STATE,
