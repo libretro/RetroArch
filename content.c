@@ -739,6 +739,7 @@ bool init_content_file(void)
 error:
    if (content)
       string_list_free(content);
+   content_temporary_free();
    return false;
 }
 
