@@ -28,6 +28,7 @@
 #include "../../input/drivers/cocoa_input.h"
 #include "../../input/drivers_keyboard/keyboard_event_apple.h"
 #include "../../frontend/frontend.h"
+#include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../system.h"
 
