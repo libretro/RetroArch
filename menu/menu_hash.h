@@ -689,8 +689,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_QUIT_RETROARCH                                        0x8e7024f2U
 #define MENU_LABEL_SHUTDOWN                                                    0xfc460361U
 #define MENU_LABEL_VALUE_SHUTDOWN                                              0x740b6741U
-#define MENU_LABEL_REBOOT                                                      0xac460361U
-#define MENU_LABEL_VALUE_REBOOT                                                0xa40b6741U
+#define MENU_LABEL_REBOOT                                                      0x1b353023U
+#define MENU_LABEL_VALUE_REBOOT                                                0xcab9e59fU
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
 #define MENU_LABEL_VALUE_STARTING_DOWNLOAD                                     0x42e10f03U
