@@ -153,7 +153,7 @@ error:
  *
  * Returns: true if successful, false otherwise.
  **/
-bool save_state(const char *path)
+static bool content_save_state(const char *path)
 {
    bool ret    = false;
    void *data  = NULL;
@@ -192,14 +192,14 @@ bool save_state(const char *path)
 }
 
 /**
- * load_state:
+ * content_load_state:
  * @path      : path that state will be loaded from.
  *
  * Load a state from disk to memory.
  *
  * Returns: true if successful, false otherwise.
  **/
-bool load_state(const char *path)
+static bool content_load_state(const char *path)
 {
    unsigned i;
    ssize_t size;
@@ -770,6 +770,20 @@ bool content_ctl(enum content_ctl_state state, void *data)
 
    switch(state)
    {
+      case CONTENT_CTL_LOAD_STATE:
+         {
+            const char *path = (const char*)data;
+            if (!path)
+               return false;
+            return content_load_state(path);
+         }
+      case CONTENT_CTL_SAVE_STATE:
+         {
+            const char *path = (const char*)data;
+            if (!path)
+               return false;
+            return content_save_state(path);
+         }
       case CONTENT_CTL_INIT:
          if (content_init_file(temporary_content))
             return true;

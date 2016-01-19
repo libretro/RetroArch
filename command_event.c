@@ -459,7 +459,7 @@ static void event_load_auto_state(void)
    if (!path_file_exists(savestate_name_auto))
       return;
 
-   ret = load_state(savestate_name_auto);
+   ret = content_ctl(CONTENT_CTL_LOAD_STATE, (void*)savestate_name_auto);
 
    RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
 
@@ -612,7 +612,7 @@ static bool event_save_auto_state(void)
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
          ".auto", sizeof(savestate_name_auto));
 
-   ret = save_state(savestate_name_auto);
+   ret = content_ctl(CONTENT_CTL_SAVE_STATE, (void*)savestate_name_auto);
    RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ?
          "succeeded" : "failed");
 
@@ -780,7 +780,7 @@ static void event_save_state(const char *path,
 {
    settings_t *settings = config_get_ptr();
 
-   if (!save_state(path))
+   if (!content_ctl(CONTENT_CTL_SAVE_STATE, (void*)path))
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
@@ -807,7 +807,7 @@ static void event_load_state(const char *path, char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
 
-   if (!load_state(path))
+   if (!content_ctl(CONTENT_CTL_LOAD_STATE, (void*)path))
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),

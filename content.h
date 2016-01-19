@@ -40,31 +40,17 @@ enum content_ctl_state
     * Returns : true if successful, otherwise false. */
    CONTENT_CTL_INIT,
 
+   /* Load a state from disk to memory. */
+   CONTENT_CTL_LOAD_STATE,
+
+   /* Save a state from memory to disk. */
+   CONTENT_CTL_SAVE_STATE,
+
    /* Frees temporary content handle. */
    CONTENT_CTL_TEMPORARY_FREE
 };
 
 /* Handles files related to libretro. */
-
-/**
- * load_state:
- * @path      : path that state will be loaded from.
- *
- * Load a state from disk to memory.
- *
- * Returns: true if successful, false otherwise.
- **/
-bool load_state(const char *path);
-
-/**
- * save_state:
- * @path      : path of saved state that shall be written to.
- *
- * Save a state from memory to disk.
- *
- * Returns: true if successful, false otherwise.
- **/
-bool save_state(const char *path);
 
 /**
  * load_ram_file:
