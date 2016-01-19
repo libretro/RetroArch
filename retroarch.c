@@ -41,6 +41,7 @@
 #include <file/file_path.h>
 #include <retro_stat.h>
 
+#include "content.h"
 #include "core_info.h"
 #include "msg_hash.h"
 #include "movie.h"
@@ -618,7 +619,6 @@ static void parse_input(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
    };
 
-   global->inited.core.no_content        = false;
    global->inited.core.type              = CORE_TYPE_PLAIN;
    *global->subsystem                    = '\0';
    global->has_set.save_path             = false;
@@ -966,8 +966,7 @@ static void parse_input(int argc, char *argv[])
    else if (*global->subsystem && optind < argc)
       set_special_paths(argv + optind, argc - optind);
    else
-      global->inited.core.no_content = true;
-
+      content_ctl(CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT, NULL);
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (global->has_set.save_path &&

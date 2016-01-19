@@ -287,7 +287,6 @@ typedef struct global
       bool main;
       struct
       {
-         bool no_content;
          enum rarch_core_type type;
       } core;
    } inited;

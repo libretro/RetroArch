@@ -533,13 +533,13 @@ static bool event_init_content(void)
    if (global->inited.core.type == CORE_TYPE_DUMMY)
       return true;
 
-   if (!global->inited.core.no_content)
+   if (!content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
       rarch_ctl(RARCH_CTL_FILL_PATHNAMES, NULL);
 
    if (!content_ctl(CONTENT_CTL_INIT, NULL))
       return false;
 
-   if (global->inited.core.no_content)
+   if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
       return true;
 
    event_set_savestate_auto_index();
@@ -579,14 +579,15 @@ static bool event_init_core(void)
       config_load_remap();
 
    /* per-core saves: reset redirection paths */
-   if((settings->sort_savestates_enable || settings->sort_savefiles_enable) && !global->inited.core.no_content)
+   if((settings->sort_savestates_enable || settings->sort_savefiles_enable) 
+         && !content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
       rarch_ctl(RARCH_CTL_SET_PATHS_REDIRECT, NULL);
 
    rarch_ctl(RARCH_CTL_VERIFY_API_VERSION, NULL);
    core.retro_init();
 
-   global->sram.use = (global->inited.core.type == CORE_TYPE_PLAIN) &&
-      !global->inited.core.no_content;
+   global->sram.use = (global->inited.core.type == CORE_TYPE_PLAIN) 
+      && !content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL);
 
    if (!event_init_content())
       return false;
@@ -604,10 +605,12 @@ static bool event_save_auto_state(void)
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
-   if (!settings->savestate_auto_save ||
-         (global->inited.core.type == CORE_TYPE_DUMMY) ||
-       global->inited.core.no_content)
-       return false;
+   if (!settings->savestate_auto_save)
+      return false;
+   if (global->inited.core.type == CORE_TYPE_DUMMY)
+      return false;
+   if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
+      return false;
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
          ".auto", sizeof(savestate_name_auto));

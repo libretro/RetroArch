@@ -675,7 +675,7 @@ static bool init_content_file_set_attribs(
       attr.i              |= system->info.need_fullpath << 1;
       attr.i              |= (!system->no_content)      << 2;
 
-      if (global->inited.core.no_content 
+      if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL)
             && settings->core.set_supports_no_game_enable)
          string_list_append(content, "", attr);
       else
@@ -754,9 +754,15 @@ bool content_ctl(enum content_ctl_state state, void *data)
    unsigned i;
    static struct string_list *temporary_content = NULL;
    static bool content_is_inited                = false;
+   static bool core_does_not_need_content       = false;
 
    switch(state)
    {
+      case CONTENT_CTL_DOES_NOT_NEED_CONTENT:
+         return core_does_not_need_content;
+      case CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT:
+         core_does_not_need_content = true;
+         break;
       case CONTENT_CTL_LOAD_STATE:
          {
             const char *path = (const char*)data;
@@ -775,8 +781,9 @@ bool content_ctl(enum content_ctl_state state, void *data)
          return content_is_inited;
       case CONTENT_CTL_DEINIT:
          content_ctl(CONTENT_CTL_TEMPORARY_FREE, NULL);
-         content_is_inited = false;
-         return true;
+         content_is_inited          = false;
+         core_does_not_need_content = false;
+         break;
       case CONTENT_CTL_INIT:
          content_is_inited = false;
          if (content_init_file(temporary_content))
