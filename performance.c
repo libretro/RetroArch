@@ -547,12 +547,20 @@ uint64_t retro_get_cpu_features(void)
          cpu |= RETRO_SIMD_MMXEXT;
    }
 #elif defined(__MACH__)
-    int has_neon;
+    int has_neon, has_altivec;
     size_t len = sizeof(size_t);
+#if defined(CTL_HW) && defined(HW_VECTORUNIT)
+    int mib[2];
+    mib[0] = CTL_HW;
+    mib[1] = HW_VECTORUNIT;
+    sysctl(mib, 2, &has_altivec, &len, NULL, 0);
+#endif
     sysctlbyname("hw.optional.neon", &has_neon, &len, NULL, 0);
 
     if (has_neon)
        cpu |= RETRO_SIMD_NEON;
+    if (has_altivec)
+       cpu |= RETRO_SIMD_VMX;
 #elif defined(__linux__)
    cpu_flags = linux_get_cpu_features();
 
