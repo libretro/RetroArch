@@ -382,6 +382,20 @@ static bool load_content_dont_need_fullpath(
    return true;
 }
 
+static bool load_content_append_to_temporary_content(const char *elem,
+      union string_list_elem_attr attributes)
+{
+   if (!temporary_content)
+   {
+      temporary_content = string_list_new();
+      if (!temporary_content)
+         return false;
+   }
+
+   string_list_append(temporary_content, elem, attributes);
+   return true;
+}
+
 #ifdef HAVE_COMPRESSION
 static bool load_content_need_fullpath(
       struct retro_game_info *info, unsigned i,
@@ -435,17 +449,11 @@ static bool load_content_need_fullpath(
    }
 
    string_list_append(additional_path_allocs,new_path, attributes);
-   info[i].path =
-      additional_path_allocs->elems
-      [additional_path_allocs->size -1 ].data;
+   info[i].path = 
+      additional_path_allocs->elems[additional_path_allocs->size -1 ].data;
 
-   /* temporary_content is initialized in init_content_file
-    * The following part takes care of cleanup of the unzipped files
-    * after exit.
-    */
-   retro_assert(temporary_content != NULL);
-   string_list_append(temporary_content,
-         new_path, attributes);
+   if (!load_content_append_to_temporary_content(new_path, attributes))
+      return false;
 
    return true;
 }
@@ -613,9 +621,10 @@ static bool init_content_file_extract(
                   temp_content);
             return false;
          }
+
          string_list_set(content, i, temp_content);
-         string_list_append(temporary_content,
-               temp_content, *attr);
+         if (!load_content_append_to_temporary_content(temp_content, *attr))
+            return false;
       }
    }
    
@@ -677,29 +686,22 @@ bool init_content_file(void)
    unsigned i;
    union string_list_elem_attr attr;
    struct retro_game_info               *info = NULL;
-   
-
    bool ret                                   = false;
    struct string_list* additional_path_allocs = NULL;
    struct string_list *content                = NULL;
    const struct retro_subsystem_info *special = NULL;
    rarch_system_info_t *system                = NULL;
    global_t *global                           = global_get_ptr();
-   temporary_content                          = string_list_new();
 
    global->inited.content                     = false;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   if (!temporary_content)
-      goto error;
 
    if (*global->subsystem)
       if (!init_content_file_subsystem(special, system))
          goto error;
 
    content = string_list_new();
-
 
    if (!content)
       goto error;
