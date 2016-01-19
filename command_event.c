@@ -526,8 +526,6 @@ static void event_set_savestate_auto_index(void)
 
 static bool event_init_content(void)
 {
-   global_t *global = global_get_ptr();
-
    /* No content to be loaded for dummy core,
     * just successfully exit. */
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))

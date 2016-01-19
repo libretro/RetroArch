@@ -2561,7 +2561,6 @@ static int xmb_list_push(void *data, void *userdata, menu_displaylist_info_t *in
 {
    int ret = -1;
    menu_handle_t *menu   = (menu_handle_t*)data;
-   global_t    *global   = global_get_ptr();
 
    switch (type)
    {

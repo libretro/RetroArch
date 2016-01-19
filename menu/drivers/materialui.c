@@ -1291,7 +1291,6 @@ static int mui_list_push(void *data, void *userdata,
    int ret                = -1;
    core_info_list_t *list = NULL;
    menu_handle_t *menu    = (menu_handle_t*)data;
-   global_t *global       = global_get_ptr();
 
    (void)userdata;
 

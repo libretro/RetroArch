@@ -1804,7 +1804,6 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
 static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_info_t *info)
 {
    menu_handle_t *menu             = menu_driver_get_ptr();
-   global_t *global                = global_get_ptr();
    settings_t *settings            = config_get_ptr();
    unsigned idx                    = rpl_entry_selection_ptr;
    const char *label               = NULL;
@@ -2429,7 +2428,6 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    struct video_shader *shader = NULL;
 #endif
    menu_handle_t       *menu   = menu_driver_get_ptr();
-   global_t          *global   = global_get_ptr();
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
    core_info_list_t *list      = NULL;
