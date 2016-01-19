@@ -556,13 +556,14 @@ uint64_t retro_get_cpu_features(void)
 #elif defined(__linux__)
    cpu_flags = linux_get_cpu_features();
 
-#ifdef __ARM_NEON__
    if (cpu_flags & CPU_ARM_FEATURE_NEON)
    {
       cpu |= RETRO_SIMD_NEON;
+#ifdef __ARM_NEON__
       arm_enable_runfast_mode();
-   }
 #endif
+   }
+
    if (cpu_flags & CPU_ARM_FEATURE_VFPv3)
       cpu |= RETRO_SIMD_VFPV3;
 
