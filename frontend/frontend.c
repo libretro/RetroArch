@@ -150,13 +150,12 @@ static void history_playlist_push(content_playlist_t *playlist,
       const char *path, const char *core_path,
       struct retro_system_info *info)
 {
-   char tmp[PATH_MAX_LENGTH]             = {0};
-   global_t                    *global   = global_get_ptr();
+   char tmp[PATH_MAX_LENGTH];
    rarch_system_info_t *system           = NULL;
    
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   if (!playlist || (global->inited.core.type == CORE_TYPE_DUMMY) || !info)
+   if (!playlist || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) || !info)
       return;
 
    /* Path can be relative here.

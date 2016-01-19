@@ -22,6 +22,7 @@
 
 #include "../command_event.h"
 #include "../general.h"
+#include "../retroarch.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"
 #include "../string_list_special.h"
@@ -293,7 +294,7 @@ bool recording_init(void)
    if (!*recording_enabled)
       return false;
 
-   if (global->inited.core.type == CORE_TYPE_DUMMY)
+   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       RARCH_WARN("%s\n", msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
       return false;

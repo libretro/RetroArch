@@ -306,12 +306,9 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          }
          return true;
       case MENU_DISPLAY_CTL_LIBRETRO_RUNNING:
-         {
-            global_t *global     = global_get_ptr();
-            if (!settings->menu.pause_libretro)
-               if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && (global->inited.core.type != CORE_TYPE_DUMMY))
-                  return true;
-         }
+         if (!settings->menu.pause_libretro)
+            if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+               return true;
          break;
       case MENU_DISPLAY_CTL_LIBRETRO:
          video_driver_set_texture_enable(true, false);

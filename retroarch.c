@@ -953,7 +953,7 @@ static void parse_input(int argc, char *argv[])
       }
    }
 
-   if (global->inited.core.type == CORE_TYPE_DUMMY)
+   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       if (optind < argc)
       {
@@ -1293,6 +1293,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_CTL_IS_DUMMY_CORE:
+         return (global->inited.core.type == CORE_TYPE_DUMMY);
       case RARCH_CTL_IS_INITED:
          return rarch_is_inited;
       case RARCH_CTL_UNSET_INITED:

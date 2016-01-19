@@ -67,6 +67,8 @@ enum rarch_ctl_state
 
    RARCH_CTL_IS_INITED,
 
+   RARCH_CTL_IS_DUMMY_CORE,
+
    RARCH_CTL_PREINIT,
 
    RARCH_CTL_DESTROY,

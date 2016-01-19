@@ -1236,7 +1236,6 @@ int runloop_iterate(unsigned *sleep_ms)
    static retro_time_t frame_limit_last_time    = 0.0;
    static retro_input_t last_input              = 0;
    settings_t *settings                         = config_get_ptr();
-   global_t   *global                           = global_get_ptr();
    rarch_system_info_t *system                  = NULL;
 
    cmd.state[1]                                 = last_input;
@@ -1327,11 +1326,11 @@ int runloop_iterate(unsigned *sleep_ms)
       event_command(EVENT_CMD_GRAB_MOUSE_TOGGLE);
 
 #ifdef HAVE_MENU
-   if (runloop_cmd_menu_press(cmd_ptr) || (global->inited.core.type == CORE_TYPE_DUMMY))
+   if (runloop_cmd_menu_press(cmd_ptr) || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && (global->inited.core.type != CORE_TYPE_DUMMY))
+         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
       }
       else

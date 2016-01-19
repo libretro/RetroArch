@@ -1721,7 +1721,7 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
    if (!menu)
       return -1;
 
-   if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && (global->inited.core.type != CORE_TYPE_DUMMY))
+   if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       rarch_system_info_t *system = NULL;
       
@@ -1774,7 +1774,7 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
             menu_hash_to_str(MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS),
             menu_hash_to_str(MENU_LABEL_CORE_CHEAT_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
-      if ((global->inited.core.type != CORE_TYPE_DUMMY) && system && system->disk_control.get_num_images)
+      if ((!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)) && system && system->disk_control.get_num_images)
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_OPTIONS),
                menu_hash_to_str(MENU_LABEL_DISK_OPTIONS),
@@ -1819,8 +1819,8 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-   if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && (global->inited.core.type != CORE_TYPE_DUMMY)
-      && !strcmp(menu->deferred_path, fullpath))
+   if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+         && !strcmp(menu->deferred_path, fullpath))
       menu_displaylist_parse_load_content_settings(info);
    else
       menu_entries_push(info->list, "Run", "collection",
@@ -2599,7 +2599,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_push    = true;
          break;
       case DISPLAYLIST_MAIN_MENU:
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && (global->inited.core.type != CORE_TYPE_DUMMY))
+         if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
             menu_displaylist_parse_settings(menu, info,
                   menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION, false);
 

@@ -530,7 +530,7 @@ static bool event_init_content(void)
 
    /* No content to be loaded for dummy core,
     * just successfully exit. */
-   if (global->inited.core.type == CORE_TYPE_DUMMY)
+   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return true;
 
    if (!content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
@@ -607,7 +607,7 @@ static bool event_save_auto_state(void)
 
    if (!settings->savestate_auto_save)
       return false;
-   if (global->inited.core.type == CORE_TYPE_DUMMY)
+   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return false;
    if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
       return false;

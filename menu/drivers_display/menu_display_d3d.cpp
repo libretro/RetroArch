@@ -200,7 +200,7 @@ static void menu_display_d3d_draw_bg(
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
    if ((settings->menu.pause_libretro
-      || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) || (global->inited.core.type == CORE_TYPE_DUMMY))
+      || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       && !force_transparency
       && texture)
       coords.color = (const float*)coord_color2;

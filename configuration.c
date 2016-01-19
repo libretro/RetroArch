@@ -1850,7 +1850,7 @@ static void config_load_core_specific(void)
    if (!*settings->libretro)
       return;
 #ifdef HAVE_DYNAMIC
-   if (global->inited.core.type == CORE_TYPE_DUMMY)
+   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return;
 #endif
 

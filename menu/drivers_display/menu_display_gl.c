@@ -140,7 +140,6 @@ static void menu_display_gl_draw_bg(
    struct gfx_coords coords;
    const GLfloat *new_vertex    = NULL;
    const GLfloat *new_tex_coord = NULL;
-   global_t     *global = global_get_ptr();
    settings_t *settings = config_get_ptr();
    gl_t             *gl = gl_get_ptr();
 
@@ -166,7 +165,7 @@ static void menu_display_gl_draw_bg(
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
    if ((settings->menu.pause_libretro
-      || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) || (global->inited.core.type == CORE_TYPE_DUMMY))
+      || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       && !force_transparency
       && texture)
       coords.color = (const float*)coord_color2;
