@@ -570,6 +570,7 @@ static bool init_content_file_subsystem(
    return true;
 }
 
+#ifdef HAVE_ZLIB
 static bool init_content_file_extract(
       struct string_list *content,
       rarch_system_info_t *system,
@@ -620,6 +621,7 @@ static bool init_content_file_extract(
    
    return true;
 }
+#endif
 
 static void init_content_file_set_attribs(
       struct string_list *content,
