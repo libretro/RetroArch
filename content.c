@@ -57,7 +57,6 @@ struct sram_block
    size_t size;
 };
 
-static struct string_list *temporary_content;
 
 /**
  * read_content_file:
@@ -384,7 +383,9 @@ error:
    return false;
 }
 
-static bool load_content_append_to_temporary_content(const char *elem,
+static bool load_content_append_to_temporary_content(
+      struct string_list *temporary_content,
+      const char *elem,
       union string_list_elem_attr attributes)
 {
    if (!temporary_content)
@@ -400,6 +401,7 @@ static bool load_content_append_to_temporary_content(const char *elem,
 
 #ifdef HAVE_COMPRESSION
 static bool load_content_from_compressed_archive(
+      struct string_list *temporary_content,
       struct retro_game_info *info, unsigned i,
       struct string_list* additional_path_allocs,
       bool need_fullpath, const char *path)
@@ -454,7 +456,7 @@ static bool load_content_from_compressed_archive(
    info[i].path = 
       additional_path_allocs->elems[additional_path_allocs->size -1 ].data;
 
-   if (!load_content_append_to_temporary_content(new_path, attributes))
+   if (!load_content_append_to_temporary_content(temporary_content, new_path, attributes))
       return false;
 
    return true;
@@ -471,6 +473,7 @@ static bool load_content_from_compressed_archive(
  * Returns : true if successful, otherwise false.
  **/
 static bool load_content(
+      struct string_list *temporary_content,
       struct retro_game_info *info,
       const struct string_list *content,
       const struct retro_subsystem_info *special,
@@ -512,7 +515,9 @@ static bool load_content(
                " load it on its own.\n");
 
 #ifdef HAVE_COMPRESSION
-         if (!load_content_from_compressed_archive(&info[i], i,
+         if (!load_content_from_compressed_archive(
+                  temporary_content,
+                  &info[i], i,
                   additional_path_allocs, need_fullpath, path))
             return false;
 #endif
@@ -582,6 +587,7 @@ static bool init_content_file_subsystem(
 
 #ifdef HAVE_ZLIB
 static bool init_content_file_extract(
+      struct string_list *temporary_content,
       struct string_list *content,
       rarch_system_info_t *system,
       const struct retro_subsystem_info *special,
@@ -626,7 +632,8 @@ static bool init_content_file_extract(
          }
 
          string_list_set(content, i, temp_content);
-         if (!load_content_append_to_temporary_content(temp_content, *attr))
+         if (!load_content_append_to_temporary_content(temporary_content,
+                  temp_content, *attr))
             return false;
       }
    }
@@ -636,6 +643,7 @@ static bool init_content_file_extract(
 #endif
 
 static bool init_content_file_set_attribs(
+      struct string_list *temporary_content,
       struct string_list *content,
       rarch_system_info_t *system,
       const struct retro_subsystem_info *special)
@@ -681,7 +689,7 @@ static bool init_content_file_set_attribs(
 
 #ifdef HAVE_ZLIB
    /* Try to extract all content we're going to load if appropriate. */
-   if (!init_content_file_extract(content, system, special, &attr))
+   if (!init_content_file_extract(temporary_content, content, system, special, &attr))
       return false;
 #endif
    return true;
@@ -698,7 +706,7 @@ static bool init_content_file_set_attribs(
  *
  * Returns : true if successful, otherwise false.
  **/
-static bool content_init_file(void)
+static bool content_init_file(struct string_list *temporary_content)
 {
    unsigned i;
    struct retro_game_info               *info = NULL;
@@ -722,14 +730,17 @@ static bool content_init_file(void)
    if (!content)
       goto error;
 
-   if (!init_content_file_set_attribs(content, system, special))
+   if (!init_content_file_set_attribs(temporary_content,
+            content, system, special))
       goto error;
 
    info                   = (struct retro_game_info*)
       calloc(content->size, sizeof(*info));
    additional_path_allocs = string_list_new();
 
-   ret = load_content(info, content, special, additional_path_allocs); 
+   ret = load_content(temporary_content,
+         info, content, special, additional_path_allocs); 
+
    for (i = 0; i < content->size; i++)
       free((void*)info[i].data);
 
@@ -756,11 +767,12 @@ error:
 bool content_ctl(enum content_ctl_state state, void *data)
 {
    unsigned i;
+   static struct string_list *temporary_content = NULL;
 
    switch(state)
    {
       case CONTENT_CTL_INIT:
-         return content_init_file();
+         return content_init_file(temporary_content);
       case CONTENT_CTL_TEMPORARY_FREE:
          if (!temporary_content)
             return false;
