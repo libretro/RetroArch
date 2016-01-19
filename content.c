@@ -760,7 +760,6 @@ static bool content_init_file(struct string_list *temporary_content)
 error:
    if (content)
       string_list_free(content);
-   content_ctl(CONTENT_CTL_TEMPORARY_FREE, NULL);
    return false;
 }
 
@@ -772,7 +771,9 @@ bool content_ctl(enum content_ctl_state state, void *data)
    switch(state)
    {
       case CONTENT_CTL_INIT:
-         return content_init_file(temporary_content);
+         if (content_init_file(temporary_content))
+            return true;
+         /* fall-through */
       case CONTENT_CTL_TEMPORARY_FREE:
          if (!temporary_content)
             return false;
