@@ -1198,13 +1198,12 @@ int rarch_main_init(int argc, char *argv[])
    event_command(EVENT_CMD_SET_PER_GAME_RESOLUTION);
 
    rarch_ctl(RARCH_CTL_UNSET_ERROR_ON_INIT, NULL);
-   global->inited.main  = true;
+   rarch_ctl(RARCH_CTL_SET_INITED, NULL);
    return 0;
 
 error:
    event_command(EVENT_CMD_CORE_DEINIT);
-
-   global->inited.main  = false;
+   rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
    return 1;
 }
 
@@ -1285,6 +1284,7 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
+   static bool rarch_is_inited             = false;
    static bool rarch_error_on_init         = false;
    static bool rarch_block_config_read     = false;
    static bool rarch_force_fullscreen      = false;
@@ -1293,7 +1293,16 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_CTL_IS_INITED:
+         return rarch_is_inited;
+      case RARCH_CTL_UNSET_INITED:
+         rarch_is_inited         = false;
+         break;
+      case RARCH_CTL_SET_INITED:
+         rarch_is_inited         = true;
+         break;
       case RARCH_CTL_DESTROY:
+         rarch_is_inited         = false;
          rarch_error_on_init     = false;
          rarch_block_config_read = false;
          rarch_force_fullscreen  = false;
@@ -1312,7 +1321,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             bool inited      = false;
             if (!global)
                return false;
-            inited           = global->inited.main;
+            inited           = rarch_ctl(RARCH_CTL_IS_INITED, NULL);
             if (!inited)
                return false;
 
@@ -1522,7 +1531,7 @@ void rarch_main_deinit(void)
    event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
    event_command(EVENT_CMD_SAVEFILES_DEINIT);
 
-   global->inited.main = false;
+   rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
 }
 
 /**

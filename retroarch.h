@@ -61,6 +61,12 @@ enum rarch_ctl_state
    /* Initialize all drivers. */
    RARCH_CTL_INIT,
 
+   RARCH_CTL_UNSET_INITED,
+
+   RARCH_CTL_SET_INITED,
+
+   RARCH_CTL_IS_INITED,
+
    RARCH_CTL_PREINIT,
 
    RARCH_CTL_DESTROY,

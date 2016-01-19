@@ -1331,7 +1331,7 @@ int runloop_iterate(unsigned *sleep_ms)
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
-         if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
+         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && (global->inited.core.type != CORE_TYPE_DUMMY))
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
       }
       else

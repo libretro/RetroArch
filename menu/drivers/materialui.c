@@ -1325,7 +1325,7 @@ static int mui_list_push(void *data, void *userdata,
       case DISPLAYLIST_MAIN_MENU:
          menu_entries_clear(info->list);
 
-         if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
+         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && (global->inited.core.type != CORE_TYPE_DUMMY))
             menu_displaylist_parse_settings(menu, info,
                   menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION, false);
 

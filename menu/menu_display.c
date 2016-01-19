@@ -21,6 +21,7 @@
 #include <formats/image.h>
 
 #include "../config.def.h"
+#include "../retroarch.h"
 #include "../configuration.h"
 #include "../runloop.h"
 #include "../gfx/video_thread_wrapper.h"
@@ -308,7 +309,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          {
             global_t *global     = global_get_ptr();
             if (!settings->menu.pause_libretro)
-               if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
+               if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && (global->inited.core.type != CORE_TYPE_DUMMY))
                   return true;
          }
          break;

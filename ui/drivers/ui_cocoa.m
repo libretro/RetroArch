@@ -246,9 +246,8 @@ static void poll_iteration(void)
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
    NSApplicationTerminateReply reply = NSTerminateNow;
-   global_t *global = global_get_ptr();
 
-   if (global && global->inited.main)
+   if (rarch_ctl(RARCH_CTL_IS_INITED, NULL))
       reply = NSTerminateCancel;
 
    ui_companion_event_command(EVENT_CMD_QUIT);

@@ -200,7 +200,6 @@ bool main_load_content(int argc, char **argv, void *args,
    char *argv_copy [MAX_ARGS]        = {NULL};
    char **rarch_argv_ptr             = (char**)argv;
    int *rarch_argc_ptr               = (int*)&argc;
-   global_t *global                  = global_get_ptr();
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)
       calloc(1, sizeof(*wrap_args));
 
@@ -224,7 +223,7 @@ bool main_load_content(int argc, char **argv, void *args,
       rarch_argc_ptr = (int*)&rarch_argc;
    }
 
-   if (global->inited.main)
+   if (rarch_ctl(RARCH_CTL_IS_INITED, NULL))
       rarch_main_deinit();
 
    if ((ret = rarch_main_init(*rarch_argc_ptr, rarch_argv_ptr)))

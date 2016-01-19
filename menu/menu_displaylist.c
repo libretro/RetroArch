@@ -1721,7 +1721,7 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
    if (!menu)
       return -1;
 
-   if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
+   if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && (global->inited.core.type != CORE_TYPE_DUMMY))
    {
       rarch_system_info_t *system = NULL;
       
@@ -1819,7 +1819,7 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-   if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY)
+   if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && (global->inited.core.type != CORE_TYPE_DUMMY)
       && !strcmp(menu->deferred_path, fullpath))
       menu_displaylist_parse_load_content_settings(info);
    else
@@ -2599,7 +2599,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_push    = true;
          break;
       case DISPLAYLIST_MAIN_MENU:
-         if (global->inited.main && (global->inited.core.type != CORE_TYPE_DUMMY))
+         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && (global->inited.core.type != CORE_TYPE_DUMMY))
             menu_displaylist_parse_settings(menu, info,
                   menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION, false);
 

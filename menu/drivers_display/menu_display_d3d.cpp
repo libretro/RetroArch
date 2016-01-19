@@ -18,6 +18,7 @@
 #include <gfx/math/matrix_4x4.h>
 
 #include "../../config.def.h"
+#include "../../content.h"
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/d3d/d3d.h"
@@ -199,7 +200,7 @@ static void menu_display_d3d_draw_bg(
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
    if ((settings->menu.pause_libretro
-      || !global->inited.main || (global->inited.core.type == CORE_TYPE_DUMMY))
+      || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) || (global->inited.core.type == CORE_TYPE_DUMMY))
       && !force_transparency
       && texture)
       coords.color = (const float*)coord_color2;

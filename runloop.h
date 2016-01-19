@@ -284,7 +284,6 @@ typedef struct global
    
    struct
    {
-      bool main;
       struct
       {
          enum rarch_core_type type;
