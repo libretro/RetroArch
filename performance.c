@@ -550,6 +550,7 @@ uint64_t retro_get_cpu_features(void)
     int has_neon, has_altivec;
     size_t len = sizeof(size_t);
     sysctlbyname("hw.optional.altivec", &has_altivec, &len, NULL, 0);
+    len        = sizeof(size_t);
     sysctlbyname("hw.optional.neon", &has_neon, &len, NULL, 0);
 
     if (has_neon)
