@@ -688,7 +688,7 @@ static bool init_content_file_set_attribs(
 }
 
 /**
- * init_content_file:
+ * content_init_file:
  *
  * Initializes and loads a content file for the currently
  * selected libretro core.
@@ -698,7 +698,7 @@ static bool init_content_file_set_attribs(
  *
  * Returns : true if successful, otherwise false.
  **/
-bool init_content_file(void)
+static bool content_init_file(void)
 {
    unsigned i;
    struct retro_game_info               *info = NULL;
@@ -729,8 +729,7 @@ bool init_content_file(void)
       calloc(content->size, sizeof(*info));
    additional_path_allocs = string_list_new();
 
-   ret = load_content(info, content, special, additional_path_allocs);
-
+   ret = load_content(info, content, special, additional_path_allocs); 
    for (i = 0; i < content->size; i++)
       free((void*)info[i].data);
 
@@ -760,6 +759,8 @@ bool content_ctl(enum content_ctl_state state, void *data)
 
    switch(state)
    {
+      case CONTENT_CTL_INIT:
+         return content_init_file();
       case CONTENT_CTL_TEMPORARY_FREE:
          if (!temporary_content)
             return false;

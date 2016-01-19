@@ -31,6 +31,15 @@ enum content_ctl_state
 {
    CONTENT_CTL_NONE = 0,
 
+   /* Initializes and loads a content file for the currently
+    * selected libretro core.
+    *
+    * global->content_is_init will be set to the return value
+    * on exit.
+    *
+    * Returns : true if successful, otherwise false. */
+   CONTENT_CTL_INIT,
+
    /* Frees temporary content handle. */
    CONTENT_CTL_TEMPORARY_FREE
 };
@@ -77,19 +86,6 @@ void load_ram_file(const char *path, int type);
  * 'dump_to_file_desperate' will be called.
  */
 void save_ram_file(const char *path, int type);
-
-/**
- * init_content_file:
- *
- * Initializes and loads a content file for the currently
- * selected libretro core.
- *
- * global->content_is_init will be set to the return value
- * on exit.
- *
- * Returns : true if successful, otherwise false.
- **/
-bool init_content_file(void);
 
 bool content_ctl(enum content_ctl_state state, void *data);
 

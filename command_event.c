@@ -536,7 +536,7 @@ static bool event_init_content(void)
    if (!global->inited.core.no_content)
       rarch_ctl(RARCH_CTL_FILL_PATHNAMES, NULL);
 
-   if (!init_content_file())
+   if (!content_ctl(CONTENT_CTL_INIT, NULL))
       return false;
 
    if (global->inited.core.no_content)
