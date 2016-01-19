@@ -142,7 +142,7 @@ rarch_remote_t *rarch_remote_new(uint16_t port)
 
    return handle;
 
-#if (defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY))
+#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
 error:
    rarch_remote_free(handle);
    return NULL;
@@ -162,12 +162,14 @@ void rarch_remote_free(rarch_remote_t *handle)
    free(handle);
 }
 
+#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
 static void parse_packet(char *buffer, unsigned size, unsigned user)
 {
    input_remote_state_t *ol_state  = input_remote_get_state_ptr();
    /* todo implement parsing of input_state from the packet */
    ol_state->buttons[user] = atoi(buffer);
 }
+#endif
 
 void input_state_remote(int16_t *ret,
       unsigned port, unsigned device, unsigned idx,
@@ -219,6 +221,7 @@ void rarch_remote_poll(rarch_remote_t *handle)
    {
       if (settings->network_remote_enable_user[user])
       {
+#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
          char buf[8];
          ssize_t ret;
          fd_set fds;
@@ -236,6 +239,7 @@ void rarch_remote_poll(rarch_remote_t *handle)
          if (ret > 0)
             parse_packet(buf, sizeof(buf), user);
          else
+#endif
             ol_state->buttons[user] = 0;
       }
    }
