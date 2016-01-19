@@ -1247,7 +1247,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_SHUTDOWN:
          return "Shutdown";
       case MENU_LABEL_VALUE_REBOOT:
-         return "Reboot":
+         return "Reboot";
       case MENU_LABEL_VALUE_HELP:
          return "help";
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
