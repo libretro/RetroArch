@@ -35,9 +35,7 @@ enum content_ctl_state
     * selected libretro core.
     *
     * global->content_is_init will be set to the return value
-    * on exit.
-    *
-    * Returns : true if successful, otherwise false. */
+    * on exit.  */
    CONTENT_CTL_INIT,
 
    /* Load a state from disk to memory. */
@@ -50,7 +48,6 @@ enum content_ctl_state
    CONTENT_CTL_TEMPORARY_FREE
 };
 
-/* Handles files related to libretro. */
 
 /**
  * load_ram_file:
