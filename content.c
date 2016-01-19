@@ -353,31 +353,35 @@ void save_ram_file(const char *path, int type)
 }
 
 /* Load the content into memory. */
-
-/* First content file is significant, attempt to do patching,
- * CRC checking, etc. */
 static bool load_content_dont_need_fullpath(
-      struct retro_game_info *info, unsigned i, const char *path)
+      struct retro_game_info *info,
+      unsigned i,
+      const char *path)
 {
    ssize_t len;
    bool ret = false;
 
    if (i == 0)
+   {
+      /* First content file is significant, attempt to do patching,
+       * CRC checking, etc. */
       ret = read_content_file(i, path, (void**)&info->data, &len);
+   }
    else
       ret = read_file(path, (void**)&info->data, &len);
 
    if (!ret || len < 0)
-   {
-      RARCH_ERR("%s \"%s\".\n",
-            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-            path);
-      return false;
-   }
+      goto error;
 
    info->size = len;
 
    return true;
+
+error:
+   RARCH_ERR("%s \"%s\".\n",
+         msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+         path);
+   return false;
 }
 
 static bool load_content_append_to_temporary_content(const char *elem,
