@@ -546,7 +546,13 @@ uint64_t retro_get_cpu_features(void)
       if (flags[3] & (1 << 22))
          cpu |= RETRO_SIMD_MMXEXT;
    }
+#elif defined(__MACH__)
+    int has_neon;
+    size_t len = sizeof(size_t);
+    sysctlbyname("hw.optional.neon", &has_neon, &len, NULL, 0);
 
+    if (has_neon)
+       cpu |= RETRO_SIMD_NEON;
 #elif defined(__linux__)
    cpu_flags = linux_get_cpu_features();
 
