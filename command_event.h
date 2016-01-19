@@ -121,7 +121,7 @@ enum event_command
    /* Shutdown the OS */
    EVENT_CMD_SHUTDOWN,
    /* Reboot the OS */
-   EVENT_CMD_REBOOT
+   EVENT_CMD_REBOOT,
    /* Resume RetroArch when in menu. */
    EVENT_CMD_RESUME,
    /* Toggles pause. */
