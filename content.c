@@ -701,9 +701,6 @@ static bool init_content_file_set_attribs(
  * Initializes and loads a content file for the currently
  * selected libretro core.
  *
- * global->content_is_init will be set to the return value
- * on exit.
- *
  * Returns : true if successful, otherwise false.
  **/
 static bool content_init_file(struct string_list *temporary_content)
@@ -716,8 +713,6 @@ static bool content_init_file(struct string_list *temporary_content)
    const struct retro_subsystem_info *special = NULL;
    rarch_system_info_t *system                = NULL;
    global_t *global                           = global_get_ptr();
-
-   global->inited.content                     = false;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -748,19 +743,10 @@ static bool content_init_file(struct string_list *temporary_content)
    if (info)
       free(info);
 
-   if (!ret)
-      goto error;
-
-   global->inited.content = true;
-
-   if (content)
-      string_list_free(content);
-   return true;
-
 error:
    if (content)
       string_list_free(content);
-   return false;
+   return ret;
 }
 
 bool content_ctl(enum content_ctl_state state, void *data)
@@ -785,9 +771,16 @@ bool content_ctl(enum content_ctl_state state, void *data)
             return content_save_state(path);
          }
       case CONTENT_CTL_INIT:
-         if (content_init_file(temporary_content))
-            return true;
-         /* fall-through */
+         {
+            global_t *global = global_get_ptr();
+            if (content_init_file(temporary_content))
+            {
+               global->inited.content = true;
+               return true;
+            }
+            global->inited.content = false;
+            /* fall-through */
+         }
       case CONTENT_CTL_TEMPORARY_FREE:
          if (!temporary_content)
             return false;
