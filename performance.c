@@ -548,9 +548,9 @@ uint64_t retro_get_cpu_features(void)
    }
 #elif defined(__MACH__)
    size_t len     = sizeof(size_t);
-   size_t alt_len = sizeof(size_t);
-   if (sysctlbyname("hw.optional.altivec", NULL, &alt_len, NULL, 0) == 0)
+   if (sysctlbyname("hw.optional.altivec", NULL, &len, NULL, 0) == 0)
       cpu |= RETRO_SIMD_VMX;
+   len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.neon", NULL, &len, NULL, 0) == 0)
       cpu |= RETRO_SIMD_NEON;
 #elif defined(__linux__)
