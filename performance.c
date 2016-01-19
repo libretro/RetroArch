@@ -549,12 +549,7 @@ uint64_t retro_get_cpu_features(void)
 #elif defined(__MACH__)
     int has_neon, has_altivec;
     size_t len = sizeof(size_t);
-#if defined(CTL_HW) && defined(HW_VECTORUNIT)
-    int mib[2];
-    mib[0] = CTL_HW;
-    mib[1] = HW_VECTORUNIT;
-    sysctl(mib, 2, &has_altivec, &len, NULL, 0);
-#endif
+    sysctlbyname("hw.optional.altivec", &has_altivec, &len, NULL, 0);
     sysctlbyname("hw.optional.neon", &has_neon, &len, NULL, 0);
 
     if (has_neon)
