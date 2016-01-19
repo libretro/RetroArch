@@ -450,7 +450,7 @@ uint64_t retro_get_cpu_features(void)
    uint64_t cpu_flags  = 0;
    uint64_t cpu        = 0;
    unsigned max_flag   = 0;
-#if defined(CPU_X86)
+#if defined(CPU_X86) && !defined(__MACH__)
    int vendor_is_intel = 0;
    const int avx_flags = (1 << 27) | (1 << 28);
 #endif
@@ -465,7 +465,59 @@ uint64_t retro_get_cpu_features(void)
    (void)vendor;
    (void)vendor_shuffle;
 
-#if defined(CPU_X86)
+#if defined(__MACH__)
+   size_t len     = sizeof(size_t);
+   if (sysctlbyname("hw.optional.mmx", NULL, &len, NULL, 0) == 0)
+   {
+      cpu |= RETRO_SIMD_MMX;
+      cpu |= RETRO_SIMD_MMXEXT;
+   }
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.sse", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_SSE;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.sse2", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_SSE2;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.sse3", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_SSE3;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.supplementalsse3", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_SSSE3;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.sse4_1", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_SSE4;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.sse4_2", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_SSE42;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.aes", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_AES;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.avx1_0", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_AVX;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.avx2_0", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_AVX2;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.altivec", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_VMX;
+
+   len            = sizeof(size_t);
+   if (sysctlbyname("hw.optional.neon", NULL, &len, NULL, 0) == 0)
+      cpu |= RETRO_SIMD_NEON;
+
+#elif defined(CPU_X86)
    (void)avx_flags;
 
    x86_cpuid(0, flags);
@@ -546,13 +598,6 @@ uint64_t retro_get_cpu_features(void)
       if (flags[3] & (1 << 22))
          cpu |= RETRO_SIMD_MMXEXT;
    }
-#elif defined(__MACH__)
-   size_t len     = sizeof(size_t);
-   if (sysctlbyname("hw.optional.altivec", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_VMX;
-   len            = sizeof(size_t);
-   if (sysctlbyname("hw.optional.neon", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_NEON;
 #elif defined(__linux__)
    cpu_flags = linux_get_cpu_features();
 
