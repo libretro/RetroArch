@@ -180,11 +180,12 @@ bool save_state(const char *path)
 
    if (ret)
       ret = retro_write_file(path, data, size);
-
-   if (!ret)
+   else
+   {
       RARCH_ERR("%s \"%s\".\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
             path);
+   }
 
    free(data);
 
@@ -291,7 +292,6 @@ bool load_state(const char *path)
 void load_ram_file(const char *path, int type)
 {
    ssize_t rc;
-   bool ret    = false;
    void *buf   = NULL;
    size_t size = core.retro_get_memory_size(type);
    void *data  = core.retro_get_memory_data(type);
@@ -299,9 +299,7 @@ void load_ram_file(const char *path, int type)
    if (size == 0 || !data)
       return;
 
-   ret = read_file(path, &buf, &rc);
-
-   if (!ret)
+   if (!read_file(path, &buf, &rc))
       return;
 
    if (rc > 0)
