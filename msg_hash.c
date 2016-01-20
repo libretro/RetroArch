@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include <rhash.h>
+#include <string/stdstring.h>
 
 #include "msg_hash.h"
 
@@ -59,7 +60,7 @@ const char *msg_hash_to_str(uint32_t hash)
          break;
    }
 
-   if (ret && strcmp(ret, "null") != 0)
+   if (ret && !string_is_equal(ret, "null"))
       return ret;
 
 end:

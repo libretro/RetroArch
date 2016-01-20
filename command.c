@@ -26,6 +26,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <net/net_compat.h>
+#include <string/stdstring.h>
 
 #include "msg_hash.h"
 
@@ -261,7 +262,7 @@ static bool command_get_arg(const char *tok,
 
    for (i = 0; i < ARRAY_SIZE(map); i++)
    {
-      if (!strcmp(tok, map[i].str))
+      if (string_is_equal(tok, map[i].str))
       {
          if (arg)
             *arg = NULL;
