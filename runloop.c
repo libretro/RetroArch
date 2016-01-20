@@ -1214,10 +1214,10 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 
    settings = config_get_ptr();
 
-   if (!settings->load_dummy_on_core_shutdown)
-      return -1;
+   if (settings->load_dummy_on_core_shutdown)
+      return runloop_iterate_time_to_exit_load_dummy();
 
-   return runloop_iterate_time_to_exit_load_dummy();
+   return -1;
 }
 
 /**
