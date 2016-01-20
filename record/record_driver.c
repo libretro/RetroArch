@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "record_driver.h"
 
@@ -126,7 +127,7 @@ const record_driver_t *ffemu_find_backend(const char *ident)
 
    for (i = 0; record_drivers[i]; i++)
    {
-      if (!strcmp(record_drivers[i]->ident, ident))
+      if (string_is_equal(record_drivers[i]->ident, ident))
          return record_drivers[i];
    }
 
