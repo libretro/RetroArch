@@ -1171,6 +1171,18 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
 #endif
 
 
+/* Loads dummy core instead of exiting RetroArch completely.
+ * Aborts core shutdown if invoked. */
+static int runloop_iterate_time_to_exit_load_dummy(void)
+{
+   if (!runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
+      return -1;
+
+   runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);
+   runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
+
+   return 1;
+}
 
 /* Time to exit out of the main loop?
  * Reasons for exiting:
@@ -1198,23 +1210,14 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    if (!runloop_ctl(RUNLOOP_CTL_IS_CORE_SHUTDOWN, NULL))
       return -1;
 
-   /* Quits out of RetroArch main loop.
-    * On special case, loads dummy core
-    * instead of exiting RetroArch completely.
-    * Aborts core shutdown if invoked.
-    */
+   /* Quits out of RetroArch main loop. */
 
    settings = config_get_ptr();
 
    if (!settings->load_dummy_on_core_shutdown)
       return -1;
-   if (!runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
-      return -1;
 
-   runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);
-   runloop_ctl(RUNLOOP_CTL_UNSET_CORE_SHUTDOWN, NULL);
-
-   return 0;
+   return runloop_iterate_time_to_exit_load_dummy();
 }
 
 /**
