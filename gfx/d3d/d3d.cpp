@@ -24,6 +24,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "d3d.h"
 #include "../video_common.h"
@@ -310,8 +311,7 @@ static bool d3d_init_multipass(d3d_video_t *d3d)
 static bool d3d_process_shader(d3d_video_t *d3d)
 {
 #ifdef HAVE_FBO
-   if (strcmp(path_get_extension(
-               d3d->shader_path.c_str()), "cgp") == 0)
+   if (string_is_equal(path_get_extension(d3d->shader_path.c_str()), "cgp"))
       return d3d_init_multipass(d3d);
 #endif
 

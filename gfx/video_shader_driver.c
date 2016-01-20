@@ -15,6 +15,8 @@
 
 #include <string.h>
 
+#include <string/stdstring.h>
+
 #include "video_shader_driver.h"
 #include "../verbosity.h"
 
@@ -49,7 +51,7 @@ const shader_backend_t *shader_ctx_find_driver(const char *ident)
 
    for (i = 0; shader_ctx_drivers[i]; i++)
    {
-      if (!strcmp(shader_ctx_drivers[i]->ident, ident))
+      if (string_is_equal(shader_ctx_drivers[i]->ident, ident))
          return shader_ctx_drivers[i];
    }
 

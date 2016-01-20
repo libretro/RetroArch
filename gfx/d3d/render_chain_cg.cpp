@@ -160,7 +160,7 @@ static INLINE CGparameter d3d9_cg_find_param_from_semantic(
       if (!semantic)
          continue;
 
-      if (!strcmp(sem, semantic) &&
+      if (string_is_equal(sem, semantic) &&
             validate_param_name(cgGetParameterName(param)))
          return param;
    }
