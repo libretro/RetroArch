@@ -15,7 +15,9 @@
 
 #include <stdint.h>
 #include <string.h>
+
 #include <rhash.h>
+#include <string/stdstring.h>
 
 #include "menu_hash.h"
 
