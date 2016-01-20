@@ -22,6 +22,7 @@
 #include <linux/fb.h>
 
 #include <rthreads/rthreads.h>
+#include <string/stdstring.h>
 
 #include "../../general.h"
 #include "../../retroarch.h"
@@ -359,9 +360,9 @@ static sunxi_disp_t *sunxi_disp_init(const char *device)
    if (!device)
       device = "/dev/fb0";
 
-   if (!strcmp(device, "/dev/fb0"))
+   if (string_is_equal(device, "/dev/fb0"))
       ctx->fb_id = 0;
-   else if (!strcmp(device, "/dev/fb1"))
+   else if (string_is_equal(device, "/dev/fb1"))
       ctx->fb_id = 1;
    else
       goto error;

@@ -17,6 +17,7 @@
 #include <vita2d.h>
 
 #include <retro_inline.h>
+#include <string/stdstring.h>
 
 #include "../../defines/psp_defines.h"
 #include "../../general.h"
@@ -277,7 +278,7 @@ static bool vita2d_gfx_frame(void *data, const void *frame,
       }
    }
    
-   if(msg && strcmp(msg,""))
+   if(!string_is_empty(msg))
      font_driver_render_msg(NULL, msg, NULL);
    
    vita2d_end_drawing();

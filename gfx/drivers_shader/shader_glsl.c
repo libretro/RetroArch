@@ -19,6 +19,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "../../general.h"
 #include "shader_glsl.h"
@@ -764,7 +765,7 @@ static void *gl_glsl_init(void *data, const char *path)
       bool ret;
       const char *path_ext = path_get_extension(path);
 
-      if (!strcmp(path_ext, "glsl"))
+      if (string_is_equal(path_ext, "glsl"))
       {
          strlcpy(glsl->shader->pass[0].source.path, path,
                sizeof(glsl->shader->pass[0].source.path));
@@ -772,7 +773,7 @@ static void *gl_glsl_init(void *data, const char *path)
          glsl->shader->modern = true;
          ret = true;
       }
-      else if (!strcmp(path_ext, "glslp"))
+      else if (string_is_equal(path_ext, "glslp"))
       {
          conf = config_file_new(path);
          if (conf)

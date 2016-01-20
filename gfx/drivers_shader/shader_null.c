@@ -21,6 +21,7 @@
 #include <compat/posix_string.h>
 #include <boolean.h>
 #include <gfx/math/matrix_4x4.h>
+#include <string/stdstring.h>
 
 #include "../../general.h"
 #include "../video_state_tracker.h"
@@ -77,7 +78,7 @@ static bool shader_null_set_mvp(void *data, void *shader_data, const math_matrix
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_MATRIX
-   if (!strcmp(video_driver_get_ident(), "gl"))
+   if (string_is_equal(video_driver_get_ident(), "gl"))
       gl_ff_matrix(mat);
 #endif
 #endif
@@ -88,7 +89,7 @@ static bool shader_null_set_coords(void *handle_data, void *shader_data, const v
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_VERTEX
-   if (!strcmp(video_driver_get_ident(), "gl"))
+   if (string_is_equal(video_driver_get_ident(), "gl"))
    {
       const struct gfx_coords *coords = (const struct gfx_coords*)data;
       gl_ff_vertex(coords);

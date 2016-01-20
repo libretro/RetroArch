@@ -33,6 +33,7 @@
 #include <file/config_file.h>
 #include <file/file_path.h>
 #include <rhash.h>
+#include <string/stdstring.h>
 
 #include "../video_shader_driver.h"
 #include "../video_shader_parse.h"
@@ -925,7 +926,7 @@ static void *gl_cg_init(void *data, const char *path)
 
    memset(cg_data->cg_alias_define, 0, sizeof(cg_data->cg_alias_define));
 
-   if (path && !strcmp(path_get_extension(path), "cgp"))
+   if (path && string_is_equal(path_get_extension(path), "cgp"))
    {
       if (!gl_cg_load_preset(cg_data, path))
          goto error;

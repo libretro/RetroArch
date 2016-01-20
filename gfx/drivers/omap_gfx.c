@@ -34,6 +34,7 @@
 
 #include <retro_inline.h>
 #include <gfx/scaler/scaler.h>
+#include <string/stdstring.h>
 
 #include "../../driver.h"
 #include "../../general.h"
@@ -221,7 +222,7 @@ static int omapfb_detect_screen(omapfb_data_t *pdata)
       if (ret < 0)
          break;
 
-      if (!strcmp(manager_name, buff))
+      if (string_is_equal(manager_name, buff))
       {
          snprintf(buff, sizeof(buff), "/sys/devices/platform/omapdss/manager%d/display", i);
          ret = omapfb_read_sysfs(buff, display_name, sizeof(display_name));
@@ -250,7 +251,7 @@ static int omapfb_detect_screen(omapfb_data_t *pdata)
       if (ret < 0)
          break;
 
-      if (!strcmp(display_name, buff))
+      if (string_is_equal(display_name, buff))
       {
          display_id = i;
          break;

@@ -20,6 +20,8 @@
 #include <wayland-client.h>
 #include <wayland-egl.h>
 
+#include <string/stdstring.h>
+
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
@@ -94,9 +96,9 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
 
    (void)version;
 
-   if (!strcmp(interface, "wl_compositor"))
+   if (string_is_equal(interface, "wl_compositor"))
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg, id, &wl_compositor_interface, 1);
-   else if (!strcmp(interface, "wl_shell"))
+   else if (string_is_equal(interface, "wl_shell"))
       wl->shell = (struct wl_shell*)wl_registry_bind(reg, id, &wl_shell_interface, 1);
 }
 
