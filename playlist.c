@@ -21,6 +21,7 @@
 
 #include <boolean.h>
 #include <compat/posix_string.h>
+#include <string/stdstring.h>
 
 #include "playlist.h"
 #include "verbosity.h"
@@ -91,7 +92,7 @@ void content_playlist_get_index_by_path(content_playlist_t *playlist,
 
    for (i = 0; i < playlist->size; i++)
    {
-      if (strcmp(playlist->entries[i].path, search_path) != 0)
+      if (!string_is_equal(playlist->entries[i].path, search_path))
          continue;
 
       if (path)
@@ -208,14 +209,14 @@ void content_playlist_push(content_playlist_t *playlist,
       content_playlist_entry_t tmp;
       bool equal_path = (!path && !playlist->entries[i].path) ||
          (path && playlist->entries[i].path &&
-          !strcmp(path,playlist->entries[i].path));
+          string_is_equal(path,playlist->entries[i].path));
 
       /* Core name can have changed while still being the same core.
        * Differentiate based on the core path only. */
       if (!equal_path)
          continue;
 
-      if (strcmp(playlist->entries[i].core_path, core_path))
+      if (!string_is_equal(playlist->entries[i].core_path, core_path))
          continue;
 
       /* If top entry, we don't want to push a new entry since

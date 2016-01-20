@@ -32,6 +32,7 @@
 #include <file/file_path.h>
 #include <retro_file.h>
 #include <string/string_list.h>
+#include <string/stdstring.h>
 #ifdef HAVE_COMPRESSION
 #include <file/file_extract.h>
 #endif
@@ -162,7 +163,7 @@ static int read_7zip_file(
          SzArEx_GetFileNameUtf16(&db, i, temp);
          res = utf16_to_char_string(temp, infile, sizeof(infile)) ? SZ_OK : SZ_ERROR_FAIL;
 
-         if (!strcmp(infile, relative_path))
+         if (string_is_equal(infile, relative_path))
          {
             /* C LZMA SDK does not support chunked extraction - see here:
              * sourceforge.net/p/sevenzip/discussion/45798/thread/6fb59aaf/
@@ -399,7 +400,7 @@ static int read_zip_file(const char *archive_path,
 
       /* We skip directories */
       if ( last_char == '/' || last_char == '\\' ) { }
-      else if (!strcmp(filename, relative_path))
+      else if (string_is_equal(filename, relative_path))
       {
          /* We found the correct file in the zip, 
           * now extract it to *buf. */

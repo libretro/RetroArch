@@ -1343,7 +1343,7 @@ static bool config_load_file(const char *path, bool set_defaults)
          &settings->menu.title_color);
    config_get_path(conf, "menu_wallpaper",
          settings->menu.wallpaper, sizeof(settings->menu.wallpaper));
-   if (!strcmp(settings->menu.wallpaper, "default"))
+   if (string_is_equal(settings->menu.wallpaper, "default"))
       *settings->menu.wallpaper = '\0';
 #endif
 
@@ -1416,15 +1416,15 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, video.gpu_screenshot, "video_gpu_screenshot");
 
    config_get_path(conf, "video_shader_dir", settings->video.shader_dir, sizeof(settings->video.shader_dir));
-   if (!strcmp(settings->video.shader_dir, "default"))
+   if (string_is_equal(settings->video.shader_dir, "default"))
       *settings->video.shader_dir = '\0';
 
    config_get_path(conf, "video_filter_dir", settings->video.filter_dir, sizeof(settings->video.filter_dir));
-   if (!strcmp(settings->video.filter_dir, "default"))
+   if (string_is_equal(settings->video.filter_dir, "default"))
       *settings->video.filter_dir = '\0';
 
    config_get_path(conf, "audio_filter_dir", settings->audio.filter_dir, sizeof(settings->audio.filter_dir));
-   if (!strcmp(settings->audio.filter_dir, "default"))
+   if (string_is_equal(settings->audio.filter_dir, "default"))
       *settings->audio.filter_dir = '\0';
 
    CONFIG_GET_BOOL_BASE(conf, settings, input.back_as_menu_toggle_enable, "back_as_menu_toggle_enable");
@@ -1547,7 +1547,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_path(conf, "screenshot_directory", settings->screenshot_directory, sizeof(settings->screenshot_directory));
    if (*settings->screenshot_directory)
    {
-      if (!strcmp(settings->screenshot_directory, "default"))
+      if (string_is_equal(settings->screenshot_directory, "default"))
          *settings->screenshot_directory = '\0';
       else if (!path_is_directory(settings->screenshot_directory))
       {
@@ -1574,24 +1574,24 @@ static bool config_load_file(const char *path, bool set_defaults)
          sizeof(settings->boxarts_directory));
    config_get_path(conf, "playlist_directory", settings->playlist_directory,
          sizeof(settings->playlist_directory));
-   if (!strcmp(settings->core_assets_directory, "default"))
+   if (string_is_equal(settings->core_assets_directory, "default"))
       *settings->core_assets_directory = '\0';
-   if (!strcmp(settings->assets_directory, "default"))
+   if (string_is_equal(settings->assets_directory, "default"))
       *settings->assets_directory = '\0';
-   if (!strcmp(settings->dynamic_wallpapers_directory, "default"))
+   if (string_is_equal(settings->dynamic_wallpapers_directory, "default"))
       *settings->dynamic_wallpapers_directory = '\0';
-   if (!strcmp(settings->boxarts_directory, "default"))
+   if (string_is_equal(settings->boxarts_directory, "default"))
       *settings->boxarts_directory = '\0';
-   if (!strcmp(settings->playlist_directory, "default"))
+   if (string_is_equal(settings->playlist_directory, "default"))
       *settings->playlist_directory = '\0';
 #ifdef HAVE_MENU
    config_get_path(conf, "rgui_browser_directory", settings->menu_content_directory,
          sizeof(settings->menu_content_directory));
-   if (!strcmp(settings->menu_content_directory, "default"))
+   if (string_is_equal(settings->menu_content_directory, "default"))
       *settings->menu_content_directory = '\0';
    config_get_path(conf, "rgui_config_directory", settings->menu_config_directory,
          sizeof(settings->menu_config_directory));
-   if (!strcmp(settings->menu_config_directory, "default"))
+   if (string_is_equal(settings->menu_config_directory, "default"))
       *settings->menu_config_directory = '\0';
    CONFIG_GET_BOOL_BASE(conf, settings, menu_show_start_screen, "rgui_show_start_screen");
 #endif
@@ -1631,7 +1631,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
 #ifdef HAVE_OVERLAY
    config_get_path(conf, "overlay_directory", settings->overlay_directory, sizeof(settings->overlay_directory));
-   if (!strcmp(settings->overlay_directory, "default"))
+   if (string_is_equal(settings->overlay_directory, "default"))
       *settings->overlay_directory = '\0';
 
    config_get_path(conf, "input_overlay", settings->input.overlay, sizeof(settings->input.overlay));
@@ -1642,7 +1642,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_FLOAT_BASE(conf, settings, input.overlay_scale, "input_overlay_scale");
 
    config_get_path(conf, "osk_overlay_directory", global->dir.osk_overlay, sizeof(global->dir.osk_overlay));
-   if (!strcmp(global->dir.osk_overlay, "default"))
+   if (string_is_equal(global->dir.osk_overlay, "default"))
       *global->dir.osk_overlay = '\0';
 
    config_get_path(conf, "input_osk_overlay", settings->osk.overlay, sizeof(settings->osk.overlay));
@@ -1752,7 +1752,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!global->has_set.save_path &&
          config_get_path(conf, "savefile_directory", tmp_str, sizeof(tmp_str)))
    {
-      if (!strcmp(tmp_str, "default"))
+      if (string_is_equal(tmp_str, "default"))
          strlcpy(global->dir.savefile, g_defaults.dir.sram,
                sizeof(global->dir.savefile));
       else if (path_is_directory(tmp_str))
@@ -1771,7 +1771,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    if (!global->has_set.state_path &&
          config_get_path(conf, "savestate_directory", tmp_str, sizeof(tmp_str)))
    {
-      if (!strcmp(tmp_str, "default"))
+      if (string_is_equal(tmp_str, "default"))
          strlcpy(global->dir.savestate, g_defaults.dir.savestate,
                sizeof(global->dir.savestate));
       else if (path_is_directory(tmp_str))
@@ -1811,7 +1811,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       *settings->system_directory = '\0';
    }
 
-   if (!strcmp(settings->system_directory, "default"))
+   if (string_is_equal(settings->system_directory, "default"))
    {
       RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR\n");
       *settings->system_directory = '\0';
@@ -1941,7 +1941,7 @@ bool config_load_override(void)
    }
 
    /* Early return in case a library isn't loaded */
-   if (string_is_empty(system->info.library_name) || !strcmp(system->info.library_name,"No Core"))
+   if (string_is_empty(system->info.library_name) || string_is_equal(system->info.library_name, "No Core"))
       return false;
 
    core_name = system ? system->info.library_name : NULL;
@@ -2123,7 +2123,7 @@ bool config_load_remap(void)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    /* Early return in case a library isn't loaded or remapping is disabled */
-   if (!system->info.library_name || !strcmp(system->info.library_name,"No Core"))
+   if (!system->info.library_name || string_is_equal(system->info.library_name,"No Core"))
       return false;
 
    core_name = system ? system->info.library_name : NULL;

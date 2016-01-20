@@ -17,6 +17,7 @@
 #include <net/net_http.h>
 #include <queues/message_queue.h>
 #include <string/string_list.h>
+#include <string/stdstring.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <file/file_extract.h>
@@ -202,7 +203,7 @@ static bool rarch_task_http_finder(rarch_task_t *task, void *user_data)
 
    handle_url = net_http_connection_url(http->connection.handle);
 
-   return strcmp(handle_url, (const char*)user_data) == 0;
+   return string_is_equal(handle_url, (const char*)user_data);
 }
 
 bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task_callback_t cb, void *user_data)

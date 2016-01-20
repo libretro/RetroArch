@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <string/stdstring.h>
+
 #include "../input_config.h"
 
 #include "joypad_connection.h"
@@ -100,7 +102,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
 
          if(pad_map[i].vid == 1406 && pad_map[i].pid == 816)  /* Never change, Nintendo. */
          {
-            if(strcmp(pad_map[i].name, name) != 0)
+            if(!string_is_equal(pad_map[i].name, name))
                continue;
          }
 

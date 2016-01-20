@@ -46,8 +46,8 @@ static void input_reindex_devices()
 
       for(j = 0; j < settings->input.max_users; j++)
       {
-         if(!strcmp(tmp,settings->input.device_names[j])
-               && settings->input.device_name_index[i]==0)
+         if(string_is_equal(tmp, settings->input.device_names[j])
+               && settings->input.device_name_index[i] == 0)
             settings->input.device_name_index[j]=k++;
       }
    }
@@ -99,7 +99,7 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    }
 
    /* Check for name match */
-   if (!strcmp(ident, params->name))
+   if (string_is_equal(ident, params->name))
    {
       score += 2;
 #if 0
@@ -146,14 +146,10 @@ static void input_autoconfigure_joypad_add(config_file_t *conf, autoconfig_param
    input_autoconfigure_joypad_conf(conf,
          settings->input.autoconf_binds[params->idx]);
 
-   if (!strcmp(device_type,"remote"))
+   if (string_is_equal(device_type,"remote"))
    {
-      if (!string_is_empty(display_name) || strcmp(display_name, ""))
-         snprintf(msg, sizeof(msg), "%s configured",
-            display_name);
-      else
-         snprintf(msg, sizeof(msg), "%s configured",
-            params->name);
+      snprintf(msg, sizeof(msg), "%s configured",
+            string_is_empty(display_name) ? params->name : display_name);
 
       if(!remote_is_bound)
          runloop_msg_queue_push(msg, 0, 60, false);
@@ -161,12 +157,10 @@ static void input_autoconfigure_joypad_add(config_file_t *conf, autoconfig_param
    }
    else
    {
-      if (!string_is_empty(display_name) || strcmp(display_name, ""))
-         snprintf(msg, sizeof(msg), "%s configured in port #%u.",
-               display_name, params->idx);
-      else
-         snprintf(msg, sizeof(msg), "%s configured in port #%u.",
-               params->name, params->idx);
+      snprintf(msg, sizeof(msg), "%s configured in port #%u.",
+            string_is_empty(display_name) ? params->name : display_name,
+            params->idx);
+
       if (!block_osd_spam)
           runloop_msg_queue_push(msg, 0, 60, false);
    }

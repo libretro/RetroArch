@@ -21,6 +21,7 @@
 #include <compat/strl.h>
 #include <retro_endianness.h>
 #include <retro_file.h>
+#include <string/stdstring.h>
 
 #include "tasks.h"
 
@@ -238,31 +239,31 @@ int detect_psp_game(const char *track_path, char *game_id)
       if (retro_fread(fd, game_id, 5) > 0)
       {
          game_id[5] = '\0';
-         if (!strcmp(game_id, "ULES-")
-          || !strcmp(game_id, "ULUS-")
-          || !strcmp(game_id, "ULJS-")
+         if (string_is_equal(game_id, "ULES-")
+          || string_is_equal(game_id, "ULUS-")
+          || string_is_equal(game_id, "ULJS-")
 
-          || !strcmp(game_id, "ULEM-")
-          || !strcmp(game_id, "ULUM-")
-          || !strcmp(game_id, "ULJM-")
+          || string_is_equal(game_id, "ULEM-")
+          || string_is_equal(game_id, "ULUM-")
+          || string_is_equal(game_id, "ULJM-")
 
-          || !strcmp(game_id, "UCES-")
-          || !strcmp(game_id, "UCUS-")
-          || !strcmp(game_id, "UCJS-")
-          || !strcmp(game_id, "UCAS-")
+          || string_is_equal(game_id, "UCES-")
+          || string_is_equal(game_id, "UCUS-")
+          || string_is_equal(game_id, "UCJS-")
+          || string_is_equal(game_id, "UCAS-")
 
-          || !strcmp(game_id, "NPEH-")
-          || !strcmp(game_id, "NPUH-")
-          || !strcmp(game_id, "NPJH-")
+          || string_is_equal(game_id, "NPEH-")
+          || string_is_equal(game_id, "NPUH-")
+          || string_is_equal(game_id, "NPJH-")
 
-          || !strcmp(game_id, "NPEG-")
-          || !strcmp(game_id, "NPUG-")
-          || !strcmp(game_id, "NPJG-")
-          || !strcmp(game_id, "NPHG-")
+          || string_is_equal(game_id, "NPEG-")
+          || string_is_equal(game_id, "NPUG-")
+          || string_is_equal(game_id, "NPJG-")
+          || string_is_equal(game_id, "NPHG-")
 
-          || !strcmp(game_id, "NPEZ-")
-          || !strcmp(game_id, "NPUZ-")
-          || !strcmp(game_id, "NPJZ-")
+          || string_is_equal(game_id, "NPEZ-")
+          || string_is_equal(game_id, "NPUZ-")
+          || string_is_equal(game_id, "NPJZ-")
          )
          {
             retro_fseek(fd, pos, SEEK_SET);
@@ -327,7 +328,7 @@ int detect_system(const char *track_path, int32_t offset,
    if (retro_fread(fd, magic, 8) > 0)
    {
       magic[8] = '\0';
-      if (!strcmp(magic, "PSP GAME"))
+      if (string_is_equal(magic, "PSP GAME"))
       {
          *system_name = "psp\0";
          rv = 0;
@@ -365,7 +366,7 @@ int find_first_data_track(const char *cue_path,
 
    while (get_token(fd, tmp_token, MAX_TOKEN_LEN) > 0)
    {
-      if (strcmp(tmp_token, "FILE") == 0)
+      if (string_is_equal(tmp_token, "FILE"))
       {
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          fill_pathname_join(track_path, cue_dir, tmp_token, max_len);

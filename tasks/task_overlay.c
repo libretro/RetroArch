@@ -184,7 +184,7 @@ static bool rarch_task_overlay_load_desc(
             desc->type = OVERLAY_TYPE_BUTTONS;
             for (tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
             {
-               if (strcmp(tmp, "nul") != 0)
+               if (!string_is_equal(tmp, "nul"))
                   desc->key_mask |= UINT64_C(1) << input_config_translate_str_to_bind_id(tmp);
             }
 
@@ -538,7 +538,7 @@ static ssize_t rarch_task_overlay_find_index(const struct overlay *ol,
 
    for (i = 0; i < size; i++)
    {
-      if (!strcmp(ol[i].name, name))
+      if (string_is_equal(ol[i].name, name))
          return i;
    }
 

@@ -130,13 +130,13 @@ static int iso_get_serial(database_state_handle_t *db_state,
    if ((rv = detect_system(name, offset, &system_name)) < 0)
       return rv;
 
-   if (strcmp(system_name, "psp") == 0)
+   if (string_is_equal(system_name, "psp"))
    {
       if (detect_psp_game(name, serial) == 0)
          return 0;
       RARCH_LOG("Found disk label '%s'\n", serial);
    }
-   else if (strcmp(system_name, "ps1") == 0)
+   else if (string_is_equal(system_name, "ps1"))
    {
       if (detect_ps1_game(name, serial) == 0)
          return 0;
@@ -430,7 +430,7 @@ static int database_info_iterate_serial_lookup(
          RARCH_LOG("serial: %s , entry serial: %s (%s).\n",
                    db_state->serial, db_info_entry->serial, db_info_entry->name);
 #endif
-         if (!strcmp(db_state->serial, db_info_entry->serial))
+         if (string_is_equal(db_state->serial, db_info_entry->serial))
             return database_info_list_iterate_found_match(db_state, db, NULL);
       }
    }

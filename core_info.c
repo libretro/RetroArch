@@ -18,6 +18,8 @@
 #include <file/file_path.h>
 #include <file/file_extract.h>
 
+#include <string/stdstring.h>
+
 #include "core_info.h"
 #include "general.h"
 #include "dir_list_special.h"
@@ -136,7 +138,7 @@ void core_info_get_name(const char *path, char *s, size_t len)
       if (!core_info[i].path)
          break;
 
-      if (strcmp(core_info[i].path, path) != 0)
+      if (!string_is_equal(core_info[i].path, path))
             continue;
 
       fill_pathname_base(info_path_base, contents->elems[i].data,
@@ -377,7 +379,7 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
    for (i = 0; i < core_info_list->count; i++)
    {
       const core_info_t *info = &core_info_list->list[i];
-      if (!strcmp(path_basename(info->path), path_basename(path))
+      if (string_is_equal(path_basename(info->path), path_basename(path))
             && info->display_name)
       {
          strlcpy(buf, info->display_name, size);
@@ -440,7 +442,8 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
    for (i = 0; i < core_info_list->count; i++)
    {
       const core_info_t *info = &core_info_list->list[i];
-      if (!strcmp(path_basename(info->path), path_basename(path)))
+
+      if (string_is_equal(path_basename(info->path), path_basename(path)))
       {
          *out_info = *info;
          return true;
@@ -559,11 +562,9 @@ core_info_t *core_info_find(core_info_list_t *list,
    {
       core_info_t *info = (core_info_t*)&list->list[i];
 
-      if (!info)
+      if (!info || !info->path)
          continue;
-      if (!info->path)
-         continue;
-      if (!strcmp(info->path, core))
+      if (string_is_equal(info->path, core))
          return info;
    }
 

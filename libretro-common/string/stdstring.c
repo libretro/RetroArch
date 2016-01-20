@@ -37,6 +37,13 @@ bool string_is_empty(const char *data)
 	return false;
 }
 
+bool string_is_equal(const char *a, const char *b)
+{
+   if (!a || !b)
+      return false;
+   return (strcmp(a, b) == 0);
+}
+
 char *string_to_upper(char *s)
 {
    unsigned char *ucs = (unsigned char *)s;

@@ -18,6 +18,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <string/stdstring.h>
+
 #include "input_keymaps.h"
 #include "../general.h"
 #include "../string_list_special.h"
@@ -132,7 +134,7 @@ const input_device_driver_t *input_joypad_init_driver(const char *ident, void *d
 
    for (i = 0; joypad_drivers[i]; i++)
    {
-      if (!strcmp(ident, joypad_drivers[i]->ident)
+      if (string_is_equal(ident, joypad_drivers[i]->ident)
             && joypad_drivers[i]->init(data))
       {
          RARCH_LOG("Found joypad driver: \"%s\".\n",

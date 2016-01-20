@@ -34,6 +34,8 @@ extern "C" {
 
 bool string_is_empty(const char *data);
 
+bool string_is_equal(const char *a, const char *b);
+
 char *string_to_upper(char *s);
 
 char *string_to_lower(char *s);

@@ -240,8 +240,9 @@ unsigned input_config_translate_str_to_bind_id(const char *str)
    unsigned i;
 
    for (i = 0; input_config_bind_map[i].valid; i++)
-      if (!strcmp(str, input_config_bind_map[i].base))
+      if (string_is_equal(str, input_config_bind_map[i].base))
          return i;
+
    return RARCH_BIND_LIST_END;
 }
 
@@ -294,7 +295,7 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
       btn = tmp;
-      if (!strcmp(btn, "nul"))
+      if (string_is_equal(btn, "nul"))
          bind->joykey = NO_BTN;
       else
       {
@@ -327,7 +328,7 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
-      if (!strcmp(tmp, "nul"))
+      if (string_is_equal(tmp, "nul"))
          bind->joyaxis = AXIS_NONE;
       else if (strlen(tmp) >= 2 && (*tmp == '+' || *tmp == '-'))
       {
@@ -436,7 +437,7 @@ void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
 
 #ifndef RARCH_CONSOLE
    input_keymaps_translate_rk_to_str(bind->key, key, sizeof(key));
-   if (!strcmp(key, "nul"))
+   if (string_is_equal(key, "nul"))
       *key = '\0';
 
    snprintf(keybuf, sizeof(keybuf), "(Key: %s)", key);

@@ -22,6 +22,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <rhash.h>
+#include <string/stdstring.h>
 
 #include "../general.h"
 #include "../verbosity.h"
@@ -369,7 +370,7 @@ static struct video_shader_parameter *video_shader_parse_find_parameter(
 
    for (i = 0; i < num_params; i++)
    {
-      if (!strcmp(params[i].id, id))
+      if (string_is_equal(params[i].id, id))
          return &params[i];
    }
 
@@ -915,9 +916,9 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
 
    ext = path_get_extension(path);
 
-   if (!strcmp(ext, "cg") || !strcmp(ext, "cgp"))
+   if (string_is_equal(ext, "cg") || string_is_equal(ext, "cgp"))
       return RARCH_SHADER_CG;
-   else if (!strcmp(ext, "glslp") || !strcmp(ext, "glsl"))
+   else if (string_is_equal(ext, "glslp") || string_is_equal(ext, "glsl"))
       return RARCH_SHADER_GLSL;
 
    return fallback;

@@ -185,7 +185,7 @@ static bool rarch_task_decompress_finder(rarch_task_t *task, void *user_data)
    if (task->handler != rarch_task_decompress_handler)
       return false;
 
-   return strcmp(dec->source_file, (const char*)user_data) == 0;
+   return string_is_equal(dec->source_file, (const char*)user_data);
 }
 
 bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
@@ -203,8 +203,8 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
    }
 
    /* ZIP or APK only */
-   is_compressed = !strcmp("zip", path_get_extension(source_file));
-   is_compressed = !is_compressed ? !strcmp("apk", path_get_extension(source_file)) : is_compressed;
+   is_compressed = string_is_equal(path_get_extension(source_file), "zip");
+   is_compressed = !is_compressed ? string_is_equal(path_get_extension(source_file), "apk") : is_compressed;
 
    if (!path_file_exists(source_file) || !is_compressed)
    {

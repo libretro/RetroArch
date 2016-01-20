@@ -30,6 +30,8 @@
 #include <android/log.h>
 #endif
 
+#include <string/stdstring.h>
+
 #if defined(HAVE_FILE_LOGGER)
 #define LOG_FILE (retro_main_log_file())
 #else
@@ -129,9 +131,9 @@ static aslclient asl_client;
    int prio = ANDROID_LOG_INFO;
    if (tag)
    {
-      if (!strcmp("[WARN]", tag))
+      if (string_is_equal("[WARN]", tag))
          prio = ANDROID_LOG_WARN;
-      else if (!strcmp("[ERROR]", tag))
+      else if (string_is_equal("[ERROR]", tag))
          prio = ANDROID_LOG_ERROR;
    }
    __android_log_vprint(prio, PROGRAM_NAME, fmt, ap);

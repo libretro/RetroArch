@@ -188,7 +188,7 @@ bool find_prev_driver(const char *label, char *s, size_t len)
 bool find_next_driver(const char *label, char *s, size_t len)
 {
    int i = find_driver_index(label, s);
-   if (i >= 0 && (strcmp(s, "null") != 0))
+   if (i >= 0 && !string_is_equal(s, "null"))
       find_driver_nonempty(label, i + 1, s, len);
    else
    {

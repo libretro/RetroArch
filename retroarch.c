@@ -794,16 +794,16 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case 'M':
-            if (!strcmp(optarg, "noload-nosave"))
+            if (string_is_equal(optarg, "noload-nosave"))
             {
                global->sram.load_disable = true;
                global->sram.save_disable = true;
             }
-            else if (!strcmp(optarg, "noload-save"))
+            else if (string_is_equal(optarg, "noload-save"))
                global->sram.load_disable = true;
-            else if (!strcmp(optarg, "load-nosave"))
+            else if (string_is_equal(optarg, "load-nosave"))
                global->sram.save_disable = true;
-            else if (strcmp(optarg, "load-save") != 0)
+            else if (!string_is_equal(optarg, "load-save"))
             {
                RARCH_ERR("Invalid argument in --sram-mode.\n");
                print_help(argv[0]);
@@ -1389,7 +1389,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
             /* If config file to be replaced is the same as the
              * current config file, exit. */
-            if (!strcmp(path, global->path.config))
+            if (string_is_equal(path, global->path.config))
                return false;
 
             if (settings->config_save_on_exit && *global->path.config)

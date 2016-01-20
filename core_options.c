@@ -21,6 +21,7 @@
 #include <compat/posix_string.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 
 #include "core_options.h"
 
@@ -79,7 +80,7 @@ void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 
    for (i = 0; i < opt->size; i++)
    {
-      if (!strcmp(opt->opts[i].key, var->key))
+      if (string_is_equal(opt->opts[i].key, var->key))
       {
          var->value = core_option_get_val(opt, i);
          return;
@@ -129,7 +130,7 @@ static bool parse_variable(core_option_manager_t *opt, size_t idx,
 
       for (i = 0; i < option->vals->size; i++)
       {
-         if (!strcmp(option->vals->elems[i].data, config_val))
+         if (string_is_equal(option->vals->elems[i].data, config_val))
          {
             option->index = i;
             break;
