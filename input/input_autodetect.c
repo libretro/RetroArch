@@ -30,7 +30,7 @@
 
 /* Adds an index for devices with the same name,
  * so they can be identified in the GUI. */
-static void input_reindex_devices()
+static void input_reindex_devices(void)
 {
    unsigned i;
    settings_t      *settings = config_get_ptr();
