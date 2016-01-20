@@ -19,6 +19,7 @@
 #include <queues/message_queue.h>
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
+#include <string/stdstring.h>
 
 #include "../config.def.h"
 #include "../retroarch.h"
@@ -171,11 +172,11 @@ static bool menu_display_check_compatibility(enum menu_display_driver_type type)
       case MENU_VIDEO_DRIVER_GENERIC:
          return true;
       case MENU_VIDEO_DRIVER_OPENGL:
-         if (!strcmp(video_driver, "gl"))
+         if (string_is_equal(video_driver, "gl"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:
-         if (!strcmp(video_driver, "d3d"))
+         if (string_is_equal(video_driver, "d3d"))
             return true;
          break;
    }

@@ -115,7 +115,7 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
             last = (char*)strrchr(core_path, '_');
             if (*last)
             {
-               if (strcmp(last, "_libretro"))
+               if (!string_is_equal(last, "_libretro"))
                   *last = '\0';
             }
             strlcat(core_path, ".info", sizeof(core_path));
@@ -1204,15 +1204,15 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             switch (hash_value)
             {
                case MENU_VALUE_CRC:
-                  if (!strcmp(crc_str, elem0))
+                  if (string_is_equal(crc_str, elem0))
                      match_found = true;
                   break;
                case MENU_VALUE_SHA1:
-                  if (!strcmp(db_info_entry->sha1, elem0))
+                  if (string_is_equal(db_info_entry->sha1, elem0))
                      match_found = true;
                   break;
                case MENU_VALUE_MD5:
-                  if (!strcmp(db_info_entry->md5, elem0))
+                  if (string_is_equal(db_info_entry->md5, elem0))
                      match_found = true;
                   break;
             }
@@ -1703,7 +1703,7 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 
    content_playlist_qsort(playlist, menu_displaylist_sort_playlist);
 
-   if (!strcmp(lpl_basename, "content_history"))
+   if (string_is_equal(lpl_basename, "content_history"))
       is_historylist = true;
 
    menu_displaylist_parse_playlist(info, playlist, path_playlist, is_historylist);
@@ -1819,7 +1819,7 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-         && !strcmp(menu->deferred_path, fullpath))
+         && string_is_equal(menu->deferred_path, fullpath))
       menu_displaylist_parse_load_content_settings(info);
    else
       menu_entries_push(info->list, "Run", "collection",
@@ -2344,7 +2344,7 @@ bool menu_playlist_find_associated_core(const char *path, char *s, size_t len)
 
    for (j = 0; j < existing_core_names->size; j++)
    {
-      if (!strcmp(path, existing_core_names->elems[j].data))
+      if (string_is_equal(path, existing_core_names->elems[j].data))
       {
          if (existing_core_paths)
          {
@@ -2930,7 +2930,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 #endif
          break;
       case DISPLAYLIST_PLAYLIST_COLLECTION:
-         if (!strcmp(info->path, "content_history.lpl"))
+         if (string_is_equal(info->path, "content_history.lpl"))
          {
             if (menu_displaylist_push_list(info, DISPLAYLIST_HISTORY) == 0)
                menu_displaylist_push_list_process(info);

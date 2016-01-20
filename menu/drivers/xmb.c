@@ -802,7 +802,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       if (!path_file_exists(path))
           xmb_fill_default_background_path(xmb, path, sizeof(path));
        
-       if(strcmp(path, xmb->background_file_path) != 0)
+       if(!string_is_equal(path, xmb->background_file_path))
        {
            if(path_file_exists(path))
            {
@@ -1404,16 +1404,16 @@ static void xmb_draw_items(xmb_handle_t *xmb,
             break;
       }
 
-      if (!strcmp(entry.value, "disabled") ||
-            !strcmp(entry.value, "off"))
+      if (string_is_equal(entry.value, "disabled") ||
+            string_is_equal(entry.value, "off"))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id)
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_OFF].id;
          else
             do_draw_text = true;
       }
-      else if (!strcmp(entry.value, "enabled") ||
-            !strcmp(entry.value, "on"))
+      else if (string_is_equal(entry.value, "enabled") ||
+            string_is_equal(entry.value, "on"))
       {
          if (xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id)
             texture_switch = xmb->textures.list[XMB_TEXTURE_SWITCH_ON].id;

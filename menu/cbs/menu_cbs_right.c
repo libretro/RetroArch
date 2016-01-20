@@ -15,6 +15,7 @@
 
 #include <file/file_path.h>
 #include <string/string_list.h>
+#include <string/stdstring.h>
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
@@ -328,7 +329,7 @@ static int playlist_association_right(unsigned type, const char *label,
    for (i = 0; i < list->count; i++)
    {
       core_info_t *info = core_info_get(list, i);
-      if (!strcmp(info->path, core_path))
+      if (string_is_equal(info->path, core_path))
          current = i;
    }
 

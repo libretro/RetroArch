@@ -1875,7 +1875,7 @@ rarch_setting_t *menu_setting_find(const char *label)
       if (needle == setting->name_hash && menu_setting_get_type(setting) <= ST_GROUP)
       {
          /* make sure this isn't a collision */
-         if (strcmp(label, name) != 0)
+         if (!string_is_equal(label, name))
             continue;
 
          if (string_is_empty(short_description))
@@ -2050,9 +2050,9 @@ int menu_setting_set_with_string_representation(rarch_setting_t* setting,
          strlcpy(setting->value.string, value, setting->size);
          break;
       case ST_BOOL:
-         if (!strcmp(value, "true"))
+         if (string_is_equal(value, "true"))
             *setting->value.boolean = true;
-         else if (!strcmp(value, "false"))
+         else if (string_is_equal(value, "false"))
             *setting->value.boolean = false;
          break;
       default:
@@ -4359,7 +4359,7 @@ static bool setting_append_list_video_options(
    (*list)[list_info->index - 1].get_string_representation = 
       &setting_get_string_representation_st_float_video_refresh_rate_auto;
 
-   if (!strcmp(settings->video.driver, "gl"))
+   if (string_is_equal(settings->video.driver, "gl"))
    {
       CONFIG_BOOL(
             list, list_info,
@@ -5857,7 +5857,7 @@ static bool setting_append_list_multimedia_options(
 
    START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-   if (strcmp(settings->record.driver, "null") != 0)
+   if (!string_is_equal(settings->record.driver, "null"))
       CONFIG_BOOL(
             list, list_info,
             &settings->multimedia.builtin_mediaplayer_enable,
@@ -6884,7 +6884,7 @@ static bool setting_append_list_directory_options(
          list_info,
          SD_FLAG_ALLOW_EMPTY | SD_FLAG_PATH_DIR | SD_FLAG_BROWSER_ACTION);
 
-   if (strcmp(settings->record.driver, "null") != 0)
+   if (!string_is_equal(settings->record.driver, "null"))
    {
       CONFIG_DIR(
             list, list_info,
@@ -7109,7 +7109,7 @@ static bool setting_append_list_privacy_options(
    START_SUB_GROUP(list, list_info, "State",
          &group_info, &subgroup_info, parent_group);
 
-   if (strcmp(settings->camera.driver, "null") != 0)
+   if (!string_is_equal(settings->camera.driver, "null"))
    {
       CONFIG_BOOL(
             list, list_info,
@@ -7126,7 +7126,7 @@ static bool setting_append_list_privacy_options(
             general_read_handler);
    }
 
-   if (strcmp(settings->location.driver, "null") != 0)
+   if (!string_is_equal(settings->location.driver, "null"))
    {
       CONFIG_BOOL(
             list, list_info,
@@ -7253,7 +7253,7 @@ rarch_setting_t *menu_setting_new(void)
    {
       settings_t      *settings = config_get_ptr();
 
-      if (strcmp(settings->record.driver, "null") != 0)
+      if (!string_is_equal(settings->record.driver, "null"))
       {
          if (!setting_append_list_recording_options(&list, list_info, root))
             goto error;

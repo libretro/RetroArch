@@ -499,14 +499,14 @@ static void mui_render_label_value(mui_handle_t *mui,
 
    hash_value = menu_hash_calculate(value);
 
-   if (!strcmp(value, "disabled") || !strcmp(value, "off"))
+   if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id)
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id;
       else
          do_draw_text = true;
    }
-   else if (!strcmp(value, "enabled") || !strcmp(value, "on"))
+   else if (string_is_equal(value, "enabled") || string_is_equal(value, "on"))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_ON].id)
          texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON].id;
