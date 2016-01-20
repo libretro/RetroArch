@@ -110,7 +110,9 @@ struct state_manager_rewind_state
 static struct state_manager_rewind_state rewind_state;
 static bool frame_is_reversed;
 
-size_t state_manager_raw_maxsize(size_t uncomp)
+/* Returns the maximum compressed size of a savestate. 
+ * It is very likely to compress to far less. */
+static size_t state_manager_raw_maxsize(size_t uncomp)
 {
    /* bytes covered by a compressed block */
    const int maxcblkcover = UINT16_MAX * sizeof(uint16_t);
@@ -122,7 +124,11 @@ size_t state_manager_raw_maxsize(size_t uncomp)
       3; /* three u16 to end it */
 }
 
-void *state_manager_raw_alloc(size_t len, uint16_t uniq)
+/*
+ * See state_manager_raw_compress for information about this.
+ * When you're done with it, send it to free().
+ */
+static void *state_manager_raw_alloc(size_t len, uint16_t uniq)
 {
    size_t  len16 = (len + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
 
@@ -270,7 +276,15 @@ static INLINE size_t find_same(const uint16_t *a, const uint16_t *b)
    return a - a_org;
 }
 
-size_t state_manager_raw_compress(const void *src,
+/*
+ * Takes two savestates and creates a patch that turns 'src' into 'dst'.
+ * Both 'src' and 'dst' must be returned from state_manager_raw_alloc(), 
+ * with the same 'len', and different 'uniq'.
+ *
+ * 'patch' must be size 'state_manager_raw_maxsize(len)' or more.
+ * Returns the number of bytes actually written to 'patch'.
+ */
+static size_t state_manager_raw_compress(const void *src,
       const void *dst, size_t len, void *patch)
 {
    const uint16_t  *old16 = (const uint16_t*)src;
@@ -330,7 +344,15 @@ size_t state_manager_raw_compress(const void *src,
    return (uint8_t*)(compressed16+3) - (uint8_t*)patch;
 }
 
-void state_manager_raw_decompress(const void *patch,
+/*
+ * Takes 'patch' from a previous call to 'state_manager_raw_compress' 
+ * and applies it to 'data' ('src' from that call), 
+ * yielding 'dst' in that call.
+ *
+ * If the given arguments do not match a previous call to 
+ * state_manager_raw_compress(), anything at all can happen.
+ */
+static void state_manager_raw_decompress(const void *patch,
       size_t patchlen, void *data, size_t datalen)
 {
    uint16_t         *out16 = (uint16_t*)data;
@@ -457,7 +479,7 @@ void state_manager_free(state_manager_t *state)
    free(state);
 }
 
-bool state_manager_pop(state_manager_t *state, const void **data)
+static bool state_manager_pop(state_manager_t *state, const void **data)
 {
    size_t start;
    uint8_t *out                 = NULL;
@@ -489,7 +511,7 @@ bool state_manager_pop(state_manager_t *state, const void **data)
    return true;
 }
 
-void state_manager_push_where(state_manager_t *state, void **data)
+static void state_manager_push_where(state_manager_t *state, void **data)
 {
    /* We need to ensure we have an uncompressed copy of the last
     * pushed state, or we could end up applying a 'patch' to wrong 
@@ -511,7 +533,7 @@ void state_manager_push_where(state_manager_t *state, void **data)
 #endif
 }
 
-void state_manager_push_do(state_manager_t *state)
+static void state_manager_push_do(state_manager_t *state)
 {
 #if STRICT_BUF_SIZE
    memcpy(state->nextblock, state->debugblock, state->debugsize);
@@ -574,7 +596,8 @@ recheckcapacity:;
    state->entries++;
 }
 
-void state_manager_capacity(state_manager_t *state,
+#if 0
+static void state_manager_capacity(state_manager_t *state,
       unsigned *entries, size_t *bytes, bool *full)
 {
    size_t headpos   = state->head - state->data;
@@ -589,6 +612,7 @@ void state_manager_capacity(state_manager_t *state,
    if (full)
       *full = remaining <= state->maxcompsize * 2;
 }
+#endif
 
 void init_rewind(void)
 {
