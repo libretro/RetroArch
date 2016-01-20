@@ -282,14 +282,6 @@ typedef struct global
       bool softfilter_enable;
    } console;
    
-   struct
-   {
-      struct
-      {
-         enum rarch_core_type type;
-      } core;
-   } inited;
-
    retro_keyboard_event_t frontend_key_event;
 } global_t;
 

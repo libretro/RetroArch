@@ -100,6 +100,7 @@ enum
    RA_OPT_MAX_FRAMES
 };
 
+static enum rarch_core_type current_core_type;
 static char current_savefile_dir[PATH_MAX_LENGTH];
 
 static char error_string[PATH_MAX_LENGTH];
@@ -619,7 +620,7 @@ static void parse_input(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
    };
 
-   global->inited.core.type              = CORE_TYPE_PLAIN;
+   current_core_type                     = CORE_TYPE_PLAIN;
    *global->subsystem                    = '\0';
    global->has_set.save_path             = false;
    global->has_set.state_path            = false;
@@ -647,7 +648,7 @@ static void parse_input(int argc, char *argv[])
 
    if (argc < 2)
    {
-      global->inited.core.type           = CORE_TYPE_DUMMY;
+      current_core_type                  = CORE_TYPE_DUMMY;
       return;
    }
 
@@ -862,7 +863,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_MENU:
-            global->inited.core.type        = CORE_TYPE_DUMMY;
+            current_core_type = CORE_TYPE_DUMMY;
             break;
 
 #ifdef HAVE_NETPLAY
@@ -1158,8 +1159,8 @@ int rarch_main_init(int argc, char *argv[])
                if (settings->multimedia.builtin_mediaplayer_enable)
                {
 #ifdef HAVE_FFMPEG
-                  global->has_set.libretro              = false;
-                  global->inited.core.type              = CORE_TYPE_FFMPEG;
+                  global->has_set.libretro  = false;
+                  current_core_type         = CORE_TYPE_FFMPEG;
 #endif
                }
                break;
@@ -1167,8 +1168,8 @@ int rarch_main_init(int argc, char *argv[])
             case RARCH_CONTENT_IMAGE:
                if (settings->multimedia.builtin_imageviewer_enable)
                {
-                  global->has_set.libretro              = false;
-                  global->inited.core.type              = CORE_TYPE_IMAGEVIEWER;
+                  global->has_set.libretro  = false;
+                  current_core_type         = CORE_TYPE_IMAGEVIEWER;
                }
                break;
 #endif
@@ -1178,7 +1179,7 @@ int rarch_main_init(int argc, char *argv[])
       }
    }
 
-   init_libretro_sym(global->inited.core.type);
+   init_libretro_sym(current_core_type);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
 
@@ -1294,9 +1295,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    switch(state)
    {
       case RARCH_CTL_IS_PLAIN_CORE:
-         return (global->inited.core.type == CORE_TYPE_PLAIN);
+         return (current_core_type == CORE_TYPE_PLAIN);
       case RARCH_CTL_IS_DUMMY_CORE:
-         return (global->inited.core.type == CORE_TYPE_DUMMY);
+         return (current_core_type == CORE_TYPE_DUMMY);
       case RARCH_CTL_IS_INITED:
          return rarch_is_inited;
       case RARCH_CTL_UNSET_INITED:
