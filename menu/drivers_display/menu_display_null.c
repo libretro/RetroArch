@@ -71,15 +71,6 @@ static void menu_display_null_clear_color(float r, float g, float b, float a)
 {
 }
 
-static unsigned menu_display_null_texture_load(void *data, enum texture_filter_type type)
-{
-   return 0;
-}
-
-static void menu_display_null_texture_unload(uintptr_t *id)
-{
-}
-
 static const float *menu_display_null_get_tex_coords(void)
 {
    static float floats[1] = {1.00f};
@@ -102,8 +93,6 @@ menu_display_ctx_driver_t menu_display_ctx_null = {
    menu_display_null_clear_color,
    menu_display_null_get_default_mvp,
    menu_display_null_get_tex_coords,
-   menu_display_null_texture_load,
-   menu_display_null_texture_unload,
    menu_display_null_font_init_first,
    MENU_VIDEO_DRIVER_GENERIC,
    "menu_display_null",

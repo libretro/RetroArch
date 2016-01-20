@@ -563,22 +563,18 @@ void menu_display_matrix_4x4_rotate_z(math_matrix_4x4 *matrix, float rotation,
 }
 
 unsigned menu_display_texture_load(void *data,
-      enum texture_filter_type  filter_type)
+      enum texture_filter_type filter_type)
 {
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp || !menu_disp->texture_load)
-      return 0;
-
-   return menu_disp->texture_load(data, filter_type);
+   unsigned id;
+   video_driver_texture_load(data, filter_type, &id);
+   return id;
 }
 
 void menu_display_texture_unload(uintptr_t *id)
 {
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp || !menu_disp->texture_unload)
+   if (!id)
       return;
-
-   menu_disp->texture_unload(id);
+   video_driver_texture_unload(id);
 }
 
 void menu_display_draw(float x, float y,

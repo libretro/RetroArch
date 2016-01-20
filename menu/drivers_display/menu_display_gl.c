@@ -190,20 +190,6 @@ static void menu_display_gl_clear_color(float r, float g, float b, float a)
    glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static unsigned menu_display_gl_texture_load(void *data, enum texture_filter_type type)
-{
-   unsigned id;
-   video_driver_texture_load(data, type, &id);
-   return id;
-}
-
-static void menu_display_gl_texture_unload(uintptr_t *id)
-{
-   if (!id)
-      return;
-   video_driver_texture_unload(id);
-}
-
 static const float *menu_display_gl_get_tex_coords(void)
 {
    return &gl_tex_coords[0];
@@ -226,8 +212,6 @@ menu_display_ctx_driver_t menu_display_ctx_gl = {
    menu_display_gl_clear_color,
    menu_display_gl_get_default_mvp,
    menu_display_gl_get_tex_coords,
-   menu_display_gl_texture_load,
-   menu_display_gl_texture_unload,
    menu_display_gl_font_init_first,
    MENU_VIDEO_DRIVER_OPENGL,
    "menu_display_gl",
