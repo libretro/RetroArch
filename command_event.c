@@ -584,7 +584,7 @@ static bool event_init_core(void)
    rarch_ctl(RARCH_CTL_VERIFY_API_VERSION, NULL);
    core.retro_init();
 
-   global->sram.use = (global->inited.core.type == CORE_TYPE_PLAIN) 
+   global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL) 
       && !content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL);
 
    if (!event_init_content())

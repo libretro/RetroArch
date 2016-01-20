@@ -1293,6 +1293,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_CTL_IS_PLAIN_CORE:
+         return (global->inited.core.type == CORE_TYPE_PLAIN);
       case RARCH_CTL_IS_DUMMY_CORE:
          return (global->inited.core.type == CORE_TYPE_DUMMY);
       case RARCH_CTL_IS_INITED:
