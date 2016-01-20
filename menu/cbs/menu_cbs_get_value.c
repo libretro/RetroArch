@@ -1015,7 +1015,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 
       for (i = 0; i < str_list->size; i++)
       {
-         if (!strcmp(str_list->elems[i].data, playlist_name_with_ext))
+         if (string_is_equal(str_list->elems[i].data, playlist_name_with_ext))
          {
             if (str_list->size != str_list2->size)
                break;
@@ -1031,7 +1031,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       string_list_free(str_list);
       string_list_free(str_list2);
 
-      if (!strcmp(s, "DETECT") || !found_matching_core_association)
+      if (string_is_equal(s, "DETECT") || !found_matching_core_association)
          strlcpy(s, "N/A", len);
       else
       {

@@ -399,13 +399,15 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
    strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
    if (
-         !strcmp(menu_label, menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE))
+         string_is_equal(menu_label,
+            menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE))
       )
    {
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
    }
-   else if (!strcmp(menu_label, menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN)))
+   else if (string_is_equal(menu_label,
+            menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN)))
    {
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
@@ -1099,8 +1101,10 @@ static int action_ok_file_load(const char *path,
    strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
    if (
-         !strcmp(menu_label, menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)) ||
-         !strcmp(menu_label, menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN))
+         string_is_equal(menu_label,
+            menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)) ||
+         string_is_equal(menu_label,
+            menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN))
       )
    {
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
@@ -1162,39 +1166,39 @@ static int action_ok_download_generic(const char *path,
 
    fill_pathname_join(s, settings->network.buildbot_assets_url,
          "frontend", sizeof(s));
-   if (!strcmp(type_msg, "cb_core_content_download"))
+   if (string_is_equal(type_msg, "cb_core_content_download"))
    {
       fill_pathname_join(s, settings->network.buildbot_assets_url,
             "cores/gw", sizeof(s));
    }
 #ifdef HAVE_LAKKA
-   else if (!strcmp(type_msg, "cb_lakka_download"))
+   else if (string_is_equal(type_msg, "cb_lakka_download"))
    {
       /* TODO unhardcode this path*/
       fill_pathname_join(s, "http://sources.lakka.tv/nightly",
             LAKKA_PROJECT, sizeof(s));
    }
 #endif
-   else if (!strcmp(type_msg, "cb_update_assets"))
+   else if (string_is_equal(type_msg, "cb_update_assets"))
       path = "assets.zip";
-   else if (!strcmp(type_msg, "cb_update_autoconfig_profiles"))
+   else if (string_is_equal(type_msg, "cb_update_autoconfig_profiles"))
       path = "autoconf.zip";
 
 #ifdef HAVE_HID
-   else if (!strcmp(type_msg, "cb_update_autoconfig_profiles_hid"))
+   else if (string_is_equal(type_msg, "cb_update_autoconfig_profiles_hid"))
       path = "autoconf_hid.zip";
 #endif
-   else if (!strcmp(type_msg, "cb_update_core_info_files"))
+   else if (string_is_equal(type_msg, "cb_update_core_info_files"))
       path = "info.zip";
-   else if (!strcmp(type_msg, "cb_update_cheats"))
+   else if (string_is_equal(type_msg, "cb_update_cheats"))
       path = "cheats.zip";
-   else if (!strcmp(type_msg, "cb_update_overlays"))
+   else if (string_is_equal(type_msg, "cb_update_overlays"))
       path = "overlays.zip";
-   else if (!strcmp(type_msg, "cb_update_databases"))
+   else if (string_is_equal(type_msg, "cb_update_databases"))
       path = "database-rdb.zip";
-   else if (!strcmp(type_msg, "cb_update_shaders_glsl"))
+   else if (string_is_equal(type_msg, "cb_update_shaders_glsl"))
       path = "shaders_glsl.zip";
-   else if (!strcmp(type_msg, "cb_update_shaders_cg"))
+   else if (string_is_equal(type_msg, "cb_update_shaders_cg"))
       path = "shaders_cg.zip";
    else
       strlcpy(s, settings->network.buildbot_url, sizeof(s));
@@ -1398,7 +1402,7 @@ static int action_ok_file_load_or_resume(const char *path,
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-   if (!strcmp(menu->deferred_path, fullpath))
+   if (string_is_equal(menu->deferred_path, fullpath))
       return generic_action_ok_command(EVENT_CMD_RESUME);
 
    runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, menu->deferred_path);
