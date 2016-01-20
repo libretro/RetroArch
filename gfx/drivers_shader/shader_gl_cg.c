@@ -868,9 +868,8 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
       char pass_str[64] = {0};
 
       snprintf(pass_str, sizeof(pass_str), "PASS%u", j + 1);
-      snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i - (j + 1));
-
       gl_cg_set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], pass_str);
+      snprintf(pass_str, sizeof(pass_str), "PASSPREV%u", i - (j + 1));
       gl_cg_set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], pass_str);
 
       if (*cg_data->shader->pass[j].alias)
