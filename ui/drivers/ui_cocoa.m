@@ -22,6 +22,7 @@
 
 #include <boolean.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
@@ -187,7 +188,7 @@ static char** waiting_argv;
 
     for (i = 0; i < waiting_argc; i++)
     {
-        if (!strcmp(waiting_argv[i], "-NSDocumentRevisionsDebugMode"))
+        if (string_is_equal(waiting_argv[i], "-NSDocumentRevisionsDebugMode"))
         {
             waiting_argv[i]   = NULL;
             waiting_argv[i+1] = NULL;

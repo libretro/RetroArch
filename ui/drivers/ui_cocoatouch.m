@@ -478,9 +478,9 @@ enum
    /* Get enabled orientations */
    apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskAll;
    
-   if (!strcmp(apple_frontend_settings.orientations, "landscape"))
+   if (string_is_equal(apple_frontend_settings.orientations, "landscape"))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskLandscape;
-   else if (!strcmp(apple_frontend_settings.orientations, "portrait"))
+   else if (string_is_equal(apple_frontend_settings.orientations, "portrait"))
       apple_frontend_settings.orientation_flags = UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskPortraitUpsideDown;
 }
 
@@ -657,7 +657,7 @@ static void ui_companion_cocoatouch_render_messagebox(const char *msg)
 {
    RetroArch_iOS *ap   = (RetroArch_iOS *)apple_platform;
 
-   if (ap && strcmp(msg, msg_old))
+   if (ap && !string_is_equal(msg, msg_old))
    {
       [ap mainMenuRenderMessageBox: [NSString stringWithUTF8String:msg]];
       strlcpy(msg_old, msg, sizeof(msg_old));

@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <string/stdstring.h>
 
 #include "../configuration.h"
 
@@ -61,7 +62,7 @@ const ui_companion_driver_t *ui_companion_find_driver(const char *ident)
 
    for (i = 0; ui_companion_drivers[i]; i++)
    {
-      if (!strcmp(ui_companion_drivers[i]->ident, ident))
+      if (string_is_equal(ui_companion_drivers[i]->ident, ident))
          return ui_companion_drivers[i];
    }
 

@@ -42,6 +42,7 @@
 #include <compat/strl.h>
 #include <rhash.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "../frontend.h"
 #include "../frontend_driver.h"
@@ -858,11 +859,11 @@ static void frontend_android_get_version_sdk(int32_t *sdk)
 static bool device_is_xperia_play(const char *name)
 {
    if (
-         !strcmp(name, "R800x") ||
-         !strcmp(name, "R800at") ||
-         !strcmp(name, "R800i") ||
-         !strcmp(name, "R800a") ||
-         !strcmp(name, "SO-01D")
+         string_is_equal(name, "R800x") ||
+         string_is_equal(name, "R800at") ||
+         string_is_equal(name, "R800i") ||
+         string_is_equal(name, "R800a") ||
+         string_is_equal(name, "SO-01D")
       )
       return true;
 
@@ -872,11 +873,11 @@ static bool device_is_xperia_play(const char *name)
 static bool device_is_game_console(const char *name)
 {
    if (
-         !strcmp(name, "OUYA Console") ||
+         string_is_equal(name, "OUYA Console") ||
          device_is_xperia_play(name) ||
-         !strcmp(name, "GAMEMID_BT") ||
-         !strcmp(name, "S7800") ||
-         !strcmp(name, "SHIELD")
+         string_is_equal(name, "GAMEMID_BT") ||
+         string_is_equal(name, "S7800") ||
+         string_is_equal(name, "SHIELD")
       )
       return true;
 
@@ -1264,7 +1265,7 @@ static bool frontend_linux_powerstate_check_apm(
 
    if (!next_string(&ptr, &str))     /* remaining battery life time units */
       goto error;
-   else if (!strcmp(str, "min"))
+   else if (string_is_equal(str, "min"))
       battery_time *= 60;
 
    if (battery_flag == 0xFF) /* unknown state */
@@ -1408,9 +1409,9 @@ static int frontend_linux_get_rating(void)
 
    if (device_is_xperia_play(device_model))
       return 6;
-   else if (!strcmp(device_model, "GT-I9505"))
+   else if (string_is_equal(device_model, "GT-I9505"))
       return 12;
-   else if (!strcmp(device_model, "SHIELD"))
+   else if (string_is_equal(device_model, "SHIELD"))
       return 13;
 #endif
    return -1;
@@ -1585,7 +1586,7 @@ static void frontend_linux_get_env(int *argc,
    if (android_app->getStringExtra && jstr)
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
-      bool used = (!strcmp(argv, "false")) ? false : true;
+      bool used = (string_is_equal(argv, "false")) ? false : true;
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
@@ -1921,11 +1922,11 @@ static void frontend_linux_get_env(int *argc,
       g_defaults.settings.video_refresh_rate = 59.19132938771038;
       g_defaults.settings.video_threaded_enable = false;
    }
-   else if (!strcmp(device_model, "GAMEMID_BT"))
+   else if (string_is_equal(device_model, "GAMEMID_BT"))
       g_defaults.settings.out_latency = 160;
-   else if (!strcmp(device_model, "SHIELD"))
+   else if (string_is_equal(device_model, "SHIELD"))
       g_defaults.settings.video_refresh_rate = 60.0;
-   else if (!strcmp(device_model, "JSS15J"))
+   else if (string_is_equal(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;
 
 #if 0
