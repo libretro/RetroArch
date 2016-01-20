@@ -5,6 +5,9 @@
 #include <assert.h>
 
 #include <boolean.h>
+#include <file/dir_list.h>
+#include <file/file_path.h>
+#include <compat/strl.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 
@@ -39,9 +42,16 @@ static uint32_t* image_buffer;
 static int       image_width;
 static int       image_height;
 static bool      image_uploaded;
+struct string_list *file_list;
 
 #if 0
 #define DUPE_TEST
+#endif
+
+#ifdef RARCH_INTERNAL
+static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|tga";
+#else
+static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|psd|tga|gif|hdr|pic|ppm|pgm";
 #endif
 
 void IMAGE_CORE_PREFIX(retro_get_system_info)(struct retro_system_info *info)
@@ -50,11 +60,7 @@ void IMAGE_CORE_PREFIX(retro_get_system_info)(struct retro_system_info *info)
    info->library_version  = "v0.1";
    info->need_fullpath    = true;
    info->block_extract    = false;
-#ifdef RARCH_INTERNAL
-   info->valid_extensions = "jpg|jpeg|png|bmp|tga";
-#else
-   info->valid_extensions = "jpg|jpeg|png|bmp|psd|tga|gif|hdr|pic|ppm|pgm";
-#endif
+   info->valid_extensions = IMAGE_CORE_PREFIX(valid_extensions);
 }
 
 void IMAGE_CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
@@ -168,8 +174,17 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    int comp;
    uint32_t *buf, *end;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
-  
+
+   char *dir = strdup(info->path);
+   path_basedir(dir);
+
+   file_list = dir_list_new(dir, IMAGE_CORE_PREFIX(valid_extensions),
+         false,false);
+   dir_list_sort(file_list, false);
+   free(dir);
+
    image_buffer = (uint32_t*)stbi_load (info->path,&image_width, &image_height, &comp, 4);
+
    /* RGBA > XRGB8888 */
    buf = &image_buffer[0];
    end = buf + (image_width*image_height*sizeof(uint32_t))/4;
@@ -187,8 +202,6 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          IMAGE_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "XRGB8888 is not supported.\n");
       return false;
    }
-
-
    return true;
 }
 
@@ -223,8 +236,30 @@ size_t IMAGE_CORE_PREFIX(retro_get_memory_size)(unsigned id)
 
 void IMAGE_CORE_PREFIX(retro_run)(void)
 {
-   IMAGE_CORE_PREFIX(input_poll_cb)();
+   int comp;
+   uint32_t *buf, *end;
 
+   static int frames = 0;
+   static int image_index = 0;
+
+   IMAGE_CORE_PREFIX(input_poll_cb)();
+   if(frames % 120 == 0 && image_index < file_list->size)
+   {
+
+      image_buffer = (uint32_t*)stbi_load (file_list->elems[image_index].data,&image_width, &image_height, &comp, 4);
+      image_index ++;
+
+      /* RGBA > XRGB8888 */
+      buf = &image_buffer[0];
+      end = buf + (image_width*image_height*sizeof(uint32_t))/4;
+
+      while(buf < end)
+      {
+         uint32_t pixel = *buf;
+         *buf = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
+         buf++;
+      }
+   }
 #ifdef DUPE_TEST
    if (!image_uploaded)
    {
@@ -236,6 +271,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
 #else
    IMAGE_CORE_PREFIX(video_cb)(image_buffer, image_width, image_height, image_width * sizeof(uint32_t));
 #endif
+   frames++;
 }
 
 unsigned IMAGE_CORE_PREFIX(retro_api_version)(void)
