@@ -48,17 +48,11 @@ struct string_list *string_list_new_special(enum string_list_type type,
    const core_info_t *core_info     = NULL;
    struct string_list *s            = string_list_new();
 
+   if (!s || !len)
+      return NULL;
+
    attr.i = 0;
-
-   (void)data;
-
-   if (!len)
-      return NULL;
-
-   *len = 0;
-
-   if (!s)
-      return NULL;
+   *len   = 0;
 
    switch (type)
    {
