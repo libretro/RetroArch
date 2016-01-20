@@ -204,7 +204,7 @@ static enum retro_key find_rk_bind(const char *str)
 
    for (i = 0; input_config_key_map[i].str; i++)
    {
-      if (strcasecmp(input_config_key_map[i].str, str) == 0)
+      if (string_is_equal_noncase(input_config_key_map[i].str, str))
          return input_config_key_map[i].key;
    }
 
@@ -266,13 +266,13 @@ static void parse_hat(struct retro_keybind *bind, const char *str)
       return;
    }
 
-   if (strcasecmp(dir, "up") == 0)
+   if (string_is_equal_noncase(dir, "up"))
       hat_dir = HAT_UP_MASK;
-   else if (strcasecmp(dir, "down") == 0)
+   else if (string_is_equal_noncase(dir, "down"))
       hat_dir = HAT_DOWN_MASK;
-   else if (strcasecmp(dir, "left") == 0)
+   else if (string_is_equal_noncase(dir, "left"))
       hat_dir = HAT_LEFT_MASK;
-   else if (strcasecmp(dir, "right") == 0)
+   else if (string_is_equal_noncase(dir, "right"))
       hat_dir = HAT_RIGHT_MASK;
 
    if (hat_dir)

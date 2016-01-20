@@ -16,6 +16,8 @@
 
 #include <string.h>
 
+#include <string/stdstring.h>
+
 #include "video_context_driver.h"
 
 #ifdef HAVE_CONFIG_H
@@ -291,7 +293,7 @@ static int find_gfx_ctx_driver_index(const char *ident)
 {
    unsigned i;
    for (i = 0; gfx_ctx_drivers[i]; i++)
-      if (strcasecmp(ident, gfx_ctx_drivers[i]->ident) == 0)
+      if (string_is_equal_noncase(ident, gfx_ctx_drivers[i]->ident))
          return i;
    return -1;
 }

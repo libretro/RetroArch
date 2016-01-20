@@ -14,12 +14,15 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
+#include <file/config_file_userdata.h>
+#include <string/stdstring.h>
+
 #include "audio_resampler_driver.h"
 #ifdef RARCH_INTERNAL
 #include "../performance.h"
 #endif
-#include <file/config_file_userdata.h>
-#include <string.h>
 #ifndef DONT_HAVE_STRING_LIST
 #include "../string_list_special.h"
 #endif
@@ -54,7 +57,7 @@ static int find_resampler_driver_index(const char *ident)
    unsigned i;
 
    for (i = 0; resampler_drivers[i]; i++)
-      if (strcasecmp(ident, resampler_drivers[i]->ident) == 0)
+      if (string_is_equal_noncase(ident, resampler_drivers[i]->ident))
          return i;
    return -1;
 }

@@ -142,7 +142,7 @@ int find_driver_index(const char * label, const char *drv)
          return -1;
       if (string_is_empty(str))
          break;
-      if (!strcasecmp(drv, str))
+      if (string_is_equal_noncase(drv, str))
          return i;
    }
 

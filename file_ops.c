@@ -537,7 +537,7 @@ int read_compressed_file(const char * path, void **buf,
 #endif
 
 #ifdef HAVE_7ZIP
-   if (strcasecmp(file_ext,"7z") == 0)
+   if (string_is_equal_noncase(file_ext, "7z"))
    {
       *length = read_7zip_file(archive_path,archive_found,buf,optional_filename);
       if (*length != -1)
@@ -545,7 +545,7 @@ int read_compressed_file(const char * path, void **buf,
    }
 #endif
 #ifdef HAVE_ZLIB
-   if (strcasecmp(file_ext,"zip") == 0)
+   if (string_is_equal_noncase(file_ext, "zip"))
    {
       *length = read_zip_file(archive_path,archive_found,buf,optional_filename);
       if (*length != -1)
@@ -588,11 +588,11 @@ struct string_list *compressed_file_list_new(const char *path,
    const char* file_ext = path_get_extension(path);
 #endif
 #ifdef HAVE_7ZIP
-   if (strcasecmp(file_ext,"7z") == 0)
+   if (string_is_equal_noncase(file_ext, "7z"))
       return compressed_7zip_file_list_new(path,ext);
 #endif
 #ifdef HAVE_ZLIB
-   if (strcasecmp(file_ext,"zip") == 0)
+   if (string_is_equal_noncase(file_ext, "zip"))
       return zlib_get_file_list(path, ext);
 #endif
 #endif

@@ -614,7 +614,7 @@ static bool init_content_file_extract(
       if (!ext)
          continue;
 
-      if (!strcasecmp(ext, "zip"))
+      if (string_is_equal_noncase(ext, "zip"))
       {
          char temp_content[PATH_MAX_LENGTH];
 

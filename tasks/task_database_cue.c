@@ -372,21 +372,23 @@ int find_first_data_track(const char *cue_path,
          fill_pathname_join(track_path, cue_dir, tmp_token, max_len);
 
       }
-      else if (strcasecmp(tmp_token, "TRACK") == 0)
+      else if (string_is_equal_noncase(tmp_token, "TRACK"))
       {
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
-         if (strcasecmp(tmp_token, "AUDIO") == 0)
+         if (string_is_equal_noncase(tmp_token, "AUDIO"))
             continue;
 
          find_token(fd, "INDEX");
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
          get_token(fd, tmp_token, MAX_TOKEN_LEN);
+
          if (sscanf(tmp_token, "%02d:%02d:%02d", &m, &s, &f) < 3)
          {
             RARCH_LOG("Error parsing time stamp '%s'\n", tmp_token);
             return -errno;
          }
+
          *offset = ((m * 60) * (s * 75) * f) * 25;
 
          RARCH_LOG("Found 1st data track on file '%s+%d'\n",

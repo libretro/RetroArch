@@ -16,6 +16,8 @@
 
 #include <xtl.h>
 
+#include <string/stdstring.h>
+
 #include "../font_driver.h"
 #include "../d3d/d3d.h"
 #include "../../general.h"
@@ -166,7 +168,7 @@ void *PackedResource::GetData(const char *strName) const
       for (DWORD i = 0; i < m_dwNumResourceTags; i++)
 #endif
       {
-         if (!strcasecmp(strName, m_pResourceTags[i].strName))
+         if (string_is_equal_noncase(strName, m_pResourceTags[i].strName))
             return &m_pSysMemData[m_pResourceTags[i].dwOffset];
       }
 

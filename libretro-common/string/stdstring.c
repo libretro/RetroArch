@@ -44,6 +44,19 @@ bool string_is_equal(const char *a, const char *b)
    return (strcmp(a, b) == 0);
 }
 
+bool string_is_equal_noncase(const char *a, const char *b)
+{
+   int ca, cb;
+   do
+   {
+      ca = (unsigned char)*a++;
+      cb = (unsigned char)*b++;
+      ca = tolower(toupper(ca));
+      cb = tolower(toupper(cb));
+   } while (ca == cb && ca != '\0');
+   return (ca - cb) == 0;
+}
+
 char *string_to_upper(char *s)
 {
    unsigned char *ucs = (unsigned char *)s;
