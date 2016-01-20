@@ -705,7 +705,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
 {
    const char *ret = menu_hash_to_str_us_label(hash);
 
-   if (ret && strcmp(ret, "null") != 0)
+   if (ret && !string_is_equal(ret, "null"))
       return ret;
 
    switch (hash)

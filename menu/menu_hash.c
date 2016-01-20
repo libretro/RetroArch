@@ -59,7 +59,7 @@ const char *menu_hash_to_str(uint32_t hash)
          break;
    }
 
-   if (ret && strcmp(ret, "null") != 0)
+   if (ret && !string_is_equal(ret, "null"))
       return ret;
 
    return menu_hash_to_str_us(hash);
