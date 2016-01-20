@@ -483,6 +483,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static core_info_t *core_info_current           = NULL;
    static core_info_list_t *core_info_curr_list    = NULL;
    settings_t *settings                            = config_get_ptr();
+   global_t *global                                = NULL;
 
    switch (state)
    {
@@ -574,18 +575,21 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             core_option_free(runloop_system.core_options);
          }
 
-         runloop_system.core_options = NULL;
+         runloop_system.core_options   = NULL;
 
          /* No longer valid. */
          if (runloop_system.special)
             free(runloop_system.special);
-         runloop_system.special = NULL;
+         runloop_system.special        = NULL;
          if (runloop_system.ports)
             free(runloop_system.ports);
-         runloop_system.ports   = NULL;
+         runloop_system.ports          = NULL;
 
-         runloop_key_event = NULL;
-         global_get_ptr()->frontend_key_event = NULL;
+         runloop_key_event             = NULL;
+         global = global_get_ptr();
+         
+         if (global)
+            global->frontend_key_event = NULL;
          audio_driver_unset_callback();
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
