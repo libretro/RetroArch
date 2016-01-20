@@ -1108,7 +1108,6 @@ int rarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
    bool *verbosity   = NULL;
-   global_t *global  = global_get_ptr();
 
    init_state();
 
@@ -1149,7 +1148,11 @@ int rarch_main_init(int argc, char *argv[])
       if (settings && (settings->multimedia.builtin_mediaplayer_enable ||
             settings->multimedia.builtin_imageviewer_enable))
       {
-         char *fullpath = NULL;
+         char *fullpath    = NULL;
+#if defined(HAVE_FFMPEG) || defined(HAVE_IMAGEVIEWER)
+         global_t *global  = global_get_ptr();
+#endif
+
          runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
          switch (rarch_path_is_media_type(fullpath))
@@ -1182,9 +1185,7 @@ int rarch_main_init(int argc, char *argv[])
    init_libretro_sym(current_core_type);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
-
-   if (!event_command(EVENT_CMD_CORE_INIT))
-      goto error;
+if (!event_command(EVENT_CMD_CORE_INIT)) goto error;
 
    event_command(EVENT_CMD_DRIVERS_INIT);
    event_command(EVENT_CMD_COMMAND_INIT);
