@@ -26,7 +26,7 @@
 
 bool string_is_empty(const char *data)
 {
-   return !data || !*data;
+   return data==NULL || *data=='\0';
 }
 
 bool string_is_equal(const char *a, const char *b)
@@ -43,17 +43,17 @@ bool string_is_equal_noncase(const char *a, const char *b)
 
 char *string_to_upper(char *s)
 {
-   unsigned char *ucs = (unsigned char *)s;
-   for ( ; *ucs != '\0'; ucs++)
-      *ucs = toupper(*ucs);
+   char *cs = (char *)s;
+   for ( ; *cs != '\0'; cs++)
+      *cs = toupper(*cs);
    return s;
 }
 
 char *string_to_lower(char *s)
 {
-   unsigned char *ucs = (unsigned char *)s;
-   for ( ; *ucs != '\0'; ucs++)
-      *ucs = tolower(*ucs);
+   char *cs = (char *)s;
+   for ( ; *cs != '\0'; cs++)
+      *cs = tolower(*cs);
    return s;
 }
 
