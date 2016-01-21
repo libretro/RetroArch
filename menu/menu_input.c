@@ -1045,6 +1045,9 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
    {
       int16_t pointer_x = menu_input_pointer_state(MENU_POINTER_X_AXIS);
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
+      float dpi;
+      gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &dpi);
+
 
       if (!menu_input->pointer.oldpressed[0])
       {
@@ -1057,8 +1060,8 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
          menu_input->pointer.old_y         = pointer_y;
          menu_input->pointer.oldpressed[0] = true;
       }
-      else if (abs(pointer_x - menu_input->pointer.start_x) > 3
-            || abs(pointer_y - menu_input->pointer.start_y) > 3)
+      else if (abs(pointer_x - menu_input->pointer.start_x) > (dpi / 10)
+            || abs(pointer_y - menu_input->pointer.start_y) > (dpi / 10))
       {
          float s, delta_time;
          menu_input->pointer.dragging      = true;
@@ -1069,7 +1072,7 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 
          menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
-         s =  menu_input->pointer.dy / delta_time * 1000000.0;
+         s =  (menu_input->pointer.dy * 550000000.0 ) /( dpi * delta_time );
          menu_input->pointer.accel = (menu_input->pointer.accel0 + menu_input->pointer.accel1 + s) / 3;
          menu_input->pointer.accel0 = menu_input->pointer.accel1;
          menu_input->pointer.accel1 = menu_input->pointer.accel;
