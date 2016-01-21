@@ -61,14 +61,10 @@ char *string_to_lower(char *s)
 
 char *string_replace_substring(const char *in, const char *pattern, const char *replacement)
 {
-   size_t numhits;
-   size_t pattern_len;
-   size_t replacement_len;
+   size_t numhits, pattern_len, replacement_len, outlen;
    const char *inat;
    const char *inprev;
-   size_t outlen;
-   char *out;
-   char *outat;
+   char *out, *outat;
    
    /* if either pattern or replacement is NULL,
     * duplicate in and let caller handle it. */
