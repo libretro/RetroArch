@@ -31,6 +31,7 @@
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <retro_file.h>
+#include <retro_stat.h>
 #include <string/string_list.h>
 #include <string/stdstring.h>
 #ifdef HAVE_COMPRESSION
@@ -384,8 +385,7 @@ static int read_zip_file(const char *archive_path,
    {
       /* Get info about current file. */
       unz_file_info file_info;
-      char filename[PATH_MAX_LENGTH] = {0};
-      char last_char = ' ';
+      char filename[PATH_MAX_LENGTH];
 
       if (unzGetCurrentFileInfo(
                zipfile,
@@ -395,11 +395,10 @@ static int read_zip_file(const char *archive_path,
                NULL, 0, NULL, 0 ) != UNZ_OK )
          goto error;
 
-      /* Check if this entry is a directory or file. */
-      last_char = filename[strlen(filename)-1];
-
-      /* We skip directories */
-      if ( last_char == '/' || last_char == '\\' ) { }
+      if (path_is_directory(filename))
+      {
+         /* We skip directories */
+      }
       else if (string_is_equal(filename, relative_path))
       {
          /* We found the correct file in the zip, 
@@ -411,6 +410,10 @@ static int read_zip_file(const char *archive_path,
          {
             /* Allocate outbuffer */
             *buf       = malloc(file_info.uncompressed_size + 1 );
+
+            if (!buf)
+               goto error;
+
             bytes_read = unzReadCurrentFile(zipfile, *buf, file_info.uncompressed_size);
 
             if (bytes_read != (ssize_t)file_info.uncompressed_size)
