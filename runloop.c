@@ -403,14 +403,14 @@ static void check_shader_dir(rarch_dir_list_t *dir_list, bool pressed_next, bool
  **/
 static bool rarch_game_specific_options(char **output)
 {
+   char game_path[PATH_MAX_LENGTH];
+   char config_directory[PATH_MAX_LENGTH];
    settings_t *settings                   = config_get_ptr();
    global_t *global                       = global_get_ptr();
    rarch_system_info_t *system            = NULL;
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
    config_file_t *option_file             = NULL;
-   char game_path[PATH_MAX_LENGTH]        = {0};
-   char config_directory[PATH_MAX_LENGTH] = {0};
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
