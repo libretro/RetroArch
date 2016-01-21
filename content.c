@@ -216,12 +216,7 @@ static bool content_load_state(const char *path)
          path);
 
    if (!ret || size < 0)
-   {
-      RARCH_ERR("%s \"%s\".\n",
-            msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
-            path);
-      return false;
-   }
+      goto error;
 
    RARCH_LOG("%s: %u %s.\n",
          msg_hash_to_str(MSG_STATE_SIZE),
@@ -280,6 +275,12 @@ static bool content_load_state(const char *path)
    free(blocks);
    free(buf);
    return ret;
+
+error:
+   RARCH_ERR("%s \"%s\".\n",
+         msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
+         path);
+   return false;
 }
 
 /**
