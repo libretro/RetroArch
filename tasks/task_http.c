@@ -227,6 +227,10 @@ bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task
       return false;
 
    http = (http_handle_t*)calloc(1, sizeof(*http));
+
+   if (!http)
+      return false;
+
    http->connection.handle = conn;
    http->connection.cb     = &cb_http_conn_default;
 
@@ -235,15 +239,22 @@ bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task
 
    http->status = HTTP_STATUS_CONNECTION_TRANSFER;
 
-   t = (rarch_task_t*)calloc(1, sizeof(*t));
-   t->handler = rarch_task_http_transfer_handler;
-   t->state = http;
-   t->callback = cb;
-   t->user_data = user_data;
-   t->progress = -1;
+   t                = (rarch_task_t*)calloc(1, sizeof(*t));
+
+   if (!t)
+   {
+      free(http);
+      return false;
+   }
+
+   t->handler       = rarch_task_http_transfer_handler;
+   t->state         = http;
+   t->callback      = cb;
+   t->user_data     = user_data;
+   t->progress      = -1;
 
    snprintf(tmp, sizeof(tmp), "%s '%s'", msg_hash_to_str(MSG_DOWNLOADING), path_basename(url));
-   t->title = strdup(tmp);
+   t->title         = strdup(tmp);
 
    rarch_task_push(t);
 

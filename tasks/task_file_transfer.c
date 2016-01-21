@@ -330,12 +330,15 @@ bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_ta
    }
 
    nbio = (nbio_handle_t*)calloc(1, sizeof(*nbio));
+
+   if (!nbio)
+      return false;
+
    nbio->handle       = handle;
    nbio->is_finished  = false;
    nbio->cb           = &cb_nbio_default;
    nbio->status       = NBIO_STATUS_TRANSFER;
    nbio->image.status = NBIO_IMAGE_STATUS_TRANSFER;
-
 
    if (cb_type_hash == CB_MENU_WALLPAPER)
       nbio->cb = &cb_nbio_image_menu_wallpaper;
@@ -345,6 +348,13 @@ bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_ta
    nbio_begin_read(handle);
 
    t = (rarch_task_t*)calloc(1, sizeof(*t));
+
+   if (!t)
+   {
+      free(nbio);
+      return false;
+   }
+
    t->state = nbio;
    t->handler = rarch_task_file_load_handler;
    t->callback = cb;
