@@ -687,10 +687,12 @@ extern "C" {
 #define MENU_LABEL_VALUE_CLOSE_CONTENT                                         0x2b3d9556U
 #define MENU_LABEL_QUIT_RETROARCH                                              0x84b0bc71U
 #define MENU_LABEL_VALUE_QUIT_RETROARCH                                        0x8e7024f2U
-#define MENU_LABEL_SHUTDOWN                                                    0xfc460361U
-#define MENU_LABEL_VALUE_SHUTDOWN                                              0x740b6741U
-#define MENU_LABEL_REBOOT                                                      0x19266b70U
-#define MENU_LABEL_VALUE_REBOOT                                                0xce815750U
+#if defined(HAVE_LAKKA)
+    #define MENU_LABEL_SHUTDOWN                                                    0xfc460361U
+    #define MENU_LABEL_VALUE_SHUTDOWN                                              0x740b6741U
+    #define MENU_LABEL_REBOOT                                                      0x19266b70U
+    #define MENU_LABEL_VALUE_REBOOT                                                0xce815750U
+#endif
 #define MENU_LABEL_DEFERRED_VIDEO_FILTER                                       0x966ad201U
 #define MENU_LABEL_DEFERRED_CORE_LIST_SET                                      0xa6d5fdb4U
 #define MENU_LABEL_VALUE_STARTING_DOWNLOAD                                     0x42e10f03U
