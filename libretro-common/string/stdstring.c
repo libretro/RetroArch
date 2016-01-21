@@ -38,6 +38,8 @@ bool string_is_equal(const char *a, const char *b)
 
 bool string_is_equal_noncase(const char *a, const char *b)
 {
+   if (!a || !b)
+      return false;
    return (strcasecmp(a, b) == 0);
 }
 
