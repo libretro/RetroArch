@@ -21,6 +21,7 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <file/file_extract.h>
+#include <retro_stat.h>
 
 #include "tasks.h"
 #include "../verbosity.h"
@@ -47,7 +48,7 @@ static int file_decompressed_subdir(const char *name, const char *valid_exts,
    decompress_state_t *dec = (decompress_state_t*)userdata;
 
    /* Ignore directories. */
-   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
+   if (path_is_directory(name))
       goto next_file;
 
    if (strstr(name, dec->subdir) != name)
@@ -86,7 +87,7 @@ static int file_decompressed(const char *name, const char *valid_exts,
    decompress_state_t *dec = (decompress_state_t*)userdata;
 
    /* Ignore directories. */
-   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
+   if (path_is_directory(name))
       goto next_file;
 
    /* Make directory */
