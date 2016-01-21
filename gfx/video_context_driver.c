@@ -182,16 +182,18 @@ bool gfx_ctx_set_video_mode(
 void gfx_ctx_translate_aspect(float *aspect,
       unsigned width, unsigned height)
 {
-   if (current_video_context->translate_aspect)
-      *aspect = current_video_context->translate_aspect(video_context_data, width, height);
+   if (!current_video_context || !current_video_context->translate_aspect)
+      return;
+
+   *aspect = current_video_context->translate_aspect(video_context_data, width, height);
 }
 
 bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
 {
-   if (current_video_context->get_metrics)
-      return current_video_context->get_metrics(video_context_data, type,
-            value);
-   return false;
+   if (!current_video_context || !current_video_context->get_metrics)
+      return false;
+   return current_video_context->get_metrics(video_context_data, type,
+         value);
 }
 
 bool gfx_ctx_image_buffer_init(const video_info_t* info)
