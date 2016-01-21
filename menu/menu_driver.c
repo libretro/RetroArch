@@ -276,6 +276,8 @@ static void menu_input_key_event(bool down, unsigned keycode,
 
 static void menu_driver_toggle(bool latch)
 {
+   retro_keyboard_event_t *key_event          = NULL;
+   retro_keyboard_event_t *frontend_key_event = NULL;
    settings_t                 *settings = config_get_ptr();
    rarch_system_info_t          *system = NULL;
    
@@ -302,8 +304,6 @@ static void menu_driver_toggle(bool latch)
 
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
-      retro_keyboard_event_t *key_event          = NULL;
-      retro_keyboard_event_t *frontend_key_event = NULL;
       runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &key_event);
       runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
 
@@ -317,8 +317,6 @@ static void menu_driver_toggle(bool latch)
    }
    else
    {
-      retro_keyboard_event_t *frontend_key_event = NULL;
-      retro_keyboard_event_t *key_event          = NULL;
       if (!runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
          driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
 
