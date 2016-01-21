@@ -30,6 +30,7 @@
 #include <queues/fifo_buffer.h>
 #include <rthreads/rthreads.h>
 #include <retro_endianness.h>
+#include <string/stdstring.h>
 
 #include "../audio_driver.h"
 #include "../../configuration.h"
@@ -174,7 +175,7 @@ static void choose_output_device(coreaudio_t *dev, const char* device)
 
       if (AudioObjectGetPropertyData(devices[i],
                &propaddr, 0, 0, &size, device_name) == noErr 
-            && !strcmp(device_name, device))
+            && string_is_equal(device_name, device))
       {
          AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice, 
                kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));

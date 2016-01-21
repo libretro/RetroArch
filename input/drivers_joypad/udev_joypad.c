@@ -391,7 +391,7 @@ static void udev_joypad_remove_device(const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      if (udev_pads[i].path && !strcmp(udev_pads[i].path, path))
+      if (udev_pads[i].path && string_is_equal(udev_pads[i].path, path))
       {
          input_config_autoconfigure_disconnect(i, udev_pads[i].ident);
          udev_free_pad(i);
@@ -428,15 +428,15 @@ static void udev_joypad_handle_hotplug(void)
    action  = udev_device_get_action(dev);
    devnode = udev_device_get_devnode(dev);
 
-   if (!val || strcmp(val, "1") || !devnode)
+   if (!val || !string_is_equal(val, "1") || !devnode)
       goto end;
 
-   if (!strcmp(action, "add"))
+   if (string_is_equal(action, "add"))
    {
       RARCH_LOG("[udev]: Hotplug add: %s.\n", devnode);
       udev_check_device(dev, devnode, true);
    }
-   else if (!strcmp(action, "remove"))
+   else if (string_is_equal(action, "remove"))
    {
       RARCH_LOG("[udev]: Hotplug remove: %s.\n", devnode);
       udev_joypad_remove_device(devnode);

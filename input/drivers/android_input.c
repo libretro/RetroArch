@@ -628,7 +628,7 @@ static int android_input_get_id_index_from_name(android_input_data_t *android_da
    int i;
    for (i = 0; i < android_data->pads_connected; i++)
    {
-      if (!strcmp(name, android_data->pad_states[i].name))
+      if (string_is_equal(name, android_data->pad_states[i].name))
          return i;
    }
 

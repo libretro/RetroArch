@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 #include <boolean.h>
+#include <string/stdstring.h>
 
 #include "../../driver.h"
 
@@ -300,12 +301,12 @@ static void sdl_grab_mouse(void *data, bool state)
       SDL_Window *w;
    };
 
-   if (!strcmp(video_driver_get_ident(), "sdl2"))
-   {
-      /* First member of sdl2_video_t is the window */
-      SDL_SetWindowGrab(((struct temp*)video_driver_get_ptr(false))->w,
-            state ? SDL_TRUE : SDL_FALSE);
-   }
+   if (!string_is_equal(video_driver_get_ident(), "sdl2"))
+      return;
+
+   /* First member of sdl2_video_t is the window */
+   SDL_SetWindowGrab(((struct temp*)video_driver_get_ptr(false))->w,
+         state ? SDL_TRUE : SDL_FALSE);
 #endif
 }
 

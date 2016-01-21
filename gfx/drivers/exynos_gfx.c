@@ -29,6 +29,7 @@
 #include <exynos/exynos_fimg2d.h>
 
 #include <retro_inline.h>
+#include <string/stdstring.h>
 
 #include "../common/drm_common.h"
 
@@ -173,7 +174,7 @@ static int exynos_get_device_index(void)
 
       ver = drmGetVersion(fd);
 
-      if (!strcmp("exynos", ver->name))
+      if (string_is_equal("exynos", ver->name))
          found = true;
       else
          ++index;

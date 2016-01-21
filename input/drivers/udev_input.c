@@ -33,6 +33,7 @@
 #include <linux/kd.h>
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "../drivers_keyboard/keyboard_event_udev.h"
 #include "../common/linux_common.h"
@@ -301,7 +302,7 @@ static void udev_input_remove_device(udev_input_t *udev, const char *devnode)
 
    for (i = 0; i < udev->num_devices; i++)
    {
-      if (strcmp(devnode, udev->devices[i]->devnode) != 0)
+      if (!string_is_equal(devnode, udev->devices[i]->devnode))
          continue;
 
       close(udev->devices[i]->fd);
@@ -333,9 +334,9 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    action        = udev_device_get_action(dev);
    devnode       = udev_device_get_devnode(dev);
 
-   is_keyboard   = val_keyboard && !strcmp(val_keyboard, "1") && devnode;
-   is_mouse      = val_mouse && !strcmp(val_mouse, "1") && devnode;
-   is_touchpad   = val_touchpad && !strcmp(val_touchpad, "1") && devnode;
+   is_keyboard   = val_keyboard && string_is_equal(val_keyboard, "1") && devnode;
+   is_mouse      = val_mouse && string_is_equal(val_mouse, "1") && devnode;
+   is_touchpad   = val_touchpad && string_is_equal(val_touchpad, "1") && devnode;
 
    if (!is_keyboard && !is_mouse && !is_touchpad)
       goto end;
@@ -356,12 +357,12 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
       devtype = "mouse";
    }
 
-   if (!strcmp(action, "add"))
+   if (string_is_equal(action, "add"))
    {
       RARCH_LOG("[udev]: Hotplug add %s: %s.\n", devtype, devnode);
       add_device(udev, devnode, cb);
    }
-   else if (!strcmp(action, "remove"))
+   else if (string_is_equal(action, "remove"))
    {
       RARCH_LOG("[udev]: Hotplug remove %s: %s.\n", devtype, devnode);
       udev_input_remove_device(udev, devnode);
