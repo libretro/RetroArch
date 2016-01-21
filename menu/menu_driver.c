@@ -304,7 +304,7 @@ static void menu_driver_toggle(bool latch)
 
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
-      runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &key_event);
+      runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
       runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
 
       if (key_event && frontend_key_event)
