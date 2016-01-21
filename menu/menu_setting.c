@@ -3662,7 +3662,7 @@ static bool setting_append_list_core_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &settings->core.set_supports_no_game_enable,
+         &settings->set_supports_no_game_enable,
          menu_hash_to_str(MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
          true,

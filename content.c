@@ -677,7 +677,7 @@ static bool init_content_file_set_attribs(
       attr.i              |= (!system->no_content)      << 2;
 
       if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL)
-            && settings->core.set_supports_no_game_enable)
+            && settings->set_supports_no_game_enable)
          string_list_append(content, "", attr);
       else
       {

@@ -692,7 +692,7 @@ static void config_set_defaults(void)
          settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
    }
 
-   settings->core.set_supports_no_game_enable        = true;
+   settings->set_supports_no_game_enable        = true;
 
    video_driver_ctl(RARCH_DISPLAY_CTL_RESET_CUSTOM_VIEWPORT, NULL);
 
@@ -1388,7 +1388,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_BOOL_BASE(conf, settings, video.force_srgb_disable, "video_force_srgb_disable");
 
-   CONFIG_GET_BOOL_BASE(conf, settings, core.set_supports_no_game_enable, "core_set_supports_no_game_enable");
+   CONFIG_GET_BOOL_BASE(conf, settings, set_supports_no_game_enable, "core_set_supports_no_game_enable");
 
 #ifdef RARCH_CONSOLE
    /* TODO - will be refactored later to make it more clean - it's more
@@ -2900,7 +2900,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "keyboard_gamepad_mapping_type", settings->input.keyboard_gamepad_mapping_type);
 
    config_set_bool(conf, "core_set_supports_no_game_enable",
-         settings->core.set_supports_no_game_enable);
+         settings->set_supports_no_game_enable);
 
    config_set_int(conf, "menu_ok_btn",          settings->menu_ok_btn);
    config_set_int(conf, "menu_cancel_btn",      settings->menu_cancel_btn);

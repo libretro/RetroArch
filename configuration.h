@@ -285,10 +285,7 @@ typedef struct settings
       bool buildbot_auto_extract_archive;
    } network;
 
-   struct
-   {
-      bool set_supports_no_game_enable;
-   } core;
+   bool set_supports_no_game_enable;
 
    struct
    {
