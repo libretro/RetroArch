@@ -263,6 +263,10 @@ static bool imageviewer_load(uint32_t *buf, int image_index)
 void IMAGE_CORE_PREFIX(retro_run)(void)
 {
    uint32_t *buf          = NULL;
+   bool first_image       = false;
+   bool last_image        = false;
+   bool backwards_image   = false;
+   bool forward_image     = false;
    bool load_image        = false;
    bool next_image        = false;
    bool prev_image        = false;
@@ -273,8 +277,26 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
 
    if (slideshow_enable)
    {
-      if ((frames % 120 == 0) && image_index < file_list->size)
+      if ((frames % 120 == 0) && image_index < (file_list->size - 1))
          next_image = true;
+   }
+
+   if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_UP))
+   {
+      if ((image_index + 5) < (file_list->size - 1))
+         forward_image   = true;
+      else
+         last_image      = true;
+   }
+
+   if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_DOWN))
+   {
+      if ((image_index - 5) > 0)
+         backwards_image = true;
+      else
+         first_image     = true;
    }
 
    if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
@@ -286,7 +308,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
    if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
             RETRO_DEVICE_ID_JOYPAD_RIGHT))
    {
-      if (image_index < file_list->size)
+      if (image_index < (file_list->size - 1))
          next_image = true;
    }
 
@@ -301,10 +323,29 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
       image_index--;
       load_image = true;
    }
-
-   if (next_image)
+   else if (next_image)
    {
       image_index++;
+      load_image = true;
+   }
+   else if (backwards_image)
+   {
+      image_index -= 5;
+      load_image = true;
+   }
+   else if (forward_image)
+   {
+      image_index += 5;
+      load_image = true;
+   }
+   else if (first_image)
+   {
+      image_index = 0;
+      load_image = true;
+   }
+   else if (last_image)
+   {
+      image_index = file_list->size - 1;
       load_image = true;
    }
 
