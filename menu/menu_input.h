@@ -97,10 +97,6 @@ enum menu_input_bind_mode
    MENU_INPUT_BIND_ALL
 };
 
-
-void menu_input_key_event(bool down, unsigned keycode, uint32_t character,
-      uint16_t key_modifiers);
-
 void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb);

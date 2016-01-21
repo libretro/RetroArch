@@ -156,18 +156,6 @@ void menu_input_free(void)
 {
 }
 
-
-void menu_input_key_event(bool down, unsigned keycode,
-      uint32_t character, uint16_t mod)
-{
-   (void)down;
-   (void)keycode;
-   (void)mod;
-
-   if (character == '/')
-      menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
-}
-
 static void menu_input_key_end_line(void)
 {
    bool keyboard_display    = false;

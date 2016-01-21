@@ -263,6 +263,17 @@ int menu_driver_iterate(enum menu_action action)
    return -1;
 }
 
+static void menu_input_key_event(bool down, unsigned keycode,
+      uint32_t character, uint16_t mod)
+{
+   (void)down;
+   (void)keycode;
+   (void)mod;
+
+   if (character == '/')
+      menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
+}
+
 static void menu_driver_toggle(bool latch)
 {
    settings_t                 *settings = config_get_ptr();
@@ -319,6 +330,7 @@ static void menu_driver_toggle(bool latch)
 
       /* Restore libretro keyboard callback. */
 
+      runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
       runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
 
       if (key_event && frontend_key_event)
