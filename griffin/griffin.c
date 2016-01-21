@@ -196,7 +196,7 @@ VIDEO IMAGE
 #include "../libretro-common/formats/tga/rtga.c"
 
 #ifdef HAVE_IMAGEVIEWER
-#include "../cores/image_core.c"
+#include "../cores/libretro-imageviewer/image_core.c"
 #endif
 
 #ifdef HAVE_RPNG

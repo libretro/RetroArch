@@ -218,7 +218,7 @@ OBJ += gfx/image/image.o
 
 ifeq ($(HAVE_IMAGEVIEWER), 1)
 DEFINES += -DHAVE_IMAGEVIEWER
-OBJ += cores/image_core.o
+OBJ += cores/libretro-imageviewer/image_core.o
 endif
 
 # Qt
