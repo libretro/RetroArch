@@ -289,6 +289,9 @@ static void menu_driver_toggle(bool latch)
    else
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_ALIVE, NULL);
 
+   runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
+   runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
+
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       bool refresh = false;
@@ -304,8 +307,6 @@ static void menu_driver_toggle(bool latch)
 
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
-      runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
-      runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
 
       if (key_event && frontend_key_event)
       {
@@ -327,10 +328,6 @@ static void menu_driver_toggle(bool latch)
       input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
 
       /* Restore libretro keyboard callback. */
-
-      runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
-      runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
-
       if (key_event && frontend_key_event)
          *key_event = *frontend_key_event;
    }
