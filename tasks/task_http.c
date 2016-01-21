@@ -206,8 +206,8 @@ static bool rarch_task_http_finder(rarch_task_t *task, void *user_data)
 
 bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task_callback_t cb, void *user_data)
 {
-   struct http_connection_t *conn;
    char tmp[PATH_MAX_LENGTH];
+   struct http_connection_t *conn = NULL;
    rarch_task_t  *t               = NULL;
    http_handle_t *http            = NULL;
 
