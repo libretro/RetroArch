@@ -78,6 +78,7 @@ enum runloop_ctl_state
    RUNLOOP_CTL_CURRENT_CORE_FREE,
    RUNLOOP_CTL_CURRENT_CORE_INIT,
    RUNLOOP_CTL_CURRENT_CORE_GET,
+   RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET,
    RUNLOOP_CTL_KEY_EVENT_GET,
    RUNLOOP_CTL_DATA_DEINIT,
    /* Checks for state changes in this frame. */
@@ -281,8 +282,6 @@ typedef struct global
       bool flickerfilter_enable;
       bool softfilter_enable;
    } console;
-   
-   retro_keyboard_event_t frontend_key_event;
 } global_t;
 
 global_t *global_get_ptr(void);

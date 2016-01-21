@@ -464,26 +464,27 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static char runloop_fullpath[PATH_MAX_LENGTH];
    static rarch_system_info_t runloop_system;
    static unsigned runloop_pending_windowed_scale;
-   static retro_keyboard_event_t runloop_key_event = NULL;
-   static unsigned runloop_max_frames              = false;
-   static bool runloop_frame_time_last             = false;
-   static bool runloop_set_frame_limit             = false;
-   static bool runloop_paused                      = false;
-   static bool runloop_idle                        = false;
-   static bool runloop_exec                        = false;
-   static bool runloop_slowmotion                  = false;
-   static bool runloop_shutdown_initiated          = false;
-   static bool runloop_core_shutdown_initiated     = false;
-   static bool runloop_perfcnt_enable              = false;
-   static bool runloop_overrides_active            = false;
-   static bool runloop_game_options_active         = false;
+   static retro_keyboard_event_t runloop_key_event          = NULL;
+   static retro_keyboard_event_t runloop_frontend_key_event = NULL;
+   static unsigned runloop_max_frames               = false;
+   static bool runloop_frame_time_last              = false;
+   static bool runloop_set_frame_limit              = false;
+   static bool runloop_paused                       = false;
+   static bool runloop_idle                         = false;
+   static bool runloop_exec                         = false;
+   static bool runloop_slowmotion                   = false;
+   static bool runloop_shutdown_initiated           = false;
+   static bool runloop_core_shutdown_initiated      = false;
+   static bool runloop_perfcnt_enable               = false;
+   static bool runloop_overrides_active             = false;
+   static bool runloop_game_options_active          = false;
 #ifdef HAVE_THREADS
-   static slock_t *runloop_msg_queue_lock          = NULL;
+   static slock_t *runloop_msg_queue_lock           = NULL;
 #endif
-   static core_info_t *core_info_current           = NULL;
-   static core_info_list_t *core_info_curr_list    = NULL;
-   settings_t *settings                            = config_get_ptr();
-   global_t *global                                = NULL;
+   static core_info_t *core_info_current            = NULL;
+   static core_info_list_t *core_info_curr_list     = NULL;
+   settings_t *settings                             = config_get_ptr();
+   global_t *global                                 = NULL;
 
    switch (state)
    {
@@ -584,12 +585,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (runloop_system.ports)
             free(runloop_system.ports);
          runloop_system.ports          = NULL;
-
          runloop_key_event             = NULL;
-         global = global_get_ptr();
-         
-         if (global)
-            global->frontend_key_event = NULL;
+         runloop_frontend_key_event    = NULL;
+
          audio_driver_unset_callback();
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
@@ -1136,6 +1134,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!key_event)
                return false;
             *key_event = &runloop_key_event;
+         }
+         break;
+      case RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET:
+         {
+            retro_keyboard_event_t **key_event = (retro_keyboard_event_t**)data;
+            if (!key_event || !global)
+               return false;
+            *key_event = &runloop_frontend_key_event;
          }
          break;
       case RUNLOOP_CTL_NONE:

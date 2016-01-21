@@ -266,7 +266,6 @@ int menu_driver_iterate(enum menu_action action)
 static void menu_driver_toggle(bool latch)
 {
    settings_t                 *settings = config_get_ptr();
-   global_t                   *global   = global_get_ptr();
    rarch_system_info_t          *system = NULL;
    
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
@@ -291,24 +290,24 @@ static void menu_driver_toggle(bool latch)
          event_command(EVENT_CMD_AUDIO_STOP);
 
       /* Override keyboard callback to redirect to menu instead.
-       * We'll use this later for something ...
-       * FIXME: This should probably be moved to menu_common somehow. */
-      if (global)
+       * We'll use this later for something ... */
+      retro_keyboard_event_t *key_event          = NULL;
+      retro_keyboard_event_t *frontend_key_event = NULL;
+      runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &key_event);
+      runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
+
+      if (key_event && frontend_key_event)
       {
-         retro_keyboard_event_t *key_event = NULL;
-         runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
+         *frontend_key_event        = *key_event;
+         *key_event                 = menu_input_key_event;
 
-         if (key_event)
-         {
-            global->frontend_key_event = *key_event;
-            *key_event                 = menu_input_key_event;
-
-            runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
-         }
+         runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
       }
    }
    else
    {
+      retro_keyboard_event_t *frontend_key_event = NULL;
+      retro_keyboard_event_t *key_event          = NULL;
       if (!runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL))
          driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
 
@@ -319,15 +318,11 @@ static void menu_driver_toggle(bool latch)
       input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
 
       /* Restore libretro keyboard callback. */
-      if (global)
-      {
-         retro_keyboard_event_t *key_event = NULL;
 
-         runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
+      runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
 
-         if (key_event)
-            *key_event = global->frontend_key_event;
-      }
+      if (key_event && frontend_key_event)
+         *key_event = *frontend_key_event;
    }
 }
 
