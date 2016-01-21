@@ -117,8 +117,6 @@ static int rarch_main_data_http_iterate_transfer(rarch_task_t *task)
    if (!net_http_update(http->handle, &pos, &tot))
    {
       task->progress = (tot == 0) ? -1 : (signed)(pos * 100 / tot);
-      /* FIXME/TODO - warning 68: integer conversion resulted in a change
-       * of sign                    ^*/
       return -1;
    }
 
