@@ -1298,8 +1298,19 @@ bool event_command(enum event_command cmd)
          }
          break;
       case EVENT_CMD_RESET_CONTEXT:
-         event_command(EVENT_CMD_DRIVERS_DEINIT);
-         event_command(EVENT_CMD_DRIVERS_INIT);
+         {
+            // EVENT_CMD_DRIVERS_DEINIT clears the callback struct so we
+            // need to make sure to keep a copy
+            struct retro_hw_render_callback hw_render;
+
+            memcpy(&hw_render, video_driver_callback(), sizeof(hw_render));
+
+            event_command(EVENT_CMD_DRIVERS_DEINIT);
+
+            memcpy(video_driver_callback(), &hw_render, sizeof(hw_render));
+
+            event_command(EVENT_CMD_DRIVERS_INIT);
+         }
          break;
       case EVENT_CMD_QUIT_RETROARCH:
          rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
