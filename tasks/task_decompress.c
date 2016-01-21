@@ -48,7 +48,7 @@ static int file_decompressed_subdir(const char *name, const char *valid_exts,
    decompress_state_t *dec = (decompress_state_t*)userdata;
 
    /* Ignore directories. */
-   if (path_is_directory(name))
+   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
       goto next_file;
 
    if (strstr(name, dec->subdir) != name)
@@ -87,7 +87,7 @@ static int file_decompressed(const char *name, const char *valid_exts,
    decompress_state_t *dec = (decompress_state_t*)userdata;
 
    /* Ignore directories. */
-   if (path_is_directory(name))
+   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
       goto next_file;
 
    /* Make directory */
