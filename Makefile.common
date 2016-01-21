@@ -478,9 +478,6 @@ ifeq ($(HAVE_COMMAND), 1)
    OBJ += command.o
 endif
 
-ifeq ($(HAVE_NETWORK_GAMEPAD), 1)
-   OBJ += remote.o
-endif
 
 #Input
 
@@ -891,6 +888,10 @@ ifeq ($(HAVE_NETWORKING), 1)
          DEFINES += -DHAVE_CHEEVOS
          OBJ += cheevos.o libretro-common/utils/md5.o
       endif
+   endif
+
+   ifeq ($(HAVE_NETWORK_GAMEPAD), 1)
+      OBJ += remote.o
    endif
 endif
 
