@@ -263,6 +263,7 @@ static bool imageviewer_load(uint32_t *buf, int image_index)
 void IMAGE_CORE_PREFIX(retro_run)(void)
 {
    uint32_t *buf          = NULL;
+   bool load_image        = false;
    bool next_image        = false;
    bool prev_image        = false;
    static int frames      = 0;
@@ -297,15 +298,18 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
 
    if (prev_image)
    {
-      if (imageviewer_load(buf, image_index))
-         image_index--;
+      image_index--;
+      load_image = true;
    }
 
    if (next_image)
    {
-      if (imageviewer_load(buf, image_index))
-         image_index++;
+      image_index++;
+      load_image = true;
    }
+
+   if (load_image)
+      imageviewer_load(buf, image_index);
 
 #ifdef DUPE_TEST
    if (!image_uploaded)
