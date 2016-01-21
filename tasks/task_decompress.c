@@ -192,20 +192,20 @@ static bool rarch_task_decompress_finder(rarch_task_t *task, void *user_data)
 bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
       const char *subdir, const char *valid_ext, rarch_task_callback_t cb, void *user_data)
 {
-   decompress_state_t *s;
-   rarch_task_t *t;
    char tmp[PATH_MAX_LENGTH];
-   bool is_compressed = false;
+   decompress_state_t *s      = NULL;
+   rarch_task_t *t            = NULL;
+   bool is_compressed         = false;
 
-   if (!target_dir || !target_dir[0] || !source_file || !source_file[0])
+   if (string_is_empty(target_dir) || string_is_empty(source_file))
    {
       RARCH_WARN("[decompress] Empty or null source file or target directory arguments.\n");
       return false;
    }
 
    /* ZIP or APK only */
-   is_compressed = string_is_equal(path_get_extension(source_file), "zip");
-   is_compressed = is_compressed || string_is_equal(path_get_extension(source_file), "apk");
+   is_compressed  = string_is_equal(path_get_extension(source_file), "zip");
+   is_compressed  = is_compressed || string_is_equal(path_get_extension(source_file), "apk");
 
    if (!path_file_exists(source_file) || !is_compressed)
    {
@@ -215,7 +215,7 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
    }
 
    if (!valid_ext || !valid_ext[0])
-      valid_ext = NULL;
+      valid_ext   = NULL;
 
    if (rarch_task_find(rarch_task_decompress_finder, (void*)source_file))
    {
@@ -225,7 +225,7 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
 
    RARCH_LOG("[decompress] File '%s.\n", source_file);
 
-   s = (decompress_state_t*)calloc(1, sizeof(*s));
+   s              = (decompress_state_t*)calloc(1, sizeof(*s));
 
    if (!s)
       goto error;
@@ -233,28 +233,28 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
    s->source_file = strdup(source_file);
    s->target_dir  = strdup(target_dir);
 
-   s->valid_ext = valid_ext ? strdup(valid_ext) : NULL;
-   s->zlib.type = ZLIB_TRANSFER_INIT;
+   s->valid_ext   = valid_ext ? strdup(valid_ext) : NULL;
+   s->zlib.type   = ZLIB_TRANSFER_INIT;
 
-   t = (rarch_task_t*)calloc(1, sizeof(*t));
+   t              = (rarch_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
       goto error;
 
-   t->state     = s;
-   t->handler   = rarch_task_decompress_handler;
+   t->state       = s;
+   t->handler     = rarch_task_decompress_handler;
 
    if (!string_is_empty(subdir))
    {
       s->subdir   = strdup(subdir);
-      t->handler   = rarch_task_decompress_handler_subdir;
+      t->handler  = rarch_task_decompress_handler_subdir;
    }
 
-   t->callback  = cb;
-   t->user_data = user_data;
+   t->callback    = cb;
+   t->user_data   = user_data;
 
    snprintf(tmp, sizeof(tmp), "%s '%s'", msg_hash_to_str(MSG_EXTRACTING), path_basename(source_file));
-   t->title = strdup(tmp);
+   t->title       = strdup(tmp);
 
    rarch_task_push(t);
 
