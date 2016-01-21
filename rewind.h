@@ -36,8 +36,6 @@ void init_rewind(void);
 
 bool state_manager_frame_is_reversed(void);
 
-void state_manager_set_frame_is_reversed(bool value);
-
 void state_manager_event_deinit(void);
 
 /**

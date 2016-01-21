@@ -658,7 +658,7 @@ bool state_manager_frame_is_reversed(void)
    return frame_is_reversed;
 }
 
-void state_manager_set_frame_is_reversed(bool value)
+static void state_manager_set_frame_is_reversed(bool value)
 {
    frame_is_reversed = value;
 }
