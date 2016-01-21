@@ -61,29 +61,37 @@ char *string_to_lower(char *s)
 
 char *string_replace_substring(const char *in, const char *pattern, const char *replacement)
 {
+	size_t numhits;
+	size_t pattern_len;
+	size_t replacement_len;
+	const char * inat;
+	const char * inprev;
+	size_t outlen;
+	char* out;
+	char* outat;
+	
 	/* if either pattern or replacement is NULL,
-	* duplicate in and let caller handle it. */
+	 * duplicate in and let caller handle it. */
 	if (!pattern || !replacement)
 		return strdup(in);
 	
-	size_t numhits = 0;
+	pattern_len     = strlen(pattern);
+	replacement_len = strlen(replacement);
 	
-	size_t pattern_len     = strlen(pattern);
-	size_t replacement_len = strlen(replacement);
-	
-	const char * inat = in;
+	numhits = 0;
+	inat = in;
 	while ((inat = strstr(inat, pattern)))
 	{
 		inat += pattern_len;
 		numhits++;
 	}
 	
-	size_t outlen = strlen(in) - pattern_len*numhits + replacement_len*numhits;
-	char* out = malloc(outlen+1);
-	char* outat = out;
+	outlen = strlen(in) - pattern_len*numhits + replacement_len*numhits;
+	out = malloc(outlen+1);
+	outat = out;
 	
-	const char * inprev = in;
 	inat = in;
+	inprev = in;
 	while ((inat = strstr(inat, pattern)))
 	{
 		memcpy(outat, inprev, inat-inprev);
