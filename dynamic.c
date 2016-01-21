@@ -856,12 +856,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
          runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
 
-         if (!key_event)
-            return false;
-
          RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
-         *key_event                  = info->callback;
-         *frontend_key_event         = *key_event;
+         if (key_event)
+            *key_event                  = info->callback;
+         if (frontend_key_event)
+            *frontend_key_event         = *key_event;
          break;
       }
 
