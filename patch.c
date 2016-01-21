@@ -66,12 +66,12 @@ static uint64_t bps_decode(struct bps_data *bps)
 
    for (;;)
    {
-      uint8_t x = bps_read(bps);
-      data += (x & 0x7f) * shift;
+      uint8_t x  = bps_read(bps);
+      data      += (x & 0x7f) * shift;
       if (x & 0x80)
          break;
-      shift <<= 7;
-      data += shift;
+      shift    <<= 7;
+      data      += shift;
    }
 
    return data;
