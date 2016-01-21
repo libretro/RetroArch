@@ -42,6 +42,7 @@ static uint32_t* image_buffer;
 static int       image_width;
 static int       image_height;
 static bool      image_uploaded;
+static bool      slideshow_enable;
 struct string_list *file_list;
 
 #if 0
@@ -172,10 +173,13 @@ void IMAGE_CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char * c)
 bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
    int comp;
-   uint32_t *buf, *end;
+   uint32_t *buf               = NULL;
+   uint32_t *end               = NULL;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
+   char *dir                   = strdup(info->path);
 
-   char *dir = strdup(info->path);
+   slideshow_enable            = false;
+
    path_basedir(dir);
 
    file_list = dir_list_new(dir, IMAGE_CORE_PREFIX(valid_extensions),
@@ -186,14 +190,14 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    image_buffer = (uint32_t*)stbi_load (info->path,&image_width, &image_height, &comp, 4);
 
    /* RGBA > XRGB8888 */
-   buf = &image_buffer[0];
-   end = buf + (image_width*image_height*sizeof(uint32_t))/4;
+   buf          = &image_buffer[0];
+   end          = buf + (image_width*image_height*sizeof(uint32_t))/4;
 
    while(buf < end)
    {
-    uint32_t pixel = *buf;
-    *buf = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
-    buf++;
+      uint32_t pixel = *buf;
+      *buf           = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
+      buf++;
    }
   
    if (!IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
@@ -234,32 +238,75 @@ size_t IMAGE_CORE_PREFIX(retro_get_memory_size)(unsigned id)
    return 0;
 }
 
-void IMAGE_CORE_PREFIX(retro_run)(void)
+static bool imageviewer_load(uint32_t *buf, int image_index)
 {
    int comp;
-   uint32_t *buf, *end;
+   uint32_t *end          = NULL;
+   image_buffer           = (uint32_t*)stbi_load(
+         file_list->elems[image_index].data,
+         &image_width, &image_height, &comp, 4);
 
-   static int frames = 0;
+   /* RGBA > XRGB8888 */
+   buf = &image_buffer[0];
+   end = buf + (image_width*image_height*sizeof(uint32_t))/4;
+
+   while(buf < end)
+   {
+      uint32_t pixel = *buf;
+      *buf = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
+      buf++;
+   }
+
+   return true;
+}
+
+void IMAGE_CORE_PREFIX(retro_run)(void)
+{
+   uint32_t *buf          = NULL;
+   bool next_image        = false;
+   bool prev_image        = false;
+   static int frames      = 0;
    static int image_index = 0;
 
    IMAGE_CORE_PREFIX(input_poll_cb)();
-   if(frames % 120 == 0 && image_index < file_list->size)
+
+   if (slideshow_enable)
    {
-
-      image_buffer = (uint32_t*)stbi_load (file_list->elems[image_index].data,&image_width, &image_height, &comp, 4);
-      image_index ++;
-
-      /* RGBA > XRGB8888 */
-      buf = &image_buffer[0];
-      end = buf + (image_width*image_height*sizeof(uint32_t))/4;
-
-      while(buf < end)
-      {
-         uint32_t pixel = *buf;
-         *buf = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
-         buf++;
-      }
+      if ((frames % 120 == 0) && image_index < file_list->size)
+         next_image = true;
    }
+
+   if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_LEFT))
+   {
+      if (image_index > 0)
+         prev_image = true;
+   }
+   if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_RIGHT))
+   {
+      if (image_index < file_list->size)
+         next_image = true;
+   }
+
+   if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_Y))
+   {
+      slideshow_enable = !slideshow_enable;
+   }
+
+   if (prev_image)
+   {
+      if (imageviewer_load(buf, image_index))
+         image_index--;
+   }
+
+   if (next_image)
+   {
+      if (imageviewer_load(buf, image_index))
+         image_index++;
+   }
+
 #ifdef DUPE_TEST
    if (!image_uploaded)
    {
