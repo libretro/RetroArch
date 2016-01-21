@@ -1139,7 +1139,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET:
          {
             retro_keyboard_event_t **key_event = (retro_keyboard_event_t**)data;
-            if (!key_event || !global)
+            if (!key_event)
                return false;
             *key_event = &runloop_frontend_key_event;
          }
