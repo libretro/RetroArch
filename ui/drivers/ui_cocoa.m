@@ -304,7 +304,7 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
                 runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
                 ui_companion_event_command(EVENT_CMD_LOAD_CORE);
                 
-                if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->core.set_supports_no_game_enable)
+                if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->set_supports_no_game_enable)
                 {
                     int ret = 0;
                     runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
