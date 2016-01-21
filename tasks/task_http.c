@@ -206,12 +206,12 @@ static bool rarch_task_http_finder(rarch_task_t *task, void *user_data)
 
 bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task_callback_t cb, void *user_data)
 {
-   rarch_task_t  *t;
-   http_handle_t *http;
    struct http_connection_t *conn;
    char tmp[PATH_MAX_LENGTH];
+   rarch_task_t  *t               = NULL;
+   http_handle_t *http            = NULL;
 
-   if (!url || !*url)
+   if (string_is_empty(url))
       return false;
 
    /* Concurrent download of the same file is not allowed */
@@ -226,10 +226,10 @@ bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task
    if (!conn)
       return false;
 
-   http = (http_handle_t*)calloc(1, sizeof(*http));
+   http                    = (http_handle_t*)calloc(1, sizeof(*http));
 
    if (!http)
-      return false;
+      goto error;
 
    http->connection.handle = conn;
    http->connection.cb     = &cb_http_conn_default;
@@ -237,26 +237,32 @@ bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task
    if (type)
       strlcpy(http->connection.elem1, type, sizeof(http->connection.elem1));
 
-   http->status = HTTP_STATUS_CONNECTION_TRANSFER;
-
-   t                = (rarch_task_t*)calloc(1, sizeof(*t));
+   http->status            = HTTP_STATUS_CONNECTION_TRANSFER;
+   t                       = (rarch_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
-   {
-      free(http);
-      return false;
-   }
+      goto error;
 
-   t->handler       = rarch_task_http_transfer_handler;
-   t->state         = http;
-   t->callback      = cb;
-   t->user_data     = user_data;
-   t->progress      = -1;
+   t->handler              = rarch_task_http_transfer_handler;
+   t->state                = http;
+   t->callback             = cb;
+   t->user_data            = user_data;
+   t->progress             = -1;
 
    snprintf(tmp, sizeof(tmp), "%s '%s'", msg_hash_to_str(MSG_DOWNLOADING), path_basename(url));
-   t->title         = strdup(tmp);
+   t->title                = strdup(tmp);
 
    rarch_task_push(t);
 
    return true;
+
+error:
+   if (conn)
+      net_http_connection_free(conn);
+   if (t)
+      free(t);
+   if (http)
+      free(http);
+
+   return false;
 }
