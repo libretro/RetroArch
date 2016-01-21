@@ -371,7 +371,7 @@ const char *menu_hash_to_str_it(uint32_t hash)
          return "Fotogrammi stimati del monitor";
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Valore fittizio sull'arresto del core";
-      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
          return "Non avviare automaticamente un core";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limita la velocità massima di caricamento";

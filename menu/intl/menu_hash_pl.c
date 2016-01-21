@@ -262,7 +262,7 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "Szacowana czêstotliwo¶æ od¶wie¿ania monitora";
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Atrapa rdzenia przy zatrzymaniu rdzenia";
-      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
          return "Nie uruchamiaj rdzenia automatycznie";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limituj maksymaln± szybko¶æ dzia³ania";

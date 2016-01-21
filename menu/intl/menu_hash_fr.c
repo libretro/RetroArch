@@ -269,7 +269,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Fréquence estimée de l'écran";
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Utiliser un faux coeur lorsqu'il n'y en a pas";
-      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
          return "Ne pas démarrer de coeur automatiquement";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limiter la vitesse d'exécution";

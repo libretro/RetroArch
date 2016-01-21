@@ -922,7 +922,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Dummy Õn Core Shútdòwn";
       case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
-         return "Ðon't áutomaticålly stàrt a core";
+         return "áutomaticålly stàrt a core";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limit Mãximum Ruñ Spêed";
       case MENU_LABEL_VALUE_FASTFORWARD_RATIO:

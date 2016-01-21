@@ -1029,7 +1029,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Dummy On Core Shutdown";
       case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
-         return "Don't automatically start a core";
+         return "Automatically start a core";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limit Maximum Run Speed";
       case MENU_LABEL_VALUE_FASTFORWARD_RATIO:

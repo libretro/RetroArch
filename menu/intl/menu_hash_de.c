@@ -254,7 +254,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Geschätzte Monitor-Bildrate";
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Dummy bei Core-Abschaltung";
-      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
          return "Cores nicht automatisch starten";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Begrenze maximale Ausführungsgeschwindigkeit";

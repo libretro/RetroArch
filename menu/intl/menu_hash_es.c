@@ -339,7 +339,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Frecuencia estimada del monitor";
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Anular al cerrar núcleo";
-      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
          return "No ejecutar automáticamente";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limitar velocidad máxima de ejecución";

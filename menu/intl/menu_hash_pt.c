@@ -253,7 +253,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Taxa de Atualização de Quadros Estimada";
       case MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN:
          return "Desligar Core Dummy On";
-      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+      case MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE: /* TODO/FIXME */
          return "Não Iniciar Cores Automaticamente";
       case MENU_LABEL_VALUE_FRAME_THROTTLE_ENABLE:
          return "Limitar Velocidade Máxima de Execução";
