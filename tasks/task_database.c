@@ -556,11 +556,15 @@ task_finished:
 
 bool rarch_task_push_dbscan(const char *fullpath, bool directory, rarch_task_callback_t cb)
 {
-   rarch_task_t *t = (rarch_task_t*)calloc(1, sizeof(*t));
-   db_handle_t *db = (db_handle_t*)calloc(1, sizeof(db_handle_t));
-   t->handler = rarch_dbscan_task_handler;
-   t->state   = db;
-   t->callback = cb;
+   rarch_task_t *t   = (rarch_task_t*)calloc(1, sizeof(*t));
+   db_handle_t *db   = (db_handle_t*)calloc(1, sizeof(db_handle_t));
+
+   if (!t || !db)
+      goto error;
+
+   t->handler        = rarch_dbscan_task_handler;
+   t->state          = db;
+   t->callback       = cb;
 
    if (directory)
       db->handle = database_info_dir_init(fullpath, DATABASE_TYPE_ITERATE);
@@ -573,6 +577,13 @@ bool rarch_task_push_dbscan(const char *fullpath, bool directory, rarch_task_cal
    rarch_task_push(t);
 
    return true;
+
+error:
+   if (t)
+      free(t);
+   if (db)
+      free(db);
+   return false;
 }
 
 #endif
