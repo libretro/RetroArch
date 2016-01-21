@@ -59,7 +59,8 @@ char *string_to_lower(char *s)
    return s;
 }
 
-char *string_replace_substring(const char *in, const char *pattern, const char *replacement)
+char *string_replace_substring(const char *in,
+      const char *pattern, const char *replacement)
 {
    size_t numhits, pattern_len, replacement_len, outlen;
    const char *inat;
@@ -73,21 +74,21 @@ char *string_replace_substring(const char *in, const char *pattern, const char *
    
    pattern_len     = strlen(pattern);
    replacement_len = strlen(replacement);
-   
-   numhits = 0;
-   inat    = in;
+   numhits         = 0;
+   inat            = in;
+
    while ((inat = strstr(inat, pattern)))
    {
       inat += pattern_len;
       numhits++;
    }
    
-   outlen = strlen(in) - pattern_len*numhits + replacement_len*numhits;
-   out    = (char *)malloc(outlen+1);
-   outat  = out;
-   
-   inat   = in;
-   inprev = in;
+   outlen          = strlen(in) - pattern_len*numhits + replacement_len*numhits;
+   out             = (char *)malloc(outlen+1);
+   outat           = out;
+   inat            = in;
+   inprev          = in;
+
    while ((inat = strstr(inat, pattern)))
    {
       memcpy(outat, inprev, inat-inprev);
