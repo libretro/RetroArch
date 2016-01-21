@@ -2412,6 +2412,7 @@ void config_load(void)
    config_load_core_specific();
 }
 
+#if 0
 /**
  * config_save_keybinds_file:
  * @path            : Path that shall be written to.
@@ -2420,7 +2421,7 @@ void config_load(void)
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
-bool config_save_keybinds_file(const char *path)
+static bool config_save_keybinds_file(const char *path)
 {
    unsigned          i = 0;
    bool            ret = false;
@@ -2441,6 +2442,7 @@ bool config_save_keybinds_file(const char *path)
    config_file_free(conf);
    return ret;
 }
+#endif
 
 
 /**

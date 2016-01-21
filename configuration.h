@@ -522,16 +522,6 @@ bool config_unload_override(void);
 bool config_load_remap(void);
 
 /**
- * config_save_keybinds_file:
- * @path            : Path that shall be written to.
- *
- * Writes a keybinds config file to disk.
- *
- * Returns: true (1) on success, otherwise returns false (0).
- **/
-bool config_save_keybinds_file(const char *path);
-
-/**
  * config_save_autoconf_profile:
  * @path            : Path that shall be written to.
  * @user              : Controller number to save
