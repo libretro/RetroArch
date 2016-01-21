@@ -205,7 +205,7 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
 
    /* ZIP or APK only */
    is_compressed = string_is_equal(path_get_extension(source_file), "zip");
-   is_compressed = !is_compressed ? string_is_equal(path_get_extension(source_file), "apk") : is_compressed;
+   is_compressed = is_compressed || string_is_equal(path_get_extension(source_file), "apk");
 
    if (!path_file_exists(source_file) || !is_compressed)
    {
@@ -227,6 +227,9 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
 
    s = (decompress_state_t*)calloc(1, sizeof(*s));
 
+   if (!s)
+      goto error;
+
    s->source_file = strdup(source_file);
    s->target_dir  = strdup(target_dir);
 
@@ -234,6 +237,10 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
    s->zlib.type = ZLIB_TRANSFER_INIT;
 
    t = (rarch_task_t*)calloc(1, sizeof(*t));
+
+   if (!t)
+      goto error;
+
    t->state     = s;
    t->handler   = rarch_task_decompress_handler;
 
@@ -252,4 +259,11 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
    rarch_task_push(t);
 
    return true;
+
+error:
+   if (s)
+      free(s);
+   if (t)
+      free(t);
+   return false;
 }
