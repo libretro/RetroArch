@@ -61,49 +61,39 @@ char *string_to_lower(char *s)
 
 char *string_replace_substring(const char *in, const char *pattern, const char *replacement)
 {
-   char *needle           = NULL;
-   char *newstr           = NULL;
-   char *head             = NULL;
-   size_t pattern_len     = 0;
-   size_t replacement_len = 0;
-
-   /* if either pattern or replacement is NULL,
-    * duplicate in and let caller handle it. */
-   if (!pattern || !replacement)
-      return strdup(in);
-
-   pattern_len     = strlen(pattern);
-   replacement_len = strlen(replacement);
-
-   newstr          = strdup(in);
-   head            = newstr;
-
-   while ((needle = strstr(head, pattern)))
-   {
-      char      *oldstr = newstr;
-      size_t oldstr_len = strlen(oldstr);
-
-      newstr = (char*)malloc(oldstr_len - pattern_len + replacement_len + 1);
-
-      if (!newstr)
-      {
-         /* Failed to allocate memory,
-          * free old string and return NULL. */
-         free(oldstr);
-         return NULL;
-      }
-
-      memcpy(newstr, oldstr, needle - oldstr);
-      memcpy(newstr + (needle - oldstr), replacement, replacement_len);
-      memcpy(newstr + (needle - oldstr) + replacement_len,
-            needle + pattern_len,
-            oldstr_len - pattern_len - (needle - oldstr));
-      newstr[oldstr_len - pattern_len + replacement_len] = '\0';
-
-      /* Move back head right after the last replacement. */
-      head = newstr + (needle - oldstr) + replacement_len;
-      free(oldstr);
-   }
-
-   return newstr;
+	/* if either pattern or replacement is NULL,
+	* duplicate in and let caller handle it. */
+	if (!pattern || !replacement)
+		return strdup(in);
+	
+	size_t numhits = 0;
+	
+	size_t pattern_len     = strlen(pattern);
+	size_t replacement_len = strlen(replacement);
+	
+	const char * inat = in;
+	while ((inat = strstr(inat, pattern)))
+	{
+		inat += pattern_len;
+		numhits++;
+	}
+	
+	size_t outlen = strlen(in) - pattern_len*numhits + replacement_len*numhits;
+	char* out = malloc(outlen+1);
+	char* outat = out;
+	
+	const char * inprev = in;
+	inat = in;
+	while ((inat = strstr(inat, pattern)))
+	{
+		memcpy(outat, inprev, inat-inprev);
+		outat += inat-inprev;
+		memcpy(outat, replacement, replacement_len);
+		outat += replacement_len;
+		inat += pattern_len;
+		inprev = inat;
+	}
+	strcpy(outat, inprev);
+	
+	return out;
 }
