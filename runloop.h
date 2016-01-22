@@ -162,6 +162,7 @@ typedef struct rarch_resolution
 typedef struct global
 {
    rarch_path_t path;
+   rarch_dir_t  dir;
 
    struct
    {
@@ -183,7 +184,6 @@ typedef struct global
       bool bps_pref;
       bool ips_pref;
    } has_set;
-
    
    struct
    {
@@ -202,8 +202,6 @@ typedef struct global
    /* For --subsystem content. */
    char subsystem[PATH_MAX_LENGTH];
    struct string_list *subsystem_fullpaths;
-
-   rarch_dir_t dir;
 
    struct
    {
