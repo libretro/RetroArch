@@ -625,7 +625,12 @@ static const char *audio_device = NULL;
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
+#ifdef ANDROID
+/* For most Android devices, 64ms is way too low. */
+static const int out_latency = 128;
+#else
 static const int out_latency = 64;
+#endif
 
 /* Will sync audio. (recommended) */
 static const bool audio_sync = true;
