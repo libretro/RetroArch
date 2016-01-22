@@ -15,6 +15,8 @@
  */
 
 #include "netplay_private.h"
+#include "../content.h"
+
 bool np_get_nickname(netplay_t *netplay, int fd)
 {
    uint8_t nick_size;
@@ -60,10 +62,10 @@ bool np_send_nickname(netplay_t *netplay, int fd)
 
 uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
 {
+   uint32_t *content_crc_ptr;
    uint32_t *header, bsv_header[4] = {0};
    size_t serialize_size = core.retro_serialize_size();
    size_t header_size = sizeof(bsv_header) + serialize_size;
-   global_t *global = global_get_ptr();
 
    *size = header_size;
 
@@ -71,9 +73,11 @@ uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
    if (!header)
       return NULL;
 
+   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+
    bsv_header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
    bsv_header[SERIALIZER_INDEX] = swap_if_big32(magic);
-   bsv_header[CRC_INDEX]        = swap_if_big32(global->content_crc);
+   bsv_header[CRC_INDEX]        = swap_if_big32(*content_crc_ptr);
    bsv_header[STATE_SIZE_INDEX] = swap_if_big32(serialize_size);
 
    if (serialize_size && !core.retro_serialize(header + 4, serialize_size))
@@ -88,9 +92,9 @@ uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
 
 bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
 {
+   uint32_t *content_crc_ptr;
    uint32_t in_crc, in_magic, in_state_size;
    uint32_t in_bsv = swap_if_little32(header[MAGIC_INDEX]);
-   global_t *global = global_get_ptr();
 
    if (in_bsv != BSV_MAGIC)
    {
@@ -107,10 +111,13 @@ bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
    }
 
    in_crc = swap_if_big32(header[CRC_INDEX]);
-   if (in_crc != global->content_crc)
+
+   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+
+   if (in_crc != *content_crc_ptr)
    {
       RARCH_ERR("CRC32 mismatch, got 0x%x, expected 0x%x.\n", in_crc,
-            global->content_crc);
+            *content_crc_ptr);
       return false;
    }
 
@@ -171,12 +178,14 @@ uint32_t np_impl_magic(void)
 bool np_send_info(netplay_t *netplay)
 {
    unsigned sram_size;
-   char msg[512]      = {0};
-   void *sram         = NULL;
-   uint32_t header[3] = {0};
-   global_t *global   = global_get_ptr();
+   char msg[512]             = {0};
+   uint32_t *content_crc_ptr = NULL;
+   void *sram                = NULL;
+   uint32_t header[3]        = {0};
+
+   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
    
-   header[0] = htonl(global->content_crc);
+   header[0] = htonl(*content_crc_ptr);
    header[1] = htonl(np_impl_magic());
    header[2] = htonl(core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM));
 
@@ -216,8 +225,8 @@ bool np_get_info(netplay_t *netplay)
 {
    unsigned sram_size;
    uint32_t header[3];
-   const void *sram = NULL;
-   global_t *global = global_get_ptr();
+   uint32_t *content_crc_ptr = NULL;
+   const void *sram          = NULL;
 
    if (!socket_receive_all_blocking(netplay->fd, header, sizeof(header)))
    {
@@ -225,7 +234,9 @@ bool np_get_info(netplay_t *netplay)
       return false;
    }
 
-   if (global->content_crc != ntohl(header[0]))
+   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+
+   if (*content_crc_ptr != ntohl(header[0]))
    {
       RARCH_ERR("Content CRC32s differ. Cannot use different games.\n");
       return false;

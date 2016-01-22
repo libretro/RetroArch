@@ -161,8 +161,6 @@ typedef struct rarch_resolution
 
 typedef struct global
 {
-   uint32_t content_crc;
-
    rarch_path_t path;
 
    struct

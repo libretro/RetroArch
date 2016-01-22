@@ -43,6 +43,8 @@ enum content_ctl_state
 
    CONTENT_CTL_DEINIT,
 
+   CONTENT_CTL_GET_CRC,
+
    /* Load a state from disk to memory. */
    CONTENT_CTL_LOAD_STATE,
 

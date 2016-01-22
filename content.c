@@ -74,8 +74,11 @@ struct sram_block
 static bool read_content_file(unsigned i, const char *path, void **buf,
       ssize_t *length)
 {
-   uint8_t *ret_buf = NULL;
-   global_t *global = global_get_ptr();
+#ifdef HAVE_ZLIB
+   uint32_t *content_crc_ptr = NULL;
+#endif
+   uint8_t *ret_buf          = NULL;
+   global_t *global          = global_get_ptr();
 
    RARCH_LOG("%s: %s.\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
@@ -93,9 +96,11 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
       patch_content(&ret_buf, length);
 
 #ifdef HAVE_ZLIB
-   global->content_crc = zlib_crc32_calculate(ret_buf, *length);
+   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
 
-   RARCH_LOG("CRC32: 0x%x .\n", (unsigned)global->content_crc);
+   *content_crc_ptr = zlib_crc32_calculate(ret_buf, *length);
+
+   RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
 #endif
    *buf = ret_buf;
 
@@ -756,6 +761,7 @@ bool content_ctl(enum content_ctl_state state, void *data)
    static struct string_list *temporary_content = NULL;
    static bool content_is_inited                = false;
    static bool core_does_not_need_content       = false;
+   static uint32_t content_crc                  = 0;
 
    switch(state)
    {
@@ -764,6 +770,13 @@ bool content_ctl(enum content_ctl_state state, void *data)
       case CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT:
          core_does_not_need_content = true;
          break;
+      case CONTENT_CTL_GET_CRC:
+         {
+            uint32_t **content_crc_ptr = (uint32_t**)data;
+            if (!content_crc_ptr)
+               return false;
+            *content_crc_ptr = &content_crc;
+         }
       case CONTENT_CTL_LOAD_STATE:
          {
             const char *path = (const char*)data;
@@ -782,6 +795,7 @@ bool content_ctl(enum content_ctl_state state, void *data)
          return content_is_inited;
       case CONTENT_CTL_DEINIT:
          content_ctl(CONTENT_CTL_TEMPORARY_FREE, NULL);
+         content_crc                = 0;
          content_is_inited          = false;
          core_does_not_need_content = false;
          break;

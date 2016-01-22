@@ -22,6 +22,7 @@
 #include <retro_endianness.h>
 
 #include "movie.h"
+#include "content.h"
 #include "general.h"
 #include "msg_hash.h"
 #include "verbosity.h"
@@ -66,11 +67,11 @@ struct bsv_state bsv_movie_state;
 static bool init_playback(bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size;
-   uint32_t header[4] = {0};
-   global_t *global   = global_get_ptr();
+   uint32_t *content_crc_ptr = NULL;
+   uint32_t header[4]        = {0};
 
-   handle->playback   = true;
-   handle->file       = fopen(path, "rb");
+   handle->playback          = true;
+   handle->file              = fopen(path, "rb");
 
    if (!handle->file)
    {
@@ -93,7 +94,9 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   if (swap_if_big32(header[CRC_INDEX]) != global->content_crc)
+   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+
+   if (swap_if_big32(header[CRC_INDEX]) != *content_crc_ptr)
       RARCH_WARN("CRC32 checksum mismatch between content file and saved content checksum in replay file header; replay highly likely to desync on playback.\n");
 
    state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
@@ -125,8 +128,8 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 static bool init_record(bsv_movie_t *handle, const char *path)
 {
    uint32_t state_size;
-   uint32_t header[4] = {0};
-   global_t *global   = global_get_ptr();
+   uint32_t header[4]        = {0};
+   uint32_t *content_crc_ptr = NULL;
 
    handle->file       = fopen(path, "wb");
    if (!handle->file)
@@ -135,10 +138,12 @@ static bool init_record(bsv_movie_t *handle, const char *path)
       return false;
    }
 
+   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+
    /* This value is supposed to show up as
     * BSV1 in a HEX editor, big-endian. */
    header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
-   header[CRC_INDEX]        = swap_if_big32(global->content_crc);
+   header[CRC_INDEX]        = swap_if_big32(*content_crc_ptr);
    state_size               = core.retro_serialize_size();
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
 
