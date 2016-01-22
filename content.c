@@ -777,6 +777,7 @@ bool content_ctl(enum content_ctl_state state, void *data)
                return false;
             *content_crc_ptr = &content_crc;
          }
+         break;
       case CONTENT_CTL_LOAD_STATE:
          {
             const char *path = (const char*)data;
