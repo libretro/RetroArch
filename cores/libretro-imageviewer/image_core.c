@@ -193,6 +193,31 @@ void IMAGE_CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char * c)
 {
 }
 
+static bool imageviewer_load(const char *path, uint32_t *buf, int image_index)
+{
+   int comp;
+   uint32_t *end          = NULL;
+   image_buffer           = (uint32_t*)stbi_load(
+         path,
+         &image_width,
+         &image_height,
+         &comp,
+         4);
+
+   /* RGBA > XRGB8888 */
+   buf = &image_buffer[0];
+   end = buf + (image_width*image_height*sizeof(uint32_t))/4;
+
+   while(buf < end)
+   {
+      uint32_t pixel = *buf;
+      *buf = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
+      buf++;
+   }
+
+   return true;
+}
+
 bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
    int comp;
@@ -210,18 +235,6 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    dir_list_sort(file_list, false);
    free(dir);
 
-   image_buffer = (uint32_t*)stbi_load (info->path,&image_width, &image_height, &comp, 4);
-
-   /* RGBA > XRGB8888 */
-   buf          = &image_buffer[0];
-   end          = buf + (image_width*image_height*sizeof(uint32_t))/4;
-
-   while(buf < end)
-   {
-      uint32_t pixel = *buf;
-      *buf           = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
-      buf++;
-   }
   
    if (!IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
@@ -229,6 +242,10 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          IMAGE_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "XRGB8888 is not supported.\n");
       return false;
    }
+
+   if (!imageviewer_load(info->path, buf, 0))
+      return false;
+
    return true;
 }
 
@@ -261,27 +278,6 @@ size_t IMAGE_CORE_PREFIX(retro_get_memory_size)(unsigned id)
    return 0;
 }
 
-static bool imageviewer_load(uint32_t *buf, int image_index)
-{
-   int comp;
-   uint32_t *end          = NULL;
-   image_buffer           = (uint32_t*)stbi_load(
-         file_list->elems[image_index].data,
-         &image_width, &image_height, &comp, 4);
-
-   /* RGBA > XRGB8888 */
-   buf = &image_buffer[0];
-   end = buf + (image_width*image_height*sizeof(uint32_t))/4;
-
-   while(buf < end)
-   {
-      uint32_t pixel = *buf;
-      *buf = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
-      buf++;
-   }
-
-   return true;
-}
 
 void IMAGE_CORE_PREFIX(retro_run)(void)
 {
@@ -373,7 +369,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
    }
 
    if (load_image)
-      imageviewer_load(buf, image_index);
+      imageviewer_load(file_list->elems[image_index].data, buf, image_index);
 
 #ifdef DUPE_TEST
    if (!image_uploaded)
