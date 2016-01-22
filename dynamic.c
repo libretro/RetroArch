@@ -129,7 +129,12 @@ static dylib_t libretro_get_system_info_lib(const char *path,
    void (*proc)(struct retro_system_info*);
 
    if (!lib)
+   {
+      RARCH_ERR("Failed to open libretro core: \"%s\"\n",
+            path);
+      RARCH_ERR("Error(s): %s\n", dylib_error());
       return NULL;
+   }
 
    proc = (void (*)(struct retro_system_info*))
       dylib_proc(lib, "retro_get_system_info");
