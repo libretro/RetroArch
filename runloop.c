@@ -484,7 +484,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static core_info_t *core_info_current            = NULL;
    static core_info_list_t *core_info_curr_list     = NULL;
    settings_t *settings                             = config_get_ptr();
-   global_t *global                                 = NULL;
 
    switch (state)
    {
@@ -911,7 +910,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_GLOBAL_FREE:
          {
-            global_t *global;
+            global_t *global = NULL;
             event_command(EVENT_CMD_TEMPORARY_CONTENT_DEINIT);
             event_command(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT);
             event_command(EVENT_CMD_RECORD_DEINIT);
