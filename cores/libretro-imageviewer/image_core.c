@@ -196,6 +196,7 @@ void IMAGE_CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char * c)
 static bool imageviewer_load(const char *path, uint32_t *buf, int image_index)
 {
    int comp;
+   struct retro_system_av_info info;
    uint32_t *end          = NULL;
    image_buffer           = (uint32_t*)stbi_load(
          path,
@@ -214,6 +215,10 @@ static bool imageviewer_load(const char *path, uint32_t *buf, int image_index)
       *buf = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
       buf++;
    }
+
+   IMAGE_CORE_PREFIX(retro_get_system_av_info)(&info);
+
+   IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_GEOMETRY, &info.geometry);
 
    return true;
 }
