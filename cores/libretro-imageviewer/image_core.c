@@ -220,9 +220,7 @@ static bool imageviewer_load(const char *path, uint32_t *buf, int image_index)
 
 bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
-   int comp;
    uint32_t *buf               = NULL;
-   uint32_t *end               = NULL;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    char *dir                   = strdup(info->path);
 
