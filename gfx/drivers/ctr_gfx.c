@@ -410,13 +410,13 @@ static bool ctr_frame(void* data, const void* frame,
 
    if(!aptMainLoop())
    {
-      event_command(EVENT_CMD_QUIT);
+      event_cmd_ctl(EVENT_CMD_QUIT, NULL);
       return true;
    }
 
    if (select_pressed)
    {
-      event_command(EVENT_CMD_QUIT);
+      event_cmd_ctl(EVENT_CMD_QUIT, NULL);
       return true;
    }
 

@@ -210,7 +210,7 @@ static void driver_adjust_system_rates(void)
       return;
 
    if (system->force_nonblock)
-      event_command(EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE);
+      event_cmd_ctl(EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE, NULL);
    else
       driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
 }
@@ -261,7 +261,7 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
    struct retro_system_av_info *av_info    = video_viewport_get_system_av_info();
 
    memcpy(av_info, info, sizeof(*av_info));
-   event_command(EVENT_CMD_REINIT);
+   event_cmd_ctl(EVENT_CMD_REINIT, NULL);
 
    /* Cannot continue recording with different parameters.
     * Take the easiest route out and just restart the recording. */
@@ -269,8 +269,8 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
    {
       runloop_msg_queue_push_new(
             MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT, 2, 180, false);
-      event_command(EVENT_CMD_RECORD_DEINIT);
-      event_command(EVENT_CMD_RECORD_INIT);
+      event_cmd_ctl(EVENT_CMD_RECORD_DEINIT, NULL);
+      event_cmd_ctl(EVENT_CMD_RECORD_INIT, NULL);
    }
 
    return true;
@@ -296,8 +296,8 @@ static void menu_update_libretro_info(void)
    retro_get_system_info(info);
 #endif
 
-   event_command(EVENT_CMD_CORE_INFO_INIT);
-   event_command(EVENT_CMD_LOAD_CORE_PERSIST);
+   event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
+   event_cmd_ctl(EVENT_CMD_LOAD_CORE_PERSIST, NULL);
 }
 #endif
 

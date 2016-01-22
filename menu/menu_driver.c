@@ -298,12 +298,12 @@ static void menu_driver_toggle(bool latch)
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
       /* Menu should always run with vsync on. */
-      event_command(EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
+      event_cmd_ctl(EVENT_CMD_VIDEO_SET_BLOCKING_STATE, NULL);
       /* Stop all rumbling before entering the menu. */
-      event_command(EVENT_CMD_RUMBLE_STOP);
+      event_cmd_ctl(EVENT_CMD_RUMBLE_STOP, NULL);
 
       if (settings->menu.pause_libretro)
-         event_command(EVENT_CMD_AUDIO_STOP);
+         event_cmd_ctl(EVENT_CMD_AUDIO_STOP, NULL);
 
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
@@ -322,7 +322,7 @@ static void menu_driver_toggle(bool latch)
          driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
 
       if (settings && settings->menu.pause_libretro)
-         event_command(EVENT_CMD_AUDIO_START);
+         event_cmd_ctl(EVENT_CMD_AUDIO_START, NULL);
 
       /* Prevent stray input from going to libretro core */
       input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
@@ -463,13 +463,13 @@ bool menu_load_content(enum rarch_core_type type)
 
    menu_shader_manager_init(menu_driver_data);
 
-   event_command(EVENT_CMD_HISTORY_INIT);
+   event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
 
    if (*fullpath || menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
       menu_push_to_history_playlist();
 
-   event_command(EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
-   event_command(EVENT_CMD_RESUME);
+   event_cmd_ctl(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
+   event_cmd_ctl(EVENT_CMD_RESUME, NULL);
 
    return true;
 }
@@ -483,7 +483,7 @@ int menu_common_load_content(
    if (core_path)
    {
       runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-      event_command(EVENT_CMD_LOAD_CORE);
+      event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
    }
 
    if (fullpath)
@@ -508,7 +508,7 @@ int menu_common_load_content(
    }
 
    if (cmd != EVENT_CMD_NONE)
-      event_command(cmd);
+      event_cmd_ctl(cmd, NULL);
 
    return -1;
 }
@@ -533,7 +533,7 @@ static void menu_free(menu_handle_t *menu)
    menu_display_free();
    menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
 
-   event_command(EVENT_CMD_HISTORY_DEINIT);
+   event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
 
    runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_FREE, NULL);
    runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_FREE, NULL);
@@ -548,7 +548,7 @@ static void bundle_decompressed(void *task_data, void *user_data, const char *er
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
    if (dec && !err)
-      event_command(EVENT_CMD_REINIT);
+      event_cmd_ctl(EVENT_CMD_REINIT, NULL);
 
    if (err)
       RARCH_ERR("%s", err);
@@ -605,7 +605,7 @@ void *menu_init(const void *data)
       menu->push_help_screen           = true;
       menu->help_screen_type           = MENU_HELP_WELCOME;
       settings->menu_show_start_screen = false;
-      event_command(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
+      event_cmd_ctl(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
    }
 
    if (      settings->bundle_assets_extract_enable

@@ -2973,7 +2973,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             content_playlist_t *playlist        = g_defaults.history;
 
             if (!playlist)
-               event_command(EVENT_CMD_HISTORY_INIT);
+               event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
 
             strlcpy(path_playlist, "history", sizeof(path_playlist));
 

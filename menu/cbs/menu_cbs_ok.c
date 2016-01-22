@@ -432,7 +432,7 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
       case -1:
          {
             int ret = 0;
-            event_command(EVENT_CMD_LOAD_CORE);
+            event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
 
             ret = menu_common_load_content(NULL, NULL,
                   false, CORE_TYPE_PLAIN);
@@ -614,7 +614,7 @@ static int action_ok_playlist_entry(const char *path,
 static int action_ok_cheat_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   event_command(EVENT_CMD_CHEATS_APPLY);
+   event_cmd_ctl(EVENT_CMD_CHEATS_APPLY, NULL);
 
    return 0;
 }
@@ -677,7 +677,7 @@ static int generic_action_ok(const char *path,
          flush_char = NULL;
          flush_type = MENU_SETTINGS;
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, action_path);
-         event_command(EVENT_CMD_LOAD_CORE);
+         event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
 
 #if defined(HAVE_DYNAMIC)
          /* No content needed for this core, load core immediately. */
@@ -694,7 +694,7 @@ static int generic_action_ok(const char *path,
          /* Core selection on non-console just updates directory listing.
           * Will take effect on new content load. */
          ret = -1;
-         event_command(EVENT_CMD_RESTART_RETROARCH);
+         event_cmd_ctl(EVENT_CMD_RESTART_RETROARCH, NULL);
 #endif
 
          break;
@@ -748,7 +748,7 @@ static int generic_action_ok(const char *path,
          flush_char = NULL;
          flush_type = 49;
          event_disk_control_append_image(action_path);
-         event_command(EVENT_CMD_RESUME);
+         event_cmd_ctl(EVENT_CMD_RESUME, NULL);
          break;
       case ACTION_OK_SET_PATH:
          flush_char = NULL;
@@ -1132,7 +1132,7 @@ static int action_ok_file_load(const char *path,
 
 static int generic_action_ok_command(enum event_command cmd)
 {
-   if (!event_command(cmd))
+   if (!event_cmd_ctl(cmd, NULL))
       return -1;
    return 0;
 }
@@ -1406,7 +1406,7 @@ static int action_ok_file_load_or_resume(const char *path,
       return generic_action_ok_command(EVENT_CMD_RESUME);
 
    runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, menu->deferred_path);
-   event_command(EVENT_CMD_LOAD_CORE);
+   event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
    rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
 
    return -1;
@@ -1449,7 +1449,7 @@ static int generic_action_ok_network(const char *path,
    if (string_is_empty(settings->network.buildbot_url))
       return -1;
 
-   event_command(EVENT_CMD_NETWORK_INIT);
+   event_cmd_ctl(EVENT_CMD_NETWORK_INIT, NULL);
 
    switch (type_id)
    {
@@ -1815,7 +1815,7 @@ static int action_ok_load_archive(const char *path,
    fill_pathname_join(detect_content_path, menu_path, content_path,
          sizeof(detect_content_path));
 
-   event_command(EVENT_CMD_LOAD_CORE);
+   event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
    ret = menu_common_load_content(NULL, detect_content_path, false, CORE_TYPE_PLAIN);
    if (ret == -1)
       action_ok_push_quick_menu();
@@ -1850,7 +1850,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    switch (ret)
    {
       case -1:
-         event_command(EVENT_CMD_LOAD_CORE);
+         event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
          ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
          if (ret == -1)
             action_ok_push_quick_menu();
@@ -1924,7 +1924,7 @@ static int action_ok_video_resolution(const char *path,
    {
       char msg[PATH_MAX_LENGTH] = {0};
 #ifdef __CELLOS_LV2__
-      event_command(EVENT_CMD_REINIT);
+      event_cmd_ctl(EVENT_CMD_REINIT, NULL);
 #endif
       video_driver_set_video_mode(width, height, true);
       snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset", width, height);

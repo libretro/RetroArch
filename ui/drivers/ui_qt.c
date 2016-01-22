@@ -108,7 +108,7 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
       return;
 
    slock_lock(handle->lock);
-   event_command(cmd);
+   event_cmd_ctl(cmd, NULL);
    slock_unlock(handle->lock);
 }
 

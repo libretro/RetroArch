@@ -62,7 +62,7 @@ void main_exit(void *args)
 {
    settings_t *settings                  = config_get_ptr();
 
-   event_command(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
+   event_cmd_ctl(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
 
    if (content_ctl(CONTENT_CTL_IS_INITED, NULL))
    {
@@ -73,7 +73,7 @@ void main_exit(void *args)
       rarch_main_deinit();
    }
 
-   event_command(EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG);
+   event_cmd_ctl(EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG, NULL);
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
@@ -231,7 +231,7 @@ bool main_load_content(int argc, char **argv, void *args,
       goto error;
    }
 
-   event_command(EVENT_CMD_RESUME);
+   event_cmd_ctl(EVENT_CMD_RESUME, NULL);
 
    check_defaults_dirs();
 
@@ -279,7 +279,7 @@ int rarch_main(int argc, char *argv[], void *data)
          return ret;
    }
 
-   event_command(EVENT_CMD_HISTORY_INIT);
+   event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
 
    settings = config_get_ptr();
 

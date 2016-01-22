@@ -168,7 +168,7 @@ static void frontend_psp_deinit(void *data)
    *verbose           = false;
 
 #ifdef HAVE_FILE_LOGGER
-   event_command(EVENT_CMD_LOG_FILE_DEINIT);
+   event_cmd_ctl(EVENT_CMD_LOG_FILE_DEINIT, NULL);
 #endif
 
 #endif

@@ -368,7 +368,7 @@ int core_setting_right(unsigned type, const char *label,
 static int disk_options_disk_idx_right(unsigned type, const char *label,
       bool wraparound)
 {
-   event_command(EVENT_CMD_DISK_NEXT);
+   event_cmd_ctl(EVENT_CMD_DISK_NEXT, NULL);
 
    return 0;
 }

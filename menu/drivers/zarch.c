@@ -1243,7 +1243,7 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
    if (zui->time_to_quit)
    {
       zui->time_to_quit = false;
-      if (!event_command(EVENT_CMD_QUIT))
+      if (!event_cmd_ctl(EVENT_CMD_QUIT, NULL))
          return -1;
       return 0;
    }
@@ -1273,7 +1273,7 @@ static bool zarch_menu_init_list(void *data)
    menu_entries_push(menu_stack, info.path, info.label, info.type, info.flags, 0);
 #endif
 
-   event_command(EVENT_CMD_HISTORY_INIT);
+   event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
 
    info.list  = selection_buf;
    menu_displaylist_push_list(&info, DISPLAYLIST_HISTORY);

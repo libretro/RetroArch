@@ -344,9 +344,9 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
    if (dec && !err)
    {
       if (type_hash == CB_CORE_UPDATER_DOWNLOAD)
-         event_command(EVENT_CMD_CORE_INFO_INIT);
+         event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
       else if (type_hash == CB_UPDATE_ASSETS)
-         event_command(EVENT_CMD_REINIT);
+         event_cmd_ctl(EVENT_CMD_REINIT, NULL);
    }
 
    if (err)
@@ -464,7 +464,7 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
    }
 #else
    if (transf->type_hash == CB_CORE_UPDATER_DOWNLOAD)
-      event_command(EVENT_CMD_CORE_INFO_INIT);
+      event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
 #endif
 
 finish:
