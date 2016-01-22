@@ -3413,6 +3413,17 @@ static bool setting_append_list_main_menu_options(
    menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_SHUTDOWN);
 #endif
 
+#if defined(HAVE_LAKKA)
+   CONFIG_ACTION(
+         list, list_info,
+         menu_hash_to_str(MENU_LABEL_REBOOT),
+         menu_hash_to_str(MENU_LABEL_VALUE_REBOOT),
+         &group_info,
+         &subgroup_info,
+         parent_group);
+   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REBOOT);
+#endif
+
    CONFIG_ACTION(
          list, list_info,
          menu_hash_to_str(MENU_LABEL_INPUT_SETTINGS),
