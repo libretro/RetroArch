@@ -104,12 +104,17 @@ enum rarch_ctl_state
     */
    RARCH_CTL_VERIFY_API_VERSION,
 
-      /* Validates CPU features for given processor architecture.
-       *
-       * Make sure we haven't compiled for something we cannot run.
-       * Ideally, code would get swapped out depending on CPU support,
-       * but this will do for now. */
+   /* Validates CPU features for given processor architecture.
+    * Make sure we haven't compiled for something we cannot run.
+    * Ideally, code would get swapped out depending on CPU support,
+    * but this will do for now. */
    RARCH_CTL_VALIDATE_CPU_FEATURES,
+
+   /**
+    * Initialize system A/V information by calling the libretro core's
+    * get_system_av_info function.
+    **/
+   RARCH_CTL_INIT_SYSTEM_AV_INFO,
 
    RARCH_CTL_FILL_PATHNAMES,
 
@@ -223,14 +228,6 @@ int rarch_defer_core(void *data,
       const char *dir, const char *path,
       const char *menu_label,
       char *s, size_t len);
-
-/**
- * rarch_init_system_av_info:
- *
- * Initialize system A/V information by calling the libretro core's
- * get_system_av_info function.
- **/
-void rarch_init_system_av_info(void);
 
 void rarch_set_paths(const char *path);
 

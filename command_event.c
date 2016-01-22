@@ -591,7 +591,7 @@ static bool event_init_core(void)
       return false;
 
    retro_init_libretro_cbs(&retro_ctx);
-   rarch_init_system_av_info();
+   rarch_ctl(RARCH_CTL_INIT_SYSTEM_AV_INFO, NULL);
 
    return true;
 }

@@ -1082,18 +1082,6 @@ static bool init_state(void)
    return true;
 }
 
-/**
- * rarch_init_system_av_info:
- *
- * Initialize system A/V information by calling the libretro core's
- * get_system_av_info function.
- **/
-void rarch_init_system_av_info(void)
-{
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   core.retro_get_system_av_info(av_info);
-   runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
-}
 
 /**
  * rarch_main_init:
@@ -1296,6 +1284,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
+      case RARCH_CTL_INIT_SYSTEM_AV_INFO:
+         {
+            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+            core.retro_get_system_av_info(av_info);
+            runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
+         }
+         break;
       case RARCH_CTL_IS_PLAIN_CORE:
          return (current_core_type == CORE_TYPE_PLAIN);
       case RARCH_CTL_IS_DUMMY_CORE:
