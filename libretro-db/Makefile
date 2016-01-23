@@ -112,11 +112,12 @@ libretrodb_tool: $(RARCHDB_TOOL_OBJS)
 rmsgpack_test: $(RMSGPACK_OBJS)
 	$(CC) $(INCFLAGS) $(RMSGPACK_OBJS) -g -o $@
 
-testlib.so: $(TESTLIB_OBJS)
+testlib.so: CFLAGS += -fPIC
+testlib.so: clean $(TESTLIB_OBJS)
 	$(CC) $(INCFLAGS) $(TESTLIB_FLAGS) $(TESTLIB_OBJS) -o $@
 
 check: testlib.so tests.lua
 	lua ./tests.lua
 
 clean:
-	rm -rf $(TARGETS) $(PLAIN_CONVERTER_OBJS) $(LUA_CONVERTER_OBJS) $(C_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS)
+	rm -rf $(TARGETS) $(PLAIN_CONVERTER_OBJS) $(LUA_CONVERTER_OBJS) $(C_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS) testlib.so
