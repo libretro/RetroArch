@@ -431,12 +431,10 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
    {
       case -1:
          {
-            int ret = 0;
             event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
 
-            ret = menu_common_load_content(NULL, NULL,
-                  false, CORE_TYPE_PLAIN);
-            if (ret == -1)
+            if (rarch_task_push_content_load_default(NULL, NULL,
+                  false, CORE_TYPE_PLAIN, NULL, NULL))
                action_ok_push_quick_menu();
             return ret;
          }
@@ -474,12 +472,14 @@ static int action_ok_file_load_with_detect_core(const char *path,
 static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   int ret = menu_common_load_content(path, detect_content_path,
-         false, CORE_TYPE_PLAIN);
-   if (ret == -1)
+   if (rarch_task_push_content_load_default(path, detect_content_path,
+         false, CORE_TYPE_PLAIN, NULL, NULL))
+   {
       action_ok_push_quick_menu();
+      return -1;
+   }
 
-   return ret;
+   return 0;
 }
 
 
@@ -684,8 +684,7 @@ static int generic_action_ok(const char *path,
          if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->set_supports_no_game_enable)
          {
             runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-            ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
-            if (ret == -1)
+            if (rarch_task_push_content_load_default(NULL, NULL, false, CORE_TYPE_PLAIN, NULL, NULL))
                action_ok_push_quick_menu();
          }
          else
@@ -1016,17 +1015,16 @@ static int action_ok_core_deferred_set(const char *path,
 static int action_ok_core_load_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   int ret                  = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
 
    if (!menu)
       return -1;
 
-   ret = menu_common_load_content(path, menu->deferred_path, false, CORE_TYPE_PLAIN);
-   if (ret == -1)
+   if (rarch_task_push_content_load_default(path, menu->deferred_path,
+            false, CORE_TYPE_PLAIN, NULL, NULL))
       action_ok_push_quick_menu();
 
-   return ret;
+   return -1;
 }
 
 static int action_ok_deferred_list_stub(const char *path,
@@ -1044,8 +1042,6 @@ static int generic_action_ok_file_load(const char *path,
    const char *menu_path    = NULL;
    file_list_t *menu_stack  = menu_entries_get_menu_stack_ptr(0);
 
-   (void)id;
-
    menu_entries_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
 
    fill_pathname_join(new_path, menu_path, path,
@@ -1056,8 +1052,8 @@ static int generic_action_ok_file_load(const char *path,
       case ACTION_OK_FFMPEG:
       case ACTION_OK_IMAGEVIEWER:
          {
-            int ret = menu_common_load_content(NULL, new_path, true, action_type);
-            if (ret == -1)
+            if (rarch_task_push_content_load_default(
+                     NULL, new_path, true, action_type, NULL, NULL))
                action_ok_push_quick_menu();
          }
          break;
@@ -1089,7 +1085,6 @@ static int action_ok_file_load(const char *path,
 {
    char menu_path_new[PATH_MAX_LENGTH];
    char full_path_new[PATH_MAX_LENGTH];
-   int ret                  = 0;
    const char *menu_label   = NULL;
    const char *menu_path    = NULL;
    rarch_setting_t *setting = NULL;
@@ -1123,10 +1118,9 @@ static int action_ok_file_load(const char *path,
       fill_pathname_join(full_path_new, menu_path_new, path,
             sizeof(full_path_new));
 
-   ret = menu_common_load_content(NULL, full_path_new, true, CORE_TYPE_PLAIN);
-   if (ret == -1)
+   if (rarch_task_push_content_load_default(NULL, full_path_new, true, CORE_TYPE_PLAIN, NULL, NULL))
       action_ok_push_quick_menu();
-   return ret;
+   return -1;
 }
 
 
@@ -1807,7 +1801,6 @@ static int action_ok_open_archive(const char *path,
 static int action_ok_load_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   int             ret      = 0;
    menu_handle_t *menu      = menu_driver_get_ptr();
    const char *menu_path    = menu ? menu->scratch2_buf : NULL;
    const char *content_path = menu ? menu->scratch_buf  : NULL;
@@ -1816,8 +1809,8 @@ static int action_ok_load_archive(const char *path,
          sizeof(detect_content_path));
 
    event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
-   ret = menu_common_load_content(NULL, detect_content_path, false, CORE_TYPE_PLAIN);
-   if (ret == -1)
+   if (rarch_task_push_content_load_default(
+            NULL, detect_content_path, false, CORE_TYPE_PLAIN, NULL, NULL))
       action_ok_push_quick_menu();
 
    return 0;
@@ -1851,10 +1844,9 @@ static int action_ok_load_archive_detect_core(const char *path,
    {
       case -1:
          event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
-         ret = menu_common_load_content(NULL, NULL, false, CORE_TYPE_PLAIN);
-         if (ret == -1)
+         if (rarch_task_push_content_load_default(NULL, NULL, false, CORE_TYPE_PLAIN, NULL, NULL))
             action_ok_push_quick_menu();
-         return ret;
+         return -1;
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
                selection, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);

@@ -881,8 +881,11 @@ static int zarch_zui_render_sidebar(zui_t *zui)
 
 static int zarch_zui_load_content(zui_t *zui, unsigned i)
 {
-   int ret = menu_common_load_content(zui->pick_cores[i].path,
-         zui->pick_content, false, CORE_TYPE_PLAIN);
+   int ret = 0;
+   
+   if (rarch_task_push_content_load_default(zui->pick_cores[i].path,
+         zui->pick_content, false, CORE_TYPE_PLAIN, NULL, NULL))
+      ret = -1;
 
    layout = LAY_HOME;
 

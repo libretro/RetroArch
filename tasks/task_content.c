@@ -18,9 +18,10 @@
 #include "tasks.h"
 #include "../command_event.h"
 
-int menu_common_load_content(
+bool rarch_task_push_content_load_default(
       const char *core_path, const char *fullpath,
-      bool persist, enum rarch_core_type type)
+      bool persist, enum rarch_core_type type,
+      rarch_task_callback_t cb, void *user_data)
 {
    enum event_command cmd       = EVENT_CMD_NONE;
 
@@ -54,11 +55,5 @@ int menu_common_load_content(
    if (cmd != EVENT_CMD_NONE)
       event_cmd_ctl(cmd, NULL);
 
-   return -1;
-}
-
-bool rarch_task_push_content_load_default(
-      rarch_task_callback_t cb, void *user_data)
-{
    return true;
 }

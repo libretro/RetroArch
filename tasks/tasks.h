@@ -166,6 +166,11 @@ bool rarch_task_push_decompress(
       const char *valid_ext,
       rarch_task_callback_t cb, void *user_data);
 
+bool rarch_task_push_content_load_default(
+      const char *core_path, const char *fullpath,
+      bool persist, enum rarch_core_type type,
+      rarch_task_callback_t cb, void *user_data);
+
 #ifdef __cplusplus
 }
 #endif
