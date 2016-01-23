@@ -474,45 +474,6 @@ bool menu_load_content(enum rarch_core_type type)
    return true;
 }
 
-int menu_common_load_content(
-      const char *core_path, const char *fullpath,
-      bool persist, enum rarch_core_type type)
-{
-   enum event_command cmd       = EVENT_CMD_NONE;
-
-   if (core_path)
-   {
-      runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-      event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
-   }
-
-   if (fullpath)
-      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
-
-   switch (type)
-   {
-      case CORE_TYPE_PLAIN:
-      case CORE_TYPE_DUMMY:
-         cmd = persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT;
-         break;
-#ifdef HAVE_FFMPEG
-      case CORE_TYPE_FFMPEG:
-         cmd = EVENT_CMD_LOAD_CONTENT_FFMPEG;
-         break;
-#endif
-      case CORE_TYPE_IMAGEVIEWER:
-#ifdef HAVE_IMAGEVIEWER
-         cmd = EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER;
-#endif
-         break;
-   }
-
-   if (cmd != EVENT_CMD_NONE)
-      event_cmd_ctl(cmd, NULL);
-
-   return -1;
-}
-
 /**
  * menu_free:
  * @menu                     : Menu handle.
