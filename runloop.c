@@ -1052,8 +1052,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          rarch_task_deinit();
          break;
       case RUNLOOP_CTL_IS_CORE_OPTION_UPDATED:
-         return runloop_system.core_options ?
-            core_option_updated(runloop_system.core_options) : false;
+         if (!runloop_system.core_options)
+            return false;
+         return  core_option_updated(runloop_system.core_options);
       case RUNLOOP_CTL_CORE_OPTION_PREV:
          {
             unsigned *idx = (unsigned*)data;
