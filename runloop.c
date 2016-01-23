@@ -414,8 +414,10 @@ static bool rarch_game_specific_options(char **output)
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   core_name = system ? system->info.library_name : NULL;
-   game_name = global ? path_basename(global->name.base) : NULL;
+   if (system)
+      core_name = system->info.library_name;
+   if (global)
+      game_name = path_basename(global->name.base);
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
