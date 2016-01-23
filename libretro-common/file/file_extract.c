@@ -788,12 +788,12 @@ bool zlib_perform_mode(const char *path, const char *valid_exts,
 {
    switch (cmode)
    {
-      case 0: /* Uncompressed */
+      case ZLIB_MODE_UNCOMPRESSED:
          if (!retro_write_file(path, cdata, size))
             return false;
          break;
 
-      case 8: /* Deflate */
+      case ZLIB_MODE_DEFLATE:
          {
             int ret = 0;
             zlib_file_handle_t handle = {0};
