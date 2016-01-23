@@ -12,12 +12,12 @@ endif
 
 LUA_CONVERTER_C = \
 			 rmsgpack.c \
-		    rmsgpack_dom.c \
-		    lua_common.c \
-		    libretrodb.c \
-		    bintree.c \
-		    query.c \
-		    lua_converter.c \
+			 rmsgpack_dom.c \
+			 lua_common.c \
+			 libretrodb.c \
+			 bintree.c \
+			 query.c \
+			 lua_converter.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
 			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
@@ -28,10 +28,10 @@ PLAIN_CONVERTER_C = \
 			 lexer.c \
 			 parser.c \
 			 rmsgpack.c \
-		    rmsgpack_dom.c \
-		    libretrodb.c \
-		    bintree.c \
-		    query.c \
+			 rmsgpack_dom.c \
+			 libretrodb.c \
+			 bintree.c \
+			 query.c \
 			 plain_converter.c \
 			 $(LIBRETRO_COMMON_DIR)/hash/rhash.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
@@ -42,10 +42,10 @@ PLAIN_CONVERTER_OBJS := $(PLAIN_CONVERTER_C:.c=.o)
 
 C_CONVERTER_C = \
 			 rmsgpack.c \
-		    rmsgpack_dom.c \
-		    libretrodb.c \
-		    bintree.c \
-		    query.c \
+			 rmsgpack_dom.c \
+			 libretrodb.c \
+			 bintree.c \
+			 query.c \
 			 c_converter.c \
 			 $(LIBRETRO_COMMON_DIR)/hash/rhash.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
@@ -55,28 +55,28 @@ C_CONVERTER_C = \
 C_CONVERTER_OBJS := $(C_CONVERTER_C:.c=.o)
 
 RARCHDB_TOOL_C = \
-			rmsgpack.c \
-		   rmsgpack_dom.c \
-		   libretrodb_tool.c \
-		   bintree.c \
-		   query.c \
-		   libretrodb.c \
-		   $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
-			$(LIBRETRO_COMMON_DIR)/file/retro_file.c \
-			$(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
+			 rmsgpack.c \
+			 rmsgpack_dom.c \
+			 libretrodb_tool.c \
+			 bintree.c \
+			 query.c \
+			 libretrodb.c \
+			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
+			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
+			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 RARCHDB_TOOL_OBJS := $(RARCHDB_TOOL_C:.c=.o)
 
 TESTLIB_C = \
-			testlib.c \
-	      query.c \
-	      libretrodb.c \
-	      bintree.c \
-	      rmsgpack.c \
-	      rmsgpack_dom.c \
-		   $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
-			$(LIBRETRO_COMMON_DIR)/file/retro_file.c \
-			$(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
+			 testlib.c \
+			 query.c \
+			 libretrodb.c \
+			 bintree.c \
+			 rmsgpack.c \
+			 rmsgpack_dom.c \
+			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
+			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
+			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 TESTLIB_OBJS := $(TESTLIB_C:.c=.o)
 
