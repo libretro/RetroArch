@@ -2,6 +2,8 @@ CFLAGS               = -g -O2
 LIBRETRO_COMMON_DIR := ../libretro-common
 INCFLAGS             = -I. -I$(LIBRETRO_COMMON_DIR)/include
 
+TARGETS              = rmsgpack_test libretrodb_tool plain_converter lua_converter
+
 LUA_CONVERTER_C = \
 			 rmsgpack.c \
 		    rmsgpack_dom.c \
@@ -14,7 +16,7 @@ LUA_CONVERTER_C = \
 			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
-LUA_CONVERTER_C_OBJS := $(LUA_CONVERTER_C:.c=.o)
+LUA_CONVERTER_OBJS := $(LUA_CONVERTER_C:.c=.o)
 
 PLAIN_CONVERTER_C = \
 			 lexer.c \
@@ -30,7 +32,7 @@ PLAIN_CONVERTER_C = \
 			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
-PLAIN_CONVERTER_C_OBJS := $(PLAIN_CONVERTER_C:.c=.o)
+PLAIN_CONVERTER_OBJS := $(PLAIN_CONVERTER_C:.c=.o)
 
 RARCHDB_TOOL_C = \
 			rmsgpack.c \
@@ -66,35 +68,32 @@ RMSGPACK_C = \
 RMSGPACK_OBJS := $(RMSGPACK_C:.c=.o)
 
 LUA_FLAGS     = `pkg-config lua --libs`
-TESTLIB_FLAGS = ${CFLAGS} ${LUA_FLAGS} -shared -fpic
+TESTLIB_FLAGS = $(CFLAGS) $(LUA_FLAGS) -shared -fpic
 
 .PHONY: all clean check
 
-all: rmsgpack_test libretrodb_tool plain_converter lua_converter
+all: $(TARGETS)
 
 %.o: %.c
-	${CC} $(INCFLAGS) $< -c ${CFLAGS} -o $@
+	$(CC) $(INCFLAGS) $< -c $(CFLAGS) -o $@
 
-plain_converter: ${PLAIN_CONVERTER_C_OBJS}
-	${CC} $(INCFLAGS) ${PLAIN_CONVERTER_C_OBJS} -o $@
+plain_converter: $(PLAIN_CONVERTER_OBJS)
+	$(CC) $(INCFLAGS) $(PLAIN_CONVERTER_OBJS) -o $@
 
-lua_converter: ${LUA_CONVERTER_C_OBJS}
-	${CC} $(INCFLAGS) ${LUA_CONVERTER_C_OBJS} ${LUA_FLAGS} -o $@
+lua_converter: $(LUA_CONVERTER_OBJS)
+	$(CC) $(INCFLAGS) $(LUA_CONVERTER_OBJS) $(LUA_FLAGS) -o $@
 
-libretrodb_tool: ${RARCHDB_TOOL_OBJS}
-	${CC} $(INCFLAGS) ${RARCHDB_TOOL_OBJS} -o $@
+libretrodb_tool: $(RARCHDB_TOOL_OBJS)
+	$(CC) $(INCFLAGS) $(RARCHDB_TOOL_OBJS) -o $@
 
 rmsgpack_test: $(RMSGPACK_OBJS)
-	${CC} $(INCFLAGS) ${RMSGPACK_OBJS} -g -o $@
+	$(CC) $(INCFLAGS) $(RMSGPACK_OBJS) -g -o $@
 
-testlib.so: ${TESTLIB_OBJS}
-	${CC} ${INCFLAGS} ${TESTLIB_FLAGS} ${TESTLIB_OBJS} -o $@
+testlib.so: $(TESTLIB_OBJS)
+	$(CC) $(INCFLAGS) $(TESTLIB_FLAGS) $(TESTLIB_OBJS) -o $@
 
 check: testlib.so tests.lua
 	lua ./tests.lua
 
 clean:
-	rm -rf $(LIBRETRO_COMMON_DIR)/*.o
-	rm -rf $(LIBRETRO_COMMON_DIR)/compat/*.o
-	rm -rf $(LIBRETRO_COMMON_DIR)/file/*.o
-	rm -rf *.o rmsgpack_test plain_converter libretrodb_tool testlib.so
+	rm -rf $(TARGETS) $(PLAIN_CONVERTER_OBJS) $(LUA_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS)
