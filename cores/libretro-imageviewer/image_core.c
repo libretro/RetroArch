@@ -298,6 +298,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
    static int image_index = 0;
    uint16_t input         = 0;
    static uint16_t previnput;
+   uint16_t realinput     = 0;
    int i;
 
    IMAGE_CORE_PREFIX(input_poll_cb)();
@@ -312,9 +313,12 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
    {
      if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, i))
      {
-        input |= 1<<i;
+        realinput |= 1<<i;
      }
    }
+   input = realinput & ~previnput;
+   previnput = realinput;
+
    if (input & (1<<RETRO_DEVICE_ID_JOYPAD_UP))
    {
       if ((image_index + 5) < (file_list->size - 1))
