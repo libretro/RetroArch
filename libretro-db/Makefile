@@ -1,8 +1,14 @@
-CFLAGS               = -g -O2 -Wall
+DEBUG                = 0
 LIBRETRO_COMMON_DIR := ../libretro-common
 INCFLAGS             = -I. -I$(LIBRETRO_COMMON_DIR)/include
 
 TARGETS              = rmsgpack_test libretrodb_tool plain_converter lua_converter c_converter
+
+ifeq ($(DEBUG), 1)
+CFLAGS               = -g -O0 -Wall
+else
+CFLAGS               = -g -O2 -Wall -DNDEBUG
+endif
 
 LUA_CONVERTER_C = \
 			 rmsgpack.c \
