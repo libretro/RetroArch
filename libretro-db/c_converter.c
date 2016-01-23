@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include <regex.h>
+#include <assert.h>
 
 #include "libretrodb.h"
 
@@ -79,45 +79,6 @@ dat_converter_list_t* dat_converter_list_create(dat_converter_list_enum type)
    return list;
 }
 
-void dat_converter_list_append(dat_converter_list_t* dst, void* item)
-{
-   if (dst->count == dst->capacity)
-   {
-      dst->capacity <<= 1;
-      dst->values = realloc(dst->values, sizeof(*dst->values) * dst->capacity);
-   }
-   switch (dst->type)
-   {
-   case DAT_CONVERTER_TOKEN_LIST:
-   {
-      dat_converter_token_t* token = (dat_converter_token_t*) item;
-      dst->values[dst->count].token = *token;
-      break;
-   }
-   case DAT_CONVERTER_STRING_LIST:
-   {
-      char* str = (char*) item;
-      dst->values[dst->count].string = str;
-      break;
-   }
-   case DAT_CONVERTER_MAP_LIST:
-   {
-      dat_converter_map_t* map = (dat_converter_map_t*) item;
-      dst->values[dst->count].map = *map;
-      break;
-   }
-   case DAT_CONVERTER_LIST_LIST:
-   {
-      dat_converter_list_t* list = (dat_converter_list_t*) item;
-      dst->values[dst->count].list = list;
-      break;
-   }
-   default:
-      return;
-   }
-   dst->count++;
-}
-
 void dat_converter_list_free(dat_converter_list_t* list)
 {
    if(!list)
@@ -141,6 +102,59 @@ void dat_converter_list_free(dat_converter_list_t* list)
 
    free(list->values);
    free(list);
+}
+
+void dat_converter_list_append(dat_converter_list_t* dst, void* item)
+{
+   if (dst->count == dst->capacity)
+   {
+      dst->capacity <<= 1;
+      dst->values = realloc(dst->values, sizeof(*dst->values) * dst->capacity);
+   }
+   switch (dst->type)
+   {
+   case DAT_CONVERTER_TOKEN_LIST:
+   {
+      dat_converter_token_t* token = (dat_converter_token_t*) item;
+      dst->values[dst->count].token = *token;
+      break;
+   }
+   case DAT_CONVERTER_STRING_LIST:
+   {
+      char* str = (char*) item;
+      dst->values[dst->count].string = str;
+      break;
+   }
+   case DAT_CONVERTER_MAP_LIST:
+   {
+      int i;
+      dat_converter_map_t* map = (dat_converter_map_t*) item;
+      for(i = 0; i < dst->count; i++)
+      {
+         if(map->key && *map->key && !strcmp(dst->values[i].map.key, map->key))
+            break;
+      }
+      if(i == dst->count)
+         dst->values[dst->count].map = *map;
+      else
+      {
+         if(dst->values[i].map.type == DAT_CONVERTER_LIST_MAP)
+            dat_converter_list_free(dst->values[i].map.value.list);
+         dst->values[i].map = *map;
+         return;
+      }
+      break;
+   }
+   case DAT_CONVERTER_LIST_LIST:
+   {
+      dat_converter_list_t* list = (dat_converter_list_t*) item;
+      dst->values[dst->count].list = list;
+      break;
+   }
+   default:
+      return;
+   }
+   dst->count++;
 }
 
 void dat_converter_token_list_dump(dat_converter_list_t* list)
@@ -231,7 +245,6 @@ dat_converter_list_t* dat_converter_lexer(char* src, const char* dat_path)
 
 dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
 {
-   bool state_is_key = true;
    dat_converter_list_t* parsed_table = dat_converter_list_create(DAT_CONVERTER_MAP_LIST);
    char* key = NULL;
 
@@ -240,7 +253,7 @@ dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
    while (current->token.label)
    {
 
-      if (state_is_key)
+      if (!key)
       {
          if (!strcmp(current->token.label, ")"))
          {
@@ -259,7 +272,6 @@ dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
          else
          {
             key = current->token.label;
-            state_is_key = false;
             current++;
          }
       }
@@ -292,7 +304,7 @@ dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
             dat_converter_list_append(parsed_table, &map);
             current++;
          }
-         state_is_key = true;
+         key = NULL;
       }
    }
 
@@ -449,10 +461,6 @@ static int value_provider(dat_converter_list_item_t** current_item, struct rmsgp
       }
       else if ((pair->type == DAT_CONVERTER_LIST_MAP) && (!strcmp(pair->key, "rom")))
       {
-
-         if (i != (list->count - 1))
-            continue;
-
          if (pair->value.list->type != DAT_CONVERTER_MAP_LIST)
             dat_converter_exit(1);
 
@@ -487,8 +495,6 @@ static int value_provider(dat_converter_list_item_t** current_item, struct rmsgp
                else
                {
                   current->value.type = RDT_BINARY;
-                  current->value.val.binary.len = strlen(rom_pair->value.string);
-                  current->value.val.binary.buff = strdup(rom_pair->value.string);
 
                   if (!strcmp(rom_pair->key, "serial"))
                   {
