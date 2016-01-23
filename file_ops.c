@@ -512,19 +512,14 @@ int read_compressed_file(const char * path, void **buf,
       }
    }
 
-   /* We assure that there is something after the '#' symbol. */
+   /* We assure that there is something after the '#' symbol.
+    *
+    * This error condition happens for example, when
+    * path = /path/to/file.7z, or
+    * path = /path/to/file.7z#
+    */
    if (str_list->size <= 1)
-   {
-      /*
-       * This error condition happens for example, when
-       * path = /path/to/file.7z, or
-       * path = /path/to/file.7z#
-       */
-      RARCH_ERR("Could not extract string and substring from "
-            ": %s.\n", path);
-      *length = 0;
-      return 0;
-   }
+      goto error;
 
 #if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
    file_ext        = path_get_extension(str_list->elems[0].data);
@@ -549,6 +544,13 @@ int read_compressed_file(const char * path, void **buf,
    string_list_free(str_list);
 #endif
    return ret;
+
+error:
+   RARCH_ERR("Could not extract string and substring from "
+         ": %s.\n", path);
+   string_list_free(str_list);
+   *length = 0;
+   return 0;
 }
 #endif
 
