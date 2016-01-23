@@ -32,7 +32,7 @@ typedef enum
 
 typedef struct
 {
-   char* label;
+   const char* label;
    int line_no;
    int column;
    const char* fname;
@@ -44,11 +44,11 @@ typedef union dat_converter_list_item_t dat_converter_list_item_t;
 
 struct dat_converter_map_t
 {
-   char* key;
+   const char* key;
    dat_converter_map_enum type;
    union
    {
-      char* string;
+      const char* string;
       dat_converter_list_t* list;
    } value;
 };
@@ -63,7 +63,7 @@ struct dat_converter_list_t
 
 union dat_converter_list_item_t
 {
-   char* string;
+   const char* string;
    dat_converter_map_t map;
    dat_converter_token_t token;
    dat_converter_list_t* list;
@@ -74,14 +74,14 @@ dat_converter_list_t* dat_converter_list_create(dat_converter_list_enum type)
    dat_converter_list_t* list = malloc(sizeof(*list));
    list->type = type;
    list->count = 0;
-   list->capacity = (1 << 8);
+   list->capacity = (1 << 2);
    list->values = (dat_converter_list_item_t*)malloc(sizeof(*list->values) * list->capacity);
    return list;
 }
 
 void dat_converter_list_free(dat_converter_list_t* list)
 {
-   if(!list)
+   if (!list)
       return;
    switch (list->type)
    {
@@ -129,16 +129,21 @@ void dat_converter_list_append(dat_converter_list_t* dst, void* item)
    {
       int i;
       dat_converter_map_t* map = (dat_converter_map_t*) item;
-      for(i = 0; i < dst->count; i++)
+      if(!map->key)
       {
-         if(map->key && *map->key && !strcmp(dst->values[i].map.key, map->key))
+         dst->values[dst->count].map = *map;
+         break;
+      }
+      for (i = 0; i < dst->count; i++)
+      {
+         if (map->key && dst->values[i].map.key && !strcmp(dst->values[i].map.key, map->key))
             break;
       }
-      if(i == dst->count)
+      if (i == dst->count)
          dst->values[dst->count].map = *map;
       else
       {
-         if(dst->values[i].map.type == DAT_CONVERTER_LIST_MAP)
+         if (dst->values[i].map.type == DAT_CONVERTER_LIST_MAP)
             dat_converter_list_free(dst->values[i].map.value.list);
          dst->values[i].map = *map;
          return;
@@ -246,7 +251,7 @@ dat_converter_list_t* dat_converter_lexer(char* src, const char* dat_path)
 dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
 {
    dat_converter_list_t* parsed_table = dat_converter_list_create(DAT_CONVERTER_MAP_LIST);
-   char* key = NULL;
+   const char* key = NULL;
 
    dat_converter_list_item_t* current = *start_token;
 
@@ -292,7 +297,6 @@ dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
                    current->token.fname,
                    current->token.line_no,
                    current->token.column);
-            //            fflush(stdout);
             dat_converter_exit(1);
          }
          else
@@ -319,21 +323,74 @@ dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
    return NULL;
 }
 
-dat_converter_list_t* dat_parser(dat_converter_list_t* lexer_list)
+const char* dat_converter_get_match_key(dat_converter_list_t* list, const char* match_key)
 {
-   bool state_is_key = true;
+   int i;
+   const char* res;
+   char* key;
+   char* dot;
+
+   if (list->type != DAT_CONVERTER_MAP_LIST)
+      return NULL;
+
+   key = strdup(match_key);
+   dot = strchr(key, '.');
+
+   if (dot)
+   {
+      *dot = '\0';
+      for (i = 0; i < list->count; i++)
+         if (!strcmp(list->values[i].map.key, key))
+         {
+            if (list->values[i].map.type == DAT_CONVERTER_LIST_MAP)
+            {
+               res = dat_converter_get_match_key(list->values[i].map.value.list, dot + 1);
+               free(key);
+               return res;
+            }
+            break;
+         }
+   }
+   else
+   {
+      for (i = 0; i < list->count; i++)
+         if (!strcmp(list->values[i].map.key, key))
+         {
+            if ((list->values[i].map.type == DAT_CONVERTER_STRING_MAP))
+            {
+               free(key);
+               return list->values[i].map.value.string;
+            }
+            break;
+         }
+   }
+
+   return NULL;
+}
+
+dat_converter_list_t* dat_parser(dat_converter_list_t* target, dat_converter_list_t* lexer_list, const char* match_key)
+{
+   const char* key = NULL;
    bool skip = true;
-   dat_converter_list_t* parsed_list = dat_converter_list_create(DAT_CONVERTER_LIST_LIST);
    dat_converter_list_item_t* current = lexer_list->values;
-   dat_converter_list_append(parsed_list, NULL);
+
+   if (!target)
+   {
+      dat_converter_map_t map;
+      target = dat_converter_list_create(DAT_CONVERTER_MAP_LIST);
+      map.key = NULL;
+      map.type = DAT_CONVERTER_LIST_MAP;
+      map.value.list = NULL;
+      dat_converter_list_append(target, &map);
+   }
 
    while (current->token.label)
    {
-      if (state_is_key)
+      if (!key)
       {
          if (!strcmp(current->token.label, "game"))
             skip = false;
-         state_is_key = false;
+         key = current->token.label;
          current++;
       }
       else
@@ -341,14 +398,28 @@ dat_converter_list_t* dat_parser(dat_converter_list_t* lexer_list)
          if (!strcmp(current->token.label, "("))
          {
             current++;
-            dat_converter_list_t* parsed_table = dat_parser_table(&current);
+            dat_converter_map_t map;
+            map.type = DAT_CONVERTER_LIST_MAP;
+            map.key = NULL;
+            map.value.list = dat_parser_table(&current);
             if (!skip)
             {
-               dat_converter_list_append(parsed_list, parsed_table);
+               if (match_key)
+               {
+                  map.key = dat_converter_get_match_key(map.value.list, match_key);
+                  if(!map.key)
+                  {
+                     printf("missing match key '%s' in one of the entries\n", match_key);
+                     dat_converter_exit(1);
+                  }
+               }
+               dat_converter_list_append(target, &map);
                skip = true;
             }
             else
-               dat_converter_list_free(parsed_table);
+               dat_converter_list_free(map.value.list);
+
+            key = NULL;
          }
          else
          {
@@ -359,17 +430,15 @@ dat_converter_list_t* dat_parser(dat_converter_list_t* lexer_list)
                    current->token.label);
             dat_converter_exit(1);
          }
-         state_is_key = true;
       }
    }
-
-   return parsed_list;
+   return target;
 }
 
 
 static int value_provider(dat_converter_list_item_t** current_item, struct rmsgpack_dom_value* out)
 {
-   int i,j;
+   int i, j;
 #if 1
    const char* ordered_keys[] =
    {
@@ -408,15 +477,18 @@ static int value_provider(dat_converter_list_item_t** current_item, struct rmsgp
 #endif
    out->type = RDT_MAP;
    out->val.map.len = 0;
-   out->val.map.items = calloc(sizeof(ordered_keys)/sizeof(char*), sizeof(struct rmsgpack_dom_pair));
+   out->val.map.items = calloc(sizeof(ordered_keys) / sizeof(char*), sizeof(struct rmsgpack_dom_pair));
 
    (*current_item)--;
-   dat_converter_list_t* list = (*current_item)->list;
-   if(!list)
+
+   assert((*current_item)->map.type == DAT_CONVERTER_LIST_MAP);
+
+   dat_converter_list_t* list = (*current_item)->map.value.list;
+
+   if (!list)
       return 1;
 
-   if (list->type != DAT_CONVERTER_MAP_LIST)
-      dat_converter_exit(1);
+   assert(list->type == DAT_CONVERTER_MAP_LIST);
 
    struct rmsgpack_dom_pair* current = out->val.map.items;
 
@@ -461,14 +533,12 @@ static int value_provider(dat_converter_list_item_t** current_item, struct rmsgp
       }
       else if ((pair->type == DAT_CONVERTER_LIST_MAP) && (!strcmp(pair->key, "rom")))
       {
-         if (pair->value.list->type != DAT_CONVERTER_MAP_LIST)
-            dat_converter_exit(1);
+         assert(pair->value.list->type == DAT_CONVERTER_MAP_LIST);
 
          for (j = 0; j < pair->value.list->count; j++)
          {
             dat_converter_map_t* rom_pair = &pair->value.list->values[j].map;
-            if (rom_pair->type != DAT_CONVERTER_STRING_MAP)
-               dat_converter_exit(1);
+            assert(rom_pair->type == DAT_CONVERTER_STRING_MAP);
 
             if (!strcmp(rom_pair->key, "name"))
             {
@@ -505,7 +575,7 @@ static int value_provider(dat_converter_list_item_t** current_item, struct rmsgp
                   {
                      current->value.val.binary.len = strlen(rom_pair->value.string) / 2;
                      current->value.val.binary.buff = malloc(current->value.val.binary.len);
-                     char* hex_char = rom_pair->value.string;
+                     const char* hex_char = rom_pair->value.string;
                      char* out_buff = current->value.val.binary.buff;
                      while (*hex_char && *(hex_char + 1))
                      {
@@ -538,7 +608,7 @@ static int value_provider(dat_converter_list_item_t** current_item, struct rmsgp
 
       }
       else
-         exit(1);
+         assert(0);
    }
 
    out->val.map.len = current - out->val.map.items;
@@ -546,12 +616,12 @@ static int value_provider(dat_converter_list_item_t** current_item, struct rmsgp
    /* re-order to match lua_converter */
    struct rmsgpack_dom_pair* ordered_pairs = calloc(out->val.map.len, sizeof(struct rmsgpack_dom_pair));
    struct rmsgpack_dom_pair* ordered_pairs_outp = ordered_pairs;
-   for(i = 0; i < (sizeof(ordered_keys)/sizeof(char*)); i++)
+   for (i = 0; i < (sizeof(ordered_keys) / sizeof(char*)); i++)
    {
       int j;
-      for(j = 0; j < out->val.map.len; j++)
+      for (j = 0; j < out->val.map.len; j++)
       {
-         if(!strcmp(ordered_keys[i], out->val.map.items[j].key.val.string.buff))
+         if (!strcmp(ordered_keys[i], out->val.map.items[j].key.val.string.buff))
          {
             *ordered_pairs_outp++ = out->val.map.items[j];
             break;
@@ -569,7 +639,7 @@ static int value_provider(dat_converter_list_item_t** current_item, struct rmsgp
 int main(int argc, char** argv)
 {
    const char* rdb_path;
-   const char* match_key;
+   const char* match_key = NULL;
    RFILE* rdb_file;
    int i;
 
@@ -595,7 +665,7 @@ int main(int argc, char** argv)
    int dat_count = argc;
    char** dat_buffers = (char**)malloc(dat_count * sizeof(*dat_buffers));
    dat_converter_list_t** dat_lexer_lists = (dat_converter_list_t**)malloc(dat_count * sizeof(*dat_lexer_lists));
-   dat_converter_list_t** dat_parser_lists = (dat_converter_list_t**)malloc(dat_count * sizeof(*dat_parser_lists));
+   dat_converter_list_t* dat_parser_list = NULL;
 
    for (i = 0; i < dat_count; i++)
    {
@@ -618,7 +688,7 @@ int main(int argc, char** argv)
 
       printf("Parsing dat file '%s'...\n", argv[i]);
       dat_lexer_lists[i] = dat_converter_lexer(dat_buffers[i], argv[i]);
-      dat_parser_lists[i] = dat_parser(dat_lexer_lists[i]);
+      dat_parser_list = dat_parser(dat_parser_list, dat_lexer_lists[i], match_key);
       //      dat_converter_token_list_dump(*dat_lexer_dst);
 
    }
@@ -635,7 +705,7 @@ int main(int argc, char** argv)
       dat_converter_exit(1);
    }
 
-   dat_converter_list_item_t* current_item = &dat_parser_lists[0]->values[dat_parser_lists[0]->count];
+   dat_converter_list_item_t* current_item = &dat_parser_list->values[dat_parser_list->count];
    libretrodb_create(rdb_file, (libretrodb_value_provider)&value_provider, &current_item);
 
    retro_fclose(rdb_file);
@@ -643,13 +713,13 @@ int main(int argc, char** argv)
    for (i = 0; i < dat_count; i++)
    {
       dat_converter_list_free(dat_lexer_lists[i]);
-      dat_converter_list_free(dat_parser_lists[i]);
       free(dat_buffers[i]);
    }
 
    free(dat_lexer_lists);
-   free(dat_parser_lists);
    free(dat_buffers);
+   dat_converter_list_free(dat_parser_list);
+
 
    return 0;
 }
