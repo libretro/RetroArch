@@ -494,9 +494,9 @@ error:
 int read_compressed_file(const char * path, void **buf,
       const char* optional_filename, ssize_t *length)
 {
+   int ret                            = 0;
    const char* file_ext               = NULL;
-   char *archive_found                = NULL;
-   char archive_path[PATH_MAX_LENGTH] = {0};
+   struct string_list *str_list       = string_split(path, "#");
 
    if (optional_filename)
    {
@@ -512,50 +512,43 @@ int read_compressed_file(const char * path, void **buf,
       }
    }
 
-   /* We split carchive path and relative path: */
-   strlcpy(archive_path, path, sizeof(archive_path));
-
-   archive_found = (char*)strchr(archive_path,'#');
-   retro_assert(archive_found != NULL);
-
    /* We assure that there is something after the '#' symbol. */
-   if (strlen(archive_found) <= 1)
+   if (str_list->size <= 1)
    {
       /*
        * This error condition happens for example, when
        * path = /path/to/file.7z, or
        * path = /path/to/file.7z#
        */
-      RARCH_ERR("Could not extract image path and carchive path from "
-            "path: %s.\n", path);
+      RARCH_ERR("Could not extract string and substring from "
+            ": %s.\n", path);
       *length = 0;
       return 0;
    }
 
-   /* We split the string in two, by putting a \0, where the hash was: */
-   *archive_found  = '\0';
-   archive_found  += 1;
 #if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
-   file_ext        = path_get_extension(archive_path);
+   file_ext        = path_get_extension(str_list->elems[0].data);
 #endif
 
 #ifdef HAVE_7ZIP
    if (string_is_equal_noncase(file_ext, "7z"))
    {
-      *length = read_7zip_file(archive_path,archive_found,buf,optional_filename);
+      *length = read_7zip_file(str_list->elems[0].data, str_list->elems[1].data, buf, optional_filename);
       if (*length != -1)
-         return 1;
+         ret = 1;
    }
 #endif
 #ifdef HAVE_ZLIB
    if (string_is_equal_noncase(file_ext, "zip"))
    {
-      *length = read_zip_file(archive_path,archive_found,buf,optional_filename);
+      *length = read_zip_file(str_list->elems[0].data, str_list->elems[1].data, buf, optional_filename);
       if (*length != -1)
-         return 1;
+         ret = 1;
    }
+
+   string_list_free(str_list);
 #endif
-   return 0;
+   return ret;
 }
 #endif
 
