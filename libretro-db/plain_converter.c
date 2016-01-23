@@ -62,6 +62,7 @@ static const char* printchar( pr_state_t* parser )
   return k;
 }
 
+#if 0
 static void printkey( const pr_key_t* key )
 {
   int i;
@@ -87,6 +88,7 @@ static void printstr( const lx_string_t* str )
     printf( "%c", str->str[ i ] );
   }
 }
+#endif
 
 static const char* printtoken( pr_state_t* parser )
 {
@@ -332,6 +334,7 @@ static int provider( void* ctx, struct rmsgpack_dom_value* out )
         case TYPE_HEXA:
           out->val.map.items[ index ].value.type = RDT_BINARY;
           out->val.map.items[ index ].value.val.binary.len = game->pairs[ i ].value.len / 2;
+          /* FIXME/TODO - warning: pointer targets in assignment differ in signedness */
           out->val.map.items[ index ].value.val.binary.buff = dup_hexa( &game->pairs[ i ].value );
           index++;
           break;
