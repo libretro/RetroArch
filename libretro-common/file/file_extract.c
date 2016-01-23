@@ -648,35 +648,9 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
          fill_pathname_resolve_relative(new_path, data->zip_path,
                path_basename(name), sizeof(new_path));
 
-      switch (cmode)
-      {
-         case ZLIB_MODE_UNCOMPRESSED:
-            data->found_content = retro_write_file(new_path, cdata, size);
-            return false;
-         case ZLIB_MODE_DEFLATE:
-            {
-               int ret = 0;
-               zlib_file_handle_t handle = {0};
-               if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
-                  return 0;
-
-               do{
-                  ret = zlib_inflate_data_to_file_iterate(handle.stream);
-               }while(ret == 0);
-
-               if (zlib_inflate_data_to_file(&handle, ret, new_path, valid_exts,
-                        cdata, csize, size, checksum))
-               {
-                  strlcpy(data->zip_path, new_path, data->zip_path_size);
-                  data->found_content = true;
-                  return 0;
-               }
-               return 0;
-            }
-
-         default:
-            return 0;
-      }
+      data->found_content = zlib_perform_mode(new_path, valid_exts, cdata, cmode, csize, size,
+            0, NULL);
+      return 0;
    }
 
    return 1;
