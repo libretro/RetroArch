@@ -48,7 +48,7 @@ static void task_queue_put(task_queue_t *queue, rarch_task_t *task)
 {
    task->next = NULL;
 
-   if (queue->front == NULL)
+   if (!queue->front)
       queue->front = task;
    else
       queue->back->next = task;
