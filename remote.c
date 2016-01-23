@@ -122,8 +122,10 @@ error:
 rarch_remote_t *rarch_remote_new(uint16_t port)
 {
    unsigned user;
-   rarch_remote_t *handle = (rarch_remote_t*)calloc(1, sizeof(*handle));
+#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
    settings_t   *settings = config_get_ptr();
+#endif
+   rarch_remote_t *handle = (rarch_remote_t*)calloc(1, sizeof(*handle));
 
    if (!handle)
       return NULL;
@@ -152,9 +154,9 @@ error:
 void rarch_remote_free(rarch_remote_t *handle)
 {
    unsigned user;
+#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
    settings_t *settings = config_get_ptr();
 
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
    for(user = 0; user < settings->input.max_users; user ++)
       socket_close(handle->net_fd[user]);
 #endif
@@ -214,7 +216,7 @@ bool input_remote_key_pressed(int key, unsigned port)
 void rarch_remote_poll(rarch_remote_t *handle)
 {
    unsigned user;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings            = config_get_ptr();
    input_remote_state_t *ol_state  = input_remote_get_state_ptr();
    
    for(user = 0; user < settings->input.max_users; user++)
