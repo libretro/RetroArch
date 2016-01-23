@@ -198,6 +198,8 @@ static bool imageviewer_load(const char *path, uint32_t *buf, int image_index)
    int comp;
    struct retro_system_av_info info;
    uint32_t *end          = NULL;
+   if (image_buffer) free(image_buffer);
+   
    image_buffer           = (uint32_t*)stbi_load(
          path,
          &image_width,
