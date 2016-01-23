@@ -32,12 +32,21 @@ typedef struct
    char *source_file;
    char *subdir;
    char *target_dir;
+   char *target_file;
    char *valid_ext;
 
    char *callback_error;
 
    zlib_transfer_t zlib;
 } decompress_state_t;
+
+static int file_decompressed_target_file(const char *name, const char *valid_exts,
+   const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+   uint32_t crc32, void *userdata)
+{
+   /* TODO/FIXME */
+   return 0;
+}
 
 static int file_decompressed_subdir(const char *name, const char *valid_exts,
    const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
@@ -161,6 +170,24 @@ static void rarch_task_decompress_handler(rarch_task_t *task)
    }
 }
 
+static void rarch_task_decompress_handler_target_file(rarch_task_t *task)
+{
+   bool returnerr;
+   decompress_state_t *dec = (decompress_state_t*)task->state;
+   int ret = zlib_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
+         dec->valid_ext, file_decompressed_target_file, dec);
+
+   task->progress = zlib_parse_file_progress(&dec->zlib);
+
+   if (task->cancelled || ret != 0)
+   {
+      task->error = dec->callback_error;
+      zlib_parse_file_iterate_stop(&dec->zlib);
+
+      rarch_task_decompress_handler_finished(task, dec);
+   }
+}
+
 static void rarch_task_decompress_handler_subdir(rarch_task_t *task)
 {
    bool returnerr;
@@ -189,8 +216,14 @@ static bool rarch_task_decompress_finder(rarch_task_t *task, void *user_data)
    return string_is_equal(dec->source_file, (const char*)user_data);
 }
 
-bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
-      const char *subdir, const char *valid_ext, rarch_task_callback_t cb, void *user_data)
+bool rarch_task_push_decompress(
+      const char *source_file,
+      const char *target_dir,
+      const char *target_file,
+      const char *subdir,
+      const char *valid_ext,
+      rarch_task_callback_t cb,
+      void *user_data)
 {
    char tmp[PATH_MAX_LENGTH];
    decompress_state_t *s      = NULL;
@@ -246,8 +279,13 @@ bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
 
    if (!string_is_empty(subdir))
    {
-      s->subdir   = strdup(subdir);
-      t->handler  = rarch_task_decompress_handler_subdir;
+      s->subdir        = strdup(subdir);
+      t->handler       = rarch_task_decompress_handler_subdir;
+   }
+   else if (!string_is_empty(target_file))
+   {
+      s->target_file   = strdup(subdir);
+      t->handler       = rarch_task_decompress_handler_target_file;
    }
 
    t->callback    = cb;

@@ -622,7 +622,7 @@ void *menu_init(const void *data)
       menu->push_help_screen           = true;
 #ifdef HAVE_ZLIB
       rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path,
-         settings->bundle_assets_dst_path_subdir, NULL, bundle_decompressed, NULL);
+         settings->bundle_assets_dst_path_subdir, NULL, NULL, bundle_decompressed, NULL);
 #endif
    }
 

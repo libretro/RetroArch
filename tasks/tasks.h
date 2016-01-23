@@ -158,8 +158,12 @@ typedef struct {
     char *source_file;
 } decompress_task_data_t;
 
-bool rarch_task_push_decompress(const char *source_file, const char *target_dir,
-      const char *subdir, const char *valid_ext,
+bool rarch_task_push_decompress(
+      const char *source_file,
+      const char *target_dir,
+      const char *target_file,
+      const char *subdir,
+      const char *valid_ext,
       rarch_task_callback_t cb, void *user_data);
 
 #ifdef __cplusplus
