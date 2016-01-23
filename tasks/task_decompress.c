@@ -124,16 +124,16 @@ static void rarch_task_decompress_handler_finished(rarch_task_t *task,
    if (!task->error && task->cancelled)
       task->error = strdup("Task canceled");
 
-   if (!task->error)
+   if (task->error)
+      free(dec->source_file);
+   else
    {
       decompress_task_data_t *data = 
          (decompress_task_data_t*)calloc(1, sizeof(*data));
 
       data->source_file = dec->source_file;
-      task->task_data = data;
+      task->task_data   = data;
    }
-   else
-      free(dec->source_file);
 
    if (dec->subdir)
       free(dec->subdir);
