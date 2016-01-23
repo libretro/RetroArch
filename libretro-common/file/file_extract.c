@@ -753,6 +753,7 @@ static int zlib_get_file_list_cb(const char *path, const char *valid_exts,
    }
 
    return string_list_append(list, path, attr);
+   
 error:
    string_list_free(ext_list);
    return 0;
@@ -769,17 +770,18 @@ struct string_list *zlib_get_file_list(const char *path, const char *valid_exts)
    struct string_list *list = string_list_new();
 
    if (!list)
-      return NULL;
+      goto error;
 
    if (!zlib_parse_file(path, valid_exts,
             zlib_get_file_list_cb, list))
-   {
-      /* Parsing ZIP failed. */
-      string_list_free(list);
-      return NULL;
-   }
+      goto error;
 
    return list;
+
+error:
+   if (list)
+      string_list_free(list);
+   return NULL;
 }
 
 bool zlib_perform_mode(const char *path, const char *valid_exts,
