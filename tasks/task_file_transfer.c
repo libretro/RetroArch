@@ -455,7 +455,10 @@ static void rarch_task_file_load_handler(rarch_task_t *task)
       if (nbio->is_finished && nbio->image.is_finished && !task->cancelled)
       {
          task->task_data = malloc(sizeof(nbio->image.ti));
-         memcpy(task->task_data, &nbio->image.ti, sizeof(nbio->image.ti));
+
+         if (task->task_data)
+            memcpy(task->task_data, &nbio->image.ti, sizeof(nbio->image.ti));
+
          goto task_finished;
       }
 
