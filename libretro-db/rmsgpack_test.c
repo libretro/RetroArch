@@ -99,7 +99,7 @@ static int stub_read_bin(
         void * data
 ){
 	stub_state_pre_print(data);
-	printf("b'%s'", s);
+	printf("b'%s'", (char*)s);
 	stub_state_post_print(data);
 	free(s);
 	return 0;

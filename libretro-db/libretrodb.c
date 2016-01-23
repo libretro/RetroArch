@@ -130,6 +130,7 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
 
    retro_fseek(fd, sizeof(libretrodb_header_t), SEEK_CUR);
 
+   item.type = RDT_NULL;
    while ((rv = value_provider(ctx, &item)) == 0)
    {
       if ((rv = validate_document(&item)) < 0)
@@ -138,6 +139,8 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
       if ((rv = rmsgpack_dom_write(fd, &item)) < 0)
          goto clean;
 
+      rmsgpack_dom_value_free(&item);
+      item.type = RDT_NULL;
       item_count++;
    }
 

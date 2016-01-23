@@ -12,6 +12,15 @@
 #include "libretrodb.h"
 #include "lua_common.h"
 
+struct libretrodb
+{
+	RFILE *fd;
+	uint64_t root;
+	uint64_t count;
+	uint64_t first_index_offset;
+   char path[1024];
+};
+
 static void push_rmsgpack_value(lua_State *L, struct rmsgpack_dom_value *value)
 {
    uint32_t i;
@@ -19,38 +28,38 @@ static void push_rmsgpack_value(lua_State *L, struct rmsgpack_dom_value *value)
    switch(value->type)
    {
       case RDT_INT:
-         lua_pushnumber(L, value->int_);
+         lua_pushnumber(L, value->val.int_);
          break;
       case RDT_UINT:
-         lua_pushnumber(L, value->uint_);
+         lua_pushnumber(L, value->val.uint_);
          break;
       case RDT_BINARY:
-         lua_pushlstring(L, value->binary.buff, value->binary.len);
+         lua_pushlstring(L, value->val.binary.buff, value->val.binary.len);
          break;
       case RDT_BOOL:
-         lua_pushboolean(L, value->bool_);
+         lua_pushboolean(L, value->val.bool_);
          break;
       case RDT_NULL:
          lua_pushnil(L);
          break;
       case RDT_STRING:
-         lua_pushlstring(L, value->string.buff, value->binary.len);
+         lua_pushlstring(L, value->val.string.buff, value->val.binary.len);
          break;
       case RDT_MAP:
-         lua_createtable(L, 0, value->map.len);
-         for (i = 0; i < value->map.len; i++)
+         lua_createtable(L, 0, value->val.map.len);
+         for (i = 0; i < value->val.map.len; i++)
          {
-            push_rmsgpack_value(L, &value->map.items[i].key);
-            push_rmsgpack_value(L, &value->map.items[i].value);
+            push_rmsgpack_value(L, &value->val.map.items[i].key);
+            push_rmsgpack_value(L, &value->val.map.items[i].value);
             lua_settable(L, -3);
          }
          break;
       case RDT_ARRAY:
-         lua_createtable(L, value->array.len, 0);
-         for (i = 0; i < value->array.len; i++)
+         lua_createtable(L, value->val.array.len, 0);
+         for (i = 0; i < value->val.array.len; i++)
          {
             lua_pushnumber(L, i + 1);
-            push_rmsgpack_value(L, &value->array.items[i]);
+            push_rmsgpack_value(L, &value->val.array.items[i]);
             lua_settable(L, -3);
          }
          break;
@@ -130,7 +139,7 @@ static int db_new(lua_State *L)
    return 2;
 }
 
-static libretrodb *checkdb(lua_State *L)
+static libretrodb_t *checkdb(lua_State *L)
 {
 	void *ud = luaL_checkudata(L, 1, "RarchDB.DB");
 	luaL_argcheck(L, ud != NULL, 1, "`RarchDB.DB' expected");
@@ -200,7 +209,7 @@ static int db_query(lua_State *L)
    return 2;
 }
 
-static libretrodb_cursor *checkcursor(lua_State *L)
+static libretrodb_cursor_t *checkcursor(lua_State *L)
 {
 	void *ud = luaL_checkudata(L, 1, "RarchDB.Cursor");
 	luaL_argcheck(L, ud != NULL, 1, "`RarchDB.Cursor' expected");

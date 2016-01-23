@@ -94,6 +94,62 @@ set_nil:
       }
       lua_pop(L, 1);
    }
+#if 1
+   /* re-order to avoid random output each run */
+   struct rmsgpack_dom_pair* ordered_pairs = calloc(out->val.map.len, sizeof(struct rmsgpack_dom_pair));
+   struct rmsgpack_dom_pair* ordered_pairs_outp = ordered_pairs;
+   const char* ordered_keys[] =
+   {
+      "name",
+      "description",
+      "rom_name",
+      "size",
+      "users",
+      "releasemonth",
+      "releaseyear",
+      "rumble",
+      "analog",
+
+      "famitsu_rating",
+      "edge_rating",
+      "edge_issue",
+      "edge_review",
+
+      "enhancement_hw",
+      "barcode",
+      "esrb_rating",
+      "elspa_rating",
+      "pegi_rating",
+      "cero_rating",
+      "franchise",
+
+      "developer",
+      "publisher",
+      "origin",
+
+      "crc",
+      "md5",
+      "sha1",
+      "serial"
+   };
+   for(i = 0; i < (sizeof(ordered_keys)/sizeof(char*)); i++)
+   {
+      int j;
+      for(j = 0; j < out->val.map.len; j++)
+      {
+         if(!strcmp(ordered_keys[i], out->val.map.items[j].key.val.string.buff))
+         {
+            *ordered_pairs_outp++ = out->val.map.items[j];
+            break;
+         }
+      }
+   }
+
+   free(out->val.map.items);
+   out->val.map.items = ordered_pairs;
+   out->val.map.len = ordered_pairs_outp - ordered_pairs;
+#endif
+
    rv = 0;
    return rv;
 }
