@@ -296,6 +296,9 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
    bool prev_image        = false;
    static int frames      = 0;
    static int image_index = 0;
+   uint16_t input         = 0;
+   static uint16_t previnput;
+   int i;
 
    IMAGE_CORE_PREFIX(input_poll_cb)();
 
@@ -305,8 +308,14 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
          next_image = true;
    }
 
-   if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-            RETRO_DEVICE_ID_JOYPAD_UP))
+   for (i=0;i<16;i++)
+   {
+     if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0, i))
+     {
+        input |= 1<<i;
+     }
+   }
+   if (input & (1<<RETRO_DEVICE_ID_JOYPAD_UP))
    {
       if ((image_index + 5) < (file_list->size - 1))
          forward_image   = true;
@@ -314,8 +323,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
          last_image      = true;
    }
 
-   if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-            RETRO_DEVICE_ID_JOYPAD_DOWN))
+   if (input & (1<<RETRO_DEVICE_ID_JOYPAD_DOWN))
    {
       if ((image_index - 5) > 0)
          backwards_image = true;
@@ -323,21 +331,18 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
          first_image     = true;
    }
 
-   if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-            RETRO_DEVICE_ID_JOYPAD_LEFT))
+   if (input & (1<<RETRO_DEVICE_ID_JOYPAD_LEFT))
    {
       if (image_index > 0)
          prev_image = true;
    }
-   if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-            RETRO_DEVICE_ID_JOYPAD_RIGHT))
+   if (input & (1<<RETRO_DEVICE_ID_JOYPAD_RIGHT))
    {
       if (image_index < (file_list->size - 1))
          next_image = true;
    }
 
-   if (IMAGE_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
-            RETRO_DEVICE_ID_JOYPAD_Y))
+   if (input & (1<<RETRO_DEVICE_ID_JOYPAD_Y))
    {
       slideshow_enable = !slideshow_enable;
    }
