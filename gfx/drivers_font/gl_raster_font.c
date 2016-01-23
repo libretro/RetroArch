@@ -118,7 +118,8 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
             }
             break;
          default:
-            RARCH_ERR("Unsupported number of components: %u\n", (unsigned)ncomponents);
+            RARCH_ERR("Unsupported number of components: %u\n",
+                  (unsigned)ncomponents);
             free(tmp);
             return false;
       }
@@ -162,7 +163,8 @@ static void *gl_raster_font_init_font(void *data,
    font->tex_width  = next_pow2(atlas->width);;
    font->tex_height = next_pow2(atlas->height);;
 
-   if (!gl_raster_font_upload_atlas(font, atlas, font->tex_width, font->tex_height))
+   if (!gl_raster_font_upload_atlas(font, atlas,
+            font->tex_width, font->tex_height))
       goto error;
 
    glBindTexture(GL_TEXTURE_2D, font->gl->texture[font->gl->tex_index]);
@@ -189,7 +191,8 @@ static void gl_raster_font_free_font(void *data)
    free(font);
 }
 
-static int gl_get_message_width(void *data, const char *msg, unsigned msg_len_full, float scale)
+static int gl_get_message_width(void *data, const char *msg,
+      unsigned msg_len_full, float scale)
 {
    gl_raster_t *font = (gl_raster_t*)data;
       
@@ -333,11 +336,13 @@ static void gl_raster_font_render_message(
    /* If the font height is not supported just draw as usual */
    if (!font->font_driver->get_line_height)
    {
-      gl_raster_font_render_line(font, msg, strlen(msg), scale, color, pos_x, pos_y, text_align);
+      gl_raster_font_render_line(font, msg, strlen(msg),
+            scale, color, pos_x, pos_y, text_align);
       return;
    }
 
-   line_height = scale * 1/(float)font->font_driver->get_line_height(font->font_data);
+   line_height = scale * 1/ (float)
+      font->font_driver->get_line_height(font->font_data);
 
    for (;;)
    {
@@ -347,14 +352,17 @@ static void gl_raster_font_render_message(
       if (delim)
       {
          unsigned msg_len = delim - msg;
-         gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x, pos_y - (float)lines*line_height, text_align);
+         gl_raster_font_render_line(font,
+               msg, msg_len, scale, color, pos_x,
+               pos_y - (float)lines*line_height, text_align);
          msg += msg_len + 1;
          lines++;
       }
       else
       {
          unsigned msg_len = strlen(msg);
-         gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x, pos_y - (float)lines*line_height, text_align);
+         gl_raster_font_render_line(font, msg, msg_len, scale, color, pos_x,
+               pos_y - (float)lines*line_height, text_align);
          break;
       }
    }
