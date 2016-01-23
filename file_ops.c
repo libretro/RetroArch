@@ -581,10 +581,10 @@ int read_file(const char *path, void **buf, ssize_t *length)
 struct string_list *compressed_file_list_new(const char *path,
       const char* ext)
 {
-#ifdef HAVE_COMPRESSION
-#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB)
+#if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
    const char* file_ext = path_get_extension(path);
 #endif
+
 #ifdef HAVE_7ZIP
    if (string_is_equal_noncase(file_ext, "7z"))
       return compressed_7zip_file_list_new(path,ext);
@@ -592,7 +592,6 @@ struct string_list *compressed_file_list_new(const char *path,
 #ifdef HAVE_ZLIB
    if (string_is_equal_noncase(file_ext, "zip"))
       return zlib_get_file_list(path, ext);
-#endif
 #endif
    return NULL;
 }
