@@ -1,8 +1,8 @@
-CFLAGS               = -g -O2
+CFLAGS               = -g -O2 -Wall
 LIBRETRO_COMMON_DIR := ../libretro-common
 INCFLAGS             = -I. -I$(LIBRETRO_COMMON_DIR)/include
 
-TARGETS              = rmsgpack_test libretrodb_tool plain_converter lua_converter
+TARGETS              = rmsgpack_test libretrodb_tool plain_converter lua_converter c_converter
 
 LUA_CONVERTER_C = \
 			 rmsgpack.c \
@@ -33,6 +33,20 @@ PLAIN_CONVERTER_C = \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 PLAIN_CONVERTER_OBJS := $(PLAIN_CONVERTER_C:.c=.o)
+
+C_CONVERTER_C = \
+			 rmsgpack.c \
+		    rmsgpack_dom.c \
+		    libretrodb.c \
+		    bintree.c \
+		    query.c \
+			 c_converter.c \
+			 $(LIBRETRO_COMMON_DIR)/hash/rhash.c \
+			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
+			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
+			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
+
+C_CONVERTER_OBJS := $(C_CONVERTER_C:.c=.o)
 
 RARCHDB_TOOL_C = \
 			rmsgpack.c \
@@ -83,6 +97,9 @@ plain_converter: $(PLAIN_CONVERTER_OBJS)
 lua_converter: $(LUA_CONVERTER_OBJS)
 	$(CC) $(INCFLAGS) $(LUA_CONVERTER_OBJS) $(LUA_FLAGS) -o $@
 
+c_converter: $(C_CONVERTER_OBJS)
+	$(CC) $(INCFLAGS) $(C_CONVERTER_OBJS) $(CFLAGS) -o $@
+
 libretrodb_tool: $(RARCHDB_TOOL_OBJS)
 	$(CC) $(INCFLAGS) $(RARCHDB_TOOL_OBJS) -o $@
 
@@ -96,4 +113,4 @@ check: testlib.so tests.lua
 	lua ./tests.lua
 
 clean:
-	rm -rf $(TARGETS) $(PLAIN_CONVERTER_OBJS) $(LUA_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS)
+	rm -rf $(TARGETS) $(PLAIN_CONVERTER_OBJS) $(LUA_CONVERTER_OBJS) $(C_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS)
