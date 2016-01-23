@@ -162,26 +162,6 @@ void dat_converter_list_append(dat_converter_list_t* dst, void* item)
    dst->count++;
 }
 
-void dat_converter_token_list_dump(dat_converter_list_t* list)
-{
-   int i;
-
-   switch (list->type)
-   {
-   case DAT_CONVERTER_TOKEN_LIST:
-      for (i = 0; i < list->count; i++)
-         printf("\x1B[31m(%6i)@%s:%5i:%-5i\x1B[0m\"%s\"\n", i,
-                list->values[i].token.fname,
-                list->values[i].token.line_no,
-                list->values[i].token.column,
-                list->values[i].token.label);
-      break;
-   default:
-      return;
-   }
-
-}
-
 dat_converter_list_t* dat_converter_lexer(char* src, const char* dat_path)
 {
 
@@ -240,7 +220,6 @@ dat_converter_list_t* dat_converter_lexer(char* src, const char* dat_path)
       src++;
       token.column++;
    }
-   *src = '\0';
 
    token.label = NULL;
    dat_converter_list_append(token_list, &token);
@@ -251,14 +230,13 @@ dat_converter_list_t* dat_converter_lexer(char* src, const char* dat_path)
 dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
 {
    dat_converter_list_t* parsed_table = dat_converter_list_create(DAT_CONVERTER_MAP_LIST);
-   const char* key = NULL;
-
+   dat_converter_map_t map = {0};
    dat_converter_list_item_t* current = *start_token;
 
    while (current->token.label)
    {
 
-      if (!key)
+      if (!map.key)
       {
          if (!strcmp(current->token.label, ")"))
          {
@@ -276,7 +254,7 @@ dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
          }
          else
          {
-            key = current->token.label;
+            map.key = current->token.label;
             current++;
          }
       }
@@ -285,9 +263,7 @@ dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
          if (!strcmp(current->token.label, "("))
          {
             current++;
-            dat_converter_map_t map;
             map.type = DAT_CONVERTER_LIST_MAP;
-            map.key = key;
             map.value.list = dat_parser_table(&current);
             dat_converter_list_append(parsed_table, &map);
          }
@@ -301,14 +277,12 @@ dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
          }
          else
          {
-            dat_converter_map_t map;
             map.type = DAT_CONVERTER_STRING_MAP;
-            map.key = key;
             map.value.string = current->token.label;
             dat_converter_list_append(parsed_table, &map);
             current++;
          }
-         key = NULL;
+         map.key = NULL;
       }
    }
 
@@ -368,11 +342,14 @@ const char* dat_converter_get_match_key(dat_converter_list_t* list, const char* 
    return NULL;
 }
 
-dat_converter_list_t* dat_parser(dat_converter_list_t* target, dat_converter_list_t* lexer_list, const char* match_key)
+dat_converter_list_t* dat_converter_parser(dat_converter_list_t* target, dat_converter_list_t* lexer_list, const char* match_key)
 {
-   const char* key = NULL;
    bool skip = true;
    dat_converter_list_item_t* current = lexer_list->values;
+   dat_converter_map_t map;
+
+   map.key = NULL;
+   map.type = DAT_CONVERTER_LIST_MAP;
 
    if (!target)
    {
@@ -386,11 +363,11 @@ dat_converter_list_t* dat_parser(dat_converter_list_t* target, dat_converter_lis
 
    while (current->token.label)
    {
-      if (!key)
+      if (!map.key)
       {
          if (!strcmp(current->token.label, "game"))
             skip = false;
-         key = current->token.label;
+         map.key = current->token.label;
          current++;
       }
       else
@@ -398,12 +375,9 @@ dat_converter_list_t* dat_parser(dat_converter_list_t* target, dat_converter_lis
          if (!strcmp(current->token.label, "("))
          {
             current++;
-            dat_converter_map_t map;
-            map.type = DAT_CONVERTER_LIST_MAP;
-            map.key = NULL;
             map.value.list = dat_parser_table(&current);
             if (!skip)
-            {
+            {               
                if (match_key)
                {
                   map.key = dat_converter_get_match_key(map.value.list, match_key);
@@ -413,13 +387,16 @@ dat_converter_list_t* dat_parser(dat_converter_list_t* target, dat_converter_lis
                      dat_converter_exit(1);
                   }
                }
+               else
+                  map.key = NULL;
+
                dat_converter_list_append(target, &map);
                skip = true;
             }
             else
                dat_converter_list_free(map.value.list);
 
-            key = NULL;
+            map.key = NULL;
          }
          else
          {
@@ -641,7 +618,6 @@ int main(int argc, char** argv)
    const char* rdb_path;
    const char* match_key = NULL;
    RFILE* rdb_file;
-   int i;
 
    if (argc < 2)
    {
@@ -664,33 +640,37 @@ int main(int argc, char** argv)
 
    int dat_count = argc;
    char** dat_buffers = (char**)malloc(dat_count * sizeof(*dat_buffers));
-   dat_converter_list_t** dat_lexer_lists = (dat_converter_list_t**)malloc(dat_count * sizeof(*dat_lexer_lists));
+   char** dat_buffer = dat_buffers;
    dat_converter_list_t* dat_parser_list = NULL;
 
-   for (i = 0; i < dat_count; i++)
+   while(argc)
    {
+      dat_converter_list_t* dat_lexer_list;
       size_t dat_file_size;
-      FILE* dat_file = fopen(argv[i], "r");
+      FILE* dat_file = fopen(*argv, "r");
 
       if (!dat_file)
       {
-         printf("could not open dat file '%s': %s\n", argv[i], strerror(errno));
+         printf("could not open dat file '%s': %s\n", *argv, strerror(errno));
          dat_converter_exit(1);
       }
 
       fseek(dat_file, 0, SEEK_END);
       dat_file_size = ftell(dat_file);
       fseek(dat_file, 0, SEEK_SET);
-      dat_buffers[i] = (char*)malloc(dat_file_size + 1);
-      fread(dat_buffers[i], 1, dat_file_size, dat_file);
+      *dat_buffer = (char*)malloc(dat_file_size + 1);
+      fread(*dat_buffer, 1, dat_file_size, dat_file);
       fclose(dat_file);
-      dat_buffers[i][dat_file_size] = '\0';
+      (*dat_buffer)[dat_file_size] = '\0';
 
-      printf("Parsing dat file '%s'...\n", argv[i]);
-      dat_lexer_lists[i] = dat_converter_lexer(dat_buffers[i], argv[i]);
-      dat_parser_list = dat_parser(dat_parser_list, dat_lexer_lists[i], match_key);
-      //      dat_converter_token_list_dump(*dat_lexer_dst);
+      printf("Parsing dat file '%s'...\n", *argv);
+      dat_lexer_list = dat_converter_lexer(*dat_buffer, *argv);
+      dat_parser_list = dat_converter_parser(dat_parser_list, dat_lexer_list, match_key);
+      dat_converter_list_free(dat_lexer_list);
 
+      argc--;
+      argv++;
+      dat_buffer++;
    }
 
    rdb_file = retro_fopen(rdb_path, RFILE_MODE_WRITE, -1);
@@ -710,16 +690,11 @@ int main(int argc, char** argv)
 
    retro_fclose(rdb_file);
 
-   for (i = 0; i < dat_count; i++)
-   {
-      dat_converter_list_free(dat_lexer_lists[i]);
-      free(dat_buffers[i]);
-   }
-
-   free(dat_lexer_lists);
-   free(dat_buffers);
    dat_converter_list_free(dat_parser_list);
 
+   while(dat_count--)
+      free(dat_buffers[dat_count]);
+   free(dat_buffers);
 
    return 0;
 }
