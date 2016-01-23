@@ -26,6 +26,10 @@
 #include "playlist.h"
 #include "verbosity.h"
 
+#ifndef PLAYLIST_ENTRIES
+#define PLAYLIST_ENTRIES 6
+#endif
+
 struct content_playlist_entry
 {
    char *path;
@@ -341,10 +345,6 @@ const char *content_playlist_entry_get_label(const content_playlist_entry_t *ent
       return NULL;
    return entry->label;
 }
-
-#ifndef PLAYLIST_ENTRIES
-#define PLAYLIST_ENTRIES 6
-#endif
 
 static bool content_playlist_read_file(
       content_playlist_t *playlist, const char *path)
