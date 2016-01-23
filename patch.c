@@ -521,9 +521,7 @@ static bool try_bps_patch(uint8_t **buf, ssize_t *size)
    global_t *global = global_get_ptr();
    bool allow_bps   = !global->patch.ups_pref && !global->patch.ips_pref;
 
-   if (!allow_bps)
-      return false;
-   if (string_is_empty(global->name.bps))
+   if (!allow_bps || string_is_empty(global->name.bps))
       return false;
 
    return apply_patch_content(buf, size, "BPS", global->name.bps,
@@ -535,9 +533,7 @@ static bool try_ups_patch(uint8_t **buf, ssize_t *size)
    global_t *global = global_get_ptr();
    bool allow_ups   = !global->patch.bps_pref && !global->patch.ips_pref;
 
-   if (!allow_ups)
-      return false;
-   if (string_is_empty(global->name.ups))
+   if (!allow_ups || string_is_empty(global->name.ups))
       return false;
 
    return apply_patch_content(buf, size, "UPS", global->name.ups,
@@ -549,9 +545,7 @@ static bool try_ips_patch(uint8_t **buf, ssize_t *size)
    global_t *global = global_get_ptr();
    bool allow_ips   = !global->patch.ups_pref && !global->patch.bps_pref;
 
-   if (!allow_ips)
-      return false;
-   if (string_is_empty(global->name.ips))
+   if (!allow_ips || string_is_empty(global->name.ips))
       return false;
 
    return apply_patch_content(buf, size, "IPS", global->name.ips,
