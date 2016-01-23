@@ -209,6 +209,9 @@ static bool imageviewer_load(const char *path, uint32_t *buf, int image_index)
 
    /* RGBA > XRGB8888 */
    buf = &image_buffer[0];
+
+   if (!buf)
+      return false;
    end = buf + (image_width*image_height*sizeof(uint32_t))/4;
 
    while(buf < end)
@@ -383,7 +386,12 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
    }
 
    if (load_image)
-      imageviewer_load(file_list->elems[image_index].data, buf, image_index);
+   {
+      if (!imageviewer_load(file_list->elems[image_index].data, buf, image_index))
+      {
+         IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+      }
+   }
 
 #ifdef DUPE_TEST
    if (!image_uploaded)
