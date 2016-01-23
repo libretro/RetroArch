@@ -58,7 +58,7 @@ static bool rarch_task_overlay_load_texture_image(struct overlay *overlay,
 {
    if (!image)
       return false;
-   if (!texture_image_load(image, path)) /* possibly unsafe on XBOX */
+   if (!texture_image_load(image, path))
       return false;
 
    overlay->load_images[overlay->load_images_size++] = *image;
@@ -682,9 +682,9 @@ task_finished:
 static bool rarch_task_push_overlay_load(const char *overlay_path,
       rarch_task_callback_t cb, void *user_data)
 {
-   rarch_task_t *t;
+   rarch_task_t *t          = NULL;
    overlay_loader_t *loader = (overlay_loader_t*)calloc(1, sizeof(*loader));
-   config_file_t *conf = config_file_new(overlay_path);
+   config_file_t *conf      = config_file_new(overlay_path);
 
    if (!conf || !loader)
       goto error;
@@ -695,20 +695,24 @@ static bool rarch_task_push_overlay_load(const char *overlay_path,
       goto error;
    }
 
-   loader->overlays = (struct overlay*)calloc(loader->size, sizeof(*loader->overlays));
+   loader->overlays         = (struct overlay*)calloc(loader->size, sizeof(*loader->overlays));
    if (!loader->overlays)
       goto error;
 
-   loader->overlay_path = strdup(overlay_path);
-   loader->conf   = conf;
-   loader->state  = OVERLAY_STATUS_DEFERRED_LOAD;
-   loader->pos_increment = (loader->size / 4) ? (loader->size / 4) : 4;
+   loader->overlay_path     = strdup(overlay_path);
+   loader->conf             = conf;
+   loader->state            = OVERLAY_STATUS_DEFERRED_LOAD;
+   loader->pos_increment    = (loader->size / 4) ? (loader->size / 4) : 4;
 
-   t = (rarch_task_t*)calloc(1, sizeof(*t));
-   t->handler = rarch_task_overlay_handler;
-   t->state   = loader;
-   t->callback = cb;
-   t->user_data = user_data;
+   t                        = (rarch_task_t*)calloc(1, sizeof(*t));
+
+   if (!t)
+      goto error;
+
+   t->handler               = rarch_task_overlay_handler;
+   t->state                 = loader;
+   t->callback              = cb;
+   t->user_data             = user_data;
 
    rarch_task_push(t);
 
@@ -719,6 +723,8 @@ error:
 
    if (loader)
    {
+      if (loader->overlay_path)
+         free(loader->overlay_path);
       if (loader->overlays)
          free(loader->overlays);
       free(loader);
