@@ -227,7 +227,7 @@ static bool glsl_core;
 static unsigned glsl_major;
 static unsigned glsl_minor;
 
-static GLint get_uniform(glsl_shader_data_t *glsl,
+static GLint gl_glsl_get_uniform(glsl_shader_data_t *glsl,
       GLuint prog, const char *base)
 {
    unsigned i;
@@ -250,7 +250,7 @@ static GLint get_uniform(glsl_shader_data_t *glsl,
    return -1;
 }
 
-static GLint get_attrib(glsl_shader_data_t *glsl,
+static GLint gl_glsl_get_attrib(glsl_shader_data_t *glsl,
       GLuint prog, const char *base)
 {
    unsigned i;
@@ -273,7 +273,7 @@ static GLint get_attrib(glsl_shader_data_t *glsl,
    return -1;
 }
 
-static void print_shader_log(GLuint obj)
+static void gl_glsl_print_shader_log(GLuint obj)
 {
    char *info_log = NULL;
    GLint max_len, info_len = 0;
@@ -295,7 +295,7 @@ static void print_shader_log(GLuint obj)
    free(info_log);
 }
 
-static void print_linker_log(GLuint obj)
+static void gl_glsl_print_linker_log(GLuint obj)
 {
    char *info_log = NULL;
    GLint max_len, info_len = 0;
@@ -317,7 +317,7 @@ static void print_linker_log(GLuint obj)
    free(info_log);
 }
 
-static bool compile_shader(glsl_shader_data_t *glsl,
+static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
       GLuint shader,
       const char *define, const char *program)
 {
@@ -359,19 +359,19 @@ static bool compile_shader(glsl_shader_data_t *glsl,
    glCompileShader(shader);
 
    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-   print_shader_log(shader);
+   gl_glsl_print_shader_log(shader);
 
    return status == GL_TRUE;
 }
 
-static bool link_program(GLuint prog)
+static bool gl_glsl_link_program(GLuint prog)
 {
    GLint status;
    
    glLinkProgram(prog);
 
    glGetProgramiv(prog, GL_LINK_STATUS, &status);
-   print_linker_log(prog);
+   gl_glsl_print_linker_log(prog);
 
    if (status != GL_TRUE)
       return false;
@@ -380,7 +380,7 @@ static bool link_program(GLuint prog)
    return true;
 }
 
-static GLuint compile_program(glsl_shader_data_t *glsl,
+static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
       const char *vertex,
       const char *fragment, unsigned i)
 {
@@ -392,7 +392,7 @@ static GLuint compile_program(glsl_shader_data_t *glsl,
    {
       RARCH_LOG("Found GLSL vertex shader.\n");
       vert = glCreateShader(GL_VERTEX_SHADER);
-      if (!compile_shader(
+      if (!gl_glsl_compile_shader(
                glsl,
                vert, "#define VERTEX\n#define PARAMETER_UNIFORM\n", vertex))
       {
@@ -407,7 +407,7 @@ static GLuint compile_program(glsl_shader_data_t *glsl,
    {
       RARCH_LOG("Found GLSL fragment shader.\n");
       frag = glCreateShader(GL_FRAGMENT_SHADER);
-      if (!compile_shader(glsl, frag,
+      if (!gl_glsl_compile_shader(glsl, frag,
                "#define FRAGMENT\n#define PARAMETER_UNIFORM\n", fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", i);
@@ -420,7 +420,7 @@ static GLuint compile_program(glsl_shader_data_t *glsl,
    if (vertex || fragment)
    {
       RARCH_LOG("Linking GLSL program.\n");
-      if (!link_program(prog))
+      if (!gl_glsl_link_program(prog))
       {
          RARCH_ERR("Failed to link program #%u.\n", i);
          return 0;
@@ -435,14 +435,14 @@ static GLuint compile_program(glsl_shader_data_t *glsl,
          glDeleteShader(frag);
 
       glUseProgram(prog);
-      glUniform1i(get_uniform(glsl, prog, "Texture"), 0);
+      glUniform1i(gl_glsl_get_uniform(glsl, prog, "Texture"), 0);
       glUseProgram(0);
    }
 
    return prog;
 }
 
-static bool load_source_path(struct video_shader_pass *pass,
+static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
    ssize_t len;
@@ -454,7 +454,7 @@ static bool load_source_path(struct video_shader_pass *pass,
    return pass->source.string.fragment && pass->source.string.vertex;
 }
 
-static bool compile_programs(glsl_shader_data_t *glsl, GLuint *gl_prog)
+static bool gl_glsl_compile_programs(glsl_shader_data_t *glsl, GLuint *gl_prog)
 {
    unsigned i;
 
@@ -469,7 +469,7 @@ static bool compile_programs(glsl_shader_data_t *glsl, GLuint *gl_prog)
        * load the file here, and pretend
        * we were really using XML all along.
        */
-      if (*pass->source.path && !load_source_path(pass, pass->source.path))
+      if (*pass->source.path && !gl_glsl_load_source_path(pass, pass->source.path))
       {
          RARCH_ERR("Failed to load GLSL shader: %s.\n", pass->source.path);
          return false;
@@ -479,7 +479,7 @@ static bool compile_programs(glsl_shader_data_t *glsl, GLuint *gl_prog)
       vertex   = pass->source.string.vertex;
       fragment = pass->source.string.fragment;
 
-      gl_prog[i] = compile_program(glsl, vertex, fragment, i);
+      gl_prog[i] = gl_glsl_compile_program(glsl, vertex, fragment, i);
 
       if (!gl_prog[i])
       {
@@ -554,7 +554,7 @@ static void gl_glsl_set_attribs(glsl_shader_data_t *glsl,
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-static void clear_uniforms_frame(struct shader_uniforms_frame *frame)
+static void gl_glsl_clear_uniforms_frame(struct shader_uniforms_frame *frame)
 {
    frame->texture      = -1;
    frame->texture_size = -1;
@@ -562,7 +562,7 @@ static void clear_uniforms_frame(struct shader_uniforms_frame *frame)
    frame->tex_coord    = -1;
 }
 
-static void find_uniforms_frame(glsl_shader_data_t *glsl,
+static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
       GLuint prog,
       struct shader_uniforms_frame *frame, const char *base)
 {
@@ -577,16 +577,16 @@ static void find_uniforms_frame(glsl_shader_data_t *glsl,
    snprintf(tex_coord, sizeof(tex_coord), "%s%s", base, "TexCoord");
 
    if (frame->texture < 0)
-      frame->texture = get_uniform(glsl, prog, texture);
+      frame->texture = gl_glsl_get_uniform(glsl, prog, texture);
    if (frame->texture_size < 0)
-      frame->texture_size = get_uniform(glsl, prog, texture_size);
+      frame->texture_size = gl_glsl_get_uniform(glsl, prog, texture_size);
    if (frame->input_size < 0)
-      frame->input_size = get_uniform(glsl, prog, input_size);
+      frame->input_size = gl_glsl_get_uniform(glsl, prog, input_size);
    if (frame->tex_coord < 0)
-      frame->tex_coord = get_attrib(glsl, prog, tex_coord);
+      frame->tex_coord = gl_glsl_get_attrib(glsl, prog, tex_coord);
 }
 
-static void find_uniforms(glsl_shader_data_t *glsl,
+static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
       unsigned pass, GLuint prog,
       struct shader_uniforms *uni)
 {
@@ -595,52 +595,52 @@ static void find_uniforms(glsl_shader_data_t *glsl,
 
    glUseProgram(prog);
 
-   uni->mvp           = get_uniform(glsl, prog, "MVPMatrix");
-   uni->tex_coord     = get_attrib(glsl, prog, "TexCoord");
-   uni->vertex_coord  = get_attrib(glsl, prog, "VertexCoord");
-   uni->color         = get_attrib(glsl, prog, "Color");
-   uni->lut_tex_coord = get_attrib(glsl, prog, "LUTTexCoord");
+   uni->mvp             = gl_glsl_get_uniform(glsl, prog, "MVPMatrix");
+   uni->tex_coord       = gl_glsl_get_attrib(glsl, prog, "TexCoord");
+   uni->vertex_coord    = gl_glsl_get_attrib(glsl, prog, "VertexCoord");
+   uni->color           = gl_glsl_get_attrib(glsl, prog, "Color");
+   uni->lut_tex_coord   = gl_glsl_get_attrib(glsl, prog, "LUTTexCoord");
 
-   uni->input_size    = get_uniform(glsl, prog, "InputSize");
-   uni->output_size   = get_uniform(glsl, prog, "OutputSize");
-   uni->texture_size  = get_uniform(glsl, prog, "TextureSize");
+   uni->input_size      = gl_glsl_get_uniform(glsl, prog, "InputSize");
+   uni->output_size     = gl_glsl_get_uniform(glsl, prog, "OutputSize");
+   uni->texture_size    = gl_glsl_get_uniform(glsl, prog, "TextureSize");
 
-   uni->frame_count     = get_uniform(glsl, prog, "FrameCount");
-   uni->frame_direction = get_uniform(glsl, prog, "FrameDirection");
+   uni->frame_count     = gl_glsl_get_uniform(glsl, prog, "FrameCount");
+   uni->frame_direction = gl_glsl_get_uniform(glsl, prog, "FrameDirection");
 
    for (i = 0; i < glsl->shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl->shader->lut[i].id);
 
-   clear_uniforms_frame(&uni->orig);
-   find_uniforms_frame(glsl, prog, &uni->orig, "Orig");
-   clear_uniforms_frame(&uni->feedback);
-   find_uniforms_frame(glsl, prog, &uni->feedback, "Feedback");
+   gl_glsl_clear_uniforms_frame(&uni->orig);
+   gl_glsl_find_uniforms_frame(glsl, prog, &uni->orig, "Orig");
+   gl_glsl_clear_uniforms_frame(&uni->feedback);
+   gl_glsl_find_uniforms_frame(glsl, prog, &uni->feedback, "Feedback");
 
    if (pass > 1)
    {
       snprintf(frame_base, sizeof(frame_base), "PassPrev%u", pass);
-      find_uniforms_frame(glsl, prog, &uni->orig, frame_base);
+      gl_glsl_find_uniforms_frame(glsl, prog, &uni->orig, frame_base);
    }
 
    for (i = 0; i + 1 < pass; i++)
    {
       snprintf(frame_base, sizeof(frame_base), "Pass%u", i + 1);
-      clear_uniforms_frame(&uni->pass[i]);
-      find_uniforms_frame(glsl, prog, &uni->pass[i], frame_base);
+      gl_glsl_clear_uniforms_frame(&uni->pass[i]);
+      gl_glsl_find_uniforms_frame(glsl, prog, &uni->pass[i], frame_base);
       snprintf(frame_base, sizeof(frame_base), "PassPrev%u", pass - (i + 1));
-      find_uniforms_frame(glsl, prog, &uni->pass[i], frame_base);
+      gl_glsl_find_uniforms_frame(glsl, prog, &uni->pass[i], frame_base);
 
       if (*glsl->shader->pass[i].alias)
-         find_uniforms_frame(glsl, prog, &uni->pass[i], glsl->shader->pass[i].alias);
+         gl_glsl_find_uniforms_frame(glsl, prog, &uni->pass[i], glsl->shader->pass[i].alias);
    }
 
-   clear_uniforms_frame(&uni->prev[0]);
-   find_uniforms_frame(glsl, prog, &uni->prev[0], "Prev");
+   gl_glsl_clear_uniforms_frame(&uni->prev[0]);
+   gl_glsl_find_uniforms_frame(glsl, prog, &uni->prev[0], "Prev");
    for (i = 1; i < PREV_TEXTURES; i++)
    {
       snprintf(frame_base, sizeof(frame_base), "Prev%u", i);
-      clear_uniforms_frame(&uni->prev[i]);
-      find_uniforms_frame(glsl, prog, &uni->prev[i], frame_base);
+      gl_glsl_clear_uniforms_frame(&uni->prev[i]);
+      gl_glsl_find_uniforms_frame(glsl, prog, &uni->prev[i], frame_base);
    }
 
    glUseProgram(0);
@@ -853,13 +853,13 @@ static void *gl_glsl_init(void *data, const char *path)
       }
    }
 
-   if (!(glsl->gl_program[0] = compile_program(glsl, stock_vertex, stock_fragment, 0)))
+   if (!(glsl->gl_program[0] = gl_glsl_compile_program(glsl, stock_vertex, stock_fragment, 0)))
    {
       RARCH_ERR("GLSL stock programs failed to compile.\n");
       goto error;
    }
 
-   if (!compile_programs(glsl, &glsl->gl_program[1]))
+   if (!gl_glsl_compile_programs(glsl, &glsl->gl_program[1]))
       goto error;
 
    if (!gl_load_luts(glsl->shader, glsl->gl_teximage))
@@ -869,7 +869,7 @@ static void *gl_glsl_init(void *data, const char *path)
    }
 
    for (i = 0; i <= glsl->shader->passes; i++)
-      find_uniforms(glsl, i, glsl->gl_program[i], &glsl->gl_uniforms[i]);
+      gl_glsl_find_uniforms(glsl, i, glsl->gl_program[i], &glsl->gl_uniforms[i]);
 
 #ifdef GLSL_DEBUG
    if (!gl_check_error())
@@ -900,14 +900,14 @@ static void *gl_glsl_init(void *data, const char *path)
 
    if (glsl->shader->modern)
    {
-      glsl->gl_program[GL_SHADER_STOCK_BLEND] = compile_program(
+      glsl->gl_program[GL_SHADER_STOCK_BLEND] = gl_glsl_compile_program(
             glsl,
             glsl_core ? 
             stock_vertex_core_blend : stock_vertex_modern_blend,
             glsl_core ? 
             stock_fragment_core_blend : stock_fragment_modern_blend,
             GL_SHADER_STOCK_BLEND);
-      find_uniforms(glsl, 0, glsl->gl_program[GL_SHADER_STOCK_BLEND],
+      gl_glsl_find_uniforms(glsl, 0, glsl->gl_program[GL_SHADER_STOCK_BLEND],
             &glsl->gl_uniforms[GL_SHADER_STOCK_BLEND]);
    }
    else
