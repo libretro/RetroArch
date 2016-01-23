@@ -451,8 +451,8 @@ bool menu_load_content(enum rarch_core_type type)
 
    if (!(main_load_content(0, NULL, NULL, menu_environment_get)))
    {
-      char name[PATH_MAX_LENGTH] = {0};
-      char msg[PATH_MAX_LENGTH]  = {0};
+      char name[PATH_MAX_LENGTH];
+      char msg[PATH_MAX_LENGTH];
 
       fill_pathname_base(name, fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
