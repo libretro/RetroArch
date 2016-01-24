@@ -328,22 +328,22 @@ static int file_archive_parse_file_iterate_step_internal(
    *csize         = read_le(state->directory + 20, 4);
    *size          = read_le(state->directory + 24, 4);
 
-   namelength    = read_le(state->directory + 28, 2);
-   extralength   = read_le(state->directory + 30, 2);
-   commentlength = read_le(state->directory + 32, 2);
+   namelength     = read_le(state->directory + 28, 2);
+   extralength    = read_le(state->directory + 30, 2);
+   commentlength  = read_le(state->directory + 32, 2);
 
    if (namelength >= PATH_MAX_LENGTH)
       return -1;
 
    memcpy(filename, state->directory + 46, namelength);
 
-   offset        = read_le(state->directory + 42, 4);
-   offsetNL      = read_le(state->data + offset + 26, 2);
-   offsetEL      = read_le(state->data + offset + 28, 2);
+   offset         = read_le(state->directory + 42, 4);
+   offsetNL       = read_le(state->data + offset + 26, 2);
+   offsetEL       = read_le(state->data + offset + 28, 2);
 
-   *cdata = state->data + offset + 30 + offsetNL + offsetEL;
+   *cdata         = state->data + offset + 30 + offsetNL + offsetEL;
 
-   *payback = 46 + namelength + extralength + commentlength;
+   *payback       = 46 + namelength + extralength + commentlength;
 
    return 1;
 }
