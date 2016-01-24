@@ -129,6 +129,64 @@ static bool zlib_stream_decompress_init(void *data)
    return true;
 }
 
+static bool zlib_stream_decompress_data_to_file_init(
+      zlib_file_handle_t *handle,
+      const uint8_t *cdata,  uint32_t csize, uint32_t size)
+{
+   z_stream *stream = NULL;
+
+   if (!handle)
+      return false;
+
+   if (!(handle->stream = (z_stream*)zlib_stream_new()))
+      goto error;
+   
+   if (inflateInit2(handle->stream, -MAX_WBITS) != Z_OK)
+      goto error;
+
+   handle->data = (uint8_t*)malloc(size);
+
+   if (!handle->data)
+      goto error;
+
+   stream            = (z_stream*)handle->stream;
+
+   if (!stream)
+      goto error;
+
+   zlib_stream_set(stream, csize, size,
+         (const uint8_t*)cdata, handle->data);
+
+   return true;
+
+error:
+   zlib_stream_free(handle->stream);
+   free(handle->stream);
+   if (handle->data)
+      free(handle->data);
+
+   return false;
+}
+
+static int zlib_stream_decompress_data_to_file_iterate(void *data)
+{
+   int zstatus;
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return -1;
+
+   zstatus = inflate(stream, Z_NO_FLUSH);
+
+   if (zstatus == Z_STREAM_END)
+      return 1;
+
+   if (zstatus != Z_OK && zstatus != Z_BUF_ERROR)
+      return -1;
+
+   return 0;
+}
+
 const struct zlib_file_backend zlib_backend = {
    zlib_stream_new,
    zlib_stream_free,
@@ -138,6 +196,8 @@ const struct zlib_file_backend zlib_backend = {
    zlib_stream_get_total_out,
    zlib_stream_decrement_total_out,
    zlib_stream_decompress_init,
+   zlib_stream_decompress_data_to_file_init,
+   zlib_stream_decompress_data_to_file_iterate,
    zlib_stream_compress_free,
    zlib_stream_compress_data_to_file,
    "zlib"

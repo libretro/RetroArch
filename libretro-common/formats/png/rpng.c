@@ -699,7 +699,7 @@ static int rpng_load_image_argb_process_inflate_init(rpng_t *rpng,
    if (!to_continue)
       goto end;
 
-   zstatus = file_archive_inflate_data_to_file_iterate(rpng->process.stream);
+   zstatus = rpng->process.stream_backend->stream_decompress_data_to_file_iterate(rpng->process.stream);
 
    switch (zstatus)
    {

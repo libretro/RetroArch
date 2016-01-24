@@ -395,11 +395,12 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
       {
          int ret = 0;
          zlib_file_handle_t handle = {0};
-         if (!file_archive_inflate_data_to_file_init(&handle, cdata, csize, size))
+         handle.backend = file_archive_get_default_file_backend();
+         if (!handle.backend->stream_decompress_data_to_file_init(&handle, cdata, csize, size))
             return false;
 
          do{
-            ret = file_archive_inflate_data_to_file_iterate(handle.stream);
+            ret = handle.backend->stream_decompress_data_to_file_iterate(handle.stream);
          }while(ret == 0);
 
          handle.real_checksum = file_archive_crc32_calculate(0, handle.data, size);

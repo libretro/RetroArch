@@ -412,68 +412,6 @@ void zlib_deflate_init(void *data, int level)
       deflateInit(stream, level);
 }
 
-bool file_archive_inflate_data_to_file_init(
-      zlib_file_handle_t *handle,
-      const uint8_t *cdata,  uint32_t csize, uint32_t size)
-{
-   z_stream *stream = NULL;
-
-   if (!handle)
-      return false;
-
-   if (!handle->backend)
-      handle->backend = file_archive_get_default_file_backend();
-
-   if (!(handle->stream = (z_stream*)handle->backend->stream_new()))
-      goto error;
-   
-   if (inflateInit2(handle->stream, -MAX_WBITS) != Z_OK)
-      goto error;
-
-   handle->data = (uint8_t*)malloc(size);
-
-   if (!handle->data)
-      goto error;
-
-   stream            = (z_stream*)handle->stream;
-
-   if (!stream)
-      goto error;
-
-   handle->backend->stream_set(stream, csize, size,
-         (const uint8_t*)cdata, handle->data);
-
-   return true;
-
-error:
-   if (handle->stream)
-      handle->backend->stream_free(handle->stream);
-   free(handle->stream);
-   if (handle->data)
-      free(handle->data);
-
-   return false;
-}
-
-int file_archive_inflate_data_to_file_iterate(void *data)
-{
-   int zstatus;
-   z_stream *stream = (z_stream*)data;
-
-   if (!stream)
-      return -1;
-
-   zstatus = inflate(stream, Z_NO_FLUSH);
-
-   if (zstatus == Z_STREAM_END)
-      return 1;
-
-   if (zstatus != Z_OK && zstatus != Z_BUF_ERROR)
-      return -1;
-
-   return 0;
-}
-
 uint32_t file_archive_crc32_calculate(
       uint32_t crc,
       const uint8_t *data,
@@ -750,12 +688,14 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
          {
             int ret = 0;
             zlib_file_handle_t handle = {0};
-            if (!file_archive_inflate_data_to_file_init(&handle,
+            handle.backend = file_archive_get_default_file_backend();
+
+            if (!handle.backend->stream_decompress_data_to_file_init(&handle,
                      cdata, csize, size))
                return false;
 
             do{
-               ret = file_archive_inflate_data_to_file_iterate(handle.stream);
+               ret = handle.backend->stream_decompress_data_to_file_iterate(handle.stream);
             }while(ret == 0);
 
             if (!file_archive_inflate_data_to_file(&handle,

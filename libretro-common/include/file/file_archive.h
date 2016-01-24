@@ -37,6 +37,14 @@ enum zlib_transfer_type
    ZLIB_TRANSFER_DEINIT_ERROR
 };
 
+typedef struct zlib_handle
+{
+   void     *stream;
+   uint8_t *data;
+   uint32_t real_checksum;
+   const struct zlib_file_backend *backend;
+} zlib_file_handle_t;
+
 struct zlib_file_backend
 {
    void *(*stream_new)(void);
@@ -48,6 +56,9 @@ struct zlib_file_backend
    uint64_t (*stream_get_total_out)(void*);
    void     (*stream_decrement_total_out)(void *, unsigned);
    bool     (*stream_decompress_init)(void *);
+   bool     (*stream_decompress_data_to_file_init)(
+         zlib_file_handle_t *, const uint8_t *,  uint32_t, uint32_t);
+   int      (*stream_decompress_data_to_file_iterate)(void *data);
    void     (*stream_compress_free)(void *);
    int      (*stream_compress_data_to_file)(void *);
    const char *ident;
@@ -64,13 +75,6 @@ typedef struct zlib_transfer
    const struct zlib_file_backend *backend;
 } zlib_transfer_t;
 
-typedef struct zlib_handle
-{
-   void     *stream;
-   uint8_t *data;
-   uint32_t real_checksum;
-   const struct zlib_file_backend *backend;
-} zlib_file_handle_t;
 
 /* Returns true when parsing should continue. False to stop. */
 typedef int (*file_archive_file_cb)(const char *name, const char *valid_exts,
@@ -132,12 +136,6 @@ bool file_archive_extract_first_content_file(char *zip_path, size_t zip_path_siz
  * Returns: string listing of files from archive on success, otherwise NULL.
  **/
 struct string_list *file_archive_get_file_list(const char *path, const char *valid_exts);
-
-bool file_archive_inflate_data_to_file_init(
-      zlib_file_handle_t *handle,
-      const uint8_t *cdata,  uint32_t csize, uint32_t size);
-
-int file_archive_inflate_data_to_file_iterate(void *data);
 
 /**
  * file_archive_inflate_data_to_file:
