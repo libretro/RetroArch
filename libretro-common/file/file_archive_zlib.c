@@ -187,6 +187,14 @@ static int zlib_stream_decompress_data_to_file_iterate(void *data)
    return 0;
 }
 
+static void zlib_stream_compress_init(void *data, int level)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (stream)
+      deflateInit(stream, level);
+}
+
 const struct zlib_file_backend zlib_backend = {
    zlib_stream_new,
    zlib_stream_free,
@@ -198,6 +206,7 @@ const struct zlib_file_backend zlib_backend = {
    zlib_stream_decompress_init,
    zlib_stream_decompress_data_to_file_init,
    zlib_stream_decompress_data_to_file_iterate,
+   zlib_stream_compress_init,
    zlib_stream_compress_free,
    zlib_stream_compress_data_to_file,
    "zlib"

@@ -404,14 +404,6 @@ static int file_archive_parse_file_init(zlib_transfer_t *state,
    return 0;
 }
 
-void zlib_deflate_init(void *data, int level)
-{
-   z_stream *stream = (z_stream*)data;
-
-   if (stream)
-      deflateInit(stream, level);
-}
-
 uint32_t file_archive_crc32_calculate(
       uint32_t crc,
       const uint8_t *data,

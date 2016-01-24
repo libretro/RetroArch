@@ -58,7 +58,8 @@ struct zlib_file_backend
    bool     (*stream_decompress_init)(void *);
    bool     (*stream_decompress_data_to_file_init)(
          zlib_file_handle_t *, const uint8_t *,  uint32_t, uint32_t);
-   int      (*stream_decompress_data_to_file_iterate)(void *data);
+   int      (*stream_decompress_data_to_file_iterate)(void *);
+   void     (*stream_compress_init)(void *, int);
    void     (*stream_compress_free)(void *);
    int      (*stream_compress_data_to_file)(void *);
    const char *ident;

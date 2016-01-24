@@ -335,7 +335,7 @@ static bool rpng_save_image(const char *path,
          encode_buf,
          deflate_buf + 8);
 
-   zlib_deflate_init(stream, 9);
+   stream_backend->stream_compress_init(stream, 9);
 
    if (stream_backend->stream_compress_data_to_file(stream) != 1)
    {
