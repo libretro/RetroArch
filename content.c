@@ -390,14 +390,6 @@ error:
    return false;
 }
 
-static bool load_content_append_to_temporary_content(
-      struct string_list *temporary_content,
-      const char *elem,
-      union string_list_elem_attr attributes)
-{
-   return true;
-}
-
 #ifdef HAVE_COMPRESSION
 static bool load_content_from_compressed_archive(
       struct string_list *temporary_content,
@@ -630,10 +622,9 @@ static bool init_content_file_extract(
          }
 
          string_list_set(content, i, temp_content);
-         if (!load_content_append_to_temporary_content(temporary_content,
+         if (!string_list_append(temporary_content,
                   temp_content, *attr))
             return false;
-         break;
       }
    }
    
