@@ -13,7 +13,8 @@ SOURCES_C := 	rpng.c \
 					rpng_test.c \
 					../../compat/compat.c \
 					../../file/nbio/nbio_stdio.c \
-					../../file/file_extract.c \
+					../../file/file_archive.c \
+					../../file/file_archive_zlib.c \
 					../../file/file_path.c \
 					../../file/retro_file.c \
 					../../string/string_list.c
