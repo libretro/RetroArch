@@ -43,6 +43,8 @@
 #include "verbosity.h"
 
 #ifdef HAVE_COMPRESSION
+static const struct zlib_file_backend *stream_backend;
+
 #ifdef HAVE_7ZIP
 #include "deps/7zip/7z.h"
 #include "deps/7zip/7zAlloc.h"
@@ -515,7 +517,8 @@ int read_compressed_file(const char * path, void **buf,
 #ifdef HAVE_ZLIB
    if (string_is_equal_noncase(file_ext, "zip"))
    {
-      *length = read_zip_file(str_list->elems[0].data, str_list->elems[1].data, buf, optional_filename);
+      stream_backend = file_archive_get_default_file_backend();
+      *length        = read_zip_file(str_list->elems[0].data, str_list->elems[1].data, buf, optional_filename);
       if (*length != -1)
          ret = 1;
    }
