@@ -412,7 +412,7 @@ static int file_archive_parse_file_init(zlib_transfer_t *state,
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-int file_archive_inflate_data_to_file(
+static int file_archive_inflate_data_to_file(
       zlib_file_handle_t *handle,
       int ret,
       const char *path,

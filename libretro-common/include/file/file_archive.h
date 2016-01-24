@@ -137,22 +137,6 @@ bool file_archive_extract_first_content_file(char *zip_path, size_t zip_path_siz
  **/
 struct string_list *file_archive_get_file_list(const char *path, const char *valid_exts);
 
-/**
- * file_archive_inflate_data_to_file:
- * @path                        : filename path of archive.
- * @cdata                       : input data.
- * @csize                       : size of input data.
- * @size                        : output file size
- * @checksum                    : CRC32 checksum from input data.
- *
- * Decompress data to file.
- *
- * Returns: true (1) on success, otherwise false (0).
- **/
-int file_archive_inflate_data_to_file(zlib_file_handle_t *handle,
-      int ret, const char *path, const char *valid_exts,
-      const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum);
-
 bool file_archive_perform_mode(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata);
