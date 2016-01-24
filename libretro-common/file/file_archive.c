@@ -343,7 +343,10 @@ int file_archive_inflate_data_to_file_iterate(void *data)
    return 0;
 }
 
-uint32_t file_archive_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length)
+uint32_t file_archive_crc32_calculate(
+      uint32_t crc,
+      const uint8_t *data,
+      size_t length)
 {
    return crc32(crc, data, length);
 }
@@ -362,9 +365,15 @@ uint32_t file_archive_crc32_calculate(uint32_t crc, const uint8_t *data, size_t 
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-int file_archive_inflate_data_to_file(zlib_file_handle_t *handle,
-      int ret, const char *path, const char *valid_exts,
-      const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum)
+int file_archive_inflate_data_to_file(
+      zlib_file_handle_t *handle,
+      int ret,
+      const char *path,
+      const char *valid_exts,
+      const uint8_t *cdata,
+      uint32_t csize,
+      uint32_t size,
+      uint32_t checksum)
 {
    if (handle)
    {
@@ -378,7 +387,8 @@ int file_archive_inflate_data_to_file(zlib_file_handle_t *handle,
       goto end;
    }
 
-   handle->real_checksum = file_archive_crc32_calculate(0, handle->data, size);
+   handle->real_checksum = file_archive_crc32_calculate(
+         0, handle->data, size);
 
 #if 0
    if (handle->real_checksum != checksum)
@@ -507,8 +517,13 @@ static int file_archive_parse_file_init(zlib_transfer_t *state,
    return 0;
 }
 
-int file_archive_parse_file_iterate(zlib_transfer_t *state, bool *returnerr, const char *file,
-      const char *valid_exts, file_archive_file_cb file_cb, void *userdata)
+int file_archive_parse_file_iterate(
+      zlib_transfer_t *state,
+      bool *returnerr,
+      const char *file,
+      const char *valid_exts,
+      file_archive_file_cb file_cb,
+      void *userdata)
 {
    if (!state)
       return -1;
@@ -606,10 +621,10 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
       unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t checksum, void *userdata)
 {
-   struct zip_extract_userdata *data = (struct zip_extract_userdata*)userdata;
-   /* Extract first content that matches our list. */
    const char *ext                   = path_get_extension(name);
+   struct zip_extract_userdata *data = (struct zip_extract_userdata*)userdata;
 
+   /* Extract first content that matches our list. */
    if (ext && string_list_find_elem(data->ext, ext))
    {
       char new_path[PATH_MAX_LENGTH] = {0};
@@ -643,8 +658,11 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
  *
  * Returns : true (1) on success, otherwise false (0).
  **/
-bool file_archive_extract_first_content_file(char *zip_path, size_t zip_path_size,
-      const char *valid_exts, const char *extraction_directory,
+bool file_archive_extract_first_content_file(
+      char *zip_path,
+      size_t zip_path_size,
+      const char *valid_exts,
+      const char *extraction_directory,
       char *out_path, size_t len)
 {
    struct string_list *list             = NULL;
@@ -670,7 +688,8 @@ bool file_archive_extract_first_content_file(char *zip_path, size_t zip_path_siz
    userdata.extraction_directory = extraction_directory;
    userdata.ext                  = list;
 
-   if (!file_archive_parse_file(zip_path, valid_exts, file_archive_extract_cb, &userdata))
+   if (!file_archive_parse_file(zip_path, valid_exts,
+            file_archive_extract_cb, &userdata))
    {
       /* Parsing file archive failed. */
       ret = false;
@@ -696,9 +715,14 @@ end:
    return ret;
 }
 
-static int file_archive_get_file_list_cb(const char *path, const char *valid_exts,
+static int file_archive_get_file_list_cb(
+      const char *path,
+      const char *valid_exts,
       const uint8_t *cdata,
-      unsigned cmode, uint32_t csize, uint32_t size, uint32_t checksum,
+      unsigned cmode,
+      uint32_t csize,
+      uint32_t size,
+      uint32_t checksum,
       void *userdata)
 {
    union string_list_elem_attr attr;
@@ -725,7 +749,8 @@ static int file_archive_get_file_list_cb(const char *path, const char *valid_ext
       /* Checks if this entry is a directory or a file. */
       char last_char = path[strlen(path)-1];
 
-      if (last_char == '/' || last_char == '\\' ) /* Skip if directory. */
+      /* Skip if directory. */
+      if (last_char == '/' || last_char == '\\' )
          goto error;
 
       file_ext = path_get_extension(path);
@@ -751,7 +776,9 @@ error:
  *
  * Returns: string listing of files from archive on success, otherwise NULL.
  **/
-struct string_list *file_archive_get_file_list(const char *path, const char *valid_exts)
+struct string_list *file_archive_get_file_list(
+      const char *path,
+      const char *valid_exts)
 {
    struct string_list *list = string_list_new();
 
@@ -785,14 +812,16 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
          {
             int ret = 0;
             zlib_file_handle_t handle = {0};
-            if (!file_archive_inflate_data_to_file_init(&handle, cdata, csize, size))
+            if (!file_archive_inflate_data_to_file_init(&handle,
+                     cdata, csize, size))
                return false;
 
             do{
                ret = file_archive_inflate_data_to_file_iterate(handle.stream);
             }while(ret == 0);
 
-            if (!file_archive_inflate_data_to_file(&handle, ret, path, valid_exts,
+            if (!file_archive_inflate_data_to_file(&handle,
+                     ret, path, valid_exts,
                      cdata, csize, size, crc32))
                return false;
          }
