@@ -196,6 +196,91 @@ error:
 }
 #endif
 
+static int file_archive_get_file_list_cb(
+      const char *path,
+      const char *valid_exts,
+      const uint8_t *cdata,
+      unsigned cmode,
+      uint32_t csize,
+      uint32_t size,
+      uint32_t checksum,
+      void *userdata)
+{
+   union string_list_elem_attr attr;
+   struct string_list *ext_list = NULL;
+   const char *file_ext         = NULL;
+   struct string_list *list     = (struct string_list*)userdata;
+
+   (void)cdata;
+   (void)cmode;
+   (void)csize;
+   (void)size;
+   (void)checksum;
+   (void)valid_exts;
+   (void)file_ext;
+   (void)ext_list;
+
+   memset(&attr, 0, sizeof(attr));
+
+   if (valid_exts)
+      ext_list = string_split(valid_exts, "|");
+
+   if (ext_list)
+   {
+      /* Checks if this entry is a directory or a file. */
+      char last_char = path[strlen(path)-1];
+
+      /* Skip if directory. */
+      if (last_char == '/' || last_char == '\\' )
+         goto error;
+
+      file_ext = path_get_extension(path);
+
+      if (!file_ext || 
+            !string_list_find_elem_prefix(ext_list, ".", file_ext))
+         goto error;
+
+      attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
+      string_list_free(ext_list);
+   }
+
+   return string_list_append(list, path, attr);
+   
+error:
+   string_list_free(ext_list);
+   return 0;
+}
+
+static int file_archive_extract_cb(const char *name, const char *valid_exts,
+      const uint8_t *cdata,
+      unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t checksum, void *userdata)
+{
+   const char *ext                   = path_get_extension(name);
+   struct zip_extract_userdata *data = (struct zip_extract_userdata*)userdata;
+
+   /* Extract first content that matches our list. */
+   if (ext && string_list_find_elem(data->ext, ext))
+   {
+      char new_path[PATH_MAX_LENGTH] = {0};
+
+      if (data->extraction_directory)
+         fill_pathname_join(new_path, data->extraction_directory,
+               path_basename(name), sizeof(new_path));
+      else
+         fill_pathname_resolve_relative(new_path, data->zip_path,
+               path_basename(name), sizeof(new_path));
+
+      data->first_extracted_file_path = strdup(new_path);
+      data->found_content             = file_archive_perform_mode(new_path,
+            valid_exts, cdata, cmode, csize, size,
+            0, NULL);
+      return 0;
+   }
+
+   return 1;
+}
+
 static const struct zlib_file_backend *file_archive_get_default_file_backend(void)
 {
    return &zlib_backend;
@@ -223,6 +308,113 @@ static bool zlib_inflate_init2(void *data)
       return false;
    return true;
 }
+
+static int file_archive_parse_file_iterate_step_internal(
+      zlib_transfer_t *state, char *filename,
+      const uint8_t **cdata,
+      unsigned *cmode, uint32_t *size, uint32_t *csize,
+      uint32_t *checksum, unsigned *payback)
+{
+   uint32_t offset;
+   uint32_t namelength, extralength, commentlength,
+            offsetNL, offsetEL;
+   uint32_t signature = read_le(state->directory + 0, 4);
+
+   if (signature != CENTRAL_FILE_HEADER_SIGNATURE)
+      return 0;
+
+   *cmode         = read_le(state->directory + 10, 2);
+   *checksum      = read_le(state->directory + 16, 4);
+   *csize         = read_le(state->directory + 20, 4);
+   *size          = read_le(state->directory + 24, 4);
+
+   namelength    = read_le(state->directory + 28, 2);
+   extralength   = read_le(state->directory + 30, 2);
+   commentlength = read_le(state->directory + 32, 2);
+
+   if (namelength >= PATH_MAX_LENGTH)
+      return -1;
+
+   memcpy(filename, state->directory + 46, namelength);
+
+   offset        = read_le(state->directory + 42, 4);
+   offsetNL      = read_le(state->data + offset + 26, 2);
+   offsetEL      = read_le(state->data + offset + 28, 2);
+
+   *cdata = state->data + offset + 30 + offsetNL + offsetEL;
+
+   *payback = 46 + namelength + extralength + commentlength;
+
+   return 1;
+}
+
+static int file_archive_parse_file_iterate_step(zlib_transfer_t *state,
+      const char *valid_exts, void *userdata, file_archive_file_cb file_cb)
+{
+   const uint8_t *cdata = NULL;
+   uint32_t checksum    = 0;
+   uint32_t size        = 0;
+   uint32_t csize       = 0;
+   unsigned cmode       = 0;
+   unsigned payload     = 0;
+   char filename[PATH_MAX_LENGTH] = {0};
+   int ret = file_archive_parse_file_iterate_step_internal(state, filename,
+         &cdata, &cmode, &size, &csize,
+         &checksum, &payload);
+
+   if (ret != 1)
+      return ret;
+
+#if 0
+   RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + 
+         offsetNL + offsetEL, csize, size);
+#endif
+
+   if (!file_cb(filename, valid_exts, cdata, cmode,
+            csize, size, checksum, userdata))
+      return 0;
+
+   state->directory += payload;
+
+   return 1;
+}
+
+static int file_archive_parse_file_init(zlib_transfer_t *state,
+      const char *file)
+{
+   state->backend = file_archive_get_default_file_backend();
+
+   if (!state->backend)
+      return -1;
+
+   state->handle = file_archive_open(file);
+   if (!state->handle)
+      return -1;
+
+   state->zip_size = file_archive_size(state->handle);
+   if (state->zip_size < 22)
+      return -1;
+
+   state->data   = file_archive_data(state->handle);
+   state->footer = state->data + state->zip_size - 22;
+
+   for (;; state->footer--)
+   {
+      if (state->footer <= state->data + 22)
+         return -1;
+      if (read_le(state->footer, 4) == END_OF_CENTRAL_DIR_SIGNATURE)
+      {
+         unsigned comment_len = read_le(state->footer + 20, 2);
+         if (state->footer + 22 + comment_len == state->data + state->zip_size)
+            break;
+      }
+   }
+
+   state->directory = state->data + read_le(state->footer + 16, 4);
+
+   return 0;
+}
+
 
 void *zlib_stream_new(void)
 {
@@ -409,111 +601,6 @@ end:
    return ret;
 }
 
-static int file_archive_parse_file_iterate_step_internal(
-      zlib_transfer_t *state, char *filename,
-      const uint8_t **cdata,
-      unsigned *cmode, uint32_t *size, uint32_t *csize,
-      uint32_t *checksum, unsigned *payback)
-{
-   uint32_t offset;
-   uint32_t namelength, extralength, commentlength,
-            offsetNL, offsetEL;
-   uint32_t signature = read_le(state->directory + 0, 4);
-
-   if (signature != CENTRAL_FILE_HEADER_SIGNATURE)
-      return 0;
-
-   *cmode         = read_le(state->directory + 10, 2);
-   *checksum      = read_le(state->directory + 16, 4);
-   *csize         = read_le(state->directory + 20, 4);
-   *size          = read_le(state->directory + 24, 4);
-
-   namelength    = read_le(state->directory + 28, 2);
-   extralength   = read_le(state->directory + 30, 2);
-   commentlength = read_le(state->directory + 32, 2);
-
-   if (namelength >= PATH_MAX_LENGTH)
-      return -1;
-
-   memcpy(filename, state->directory + 46, namelength);
-
-   offset        = read_le(state->directory + 42, 4);
-   offsetNL      = read_le(state->data + offset + 26, 2);
-   offsetEL      = read_le(state->data + offset + 28, 2);
-
-   *cdata = state->data + offset + 30 + offsetNL + offsetEL;
-
-   *payback = 46 + namelength + extralength + commentlength;
-
-   return 1;
-}
-
-static int file_archive_parse_file_iterate_step(zlib_transfer_t *state,
-      const char *valid_exts, void *userdata, file_archive_file_cb file_cb)
-{
-   const uint8_t *cdata = NULL;
-   uint32_t checksum    = 0;
-   uint32_t size        = 0;
-   uint32_t csize       = 0;
-   unsigned cmode       = 0;
-   unsigned payload     = 0;
-   char filename[PATH_MAX_LENGTH] = {0};
-   int ret = file_archive_parse_file_iterate_step_internal(state, filename,
-         &cdata, &cmode, &size, &csize,
-         &checksum, &payload);
-
-   if (ret != 1)
-      return ret;
-
-#if 0
-   RARCH_LOG("OFFSET: %u, CSIZE: %u, SIZE: %u.\n", offset + 30 + 
-         offsetNL + offsetEL, csize, size);
-#endif
-
-   if (!file_cb(filename, valid_exts, cdata, cmode,
-            csize, size, checksum, userdata))
-      return 0;
-
-   state->directory += payload;
-
-   return 1;
-}
-
-static int file_archive_parse_file_init(zlib_transfer_t *state,
-      const char *file)
-{
-   state->backend = file_archive_get_default_file_backend();
-
-   if (!state->backend)
-      return -1;
-
-   state->handle = file_archive_open(file);
-   if (!state->handle)
-      return -1;
-
-   state->zip_size = file_archive_size(state->handle);
-   if (state->zip_size < 22)
-      return -1;
-
-   state->data   = file_archive_data(state->handle);
-   state->footer = state->data + state->zip_size - 22;
-
-   for (;; state->footer--)
-   {
-      if (state->footer <= state->data + 22)
-         return -1;
-      if (read_le(state->footer, 4) == END_OF_CENTRAL_DIR_SIGNATURE)
-      {
-         unsigned comment_len = read_le(state->footer + 20, 2);
-         if (state->footer + 22 + comment_len == state->data + state->zip_size)
-            break;
-      }
-   }
-
-   state->directory = state->data + read_le(state->footer + 16, 4);
-
-   return 0;
-}
 
 int file_archive_parse_file_iterate(
       zlib_transfer_t *state,
@@ -611,37 +698,6 @@ int file_archive_parse_file_progress(zlib_transfer_t *state)
    return delta * 100 / state->zip_size;
 }
 
-
-static int file_archive_extract_cb(const char *name, const char *valid_exts,
-      const uint8_t *cdata,
-      unsigned cmode, uint32_t csize, uint32_t size,
-      uint32_t checksum, void *userdata)
-{
-   const char *ext                   = path_get_extension(name);
-   struct zip_extract_userdata *data = (struct zip_extract_userdata*)userdata;
-
-   /* Extract first content that matches our list. */
-   if (ext && string_list_find_elem(data->ext, ext))
-   {
-      char new_path[PATH_MAX_LENGTH] = {0};
-
-      if (data->extraction_directory)
-         fill_pathname_join(new_path, data->extraction_directory,
-               path_basename(name), sizeof(new_path));
-      else
-         fill_pathname_resolve_relative(new_path, data->zip_path,
-               path_basename(name), sizeof(new_path));
-
-      data->first_extracted_file_path = strdup(new_path);
-      data->found_content             = file_archive_perform_mode(new_path,
-            valid_exts, cdata, cmode, csize, size,
-            0, NULL);
-      return 0;
-   }
-
-   return 1;
-}
-
 /**
  * file_archive_extract_first_content_file:
  * @zip_path                    : filename path to ZIP archive.
@@ -711,60 +767,6 @@ end:
    return ret;
 }
 
-static int file_archive_get_file_list_cb(
-      const char *path,
-      const char *valid_exts,
-      const uint8_t *cdata,
-      unsigned cmode,
-      uint32_t csize,
-      uint32_t size,
-      uint32_t checksum,
-      void *userdata)
-{
-   union string_list_elem_attr attr;
-   struct string_list *ext_list = NULL;
-   const char *file_ext         = NULL;
-   struct string_list *list     = (struct string_list*)userdata;
-
-   (void)cdata;
-   (void)cmode;
-   (void)csize;
-   (void)size;
-   (void)checksum;
-   (void)valid_exts;
-   (void)file_ext;
-   (void)ext_list;
-
-   memset(&attr, 0, sizeof(attr));
-
-   if (valid_exts)
-      ext_list = string_split(valid_exts, "|");
-
-   if (ext_list)
-   {
-      /* Checks if this entry is a directory or a file. */
-      char last_char = path[strlen(path)-1];
-
-      /* Skip if directory. */
-      if (last_char == '/' || last_char == '\\' )
-         goto error;
-
-      file_ext = path_get_extension(path);
-
-      if (!file_ext || 
-            !string_list_find_elem_prefix(ext_list, ".", file_ext))
-         goto error;
-
-      attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
-      string_list_free(ext_list);
-   }
-
-   return string_list_append(list, path, attr);
-   
-error:
-   string_list_free(ext_list);
-   return 0;
-}
 
 /**
  * file_archive_get_file_list:
