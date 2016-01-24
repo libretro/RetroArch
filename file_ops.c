@@ -351,136 +351,117 @@ end:
 #endif
 
 #ifdef HAVE_ZLIB
-#include "deps/zlib/unzip.h"
-
-#define RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX 16384
+struct decomp_state
+{
+   char *opt_file;
+   char *needle;
+   void **buf;
+   size_t size;
+   bool found;
+};
 
 /* Extract the relative path (needle) from a 
- * ZIP archive (path) and allocate a buf for it to write it in. */
-/* This code is inspired by:
- * stackoverflow.com/questions/10440113/simple-way-to-unzip-a-zip-file-using-zlib
+ * ZIP archive (path) and allocate a buffer for it to write it in. 
  *
- * optional_outfile if not NULL will be used to extract the file. buf will be 0
- * then.
+ * optional_outfile if not NULL will be used to extract the file to. 
+ * buf will be 0 then.
  */
+
+static int file_decompressed(const char *name, const char *valid_exts,
+   const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+   uint32_t crc32, void *userdata)
+{
+   struct decomp_state *st = (struct decomp_state*)userdata;
+   /* Ignore directories. */
+   if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
+      goto next_file;
+
+   RARCH_LOG("[deflate] Path: %s, CRC32: 0x%x\n", name, crc32);
+
+   if (strstr(name, st->needle))
+   {
+      st->found = true;
+
+      if (st->opt_file != 0)
+      {
+         if (!retro_write_file(st->opt_file, cdata, size))
+            goto error;
+
+         st->size = 0;
+      }
+      else
+      {
+         int ret = 0;
+         zlib_file_handle_t handle = {0};
+         if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
+            return false;
+
+         do{
+            ret = zlib_inflate_data_to_file_iterate(handle.stream);
+         }while(ret == 0);
+
+         handle.real_checksum = zlib_crc32_calculate(handle.data, size);
+
+         if (handle.real_checksum != crc32)
+         {
+            RARCH_ERR("Inflated checksum did not match CRC32!\n");
+            goto error;
+         }
+
+         if (handle.stream)
+            free(handle.stream);
+         *st->buf = malloc(size);
+         memcpy(*st->buf, handle.data, size);
+
+         if (handle.data)
+            free(handle.data);
+
+         st->size = size;
+      }
+   }
+
+next_file:
+   return 1;
+
+error:
+   return 0;
+}
 
 static int read_zip_file(const char *path,
       const char *needle, void **buf,
       const char* optional_outfile)
 {
-   uLong i;
-   unz_global_info global_info;
-   ssize_t    bytes_read = -1;
-   bool finished_reading = false;
-   unzFile      *zipfile = (unzFile*)unzOpen(path);
+   bool returnerr = true;
+   zlib_transfer_t zlib;
+   struct decomp_state st;
+   int ret     = 0;
 
-   if (!zipfile)
-      return -1;
+   zlib.type   = ZLIB_TRANSFER_INIT;
 
-   /* Get info about the zip file */
-   if (unzGetGlobalInfo(zipfile, &global_info) != UNZ_OK)
-      goto error;
+   st.needle   = needle           ? strdup(needle)           : NULL;
+   st.opt_file = optional_outfile ? strdup(optional_outfile) : NULL;
+   st.found    = false;
+   st.buf      = buf;
 
-   for ( i = 0; i < global_info.number_entry; ++i )
+   do
    {
-      /* Get info about current file. */
-      unz_file_info file_info;
-      char filename[PATH_MAX_LENGTH];
-
-      if (unzGetCurrentFileInfo(
-               zipfile,
-               &file_info,
-               filename,
-               PATH_MAX_LENGTH,
-               NULL, 0, NULL, 0 ) != UNZ_OK )
-         goto error;
-
-      if (path_is_directory(filename))
-      {
-         /* We skip directories */
-      }
-      else if (string_is_equal(filename, needle))
-      {
-         /* We found the correct file in the zip, 
-          * now extract it to *buf. */
-         if (unzOpenCurrentFile(zipfile) != UNZ_OK )
-            goto error;
-
-         if (optional_outfile == 0)
-         {
-            /* Allocate outbuffer */
-            *buf       = malloc(file_info.uncompressed_size + 1 );
-
-            if (!buf)
-               goto error;
-
-            bytes_read = unzReadCurrentFile(zipfile, *buf, file_info.uncompressed_size);
-
-            if (bytes_read != (ssize_t)file_info.uncompressed_size)
-            {
-               RARCH_ERR(
-                     "Tried to read %d bytes, but only got %d of file %s in ZIP %s.\n",
-                     (unsigned int) file_info.uncompressed_size, (int)bytes_read,
-                     needle, path);
-               free(*buf);
-               goto close;
-            }
-            ((char*)(*buf))[file_info.uncompressed_size] = '\0';
-         }
-         else
-         {
-            char read_buffer[RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX] = {0};
-            RFILE* outsink = retro_fopen(optional_outfile, RFILE_MODE_WRITE, -1);
-
-            if (!outsink)
-               goto close;
-
-            bytes_read = 0;
-
-            do
-            {
-               bytes_read = unzReadCurrentFile(zipfile, read_buffer,
-                     RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX );
-
-               if (retro_fwrite(outsink, read_buffer, bytes_read) == bytes_read)
-                  continue;
-
-               RARCH_ERR("Error writing to %s.\n", optional_outfile);
-               retro_fclose(outsink);
-               goto close;
-            } while(bytes_read > 0);
-
-            retro_fclose(outsink);
-         }
-         finished_reading = true;
-      }
-
-      unzCloseCurrentFile(zipfile);
-
-      if (finished_reading)
+      ret = zlib_parse_file_iterate(&zlib, &returnerr, path,
+            "", file_decompressed, &st);
+      if (!returnerr)
          break;
+   }while(ret == 0 && !st.found);
 
-      if ((i + 1) < global_info.number_entry)
-      {
-         if (unzGoToNextFile(zipfile) == UNZ_OK)
-            continue;
+   zlib_parse_file_iterate_stop(&zlib);
 
-         goto error;
-      }
-   }
+   if (st.opt_file)
+      free(st.opt_file);
+   if (st.needle)
+      free(st.needle);
 
-   unzClose(zipfile);
-
-   if(!finished_reading)
+   if (!st.found)
       return -1;
 
-   return bytes_read;
-
-close:
-   unzCloseCurrentFile(zipfile);
-error:
-   unzClose(zipfile);
-   return -1;
+   return st.size;
 }
 #endif
 
