@@ -88,13 +88,17 @@ uint32_t file_archive_crc32_calculate(uint32_t crc, const uint8_t *data, size_t 
 bool file_archive_parse_file(const char *file, const char *valid_exts,
       file_archive_file_cb file_cb, void *userdata);
 
-int file_archive_parse_file_iterate(void *data, bool *returnerr,
+int file_archive_parse_file_iterate(
+      zlib_transfer_t *state,
+      bool *returnerr,
       const char *file,
-      const char *valid_exts, file_archive_file_cb file_cb, void *userdata);
+      const char *valid_exts,
+      file_archive_file_cb file_cb,
+      void *userdata);
 
-void file_archive_parse_file_iterate_stop(void *data);
+void file_archive_parse_file_iterate_stop(zlib_transfer_t *state);
 
-int file_archive_parse_file_progress(void *data);
+int file_archive_parse_file_progress(zlib_transfer_t *state);
 
 /**
  * file_archive_extract_first_content_file:

@@ -506,11 +506,9 @@ static int file_archive_parse_file_init(zlib_transfer_t *state,
    return 0;
 }
 
-int file_archive_parse_file_iterate(void *data, bool *returnerr, const char *file,
+int file_archive_parse_file_iterate(zlib_transfer_t *state, bool *returnerr, const char *file,
       const char *valid_exts, file_archive_file_cb file_cb, void *userdata)
 {
-   zlib_transfer_t *state = (zlib_transfer_t*)data;
-
    if (!state)
       return -1;
 
@@ -552,14 +550,13 @@ int file_archive_parse_file_iterate(void *data, bool *returnerr, const char *fil
    return 0;
 }
 
-void file_archive_parse_file_iterate_stop(void *data)
+void file_archive_parse_file_iterate_stop(zlib_transfer_t *state)
 {
-   zlib_transfer_t *state = (zlib_transfer_t*)data;
    if (!state || !state->handle)
       return;
 
    state->type = ZLIB_TRANSFER_DEINIT;
-   file_archive_parse_file_iterate(data, NULL, NULL, NULL, NULL, NULL);
+   file_archive_parse_file_iterate(state, NULL, NULL, NULL, NULL, NULL);
 }
 
 /**
@@ -595,10 +592,9 @@ bool file_archive_parse_file(const char *file, const char *valid_exts,
    return returnerr;
 }
 
-int file_archive_parse_file_progress(void *data)
+int file_archive_parse_file_progress(zlib_transfer_t *state)
 {
    /* FIXME: this estimate is worse than before */
-   zlib_transfer_t *state = (zlib_transfer_t*)data;
    ptrdiff_t delta = state->directory - state->data;
    return delta * 100 / state->zip_size;
 }
