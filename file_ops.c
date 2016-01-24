@@ -118,9 +118,6 @@ static int read_7zip_file(
       return -1;
    }
 
-   RARCH_LOG_OUTPUT("Opened archive %s. Now trying to extract %s\n",
-         path, needle);
-
    FileInStream_CreateVTable(&archiveStream);
    LookToRead_CreateVTable(&lookStream, False);
    lookStream.realStream = &archiveStream.s;
@@ -169,6 +166,9 @@ static int read_7zip_file(
 
          if (string_is_equal(infile, needle))
          {
+            RARCH_LOG_OUTPUT("Opened archive %s. Now trying to extract %s\n",
+                  path, needle);
+
             /* C LZMA SDK does not support chunked extraction - see here:
              * sourceforge.net/p/sevenzip/discussion/45798/thread/6fb59aaf/
              * */
