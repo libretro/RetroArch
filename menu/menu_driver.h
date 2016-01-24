@@ -413,9 +413,6 @@ int menu_iterate_render(void *data, void *userdata);
  **/
 bool menu_load_content(enum rarch_core_type type);
 
-int menu_common_load_content(const char *core_path, const char *full_path,
-      bool persist, enum rarch_core_type type);
-
 #ifdef __cplusplus
 }
 #endif
