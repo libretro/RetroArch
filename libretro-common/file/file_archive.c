@@ -481,11 +481,11 @@ int file_archive_parse_file_iterate(
          break;
       case ZLIB_TRANSFER_ITERATE:
          {
-            int ret2 = file_archive_parse_file_iterate_step(state,
+            int ret = file_archive_parse_file_iterate_step(state,
                   valid_exts, userdata, file_cb);
-            if (ret2 != 1)
+            if (ret != 1)
                state->type = ZLIB_TRANSFER_DEINIT;
-            if (ret2 == -1)
+            if (ret == -1)
                state->type = ZLIB_TRANSFER_DEINIT_ERROR;
          }
          break;
