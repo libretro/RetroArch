@@ -166,8 +166,6 @@ void zlib_stream_deflate_free(void *data);
 
 bool zlib_inflate_init(void *data);
 
-bool zlib_inflate_init2(void *data);
-
 void zlib_set_stream(void *data,
       uint32_t       avail_in,
       uint32_t       avail_out,

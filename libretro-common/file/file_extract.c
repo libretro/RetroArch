@@ -76,12 +76,7 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
    return val;
 }
 
-void *zlib_stream_new(void)
-{
-   return (z_stream*)calloc(1, sizeof(z_stream));
-}
-
-bool zlib_inflate_init2(void *data)
+static bool zlib_inflate_init2(void *data)
 {
    z_stream *stream = (z_stream*)data;
 
@@ -90,6 +85,11 @@ bool zlib_inflate_init2(void *data)
    if (inflateInit2(stream, -MAX_WBITS) != Z_OK)
       return false;
    return true;
+}
+
+void *zlib_stream_new(void)
+{
+   return (z_stream*)calloc(1, sizeof(z_stream));
 }
 
 void zlib_deflate_init(void *data, int level)
