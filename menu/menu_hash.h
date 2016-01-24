@@ -666,6 +666,8 @@ extern "C" {
 #define MENU_LABEL_DETECT_CORE_LIST                                            0xaa07c341U
 #define MENU_LABEL_VALUE_DETECT_CORE_LIST                                      0x2a2ebd1aU
 #define MENU_LABEL_DETECT_CORE_LIST_OK                                         0xabba2a7aU
+#define MENU_LABEL_START_CORE                                                  0xb0b6ae5bU
+#define MENU_LABEL_VALUE_START_CORE                                            0x2adef65cU
 #define MENU_LABEL_LOAD_CONTENT                                                0x828943c3U
 #define MENU_LABEL_VALUE_LOAD_CONTENT                                          0xf0e39e65U
 #define MENU_LABEL_VALUE_CORE_UPDATER_LIST                                     0x0372767dU

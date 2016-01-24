@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_START_CORE:
+         return "start_core";
       case MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL:
          return "cheevos_test_unofficial";
       case MENU_LABEL_CHEEVOS_ENABLE:
@@ -1642,6 +1644,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Use Builtin Image Viewer";
       case MENU_LABEL_VALUE_ENABLE:
          return "Enable";
+      case MENU_LABEL_VALUE_START_CORE:
+         return "Start Core";
       default:
          break;
    }
