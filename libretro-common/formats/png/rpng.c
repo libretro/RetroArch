@@ -798,7 +798,7 @@ static bool rpng_load_image_argb_process_init(rpng_t *rpng,
    if (!rpng->process.inflate_buf)
       return false;
 
-   zlib_set_stream(
+   rpng->process.stream_backend->stream_set(
          rpng->process.stream,
          rpng->idat_buf.size,
          rpng->process.inflate_buf_size,

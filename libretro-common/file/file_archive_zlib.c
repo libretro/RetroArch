@@ -38,6 +38,25 @@ static void zlib_stream_free(void *data)
       inflateEnd(ret);
 }
 
+static void zlib_stream_set(void *data,
+      uint32_t       avail_in,
+      uint32_t       avail_out,
+      const uint8_t *next_in,
+      uint8_t       *next_out
+      )
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return;
+
+   stream->avail_in  = avail_in;
+   stream->avail_out = avail_out;
+
+   stream->next_in   = (uint8_t*)next_in;
+   stream->next_out  = next_out;
+}
+
 static uint32_t zlib_stream_get_avail_in(void *data)
 {
    z_stream *stream = (z_stream*)data;
@@ -113,6 +132,7 @@ static bool zlib_stream_decompress_init(void *data)
 const struct zlib_file_backend zlib_backend = {
    zlib_stream_new,
    zlib_stream_free,
+   zlib_stream_set,
    zlib_stream_get_avail_in,
    zlib_stream_get_avail_out,
    zlib_stream_get_total_out,

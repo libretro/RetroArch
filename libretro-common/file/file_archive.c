@@ -451,12 +451,8 @@ bool file_archive_inflate_data_to_file_init(
    if (!stream)
       goto error;
 
-   zlib_set_stream(stream,
-         csize,
-         size,
-         (const uint8_t*)cdata,
-         handle->data 
-         );
+   handle->backend->stream_set(stream, csize, size,
+         (const uint8_t*)cdata, handle->data);
 
    return true;
 
@@ -730,8 +726,7 @@ end:
  *
  * Returns: string listing of files from archive on success, otherwise NULL.
  **/
-struct string_list *file_archive_get_file_list(
-      const char *path,
+struct string_list *file_archive_get_file_list(const char *path,
       const char *valid_exts)
 {
    struct string_list *list = string_list_new();
@@ -786,23 +781,3 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
 
    return true;
 }
-
-void zlib_set_stream(void *data,
-      uint32_t       avail_in,
-      uint32_t       avail_out,
-      const uint8_t *next_in,
-      uint8_t       *next_out
-      )
-{
-   z_stream *stream = (z_stream*)data;
-
-   if (!stream)
-      return;
-
-   stream->avail_in  = avail_in;
-   stream->avail_out = avail_out;
-
-   stream->next_in   = (uint8_t*)next_in;
-   stream->next_out  = next_out;
-}
-

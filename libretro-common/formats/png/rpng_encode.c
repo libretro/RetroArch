@@ -328,7 +328,7 @@ static bool rpng_save_image(const char *path,
    if (!stream)
       GOTO_END_ERROR();
 
-   zlib_set_stream(
+   stream_backend->stream_set(
          stream,
          encode_buf_size,
          encode_buf_size * 2,
