@@ -339,11 +339,11 @@ static bool rpng_save_image(const char *path,
 
    if (zlib_deflate_data_to_file(stream) != 1)
    {
-      zlib_stream_deflate_free(stream);
+      stream_backend->stream_compress_free(stream);
       GOTO_END_ERROR();
    }
 
-   zlib_stream_deflate_free(stream);
+   stream_backend->stream_compress_free(stream);
 
    memcpy(deflate_buf + 4, "IDAT", 4);
    dword_write_be(deflate_buf + 0,        stream_backend->stream_get_total_out(stream));

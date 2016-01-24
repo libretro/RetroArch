@@ -434,13 +434,6 @@ bool file_archive_inflate_init(void *data)
    return true;
 }
 
-void zlib_stream_deflate_free(void *data)
-{
-   z_stream *ret = (z_stream*)data;
-   if (ret)
-      deflateEnd(ret);
-}
-
 bool file_archive_inflate_data_to_file_init(
       zlib_file_handle_t *handle,
       const uint8_t *cdata,  uint32_t csize, uint32_t size)

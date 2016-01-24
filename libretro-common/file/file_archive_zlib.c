@@ -76,6 +76,13 @@ static void zlib_stream_decrement_total_out(void *data, unsigned subtraction)
       stream->total_out  -= subtraction;
 }
 
+static void zlib_stream_compress_free(void *data)
+{
+   z_stream *ret = (z_stream*)data;
+   if (ret)
+      deflateEnd(ret);
+}
+
 const struct zlib_file_backend zlib_backend = {
    zlib_stream_new,
    zlib_stream_free,
@@ -83,5 +90,6 @@ const struct zlib_file_backend zlib_backend = {
    zlib_stream_get_avail_out,
    zlib_stream_get_total_out,
    zlib_stream_decrement_total_out,
+   zlib_stream_compress_free,
    "zlib"
 };
