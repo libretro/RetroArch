@@ -183,6 +183,8 @@ uint64_t zlib_stream_get_total_out(void *data);
 void zlib_stream_decrement_total_out(void *data,
       unsigned subtraction);
 
+const struct zlib_file_backend *file_archive_get_default_file_backend(void);
+
 const struct zlib_file_backend zlib_backend;
 
 #endif

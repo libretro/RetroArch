@@ -281,7 +281,7 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
    return 1;
 }
 
-static const struct zlib_file_backend *file_archive_get_default_file_backend(void)
+const struct zlib_file_backend *file_archive_get_default_file_backend(void)
 {
    return &zlib_backend;
 }

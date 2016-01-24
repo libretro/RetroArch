@@ -112,6 +112,7 @@ struct rpng_process_t
       unsigned pos;
    } pass;
    void *stream;
+   const struct zlib_file_backend *stream_backend;
 };
 
 struct rpng
@@ -952,6 +953,9 @@ int rpng_nbio_load_image_argb_process(rpng_t *rpng,
 {
    if (!rpng->process.initialized)
    {
+      if (!rpng->process.stream_backend)
+         rpng->process.stream_backend = file_archive_get_default_file_backend();
+
       if (!rpng_load_image_argb_process_init(rpng, data, width,
                height))
          return PNG_PROCESS_ERROR;
