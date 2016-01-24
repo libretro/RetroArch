@@ -183,11 +183,9 @@ static void *file_archive_open(const char *path)
 
    read_from_file = retro_read_file(path, &data->data, &ret);
 
+   /* Failed to open archive? */
    if (!read_from_file || ret < 0)
-   {
-      /* Failed to open archive. */
       goto error;
-   }
 
    data->size = ret;
    return data;
