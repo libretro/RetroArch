@@ -38,8 +38,50 @@ static void zlib_stream_free(void *data)
       inflateEnd(ret);
 }
 
+static uint32_t zlib_stream_get_avail_in(void *data)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return 0;
+
+   return stream->avail_in;
+}
+
+static uint32_t zlib_stream_get_avail_out(void *data)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return 0;
+
+   return stream->avail_out;
+}
+
+static uint64_t zlib_stream_get_total_out(void *data)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return 0;
+
+   return stream->total_out;
+}
+
+static void zlib_stream_decrement_total_out(void *data, unsigned subtraction)
+{
+   z_stream *stream = (z_stream*)data;
+
+   if (stream)
+      stream->total_out  -= subtraction;
+}
+
 const struct zlib_file_backend zlib_backend = {
    zlib_stream_new,
    zlib_stream_free,
+   zlib_stream_get_avail_in,
+   zlib_stream_get_avail_out,
+   zlib_stream_get_total_out,
+   zlib_stream_decrement_total_out,
    "zlib"
 };

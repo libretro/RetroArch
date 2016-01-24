@@ -41,6 +41,10 @@ struct zlib_file_backend
 {
    void *(*stream_new)(void);
    void  (*stream_free)(void *);
+   uint32_t (*stream_get_avail_in)(void*);
+   uint32_t (*stream_get_avail_out)(void*);
+   uint64_t (*stream_get_total_out)(void*);
+   void     (*stream_decrement_total_out)(void *, unsigned);
    const char *ident;
 };
 
@@ -62,9 +66,6 @@ typedef struct zlib_handle
    uint32_t real_checksum;
    const struct zlib_file_backend *backend;
 } zlib_file_handle_t;
-
-
-
 
 /* Returns true when parsing should continue. False to stop. */
 typedef int (*file_archive_file_cb)(const char *name, const char *valid_exts,
@@ -171,15 +172,6 @@ void zlib_set_stream(void *data,
       const uint8_t *next_in,
       uint8_t       *next_out
       );
-
-uint32_t zlib_stream_get_avail_in(void *data);
-
-uint32_t zlib_stream_get_avail_out(void *data);
-
-uint64_t zlib_stream_get_total_out(void *data);
-
-void zlib_stream_decrement_total_out(void *data,
-      unsigned subtraction);
 
 const struct zlib_file_backend *file_archive_get_default_file_backend(void);
 
