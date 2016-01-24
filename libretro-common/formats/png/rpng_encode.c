@@ -213,6 +213,7 @@ static bool rpng_save_image(const char *path,
    bool ret = true;
    struct png_ihdr ihdr = {0};
 
+   const struct zlib_file_backend *stream_backend = NULL;
    size_t encode_buf_size  = 0;
    uint8_t *encode_buf     = NULL;
    uint8_t *deflate_buf    = NULL;
@@ -224,10 +225,11 @@ static bool rpng_save_image(const char *path,
    uint8_t *prev_encoded   = NULL;
    uint8_t *encode_target  = NULL;
    void *stream            = NULL;
-
-   RFILE *file = retro_fopen(path, RFILE_MODE_WRITE, -1);
+   RFILE *file             = retro_fopen(path, RFILE_MODE_WRITE, -1);
    if (!file)
       GOTO_END_ERROR();
+
+   stream_backend = file_archive_get_default_file_backend();
 
    if (retro_fwrite(file, png_magic, sizeof(png_magic)) != sizeof(png_magic))
       GOTO_END_ERROR();
@@ -321,7 +323,7 @@ static bool rpng_save_image(const char *path,
    if (!deflate_buf)
       GOTO_END_ERROR();
 
-   stream = zlib_stream_new();
+   stream = stream_backend->stream_new();
 
    if (!stream)
       GOTO_END_ERROR();

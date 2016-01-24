@@ -26,6 +26,12 @@
 #include <file/file_archive.h>
 #include <retro_file.h>
 
+static void *zlib_stream_new(void)
+{
+   return (z_stream*)calloc(1, sizeof(z_stream));
+}
+
 const struct zlib_file_backend zlib_backend = {
+   zlib_stream_new,
    "zlib"
 };

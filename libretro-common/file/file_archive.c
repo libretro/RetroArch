@@ -415,12 +415,6 @@ static int file_archive_parse_file_init(zlib_transfer_t *state,
    return 0;
 }
 
-
-void *zlib_stream_new(void)
-{
-   return (z_stream*)calloc(1, sizeof(z_stream));
-}
-
 void zlib_deflate_init(void *data, int level)
 {
    z_stream *stream = (z_stream*)data;
@@ -463,7 +457,10 @@ bool file_archive_inflate_data_to_file_init(
    if (!handle)
       return false;
 
-   if (!(handle->stream = (z_stream*)zlib_stream_new()))
+   if (!handle->backend)
+      handle->backend = file_archive_get_default_file_backend();
+
+   if (!(handle->stream = (z_stream*)handle->backend->stream_new()))
       goto error;
    
    if (!(zlib_inflate_init2(handle->stream)))

@@ -28,13 +28,6 @@
 
 #include <boolean.h>
 
-typedef struct zlib_handle
-{
-   void     *stream;
-   uint8_t *data;
-   uint32_t real_checksum;
-} zlib_file_handle_t;
-
 enum zlib_transfer_type
 {
    ZLIB_TRANSFER_NONE = 0,
@@ -42,6 +35,12 @@ enum zlib_transfer_type
    ZLIB_TRANSFER_ITERATE,
    ZLIB_TRANSFER_DEINIT,
    ZLIB_TRANSFER_DEINIT_ERROR
+};
+
+struct zlib_file_backend
+{
+   void *(*stream_new)(void);
+   const char *ident;
 };
 
 typedef struct zlib_transfer
@@ -55,15 +54,16 @@ typedef struct zlib_transfer
    const struct zlib_file_backend *backend;
 } zlib_transfer_t;
 
-/* File backends. Can be fleshed out later, but keep it simple for now.
- * The file is mapped to memory directly (via mmap() or just 
- * plain retro_read_file()).
- */
-
-struct zlib_file_backend
+typedef struct zlib_handle
 {
-   const char *ident;
-};
+   void     *stream;
+   uint8_t *data;
+   uint32_t real_checksum;
+   const struct zlib_file_backend *backend;
+} zlib_file_handle_t;
+
+
+
 
 /* Returns true when parsing should continue. False to stop. */
 typedef int (*file_archive_file_cb)(const char *name, const char *valid_exts,
@@ -154,8 +154,6 @@ bool file_archive_perform_mode(const char *name, const char *valid_exts,
 
 struct string_list *compressed_file_list_new(const char *filename,
       const char* ext);
-
-void *zlib_stream_new(void);
 
 void zlib_stream_free(void *data);
 

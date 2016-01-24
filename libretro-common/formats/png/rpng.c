@@ -786,7 +786,7 @@ static bool rpng_load_image_argb_process_init(rpng_t *rpng,
    if (rpng->ihdr.interlace == 1) /* To be sure. */
       rpng->process.inflate_buf_size *= 2;
 
-   rpng->process.stream = zlib_stream_new();
+   rpng->process.stream = rpng->process.stream_backend->stream_new();
 
    if (!rpng->process.stream)
       return false;
