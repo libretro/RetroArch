@@ -101,7 +101,8 @@ int zlib_parse_file_progress(void *data);
  * Returns : true (1) on success, otherwise false (0).
  **/
 bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size, 
-      const char *valid_exts, const char *extraction_dir);
+      const char *valid_exts, const char *extraction_dir,
+      char *out_path, size_t len);
 
 /**
  * zlib_get_file_list:

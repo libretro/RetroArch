@@ -615,6 +615,7 @@ int zlib_parse_file_progress(void *data)
 struct zip_extract_userdata
 {
    char *zip_path;
+   char *first_extracted_file_path;
    const char *extraction_directory;
    size_t zip_path_size;
    struct string_list *ext;
@@ -648,7 +649,9 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
          fill_pathname_resolve_relative(new_path, data->zip_path,
                path_basename(name), sizeof(new_path));
 
-      data->found_content = zlib_perform_mode(new_path, valid_exts, cdata, cmode, csize, size,
+      data->first_extracted_file_path = strdup(new_path);
+      data->found_content             = zlib_perform_mode(new_path,
+            valid_exts, cdata, cmode, csize, size,
             0, NULL);
       return 0;
    }
@@ -669,7 +672,8 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
  * Returns : true (1) on success, otherwise false (0).
  **/
 bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
-      const char *valid_exts, const char *extraction_directory)
+      const char *valid_exts, const char *extraction_directory,
+      char *out_path, size_t len)
 {
    struct string_list *list;
    bool ret = true;
@@ -704,7 +708,12 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
       GOTO_END_ERROR();
    }
 
+   if (*userdata.first_extracted_file_path)
+      strlcpy(out_path, userdata.first_extracted_file_path, len);
+
 end:
+   if (userdata.first_extracted_file_path)
+      free(userdata.first_extracted_file_path);
    if (list)
       string_list_free(list);
    return ret;

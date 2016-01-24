@@ -606,6 +606,7 @@ static bool init_content_file_extract(
 
       if (string_is_equal_noncase(ext, "zip"))
       {
+         char new_path[PATH_MAX_LENGTH];
          char temp_content[PATH_MAX_LENGTH];
 
          strlcpy(temp_content, content->elems[i].data,
@@ -614,16 +615,17 @@ static bool init_content_file_extract(
          if (!zlib_extract_first_content_file(temp_content,
                   sizeof(temp_content), valid_ext,
                   *settings->cache_directory ?
-                  settings->cache_directory : NULL))
+                  settings->cache_directory : NULL,
+                  new_path, sizeof(new_path)))
          {
             RARCH_ERR("Failed to extract content from zipped file: %s.\n",
                   temp_content);
             return false;
          }
 
-         string_list_set(content, i, temp_content);
+         string_list_set(content, i, new_path);
          if (!string_list_append(temporary_content,
-                  temp_content, *attr))
+                  new_path, *attr))
             return false;
       }
    }
