@@ -298,17 +298,6 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
    return val;
 }
 
-static bool zlib_inflate_init2(void *data)
-{
-   z_stream *stream = (z_stream*)data;
-
-   if (!stream)
-      return false;
-   if (inflateInit2(stream, -MAX_WBITS) != Z_OK)
-      return false;
-   return true;
-}
-
 static int file_archive_parse_file_iterate_step_internal(
       zlib_transfer_t *state, char *filename,
       const uint8_t **cdata,
@@ -438,7 +427,7 @@ bool file_archive_inflate_data_to_file_init(
    if (!(handle->stream = (z_stream*)handle->backend->stream_new()))
       goto error;
    
-   if (!(zlib_inflate_init2(handle->stream)))
+   if (inflateInit2(handle->stream, -MAX_WBITS) != Z_OK)
       goto error;
 
    handle->data = (uint8_t*)malloc(size);
