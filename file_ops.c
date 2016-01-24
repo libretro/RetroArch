@@ -85,11 +85,11 @@ static bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
 }
 
 /* Extract the relative path (needle) from a 7z archive 
- * archive_path and allocate a buf for it to write it in.
+ * (path) and allocate a buf for it to write it in.
  * If optional_outfile is set, extract to that instead and don't alloc buffer.
  */
 static int read_7zip_file(
-      const char *archive_path,
+      const char *path,
       const char *needle, void **buf,
       const char *optional_outfile)
 {
@@ -110,14 +110,14 @@ static int read_7zip_file(
    allocTempImp.Alloc   = SzAllocTemp;
    allocTempImp.Free    = SzFreeTemp;
 
-   if (InFile_Open(&archiveStream.file, archive_path))
+   if (InFile_Open(&archiveStream.file, path))
    {
-      RARCH_ERR("Could not open %s as 7z archive\n.",archive_path);
+      RARCH_ERR("Could not open %s as 7z archive\n.", path);
       return -1;
    }
 
    RARCH_LOG_OUTPUT("Opened archive %s. Now trying to extract %s\n",
-         archive_path, needle);
+         path, needle);
 
    FileInStream_CreateVTable(&archiveStream);
    LookToRead_CreateVTable(&lookStream, False);
@@ -212,7 +212,7 @@ static int read_7zip_file(
       {
          /* Error handling */
          if (!file_found)
-            RARCH_ERR("File %s not found in %s\n", needle, archive_path);
+            RARCH_ERR("File %s not found in %s\n", needle, path);
 
          RARCH_ERR("Failed to open compressed file inside 7zip archive.\n");
 
@@ -356,7 +356,7 @@ end:
 #define RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX 16384
 
 /* Extract the relative path (needle) from a 
- * zip archive archive_path and allocate a buf for it to write it in. */
+ * ZIP archive (path) and allocate a buf for it to write it in. */
 /* This code is inspired by:
  * stackoverflow.com/questions/10440113/simple-way-to-unzip-a-zip-file-using-zlib
  *
@@ -364,7 +364,7 @@ end:
  * then.
  */
 
-static int read_zip_file(const char *archive_path,
+static int read_zip_file(const char *path,
       const char *needle, void **buf,
       const char* optional_outfile)
 {
@@ -372,7 +372,7 @@ static int read_zip_file(const char *archive_path,
    unz_global_info global_info;
    ssize_t    bytes_read = -1;
    bool finished_reading = false;
-   unzFile      *zipfile = (unzFile*)unzOpen(archive_path);
+   unzFile      *zipfile = (unzFile*)unzOpen(path);
 
    if (!zipfile)
       return -1;
@@ -421,7 +421,7 @@ static int read_zip_file(const char *archive_path,
                RARCH_ERR(
                      "Tried to read %d bytes, but only got %d of file %s in ZIP %s.\n",
                      (unsigned int) file_info.uncompressed_size, (int)bytes_read,
-                     needle, archive_path);
+                     needle, path);
                free(*buf);
                goto close;
             }
