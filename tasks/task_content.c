@@ -18,6 +18,8 @@
 #include "tasks.h"
 #include "../command_event.h"
 
+/* TODO/FIXME - turn this into actual task */
+
 bool rarch_task_push_content_load_default(
       const char *core_path, const char *fullpath,
       bool persist, enum rarch_core_type type,
