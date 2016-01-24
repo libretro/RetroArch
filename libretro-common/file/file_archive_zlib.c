@@ -133,8 +133,6 @@ static bool zlib_stream_decompress_data_to_file_init(
       zlib_file_handle_t *handle,
       const uint8_t *cdata,  uint32_t csize, uint32_t size)
 {
-   z_stream *stream = NULL;
-
    if (!handle)
       return false;
 
@@ -149,12 +147,7 @@ static bool zlib_stream_decompress_data_to_file_init(
    if (!handle->data)
       goto error;
 
-   stream            = (z_stream*)handle->stream;
-
-   if (!stream)
-      goto error;
-
-   zlib_stream_set(stream, csize, size,
+   zlib_stream_set(handle->stream, csize, size,
          (const uint8_t*)cdata, handle->data);
 
    return true;
