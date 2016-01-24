@@ -395,14 +395,6 @@ static bool load_content_append_to_temporary_content(
       const char *elem,
       union string_list_elem_attr attributes)
 {
-   if (!temporary_content)
-   {
-      temporary_content = string_list_new();
-      if (!temporary_content)
-         return false;
-   }
-
-   string_list_append(temporary_content, elem, attributes);
    return true;
 }
 
@@ -462,7 +454,7 @@ static bool load_content_from_compressed_archive(
    info[i].path = 
       additional_path_allocs->elems[additional_path_allocs->size -1 ].data;
 
-   if (!load_content_append_to_temporary_content(temporary_content, new_path, attributes))
+   if (!string_list_append(temporary_content, new_path, attributes))
       return false;
 
    return true;
@@ -641,6 +633,7 @@ static bool init_content_file_extract(
          if (!load_content_append_to_temporary_content(temporary_content,
                   temp_content, *attr))
             return false;
+         break;
       }
    }
    
@@ -802,6 +795,9 @@ bool content_ctl(enum content_ctl_state state, void *data)
          break;
       case CONTENT_CTL_INIT:
          content_is_inited = false;
+         temporary_content = string_list_new();
+         if (!temporary_content)
+            return false;
          if (content_init_file(temporary_content))
          {
             content_is_inited = true;
