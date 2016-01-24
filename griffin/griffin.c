@@ -42,6 +42,7 @@ CONSOLE EXTENSIONS
 
 #ifdef HAVE_ZLIB
 #include "../libretro-common/file/file_extract.c"
+#include "../libretro-common/file/file_extract_zlib.c"
 #endif
 
 /*============================================================

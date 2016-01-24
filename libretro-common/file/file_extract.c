@@ -20,11 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <compat/zlib.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <compat/zlib.h>
 #include <compat/strl.h>
 
 #include <file/file_extract.h>
@@ -34,19 +35,6 @@
 #include <retro_miscellaneous.h>
 #include <string/string_list.h>
 
-/* File backends. Can be fleshed out later, but keep it simple for now.
- * The file is mapped to memory directly (via mmap() or just 
- * plain retro_read_file()).
- */
-
-struct zlib_file_backend
-{
-   void          *(*open)(const char *path);
-   const uint8_t *(*data)(void *handle);
-   size_t         (*size)(void *handle);
-   void           (*free)(void *handle); /* Closes, unmaps and frees. */
-};
-
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
 #define CENTRAL_FILE_HEADER_SIGNATURE 0x02014b50
 #endif
@@ -55,153 +43,10 @@ struct zlib_file_backend
 #define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
 #endif
 
-#ifdef HAVE_MMAP
-#include <fcntl.h>
-#include <errno.h>
-#include <unistd.h>
-
-#include <sys/mman.h>
-#include <sys/stat.h>
-
-typedef struct
-{
-   int fd;
-   void *data;
-   size_t size;
-} zlib_file_data_t;
-
-static void zlib_file_free(void *handle)
-{
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
-
-   if (!data)
-      return;
-
-   if (data->data)
-      munmap(data->data, data->size);
-   if (data->fd >= 0)
-      close(data->fd);
-   free(data);
-}
-
-static const uint8_t *zlib_file_data(void *handle)
-{
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
-   if (!data)
-      return NULL;
-   return (const uint8_t*)data->data;
-}
-
-static size_t zlib_file_size(void *handle)
-{
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
-   if (!data)
-      return 0;
-   return data->size;
-}
-
-static void *zlib_file_open(const char *path)
-{
-   zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
-
-   if (!data)
-      return NULL;
-
-   data->fd = open(path, O_RDONLY);
-
-   /* Failed to open archive. */
-   if (data->fd < 0)
-      goto error;
-
-   data->size = path_get_size(path);
-   if (!data->size)
-      return data;
-
-   data->data = mmap(NULL, data->size, PROT_READ, MAP_SHARED, data->fd, 0);
-   if (data->data == MAP_FAILED)
-   {
-      data->data = NULL;
-
-      /* Failed to mmap() file */
-      goto error;
-   }
-
-   return data;
-
-error:
-   zlib_file_free(data);
-   return NULL;
-}
-#else
-typedef struct
-{
-   void *data;
-   size_t size;
-} zlib_file_data_t;
-
-static void zlib_file_free(void *handle)
-{
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
-   if (!data)
-      return;
-   free(data->data);
-   free(data);
-}
-
-static const uint8_t *zlib_file_data(void *handle)
-{
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
-   if (!data)
-      return NULL;
-   return (const uint8_t*)data->data;
-}
-
-static size_t zlib_file_size(void *handle)
-{
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
-   if (!data)
-      return 0;
-   return data->size;
-}
-
-static void *zlib_file_open(const char *path)
-{
-   ssize_t ret = -1;
-   bool read_from_file = false;
-   zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
-
-   if (!data)
-      return NULL;
-
-   read_from_file = retro_read_file(path, &data->data, &ret);
-
-   if (!read_from_file || ret < 0)
-   {
-      /* Failed to open archive. */
-      goto error;
-   }
-
-   data->size = ret;
-   return data;
-
-error:
-   zlib_file_free(data);
-   return NULL;
-}
-#endif
-
-static const struct zlib_file_backend zlib_backend = {
-   zlib_file_open,
-   zlib_file_data,
-   zlib_file_size,
-   zlib_file_free,
-};
-
 static const struct zlib_file_backend *zlib_get_default_file_backend(void)
 {
    return &zlib_backend;
 }
-
 
 #undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \

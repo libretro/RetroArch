@@ -55,6 +55,19 @@ typedef struct zlib_transfer
    const struct zlib_file_backend *backend;
 } zlib_transfer_t;
 
+/* File backends. Can be fleshed out later, but keep it simple for now.
+ * The file is mapped to memory directly (via mmap() or just 
+ * plain retro_read_file()).
+ */
+
+struct zlib_file_backend
+{
+   void          *(*open)(const char *path);
+   const uint8_t *(*data)(void *handle);
+   size_t         (*size)(void *handle);
+   void           (*free)(void *handle); /* Closes, unmaps and frees. */
+};
+
 /* Returns true when parsing should continue. False to stop. */
 typedef int (*zlib_file_cb)(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
@@ -172,6 +185,8 @@ uint64_t zlib_stream_get_total_out(void *data);
 
 void zlib_stream_decrement_total_out(void *data,
       unsigned subtraction);
+
+const struct zlib_file_backend zlib_backend;
 
 #endif
 
