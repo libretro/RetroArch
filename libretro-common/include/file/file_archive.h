@@ -62,10 +62,7 @@ typedef struct zlib_transfer
 
 struct zlib_file_backend
 {
-   void          *(*open)(const char *path);
-   const uint8_t *(*data)(void *handle);
-   size_t         (*size)(void *handle);
-   void           (*free)(void *handle); /* Closes, unmaps and frees. */
+   const char *ident;
 };
 
 /* Returns true when parsing should continue. False to stop. */

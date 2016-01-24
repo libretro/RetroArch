@@ -20,14 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <compat/zlib.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <compat/strl.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#ifdef HAVE_MMAP
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+
+#include <sys/mman.h>
+#include <sys/stat.h>
+#endif
+
+#include <compat/strl.h>
+#include <compat/zlib.h>
 #include <file/file_archive.h>
 #include <file/file_path.h>
 #include <retro_file.h>
@@ -58,6 +70,133 @@ enum zlib_compression_mode
    ZLIB_MODE_UNCOMPRESSED = 0,
    ZLIB_MODE_DEFLATE      = 8
 };
+
+typedef struct
+{
+#ifdef HAVE_MMAP
+   int fd;
+#endif
+   void *data;
+   size_t size;
+} zlib_file_data_t;
+
+#ifdef HAVE_MMAP
+/* Closes, unmaps and frees. */
+static void file_archive_free(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+
+   if (!data)
+      return;
+
+   if (data->data)
+      munmap(data->data, data->size);
+   if (data->fd >= 0)
+      close(data->fd);
+   free(data);
+}
+
+static const uint8_t *file_archive_data(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   if (!data)
+      return NULL;
+   return (const uint8_t*)data->data;
+}
+
+static size_t file_archive_size(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   if (!data)
+      return 0;
+   return data->size;
+}
+
+static void *file_archive_open(const char *path)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
+
+   if (!data)
+      return NULL;
+
+   data->fd = open(path, O_RDONLY);
+
+   /* Failed to open archive. */
+   if (data->fd < 0)
+      goto error;
+
+   data->size = path_get_size(path);
+   if (!data->size)
+      return data;
+
+   data->data = mmap(NULL, data->size, PROT_READ, MAP_SHARED, data->fd, 0);
+   if (data->data == MAP_FAILED)
+   {
+      data->data = NULL;
+
+      /* Failed to mmap() file */
+      goto error;
+   }
+
+   return data;
+
+error:
+   file_archive_free(data);
+   return NULL;
+}
+#else
+
+/* Closes, unmaps and frees. */
+static void file_archive_free(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   if (!data)
+      return;
+   free(data->data);
+   free(data);
+}
+
+static const uint8_t *file_archive_data(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   if (!data)
+      return NULL;
+   return (const uint8_t*)data->data;
+}
+
+static size_t file_archive_size(void *handle)
+{
+   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   if (!data)
+      return 0;
+   return data->size;
+}
+
+static void *file_archive_open(const char *path)
+{
+   ssize_t ret            = -1;
+   bool read_from_file    = false;
+   zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
+
+   if (!data)
+      return NULL;
+
+   read_from_file = retro_read_file(path, &data->data, &ret);
+
+   if (!read_from_file || ret < 0)
+   {
+      /* Failed to open archive. */
+      goto error;
+   }
+
+   data->size = ret;
+   return data;
+
+error:
+   file_archive_free(data);
+   return NULL;
+}
+#endif
 
 static const struct zlib_file_backend *file_archive_get_default_file_backend(void)
 {
@@ -339,15 +478,15 @@ static int file_archive_parse_file_init(zlib_transfer_t *state,
    if (!state->backend)
       return -1;
 
-   state->handle = state->backend->open(file);
+   state->handle = file_archive_open(file);
    if (!state->handle)
       return -1;
 
-   state->zip_size = state->backend->size(state->handle);
+   state->zip_size = file_archive_size(state->handle);
    if (state->zip_size < 22)
       return -1;
 
-   state->data   = state->backend->data(state->handle);
+   state->data   = file_archive_data(state->handle);
    state->footer = state->data + state->zip_size - 22;
 
    for (;; state->footer--)
@@ -400,7 +539,7 @@ int file_archive_parse_file_iterate(void *data, bool *returnerr, const char *fil
       case ZLIB_TRANSFER_DEINIT:
          if (state->handle)
          {
-            state->backend->free(state->handle);
+            file_archive_free(state->handle);
             state->handle = NULL;
          }
          break;
