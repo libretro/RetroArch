@@ -566,7 +566,7 @@ void menu_display_matrix_4x4_rotate_z(math_matrix_4x4 *matrix, float rotation,
 unsigned menu_display_texture_load(void *data,
       enum texture_filter_type filter_type)
 {
-   unsigned id;
+   unsigned id = 0;
    video_driver_texture_load(data, filter_type, &id);
    return id;
 }
