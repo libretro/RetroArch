@@ -400,7 +400,7 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
             ret = zlib_inflate_data_to_file_iterate(handle.stream);
          }while(ret == 0);
 
-         handle.real_checksum = zlib_crc32_calculate(handle.data, size);
+         handle.real_checksum = zlib_crc32_calculate(0, handle.data, size);
 
          if (handle.real_checksum != crc32)
          {

@@ -186,7 +186,7 @@ patch_error_t bps_apply_patch(
       modify_modify_checksum |= bps_read(&bps) << i;
 
 #ifdef HAVE_ZLIB
-   bps.source_checksum = zlib_crc32_calculate(bps.source_data, bps.source_length);
+   bps.source_checksum = zlib_crc32_calculate(0, bps.source_data, bps.source_length);
 #else
    return PATCH_PATCH_CHECKSUM_INVALID;
 #endif

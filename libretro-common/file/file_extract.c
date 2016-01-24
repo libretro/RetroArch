@@ -203,9 +203,9 @@ int zlib_inflate_data_to_file_iterate(void *data)
    return 0;
 }
 
-uint32_t zlib_crc32_calculate(const uint8_t *data, size_t length)
+uint32_t zlib_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length)
 {
-   return crc32(0, data, length);
+   return crc32(crc, data, length);
 }
 
 uint32_t zlib_crc32_adjust(uint32_t crc, uint8_t data)
@@ -245,7 +245,7 @@ int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
       goto end;
    }
 
-   handle->real_checksum = zlib_crc32_calculate(handle->data, size);
+   handle->real_checksum = zlib_crc32_calculate(0, handle->data, size);
 
 #if 0
    if (handle->real_checksum != checksum)

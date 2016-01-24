@@ -208,7 +208,7 @@ static int database_info_iterate_playlist(
 
 
 #ifdef HAVE_ZLIB
-            db_state->crc = zlib_crc32_calculate(db_state->buf, ret);
+            db_state->crc = zlib_crc32_calculate(0, db_state->buf, ret);
 #endif
             db->type = DATABASE_TYPE_CRC_LOOKUP;
          }

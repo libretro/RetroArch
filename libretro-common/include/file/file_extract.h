@@ -73,7 +73,7 @@ typedef int (*zlib_file_cb)(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata);
 
-uint32_t zlib_crc32_calculate(const uint8_t *data, size_t length);
+uint32_t zlib_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length);
 
 uint32_t zlib_crc32_adjust(uint32_t crc, uint8_t data);
 
