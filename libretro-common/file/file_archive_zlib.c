@@ -31,7 +31,15 @@ static void *zlib_stream_new(void)
    return (z_stream*)calloc(1, sizeof(z_stream));
 }
 
+static void zlib_stream_free(void *data)
+{
+   z_stream *ret = (z_stream*)data;
+   if (ret)
+      inflateEnd(ret);
+}
+
 const struct zlib_file_backend zlib_backend = {
    zlib_stream_new,
+   zlib_stream_free,
    "zlib"
 };

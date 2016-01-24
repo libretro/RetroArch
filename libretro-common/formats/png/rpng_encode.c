@@ -364,7 +364,7 @@ end:
    free(avg_filtered);
    free(paeth_filtered);
 
-   zlib_stream_free(stream);
+   stream_backend->stream_free(stream);
    return ret;
 }
 

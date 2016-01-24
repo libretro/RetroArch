@@ -434,13 +434,6 @@ bool file_archive_inflate_init(void *data)
    return true;
 }
 
-void zlib_stream_free(void *data)
-{
-   z_stream *ret = (z_stream*)data;
-   if (ret)
-      inflateEnd(ret);
-}
-
 void zlib_stream_deflate_free(void *data)
 {
    z_stream *ret = (z_stream*)data;
@@ -487,7 +480,7 @@ bool file_archive_inflate_data_to_file_init(
 
 error:
    if (handle->stream)
-      zlib_stream_free(handle->stream);
+      handle->backend->stream_free(handle->stream);
    free(handle->stream);
    if (handle->data)
       free(handle->data);
@@ -564,7 +557,7 @@ int file_archive_inflate_data_to_file(
 {
    if (handle)
    {
-      zlib_stream_free(handle->stream);
+      handle->backend->stream_free(handle->stream);
       free(handle->stream);
    }
 

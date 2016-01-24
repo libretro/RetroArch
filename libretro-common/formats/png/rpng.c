@@ -714,7 +714,7 @@ static int rpng_load_image_argb_process_inflate_init(rpng_t *rpng,
    return 0;
 
 end:
-   zlib_stream_free(rpng->process.stream);
+   rpng->process.stream_backend->stream_free(rpng->process.stream);
 
    *width  = rpng->ihdr.width;
    *height = rpng->ihdr.height;
@@ -741,7 +741,7 @@ end:
    return 1;
 
 error:
-   zlib_stream_free(rpng->process.stream);
+   rpng->process.stream_backend->stream_free(rpng->process.stream);
 
 false_end:
    rpng->process.inflate_initialized = false;
@@ -985,7 +985,7 @@ void rpng_nbio_load_image_free(rpng_t *rpng)
       free(rpng->process.inflate_buf);
    if (rpng->process.stream)
    {
-      zlib_stream_free(rpng->process.stream);
+      rpng->process.stream_backend->stream_free(rpng->process.stream);
       free(rpng->process.stream);
    }
 

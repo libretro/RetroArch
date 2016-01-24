@@ -40,6 +40,7 @@ enum zlib_transfer_type
 struct zlib_file_backend
 {
    void *(*stream_new)(void);
+   void  (*stream_free)(void *);
    const char *ident;
 };
 
@@ -155,7 +156,6 @@ bool file_archive_perform_mode(const char *name, const char *valid_exts,
 struct string_list *compressed_file_list_new(const char *filename,
       const char* ext);
 
-void zlib_stream_free(void *data);
 
 void zlib_deflate_init(void *data, int level);
 
