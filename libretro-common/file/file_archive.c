@@ -481,22 +481,6 @@ error:
    return false;
 }
 
-int zlib_deflate_data_to_file(void *data)
-{
-   int zstatus;
-   z_stream *stream = (z_stream*)data;
-
-   if (!stream)
-      return -1;
-
-   zstatus = deflate(stream, Z_FINISH);
-
-   if (zstatus == Z_STREAM_END)
-      return 1;
-
-   return 0;
-}
-
 int file_archive_inflate_data_to_file_iterate(void *data)
 {
    int zstatus;

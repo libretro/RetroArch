@@ -83,6 +83,22 @@ static void zlib_stream_compress_free(void *data)
       deflateEnd(ret);
 }
 
+static int zlib_stream_compress_data_to_file(void *data)
+{
+   int zstatus;
+   z_stream *stream = (z_stream*)data;
+
+   if (!stream)
+      return -1;
+
+   zstatus = deflate(stream, Z_FINISH);
+
+   if (zstatus == Z_STREAM_END)
+      return 1;
+
+   return 0;
+}
+
 const struct zlib_file_backend zlib_backend = {
    zlib_stream_new,
    zlib_stream_free,
@@ -91,5 +107,6 @@ const struct zlib_file_backend zlib_backend = {
    zlib_stream_get_total_out,
    zlib_stream_decrement_total_out,
    zlib_stream_compress_free,
+   zlib_stream_compress_data_to_file,
    "zlib"
 };
