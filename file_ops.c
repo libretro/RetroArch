@@ -139,7 +139,7 @@ static int read_7zip_file(
       for (i = 0; i < db.db.NumFiles; i++)
       {
          size_t len;
-         char infile[PATH_MAX_LENGTH] = {0};
+         char infile[PATH_MAX_LENGTH];
          size_t offset           = 0;
          size_t outSizeProcessed = 0;
          const CSzFileItem    *f = db.db.Files + i;
@@ -156,6 +156,7 @@ static int read_7zip_file(
             free(temp);
             temp_size = len;
             temp = (uint16_t *)malloc(temp_size * sizeof(temp[0]));
+
             if (temp == 0)
             {
                res = SZ_ERROR_MEM;
@@ -240,15 +241,8 @@ static struct string_list *compressed_7zip_file_list_new(
    ISzAlloc allocTempImp;
    uint16_t *temp               = NULL;
    size_t temp_size             = 0;
-   struct string_list *ext_list = NULL;
-   struct string_list     *list = string_list_new();
-
-   if (!list)
-      return NULL;
-
-   if (ext)
-      ext_list = string_split(ext, "|");
-
+   struct string_list     *list = NULL;
+   
    /* These are the allocation routines - currently using 
     * the non-standard 7zip choices. */
    allocImp.Alloc     = SzAlloc;
@@ -259,12 +253,15 @@ static struct string_list *compressed_7zip_file_list_new(
    if (InFile_Open(&archiveStream.file, path))
    {
       RARCH_ERR("Could not open %s as 7z archive.\n",path);
+      return NULL;
+   }
 
-      if (ext_list)
-         string_list_free(ext_list);
-      string_list_free(list);
-      list = NULL;
-      goto end;
+   list = string_list_new();
+
+   if (!list)
+   {
+      File_Close(&archiveStream.file);
+      return NULL;
    }
 
    FileInStream_CreateVTable(&archiveStream);
@@ -277,13 +274,14 @@ static struct string_list *compressed_7zip_file_list_new(
    if (SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp) == SZ_OK)
    {
       uint32_t i;
-      SRes res  = SZ_OK;
+      struct string_list *ext_list = ext ? string_split(ext, "|"): NULL;
+      SRes res                     = SZ_OK;
 
       for (i = 0; i < db.db.NumFiles; i++)
       {
          union string_list_elem_attr attr;
+         char infile[PATH_MAX_LENGTH];
          const char *file_ext         = NULL;
-         char infile[PATH_MAX_LENGTH] = {0};
          size_t                   len = 0;
          bool supported_by_core       = false;
          const CSzFileItem         *f = db.db.Files + i;
@@ -332,6 +330,8 @@ static struct string_list *compressed_7zip_file_list_new(
          }
       }
 
+      string_list_free(ext_list);
+
       if (res != SZ_OK)
       {
          /* Error handling */
@@ -342,12 +342,10 @@ static struct string_list *compressed_7zip_file_list_new(
       }
    }
 
-end:
    SzArEx_Free(&db, &allocImp);
    free(temp);
    File_Close(&archiveStream.file);
 
-   string_list_free(ext_list);
    return list;
 }
 #endif
