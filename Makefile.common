@@ -839,13 +839,9 @@ ifeq ($(WANT_ZLIB),1)
           deps/zlib/inftrees.o \
           deps/zlib/trees.o \
           deps/zlib/uncompr.o \
-          deps/zlib/zutil.o \
-          deps/zlib/ioapi.o \
-          deps/zlib/unzip.o
+          deps/zlib/zutil.o
 else
 ifeq ($(HAVE_ZLIB),1)
-ZLIB_OBJS = deps/zlib/unzip.o \
-            deps/zlib/ioapi.o
 OBJ += $(ZLIB_OBJS)
 HAVE_ZLIB_DEFLATE = 1
 endif

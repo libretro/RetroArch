@@ -880,12 +880,6 @@ DEPENDENCIES
 #include "../deps/zlib/zutil.c"
 #endif
 
-/* Decompression support always requires the next two files */
-#if defined(WANT_ZLIB) || defined(HAVE_ZLIB)
-#include "../deps/zlib/ioapi.c"
-#include "../deps/zlib/unzip.c"
-#endif
-
 #ifdef HAVE_7ZIP
 #include "../deps/7zip/7zIn.c"
 #include "../deps/7zip/7zAlloc.c"
