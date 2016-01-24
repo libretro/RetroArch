@@ -78,12 +78,12 @@ void retro_uninit_libretro_cbs(void)
 void retro_init_libretro_cbs(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
+#ifdef HAVE_NETPLAY
    global_t            *global = global_get_ptr();
+#endif
 
    if (!cbs)
       return;
-
-   (void)global;
 
    core.retro_set_video_refresh(video_driver_frame);
    core.retro_set_audio_sample(audio_driver_sample);
