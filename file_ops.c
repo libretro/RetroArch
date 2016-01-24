@@ -431,17 +431,17 @@ static int read_zip_file(const char *path,
       const char *needle, void **buf,
       const char* optional_outfile)
 {
-   bool returnerr = true;
    zlib_transfer_t zlib;
    struct decomp_state st;
-   int ret     = 0;
+   bool returnerr = true;
+   int ret        = 0;
 
-   zlib.type   = ZLIB_TRANSFER_INIT;
+   zlib.type      = ZLIB_TRANSFER_INIT;
 
-   st.needle   = needle           ? strdup(needle)           : NULL;
-   st.opt_file = optional_outfile ? strdup(optional_outfile) : NULL;
-   st.found    = false;
-   st.buf      = buf;
+   st.needle      = needle           ? strdup(needle)           : NULL;
+   st.opt_file    = optional_outfile ? strdup(optional_outfile) : NULL;
+   st.found       = false;
+   st.buf         = buf;
 
    do
    {

@@ -43,16 +43,26 @@
 #define END_OF_CENTRAL_DIR_SIGNATURE 0x06054b50
 #endif
 
+struct zip_extract_userdata
+{
+   char *zip_path;
+   char *first_extracted_file_path;
+   const char *extraction_directory;
+   size_t zip_path_size;
+   struct string_list *ext;
+   bool found_content;
+};
+
+enum zlib_compression_mode
+{
+   ZLIB_MODE_UNCOMPRESSED = 0,
+   ZLIB_MODE_DEFLATE      = 8
+};
+
 static const struct zlib_file_backend *zlib_get_default_file_backend(void)
 {
    return &zlib_backend;
 }
-
-#undef GOTO_END_ERROR
-#define GOTO_END_ERROR() do { \
-   ret = false; \
-   goto end; \
-} while(0)
 
 static uint32_t read_le(const uint8_t *data, unsigned size)
 {
@@ -247,7 +257,10 @@ int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
 #endif
 
    if (!retro_write_file(path, handle->data, size))
-      GOTO_END_ERROR();
+   {
+      ret = false;
+      goto end;
+   }
 
 end:
    if (handle->data)
@@ -304,7 +317,8 @@ static int zlib_parse_file_iterate_step(zlib_transfer_t *state,
    unsigned cmode       = 0;
    unsigned payload     = 0;
    char filename[PATH_MAX_LENGTH] = {0};
-   int ret = zlib_parse_file_iterate_step_internal(state, filename, &cdata, &cmode, &size, &csize,
+   int ret = zlib_parse_file_iterate_step_internal(state, filename,
+         &cdata, &cmode, &size, &csize,
          &checksum, &payload);
 
    if (ret != 1)
@@ -457,21 +471,6 @@ int zlib_parse_file_progress(void *data)
    return delta * 100 / state->zip_size;
 }
 
-struct zip_extract_userdata
-{
-   char *zip_path;
-   char *first_extracted_file_path;
-   const char *extraction_directory;
-   size_t zip_path_size;
-   struct string_list *ext;
-   bool found_content;
-};
-
-enum zlib_compression_mode
-{
-   ZLIB_MODE_UNCOMPRESSED = 0,
-   ZLIB_MODE_DEFLATE      = 8
-};
 
 static int zip_extract_cb(const char *name, const char *valid_exts,
       const uint8_t *cdata,
@@ -479,9 +478,8 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
       uint32_t checksum, void *userdata)
 {
    struct zip_extract_userdata *data = (struct zip_extract_userdata*)userdata;
-
    /* Extract first content that matches our list. */
-   const char *ext = path_get_extension(name);
+   const char *ext                   = path_get_extension(name);
 
    if (ext && string_list_find_elem(data->ext, ext))
    {
@@ -520,8 +518,8 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
       const char *valid_exts, const char *extraction_directory,
       char *out_path, size_t len)
 {
-   struct string_list *list;
-   bool ret = true;
+   struct string_list *list             = NULL;
+   bool ret                             = true;
    struct zip_extract_userdata userdata = {0};
 
    if (!valid_exts)
@@ -533,7 +531,10 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
 
    list = string_split(valid_exts, "|");
    if (!list)
-      GOTO_END_ERROR();
+   {
+      ret = false;
+      goto end;
+   }
 
    userdata.zip_path             = zip_path;
    userdata.zip_path_size        = zip_path_size;
@@ -543,14 +544,16 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
    if (!zlib_parse_file(zip_path, valid_exts, zip_extract_cb, &userdata))
    {
       /* Parsing ZIP failed. */
-      GOTO_END_ERROR();
+      ret = false;
+      goto end;
    }
 
    if (!userdata.found_content)
    {
       /* Didn't find any content that matched valid extensions
        * for libretro implementation. */
-      GOTO_END_ERROR();
+      ret = false;
+      goto end;
    }
 
    if (*userdata.first_extracted_file_path)
@@ -571,8 +574,8 @@ static int zlib_get_file_list_cb(const char *path, const char *valid_exts,
 {
    union string_list_elem_attr attr;
    struct string_list *ext_list = NULL;
-   const char *file_ext = NULL;
-   struct string_list *list = (struct string_list*)userdata;
+   const char *file_ext         = NULL;
+   struct string_list *list     = (struct string_list*)userdata;
 
    (void)cdata;
    (void)cmode;
