@@ -479,18 +479,16 @@ int read_compressed_file(const char * path, void **buf,
    const char* file_ext               = NULL;
    struct string_list *str_list       = string_split(path, "#");
 
-   if (optional_filename)
+   /* Safety check.
+    * If optional_filename and optional_filename 
+    * exists, we simply return 0,
+    * hoping that optional_filename is the 
+    * same as requested.
+    */
+   if (optional_filename && path_file_exists(optional_filename))
    {
-      /* Safety check.  * If optional_filename and optional_filename 
-       * exists, we simply return 0,
-       * hoping that optional_filename is the 
-       * same as requested.
-       */
-      if(path_file_exists(optional_filename))
-      {
-         *length = 0;
-         return 1;
-      }
+      *length = 0;
+      return 1;
    }
 
    /* We assure that there is something after the '#' symbol.
