@@ -18,7 +18,7 @@ for dat_file in $DAT_dir/*.dat ; do
    name=`echo "$name" | sed "s/\.dat//"`
    ./lua_converter "$lua_RDB_outdir/$name.rdb" dat_converter.lua "$dat_file"
 done
-#./lua_converter "$lua_RDB_outdir/merged.rdb" dat_converter.lua rom.crc $DAT_dir/N*.dat
+./lua_converter "$lua_RDB_outdir/merged.rdb" dat_converter.lua rom.sha1 $DAT_dir/N*.dat
 
 echo
 echo "==========================================================="
@@ -34,7 +34,7 @@ for dat_file in $DAT_dir/*.dat ; do
    name=`echo "$name" | sed "s/\.dat//"`
    ./c_converter "$c_RDB_outdir/$name.rdb" "$dat_file"
 done
-#./c_converter "$c_RDB_outdir/merged.rdb" rom.crc $DAT_dir/N*.dat
+./c_converter "$c_RDB_outdir/merged.rdb" rom.sha1 $DAT_dir/N*.dat
 
 echo
 echo "==========================================================="
