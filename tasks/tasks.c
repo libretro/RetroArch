@@ -163,7 +163,7 @@ static void regular_wait(void)
 
 static void regular_reset(void)
 {
-   rarch_task_t *task;
+   rarch_task_t *task = NULL;
 
    for (task = tasks_running.front; task; task = task->next)
       task->cancelled = true;
@@ -179,7 +179,7 @@ static void regular_deinit(void)
 
 static bool regular_find(rarch_task_finder_t func, void *user_data)
 {
-   rarch_task_t *task;
+   rarch_task_t *task = NULL;
 
    for (task = tasks_running.front; task; task = task->next)
    {
@@ -217,7 +217,8 @@ static void threaded_push_running(rarch_task_t *task)
 
 static void threaded_gather(void)
 {
-   rarch_task_t *task;
+   rarch_task_t *task = NULL;
+
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
       push_task_progress(task);
@@ -231,7 +232,8 @@ static void threaded_gather(void)
 
 static void threaded_wait(void)
 {
-   bool wait;
+   bool wait = false;
+
    do
    {
       threaded_gather();
@@ -244,7 +246,7 @@ static void threaded_wait(void)
 
 static void threaded_reset(void)
 {
-   rarch_task_t *task;
+   rarch_task_t *task = NULL;
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
@@ -307,7 +309,7 @@ static void threaded_worker(void *userdata)
 
 static bool threaded_find(rarch_task_finder_t func, void *user_data)
 {
-   rarch_task_t *task;
+   rarch_task_t *task = NULL;
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
