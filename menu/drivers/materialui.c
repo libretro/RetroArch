@@ -1324,9 +1324,14 @@ static int mui_list_push(void *data, void *userdata,
       case DISPLAYLIST_MAIN_MENU:
          menu_entries_clear(info->list);
 
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_START_CORE), PARSE_ACTION, false);
+
          if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+         {
             menu_displaylist_parse_settings(menu, info,
                   menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION, false);
+         }
 
 #if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
          menu_displaylist_parse_settings(menu, info,

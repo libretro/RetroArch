@@ -1741,6 +1741,15 @@ static int action_ok_rpl_entry(const char *path,
          entry_idx, ACTION_OK_DL_RPL_ENTRY);
 }
 
+static int action_ok_start_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+   if (rarch_task_push_content_load_default(
+            NULL, NULL, false, CORE_TYPE_PLAIN, NULL, NULL))
+      action_ok_push_quick_menu();
+   return 0;
+}
 
 static int action_ok_open_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -1979,6 +1988,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 
    switch (hash)
    {
+      case MENU_LABEL_START_CORE:
+         BIND_ACTION_OK(cbs, action_ok_start_core);
+         break;
       case MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE:
          BIND_ACTION_OK(cbs, action_ok_open_archive_detect_core);
          break;

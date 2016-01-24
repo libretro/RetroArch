@@ -2597,6 +2597,10 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_push    = true;
          break;
       case DISPLAYLIST_MAIN_MENU:
+         runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_START_CORE), PARSE_ACTION, false);
          if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
             menu_displaylist_parse_settings(menu, info,
                   menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION, false);

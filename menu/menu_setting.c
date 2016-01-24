@@ -3267,6 +3267,14 @@ static bool setting_append_list_main_menu_options(
 
    CONFIG_ACTION(
          list, list_info,
+         menu_hash_to_str(MENU_LABEL_START_CORE),
+         menu_hash_to_str(MENU_LABEL_VALUE_START_CORE),
+         &group_info,
+         &subgroup_info,
+         parent_group);
+
+   CONFIG_ACTION(
+         list, list_info,
          menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
          menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS),
          &group_info,
