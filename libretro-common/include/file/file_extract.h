@@ -75,8 +75,6 @@ typedef int (*zlib_file_cb)(const char *name, const char *valid_exts,
 
 uint32_t zlib_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length);
 
-uint32_t zlib_crc32_adjust(uint32_t crc, uint8_t data);
-
 /**
  * zlib_parse_file:
  * @file                        : filename path of archive

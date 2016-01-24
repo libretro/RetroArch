@@ -208,13 +208,6 @@ uint32_t zlib_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length)
    return crc32(crc, data, length);
 }
 
-uint32_t zlib_crc32_adjust(uint32_t crc, uint8_t data)
-{
-   /* zlib and nall have different assumptions on "sign" for this 
-    * function. */
-   return ~crc32(~crc, &data, 1);
-}
-
 /**
  * zlib_inflate_data_to_file:
  * @path                        : filename path of archive.
