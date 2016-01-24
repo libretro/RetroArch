@@ -161,9 +161,7 @@ bool file_archive_perform_mode(const char *name, const char *valid_exts,
 struct string_list *compressed_file_list_new(const char *filename,
       const char* ext);
 
-
 void zlib_deflate_init(void *data, int level);
-
 
 const struct zlib_file_backend *file_archive_get_default_file_backend(void);
 

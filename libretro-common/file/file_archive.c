@@ -281,11 +281,6 @@ static int file_archive_extract_cb(const char *name, const char *valid_exts,
    return 1;
 }
 
-const struct zlib_file_backend *file_archive_get_default_file_backend(void)
-{
-   return &zlib_backend;
-}
-
 static uint32_t read_le(const uint8_t *data, unsigned size)
 {
    unsigned i;
@@ -472,7 +467,6 @@ end:
    return ret;
 }
 
-
 int file_archive_parse_file_iterate(
       zlib_transfer_t *state,
       bool *returnerr,
@@ -638,7 +632,6 @@ end:
    return ret;
 }
 
-
 /**
  * file_archive_get_file_list:
  * @path                        : filename path of archive
@@ -701,4 +694,9 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
    }
 
    return true;
+}
+
+const struct zlib_file_backend *file_archive_get_default_file_backend(void)
+{
+   return &zlib_backend;
 }
