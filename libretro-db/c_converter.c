@@ -38,9 +38,12 @@ typedef struct
    const char* fname;
 } dat_converter_token_t;
 
+
 typedef struct dat_converter_map_t dat_converter_map_t;
 typedef struct dat_converter_list_t dat_converter_list_t;
 typedef union dat_converter_list_item_t dat_converter_list_item_t;
+typedef struct dat_converter_search_tree_t dat_converter_search_tree_t;
+typedef struct dat_converter_bt_node_t dat_converter_bt_node_t;
 
 struct dat_converter_map_t
 {
@@ -57,6 +60,7 @@ struct dat_converter_list_t
 {
    dat_converter_list_enum type;
    dat_converter_list_item_t* values;
+   dat_converter_bt_node_t* bt_root;
    int count;
    int capacity;
 };
@@ -69,6 +73,20 @@ union dat_converter_list_item_t
    dat_converter_list_t* list;
 };
 
+
+struct dat_converter_bt_node_t
+{
+   int index;
+   dat_converter_bt_node_t* right;
+   dat_converter_bt_node_t* left;
+};
+
+int dat_converter_cmp_func(const void *a, const void *b, void *ctx)
+{
+   return strcmp(a, b);
+}
+
+
 dat_converter_list_t* dat_converter_list_create(dat_converter_list_enum type)
 {
    dat_converter_list_t* list = malloc(sizeof(*list));
@@ -76,7 +94,17 @@ dat_converter_list_t* dat_converter_list_create(dat_converter_list_enum type)
    list->count = 0;
    list->capacity = (1 << 2);
    list->values = (dat_converter_list_item_t*)malloc(sizeof(*list->values) * list->capacity);
+   list->bt_root = NULL;
    return list;
+}
+
+void dat_converter_bt_node_free(dat_converter_bt_node_t* node)
+{
+   if(!node)
+      return;
+   dat_converter_bt_node_free(node->left);
+   dat_converter_bt_node_free(node->right);
+   free(node);
 }
 
 void dat_converter_list_free(dat_converter_list_t* list)
@@ -95,6 +123,7 @@ void dat_converter_list_free(dat_converter_list_t* list)
          if (list->values[list->count].map.type == DAT_CONVERTER_LIST_MAP)
             dat_converter_list_free(list->values[list->count].map.value.list);
       }
+      dat_converter_bt_node_free(list->bt_root);
       break;
    default:
       break;
@@ -103,6 +132,35 @@ void dat_converter_list_free(dat_converter_list_t* list)
    free(list->values);
    free(list);
 }
+
+dat_converter_bt_node_t* dat_converter_bt_node_insert(dat_converter_list_t* list, dat_converter_bt_node_t** node, dat_converter_map_t* map)
+{
+   assert(map->key);
+   assert(list->type == DAT_CONVERTER_MAP_LIST);
+
+   if(!*node)
+   {
+      *node = calloc(1, sizeof(dat_converter_bt_node_t));
+      return *node;
+   }
+
+   int diff = strcmp(list->values[(*node)->index].map.key, map->key);
+
+   if(diff < 0)
+      return dat_converter_bt_node_insert(list, &(*node)->left, map);
+   else if(diff > 0)
+      return dat_converter_bt_node_insert(list, &(*node)->right, map);
+
+   /* found match */
+
+   if(list->values[(*node)->index].map.type == DAT_CONVERTER_LIST_MAP)
+      dat_converter_list_free(list->values[(*node)->index].map.value.list);
+
+   list->values[(*node)->index].map = *map;
+
+   return NULL;
+}
+
 
 void dat_converter_list_append(dat_converter_list_t* dst, void* item)
 {
@@ -127,26 +185,19 @@ void dat_converter_list_append(dat_converter_list_t* dst, void* item)
    }
    case DAT_CONVERTER_MAP_LIST:
    {
-      int i;
       dat_converter_map_t* map = (dat_converter_map_t*) item;
       if(!map->key)
-      {
-         dst->values[dst->count].map = *map;
-         break;
-      }
-      for (i = 0; i < dst->count; i++)
-      {
-         if (map->key && dst->values[i].map.key && !strcmp(dst->values[i].map.key, map->key))
-            break;
-      }
-      if (i == dst->count)
          dst->values[dst->count].map = *map;
       else
       {
-         if (dst->values[i].map.type == DAT_CONVERTER_LIST_MAP)
-            dat_converter_list_free(dst->values[i].map.value.list);
-         dst->values[i].map = *map;
-         return;
+         dat_converter_bt_node_t* new_node = dat_converter_bt_node_insert(dst, &dst->bt_root, map);
+         if(new_node)
+         {
+            dst->values[dst->count].map = *map;
+            new_node->index = dst->count;
+         }
+         else
+            return;
       }
       break;
    }
