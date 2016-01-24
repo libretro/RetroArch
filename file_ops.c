@@ -84,13 +84,13 @@ static bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
    return ret;
 }
 
-/* Extract the relative path relative_path from a 7z archive 
+/* Extract the relative path (needle) from a 7z archive 
  * archive_path and allocate a buf for it to write it in.
  * If optional_outfile is set, extract to that instead and don't alloc buffer.
  */
 static int read_7zip_file(
       const char *archive_path,
-      const char *relative_path, void **buf,
+      const char *needle, void **buf,
       const char *optional_outfile)
 {
    CFileInStream archiveStream;
@@ -117,7 +117,7 @@ static int read_7zip_file(
    }
 
    RARCH_LOG_OUTPUT("Opened archive %s. Now trying to extract %s\n",
-         archive_path,relative_path);
+         archive_path, needle);
 
    FileInStream_CreateVTable(&archiveStream);
    LookToRead_CreateVTable(&lookStream, False);
@@ -164,7 +164,7 @@ static int read_7zip_file(
          SzArEx_GetFileNameUtf16(&db, i, temp);
          res = utf16_to_char_string(temp, infile, sizeof(infile)) ? SZ_OK : SZ_ERROR_FAIL;
 
-         if (string_is_equal(infile, relative_path))
+         if (string_is_equal(infile, needle))
          {
             /* C LZMA SDK does not support chunked extraction - see here:
              * sourceforge.net/p/sevenzip/discussion/45798/thread/6fb59aaf/
@@ -212,7 +212,7 @@ static int read_7zip_file(
       {
          /* Error handling */
          if (!file_found)
-            RARCH_ERR("File %s not found in %s\n", relative_path, archive_path);
+            RARCH_ERR("File %s not found in %s\n", needle, archive_path);
 
          RARCH_ERR("Failed to open compressed file inside 7zip archive.\n");
 
@@ -355,7 +355,7 @@ end:
 
 #define RARCH_ZIP_SUPPORT_BUFFER_SIZE_MAX 16384
 
-/* Extract the relative path relative_path from a 
+/* Extract the relative path (needle) from a 
  * zip archive archive_path and allocate a buf for it to write it in. */
 /* This code is inspired by:
  * stackoverflow.com/questions/10440113/simple-way-to-unzip-a-zip-file-using-zlib
@@ -365,7 +365,7 @@ end:
  */
 
 static int read_zip_file(const char *archive_path,
-      const char *relative_path, void **buf,
+      const char *needle, void **buf,
       const char* optional_outfile)
 {
    uLong i;
@@ -399,7 +399,7 @@ static int read_zip_file(const char *archive_path,
       {
          /* We skip directories */
       }
-      else if (string_is_equal(filename, relative_path))
+      else if (string_is_equal(filename, needle))
       {
          /* We found the correct file in the zip, 
           * now extract it to *buf. */
@@ -421,7 +421,7 @@ static int read_zip_file(const char *archive_path,
                RARCH_ERR(
                      "Tried to read %d bytes, but only got %d of file %s in ZIP %s.\n",
                      (unsigned int) file_info.uncompressed_size, (int)bytes_read,
-                     relative_path, archive_path);
+                     needle, archive_path);
                free(*buf);
                goto close;
             }
