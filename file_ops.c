@@ -403,7 +403,7 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
             ret = handle.backend->stream_decompress_data_to_file_iterate(handle.stream);
          }while(ret == 0);
 
-         handle.real_checksum = file_archive_crc32_calculate(0, handle.data, size);
+         handle.real_checksum = handle.backend->stream_crc_calculate(0, handle.data, size);
 
          if (handle.real_checksum != crc32)
          {

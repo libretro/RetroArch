@@ -202,13 +202,17 @@ static int database_info_iterate_playlist(
          {
             ssize_t ret;
             int read_from            = read_file(name, (void**)&db_state->buf, &ret);
+#ifdef HAVE_ZLIB
+            const struct zlib_file_backend *stream_backend = 
+               file_archive_get_default_file_backend();
+#endif
 
             if (read_from != 1 || ret <= 0)
                return 0;
 
 
 #ifdef HAVE_ZLIB
-            db_state->crc = file_archive_crc32_calculate(0, db_state->buf, ret);
+            db_state->crc = stream_backend->stream_crc_calculate(0, db_state->buf, ret);
 #endif
             db->type = DATABASE_TYPE_CRC_LOOKUP;
          }

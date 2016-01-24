@@ -76,6 +76,8 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 {
 #ifdef HAVE_ZLIB
    uint32_t *content_crc_ptr = NULL;
+   const struct zlib_file_backend *stream_backend = 
+      file_archive_get_default_file_backend();
 #endif
    uint8_t *ret_buf          = NULL;
    global_t *global          = global_get_ptr();
@@ -97,8 +99,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 
 #ifdef HAVE_ZLIB
    content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
-
-   *content_crc_ptr = file_archive_crc32_calculate(0, ret_buf, *length);
+   *content_crc_ptr = stream_backend->stream_crc_calculate(0, ret_buf, *length);
 
    RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
 #endif

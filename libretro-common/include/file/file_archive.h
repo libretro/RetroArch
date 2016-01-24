@@ -62,6 +62,7 @@ struct zlib_file_backend
    void     (*stream_compress_init)(void *, int);
    void     (*stream_compress_free)(void *);
    int      (*stream_compress_data_to_file)(void *);
+   uint32_t (*stream_crc_calculate)(uint32_t, const uint8_t *, size_t);
    const char *ident;
 };
 
@@ -81,8 +82,6 @@ typedef struct zlib_transfer
 typedef int (*file_archive_file_cb)(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata);
-
-uint32_t file_archive_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length);
 
 /**
  * zlib_parse_file:

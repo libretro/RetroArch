@@ -188,6 +188,12 @@ static void zlib_stream_compress_init(void *data, int level)
       deflateInit(stream, level);
 }
 
+static uint32_t zlib_stream_crc32_calculate(uint32_t crc,
+      const uint8_t *data, size_t length)
+{
+   return crc32(crc, data, length);
+}
+
 const struct zlib_file_backend zlib_backend = {
    zlib_stream_new,
    zlib_stream_free,
@@ -202,5 +208,6 @@ const struct zlib_file_backend zlib_backend = {
    zlib_stream_compress_init,
    zlib_stream_compress_free,
    zlib_stream_compress_data_to_file,
+   zlib_stream_crc32_calculate,
    "zlib"
 };

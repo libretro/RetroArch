@@ -39,7 +39,6 @@
 #endif
 
 #include <compat/strl.h>
-#include <compat/zlib.h>
 #include <file/file_archive.h>
 #include <file/file_path.h>
 #include <retro_file.h>
@@ -399,14 +398,6 @@ static int file_archive_parse_file_init(zlib_transfer_t *state,
    return 0;
 }
 
-uint32_t file_archive_crc32_calculate(
-      uint32_t crc,
-      const uint8_t *data,
-      size_t length)
-{
-   return crc32(crc, data, length);
-}
-
 /**
  * file_archive_inflate_data_to_file:
  * @path                        : filename path of archive.
@@ -443,7 +434,7 @@ int file_archive_inflate_data_to_file(
       goto end;
    }
 
-   handle->real_checksum = file_archive_crc32_calculate(
+   handle->real_checksum = handle->backend->stream_crc_calculate(
          0, handle->data, size);
 
 #if 0
