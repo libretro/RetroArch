@@ -76,10 +76,10 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
    NULL,
 };
 
-static menu_display_t  menu_display_state;
 
 static menu_display_t *menu_display_get_ptr(void)
 {
+   static menu_display_t  menu_display_state;
    return &menu_display_state;
 }
 
@@ -103,7 +103,7 @@ void menu_display_free(void)
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_FRAMEBUF_DEINIT, NULL);
-   memset(&menu_display_state, 0, sizeof(menu_display_t));
+   memset(menu_display_get_ptr(), 0, sizeof(menu_display_t));
 }
 
 bool menu_display_init(void)

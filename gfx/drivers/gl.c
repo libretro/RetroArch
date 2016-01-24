@@ -985,7 +985,7 @@ static void gl_check_fbo_dimension(gl_t *gl, unsigned i, GLuint fbo, GLuint text
 {
    GLenum status;
    unsigned img_width, img_height, max, pow2_size;
-   bool check_dimensions = false;
+   bool check_dimensions         = false;
    struct gfx_fbo_rect *fbo_rect = &gl->fbo_rect[i];
 
    if (!fbo_rect)
