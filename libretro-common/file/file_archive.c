@@ -301,6 +301,7 @@ bool file_archive_inflate_data_to_file_init(
 error:
    if (handle->stream)
       zlib_stream_free(handle->stream);
+   free(handle->stream);
    if (handle->data)
       free(handle->data);
 
