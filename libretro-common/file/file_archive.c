@@ -552,10 +552,8 @@ int file_archive_parse_file_iterate(
          *returnerr = false;
       case ZLIB_TRANSFER_DEINIT:
          if (state->handle)
-         {
             file_archive_free(state->handle);
-            state->handle = NULL;
-         }
+         state->handle = NULL;
          break;
    }
 
