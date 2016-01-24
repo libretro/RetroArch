@@ -423,17 +423,6 @@ void zlib_deflate_init(void *data, int level)
       deflateInit(stream, level);
 }
 
-bool file_archive_inflate_init(void *data)
-{
-   z_stream *stream = (z_stream*)data;
-
-   if (!stream)
-      return false;
-   if (inflateInit(stream) != Z_OK)
-      return false;
-   return true;
-}
-
 bool file_archive_inflate_data_to_file_init(
       zlib_file_handle_t *handle,
       const uint8_t *cdata,  uint32_t csize, uint32_t size)

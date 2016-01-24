@@ -45,6 +45,7 @@ struct zlib_file_backend
    uint32_t (*stream_get_avail_out)(void*);
    uint64_t (*stream_get_total_out)(void*);
    void     (*stream_decrement_total_out)(void *, unsigned);
+   bool     (*stream_decompress_init)(void *);
    void     (*stream_compress_free)(void *);
    int      (*stream_compress_data_to_file)(void *);
    const char *ident;
@@ -161,8 +162,6 @@ struct string_list *compressed_file_list_new(const char *filename,
 
 
 void zlib_deflate_init(void *data, int level);
-
-bool file_archive_inflate_init(void *data);
 
 void zlib_set_stream(void *data,
       uint32_t       avail_in,

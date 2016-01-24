@@ -791,7 +791,7 @@ static bool rpng_load_image_argb_process_init(rpng_t *rpng,
    if (!rpng->process.stream)
       return false;
 
-   if (!file_archive_inflate_init(rpng->process.stream))
+   if (!rpng->process.stream_backend->stream_decompress_init(rpng->process.stream))
       return false;
 
    rpng->process.inflate_buf = (uint8_t*)malloc(rpng->process.inflate_buf_size);
