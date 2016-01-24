@@ -112,7 +112,6 @@ struct rpng_process_t
       unsigned pos;
    } pass;
    void *stream;
-   zlib_file_handle_t handle;
 };
 
 struct rpng

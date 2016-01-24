@@ -367,7 +367,7 @@ struct decomp_state
  * buf will be 0 then.
  */
 
-static int file_decompressed(const char *name, const char *valid_exts,
+static int zip_file_decompressed(const char *name, const char *valid_exts,
    const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
    uint32_t crc32, void *userdata)
 {
@@ -446,7 +446,7 @@ static int read_zip_file(const char *path,
    do
    {
       ret = zlib_parse_file_iterate(&zlib, &returnerr, path,
-            "", file_decompressed, &st);
+            "", zip_file_decompressed, &st);
       if (!returnerr)
          break;
    }while(ret == 0 && !st.found);
