@@ -180,7 +180,7 @@ static int database_info_iterate_playlist(
       case HASH_EXTENSION_ZIP:
 #ifdef HAVE_ZLIB
          db->type = DATABASE_TYPE_ITERATE_ZIP;
-         memset(&db->state, 0, sizeof(zlib_transfer_t));
+         memset(&db->state, 0, sizeof(file_archive_transfer_t));
          db_state->zip_name[0] = '\0';
          db->state.type = ZLIB_TRANSFER_INIT;
 
@@ -203,7 +203,7 @@ static int database_info_iterate_playlist(
             ssize_t ret;
             int read_from            = read_file(name, (void**)&db_state->buf, &ret);
 #ifdef HAVE_ZLIB
-            const struct zlib_file_backend *stream_backend = 
+            const struct file_archive_file_backend *stream_backend = 
                file_archive_get_default_file_backend();
 #endif
 

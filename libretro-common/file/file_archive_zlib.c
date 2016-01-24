@@ -130,7 +130,7 @@ static bool zlib_stream_decompress_init(void *data)
 }
 
 static bool zlib_stream_decompress_data_to_file_init(
-      zlib_file_handle_t *handle,
+      file_archive_file_handle_t *handle,
       const uint8_t *cdata,  uint32_t csize, uint32_t size)
 {
    if (!handle)
@@ -194,7 +194,7 @@ static uint32_t zlib_stream_crc32_calculate(uint32_t crc,
    return crc32(crc, data, length);
 }
 
-const struct zlib_file_backend zlib_backend = {
+const struct file_archive_file_backend zlib_backend = {
    zlib_stream_new,
    zlib_stream_free,
    zlib_stream_set,

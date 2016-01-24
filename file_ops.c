@@ -43,7 +43,7 @@
 #include "verbosity.h"
 
 #ifdef HAVE_COMPRESSION
-static const struct zlib_file_backend *stream_backend;
+static const struct file_archive_file_backend *stream_backend;
 
 #ifdef HAVE_7ZIP
 #include "deps/7zip/7z.h"
@@ -394,7 +394,7 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
       else
       {
          int ret = 0;
-         zlib_file_handle_t handle = {0};
+         file_archive_file_handle_t handle = {0};
          handle.backend = file_archive_get_default_file_backend();
          if (!handle.backend->stream_decompress_data_to_file_init(&handle, cdata, csize, size))
             return false;
@@ -434,7 +434,7 @@ static int read_zip_file(const char *path,
       const char *needle, void **buf,
       const char* optional_outfile)
 {
-   zlib_transfer_t zlib;
+   file_archive_transfer_t zlib;
    struct decomp_state st;
    bool returnerr = true;
    int ret        = 0;

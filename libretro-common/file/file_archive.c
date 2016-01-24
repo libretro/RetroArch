@@ -64,7 +64,7 @@ struct zip_extract_userdata
    bool found_content;
 };
 
-enum zlib_compression_mode
+enum file_archive_compression_mode
 {
    ZLIB_MODE_UNCOMPRESSED = 0,
    ZLIB_MODE_DEFLATE      = 8
@@ -77,13 +77,13 @@ typedef struct
 #endif
    void *data;
    size_t size;
-} zlib_file_data_t;
+} file_archive_file_data_t;
 
 #ifdef HAVE_MMAP
 /* Closes, unmaps and frees. */
 static void file_archive_free(void *handle)
 {
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
 
    if (!data)
       return;
@@ -97,7 +97,7 @@ static void file_archive_free(void *handle)
 
 static const uint8_t *file_archive_data(void *handle)
 {
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
    if (!data)
       return NULL;
    return (const uint8_t*)data->data;
@@ -105,7 +105,7 @@ static const uint8_t *file_archive_data(void *handle)
 
 static size_t file_archive_size(void *handle)
 {
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
    if (!data)
       return 0;
    return data->size;
@@ -113,7 +113,7 @@ static size_t file_archive_size(void *handle)
 
 static void *file_archive_open(const char *path)
 {
-   zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
+   file_archive_file_data_t *data = (file_archive_file_data_t*)calloc(1, sizeof(*data));
 
    if (!data)
       return NULL;
@@ -148,7 +148,7 @@ error:
 /* Closes, unmaps and frees. */
 static void file_archive_free(void *handle)
 {
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
    if (!data)
       return;
    free(data->data);
@@ -157,7 +157,7 @@ static void file_archive_free(void *handle)
 
 static const uint8_t *file_archive_data(void *handle)
 {
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
    if (!data)
       return NULL;
    return (const uint8_t*)data->data;
@@ -165,7 +165,7 @@ static const uint8_t *file_archive_data(void *handle)
 
 static size_t file_archive_size(void *handle)
 {
-   zlib_file_data_t *data = (zlib_file_data_t*)handle;
+   file_archive_file_data_t *data = (file_archive_file_data_t*)handle;
    if (!data)
       return 0;
    return data->size;
@@ -175,7 +175,8 @@ static void *file_archive_open(const char *path)
 {
    ssize_t ret            = -1;
    bool read_from_file    = false;
-   zlib_file_data_t *data = (zlib_file_data_t*)calloc(1, sizeof(*data));
+   file_archive_file_data_t *data = (file_archive_file_data_t*)
+      calloc(1, sizeof(*data));
 
    if (!data)
       return NULL;
@@ -293,7 +294,7 @@ static uint32_t read_le(const uint8_t *data, unsigned size)
 }
 
 static int file_archive_parse_file_iterate_step_internal(
-      zlib_transfer_t *state, char *filename,
+      file_archive_transfer_t *state, char *filename,
       const uint8_t **cdata,
       unsigned *cmode, uint32_t *size, uint32_t *csize,
       uint32_t *checksum, unsigned *payback)
@@ -331,7 +332,7 @@ static int file_archive_parse_file_iterate_step_internal(
    return 1;
 }
 
-static int file_archive_parse_file_iterate_step(zlib_transfer_t *state,
+static int file_archive_parse_file_iterate_step(file_archive_transfer_t *state,
       const char *valid_exts, void *userdata, file_archive_file_cb file_cb)
 {
    const uint8_t *cdata = NULL;
@@ -362,7 +363,7 @@ static int file_archive_parse_file_iterate_step(zlib_transfer_t *state,
    return 1;
 }
 
-static int file_archive_parse_file_init(zlib_transfer_t *state,
+static int file_archive_parse_file_init(file_archive_transfer_t *state,
       const char *file)
 {
    state->backend = file_archive_get_default_file_backend();
@@ -413,7 +414,7 @@ static int file_archive_parse_file_init(zlib_transfer_t *state,
  * Returns: true (1) on success, otherwise false (0).
  **/
 static int file_archive_inflate_data_to_file(
-      zlib_file_handle_t *handle,
+      file_archive_file_handle_t *handle,
       int ret,
       const char *path,
       const char *valid_exts,
@@ -459,7 +460,7 @@ end:
 }
 
 int file_archive_parse_file_iterate(
-      zlib_transfer_t *state,
+      file_archive_transfer_t *state,
       bool *returnerr,
       const char *file,
       const char *valid_exts,
@@ -505,7 +506,7 @@ int file_archive_parse_file_iterate(
    return 0;
 }
 
-void file_archive_parse_file_iterate_stop(zlib_transfer_t *state)
+void file_archive_parse_file_iterate_stop(file_archive_transfer_t *state)
 {
    if (!state || !state->handle)
       return;
@@ -530,7 +531,7 @@ void file_archive_parse_file_iterate_stop(zlib_transfer_t *state)
 bool file_archive_parse_file(const char *file, const char *valid_exts,
       file_archive_file_cb file_cb, void *userdata)
 {
-   zlib_transfer_t state = {0};
+   file_archive_transfer_t state = {0};
    bool returnerr        = true;
 
    state.type = ZLIB_TRANSFER_INIT;
@@ -547,7 +548,7 @@ bool file_archive_parse_file(const char *file, const char *valid_exts,
    return returnerr;
 }
 
-int file_archive_parse_file_progress(zlib_transfer_t *state)
+int file_archive_parse_file_progress(file_archive_transfer_t *state)
 {
    /* FIXME: this estimate is worse than before */
    ptrdiff_t delta = state->directory - state->data;
@@ -663,7 +664,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
       case ZLIB_MODE_DEFLATE:
          {
             int ret = 0;
-            zlib_file_handle_t handle = {0};
+            file_archive_file_handle_t handle = {0};
             handle.backend = file_archive_get_default_file_backend();
 
             if (!handle.backend->stream_decompress_data_to_file_init(&handle,
@@ -687,7 +688,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
    return true;
 }
 
-const struct zlib_file_backend *file_archive_get_default_file_backend(void)
+const struct file_archive_file_backend *file_archive_get_default_file_backend(void)
 {
    return &zlib_backend;
 }

@@ -55,7 +55,7 @@ static uint8_t bps_read(struct bps_data *bps)
 {
    uint8_t data = bps->modify_data[bps->modify_offset++];
 #ifdef HAVE_ZLIB
-   const struct zlib_file_backend *stream_backend = 
+   const struct file_archive_file_backend *stream_backend = 
       file_archive_get_default_file_backend();
    bps->modify_checksum = ~stream_backend->stream_crc_calculate(
          ~bps->modify_checksum, &data, 1);
@@ -83,7 +83,7 @@ static uint64_t bps_decode(struct bps_data *bps)
 static void bps_write(struct bps_data *bps, uint8_t data)
 {
 #ifdef HAVE_ZLIB
-   const struct zlib_file_backend *stream_backend = 
+   const struct file_archive_file_backend *stream_backend = 
       file_archive_get_default_file_backend();
 #endif
    if (!bps)
@@ -107,7 +107,7 @@ patch_error_t bps_apply_patch(
    uint32_t modify_source_checksum = 0, modify_target_checksum = 0,
             modify_modify_checksum = 0, checksum;
 #ifdef HAVE_ZLIB
-   const struct zlib_file_backend *stream_backend = 
+   const struct file_archive_file_backend *stream_backend = 
       file_archive_get_default_file_backend();
 #endif
 
@@ -228,7 +228,7 @@ struct ups_data
 static uint8_t ups_patch_read(struct ups_data *data) 
 {
 #ifdef HAVE_ZLIB
-   const struct zlib_file_backend *stream_backend = 
+   const struct file_archive_file_backend *stream_backend = 
       file_archive_get_default_file_backend();
 #endif
 
@@ -246,7 +246,7 @@ static uint8_t ups_patch_read(struct ups_data *data)
 static uint8_t ups_source_read(struct ups_data *data) 
 {
 #ifdef HAVE_ZLIB
-   const struct zlib_file_backend *stream_backend = 
+   const struct file_archive_file_backend *stream_backend = 
       file_archive_get_default_file_backend();
 #endif
 
@@ -264,7 +264,7 @@ static uint8_t ups_source_read(struct ups_data *data)
 static void ups_target_write(struct ups_data *data, uint8_t n) 
 {
 #ifdef HAVE_ZLIB
-   const struct zlib_file_backend *stream_backend = 
+   const struct file_archive_file_backend *stream_backend = 
       file_archive_get_default_file_backend();
 #endif
 

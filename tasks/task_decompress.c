@@ -37,7 +37,7 @@ typedef struct
 
    char *callback_error;
 
-   zlib_transfer_t zlib;
+   file_archive_transfer_t zlib;
 } decompress_state_t;
 
 static int file_decompressed_target_file(const char *name, const char *valid_exts,

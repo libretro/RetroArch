@@ -28,7 +28,7 @@
 
 #include <boolean.h>
 
-enum zlib_transfer_type
+enum file_archive_transfer_type
 {
    ZLIB_TRANSFER_NONE = 0,
    ZLIB_TRANSFER_INIT,
@@ -37,15 +37,15 @@ enum zlib_transfer_type
    ZLIB_TRANSFER_DEINIT_ERROR
 };
 
-typedef struct zlib_handle
+typedef struct file_archive_handle
 {
    void     *stream;
    uint8_t *data;
    uint32_t real_checksum;
-   const struct zlib_file_backend *backend;
-} zlib_file_handle_t;
+   const struct file_archive_file_backend *backend;
+} file_archive_file_handle_t;
 
-struct zlib_file_backend
+struct file_archive_file_backend
 {
    void *(*stream_new)(void);
    void  (*stream_free)(void *);
@@ -57,7 +57,7 @@ struct zlib_file_backend
    void     (*stream_decrement_total_out)(void *, unsigned);
    bool     (*stream_decompress_init)(void *);
    bool     (*stream_decompress_data_to_file_init)(
-         zlib_file_handle_t *, const uint8_t *,  uint32_t, uint32_t);
+         file_archive_file_handle_t *, const uint8_t *,  uint32_t, uint32_t);
    int      (*stream_decompress_data_to_file_iterate)(void *);
    void     (*stream_compress_init)(void *, int);
    void     (*stream_compress_free)(void *);
@@ -66,16 +66,16 @@ struct zlib_file_backend
    const char *ident;
 };
 
-typedef struct zlib_transfer
+typedef struct file_archive_transfer
 {
    void *handle;
    const uint8_t *footer;
    const uint8_t *directory;
    const uint8_t *data;
    int32_t zip_size;
-   enum zlib_transfer_type type;
-   const struct zlib_file_backend *backend;
-} zlib_transfer_t;
+   enum file_archive_transfer_type type;
+   const struct file_archive_file_backend *backend;
+} file_archive_transfer_t;
 
 
 /* Returns true when parsing should continue. False to stop. */
@@ -84,7 +84,7 @@ typedef int (*file_archive_file_cb)(const char *name, const char *valid_exts,
       uint32_t crc32, void *userdata);
 
 /**
- * zlib_parse_file:
+ * file_archive_parse_file:
  * @file                        : filename path of archive
  * @valid_exts                  : Valid extensions of archive to be parsed. 
  *                                If NULL, allow all.
@@ -100,16 +100,16 @@ bool file_archive_parse_file(const char *file, const char *valid_exts,
       file_archive_file_cb file_cb, void *userdata);
 
 int file_archive_parse_file_iterate(
-      zlib_transfer_t *state,
+      file_archive_transfer_t *state,
       bool *returnerr,
       const char *file,
       const char *valid_exts,
       file_archive_file_cb file_cb,
       void *userdata);
 
-void file_archive_parse_file_iterate_stop(zlib_transfer_t *state);
+void file_archive_parse_file_iterate_stop(file_archive_transfer_t *state);
 
-int file_archive_parse_file_progress(zlib_transfer_t *state);
+int file_archive_parse_file_progress(file_archive_transfer_t *state);
 
 /**
  * file_archive_extract_first_content_file:
@@ -144,11 +144,11 @@ bool file_archive_perform_mode(const char *name, const char *valid_exts,
 struct string_list *compressed_file_list_new(const char *filename,
       const char* ext);
 
-void zlib_deflate_init(void *data, int level);
+void file_archive_deflate_init(void *data, int level);
 
-const struct zlib_file_backend *file_archive_get_default_file_backend(void);
+const struct file_archive_file_backend *file_archive_get_default_file_backend(void);
 
-const struct zlib_file_backend zlib_backend;
+const struct file_archive_file_backend zlib_backend;
 
 #endif
 

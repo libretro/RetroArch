@@ -55,7 +55,7 @@ typedef struct
    size_t list_ptr;
    struct string_list *list;
 #ifdef HAVE_ZLIB
-   zlib_transfer_t state;
+   file_archive_transfer_t state;
 #endif
 } database_info_handle_t;
 

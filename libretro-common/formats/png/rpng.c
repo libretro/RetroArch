@@ -112,7 +112,7 @@ struct rpng_process_t
       unsigned pos;
    } pass;
    void *stream;
-   const struct zlib_file_backend *stream_backend;
+   const struct file_archive_file_backend *stream_backend;
 };
 
 struct rpng

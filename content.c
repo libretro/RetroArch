@@ -76,7 +76,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 {
 #ifdef HAVE_ZLIB
    uint32_t *content_crc_ptr = NULL;
-   const struct zlib_file_backend *stream_backend = 
+   const struct file_archive_file_backend *stream_backend = 
       file_archive_get_default_file_backend();
 #endif
    uint8_t *ret_buf          = NULL;
