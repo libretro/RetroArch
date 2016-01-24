@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <rhash.h>
 
 #include "libretrodb.h"
 
@@ -48,6 +49,7 @@ typedef struct dat_converter_bt_node_t dat_converter_bt_node_t;
 struct dat_converter_map_t
 {
    const char* key;
+   uint32_t hash;
    dat_converter_map_enum type;
    union
    {
@@ -77,6 +79,7 @@ union dat_converter_list_item_t
 struct dat_converter_bt_node_t
 {
    int index;
+   uint32_t hash;
    dat_converter_bt_node_t* right;
    dat_converter_bt_node_t* left;
 };
@@ -144,7 +147,10 @@ dat_converter_bt_node_t* dat_converter_bt_node_insert(dat_converter_list_t* list
       return *node;
    }
 
-   int diff = strcmp(list->values[(*node)->index].map.key, map->key);
+   int diff = (*node)->hash - map->hash;
+
+   if(!diff)
+      diff = strcmp(list->values[(*node)->index].map.key, map->key);
 
    if(diff < 0)
       return dat_converter_bt_node_insert(list, &(*node)->left, map);
@@ -190,11 +196,13 @@ void dat_converter_list_append(dat_converter_list_t* dst, void* item)
          dst->values[dst->count].map = *map;
       else
       {
+         map->hash = djb2_calculate(map->key);
          dat_converter_bt_node_t* new_node = dat_converter_bt_node_insert(dst, &dst->bt_root, map);
          if(new_node)
          {
             dst->values[dst->count].map = *map;
             new_node->index = dst->count;
+            new_node->hash = map->hash;
          }
          else
             return;

@@ -33,6 +33,7 @@ PLAIN_CONVERTER_C = \
 			 bintree.c \
 			 query.c \
 			 plain_converter.c \
+          $(LIBRETRO_COMMON_DIR)/hash/rhash.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
 			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
