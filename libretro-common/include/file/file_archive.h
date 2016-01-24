@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2015 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (file_extract.h).
+ * The following license statement only applies to this file (file_archive.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef FILE_EXTRACT_H__
-#define FILE_EXTRACT_H__
+#ifndef FILE_ARCHIVE_H__
+#define FILE_ARCHIVE_H__
 
 #include <stdint.h>
 #include <stddef.h>

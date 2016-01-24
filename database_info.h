@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
-#include <file/file_extract.h>
+#include <file/file_archive.h>
 #include "libretro-db/libretrodb.h"
 #include "playlist.h"
 

@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2015 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (file_extract.c).
+ * The following license statement only applies to this file (file_archive.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -28,7 +28,7 @@
 
 #include <compat/strl.h>
 
-#include <file/file_extract.h>
+#include <file/file_archive.h>
 #include <file/file_path.h>
 #include <retro_file.h>
 #include <retro_stat.h>
@@ -440,7 +440,7 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
       zlib_file_cb file_cb, void *userdata)
 {
    zlib_transfer_t state = {0};
-   bool returnerr = true;
+   bool returnerr        = true;
 
    state.type = ZLIB_TRANSFER_INIT;
 

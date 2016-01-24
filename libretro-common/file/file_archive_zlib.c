@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2015 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (file_extract_zlib.c).
+ * The following license statement only applies to this file (file_archive_zlib.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -32,7 +32,7 @@
 #endif
 
 #include <compat/zlib.h>
-#include <file/file_extract.h>
+#include <file/file_archive.h>
 #include <retro_file.h>
 
 #ifdef HAVE_MMAP

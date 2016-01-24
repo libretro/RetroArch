@@ -24,7 +24,7 @@
 
 #include <compat/msvc.h>
 #include <file/file_path.h>
-#include <file/file_extract.h>
+#include <file/file_archive.h>
 #include <string/stdstring.h>
 
 #include "patch.h"

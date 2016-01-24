@@ -32,7 +32,7 @@
 #include <boolean.h>
 #include <file/nbio.h>
 #include <formats/rpng.h>
-#include <file/file_extract.h>
+#include <file/file_archive.h>
 
 #include "rpng_internal.h"
 

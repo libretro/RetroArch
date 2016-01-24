@@ -17,7 +17,7 @@
 
 #include <file/file_list.h>
 #include <file/file_path.h>
-#include <file/file_extract.h>
+#include <file/file_archive.h>
 #include <file/dir_list.h>
 #include <retro_stat.h>
 #include <string/stdstring.h>

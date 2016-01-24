@@ -35,7 +35,7 @@
 #include <string/string_list.h>
 #include <string/stdstring.h>
 #ifdef HAVE_COMPRESSION
-#include <file/file_extract.h>
+#include <file/file_archive.h>
 #endif
 #include <encodings/utf.h>
 

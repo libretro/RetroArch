@@ -32,7 +32,7 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include <file/file_extract.h>
+#include <file/file_archive.h>
 #include <string/stdstring.h>
 #include <retro_file.h>
 #include <retro_stat.h>
