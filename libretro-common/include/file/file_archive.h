@@ -69,11 +69,11 @@ struct zlib_file_backend
 };
 
 /* Returns true when parsing should continue. False to stop. */
-typedef int (*zlib_file_cb)(const char *name, const char *valid_exts,
+typedef int (*file_archive_file_cb)(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata);
 
-uint32_t zlib_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length);
+uint32_t file_archive_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length);
 
 /**
  * zlib_parse_file:
@@ -88,19 +88,19 @@ uint32_t zlib_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length);
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool zlib_parse_file(const char *file, const char *valid_exts,
-      zlib_file_cb file_cb, void *userdata);
+bool file_archive_parse_file(const char *file, const char *valid_exts,
+      file_archive_file_cb file_cb, void *userdata);
 
-int zlib_parse_file_iterate(void *data, bool *returnerr,
+int file_archive_parse_file_iterate(void *data, bool *returnerr,
       const char *file,
-      const char *valid_exts, zlib_file_cb file_cb, void *userdata);
+      const char *valid_exts, file_archive_file_cb file_cb, void *userdata);
 
-void zlib_parse_file_iterate_stop(void *data);
+void file_archive_parse_file_iterate_stop(void *data);
 
-int zlib_parse_file_progress(void *data);
+int file_archive_parse_file_progress(void *data);
 
 /**
- * zlib_extract_first_content_file:
+ * file_archive_extract_first_content_file:
  * @zip_path                    : filename path to ZIP archive.
  * @zip_path_size               : size of ZIP archive.
  * @valid_exts                  : valid extensions for a content file.
@@ -111,28 +111,28 @@ int zlib_parse_file_progress(void *data);
  *
  * Returns : true (1) on success, otherwise false (0).
  **/
-bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size, 
+bool file_archive_extract_first_content_file(char *zip_path, size_t zip_path_size, 
       const char *valid_exts, const char *extraction_dir,
       char *out_path, size_t len);
 
 /**
- * zlib_get_file_list:
+ * file_archive_get_file_list:
  * @path                        : filename path of archive
  * @valid_exts                  : Valid extensions of archive to be parsed. 
  *                                If NULL, allow all.
  *
  * Returns: string listing of files from archive on success, otherwise NULL.
  **/
-struct string_list *zlib_get_file_list(const char *path, const char *valid_exts);
+struct string_list *file_archive_get_file_list(const char *path, const char *valid_exts);
 
-bool zlib_inflate_data_to_file_init(
+bool file_archive_inflate_data_to_file_init(
       zlib_file_handle_t *handle,
       const uint8_t *cdata,  uint32_t csize, uint32_t size);
 
-int zlib_inflate_data_to_file_iterate(void *data);
+int file_archive_inflate_data_to_file_iterate(void *data);
 
 /**
- * zlib_inflate_data_to_file:
+ * file_archive_inflate_data_to_file:
  * @path                        : filename path of archive.
  * @cdata                       : input data.
  * @csize                       : size of input data.
@@ -143,11 +143,11 @@ int zlib_inflate_data_to_file_iterate(void *data);
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
+int file_archive_inflate_data_to_file(zlib_file_handle_t *handle,
       int ret, const char *path, const char *valid_exts,
       const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum);
 
-bool zlib_perform_mode(const char *name, const char *valid_exts,
+bool file_archive_perform_mode(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata);
 
@@ -164,7 +164,7 @@ int zlib_deflate_data_to_file(void *data);
 
 void zlib_stream_deflate_free(void *data);
 
-bool zlib_inflate_init(void *data);
+bool file_archive_inflate_init(void *data);
 
 void zlib_set_stream(void *data,
       uint32_t       avail_in,

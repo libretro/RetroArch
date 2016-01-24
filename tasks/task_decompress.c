@@ -72,7 +72,7 @@ static int file_decompressed_subdir(const char *name, const char *valid_exts,
    if (!path_mkdir(path_dir))
       goto error;
 
-   if (!zlib_perform_mode(path, valid_exts,
+   if (!file_archive_perform_mode(path, valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
       goto error;
 
@@ -108,7 +108,7 @@ static int file_decompressed(const char *name, const char *valid_exts,
 
    fill_pathname_join(path, dec->target_dir, name, sizeof(path));
 
-   if (!zlib_perform_mode(path, valid_exts,
+   if (!file_archive_perform_mode(path, valid_exts,
             cdata, cmode, csize, size, crc32, userdata))
       goto error;
 
@@ -156,15 +156,15 @@ static void rarch_task_decompress_handler(rarch_task_t *task)
 {
    bool returnerr;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   int ret = zlib_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
+   int ret = file_archive_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
          dec->valid_ext, file_decompressed, dec);
 
-   task->progress = zlib_parse_file_progress(&dec->zlib);
+   task->progress = file_archive_parse_file_progress(&dec->zlib);
 
    if (task->cancelled || ret != 0)
    {
       task->error = dec->callback_error;
-      zlib_parse_file_iterate_stop(&dec->zlib);
+      file_archive_parse_file_iterate_stop(&dec->zlib);
 
       rarch_task_decompress_handler_finished(task, dec);
    }
@@ -174,15 +174,15 @@ static void rarch_task_decompress_handler_target_file(rarch_task_t *task)
 {
    bool returnerr;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   int ret = zlib_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
+   int ret = file_archive_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
          dec->valid_ext, file_decompressed_target_file, dec);
 
-   task->progress = zlib_parse_file_progress(&dec->zlib);
+   task->progress = file_archive_parse_file_progress(&dec->zlib);
 
    if (task->cancelled || ret != 0)
    {
       task->error = dec->callback_error;
-      zlib_parse_file_iterate_stop(&dec->zlib);
+      file_archive_parse_file_iterate_stop(&dec->zlib);
 
       rarch_task_decompress_handler_finished(task, dec);
    }
@@ -192,15 +192,15 @@ static void rarch_task_decompress_handler_subdir(rarch_task_t *task)
 {
    bool returnerr;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   int ret = zlib_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
+   int ret = file_archive_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
          dec->valid_ext, file_decompressed_subdir, dec);
 
-   task->progress = zlib_parse_file_progress(&dec->zlib);
+   task->progress = file_archive_parse_file_progress(&dec->zlib);
 
    if (task->cancelled || ret != 0)
    {
       task->error = dec->callback_error;
-      zlib_parse_file_iterate_stop(&dec->zlib);
+      file_archive_parse_file_iterate_stop(&dec->zlib);
 
       rarch_task_decompress_handler_finished(task, dec);
    }

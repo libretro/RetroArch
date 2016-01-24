@@ -208,7 +208,7 @@ static int database_info_iterate_playlist(
 
 
 #ifdef HAVE_ZLIB
-            db_state->crc = zlib_crc32_calculate(0, db_state->buf, ret);
+            db_state->crc = file_archive_crc32_calculate(0, db_state->buf, ret);
 #endif
             db->type = DATABASE_TYPE_CRC_LOOKUP;
          }
@@ -386,13 +386,13 @@ static int database_info_iterate_playlist_zip(
       return database_info_iterate_crc_lookup(db_state, db, db_state->zip_name);
    else
    {
-      if (zlib_parse_file_iterate(&db->state,
+      if (file_archive_parse_file_iterate(&db->state,
                &returnerr, name, NULL, zlib_compare_crc32,
                (void*)db_state) != 0)
          return 0;
 
       if (db_state->crc)
-         zlib_parse_file_iterate_stop(&db->state);
+         file_archive_parse_file_iterate_stop(&db->state);
    }
 #endif
 

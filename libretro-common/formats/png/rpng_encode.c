@@ -48,7 +48,7 @@ static void dword_write_be(uint8_t *buf, uint32_t val)
 static bool png_write_crc(RFILE *file, const uint8_t *data, size_t size)
 {
    uint8_t crc_raw[4] = {0};
-   uint32_t crc = zlib_crc32_calculate(0, data, size);
+   uint32_t crc = file_archive_crc32_calculate(0, data, size);
 
    dword_write_be(crc_raw, crc);
    return retro_fwrite(file, crc_raw, sizeof(crc_raw)) == sizeof(crc_raw);

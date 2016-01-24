@@ -98,7 +98,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 #ifdef HAVE_ZLIB
    content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
 
-   *content_crc_ptr = zlib_crc32_calculate(0, ret_buf, *length);
+   *content_crc_ptr = file_archive_crc32_calculate(0, ret_buf, *length);
 
    RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
 #endif
@@ -612,7 +612,7 @@ static bool init_content_file_extract(
          strlcpy(temp_content, content->elems[i].data,
                sizeof(temp_content));
 
-         if (!zlib_extract_first_content_file(temp_content,
+         if (!file_archive_extract_first_content_file(temp_content,
                   sizeof(temp_content), valid_ext,
                   *settings->cache_directory ?
                   settings->cache_directory : NULL,

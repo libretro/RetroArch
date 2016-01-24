@@ -59,7 +59,7 @@ enum zlib_compression_mode
    ZLIB_MODE_DEFLATE      = 8
 };
 
-static const struct zlib_file_backend *zlib_get_default_file_backend(void)
+static const struct zlib_file_backend *file_archive_get_default_file_backend(void)
 {
    return &zlib_backend;
 }
@@ -100,7 +100,7 @@ void zlib_deflate_init(void *data, int level)
       deflateInit(stream, level);
 }
 
-bool zlib_inflate_init(void *data)
+bool file_archive_inflate_init(void *data)
 {
    z_stream *stream = (z_stream*)data;
 
@@ -125,7 +125,7 @@ void zlib_stream_deflate_free(void *data)
       deflateEnd(ret);
 }
 
-bool zlib_inflate_data_to_file_init(
+bool file_archive_inflate_data_to_file_init(
       zlib_file_handle_t *handle,
       const uint8_t *cdata,  uint32_t csize, uint32_t size)
 {
@@ -184,7 +184,7 @@ int zlib_deflate_data_to_file(void *data)
    return 0;
 }
 
-int zlib_inflate_data_to_file_iterate(void *data)
+int file_archive_inflate_data_to_file_iterate(void *data)
 {
    int zstatus;
    z_stream *stream = (z_stream*)data;
@@ -203,13 +203,13 @@ int zlib_inflate_data_to_file_iterate(void *data)
    return 0;
 }
 
-uint32_t zlib_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length)
+uint32_t file_archive_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length)
 {
    return crc32(crc, data, length);
 }
 
 /**
- * zlib_inflate_data_to_file:
+ * file_archive_inflate_data_to_file:
  * @path                        : filename path of archive.
  * @valid_exts                  : Valid extensions of archive to be parsed. 
  *                                If NULL, allow all.
@@ -222,7 +222,7 @@ uint32_t zlib_crc32_calculate(uint32_t crc, const uint8_t *data, size_t length)
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
+int file_archive_inflate_data_to_file(zlib_file_handle_t *handle,
       int ret, const char *path, const char *valid_exts,
       const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t checksum)
 {
@@ -238,7 +238,7 @@ int zlib_inflate_data_to_file(zlib_file_handle_t *handle,
       goto end;
    }
 
-   handle->real_checksum = zlib_crc32_calculate(0, handle->data, size);
+   handle->real_checksum = file_archive_crc32_calculate(0, handle->data, size);
 
 #if 0
    if (handle->real_checksum != checksum)
@@ -261,7 +261,7 @@ end:
    return ret;
 }
 
-static int zlib_parse_file_iterate_step_internal(
+static int file_archive_parse_file_iterate_step_internal(
       zlib_transfer_t *state, char *filename,
       const uint8_t **cdata,
       unsigned *cmode, uint32_t *size, uint32_t *csize,
@@ -300,8 +300,8 @@ static int zlib_parse_file_iterate_step_internal(
    return 1;
 }
 
-static int zlib_parse_file_iterate_step(zlib_transfer_t *state,
-      const char *valid_exts, void *userdata, zlib_file_cb file_cb)
+static int file_archive_parse_file_iterate_step(zlib_transfer_t *state,
+      const char *valid_exts, void *userdata, file_archive_file_cb file_cb)
 {
    const uint8_t *cdata = NULL;
    uint32_t checksum    = 0;
@@ -310,7 +310,7 @@ static int zlib_parse_file_iterate_step(zlib_transfer_t *state,
    unsigned cmode       = 0;
    unsigned payload     = 0;
    char filename[PATH_MAX_LENGTH] = {0};
-   int ret = zlib_parse_file_iterate_step_internal(state, filename,
+   int ret = file_archive_parse_file_iterate_step_internal(state, filename,
          &cdata, &cmode, &size, &csize,
          &checksum, &payload);
 
@@ -331,10 +331,10 @@ static int zlib_parse_file_iterate_step(zlib_transfer_t *state,
    return 1;
 }
 
-static int zlib_parse_file_init(zlib_transfer_t *state,
+static int file_archive_parse_file_init(zlib_transfer_t *state,
       const char *file)
 {
-   state->backend = zlib_get_default_file_backend();
+   state->backend = file_archive_get_default_file_backend();
 
    if (!state->backend)
       return -1;
@@ -367,8 +367,8 @@ static int zlib_parse_file_init(zlib_transfer_t *state,
    return 0;
 }
 
-int zlib_parse_file_iterate(void *data, bool *returnerr, const char *file,
-      const char *valid_exts, zlib_file_cb file_cb, void *userdata)
+int file_archive_parse_file_iterate(void *data, bool *returnerr, const char *file,
+      const char *valid_exts, file_archive_file_cb file_cb, void *userdata)
 {
    zlib_transfer_t *state = (zlib_transfer_t*)data;
 
@@ -380,14 +380,14 @@ int zlib_parse_file_iterate(void *data, bool *returnerr, const char *file,
       case ZLIB_TRANSFER_NONE:
          break;
       case ZLIB_TRANSFER_INIT:
-         if (zlib_parse_file_init(state, file) == 0)
+         if (file_archive_parse_file_init(state, file) == 0)
             state->type = ZLIB_TRANSFER_ITERATE;
          else
             state->type = ZLIB_TRANSFER_DEINIT_ERROR;
          break;
       case ZLIB_TRANSFER_ITERATE:
          {
-            int ret2 = zlib_parse_file_iterate_step(state,
+            int ret2 = file_archive_parse_file_iterate_step(state,
                   valid_exts, userdata, file_cb);
             if (ret2 != 1)
                state->type = ZLIB_TRANSFER_DEINIT;
@@ -413,18 +413,18 @@ int zlib_parse_file_iterate(void *data, bool *returnerr, const char *file,
    return 0;
 }
 
-void zlib_parse_file_iterate_stop(void *data)
+void file_archive_parse_file_iterate_stop(void *data)
 {
    zlib_transfer_t *state = (zlib_transfer_t*)data;
    if (!state || !state->handle)
       return;
 
    state->type = ZLIB_TRANSFER_DEINIT;
-   zlib_parse_file_iterate(data, NULL, NULL, NULL, NULL, NULL);
+   file_archive_parse_file_iterate(data, NULL, NULL, NULL, NULL, NULL);
 }
 
 /**
- * zlib_parse_file:
+ * file_archive_parse_file:
  * @file                        : filename path of archive
  * @valid_exts                  : Valid extensions of archive to be parsed. 
  *                                If NULL, allow all.
@@ -436,8 +436,8 @@ void zlib_parse_file_iterate_stop(void *data)
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool zlib_parse_file(const char *file, const char *valid_exts,
-      zlib_file_cb file_cb, void *userdata)
+bool file_archive_parse_file(const char *file, const char *valid_exts,
+      file_archive_file_cb file_cb, void *userdata)
 {
    zlib_transfer_t state = {0};
    bool returnerr        = true;
@@ -446,7 +446,7 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
 
    for (;;)
    {
-      int ret = zlib_parse_file_iterate(&state, &returnerr, file,
+      int ret = file_archive_parse_file_iterate(&state, &returnerr, file,
             valid_exts, file_cb, userdata);
 
       if (ret != 0)
@@ -456,7 +456,7 @@ bool zlib_parse_file(const char *file, const char *valid_exts,
    return returnerr;
 }
 
-int zlib_parse_file_progress(void *data)
+int file_archive_parse_file_progress(void *data)
 {
    /* FIXME: this estimate is worse than before */
    zlib_transfer_t *state = (zlib_transfer_t*)data;
@@ -465,7 +465,7 @@ int zlib_parse_file_progress(void *data)
 }
 
 
-static int zip_extract_cb(const char *name, const char *valid_exts,
+static int file_archive_extract_cb(const char *name, const char *valid_exts,
       const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t checksum, void *userdata)
@@ -486,7 +486,7 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
                path_basename(name), sizeof(new_path));
 
       data->first_extracted_file_path = strdup(new_path);
-      data->found_content             = zlib_perform_mode(new_path,
+      data->found_content             = file_archive_perform_mode(new_path,
             valid_exts, cdata, cmode, csize, size,
             0, NULL);
       return 0;
@@ -496,7 +496,7 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
 }
 
 /**
- * zlib_extract_first_content_file:
+ * file_archive_extract_first_content_file:
  * @zip_path                    : filename path to ZIP archive.
  * @zip_path_size               : size of ZIP archive.
  * @valid_exts                  : valid extensions for a content file.
@@ -507,7 +507,7 @@ static int zip_extract_cb(const char *name, const char *valid_exts,
  *
  * Returns : true (1) on success, otherwise false (0).
  **/
-bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
+bool file_archive_extract_first_content_file(char *zip_path, size_t zip_path_size,
       const char *valid_exts, const char *extraction_directory,
       char *out_path, size_t len)
 {
@@ -534,9 +534,9 @@ bool zlib_extract_first_content_file(char *zip_path, size_t zip_path_size,
    userdata.extraction_directory = extraction_directory;
    userdata.ext                  = list;
 
-   if (!zlib_parse_file(zip_path, valid_exts, zip_extract_cb, &userdata))
+   if (!file_archive_parse_file(zip_path, valid_exts, file_archive_extract_cb, &userdata))
    {
-      /* Parsing ZIP failed. */
+      /* Parsing file archive failed. */
       ret = false;
       goto end;
    }
@@ -560,7 +560,7 @@ end:
    return ret;
 }
 
-static int zlib_get_file_list_cb(const char *path, const char *valid_exts,
+static int file_archive_get_file_list_cb(const char *path, const char *valid_exts,
       const uint8_t *cdata,
       unsigned cmode, uint32_t csize, uint32_t size, uint32_t checksum,
       void *userdata)
@@ -610,20 +610,20 @@ error:
 }
 
 /**
- * zlib_get_file_list:
+ * file_archive_get_file_list:
  * @path                        : filename path of archive
  *
  * Returns: string listing of files from archive on success, otherwise NULL.
  **/
-struct string_list *zlib_get_file_list(const char *path, const char *valid_exts)
+struct string_list *file_archive_get_file_list(const char *path, const char *valid_exts)
 {
    struct string_list *list = string_list_new();
 
    if (!list)
       goto error;
 
-   if (!zlib_parse_file(path, valid_exts,
-            zlib_get_file_list_cb, list))
+   if (!file_archive_parse_file(path, valid_exts,
+            file_archive_get_file_list_cb, list))
       goto error;
 
    return list;
@@ -634,7 +634,7 @@ error:
    return NULL;
 }
 
-bool zlib_perform_mode(const char *path, const char *valid_exts,
+bool file_archive_perform_mode(const char *path, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata)
 {
@@ -649,14 +649,14 @@ bool zlib_perform_mode(const char *path, const char *valid_exts,
          {
             int ret = 0;
             zlib_file_handle_t handle = {0};
-            if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
+            if (!file_archive_inflate_data_to_file_init(&handle, cdata, csize, size))
                return false;
 
             do{
-               ret = zlib_inflate_data_to_file_iterate(handle.stream);
+               ret = file_archive_inflate_data_to_file_iterate(handle.stream);
             }while(ret == 0);
 
-            if (!zlib_inflate_data_to_file(&handle, ret, path, valid_exts,
+            if (!file_archive_inflate_data_to_file(&handle, ret, path, valid_exts,
                      cdata, csize, size, crc32))
                return false;
          }

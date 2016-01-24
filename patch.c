@@ -55,7 +55,7 @@ static uint8_t bps_read(struct bps_data *bps)
 {
    uint8_t data = bps->modify_data[bps->modify_offset++];
 #ifdef HAVE_ZLIB
-   bps->modify_checksum = ~zlib_crc32_calculate(~bps->modify_checksum, &data, 1);
+   bps->modify_checksum = ~file_archive_crc32_calculate(~bps->modify_checksum, &data, 1);
 #endif
    return data;
 }
@@ -84,7 +84,7 @@ static void bps_write(struct bps_data *bps, uint8_t data)
 
    bps->target_data[bps->output_offset++] = data;
 #ifdef HAVE_ZLIB
-   bps->target_checksum = ~zlib_crc32_calculate(~bps->target_checksum, &data, 1);
+   bps->target_checksum = ~file_archive_crc32_calculate(~bps->target_checksum, &data, 1);
 #endif
 }
 
@@ -186,7 +186,7 @@ patch_error_t bps_apply_patch(
       modify_modify_checksum |= bps_read(&bps) << i;
 
 #ifdef HAVE_ZLIB
-   bps.source_checksum = zlib_crc32_calculate(0, bps.source_data, bps.source_length);
+   bps.source_checksum = file_archive_crc32_calculate(0, bps.source_data, bps.source_length);
 #else
    return PATCH_PATCH_CHECKSUM_INVALID;
 #endif
@@ -220,7 +220,7 @@ static uint8_t ups_patch_read(struct ups_data *data)
    {
       uint8_t n = data->patch_data[data->patch_offset++];
 #ifdef HAVE_ZLIB
-      data->patch_checksum = ~zlib_crc32_calculate(~data->patch_checksum, &n, 1);
+      data->patch_checksum = ~file_archive_crc32_calculate(~data->patch_checksum, &n, 1);
 #endif
       return n;
    }
@@ -233,7 +233,7 @@ static uint8_t ups_source_read(struct ups_data *data)
    {
       uint8_t n = data->source_data[data->source_offset++];
 #ifdef HAVE_ZLIB
-      data->source_checksum = ~zlib_crc32_calculate(~data->source_checksum, &n, 1);
+      data->source_checksum = ~file_archive_crc32_calculate(~data->source_checksum, &n, 1);
 #endif
       return n;
    }
@@ -246,7 +246,7 @@ static void ups_target_write(struct ups_data *data, uint8_t n)
    {
       data->target_data[data->target_offset] = n;
 #ifdef HAVE_ZLIB
-      data->target_checksum = ~zlib_crc32_calculate(~data->target_checksum, &n, 1);
+      data->target_checksum = ~file_archive_crc32_calculate(~data->target_checksum, &n, 1);
 #endif
    }
 

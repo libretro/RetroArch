@@ -393,14 +393,14 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
       {
          int ret = 0;
          zlib_file_handle_t handle = {0};
-         if (!zlib_inflate_data_to_file_init(&handle, cdata, csize, size))
+         if (!file_archive_inflate_data_to_file_init(&handle, cdata, csize, size))
             return false;
 
          do{
-            ret = zlib_inflate_data_to_file_iterate(handle.stream);
+            ret = file_archive_inflate_data_to_file_iterate(handle.stream);
          }while(ret == 0);
 
-         handle.real_checksum = zlib_crc32_calculate(0, handle.data, size);
+         handle.real_checksum = file_archive_crc32_calculate(0, handle.data, size);
 
          if (handle.real_checksum != crc32)
          {
@@ -445,13 +445,13 @@ static int read_zip_file(const char *path,
 
    do
    {
-      ret = zlib_parse_file_iterate(&zlib, &returnerr, path,
+      ret = file_archive_parse_file_iterate(&zlib, &returnerr, path,
             "", zip_file_decompressed, &st);
       if (!returnerr)
          break;
    }while(ret == 0 && !st.found);
 
-   zlib_parse_file_iterate_stop(&zlib);
+   file_archive_parse_file_iterate_stop(&zlib);
 
    if (st.opt_file)
       free(st.opt_file);
@@ -570,7 +570,7 @@ struct string_list *compressed_file_list_new(const char *path,
 #endif
 #ifdef HAVE_ZLIB
    if (string_is_equal_noncase(file_ext, "zip"))
-      return zlib_get_file_list(path, ext);
+      return file_archive_get_file_list(path, ext);
 #endif
    return NULL;
 }

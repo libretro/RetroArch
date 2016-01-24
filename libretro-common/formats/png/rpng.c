@@ -698,7 +698,7 @@ static int rpng_load_image_argb_process_inflate_init(rpng_t *rpng,
    if (!to_continue)
       goto end;
 
-   zstatus = zlib_inflate_data_to_file_iterate(rpng->process.stream);
+   zstatus = file_archive_inflate_data_to_file_iterate(rpng->process.stream);
 
    switch (zstatus)
    {
@@ -790,7 +790,7 @@ static bool rpng_load_image_argb_process_init(rpng_t *rpng,
    if (!rpng->process.stream)
       return false;
 
-   if (!zlib_inflate_init(rpng->process.stream))
+   if (!file_archive_inflate_init(rpng->process.stream))
       return false;
 
    rpng->process.inflate_buf = (uint8_t*)malloc(rpng->process.inflate_buf_size);
