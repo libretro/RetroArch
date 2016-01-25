@@ -27,7 +27,6 @@ extern "C" {
 
 /**
  * menu_content_load:
- * type                      : Type of content to load.
  *
  * Loads content into currently selected core.
  * Will also optionally push the content entry to the history playlist.
