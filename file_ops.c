@@ -240,6 +240,8 @@ static struct string_list *compressed_7zip_file_list_new(
    CSzArEx db;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
+   uint16_t *temp               = NULL;
+   size_t temp_size             = 0;
    struct string_list     *list = NULL;
    
    /* These are the allocation routines - currently using 
@@ -273,8 +275,6 @@ static struct string_list *compressed_7zip_file_list_new(
    if (SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp) == SZ_OK)
    {
       uint32_t i;
-      uint16_t *temp               = NULL;
-      size_t temp_size             = 0;
       struct string_list *ext_list = ext ? string_split(ext, "|"): NULL;
       SRes res                     = SZ_OK;
 
@@ -332,7 +332,6 @@ static struct string_list *compressed_7zip_file_list_new(
       }
 
       string_list_free(ext_list);
-      free(temp);
 
       if (res != SZ_OK)
       {
@@ -345,6 +344,7 @@ static struct string_list *compressed_7zip_file_list_new(
    }
 
    SzArEx_Free(&db, &allocImp);
+   free(temp);
    File_Close(&archiveStream.file);
 
    return list;
