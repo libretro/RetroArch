@@ -255,6 +255,46 @@ libretro_find_controller_description(
    return NULL;
 }
 
+#ifdef HAVE_DYNAMIC
+static void load_dynamic_core(void)
+{
+   settings_t *settings = config_get_ptr();
+   function_t sym       = dylib_proc(NULL, "retro_init");
+
+   if (sym)
+   {
+      /* Try to verify that -lretro was not linked in from other modules
+       * since loading it dynamically and with -l will fail hard. */
+      RARCH_ERR("Serious problem. RetroArch wants to load libretro cores dyamically, but it is already linked.\n");
+      RARCH_ERR("This could happen if other modules RetroArch depends on link against libretro directly.\n");
+      RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
+      retro_fail(1, "init_libretro_sym()");
+   }
+
+   if (!*settings->libretro)
+   {
+      RARCH_ERR("RetroArch is built for dynamic libretro cores, but libretro_path is not set. Cannot continue.\n");
+      retro_fail(1, "init_libretro_sym()");
+   }
+
+   /* Need to use absolute path for this setting. It can be
+    * saved to content history, and a relative path would
+    * break in that scenario. */
+   path_resolve_realpath(settings->libretro, sizeof(settings->libretro));
+
+   RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
+         settings->libretro);
+   lib_handle = dylib_load(settings->libretro);
+   if (!lib_handle)
+   {
+      RARCH_ERR("Failed to open libretro core: \"%s\"\n",
+            settings->libretro);
+      RARCH_ERR("Error(s): %s\n", dylib_error());
+      retro_fail(1, "load_dynamic()");
+   }
+}
+#endif
+
 /**
  * load_symbols:
  * @type                        : Type of core to be loaded.
@@ -268,45 +308,9 @@ static void load_symbols(enum rarch_core_type type)
    switch (type)
    {
       case CORE_TYPE_PLAIN:
-         {
 #ifdef HAVE_DYNAMIC
-            settings_t *settings = config_get_ptr();
-            function_t sym       = dylib_proc(NULL, "retro_init");
-
-            if (sym)
-            {
-               /* Try to verify that -lretro was not linked in from other modules
-                * since loading it dynamically and with -l will fail hard. */
-               RARCH_ERR("Serious problem. RetroArch wants to load libretro cores dyamically, but it is already linked.\n");
-               RARCH_ERR("This could happen if other modules RetroArch depends on link against libretro directly.\n");
-               RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
-               retro_fail(1, "init_libretro_sym()");
-            }
-
-            if (!*settings->libretro)
-            {
-               RARCH_ERR("RetroArch is built for dynamic libretro cores, but libretro_path is not set. Cannot continue.\n");
-               retro_fail(1, "init_libretro_sym()");
-            }
-
-            /* Need to use absolute path for this setting. It can be
-             * saved to content history, and a relative path would
-             * break in that scenario. */
-            path_resolve_realpath(settings->libretro,
-                  sizeof(settings->libretro));
-
-            RARCH_LOG("Loading dynamic libretro core from: \"%s\"\n",
-                  settings->libretro);
-            lib_handle = dylib_load(settings->libretro);
-            if (!lib_handle)
-            {
-               RARCH_ERR("Failed to open libretro core: \"%s\"\n",
-                     settings->libretro);
-               RARCH_ERR("Error(s): %s\n", dylib_error());
-               retro_fail(1, "load_dynamic()");
-            }
+         load_dynamic_core();
 #endif
-         }
 
          SYMBOL(retro_init);
          SYMBOL(retro_deinit);
