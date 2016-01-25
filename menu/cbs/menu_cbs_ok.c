@@ -559,8 +559,12 @@ static int action_ok_playlist_entry(const char *path,
       )
    {
       char new_core_path[PATH_MAX_LENGTH];
+      char new_display_name[PATH_MAX_LENGTH];
       core_info_t            *core_info = NULL;
       core_info_list_t *list            = NULL;
+      const char *entry_path            = NULL;
+      const char *entry_crc32           = NULL;
+      const char *db_name               = NULL;
       const char             *path_base = path_basename(menu->db_playlist_file);
       bool        found_associated_core = menu_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
@@ -570,31 +574,24 @@ static int action_ok_playlist_entry(const char *path,
       if (!(core_info = core_info_find(list, new_core_path)))
          found_associated_core = false;
 
-      if (found_associated_core)
-      {
-         char new_display_name[PATH_MAX_LENGTH];
-         const char *entry_path  = NULL;
-         const char *entry_crc32 = NULL;
-         const char *db_name     = NULL;
-
-         menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
-
-         content_playlist_get_index(tmp_playlist, selection_ptr,
-               &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
-
-         strlcpy(new_display_name, core_info->display_name, sizeof(new_display_name));
-         content_playlist_update(tmp_playlist,
-               selection_ptr,
-               entry_path,
-               entry_label,
-               new_core_path,
-               new_display_name,
-               entry_crc32,
-               db_name);
-         content_playlist_write_file(tmp_playlist);
-      }
-      else
+      if (!found_associated_core)
          return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr, entry_idx);
+
+      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+
+      content_playlist_get_index(tmp_playlist, selection_ptr,
+            &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
+
+      strlcpy(new_display_name, core_info->display_name, sizeof(new_display_name));
+      content_playlist_update(tmp_playlist,
+            selection_ptr,
+            entry_path,
+            entry_label,
+            new_core_path,
+            new_display_name,
+            entry_crc32,
+            db_name);
+      content_playlist_write_file(tmp_playlist);
    }
 
    menu_content_playlist_load(playlist, selection_ptr);
