@@ -1076,11 +1076,9 @@ static int generic_action_ok_file_load(const char *path,
    {
       case ACTION_OK_FFMPEG:
       case ACTION_OK_IMAGEVIEWER:
-         {
-            if (rarch_task_push_content_load_default(
-                     NULL, new_path, true, action_type, NULL, NULL))
-               action_ok_push_quick_menu();
-         }
+         if (rarch_task_push_content_load_default(
+                  NULL, new_path, true, action_type, NULL, NULL))
+            action_ok_push_quick_menu();
          break;
       default:
          break;
@@ -1181,8 +1179,8 @@ static int action_ok_download_generic(const char *path,
 #ifdef HAVE_NETWORKING
    char s[PATH_MAX_LENGTH];
    char s3[PATH_MAX_LENGTH];
-   settings_t *settings            = config_get_ptr();
-   menu_file_transfer_t *transf;
+   menu_file_transfer_t *transf = NULL;
+   settings_t *settings         = config_get_ptr();
 
    fill_pathname_join(s, settings->network.buildbot_assets_url,
          "frontend", sizeof(s));
