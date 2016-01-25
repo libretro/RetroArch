@@ -636,8 +636,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_VARIABLE:
-      {
-
          if (!runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_GET, data))
          {
             struct retro_variable *var = (struct retro_variable*)data;
@@ -649,21 +647,18 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          }
 
          break;
-      }
 
       case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
          *(bool*)data = runloop_ctl(RUNLOOP_CTL_IS_CORE_OPTION_UPDATED, NULL);
          break;
 
       case RETRO_ENVIRONMENT_SET_VARIABLES:
-      {
          RARCH_LOG("Environ SET_VARIABLES.\n");
 
          runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_DEINIT, NULL);
          runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_INIT,   data);
 
          break;
-      }
 
       case RETRO_ENVIRONMENT_SET_MESSAGE:
       {
