@@ -55,13 +55,12 @@ static bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
    bool ret;
-   char filename[PATH_MAX_LENGTH] = {0};
-   char shotname[256]             = {0};
-   struct scaler_ctx scaler       = {0};
+   char filename[PATH_MAX_LENGTH];
+   char shotname[256];
+#if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
    uint8_t *out_buffer            = NULL;
-
-   (void)out_buffer;
-   (void)scaler;
+   struct scaler_ctx scaler       = {0};
+#endif
 
    fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
    fill_pathname_join(filename, folder, shotname, sizeof(filename));
