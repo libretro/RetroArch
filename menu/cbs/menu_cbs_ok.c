@@ -1743,8 +1743,6 @@ static int action_ok_rpl_entry(const char *path,
 static int action_ok_start_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   settings_t              *settings = config_get_ptr();
-
    /* No content needed for this core, load core immediately. */
    if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
    {
