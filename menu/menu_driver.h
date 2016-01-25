@@ -132,6 +132,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_TOGGLE,
    RARCH_MENU_CTL_CONTEXT_RESET,
    RARCH_MENU_CTL_CONTEXT_DESTROY,
+   RARCH_MENU_CTL_SHADER_MANAGER_INIT,
    RARCH_MENU_CTL_POPULATE_ENTRIES
 };
 
@@ -401,17 +402,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 void *menu_init(const void *data);
 
 int menu_iterate_render(void *data, void *userdata);
-
-/**
- * menu_load_content:
- * type                      : Type of content to load.
- *
- * Loads content into currently selected core.
- * Will also optionally push the content entry to the history playlist.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool menu_load_content(enum rarch_core_type type);
 
 #ifdef __cplusplus
 }

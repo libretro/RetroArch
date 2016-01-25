@@ -71,6 +71,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_content.h"
 #include "menu/menu_hash.h"
 #endif
 
@@ -1411,7 +1412,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_LOAD_CONTENT:
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
-         if (!menu_load_content(CORE_TYPE_PLAIN))
+         if (!menu_content_load(CORE_TYPE_PLAIN))
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
          frontend_driver_content_loaded();
@@ -1420,7 +1421,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_LOAD_CONTENT_FFMPEG:
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
-         if (!menu_load_content(CORE_TYPE_FFMPEG))
+         if (!menu_content_load(CORE_TYPE_FFMPEG))
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
          frontend_driver_content_loaded();
@@ -1429,7 +1430,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_LOAD_CONTENT_IMAGEVIEWER:
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
-         if (!menu_load_content(CORE_TYPE_IMAGEVIEWER))
+         if (!menu_content_load(CORE_TYPE_IMAGEVIEWER))
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
          frontend_driver_content_loaded();

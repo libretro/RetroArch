@@ -19,9 +19,24 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <boolean.h>
+
+#include "../dynamic.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * menu_content_load:
+ * type                      : Type of content to load.
+ *
+ * Loads content into currently selected core.
+ * Will also optionally push the content entry to the history playlist.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool menu_content_load(enum rarch_core_type type);
 
 #ifdef __cplusplus
 }
