@@ -382,8 +382,10 @@ int action_ok_push_quick_menu(void)
    return 0;
 }
 
-static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *path, uint32_t hash_label,
-      bool is_carchive)
+static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx,
+      const char *path, const char *label,
+      uint32_t hash_label,
+      unsigned type, bool is_carchive)
 {
    char menu_path_new[PATH_MAX_LENGTH];
    const char *menu_path    = NULL;
@@ -440,8 +442,8 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
             return ret;
          }
       case 0:
-         return generic_action_ok_displaylist_push(path,
-               NULL, 0, idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+         return generic_action_ok_displaylist_push(path, label, type,
+               idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
       default:
          break;
    }
@@ -458,7 +460,10 @@ static int action_ok_file_load_with_detect_core_carchive(
    fill_pathname_join_delim(detect_content_path, detect_content_path, path,
          '#', sizeof(detect_content_path));
 
-   return rarch_defer_core_wrapper(idx, entry_idx, path, hash_label, true);
+   type = 0;
+   label = NULL;
+
+   return rarch_defer_core_wrapper(idx, entry_idx, path, label, hash_label, type, true);
 }
 
 static int action_ok_file_load_with_detect_core(const char *path,
@@ -466,7 +471,10 @@ static int action_ok_file_load_with_detect_core(const char *path,
 {
    uint32_t hash_label      = menu_hash_calculate(label);
 
-   return rarch_defer_core_wrapper(idx, entry_idx, path, hash_label, false);
+   type  = 0;
+   label = NULL;
+
+   return rarch_defer_core_wrapper(idx, entry_idx, path, label, hash_label, type, false);
 }
 
 
@@ -1830,7 +1838,6 @@ static int action_ok_load_archive(const char *path,
 static int action_ok_load_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   size_t selection;
    int ret                  = 0;
    core_info_list_t *list   = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -1840,7 +1847,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    if (!menu)
       return -1;
 
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &idx))
       return false;
 
    runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
@@ -1855,12 +1862,13 @@ static int action_ok_load_archive_detect_core(const char *path,
    {
       case -1:
          event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
-         if (rarch_task_push_content_load_default(NULL, NULL, false, CORE_TYPE_PLAIN, NULL, NULL))
+         if (rarch_task_push_content_load_default(NULL, NULL,
+                  false, CORE_TYPE_PLAIN, NULL, NULL))
             action_ok_push_quick_menu();
          return -1;
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
-               selection, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
+               idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
       default:
          break;
    }
