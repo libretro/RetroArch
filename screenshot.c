@@ -26,7 +26,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <retro_file.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
 
@@ -59,10 +58,8 @@ static bool screenshot_dump(const char *folder, const void *frame,
    char filename[PATH_MAX_LENGTH] = {0};
    char shotname[256]             = {0};
    struct scaler_ctx scaler       = {0};
-   RFILE *file                    = NULL;
    uint8_t *out_buffer            = NULL;
 
-   (void)file;
    (void)out_buffer;
    (void)scaler;
 
