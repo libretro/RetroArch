@@ -379,8 +379,8 @@ static void load_symbols(enum rarch_core_type type)
          SYMBOL_DUMMY(retro_get_memory_data);
          SYMBOL_DUMMY(retro_get_memory_size);
          break;
-#ifdef HAVE_FFMPEG
       case CORE_TYPE_FFMPEG:
+#ifdef HAVE_FFMPEG
          SYMBOL_FFMPEG(retro_init);
          SYMBOL_FFMPEG(retro_deinit);
 
@@ -414,8 +414,8 @@ static void load_symbols(enum rarch_core_type type)
          SYMBOL_FFMPEG(retro_get_region);
          SYMBOL_FFMPEG(retro_get_memory_data);
          SYMBOL_FFMPEG(retro_get_memory_size);
-         break;
 #endif
+         break;
       case CORE_TYPE_IMAGEVIEWER:
 #ifdef HAVE_IMAGEVIEWER
          SYMBOL_IMAGEVIEWER(retro_init);
