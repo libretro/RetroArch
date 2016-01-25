@@ -21,8 +21,6 @@
 
 #include <boolean.h>
 
-#include "../dynamic.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
