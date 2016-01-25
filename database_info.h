@@ -23,7 +23,6 @@
 #include <boolean.h>
 #include <file/file_archive.h>
 #include "libretro-db/libretrodb.h"
-#include "playlist.h"
 
 #ifdef __cplusplus
 extern "C" {
