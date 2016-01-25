@@ -24,6 +24,7 @@
 #include "../menu_shader.h"
 #include "../menu_navigation.h"
 #include "../menu_hash.h"
+#include "../menu_content.h"
 
 #include "../../core_info.h"
 #include "../../defaults.h"
@@ -415,7 +416,7 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx, const char *pa
 
    runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
 
-   ret = rarch_defer_core(list,
+   ret = menu_content_defer_core(list,
          menu_path_new, path, menu_label, menu->deferred_path,
          sizeof(menu->deferred_path));
 
@@ -1844,7 +1845,7 @@ static int action_ok_load_archive_detect_core(const char *path,
 
    runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
 
-   ret = rarch_defer_core(list, menu_path, content_path, label,
+   ret = menu_content_defer_core(list, menu_path, content_path, label,
          menu->deferred_path, sizeof(menu->deferred_path));
 
    fill_pathname_join(detect_content_path, menu_path, content_path,

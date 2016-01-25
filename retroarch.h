@@ -208,27 +208,6 @@ void rarch_main_deinit(void);
  **/
 void rarch_playlist_load_content(void *data, unsigned index);
 
-/**
- * rarch_defer_core:
- * @core_info            : Core info list handle.
- * @dir                  : Directory. Gets joined with @path.
- * @path                 : Path. Gets joined with @dir.
- * @menu_label           : Label identifier of menu setting.
- * @s                    : Deferred core path. Will be filled in
- *                         by function.
- * @len                  : Size of @s.
- *
- * Gets deferred core.
- *
- * Returns: 0 if there are multiple deferred cores and a
- * selection needs to be made from a list, otherwise
- * returns -1 and fills in @s with path to core.
- **/
-int rarch_defer_core(void *data,
-      const char *dir, const char *path,
-      const char *menu_label,
-      char *s, size_t len);
-
 void rarch_set_paths(const char *path);
 
 int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t len);

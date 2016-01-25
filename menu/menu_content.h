@@ -35,6 +35,27 @@ extern "C" {
  **/
 bool menu_content_load(void);
 
+/**
+ * menu_content_defer_core:
+ * @core_info            : Core info list handle.
+ * @dir                  : Directory. Gets joined with @path.
+ * @path                 : Path. Gets joined with @dir.
+ * @menu_label           : Label identifier of menu setting.
+ * @s                    : Deferred core path. Will be filled in
+ *                         by function.
+ * @len                  : Size of @s.
+ *
+ * Gets deferred core.
+ *
+ * Returns: 0 if there are multiple deferred cores and a
+ * selection needs to be made from a list, otherwise
+ * returns -1 and fills in @s with path to core.
+ **/
+int menu_content_defer_core(void *data,
+      const char *dir, const char *path,
+      const char *menu_label,
+      char *s, size_t len);
+
 #ifdef __cplusplus
 }
 #endif
