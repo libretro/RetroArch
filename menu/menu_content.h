@@ -36,7 +36,7 @@ extern "C" {
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool menu_content_load(enum rarch_core_type type);
+bool menu_content_load(void);
 
 #ifdef __cplusplus
 }

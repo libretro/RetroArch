@@ -99,7 +99,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
  * Returns: true (1) if successful, otherwise false (0).
  **/
 
-bool menu_content_load(enum rarch_core_type type)
+bool menu_content_load(void)
 {
    bool msg_force       = true;
    char *fullpath       = NULL;
