@@ -38,23 +38,14 @@
 static void menu_content_push_to_history_playlist(void)
 {
    struct retro_system_info *system = NULL;
-   settings_t *settings        = config_get_ptr();
-   char *fullpath              = NULL;
+   settings_t *settings             = config_get_ptr();
+   char *fullpath                   = NULL;
 
+   /* If the history list is not enabled, early return. */
    if (!settings->history_list_enable)
       return;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-   if (*fullpath)
-   {
-      char tmp[PATH_MAX_LENGTH];
-      char str[PATH_MAX_LENGTH];
-
-      fill_pathname_base(tmp, fullpath, sizeof(tmp));
-      snprintf(str, sizeof(str), "INFO - Loading %s ...", tmp);
-      menu_display_msg_queue_push(str, 1, 1, false);
-   }
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
          &system);
@@ -109,6 +100,8 @@ static void menu_content_environment_get(int *argc, char *argv[],
 bool menu_content_load(void)
 {
    bool msg_force       = true;
+   char name[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH];
    char *fullpath       = NULL;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
@@ -116,16 +109,20 @@ bool menu_content_load(void)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
    menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
+   if (*fullpath)
+      fill_pathname_base(name, fullpath, sizeof(name));
+
    if (!(main_load_content(0, NULL, NULL, menu_content_environment_get)))
    {
-      char name[PATH_MAX_LENGTH];
-      char msg[PATH_MAX_LENGTH];
-
-      fill_pathname_base(name, fullpath, sizeof(name));
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       menu_display_msg_queue_push(msg, 1, 90, false);
-
       return false;
+   }
+
+   if (*fullpath)
+   {
+      snprintf(msg, sizeof(msg), "INFO - Loading %s ...", name);
+      menu_display_msg_queue_push(msg, 1, 1, false);
    }
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
