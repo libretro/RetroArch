@@ -181,18 +181,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data);
 int rarch_main_init(int argc, char *argv[]);
 
 /**
- * rarch_main_init_wrap:
- * @args                 : Input arguments.
- * @argc                 : Count of arguments.
- * @argv                 : Arguments.
- *
- * Generates an @argc and @argv pair based on @args
- * of type rarch_main_wrap.
- **/
-void rarch_main_init_wrap(const struct rarch_main_wrap *args,
-      int *argc, char **argv);
-
-/**
  * rarch_main_deinit:
  *
  * Deinitializes RetroArch.
