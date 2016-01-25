@@ -71,6 +71,51 @@ static dylib_t lib_handle;
 struct retro_core_t core;
 static bool ignore_environment_cb;
 
+
+const struct retro_subsystem_info *libretro_find_subsystem_info(
+      const struct retro_subsystem_info *info, unsigned num_info,
+      const char *ident)
+{
+   unsigned i;
+   for (i = 0; i < num_info; i++)
+   {
+      if (string_is_equal(info[i].ident, ident))
+         return &info[i];
+      else if (string_is_equal(info[i].desc, ident))
+         return &info[i];
+   }
+
+   return NULL;
+}
+
+/**
+ * libretro_find_controller_description:
+ * @info                         : Pointer to controller info handle.
+ * @id                           : Identifier of controller to search
+ *                                 for.
+ *
+ * Search for a controller of type @id in @info.
+ *
+ * Returns: controller description of found controller on success,
+ * otherwise NULL.
+ **/
+const struct retro_controller_description *
+libretro_find_controller_description(
+      const struct retro_controller_info *info, unsigned id)
+{
+   unsigned i;
+
+   for (i = 0; i < info->num_types; i++)
+   {
+      if (info->types[i].id != id)
+         continue;
+
+      return &info->types[i];
+   }
+
+   return NULL;
+}
+
 #ifdef HAVE_DYNAMIC
 static bool *load_no_content_hook;
 
@@ -209,53 +254,6 @@ void libretro_free_system_info(struct retro_system_info *info)
    free((void*)info->valid_extensions);
    memset(info, 0, sizeof(*info));
 }
-#endif
-
-const struct retro_subsystem_info *libretro_find_subsystem_info(
-      const struct retro_subsystem_info *info, unsigned num_info,
-      const char *ident)
-{
-   unsigned i;
-   for (i = 0; i < num_info; i++)
-   {
-      if (string_is_equal(info[i].ident, ident))
-         return &info[i];
-      else if (string_is_equal(info[i].desc, ident))
-         return &info[i];
-   }
-
-   return NULL;
-}
-
-/**
- * libretro_find_controller_description:
- * @info                         : Pointer to controller info handle.
- * @id                           : Identifier of controller to search
- *                                 for.
- *
- * Search for a controller of type @id in @info.
- *
- * Returns: controller description of found controller on success,
- * otherwise NULL.
- **/
-const struct retro_controller_description *
-libretro_find_controller_description(
-      const struct retro_controller_info *info, unsigned id)
-{
-   unsigned i;
-
-   for (i = 0; i < info->num_types; i++)
-   {
-      if (info->types[i].id != id)
-         continue;
-
-      return &info->types[i];
-   }
-
-   return NULL;
-}
-
-#ifdef HAVE_DYNAMIC
 static void load_dynamic_core(void)
 {
    settings_t *settings = config_get_ptr();
@@ -962,10 +960,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH:
       {
          const char **path = (const char**)data;
+         *path = NULL;
 #ifdef HAVE_DYNAMIC
          *path = settings->libretro;
-#else
-         *path = NULL;
 #endif
          break;
       }
