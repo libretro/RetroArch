@@ -135,12 +135,14 @@ static int deferred_push_core_list_deferred(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_CORES_SUPPORTED);
 }
 
-static int deferred_push_core_collection_list_deferred(menu_displaylist_info_t *info)
+static int deferred_push_core_collection_list_deferred(
+      menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_CORES_COLLECTION_SUPPORTED);
 }
 
-static int deferred_push_database_manager_list_deferred(menu_displaylist_info_t *info)
+static int deferred_push_database_manager_list_deferred(
+      menu_displaylist_info_t *info)
 {
    strlcpy(info->path_b,    info->path, sizeof(info->path_b));
    info->path_c[0] = '\0';
@@ -148,7 +150,8 @@ static int deferred_push_database_manager_list_deferred(menu_displaylist_info_t 
    return deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 }
 
-static int deferred_push_cursor_manager_list_deferred(menu_displaylist_info_t *info)
+static int deferred_push_cursor_manager_list_deferred(
+      menu_displaylist_info_t *info)
 {
    char rdb_path[PATH_MAX_LENGTH];
    int ret                        = -1;
@@ -181,14 +184,16 @@ end:
    return ret;
 }
 
-static int deferred_push_cursor_manager_list_deferred_query_subsearch(menu_displaylist_info_t *info)
+static int deferred_push_cursor_manager_list_deferred_query_subsearch(
+      menu_displaylist_info_t *info)
 {
    int ret                       = -1;
 #ifdef HAVE_LIBRETRODB
    char query[PATH_MAX_LENGTH]   = {0};
    struct string_list *str_list  = string_split(info->path, "|"); 
 
-   database_info_build_query(query, sizeof(query), info->label, str_list->elems[0].data);
+   database_info_build_query(query, sizeof(query),
+         info->label, str_list->elems[0].data);
 
    if (string_is_empty(query))
       goto end;
@@ -206,12 +211,14 @@ end:
    return ret;
 }
 
-static int deferred_push_video_shader_preset_parameters(menu_displaylist_info_t *info)
+static int deferred_push_video_shader_preset_parameters(
+      menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_SHADER_PARAMETERS_PRESET);
 }
 
-static int deferred_push_video_shader_parameters(menu_displaylist_info_t *info)
+static int deferred_push_video_shader_parameters(
+      menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_SHADER_PARAMETERS);
 }
@@ -427,7 +434,8 @@ void cb_generic_download(void *task_data, void *user_data, const char *err)
          dir_path = "/storage/.update/"; /* TODO unhardcode this ? */
          break;
       default:
-         RARCH_WARN("Unknown transfer type '%u' bailing out.\n", transf->type_hash);
+         RARCH_WARN("Unknown transfer type '%u' bailing out.\n",
+               transf->type_hash);
          break;
    }
 
@@ -521,7 +529,8 @@ enum
 };
 
 
-static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned type)
+static int general_push(menu_displaylist_info_t *info,
+      unsigned id, unsigned type)
 {
    struct retro_system_info *system_menu = NULL;
    settings_t        *settings = config_get_ptr();
@@ -625,12 +634,14 @@ static int general_push(menu_displaylist_info_t *info, unsigned id, unsigned typ
 
 static int deferred_push_detect_core_list(menu_displaylist_info_t *info)
 {
-   return general_push(info, PUSH_DETECT_CORE_LIST, DISPLAYLIST_CORES_DETECTED);
+   return general_push(info, PUSH_DETECT_CORE_LIST,
+         DISPLAYLIST_CORES_DETECTED);
 }
 
 static int deferred_archive_open_detect_core(menu_displaylist_info_t *info)
 {
-   return general_push(info, PUSH_ARCHIVE_OPEN_DETECT_CORE, DISPLAYLIST_DEFAULT);
+   return general_push(info, PUSH_ARCHIVE_OPEN_DETECT_CORE,
+         DISPLAYLIST_DEFAULT);
 }
 
 static int deferred_archive_open(menu_displaylist_info_t *info)
@@ -740,14 +751,16 @@ static int deferred_push_content_history_path(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_CONTENT_HISTORY);
 }
 
-static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *cbs, 
+static int menu_cbs_init_bind_deferred_push_compare_label(
+      menu_file_list_cbs_t *cbs, 
       const char *label, uint32_t label_hash)
 {
    if (strstr(label, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
    }
-   else if (strstr(label, menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
+   else if (strstr(label,
+            menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rpl_entry_actions);
    }
@@ -959,7 +972,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(menu_file_list_cbs_t *
    return 0;
 }
 
-static int menu_cbs_init_bind_deferred_push_compare_type(menu_file_list_cbs_t *cbs, unsigned type,
+static int menu_cbs_init_bind_deferred_push_compare_type(
+      menu_file_list_cbs_t *cbs, unsigned type,
       uint32_t label_hash)
 {
    if (type == MENU_SETTING_GROUP)
@@ -990,10 +1004,12 @@ int menu_cbs_init_bind_deferred_push(menu_file_list_cbs_t *cbs,
 
    BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_default);
 
-   if (menu_cbs_init_bind_deferred_push_compare_label(cbs, label, label_hash) == 0)
+   if (menu_cbs_init_bind_deferred_push_compare_label(
+            cbs, label, label_hash) == 0)
       return 0;
 
-   if (menu_cbs_init_bind_deferred_push_compare_type(cbs, type, label_hash) == 0)
+   if (menu_cbs_init_bind_deferred_push_compare_type(
+            cbs, type, label_hash) == 0)
       return 0;
 
    return -1;
