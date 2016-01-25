@@ -22,6 +22,8 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT                           0xe5f4b599U
+
 #define MENU_LABEL_UI_COMPANION_ENABLE                                         0xb2d7a20cU
 #define MENU_LABEL_VALUE_UI_COMPANION_ENABLE                                   0xee4933ceU
 

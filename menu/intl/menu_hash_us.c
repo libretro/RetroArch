@@ -1514,6 +1514,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "SDL image support";
       case MENU_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT:
          return "OpenGL/Direct3D render-to-texture (multi-pass shaders) support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT:
+         return "Dynamic run-time loading of libretro library";
       case MENU_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT:
          return "FFmpeg support";
       case MENU_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT:
