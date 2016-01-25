@@ -953,8 +953,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #else
             char *fullpath = NULL;
             runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-            rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH,
-                  (void*)settings->libretro);
+            runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, settings->libretro);
             rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)fullpath);
             event_cmd_ctl(EVENT_CMD_QUIT, NULL);
 #endif

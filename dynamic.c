@@ -1215,14 +1215,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          return video_driver_get_current_software_framebuffer((struct retro_framebuffer*)data);
 
       /* Private extensions for internal use, not part of libretro API. */
-      case RETRO_ENVIRONMENT_SET_LIBRETRO_PATH:
-         RARCH_LOG("Environ (Private) SET_LIBRETRO_PATH.\n");
-
-         if (!path_file_exists((const char*)data))
-            return false;
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, data);
-         break;
-
       case RETRO_ENVIRONMENT_EXEC:
       case RETRO_ENVIRONMENT_EXEC_ESCAPE:
          {

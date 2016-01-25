@@ -359,7 +359,8 @@ static void frontend_gx_process_args(int *argc, char *argv[])
    if (!settings->libretro[0] && *argc >= 1 && strrchr(argv[0], '/'))
    {
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
-      rarch_environment_cb(RETRO_ENVIRONMENT_SET_LIBRETRO_PATH, path);
+      if (path_file_exists(path))
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, path);
    }
 #endif
 }
