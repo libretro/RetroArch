@@ -101,8 +101,6 @@ static int read_7zip_file(
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
    uint8_t *output      = 0;
-   size_t output_size   = 0;
-   uint16_t *temp       = NULL;
    long outsize         = -1;
 
    /*These are the allocation routines.
@@ -129,6 +127,7 @@ static int read_7zip_file(
    {
       uint32_t i;
       bool file_found      = false;
+      uint16_t *temp       = NULL;
       size_t temp_size     = 0;
       uint32_t block_index = 0xFFFFFFFF;
       SRes res             = SZ_OK;
@@ -166,6 +165,8 @@ static int read_7zip_file(
 
          if (string_is_equal(infile, needle))
          {
+            size_t output_size   = 0;
+
             RARCH_LOG_OUTPUT("Opened archive %s. Now trying to extract %s\n",
                   path, needle);
 
@@ -193,7 +194,6 @@ static int read_7zip_file(
                   res        = SZ_OK;
                   file_found = true;
                   outsize    = -1;
-                  break;
                }
             }
             else
@@ -211,6 +211,9 @@ static int read_7zip_file(
          }
       }
 
+      free(temp);
+      IAlloc_Free(&allocImp, output);
+
       if (!(file_found && res == SZ_OK))
       {
          /* Error handling */
@@ -223,9 +226,7 @@ static int read_7zip_file(
       }
    }
 
-   IAlloc_Free(&allocImp, output);
    SzArEx_Free(&db, &allocImp);
-   free(temp);
    File_Close(&archiveStream.file);
 
    return outsize;
