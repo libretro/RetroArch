@@ -400,7 +400,7 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
 }
 
 /**
- * file_archive_inflate_data_to_file:
+ * file_archive_decompress_data_to_file:
  * @path                        : filename path of archive.
  * @valid_exts                  : Valid extensions of archive to be parsed. 
  *                                If NULL, allow all.
@@ -413,7 +413,7 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-static int file_archive_inflate_data_to_file(
+static int file_archive_decompress_data_to_file(
       file_archive_file_handle_t *handle,
       int ret,
       const char *path,
@@ -675,7 +675,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
                ret = handle.backend->stream_decompress_data_to_file_iterate(handle.stream);
             }while(ret == 0);
 
-            if (!file_archive_inflate_data_to_file(&handle,
+            if (!file_archive_decompress_data_to_file(&handle,
                      ret, path, valid_exts,
                      cdata, csize, size, crc32))
                return false;
