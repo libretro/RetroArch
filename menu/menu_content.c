@@ -14,7 +14,9 @@
  */
 
 #include <retro_assert.h>
+#include <retro_file.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include "menu_content.h"
 #include "menu_driver.h"
@@ -24,9 +26,11 @@
 
 #include "../core_info.h"
 #include "../configuration.h"
+#include "../dynamic.h"
 #include "../defaults.h"
 #include "../frontend/frontend.h"
 #include "../playlist.h"
+#include "../libretro_private.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"
@@ -135,6 +139,69 @@ bool menu_content_load(void)
    event_cmd_ctl(EVENT_CMD_RESUME, NULL);
 
    return true;
+}
+
+/**
+ * menu_content_playlist_load:
+ * @playlist             : Playlist handle.
+ * @idx                  : Index in playlist.
+ *
+ * Initializes core and loads content based on playlist entry.
+ **/
+void menu_content_playlist_load(void *data, unsigned idx)
+{
+   const char *core_path        = NULL;
+   const char *path             = NULL;
+   content_playlist_t *playlist = (content_playlist_t*)data;
+
+   if (!playlist)
+      return;
+
+   content_playlist_get_index(playlist,
+         idx, &path, NULL, &core_path, NULL, NULL, NULL);
+
+   if (path && !string_is_empty(path))
+   {
+      unsigned i;
+      RFILE *fp           = NULL;
+      char *path_check    = NULL;
+      char *path_tolower  = strdup(path);
+
+      for (i = 0; i < strlen(path_tolower); ++i)
+         path_tolower[i] = tolower(path_tolower[i]);
+
+      if (strstr(path_tolower, ".zip"))
+         strstr(path_tolower, ".zip")[4] = '\0';
+      else if (strstr(path_tolower, ".7z"))
+         strstr(path_tolower, ".7z")[3] = '\0';
+
+      path_check = (char *)calloc(strlen(path_tolower) + 1, sizeof(char));
+      strncpy(path_check, path, strlen(path_tolower));
+
+      fp = retro_fopen(path_check, RFILE_MODE_READ, -1);
+      if (!fp)
+      {
+         runloop_msg_queue_push("File could not be loaded.\n", 1, 100, true);
+         RARCH_LOG("File at %s failed to load.\n", path_check);
+         free(path_tolower);
+         free(path_check);
+         return;
+      }
+      retro_fclose(fp);
+      free(path_tolower);
+      free(path_check);
+   }
+
+   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+
+   if (path)
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+   else
+      menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
+
+   rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
+
+   event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
 }
 
 /**

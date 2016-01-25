@@ -589,7 +589,7 @@ static int action_ok_playlist_entry(const char *path,
          return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr, entry_idx);
    }
 
-   rarch_playlist_load_content(playlist, selection_ptr);
+   menu_content_playlist_load(playlist, selection_ptr);
 
    if (is_history)
    {

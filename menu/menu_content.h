@@ -36,6 +36,15 @@ extern "C" {
 bool menu_content_load(void);
 
 /**
+ * menu_content_playlist_load:
+ * @playlist             : Playlist handle.
+ * @idx                  : Index in playlist.
+ *
+ * Initializes core and loads content based on playlist entry.
+ **/
+void menu_content_playlist_load(void *data, unsigned index);
+
+/**
  * menu_content_defer_core:
  * @core_info            : Core info list handle.
  * @dir                  : Directory. Gets joined with @path.

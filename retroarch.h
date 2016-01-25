@@ -199,15 +199,6 @@ void rarch_main_init_wrap(const struct rarch_main_wrap *args,
  **/
 void rarch_main_deinit(void);
 
-/**
- * rarch_playlist_load_content:
- * @playlist             : Playlist handle.
- * @idx                  : Index in playlist.
- *
- * Initializes core and loads content based on playlist entry.
- **/
-void rarch_playlist_load_content(void *data, unsigned index);
-
 void rarch_set_paths(const char *path);
 
 int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t len);
