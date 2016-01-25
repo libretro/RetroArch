@@ -647,16 +647,13 @@ static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, unsigned flush_id)
 {
-   bool msg_force;
    char action_path[PATH_MAX_LENGTH];
    unsigned flush_type               = 0;
    int ret                           = 0;
    const char             *menu_path = NULL;
    const char *flush_char            = NULL;
    struct video_shader      *shader  = NULL;
-   global_t                  *global = global_get_ptr();
    menu_handle_t               *menu = menu_driver_get_ptr();
-   settings_t              *settings = config_get_ptr();
 
    if (!menu)
       goto error;
@@ -677,6 +674,8 @@ static int generic_action_ok(const char *path,
          flush_type = 49;
          if (path_file_exists(action_path))
          {
+            settings_t *settings = config_get_ptr();
+
             strlcpy(settings->menu.wallpaper, action_path, sizeof(settings->menu.wallpaper));
             rarch_task_push_image_load(action_path, "cb_menu_wallpaper",
                   menu_display_handle_wallpaper_upload, NULL);
@@ -698,16 +697,18 @@ static int generic_action_ok(const char *path,
          break;
 
       case ACTION_OK_LOAD_CONFIG_FILE:
-         flush_char      = NULL;
-         flush_type      = MENU_SETTINGS;
-         msg_force       = true;
-         menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
-
-         if (rarch_ctl(RARCH_CTL_REPLACE_CONFIG, action_path))
          {
-            bool pending_push = false;
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-            ret = -1;
+            bool msg_force  = true;
+            flush_char      = NULL;
+            flush_type      = MENU_SETTINGS;
+            menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
+
+            if (rarch_ctl(RARCH_CTL_REPLACE_CONFIG, action_path))
+            {
+               bool pending_push = false;
+               menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+               ret = -1;
+            }
          }
          break;
 #ifdef HAVE_SHADER_MANAGER
@@ -725,8 +726,11 @@ static int generic_action_ok(const char *path,
          break;
 #endif
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
-         strlcpy(global->record.config, action_path,
-               sizeof(global->record.config));
+         {
+            global_t *global = global_get_ptr();
+            strlcpy(global->record.config, action_path,
+                  sizeof(global->record.config));
+         }
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
          {
