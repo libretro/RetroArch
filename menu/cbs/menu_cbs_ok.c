@@ -1747,7 +1747,8 @@ static int action_ok_start_core(const char *path,
    if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
    {
       runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-      if (rarch_task_push_content_load_default(NULL, NULL, false, CORE_TYPE_PLAIN, NULL, NULL))
+      if (rarch_task_push_content_load_default(NULL, NULL,
+               false, CORE_TYPE_PLAIN, NULL, NULL))
          action_ok_push_quick_menu();
    }
 
