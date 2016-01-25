@@ -28,9 +28,7 @@ enum rarch_core_type
 {
    CORE_TYPE_PLAIN = 0,
    CORE_TYPE_DUMMY,
-#ifdef HAVE_FFMPEG
    CORE_TYPE_FFMPEG,
-#endif
    CORE_TYPE_IMAGEVIEWER
 };
 
@@ -175,7 +173,6 @@ void init_libretro_sym(enum rarch_core_type type);
  * unbind all libretro callback symbols.
  **/
 void uninit_libretro_sym(void);
-
 
 #ifdef __cplusplus
 }
