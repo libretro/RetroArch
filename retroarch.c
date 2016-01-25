@@ -1621,7 +1621,7 @@ int rarch_defer_core(void *data, const char *dir,
       const char *path, const char *menu_label,
       char *s, size_t len)
 {
-   char new_core_path[PATH_MAX_LENGTH] = {0};
+   char new_core_path[PATH_MAX_LENGTH];
    const core_info_t *info             = NULL;
    size_t supported                    = 0;
    core_info_list_t *core_info         = (core_info_list_t*)data;
@@ -1646,25 +1646,25 @@ int rarch_defer_core(void *data, const char *dir,
             &supported);
 
 #ifdef HAVE_MENU
+   /* We started the menu with 'Load Content', we are 
+    * going to use the current core to load this. */
    if (menu_label_hash == MENU_LABEL_LOAD_CONTENT)
    {
       runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, (void*)&info);
-
       if (info)
       {
-         strlcpy(new_core_path, info->path, sizeof(new_core_path));
+         RARCH_LOG("Use the current core (%s) to load this content...\n", info->path);
          supported = 1;
       }
    }
-   else
 #endif
-    if (info)
-      strlcpy(new_core_path, info->path, sizeof(new_core_path));
-
    /* There are multiple deferred cores and a
     * selection needs to be made from a list, return 0. */
    if (supported != 1)
       return 0;
+
+    if (info)
+      strlcpy(new_core_path, info->path, sizeof(new_core_path));
 
    runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, s);
 
