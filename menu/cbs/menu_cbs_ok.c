@@ -688,17 +688,7 @@ static int generic_action_ok(const char *path,
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, action_path);
          event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
 
-#if defined(HAVE_DYNAMIC)
-         /* No content needed for this core, load core immediately. */
-         if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->set_supports_no_game_enable)
-         {
-            runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-            if (rarch_task_push_content_load_default(NULL, NULL, false, CORE_TYPE_PLAIN, NULL, NULL))
-               action_ok_push_quick_menu();
-         }
-         else
-            ret = 0;
-#else
+#if !defined(HAVE_DYNAMIC)
          /* Core selection on non-console just updates directory listing.
           * Will take effect on new content load. */
          ret = -1;
@@ -1753,11 +1743,16 @@ static int action_ok_rpl_entry(const char *path,
 static int action_ok_start_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-   event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
-   if (rarch_task_push_content_load_default(
-            NULL, NULL, false, CORE_TYPE_PLAIN, NULL, NULL))
-      action_ok_push_quick_menu();
+   settings_t              *settings = config_get_ptr();
+
+   /* No content needed for this core, load core immediately. */
+   if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
+   {
+      runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+      if (rarch_task_push_content_load_default(NULL, NULL, false, CORE_TYPE_PLAIN, NULL, NULL))
+         action_ok_push_quick_menu();
+   }
+
    return 0;
 }
 
