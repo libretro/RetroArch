@@ -409,6 +409,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
    endif
    OBJ += menu/menu_hash.o \
 			 menu/menu_driver.o \
+			 menu/menu_content.o \
           menu/intl/menu_hash_de.o \
           menu/intl/menu_hash_es.o \
           menu/intl/menu_hash_eo.o \

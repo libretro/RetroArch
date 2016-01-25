@@ -689,7 +689,7 @@ static int generic_action_ok(const char *path,
          }
          else
             ret = 0;
-#elif defined(RARCH_CONSOLE)
+#else
          /* Core selection on non-console just updates directory listing.
           * Will take effect on new content load. */
          ret = -1;
