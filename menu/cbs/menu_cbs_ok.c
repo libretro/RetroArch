@@ -1744,6 +1744,7 @@ static int action_ok_rpl_entry(const char *path,
 static int action_ok_start_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
    event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
    if (rarch_task_push_content_load_default(
             NULL, NULL, false, CORE_TYPE_PLAIN, NULL, NULL))
