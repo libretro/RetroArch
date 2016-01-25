@@ -2258,10 +2258,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
             break;
          case MENU_LABEL_CORE_LIST:
 #ifdef HAVE_LIBRETRO_MANAGEMENT
-#ifdef RARCH_CONSOLE
             if (is_dir || string_is_equal_noncase(path, SALAMANDER_FILE))
                continue;
-#endif
 #endif
             /* Compressed cores are unsupported */
             if (file_type == MENU_FILE_CARCHIVE)

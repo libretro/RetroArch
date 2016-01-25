@@ -505,11 +505,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (!runloop_system.info.library_version)
             runloop_system.info.library_version = "v0";
 
-#ifndef RARCH_CONSOLE
          strlcpy(runloop_system.title_buf, 
                msg_hash_to_str(MSG_PROGRAM), sizeof(runloop_system.title_buf));
          strlcat(runloop_system.title_buf, " ", sizeof(runloop_system.title_buf));
-#endif
          strlcat(runloop_system.title_buf, runloop_system.info.library_name, sizeof(runloop_system.title_buf));
          strlcat(runloop_system.title_buf, " ", sizeof(runloop_system.title_buf));
          strlcat(runloop_system.title_buf, runloop_system.info.library_version, sizeof(runloop_system.title_buf));
