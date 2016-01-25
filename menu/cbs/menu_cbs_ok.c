@@ -1118,7 +1118,8 @@ static int action_ok_file_load(const char *path,
       fill_pathname_join(full_path_new, menu_path_new, path,
             sizeof(full_path_new));
 
-   if (rarch_task_push_content_load_default(NULL, full_path_new, true, CORE_TYPE_PLAIN, NULL, NULL))
+   if (rarch_task_push_content_load_default(NULL, full_path_new,
+            true, CORE_TYPE_PLAIN, NULL, NULL))
       action_ok_push_quick_menu();
    return -1;
 }
@@ -1317,9 +1318,11 @@ static int action_ok_option_create(const char *path,
    * Try config directory setting first,
    * fallback to the location of the current configuration file. */
    if (!string_is_empty(settings->menu_config_directory))
-      strlcpy(config_directory, settings->menu_config_directory, PATH_MAX_LENGTH);
+      strlcpy(config_directory,
+            settings->menu_config_directory, PATH_MAX_LENGTH);
    else if (!string_is_empty(global->path.config))
-      fill_pathname_basedir(config_directory, global->path.config, PATH_MAX_LENGTH);
+      fill_pathname_basedir(config_directory,
+            global->path.config, PATH_MAX_LENGTH);
    else
    {
       RARCH_WARN("Per-game Options: no config directory set\n");
@@ -1342,9 +1345,11 @@ static int action_ok_option_create(const char *path,
       path_mkdir(core_path);
 
    if(core_option_flush_game_specific(system->core_options,game_path))
-      menu_display_msg_queue_push("Core options file saved successfully", 1, 100, true);
+      menu_display_msg_queue_push("Core options file saved successfully",
+            1, 100, true);
    else
-      menu_display_msg_queue_push("Error saving core options file", 1, 100, true);
+      menu_display_msg_queue_push("Error saving core options file",
+            1, 100, true);
    return 0;
 }
 
@@ -1875,7 +1880,8 @@ static int action_ok_help_audio_video_troubleshooting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING, MENU_HELP_AUDIO_VIDEO_TROUBLESHOOTING);
+         MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+         MENU_HELP_AUDIO_VIDEO_TROUBLESHOOTING);
 }
 
 static int action_ok_help(const char *path,
@@ -1910,7 +1916,8 @@ static int action_ok_help_change_virtual_gamepad(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD, MENU_HELP_CHANGE_VIRTUAL_GAMEPAD);
+         MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,
+         MENU_HELP_CHANGE_VIRTUAL_GAMEPAD);
 }
 
 static int action_ok_help_load_content(const char *path,
@@ -1933,7 +1940,8 @@ static int action_ok_video_resolution(const char *path,
       event_cmd_ctl(EVENT_CMD_REINIT, NULL);
 #endif
       video_driver_set_video_mode(width, height, true);
-      snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset", width, height);
+      snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset",
+            width, height);
       menu_display_msg_queue_push(msg, 1, 100, true);
    }
 
