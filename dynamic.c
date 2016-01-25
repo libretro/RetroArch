@@ -1216,8 +1216,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       /* Private extensions for internal use, not part of libretro API. */
       case RETRO_ENVIRONMENT_EXEC:
-      case RETRO_ENVIRONMENT_EXEC_ESCAPE:
          {
+            RARCH_LOG("Environ (Private) EXEC.\n");
+
             char *fullpath = NULL;
             runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
@@ -1234,13 +1235,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
 #endif
 
-            if (cmd == RETRO_ENVIRONMENT_EXEC_ESCAPE)
-            {
-               RARCH_LOG("Environ (Private) EXEC_ESCAPE.\n");
-               runloop_ctl(RUNLOOP_CTL_SET_EXEC, NULL);
-            }
-            else
-               RARCH_LOG("Environ (Private) EXEC.\n");
          }
          break;
 
