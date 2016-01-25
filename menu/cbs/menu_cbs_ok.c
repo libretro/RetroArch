@@ -87,7 +87,8 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx; 
          info_path          = label;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_USER_BINDS_LIST);
+         info_label         = menu_hash_to_str(
+               MENU_LABEL_DEFERRED_USER_BINDS_LIST);
          break;
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
       case ACTION_OK_DL_OPEN_ARCHIVE:
@@ -102,10 +103,12 @@ int generic_action_ok_displaylist_push(const char *path,
          switch (action_type)
          {
             case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
-               info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE);
+               info_label = menu_hash_to_str(
+                     MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE);
                break;
             case ACTION_OK_DL_OPEN_ARCHIVE:
-               info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN);
+               info_label = menu_hash_to_str(
+                     MENU_LABEL_DEFERRED_ARCHIVE_OPEN);
                break;
          }
          info_path          = path;
@@ -215,7 +218,8 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = label;
          break;
       case ACTION_OK_DL_RDB_ENTRY:
-         fill_pathname_join_delim(tmp, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
+         fill_pathname_join_delim(tmp,
+               menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
                path, '|', sizeof(tmp));
 
          info.directory_ptr = idx;
@@ -244,10 +248,12 @@ int generic_action_ok_displaylist_push(const char *path,
          switch (action_type)
          {
             case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
-               info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE);
+               info_label = menu_hash_to_str(
+                     MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE);
                break;
             case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
-               info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_ACTION);
+               info_label = menu_hash_to_str(
+                     MENU_LABEL_DEFERRED_ARCHIVE_ACTION);
                break;
          }
 
@@ -258,8 +264,10 @@ int generic_action_ok_displaylist_push(const char *path,
          {
             char parent_dir[PATH_MAX_LENGTH];
 
-            fill_pathname_parent_dir(parent_dir, action_path, sizeof(parent_dir));
-            fill_pathname_parent_dir(parent_dir, parent_dir, sizeof(parent_dir));
+            fill_pathname_parent_dir(parent_dir,
+                  action_path, sizeof(parent_dir));
+            fill_pathname_parent_dir(parent_dir,
+                  parent_dir, sizeof(parent_dir));
 
             info.type          = type;
             info.directory_ptr = idx;
@@ -279,7 +287,8 @@ int generic_action_ok_displaylist_push(const char *path,
 
          info.directory_ptr = idx;
          info_path          = tmp;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST);
+         info_label         = menu_hash_to_str(
+               MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST);
          break;
       case ACTION_OK_DL_CURSOR_MANAGER_LIST:
          fill_pathname_join(tmp, settings->cursor_directory,
@@ -287,19 +296,22 @@ int generic_action_ok_displaylist_push(const char *path,
 
          info.directory_ptr = idx;
          info_path          = tmp;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST);
+         info_label         = menu_hash_to_str(
+               MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST);
          break;
       case ACTION_OK_DL_CORE_UPDATER_LIST:
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_UPDATER_LIST);
+         info_label         = menu_hash_to_str(
+               MENU_LABEL_DEFERRED_CORE_UPDATER_LIST);
          break;
       case ACTION_OK_DL_CORE_CONTENT_LIST:
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_CONTENT_LIST);
+         info_label         = menu_hash_to_str(
+               MENU_LABEL_DEFERRED_CORE_CONTENT_LIST);
          break;
       case ACTION_OK_DL_LAKKA_LIST:
          info.type          = type;
@@ -316,7 +328,8 @@ int generic_action_ok_displaylist_push(const char *path,
          info.directory_ptr                 = idx;
          rdb_entry_start_game_selection_ptr = idx;
          info_path                          = settings->libretro_directory;
-         info_label                         = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST_SET);
+         info_label                         = menu_hash_to_str(
+               MENU_LABEL_DEFERRED_CORE_LIST_SET);
          break;
       case ACTION_OK_DL_ACCOUNTS_LIST:
          info.directory_ptr = idx;
@@ -463,7 +476,8 @@ static int action_ok_file_load_with_detect_core_carchive(
    type = 0;
    label = NULL;
 
-   return rarch_defer_core_wrapper(idx, entry_idx, path, label, hash_label, type, true);
+   return rarch_defer_core_wrapper(idx, entry_idx,
+         path, label, hash_label, type, true);
 }
 
 static int action_ok_file_load_with_detect_core(const char *path,
@@ -474,7 +488,8 @@ static int action_ok_file_load_with_detect_core(const char *path,
    type  = 0;
    label = NULL;
 
-   return rarch_defer_core_wrapper(idx, entry_idx, path, label, hash_label, type, false);
+   return rarch_defer_core_wrapper(idx, entry_idx,
+         path, label, hash_label, type, false);
 }
 
 
@@ -490,7 +505,6 @@ static int action_ok_file_load_detect_core(const char *path,
 
    return 0;
 }
-
 
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -521,7 +535,8 @@ static int action_ok_playlist_entry(const char *path,
 
          if (!tmp_playlist)
          {
-            tmp_playlist = content_playlist_init(menu->db_playlist_file, COLLECTION_SIZE);
+            tmp_playlist = content_playlist_init(
+                  menu->db_playlist_file, COLLECTION_SIZE);
 
             if (!tmp_playlist)
                return -1;
@@ -545,7 +560,8 @@ static int action_ok_playlist_entry(const char *path,
          &entry_path, &entry_label, &core_path, &core_name, NULL, NULL); 
 
 #if 0
-   RARCH_LOG("path: %s, label: %s, core path: %s, core name: %s, idx: %d\n", entry_path, entry_label,
+   RARCH_LOG("path: %s, label: %s, core path: %s, core name: %s, idx: %d\n",
+         entry_path, entry_label,
          core_path, core_name, selection_ptr);
    RARCH_LOG("playlist file: %s\n", menu->db_playlist_file);
 #endif
@@ -575,7 +591,8 @@ static int action_ok_playlist_entry(const char *path,
          found_associated_core = false;
 
       if (!found_associated_core)
-         return action_ok_file_load_with_detect_core(entry_path, label, type, selection_ptr, entry_idx);
+         return action_ok_file_load_with_detect_core(entry_path,
+               label, type, selection_ptr, entry_idx);
 
       menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
 
@@ -603,7 +620,8 @@ static int action_ok_playlist_entry(const char *path,
          case MENU_LABEL_COLLECTION:
          case MENU_LABEL_RDB_ENTRY_START_CONTENT:
             menu_entries_pop_stack(&selection, 0);
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION,
+                  &selection);
             break;
          default:
             menu_entries_flush_stack(NULL, MENU_SETTINGS);
@@ -673,7 +691,8 @@ static int generic_action_ok(const char *path,
          {
             settings_t *settings = config_get_ptr();
 
-            strlcpy(settings->menu.wallpaper, action_path, sizeof(settings->menu.wallpaper));
+            strlcpy(settings->menu.wallpaper,
+                  action_path, sizeof(settings->menu.wallpaper));
             rarch_task_push_image_load(action_path, "cb_menu_wallpaper",
                   menu_display_handle_wallpaper_upload, NULL);
          }
@@ -753,11 +772,13 @@ static int generic_action_ok(const char *path,
          flush_char = NULL;
          flush_type = 49;
          {
-            menu_file_list_cbs_t *cbs = menu_entries_get_last_stack_actiondata();
+            menu_file_list_cbs_t *cbs = 
+               menu_entries_get_last_stack_actiondata();
 
             if (cbs)
             {
-               menu_setting_set_with_string_representation(cbs->setting, action_path);
+               menu_setting_set_with_string_representation(
+                     cbs->setting, action_path);
                ret = menu_setting_generic(cbs->setting, false);
             }
          }
@@ -828,7 +849,8 @@ static int action_ok_remap_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
-         ACTION_OK_LOAD_REMAPPING_FILE, MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS);
+         ACTION_OK_LOAD_REMAPPING_FILE,
+         MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS);
 }
 
 static int action_ok_shader_preset_load(const char *path,
@@ -914,7 +936,8 @@ static int generic_action_ok_remap_file_save(const char *path,
    if (info)
       core_name           = info->info.library_name;
 
-   fill_pathname_join(directory, settings->input_remapping_directory, core_name, PATH_MAX_LENGTH);
+   fill_pathname_join(directory, settings->input_remapping_directory,
+         core_name, PATH_MAX_LENGTH);
 
    switch (action_type)
    {
@@ -932,9 +955,11 @@ static int generic_action_ok_remap_file_save(const char *path,
        path_mkdir(directory);
 
    if(input_remapping_save_file(file))
-      menu_display_msg_queue_push("Remap file saved successfully", 1, 100, true);
+      menu_display_msg_queue_push("Remap file saved successfully",
+            1, 100, true);
    else
-      menu_display_msg_queue_push("Error saving remap file", 1, 100, true);
+      menu_display_msg_queue_push("Error saving remap file",
+            1, 100, true);
 
    return 0;
 }
