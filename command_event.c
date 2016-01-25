@@ -431,8 +431,13 @@ static bool event_load_save_files(void)
       return false;
 
    for (i = 0; i < global->savefiles->size; i++)
-      load_ram_file(global->savefiles->elems[i].data,
-            global->savefiles->elems[i].attr.i);
+   {
+      ram_type_t ram;
+      ram.path = global->savefiles->elems[i].data;
+      ram.type = global->savefiles->elems[i].attr.i;
+
+      content_ctl(CONTENT_CTL_LOAD_RAM_FILE, &ram);
+   }
 
    return true;
 }
@@ -1411,14 +1416,16 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 
             for (i = 0; i < global->savefiles->size; i++)
             {
-               unsigned type    = global->savefiles->elems[i].attr.i;
-               const char *path = global->savefiles->elems[i].data;
+               ram_type_t ram;
+               ram.type    = global->savefiles->elems[i].attr.i;
+               ram.path    = global->savefiles->elems[i].data;
+
                RARCH_LOG("%s #%u %s \"%s\".\n",
                      msg_hash_to_str(MSG_SAVING_RAM_TYPE),
-                     type,
+                     ram.type,
                      msg_hash_to_str(MSG_TO),
-                     path);
-               save_ram_file(path, type);
+                     ram.path);
+               content_ctl(CONTENT_CTL_SAVE_RAM_FILE, &ram);
             }
          }
          return true;

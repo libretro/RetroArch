@@ -45,6 +45,15 @@ enum content_ctl_state
 
    CONTENT_CTL_GET_CRC,
 
+   /* Load a RAM state from disk to memory. */
+   CONTENT_CTL_LOAD_RAM_FILE,
+
+   /* Save a RAM state from memory to disk.
+    *
+    * In case the file could not be written to, a fallback function
+    * 'dump_to_file_desperate' will be called. */
+   CONTENT_CTL_SAVE_RAM_FILE,
+
    /* Load a state from disk to memory. */
    CONTENT_CTL_LOAD_STATE,
 
@@ -55,27 +64,11 @@ enum content_ctl_state
    CONTENT_CTL_TEMPORARY_FREE
 };
 
-
-/**
- * load_ram_file:
- * @path             : path of RAM state that will be loaded from.
- * @type             : type of memory
- *
- * Load a RAM state from disk to memory.
- */
-void load_ram_file(const char *path, int type);
-
-/**
- * save_ram_file:
- * @path             : path of RAM state that shall be written to.
- * @type             : type of memory
- *
- * Save a RAM state from memory to disk.
- *
- * In case the file could not be written to, a fallback function
- * 'dump_to_file_desperate' will be called.
- */
-void save_ram_file(const char *path, int type);
+typedef struct ram_type
+{
+   const char *path;
+   int type;
+} ram_type_t;
 
 bool content_ctl(enum content_ctl_state state, void *data);
 

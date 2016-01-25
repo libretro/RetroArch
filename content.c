@@ -296,18 +296,18 @@ error:
  *
  * Load a RAM state from disk to memory.
  */
-void load_ram_file(const char *path, int type)
+static bool load_ram_file(ram_type_t *ram)
 {
    ssize_t rc;
    void *buf   = NULL;
-   size_t size = core.retro_get_memory_size(type);
-   void *data  = core.retro_get_memory_data(type);
+   size_t size = core.retro_get_memory_size(ram->type);
+   void *data  = core.retro_get_memory_data(ram->type);
 
    if (size == 0 || !data)
-      return;
+      return false;
 
-   if (!read_file(path, &buf, &rc))
-      return;
+   if (!read_file(ram->path, &buf, &rc))
+      return false;
 
    if (rc > 0)
    {
@@ -325,6 +325,8 @@ void load_ram_file(const char *path, int type)
 
    if (buf)
       free(buf);
+
+   return true;
 }
 
 /**
@@ -337,26 +339,28 @@ void load_ram_file(const char *path, int type)
  * In case the file could not be written to, a fallback function
  * 'dump_to_file_desperate' will be called.
  */
-void save_ram_file(const char *path, int type)
+static bool save_ram_file(ram_type_t *ram)
 {
-   size_t size = core.retro_get_memory_size(type);
-   void *data  = core.retro_get_memory_data(type);
+   size_t size = core.retro_get_memory_size(ram->type);
+   void *data  = core.retro_get_memory_data(ram->type);
 
    if (!data || size == 0)
-      return;
+      return false;
 
-   if (!retro_write_file(path, data, size))
+   if (!retro_write_file(ram->path, data, size))
    {
       RARCH_ERR("%s.\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
       RARCH_WARN("Attempting to recover ...\n");
-      dump_to_file_desperate(data, size, type);
-      return;
+      dump_to_file_desperate(data, size, ram->type);
+      return false;
    }
 
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
-         path);
+         ram->path);
+
+   return true;
 }
 
 /* Load the content into memory. */
@@ -752,6 +756,22 @@ bool content_ctl(enum content_ctl_state state, void *data)
 
    switch(state)
    {
+      case CONTENT_CTL_LOAD_RAM_FILE:
+         {
+            ram_type_t *ram = (ram_type_t*)data;
+            if (!ram)
+               return false;
+            return load_ram_file(ram);
+         }
+         break;
+      case CONTENT_CTL_SAVE_RAM_FILE:
+         {
+            ram_type_t *ram = (ram_type_t*)data;
+            if (!ram)
+               return false;
+            save_ram_file(ram);
+         }
+         break;
       case CONTENT_CTL_DOES_NOT_NEED_CONTENT:
          return core_does_not_need_content;
       case CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT:
