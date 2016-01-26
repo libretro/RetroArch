@@ -399,14 +399,14 @@ error:
 
 #ifdef HAVE_COMPRESSION
 static bool load_content_from_compressed_archive(
+      char *new_path, size_t len,
       struct string_list *temporary_content,
       struct retro_game_info *info, unsigned i,
       struct string_list* additional_path_allocs,
       bool need_fullpath, const char *path)
 {
-   ssize_t len;
    union string_list_elem_attr attributes;
-   char new_path[PATH_MAX_LENGTH];
+   ssize_t new_path_len;
    char new_basedir[PATH_MAX_LENGTH];
    bool ret                          = false;
    settings_t *settings              = config_get_ptr();
@@ -420,7 +420,7 @@ static bool load_content_from_compressed_archive(
       return true;
 
    RARCH_LOG("Compressed file in case of need_fullpath."
-         "Now extracting to temporary directory.\n");
+         " Now extracting to temporary directory.\n");
 
    strlcpy(new_basedir, settings->cache_directory,
          sizeof(new_basedir));
@@ -437,11 +437,11 @@ static bool load_content_from_compressed_archive(
 
    attributes.i = 0;
    fill_pathname_join(new_path, new_basedir,
-         path_basename(path), sizeof(new_path));
+         path_basename(path), len);
 
-   ret = read_compressed_file(path, NULL, new_path, &len);
+   ret = read_compressed_file(path, NULL, new_path, &new_path_len);
 
-   if (!ret || len < 0)
+   if (!ret || new_path_len < 0)
    {
       RARCH_ERR("%s \"%s\".\n",
             msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
@@ -449,7 +449,9 @@ static bool load_content_from_compressed_archive(
       return false;
    }
 
-   string_list_append(additional_path_allocs,new_path, attributes);
+   RARCH_LOG("New path is: [%s]\n", new_path);
+
+   string_list_append(additional_path_allocs, new_path, attributes);
    info[i].path = 
       additional_path_allocs->elems[additional_path_allocs->size -1 ].data;
 
@@ -478,21 +480,22 @@ static bool load_content(
       )
 {
    unsigned i;
+   char new_path[PATH_MAX_LENGTH];
    bool ret         = true;
    const char *path = NULL;
 
    if (!info || !additional_path_allocs)
       return false;
 
+
    for (i = 0; i < content->size; i++)
    {
       int         attr     = content->elems[i].attr.i;
       bool need_fullpath   = attr & 2;
       bool require_content = attr & 4;
+      const char *file_path= content->elems[i].data;
 
-      path                 = content->elems[i].data;
-
-      if (require_content && string_is_empty(path))
+      if (require_content && string_is_empty(file_path))
       {
          RARCH_LOG("libretro core requires content, "
                "but nothing was provided.\n");
@@ -501,12 +504,12 @@ static bool load_content(
 
       info[i].path = NULL;
 
-      if (*path)
-         info[i].path = path;
+      if (*file_path)
+         info[i].path = file_path;
 
-      if (!need_fullpath && !string_is_empty(path))
+      if (!need_fullpath && !string_is_empty(file_path))
       {
-         if (!load_content_into_memory(&info[i], i, path))
+         if (!load_content_into_memory(&info[i], i, file_path))
             return false;
       }
       else
@@ -516,15 +519,18 @@ static bool load_content(
 
 #ifdef HAVE_COMPRESSION
          if (!load_content_from_compressed_archive(
+                  new_path, sizeof(new_path),
                   temporary_content,
                   &info[i], i,
-                  additional_path_allocs, need_fullpath, path))
+                  additional_path_allocs, need_fullpath, file_path))
             return false;
+         path = new_path;
 #endif
       }
    }
 
-   path = content->elems[0].data;
+   if (path == NULL)
+      path = content->elems[0].data;
 
    RARCH_LOG("Calling %s with path: [%s]\n", special ? 
          "retro_load_game_special" : "retro_load_game", *path ? path : "N/A");
