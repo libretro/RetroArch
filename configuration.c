@@ -1955,14 +1955,16 @@ bool config_load_override(void)
       return false;
 
    /* Concatenate strings into full paths for core_path, game_path */
+   fill_pathname_join(game_path,
+         config_directory, core_name, sizeof(game_path));
+   fill_string_join(game_path, game_name, sizeof(game_path));
+   strlcat(game_path, ".cfg", sizeof(game_path));
+
    fill_pathname_join(core_path,
          config_directory, core_name, sizeof(core_path));
    fill_string_join(core_path, core_name, sizeof(core_path));
    strlcat(core_path, ".cfg", sizeof(core_path));
 
-   fill_pathname_join(game_path, config_directory, core_name, sizeof(game_path));
-   fill_string_join(game_path, game_name, sizeof(game_path));
-   strlcat(game_path, ".cfg", sizeof(game_path));
 
    /* Create a new config file from core_path */
    new_conf = config_file_new(core_path);
