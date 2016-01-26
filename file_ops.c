@@ -88,7 +88,8 @@ static bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
 
 /* Extract the relative path (needle) from a 7z archive 
  * (path) and allocate a buf for it to write it in.
- * If optional_outfile is set, extract to that instead and don't alloc buffer.
+ * If optional_outfile is set, extract to that instead 
+ * and don't allocate buffer.
  */
 static int read_7zip_file(
       const char *path,

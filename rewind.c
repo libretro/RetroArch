@@ -504,7 +504,8 @@ static bool state_manager_pop(state_manager_t *state, const void **data)
    compressed = state->data + start + sizeof(size_t);
    out = state->thisblock;
 
-   state_manager_raw_decompress(compressed, state->maxcompsize, out, state->blocksize);
+   state_manager_raw_decompress(compressed,
+         state->maxcompsize, out, state->blocksize);
 
    state->entries--;
    *data = state->thisblock;
@@ -571,7 +572,8 @@ recheckcapacity:;
       newb = state->nextblock;
       compressed = state->head + sizeof(size_t);
 
-      compressed += state_manager_raw_compress(oldb, newb, state->blocksize, compressed);
+      compressed += state_manager_raw_compress(oldb, newb,
+            state->blocksize, compressed);
 
       if (compressed - state->data + state->maxcompsize > state->capacity)
       {
@@ -707,7 +709,8 @@ void state_manager_check_rewind(bool pressed)
          audio_driver_ctl(RARCH_AUDIO_CTL_SETUP_REWIND, NULL);
 
          runloop_msg_queue_push_new(MSG_REWINDING, 0,
-               runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ? 1 : 30, true);
+               runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) 
+               ? 1 : 30, true);
          core.retro_unserialize(buf, rewind_state.size);
 
          if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))

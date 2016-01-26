@@ -187,7 +187,8 @@ void rarch_main_deinit(void);
 
 void rarch_set_paths(const char *path);
 
-int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t len);
+int rarch_info_get_capabilities(enum rarch_capabilities type,
+      char *s, size_t len);
 
 enum rarch_content_type rarch_path_is_media_type(const char *path);
 
