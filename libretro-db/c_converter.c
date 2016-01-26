@@ -129,6 +129,7 @@ static void dat_converter_list_free(dat_converter_list_t* list)
    free(list->values);
    free(list);
 }
+static void dat_converter_list_append(dat_converter_list_t* dst, void* item);
 
 static dat_converter_bt_node_t* dat_converter_bt_node_insert(dat_converter_list_t* list, dat_converter_bt_node_t** node,
       dat_converter_map_t* map)
@@ -155,9 +156,21 @@ static dat_converter_bt_node_t* dat_converter_bt_node_insert(dat_converter_list_
    /* found match */
 
    if (list->values[(*node)->index].map.type == DAT_CONVERTER_LIST_MAP)
-      dat_converter_list_free(list->values[(*node)->index].map.value.list);
+   {
+      if (map->type == DAT_CONVERTER_LIST_MAP)
+      {
+         int i;
+         assert(list->values[(*node)->index].map.value.list->type == map->value.list->type);
+         for (i = 0; i < map->value.list->count; i++)
+            dat_converter_list_append(list->values[(*node)->index].map.value.list, &map->value.list->values[i]);
 
-   list->values[(*node)->index].map = *map;
+         /* set count to 0 to prevent freeing the child nodes */
+         map->value.list->count = 0;
+         dat_converter_list_free(map->value.list);
+      }
+   }
+   else
+      list->values[(*node)->index].map = *map;
 
    return NULL;
 }
@@ -630,30 +643,32 @@ static int dat_converter_value_provider(dat_converter_list_item_t** current_item
          current->value.type = RDT_BINARY;
          current->value.val.binary.len = strlen(value) / 2;
          current->value.val.binary.buff = malloc(current->value.val.binary.len);
-         const char* hex_char = value;
-         char* out_buff = current->value.val.binary.buff;
-         while (*hex_char && *(hex_char + 1))
          {
-            char val = 0;
-            if (*hex_char >= 'A' && *hex_char <= 'F')
-               val = *hex_char + 0xA - 'A';
-            else if (*hex_char >= 'a' && *hex_char <= 'f')
-               val = *hex_char + 0xA - 'a';
-            else if (*hex_char >= '0' && *hex_char <= '9')
-               val = *hex_char - '0';
-            else
-               val = 0;
-            val <<= 4;
-            hex_char++;
-            if (*hex_char >= 'A' && *hex_char <= 'F')
-               val |= *hex_char + 0xA - 'A';
-            else if (*hex_char >= 'a' && *hex_char <= 'f')
-               val |= *hex_char + 0xA - 'a';
-            else if (*hex_char >= '0' && *hex_char <= '9')
-               val |= *hex_char - '0';
+            const char* hex_char = value;
+            char* out_buff = current->value.val.binary.buff;
+            while (*hex_char && *(hex_char + 1))
+            {
+               char val = 0;
+               if (*hex_char >= 'A' && *hex_char <= 'F')
+                  val = *hex_char + 0xA - 'A';
+               else if (*hex_char >= 'a' && *hex_char <= 'f')
+                  val = *hex_char + 0xA - 'a';
+               else if (*hex_char >= '0' && *hex_char <= '9')
+                  val = *hex_char - '0';
+               else
+                  val = 0;
+               val <<= 4;
+               hex_char++;
+               if (*hex_char >= 'A' && *hex_char <= 'F')
+                  val |= *hex_char + 0xA - 'A';
+               else if (*hex_char >= 'a' && *hex_char <= 'f')
+                  val |= *hex_char + 0xA - 'a';
+               else if (*hex_char >= '0' && *hex_char <= '9')
+                  val |= *hex_char - '0';
 
-            *out_buff++ = val;
-            hex_char++;
+               *out_buff++ = val;
+               hex_char++;
+            }
          }
          break;
       default:
