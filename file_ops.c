@@ -161,7 +161,8 @@ static int read_7zip_file(
          }
 
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         res = utf16_to_char_string(temp, infile, sizeof(infile)) ? SZ_OK : SZ_ERROR_FAIL;
+         res = utf16_to_char_string(temp, infile, sizeof(infile)) 
+            ? SZ_OK : SZ_ERROR_FAIL;
 
          if (string_is_equal(infile, needle))
          {
@@ -307,7 +308,8 @@ static struct string_list *compressed_7zip_file_list_new(
          }
 
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         res      = utf16_to_char_string(temp, infile, sizeof(infile)) ? SZ_OK : SZ_ERROR_FAIL;
+         res      = utf16_to_char_string(temp, infile, sizeof(infile)) 
+            ? SZ_OK : SZ_ERROR_FAIL;
          file_ext = path_get_extension(infile);
 
          if (string_list_find_elem_prefix(ext_list, ".", file_ext))
@@ -395,14 +397,17 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
          int ret = 0;
          file_archive_file_handle_t handle = {0};
          handle.backend = file_archive_get_default_file_backend();
-         if (!handle.backend->stream_decompress_data_to_file_init(&handle, cdata, csize, size))
+         if (!handle.backend->stream_decompress_data_to_file_init(
+                  &handle, cdata, csize, size))
             return false;
 
          do{
-            ret = handle.backend->stream_decompress_data_to_file_iterate(handle.stream);
+            ret = handle.backend->stream_decompress_data_to_file_iterate(
+                  handle.stream);
          }while(ret == 0);
 
-         handle.real_checksum = handle.backend->stream_crc_calculate(0, handle.data, size);
+         handle.real_checksum = handle.backend->stream_crc_calculate(0,
+               handle.data, size);
 
          if (handle.real_checksum != crc32)
          {
@@ -440,10 +445,15 @@ static int read_zip_file(const char *path,
 
    zlib.type      = ZLIB_TRANSFER_INIT;
 
-   st.needle      = needle           ? strdup(needle)           : NULL;
-   st.opt_file    = optional_outfile ? strdup(optional_outfile) : NULL;
+   st.needle      = NULL;
+   st.opt_file    = NULL;
    st.found       = false;
    st.buf         = buf;
+
+   if (needle)
+      st.needle   = strdup(needle);
+   if (optional_outfile)
+      st.opt_file = strdup(optional_outfile);
 
    do
    {
@@ -509,7 +519,8 @@ int read_compressed_file(const char * path, void **buf,
 #ifdef HAVE_7ZIP
    if (string_is_equal_noncase(file_ext, "7z"))
    {
-      *length = read_7zip_file(str_list->elems[0].data, str_list->elems[1].data, buf, optional_filename);
+      *length = read_7zip_file(str_list->elems[0].data,
+            str_list->elems[1].data, buf, optional_filename);
       if (*length != -1)
          ret = 1;
    }
@@ -518,7 +529,8 @@ int read_compressed_file(const char * path, void **buf,
    if (string_is_equal_noncase(file_ext, "zip"))
    {
       stream_backend = file_archive_get_default_file_backend();
-      *length        = read_zip_file(str_list->elems[0].data, str_list->elems[1].data, buf, optional_filename);
+      *length        = read_zip_file(str_list->elems[0].data,
+            str_list->elems[1].data, buf, optional_filename);
       if (*length != -1)
          ret = 1;
    }

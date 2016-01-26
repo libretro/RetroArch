@@ -99,7 +99,8 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 
 #ifdef HAVE_ZLIB
    content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
-   *content_crc_ptr = stream_backend->stream_crc_calculate(0, ret_buf, *length);
+   *content_crc_ptr = stream_backend->stream_crc_calculate(
+         0, ret_buf, *length);
 
    RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
 #endif
@@ -313,7 +314,8 @@ static bool load_ram_file(ram_type_t *ram)
    {
       if (rc > (ssize_t)size)
       {
-         RARCH_WARN("SRAM is larger than implementation expects, doing partial load (truncating %u %s %s %u).\n",
+         RARCH_WARN("SRAM is larger than implementation expects, "
+               "doing partial load (truncating %u %s %s %u).\n",
                (unsigned)rc,
                msg_hash_to_str(MSG_BYTES),
                msg_hash_to_str(MSG_TO),
@@ -490,7 +492,8 @@ static bool load_content(
 
       if (require_content && string_is_empty(path))
       {
-         RARCH_LOG("libretro core requires content, but nothing was provided.\n");
+         RARCH_LOG("libretro core requires content, "
+               "but nothing was provided.\n");
          return false;
       }
 
@@ -557,13 +560,15 @@ static bool init_content_file_subsystem(
 
    if (special->num_roms && !global->subsystem_fullpaths)
    {
-      RARCH_ERR("libretro core requires special content, but none were provided.\n");
+      RARCH_ERR("libretro core requires special content, "
+            "but none were provided.\n");
       return false;
    }
    else if (special->num_roms && special->num_roms
          != global->subsystem_fullpaths->size)
    {
-      RARCH_ERR("libretro core requires %u content files for subsystem \"%s\", but %u content files were provided.\n",
+      RARCH_ERR("libretro core requires %u content files for "
+            "subsystem \"%s\", but %u content files were provided.\n",
             special->num_roms, special->desc,
             (unsigned)global->subsystem_fullpaths->size);
       return false;
@@ -571,7 +576,8 @@ static bool init_content_file_subsystem(
    else if (!special->num_roms && global->subsystem_fullpaths
          && global->subsystem_fullpaths->size)
    {
-      RARCH_ERR("libretro core takes no content for subsystem \"%s\", but %u content files were provided.\n",
+      RARCH_ERR("libretro core takes no content for subsystem \"%s\", "
+            "but %u content files were provided.\n",
             special->desc,
             (unsigned)global->subsystem_fullpaths->size);
       return false;
@@ -686,7 +692,8 @@ static bool init_content_file_set_attribs(
 
 #ifdef HAVE_ZLIB
    /* Try to extract all content we're going to load if appropriate. */
-   if (!init_content_file_extract(temporary_content, content, system, special, &attr))
+   if (!init_content_file_extract(temporary_content,
+            content, system, special, &attr))
       return false;
 #endif
    return true;
