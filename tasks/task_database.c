@@ -313,9 +313,10 @@ static int database_info_list_iterate_found_match(
    content_playlist_free(playlist);
 
    database_info_list_free(db_state->info);
-   printf("SCANNING: %d %s\n", db_state->crc, db_playlist_path);
+
    db_state->info = NULL;
    db_state->crc  = 0;
+
    return 0;
 }
 
