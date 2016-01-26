@@ -148,7 +148,7 @@ void file_archive_deflate_init(void *data, int level);
 
 const struct file_archive_file_backend *file_archive_get_default_file_backend(void);
 
-const struct file_archive_file_backend zlib_backend;
+extern const struct file_archive_file_backend zlib_backend;
 
 #endif
 

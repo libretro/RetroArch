@@ -139,7 +139,7 @@ static bool zlib_stream_decompress_data_to_file_init(
    if (!(handle->stream = (z_stream*)zlib_stream_new()))
       goto error;
    
-   if (inflateInit2(handle->stream, -MAX_WBITS) != Z_OK)
+   if (inflateInit2((z_streamp)handle->stream, -MAX_WBITS) != Z_OK)
       goto error;
 
    handle->data = (uint8_t*)malloc(size);
