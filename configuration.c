@@ -1920,10 +1920,10 @@ static void config_load_core_specific(void)
  */
 bool config_load_override(void)
 {
-   char buf[PATH_MAX_LENGTH]              = {0};
-   char config_directory[PATH_MAX_LENGTH] = {0}; /* path to the directory containing retroarch.cfg (prefix)    */
-   char core_path[PATH_MAX_LENGTH]        = {0}; /* final path for core-specific configuration (prefix+suffix) */
-   char game_path[PATH_MAX_LENGTH]        = {0}; /* final path for game-specific configuration (prefix+suffix) */
+   char buf[PATH_MAX_LENGTH];
+   char config_directory[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH];
+   char game_path[PATH_MAX_LENGTH];
    config_file_t *new_conf                = NULL;
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
@@ -1934,24 +1934,13 @@ bool config_load_override(void)
    
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   if (!global || !settings || !system)
-   {
-      RARCH_ERR("Couldn't load override config file.\n");
-      return false;
-   }
-
-   /* Early return in case a library isn't loaded */
-   if (string_is_empty(system->info.library_name) || string_is_equal(system->info.library_name, "No Core"))
-      return false;
-
-   core_name = system ? system->info.library_name : NULL;
-   game_name = global ? path_basename(global->name.base) : NULL;
+   if (system)
+      core_name = system->info.library_name;
+   if (global)
+      game_name = path_basename(global->name.base);
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
-
-   RARCH_LOG("Overrides: core name: %s\n", core_name);
-   RARCH_LOG("Overrides: game name: %s\n", game_name);
 
    /* Config directory: config_directory.
     * Try config directory setting first,
@@ -1963,20 +1952,16 @@ bool config_load_override(void)
       fill_pathname_basedir(config_directory,
             global->path.config, sizeof(config_directory));
    else
-   {
-      RARCH_WARN("Overrides: no config directory set\n");
       return false;
-   }
-
-   RARCH_LOG("Overrides: config directory: %s\n", config_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
-   fill_pathname_join(core_path, config_directory, core_name, sizeof(core_path));
-   fill_pathname_join(core_path, core_path, core_name, sizeof(core_path));
+   fill_pathname_join(core_path,
+         config_directory, core_name, sizeof(core_path));
+   fill_string_join(core_path, core_name, sizeof(core_path));
    strlcat(core_path, ".cfg", sizeof(core_path));
 
    fill_pathname_join(game_path, config_directory, core_name, sizeof(game_path));
-   fill_pathname_join(game_path, game_path, game_name, sizeof(game_path));
+   fill_string_join(game_path, game_name, sizeof(game_path));
    strlcat(game_path, ".cfg", sizeof(game_path));
 
    /* Create a new config file from core_path */
@@ -2042,7 +2027,7 @@ bool config_load_override(void)
 #endif
 
    /* Store the libretro_path we're using since it will be overwritten by the override when reloading */
-   strlcpy(buf,settings->libretro,sizeof(buf));
+   strlcpy(buf, settings->libretro, sizeof(buf));
 
    /* Toggle has_save_path to false so it resets */
    global->has_set.save_path  = false;
@@ -2053,7 +2038,7 @@ bool config_load_override(void)
 
    /* Restore the libretro_path we're using
     * since it will be overwritten by the override when reloading. */
-   strlcpy(settings->libretro,buf,sizeof(settings->libretro));
+   strlcpy(settings->libretro, buf, sizeof(settings->libretro));
    runloop_msg_queue_push("Configuration override loaded", 1, 100, true);
 
    /* Reset save paths */
