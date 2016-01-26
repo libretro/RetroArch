@@ -166,7 +166,6 @@ static const char *menu_video_get_ident(void)
 static bool menu_display_check_compatibility(enum menu_display_driver_type type)
 {
    const char *video_driver = menu_video_get_ident();
-   const char *ctx_driver   = gfx_ctx_get_ident();
 
    switch (type)
    {
@@ -174,8 +173,6 @@ static bool menu_display_check_compatibility(enum menu_display_driver_type type)
          return true;
       case MENU_VIDEO_DRIVER_OPENGL:
          if (string_is_equal(video_driver, "gl"))
-            return true;
-         if (!string_is_empty(ctx_driver) && string_is_equal(video_driver, "sdl_gl"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:
