@@ -13,11 +13,11 @@ endif
 LUA_CONVERTER_C = \
 			 rmsgpack.c \
 			 rmsgpack_dom.c \
-			 lua_common.c \
+			 lua/lua_common.c \
 			 libretrodb.c \
 			 bintree.c \
 			 query.c \
-			 lua_converter.c \
+			 lua/lua_converter.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
 			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
@@ -52,7 +52,7 @@ RARCHDB_TOOL_C = \
 RARCHDB_TOOL_OBJS := $(RARCHDB_TOOL_C:.c=.o)
 
 TESTLIB_C = \
-			 testlib.c \
+			 lua/testlib.c \
 			 query.c \
 			 libretrodb.c \
 			 bintree.c \
@@ -97,8 +97,8 @@ testlib.so: CFLAGS += -fPIC
 testlib.so: clean $(TESTLIB_OBJS)
 	$(CC) $(INCFLAGS) $(TESTLIB_FLAGS) $(TESTLIB_OBJS) -o $@
 
-check: testlib.so tests.lua
-	lua ./tests.lua
+check: testlib.so lua/tests.lua
+	lua ./lua/tests.lua
 
 clean:
 	rm -rf $(TARGETS) $(LUA_CONVERTER_OBJS) $(C_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS) testlib.so
