@@ -399,7 +399,6 @@ error:
 
 #ifdef HAVE_COMPRESSION
 static bool load_content_from_compressed_archive(
-      char *new_path, size_t len,
       struct string_list *temporary_content,
       struct retro_game_info *info, unsigned i,
       struct string_list* additional_path_allocs,
@@ -407,6 +406,7 @@ static bool load_content_from_compressed_archive(
 {
    union string_list_elem_attr attributes;
    ssize_t new_path_len;
+   char new_path[PATH_MAX_LENGTH];
    char new_basedir[PATH_MAX_LENGTH];
    bool ret                          = false;
    settings_t *settings              = config_get_ptr();
@@ -437,7 +437,7 @@ static bool load_content_from_compressed_archive(
 
    attributes.i = 0;
    fill_pathname_join(new_path, new_basedir,
-         path_basename(path), len);
+         path_basename(path), sizeof(new_path));
 
    ret = read_compressed_file(path, NULL, new_path, &new_path_len);
 
@@ -480,22 +480,19 @@ static bool load_content(
       )
 {
    unsigned i;
-   char new_path[PATH_MAX_LENGTH];
    bool ret         = true;
-   const char *path = NULL;
 
    if (!info || !additional_path_allocs)
       return false;
-
 
    for (i = 0; i < content->size; i++)
    {
       int         attr     = content->elems[i].attr.i;
       bool need_fullpath   = attr & 2;
       bool require_content = attr & 4;
-      const char *file_path= content->elems[i].data;
+      const char *path     = content->elems[i].data;
 
-      if (require_content && string_is_empty(file_path))
+      if (require_content && string_is_empty(path))
       {
          RARCH_LOG("libretro core requires content, "
                "but nothing was provided.\n");
@@ -504,12 +501,12 @@ static bool load_content(
 
       info[i].path = NULL;
 
-      if (*file_path)
-         info[i].path = file_path;
+      if (*path)
+         info[i].path = path;
 
-      if (!need_fullpath && !string_is_empty(file_path))
+      if (!need_fullpath && !string_is_empty(path))
       {
-         if (!load_content_into_memory(&info[i], i, file_path))
+         if (!load_content_into_memory(&info[i], i, path))
             return false;
       }
       else
@@ -519,32 +516,24 @@ static bool load_content(
 
 #ifdef HAVE_COMPRESSION
          if (!load_content_from_compressed_archive(
-                  new_path, sizeof(new_path),
                   temporary_content,
                   &info[i], i,
-                  additional_path_allocs, need_fullpath, file_path))
+                  additional_path_allocs, need_fullpath, path))
             return false;
-         path = new_path;
 #endif
       }
    }
-
-   if (path == NULL)
-      path = content->elems[0].data;
-
-   RARCH_LOG("Calling %s with path: [%s]\n", special ? 
-         "retro_load_game_special" : "retro_load_game", *path ? path : "N/A");
 
    if (special)
       ret = core.retro_load_game_special(special->id, info, content->size);
    else
    {
-      ret = core.retro_load_game(*path ? info : NULL);
+      ret = core.retro_load_game(*content->elems[0].data ? info : NULL);
       
 #ifdef HAVE_CHEEVOS
       /* Load the achievements into memory if the game has content. */
       cheevos_set_cheats();
-      cheevos_load(*path ? info : NULL);
+      cheevos_load(*content->elems[0].data ? info : NULL);
 #endif
    }
 
