@@ -117,7 +117,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
  *
  * Attempt to save valuable RAM data somewhere.
  **/
-static void dump_to_file_desperate(const void *data,
+static bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
    time_t time_;
@@ -132,7 +132,7 @@ static void dump_to_file_desperate(const void *data,
 #endif
 
    if (!base)
-      goto error;
+      return false;
 
    snprintf(path, sizeof(path), "%s/RetroArch-recovery-%u", base, type);
 
@@ -141,15 +141,11 @@ static void dump_to_file_desperate(const void *data,
    strftime(timebuf, sizeof(timebuf), "%Y-%m-%d-%H-%M-%S", localtime(&time_));
    strlcat(path, timebuf, sizeof(path));
 
-   if (retro_write_file(path, data, size))
-      RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
-   else
-      goto error;
+   if (!retro_write_file(path, data, size))
+      return false;
 
-   return;
-
-error:
-   RARCH_WARN("Failed ... Cannot recover save file.\n");
+   RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
+   return true;
 }
 
 
@@ -338,8 +334,6 @@ static bool load_ram_file(ram_type_t *ram)
  *
  * Save a RAM state from memory to disk.
  *
- * In case the file could not be written to, a fallback function
- * 'dump_to_file_desperate' will be called.
  */
 static bool save_ram_file(ram_type_t *ram)
 {
@@ -354,7 +348,14 @@ static bool save_ram_file(ram_type_t *ram)
       RARCH_ERR("%s.\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
       RARCH_WARN("Attempting to recover ...\n");
-      dump_to_file_desperate(data, size, ram->type);
+
+      /* In case the file could not be written to, 
+       * the fallback function 'dump_to_file_desperate'
+       * will be called. */
+      if (!dump_to_file_desperate(data, size, ram->type))
+      {
+         RARCH_WARN("Failed ... Cannot recover save file.\n");
+      }
       return false;
    }
 
