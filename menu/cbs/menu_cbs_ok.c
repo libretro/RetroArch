@@ -938,17 +938,17 @@ static int generic_action_ok_remap_file_save(const char *path,
       core_name           = info->info.library_name;
 
    fill_pathname_join(directory, settings->input_remapping_directory,
-         core_name, PATH_MAX_LENGTH);
+         core_name, sizeof(directory));
 
    switch (action_type)
    {
       case ACTION_OK_REMAP_FILE_SAVE_CORE:
-         fill_pathname_join(file, core_name, core_name, PATH_MAX_LENGTH);
+         fill_pathname_join(file, core_name, core_name, sizeof(file));
          break;
       case ACTION_OK_REMAP_FILE_SAVE_GAME:
          if (global)
             game_name           = path_basename(global->name.base);
-         fill_pathname_join(file, core_name, game_name, PATH_MAX_LENGTH);
+         fill_pathname_join(file, core_name, game_name, sizeof(file));
          break;
    }
 
@@ -1343,10 +1343,10 @@ static int action_ok_option_create(const char *path,
    * fallback to the location of the current configuration file. */
    if (!string_is_empty(settings->menu_config_directory))
       strlcpy(config_directory,
-            settings->menu_config_directory, PATH_MAX_LENGTH);
+            settings->menu_config_directory, sizeof(config_directory));
    else if (!string_is_empty(global->path.config))
       fill_pathname_basedir(config_directory,
-            global->path.config, PATH_MAX_LENGTH);
+            global->path.config, sizeof(config_directory));
    else
    {
       RARCH_WARN("Per-game Options: no config directory set\n");
@@ -1360,10 +1360,10 @@ static int action_ok_option_create(const char *path,
       return false;
 
    /* Concatenate strings into full paths for game_path */
-   fill_pathname_join(core_path, config_directory, core_name, PATH_MAX_LENGTH);
-   fill_pathname_join(game_path, config_directory, core_name, PATH_MAX_LENGTH);
-   fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
-   strlcat(game_path, ".opt", PATH_MAX_LENGTH);
+   fill_pathname_join(core_path, config_directory, core_name, sizeof(core_path));
+   fill_pathname_join(game_path, config_directory, core_name, sizeof(game_path));
+   fill_pathname_join(game_path, game_path, game_name, sizeof(game_path));
+   strlcat(game_path, ".opt", sizeof(game_path));
 
    if (!path_is_directory(core_path))
       path_mkdir(core_path);
