@@ -765,7 +765,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS:
       {
-         unsigned retro_id, retro_port;
+         unsigned retro_id;
          const struct retro_input_descriptor *desc = NULL;
 
          static const char *libretro_btn_desc[] = {
@@ -782,8 +782,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          for (; desc->description; desc++)
          {
-            retro_port = desc->port;
-            retro_id   = desc->id;
+            unsigned retro_port = desc->port;
+
+            retro_id            = desc->id;
 
             if (desc->port >= MAX_USERS)
                continue;
@@ -1231,7 +1232,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
-         return video_driver_get_current_software_framebuffer((struct retro_framebuffer*)data);
+         return video_driver_get_current_software_framebuffer(
+               (struct retro_framebuffer*)data);
 
       /* Private extensions for internal use, not part of libretro API. */
       case RETRO_ENVIRONMENT_EXEC:
