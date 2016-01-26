@@ -159,9 +159,12 @@ void libretro_get_environment_info(void (*func)(retro_environment_t),
    /* load_no_content gets set in this callback. */
    func(environ_cb_get_system_info);
 
-   /* It's possible that we just set get_system_info callback to the currently running core.
+   /* It's possible that we just set get_system_info callback 
+    * to the currently running core.
+    *
     * Make sure we reset it to the actual environment callback.
-    * Ignore any environment callbacks here in case we're running on the non-current core. */
+    * Ignore any environment callbacks here in case we're running 
+    * on the non-current core. */
    ignore_environment_cb = true;
    func(rarch_environment_cb);
    ignore_environment_cb = false;
@@ -700,7 +703,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             char *fullpath = NULL;
             runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-            RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n", fullpath);
+            RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
+                  fullpath);
             fill_pathname_basedir(global->dir.systemdir, fullpath,
                   sizeof(global->dir.systemdir));
 
@@ -800,12 +804,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                      switch (desc->index)
                      {
                         case RETRO_DEVICE_INDEX_ANALOG_LEFT:
-                           system->input_desc_btn[retro_port][RARCH_ANALOG_LEFT_X_PLUS] = desc->description;
-                           system->input_desc_btn[retro_port][RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
+                           system->input_desc_btn[retro_port]
+                           [RARCH_ANALOG_LEFT_X_PLUS]  = desc->description;
+                           system->input_desc_btn[retro_port]
+                           [RARCH_ANALOG_LEFT_X_MINUS] = desc->description;
                            break;
                         case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
-                           system->input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
-                           system->input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
+                           system->input_desc_btn[retro_port]
+                           [RARCH_ANALOG_RIGHT_X_PLUS] = desc->description;
+                           system->input_desc_btn[retro_port]
+                           [RARCH_ANALOG_RIGHT_X_MINUS] = desc->description;
                            break;
                      }
                      break;
@@ -813,19 +821,24 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                      switch (desc->index)
                      {
                         case RETRO_DEVICE_INDEX_ANALOG_LEFT:
-                           system->input_desc_btn[retro_port][RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
-                           system->input_desc_btn[retro_port][RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
+                           system->input_desc_btn[retro_port]
+                           [RARCH_ANALOG_LEFT_Y_PLUS] = desc->description;
+                           system->input_desc_btn[retro_port]
+                           [RARCH_ANALOG_LEFT_Y_MINUS] = desc->description;
                            break;
                         case RETRO_DEVICE_INDEX_ANALOG_RIGHT:
-                           system->input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
-                           system->input_desc_btn[retro_port][RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
+                           system->input_desc_btn[retro_port]
+                           [RARCH_ANALOG_RIGHT_Y_PLUS] = desc->description;
+                           system->input_desc_btn[retro_port]
+                           [RARCH_ANALOG_RIGHT_Y_MINUS] = desc->description;
                            break;
                      }
                      break;
                }
             }
             else
-               system->input_desc_btn[retro_port][retro_id] = desc->description;
+               system->input_desc_btn[retro_port]
+               [retro_id] = desc->description;
          }
 
          RARCH_LOG("Environ SET_INPUT_DESCRIPTORS:\n");
@@ -905,17 +918,20 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
             case RETRO_HW_CONTEXT_OPENGL:
             case RETRO_HW_CONTEXT_OPENGL_CORE:
-               RARCH_ERR("Requesting OpenGL context, but RetroArch is compiled against OpenGLES2. Cannot use HW context.\n");
+               RARCH_ERR("Requesting OpenGL context, but RetroArch "
+                     "is compiled against OpenGLES2. Cannot use HW context.\n");
                return false;
 #elif defined(HAVE_OPENGL)
             case RETRO_HW_CONTEXT_OPENGLES2:
             case RETRO_HW_CONTEXT_OPENGLES3:
-               RARCH_ERR("Requesting OpenGLES%u context, but RetroArch is compiled against OpenGL. Cannot use HW context.\n",
+               RARCH_ERR("Requesting OpenGLES%u context, but RetroArch "
+                     "is compiled against OpenGL. Cannot use HW context.\n",
                      cb->context_type == RETRO_HW_CONTEXT_OPENGLES2 ? 2 : 3);
                return false;
 
             case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-               RARCH_ERR("Requesting OpenGLES%u.%u context, but RetroArch is compiled against OpenGL. Cannot use HW context.\n",
+               RARCH_ERR("Requesting OpenGLES%u.%u context, but RetroArch "
+                     "is compiled against OpenGL. Cannot use HW context.\n",
                      cb->version_major, cb->version_minor);
                return false;
 
@@ -936,7 +952,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_current_framebuffer = video_driver_get_current_framebuffer;
          cb->get_proc_address        = video_driver_get_proc_address;
 
-         if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) /* Old ABI. Don't copy garbage. */
+         /* Old ABI. Don't copy garbage. */
+         if (cmd & RETRO_ENVIRONMENT_EXPERIMENTAL) 
             memcpy(hw_render,
                   cb, offsetof(struct retro_hw_render_callback, stencil));
          else
@@ -1085,10 +1102,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_time_usec    = retro_get_time_usec;
          cb->get_cpu_features = retro_get_cpu_features;
          cb->get_perf_counter = retro_get_perf_counter;
-         cb->perf_register    = retro_perf_register; /* libretro specific path. */
+
+         cb->perf_register    = retro_perf_register; 
          cb->perf_start       = retro_perf_start;
          cb->perf_stop        = retro_perf_stop;
-         cb->perf_log         = retro_perf_log; /* libretro specific path. */
+         cb->perf_log         = retro_perf_log;
          break;
       }
 
@@ -1175,14 +1193,18 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_GEOMETRY:
       {
-         struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-         const struct retro_game_geometry *in_geom =
-            (const struct retro_game_geometry*)data;
-         struct retro_game_geometry *geom = av_info ?
-            (struct retro_game_geometry*)&av_info->geometry : NULL;
+         const struct retro_game_geometry *in_geom = NULL;
+         struct retro_game_geometry *geom = NULL;
+         struct retro_system_av_info *av_info = 
+            video_viewport_get_system_av_info();
+         
+         if (av_info)
+            geom = (struct retro_game_geometry*)&av_info->geometry;
 
          if (!geom)
             return false;
+
+         in_geom = (const struct retro_game_geometry*)data;
 
          RARCH_LOG("Environ SET_GEOMETRY.\n");
 
@@ -1195,6 +1217,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             geom->base_width   = in_geom->base_width;
             geom->base_height  = in_geom->base_height;
             geom->aspect_ratio = in_geom->aspect_ratio;
+
             RARCH_LOG("SET_GEOMETRY: %ux%u, aspect: %.3f.\n",
                   geom->base_width, geom->base_height, geom->aspect_ratio);
 
