@@ -134,6 +134,134 @@ menu_handle_t *menu_driver_get_ptr(void)
    return menu_driver_data;
 }
 
+/**
+ * menu_free:
+ * @menu                     : Menu handle.
+ *
+ * Frees a menu handle
+ **/
+static void menu_free(menu_handle_t *menu)
+{
+   if (!menu)
+      return;
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
+   menu_shader_free(menu);
+   menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_DEINIT, NULL);
+   menu_driver_free(menu);
+   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
+   menu_display_free();
+   menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
+
+   event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
+
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_FREE, NULL);
+   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_FREE, NULL);
+
+   free(menu);
+}
+
+#ifdef HAVE_ZLIB
+static void bundle_decompressed(void *task_data, void *user_data, const char *err)
+{
+   settings_t      *settings   = config_get_ptr();
+   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
+
+   if (dec && !err)
+      event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+
+   if (err)
+      RARCH_ERR("%s", err);
+
+   if (dec)
+   {
+      /* delete bundle? */
+      free(dec->source_file);
+      free(dec);
+   }
+
+   settings->bundle_assets_extract_last_version = settings->bundle_assets_extract_version_current;
+   settings->bundle_finished = true;
+}
+#endif
+
+/**
+ * menu_init:
+ * @data                     : Menu context handle.
+ *
+ * Create and initialize menu handle.
+ *
+ * Returns: menu handle on success, otherwise NULL.
+ **/
+static void *menu_init(const void *data)
+{
+   menu_handle_t *menu         = NULL;
+   menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
+   settings_t *settings        = config_get_ptr();
+   
+   if (!menu_ctx)
+      return NULL;
+
+   menu = (menu_handle_t*)menu_ctx->init(&menu_userdata);
+
+   if (!menu)
+      return NULL;
+
+   strlcpy(settings->menu.driver, menu_ctx->ident,
+         sizeof(settings->menu.driver));
+
+   if (!menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL))
+      goto error;
+
+   if (!runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_INIT, NULL))
+      goto error;
+
+#ifdef HAVE_SHADER_MANAGER
+   menu_driver_shader = (struct video_shader*)calloc(1, sizeof(struct video_shader));
+   if (!menu_driver_shader)
+      goto error;
+#endif
+
+   if (settings->menu_show_start_screen)
+   {
+      menu->push_help_screen           = true;
+      menu->help_screen_type           = MENU_HELP_WELCOME;
+      settings->menu_show_start_screen = false;
+      event_cmd_ctl(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
+   }
+
+   if (      settings->bundle_assets_extract_enable
+         && !string_is_empty(settings->bundle_assets_src_path) 
+         && !string_is_empty(settings->bundle_assets_dst_path)
+#ifdef IOS
+         && menu->push_help_screen
+#else
+         && (settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version)
+#endif
+      )
+   {
+      menu->help_screen_type           = MENU_HELP_EXTRACT;
+      menu->push_help_screen           = true;
+#ifdef HAVE_ZLIB
+      rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path,
+         settings->bundle_assets_dst_path_subdir, NULL, NULL, bundle_decompressed, NULL);
+#endif
+   }
+
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
+
+   if (!menu_display_init())
+      goto error;
+
+   return menu;
+   
+error:
+   menu_free(menu);
+
+   return NULL;
+}
+
 void init_menu(void)
 {
    if (menu_driver_data)
@@ -369,133 +497,8 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
    return 0;
 }
 
-/**
- * menu_free:
- * @menu                     : Menu handle.
- *
- * Frees a menu handle
- **/
-static void menu_free(menu_handle_t *menu)
-{
-   if (!menu)
-      return;
 
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
-   menu_shader_free(menu);
-   menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_DEINIT, NULL);
-   menu_driver_free(menu);
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
-   menu_display_free();
-   menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
 
-   event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
-
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_FREE, NULL);
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_FREE, NULL);
-
-   free(menu);
-}
-
-#ifdef HAVE_ZLIB
-static void bundle_decompressed(void *task_data, void *user_data, const char *err)
-{
-   settings_t      *settings   = config_get_ptr();
-   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
-
-   if (dec && !err)
-      event_cmd_ctl(EVENT_CMD_REINIT, NULL);
-
-   if (err)
-      RARCH_ERR("%s", err);
-
-   if (dec)
-   {
-      /* delete bundle? */
-      free(dec->source_file);
-      free(dec);
-   }
-
-   settings->bundle_assets_extract_last_version = settings->bundle_assets_extract_version_current;
-   settings->bundle_finished = true;
-}
-#endif
-
-/**
- * menu_init:
- * @data                     : Menu context handle.
- *
- * Create and initialize menu handle.
- *
- * Returns: menu handle on success, otherwise NULL.
- **/
-void *menu_init(const void *data)
-{
-   menu_handle_t *menu         = NULL;
-   menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
-   settings_t *settings        = config_get_ptr();
-   
-   if (!menu_ctx)
-      return NULL;
-
-   menu = (menu_handle_t*)menu_ctx->init(&menu_userdata);
-
-   if (!menu)
-      return NULL;
-
-   strlcpy(settings->menu.driver, menu_ctx->ident,
-         sizeof(settings->menu.driver));
-
-   if (!menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL))
-      goto error;
-
-   if (!runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_INIT, NULL))
-      goto error;
-
-#ifdef HAVE_SHADER_MANAGER
-   menu_driver_shader = (struct video_shader*)calloc(1, sizeof(struct video_shader));
-   if (!menu_driver_shader)
-      goto error;
-#endif
-
-   if (settings->menu_show_start_screen)
-   {
-      menu->push_help_screen           = true;
-      menu->help_screen_type           = MENU_HELP_WELCOME;
-      settings->menu_show_start_screen = false;
-      event_cmd_ctl(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
-   }
-
-   if (      settings->bundle_assets_extract_enable
-         && !string_is_empty(settings->bundle_assets_src_path) 
-         && !string_is_empty(settings->bundle_assets_dst_path)
-#ifdef IOS
-         && menu->push_help_screen
-#else
-         && (settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version)
-#endif
-      )
-   {
-      menu->help_screen_type           = MENU_HELP_EXTRACT;
-      menu->push_help_screen           = true;
-#ifdef HAVE_ZLIB
-      rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path,
-         settings->bundle_assets_dst_path_subdir, NULL, NULL, bundle_decompressed, NULL);
-#endif
-   }
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
-
-   if (!menu_display_init())
-      goto error;
-
-   return menu;
-   
-error:
-   menu_free(menu);
-
-   return NULL;
-}
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {

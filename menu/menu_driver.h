@@ -391,16 +391,6 @@ extern unsigned int rdb_entry_start_game_selection_ptr;
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
-/**
- * menu_init:
- * @data                     : Menu context handle.
- *
- * Create and initialize menu handle.
- *
- * Returns: menu handle on success, otherwise NULL.
- **/
-void *menu_init(const void *data);
-
 int menu_iterate_render(void *data, void *userdata);
 
 #ifdef __cplusplus
