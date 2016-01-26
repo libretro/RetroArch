@@ -1083,6 +1083,54 @@ static bool init_state(void)
    return true;
 }
 
+bool rarch_option_create(char *path, size_t len)
+{
+   char core_path[PATH_MAX_LENGTH];
+   char config_directory[PATH_MAX_LENGTH];
+   const char *core_name       = NULL;
+   const char *game_name       = NULL;
+   global_t *global            = global_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   rarch_system_info_t *system = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+   if (system)
+      core_name = system->info.library_name;
+   if (global)
+      game_name = path_basename(global->name.base);
+
+   if (string_is_empty(core_name) || string_is_empty(game_name))
+      return false;
+
+   /* Config directory: config_directory.
+   * Try config directory setting first,
+   * fallback to the location of the current configuration file. */
+   if (!string_is_empty(settings->menu_config_directory))
+      strlcpy(config_directory,
+            settings->menu_config_directory, sizeof(config_directory));
+   else if (!string_is_empty(global->path.config))
+      fill_pathname_basedir(config_directory,
+            global->path.config, sizeof(config_directory));
+   else
+   {
+      RARCH_WARN("Per-game Options: no config directory set\n");
+      return false;
+   }
+
+   /* Concatenate strings into full paths for game_path */
+   fill_pathname_join(path,
+         config_directory, core_name, len);
+   fill_string_join(path, game_name, len);
+   strlcat(path, ".opt", len);
+
+   fill_pathname_join(core_path,
+         config_directory, core_name, sizeof(core_path));
+   if (!path_is_directory(core_path))
+      path_mkdir(core_path);
+
+   return true;
+}
 
 /**
  * rarch_main_init:

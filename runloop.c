@@ -394,58 +394,20 @@ static void check_shader_dir(rarch_dir_list_t *dir_list, bool pressed_next, bool
 
 /**
  * rarch_game_specific_options:
- * @cmd                          : Output variable with path to core options file.
  *
  * Environment callback function implementation.
  *
- * Returns: true (1) if a game specific core options path has been found,
+ * Returns: true (1) if a game specific core 
+ * options path has been found,
  * otherwise false (0).
  **/
 static bool rarch_game_specific_options(char **output)
 {
    char game_path[PATH_MAX_LENGTH];
-   char config_directory[PATH_MAX_LENGTH];
-   settings_t *settings                   = config_get_ptr();
-   global_t *global                       = global_get_ptr();
-   rarch_system_info_t *system            = NULL;
-   const char *core_name                  = NULL;
-   const char *game_name                  = NULL;
-   config_file_t *option_file             = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   if (system)
-      core_name = system->info.library_name;
-   if (global)
-      game_name = path_basename(global->name.base);
-
-   if (string_is_empty(core_name) || string_is_empty(game_name))
-      return false;
-
-   RARCH_LOG("Per-Game Options: core name: %s\n", core_name);
-   RARCH_LOG("Per-Game Options: game name: %s\n", game_name);
-
-   /* Config directory: config_directory.
-   * Try config directory setting first,
-   * fallback to the location of the current configuration file. */
-   if (!string_is_empty(settings->menu_config_directory))
-      strlcpy(config_directory,
-            settings->menu_config_directory, sizeof(config_directory));
-   else if (!string_is_empty(global->path.config))
-      fill_pathname_basedir(config_directory,
-            global->path.config, sizeof(config_directory));
-   else
-   {
-      RARCH_WARN("Per-Game Options: no config directory set\n");
-      return false;
-   }
-
-   /* Concatenate strings into full paths for game_path */
-   fill_pathname_join(game_path,
-         config_directory, core_name, sizeof(game_path));
-   fill_pathname_join(game_path,
-         game_path, game_name, sizeof(game_path));
-   strlcat(game_path, ".opt", sizeof(game_path));
+   config_file_t *option_file = NULL;
+   
+   if (!rarch_option_create(game_path, sizeof(game_path)))
+         return false;
 
    option_file = config_file_new(game_path);
    if (!option_file)
