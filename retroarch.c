@@ -78,8 +78,10 @@
 #include "config.features.h"
 #include "command_event.h"
 
-/* Descriptive names for options without short variant. Please keep the name in
-   sync with the option name. Order does not matter. */
+/* Descriptive names for options without short variant.
+ *
+ * Please keep the name in sync with the option name.
+ * Order does not matter. */
 enum
 {
    RA_OPT_MENU = 256, /* must be outside the range of a char */
@@ -115,7 +117,8 @@ static void print_features(void)
    puts("Features:");
    _PSUPP(libretrodb, "LibretroDB", "LibretroDB support");
    _PSUPP(command, "Command", "Command interface support");
-   _PSUPP(network_command, "Network Command", "Network Command interface support");
+   _PSUPP(network_command, "Network Command", "Network Command interface "
+         "support");
    _PSUPP(sdl, "SDL", "SDL input/audio/video drivers");
    _PSUPP(sdl2, "SDL2", "SDL2 input/audio/video drivers");
    _PSUPP(x11, "X11", "X11 input/video drivers");
@@ -167,7 +170,8 @@ static void print_version(void)
 {
    char str[PATH_MAX_LENGTH] = {0};
 
-   fprintf(stderr, "%s: Frontend for libretro -- v%s", msg_hash_to_str(MSG_PROGRAM), PACKAGE_VERSION);
+   fprintf(stderr, "%s: Frontend for libretro -- v%s",
+         msg_hash_to_str(MSG_PROGRAM), PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
    printf(" -- %s --\n", rarch_git_version);
 #endif
@@ -193,50 +197,79 @@ static void print_help(const char *arg0)
    puts("  -v, --verbose         Verbose logging.");
    puts("      --log-file=FILE   Log messages to FILE.");
    puts("      --version         Show version.");
-   puts("      --features        Prints available features compiled into program.");
+   puts("      --features        Prints available features compiled into "
+         "program.");
 #ifdef HAVE_MENU
-   puts("      --menu            Do not require content or libretro core to be loaded,\n"
-        "                        starts directly in menu. If no arguments are passed to\n"
-        "                        the program, it is equivalent to using --menu as only argument.");
+   puts("      --menu            Do not require content or libretro core to "
+         "be loaded,\n"
+        "                        starts directly in menu. If no arguments "
+        "are passed to\n"
+        "                        the program, it is equivalent to using "
+        "--menu as only argument.");
 #endif
    puts("  -s, --save=PATH       Path for save files (*.srm).");
    puts("  -S, --savestate=PATH  Path for the save state files (*.state).");
-   puts("  -f, --fullscreen      Start the program in fullscreen regardless of config settings.");
+   puts("  -f, --fullscreen      Start the program in fullscreen regardless "
+         "of config settings.");
    puts("  -c, --config=FILE     Path for config file."
 #ifdef _WIN32
-         "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe.\n\t\tIf a default config is not found, the program will attempt to create one."
+         "\n\t\tDefaults to retroarch.cfg in same directory as retroarch.exe."
+         "\n\t\tIf a default config is not found, the program will attempt to"
+         "create one."
 #else
-         "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\tand $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, the program will attempt to create one based on the skeleton config (" GLOBAL_CONFIG_DIR "/retroarch.cfg)."
+         "\n\t\tBy default looks for config in $XDG_CONFIG_HOME/retroarch/"
+         "retroarch.cfg,\n\t\t$HOME/.config/retroarch/retroarch.cfg,\n\t\t"
+         "and $HOME/.retroarch.cfg.\n\t\tIf a default config is not found, "
+         "the program will attempt to create one based on the skeleton "
+         "config (" GLOBAL_CONFIG_DIR "/retroarch.cfg)."
 #endif
          );
    puts("      --appendconfig=FILE\n"
-        "                        Extra config files are loaded in, and take priority over\n"
-        "                        config selected in -c (or default). Multiple configs are\n"
+        "                        Extra config files are loaded in, "
+        "and take priority over\n"
+        "                        config selected in -c (or default). "
+        "Multiple configs are\n"
         "                        delimited by '|'.");
 #ifdef HAVE_DYNAMIC
-   puts("  -L, --libretro=FILE   Path to libretro implementation. Overrides any config setting.");
+   puts("  -L, --libretro=FILE   Path to libretro implementation. "
+         "Overrides any config setting.");
 #endif
-   puts("      --subsystem=NAME  Use a subsystem of the libretro core. Multiple content\n"
-        "                        files are loaded as multiple arguments. If a content\n"
-        "                        file is skipped, use a blank (\"\") command line argument.\n"
-        "                        Content must be loaded in an order which depends on the\n"
-        "                        particular subsystem used. See verbose log output to learn\n"
-        "                        how a particular subsystem wants content to be loaded.\n");
+   puts("      --subsystem=NAME  Use a subsystem of the libretro core. "
+         "Multiple content\n"
+        "                        files are loaded as multiple arguments. "
+        "If a content\n"
+        "                        file is skipped, use a blank (\"\") "
+        "command line argument.\n"
+        "                        Content must be loaded in an order "
+        "which depends on the\n"
+        "                        particular subsystem used. See verbose "
+        "log output to learn\n"
+        "                        how a particular subsystem wants content "
+        "to be loaded.\n");
 
    printf("  -N, --nodevice=PORT\n"
-          "                        Disconnects controller device connected to PORT (1 to %d).\n", MAX_USERS);
+          "                        Disconnects controller device connected "
+          "to PORT (1 to %d).\n", MAX_USERS);
    printf("  -A, --dualanalog=PORT\n"
-          "                        Connect a DualAnalog controller to PORT (1 to %d).\n", MAX_USERS);
+          "                        Connect a DualAnalog controller to PORT "
+          "(1 to %d).\n", MAX_USERS);
    printf("  -d, --device=PORT:ID\n"
-          "                        Connect a generic device into PORT of the device (1 to %d).\n", MAX_USERS);
-   puts("                        Format is PORT:ID, where ID is a number corresponding to the particular device.");
+          "                        Connect a generic device into PORT of "
+          "the device (1 to %d).\n", MAX_USERS);
+   puts("                        Format is PORT:ID, where ID is a number "
+         "corresponding to the particular device.");
 
    puts("  -P, --bsvplay=FILE    Playback a BSV movie file.");
-   puts("  -R, --bsvrecord=FILE  Start recording a BSV movie file from the beginning.");
-   puts("      --eof-exit        Exit upon reaching the end of the BSV movie file.");
-   puts("  -M, --sram-mode=MODE  SRAM handling mode. MODE can be 'noload-nosave',\n"
-        "                        'noload-save', 'load-nosave' or 'load-save'.\n"
-        "                        Note: 'noload-save' implies that save files *WILL BE OVERWRITTEN*.");
+   puts("  -R, --bsvrecord=FILE  Start recording a BSV movie file from "
+         "the beginning.");
+   puts("      --eof-exit        Exit upon reaching the end of the "
+         "BSV movie file.");
+   puts("  -M, --sram-mode=MODE  SRAM handling mode. MODE can be "
+         "'noload-nosave',\n"
+        "                        'noload-save', 'load-nosave' or "
+        "'load-save'.\n"
+        "                        Note: 'noload-save' implies that "
+        "save files *WILL BE OVERWRITTEN*.");
 
 #ifdef HAVE_NETPLAY
    puts("  -H, --host            Host netplay as user 1.");
@@ -245,23 +278,31 @@ static void print_help(const char *arg0)
    puts("  -F, --frames=NUMBER   Sync frames when using netplay.");
    puts("      --spectate        Connect to netplay server as spectator.");
 #endif
-   puts("      --nick=NICK       Picks a username (for use with netplay). Not mandatory.");
+   puts("      --nick=NICK       Picks a username (for use with netplay). "
+         "Not mandatory.");
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   puts("      --command         Sends a command over UDP to an already running program process.");
+   puts("      --command         Sends a command over UDP to an already "
+         "running program process.");
    puts("      Available commands are listed if command is invalid.");
 #endif
 
-   puts("  -r, --record=FILE     Path to record video file.\n        Using .mkv extension is recommended.");
+   puts("  -r, --record=FILE     Path to record video file.\n        "
+         "Using .mkv extension is recommended.");
    puts("      --recordconfig    Path to settings used during recording.");
    puts("      --size=WIDTHxHEIGHT\n"
         "                        Overrides output video size when recording.");
-   puts("  -U, --ups=FILE        Specifies path for UPS patch that will be applied to content.");
-   puts("      --bps=FILE        Specifies path for BPS patch that will be applied to content.");
-   puts("      --ips=FILE        Specifies path for IPS patch that will be applied to content.");
+   puts("  -U, --ups=FILE        Specifies path for UPS patch that will be "
+         "applied to content.");
+   puts("      --bps=FILE        Specifies path for BPS patch that will be "
+         "applied to content.");
+   puts("      --ips=FILE        Specifies path for IPS patch that will be "
+         "applied to content.");
    puts("      --no-patch        Disables all forms of content patching.");
-   puts("  -D, --detach          Detach program from the running console. Not relevant for all platforms.");
+   puts("  -D, --detach          Detach program from the running console. "
+         "Not relevant for all platforms.");
    puts("      --max-frames=NUMBER\n"
-        "                        Runs for the specified number of frames, then exits.\n");
+        "                        Runs for the specified number of frames, "
+        "then exits.\n");
 }
 
 static void set_basename(const char *path)
@@ -337,12 +378,12 @@ static void set_special_paths(char **argv, unsigned num_content)
    /* If this is already set,
     * do not overwrite it as this was initialized before in
     * a menu or otherwise. */
-   if (string_is_empty(settings->system_directory))
-   {
-      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
-      /*fill_pathname_basedir(settings->system_directory, argv[0],
-            sizeof(settings->system_directory));*/
-   }
+   if (!string_is_empty(settings->system_directory))
+      return;
+
+   RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
+   /*fill_pathname_basedir(settings->system_directory, argv[0],
+     sizeof(settings->system_directory));*/
 }
 
 const char *rarch_get_current_savefile_dir(void)
@@ -371,9 +412,11 @@ static void set_paths_redirect(const char *path)
    }
    if (info->info.library_name &&
             !string_is_empty(info->info.library_name))
-         global_library_name_hash = msg_hash_calculate(info->info.library_name);
+         global_library_name_hash = 
+            msg_hash_calculate(info->info.library_name);
 
-   /* Initialize current save directories with the values from the config */
+   /* Initialize current save directories 
+    * with the values from the config. */
    strlcpy(current_savefile_dir,
          global->dir.savefile,
          sizeof(current_savefile_dir));
@@ -407,7 +450,9 @@ static void set_paths_redirect(const char *path)
             path_mkdir(current_savefile_dir);
             if(!path_is_directory(current_savefile_dir))
             {
-               RARCH_LOG("Reverting savefile directory to %s\n", global->dir.savefile);
+               RARCH_LOG("Reverting savefile directory to %s\n",
+                     global->dir.savefile);
+
                strlcpy(current_savefile_dir,
                      global->dir.savefile,
                      sizeof(current_savefile_dir));
@@ -433,7 +478,8 @@ static void set_paths_redirect(const char *path)
             path_mkdir(current_savestate_dir);
             if(!path_is_directory(current_savestate_dir))
             {
-               RARCH_LOG("Reverting savestate directory to %s\n", global->dir.savestate);
+               RARCH_LOG("Reverting savestate directory to %s\n",
+                     global->dir.savestate);
                strlcpy(current_savestate_dir,
                      global->dir.savestate,
                      sizeof(current_savestate_dir));
@@ -655,7 +701,8 @@ static void parse_input(int argc, char *argv[])
 
    /* Make sure we can call parse_input several times ... */
    optind    = 0;
-   optstring = "hs:fvS:A:c:U:DN:d:" BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
+   optstring = "hs:fvS:A:c:U:DN:d:" 
+      BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
 
    for (;;)
    {
@@ -770,7 +817,9 @@ static void parse_input(int argc, char *argv[])
                      sizeof(settings->libretro_directory));
                global->has_set.libretro = true;
                global->has_set.libretro_directory = true;
-               RARCH_WARN("Using old --libretro behavior. Setting libretro_directory to \"%s\" instead.\n", optarg);
+               RARCH_WARN("Using old --libretro behavior. "
+                     "Setting libretro_directory to \"%s\" instead.\n",
+                     optarg);
             }
             else
             {
@@ -1262,7 +1311,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    {
       case RARCH_CTL_INIT_SYSTEM_AV_INFO:
          {
-            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+            struct retro_system_av_info *av_info = 
+               video_viewport_get_system_av_info();
             core.retro_get_system_av_info(av_info);
             runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
          }
@@ -1496,7 +1546,8 @@ void rarch_main_deinit(void)
    rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
 }
 
-int rarch_info_get_capabilities(enum rarch_capabilities type, char *s, size_t len)
+int rarch_info_get_capabilities(enum rarch_capabilities type,
+      char *s, size_t len)
 {
    switch (type)
    {
