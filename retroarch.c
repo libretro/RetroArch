@@ -1113,10 +1113,7 @@ bool rarch_option_create(char *path, size_t len)
       fill_pathname_basedir(config_directory,
             global->path.config, sizeof(config_directory));
    else
-   {
-      RARCH_WARN("Per-game Options: no config directory set\n");
       return false;
-   }
 
    /* Concatenate strings into full paths for game_path */
    fill_pathname_join(path,
