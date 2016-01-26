@@ -295,6 +295,19 @@ void fill_pathname_join(char *out_path, const char *dir,
       const char *path, size_t size);
 
 /**
+ * fill_string_join:
+ * @out_path           : output path
+ * @path               : path
+ * @size               : size of output path
+ *
+ * Joins a string (@out_path) and path (@append) together.
+ * Makes sure not to get  two consecutive slashes 
+ * between directory and path.
+ **/
+void fill_string_join(char *out_path,
+      const char *path, size_t size);
+
+/**
  * fill_pathname_join_delim:
  * @out_path           : output path
  * @dir                : directory   
