@@ -186,7 +186,8 @@ void event_disk_control_append_image(const char *path)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sysinfo);
 
    if (sysinfo)
-      control = (const struct retro_disk_control_callback*)&sysinfo->disk_control;
+      control = (const struct retro_disk_control_callback*)
+         &sysinfo->disk_control;
 
    if (!control)
       return;
@@ -350,7 +351,9 @@ static void event_init_controllers(void)
             /* Do not fix settings->input.libretro_device[i],
              * because any use of dummy core will reset this,
              * which is not a good idea. */
-            RARCH_WARN("Input device ID %u is unknown to this libretro implementation. Using RETRO_DEVICE_JOYPAD.\n", device);
+            RARCH_WARN("Input device ID %u is unknown to this "
+                  "libretro implementation. Using RETRO_DEVICE_JOYPAD.\n",
+                  device);
             device = RETRO_DEVICE_JOYPAD;
          }
          ident = "Joypad";
@@ -410,7 +413,8 @@ static void event_init_cheats(void)
 {
    bool allow_cheats = true;
 #ifdef HAVE_NETPLAY
-   allow_cheats &= !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
+   allow_cheats &= !netplay_driver_ctl(
+         RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
 #endif
    allow_cheats &= !bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL);
 
@@ -714,7 +718,8 @@ static bool event_save_core_config(void)
             sizeof(config_path));
    }
 
-   /* Overrides block config file saving, make it appear as overrides weren't enabled for a manual save */
+   /* Overrides block config file saving, make it appear as overrides 
+    * weren't enabled for a manual save */
    if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
    {
       runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
@@ -795,7 +800,8 @@ static void event_save_state(const char *path,
    }
 
    if (settings->state_slot < 0)
-      snprintf(s, len, "%s #-1 (auto).", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
+      snprintf(s, len, "%s #-1 (auto).",
+            msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT));
    else
       snprintf(s, len, "%s #%d.", msg_hash_to_str(MSG_SAVED_STATE_TO_SLOT),
             settings->state_slot);
@@ -822,7 +828,8 @@ static void event_load_state(const char *path, char *s, size_t len)
    }
 
    if (settings->state_slot < 0)
-      snprintf(s, len, "%s #-1 (auto).", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
+      snprintf(s, len, "%s #-1 (auto).",
+            msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
    else
       snprintf(s, len, "%s #%d.", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
             settings->state_slot);
@@ -857,7 +864,8 @@ static void event_main_state(unsigned cmd)
       }
    }
    else
-      strlcpy(msg, msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES), sizeof(msg));
+      strlcpy(msg, msg_hash_to_str(
+               MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES), sizeof(msg));
 
    runloop_msg_queue_push(msg, 2, 180, true);
    RARCH_LOG("%s\n", msg);
@@ -1074,19 +1082,24 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
                (const struct retro_hw_render_callback*)video_driver_callback();
 
             if (hw_render->cache_context)
-               video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT, NULL);
+               video_driver_ctl(
+                     RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT, NULL);
             else
-               video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT, NULL);
+               video_driver_ctl(
+                     RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT, NULL);
 
-            video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+            video_driver_ctl(
+                  RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT_ACK, NULL);
             event_cmd_ctl(EVENT_CMD_RESET_CONTEXT, NULL);
-            video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT, NULL);
+            video_driver_ctl(
+                  RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT, NULL);
 
             /* Poll input to avoid possibly stale data to corrupt things. */
             input_driver_ctl(RARCH_INPUT_CTL_POLL, NULL);
 
 #ifdef HAVE_MENU
-            menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
+            menu_display_ctl(
+                  MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
 
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
                event_cmd_ctl(EVENT_CMD_VIDEO_SET_BLOCKING_STATE, NULL);
@@ -1153,9 +1166,11 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          if (audio_driver_ctl(RARCH_AUDIO_CTL_ALIVE, NULL))
             return false;
 
-         if (!settings->audio.mute_enable && !audio_driver_ctl(RARCH_AUDIO_CTL_START, NULL))
+         if (!settings->audio.mute_enable && 
+               !audio_driver_ctl(RARCH_AUDIO_CTL_START, NULL))
          {
-            RARCH_ERR("Failed to start audio driver. Will continue without audio.\n");
+            RARCH_ERR("Failed to start audio driver. "
+                  "Will continue without audio.\n");
             audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
          }
          break;
@@ -1443,11 +1458,12 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
       case EVENT_CMD_SAVEFILES_INIT:
          {
             global_t  *global         = global_get_ptr();
-            global->sram.use = global->sram.use && !global->sram.save_disable
+            global->sram.use = global->sram.use && !global->sram.save_disable;
 #ifdef HAVE_NETPLAY
-               && (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL) || !global->netplay.is_client)
+            global->sram.use = global->sram.use && 
+               (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL)
+                || !global->netplay.is_client);
 #endif
-               ;
 
             if (!global->sram.use)
                RARCH_LOG("%s\n",
@@ -1611,7 +1627,8 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
                   grab_mouse_state ? "yes" : "no");
 
             grab_mouse_state_tmp = !grab_mouse_state;
-            video_driver_ctl(RARCH_DISPLAY_CTL_SHOW_MOUSE, &grab_mouse_state_tmp);
+            video_driver_ctl(RARCH_DISPLAY_CTL_SHOW_MOUSE,
+                  &grab_mouse_state_tmp);
          }
          break;
       case EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG:
