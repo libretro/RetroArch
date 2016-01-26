@@ -62,9 +62,5 @@ libretrodb_tool: $(RARCHDB_TOOL_OBJS)
 rmsgpack_test: $(RMSGPACK_OBJS)
 	$(CC) $(INCFLAGS) $(RMSGPACK_OBJS) -g -o $@
 
-testlib.so: CFLAGS += -fPIC
-testlib.so: clean $(TESTLIB_OBJS)
-	$(CC) $(INCFLAGS) $(TESTLIB_FLAGS) $(TESTLIB_OBJS) -o $@
-
 clean:
-	rm -rf $(TARGETS) $(C_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS) testlib.so
+	rm -rf $(TARGETS) $(C_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS) 
