@@ -95,8 +95,6 @@ static char *extract_cpuinfo_field(char* buffer, ssize_t length, const char* fie
    /* Look for first field occurrence, and ensures it starts the line. */
    const char *p = buffer;
 
-   bufend = buffer + length;
-
    for (;;)
    {
       p = memmem(p, bufend-p, field, fieldlen);
