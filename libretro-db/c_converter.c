@@ -84,12 +84,6 @@ struct dat_converter_bt_node_t
    dat_converter_bt_node_t* left;
 };
 
-static int dat_converter_cmp_func(const void* a, const void* b, void* ctx)
-{
-   return strcmp(a, b);
-}
-
-
 static dat_converter_list_t* dat_converter_list_create(dat_converter_list_enum type)
 {
    dat_converter_list_t* list = malloc(sizeof(*list));
@@ -365,7 +359,51 @@ struct dat_converter_match_key_t
    dat_converter_match_key_t* next;
 };
 
-static const char* dat_converter_get_match_key(dat_converter_list_t* list, dat_converter_match_key_t* match_key)
+static dat_converter_match_key_t* dat_converter_match_key_create(const char* format)
+{
+   dat_converter_match_key_t* match_key;
+   dat_converter_match_key_t* current_mk;
+   char* dot;
+
+   match_key = malloc(sizeof(*match_key));
+   match_key->value = strdup(format);
+   match_key->next = NULL;
+   current_mk = match_key;
+
+   dot = match_key->value;
+   while (*dot++)
+   {
+      if (*dot == '.')
+      {
+         *dot++ = '\0';
+         current_mk->hash = djb2_calculate(current_mk->value);
+         current_mk->next = malloc(sizeof(*match_key));
+         current_mk = current_mk->next;
+         current_mk->value = dot;
+         current_mk->next = NULL;
+      }
+   }
+   current_mk->hash = djb2_calculate(current_mk->value);
+
+   return match_key;
+}
+
+static void dat_converter_match_key_free(dat_converter_match_key_t* match_key)
+{
+   if(!match_key)
+      return;
+
+   free(match_key->value);
+
+   while(match_key)
+   {
+      dat_converter_match_key_t* next = match_key->next;
+      free(match_key);
+      match_key = next;
+   }
+}
+
+static const char* dat_converter_get_match(dat_converter_list_t* list, dat_converter_match_key_t* match_key)
 {
    int i;
 
@@ -381,7 +419,7 @@ static const char* dat_converter_get_match_key(dat_converter_list_t* list, dat_c
          assert(!strcmp(list->values[i].map.key, match_key->value));
 
          if(match_key->next)
-            return dat_converter_get_match_key(list->values[i].map.value.list, match_key->next);
+            return dat_converter_get_match(list->values[i].map.value.list, match_key->next);
          else  if ((list->values[i].map.type == DAT_CONVERTER_STRING_MAP))
             return list->values[i].map.value.string;
          else
@@ -431,7 +469,7 @@ static dat_converter_list_t* dat_converter_parser(dat_converter_list_t* target, 
             {
                if (match_key)
                {
-                  map.key = dat_converter_get_match_key(map.value.list, match_key);
+                  map.key = dat_converter_get_match(map.value.list, match_key);
                   if (!map.key)
                   {
                      printf("missing match key '");
@@ -690,29 +728,7 @@ int main(int argc, char** argv)
 
    if (argc > 1 && **argv)
    {
-      dat_converter_match_key_t* current_mk;
-      char* dot;
-
-      match_key = malloc(sizeof(*match_key));
-      match_key->value = strdup(*argv);
-      match_key->next = NULL;
-      current_mk = match_key;
-
-      dot = match_key->value;
-      while (*dot++)
-      {
-         if (*dot == '.')
-         {
-            *dot++ = '\0';
-            current_mk->hash = djb2_calculate(current_mk->value);
-            current_mk->next = malloc(sizeof(*match_key));
-            current_mk = current_mk->next;
-            current_mk->value = dot;
-            current_mk->next = NULL;
-         }
-      }
-      current_mk->hash = djb2_calculate(current_mk->value);
-
+      match_key = dat_converter_match_key_create(*argv);
       argc--;
       argv++;
    }
@@ -775,15 +791,8 @@ int main(int argc, char** argv)
       free(dat_buffers[dat_count]);
    free(dat_buffers);
 
-   if(match_key)
-      free(match_key->value);
+   dat_converter_match_key_free(match_key);
 
-   while(match_key)
-   {
-      dat_converter_match_key_t* next = match_key->next;
-      free(match_key);
-      match_key = next;
-   }
 
    return 0;
 }
