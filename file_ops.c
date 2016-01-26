@@ -439,7 +439,7 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
                   cdata, csize, size, crc32))
          {
             bool goto_error = false;
-            buf             = malloc(size);
+            buf             = (char*)malloc(size);
 
             if (buf)
             {
