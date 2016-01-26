@@ -389,9 +389,49 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
       if (st->opt_file != 0)
       {
          /* Called in case core has need_fullpath enabled. */
+         int ret   = 0;
+         file_archive_file_handle_t handle = {0};
+         char *buf                         = NULL;
+         
+
          RARCH_LOG("opt file is: %s\n", st->opt_file);
-         if (!retro_write_file(st->opt_file, cdata, size))
+         handle.backend = file_archive_get_default_file_backend();
+         if (!handle.backend->stream_decompress_data_to_file_init(
+                  &handle, cdata, csize, size))
+            return false;
+
+         do{
+            ret = handle.backend->stream_decompress_data_to_file_iterate(
+                  handle.stream);
+         }while(ret == 0);
+
+         handle.real_checksum = handle.backend->stream_crc_calculate(0,
+               handle.data, size);
+
+         if (handle.real_checksum != crc32)
+         {
+            RARCH_ERR("Inflated checksum did not match CRC32!\n");
             goto error;
+         }
+
+         if (handle.stream)
+            free(handle.stream);
+
+         buf = malloc(size);
+         if (!buf)
+            goto error;
+         memcpy(buf, handle.data, size);
+         if (!retro_write_file(st->opt_file, buf, size))
+         {
+            if (handle.data)
+               free(handle.data);
+            free(buf);
+            goto error;
+         }
+
+         if (handle.data)
+            free(handle.data);
+         free(buf);
 
          st->size = 0;
       }
