@@ -371,6 +371,36 @@ struct decomp_state
  * buf will be 0 then.
  */
 
+static bool zip_file_decompressed_handle(file_archive_file_handle_t *handle,
+      const uint8_t *cdata, uint32_t csize, uint32_t size, uint32_t crc32)
+{
+   int ret   = 0;
+
+   handle->backend = file_archive_get_default_file_backend();
+   if (!handle->backend->stream_decompress_data_to_file_init(
+            handle, cdata, csize, size))
+      return false;
+
+   do{
+      ret = handle->backend->stream_decompress_data_to_file_iterate(
+            handle->stream);
+   }while(ret == 0);
+
+   handle->real_checksum = handle->backend->stream_crc_calculate(0,
+         handle->data, size);
+
+   if (handle->real_checksum != crc32)
+   {
+      RARCH_ERR("Inflated checksum did not match CRC32!\n");
+      return false;
+   }
+
+   if (handle->stream)
+      free(handle->stream);
+
+   return true;
+}
+
 static int zip_file_decompressed(const char *name, const char *valid_exts,
    const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
    uint32_t crc32, void *userdata)
@@ -389,33 +419,11 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
       if (st->opt_file != 0)
       {
          /* Called in case core has need_fullpath enabled. */
-         int ret   = 0;
          file_archive_file_handle_t handle = {0};
          char *buf                         = NULL;
          
-
-         RARCH_LOG("opt file is: %s\n", st->opt_file);
-         handle.backend = file_archive_get_default_file_backend();
-         if (!handle.backend->stream_decompress_data_to_file_init(
-                  &handle, cdata, csize, size))
-            return false;
-
-         do{
-            ret = handle.backend->stream_decompress_data_to_file_iterate(
-                  handle.stream);
-         }while(ret == 0);
-
-         handle.real_checksum = handle.backend->stream_crc_calculate(0,
-               handle.data, size);
-
-         if (handle.real_checksum != crc32)
-         {
-            RARCH_ERR("Inflated checksum did not match CRC32!\n");
-            goto error;
-         }
-
-         if (handle.stream)
-            free(handle.stream);
+         zip_file_decompressed_handle(&handle, cdata, csize, size,
+               crc32);
 
          buf = malloc(size);
          if (!buf)
@@ -440,29 +448,11 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
          /* Called in case core has need_fullpath disabled.
           * Will copy decompressed content directly into
           * RetroArch's ROM buffer. */
-         int ret = 0;
          file_archive_file_handle_t handle = {0};
-         handle.backend = file_archive_get_default_file_backend();
-         if (!handle.backend->stream_decompress_data_to_file_init(
-                  &handle, cdata, csize, size))
-            return false;
 
-         do{
-            ret = handle.backend->stream_decompress_data_to_file_iterate(
-                  handle.stream);
-         }while(ret == 0);
+         zip_file_decompressed_handle(&handle, cdata, csize, size,
+               crc32);
 
-         handle.real_checksum = handle.backend->stream_crc_calculate(0,
-               handle.data, size);
-
-         if (handle.real_checksum != crc32)
-         {
-            RARCH_ERR("Inflated checksum did not match CRC32!\n");
-            goto error;
-         }
-
-         if (handle.stream)
-            free(handle.stream);
          *st->buf = malloc(size);
          memcpy(*st->buf, handle.data, size);
 
