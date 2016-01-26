@@ -429,9 +429,11 @@ static bool rarch_game_specific_options(char **output)
    * Try config directory setting first,
    * fallback to the location of the current configuration file. */
    if (!string_is_empty(settings->menu_config_directory))
-      strlcpy(config_directory, settings->menu_config_directory, sizeof(config_directory));
+      strlcpy(config_directory,
+            settings->menu_config_directory, sizeof(config_directory));
    else if (!string_is_empty(global->path.config))
-      fill_pathname_basedir(config_directory, global->path.config, sizeof(config_directory));
+      fill_pathname_basedir(config_directory,
+            global->path.config, sizeof(config_directory));
    else
    {
       RARCH_WARN("Per-Game Options: no config directory set\n");
@@ -439,8 +441,10 @@ static bool rarch_game_specific_options(char **output)
    }
 
    /* Concatenate strings into full paths for game_path */
-   fill_pathname_join(game_path, config_directory, core_name, sizeof(game_path));
-   fill_pathname_join(game_path, game_path, game_name, sizeof(game_path));
+   fill_pathname_join(game_path,
+         config_directory, core_name, sizeof(game_path));
+   fill_pathname_join(game_path,
+         game_path, game_name, sizeof(game_path));
    strlcat(game_path, ".opt", sizeof(game_path));
 
    option_file = config_file_new(game_path);

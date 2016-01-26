@@ -1323,20 +1323,25 @@ static int action_ok_disk_cycle_tray_status(const char *path,
    return generic_action_ok_command(EVENT_CMD_DISK_EJECT_TOGGLE);
 }
 
-/* creates folder and core options stub file for subsequent runs */
-static int action_ok_option_create(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
+bool rarch_option_create(char *path, size_t len)
 {
-   settings_t *settings                   = config_get_ptr();
-   global_t *global                       = global_get_ptr();
-   rarch_system_info_t *system            = NULL;
-   const char *core_name                  = NULL;
-   const char *game_name                  = NULL;
-   char core_path[PATH_MAX_LENGTH]        = {0};
-   char game_path[PATH_MAX_LENGTH]        = {0};
-   char config_directory[PATH_MAX_LENGTH] = {0};
+   char core_path[PATH_MAX_LENGTH];
+   char config_directory[PATH_MAX_LENGTH];
+   const char *core_name       = NULL;
+   const char *game_name       = NULL;
+   global_t *global            = global_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   rarch_system_info_t *system = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+   if (system)
+      core_name = system->info.library_name;
+   if (global)
+      game_name = path_basename(global->name.base);
+
+   if (string_is_empty(core_name) || string_is_empty(game_name))
+      return false;
 
    /* Config directory: config_directory.
    * Try config directory setting first,
@@ -1353,27 +1358,41 @@ static int action_ok_option_create(const char *path,
       return false;
    }
 
-   core_name = system ? system->info.library_name        : NULL;
-   game_name = global ? path_basename(global->name.base) : NULL;
-
-   if (string_is_empty(core_name) || string_is_empty(game_name))
-      return false;
-
    /* Concatenate strings into full paths for game_path */
-   fill_pathname_join(core_path, config_directory, core_name, sizeof(core_path));
-   fill_pathname_join(game_path, config_directory, core_name, sizeof(game_path));
-   fill_pathname_join(game_path, game_path, game_name, sizeof(game_path));
-   strlcat(game_path, ".opt", sizeof(game_path));
+   fill_pathname_join(path,
+         config_directory, core_name, len);
+   fill_string_join(path, game_name, len);
+   strlcat(path, ".opt", len);
 
+   fill_pathname_join(core_path,
+         config_directory, core_name, sizeof(core_path));
    if (!path_is_directory(core_path))
       path_mkdir(core_path);
 
-   if(core_option_flush_game_specific(system->core_options,game_path))
-      menu_display_msg_queue_push("Core options file saved successfully",
-            1, 100, true);
-   else
+   return true;
+}
+
+/* creates folder and core options stub file for subsequent runs */
+static int action_ok_option_create(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char game_path[PATH_MAX_LENGTH];
+   rarch_system_info_t *system            = NULL;
+
+   if (!rarch_option_create(game_path, sizeof(game_path)))
+   {
       menu_display_msg_queue_push("Error saving core options file",
             1, 100, true);
+      return 0;
+   }
+
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+   if(core_option_flush_game_specific(system->core_options,
+            game_path))
+      menu_display_msg_queue_push("Core options file saved successfully",
+            1, 100, true);
+
    return 0;
 }
 
