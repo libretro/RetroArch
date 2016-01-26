@@ -284,7 +284,7 @@ bool rarch_task_push_decompress(
    }
    else if (!string_is_empty(target_file))
    {
-      s->target_file   = strdup(subdir);
+      s->target_file   = strdup(target_file);
       t->handler       = rarch_task_decompress_handler_target_file;
    }
 
