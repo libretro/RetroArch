@@ -1957,9 +1957,11 @@ bool config_load_override(void)
     * Try config directory setting first,
     * fallback to the location of the current configuration file. */
    if (!string_is_empty(settings->menu_config_directory))
-      strlcpy(config_directory, settings->menu_config_directory, PATH_MAX_LENGTH);
+      strlcpy(config_directory,
+            settings->menu_config_directory, sizeof(config_directory));
    else if (!string_is_empty(global->path.config))
-      fill_pathname_basedir(config_directory, global->path.config, PATH_MAX_LENGTH);
+      fill_pathname_basedir(config_directory,
+            global->path.config, sizeof(config_directory));
    else
    {
       RARCH_WARN("Overrides: no config directory set\n");
@@ -1969,13 +1971,13 @@ bool config_load_override(void)
    RARCH_LOG("Overrides: config directory: %s\n", config_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
-   fill_pathname_join(core_path, config_directory, core_name, PATH_MAX_LENGTH);
-   fill_pathname_join(core_path, core_path, core_name, PATH_MAX_LENGTH);
-   strlcat(core_path, ".cfg", PATH_MAX_LENGTH);
+   fill_pathname_join(core_path, config_directory, core_name, sizeof(core_path));
+   fill_pathname_join(core_path, core_path, core_name, sizeof(core_path));
+   strlcat(core_path, ".cfg", sizeof(core_path));
 
-   fill_pathname_join(game_path, config_directory, core_name, PATH_MAX_LENGTH);
-   fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
-   strlcat(game_path, ".cfg", PATH_MAX_LENGTH);
+   fill_pathname_join(game_path, config_directory, core_name, sizeof(game_path));
+   fill_pathname_join(game_path, game_path, game_name, sizeof(game_path));
+   strlcat(game_path, ".cfg", sizeof(game_path));
 
    /* Create a new config file from core_path */
    new_conf = config_file_new(core_path);
@@ -2143,17 +2145,17 @@ bool config_load_remap(void)
       return false;
    }
 
-   strlcpy(remap_directory, settings->input_remapping_directory, PATH_MAX_LENGTH);
+   strlcpy(remap_directory, settings->input_remapping_directory, sizeof(remap_directory));
    RARCH_LOG("Remaps: remap directory: %s\n", remap_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
-   fill_pathname_join(core_path, remap_directory, core_name, PATH_MAX_LENGTH);
-   fill_pathname_join(core_path, core_path, core_name, PATH_MAX_LENGTH);
-   strlcat(core_path, ".rmp", PATH_MAX_LENGTH);
+   fill_pathname_join(core_path, remap_directory, core_name, sizeof(core_path));
+   fill_pathname_join(core_path, core_path, core_name, sizeof(core_path));
+   strlcat(core_path, ".rmp", sizeof(core_path));
 
-   fill_pathname_join(game_path, remap_directory, core_name, PATH_MAX_LENGTH);
-   fill_pathname_join(game_path, game_path, game_name, PATH_MAX_LENGTH);
-   strlcat(game_path, ".rmp", PATH_MAX_LENGTH);
+   fill_pathname_join(game_path, remap_directory, core_name, sizeof(game_path));
+   fill_pathname_join(game_path, game_path, game_name, sizeof(game_path));
+   strlcat(game_path, ".rmp", sizeof(game_path));
 
    /* Create a new config file from game_path */
    new_conf = config_file_new(game_path);
