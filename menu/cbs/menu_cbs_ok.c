@@ -412,7 +412,8 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx,
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 
-   strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
+   if (!string_is_empty(menu_path))
+      strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
    if (
          string_is_equal(menu_label,
