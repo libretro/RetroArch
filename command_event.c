@@ -1047,9 +1047,6 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #endif
          core.retro_reset();
 
-         /* bSNES since v073r01 resets controllers to JOYPAD
-          * after a reset, so just enforce it here. */
-         event_cmd_ctl(EVENT_CMD_CONTROLLERS_INIT, NULL);
          break;
       case EVENT_CMD_SAVE_STATE:
          if (settings->savestate_auto_index)
