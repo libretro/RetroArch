@@ -50,21 +50,6 @@ static int insert(bintree_t *t, struct bintree_node *root, void *value)
    {
       root->left  = new_nil_node(root);
       root->right = new_nil_node(root);
-
-      if (!root->left || !root->right)
-      {
-         if (root->left)
-         {
-            free(root->left);
-            root->left = NULL;
-         }
-         if (root->right)
-         {
-            free(root->right);
-            root->right = NULL;
-         }
-         return -ENOMEM;
-      }
       root->value = value;
 
       return 0;
