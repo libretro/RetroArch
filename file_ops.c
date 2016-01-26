@@ -388,6 +388,8 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
 
       if (st->opt_file != 0)
       {
+         /* Called in case core has need_fullpath enabled. */
+         RARCH_LOG("opt file is: %s\n", st->opt_file);
          if (!retro_write_file(st->opt_file, cdata, size))
             goto error;
 
@@ -395,6 +397,9 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
       }
       else
       {
+         /* Called in case core has need_fullpath disabled.
+          * Will copy decompressed content directly into
+          * RetroArch's ROM buffer. */
          int ret = 0;
          file_archive_file_handle_t handle = {0};
          handle.backend = file_archive_get_default_file_backend();

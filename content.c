@@ -478,17 +478,19 @@ static bool load_content(
       )
 {
    unsigned i;
-   bool ret    = true;
+   bool ret         = true;
+   const char *path = NULL;
 
    if (!info || !additional_path_allocs)
       return false;
 
    for (i = 0; i < content->size; i++)
    {
-      const char *path     = content->elems[i].data;
       int         attr     = content->elems[i].attr.i;
       bool need_fullpath   = attr & 2;
       bool require_content = attr & 4;
+
+      path                 = content->elems[i].data;
 
       if (require_content && string_is_empty(path))
       {
@@ -522,16 +524,21 @@ static bool load_content(
       }
    }
 
+   path = content->elems[0].data;
+
+   RARCH_LOG("Calling %s with path: [%s]\n", special ? 
+         "retro_load_game_special" : "retro_load_game", *path ? path : "N/A");
+
    if (special)
       ret = core.retro_load_game_special(special->id, info, content->size);
    else
    {
-      ret = core.retro_load_game(*content->elems[0].data ? info : NULL);
+      ret = core.retro_load_game(*path ? info : NULL);
       
 #ifdef HAVE_CHEEVOS
       /* Load the achievements into memory if the game has content. */
       cheevos_set_cheats();
-      cheevos_load(*content->elems[0].data ? info : NULL);
+      cheevos_load(*path ? info : NULL);
 #endif
    }
 
