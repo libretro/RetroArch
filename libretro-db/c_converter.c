@@ -11,7 +11,7 @@
 
 #include "libretrodb.h"
 
-void dat_converter_exit(int rc)
+static void dat_converter_exit(int rc)
 {
    fflush(stdout);
    exit(rc);
@@ -84,13 +84,7 @@ struct dat_converter_bt_node_t
    dat_converter_bt_node_t* left;
 };
 
-int dat_converter_cmp_func(const void *a, const void *b, void *ctx)
-{
-   return strcmp(a, b);
-}
-
-
-dat_converter_list_t* dat_converter_list_create(dat_converter_list_enum type)
+static dat_converter_list_t* dat_converter_list_create(dat_converter_list_enum type)
 {
    dat_converter_list_t* list = malloc(sizeof(*list));
    list->type = type;
@@ -101,16 +95,16 @@ dat_converter_list_t* dat_converter_list_create(dat_converter_list_enum type)
    return list;
 }
 
-void dat_converter_bt_node_free(dat_converter_bt_node_t* node)
+static void dat_converter_bt_node_free(dat_converter_bt_node_t* node)
 {
-   if(!node)
+   if (!node)
       return;
    dat_converter_bt_node_free(node->left);
    dat_converter_bt_node_free(node->right);
    free(node);
 }
 
-void dat_converter_list_free(dat_converter_list_t* list)
+static void dat_converter_list_free(dat_converter_list_t* list)
 {
    if (!list)
       return;
@@ -135,13 +129,15 @@ void dat_converter_list_free(dat_converter_list_t* list)
    free(list->values);
    free(list);
 }
+static void dat_converter_list_append(dat_converter_list_t* dst, void* item);
 
-dat_converter_bt_node_t* dat_converter_bt_node_insert(dat_converter_list_t* list, dat_converter_bt_node_t** node, dat_converter_map_t* map)
+static dat_converter_bt_node_t* dat_converter_bt_node_insert(dat_converter_list_t* list, dat_converter_bt_node_t** node,
+      dat_converter_map_t* map)
 {
    assert(map->key);
    assert(list->type == DAT_CONVERTER_MAP_LIST);
 
-   if(!*node)
+   if (!*node)
    {
       *node = calloc(1, sizeof(dat_converter_bt_node_t));
       return *node;
@@ -149,26 +145,38 @@ dat_converter_bt_node_t* dat_converter_bt_node_insert(dat_converter_list_t* list
 
    int diff = (*node)->hash - map->hash;
 
-   if(!diff)
+   if (!diff)
       diff = strcmp(list->values[(*node)->index].map.key, map->key);
 
-   if(diff < 0)
+   if (diff < 0)
       return dat_converter_bt_node_insert(list, &(*node)->left, map);
-   else if(diff > 0)
+   else if (diff > 0)
       return dat_converter_bt_node_insert(list, &(*node)->right, map);
 
    /* found match */
 
-   if(list->values[(*node)->index].map.type == DAT_CONVERTER_LIST_MAP)
-      dat_converter_list_free(list->values[(*node)->index].map.value.list);
+   if (list->values[(*node)->index].map.type == DAT_CONVERTER_LIST_MAP)
+   {
+      if (map->type == DAT_CONVERTER_LIST_MAP)
+      {
+         int i;
+         assert(list->values[(*node)->index].map.value.list->type == map->value.list->type);
+         for (i = 0; i < map->value.list->count; i++)
+            dat_converter_list_append(list->values[(*node)->index].map.value.list, &map->value.list->values[i]);
 
-   list->values[(*node)->index].map = *map;
+         /* set count to 0 to prevent freeing the child nodes */
+         map->value.list->count = 0;
+         dat_converter_list_free(map->value.list);
+      }
+   }
+   else
+      list->values[(*node)->index].map = *map;
 
    return NULL;
 }
 
 
-void dat_converter_list_append(dat_converter_list_t* dst, void* item)
+static void dat_converter_list_append(dat_converter_list_t* dst, void* item)
 {
    if (dst->count == dst->capacity)
    {
@@ -192,13 +200,13 @@ void dat_converter_list_append(dat_converter_list_t* dst, void* item)
    case DAT_CONVERTER_MAP_LIST:
    {
       dat_converter_map_t* map = (dat_converter_map_t*) item;
-      if(!map->key)
+      if (!map->key)
          dst->values[dst->count].map = *map;
       else
       {
          map->hash = djb2_calculate(map->key);
          dat_converter_bt_node_t* new_node = dat_converter_bt_node_insert(dst, &dst->bt_root, map);
-         if(new_node)
+         if (new_node)
          {
             dst->values[dst->count].map = *map;
             new_node->index = dst->count;
@@ -221,7 +229,7 @@ void dat_converter_list_append(dat_converter_list_t* dst, void* item)
    dst->count++;
 }
 
-dat_converter_list_t* dat_converter_lexer(char* src, const char* dat_path)
+static dat_converter_list_t* dat_converter_lexer(char* src, const char* dat_path)
 {
 
 
@@ -286,7 +294,7 @@ dat_converter_list_t* dat_converter_lexer(char* src, const char* dat_path)
    return token_list;
 }
 
-dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
+static dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
 {
    dat_converter_list_t* parsed_table = dat_converter_list_create(DAT_CONVERTER_MAP_LIST);
    dat_converter_map_t map = {0};
@@ -356,52 +364,87 @@ dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
    return NULL;
 }
 
-const char* dat_converter_get_match_key(dat_converter_list_t* list, const char* match_key)
+typedef struct dat_converter_match_key_t dat_converter_match_key_t;
+struct dat_converter_match_key_t
+{
+   char* value;
+   uint32_t hash;
+   dat_converter_match_key_t* next;
+};
+
+static dat_converter_match_key_t* dat_converter_match_key_create(const char* format)
+{
+   dat_converter_match_key_t* match_key;
+   dat_converter_match_key_t* current_mk;
+   char* dot;
+
+   match_key = malloc(sizeof(*match_key));
+   match_key->value = strdup(format);
+   match_key->next = NULL;
+   current_mk = match_key;
+
+   dot = match_key->value;
+   while (*dot++)
+   {
+      if (*dot == '.')
+      {
+         *dot++ = '\0';
+         current_mk->hash = djb2_calculate(current_mk->value);
+         current_mk->next = malloc(sizeof(*match_key));
+         current_mk = current_mk->next;
+         current_mk->value = dot;
+         current_mk->next = NULL;
+      }
+   }
+   current_mk->hash = djb2_calculate(current_mk->value);
+
+   return match_key;
+}
+
+static void dat_converter_match_key_free(dat_converter_match_key_t* match_key)
+{
+   if (!match_key)
+      return;
+
+   free(match_key->value);
+
+   while (match_key)
+   {
+      dat_converter_match_key_t* next = match_key->next;
+      free(match_key);
+      match_key = next;
+   }
+}
+
+static const char* dat_converter_get_match(dat_converter_list_t* list, dat_converter_match_key_t* match_key)
 {
    int i;
-   const char* res;
-   char* key;
-   char* dot;
+
+   assert(match_key);
 
    if (list->type != DAT_CONVERTER_MAP_LIST)
       return NULL;
 
-   key = strdup(match_key);
-   dot = strchr(key, '.');
-
-   if (dot)
+   for (i = 0; i < list->count; i++)
    {
-      *dot = '\0';
-      for (i = 0; i < list->count; i++)
-         if (!strcmp(list->values[i].map.key, key))
-         {
-            if (list->values[i].map.type == DAT_CONVERTER_LIST_MAP)
-            {
-               res = dat_converter_get_match_key(list->values[i].map.value.list, dot + 1);
-               free(key);
-               return res;
-            }
-            break;
-         }
-   }
-   else
-   {
-      for (i = 0; i < list->count; i++)
-         if (!strcmp(list->values[i].map.key, key))
-         {
-            if ((list->values[i].map.type == DAT_CONVERTER_STRING_MAP))
-            {
-               free(key);
-               return list->values[i].map.value.string;
-            }
-            break;
-         }
-   }
+      if (list->values[i].map.hash == match_key->hash)
+      {
+         assert(!strcmp(list->values[i].map.key, match_key->value));
 
+         if (match_key->next)
+            return dat_converter_get_match(list->values[i].map.value.list, match_key->next);
+         else  if ((list->values[i].map.type == DAT_CONVERTER_STRING_MAP))
+            return list->values[i].map.value.string;
+         else
+            return NULL;
+
+      }
+   }
    return NULL;
 }
 
-dat_converter_list_t* dat_converter_parser(dat_converter_list_t* target, dat_converter_list_t* lexer_list, const char* match_key)
+static dat_converter_list_t* dat_converter_parser(dat_converter_list_t* target, dat_converter_list_t* lexer_list,
+      dat_converter_match_key_t* match_key)
 {
    bool skip = true;
    dat_converter_list_item_t* current = lexer_list->values;
@@ -436,13 +479,19 @@ dat_converter_list_t* dat_converter_parser(dat_converter_list_t* target, dat_con
             current++;
             map.value.list = dat_parser_table(&current);
             if (!skip)
-            {               
+            {
                if (match_key)
                {
-                  map.key = dat_converter_get_match_key(map.value.list, match_key);
-                  if(!map.key)
+                  map.key = dat_converter_get_match(map.value.list, match_key);
+                  if (!map.key)
                   {
-                     printf("missing match key '%s' in one of the entries\n", match_key);
+                     printf("missing match key '");
+                     while (match_key->next)
+                     {
+                        printf("%s.", match_key->value);
+                        match_key = match_key->next;
+                     }
+                     printf("%s' in one of the entries\n", match_key->value);
                      dat_converter_exit(1);
                   }
                }
@@ -471,49 +520,80 @@ dat_converter_list_t* dat_converter_parser(dat_converter_list_t* target, dat_con
    return target;
 }
 
-
-static int value_provider(dat_converter_list_item_t** current_item, struct rmsgpack_dom_value* out)
+typedef enum
 {
-   int i, j;
-#if 1
-   const char* ordered_keys[] =
+   DAT_CONVERTER_RDB_TYPE_STRING,
+   DAT_CONVERTER_RDB_TYPE_UINT,
+   DAT_CONVERTER_RDB_TYPE_BINARY,
+   DAT_CONVERTER_RDB_TYPE_HEX
+} dat_converter_rdb_format_enum;
+
+typedef struct
+{
+   const char* dat_key;
+   const char* rdb_key;
+   dat_converter_rdb_format_enum format;
+} dat_converter_rdb_mappings_t;
+
+dat_converter_rdb_mappings_t rdb_mappings[] =
+{
+   {"name",           "name",           DAT_CONVERTER_RDB_TYPE_STRING},
+   {"description",    "description",    DAT_CONVERTER_RDB_TYPE_STRING},
+   {"rom.name",       "rom_name",       DAT_CONVERTER_RDB_TYPE_STRING},
+   {"rom.size",       "size",           DAT_CONVERTER_RDB_TYPE_UINT},
+   {"users",          "users",          DAT_CONVERTER_RDB_TYPE_UINT},
+   {"releasemonth",   "releasemonth",   DAT_CONVERTER_RDB_TYPE_UINT},
+   {"releaseyear",    "releaseyear",    DAT_CONVERTER_RDB_TYPE_UINT},
+   {"rumble",         "rumble",         DAT_CONVERTER_RDB_TYPE_UINT},
+   {"analog",         "analog",         DAT_CONVERTER_RDB_TYPE_UINT},
+
+   {"famitsu_rating", "famitsu_rating", DAT_CONVERTER_RDB_TYPE_UINT},
+   {"edge_rating",    "edge_rating",    DAT_CONVERTER_RDB_TYPE_UINT},
+   {"edge_issue",     "edge_issue",     DAT_CONVERTER_RDB_TYPE_UINT},
+   {"edge_review",    "edge_review",    DAT_CONVERTER_RDB_TYPE_STRING},
+
+   {"enhancement_hw", "enhancement_hw", DAT_CONVERTER_RDB_TYPE_STRING},
+   {"barcode",        "barcode",        DAT_CONVERTER_RDB_TYPE_STRING},
+   {"esrb_rating",    "esrb_rating",    DAT_CONVERTER_RDB_TYPE_STRING},
+   {"elspa_rating",   "elspa_rating",   DAT_CONVERTER_RDB_TYPE_STRING},
+   {"pegi_rating",    "pegi_rating",    DAT_CONVERTER_RDB_TYPE_STRING},
+   {"cero_rating",    "cero_rating",    DAT_CONVERTER_RDB_TYPE_STRING},
+   {"franchise",      "franchise",      DAT_CONVERTER_RDB_TYPE_STRING},
+
+   {"developer",      "developer",      DAT_CONVERTER_RDB_TYPE_STRING},
+   {"publisher",      "publisher",      DAT_CONVERTER_RDB_TYPE_STRING},
+   {"origin",         "origin",         DAT_CONVERTER_RDB_TYPE_STRING},
+
+   {"rom.crc",        "crc",            DAT_CONVERTER_RDB_TYPE_HEX},
+   {"rom.md5",        "md5",            DAT_CONVERTER_RDB_TYPE_HEX},
+   {"rom.sha1",       "sha1",           DAT_CONVERTER_RDB_TYPE_HEX},
+   {"serial",         "serial",         DAT_CONVERTER_RDB_TYPE_BINARY},
+   {"rom.serial",     "serial",         DAT_CONVERTER_RDB_TYPE_BINARY}
+};
+
+dat_converter_match_key_t* rdb_mappings_mk[(sizeof(rdb_mappings) / sizeof(*rdb_mappings))] = {0};
+
+static void dat_converter_value_provider_init(void)
+{
+   int i;
+   for (i = 0; i < (sizeof(rdb_mappings) / sizeof(*rdb_mappings)); i++)
+      rdb_mappings_mk[i] = dat_converter_match_key_create(rdb_mappings[i].dat_key);
+}
+static void dat_converter_value_provider_free(void)
+{
+   int i;
+   for (i = 0; i < (sizeof(rdb_mappings) / sizeof(*rdb_mappings)); i++)
    {
-      "name",
-      "description",
-      "rom_name",
-      "size",
-      "users",
-      "releasemonth",
-      "releaseyear",
-      "rumble",
-      "analog",
-
-      "famitsu_rating",
-      "edge_rating",
-      "edge_issue",
-      "edge_review",
-
-      "enhancement_hw",
-      "barcode",
-      "esrb_rating",
-      "elspa_rating",
-      "pegi_rating",
-      "cero_rating",
-      "franchise",
-
-      "developer",
-      "publisher",
-      "origin",
-
-      "crc",
-      "md5",
-      "sha1",
-      "serial"
-   };
-#endif
+      dat_converter_match_key_free(rdb_mappings_mk[i]);
+      rdb_mappings_mk[i] = NULL;
+   }
+}
+static int dat_converter_value_provider(dat_converter_list_item_t** current_item, struct rmsgpack_dom_value* out)
+{
+   int i;
    out->type = RDT_MAP;
    out->val.map.len = 0;
-   out->val.map.items = calloc(sizeof(ordered_keys) / sizeof(char*), sizeof(struct rmsgpack_dom_pair));
+   out->val.map.items = calloc((sizeof(rdb_mappings) / sizeof(*rdb_mappings)), sizeof(struct rmsgpack_dom_pair));
 
    (*current_item)--;
 
@@ -528,154 +608,84 @@ static int value_provider(dat_converter_list_item_t** current_item, struct rmsgp
 
    struct rmsgpack_dom_pair* current = out->val.map.items;
 
-   for (i = 0; i < list->count; i++)
+   for (i = 0; i < (sizeof(rdb_mappings) / sizeof(*rdb_mappings)); i++)
    {
-      dat_converter_map_t* pair = &list->values[i].map;
+      const char* value = dat_converter_get_match(list, rdb_mappings_mk[i]);
+      if (!value)
+         continue;
 
-      if (pair->type == DAT_CONVERTER_STRING_MAP)
+      current->key.type = RDT_STRING;
+      current->key.val.string.len = strlen(rdb_mappings[i].rdb_key);
+      current->key.val.string.buff = strdup(rdb_mappings[i].rdb_key);
+
+      switch (rdb_mappings[i].format)
       {
-         current->key.type = RDT_STRING;
-         current->key.val.string.len = strlen(pair->key);
-         current->key.val.string.buff = strdup(pair->key);
-
-         if (!strcmp(pair->key, "users") ||
-               !strcmp(pair->key, "releasemonth") ||
-               !strcmp(pair->key, "releaseyear") ||
-               !strcmp(pair->key, "rumble") ||
-               !strcmp(pair->key, "analog") ||
-               !strcmp(pair->key, "famitsu_rating") ||
-               !strcmp(pair->key, "edge_rating") ||
-               !strcmp(pair->key, "edge_issue"))
+      case DAT_CONVERTER_RDB_TYPE_STRING:
+         current->value.type = RDT_STRING;
+         current->value.val.string.len = strlen(value);
+         current->value.val.string.buff = strdup(value);
+         break;
+      case DAT_CONVERTER_RDB_TYPE_UINT:
+         current->value.type = RDT_UINT;
+         if (value[strlen(value) - 1] == '\?')
          {
-            current->value.type = RDT_UINT;
-            if (pair->value.string[strlen(pair->value.string) - 1] == '\?')
-               continue;
-            current->value.val.uint_ = (uint64_t)atoll(pair->value.string);
+            free(current->key.val.string.buff);
+            continue;
          }
-         else if (!strcmp(pair->key, "serial"))
+         current->value.val.uint_ = (uint64_t)atoll(value);
+         break;
+      case DAT_CONVERTER_RDB_TYPE_BINARY:
+         current->value.type = RDT_BINARY;
+         current->value.val.binary.len = strlen(value);
+         current->value.val.binary.buff = strdup(value);
+         break;
+      case DAT_CONVERTER_RDB_TYPE_HEX:
+         current->value.type = RDT_BINARY;
+         current->value.val.binary.len = strlen(value) / 2;
+         current->value.val.binary.buff = malloc(current->value.val.binary.len);
          {
-            current->value.type = RDT_BINARY;
-            current->value.val.binary.len = strlen(pair->value.string);
-            current->value.val.binary.buff = strdup(pair->value.string);
-         }
-         else
-         {
-            current->value.type = RDT_STRING;
-            current->value.val.string.len = strlen(pair->value.string);
-            current->value.val.string.buff = strdup(pair->value.string);
-         }
-
-         current++;
-      }
-      else if ((pair->type == DAT_CONVERTER_LIST_MAP) && (!strcmp(pair->key, "rom")))
-      {
-         assert(pair->value.list->type == DAT_CONVERTER_MAP_LIST);
-
-         for (j = 0; j < pair->value.list->count; j++)
-         {
-            dat_converter_map_t* rom_pair = &pair->value.list->values[j].map;
-            assert(rom_pair->type == DAT_CONVERTER_STRING_MAP);
-
-            if (!strcmp(rom_pair->key, "name"))
+            const char* hex_char = value;
+            char* out_buff = current->value.val.binary.buff;
+            while (*hex_char && *(hex_char + 1))
             {
-               current->key.type = RDT_STRING;
-               current->key.val.string.len = strlen("rom_name");
-               current->key.val.string.buff = strdup("rom_name");
-
-               current->value.type = RDT_STRING;
-               current->value.val.string.len = strlen(rom_pair->value.string);
-               current->value.val.string.buff = strdup(rom_pair->value.string);
-            }
-            else
-            {
-               current->key.type = RDT_STRING;
-               current->key.val.string.len = strlen(rom_pair->key);
-               current->key.val.string.buff = strdup(rom_pair->key);
-
-               if (!strcmp(rom_pair->key, "size"))
-               {
-                  current->value.type = RDT_UINT;
-                  current->value.val.uint_ = (uint64_t)atoll(rom_pair->value.string);
-
-               }
+               char val = 0;
+               if (*hex_char >= 'A' && *hex_char <= 'F')
+                  val = *hex_char + 0xA - 'A';
+               else if (*hex_char >= 'a' && *hex_char <= 'f')
+                  val = *hex_char + 0xA - 'a';
+               else if (*hex_char >= '0' && *hex_char <= '9')
+                  val = *hex_char - '0';
                else
-               {
-                  current->value.type = RDT_BINARY;
+                  val = 0;
+               val <<= 4;
+               hex_char++;
+               if (*hex_char >= 'A' && *hex_char <= 'F')
+                  val |= *hex_char + 0xA - 'A';
+               else if (*hex_char >= 'a' && *hex_char <= 'f')
+                  val |= *hex_char + 0xA - 'a';
+               else if (*hex_char >= '0' && *hex_char <= '9')
+                  val |= *hex_char - '0';
 
-                  if (!strcmp(rom_pair->key, "serial"))
-                  {
-                     current->value.val.binary.len = strlen(rom_pair->value.string);
-                     current->value.val.binary.buff = strdup(rom_pair->value.string);
-                  }
-                  else
-                  {
-                     current->value.val.binary.len = strlen(rom_pair->value.string) / 2;
-                     current->value.val.binary.buff = malloc(current->value.val.binary.len);
-                     const char* hex_char = rom_pair->value.string;
-                     char* out_buff = current->value.val.binary.buff;
-                     while (*hex_char && *(hex_char + 1))
-                     {
-                        char val = 0;
-                        if (*hex_char >= 'A' && *hex_char <= 'F')
-                           val = *hex_char + 0xA - 'A';
-                        else if (*hex_char >= 'a' && *hex_char <= 'f')
-                           val = *hex_char + 0xA - 'a';
-                        else if (*hex_char >= '0' && *hex_char <= '9')
-                           val = *hex_char - '0';
-                        else
-                           val = 0;
-                        val <<= 4;
-                        hex_char++;
-                        if (*hex_char >= 'A' && *hex_char <= 'F')
-                           val |= *hex_char + 0xA - 'A';
-                        else if (*hex_char >= 'a' && *hex_char <= 'f')
-                           val |= *hex_char + 0xA - 'a';
-                        else if (*hex_char >= '0' && *hex_char <= '9')
-                           val |= *hex_char - '0';
-
-                        *out_buff++ = val;
-                        hex_char++;
-                     }
-                  }
-               }
+               *out_buff++ = val;
+               hex_char++;
             }
-            current++;
          }
-
-      }
-      else
+         break;
+      default:
          assert(0);
+         break;
+      }
+      current++;
    }
 
    out->val.map.len = current - out->val.map.items;
-#if 1
-   /* re-order to match lua_converter */
-   struct rmsgpack_dom_pair* ordered_pairs = calloc(out->val.map.len, sizeof(struct rmsgpack_dom_pair));
-   struct rmsgpack_dom_pair* ordered_pairs_outp = ordered_pairs;
-   for (i = 0; i < (sizeof(ordered_keys) / sizeof(char*)); i++)
-   {
-      int j;
-      for (j = 0; j < out->val.map.len; j++)
-      {
-         if (!strcmp(ordered_keys[i], out->val.map.items[j].key.val.string.buff))
-         {
-            *ordered_pairs_outp++ = out->val.map.items[j];
-            break;
-         }
-      }
-   }
-
-   free(out->val.map.items);
-   out->val.map.items = ordered_pairs;
-   out->val.map.len = ordered_pairs_outp - ordered_pairs;
-#endif
    return 0;
 }
 
 int main(int argc, char** argv)
 {
    const char* rdb_path;
-   const char* match_key = NULL;
+   dat_converter_match_key_t* match_key = NULL;
    RFILE* rdb_file;
 
    if (argc < 2)
@@ -690,9 +700,9 @@ int main(int argc, char** argv)
    argc--;
    argv++;
 
-   if (argc > 1)
+   if (argc > 1 &&** argv)
    {
-      match_key = *argv;
+      match_key = dat_converter_match_key_create(*argv);
       argc--;
       argv++;
    }
@@ -702,7 +712,7 @@ int main(int argc, char** argv)
    char** dat_buffer = dat_buffers;
    dat_converter_list_t* dat_parser_list = NULL;
 
-   while(argc)
+   while (argc)
    {
       dat_converter_list_t* dat_lexer_list;
       size_t dat_file_size;
@@ -745,15 +755,20 @@ int main(int argc, char** argv)
    }
 
    dat_converter_list_item_t* current_item = &dat_parser_list->values[dat_parser_list->count];
-   libretrodb_create(rdb_file, (libretrodb_value_provider)&value_provider, &current_item);
+   dat_converter_value_provider_init();
+   libretrodb_create(rdb_file, (libretrodb_value_provider)&dat_converter_value_provider, &current_item);
+   dat_converter_value_provider_free();
 
    retro_fclose(rdb_file);
 
    dat_converter_list_free(dat_parser_list);
 
-   while(dat_count--)
+   while (dat_count--)
       free(dat_buffers[dat_count]);
    free(dat_buffers);
+
+   dat_converter_match_key_free(match_key);
+
 
    return 0;
 }
