@@ -1,5 +1,4 @@
 #!/bin/sh
 rdb_file="$1"
 shift 1
- ./lua_converter "$rdb_file" dat_converter.lua "$@"
-#./plain_converter "$rdb_file" "$@"
+ ./c_converter "$rdb_file" dat_converter.lua "$@"

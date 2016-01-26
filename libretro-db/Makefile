@@ -2,7 +2,7 @@ DEBUG                = 0
 LIBRETRO_COMMON_DIR := ../libretro-common
 INCFLAGS             = -I. -I$(LIBRETRO_COMMON_DIR)/include
 
-TARGETS              = rmsgpack_test libretrodb_tool plain_converter lua_converter c_converter
+TARGETS              = rmsgpack_test libretrodb_tool lua_converter c_converter
 
 ifeq ($(DEBUG), 1)
 CFLAGS               = -g -O0 -Wall
@@ -23,22 +23,6 @@ LUA_CONVERTER_C = \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 LUA_CONVERTER_OBJS := $(LUA_CONVERTER_C:.c=.o)
-
-PLAIN_CONVERTER_C = \
-			 lexer.c \
-			 parser.c \
-			 rmsgpack.c \
-			 rmsgpack_dom.c \
-			 libretrodb.c \
-			 bintree.c \
-			 query.c \
-			 plain_converter.c \
-			 $(LIBRETRO_COMMON_DIR)/hash/rhash.c \
-			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
-			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
-			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
-
-PLAIN_CONVERTER_OBJS := $(PLAIN_CONVERTER_C:.c=.o)
 
 C_CONVERTER_C = \
 			 rmsgpack.c \
@@ -97,9 +81,6 @@ all: $(TARGETS)
 %.o: %.c
 	$(CC) $(INCFLAGS) $< -c $(CFLAGS) -o $@
 
-plain_converter: $(PLAIN_CONVERTER_OBJS)
-	$(CC) $(INCFLAGS) $(PLAIN_CONVERTER_OBJS) -o $@
-
 lua_converter: $(LUA_CONVERTER_OBJS)
 	$(CC) $(INCFLAGS) $(LUA_CONVERTER_OBJS) $(LUA_FLAGS) -o $@
 
@@ -120,4 +101,4 @@ check: testlib.so tests.lua
 	lua ./tests.lua
 
 clean:
-	rm -rf $(TARGETS) $(PLAIN_CONVERTER_OBJS) $(LUA_CONVERTER_OBJS) $(C_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS) testlib.so
+	rm -rf $(TARGETS) $(LUA_CONVERTER_OBJS) $(C_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS) testlib.so
