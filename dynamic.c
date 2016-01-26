@@ -1241,9 +1241,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       /* Private extensions for internal use, not part of libretro API. */
       case RETRO_ENVIRONMENT_EXEC:
          {
+            char *fullpath = NULL;
+
             RARCH_LOG("Environ (Private) EXEC.\n");
 
-            char *fullpath = NULL;
             runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
             if (fullpath != data)
