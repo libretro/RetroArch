@@ -184,7 +184,6 @@ static int database_info_iterate_playlist(
          memset(&db->state, 0, sizeof(file_archive_transfer_t));
          db_state->zip_name[0] = '\0';
          db->state.type = ZLIB_TRANSFER_INIT;
-
          return 1;
 #endif
       case HASH_EXTENSION_CUE:
@@ -304,13 +303,17 @@ static int database_info_list_iterate_found_match(
    RARCH_LOG("entry path str: %s\n", entry_path_str);
 #endif
 
-   content_playlist_push(playlist, entry_path_str,
-         db_info_entry->name, "DETECT", "DETECT", db_crc, db_playlist_base_str);
+   if(!content_playlist_entry_exists(playlist, entry_path_str, db_crc))
+   {
+      content_playlist_push(playlist, entry_path_str,
+            db_info_entry->name, "DETECT", "DETECT", db_crc, db_playlist_base_str);
+   }
 
    content_playlist_write_file(playlist);
    content_playlist_free(playlist);
 
    database_info_list_free(db_state->info);
+
    db_state->info = NULL;
    db_state->crc  = 0;
 
@@ -480,7 +483,6 @@ static int database_info_iterate(database_state_handle_t *db_state, database_inf
       case DATABASE_TYPE_CRC_LOOKUP:
          return database_info_iterate_crc_lookup(db_state, db, NULL);
    }
-
    return 0;
 }
 

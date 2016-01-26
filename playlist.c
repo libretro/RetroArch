@@ -116,6 +116,21 @@ void content_playlist_get_index_by_path(content_playlist_t *playlist,
 
 }
 
+bool content_playlist_entry_exists(content_playlist_t *playlist,
+      const char *path,
+      const char *crc32)
+{
+   size_t i;
+   if (!playlist)
+      return false;
+
+   for (i = 0; i < playlist->size; i++)
+      if (string_is_equal(playlist->entries[i].path, path) || string_is_equal(playlist->entries[i].crc32, crc32))
+         return true;
+
+   return false;
+}
+
 /**
  * content_playlist_free_entry:
  * @entry           	   : Playlist entry handle.
