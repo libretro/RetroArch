@@ -462,12 +462,10 @@ void path_parent_dir(char *path)
  **/
 const char *path_basename(const char *path)
 {
-   const char *last_hash = NULL;
    const char *last = find_last_slash(path);
-
-   (void)last_hash;
-
 #ifdef HAVE_COMPRESSION
+   const char *last_hash = NULL;
+
    /* We cut either at the last hash or the last slash; whichever comes last */
    last_hash = strchr(path,'#');
 
