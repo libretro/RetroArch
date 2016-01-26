@@ -438,7 +438,9 @@ void *menu_init(const void *data)
    if (!menu_ctx)
       return NULL;
 
-   if (!(menu = (menu_handle_t*)menu_ctx->init(&menu_userdata)))
+   menu = (menu_handle_t*)menu_ctx->init(&menu_userdata);
+
+   if (!menu)
       return NULL;
 
    strlcpy(settings->menu.driver, menu_ctx->ident,
