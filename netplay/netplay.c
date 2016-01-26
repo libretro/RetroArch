@@ -132,9 +132,9 @@ static bool send_chunk(netplay_t *netplay)
  **/
 static bool get_self_input_state(netplay_t *netplay)
 {
-   uint32_t state          = 0;
-   struct delta_frame *ptr = &netplay->buffer[netplay->self_ptr];
-   settings_t *settings    = config_get_ptr();
+   uint32_t state[UDP_WORDS_PER_FRAME - 1] = {0};
+   struct delta_frame *ptr                 = &netplay->buffer[netplay->self_ptr];
+   settings_t *settings                    = config_get_ptr();
 
    if (!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL) && netplay->frame_count > 0)
    {
@@ -148,22 +148,40 @@ static bool get_self_input_state(netplay_t *netplay)
          int16_t tmp = cb(settings->input.netplay_client_swap_input ?
                0 : !netplay->port,
                RETRO_DEVICE_JOYPAD, 0, i);
-         state |= tmp ? 1 << i : 0;
+         state[0] |= tmp ? 1 << i : 0;
       }
 
-      for (i = RARCH_FIRST_CUSTOM_BIND; i < RARCH_FIRST_META_KEY; i++)
+      for (i = 0; i < 2; i++)
       {
-         int16_t tmp = cb(settings->input.netplay_client_swap_input ?
+         int16_t tmp_x = cb(settings->input.netplay_client_swap_input ?
                0 : !netplay->port,
-               RETRO_DEVICE_ANALOG, 0, i);
-         state |= tmp ? 1 << i : 0;
+               RETRO_DEVICE_ANALOG, i, 0);
+         int16_t tmp_y = cb(settings->input.netplay_client_swap_input ?
+               0 : !netplay->port,
+               RETRO_DEVICE_ANALOG, i, 1);
+         state[1 + i] = (uint16_t)tmp_x | (((uint16_t)tmp_y) << 16);
       }
    }
 
-   memmove(netplay->packet_buffer, netplay->packet_buffer + 2,
-         sizeof (netplay->packet_buffer) - 2 * sizeof(uint32_t));
-   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2] = htonl(netplay->frame_count); 
-   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * 2 + 1] = htonl(state);
+   /* Here we construct the payload format:
+    * frame {
+    *    uint32_t frame_number
+    *    uint32_t RETRO_DEVICE_JOYPAD state (top 16 bits zero)
+    *    uint32_t ANALOG state[0]
+    *    uint32_t ANALOG state[1]
+    * }
+    *
+    * payload {
+    *    ; To compat packet losses, send input in a sliding window
+    *    frame redundancy_frames[UDP_FRAME_PACKETS];
+    * }
+    */
+   memmove(netplay->packet_buffer, netplay->packet_buffer + UDP_WORDS_PER_FRAME,
+         sizeof (netplay->packet_buffer) - UDP_WORDS_PER_FRAME * sizeof(uint32_t));
+   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME] = htonl(netplay->frame_count); 
+   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME + 1] = htonl(state[0]);
+   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME + 2] = htonl(state[1]);
+   netplay->packet_buffer[(UDP_FRAME_PACKETS - 1) * UDP_WORDS_PER_FRAME + 3] = htonl(state[2]);
 
    if (!send_chunk(netplay))
    {
@@ -172,7 +190,7 @@ static bool get_self_input_state(netplay_t *netplay)
       return false;
    }
 
-   ptr->self_state = state;
+   memcpy(ptr->self_state, state, sizeof(state));
    netplay->self_ptr = NEXT_PTR(netplay->self_ptr);
    return true;
 }
@@ -341,19 +359,21 @@ static void parse_packet(netplay_t *netplay, uint32_t *buffer, unsigned size)
 {
    unsigned i;
 
-   for (i = 0; i < size * 2; i++)
+   for (i = 0; i < size * UDP_WORDS_PER_FRAME; i++)
       buffer[i] = ntohl(buffer[i]);
 
    for (i = 0; i < size && netplay->read_frame_count <= netplay->frame_count; i++)
    {
-      uint32_t frame = buffer[2 * i + 0];
-      uint32_t state = buffer[2 * i + 1];
+      uint32_t frame = buffer[UDP_WORDS_PER_FRAME * i + 0];
+      const uint32_t *state = &buffer[UDP_WORDS_PER_FRAME * i + 1];
 
       if (frame != netplay->read_frame_count)
          continue;
 
       netplay->buffer[netplay->read_ptr].is_simulated = false;
-      netplay->buffer[netplay->read_ptr].real_input_state = state;
+      memcpy(netplay->buffer[netplay->read_ptr].real_input_state, state,
+            sizeof(netplay->buffer[netplay->read_ptr].real_input_state));
+
       netplay->read_ptr = NEXT_PTR(netplay->read_ptr);
       netplay->read_frame_count++;
       netplay->timeout_cnt = 0;
@@ -366,8 +386,10 @@ static void simulate_input(netplay_t *netplay)
    size_t ptr  = PREV_PTR(netplay->self_ptr);
    size_t prev = PREV_PTR(netplay->read_ptr);
 
-   netplay->buffer[ptr].simulated_input_state = 
-      netplay->buffer[prev].real_input_state;
+   memcpy(netplay->buffer[ptr].simulated_input_state,
+         netplay->buffer[prev].real_input_state,
+         sizeof(netplay->buffer[prev].real_input_state));
+
    netplay->buffer[ptr].is_simulated = true;
    netplay->buffer[ptr].used_real = false;
 }
@@ -400,7 +422,7 @@ static bool netplay_poll(netplay_t *netplay)
    {
       netplay->buffer[0].used_real        = true;
       netplay->buffer[0].is_simulated     = false;
-      netplay->buffer[0].real_input_state = 0;
+      memset(netplay->buffer[0].real_input_state, 0, sizeof(netplay->buffer[0].real_input_state));
       netplay->read_ptr                   = NEXT_PTR(netplay->read_ptr);
       netplay->read_frame_count++;
       return true;
@@ -421,7 +443,7 @@ static bool netplay_poll(netplay_t *netplay)
       uint32_t first_read = netplay->read_frame_count;
       do 
       {
-         uint32_t buffer[UDP_FRAME_PACKETS * 2];
+         uint32_t buffer[UDP_FRAME_PACKETS * UDP_WORDS_PER_FRAME];
          if (!receive_data(netplay, buffer, sizeof(buffer)))
          {
             warn_hangup();
@@ -515,7 +537,8 @@ static int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned devic
 {
    size_t ptr = netplay->is_replay ? 
       netplay->tmp_ptr : PREV_PTR(netplay->self_ptr);
-   uint16_t curr_input_state = netplay->buffer[ptr].self_state;
+
+   const uint32_t *curr_input_state = netplay->buffer[ptr].self_state;
 
    if (netplay->port == (netplay_flip_port(netplay, port) ? 1 : 0))
    {
@@ -525,7 +548,20 @@ static int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned devic
          curr_input_state = netplay->buffer[ptr].real_input_state;
    }
 
-   return ((1 << id) & curr_input_state) ? 1 : 0;
+   switch (device)
+   {
+      case RETRO_DEVICE_JOYPAD:
+         return ((1 << id) & curr_input_state[0]) ? 1 : 0;
+
+      case RETRO_DEVICE_ANALOG:
+      {
+         uint32_t state = curr_input_state[1 + idx];
+         return (int16_t)(uint16_t)(state >> (id * 16));
+      }
+
+      default:
+         return 0;
+   }
 }
 
 int16_t input_state_net(unsigned port, unsigned device,

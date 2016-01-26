@@ -34,6 +34,7 @@
 #endif
 
 #define UDP_FRAME_PACKETS 16
+#define UDP_WORDS_PER_FRAME 4 /* Allows us to send 128 bits worth of state per frame. */
 #define MAX_SPECTATORS 16
 #define RARCH_DEFAULT_PORT 55435
 
@@ -44,9 +45,9 @@ struct delta_frame
 {
    void *state;
 
-   uint16_t real_input_state;
-   uint16_t simulated_input_state;
-   uint16_t self_state;
+   uint32_t real_input_state[UDP_WORDS_PER_FRAME - 1];
+   uint32_t simulated_input_state[UDP_WORDS_PER_FRAME - 1];
+   uint32_t self_state[UDP_WORDS_PER_FRAME - 1];
 
    bool is_simulated;
    bool used_real;
@@ -95,7 +96,7 @@ struct netplay
 
    /* To compat UDP packet loss we also send 
     * old data along with the packets. */
-   uint32_t packet_buffer[UDP_FRAME_PACKETS * 2];
+   uint32_t packet_buffer[UDP_FRAME_PACKETS * UDP_WORDS_PER_FRAME];
    uint32_t frame_count;
    uint32_t read_frame_count;
    uint32_t other_frame_count;
