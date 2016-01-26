@@ -436,7 +436,7 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx,
          menu_path_new, path, menu_label, menu->deferred_path,
          sizeof(menu->deferred_path));
 
-   if (!is_carchive)
+   if (!is_carchive && !string_is_empty(path) && !string_is_empty(menu_path_new))
       fill_pathname_join(detect_content_path, menu_path_new, path,
             sizeof(detect_content_path));
 

@@ -227,7 +227,8 @@ int menu_content_defer_core(void *data, const char *dir,
    core_info_list_t *core_info         = (core_info_list_t*)data;
    uint32_t menu_label_hash            = menu_hash_calculate(menu_label);
 
-   fill_pathname_join(s, dir, path, len);
+   if (!string_is_empty(dir) && !string_is_empty(path))
+      fill_pathname_join(s, dir, path, len);
 
 #ifdef HAVE_COMPRESSION
    if (path_is_compressed_file(dir))
