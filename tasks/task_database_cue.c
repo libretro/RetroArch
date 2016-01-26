@@ -351,7 +351,7 @@ int find_first_data_track(const char *cue_path,
    char cue_dir[PATH_MAX_LENGTH];
    RFILE *fd;
 
-   strlcpy(cue_dir, cue_path, PATH_MAX_LENGTH);
+   strlcpy(cue_dir, cue_path, sizeof(cue_dir));
    path_basedir(cue_dir);
 
    fd = retro_fopen(cue_path, RFILE_MODE_READ, -1);

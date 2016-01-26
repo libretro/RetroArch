@@ -336,7 +336,7 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Try to create a "test" subdirectory on top of libretro directory */
-   fill_pathname_join(tmp, settings->libretro_directory, ".retroarch", PATH_MAX_LENGTH);
+   fill_pathname_join(tmp, settings->libretro_directory, ".retroarch", sizeof(tmp));
    ret = path_mkdir(tmp);
    snprintf(tmp, sizeof(tmp), "- create a directory... %s",  ret ? "passed" : "failed");
    menu_entries_push(info->list, tmp, "",
@@ -357,7 +357,7 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
-   fill_pathname_join(tmp, global->dir.savefile, ".retroarch", PATH_MAX_LENGTH);
+   fill_pathname_join(tmp, global->dir.savefile, ".retroarch", sizeof(tmp));
    ret = path_mkdir(tmp);
    snprintf(tmp, sizeof(tmp), "- directory writable: %s",  ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
@@ -378,7 +378,7 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
-   fill_pathname_join(tmp, global->dir.savestate, ".retroarch", PATH_MAX_LENGTH);
+   fill_pathname_join(tmp, global->dir.savestate, ".retroarch", sizeof(tmp));
    ret = path_mkdir(tmp);
    snprintf(tmp, sizeof(tmp), "- directory writable: %s",  ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
@@ -399,7 +399,7 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
-   fill_pathname_join(tmp, settings->system_directory, ".retroarch", PATH_MAX_LENGTH);
+   fill_pathname_join(tmp, settings->system_directory, ".retroarch", sizeof(tmp));
    ret = path_mkdir(tmp);
    snprintf(tmp, sizeof(tmp), "- directory writable: %s",  ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
