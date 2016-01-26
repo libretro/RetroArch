@@ -1317,8 +1317,8 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_RESET_CONTEXT:
          {
-            // EVENT_CMD_DRIVERS_DEINIT clears the callback struct so we
-            // need to make sure to keep a copy
+            /* EVENT_CMD_DRIVERS_DEINIT clears the callback struct so we
+             * need to make sure to keep a copy */
             struct retro_hw_render_callback hw_render;
 
             memcpy(&hw_render, video_driver_callback(), sizeof(hw_render));
