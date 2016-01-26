@@ -2099,24 +2099,22 @@ bool config_load_override(void)
  */
 bool config_load_remap(void)
 {
+   char remap_directory[PATH_MAX_LENGTH];    /* path to the directory containing retroarch.cfg (prefix)    */
+   char core_path[PATH_MAX_LENGTH];    /* final path for core-specific configuration (prefix+suffix) */
+   char game_path[PATH_MAX_LENGTH];    /* final path for game-specific configuration (prefix+suffix) */
    config_file_t *new_conf                 = NULL;
    const char *core_name                   = NULL;
    const char *game_name                   = NULL;
-   char remap_directory[PATH_MAX_LENGTH]   = {0};    /* path to the directory containing retroarch.cfg (prefix)    */
-   char core_path[PATH_MAX_LENGTH]         = {0};    /* final path for core-specific configuration (prefix+suffix) */
-   char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
    rarch_system_info_t *system             = NULL;
    
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   /* Early return in case a library isn't loaded or remapping is disabled */
-   if (!system->info.library_name || string_is_equal(system->info.library_name,"No Core"))
-      return false;
-
-   core_name = system ? system->info.library_name : NULL;
-   game_name = global ? path_basename(global->name.base) : NULL;
+   if (system)
+      core_name = system->info.library_name;
+   if (global)
+      game_name = path_basename(global->name.base);
 
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
@@ -2127,21 +2125,21 @@ bool config_load_remap(void)
    /* Remap directory: remap_directory.
     * Try remap directory setting, no fallbacks defined */
    if (string_is_empty(settings->input_remapping_directory))
-   {
-      RARCH_WARN("Remaps: no remap directory set.\n");
       return false;
-   }
 
-   strlcpy(remap_directory, settings->input_remapping_directory, sizeof(remap_directory));
+   strlcpy(remap_directory,
+         settings->input_remapping_directory, sizeof(remap_directory));
    RARCH_LOG("Remaps: remap directory: %s\n", remap_directory);
 
    /* Concatenate strings into full paths for core_path, game_path */
-   fill_pathname_join(core_path, remap_directory, core_name, sizeof(core_path));
-   fill_pathname_join(core_path, core_path, core_name, sizeof(core_path));
+   fill_pathname_join(core_path,
+         remap_directory, core_name, sizeof(core_path));
+   fill_string_join(core_path, core_name, sizeof(core_path));
    strlcat(core_path, ".rmp", sizeof(core_path));
 
-   fill_pathname_join(game_path, remap_directory, core_name, sizeof(game_path));
-   fill_pathname_join(game_path, game_path, game_name, sizeof(game_path));
+   fill_pathname_join(game_path,
+         remap_directory, core_name, sizeof(game_path));
+   fill_string_join(game_path, game_name, sizeof(game_path));
    strlcat(game_path, ".rmp", sizeof(game_path));
 
    /* Create a new config file from game_path */
