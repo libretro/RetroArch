@@ -37,7 +37,7 @@ int main(int argc, char ** argv)
       printf("Could not open db file '%s': %s\n", path, strerror(-rv));
       goto error;
    }
-   else if (strcmp(command, "list") == 0)
+   else if (!strcmp(command, "list"))
    {
       if ((rv = libretrodb_cursor_open(db, cur, NULL)) != 0)
       {
@@ -58,7 +58,7 @@ int main(int argc, char ** argv)
          rmsgpack_dom_value_free(&item);
       }
    }
-   else if (strcmp(command, "find") == 0)
+   else if (!strcmp(command, "find"))
    {
       if (argc != 4)
       {
@@ -89,7 +89,7 @@ int main(int argc, char ** argv)
          rmsgpack_dom_value_free(&item);
       }
    }
-   else if (strcmp(command, "create-index") == 0)
+   else if (!strcmp(command, "create-index"))
    {
       const char * index_name, * field_name;
 
