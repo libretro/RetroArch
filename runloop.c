@@ -114,7 +114,8 @@ const char *runloop_msg_queue_pull(void)
    return ret;
 }
 
-void runloop_msg_queue_push_new(uint32_t hash, unsigned prio, unsigned duration,
+void runloop_msg_queue_push_new(uint32_t hash,
+      unsigned prio, unsigned duration,
       bool flush)
 {
    const char *msg = msg_hash_to_str(hash);
@@ -125,7 +126,8 @@ void runloop_msg_queue_push_new(uint32_t hash, unsigned prio, unsigned duration,
    runloop_msg_queue_push(msg, prio, duration, flush);
 }
 
-void runloop_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
+void runloop_msg_queue_push(const char *msg,
+      unsigned prio, unsigned duration,
       bool flush)
 {
    settings_t *settings = config_get_ptr();
@@ -336,7 +338,8 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
  *
  * Will also immediately apply the shader.
  **/
-static void check_shader_dir(rarch_dir_list_t *dir_list, bool pressed_next, bool pressed_prev)
+static void check_shader_dir(rarch_dir_list_t *dir_list,
+      bool pressed_next, bool pressed_prev)
 {
    uint32_t ext_hash;
    char msg[128];
@@ -415,7 +418,8 @@ static bool rarch_game_specific_options(char **output)
 
    config_file_free(option_file);
    
-   RARCH_LOG("Per-Game Options: game-specific core options found at %s\n", game_path);
+   RARCH_LOG("Per-Game Options: "
+         "game-specific core options found at %s\n", game_path);
    *output = strdup(game_path);
    return true;
 }
@@ -472,12 +476,21 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_system.info.library_version = "v0";
 
          strlcpy(runloop_system.title_buf, 
-               msg_hash_to_str(MSG_PROGRAM), sizeof(runloop_system.title_buf));
-         strlcat(runloop_system.title_buf, " ", sizeof(runloop_system.title_buf));
-         strlcat(runloop_system.title_buf, runloop_system.info.library_name, sizeof(runloop_system.title_buf));
-         strlcat(runloop_system.title_buf, " ", sizeof(runloop_system.title_buf));
-         strlcat(runloop_system.title_buf, runloop_system.info.library_version, sizeof(runloop_system.title_buf));
-         strlcpy(runloop_system.valid_extensions, runloop_system.info.valid_extensions ?
+               msg_hash_to_str(MSG_PROGRAM),
+               sizeof(runloop_system.title_buf));
+         strlcat(runloop_system.title_buf,
+               " ", sizeof(runloop_system.title_buf));
+         strlcat(runloop_system.title_buf, 
+               runloop_system.info.library_name,
+               sizeof(runloop_system.title_buf));
+         strlcat(runloop_system.title_buf,
+               " ", sizeof(runloop_system.title_buf));
+         strlcat(runloop_system.title_buf,
+               runloop_system.info.library_version,
+               sizeof(runloop_system.title_buf));
+
+         strlcpy(runloop_system.valid_extensions,
+               runloop_system.info.valid_extensions ?
                runloop_system.info.valid_extensions : DEFAULT_EXT,
                sizeof(runloop_system.valid_extensions));
          runloop_system.block_extract = runloop_system.info.block_extract;
@@ -660,7 +673,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_CHECK_IDLE_STATE:
          {
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
-            bool focused              = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL);
+            bool focused              = 
+               runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL);
 
             check_pause(settings, focused,
                   runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
@@ -686,10 +700,13 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             if (runloop_cmd_triggered(cmd, RARCH_OSK))
             {
-               if (input_driver_ctl(RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED, NULL))
-                  input_driver_ctl(RARCH_INPUT_CTL_UNSET_KEYBOARD_LINEFEED_ENABLED, NULL);
+               if (input_driver_ctl(
+                        RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED, NULL))
+                  input_driver_ctl(
+                        RARCH_INPUT_CTL_UNSET_KEYBOARD_LINEFEED_ENABLED, NULL);
                else
-                  input_driver_ctl(RARCH_INPUT_CTL_SET_KEYBOARD_LINEFEED_ENABLED, NULL);
+                  input_driver_ctl(
+                        RARCH_INPUT_CTL_SET_KEYBOARD_LINEFEED_ENABLED, NULL);
             }
 
             if (runloop_cmd_press(cmd, RARCH_VOLUME_UP))
@@ -757,7 +774,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!cmd)
                return false;
 
-            check_is_oneshot     = runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE) 
+            check_is_oneshot     = runloop_cmd_triggered(cmd,
+                  RARCH_FRAMEADVANCE) 
                || runloop_cmd_press(cmd, RARCH_REWIND);
 
             if (!runloop_paused)
@@ -847,7 +865,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                runloop_msg_queue_push_new(
                      MSG_FAILED_TO_START_MOVIE_RECORD,
                      1, 180, true);
-               RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+               RARCH_ERR("%s\n",
+                     msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
             }
          }
          break;
@@ -1055,10 +1074,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          {
             char *game_options_path           = NULL;
             bool ret                          = false;
-            const struct retro_variable *vars = (const struct retro_variable*)data;
             char buf[PATH_MAX_LENGTH]         = {0};
             global_t *global                  = global_get_ptr();
             const char *options_path          = settings->core_options_path;
+            const struct retro_variable *vars = 
+               (const struct retro_variable*)data;
 
             if (!*options_path && *global->path.config)
             {
@@ -1074,13 +1094,15 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if(ret)
             {
                runloop_ctl(RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE, NULL);
-               runloop_system.core_options = core_option_new(game_options_path, vars);
+               runloop_system.core_options = 
+                  core_option_new(game_options_path, vars);
                free(game_options_path);
             }
             else
             {
                runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
-               runloop_system.core_options = core_option_new(options_path, vars);
+               runloop_system.core_options = 
+                  core_option_new(options_path, vars);
             }
 
          }
@@ -1096,7 +1118,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          return true;
       case RUNLOOP_CTL_KEY_EVENT_GET:
          {
-            retro_keyboard_event_t **key_event = (retro_keyboard_event_t**)data;
+            retro_keyboard_event_t **key_event = 
+               (retro_keyboard_event_t**)data;
             if (!key_event)
                return false;
             *key_event = &runloop_key_event;
@@ -1104,7 +1127,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET:
          {
-            retro_keyboard_event_t **key_event = (retro_keyboard_event_t**)data;
+            retro_keyboard_event_t **key_event = 
+               (retro_keyboard_event_t**)data;
             if (!key_event)
                return false;
             *key_event = &runloop_frontend_key_event;
@@ -1125,13 +1149,15 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
    static char prev_overlay_restore = false;
    bool osk_enable = input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL);
 
-   if (osk_enable && !input_driver_ctl(RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED, NULL))
+   if (osk_enable && !input_driver_ctl(
+            RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED, NULL))
    {
       input_driver_ctl(RARCH_INPUT_CTL_UNSET_OSK_ENABLED, NULL);
       prev_overlay_restore  = true;
       event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
    }
-   else if (!osk_enable && input_driver_ctl(RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED, NULL))
+   else if (!osk_enable && input_driver_ctl(
+            RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED, NULL))
    {
       input_driver_ctl(RARCH_INPUT_CTL_SET_OSK_ENABLED, NULL);
       prev_overlay_restore  = false;
@@ -1201,8 +1227,9 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
  *
  * Run Libretro core in RetroArch for one frame.
  *
- * Returns: 0 on success, 1 if we have to wait until button input in order
- * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop.
+ * Returns: 0 on success, 1 if we have to wait until 
+ * button input in order to wake up the loop, 
+ * -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
 int runloop_iterate(unsigned *sleep_ms)
 {
@@ -1231,8 +1258,10 @@ int runloop_iterate(unsigned *sleep_ms)
 
    if (runloop_ctl(RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT, NULL))
    {
-      struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-      float fastforward_ratio              = (settings->fastforward_ratio == 0.0f) 
+      struct retro_system_av_info *av_info = 
+         video_viewport_get_system_av_info();
+      float fastforward_ratio              = 
+         (settings->fastforward_ratio == 0.0f) 
          ? 1.0f : settings->fastforward_ratio;
 
       frame_limit_last_time    = retro_get_time_usec();
@@ -1294,7 +1323,8 @@ int runloop_iterate(unsigned *sleep_ms)
    {
       bool fullscreen_toggled = !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 #ifdef HAVE_MENU
-      fullscreen_toggled = fullscreen_toggled || menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
+      fullscreen_toggled = fullscreen_toggled || 
+         menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL);
 #endif
 
       if (fullscreen_toggled)
@@ -1305,11 +1335,13 @@ int runloop_iterate(unsigned *sleep_ms)
       event_cmd_ctl(EVENT_CMD_GRAB_MOUSE_TOGGLE, NULL);
 
 #ifdef HAVE_MENU
-   if (runloop_cmd_menu_press(cmd_ptr) || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (runloop_cmd_menu_press(cmd_ptr) || 
+         rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
       {
-         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+         if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && 
+               !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
             rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
       }
       else
@@ -1321,7 +1353,8 @@ int runloop_iterate(unsigned *sleep_ms)
    runloop_iterate_linefeed_overlay(settings);
 #endif
 
-   if (runloop_iterate_time_to_exit(runloop_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1)
+   if (runloop_iterate_time_to_exit(
+            runloop_cmd_press(cmd_ptr, RARCH_QUIT_KEY)) != 1)
    {
       frame_limit_last_time = 0.0;
       return -1;
@@ -1331,10 +1364,12 @@ int runloop_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
-      bool focused = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL) && !ui_companion_is_on_foreground();
+      bool focused = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL) 
+         && !ui_companion_is_on_foreground();
       bool is_idle = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
 
-      if (menu_driver_iterate((enum menu_action)menu_input_frame_retropad(cmd.state[0], cmd.state[2])) == -1)
+      if (menu_driver_iterate((enum menu_action)
+               menu_input_frame_retropad(cmd.state[0], cmd.state[2])) == -1)
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
       if (focused || !is_idle)
@@ -1423,7 +1458,8 @@ end:
       return 0;
 
    current                        = retro_get_time_usec();
-   target                         = frame_limit_last_time + frame_limit_minimum_time;
+   target                         = frame_limit_last_time + 
+      frame_limit_minimum_time;
    to_sleep_ms                    = (target - current) / 1000;
 
    if (to_sleep_ms > 0)
