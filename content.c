@@ -45,6 +45,7 @@
 #include "movie.h"
 #include "patch.h"
 #include "system.h"
+#include "libretro_version_1.h"
 #include "verbosity.h"
 
 #ifdef HAVE_CHEEVOS
@@ -159,30 +160,32 @@ static bool dump_to_file_desperate(const void *data,
  **/
 static bool content_save_state(const char *path)
 {
+   retro_ctx_size_info_t info;
    bool ret    = false;
    void *data  = NULL;
-   size_t size = core.retro_serialize_size();
+
+   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_STATE),
          path);
 
-   if (size == 0)
+   if (info.size == 0)
       return false;
 
-   data = malloc(size);
+   data = malloc(info.size);
 
    if (!data)
       return false;
 
    RARCH_LOG("%s: %d %s.\n",
          msg_hash_to_str(MSG_STATE_SIZE),
-         (int)size,
+         (int)info.size,
          msg_hash_to_str(MSG_BYTES));
-   ret = core.retro_serialize(data, size);
+   ret = core.retro_serialize(data, info.size);
 
    if (ret)
-      ret = retro_write_file(path, data, size);
+      ret = retro_write_file(path, data, info.size);
    else
    {
       RARCH_ERR("%s \"%s\".\n",

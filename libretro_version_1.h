@@ -66,8 +66,15 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_CTX_POLL_CB,
    
-   CORE_CTL_RETRO_SET_ENVIRONMENT
+   CORE_CTL_RETRO_SET_ENVIRONMENT,
+
+   CORE_CTL_RETRO_SERIALIZE_SIZE
 };
+
+typedef struct retro_ctx_size_info
+{
+   size_t size;
+} retro_ctx_size_info_t;
 
 typedef struct retro_ctx_environ_info
 {
