@@ -395,8 +395,6 @@ static void event_deinit_core(bool reinit)
    cheevos_unload();
 #endif
 
-   video_driver_callback_destroy_context();
-   video_driver_unset_callback();
    core_ctl(CORE_CTL_RETRO_UNLOAD_GAME, NULL);
    core_ctl(CORE_CTL_RETRO_DEINIT, NULL);
 
