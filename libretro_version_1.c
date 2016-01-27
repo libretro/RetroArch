@@ -174,6 +174,14 @@ bool core_ctl(enum core_ctl_state state, void *data)
 
    switch (state)
    {
+      case CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE:
+         {
+            retro_ctx_controller_info_t *pad = (retro_ctx_controller_info_t*)data;
+            if (!pad)
+               return false;
+            core.retro_set_controller_port_device(pad->i, pad->device);
+         }
+         break;
       case CORE_CTL_RETRO_GET_MEMORY:
          {
             retro_ctx_memory_info_t *info = (retro_ctx_memory_info_t*)data;

@@ -330,6 +330,7 @@ static void event_init_controllers(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
+      retro_ctx_controller_info_t pad;
       const char *ident   = NULL;
       bool set_controller = false;
       const struct retro_controller_description *desc = NULL;
@@ -379,14 +380,12 @@ static void event_init_controllers(void)
       }
 
       if (set_controller)
-         core.retro_set_controller_port_device(i, device);
+      {
+         pad.device     = device;
+         pad.i          = i + 1;
+         core_ctl(CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE, &pad);
+      }
    }
-}
-
-static void event_deinit_core_interfaces(void)
-{
-   video_driver_callback_destroy_context();
-   video_driver_unset_callback();
 }
 
 static void event_deinit_core(bool reinit)
@@ -396,7 +395,8 @@ static void event_deinit_core(bool reinit)
    cheevos_unload();
 #endif
 
-   event_deinit_core_interfaces();
+   video_driver_callback_destroy_context();
+   video_driver_unset_callback();
    core_ctl(CORE_CTL_RETRO_UNLOAD_GAME, NULL);
    core_ctl(CORE_CTL_RETRO_DEINIT, NULL);
 

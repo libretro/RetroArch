@@ -92,8 +92,16 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_GET_SYSTEM_INFO,
 
-   CORE_CTL_RETRO_LOAD_GAME
+   CORE_CTL_RETRO_LOAD_GAME,
+
+   CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE
 };
+
+typedef struct retro_ctx_controller_info
+{
+   unsigned i;
+   unsigned device;
+} retro_ctx_controller_info_t;
 
 typedef struct retro_ctx_memory_info
 {
