@@ -58,7 +58,9 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_UNLOAD_GAME,
 
-   CORE_CTL_RETRO_RESET
+   CORE_CTL_RETRO_RESET,
+
+   CORE_CTL_RETRO_GET_SYSTEM_AV_INFO
 };
 
 typedef struct retro_callbacks

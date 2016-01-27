@@ -171,6 +171,14 @@ bool core_ctl(enum core_ctl_state state, void *data)
 {
    switch (state)
    {
+      case CORE_CTL_RETRO_GET_SYSTEM_AV_INFO:
+         {
+            struct retro_system_av_info *av_info = (struct retro_system_av_info*)data;
+            if (!av_info)
+               return false;
+            core.retro_get_system_av_info(av_info);
+         }
+         break;
       case CORE_CTL_RETRO_RESET:
          core.retro_reset();
          break;
