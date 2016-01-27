@@ -1388,7 +1388,7 @@ int runloop_iterate(unsigned *sleep_ms)
    if (!runloop_ctl(RUNLOOP_CTL_CHECK_STATE, &cmd))
    {
       /* RetroArch has been paused. */
-      retro_ctx.poll_cb();
+      core_ctl(CORE_CTL_RETRO_CTX_POLL_CB, NULL);
       *sleep_ms = 10;
       return 1;
    }
