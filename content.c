@@ -160,6 +160,7 @@ static bool dump_to_file_desperate(const void *data,
  **/
 static bool content_save_state(const char *path)
 {
+   retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
    bool ret    = false;
    void *data  = NULL;
@@ -182,7 +183,10 @@ static bool content_save_state(const char *path)
          msg_hash_to_str(MSG_STATE_SIZE),
          (int)info.size,
          msg_hash_to_str(MSG_BYTES));
-   ret = core.retro_serialize(data, info.size);
+
+   serial_info.data = data;
+   serial_info.size = info.size;
+   ret = core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
 
    if (ret)
       ret = retro_write_file(path, data, info.size);
@@ -210,6 +214,7 @@ static bool content_load_state(const char *path)
 {
    unsigned i;
    ssize_t size;
+   retro_ctx_serialize_info_t serial_info;
    unsigned num_blocks       = 0;
    void *buf                 = NULL;
    struct sram_block *blocks = NULL;
@@ -263,7 +268,9 @@ static bool content_load_state(const char *path)
       }
    }
 
-   ret = core.retro_unserialize(buf, size);
+   serial_info.data_const = buf;
+   serial_info.size       = size;
+   ret = core_ctl(CORE_CTL_RETRO_UNSERIALIZE, &serial_info);
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
