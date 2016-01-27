@@ -35,7 +35,6 @@
 #include "netplay/netplay.h"
 #endif
 
-struct retro_callbacks retro_ctx;
 
 static bool input_polled;
 
@@ -74,9 +73,9 @@ static bool retro_set_default_callbacks(void *data)
    return true;
 }
 
-static bool retro_uninit_libretro_cbs(void)
+static bool retro_uninit_libretro_cbs(void *data)
 {
-   struct retro_callbacks *cbs = (struct retro_callbacks*)&retro_ctx;
+   struct retro_callbacks *cbs = (struct retro_callbacks*)data;
 
    if (!cbs)
       return false;
@@ -169,6 +168,8 @@ static void retro_set_rewind_callbacks(void)
 
 bool core_ctl(enum core_ctl_state state, void *data)
 {
+   static struct retro_callbacks retro_ctx;
+
    switch (state)
    {
       case CORE_CTL_RETRO_CTX_FRAME_CB:
@@ -224,9 +225,9 @@ bool core_ctl(enum core_ctl_state state, void *data)
          retro_set_rewind_callbacks();
          break;
       case CORE_CTL_INIT:
-         return retro_init_libretro_cbs(data);
+         return retro_init_libretro_cbs(&retro_ctx);
       case CORE_CTL_DEINIT:
-         return retro_uninit_libretro_cbs();
+         return retro_uninit_libretro_cbs(&retro_ctx);
       case CORE_CTL_NONE:
       default:
          break;

@@ -84,8 +84,6 @@ typedef struct retro_callbacks
    retro_input_poll_t poll_cb;
 } retro_callbacks_t;
 
-extern retro_callbacks_t retro_ctx;
-
 bool core_ctl(enum core_ctl_state state, void *data);
 
 #ifdef __cplusplus
