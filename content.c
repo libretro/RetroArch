@@ -541,7 +541,7 @@ static bool load_content(
    if (!ret)
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
 
-   return true;
+   return ret;
 }
 
 static bool init_content_file_subsystem(
@@ -827,7 +827,8 @@ bool content_ctl(enum content_ctl_state state, void *data)
             content_is_inited = true;
             return true;
          }
-         /* fall-through */
+         content_ctl(CONTENT_CTL_DEINIT, NULL);
+         return false;
       case CONTENT_CTL_TEMPORARY_FREE:
          if (!temporary_content)
             return false;

@@ -1266,7 +1266,9 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          }
       case EVENT_CMD_CORE_INIT:
          if (!event_init_core())
+         {
             return false;
+         }
          break;
       case EVENT_CMD_VIDEO_APPLY_STATE_CHANGES:
          video_driver_ctl(RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES, NULL);
