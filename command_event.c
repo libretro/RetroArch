@@ -840,6 +840,7 @@ static void event_load_state(const char *path, char *s, size_t len)
 
 static void event_main_state(unsigned cmd)
 {
+   retro_ctx_size_info_t info;
    char path[PATH_MAX_LENGTH] = {0};
    char msg[128]              = {0};
    global_t *global           = global_get_ptr();
@@ -854,7 +855,9 @@ static void event_main_state(unsigned cmd)
    else
       strlcpy(path, global->name.savestate, sizeof(path));
 
-   if (core.retro_serialize_size())
+   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+
+   if (info.size)
    {
       switch (cmd)
       {

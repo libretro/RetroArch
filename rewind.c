@@ -618,6 +618,7 @@ static void state_manager_capacity(state_manager_t *state,
 
 void init_rewind(void)
 {
+   retro_ctx_size_info_t info;
    void *state          = NULL;
    settings_t *settings = config_get_ptr();
 
@@ -630,7 +631,9 @@ void init_rewind(void)
       return;
    }
 
-   rewind_state.size = core.retro_serialize_size();
+   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+
+   rewind_state.size = info.size;
 
    if (!rewind_state.size)
    {

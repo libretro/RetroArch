@@ -62,14 +62,17 @@ bool np_send_nickname(netplay_t *netplay, int fd)
 
 uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
 {
+   retro_ctx_size_info_t info;
    uint32_t *content_crc_ptr;
    uint32_t *header, bsv_header[4] = {0};
-   size_t serialize_size = core.retro_serialize_size();
-   size_t header_size = sizeof(bsv_header) + serialize_size;
+   size_t serialize_size, header_size;
 
-   *size = header_size;
-
-   header = (uint32_t*)malloc(header_size);
+   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+   
+   serialize_size = info.size;
+   header_size    = sizeof(bsv_header) + serialize_size;
+   *size          = header_size;
+   header         = (uint32_t*)malloc(header_size);
    if (!header)
       return NULL;
 
@@ -92,6 +95,7 @@ uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
 
 bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
 {
+   retro_ctx_size_info_t info;
    uint32_t *content_crc_ptr;
    uint32_t in_crc, in_magic, in_state_size;
    uint32_t in_bsv = swap_if_little32(header[MAGIC_INDEX]);
@@ -121,11 +125,13 @@ bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
       return false;
    }
 
+   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+
    in_state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
-   if (in_state_size != core.retro_serialize_size())
+   if (in_state_size != info.size)
    {
       RARCH_ERR("Serialization size mismatch, got 0x%x, expected 0x%x.\n",
-            (unsigned)in_state_size, (unsigned)core.retro_serialize_size());
+            (unsigned)in_state_size, (unsigned)info.size);
       return false;
    }
 

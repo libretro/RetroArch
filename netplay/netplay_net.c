@@ -94,6 +94,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
 static bool netplay_net_init_buffers(netplay_t *netplay)
 {
    unsigned i;
+   retro_ctx_size_info_t info;
 
    if (!netplay)
       return false;
@@ -104,7 +105,9 @@ static bool netplay_net_init_buffers(netplay_t *netplay)
    if (!netplay->buffer)
       return false;
 
-   netplay->state_size = core.retro_serialize_size();
+   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+
+   netplay->state_size = info.size;
 
    for (i = 0; i < netplay->buffer_size; i++)
    {

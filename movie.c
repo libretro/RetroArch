@@ -22,6 +22,7 @@
 #include <retro_endianness.h>
 
 #include "movie.h"
+#include "libretro_version_1.h"
 #include "content.h"
 #include "general.h"
 #include "msg_hash.h"
@@ -103,6 +104,8 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 
    if (state_size)
    {
+      retro_ctx_size_info_t info;
+
       handle->state      = (uint8_t*)malloc(state_size);
       handle->state_size = state_size;
       if (!handle->state)
@@ -114,7 +117,9 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
          return false;
       }
 
-      if (core.retro_serialize_size() == state_size)
+      core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+
+      if (info.size == state_size)
          core.retro_unserialize(handle->state, state_size);
       else
          RARCH_WARN("Movie format seems to have a different serializer version. Will most likely fail.\n");
@@ -127,6 +132,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 
 static bool init_record(bsv_movie_t *handle, const char *path)
 {
+   retro_ctx_size_info_t info;
    uint32_t state_size;
    uint32_t header[4]        = {0};
    uint32_t *content_crc_ptr = NULL;
@@ -144,7 +150,11 @@ static bool init_record(bsv_movie_t *handle, const char *path)
     * BSV1 in a HEX editor, big-endian. */
    header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
    header[CRC_INDEX]        = swap_if_big32(*content_crc_ptr);
-   state_size               = core.retro_serialize_size();
+
+   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+
+   state_size               = info.size;
+
    header[STATE_SIZE_INDEX] = swap_if_big32(state_size);
 
    fwrite(header, 4, sizeof(uint32_t), handle->file);
