@@ -263,6 +263,7 @@ typedef struct settings
 #endif
       bool keyboard_gamepad_enable;
       unsigned keyboard_gamepad_mapping_type;
+      unsigned poll_type_behavior;
    } input;
 
    struct

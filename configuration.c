@@ -482,8 +482,9 @@ static void config_set_defaults(void)
 #if TARGET_OS_IPHONE
    settings->input.small_keyboard_enable   = false;
 #endif
-   settings->input.keyboard_gamepad_enable       = true;
-   settings->input.keyboard_gamepad_mapping_type = 1;
+   settings->input.keyboard_gamepad_enable          = true;
+   settings->input.keyboard_gamepad_mapping_type    = 1;
+   settings->input.poll_type_behavior               = 1;
 #ifdef HAVE_FFMPEG
    settings->multimedia.builtin_mediaplayer_enable  = true;
 #else
@@ -1623,6 +1624,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 #endif
    CONFIG_GET_BOOL_BASE(conf, settings, input.keyboard_gamepad_enable, "keyboard_gamepad_enable");
    CONFIG_GET_INT_BASE(conf, settings, input.keyboard_gamepad_mapping_type, "keyboard_gamepad_mapping_type");
+   CONFIG_GET_INT_BASE(conf, settings, input.poll_type_behavior, "input_poll_type_behavior");
 
    config_get_path(conf, "recording_output_directory", global->record.output_dir,
          sizeof(global->record.output_dir));
@@ -2885,6 +2887,7 @@ bool config_save_file(const char *path)
 #endif
    config_set_bool(conf, "keyboard_gamepad_enable", settings->input.keyboard_gamepad_enable);
    config_set_int(conf, "keyboard_gamepad_mapping_type", settings->input.keyboard_gamepad_mapping_type);
+   config_set_int(conf, "input_poll_type_behavior", settings->input.poll_type_behavior);
 
    config_set_bool(conf, "core_set_supports_no_game_enable",
          settings->set_supports_no_game_enable);

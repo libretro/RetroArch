@@ -599,7 +599,7 @@ static bool event_init_core(void)
    if (!event_init_content())
       return false;
 
-   core.poll_type = POLL_TYPE_LATE;
+   core.poll_type = settings->input.poll_type_behavior;
    retro_init_libretro_cbs(&retro_ctx);
    rarch_ctl(RARCH_CTL_INIT_SYSTEM_AV_INFO, NULL);
 
