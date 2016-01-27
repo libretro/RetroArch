@@ -351,13 +351,16 @@ static bool load_ram_file(ram_type_t *ram)
  */
 static bool save_ram_file(ram_type_t *ram)
 {
-   size_t size = core.retro_get_memory_size(ram->type);
-   void *data  = core.retro_get_memory_data(ram->type);
+   retro_ctx_memory_info_t mem_info;
 
-   if (!data || size == 0)
+   mem_info.ram = ram;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   if (!mem_info.data || mem_info.size == 0)
       return false;
 
-   if (!retro_write_file(ram->path, data, size))
+   if (!retro_write_file(ram->path, mem_info.data, mem_info.size))
    {
       RARCH_ERR("%s.\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
@@ -366,7 +369,7 @@ static bool save_ram_file(ram_type_t *ram)
       /* In case the file could not be written to, 
        * the fallback function 'dump_to_file_desperate'
        * will be called. */
-      if (!dump_to_file_desperate(data, size, ram->type))
+      if (!dump_to_file_desperate(mem_info.data, mem_info.size, ram->type))
       {
          RARCH_WARN("Failed ... Cannot recover save file.\n");
       }

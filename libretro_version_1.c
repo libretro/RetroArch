@@ -174,6 +174,15 @@ bool core_ctl(enum core_ctl_state state, void *data)
 
    switch (state)
    {
+      case CORE_CTL_RETRO_GET_MEMORY:
+         {
+            retro_ctx_memory_info_t *info = (retro_ctx_memory_info_t*)data;
+            if (!info || !info->ram)
+               return false;
+            info->size  = core.retro_get_memory_size(info->ram->type);
+            info->data  = core.retro_get_memory_data(info->ram->type);
+         }
+         break;
       case CORE_CTL_RETRO_LOAD_GAME:
          {
             retro_ctx_load_content_info_t *load_info = 

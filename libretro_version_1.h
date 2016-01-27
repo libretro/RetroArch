@@ -24,6 +24,7 @@ extern "C" {
 
 #include <boolean.h>
 
+#include "content.h"
 #include "libretro.h"
 
 enum
@@ -82,6 +83,8 @@ enum core_ctl_state
     */
    CORE_CTL_VERIFY_API_VERSION,
 
+   CORE_CTL_RETRO_GET_MEMORY,
+
    /**
     * Initialize system A/V information.
     **/
@@ -91,6 +94,13 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_LOAD_GAME
 };
+
+typedef struct retro_ctx_memory_info
+{
+   void *data;
+   size_t size;
+   ram_type_t *ram;
+} retro_ctx_memory_info_t;
 
 typedef struct retro_ctx_load_content_info
 {
