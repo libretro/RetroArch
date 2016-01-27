@@ -1366,6 +1366,8 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
          return true;
       case RARCH_CTL_SET_PATHS_REDIRECT:
+         if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
+            return false;
          set_paths_redirect(global->name.base);
          break;
       case RARCH_CTL_SET_ERROR_ON_INIT:
