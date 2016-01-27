@@ -171,7 +171,7 @@ bool core_ctl(enum core_ctl_state state, void *data)
 {
    switch (state)
    {
-      case CORE_CTL_RUN:
+      case CORE_CTL_RETRO_RUN:
          switch (core.poll_type)
          {
             case POLL_TYPE_EARLY:

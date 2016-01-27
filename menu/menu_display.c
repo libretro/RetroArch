@@ -321,7 +321,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             if (!libretro_input_is_blocked)
                input_driver_ctl(RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED, NULL);
 
-            core_ctl(CORE_CTL_RUN, NULL);
+            core_ctl(CORE_CTL_RETRO_RUN, NULL);
 
             input_driver_ctl(RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED, NULL);
             return true;

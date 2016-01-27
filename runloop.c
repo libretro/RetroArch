@@ -1423,7 +1423,7 @@ int runloop_iterate(unsigned *sleep_ms)
          !input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
       retro_sleep(settings->video.frame_delay);
 
-   core_ctl(CORE_CTL_RUN, NULL);
+   core_ctl(CORE_CTL_RETRO_RUN, NULL);
 
 #ifdef HAVE_CHEEVOS
    /* Test the achievements. */
