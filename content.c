@@ -310,11 +310,14 @@ error:
 static bool load_ram_file(ram_type_t *ram)
 {
    ssize_t rc;
+   retro_ctx_memory_info_t mem_info;
    void *buf   = NULL;
-   size_t size = core.retro_get_memory_size(ram->type);
-   void *data  = core.retro_get_memory_data(ram->type);
 
-   if (size == 0 || !data)
+   mem_info.ram = ram;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   if (mem_info.size == 0 || !mem_info.data)
       return false;
 
    if (!read_file(ram->path, &buf, &rc))
@@ -322,17 +325,17 @@ static bool load_ram_file(ram_type_t *ram)
 
    if (rc > 0)
    {
-      if (rc > (ssize_t)size)
+      if (rc > (ssize_t)mem_info.size)
       {
          RARCH_WARN("SRAM is larger than implementation expects, "
                "doing partial load (truncating %u %s %s %u).\n",
                (unsigned)rc,
                msg_hash_to_str(MSG_BYTES),
                msg_hash_to_str(MSG_TO),
-               (unsigned)size);
-         rc = size;
+               (unsigned)mem_info.size);
+         rc = mem_info.size;
       }
-      memcpy(data, buf, rc);
+      memcpy(mem_info.data, buf, rc);
    }
 
    if (buf)
