@@ -691,15 +691,13 @@ static bool event_save_core_config(void)
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
-         char tmp[64] = {0};
+         char tmp[64];
 
          fill_pathname_base(config_name, settings->libretro,
                sizeof(config_name));
          path_remove_extension(config_name);
          fill_pathname_join(config_path, config_dir, config_name,
                sizeof(config_path));
-
-         *tmp = '\0';
 
          if (i)
             snprintf(tmp, sizeof(tmp), "-%u.cfg", i);
