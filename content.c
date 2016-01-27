@@ -287,7 +287,11 @@ static bool content_load_state(const char *path)
       free(blocks[i].data);
    free(blocks);
    free(buf);
-   return ret;
+   
+   if (!ret)
+      goto error;
+
+   return true;
 
 error:
    RARCH_ERR("%s \"%s\".\n",
