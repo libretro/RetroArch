@@ -62,10 +62,11 @@ bool np_send_nickname(netplay_t *netplay, int fd)
 
 uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
 {
+   retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
    uint32_t *content_crc_ptr;
-   uint32_t *header, bsv_header[4] = {0};
    size_t serialize_size, header_size;
+   uint32_t *header, bsv_header[4] = {0};
 
    core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
    
@@ -74,7 +75,7 @@ uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
    *size          = header_size;
    header         = (uint32_t*)malloc(header_size);
    if (!header)
-      return NULL;
+      goto error;
 
    content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
 
@@ -83,14 +84,19 @@ uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
    bsv_header[CRC_INDEX]        = swap_if_big32(*content_crc_ptr);
    bsv_header[STATE_SIZE_INDEX] = swap_if_big32(serialize_size);
 
-   if (serialize_size && !core.retro_serialize(header + 4, serialize_size))
-   {
-      free(header);
-      return NULL;
-   }
+   serial_info.data             = header + 4;
+   serial_info.size             = serialize_size;
+
+   if (serialize_size && !core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info))
+      goto error;
 
    memcpy(header, bsv_header, sizeof(bsv_header));
    return header;
+
+error:
+   if (header)
+      free(header);
+   return NULL;
 }
 
 bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
