@@ -22,6 +22,8 @@
 extern "C" {
 #endif
 
+#include <boolean.h>
+
 #include "libretro.h"
 
 enum
@@ -33,6 +35,11 @@ enum
    /* Polling is performed on first call to 
     * retro_input_state per frame. */
    POLL_TYPE_LATE
+};
+
+enum core_ctl_state
+{
+   CORE_CTL_NONE = 0
 };
 
 typedef struct retro_callbacks
@@ -90,6 +97,8 @@ void retro_run_core(void);
 bool retro_flush_audio(const int16_t *data, size_t samples);
 
 void retro_uninit_libretro_cbs(void);
+
+bool core_ctl(enum core_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

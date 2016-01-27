@@ -172,3 +172,15 @@ void retro_set_rewind_callbacks(void)
       core.retro_set_audio_sample_batch(audio_driver_sample_batch);
    }
 }
+
+bool core_ctl(enum core_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case CORE_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}
