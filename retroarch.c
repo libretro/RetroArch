@@ -1478,11 +1478,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_VERIFY_API_VERSION:
-         RARCH_LOG("Version of libretro API: %u\n", core.retro_api_version());
-         RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
+         {
+            unsigned api_version = core.retro_api_version();
+            RARCH_LOG("Version of libretro API: %u\n", api_version);
+            RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
 
-         if (core.retro_api_version() != RETRO_API_VERSION)
-            RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
+            if (api_version != RETRO_API_VERSION)
+               RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
+         }
          break;
       case RARCH_CTL_FILL_PATHNAMES:
          rarch_init_savefile_paths();
