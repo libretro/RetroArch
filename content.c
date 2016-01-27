@@ -538,20 +538,24 @@ static bool load_content(
    if (special)
       ret = core.retro_load_game_special(special->id, info, content->size);
    else
-   {
       ret = core.retro_load_game(*content->elems[0].data ? info : NULL);
-      
+
+   if (!ret)
+   {
+      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
+      return false;
+   }
+
 #ifdef HAVE_CHEEVOS
+   if (!special)
+   {
       /* Load the achievements into memory if the game has content. */
       cheevos_set_cheats();
       cheevos_load(*content->elems[0].data ? info : NULL);
-#endif
    }
+#endif
 
-   if (!ret)
-      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
-
-   return ret;
+   return true;
 }
 
 static bool init_content_file_subsystem(
