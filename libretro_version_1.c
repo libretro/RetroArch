@@ -171,6 +171,18 @@ bool core_ctl(enum core_ctl_state state, void *data)
 {
    switch (state)
    {
+      case CORE_CTL_RETRO_RESET:
+         core.retro_reset();
+         break;
+      case CORE_CTL_RETRO_INIT:
+         core.retro_init();
+         break;
+      case CORE_CTL_RETRO_DEINIT:
+         core.retro_deinit();
+         break;
+      case CORE_CTL_RETRO_UNLOAD_GAME:
+         core.retro_unload_game();
+         break;
       case CORE_CTL_RETRO_RUN:
          switch (core.poll_type)
          {

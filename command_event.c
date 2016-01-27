@@ -393,8 +393,8 @@ static void event_deinit_core(bool reinit)
 #endif
 
    event_deinit_core_interfaces();
-   core.retro_unload_game();
-   core.retro_deinit();
+   core_ctl(CORE_CTL_RETRO_UNLOAD_GAME, NULL);
+   core_ctl(CORE_CTL_RETRO_DEINIT, NULL);
 
    if (reinit)
       event_cmd_ctl(EVENT_CMD_DRIVERS_DEINIT, NULL);
@@ -591,7 +591,7 @@ static bool event_init_core(void)
       rarch_ctl(RARCH_CTL_SET_PATHS_REDIRECT, NULL);
 
    rarch_ctl(RARCH_CTL_VERIFY_API_VERSION, NULL);
-   core.retro_init();
+   core_ctl(CORE_CTL_RETRO_INIT, NULL);
 
    global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL) 
       && !content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL);
@@ -1046,8 +1046,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #ifdef HAVE_CHEEVOS
          cheevos_set_cheats();
 #endif
-         core.retro_reset();
-
+         core_ctl(CORE_CTL_RETRO_RESET, NULL);
          break;
       case EVENT_CMD_SAVE_STATE:
          if (settings->savestate_auto_index)

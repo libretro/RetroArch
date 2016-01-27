@@ -50,7 +50,15 @@ enum core_ctl_state
    CORE_CTL_SET_CBS_REWIND,
 
    /* Runs the core for one frame. */
-   CORE_CTL_RETRO_RUN
+   CORE_CTL_RETRO_RUN,
+
+   CORE_CTL_RETRO_INIT,
+
+   CORE_CTL_RETRO_DEINIT,
+
+   CORE_CTL_RETRO_UNLOAD_GAME,
+
+   CORE_CTL_RETRO_RESET
 };
 
 typedef struct retro_callbacks
