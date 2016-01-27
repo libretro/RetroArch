@@ -472,15 +472,15 @@ static void load_symbols(enum rarch_core_type type)
 void libretro_get_current_core_pathname(char *name, size_t size)
 {
    size_t i;
-   const char                *id = NULL;
-   struct retro_system_info info = {0};
+   struct retro_system_info info;
+   const char                *id = msg_hash_to_str(MSG_UNKNOWN);
 
    if (size == 0)
       return;
 
    core.retro_get_system_info(&info);
-   id = info.library_name ? info.library_name :
-      msg_hash_to_str(MSG_UNKNOWN);
+   if (info.library_name)
+      id = info.library_name;
 
    if (!id || strlen(id) >= size)
    {
