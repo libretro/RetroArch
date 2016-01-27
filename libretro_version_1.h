@@ -24,6 +24,17 @@ extern "C" {
 
 #include "libretro.h"
 
+enum
+{
+   /* Polling is performed before call to retro_run */
+   POLL_TYPE_EARLY = 0,
+   /* Polling is performed when requested. */
+   POLL_TYPE_NORMAL,
+   /* Polling is performed on first call to retro_input_state
+    * per frame. */
+   POLL_TYPE_LATE
+};
+
 typedef struct retro_callbacks
 {
    retro_video_refresh_t frame_cb;
@@ -59,6 +70,9 @@ void retro_set_default_callbacks(void *data);
  * rewinding is currently activated.
  **/
 void retro_set_rewind_callbacks(void);
+
+/* Runs the core for one frame. Use instead of core.retro_run(). */
+void retro_run_core(void);
 
 /**
  * retro_flush_audio:

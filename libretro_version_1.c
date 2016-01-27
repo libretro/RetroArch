@@ -37,6 +37,21 @@
 
 struct retro_callbacks retro_ctx;
 
+static bool input_polled;
+
+static int16_t input_state_poll(unsigned port,
+      unsigned device, unsigned idx, unsigned id)
+{
+   if (core.poll_type == POLL_TYPE_LATE)
+   {
+      if (!input_polled)
+         input_poll();
+
+      input_polled = true;
+   }
+   return input_state(port, device, idx, id);
+}
+
 /**
  * retro_set_default_callbacks:
  * @data           : pointer to retro_callbacks object
@@ -53,7 +68,7 @@ void retro_set_default_callbacks(void *data)
    cbs->frame_cb        = video_driver_frame;
    cbs->sample_cb       = audio_driver_sample;
    cbs->sample_batch_cb = audio_driver_sample_batch;
-   cbs->state_cb        = input_state;
+   cbs->state_cb        = input_state_poll;
    cbs->poll_cb         = input_poll;
 }
 
@@ -66,6 +81,27 @@ void retro_uninit_libretro_cbs(void)
    cbs->sample_batch_cb = NULL;
    cbs->state_cb        = NULL;
    cbs->poll_cb         = NULL;
+}
+
+
+void retro_run_core(void)
+{
+   switch (core.poll_type)
+   {
+      case POLL_TYPE_EARLY:
+         input_poll();
+         break;
+      case POLL_TYPE_LATE:
+         input_polled = false;
+         break;
+   }
+   core.retro_run();
+}
+
+static void input_poll_maybe(void)
+{
+   if (core.poll_type == POLL_TYPE_NORMAL)
+      input_poll();
 }
 
 /**
@@ -88,14 +124,17 @@ void retro_init_libretro_cbs(void *data)
    core.retro_set_video_refresh(video_driver_frame);
    core.retro_set_audio_sample(audio_driver_sample);
    core.retro_set_audio_sample_batch(audio_driver_sample_batch);
-   core.retro_set_input_state(input_state);
-   core.retro_set_input_poll(input_poll);
+   core.retro_set_input_state(input_state_poll);
+   core.retro_set_input_poll(input_poll_maybe);
 
    retro_set_default_callbacks(cbs);
 
 #ifdef HAVE_NETPLAY
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
       return;
+
+   /* Force normal poll type for netplay. */
+   core.poll_type = POLL_TYPE_NORMAL;
 
    if (global->netplay.is_spectate)
    {

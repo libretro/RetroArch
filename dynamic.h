@@ -123,6 +123,7 @@ bool rarch_environment_cb(unsigned cmd, void *data);
 
 struct retro_core_t
 {
+   unsigned poll_type;
    void (*retro_init)(void);
    void (*retro_deinit)(void);
    unsigned (*retro_api_version)(void);

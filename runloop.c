@@ -1424,7 +1424,7 @@ int runloop_iterate(unsigned *sleep_ms)
       retro_sleep(settings->video.frame_delay);
 
    /* Run libretro for one frame. */
-   core.retro_run();
+   retro_run_core();
 
 #ifdef HAVE_CHEEVOS
    /* Test the achievements. */
