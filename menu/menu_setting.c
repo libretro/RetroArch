@@ -2791,6 +2791,9 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
+         core.poll_type = *setting->value.integer;
+         break;
       case MENU_LABEL_VIDEO_SCALE_INTEGER:
          {
             video_viewport_t vp;
@@ -5192,6 +5195,19 @@ static bool setting_append_list_input_options(
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, MAX_USERS, 1, true, true);
+
+   CONFIG_UINT(
+         list, list_info,
+         &settings->input.poll_type_behavior,
+         menu_hash_to_str(MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR),
+         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR),
+         input_poll_type_behavior,
+         &group_info,
+         &subgroup_info,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
 
 #if TARGET_OS_IPHONE
    CONFIG_BOOL(

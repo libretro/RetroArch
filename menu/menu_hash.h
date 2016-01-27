@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR                                    0x8360107bU
+#define MENU_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR                              0xaa23fc1eU
+
 #define MENU_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT                           0xe5f4b599U
 
 #define MENU_LABEL_UI_COMPANION_ENABLE                                         0xb2d7a20cU

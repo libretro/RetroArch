@@ -700,6 +700,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "screen_resolution";
       case MENU_LABEL_USE_BUILTIN_IMAGE_VIEWER:
          return "use_builtin_image_viewer";
+      case MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
+         return "input_poll_type_behavior";
       default:
          break;
    }
@@ -1648,6 +1650,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Enable";
       case MENU_LABEL_VALUE_START_CORE:
          return "Start Core";
+      case MENU_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
+         return "Poll Type Behavior";
       default:
          break;
    }
