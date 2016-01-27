@@ -81,21 +81,6 @@ void retro_set_rewind_callbacks(void);
 /* Runs the core for one frame. Use instead of core.retro_run(). */
 void retro_run_core(void);
 
-/**
- * retro_flush_audio:
- * @data                 : pointer to audio buffer.
- * @samples              : amount of samples to write.
- *
- * Writes audio samples to audio driver. Will first
- * perform DSP processing (if enabled) and resampling.
- *
- * driver.audio_active will be set to false (0) in case
- * of an error, otherwise will be set to true (1).
- *
- * Returns: true (1) on success, otherwise false (0).
- **/
-bool retro_flush_audio(const int16_t *data, size_t samples);
-
 void retro_uninit_libretro_cbs(void);
 
 bool core_ctl(enum core_ctl_state state, void *data);
