@@ -104,6 +104,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
 
    if (state_size)
    {
+      retro_ctx_serialize_info_t serial_info;
       retro_ctx_size_info_t info;
 
       handle->state      = (uint8_t*)malloc(state_size);
@@ -120,7 +121,11 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
       core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
 
       if (info.size == state_size)
-         core.retro_unserialize(handle->state, state_size);
+      {
+         serial_info.data_const = handle->state;
+         serial_info.size       = state_size;
+         core_ctl(CORE_CTL_RETRO_UNSERIALIZE, &serial_info);
+      }
       else
          RARCH_WARN("Movie format seems to have a different serializer version. Will most likely fail.\n");
    }
@@ -164,11 +169,17 @@ static bool init_record(bsv_movie_t *handle, const char *path)
 
    if (state_size)
    {
+      retro_ctx_serialize_info_t serial_info;
+
       handle->state = (uint8_t*)malloc(state_size);
       if (!handle->state)
          return false;
 
-      core.retro_serialize(handle->state, state_size);
+      serial_info.data = handle->state;
+      serial_info.size = state_size;
+
+      core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+
       fwrite(handle->state, 1, state_size, handle->file);
    }
 
@@ -281,10 +292,18 @@ void bsv_movie_frame_rewind(bsv_movie_t *handle)
 
       if (!handle->playback)
       {
+         retro_ctx_serialize_info_t serial_info;
+
          /* If recording, we simply reset
           * the starting point. Nice and easy. */
+
          fseek(handle->file, 4 * sizeof(uint32_t), SEEK_SET);
-         core.retro_serialize(handle->state, handle->state_size);
+
+         serial_info.data = handle->state;
+         serial_info.size = handle->state_size;
+
+         core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+
          fwrite(handle->state, 1, handle->state_size, handle->file);
       }
       else
