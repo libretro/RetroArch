@@ -68,8 +68,19 @@ enum core_ctl_state
    
    CORE_CTL_RETRO_SET_ENVIRONMENT,
 
-   CORE_CTL_RETRO_SERIALIZE_SIZE
+   CORE_CTL_RETRO_SERIALIZE_SIZE,
+
+   CORE_CTL_RETRO_SERIALIZE,
+
+   CORE_CTL_RETRO_UNSERIALIZE
 };
+
+typedef struct retro_ctx_serialize_info
+{
+   const void *data_const;
+   void *data;
+   size_t size;
+} retro_ctx_serialize_info_t;
 
 typedef struct retro_ctx_size_info
 {

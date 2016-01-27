@@ -172,6 +172,22 @@ bool core_ctl(enum core_ctl_state state, void *data)
 
    switch (state)
    {
+      case CORE_CTL_RETRO_UNSERIALIZE:
+         {
+            retro_ctx_serialize_info_t *info = (retro_ctx_serialize_info_t*)data;
+            if (!info)
+               return false;
+            core.retro_unserialize(info->data_const, info->size);
+         }
+         break;
+      case CORE_CTL_RETRO_SERIALIZE:
+         {
+            retro_ctx_serialize_info_t *info = (retro_ctx_serialize_info_t*)data;
+            if (!info)
+               return false;
+            core.retro_serialize(info->data, info->size);
+         }
+         break;
       case CORE_CTL_RETRO_SERIALIZE_SIZE:
          {
             retro_ctx_size_info_t *info = (retro_ctx_size_info_t *)data;
