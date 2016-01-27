@@ -39,7 +39,11 @@ enum
 
 enum core_ctl_state
 {
-   CORE_CTL_NONE = 0
+   CORE_CTL_NONE = 0,
+
+   CORE_CTL_INIT,
+
+   CORE_CTL_DEINIT
 };
 
 typedef struct retro_callbacks
@@ -52,15 +56,6 @@ typedef struct retro_callbacks
 } retro_callbacks_t;
 
 extern retro_callbacks_t retro_ctx;
-
-/**
- * retro_init_libretro_cbs:
- * @data           : pointer to retro_callbacks object
- *
- * Initializes libretro callbacks, and binds the libretro callbacks 
- * to default callback functions.
- **/
-void retro_init_libretro_cbs(void *data);
 
 /**
  * retro_set_default_callbacks:
@@ -80,8 +75,6 @@ void retro_set_rewind_callbacks(void);
 
 /* Runs the core for one frame. Use instead of core.retro_run(). */
 void retro_run_core(void);
-
-void retro_uninit_libretro_cbs(void);
 
 bool core_ctl(enum core_ctl_state state, void *data);
 

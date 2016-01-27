@@ -72,15 +72,20 @@ void retro_set_default_callbacks(void *data)
    cbs->poll_cb         = input_poll;
 }
 
-void retro_uninit_libretro_cbs(void)
+static bool retro_uninit_libretro_cbs(void)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)&retro_ctx;
+
+   if (!cbs)
+      return false;
 
    cbs->frame_cb        = NULL;
    cbs->sample_cb       = NULL;
    cbs->sample_batch_cb = NULL;
    cbs->state_cb        = NULL;
    cbs->poll_cb         = NULL;
+
+   return true;
 }
 
 
@@ -111,7 +116,7 @@ static void input_poll_maybe(void)
  * Initializes libretro callbacks, and binds the libretro callbacks 
  * to default callback functions.
  **/
-void retro_init_libretro_cbs(void *data)
+static bool retro_init_libretro_cbs(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
 #ifdef HAVE_NETPLAY
@@ -119,7 +124,7 @@ void retro_init_libretro_cbs(void *data)
 #endif
 
    if (!cbs)
-      return;
+      return false;
 
    core.retro_set_video_refresh(video_driver_frame);
    core.retro_set_audio_sample(audio_driver_sample);
@@ -131,7 +136,7 @@ void retro_init_libretro_cbs(void *data)
 
 #ifdef HAVE_NETPLAY
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
-      return;
+      return true;
 
    /* Force normal poll type for netplay. */
    core.poll_type = POLL_TYPE_NORMAL;
@@ -151,6 +156,8 @@ void retro_init_libretro_cbs(void *data)
       core.retro_set_input_state(input_state_net);
    }
 #endif
+
+   return true;
 }
 
 /**
@@ -177,6 +184,10 @@ bool core_ctl(enum core_ctl_state state, void *data)
 {
    switch (state)
    {
+      case CORE_CTL_INIT:
+         return retro_init_libretro_cbs(data);
+      case CORE_CTL_DEINIT:
+         return retro_uninit_libretro_cbs();
       case CORE_CTL_NONE:
       default:
          break;

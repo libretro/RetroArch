@@ -428,7 +428,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 #endif
          location_driver_ctl(RARCH_LOCATION_CTL_DESTROY, NULL);
          camera_driver_ctl(RARCH_CAMERA_CTL_DESTROY, NULL);
-         retro_uninit_libretro_cbs();
+         core_ctl(CORE_CTL_DEINIT, NULL);
          break;
       case RARCH_DRIVER_CTL_UNINIT:
          {
