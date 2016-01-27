@@ -537,6 +537,8 @@ static void event_set_savestate_auto_index(void)
 
 static bool event_init_content(void)
 {
+   rarch_ctl(RARCH_CTL_SET_SRAM_ENABLE, NULL);
+
    /* No content to be loaded for dummy core,
     * just successfully exit. */
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
@@ -567,7 +569,6 @@ static bool event_init_content(void)
 static bool event_init_core(void *data)
 {
    retro_ctx_environ_info_t info;
-   global_t *global                = global_get_ptr();
    settings_t *settings            = config_get_ptr();
    enum rarch_core_type *core_type = (enum rarch_core_type*)data;
 
@@ -602,9 +603,6 @@ static bool event_init_core(void *data)
 
    if (!core_ctl(CORE_CTL_RETRO_INIT, NULL))
       return false;
-
-   global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL) 
-      && !content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL);
 
    if (!event_init_content())
       return false;

@@ -1370,6 +1370,10 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             return false;
          set_paths_redirect(global->name.base);
          break;
+      case RARCH_CTL_SET_SRAM_ENABLE:
+         global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL) 
+            && !content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL);
+         break;
       case RARCH_CTL_SET_ERROR_ON_INIT:
          rarch_error_on_init = true;
          break;
