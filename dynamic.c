@@ -34,6 +34,7 @@
 #include "camera/camera_driver.h"
 #include "location/location_driver.h"
 #include "record/record_driver.h"
+#include "libretro_version_1.h"
 #include "performance.h"
 #include "system.h"
 
@@ -478,7 +479,8 @@ void libretro_get_current_core_pathname(char *name, size_t size)
    if (size == 0)
       return;
 
-   core.retro_get_system_info(&info);
+   core_ctl(CORE_CTL_RETRO_GET_SYSTEM_INFO, &info);
+
    if (info.library_name)
       id = info.library_name;
 
