@@ -330,7 +330,8 @@ static void event_init_controllers(void)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      const char *ident = NULL;
+      const char *ident   = NULL;
+      bool set_controller = false;
       const struct retro_controller_description *desc = NULL;
       unsigned device = settings->input.libretro_device[i];
 
@@ -363,7 +364,7 @@ static void event_init_controllers(void)
       {
          case RETRO_DEVICE_NONE:
             RARCH_LOG("Disconnecting device from port %u.\n", i + 1);
-            core.retro_set_controller_port_device(i, device);
+            set_controller = true;
             break;
          case RETRO_DEVICE_JOYPAD:
             break;
@@ -373,9 +374,12 @@ static void event_init_controllers(void)
              * cores needlessly. */
             RARCH_LOG("Connecting %s (ID: %u) to port %u.\n", ident,
                   device, i + 1);
-            core.retro_set_controller_port_device(i, device);
+            set_controller = true;
             break;
       }
+
+      if (set_controller)
+         core.retro_set_controller_port_device(i, device);
    }
 }
 
