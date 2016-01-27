@@ -601,8 +601,6 @@ static bool event_init_core(void)
    if (!event_init_content())
       return false;
 
-   core.poll_type = settings->input.poll_type_behavior;
-
    if (!core_ctl(CORE_CTL_INIT, NULL))
       return false;
 
