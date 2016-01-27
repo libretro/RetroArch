@@ -1145,7 +1145,8 @@ void video_driver_set_pixel_format(enum retro_pixel_format fmt)
  **/
 static bool video_driver_cached_frame(void)
 {
-   void *recording      = recording_driver_get_data_ptr();
+   retro_ctx_frame_info_t info;
+   void *recording  = recording_driver_get_data_ptr();
 
    if (runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
       return true; /* Maybe return false here for indication of idleness? */
@@ -1157,13 +1158,15 @@ static bool video_driver_cached_frame(void)
     * freed the memory, but no known implementations do this.
     * It would be really stupid at any rate ...
     */
-   if (retro_ctx.frame_cb)
-      retro_ctx.frame_cb(
-            (video_driver_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID)
-            ? NULL : video_driver_state.frame_cache.data,
-            video_driver_state.frame_cache.width,
-            video_driver_state.frame_cache.height,
-            video_driver_state.frame_cache.pitch);
+   info.data        = NULL;
+   info.width       = video_driver_state.frame_cache.width;
+   info.height      = video_driver_state.frame_cache.height;
+   info.pitch       = video_driver_state.frame_cache.pitch;
+
+   if (video_driver_state.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID)
+      info.data = video_driver_state.frame_cache.data;
+
+   core_ctl(CORE_CTL_RETRO_CTX_FRAME_CB, &info);
 
    recording_driver_set_data_ptr(recording);
 

@@ -1183,8 +1183,7 @@ unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_in
    if (!menu_input)
       return 0;
 
-   if (retro_ctx.poll_cb)
-      retro_ctx.poll_cb();
+   core_ctl(CORE_CTL_RETRO_CTX_POLL_CB, NULL);
 
    /* don't run anything first frame, only capture held inputs
     * for old_input_state. */

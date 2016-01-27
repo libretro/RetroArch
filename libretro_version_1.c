@@ -171,6 +171,21 @@ bool core_ctl(enum core_ctl_state state, void *data)
 {
    switch (state)
    {
+      case CORE_CTL_RETRO_CTX_FRAME_CB:
+         {
+            retro_ctx_frame_info_t *info = (retro_ctx_frame_info_t*)data;
+            if (!info || !retro_ctx.frame_cb)
+               return false;
+
+            retro_ctx.frame_cb(
+                  info->data, info->width, info->height, info->pitch);
+         }
+         break;
+      case CORE_CTL_RETRO_CTX_POLL_CB:
+         if (!retro_ctx.poll_cb)
+            return false;
+         retro_ctx.poll_cb();
+         break;
       case CORE_CTL_RETRO_GET_SYSTEM_AV_INFO:
          {
             struct retro_system_av_info *av_info = (struct retro_system_av_info*)data;

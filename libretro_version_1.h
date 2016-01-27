@@ -60,8 +60,20 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_RESET,
 
-   CORE_CTL_RETRO_GET_SYSTEM_AV_INFO
+   CORE_CTL_RETRO_GET_SYSTEM_AV_INFO,
+
+   CORE_CTL_RETRO_CTX_FRAME_CB,
+
+   CORE_CTL_RETRO_CTX_POLL_CB
 };
+
+typedef struct retro_ctx_frame_info
+{
+   const void *data;
+   unsigned width;
+   unsigned height;
+   size_t pitch;
+} retro_ctx_frame_info_t;
 
 typedef struct retro_callbacks
 {
