@@ -29,6 +29,7 @@
 #include "general.h"
 #include "msg_hash.h"
 #include "rewind.h"
+#include "system.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
 
@@ -173,6 +174,14 @@ bool core_ctl(enum core_ctl_state state, void *data)
 
    switch (state)
    {
+      case CORE_CTL_RETRO_GET_SYSTEM_INFO:
+         {
+            struct retro_system_info *system = (struct retro_system_info*)data;
+            if (!system)
+               return false;
+            core.retro_get_system_info(system);
+         }
+         break;
       case CORE_CTL_RETRO_UNSERIALIZE:
          {
             retro_ctx_serialize_info_t *info = (retro_ctx_serialize_info_t*)data;

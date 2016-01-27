@@ -468,7 +468,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_SHADER_DIR_INIT:
          return shader_dir_init(&runloop_shader_dir);
       case RUNLOOP_CTL_SYSTEM_INFO_INIT:
-         core.retro_get_system_info(&runloop_system.info);
+         core_ctl(CORE_CTL_RETRO_GET_SYSTEM_INFO, &runloop_system.info);
 
          if (!runloop_system.info.library_name)
             runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);

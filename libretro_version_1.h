@@ -85,7 +85,9 @@ enum core_ctl_state
    /**
     * Initialize system A/V information.
     **/
-   CORE_CTL_INIT_SYSTEM_AV_INFO
+   CORE_CTL_INIT_SYSTEM_AV_INFO,
+
+   CORE_CTL_RETRO_GET_SYSTEM_INFO
 };
 
 typedef struct retro_ctx_serialize_info

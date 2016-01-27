@@ -28,6 +28,7 @@
 #include "configuration.h"
 #include "performance.h"
 #include "runloop.h"
+#include "libretro_version_1.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
@@ -1858,7 +1859,7 @@ int cheevos_load(const void *data)
    
    /* The the supported extensions as a hint to what method we should use. */
    
-   core.retro_get_system_info(&sysinfo);
+   core_ctl(CORE_CTL_RETRO_GET_SYSTEM_INFO, &sysinfo);
    
    for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
    {
