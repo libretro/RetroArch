@@ -90,21 +90,6 @@ static bool retro_uninit_libretro_cbs(void)
    return true;
 }
 
-
-void retro_run_core(void)
-{
-   switch (core.poll_type)
-   {
-      case POLL_TYPE_EARLY:
-         input_poll();
-         break;
-      case POLL_TYPE_LATE:
-         input_polled = false;
-         break;
-   }
-   core.retro_run();
-}
-
 static void input_poll_maybe(void)
 {
    if (core.poll_type == POLL_TYPE_NORMAL)
@@ -186,6 +171,18 @@ bool core_ctl(enum core_ctl_state state, void *data)
 {
    switch (state)
    {
+      case CORE_CTL_RUN:
+         switch (core.poll_type)
+         {
+            case POLL_TYPE_EARLY:
+               input_poll();
+               break;
+            case POLL_TYPE_LATE:
+               input_polled = false;
+               break;
+         }
+         core.retro_run();
+         break;
       case CORE_CTL_SET_CBS:
          return retro_set_default_callbacks(data);
       case CORE_CTL_SET_CBS_REWIND:

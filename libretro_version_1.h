@@ -47,7 +47,10 @@ enum core_ctl_state
 
    CORE_CTL_SET_CBS,
 
-   CORE_CTL_SET_CBS_REWIND
+   CORE_CTL_SET_CBS_REWIND,
+
+   /* Runs the core for one frame. */
+   CORE_CTL_RUN
 };
 
 typedef struct retro_callbacks
@@ -60,9 +63,6 @@ typedef struct retro_callbacks
 } retro_callbacks_t;
 
 extern retro_callbacks_t retro_ctx;
-
-/* Runs the core for one frame. Use instead of core.retro_run(). */
-void retro_run_core(void);
 
 bool core_ctl(enum core_ctl_state state, void *data);
 

@@ -1423,8 +1423,7 @@ int runloop_iterate(unsigned *sleep_ms)
          !input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
       retro_sleep(settings->video.frame_delay);
 
-   /* Run libretro for one frame. */
-   retro_run_core();
+   core_ctl(CORE_CTL_RUN, NULL);
 
 #ifdef HAVE_CHEEVOS
    /* Test the achievements. */

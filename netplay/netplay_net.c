@@ -77,7 +77,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
          lock_autosave();
 #endif
-         retro_run_core();
+         core_ctl(CORE_CTL_RUN, NULL);
 #if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
          unlock_autosave();
 #endif
