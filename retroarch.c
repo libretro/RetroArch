@@ -1477,9 +1477,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          }
          break;
-      case RARCH_CTL_VERIFY_API_VERSION:
-         core_ctl(CORE_CTL_VERIFY_API_VERSION, NULL);
-         break;
       case RARCH_CTL_FILL_PATHNAMES:
          rarch_init_savefile_paths();
          bsv_movie_set_path(global->name.savefile);

@@ -592,8 +592,8 @@ static bool event_init_core(void)
          && !content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
       rarch_ctl(RARCH_CTL_SET_PATHS_REDIRECT, NULL);
 
-   rarch_ctl(RARCH_CTL_VERIFY_API_VERSION, NULL);
-   core_ctl(CORE_CTL_RETRO_INIT, NULL);
+   if (!core_ctl(CORE_CTL_RETRO_INIT, NULL))
+      return false;
 
    global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL) 
       && !content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL);

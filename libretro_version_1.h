@@ -74,6 +74,12 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_UNSERIALIZE,
 
+   /* Compare libretro core API version against API version
+    * used by RetroArch.
+    *
+    * TODO - when libretro v2 gets added, allow for switching
+    * between libretro version backend dynamically.
+    */
    CORE_CTL_VERIFY_API_VERSION
 };
 

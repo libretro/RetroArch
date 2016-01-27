@@ -260,7 +260,11 @@ bool core_ctl(enum core_ctl_state state, void *data)
          retro_set_rewind_callbacks();
          break;
       case CORE_CTL_INIT:
-         return retro_init_libretro_cbs(&retro_ctx);
+         if (!core_ctl(CORE_CTL_VERIFY_API_VERSION, NULL))
+            return false;
+         if (!retro_init_libretro_cbs(&retro_ctx))
+            return false;
+         break;
       case CORE_CTL_DEINIT:
          return retro_uninit_libretro_cbs(&retro_ctx);
       case CORE_CTL_VERIFY_API_VERSION:

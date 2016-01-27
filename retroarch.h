@@ -94,14 +94,6 @@ enum rarch_ctl_state
 
    RARCH_CTL_FORCE_QUIT,
 
-   /* Compare libretro core API version against API version
-    * used by RetroArch.
-    *
-    * TODO - when libretro v2 gets added, allow for switching
-    * between libretro version backend dynamically.
-    */
-   RARCH_CTL_VERIFY_API_VERSION,
-
    /* Validates CPU features for given processor architecture.
     * Make sure we haven't compiled for something we cannot run.
     * Ideally, code would get swapped out depending on CPU support,
