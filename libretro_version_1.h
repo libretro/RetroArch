@@ -72,7 +72,9 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_SERIALIZE,
 
-   CORE_CTL_RETRO_UNSERIALIZE
+   CORE_CTL_RETRO_UNSERIALIZE,
+
+   CORE_CTL_VERIFY_API_VERSION
 };
 
 typedef struct retro_ctx_serialize_info

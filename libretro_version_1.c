@@ -27,6 +27,7 @@
 #include "libretro.h"
 #include "libretro_version_1.h"
 #include "general.h"
+#include "msg_hash.h"
 #include "rewind.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"
@@ -262,6 +263,19 @@ bool core_ctl(enum core_ctl_state state, void *data)
          return retro_init_libretro_cbs(&retro_ctx);
       case CORE_CTL_DEINIT:
          return retro_uninit_libretro_cbs(&retro_ctx);
+      case CORE_CTL_VERIFY_API_VERSION:
+         {
+            unsigned api_version = core.retro_api_version();
+            RARCH_LOG("Version of libretro API: %u\n", api_version);
+            RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
+
+            if (api_version != RETRO_API_VERSION)
+            {
+               RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
+               return false;
+            }
+         }
+         break;
       case CORE_CTL_NONE:
       default:
          break;
