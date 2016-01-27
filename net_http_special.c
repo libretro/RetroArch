@@ -24,17 +24,15 @@
 
 int net_http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout)
 {
-   retro_time_t t0;
    uint8_t* data;
    size_t length;
    char* res;
    int ret = NET_HTTP_GET_OK;
-   struct http_connection_t* conn = NULL;
    struct http_t* http = NULL;
+   retro_time_t t0 = retro_get_time_usec();
+   struct http_connection_t *conn = net_http_connection_new(url);
 
    *result = NULL;
-   t0 = retro_get_time_usec();
-   conn = net_http_connection_new(url);
 
    /* Error creating the connection descriptor. */
    if (!conn)
