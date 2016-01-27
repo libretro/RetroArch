@@ -743,5 +743,5 @@ void state_manager_check_rewind(bool pressed)
       }
    }
 
-   retro_set_rewind_callbacks();
+   core_ctl(CORE_CTL_SET_CBS_REWIND, NULL);
 }

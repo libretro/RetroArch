@@ -168,7 +168,7 @@ static bool retro_init_libretro_cbs(void *data)
  * Sets the audio sampling callbacks based on whether or not
  * rewinding is currently activated.
  **/
-void retro_set_rewind_callbacks(void)
+static void retro_set_rewind_callbacks(void)
 {
    if (state_manager_frame_is_reversed())
    {
@@ -188,6 +188,9 @@ bool core_ctl(enum core_ctl_state state, void *data)
    {
       case CORE_CTL_SET_CBS:
          return retro_set_default_callbacks(data);
+      case CORE_CTL_SET_CBS_REWIND:
+         retro_set_rewind_callbacks();
+         break;
       case CORE_CTL_INIT:
          return retro_init_libretro_cbs(data);
       case CORE_CTL_DEINIT:

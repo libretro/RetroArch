@@ -45,7 +45,9 @@ enum core_ctl_state
 
    CORE_CTL_DEINIT,
 
-   CORE_CTL_SET_CBS
+   CORE_CTL_SET_CBS,
+
+   CORE_CTL_SET_CBS_REWIND
 };
 
 typedef struct retro_callbacks
@@ -58,14 +60,6 @@ typedef struct retro_callbacks
 } retro_callbacks_t;
 
 extern retro_callbacks_t retro_ctx;
-
-/**
- * retro_set_rewind_callbacks:
- *
- * Sets the audio sampling callbacks based on whether or not
- * rewinding is currently activated.
- **/
-void retro_set_rewind_callbacks(void);
 
 /* Runs the core for one frame. Use instead of core.retro_run(). */
 void retro_run_core(void);
