@@ -618,6 +618,7 @@ static void state_manager_capacity(state_manager_t *state,
 
 void init_rewind(void)
 {
+   retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
    void *state          = NULL;
    settings_t *settings = config_get_ptr();
@@ -653,7 +654,12 @@ void init_rewind(void)
       RARCH_WARN("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
 
    state_manager_push_where(rewind_state.state, &state);
-   core.retro_serialize(state, rewind_state.size);
+
+   serial_info.data = state;
+   serial_info.size = rewind_state.size;
+
+   core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+
    state_manager_push_do(rewind_state.state);
 }
 
@@ -708,13 +714,19 @@ void state_manager_check_rewind(bool pressed)
 
       if (state_manager_pop(rewind_state.state, &buf))
       {
+         retro_ctx_serialize_info_t serial_info;
+
          state_manager_set_frame_is_reversed(true);
          audio_driver_ctl(RARCH_AUDIO_CTL_SETUP_REWIND, NULL);
 
          runloop_msg_queue_push_new(MSG_REWINDING, 0,
                runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) 
                ? 1 : 30, true);
-         core.retro_unserialize(buf, rewind_state.size);
+
+         serial_info.data_const = buf;
+         serial_info.size       = rewind_state.size;
+
+         core_ctl(CORE_CTL_RETRO_UNSERIALIZE, &serial_info);
 
          if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             bsv_movie_ctl(BSV_MOVIE_CTL_FRAME_REWIND, NULL);
@@ -732,6 +744,7 @@ void state_manager_check_rewind(bool pressed)
 
       if ((cnt == 0) || bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       {
+         retro_ctx_serialize_info_t serial_info;
          static struct retro_perf_counter rewind_serialize = {0};
          void *state = NULL;
 
@@ -739,7 +752,12 @@ void state_manager_check_rewind(bool pressed)
 
          rarch_perf_init(&rewind_serialize, "rewind_serialize");
          retro_perf_start(&rewind_serialize);
-         core.retro_serialize(state, rewind_state.size);
+
+         serial_info.data = state;
+         serial_info.size = rewind_state.size;
+
+         core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+
          retro_perf_stop(&rewind_serialize);
 
          state_manager_push_do(rewind_state.state);
