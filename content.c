@@ -495,7 +495,7 @@ static bool load_content(
       )
 {
    unsigned i;
-   bool ret         = true;
+   retro_ctx_load_content_info_t load_info;
 
    if (!info || !additional_path_allocs)
       return false;
@@ -539,12 +539,11 @@ static bool load_content(
       }
    }
 
-   if (special)
-      ret = core.retro_load_game_special(special->id, info, content->size);
-   else
-      ret = core.retro_load_game(*content->elems[0].data ? info : NULL);
+   load_info.content = content;
+   load_info.special = special;
+   load_info.info    = info;
 
-   if (!ret)
+   if (!core_ctl(CORE_CTL_RETRO_LOAD_GAME, &load_info))
    {
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
       return false;
