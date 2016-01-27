@@ -125,7 +125,7 @@ bool content_playlist_entry_exists(content_playlist_t *playlist,
       return false;
 
    for (i = 0; i < playlist->size; i++)
-      if (string_is_equal(playlist->entries[i].path, path) || string_is_equal(playlist->entries[i].crc32, crc32))
+      if (string_is_equal(playlist->entries[i].path, path))
          return true;
 
    return false;
