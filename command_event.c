@@ -564,6 +564,7 @@ static bool event_init_content(void)
 
 static bool event_init_core(void)
 {
+   retro_ctx_environ_info_t info;
    global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
@@ -579,7 +580,8 @@ static bool event_init_core(void)
    /* reset video format to libretro's default */
    video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
 
-   core.retro_set_environment(rarch_environment_cb);
+   info.env = rarch_environment_cb;
+   core_ctl(CORE_CTL_RETRO_SET_ENVIRONMENT, &info);
 
    /* auto-remap: apply remap files */
    if(settings->auto_remaps_enable)

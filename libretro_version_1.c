@@ -187,6 +187,14 @@ bool core_ctl(enum core_ctl_state state, void *data)
             return false;
          retro_ctx.poll_cb();
          break;
+      case CORE_CTL_RETRO_SET_ENVIRONMENT:
+         {
+            retro_ctx_environ_info_t *info = (retro_ctx_environ_info_t*)data;
+            if (!info)
+               return false;
+            core.retro_set_environment(info->env);
+         }
+         break;
       case CORE_CTL_RETRO_GET_SYSTEM_AV_INFO:
          {
             struct retro_system_av_info *av_info = (struct retro_system_av_info*)data;

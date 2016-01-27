@@ -64,8 +64,15 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_CTX_FRAME_CB,
 
-   CORE_CTL_RETRO_CTX_POLL_CB
+   CORE_CTL_RETRO_CTX_POLL_CB,
+   
+   CORE_CTL_RETRO_SET_ENVIRONMENT
 };
+
+typedef struct retro_ctx_environ_info
+{
+   retro_environment_t env;
+} retro_ctx_environ_info_t;
 
 typedef struct retro_ctx_frame_info
 {
