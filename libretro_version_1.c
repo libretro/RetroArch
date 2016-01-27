@@ -264,6 +264,9 @@ bool core_ctl(enum core_ctl_state state, void *data)
             return false;
          if (!retro_init_libretro_cbs(&retro_ctx))
             return false;
+         core_ctl(CORE_CTL_RETRO_GET_SYSTEM_AV_INFO,
+               video_viewport_get_system_av_info());
+         runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
          break;
       case CORE_CTL_DEINIT:
          return retro_uninit_libretro_cbs(&retro_ctx);

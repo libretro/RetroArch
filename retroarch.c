@@ -1309,11 +1309,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
-      case RARCH_CTL_INIT_SYSTEM_AV_INFO:
-         core_ctl(CORE_CTL_RETRO_GET_SYSTEM_AV_INFO,
-               video_viewport_get_system_av_info());
-         runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
-         break;
       case RARCH_CTL_IS_PLAIN_CORE:
          return (current_core_type == CORE_TYPE_PLAIN);
       case RARCH_CTL_IS_DUMMY_CORE:

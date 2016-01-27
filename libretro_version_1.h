@@ -80,7 +80,12 @@ enum core_ctl_state
     * TODO - when libretro v2 gets added, allow for switching
     * between libretro version backend dynamically.
     */
-   CORE_CTL_VERIFY_API_VERSION
+   CORE_CTL_VERIFY_API_VERSION,
+
+   /**
+    * Initialize system A/V information.
+    **/
+   CORE_CTL_INIT_SYSTEM_AV_INFO
 };
 
 typedef struct retro_ctx_serialize_info

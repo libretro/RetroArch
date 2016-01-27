@@ -100,12 +100,6 @@ enum rarch_ctl_state
     * but this will do for now. */
    RARCH_CTL_VALIDATE_CPU_FEATURES,
 
-   /**
-    * Initialize system A/V information by calling the libretro core's
-    * get_system_av_info function.
-    **/
-   RARCH_CTL_INIT_SYSTEM_AV_INFO,
-
    RARCH_CTL_FILL_PATHNAMES,
 
    RARCH_CTL_SET_PATHS_REDIRECT,

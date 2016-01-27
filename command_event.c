@@ -602,8 +602,9 @@ static bool event_init_core(void)
       return false;
 
    core.poll_type = settings->input.poll_type_behavior;
-   core_ctl(CORE_CTL_INIT, NULL);
-   rarch_ctl(RARCH_CTL_INIT_SYSTEM_AV_INFO, NULL);
+
+   if (!core_ctl(CORE_CTL_INIT, NULL))
+      return false;
 
    return true;
 }
