@@ -1114,7 +1114,7 @@ bool init_netplay(void)
       return false;
    }
 
-   retro_set_default_callbacks(&cbs);
+   core_ctl(CORE_CTL_SET_CBS, &cbs);
 
    if (*global->netplay.server)
    {

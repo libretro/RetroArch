@@ -43,7 +43,9 @@ enum core_ctl_state
 
    CORE_CTL_INIT,
 
-   CORE_CTL_DEINIT
+   CORE_CTL_DEINIT,
+
+   CORE_CTL_SET_CBS
 };
 
 typedef struct retro_callbacks
@@ -56,14 +58,6 @@ typedef struct retro_callbacks
 } retro_callbacks_t;
 
 extern retro_callbacks_t retro_ctx;
-
-/**
- * retro_set_default_callbacks:
- * @data           : pointer to retro_callbacks object
- *
- * Binds the libretro callbacks to default callback functions.
- **/
-void retro_set_default_callbacks(void *data);
 
 /**
  * retro_set_rewind_callbacks:

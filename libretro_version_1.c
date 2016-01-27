@@ -58,18 +58,20 @@ static int16_t input_state_poll(unsigned port,
  *
  * Binds the libretro callbacks to default callback functions.
  **/
-void retro_set_default_callbacks(void *data)
+static bool retro_set_default_callbacks(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
 
    if (!cbs)
-      return;
+      return false;
 
    cbs->frame_cb        = video_driver_frame;
    cbs->sample_cb       = audio_driver_sample;
    cbs->sample_batch_cb = audio_driver_sample_batch;
    cbs->state_cb        = input_state_poll;
    cbs->poll_cb         = input_poll;
+
+   return true;
 }
 
 static bool retro_uninit_libretro_cbs(void)
@@ -132,7 +134,7 @@ static bool retro_init_libretro_cbs(void *data)
    core.retro_set_input_state(input_state_poll);
    core.retro_set_input_poll(input_poll_maybe);
 
-   retro_set_default_callbacks(cbs);
+   core_ctl(CORE_CTL_SET_CBS, cbs);
 
 #ifdef HAVE_NETPLAY
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
@@ -184,6 +186,8 @@ bool core_ctl(enum core_ctl_state state, void *data)
 {
    switch (state)
    {
+      case CORE_CTL_SET_CBS:
+         return retro_set_default_callbacks(data);
       case CORE_CTL_INIT:
          return retro_init_libretro_cbs(data);
       case CORE_CTL_DEINIT:
