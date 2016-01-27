@@ -593,13 +593,12 @@ static bool event_init_core(void *data)
    info.env = rarch_environment_cb;
    core_ctl(CORE_CTL_RETRO_SET_ENVIRONMENT, &info);
 
-   /* auto-remap: apply remap files */
+   /* Auto-remap: apply remap files */
    if(settings->auto_remaps_enable)
       config_load_remap();
 
-   /* per-core saves: reset redirection paths */
-   if((settings->sort_savestates_enable || settings->sort_savefiles_enable))
-      rarch_ctl(RARCH_CTL_SET_PATHS_REDIRECT, NULL);
+   /* Per-core saves: reset redirection paths */
+   rarch_ctl(RARCH_CTL_SET_PATHS_REDIRECT, NULL);
 
    if (!core_ctl(CORE_CTL_RETRO_INIT, NULL))
       return false;

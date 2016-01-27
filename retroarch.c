@@ -1277,7 +1277,6 @@ int rarch_main_init(int argc, char *argv[])
    event_cmd_ctl(EVENT_CMD_RECORD_INIT, NULL);
    event_cmd_ctl(EVENT_CMD_CHEATS_INIT, NULL);
    event_cmd_ctl(EVENT_CMD_REMAPPING_INIT, NULL);
-
    event_cmd_ctl(EVENT_CMD_SAVEFILES_INIT, NULL);
    event_cmd_ctl(EVENT_CMD_SET_PER_GAME_RESOLUTION, NULL);
 
@@ -1366,9 +1365,12 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
          return true;
       case RARCH_CTL_SET_PATHS_REDIRECT:
-         if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
-            return false;
-         set_paths_redirect(global->name.base);
+         if(settings->sort_savestates_enable || settings->sort_savefiles_enable)
+         {
+            if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
+               return false;
+            set_paths_redirect(global->name.base);
+         }
          break;
       case RARCH_CTL_SET_SRAM_ENABLE:
          global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL) 
