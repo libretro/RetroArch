@@ -1266,9 +1266,7 @@ int rarch_main_init(int argc, char *argv[])
    }
 
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
-   init_libretro_sym(current_core_type);
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
-   if (!event_cmd_ctl(EVENT_CMD_CORE_INIT, NULL))
+   if (!event_cmd_ctl(EVENT_CMD_CORE_INIT, &current_core_type))
       goto error;
 
    event_cmd_ctl(EVENT_CMD_DRIVERS_INIT, NULL);

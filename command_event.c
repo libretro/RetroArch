@@ -564,11 +564,18 @@ static bool event_init_content(void)
    return true;
 }
 
-static bool event_init_core(void)
+static bool event_init_core(void *data)
 {
    retro_ctx_environ_info_t info;
-   global_t *global     = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   global_t *global                = global_get_ptr();
+   settings_t *settings            = config_get_ptr();
+   enum rarch_core_type *core_type = (enum rarch_core_type*)data;
+
+   if (!core_type)
+      return false;
+
+   init_libretro_sym(*core_type);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
 
    /* auto overrides: apply overrides */
    if(settings->auto_overrides_enable)
@@ -1270,10 +1277,8 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             break;
          }
       case EVENT_CMD_CORE_INIT:
-         if (!event_init_core())
-         {
+         if (!event_init_core(data))
             return false;
-         }
          break;
       case EVENT_CMD_VIDEO_APPLY_STATE_CHANGES:
          video_driver_ctl(RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES, NULL);
