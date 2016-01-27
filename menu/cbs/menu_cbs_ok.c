@@ -766,7 +766,7 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_APPEND_DISK_IMAGE:
          flush_char = NULL;
          flush_type = 49;
-         event_disk_control_append_image(action_path);
+         event_cmd_ctl(EVENT_CMD_DISK_APPEND_IMAGE, action_path);
          event_cmd_ctl(EVENT_CMD_RESUME, NULL);
          break;
       case ACTION_OK_SET_PATH:

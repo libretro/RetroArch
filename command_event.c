@@ -16,6 +16,7 @@
 #include <ctype.h>
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "command_event.h"
 
@@ -174,7 +175,7 @@ static void event_disk_control_set_index(unsigned idx)
  *
  * Appends disk image to disk image list.
  **/
-void event_disk_control_append_image(const char *path)
+static bool event_disk_control_append_image(const char *path)
 {
    unsigned new_idx;
    char msg[128]                                      = {0};
@@ -190,14 +191,14 @@ void event_disk_control_append_image(const char *path)
          &sysinfo->disk_control;
 
    if (!control)
-      return;
+      return false;
 
    event_disk_control_set_eject(true, false);
 
    control->add_image_index();
    new_idx = control->get_num_images();
    if (!new_idx)
-      return;
+      return false;
    new_idx--;
 
    info.path = path;
@@ -224,6 +225,8 @@ void event_disk_control_append_image(const char *path)
    event_cmd_ctl(EVENT_CMD_AUTOSAVE_INIT, NULL);
    event_disk_control_set_index(new_idx);
    event_disk_control_set_eject(false, false);
+
+   return true;
 }
 
 /**
@@ -1551,6 +1554,13 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
       case EVENT_CMD_LOG_FILE_DEINIT:
          retro_main_log_file_deinit();
          break;
+      case EVENT_CMD_DISK_APPEND_IMAGE:
+         {
+            const char *path = (const char*)data;
+            if (string_is_empty(path))
+               return false;
+            return event_disk_control_append_image(path);
+         }
       case EVENT_CMD_DISK_EJECT_TOGGLE:
          if (info && info->disk_control.get_num_images)
          {

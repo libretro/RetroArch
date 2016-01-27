@@ -196,6 +196,8 @@ enum event_command
    EVENT_CMD_DISK_NEXT,
    /* Cycle to previous disk. */
    EVENT_CMD_DISK_PREV,
+   /* Appends disk image to disk image list. */
+   EVENT_CMD_DISK_APPEND_IMAGE,
    /* Stops rumbling. */
    EVENT_CMD_RUMBLE_STOP,
    /* Toggles mouse grab. */
@@ -208,14 +210,6 @@ enum event_command
    EVENT_CMD_VOLUME_UP,
    EVENT_CMD_VOLUME_DOWN
 };
-
-/**
- * event_disk_control_append_image:
- * @path                 : Path to disk image. 
- *
- * Appends disk image to disk image list.
- **/
-void event_disk_control_append_image(const char *path);
 
 /**
  * event_command:
