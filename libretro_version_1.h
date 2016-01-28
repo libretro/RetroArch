@@ -80,6 +80,8 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_SYMBOLS_INIT,
 
+   CORE_CTL_RETRO_API_VERSION,
+
    /* Compare libretro core API version against API version
     * used by RetroArch.
     *
@@ -101,6 +103,11 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE
 };
+
+typedef struct retro_ctx_api_info
+{
+   unsigned version;
+} retro_ctx_api_info_t;
 
 typedef struct retro_ctx_controller_info
 {

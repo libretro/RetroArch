@@ -157,11 +157,16 @@ bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
 uint32_t np_impl_magic(void)
 {
    size_t i, len;
+   retro_ctx_api_info_t api_info;
+   unsigned api;
    uint32_t res                        = 0;
    rarch_system_info_t *info           = NULL;
    const char *lib                     = NULL;
    const char *ver                     = PACKAGE_VERSION;
-   unsigned api                        = core.retro_api_version();
+
+   core_ctl(CORE_CTL_RETRO_API_VERSION, &api_info);
+
+   api                                 = api_info.version;
    
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
    

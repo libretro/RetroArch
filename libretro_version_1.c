@@ -174,6 +174,12 @@ bool core_ctl(enum core_ctl_state state, void *data)
 
    switch (state)
    {
+      case CORE_CTL_RETRO_API_VERSION:
+         {
+            retro_ctx_api_info_t *api = (retro_ctx_api_info_t*)data;
+            api->version = core.retro_api_version();
+         }
+         break;
       case CORE_CTL_SET_POLL_TYPE:
          {
             unsigned *poll_type = (unsigned*)data;
