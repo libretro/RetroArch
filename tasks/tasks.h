@@ -27,7 +27,19 @@ extern "C" {
 
 enum task_ctl_state
 {
-   TASK_CTL_NONE = 0
+   TASK_CTL_NONE = 0,
+
+   /* Blocks until all tasks have finished.
+    * This must only be called from the main thread. */
+   TASK_CTL_WAIT,
+
+   /* Sends a signal to terminate all the tasks.
+    *
+    * This won't terminate the tasks immediately.
+    * They will finish as soon as possible.
+    *
+    * This must only be called from the main thread. */
+   TASK_CTL_RESET,
 };
 
 typedef struct rarch_task rarch_task_t;
@@ -97,23 +109,6 @@ void rarch_task_deinit(void);
  * This function must only be called from the main thread.
  */
 void rarch_task_check(void);
-
-/**
- * @brief Sends a signal to terminate all the tasks.
- *
- * This function won't terminate the tasks immediately. They will finish as
- * soon as possible.
- *
- * This function must only be called from the main thread.
- */
-void rarch_task_reset(void);
-
-/**
- * @brief Blocks until all tasks have finished.
- *
- * This function must only be called from the main thread.
- */
-void rarch_task_wait(void);
 
 /**
  * @brief Calls func for every running task until it returns true.

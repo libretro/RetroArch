@@ -414,16 +414,6 @@ void rarch_task_push(rarch_task_t *task)
    impl_current->push_running(task);
 }
 
-void rarch_task_wait(void)
-{
-   impl_current->wait();
-}
-
-void rarch_task_reset(void)
-{
-   impl_current->reset();
-}
-
 bool rarch_task_find(rarch_task_finder_t func, void *user_data)
 {
    return impl_current->find(func, user_data);
@@ -433,6 +423,12 @@ bool task_ctl(enum task_ctl_state state, void *data)
 {
    switch (state)
    {
+      case TASK_CTL_RESET:
+         impl_current->reset();
+         break;
+      case TASK_CTL_WAIT:
+         impl_current->wait();
+         break;
       case TASK_CTL_NONE:
       default:
          break;
