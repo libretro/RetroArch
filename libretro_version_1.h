@@ -75,6 +75,8 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_UNSERIALIZE,
 
+   CORE_CTL_RETRO_SYMBOLS_INIT,
+
    /* Compare libretro core API version against API version
     * used by RetroArch.
     *

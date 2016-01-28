@@ -410,8 +410,6 @@ static void event_deinit_core(bool reinit)
       config_unload_override();
       runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
-
-   uninit_libretro_sym(&core);
 }
 
 static void event_init_cheats(void)
@@ -573,12 +571,10 @@ static bool event_init_core(void *data)
 {
    retro_ctx_environ_info_t info;
    settings_t *settings            = config_get_ptr();
-   enum rarch_core_type *core_type = (enum rarch_core_type*)data;
 
-   if (!core_type)
+   if (!core_ctl(CORE_CTL_RETRO_SYMBOLS_INIT, data))
       return false;
 
-   init_libretro_sym(*core_type, &core);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
 
    /* auto overrides: apply overrides */

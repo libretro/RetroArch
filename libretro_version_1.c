@@ -174,6 +174,15 @@ bool core_ctl(enum core_ctl_state state, void *data)
 
    switch (state)
    {
+      case CORE_CTL_RETRO_SYMBOLS_INIT:
+         {
+            enum rarch_core_type *core_type = (enum rarch_core_type*)data;
+
+            if (!core_type)
+               return false;
+            init_libretro_sym(*core_type, &core);
+         }
+         break;
       case CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE:
          {
             retro_ctx_controller_info_t *pad = (retro_ctx_controller_info_t*)data;
@@ -278,6 +287,7 @@ bool core_ctl(enum core_ctl_state state, void *data)
          video_driver_callback_destroy_context();
          video_driver_unset_callback();
          core.retro_deinit();
+         uninit_libretro_sym(&core);
          break;
       case CORE_CTL_RETRO_UNLOAD_GAME:
          core.retro_unload_game();
