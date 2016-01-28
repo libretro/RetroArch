@@ -50,23 +50,21 @@
 #ifdef HAVE_DYNAMIC
 #define SYMBOL(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
-   memcpy(&core.x, &func, sizeof(func)); \
-   if (core.x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retro_fail(1, "init_libretro_sym()"); } \
+   memcpy(&current_core->x, &func, sizeof(func)); \
+   if (current_core->x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retro_fail(1, "init_libretro_sym()"); } \
 } while (0)
 
 static dylib_t lib_handle;
 #else
-#define SYMBOL(x) core.x = x
+#define SYMBOL(x) current_core->x = x
 #endif
 
-#define SYMBOL_DUMMY(x) core.x = libretro_dummy_##x
-
+#define SYMBOL_DUMMY(x) current_core->x = libretro_dummy_##x
 #ifdef HAVE_FFMPEG
-#define SYMBOL_FFMPEG(x) core.x = libretro_ffmpeg_##x
+#define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
 #endif
-
 #ifdef HAVE_IMAGEVIEWER
-#define SYMBOL_IMAGEVIEWER(x) core.x = libretro_imageviewer_##x
+#define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
 #endif
 
 struct retro_core_t core;
@@ -308,7 +306,7 @@ static void load_dynamic_core(void)
  *
  * Setup libretro callback symbols.
  **/
-static void load_symbols(enum rarch_core_type type)
+static void load_symbols(enum rarch_core_type type, struct retro_core_t *current_core)
 {
    switch (type)
    {
@@ -512,13 +510,13 @@ void libretro_get_current_core_pathname(char *name, size_t size)
  * Initializes libretro symbols and
  * setups environment callback functions.
  **/
-void init_libretro_sym(enum rarch_core_type type)
+void init_libretro_sym(enum rarch_core_type type, struct retro_core_t *current_core)
 {
    /* Guarantee that we can do "dirty" casting.
     * Every OS that this program supports should pass this. */
    retro_assert(sizeof(void*) == sizeof(void (*)(void)));
 
-   load_symbols(type);
+   load_symbols(type, current_core);
 }
 
 /**

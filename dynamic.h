@@ -162,7 +162,7 @@ extern struct retro_core_t core;
  * Initializes libretro symbols and
  * setups environment callback functions.
  **/
-void init_libretro_sym(enum rarch_core_type type);
+void init_libretro_sym(enum rarch_core_type type, struct retro_core_t *core);
 
 /**
  * uninit_libretro_sym:

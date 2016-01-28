@@ -578,7 +578,7 @@ static bool event_init_core(void *data)
    if (!core_type)
       return false;
 
-   init_libretro_sym(*core_type);
+   init_libretro_sym(*core_type, &core);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
 
    /* auto overrides: apply overrides */
