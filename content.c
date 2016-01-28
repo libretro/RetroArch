@@ -313,7 +313,7 @@ static bool load_ram_file(ram_type_t *ram)
    retro_ctx_memory_info_t mem_info;
    void *buf   = NULL;
 
-   mem_info.ram = ram;
+   mem_info.id  = ram->type;
 
    core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
 
@@ -356,7 +356,7 @@ static bool save_ram_file(ram_type_t *ram)
 {
    retro_ctx_memory_info_t mem_info;
 
-   mem_info.ram = ram;
+   mem_info.id = ram->type;
 
    core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
 

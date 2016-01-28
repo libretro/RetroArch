@@ -107,7 +107,7 @@ typedef struct retro_ctx_memory_info
 {
    void *data;
    size_t size;
-   ram_type_t *ram;
+   unsigned id;
 } retro_ctx_memory_info_t;
 
 typedef struct retro_ctx_load_content_info
