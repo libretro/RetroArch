@@ -98,7 +98,8 @@ static void push_task_progress(rarch_task_t *task)
       else
       {
          if (task->progress >= 0 && task->progress <= 100)
-            task_msg_queue_pushf(1, 60, true, "%i%%: %s", task->progress, task->title);
+            task_msg_queue_pushf(1, 60, true, "%i%%: %s",
+                  task->progress, task->title);
          else
             task_msg_queue_pushf(1, 60, true, "%s...", task->title);
       }
