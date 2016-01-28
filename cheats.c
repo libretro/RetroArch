@@ -84,7 +84,15 @@ void cheat_manager_apply_cheats(void)
    for (i = 0; i < handle->size; i++)
    {
       if (handle->cheats[i].state)
-         core.retro_cheat_set(idx++, true, handle->cheats[i].code);
+      {
+         retro_ctx_cheat_info_t cheat_info;
+
+         cheat_info.index   = idx++;
+         cheat_info.enabled = true;
+         cheat_info.code    = handle->cheats[i].code;
+
+         core_ctl(CORE_CTL_RETRO_CHEAT_SET, &cheat_info);
+      }
    }
    
 #ifdef HAVE_CHEEVOS

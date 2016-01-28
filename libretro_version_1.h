@@ -80,6 +80,8 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_SYMBOLS_INIT,
 
+   CORE_CTL_RETRO_CHEAT_SET,
+
    CORE_CTL_RETRO_CHEAT_RESET,
 
    CORE_CTL_RETRO_API_VERSION,
@@ -105,6 +107,13 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE
 };
+
+typedef struct retro_ctx_cheat_info
+{
+   unsigned index;
+   bool enabled;
+   const char *code;
+} retro_ctx_cheat_info_t;
 
 typedef struct retro_ctx_api_info
 {

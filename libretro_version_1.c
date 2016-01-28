@@ -174,6 +174,12 @@ bool core_ctl(enum core_ctl_state state, void *data)
 
    switch (state)
    {
+      case CORE_CTL_RETRO_CHEAT_SET:
+         {
+            retro_ctx_cheat_info_t *info = (retro_ctx_cheat_info_t*)data;
+            core.retro_cheat_set(info->index, info->enabled, info->code);
+         }
+         break;
       case CORE_CTL_RETRO_CHEAT_RESET:
          core.retro_cheat_reset();
          break;
