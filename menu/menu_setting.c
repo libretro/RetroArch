@@ -2806,7 +2806,7 @@ void general_write_handler(void *data)
    switch (hash)
    {
       case MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
-         core.poll_type = *setting->value.integer;
+         core_ctl(CORE_CTL_SET_POLL_TYPE, setting->value.integer);
          break;
       case MENU_LABEL_VIDEO_SCALE_INTEGER:
          {

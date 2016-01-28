@@ -174,6 +174,12 @@ bool core_ctl(enum core_ctl_state state, void *data)
 
    switch (state)
    {
+      case CORE_CTL_SET_POLL_TYPE:
+         {
+            unsigned *poll_type = (unsigned*)data;
+            core.poll_type = *poll_type;
+         }
+         break;
       case CORE_CTL_RETRO_SYMBOLS_INIT:
          {
             enum rarch_core_type *core_type = (enum rarch_core_type*)data;
