@@ -419,9 +419,10 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
    uint32_t crc32, void *userdata)
 {
    struct decomp_state *st = (struct decomp_state*)userdata;
+
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
-      goto next_file;
+      return 1;
 
    RARCH_LOG("[deflate] Path: %s, CRC32: 0x%x\n", name, crc32);
 
@@ -467,15 +468,10 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
          free(handle.data);
 
       if (goto_error)
-         goto error;
-
+         return 0;
    }
 
-next_file:
    return 1;
-
-error:
-   return 0;
 }
 
 static int read_zip_file(const char *path,
