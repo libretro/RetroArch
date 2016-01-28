@@ -25,6 +25,7 @@
 #include "video_state_python.h"
 #include "../dynamic.h"
 #include "../libretro.h"
+#include "../libretro_version_1.h"
 #include "../general.h"
 #include "../verbosity.h"
 #include "../input/input_config.h"
@@ -34,8 +35,14 @@ static PyObject* py_read_wram(PyObject *self, PyObject *args)
 {
    unsigned addr;
    size_t   max;
-   const uint8_t *data = (const uint8_t*)
-      core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+   retro_ctx_memory_info_t    mem_info;
+   const uint8_t *data = NULL;
+
+   mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   data = (const uint8_t*)mem_info.data;
 
    (void)self;
 
@@ -45,7 +52,7 @@ static PyObject* py_read_wram(PyObject *self, PyObject *args)
       return Py_None;
    }
 
-   max = core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
+   max = mem_info.size;
 
    if (!PyArg_ParseTuple(args, "I", &addr))
       return NULL;
@@ -63,8 +70,14 @@ static PyObject* py_read_vram(PyObject *self, PyObject *args)
 {
    unsigned addr;
    size_t max;
-   const uint8_t *data = (const uint8_t*)
-      core.retro_get_memory_data(RETRO_MEMORY_VIDEO_RAM);
+   retro_ctx_memory_info_t    mem_info;
+   const uint8_t *data = NULL;
+
+   mem_info.id = RETRO_MEMORY_VIDEO_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   
+   data = (const uint8_t*)mem_info.data;
 
    (void)self;
 
@@ -74,7 +87,7 @@ static PyObject* py_read_vram(PyObject *self, PyObject *args)
       return Py_None;
    }
 
-   max = core.retro_get_memory_size(RETRO_MEMORY_VIDEO_RAM);
+   max = mem_info.size;
 
    if (!PyArg_ParseTuple(args, "I", &addr))
       return NULL;

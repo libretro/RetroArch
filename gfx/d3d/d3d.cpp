@@ -91,6 +91,7 @@ static bool d3d_init_luts(d3d_video_t *d3d)
 #ifndef DONT_HAVE_STATE_TRACKER
 static bool d3d_init_imports(d3d_video_t *d3d)
 {
+   retro_ctx_memory_info_t    mem_info;
    state_tracker_t *state_tracker = NULL;
    state_tracker_info tracker_info = {0};
 
@@ -99,8 +100,11 @@ static bool d3d_init_imports(d3d_video_t *d3d)
    if (!d3d->renderchain_driver->add_state_tracker)
       return true;
 
-   tracker_info.wram      = (uint8_t*)
-      core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+   mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   tracker_info.wram      = (uint8_t*)mem_info.data;
    tracker_info.info      = d3d->shader.variable;
    tracker_info.info_elem = d3d->shader.variables;
 
