@@ -38,12 +38,13 @@
 #endif
 
 static struct retro_core_t core;
+static unsigned core_poll_type;
 static bool input_polled;
 
 static int16_t input_state_poll(unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   if (core.poll_type == POLL_TYPE_LATE)
+   if (core_poll_type == POLL_TYPE_LATE)
    {
       if (!input_polled)
          input_poll();
@@ -93,7 +94,7 @@ static bool retro_uninit_libretro_cbs(void *data)
 
 static void input_poll_maybe(void)
 {
-   if (core.poll_type == POLL_TYPE_NORMAL)
+   if (core_poll_type == POLL_TYPE_NORMAL)
       input_poll();
 }
 
@@ -127,7 +128,7 @@ static bool retro_init_libretro_cbs(void *data)
       return true;
 
    /* Force normal poll type for netplay. */
-   core.poll_type = POLL_TYPE_NORMAL;
+   core_poll_type = POLL_TYPE_NORMAL;
 
    if (global->netplay.is_spectate)
    {
@@ -192,7 +193,7 @@ bool core_ctl(enum core_ctl_state state, void *data)
       case CORE_CTL_SET_POLL_TYPE:
          {
             unsigned *poll_type = (unsigned*)data;
-            core.poll_type = *poll_type;
+            core_poll_type = *poll_type;
          }
          break;
       case CORE_CTL_RETRO_SYMBOLS_INIT:
@@ -314,7 +315,7 @@ bool core_ctl(enum core_ctl_state state, void *data)
          core.retro_unload_game();
          break;
       case CORE_CTL_RETRO_RUN:
-         switch (core.poll_type)
+         switch (core_poll_type)
          {
             case POLL_TYPE_EARLY:
                input_poll();
@@ -333,7 +334,7 @@ bool core_ctl(enum core_ctl_state state, void *data)
       case CORE_CTL_INIT:
          {
             settings_t *settings = config_get_ptr();
-            core.poll_type = settings->input.poll_type_behavior;
+            core_poll_type = settings->input.poll_type_behavior;
             if (!core_ctl(CORE_CTL_VERIFY_API_VERSION, NULL))
                return false;
             if (!retro_init_libretro_cbs(&retro_ctx))
