@@ -385,7 +385,7 @@ static void event_init_controllers(void)
       if (set_controller)
       {
          pad.device     = device;
-         pad.i          = i + 1;
+         pad.port       = i + 1;
          core_ctl(CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE, &pad);
       }
    }

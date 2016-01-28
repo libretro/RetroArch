@@ -101,7 +101,7 @@ enum core_ctl_state
 
 typedef struct retro_ctx_controller_info
 {
-   unsigned i;
+   unsigned port;
    unsigned device;
 } retro_ctx_controller_info_t;
 

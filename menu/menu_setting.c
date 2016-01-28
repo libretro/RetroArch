@@ -2183,6 +2183,7 @@ static int setting_action_start_analog_dpad_mode(void *data)
 
 static int setting_action_start_libretro_device_type(void *data)
 {
+   retro_ctx_controller_info_t pad;
    unsigned index_offset, current_device;
    unsigned devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
@@ -2226,7 +2227,10 @@ static int setting_action_start_libretro_device_type(void *data)
    current_device = RETRO_DEVICE_JOYPAD;
 
    settings->input.libretro_device[port] = current_device;
-   core.retro_set_controller_port_device(port, current_device);
+
+   pad.port   = port;
+   pad.device = current_device;
+   core_ctl(CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE, &pad);
 
    return 0;
 }
@@ -2330,6 +2334,7 @@ static int setting_action_right_analog_dpad_mode(void *data, bool wraparound)
 static int setting_action_left_libretro_device_type(
       void *data, bool wraparound)
 {
+   retro_ctx_controller_info_t pad;
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
@@ -2382,7 +2387,11 @@ static int setting_action_left_libretro_device_type(
       [(current_idx + types - 1) % types];
 
    settings->input.libretro_device[port] = current_device;
-   core.retro_set_controller_port_device(port, current_device);
+
+   pad.port   = port;
+   pad.device = current_device;
+
+   core_ctl(CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE, &pad);
 
    return 0;
 }
@@ -2390,6 +2399,7 @@ static int setting_action_left_libretro_device_type(
 static int setting_action_right_libretro_device_type(
       void *data, bool wraparound)
 {
+   retro_ctx_controller_info_t pad;
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
@@ -2442,7 +2452,11 @@ static int setting_action_right_libretro_device_type(
       [(current_idx + 1) % types];
 
    settings->input.libretro_device[port] = current_device;
-   core.retro_set_controller_port_device(port, current_device);
+
+   pad.port   = port;
+   pad.device = current_device;
+
+   core_ctl(CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE, &pad);
 
    return 0;
 }
