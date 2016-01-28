@@ -117,6 +117,8 @@ enum runloop_ctl_state
    RUNLOOP_CTL_PREPARE_DUMMY
 };
 
+typedef int (*transfer_cb_t)(void *data, size_t len);
+
 typedef struct rarch_dir_list
 {
    struct string_list *list;
@@ -287,8 +289,10 @@ global_t *global_get_ptr(void);
  *
  * Run Libretro core in RetroArch for one frame.
  *
- * Returns: 0 on successful run, 1 if we have to wait until button input in order
- * to wake up the loop, -1 if we forcibly quit out of the RetroArch iteration loop. 
+ * Returns: 0 on successful run, 
+ * Returns 1 if we have to wait until button input in order 
+ * to wake up the loop.
+ * Returns -1 if we forcibly quit out of the RetroArch iteration loop. 
  **/
 int runloop_iterate(unsigned *sleep_ms);
 
@@ -302,7 +306,6 @@ const char *runloop_msg_queue_pull(void);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
-typedef int (*transfer_cb_t)(void *data, size_t len);
 
 #ifdef __cplusplus
 }
