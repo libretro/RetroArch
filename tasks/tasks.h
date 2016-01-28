@@ -25,6 +25,11 @@
 extern "C" {
 #endif
 
+enum task_ctl_state
+{
+   TASK_CTL_NONE = 0
+};
+
 typedef struct rarch_task rarch_task_t;
 typedef void (*rarch_task_callback_t)(void *task_data, void *user_data, const char *error);
 typedef void (*rarch_task_handler_t)(rarch_task_t *task);
@@ -170,6 +175,8 @@ bool rarch_task_push_content_load_default(
       const char *core_path, const char *fullpath,
       bool persist, enum rarch_core_type type,
       rarch_task_callback_t cb, void *user_data);
+
+bool task_ctl(enum task_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

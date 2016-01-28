@@ -428,3 +428,15 @@ bool rarch_task_find(rarch_task_finder_t func, void *user_data)
 {
    return impl_current->find(func, user_data);
 }
+
+bool task_ctl(enum task_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case TASK_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}
