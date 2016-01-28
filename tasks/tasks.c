@@ -45,7 +45,6 @@ struct rarch_task_impl
 static task_queue_t tasks_running  = {NULL, NULL};
 static task_queue_t tasks_finished = {NULL, NULL};
 
-
 static void task_queue_put(task_queue_t *queue, rarch_task_t *task)
 {
    task->next = NULL;
@@ -71,7 +70,7 @@ static rarch_task_t *task_queue_get(task_queue_t *queue)
    return task;
 }
 
-void task_msg_queue_pushf(unsigned prio, unsigned duration,
+static void task_msg_queue_pushf(unsigned prio, unsigned duration,
       bool flush, const char *fmt, ...)
 {
    char buf[1024];
