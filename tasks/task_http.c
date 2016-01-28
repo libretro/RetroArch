@@ -207,6 +207,7 @@ static bool rarch_task_http_finder(rarch_task_t *task, void *user_data)
 bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task_callback_t cb, void *user_data)
 {
    char tmp[PATH_MAX_LENGTH];
+   task_finder_data_t find_data;
    struct http_connection_t *conn = NULL;
    rarch_task_t  *t               = NULL;
    http_handle_t *http            = NULL;
@@ -214,8 +215,11 @@ bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task
    if (string_is_empty(url))
       return false;
 
+   find_data.func     = rarch_task_http_finder;
+   find_data.userdata = (void*)url;
+
    /* Concurrent download of the same file is not allowed */
-   if (rarch_task_find(rarch_task_http_finder, (void*)url))
+   if (task_ctl(TASK_CTL_FIND, &find_data))
    {
       RARCH_LOG("[http] '%s'' is already being downloaded.\n", url);
       return false;

@@ -44,6 +44,12 @@ enum task_ctl_state
     * This must only be called from the main thread. */
    TASK_CTL_INIT,
 
+   /**
+    * Calls func for every running task until it returns true.
+    * Returns a task or NULL if not found.
+    */
+   TASK_CTL_FIND,
+
    /* Blocks until all tasks have finished.
     * This must only be called from the main thread. */
    TASK_CTL_WAIT,
@@ -107,14 +113,12 @@ struct rarch_task
    rarch_task_t *next;
 };
 
-/**
- * @brief Calls func for every running task until it returns true.
- *
- * @param func
- * @param user_data
- * @return a task or NULL if not found.
- */
-bool rarch_task_find(rarch_task_finder_t func, void *user_data);
+typedef struct task_finder_data
+{
+   rarch_task_finder_t func;
+   void *userdata;
+} task_finder_data_t;
+
 
 #ifdef HAVE_NETWORKING
 typedef struct {

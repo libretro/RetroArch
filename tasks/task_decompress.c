@@ -225,6 +225,7 @@ bool rarch_task_push_decompress(
       rarch_task_callback_t cb,
       void *user_data)
 {
+   task_finder_data_t find_data;
    char tmp[PATH_MAX_LENGTH];
    decompress_state_t *s      = NULL;
    rarch_task_t *t            = NULL;
@@ -250,7 +251,10 @@ bool rarch_task_push_decompress(
    if (!valid_ext || !valid_ext[0])
       valid_ext   = NULL;
 
-   if (rarch_task_find(rarch_task_decompress_finder, (void*)source_file))
+   find_data.func     = rarch_task_decompress_finder;
+   find_data.userdata = (void*)source_file;
+
+   if (task_ctl(TASK_CTL_FIND, &find_data))
    {
       RARCH_LOG("[decompress] File '%s' already being decompressed.\n", source_file);
       return false;

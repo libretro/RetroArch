@@ -369,11 +369,6 @@ static struct rarch_task_impl impl_threaded = {
 };
 #endif
 
-bool rarch_task_find(rarch_task_finder_t func, void *user_data)
-{
-   return impl_current->find(func, user_data);
-}
-
 bool task_ctl(enum task_ctl_state state, void *data)
 {
 #ifdef HAVE_THREADS
@@ -398,6 +393,13 @@ bool task_ctl(enum task_ctl_state state, void *data)
             impl_current = &impl_regular;
 
          impl_current->init();
+         break;
+      case TASK_CTL_FIND:
+         {
+            task_finder_data_t *find_data = (task_finder_data_t*)data;
+            if (!impl_current->find(find_data->func, find_data->userdata))
+               return false;
+         }
          break;
       case TASK_CTL_CHECK:
          {
