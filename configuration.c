@@ -484,7 +484,7 @@ static void config_set_defaults(void)
 #endif
    settings->input.keyboard_gamepad_enable          = true;
    settings->input.keyboard_gamepad_mapping_type    = 1;
-   settings->input.poll_type_behavior               = 1;
+   settings->input.poll_type_behavior               = 2;
 #ifdef HAVE_FFMPEG
    settings->multimedia.builtin_mediaplayer_enable  = true;
 #else

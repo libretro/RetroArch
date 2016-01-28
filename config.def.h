@@ -756,7 +756,7 @@ static const bool input_descriptor_hide_unbound = false;
 
 static const unsigned input_max_users = 5;
 
-static const unsigned input_poll_type_behavior = 1;
+static const unsigned input_poll_type_behavior = 2;
 
 #ifdef IOS
 static const bool ui_companion_start_on_boot = false;
