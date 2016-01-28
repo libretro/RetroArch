@@ -894,39 +894,58 @@ Test all the achievements (call once per frame).
 
 static const uint8_t *cheevos_get_memory(unsigned offset)
 {
-   size_t size = core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
    uint8_t *memory;
+   retro_ctx_memory_info_t mem_info;
 
-   if (offset < size)
+   mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   if (offset < mem_info.size)
    {
-      memory = (uint8_t*)core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      memory = (uint8_t*)mem_info.data;
       return memory + offset;
    }
 
-   offset -= size;
-   size = core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+   offset -= mem_info.size;
 
-   if (offset < size)
+   mem_info.data = NULL;
+   mem_info.size = 0;
+   mem_info.id   = RETRO_MEMORY_SAVE_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   if (offset < mem_info.size)
    {
-      memory = (uint8_t*)core.retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+      memory = (uint8_t*)mem_info.data;
       return memory + offset;
    }
 
-   offset -= size;
-   size = core.retro_get_memory_size(RETRO_MEMORY_VIDEO_RAM);
+   offset -= mem_info.size;
 
-   if (offset < size)
+   mem_info.data = NULL;
+   mem_info.size = 0;
+   mem_info.id   = RETRO_MEMORY_VIDEO_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   if (offset < mem_info.size)
    {
-      memory = (uint8_t*)core.retro_get_memory_data(RETRO_MEMORY_VIDEO_RAM);
+      memory = (uint8_t*)mem_info.data;
       return memory + offset;
    }
 
-   offset -= size;
-   size = core.retro_get_memory_size(RETRO_MEMORY_RTC);
+   offset -= mem_info.size;
 
-   if (offset < size)
+   mem_info.data = NULL;
+   mem_info.size = 0;
+   mem_info.id   = RETRO_MEMORY_RTC;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   if (offset < mem_info.size)
    {
-      memory = (uint8_t*)core.retro_get_memory_data(RETRO_MEMORY_RTC);
+      memory = (uint8_t*)mem_info.data;
       return memory + offset;
    }
 
@@ -1790,6 +1809,8 @@ static unsigned cheevos_find_game_id_nes(const struct retro_game_info *info, ret
 
 int cheevos_load(const void *data)
 {
+   retro_ctx_memory_info_t mem_info;
+
    static const uint32_t genesis_exts[] =
    {
       0x0b888feeU, /* mdx */
@@ -1844,12 +1865,39 @@ int cheevos_load(const void *data)
    /* Also return OK if there's no content. */
    if (!info)
       return 0;
+
+   mem_info.data = NULL;
+   mem_info.size = 0;
+   mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
    
-   memory  = core.retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
-   memory += core.retro_get_memory_size(RETRO_MEMORY_VIDEO_RAM);
-   memory += core.retro_get_memory_size(RETRO_MEMORY_RTC);
-   memory += core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
-   
+   memory  = mem_info.size;
+
+   mem_info.data = NULL;
+   mem_info.size = 0;
+   mem_info.id   = RETRO_MEMORY_VIDEO_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   memory += mem_info.size;
+
+   mem_info.data = NULL;
+   mem_info.size = 0;
+   mem_info.id   = RETRO_MEMORY_RTC;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   memory += mem_info.size;
+
+   mem_info.data = NULL;
+   mem_info.size = 0;
+   mem_info.id   = RETRO_MEMORY_SAVE_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   memory += mem_info.size;
+
    if (!memory)
    {
       runloop_msg_queue_push("This core doesn't support achievements", 0, 5 * 60, false);
