@@ -25,12 +25,14 @@
 #include "rthreads/rthreads.h"
 #endif
 
-typedef struct {
+typedef struct
+{
    rarch_task_t *front;
    rarch_task_t *back;
 } task_queue_t;
 
-struct rarch_task_impl {
+struct rarch_task_impl
+{
    void (*push_running)(rarch_task_t *);
    void (*reset)(void);
    void (*wait)(void);
@@ -39,6 +41,7 @@ struct rarch_task_impl {
    void (*init)(void);
    void (*deinit)(void);
 };
+
 static task_queue_t tasks_running  = {NULL, NULL};
 static task_queue_t tasks_finished = {NULL, NULL};
 
@@ -48,10 +51,10 @@ static void task_queue_put(task_queue_t *queue, rarch_task_t *task)
 {
    task->next = NULL;
 
-   if (!queue->front)
-      queue->front = task;
-   else
+   if (queue->front)
       queue->back->next = task;
+   else
+      queue->front = task;
 
    queue->back = task;
 }
@@ -74,6 +77,7 @@ void task_msg_queue_pushf(unsigned prio, unsigned duration,
 {
    char buf[1024];
    va_list ap;
+   
    va_start(ap, fmt);
    vsnprintf(buf, sizeof(buf), fmt, ap);
    va_end(ap);
@@ -378,15 +382,6 @@ void rarch_task_init(void)
    impl_current->init();
 }
 
-void rarch_task_deinit(void)
-{
-   if (!impl_current)
-      return;
-
-   impl_current->deinit();
-   impl_current = NULL;
-}
-
 bool rarch_task_find(rarch_task_finder_t func, void *user_data)
 {
    return impl_current->find(func, user_data);
@@ -396,6 +391,13 @@ bool task_ctl(enum task_ctl_state state, void *data)
 {
    switch (state)
    {
+      case TASK_CTL_DEINIT:
+         if (!impl_current)
+            return false;
+
+         impl_current->deinit();
+         impl_current = NULL;
+         break;
       case TASK_CTL_CHECK:
          {
 #ifdef HAVE_THREADS
@@ -406,7 +408,7 @@ bool task_ctl(enum task_ctl_state state, void *data)
             if (want_threaded != current_threaded)
             {
                RARCH_LOG("Switching rarch_task implementation.\n");
-               rarch_task_deinit();
+               task_ctl(TASK_CTL_DEINIT, NULL);
             }
 
             if (impl_current == NULL)

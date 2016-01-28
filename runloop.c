@@ -1027,7 +1027,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_IS_EXEC:
          return runloop_exec;
       case RUNLOOP_CTL_DATA_DEINIT:
-         rarch_task_deinit();
+         task_ctl(TASK_CTL_DEINIT, NULL);
          break;
       case RUNLOOP_CTL_IS_CORE_OPTION_UPDATED:
          if (!runloop_system.core_options)

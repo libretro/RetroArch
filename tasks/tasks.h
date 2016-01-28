@@ -29,6 +29,13 @@ enum task_ctl_state
 {
    TASK_CTL_NONE = 0,
 
+   /* Deinitializes the task system.
+    * This deinitializes the task system. 
+    * The tasks that are running at
+    * the moment will stay on hold 
+    * until TASK_CTL_INIT is called again. */
+   TASK_CTL_DEINIT,
+
    /* Blocks until all tasks have finished.
     * This must only be called from the main thread. */
    TASK_CTL_WAIT,
@@ -101,14 +108,6 @@ struct rarch_task
  * This function must only be called from the main thread.
  */
 void rarch_task_init(void);
-
-/**
- * @brief Deinitializes the task system
- *
- * This function deinitializes the task system. The tasks that are running at
- * the moment will stay on hold until rarch_task_init() is called again.
- */
-void rarch_task_deinit(void);
 
 /**
  * @brief Calls func for every running task until it returns true.
