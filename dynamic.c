@@ -530,7 +530,7 @@ void init_libretro_sym(enum rarch_core_type type)
  * associated state, and
  * unbind all libretro callback symbols.
  **/
-void uninit_libretro_sym(void)
+void uninit_libretro_sym(struct retro_core_t *current_core)
 {
 #ifdef HAVE_DYNAMIC
    if (lib_handle)
@@ -538,31 +538,7 @@ void uninit_libretro_sym(void)
    lib_handle = NULL;
 #endif
 
-   core.retro_init                       = NULL;
-   core.retro_deinit                     = NULL;
-   core.retro_api_version                = NULL;
-   core.retro_get_system_info            = NULL;
-   core.retro_get_system_av_info         = NULL;
-   core.retro_set_environment            = NULL;
-   core.retro_set_video_refresh          = NULL;
-   core.retro_set_audio_sample           = NULL;
-   core.retro_set_audio_sample_batch     = NULL;
-   core.retro_set_input_poll             = NULL;
-   core.retro_set_input_state            = NULL;
-   core.retro_set_controller_port_device = NULL;
-   core.retro_reset                      = NULL;
-   core.retro_run                        = NULL;
-   core.retro_serialize_size             = NULL;
-   core.retro_serialize                  = NULL;
-   core.retro_unserialize                = NULL;
-   core.retro_cheat_reset                = NULL;
-   core.retro_cheat_set                  = NULL;
-   core.retro_load_game                  = NULL;
-   core.retro_load_game_special          = NULL;
-   core.retro_unload_game                = NULL;
-   core.retro_get_region                 = NULL;
-   core.retro_get_memory_data            = NULL;
-   core.retro_get_memory_size            = NULL;
+   memset(&current_core, 0, sizeof(struct retro_core_t));
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_FREE, NULL);
    camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);

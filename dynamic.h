@@ -173,7 +173,7 @@ void init_libretro_sym(enum rarch_core_type type);
  * associated state, and
  * unbind all libretro callback symbols.
  **/
-void uninit_libretro_sym(void);
+void uninit_libretro_sym(struct retro_core_t *core);
 
 #ifdef __cplusplus
 }

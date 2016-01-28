@@ -411,7 +411,7 @@ static void event_deinit_core(bool reinit)
       runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
    }
 
-   uninit_libretro_sym();
+   uninit_libretro_sym(&core);
 }
 
 static void event_init_cheats(void)
