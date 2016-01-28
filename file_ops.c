@@ -427,19 +427,18 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
 
    if (strstr(name, st->needle))
    {
+      bool goto_error = false;
+      file_archive_file_handle_t handle = {0};
+
       st->found = true;
 
-      if (st->opt_file != 0)
+      if (zip_file_decompressed_handle(&handle,
+               cdata, csize, size, crc32))
       {
-         /* Called in case core has need_fullpath enabled. */
-         file_archive_file_handle_t handle = {0};
-         char *buf                         = NULL;
-         
-         if (zip_file_decompressed_handle(&handle,
-                  cdata, csize, size, crc32))
+         if (st->opt_file != 0)
          {
-            bool goto_error = false;
-            buf             = (char*)malloc(size);
+            /* Called in case core has need_fullpath enabled. */
+            char *buf       = (char*)malloc(size);
 
             if (buf)
             {
@@ -448,35 +447,28 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
                   goto_error = true;
             }
 
-            if (handle.data)
-               free(handle.data);
             free(buf);
-
-            if (goto_error)
-               goto error;
 
             st->size = 0;
          }
-      }
-      else
-      {
-         /* Called in case core has need_fullpath disabled.
-          * Will copy decompressed content directly into
-          * RetroArch's ROM buffer. */
-         file_archive_file_handle_t handle = {0};
-
-         if (zip_file_decompressed_handle(&handle,
-                  cdata, csize, size, crc32))
+         else
          {
+            /* Called in case core has need_fullpath disabled.
+             * Will copy decompressed content directly into
+             * RetroArch's ROM buffer. */
             *st->buf = malloc(size);
             memcpy(*st->buf, handle.data, size);
-
-            if (handle.data)
-               free(handle.data);
 
             st->size = size;
          }
       }
+
+      if (handle.data)
+         free(handle.data);
+
+      if (goto_error)
+         goto error;
+
    }
 
 next_file:
