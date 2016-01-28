@@ -33,6 +33,11 @@ enum task_ctl_state
     * This must only be called from the main thread. */
    TASK_CTL_WAIT,
 
+   /* Checks for finished tasks
+    * Takes the finished tasks, if any, and runs their callbacks.
+    * This must only be called from the main thread. */
+   TASK_CTL_CHECK,
+
    /* Pushes a task
     * The task will start as soon as possible. */
    TASK_CTL_PUSH,
@@ -104,15 +109,6 @@ void rarch_task_init(void);
  * the moment will stay on hold until rarch_task_init() is called again.
  */
 void rarch_task_deinit(void);
-
-/**
- * @brief Checks for finished tasks
- *
- * Takes the finished tasks, if any, and runs their callbacks.
- *
- * This function must only be called from the main thread.
- */
-void rarch_task_check(void);
 
 /**
  * @brief Calls func for every running task until it returns true.

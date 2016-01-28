@@ -454,7 +454,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    switch (state)
    {
       case RUNLOOP_CTL_DATA_ITERATE:
-         rarch_task_check();
+         task_ctl(TASK_CTL_CHECK, NULL);
          return true;
       case RUNLOOP_CTL_SHADER_DIR_DEINIT:
          shader_dir_free(&runloop_shader_dir);

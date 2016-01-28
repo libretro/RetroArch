@@ -387,26 +387,6 @@ void rarch_task_deinit(void)
    impl_current = NULL;
 }
 
-void rarch_task_check(void)
-{
-#ifdef HAVE_THREADS
-   settings_t *settings  = config_get_ptr();
-   bool current_threaded = (impl_current == &impl_threaded);
-   bool want_threaded    = settings->threaded_data_runloop_enable;
-
-   if (want_threaded != current_threaded)
-   {
-      RARCH_LOG("Switching rarch_task implementation.\n");
-      rarch_task_deinit();
-   }
-
-   if (impl_current == NULL)
-      rarch_task_init();
-#endif
-
-   impl_current->gather();
-}
-
 bool rarch_task_find(rarch_task_finder_t func, void *user_data)
 {
    return impl_current->find(func, user_data);
@@ -416,6 +396,26 @@ bool task_ctl(enum task_ctl_state state, void *data)
 {
    switch (state)
    {
+      case TASK_CTL_CHECK:
+         {
+#ifdef HAVE_THREADS
+            settings_t *settings  = config_get_ptr();
+            bool current_threaded = (impl_current == &impl_threaded);
+            bool want_threaded    = settings->threaded_data_runloop_enable;
+
+            if (want_threaded != current_threaded)
+            {
+               RARCH_LOG("Switching rarch_task implementation.\n");
+               rarch_task_deinit();
+            }
+
+            if (impl_current == NULL)
+               rarch_task_init();
+#endif
+
+            impl_current->gather();
+         }
+         break;
       case TASK_CTL_PUSH:
          {
             /* The lack of NULL checks in the following functions is proposital
