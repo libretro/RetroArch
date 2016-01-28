@@ -203,13 +203,13 @@ static void rarch_main_init_wrap(
          RARCH_LOG("Using content: %s.\n", args->content_path);
          argv[(*argc)++] = strdup(args->content_path);
       }
+#ifdef HAVE_MENU
       else
       {
-#ifdef HAVE_MENU
          RARCH_LOG("No content, starting dummy core.\n");
          argv[(*argc)++] = strdup("--menu");
-#endif
       }
+#endif
    }
 
    if (args->sram_path)
