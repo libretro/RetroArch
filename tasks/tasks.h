@@ -36,6 +36,14 @@ enum task_ctl_state
     * until TASK_CTL_INIT is called again. */
    TASK_CTL_DEINIT,
 
+   /* Initializes the task system.
+    * This initializes the task system 
+    * and chooses an appropriate
+    * implementation according to the settings.
+    *
+    * This must only be called from the main thread. */
+   TASK_CTL_INIT,
+
    /* Blocks until all tasks have finished.
     * This must only be called from the main thread. */
    TASK_CTL_WAIT,
@@ -98,16 +106,6 @@ struct rarch_task
    /* don't touch this. */
    rarch_task_t *next;
 };
-
-/**
- * @brief Initializes the task system
- *
- * This function initializes the task system and chooses an appropriate
- * implementation according to the settings.
- *
- * This function must only be called from the main thread.
- */
-void rarch_task_init(void);
 
 /**
  * @brief Calls func for every running task until it returns true.

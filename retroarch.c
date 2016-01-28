@@ -1223,7 +1223,7 @@ int rarch_main_init(int argc, char *argv[])
 
    rarch_ctl(RARCH_CTL_VALIDATE_CPU_FEATURES, NULL);
    config_load();
-   rarch_task_init();
+   task_ctl(TASK_CTL_INIT, NULL);
 
    {
       settings_t *settings = config_get_ptr();

@@ -369,19 +369,6 @@ static struct rarch_task_impl impl_threaded = {
 };
 #endif
 
-void rarch_task_init(void)
-{
-#ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-   if (settings->threaded_data_runloop_enable)
-      impl_current = &impl_threaded;
-   else
-#endif
-      impl_current = &impl_regular;
-
-   impl_current->init();
-}
-
 bool rarch_task_find(rarch_task_finder_t func, void *user_data)
 {
    return impl_current->find(func, user_data);
@@ -389,6 +376,10 @@ bool rarch_task_find(rarch_task_finder_t func, void *user_data)
 
 bool task_ctl(enum task_ctl_state state, void *data)
 {
+#ifdef HAVE_THREADS
+   settings_t *settings = config_get_ptr();
+#endif
+
    switch (state)
    {
       case TASK_CTL_DEINIT:
@@ -398,10 +389,19 @@ bool task_ctl(enum task_ctl_state state, void *data)
          impl_current->deinit();
          impl_current = NULL;
          break;
+      case TASK_CTL_INIT:
+#ifdef HAVE_THREADS
+         if (settings->threaded_data_runloop_enable)
+            impl_current = &impl_threaded;
+         else
+#endif
+            impl_current = &impl_regular;
+
+         impl_current->init();
+         break;
       case TASK_CTL_CHECK:
          {
 #ifdef HAVE_THREADS
-            settings_t *settings  = config_get_ptr();
             bool current_threaded = (impl_current == &impl_threaded);
             bool want_threaded    = settings->threaded_data_runloop_enable;
 
@@ -412,7 +412,7 @@ bool task_ctl(enum task_ctl_state state, void *data)
             }
 
             if (impl_current == NULL)
-               rarch_task_init();
+               task_ctl(TASK_CTL_INIT, NULL);
 #endif
 
             impl_current->gather();

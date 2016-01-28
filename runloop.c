@@ -996,8 +996,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
 #endif
          runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
-         rarch_task_init();
-
+         task_ctl(TASK_CTL_INIT, NULL);
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 
          rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
