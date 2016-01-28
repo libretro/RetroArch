@@ -37,7 +37,7 @@
 #include "netplay/netplay.h"
 #endif
 
-
+static struct retro_core_t core;
 static bool input_polled;
 
 static int16_t input_state_poll(unsigned port,

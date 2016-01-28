@@ -151,8 +151,6 @@ struct retro_core_t
    size_t (*retro_get_memory_size)(unsigned);
 };
 
-extern struct retro_core_t core;
-
 /**
  * init_libretro_sym:
  * @type                        : Type of core to be loaded.

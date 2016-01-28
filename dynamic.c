@@ -67,9 +67,7 @@ static dylib_t lib_handle;
 #define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
 #endif
 
-struct retro_core_t core;
 static bool ignore_environment_cb;
-
 
 const struct retro_subsystem_info *libretro_find_subsystem_info(
       const struct retro_subsystem_info *info, unsigned num_info,
