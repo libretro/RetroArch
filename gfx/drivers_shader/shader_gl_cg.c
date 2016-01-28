@@ -37,6 +37,7 @@
 
 #include "../video_shader_driver.h"
 #include "../video_shader_parse.h"
+#include "../../libretro_version_1.h"
 #include "../../dynamic.h"
 #include "../../rewind.h"
 #include "../video_state_tracker.h"
@@ -610,6 +611,7 @@ static bool gl_cg_load_plain(void *data, const char *path)
 static bool gl_cg_load_imports(void *data)
 {
    unsigned i;
+   retro_ctx_memory_info_t mem_info;
    struct state_tracker_info tracker_info = {0};
    cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
 
@@ -619,6 +621,7 @@ static bool gl_cg_load_imports(void *data)
    for (i = 0; i < cg_data->shader->variables; i++)
    {
       unsigned memtype;
+
       switch (cg_data->shader->variable[i].ram_type)
       {
          case RARCH_STATE_WRAM:
@@ -629,16 +632,25 @@ static bool gl_cg_load_imports(void *data)
             memtype = -1u;
       }
 
+      mem_info.id = memtype;
+
+      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
       if ((memtype != -1u) && 
-            (cg_data->shader->variable[i].addr >= core.retro_get_memory_size(memtype)))
+            (cg_data->shader->variable[i].addr >= mem_info.size))
       {
          RARCH_ERR("Address out of bounds.\n");
          return false;
       }
    }
 
-   tracker_info.wram = (uint8_t*)
-      core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+   mem_info.data = NULL;
+   mem_info.size = 0;
+   mem_info.id   = RETRO_MEMORY_SYSTEM_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   tracker_info.wram      = (uint8_t*)mem_info.data;
    tracker_info.info      = cg_data->shader->variable;
    tracker_info.info_elem = cg_data->shader->variables;
 

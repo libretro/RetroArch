@@ -27,6 +27,7 @@
 #include "../../dynamic.h"
 #include "../../file_ops.h"
 #include "../../rewind.h"
+#include "../../libretro_version_1.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -878,9 +879,14 @@ static void *gl_glsl_init(void *data, const char *path)
 
    if (glsl->shader->variables)
    {
+      retro_ctx_memory_info_t mem_info;
       struct state_tracker_info info = {0};
 
-      info.wram      = (uint8_t*)core.retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
+      mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
+
+      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+      info.wram      = (uint8_t*)mem_info.data;
       info.info      = glsl->shader->variable;
       info.info_elem = glsl->shader->variables;
 

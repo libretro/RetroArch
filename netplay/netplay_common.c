@@ -190,16 +190,20 @@ uint32_t np_impl_magic(void)
 bool np_send_info(netplay_t *netplay)
 {
    unsigned sram_size;
+   retro_ctx_memory_info_t mem_info;
    char msg[512]             = {0};
    uint32_t *content_crc_ptr = NULL;
    void *sram                = NULL;
    uint32_t header[3]        = {0};
 
+   mem_info.id = RETRO_MEMORY_SAVE_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
    content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
    
    header[0] = htonl(*content_crc_ptr);
    header[1] = htonl(np_impl_magic());
-   header[2] = htonl(core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM));
+   header[2] = htonl(mem_info.size);
 
    if (!socket_send_all_blocking(netplay->fd, header, sizeof(header)))
       return false;
@@ -211,8 +215,8 @@ bool np_send_info(netplay_t *netplay)
    }
 
    /* Get SRAM data from User 1. */
-   sram      = core.retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
-   sram_size = core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+   sram      = mem_info.data;
+   sram_size = mem_info.size;
 
    if (!socket_receive_all_blocking(netplay->fd, sram, sram_size))
    {
@@ -237,6 +241,7 @@ bool np_get_info(netplay_t *netplay)
 {
    unsigned sram_size;
    uint32_t header[3];
+   retro_ctx_memory_info_t mem_info;
    uint32_t *content_crc_ptr = NULL;
    const void *sram          = NULL;
 
@@ -260,7 +265,11 @@ bool np_get_info(netplay_t *netplay)
       return false;
    }
 
-   if (core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM) != ntohl(header[2]))
+   mem_info.id = RETRO_MEMORY_SAVE_RAM;
+
+   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+   if (mem_info.size != ntohl(header[2]))
    {
       RARCH_ERR("Content SRAM sizes do not correspond.\n");
       return false;
@@ -273,8 +282,8 @@ bool np_get_info(netplay_t *netplay)
    }
 
    /* Send SRAM data to our User 2. */
-   sram      = core.retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
-   sram_size = core.retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+   sram      = mem_info.data;
+   sram_size = mem_info.size;
 
    if (!socket_send_all_blocking(netplay->fd, sram, sram_size))
    {
