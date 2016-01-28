@@ -424,12 +424,6 @@ static bool rarch_game_specific_options(char **output)
    return true;
 }
 
-static void runloop_data_clear_state(void)
-{
-   runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
-   rarch_task_init();
-}
-
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    static rarch_dir_list_t runloop_shader_dir;
@@ -1001,7 +995,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
 #endif
-         runloop_data_clear_state();
+         runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
+         rarch_task_init();
 
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 
