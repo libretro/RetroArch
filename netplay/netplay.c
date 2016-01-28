@@ -1036,6 +1036,7 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
       unsigned device, unsigned idx, unsigned id)
 {
    int16_t inp;
+   retro_ctx_input_state_info_t input_info;
 
    if (socket_receive_all_blocking(netplay->fd, (char*)&inp, sizeof(inp)))
       return swap_if_big16(inp);
@@ -1043,7 +1044,10 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
    RARCH_ERR("Connection with host was cut.\n");
    runloop_msg_queue_push("Connection with host was cut.", 1, 180, true);
 
-   core.retro_set_input_state(netplay->cbs.state_cb);
+   input_info.cb = netplay->cbs.state_cb;
+
+   core_ctl(CORE_CTL_RETRO_SET_INPUT_STATE, &input_info);
+
    return netplay->cbs.state_cb(port, device, idx, id);
 }
 

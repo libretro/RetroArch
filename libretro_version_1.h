@@ -84,6 +84,8 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_CHEAT_RESET,
 
+   CORE_CTL_RETRO_SET_INPUT_STATE,
+
    CORE_CTL_RETRO_API_VERSION,
 
    /* Compare libretro core API version against API version
@@ -107,6 +109,11 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE
 };
+
+typedef struct retro_ctx_input_state_info
+{
+   retro_input_state_t cb;
+} retro_ctx_input_state_info_t;
 
 typedef struct retro_ctx_cheat_info
 {
