@@ -48,7 +48,7 @@ EOF
 opt_exists() # $opt is returned if exists in OPTS
 {	opt=$(echo "$1" | tr '[a-z]' '[A-Z]')
 	for OPT in $OPTS; do [ "$opt" = "$OPT" ] && return; done
-	print_help; exit 1
+	echo "Unknown option $2"; exit 1
 }
 
 parse_input() # Parse stuff :V
@@ -62,21 +62,21 @@ parse_input() # Parse stuff :V
 			--global-config-dir=*) GLOBAL_CONFIG_DIR=${1##--global-config-dir=};;
 			--host=*) CROSS_COMPILE=${1##--host=}-;;
 			--enable-*)
-				opt_exists "${1##--enable-}"
+				opt_exists "${1##--enable-}" "$1"
 				eval "HAVE_$opt=yes"
 			;;
 			--disable-*)
-				opt_exists "${1##--disable-}"
+				opt_exists "${1##--disable-}" "$1"
 				eval "HAVE_$opt=no"
 			;;
 			--with-*)
 				arg="${1##--with-}"
 				val="${arg##*=}"
-				opt_exists "${arg%%=*}"
+				opt_exists "${arg%%=*}" "$1"
 				eval "$opt=\"$val\""
 			;;
 			-h|--help) print_help; exit 0;;
-			*) print_help; exit 1;;
+			*) echo "Unknown option $1"; exit 1;;
 		esac
 		shift
 	done
