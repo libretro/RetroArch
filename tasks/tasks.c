@@ -45,7 +45,6 @@ struct rarch_task_impl
 static task_queue_t tasks_running  = {NULL, NULL};
 static task_queue_t tasks_finished = {NULL, NULL};
 
-static struct rarch_task_impl *impl_current = NULL;
 
 static void task_queue_put(task_queue_t *queue, rarch_task_t *task)
 {
@@ -371,6 +370,7 @@ static struct rarch_task_impl impl_threaded = {
 
 bool task_ctl(enum task_ctl_state state, void *data)
 {
+   static struct rarch_task_impl *impl_current = NULL;
 #ifdef HAVE_THREADS
    settings_t *settings = config_get_ptr();
 #endif
@@ -385,12 +385,11 @@ bool task_ctl(enum task_ctl_state state, void *data)
          impl_current = NULL;
          break;
       case TASK_CTL_INIT:
+         impl_current = &impl_regular;
 #ifdef HAVE_THREADS
          if (settings->threaded_data_runloop_enable)
             impl_current = &impl_threaded;
-         else
 #endif
-            impl_current = &impl_regular;
 
          impl_current->init();
          break;
@@ -413,7 +412,7 @@ bool task_ctl(enum task_ctl_state state, void *data)
                task_ctl(TASK_CTL_DEINIT, NULL);
             }
 
-            if (impl_current == NULL)
+            if (!impl_current)
                task_ctl(TASK_CTL_INIT, NULL);
 #endif
 
