@@ -73,9 +73,10 @@ enum task_ctl_state
 };
 
 typedef struct rarch_task rarch_task_t;
-typedef void (*rarch_task_callback_t)(void *task_data, void *user_data, const char *error);
+typedef void (*rarch_task_callback_t)(void *task_data,
+      void *user_data, const char *error);
 typedef void (*rarch_task_handler_t)(rarch_task_t *task);
-typedef bool (*rarch_task_finder_t)(rarch_task_t *task, void *user_data);
+typedef bool (*rarch_task_finder_t)(rarch_task_t *task, void *userdata);
 
 typedef struct
 {
@@ -85,9 +86,12 @@ typedef struct
 struct rarch_task
 {
    rarch_task_handler_t  handler;
-   rarch_task_callback_t callback; /* always called from the main loop */
 
-   /* set to true by the handler to signal the task has finished executing. */
+   /* always called from the main loop */
+   rarch_task_callback_t callback;
+
+   /* set to true by the handler to signal 
+    * the task has finished executing. */
    bool finished;
 
    /* set to true by the task system to signal the task *must* end. */
@@ -102,12 +106,15 @@ struct rarch_task
    /* created and destroyed by the code related to the handler */
    void *state;
 
-   /* created by task handler; destroyed by main loop (after calling the callback) */
+   /* created by task handler; destroyed by main loop 
+    * (after calling the callback) */
    char *error;
 
    /* -1 = unmettered, 0-100 progress value */
    int8_t progress;
-   char *title; /* handler can modify but will be free()d automatically if non-null */
+
+   /* handler can modify but will be free()d automatically if non-null */
+   char *title;
 
    /* don't touch this. */
    rarch_task_t *next;
@@ -126,13 +133,16 @@ typedef struct {
     size_t len;
 } http_transfer_data_t;
 
-bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task_callback_t cb, void *user_data);
+bool rarch_task_push_http_transfer(const char *url, const char *type,
+      rarch_task_callback_t cb, void *userdata);
 #endif
 
-bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_task_callback_t cb, void *user_data);
+bool rarch_task_push_image_load(const char *fullpath, const char *type,
+      rarch_task_callback_t cb, void *userdata);
 
 #ifdef HAVE_LIBRETRODB
-bool rarch_task_push_dbscan(const char *fullpath, bool directory, rarch_task_callback_t cb);
+bool rarch_task_push_dbscan(const char *fullpath,
+      bool directory, rarch_task_callback_t cb);
 #endif
 
 #ifdef HAVE_OVERLAY
