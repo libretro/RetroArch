@@ -407,13 +407,6 @@ void rarch_task_check(void)
    impl_current->gather();
 }
 
-/* The lack of NULL checks in the following functions is proposital
- * to ensure correct control flow by the users. */
-void rarch_task_push(rarch_task_t *task)
-{
-   impl_current->push_running(task);
-}
-
 bool rarch_task_find(rarch_task_finder_t func, void *user_data)
 {
    return impl_current->find(func, user_data);
@@ -423,6 +416,14 @@ bool task_ctl(enum task_ctl_state state, void *data)
 {
    switch (state)
    {
+      case TASK_CTL_PUSH:
+         {
+            /* The lack of NULL checks in the following functions is proposital
+             * to ensure correct control flow by the users. */
+            rarch_task_t *task = (rarch_task_t*)data;
+            impl_current->push_running(task);
+            break;
+         }
       case TASK_CTL_RESET:
          impl_current->reset();
          break;

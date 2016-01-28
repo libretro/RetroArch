@@ -294,7 +294,7 @@ bool rarch_task_push_decompress(
    snprintf(tmp, sizeof(tmp), "%s '%s'", msg_hash_to_str(MSG_EXTRACTING), path_basename(source_file));
    t->title       = strdup(tmp);
 
-   rarch_task_push(t);
+   task_ctl(TASK_CTL_PUSH, t);
 
    return true;
 

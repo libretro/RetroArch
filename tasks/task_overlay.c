@@ -714,7 +714,7 @@ static bool rarch_task_push_overlay_load(const char *overlay_path,
    t->callback              = cb;
    t->user_data             = user_data;
 
-   rarch_task_push(t);
+   task_ctl(TASK_CTL_PUSH, t);
 
    return true;
 error:

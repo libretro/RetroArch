@@ -360,7 +360,7 @@ bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_ta
    t->callback = cb;
    t->user_data = user_data;
 
-   rarch_task_push(t);
+   task_ctl(TASK_CTL_PUSH, t);
 #endif
    return true;
 }

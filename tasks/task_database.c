@@ -581,7 +581,7 @@ bool rarch_task_push_dbscan(const char *fullpath, bool directory, rarch_task_cal
    if (db->handle)
       db->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
 
-   rarch_task_push(t);
+   task_ctl(TASK_CTL_PUSH, t);
 
    return true;
 

@@ -33,6 +33,10 @@ enum task_ctl_state
     * This must only be called from the main thread. */
    TASK_CTL_WAIT,
 
+   /* Pushes a task
+    * The task will start as soon as possible. */
+   TASK_CTL_PUSH,
+
    /* Sends a signal to terminate all the tasks.
     *
     * This won't terminate the tasks immediately.
@@ -118,15 +122,6 @@ void rarch_task_check(void);
  * @return a task or NULL if not found.
  */
 bool rarch_task_find(rarch_task_finder_t func, void *user_data);
-
-/**
- * @brief Pushes a task
- *
- * The task will start as soon as possible.
- *
- * @param task
- */
-void rarch_task_push(rarch_task_t *task);
 
 #ifdef HAVE_NETWORKING
 typedef struct {
