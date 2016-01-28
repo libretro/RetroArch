@@ -80,6 +80,8 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_SYMBOLS_INIT,
 
+   CORE_CTL_RETRO_CHEAT_RESET,
+
    CORE_CTL_RETRO_API_VERSION,
 
    /* Compare libretro core API version against API version

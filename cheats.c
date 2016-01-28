@@ -27,6 +27,7 @@
 #include "general.h"
 #include "runloop.h"
 #include "dynamic.h"
+#include "libretro_version_1.h"
 #include "verbosity.h"
 
 #ifdef HAVE_CONFIG_H
@@ -78,7 +79,7 @@ void cheat_manager_apply_cheats(void)
    if (!handle)
       return;
 
-   core.retro_cheat_reset();
+   core_ctl(CORE_CTL_RETRO_CHEAT_RESET, NULL);
 
    for (i = 0; i < handle->size; i++)
    {
