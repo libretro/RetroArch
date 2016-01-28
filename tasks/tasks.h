@@ -21,8 +21,6 @@
 
 #include "../runloop.h"
 
-#define MAX_TOKEN_LEN 255
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,34 +30,40 @@ typedef void (*rarch_task_callback_t)(void *task_data, void *user_data, const ch
 typedef void (*rarch_task_handler_t)(rarch_task_t *task);
 typedef bool (*rarch_task_finder_t)(rarch_task_t *task, void *user_data);
 
-struct rarch_task {
-    rarch_task_handler_t  handler;
-    rarch_task_callback_t callback; /* always called from the main loop */
+typedef struct
+{
+   char *source_file;
+} decompress_task_data_t;
 
-    /* set to true by the handler to signal the task has finished executing. */
-    bool finished;
+struct rarch_task
+{
+   rarch_task_handler_t  handler;
+   rarch_task_callback_t callback; /* always called from the main loop */
 
-    /* set to true by the task system to signal the task *must* end. */
-    bool cancelled;
+   /* set to true by the handler to signal the task has finished executing. */
+   bool finished;
 
-    /* created by the handler, destroyed by the user */
-    void *task_data;
+   /* set to true by the task system to signal the task *must* end. */
+   bool cancelled;
 
-    /* owned by the user */
-    void *user_data;
+   /* created by the handler, destroyed by the user */
+   void *task_data;
 
-    /* created and destroyed by the code related to the handler */
-    void *state;
+   /* owned by the user */
+   void *user_data;
 
-    /* created by task handler; destroyed by main loop (after calling the callback) */
-    char *error;
+   /* created and destroyed by the code related to the handler */
+   void *state;
 
-    /* -1 = unmettered, 0-100 progress value */
-    int8_t progress;
-    char *title; /* handler can modify but will be free()d automatically if non-null */
+   /* created by task handler; destroyed by main loop (after calling the callback) */
+   char *error;
 
-    /* don't touch this. */
-    rarch_task_t *next;
+   /* -1 = unmettered, 0-100 progress value */
+   int8_t progress;
+   char *title; /* handler can modify but will be free()d automatically if non-null */
+
+   /* don't touch this. */
+   rarch_task_t *next;
 };
 
 /**
@@ -153,10 +157,6 @@ int detect_system(const char* track_path, int32_t offset,
 int detect_ps1_game(const char *track_path, char *game_id);
 
 int detect_psp_game(const char *track_path, char *game_id);
-
-typedef struct {
-    char *source_file;
-} decompress_task_data_t;
 
 bool rarch_task_push_decompress(
       const char *source_file,

@@ -35,7 +35,8 @@
 #include "../general.h"
 #include "../verbosity.h"
 
-#define MAGIC_LEN 16
+#define MAGIC_LEN       16
+#define MAX_TOKEN_LEN   255
 
 struct magic_entry
 {
