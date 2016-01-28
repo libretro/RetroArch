@@ -27,6 +27,7 @@
 #include "configuration.h"
 #include "msg_hash.h"
 #include "runloop.h"
+#include "libretro_version_1.h"
 #include "verbosity.h"
 
 /* Autosave support. */
@@ -251,15 +252,20 @@ void autosave_event_init(void)
 
    for (i = 0; i < global->savefiles->size; i++)
    {
+      retro_ctx_memory_info_t mem_info;
       const char *path = global->savefiles->elems[i].data;
       unsigned    type = global->savefiles->elems[i].attr.i;
 
-      if (core.retro_get_memory_size(type) <= 0)
+      mem_info.id = type;
+
+      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+      if (mem_info.size <= 0)
          continue;
 
       autosave_state.list[i] = autosave_new(path,
-            core.retro_get_memory_data(type),
-            core.retro_get_memory_size(type),
+            mem_info.data,
+            mem_info.size,
             settings->autosave_interval);
 
       if (!autosave_state.list[i])
