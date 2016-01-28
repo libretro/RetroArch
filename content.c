@@ -250,8 +250,16 @@ static bool content_load_state(const char *path)
       }
    }
 
+
    for (i = 0; i < num_blocks; i++)
-      blocks[i].size = core.retro_get_memory_size(blocks[i].type);
+   {
+      retro_ctx_memory_info_t    mem_info;
+
+      mem_info.id = blocks[i].type;
+      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+      blocks[i].size = mem_info.size;
+   }
 
    for (i = 0; i < num_blocks; i++)
       if (blocks[i].size)
@@ -262,7 +270,14 @@ static bool content_load_state(const char *path)
    {
       if (blocks[i].data)
       {
-         const void *ptr = core.retro_get_memory_data(blocks[i].type);
+         retro_ctx_memory_info_t    mem_info;
+         const void *ptr = NULL;
+
+         mem_info.id = blocks[i].type;
+
+         core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+         ptr = mem_info.data;
          if (ptr)
             memcpy(blocks[i].data, ptr, blocks[i].size);
       }
@@ -277,7 +292,14 @@ static bool content_load_state(const char *path)
    {
       if (blocks[i].data)
       {
-         void *ptr = core.retro_get_memory_data(blocks[i].type);
+         retro_ctx_memory_info_t    mem_info;
+         void *ptr = NULL;
+
+         mem_info.id = blocks[i].type;
+
+         core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+
+         ptr = mem_info.data;
          if (ptr)
             memcpy(ptr, blocks[i].data, blocks[i].size);
       }
