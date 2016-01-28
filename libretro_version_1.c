@@ -38,18 +38,18 @@
 #endif
 
 static struct retro_core_t core;
-static unsigned core_poll_type;
-static bool input_polled;
+static unsigned            core_poll_type;
+static bool                core_input_polled;
 
 static int16_t input_state_poll(unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
    if (core_poll_type == POLL_TYPE_LATE)
    {
-      if (!input_polled)
+      if (!core_input_polled)
          input_poll();
 
-      input_polled = true;
+      core_input_polled = true;
    }
    return input_state(port, device, idx, id);
 }
@@ -321,7 +321,7 @@ bool core_ctl(enum core_ctl_state state, void *data)
                input_poll();
                break;
             case POLL_TYPE_LATE:
-               input_polled = false;
+               core_input_polled = false;
                break;
          }
          core.retro_run();
