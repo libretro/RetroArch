@@ -31,16 +31,20 @@ EOF
 
 	while IFS='=#' read VAR VAL COMMENT; do
 		VAR=$(echo "${VAR##HAVE_}" | tr '[A-Z]' '[a-z]')
-		case "$VAL" in
-			'yes'*)
-				print_help_option "--disable-$VAR" "$COMMENT";;
-			'no'*)
-				print_help_option "--enable-$VAR" "$COMMENT";;
-			'auto'*)
-				print_help_option "--enable-$VAR" "$COMMENT"
-				print_help_option "--disable-$VAR";;
+		case "$VAR" in
+			'c89_'*) true;;
 			*)
-				print_help_option "--with-$VAR" "$COMMENT";;
+			case "$VAL" in
+				'yes'*)
+					print_help_option "--disable-$VAR" "$COMMENT";;
+				'no'*)
+					print_help_option "--enable-$VAR" "$COMMENT";;
+				'auto'*)
+					print_help_option "--enable-$VAR" "$COMMENT"
+					print_help_option "--disable-$VAR";;
+				*)
+					print_help_option "--with-$VAR" "$COMMENT";;
+			esac
 		esac
 	done < 'qb/config.params.sh'
 }
