@@ -350,6 +350,10 @@ void retro_run(void)
 
    input_poll_cb();
 
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))
+   {
+   }
+
 #ifdef CORE
    glBindVertexArray(vao);
    if (multisample_fbo)
