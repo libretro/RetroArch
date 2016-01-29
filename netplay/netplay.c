@@ -568,8 +568,15 @@ int16_t input_state_net(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
    netplay_t *netplay = (netplay_t*)netplay_data;
+
    if (netplay_is_alive(netplay))
+   {
+      /* Only two players for now. */
+      if (port > 1)
+         return 0;
+
       return netplay_input_state(netplay, port, device, idx, id);
+   }
    return netplay->cbs.state_cb(port, device, idx, id);
 }
 

@@ -56,7 +56,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
    {
       const struct delta_frame *ptr = &netplay->buffer[netplay->other_ptr];
 
-      if ((ptr->simulated_input_state != ptr->real_input_state)
+      if (memcmp(ptr->simulated_input_state, ptr->real_input_state, sizeof(ptr->real_input_state)) != 0
             && !ptr->used_real)
          break;
       netplay->other_ptr = NEXT_PTR(netplay->other_ptr);
