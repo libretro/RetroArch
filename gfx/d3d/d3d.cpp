@@ -46,6 +46,7 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include "../../libretro_version_1.h"
 #include "../../performance.h"
 
 #include "../../defines/d3d_defines.h"
