@@ -8,6 +8,10 @@
 
 #include "../../libretro.h"
 
+#if 0
+#define GL_FF
+#endif
+
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 static struct retro_hw_render_callback hw_render;
 
@@ -35,13 +39,14 @@ static struct retro_hw_render_callback hw_render;
 #define MAX_HEIGHT 2048
 #endif
 
-static unsigned width = BASE_WIDTH;
+static unsigned width  = BASE_WIDTH;
 static unsigned height = BASE_HEIGHT;
 
+#ifndef GL_FF
 static GLuint prog;
 static GLuint vbo;
 
-#ifdef CORE
+#if defined(CORE)
 static bool context_alive;
 static bool multisample_fbo;
 static unsigned multisample;
@@ -49,10 +54,7 @@ static GLuint vao;
 
 static GLuint fbo;
 static GLuint rbo_color, rbo_depth_stencil;
-#endif
 
-
-#ifdef CORE
 static const char *vertex_shader[] = {
    "#version 140\n"
    "uniform mat4 uMVP;",
@@ -95,7 +97,10 @@ static const char *fragment_shader[] = {
    "}",
 };
 #endif
+#endif
 
+
+#ifndef GL_FF
 static void compile_program(void)
 {
    prog = glCreateProgram();
@@ -114,7 +119,7 @@ static void compile_program(void)
    glDeleteShader(frag);
 }
 
-#ifdef CORE
+#if defined(CORE)
 static void init_multisample(unsigned samples)
 {
    multisample = samples;
@@ -170,7 +175,9 @@ static void init_multisample(unsigned samples)
       fprintf(stderr, "Multisampled FBOs not supported.\n");
 }
 #endif
+#endif
 
+#ifndef GL_FF
 static void setup_vao(void)
 {
    static const GLfloat vertex_data[] = {
@@ -184,7 +191,7 @@ static void setup_vao(void)
       1.0, 0.0, 1.0, 1.0,
    };
 
-#ifdef CORE
+#if defined(CORE)
    glGenVertexArrays(1, &vao);
 #endif
 
@@ -197,6 +204,7 @@ static void setup_vao(void)
    glBindBuffer(GL_ARRAY_BUFFER, 0);
    glUseProgram(0);
 }
+#endif
 
 void retro_init(void)
 {}
@@ -218,7 +226,11 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
+#ifdef GL_FF
+   info->library_name     = "TestCore GL (FF)";
+#else
    info->library_name     = "TestCore GL";
+#endif
    info->library_version  = "v1";
    info->need_fullpath    = false;
    info->valid_extensions = NULL; // Anything is fine, we don't care.
@@ -342,6 +354,8 @@ static void update_variables(void)
 #endif
 }
 
+static unsigned frame_count;
+
 void retro_run(void)
 {
    bool updated = false;
@@ -353,6 +367,37 @@ void retro_run(void)
    if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))
    {
    }
+
+#ifdef GL_FF
+   int   width = BASE_WIDTH * 4;
+   int  height = BASE_HEIGHT * 4;
+   float ratio = width / (float)height;
+
+   glBindFramebuffer(RARCH_GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
+
+   glViewport(0, 0, width, height);
+   glClear(GL_COLOR_BUFFER_BIT);
+   glMatrixMode(GL_PROJECTION);
+   glLoadIdentity();
+   glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+   glMatrixMode(GL_MODELVIEW);
+   glLoadIdentity();
+   glRotatef((float)frame_count * 2, 0.0f, 0.0f, 0.1f);
+
+   glLoadIdentity();
+   glBegin(GL_TRIANGLES);
+
+   glColor3f(1.f, 0.f, 0.f);
+   glVertex3f(-0.3f, -0.3f, 0.f);
+
+   glColor3f(0.f, 1.f, 0.f);
+   glVertex3f(0.3f, -0.3f, 0.f);
+   
+   glColor3f(0.f, 0.f, 1.f);
+   glVertex3f(0.0f, 0.3f, 0.f);
+
+   glEnd();
+#else
 
 #ifdef CORE
    glBindVertexArray(vao);
@@ -381,8 +426,6 @@ void retro_run(void)
 
    int loc = glGetUniformLocation(prog, "uMVP");
 
-   static unsigned frame_count;
-   frame_count++;
    float angle = frame_count / 100.0;
    float cos_angle = cos(angle);
    float sin_angle = sin(angle);
@@ -425,6 +468,10 @@ void retro_run(void)
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
    }
 #endif
+#endif
+
+   frame_count++;
+
    video_cb(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
 }
 
@@ -432,11 +479,14 @@ static void context_reset(void)
 {
    fprintf(stderr, "Context reset!\n");
    rglgen_resolve_symbols(hw_render.get_proc_address);
+
+#ifndef GL_FF
    compile_program();
    setup_vao();
 #ifdef CORE
    context_alive = true;
    init_multisample(multisample);
+#endif
 #endif
 }
 
@@ -444,6 +494,7 @@ static void context_destroy(void)
 {
    fprintf(stderr, "Context destroy!\n");
 
+#ifndef GL_FF
 #ifdef CORE
    glDeleteVertexArrays(1, &vao);
    vao = 0;
@@ -454,6 +505,7 @@ static void context_destroy(void)
    vbo = 0;
    glDeleteProgram(prog);
    prog = 0;
+#endif
 }
 
 #ifdef GLES
@@ -471,7 +523,9 @@ static bool retro_init_hw_context(void)
    hw_render.context_reset = context_reset;
    hw_render.context_destroy = context_destroy;
    hw_render.depth = true;
+#ifndef GL_FF
    hw_render.stencil = true;
+#endif
    hw_render.bottom_left_origin = true;
 
    if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
@@ -482,7 +536,7 @@ static bool retro_init_hw_context(void)
 #else
 static bool retro_init_hw_context(void)
 {
-#ifdef CORE
+#if defined(CORE) && !defined(GL_FF)
    hw_render.context_type = RETRO_HW_CONTEXT_OPENGL_CORE;
    hw_render.version_major = 3;
    hw_render.version_minor = 1;
