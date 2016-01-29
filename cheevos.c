@@ -214,7 +214,7 @@ typedef struct
    int cheats_were_enabled;
 } cheevos_globals_t;
 
-cheevos_locals_t cheevos_locals =
+static cheevos_locals_t cheevos_locals =
 {
    0,
    {NULL, 0},
