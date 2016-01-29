@@ -218,7 +218,7 @@ static bool event_disk_control_append_image(const char *path)
        * If we actually use append_image, we assume that we
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
-      rarch_set_paths(path);
+      rarch_ctl(RARCH_CTL_SET_PATHS, (void*)path);
       rarch_ctl(RARCH_CTL_FILL_PATHNAMES, NULL);
    }
 

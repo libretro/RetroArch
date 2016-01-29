@@ -106,6 +106,8 @@ enum rarch_ctl_state
 
    RARCH_CTL_SET_SRAM_ENABLE,
 
+   RARCH_CTL_SET_PATHS,
+
    RARCH_CTL_SET_FORCE_FULLSCREEN,
 
    RARCH_CTL_UNSET_FORCE_FULLSCREEN,
@@ -172,8 +174,6 @@ int rarch_main_init(int argc, char *argv[]);
  * Deinitializes RetroArch.
  **/
 void rarch_main_deinit(void);
-
-void rarch_set_paths(const char *path);
 
 int rarch_info_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len);
