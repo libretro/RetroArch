@@ -369,14 +369,14 @@ void retro_run(void)
    }
 
 #ifdef GL_FF
-   int   width = BASE_WIDTH * 4;
-   int  height = BASE_HEIGHT * 4;
    float ratio = width / (float)height;
 
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
 
+   glClearColor(0.3, 0.4, 0.5, 1.0);
    glViewport(0, 0, width, height);
    glClear(GL_COLOR_BUFFER_BIT);
+
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
    glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
@@ -387,14 +387,17 @@ void retro_run(void)
    glLoadIdentity();
    glBegin(GL_TRIANGLES);
 
-   glColor3f(1.f, 0.f, 0.f);
-   glVertex3f(-0.3f, -0.3f, 0.f);
+   glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+   glVertex2f(-0.5f, -0.5f);
 
-   glColor3f(0.f, 1.f, 0.f);
-   glVertex3f(0.3f, -0.3f, 0.f);
+   glColor4f(1.0f, 1.0f, 0.0f, 1.0f);
+   glVertex2f(0.5f, -0.5f);
    
-   glColor3f(0.f, 0.f, 1.f);
-   glVertex3f(0.0f, 0.3f, 0.f);
+   glColor4f(0.0f, 1.0f, 1.0f, 1.0f);
+   glVertex2f(-0.5f, 0.5f);
+
+   glColor4f(1.0f, 0.0f, 1.0f, 1.0f);
+   glVertex2f(0.5f, 0.5f);
 
    glEnd();
 #else
