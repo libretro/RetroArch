@@ -114,18 +114,6 @@ const char *runloop_msg_queue_pull(void)
    return ret;
 }
 
-void runloop_msg_queue_push_new(uint32_t hash,
-      unsigned prio, unsigned duration,
-      bool flush)
-{
-   const char *msg = msg_hash_to_str(hash);
-
-   if (!msg)
-      return;
-
-   runloop_msg_queue_push(msg, prio, duration, flush);
-}
-
 void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,
       bool flush)
@@ -801,9 +789,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
 
             if (state_manager_frame_is_reversed())
-               runloop_msg_queue_push_new(MSG_SLOW_MOTION_REWIND, 0, 30, true);
+               runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 0, 30, true);
             else
-               runloop_msg_queue_push_new(MSG_SLOW_MOTION, 0, 30, true);
+               runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 0, 30, true);
          }
          break;
       case RUNLOOP_CTL_CHECK_MOVIE:
@@ -816,8 +804,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return false;
 
-         runloop_msg_queue_push_new(
-               MSG_MOVIE_RECORD_STOPPED, 2, 180, true);
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true);
          RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
 
          event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
@@ -856,8 +844,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             }
             else
             {
-               runloop_msg_queue_push_new(
-                     MSG_FAILED_TO_START_MOVIE_RECORD,
+               runloop_msg_queue_push(
+                     msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
                      1, 180, true);
                RARCH_ERR("%s\n",
                      msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
@@ -868,8 +856,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (!bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL))
             return false;
 
-         runloop_msg_queue_push_new(
-               MSG_MOVIE_PLAYBACK_ENDED, 1, 180, false);
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 1, 180, false);
          RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
 
          event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);

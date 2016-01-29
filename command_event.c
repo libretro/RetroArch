@@ -677,7 +677,7 @@ static bool event_save_core_config(void)
             sizeof(config_dir));
    else
    {
-      runloop_msg_queue_push_new(MSG_CONFIG_DIRECTORY_NOT_SET, 1, 180, true);
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET), 1, 180, true);
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
       return false;
    }
@@ -1047,7 +1047,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_RESET:
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
-         runloop_msg_queue_push_new(MSG_RESET, 1, 120, true);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true);
 
 #ifdef HAVE_CHEEVOS
          cheevos_set_cheats();
@@ -1571,8 +1571,8 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             }
          }
          else
-            runloop_msg_queue_push_new(
-                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
                   1, 120, true);
          break;
       case EVENT_CMD_DISK_NEXT:
@@ -1591,8 +1591,8 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             event_check_disk_next(control);
          }
          else
-            runloop_msg_queue_push_new(
-                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
                   1, 120, true);
          break;
       case EVENT_CMD_DISK_PREV:
@@ -1611,8 +1611,8 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             event_check_disk_prev(control);
          }
          else
-            runloop_msg_queue_push_new(
-                  MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+            runloop_msg_queue_push(
+                  msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS),
                   1, 120, true);
          break;
       case EVENT_CMD_RUMBLE_STOP:

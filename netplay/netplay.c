@@ -1140,8 +1140,8 @@ bool init_netplay(void)
    global->netplay.is_client = false;
    RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED));
 
-   runloop_msg_queue_push_new(
-         MSG_NETPLAY_FAILED,
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_NETPLAY_FAILED),
          0, 180, false);
    return false;
 }

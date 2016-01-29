@@ -327,7 +327,7 @@ static void bsv_movie_init_state(void)
       }
 
       bsv_movie_state.movie_playback = true;
-      runloop_msg_queue_push_new(MSG_STARTING_MOVIE_PLAYBACK, 2, 180, false);
+      runloop_msg_queue_push(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK), 2, 180, false);
       RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
       settings->rewind_granularity = 1;
    }
@@ -342,7 +342,7 @@ static void bsv_movie_init_state(void)
       if (!(bsv_movie_init_handle(bsv_movie_state.movie_start_path,
                   RARCH_MOVIE_RECORD)))
       {
-         runloop_msg_queue_push_new(MSG_FAILED_TO_START_MOVIE_RECORD, 1, 180, true);
+         runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD), 1, 180, true);
          RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
          return;
       }

@@ -719,7 +719,8 @@ void state_manager_check_rewind(bool pressed)
          state_manager_set_frame_is_reversed(true);
          audio_driver_ctl(RARCH_AUDIO_CTL_SETUP_REWIND, NULL);
 
-         runloop_msg_queue_push_new(MSG_REWINDING, 0,
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_REWINDING), 0,
                runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) 
                ? 1 : 30, true);
 
@@ -732,7 +733,8 @@ void state_manager_check_rewind(bool pressed)
             bsv_movie_ctl(BSV_MOVIE_CTL_FRAME_REWIND, NULL);
       }
       else
-         runloop_msg_queue_push_new(MSG_REWIND_REACHED_END,
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_REWIND_REACHED_END),
                0, 30, true);
    }
    else

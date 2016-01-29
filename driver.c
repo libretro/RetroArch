@@ -267,8 +267,9 @@ static bool driver_update_system_av_info(const struct retro_system_av_info *info
     * Take the easiest route out and just restart the recording. */
    if (recording_driver_get_data_ptr())
    {
-      runloop_msg_queue_push_new(
-            MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT, 2, 180, false);
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT),
+            2, 180, false);
       event_cmd_ctl(EVENT_CMD_RECORD_DEINIT, NULL);
       event_cmd_ctl(EVENT_CMD_RECORD_INIT, NULL);
    }
