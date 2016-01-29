@@ -30,7 +30,7 @@ else ifneq ($(findstring Darwin,$(shell uname -a)),)
 	system_platform = win
 endif
 
-TARGET_NAME = testgl
+TARGET_NAME = testgl_ff
 
 ifeq ($(platform), unix)
    TARGET := $(TARGET_NAME)_libretro.so
@@ -136,7 +136,7 @@ else
 	CFLAGS += -std=gnu99
 endif
 
-OBJECTS := libretro_gl_test.o ../../libretro-common/glsym/rglgen.o
+OBJECTS := libretro_gl_ff_test.o ../../libretro-common/glsym/rglgen.o
 CFLAGS += -Wall -pedantic $(fpic)
 
 ifeq ($(GLES), 1)
