@@ -443,6 +443,22 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
    return prog;
 }
 
+static void gl_glsl_strip_parameter_pragmas(char *source)
+{
+   /* #pragma parameter lines tend to have " characters in them,
+    * which is not legal GLSL. */
+   char *s = strstr(source, "#pragma parameter");
+
+   while (s)
+   {
+      /* #pragmas have to be on a single line,
+       * so we can just replace the entire line with spaces. */
+      while (*s != '\0' && *s != '\n')
+         *s++ = ' ';
+      s = strstr(s, "#pragma parameter");
+   }
+}
+
 static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
@@ -451,6 +467,7 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
    if (!ret || len <= 0)
       return false;
 
+   gl_glsl_strip_parameter_pragmas(pass->source.string.vertex);
    pass->source.string.fragment = strdup(pass->source.string.vertex);
    return pass->source.string.fragment && pass->source.string.vertex;
 }
