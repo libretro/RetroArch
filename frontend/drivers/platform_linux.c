@@ -857,11 +857,11 @@ static void frontend_android_get_version_sdk(int32_t *sdk)
 static bool device_is_xperia_play(const char *name)
 {
    if (
-         string_is_equal(name, "R800x") ||
-         string_is_equal(name, "R800at") ||
-         string_is_equal(name, "R800i") ||
-         string_is_equal(name, "R800a") ||
-         string_is_equal(name, "SO-01D")
+         strstr(name, "R800x") ||
+         strstr(name, "R800at") ||
+         strstr(name, "R800i") ||
+         strstr(name, "R800a") ||
+         strstr(name, "SO-01D")
       )
       return true;
 
@@ -871,11 +871,11 @@ static bool device_is_xperia_play(const char *name)
 static bool device_is_game_console(const char *name)
 {
    if (
-         string_is_equal(name, "OUYA Console") ||
+         strstr(name, "OUYA Console") ||
          device_is_xperia_play(name) ||
-         string_is_equal(name, "GAMEMID_BT") ||
-         string_is_equal(name, "S7800") ||
-         string_is_equal(name, "SHIELD")
+         strstr(name, "GAMEMID_BT") ||
+         strstr(name, "S7800") ||
+         strstr(name, "SHIELD")
       )
       return true;
 
@@ -1407,9 +1407,9 @@ static int frontend_linux_get_rating(void)
 
    if (device_is_xperia_play(device_model))
       return 6;
-   else if (string_is_equal(device_model, "GT-I9505"))
+   else if (strstr(device_model, "GT-I9505"))
       return 12;
-   else if (string_is_equal(device_model, "SHIELD"))
+   else if (strstr(device_model, "SHIELD"))
       return 13;
 #endif
    return -1;
@@ -1920,11 +1920,11 @@ static void frontend_linux_get_env(int *argc,
       g_defaults.settings.video_refresh_rate = 59.19132938771038;
       g_defaults.settings.video_threaded_enable = false;
    }
-   else if (string_is_equal(device_model, "GAMEMID_BT"))
+   else if (strstr(device_model, "GAMEMID_BT"))
       g_defaults.settings.out_latency = 160;
-   else if (string_is_equal(device_model, "SHIELD"))
+   else if (strstr(device_model, "SHIELD"))
       g_defaults.settings.video_refresh_rate = 60.0;
-   else if (string_is_equal(device_model, "JSS15J"))
+   else if (strstr(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;
 
 #if 0
