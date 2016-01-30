@@ -74,39 +74,6 @@ bool video_texture_image_color_convert(unsigned r_shift,
 }
 
 #ifdef HAVE_RPNG
-static bool video_texture_image_load_png(
-      const char *path,
-      struct texture_image *out_img,
-      unsigned a_shift, unsigned r_shift,
-      unsigned g_shift, unsigned b_shift)
-{
-   bool ret = rpng_load_image_argb(path,
-         &out_img->pixels, &out_img->width, &out_img->height);
-
-   if (!ret)
-   {
-      out_img->pixels = NULL;
-      out_img->width  = out_img->height = 0;
-      return false;
-   }
-
-   video_texture_image_color_convert(r_shift, g_shift, b_shift,
-         a_shift, out_img);
-
-#ifdef GEKKO
-   if (ret)
-   {
-      if (!video_texture_image_rpng_gx_convert_texture32(out_img))
-      {
-         video_texture_image_free(out_img);
-         return false;
-      }
-   }
-#endif
-
-   return true;
-}
-#endif
 
 #ifdef GEKKO
 
@@ -167,6 +134,41 @@ static bool video_texture_image_rpng_gx_convert_texture32(struct texture_image *
    return true;
 }
 #endif
+
+static bool video_texture_image_load_png(
+      const char *path,
+      struct texture_image *out_img,
+      unsigned a_shift, unsigned r_shift,
+      unsigned g_shift, unsigned b_shift)
+{
+   bool ret = rpng_load_image_argb(path,
+         &out_img->pixels, &out_img->width, &out_img->height);
+
+   if (!ret)
+   {
+      out_img->pixels = NULL;
+      out_img->width  = out_img->height = 0;
+      return false;
+   }
+
+   video_texture_image_color_convert(r_shift, g_shift, b_shift,
+         a_shift, out_img);
+
+#ifdef GEKKO
+   if (ret)
+   {
+      if (!video_texture_image_rpng_gx_convert_texture32(out_img))
+      {
+         video_texture_image_free(out_img);
+         return false;
+      }
+   }
+#endif
+
+   return true;
+}
+#endif
+
 
 void video_texture_image_free(struct texture_image *img)
 {
