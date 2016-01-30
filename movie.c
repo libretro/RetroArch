@@ -198,7 +198,7 @@ void bsv_movie_free(bsv_movie_t *handle)
    free(handle);
 }
 
-bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type)
+static bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type)
 {
    bsv_movie_t *handle = (bsv_movie_t*)calloc(1, sizeof(*handle));
    if (!handle)
@@ -227,14 +227,15 @@ error:
    return NULL;
 }
 
-void bsv_movie_set_frame_start(bsv_movie_t *handle)
+/* Used for rewinding while playback/record. */
+static void bsv_movie_set_frame_start(bsv_movie_t *handle)
 {
    if (!handle)
       return;
    handle->frame_pos[handle->frame_ptr] = ftell(handle->file);
 }
 
-void bsv_movie_set_frame_end(bsv_movie_t *handle)
+static void bsv_movie_set_frame_end(bsv_movie_t *handle)
 {
    if (!handle)
       return;
@@ -245,7 +246,7 @@ void bsv_movie_set_frame_end(bsv_movie_t *handle)
    handle->did_rewind   = false;
 }
 
-void bsv_movie_frame_rewind(bsv_movie_t *handle)
+static void bsv_movie_frame_rewind(bsv_movie_t *handle)
 {
    handle->did_rewind = true;
 
