@@ -50,18 +50,6 @@ int read_compressed_file(const char * path, void **buf,
  */
 int read_file(const char *path, void **buf, ssize_t *length);
 
-/**
- * write_file:
- * @path             : path to file.
- * @data             : contents to write to the file.
- * @size             : size of the contents.
- *
- * Writes data to a file.
- *
- * Returns: true (1) on success, false (0) otherwise.
- */
-bool write_file(const char *path, const void *buf, ssize_t size);
-
 #ifdef __cplusplus
 }
 #endif
