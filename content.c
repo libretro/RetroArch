@@ -220,7 +220,7 @@ static bool content_load_state(const char *path)
    struct sram_block *blocks = NULL;
    settings_t *settings      = config_get_ptr();
    global_t *global          = global_get_ptr();
-   bool ret                  = read_file(path, &buf, &size);
+   bool ret                  = retro_read_file(path, &buf, &size);
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),
@@ -342,7 +342,7 @@ static bool load_ram_file(ram_type_t *ram)
    if (mem_info.size == 0 || !mem_info.data)
       return false;
 
-   if (!read_file(ram->path, &buf, &rc))
+   if (!retro_read_file(ram->path, &buf, &rc))
       return false;
 
    if (rc > 0)
