@@ -64,14 +64,11 @@ void main_exit(void *args)
 
    event_cmd_ctl(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
 
-   if (content_ctl(CONTENT_CTL_IS_INITED, NULL))
-   {
 #ifdef HAVE_MENU
-      /* Do not want menu context to live any more. */
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_OWN_DRIVER, NULL);
+   /* Do not want menu context to live any more. */
+   menu_driver_ctl(RARCH_MENU_CTL_UNSET_OWN_DRIVER, NULL);
 #endif
-      rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
-   }
+   rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
    event_cmd_ctl(EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG, NULL);
 
