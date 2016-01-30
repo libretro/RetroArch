@@ -70,7 +70,7 @@ void main_exit(void *args)
       /* Do not want menu context to live any more. */
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_OWN_DRIVER, NULL);
 #endif
-      rarch_main_deinit();
+      rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
    }
 
    event_cmd_ctl(EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG, NULL);
@@ -265,7 +265,7 @@ bool main_load_content(int argc, char **argv, void *args,
 {
    unsigned i;
    bool retval                       = true;
-   int ret = 0, rarch_argc           = 0;
+   int rarch_argc                    = 0;
    char *rarch_argv[MAX_ARGS]        = {NULL};
    char *argv_copy [MAX_ARGS]        = {NULL};
    char **rarch_argv_ptr             = (char**)argv;
@@ -278,7 +278,6 @@ bool main_load_content(int argc, char **argv, void *args,
 
    (void)rarch_argc_ptr;
    (void)rarch_argv_ptr;
-   (void)ret;
 
    retro_assert(wrap_args);
 
@@ -293,10 +292,12 @@ bool main_load_content(int argc, char **argv, void *args,
       rarch_argc_ptr = (int*)&rarch_argc;
    }
 
-   if (rarch_ctl(RARCH_CTL_IS_INITED, NULL))
-      rarch_main_deinit();
+   rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
-   if ((ret = rarch_main_init(*rarch_argc_ptr, rarch_argv_ptr)))
+   wrap_args->argc = *rarch_argc_ptr;
+   wrap_args->argv = rarch_argv_ptr;
+
+   if (!rarch_ctl(RARCH_CTL_MAIN_INIT, wrap_args))
    {
       retval = false;
       goto error;

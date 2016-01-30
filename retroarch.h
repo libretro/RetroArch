@@ -61,6 +61,12 @@ enum rarch_ctl_state
    /* Initialize all drivers. */
    RARCH_CTL_INIT,
 
+   /* Initializes RetroArch. */
+   RARCH_CTL_MAIN_INIT,
+
+   /* Deinitializes RetroArch. */
+   RARCH_CTL_MAIN_DEINIT,
+
    RARCH_CTL_UNSET_INITED,
 
    RARCH_CTL_SET_INITED,
@@ -144,6 +150,8 @@ enum rarch_capabilities
 
 struct rarch_main_wrap
 {
+   int argc;
+   char **argv;
    const char *content_path;
    const char *sram_path;
    const char *state_path;
@@ -156,24 +164,6 @@ struct rarch_main_wrap
 };
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data);
-
-/**
- * rarch_main_init:
- * @argc                 : Count of (commandline) arguments.
- * @argv                 : (Commandline) arguments.
- *
- * Initializes RetroArch.
- *
- * Returns: 0 on success, otherwise 1 if there was an error.
- **/
-int rarch_main_init(int argc, char *argv[]);
-
-/**
- * rarch_main_deinit:
- *
- * Deinitializes RetroArch.
- **/
-void rarch_main_deinit(void);
 
 int rarch_info_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len);

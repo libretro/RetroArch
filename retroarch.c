@@ -1170,7 +1170,7 @@ bool rarch_option_create(char *path, size_t len)
  *
  * Returns: 0 on success, otherwise 1 if there was an error.
  **/
-int rarch_main_init(int argc, char *argv[])
+static int rarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
    bool *verbosity   = NULL;
@@ -1273,6 +1273,40 @@ error:
    return 1;
 }
 
+/**
+ * rarch_main_deinit:
+ *
+ * Deinitializes the program.
+ **/
+static void rarch_main_deinit(void)
+{
+   global_t *global = global_get_ptr();
+
+   event_cmd_ctl(EVENT_CMD_NETPLAY_DEINIT, NULL);
+   event_cmd_ctl(EVENT_CMD_COMMAND_DEINIT, NULL);
+   event_cmd_ctl(EVENT_CMD_REMOTE_DEINIT, NULL);
+
+   if (global->sram.use)
+      event_cmd_ctl(EVENT_CMD_AUTOSAVE_DEINIT, NULL);
+
+   event_cmd_ctl(EVENT_CMD_RECORD_DEINIT, NULL);
+   event_cmd_ctl(EVENT_CMD_SAVEFILES, NULL);
+
+   event_cmd_ctl(EVENT_CMD_REWIND_DEINIT, NULL);
+   event_cmd_ctl(EVENT_CMD_CHEATS_DEINIT, NULL);
+   event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
+
+   event_cmd_ctl(EVENT_CMD_AUTOSAVE_STATE, NULL);
+
+   event_cmd_ctl(EVENT_CMD_CORE_DEINIT, NULL);
+
+   event_cmd_ctl(EVENT_CMD_TEMPORARY_CONTENT_DEINIT, NULL);
+   event_cmd_ctl(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT, NULL);
+   event_cmd_ctl(EVENT_CMD_SAVEFILES_DEINIT, NULL);
+
+   rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
+}
+
 #define FAIL_CPU(simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
    retro_fail(1, "validate_cpu_features()"); \
@@ -1329,7 +1363,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
          runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
          config_free();
-         return true;
+         break;
       case RARCH_CTL_DEINIT:
          {
             bool inited      = false;
@@ -1342,7 +1376,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             event_cmd_ctl(EVENT_CMD_DRIVERS_DEINIT, NULL);
             event_cmd_ctl(EVENT_CMD_DRIVERS_INIT, NULL);
          }
-         return true;
+         break;
       case RARCH_CTL_PREINIT:
          if (!config_realloc())
             return false;
@@ -1350,7 +1384,19 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
 
          runloop_ctl(RUNLOOP_CTL_CLEAR_STATE, NULL);
-         return true;
+         break;
+      case RARCH_CTL_MAIN_DEINIT:
+         if (!rarch_ctl(RARCH_CTL_IS_INITED, NULL))
+            return false;
+         rarch_main_deinit();
+         break;
+      case RARCH_CTL_MAIN_INIT:
+         {
+            struct rarch_main_wrap *wrap = (struct rarch_main_wrap*)data;
+            if (rarch_main_init(wrap->argc, wrap->argv))
+               return false;
+         }
+         break;
       case RARCH_CTL_INIT:
          rarch_ctl(RARCH_CTL_DEINIT, NULL);
          init_state();
@@ -1360,7 +1406,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
          }
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
-         return true;
+         break;
       case RARCH_CTL_SET_PATHS_REDIRECT:
          if(settings->sort_savestates_enable || settings->sort_savefiles_enable)
          {
@@ -1419,7 +1465,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             *settings->libretro = '\0'; /* Load core in new config. */
          }
          runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
-         return true;
+         break;
       case RARCH_CTL_MENU_RUNNING:
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
@@ -1500,39 +1546,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    return true;
 }
 
-/**
- * rarch_main_deinit:
- *
- * Deinitializes the program.
- **/
-void rarch_main_deinit(void)
-{
-   global_t *global = global_get_ptr();
-
-   event_cmd_ctl(EVENT_CMD_NETPLAY_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_COMMAND_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_REMOTE_DEINIT, NULL);
-
-   if (global->sram.use)
-      event_cmd_ctl(EVENT_CMD_AUTOSAVE_DEINIT, NULL);
-
-   event_cmd_ctl(EVENT_CMD_RECORD_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_SAVEFILES, NULL);
-
-   event_cmd_ctl(EVENT_CMD_REWIND_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_CHEATS_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
-
-   event_cmd_ctl(EVENT_CMD_AUTOSAVE_STATE, NULL);
-
-   event_cmd_ctl(EVENT_CMD_CORE_DEINIT, NULL);
-
-   event_cmd_ctl(EVENT_CMD_TEMPORARY_CONTENT_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_SAVEFILES_DEINIT, NULL);
-
-   rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
-}
 
 int rarch_info_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len)
