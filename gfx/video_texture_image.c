@@ -178,6 +178,35 @@ void video_texture_image_free(struct texture_image *img)
    memset(img, 0, sizeof(*img));
 }
 
+static bool video_texture_image_load_tga(
+      const char *path,
+      struct texture_image *out_img,
+      unsigned a_shift, unsigned r_shift,
+      unsigned g_shift, unsigned b_shift)
+{
+   ssize_t len;
+   void *raw_buf = NULL;
+   uint8_t *buf  = NULL;
+   bool      ret = read_file(path, &raw_buf, &len);
+
+   if (!ret || len < 0)
+   {
+      RARCH_ERR("Failed to read image: %s.\n", path);
+      return false;
+   }
+
+   buf = (uint8_t*)raw_buf;
+
+   ret = rtga_image_load_shift(buf, out_img,
+         a_shift, r_shift, g_shift, b_shift);
+
+   if (buf)
+      free(buf);
+
+   return ret;
+}
+
+
 bool video_texture_image_load(struct texture_image *out_img, const char *path)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;
@@ -186,34 +215,13 @@ bool video_texture_image_load(struct texture_image *out_img, const char *path)
          &a_shift);
 
    if (strstr(path, ".tga"))
-   {
-      ssize_t len;
-      void *raw_buf = NULL;
-      uint8_t *buf  = NULL;
-      bool      ret = read_file(path, &raw_buf, &len);
-
-      if (!ret || len < 0)
-      {
-         RARCH_ERR("Failed to read image: %s.\n", path);
-         return false;
-      }
-
-      buf = (uint8_t*)raw_buf;
-
-      ret = rtga_image_load_shift(buf, out_img,
+      return video_texture_image_load_tga(path, out_img,
             a_shift, r_shift, g_shift, b_shift);
 
-      if (buf)
-         free(buf);
-
-      return ret;
-   }
 #ifdef HAVE_RPNG
-   else if (strstr(path, ".png"))
-   {
+   if (strstr(path, ".png"))
       return video_texture_image_load_png(path, out_img,
             a_shift, r_shift, g_shift, b_shift);
-   }
 #endif
 
    return false;
