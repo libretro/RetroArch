@@ -22,7 +22,7 @@
 #include "tasks.h"
 
 #ifdef HAVE_THREADS
-#include "rthreads/rthreads.h"
+#include <rthreads/rthreads.h>
 #endif
 
 typedef struct
