@@ -258,7 +258,7 @@ bool take_screenshot(void)
 
    msg = msg_screenshot;
 
-   RARCH_LOG("%s.\n", msg_screenshot);
+   RARCH_LOG("%s.\n", msg);
 
    is_paused = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 
