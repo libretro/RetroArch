@@ -33,10 +33,12 @@
 #include "../file_ops.h"
 #include "../general.h"
 
-bool video_texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
-      unsigned *b_shift, unsigned *a_shift)
+bool video_texture_image_set_color_shifts(
+      unsigned *r_shift, unsigned *g_shift, unsigned *b_shift,
+      unsigned *a_shift)
 {
-   bool use_rgba        = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
+   bool use_rgba        = video_driver_ctl(
+         RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
    *a_shift             = 24;
    *r_shift             = use_rgba ? 0 : 16;
    *g_shift             = 8;
@@ -96,7 +98,8 @@ bool video_texture_image_color_convert(unsigned r_shift,
    src += tmp_pitch; \
 }
 
-static bool video_texture_image_rpng_gx_convert_texture32(struct texture_image *image)
+static bool video_texture_image_rpng_gx_convert_texture32(
+      struct texture_image *image)
 {
    unsigned tmp_pitch, width2, i;
    const uint16_t *src = NULL;
@@ -105,7 +108,8 @@ static bool video_texture_image_rpng_gx_convert_texture32(struct texture_image *
     * to avoid gaps in memory when converting by copying over to 
     * a temporary buffer first, then converting over into 
     * main buffer again. */
-   void *tmp           = malloc(image->width * image->height * sizeof(uint32_t));
+   void *tmp           = malloc(image->width 
+         * image->height * sizeof(uint32_t));
 
    if (!tmp)
    {
@@ -113,7 +117,8 @@ static bool video_texture_image_rpng_gx_convert_texture32(struct texture_image *
       return false;
    }
 
-   memcpy(tmp, image->pixels, image->width * image->height * sizeof(uint32_t));
+   memcpy(tmp, image->pixels, image->width 
+         * image->height * sizeof(uint32_t));
    tmp_pitch = (image->width * sizeof(uint32_t)) >> 1;
 
    image->width       &= ~3;
@@ -209,7 +214,8 @@ static bool video_texture_image_load_tga(
 }
 
 
-bool video_texture_image_load(struct texture_image *out_img, const char *path)
+bool video_texture_image_load(struct texture_image *out_img, 
+      const char *path)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;
 
