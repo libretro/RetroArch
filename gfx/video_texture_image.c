@@ -29,6 +29,7 @@
 #include <formats/rpng.h>
 #endif
 #include <formats/tga.h>
+#include <retro_file.h>
 
 #include "../file_ops.h"
 #include "../general.h"
@@ -194,7 +195,7 @@ static bool video_texture_image_load_tga(
    ssize_t len;
    void *raw_buf = NULL;
    uint8_t *buf  = NULL;
-   bool      ret = read_file(path, &raw_buf, &len);
+   bool      ret = retro_read_file(path, &raw_buf, &len);
 
    if (!ret || len < 0)
    {
