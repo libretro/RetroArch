@@ -190,47 +190,35 @@ static bool take_screenshot_raw(void)
          width, height, -pitch, false);
 }
 
-/**
- * take_screenshot:
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool take_screenshot(void)
+static bool take_screenshot_choice(void)
 {
-   bool is_paused;
-   bool viewport_read   = false;
-   bool ret             = true;
-   const char *msg      = NULL;
-   settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    /* No way to infer screenshot directory. */
    if ((!*settings->screenshot_directory) && (!*global->name.base))
       return false;
 
-   viewport_read = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_VIEWPORT_READ, NULL);
-
-   if (viewport_read)
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_VIEWPORT_READ, NULL))
    {
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
       video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      return take_screenshot_viewport();
    }
-
-   if (viewport_read)
-      ret = take_screenshot_viewport();
    else if (!video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB, NULL))
-      ret = take_screenshot_raw();
+      return take_screenshot_raw();
    else if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_READ_FRAME_RAW, NULL))
    {
       unsigned old_width, old_height;
       size_t old_pitch;
       void *frame_data;
+      bool ret             = false;
       const void* old_data = NULL;
-      
+
       video_driver_cached_frame_get(&old_data, &old_width, &old_height,
             &old_pitch);
-      
+
       frame_data = video_driver_read_frame_raw(
             &old_width, &old_height, &old_pitch);
 
@@ -240,18 +228,27 @@ bool take_screenshot(void)
       if (frame_data)
       {
          video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_SET_PTR, (void*)frame_data);
-         ret = take_screenshot_raw();
+         if (take_screenshot_raw())
+            ret = true;
          free(frame_data);
       }
-      else
-         ret = false;
-   }
-   else
-   {
-      RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
-      ret = false;
+
+      return ret;
    }
 
+   return false;
+}
+
+/**
+ * take_screenshot:
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool take_screenshot(void)
+{
+   bool is_paused;
+   const char *msg      = NULL;
+   bool             ret = take_screenshot_choice();
 
    if (ret)
    {
