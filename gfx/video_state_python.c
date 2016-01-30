@@ -21,6 +21,7 @@
 
 #include <compat/strl.h>
 #include <compat/posix_string.h>
+#include <retro_file.h>
 
 #include "video_state_python.h"
 #include "../dynamic.h"
@@ -302,7 +303,9 @@ py_state_t *py_state_new(const char *script,
        * compiled with MSVC. */
       ssize_t len;
       char *script_ = NULL;
-      bool ret = read_file(script, (void**)&script_, &len);
+      bool ret      = retro_read_file
+         (script, (void**)&script_, &len);
+
       if (!ret || len < 0)
       {
          RARCH_ERR("Python: Failed to read script\n");

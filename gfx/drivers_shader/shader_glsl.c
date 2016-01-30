@@ -19,6 +19,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <file/file_path.h>
+#include <retro_file.h>
 #include <string/stdstring.h>
 
 #include "../../general.h"
@@ -463,7 +464,8 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
    ssize_t len;
-   bool ret = read_file(path, (void**)&pass->source.string.vertex, &len);
+   bool ret = retro_read_file(path,
+         (void**)&pass->source.string.vertex, &len);
    if (!ret || len <= 0)
       return false;
 
@@ -472,7 +474,8 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
    return pass->source.string.fragment && pass->source.string.vertex;
 }
 
-static bool gl_glsl_compile_programs(glsl_shader_data_t *glsl, GLuint *gl_prog)
+static bool gl_glsl_compile_programs(
+      glsl_shader_data_t *glsl, GLuint *gl_prog)
 {
    unsigned i;
 
@@ -487,9 +490,11 @@ static bool gl_glsl_compile_programs(glsl_shader_data_t *glsl, GLuint *gl_prog)
        * load the file here, and pretend
        * we were really using XML all along.
        */
-      if (*pass->source.path && !gl_glsl_load_source_path(pass, pass->source.path))
+      if (*pass->source.path && !gl_glsl_load_source_path(
+               pass, pass->source.path))
       {
-         RARCH_ERR("Failed to load GLSL shader: %s.\n", pass->source.path);
+         RARCH_ERR("Failed to load GLSL shader: %s.\n",
+               pass->source.path);
          return false;
       }
       *pass->source.path = '\0';

@@ -25,6 +25,7 @@
 #include <compat/msvc.h>
 #include <file/file_path.h>
 #include <file/file_archive.h>
+#include <retro_file.h>
 #include <string/stdstring.h>
 
 #include "patch.h"
@@ -491,7 +492,7 @@ static bool apply_patch_content(uint8_t **buf,
    ssize_t ret_size         = *size;
    uint8_t *ret_buf         = *buf;
    
-   if (!read_file(patch_path, &patch_data, &patch_size))
+   if (!retro_read_file(patch_path, &patch_data, &patch_size))
       return false;
    if (patch_size < 0)
       return false;
