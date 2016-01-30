@@ -96,10 +96,10 @@ static int cb_image_menu_upload_generic(void *data, size_t len)
          nbio->image.processing_final_state == IMAGE_PROCESS_ERROR_END)
       return -1;
 
-   texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
+   video_texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift);
 
-   texture_image_color_convert(r_shift, g_shift, b_shift,
+   video_texture_image_color_convert(r_shift, g_shift, b_shift,
          a_shift, &nbio->image.ti);
 
    nbio->image.is_blocking_on_processing         = false;

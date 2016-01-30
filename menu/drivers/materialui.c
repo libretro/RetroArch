@@ -158,12 +158,12 @@ static void mui_context_reset_textures(mui_handle_t *mui, const char *iconpath)
       if (string_is_empty(path) || !path_file_exists(path))
          continue;
 
-      texture_image_load(&ti, path);
+      video_texture_image_load(&ti, path);
 
       mui->textures.list[i].id   = menu_display_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR);
 
-      texture_image_free(&ti);
+      video_texture_image_free(&ti);
    }
 }
 

@@ -1097,18 +1097,19 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb, const char *the
       fill_pathname_join(content_texturepath, iconpath, sysname, sizeof(content_texturepath));
       strlcat(content_texturepath, "-content.png", sizeof(content_texturepath));
 
-      texture_image_load(&ti, texturepath);
+      video_texture_image_load(&ti, texturepath);
 
       node->icon         = menu_display_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR);
 
-      texture_image_free(&ti);
-      texture_image_load(&ti, content_texturepath);
+      video_texture_image_free(&ti);
+
+      video_texture_image_load(&ti, content_texturepath);
 
       node->content_icon = menu_display_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR);
 
-      texture_image_free(&ti);
+      video_texture_image_free(&ti);
    }
 
    xmb_toggle_horizontal_list(xmb);
@@ -2171,12 +2172,12 @@ static void xmb_context_reset_textures(xmb_handle_t *xmb, const char *iconpath)
       if (string_is_empty(path) || !path_file_exists(path))
          continue;
 
-      texture_image_load(&ti, path);
+      video_texture_image_load(&ti, path);
 
       xmb->textures.list[i].id   = menu_display_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR);
 
-      texture_image_free(&ti);
+      video_texture_image_free(&ti);
    }
 
    xmb->main_menu_node.icon  = xmb->textures.list[XMB_TEXTURE_MAIN_MENU].id;

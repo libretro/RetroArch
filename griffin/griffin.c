@@ -192,7 +192,7 @@ VIDEO SHADERS
 VIDEO IMAGE
 ============================================================ */
 
-#include "../gfx/image/image.c"
+#include "../gfx/video_texture_image.c"
 
 #include "../libretro-common/formats/tga/rtga.c"
 

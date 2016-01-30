@@ -67,7 +67,7 @@ bool gl_load_luts(const struct video_shader *shader,
       RARCH_LOG("Loading texture image from: \"%s\" ...\n",
             shader->lut[i].path);
 
-      if (!texture_image_load(&img, shader->lut[i].path))
+      if (!video_texture_image_load(&img, shader->lut[i].path))
       {
          RARCH_ERR("Failed to load texture image from: \"%s\"\n",
                shader->lut[i].path);
@@ -90,7 +90,7 @@ bool gl_load_luts(const struct video_shader *shader,
             filter_type, 4,
             img.width, img.height,
             img.pixels, sizeof(uint32_t));
-      texture_image_free(&img);
+      video_texture_image_free(&img);
    }
 
    glBindTexture(GL_TEXTURE_2D, 0);

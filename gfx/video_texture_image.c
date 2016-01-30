@@ -14,26 +14,26 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stddef.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
+#include <boolean.h>
 #include <formats/image.h>
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>
 #endif
 #include <formats/tga.h>
-#include "../../file_ops.h"
-#include "../../verbosity.h"
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stddef.h>
-#include <boolean.h>
-#include "../../general.h"
+#include "../file_ops.h"
+#include "../general.h"
 
-bool texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
+bool video_texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
       unsigned *b_shift, unsigned *a_shift)
 {
    bool use_rgba        = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
@@ -45,7 +45,7 @@ bool texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
    return use_rgba;
 }
 
-bool texture_image_color_convert(unsigned r_shift,
+bool video_texture_image_color_convert(unsigned r_shift,
       unsigned g_shift, unsigned b_shift, unsigned a_shift,
       struct texture_image *out_img)
 {
@@ -74,7 +74,8 @@ bool texture_image_color_convert(unsigned r_shift,
 }
 
 #ifdef HAVE_RPNG
-static bool rpng_image_load_argb_shift(const char *path,
+static bool video_texture_image_load_png(
+      const char *path,
       struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
@@ -89,8 +90,19 @@ static bool rpng_image_load_argb_shift(const char *path,
       return false;
    }
 
-   texture_image_color_convert(r_shift, g_shift, b_shift,
+   video_texture_image_color_convert(r_shift, g_shift, b_shift,
          a_shift, out_img);
+
+#ifdef GEKKO
+   if (ret)
+   {
+      if (!video_texture_image_rpng_gx_convert_texture32(out_img))
+      {
+         video_texture_image_free(out_img);
+         return false;
+      }
+   }
+#endif
 
    return true;
 }
@@ -117,7 +129,7 @@ static bool rpng_image_load_argb_shift(const char *path,
    src += tmp_pitch; \
 }
 
-static bool rpng_gx_convert_texture32(struct texture_image *image)
+static bool video_texture_image_rpng_gx_convert_texture32(struct texture_image *image)
 {
    unsigned tmp_pitch, width2, i;
    const uint16_t *src = NULL;
@@ -154,10 +166,9 @@ static bool rpng_gx_convert_texture32(struct texture_image *image)
    free(tmp);
    return true;
 }
-
 #endif
 
-void texture_image_free(struct texture_image *img)
+void video_texture_image_free(struct texture_image *img)
 {
    if (!img)
       return;
@@ -167,22 +178,19 @@ void texture_image_free(struct texture_image *img)
    memset(img, 0, sizeof(*img));
 }
 
-bool texture_image_load(struct texture_image *out_img, const char *path)
+bool video_texture_image_load(struct texture_image *out_img, const char *path)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;
-   bool ret = false;
 
-   texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
+   video_texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift);
-
-   (void)ret;
 
    if (strstr(path, ".tga"))
    {
       ssize_t len;
       void *raw_buf = NULL;
       uint8_t *buf  = NULL;
-      ret = read_file(path, &raw_buf, &len);
+      bool      ret = read_file(path, &raw_buf, &len);
 
       if (!ret || len < 0)
       {
@@ -197,26 +205,16 @@ bool texture_image_load(struct texture_image *out_img, const char *path)
 
       if (buf)
          free(buf);
+
+      return ret;
    }
 #ifdef HAVE_RPNG
    else if (strstr(path, ".png"))
    {
-      ret = rpng_image_load_argb_shift(path, out_img,
+      return video_texture_image_load_png(path, out_img,
             a_shift, r_shift, g_shift, b_shift);
    }
-
-#ifdef GEKKO
-   if (ret)
-   {
-      if (!rpng_gx_convert_texture32(out_img))
-      {
-         texture_image_free(out_img);
-         return false;
-      }
-   }
 #endif
 
-#endif
-
-   return ret;
+   return false;
 }

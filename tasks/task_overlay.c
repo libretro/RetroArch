@@ -58,7 +58,7 @@ static bool rarch_task_overlay_load_texture_image(struct overlay *overlay,
 {
    if (!image)
       return false;
-   if (!texture_image_load(image, path))
+   if (!video_texture_image_load(image, path))
       return false;
 
    overlay->load_images[overlay->load_images_size++] = *image;
