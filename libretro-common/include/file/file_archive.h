@@ -83,22 +83,6 @@ typedef int (*file_archive_file_cb)(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
       uint32_t crc32, void *userdata);
 
-/**
- * file_archive_parse_file:
- * @file                        : filename path of archive
- * @valid_exts                  : Valid extensions of archive to be parsed. 
- *                                If NULL, allow all.
- * @file_cb                     : file_cb function pointer
- * @userdata                    : userdata to pass to file_cb function pointer.
- *
- * Low-level file parsing. Enumerates over all files and calls 
- * file_cb with userdata.
- *
- * Returns: true (1) on success, otherwise false (0).
- **/
-bool file_archive_parse_file(const char *file, const char *valid_exts,
-      file_archive_file_cb file_cb, void *userdata);
-
 int file_archive_parse_file_iterate(
       file_archive_transfer_t *state,
       bool *returnerr,

@@ -528,7 +528,7 @@ void file_archive_parse_file_iterate_stop(file_archive_transfer_t *state)
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool file_archive_parse_file(const char *file, const char *valid_exts,
+static bool file_archive_parse_file(const char *file, const char *valid_exts,
       file_archive_file_cb file_cb, void *userdata)
 {
    file_archive_transfer_t state = {0};
