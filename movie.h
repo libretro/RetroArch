@@ -42,9 +42,14 @@ enum rarch_movie_type
 
 enum bsv_ctl_state
 {
-   BSV_MOVIE_CTL_IS_INITED = 0,
+   BSV_MOVIE_CTL_NONE = 0,
+   BSV_MOVIE_CTL_IS_INITED,
    BSV_MOVIE_CTL_PLAYBACK_ON,
    BSV_MOVIE_CTL_PLAYBACK_OFF,
+   /* Playback. */
+   BSV_MOVIE_CTL_GET_INPUT,
+   /* Recording. */
+   BSV_MOVIE_CTL_SET_INPUT,
    BSV_MOVIE_CTL_SET_START_RECORDING,
    BSV_MOVIE_CTL_UNSET_START_RECORDING,
    BSV_MOVIE_CTL_START_RECORDING,
@@ -71,12 +76,6 @@ void bsv_movie_set_path(const char *path);
 void bsv_movie_set_start_path(const char *path);
 
 bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type);
-
-/* Playback. */
-bool bsv_movie_get_input(int16_t *input);
-
-/* Recording. */
-void bsv_movie_set_input(int16_t input);
 
 /* Used for rewinding while playback/record. */
 void bsv_movie_set_frame_start(bsv_movie_t *handle);

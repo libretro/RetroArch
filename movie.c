@@ -198,24 +198,6 @@ void bsv_movie_free(bsv_movie_t *handle)
    free(handle);
 }
 
-bool bsv_movie_get_input(int16_t *input)
-{
-   bsv_movie_t *handle = bsv_movie_state.movie;
-   if (fread(input, sizeof(int16_t), 1, handle->file) != 1)
-      return false;
-
-   *input = swap_if_big16(*input);
-   return true;
-}
-
-void bsv_movie_set_input(int16_t input)
-{
-   bsv_movie_t *handle = bsv_movie_state.movie;
-
-   input = swap_if_big16(input);
-   fwrite(&input, sizeof(int16_t), 1, handle->file);
-}
-
 bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type)
 {
    bsv_movie_t *handle = (bsv_movie_t*)calloc(1, sizeof(*handle));
@@ -414,6 +396,26 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data)
       case BSV_MOVIE_CTL_FRAME_REWIND:
          bsv_movie_frame_rewind(bsv_movie_state.movie);
          break;
+      case BSV_MOVIE_CTL_GET_INPUT:
+         {
+            int16_t *bsv_data = (int16_t*)data;
+            bsv_movie_t *handle = bsv_movie_state.movie;
+            if (fread(bsv_data, sizeof(int16_t), 1, handle->file) != 1)
+               return false;
+
+            *bsv_data = swap_if_big16(*bsv_data);
+         }
+         break;
+      case BSV_MOVIE_CTL_SET_INPUT:
+         {
+            int16_t *bsv_data = (int16_t*)data;
+            bsv_movie_t *handle = bsv_movie_state.movie;
+
+            *bsv_data = swap_if_big16(*bsv_data);
+            fwrite(bsv_data, sizeof(int16_t), 1, handle->file);
+         }
+         break;
+      case BSV_MOVIE_CTL_NONE:
       default:
          return false;
    }
