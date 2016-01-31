@@ -1329,6 +1329,7 @@ static int action_ok_option_create(const char *path,
 {
    char game_path[PATH_MAX_LENGTH];
    rarch_system_info_t *system            = NULL;
+   config_file_t *conf                    = NULL;
 
    if (!rarch_option_create(game_path, sizeof(game_path)))
    {
@@ -1337,12 +1338,23 @@ static int action_ok_option_create(const char *path,
       return 0;
    }
 
+   conf = config_file_new(game_path);
+
+   if (!conf)
+   {
+      conf = config_file_new(NULL);
+      if (!conf)
+         return false;
+   }
+
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   if(core_option_flush_game_specific(system->core_options,
-            game_path))
-      menu_display_msg_queue_push("Core options file saved successfully",
+   if(config_file_write(conf, game_path))
+   {
+      menu_display_msg_queue_push("Core options file created successfully",
             1, 100, true);
+      strlcpy(system->game_options_path, game_path, sizeof(system->game_options_path));
+   }
 
    return 0;
 }
