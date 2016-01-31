@@ -1355,6 +1355,7 @@ static int action_ok_option_create(const char *path,
             1, 100, true);
       strlcpy(system->game_options_path, game_path, sizeof(system->game_options_path));
    }
+   config_file_free(conf);
 
    return 0;
 }
