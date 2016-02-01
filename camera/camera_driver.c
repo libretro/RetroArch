@@ -90,8 +90,16 @@ const char* config_get_camera_driver_options(void)
 
 void find_camera_driver(void)
 {
+   int i;
+   driver_ctx_info_t drv;
    settings_t *settings = config_get_ptr();
-   int i = find_driver_index("camera_driver", settings->camera.driver);
+
+   drv.label = "camera_driver";
+   drv.s     = settings->camera.driver;
+
+   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+   i = drv.len;
 
    if (i >= 0)
       camera_driver = (const camera_driver_t*)camera_driver_find_handle(i);

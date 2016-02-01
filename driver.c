@@ -120,7 +120,7 @@ static const void *find_driver_nonempty(const char *label, int i,
 }
 
 /**
- * find_driver_index:
+ * driver_find_index:
  * @label              : string of driver type to be found.
  * @drv                : identifier of driver to be found.
  *
@@ -129,7 +129,7 @@ static const void *find_driver_nonempty(const char *label, int i,
  * Returns: -1 if no driver based on @label and @drv found, otherwise
  * index number of the driver found in the array.
  **/
-int find_driver_index(const char * label, const char *drv)
+static int driver_find_index(const char * label, const char *drv)
 {
    unsigned i;
    char str[256];
@@ -165,7 +165,7 @@ static bool driver_find_first(const char *label, char *s, size_t len)
  **/
 static bool driver_find_prev(const char *label, char *s, size_t len)
 {
-   int i = find_driver_index(label, s);
+   int i = driver_find_index(label, s);
    if (i > 0)
       find_driver_nonempty(label, i - 1, s, len);
    else
@@ -187,7 +187,7 @@ static bool driver_find_prev(const char *label, char *s, size_t len)
  **/
 bool driver_find_next(const char *label, char *s, size_t len)
 {
-   int i = find_driver_index(label, s);
+   int i = driver_find_index(label, s);
    if (i >= 0 && !string_is_equal(s, "null"))
       find_driver_nonempty(label, i + 1, s, len);
    else
@@ -495,6 +495,14 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             if (!drv)
                return false;
             return driver_find_next(drv->label, drv->s, drv->len);
+         }
+      case RARCH_DRIVER_CTL_FIND_INDEX:
+         {
+            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
+            if (!drv)
+               return false;
+            drv->len = driver_find_index(drv->label, drv->s);
+            return true;
          }
       case RARCH_DRIVER_CTL_NONE:
       default:

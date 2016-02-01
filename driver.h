@@ -207,14 +207,18 @@ enum driver_ctl_state
 
    RARCH_DRIVER_CTL_FIND_PREV,
 
-   RARCH_DRIVER_CTL_FIND_NEXT
+   RARCH_DRIVER_CTL_FIND_NEXT,
+
+   /* Find index of the driver, based on @label. */
+   RARCH_DRIVER_CTL_FIND_INDEX
+
 };
 
 typedef struct driver_ctx_info
 {
    const char *label;
    char *s;
-   size_t len;
+   ssize_t len;
 } driver_ctx_info_t;
 
 
@@ -232,18 +236,6 @@ typedef struct driver_ctx_info
  *
  * Typically, if a driver intends to make use of this, it should 
  * set this to true at the end of its 'init' function. */
-
-/**
- * find_driver_index:
- * @label              : string of driver type to be found.
- * @drv                : identifier of driver to be found.
- *
- * Find index of the driver, based on @label.
- *
- * Returns: -1 if no driver based on @label and @drv found, otherwise
- * index number of the driver found in the array.
- **/
-int find_driver_index(const char * label, const char *drv);
 
 bool driver_ctl(enum driver_ctl_state state, void *data);
 

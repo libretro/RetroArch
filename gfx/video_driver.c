@@ -235,6 +235,7 @@ const char* config_get_video_driver_options(void)
 static bool find_video_driver(void)
 {
    int i;
+   driver_ctx_info_t drv;
    settings_t *settings = config_get_ptr();
 
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)
@@ -255,7 +256,13 @@ static bool find_video_driver(void)
       RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
    }
 
-   i = find_driver_index("video_driver", settings->video.driver);
+   drv.label = "video_driver";
+   drv.s     = settings->video.driver;
+
+   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+   i = drv.len;
+
    if (i >= 0)
       current_video = (video_driver_t*)video_driver_find_handle(i);
    else

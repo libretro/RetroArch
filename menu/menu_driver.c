@@ -105,9 +105,17 @@ const char *config_get_menu_driver_options(void)
 
 void find_menu_driver(void)
 {
+   int i;
+   driver_ctx_info_t drv;
    settings_t *settings = config_get_ptr();
 
-   int i = find_driver_index("menu_driver", settings->menu.driver);
+   drv.label = "menu_driver";
+   drv.s     = settings->menu.driver;
+
+   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+   i = drv.len;
+
    if (i >= 0)
       menu_driver_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
    else

@@ -85,8 +85,16 @@ const char* config_get_location_driver_options(void)
 
 void find_location_driver(void)
 {
+   int i;
+   driver_ctx_info_t drv;
    settings_t *settings = config_get_ptr();
-   int i                = find_driver_index("location_driver", settings->location.driver);
+
+   drv.label = "location_driver";
+   drv.s     = settings->location.driver;
+
+   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+   i = drv.len;
 
    if (i >= 0)
       location_driver = (const location_driver_t*)location_driver_find_handle(i);

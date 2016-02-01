@@ -89,8 +89,16 @@ const char* config_get_record_driver_options(void)
 
 void find_record_driver(void)
 {
+   int i;
+   driver_ctx_info_t drv;
    settings_t *settings = config_get_ptr();
-   int                i = find_driver_index("record_driver", settings->record.driver);
+
+   drv.label = "record_driver";
+   drv.s     = settings->record.driver;
+
+   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+   i = drv.len;
 
    if (i >= 0)
       recording_driver = (const record_driver_t*)record_driver_find_handle(i);

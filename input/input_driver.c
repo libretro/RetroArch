@@ -737,9 +737,16 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          return false;
       case RARCH_INPUT_CTL_FIND_DRIVER:
          {
+            int i;
+            driver_ctx_info_t drv;
             settings_t *settings = config_get_ptr();
-            int                i = find_driver_index("input_driver",
-                  settings->input.driver);
+
+            drv.label = "input_driver";
+            drv.s     = settings->input.driver;
+
+            driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+            i = drv.len;
 
             if (i >= 0)
                current_input = (const input_driver_t*)input_driver_find_handle(i);
