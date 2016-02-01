@@ -201,8 +201,21 @@ enum driver_ctl_state
    /* Update the system Audio/Video information. 
     * Will reinitialize audio/video drivers.
     * Used by RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO. */
-   RARCH_DRIVER_CTL_UPDATE_SYSTEM_AV_INFO
+   RARCH_DRIVER_CTL_UPDATE_SYSTEM_AV_INFO,
+
+   RARCH_DRIVER_CTL_FIND_FIRST,
+
+   RARCH_DRIVER_CTL_FIND_PREV,
+
+   RARCH_DRIVER_CTL_FIND_NEXT
 };
+
+typedef struct driver_ctx_info
+{
+   const char *label;
+   char *s;
+   size_t len;
+} driver_ctx_info_t;
 
 
 /* TODO/FIXME - comment needs to be moved to each respective driver */
@@ -219,32 +232,6 @@ enum driver_ctl_state
  *
  * Typically, if a driver intends to make use of this, it should 
  * set this to true at the end of its 'init' function. */
-
-bool find_first_driver(const char *label, char *s, size_t len);
-
-/**
- * find_prev_driver:
- * @label              : string of driver type to be found.
- * @s                  : identifier of driver to be found.
- * @len                : size of @s.
- *
- * Find previous driver in driver array.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool find_prev_driver(const char *label, char *s, size_t len);
-
-/**
- * find_next_driver:
- * @label              : string of driver type to be found.
- * @s                  : identifier of driver to be found.
- * @len                : size of @.
- *
- * Find next driver in driver array.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool find_next_driver(const char *label, char *s, size_t len);
 
 /**
  * find_driver_index:

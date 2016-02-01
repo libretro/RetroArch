@@ -789,12 +789,18 @@ static int setting_fraction_action_right_default(
 static int setting_string_action_left_driver(void *data,
       bool wraparound)
 {
+   driver_ctx_info_t drv;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
 
-   find_prev_driver(setting->name, setting->value.string, setting->size);
+   drv.label = setting->name;
+   drv.s     = setting->value.string;
+   drv.len   = setting->size;
+
+   if (!driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv))
+      return -1;
 
    return 0;
 }
@@ -802,17 +808,27 @@ static int setting_string_action_left_driver(void *data,
 static int setting_string_action_right_driver(void *data,
       bool wraparound)
 {
+   driver_ctx_info_t drv;
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (!setting)
       return -1;
 
-   if (!find_next_driver(setting->name, setting->value.string, setting->size))
+   drv.label = setting->name;
+   drv.s     = setting->value.string;
+   drv.len   = setting->size;
+
+   if (!driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv))
    {
       settings_t *settings = config_get_ptr();
 
       if (settings && settings->menu.navigation.wraparound.setting_enable)
-         find_first_driver(setting->name, setting->value.string, setting->size);
+      {
+         drv.label = setting->name;
+         drv.s     = setting->value.string;
+         drv.len   = setting->size;
+         driver_ctl(RARCH_DRIVER_CTL_FIND_FIRST, &drv);
+      }
    }
 
    return 0;

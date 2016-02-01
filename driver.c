@@ -149,21 +149,21 @@ int find_driver_index(const char * label, const char *drv)
    return -1;
 }
 
-bool find_first_driver(const char *label, char *s, size_t len)
+static bool driver_find_first(const char *label, char *s, size_t len)
 {
    find_driver_nonempty(label, 0, s, len);
    return true;
 }
 
 /**
- * find_prev_driver:
+ * driver_find_prev:
  * @label              : string of driver type to be found.
  * @s                  : identifier of driver to be found.
  * @len                : size of @s.
  *
  * Find previous driver in driver array.
  **/
-bool find_prev_driver(const char *label, char *s, size_t len)
+static bool driver_find_prev(const char *label, char *s, size_t len)
 {
    int i = find_driver_index(label, s);
    if (i > 0)
@@ -178,14 +178,14 @@ bool find_prev_driver(const char *label, char *s, size_t len)
 }
 
 /**
- * find_next_driver:
+ * driver_find_next:
  * @label              : string of driver type to be found.
  * @s                  : identifier of driver to be found.
  * @len                : size of @s.
  *
  * Find next driver in driver array.
  **/
-bool find_next_driver(const char *label, char *s, size_t len)
+bool driver_find_next(const char *label, char *s, size_t len)
 {
    int i = find_driver_index(label, s);
    if (i >= 0 && !string_is_equal(s, "null"))
@@ -475,6 +475,27 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                return driver_update_system_av_info(*info);
          }
          return false;
+      case RARCH_DRIVER_CTL_FIND_FIRST:
+         {
+            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
+            if (!drv)
+               return false;
+            return driver_find_first(drv->label, drv->s, drv->len);
+         }
+      case RARCH_DRIVER_CTL_FIND_PREV:
+         {
+            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
+            if (!drv)
+               return false;
+            return driver_find_prev(drv->label, drv->s, drv->len);
+         }
+      case RARCH_DRIVER_CTL_FIND_NEXT:
+         {
+            driver_ctx_info_t *drv = (driver_ctx_info_t*)data;
+            if (!drv)
+               return false;
+            return driver_find_next(drv->label, drv->s, drv->len);
+         }
       case RARCH_DRIVER_CTL_NONE:
       default:
          break;
