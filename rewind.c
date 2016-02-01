@@ -430,8 +430,21 @@ static INLINE size_t read_size_t(const void *ptr)
    return ret;
 }
 
+static void state_manager_free(state_manager_t *state)
+{
+   if (!state)
+      return;
 
-state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
+   free(state->data);
+   free(state->thisblock);
+   free(state->nextblock);
+#if STRICT_BUF_SIZE
+   free(state->debugblock);
+#endif
+   free(state);
+}
+
+static state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
 {
    state_manager_t *state = (state_manager_t*)calloc(1, sizeof(*state));
 
@@ -443,9 +456,13 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
    state->maxcompsize = state_manager_raw_maxsize(state_size) + sizeof(size_t) * 2;
    state->data        = (uint8_t*)malloc(buffer_size);
 
+   if (!state->data)
+      goto error;
+
    state->thisblock   = (uint8_t*)state_manager_raw_alloc(state_size, 0);
    state->nextblock   = (uint8_t*)state_manager_raw_alloc(state_size, 1);
-   if (!state->data || !state->thisblock || !state->nextblock)
+
+   if (!state->thisblock || !state->nextblock)
       goto error;
 
    state->capacity = buffer_size;
@@ -462,22 +479,10 @@ state_manager_t *state_manager_new(size_t state_size, size_t buffer_size)
 
 error:
    state_manager_free(state);
+
    return NULL;
 }
 
-void state_manager_free(state_manager_t *state)
-{
-   if (!state)
-      return;
-
-   free(state->data);
-   free(state->thisblock);
-   free(state->nextblock);
-#if STRICT_BUF_SIZE
-   free(state->debugblock);
-#endif
-   free(state);
-}
 
 static bool state_manager_pop(state_manager_t *state, const void **data)
 {

@@ -28,10 +28,6 @@ extern "C" {
 
 typedef struct state_manager state_manager_t;
 
-state_manager_t *state_manager_new(size_t state_size, size_t buffer_size);
-
-void state_manager_free(state_manager_t *state);
-
 void init_rewind(void);
 
 bool state_manager_frame_is_reversed(void);
