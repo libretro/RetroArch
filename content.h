@@ -48,10 +48,7 @@ enum content_ctl_state
    /* Load a RAM state from disk to memory. */
    CONTENT_CTL_LOAD_RAM_FILE,
 
-   /* Save a RAM state from memory to disk.
-    *
-    * In case the file could not be written to, a fallback function
-    * 'dump_to_file_desperate' will be called. */
+   /* Save a RAM state from memory to disk. */
    CONTENT_CTL_SAVE_RAM_FILE,
 
    /* Load a state from disk to memory. */
