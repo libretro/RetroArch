@@ -123,10 +123,9 @@ void runloop_msg_queue_push(const char *msg,
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
 
    if (flush)
-      msg_queue_clear(g_msg_queue);
-   msg_queue_push(g_msg_queue, msg, prio, duration);
+      runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_CLEAR, NULL);
 
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
+   msg_queue_push(g_msg_queue, msg, prio, duration);
 
    if (ui_companion_is_on_foreground())
    {
@@ -134,6 +133,9 @@ void runloop_msg_queue_push(const char *msg,
       if (ui->msg_queue_push)
          ui->msg_queue_push(msg, prio, duration, flush);
    }
+
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
+
 }
 
 #ifdef HAVE_MENU
@@ -952,6 +954,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_msg_queue_lock = NULL;
 #endif
          break;
+      case RUNLOOP_CTL_MSG_QUEUE_CLEAR:
+         msg_queue_clear(g_msg_queue);
+         return true;
       case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
          if (!g_msg_queue)
             return true;
