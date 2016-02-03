@@ -136,7 +136,8 @@ static int find_token(RFILE *fd, const char *token)
 #define MODETEST_VAL 0xffffff00
 #endif
 
-static int detect_ps1_game_sub(const char *track_path, char *game_id, int sub_channel_mixed)
+static int detect_ps1_game_sub(const char *track_path,
+      char *game_id, int sub_channel_mixed)
 {
    uint8_t* tmp;
    uint8_t buffer[2048 * 2];

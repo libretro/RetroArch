@@ -209,7 +209,8 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
    return -1;
 }
 
-static int rarch_main_data_image_iterate_process_transfer_parse(nbio_handle_t *nbio)
+static int rarch_main_data_image_iterate_process_transfer_parse(
+      nbio_handle_t *nbio)
 {
    if (nbio->image.handle && nbio->image.cb)
    {
@@ -311,7 +312,8 @@ static int cb_nbio_image_menu_boxart(void *data, size_t len)
 #endif
 #endif
 
-bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_task_callback_t cb, void *user_data)
+bool rarch_task_push_image_load(const char *fullpath,
+      const char *type, rarch_task_callback_t cb, void *user_data)
 {
 #if defined(HAVE_RPNG) && defined(HAVE_MENU)
    rarch_task_t *t;
@@ -325,7 +327,8 @@ bool rarch_task_push_image_load(const char *fullpath, const char *type, rarch_ta
 
    if (!handle)
    {
-      RARCH_ERR("[image load] Failed to open '%s': %s.\n", fullpath, strerror(errno));
+      RARCH_ERR("[image load] Failed to open '%s': %s.\n",
+            fullpath, strerror(errno));
       return false;
    }
 

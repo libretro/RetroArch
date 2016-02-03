@@ -62,7 +62,8 @@ static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
    return 0;
 }
 
-static int rarch_main_data_http_conn_iterate_transfer_parse(http_handle_t *http)
+static int rarch_main_data_http_conn_iterate_transfer_parse(
+      http_handle_t *http)
 {
    if (net_http_connection_done(http->connection.handle))
    {
@@ -204,7 +205,8 @@ static bool rarch_task_http_finder(rarch_task_t *task, void *user_data)
    return string_is_equal(handle_url, (const char*)user_data);
 }
 
-bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task_callback_t cb, void *user_data)
+bool rarch_task_push_http_transfer(const char *url, const char *type,
+      rarch_task_callback_t cb, void *user_data)
 {
    char tmp[PATH_MAX_LENGTH];
    task_finder_data_t find_data;
@@ -253,7 +255,9 @@ bool rarch_task_push_http_transfer(const char *url, const char *type, rarch_task
    t->user_data            = user_data;
    t->progress             = -1;
 
-   snprintf(tmp, sizeof(tmp), "%s '%s'", msg_hash_to_str(MSG_DOWNLOADING), path_basename(url));
+   snprintf(tmp, sizeof(tmp), "%s '%s'",
+         msg_hash_to_str(MSG_DOWNLOADING), path_basename(url));
+
    t->title                = strdup(tmp);
 
    task_ctl(TASK_CTL_PUSH, t);

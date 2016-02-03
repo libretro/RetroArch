@@ -40,17 +40,21 @@ typedef struct
    file_archive_transfer_t zlib;
 } decompress_state_t;
 
-static int file_decompressed_target_file(const char *name, const char *valid_exts,
-   const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
-   uint32_t crc32, void *userdata)
+static int file_decompressed_target_file(const char *name,
+      const char *valid_exts,
+      const uint8_t *cdata,
+      unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t crc32, void *userdata)
 {
    /* TODO/FIXME */
    return 0;
 }
 
-static int file_decompressed_subdir(const char *name, const char *valid_exts,
-   const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
-   uint32_t crc32, void *userdata)
+static int file_decompressed_subdir(const char *name,
+      const char *valid_exts,
+      const uint8_t *cdata,
+      unsigned cmode, uint32_t csize,uint32_t size,
+      uint32_t crc32, void *userdata)
 {
    char path[PATH_MAX_LENGTH];
    char path_dir[PATH_MAX_LENGTH];
@@ -83,7 +87,8 @@ next_file:
 
 error:
    dec->callback_error = (char*)malloc(PATH_MAX_LENGTH);
-   snprintf(dec->callback_error, PATH_MAX_LENGTH, "Failed to deflate %s.\n", path);
+   snprintf(dec->callback_error,
+         PATH_MAX_LENGTH, "Failed to deflate %s.\n", path);
 
    return 0;
 }
@@ -119,7 +124,8 @@ next_file:
 
 error:
    dec->callback_error = (char*)malloc(PATH_MAX_LENGTH);
-   snprintf(dec->callback_error, PATH_MAX_LENGTH, "Failed to deflate %s.\n", path);
+   snprintf(dec->callback_error, PATH_MAX_LENGTH,
+         "Failed to deflate %s.\n", path);
 
    return 0;
 }
@@ -154,9 +160,10 @@ static void rarch_task_decompress_handler_finished(rarch_task_t *task,
 
 static void rarch_task_decompress_handler(rarch_task_t *task)
 {
-   bool returnerr;
+   bool retdec             = false;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   int ret = file_archive_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
+   int ret                 = file_archive_parse_file_iterate(&dec->zlib,
+         &retdec, dec->source_file,
          dec->valid_ext, file_decompressed, dec);
 
    task->progress = file_archive_parse_file_progress(&dec->zlib);
@@ -172,9 +179,10 @@ static void rarch_task_decompress_handler(rarch_task_t *task)
 
 static void rarch_task_decompress_handler_target_file(rarch_task_t *task)
 {
-   bool returnerr;
+   bool retdec;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   int ret = file_archive_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
+   int ret = file_archive_parse_file_iterate(&dec->zlib,
+         &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_target_file, dec);
 
    task->progress = file_archive_parse_file_progress(&dec->zlib);
@@ -190,9 +198,10 @@ static void rarch_task_decompress_handler_target_file(rarch_task_t *task)
 
 static void rarch_task_decompress_handler_subdir(rarch_task_t *task)
 {
-   bool returnerr;
+   bool retdec;
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   int ret = file_archive_parse_file_iterate(&dec->zlib, &returnerr, dec->source_file,
+   int ret = file_archive_parse_file_iterate(&dec->zlib,
+         &retdec, dec->source_file,
          dec->valid_ext, file_decompressed_subdir, dec);
 
    task->progress = file_archive_parse_file_progress(&dec->zlib);
@@ -206,7 +215,8 @@ static void rarch_task_decompress_handler_subdir(rarch_task_t *task)
    }
 }
 
-static bool rarch_task_decompress_finder(rarch_task_t *task, void *user_data)
+static bool rarch_task_decompress_finder(
+      rarch_task_t *task, void *user_data)
 {
    decompress_state_t *dec = (decompress_state_t*)task->state;
 
@@ -233,13 +243,15 @@ bool rarch_task_push_decompress(
 
    if (string_is_empty(target_dir) || string_is_empty(source_file))
    {
-      RARCH_WARN("[decompress] Empty or null source file or target directory arguments.\n");
+      RARCH_WARN("[decompress] Empty or null source file or"
+            " target directory arguments.\n");
       return false;
    }
 
    /* ZIP or APK only */
    is_compressed  = string_is_equal(path_get_extension(source_file), "zip");
-   is_compressed  = is_compressed || string_is_equal(path_get_extension(source_file), "apk");
+   is_compressed  = is_compressed || 
+      string_is_equal(path_get_extension(source_file), "apk");
 
    if (!path_file_exists(source_file) || !is_compressed)
    {
@@ -256,7 +268,8 @@ bool rarch_task_push_decompress(
 
    if (task_ctl(TASK_CTL_FIND, &find_data))
    {
-      RARCH_LOG("[decompress] File '%s' already being decompressed.\n", source_file);
+      RARCH_LOG("[decompress] File '%s' already being decompressed.\n",
+            source_file);
       return false;
    }
 
@@ -295,7 +308,9 @@ bool rarch_task_push_decompress(
    t->callback    = cb;
    t->user_data   = user_data;
 
-   snprintf(tmp, sizeof(tmp), "%s '%s'", msg_hash_to_str(MSG_EXTRACTING), path_basename(source_file));
+   snprintf(tmp, sizeof(tmp), "%s '%s'",
+         msg_hash_to_str(MSG_EXTRACTING), path_basename(source_file));
+
    t->title       = strdup(tmp);
 
    task_ctl(TASK_CTL_PUSH, t);

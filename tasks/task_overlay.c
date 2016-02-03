@@ -87,7 +87,8 @@ static void rarch_task_overlay_load_desc_image(
       fill_pathname_resolve_relative(path, loader->overlay_path,
             image_path, sizeof(path));
 
-      if (rarch_task_overlay_load_texture_image(input_overlay, &desc->image, path))
+      if (rarch_task_overlay_load_texture_image(input_overlay,
+               &desc->image, path))
          desc->image_index = input_overlay->load_images_size - 1;
    }
 
@@ -182,15 +183,19 @@ static bool rarch_task_overlay_load_desc(
             const char *tmp = NULL;
 
             desc->type = OVERLAY_TYPE_BUTTONS;
-            for (tmp = strtok_r(key, "|", &save); tmp; tmp = strtok_r(NULL, "|", &save))
+
+            tmp = strtok_r(key, "|", &save);
+
+            for (; tmp; tmp = strtok_r(NULL, "|", &save))
             {
                if (!string_is_equal(tmp, "nul"))
-                  desc->key_mask |= UINT64_C(1) << input_config_translate_str_to_bind_id(tmp);
+                  desc->key_mask |= UINT64_C(1) 
+                     << input_config_translate_str_to_bind_id(tmp);
             }
 
             if (desc->key_mask & (UINT64_C(1) << RARCH_OVERLAY_NEXT))
             {
-               char overlay_target_key[64] = {0};
+               char overlay_target_key[64];
 
                snprintf(overlay_target_key, sizeof(overlay_target_key),
                      "overlay%u_desc%u_next_target", ol_idx, desc_idx);
@@ -241,7 +246,8 @@ static bool rarch_task_overlay_load_desc(
                goto end;
             }
 
-            snprintf(overlay_analog_saturate_key, sizeof(overlay_analog_saturate_key),
+            snprintf(overlay_analog_saturate_key,
+                  sizeof(overlay_analog_saturate_key),
                   "overlay%u_desc%u_saturate_pct", ol_idx, desc_idx);
             if (!config_get_float(conf, overlay_analog_saturate_key,
                      &desc->analog_saturate_pct))
@@ -412,7 +418,8 @@ static void rarch_task_overlay_deferred_load(overlay_loader_t *loader)
       snprintf(overlay->config.descs.key,
             sizeof(overlay->config.descs.key), "overlay%u_descs", loader->pos);
 
-      if (!config_get_uint(conf, overlay->config.descs.key, &overlay->config.descs.size))
+      if (!config_get_uint(conf, overlay->config.descs.key,
+               &overlay->config.descs.size))
       {
          RARCH_ERR("[Overlay]: Failed to read number of descs from config key: %s.\n",
                overlay->config.descs.key);
@@ -469,10 +476,12 @@ static void rarch_task_overlay_deferred_load(overlay_loader_t *loader)
       {
          char overlay_resolved_path[PATH_MAX_LENGTH] = {0};
 
-         fill_pathname_resolve_relative(overlay_resolved_path, loader->overlay_path,
+         fill_pathname_resolve_relative(overlay_resolved_path,
+               loader->overlay_path,
                overlay->config.paths.path, sizeof(overlay_resolved_path));
 
-         if (!rarch_task_overlay_load_texture_image(overlay, &overlay->image, overlay_resolved_path))
+         if (!rarch_task_overlay_load_texture_image(overlay,
+                  &overlay->image, overlay_resolved_path))
          {
             RARCH_ERR("[Overlay]: Failed to load image: %s.\n",
                   overlay_resolved_path);
@@ -497,7 +506,8 @@ static void rarch_task_overlay_deferred_load(overlay_loader_t *loader)
       if (config_get_array(conf, overlay->config.rect.key,
                overlay->config.rect.array, sizeof(overlay->config.rect.array)))
       {
-         struct string_list *list = string_split(overlay->config.rect.array, ", ");
+         struct string_list *list = 
+            string_split(overlay->config.rect.array, ", ");
 
          if (!list || list->size < 4)
          {
@@ -588,7 +598,8 @@ static void rarch_task_overlay_resolve_iterate(overlay_loader_t *loader)
       return;
    }
 
-   if (!rarch_task_overlay_resolve_targets(loader->overlays, loader->resolve_pos, loader->size))
+   if (!rarch_task_overlay_resolve_targets(loader->overlays,
+            loader->resolve_pos, loader->size))
    {
       RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
       goto error;
@@ -695,7 +706,9 @@ static bool rarch_task_push_overlay_load(const char *overlay_path,
       goto error;
    }
 
-   loader->overlays         = (struct overlay*)calloc(loader->size, sizeof(*loader->overlays));
+   loader->overlays         = (struct overlay*)
+      calloc(loader->size, sizeof(*loader->overlays));
+
    if (!loader->overlays)
       goto error;
 
@@ -737,7 +750,8 @@ bool rarch_task_push_overlay_load_default(
       rarch_task_callback_t cb, void *user_data)
 {
    settings_t *settings = config_get_ptr();
-   bool osk_enable      = input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL);
+   bool osk_enable      = 
+      input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL);
 
    if (osk_enable)
    {
