@@ -910,8 +910,6 @@ bool event_cmd_exec(void *data)
 {
    char *fullpath = NULL;
 
-   RARCH_LOG("Environ (Private) EXEC.\n");
-
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    if (fullpath != data)
