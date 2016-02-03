@@ -136,7 +136,8 @@ static bool get_self_input_state(netplay_t *netplay)
    struct delta_frame *ptr                 = &netplay->buffer[netplay->self_ptr];
    settings_t *settings                    = config_get_ptr();
 
-   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL) && netplay->frame_count > 0)
+   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL) 
+         && netplay->frame_count > 0)
    {
       unsigned i;
 
@@ -239,7 +240,8 @@ static bool netplay_get_cmd(netplay_t *netplay)
             return netplay_cmd_nak(netplay);
          }
 
-         if (!socket_receive_all_blocking(netplay->fd, &flip_frame, sizeof(flip_frame)))
+         if (!socket_receive_all_blocking(
+                  netplay->fd, &flip_frame, sizeof(flip_frame)))
          {
             RARCH_ERR("Failed to receive CMD_FLIP_PLAYERS argument.\n");
             return netplay_cmd_nak(netplay);
@@ -293,7 +295,8 @@ static bool netplay_get_cmd(netplay_t *netplay)
 
 static int poll_input(netplay_t *netplay, bool block)
 {
-   int max_fd        = (netplay->fd > netplay->udp_fd ? netplay->fd : netplay->udp_fd) + 1;
+   int max_fd        = (netplay->fd > netplay->udp_fd ? 
+         netplay->fd : netplay->udp_fd) + 1;
    struct timeval tv = {0};
    tv.tv_sec         = 0;
    tv.tv_usec        = block ? (RETRY_MS * 1000) : 0;
@@ -422,7 +425,10 @@ static bool netplay_poll(netplay_t *netplay)
    {
       netplay->buffer[0].used_real        = true;
       netplay->buffer[0].is_simulated     = false;
-      memset(netplay->buffer[0].real_input_state, 0, sizeof(netplay->buffer[0].real_input_state));
+
+      memset(netplay->buffer[0].real_input_state,
+            0, sizeof(netplay->buffer[0].real_input_state));
+
       netplay->read_ptr                   = NEXT_PTR(netplay->read_ptr);
       netplay->read_frame_count++;
       return true;
@@ -532,7 +538,8 @@ static bool netplay_flip_port(netplay_t *netplay, bool port)
    return port ^ netplay->flip ^ (frame < netplay->flip_frame);
 }
 
-static int16_t netplay_input_state(netplay_t *netplay, bool port, unsigned device,
+static int16_t netplay_input_state(netplay_t *netplay,
+      bool port, unsigned device,
       unsigned idx, unsigned id)
 {
    size_t ptr = netplay->is_replay ? 
@@ -1121,7 +1128,8 @@ bool init_netplay(void)
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_START_PLAYBACK, NULL))
    {
-      RARCH_WARN("%s\n", msg_hash_to_str(MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED));
+      RARCH_WARN("%s\n",
+            msg_hash_to_str(MSG_NETPLAY_FAILED_MOVIE_PLAYBACK_HAS_STARTED));
       return false;
    }
 
@@ -1223,10 +1231,10 @@ static struct hostent *gethostbyname(const char *name)
    static struct hostent he;
    static struct in_addr addr;
    static char *addr_ptr;
-   XNDNS *dns = NULL;
+   XNDNS *dns     = NULL;
 
    he.h_addr_list = &addr_ptr;
-   addr_ptr = (char*)&addr;
+   addr_ptr       = (char*)&addr;
 
    if (!name)
       return NULL;
