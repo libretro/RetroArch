@@ -34,10 +34,10 @@
 
 #include "ctr/ctr_debug.h"
 
-#ifdef IS_SALAMANDER
-#include "../../file_ext.h"
-#else
+#ifndef IS_SALAMANDER
+#ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#endif
 #endif
 
 const char* elf_path_cst = "sdmc:/retroarch/test.3dsx";
