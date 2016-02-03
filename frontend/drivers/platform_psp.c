@@ -65,10 +65,6 @@ char eboot_path[512];
 static bool exit_spawn = false;
 static bool exitspawn_start_game = false;
 
-#ifdef IS_SALAMANDER
-#include "../../file_ext.h"
-#endif
-
 static void frontend_psp_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
