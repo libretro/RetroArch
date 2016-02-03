@@ -299,50 +299,6 @@ static int deferred_push_disk_options(menu_displaylist_info_t *info)
 }
 
 #ifdef HAVE_NETWORKING
-/* HACK - we have to find some way to pass state inbetween
- * function pointer callback functions that don't necessarily
- * call each other. */
-char *core_buf;
-size_t core_len;
-
-void cb_net_generic(void *task_data, void *user_data, const char *err)
-{
-   bool refresh = false;
-   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
-
-   if (core_buf)
-      free(core_buf);
-
-   core_buf = NULL;
-   core_len = 0;
-
-   if (!data || err)
-      goto finish;
-
-   core_buf = (char*)malloc((data->len+1) * sizeof(char));
-
-   if (!core_buf)
-      goto finish;
-
-   memcpy(core_buf, data->data, data->len * sizeof(char));
-   core_buf[data->len] = '\0';
-   core_len      = data->len;
-
-finish:
-   refresh = true;
-   menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
-
-   if (err)
-      RARCH_ERR("Download failed: %s\n", err);
-
-   if (data)
-   {
-      if (data->data)
-         free(data->data);
-      free(data);
-   }
-}
-
 static void cb_decompressed(void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
@@ -371,9 +327,6 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
 
 /* expects http_transfer_t*, menu_file_transfer_t* */
 void cb_generic_download(void *task_data, void *user_data, const char *err)
-#if 0
-(void *data, size_t len, const char *dir_path)
-#endif
 {
    char output_path[PATH_MAX_LENGTH];
    char shaderdir[PATH_MAX_LENGTH];

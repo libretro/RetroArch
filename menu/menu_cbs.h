@@ -204,9 +204,8 @@ bool menu_playlist_find_associated_core(const char *path, char *s, size_t len);
 
 
 #ifdef HAVE_NETWORKING
-void cb_net_generic(void *task_data, void *user_data, const char *err);
-
-typedef struct {
+typedef struct
+{
     uint32_t type_hash;
     char path[PATH_MAX_LENGTH];
 } menu_file_transfer_t;

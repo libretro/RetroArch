@@ -51,8 +51,52 @@ char detect_content_path[PATH_MAX_LENGTH];
 unsigned rdb_entry_start_game_selection_ptr, rpl_entry_selection_ptr;
 size_t hack_shader_pass = 0;
 
+#ifdef HAVE_NETWORKING
+/* HACK - we have to find some way to pass state inbetween
+ * function pointer callback functions that don't necessarily
+ * call each other. */
+char *core_buf;
+size_t core_len;
+
 /* defined in menu_cbs_deferred_push */
-void cb_net_generic(void *task_data, void *user_data, const char *err);
+void cb_net_generic(void *task_data, void *user_data, const char *err)
+{
+   bool refresh = false;
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+
+   if (core_buf)
+      free(core_buf);
+
+   core_buf = NULL;
+   core_len = 0;
+
+   if (!data || err)
+      goto finish;
+
+   core_buf = (char*)malloc((data->len+1) * sizeof(char));
+
+   if (!core_buf)
+      goto finish;
+
+   memcpy(core_buf, data->data, data->len * sizeof(char));
+   core_buf[data->len] = '\0';
+   core_len      = data->len;
+
+finish:
+   refresh = true;
+   menu_entries_ctl(MENU_ENTRIES_CTL_UNSET_REFRESH, &refresh);
+
+   if (err)
+      RARCH_ERR("Download failed: %s\n", err);
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+}
+#endif
 
 int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
