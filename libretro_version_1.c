@@ -233,7 +233,6 @@ bool core_ctl(enum core_ctl_state state, void *data)
                return core.retro_load_game_special(load_info->special->id, load_info->info, load_info->content->size);
             return core.retro_load_game(*load_info->content->elems[0].data ? load_info->info : NULL);
          }
-         break;
       case CORE_CTL_RETRO_GET_SYSTEM_INFO:
          {
             struct retro_system_info *system = (struct retro_system_info*)data;

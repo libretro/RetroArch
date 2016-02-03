@@ -329,11 +329,15 @@ error:
  *
  * Load a RAM state from disk to memory.
  */
-static bool load_ram_file(ram_type_t *ram)
+static bool load_ram_file(void *data)
 {
    ssize_t rc;
    retro_ctx_memory_info_t mem_info;
-   void *buf   = NULL;
+   void *buf       = NULL;
+   ram_type_t *ram = (ram_type_t*)data;
+
+   if (!ram)
+      return false;
 
    mem_info.id  = ram->type;
 
@@ -812,13 +816,7 @@ bool content_ctl(enum content_ctl_state state, void *data)
    switch(state)
    {
       case CONTENT_CTL_LOAD_RAM_FILE:
-         {
-            ram_type_t *ram = (ram_type_t*)data;
-            if (!ram)
-               return false;
-            return load_ram_file(ram);
-         }
-         break;
+         return load_ram_file(data);
       case CONTENT_CTL_SAVE_RAM_FILE:
          {
             ram_type_t *ram = (ram_type_t*)data;
