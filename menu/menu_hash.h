@@ -554,6 +554,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT                               0x2cf73cceU
 #define MENU_LABEL_RDB_ENTRY_ANALOG                                            0x9081c2ffU
 #define MENU_LABEL_RDB_ENTRY_RUMBLE                                            0xb8ae8ad4U
+#define MENU_LABEL_RDB_ENTRY_COOP                                              0x7c953ff6U
 #define MENU_LABEL_RDB_ENTRY_START_CONTENT                                     0x95025a55U
 #define MENU_LABEL_RDB_ENTRY_DESCRIPTION                                       0x26aa1f71U
 #define MENU_LABEL_VALUE_RDB_ENTRY_DESCRIPTION                                 0xe61a1f69U

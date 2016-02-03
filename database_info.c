@@ -71,6 +71,7 @@
 #define DB_CURSOR_RELEASEDATE_MONTH             0x790ad76cU
 #define DB_CURSOR_RELEASEDATE_YEAR              0x7fd06ed7U
 #define DB_CURSOR_RUMBLE_SUPPORTED              0x1a4dc3ecU
+#define DB_CURSOR_COOP_SUPPORTED                0x7c953ff6U
 #define DB_CURSOR_ANALOG_SUPPORTED              0xf220fc17U
 #define DB_CURSOR_SIZE                          0x7c9dede0U
 #define DB_CURSOR_SERIAL                        0x1b843ec5U
@@ -237,6 +238,7 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
 
    db_info->analog_supported       = -1;
    db_info->rumble_supported       = -1;
+   db_info->coop_supported         = -1;
 
    for (i = 0; i < item.val.map.len; i++)
    {
@@ -317,6 +319,9 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
             break;
          case DB_CURSOR_RUMBLE_SUPPORTED:
             db_info->rumble_supported = val->val.uint_;
+            break;
+         case DB_CURSOR_COOP_SUPPORTED:
+            db_info->coop_supported = val->val.uint_;
             break;
          case DB_CURSOR_ANALOG_SUPPORTED:
             db_info->analog_supported = val->val.uint_;

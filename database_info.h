@@ -87,6 +87,7 @@ typedef struct
    unsigned releaseyear;
    int analog_supported;
    int rumble_supported;
+   int coop_supported;
    void *userdata;
 } database_info_t;
 
