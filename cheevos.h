@@ -25,7 +25,7 @@ int cheevos_load(const void *data);
 void cheevos_populate_menu(void *data);
 #endif
 
-void cheevos_get_description(unsigned cheevo_ndx, char *str, size_t len);
+void cheevos_get_description(unsigned idx, char *str, size_t len);
 
 void cheevos_set_cheats(void);
 
