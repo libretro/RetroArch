@@ -1824,7 +1824,10 @@ static unsigned cheevos_find_game_id_nes(
          return 0;
    }
    
-   if (header.id[0] != 'N' || header.id[1] != 'E' || header.id[2] != 'S' || header.id[3] != 0x1a)
+   if (     header.id[0] != 'N' 
+         || header.id[1] != 'E' 
+         || header.id[2] != 'S' 
+         || header.id[3] != 0x1a)
       return 0;
    
    if (header.rom_size)
