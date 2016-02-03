@@ -206,9 +206,11 @@ static bool take_screenshot_choice(void)
       video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
       return take_screenshot_viewport();
    }
-   else if (!video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB, NULL))
+
+   if (!video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB, NULL))
       return take_screenshot_raw();
-   else if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_READ_FRAME_RAW, NULL))
+
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_READ_FRAME_RAW, NULL))
    {
       unsigned old_width, old_height;
       size_t old_pitch;
