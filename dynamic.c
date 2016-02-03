@@ -1229,10 +1229,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                   runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, data);
             }
 
-#if defined(RARCH_CONSOLE)
-            frontend_driver_set_fork(true, true, false);
-#elif defined(HAVE_DYNAMIC)
+#if defined(HAVE_DYNAMIC)
             rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
+#else
+            if (frontend_driver_has_fork())
+               frontend_driver_set_fork(true, true, false);
 #endif
 
          }
