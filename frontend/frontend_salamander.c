@@ -56,6 +56,7 @@ static void find_first_libretro_core(char *first_file,
    for (i = 0; i < list->size && !ret; i++)
    {
       char fname[PATH_MAX_LENGTH];
+      char salamander_name[PATH_MAX_LENGTH];
       const char *libretro_elem = (const char*)list->elems[i].data;
 
       RARCH_LOG("Checking library: \"%s\".\n", libretro_elem);
@@ -65,9 +66,12 @@ static void find_first_libretro_core(char *first_file,
 
       fill_pathname_base(fname, libretro_elem, sizeof(fname));
 
-      if (strncmp(fname, SALAMANDER_FILE, sizeof(fname)) == 0)
+      if (!frontend_driver_get_salamander_basename(salamander_name, sizeof(salamander_name)))
+         break;
+
+      if (!strncmp(fname, salamander_name, sizeof(fname)))
       {
-         if ((i + 1) == list->size)
+         if (list->size == (i + 1))
          {
             RARCH_WARN("Entry is RetroArch Salamander itself, but is last entry. No choice but to set it.\n");
             strlcpy(first_file, fname, size_of_first_file);

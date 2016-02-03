@@ -372,8 +372,16 @@ static void frontend_gx_set_fork(bool exitspawn, bool start_game, bool restart)
    if (restart)
    {
       char new_path[PATH_MAX_LENGTH];
-      fill_pathname_join(new_path, g_defaults.dir.core, SALAMANDER_FILE, sizeof(new_path));
-      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
+      char salamander_name[PATH_MAX_LENGTH];
+
+      if (frontend_driver_get_salamander_basename(salamander_name,
+               sizeof(salamander_name)))
+      {
+         fill_pathname_join(new_path, g_defaults.dir.core,
+               salamander_name, sizeof(new_path));
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
+      }
+
    }
 #endif
 

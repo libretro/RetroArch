@@ -2262,7 +2262,15 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_has_fork())
             {
-               if (is_dir || string_is_equal_noncase(path, SALAMANDER_FILE))
+               char salamander_name[PATH_MAX_LENGTH];
+
+               if (frontend_driver_get_salamander_basename(salamander_name, sizeof(salamander_name)))
+               {
+                  if (string_is_equal_noncase(path, salamander_name))
+                     continue;
+               }
+
+               if (is_dir)
                   continue;
             }
 #endif

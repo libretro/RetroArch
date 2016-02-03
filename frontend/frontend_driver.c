@@ -107,6 +107,37 @@ frontend_ctx_driver_t *frontend_ctx_init_first(void)
    return frontend;
 }
 
+bool frontend_driver_get_salamander_basename(char *s, size_t len)
+{
+#ifdef HAVE_DYNAMIC
+   return false;
+#else
+
+#if defined(__CELLOS_LV2__)
+   strlcpy(s, "EBOOT.BIN", len);
+   return true;
+#elif defined(PSP)
+   strlcpy(s, "EBOOT.PBP", len);
+   return true;
+#elif defined(VITA)
+   strlcpy(s, "default.velf", len);
+   return true;
+#elif defined(_XBOX1)
+   strlcpy(s, "default.xbe", len);
+   return true;
+#elif defined(_XBOX360)
+   strlcpy(s, "default.xex", len);
+   return true;
+#elif defined(HW_RVL)
+   strlcpy(s, "boot.dol", len);
+   return true;
+#else
+   return false;
+#endif
+
+#endif
+}
+
 #ifndef IS_SALAMANDER
 frontend_ctx_driver_t *frontend_get_ptr(void)
 {

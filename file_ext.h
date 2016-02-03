@@ -28,22 +28,16 @@
 #else
 #if defined(__CELLOS_LV2__)
 #define EXT_EXECUTABLES "self|bin"
-#define SALAMANDER_FILE "EBOOT.BIN"
 #elif defined(PSP)
 #define EXT_EXECUTABLES "pbp"
-#define SALAMANDER_FILE "EBOOT.PBP"
 #elif defined(VITA)
 #define EXT_EXECUTABLES "velf"
-#define SALAMANDER_FILE "default.velf"
 #elif defined(_XBOX1)
 #define EXT_EXECUTABLES "xbe"
-#define SALAMANDER_FILE "default.xbe"
 #elif defined(_XBOX360)
 #define EXT_EXECUTABLES "xex"
-#define SALAMANDER_FILE "default.xex"
 #elif defined(GEKKO)
 #define EXT_EXECUTABLES "dol"
-#define SALAMANDER_FILE "boot.dol"
 #else
 #define EXT_EXECUTABLES ""
 #endif
