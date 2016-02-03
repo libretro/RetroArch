@@ -241,9 +241,6 @@ void frontend_driver_init_first(void *args)
 {
    current_frontend_ctx = (frontend_ctx_driver_t*)frontend_ctx_init_first();
 
-   if (!current_frontend_ctx)
-      RARCH_WARN("Frontend context could not be initialized.\n");
-
    if (current_frontend_ctx && current_frontend_ctx->init)
       current_frontend_ctx->init(args);
 }
