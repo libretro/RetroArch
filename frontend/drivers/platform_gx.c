@@ -54,8 +54,10 @@ extern void system_exec_wii(const char *path, bool should_load_game);
 #include <debug.h>
 #endif
 
+#if defined(HW_RVL)
 static bool exit_spawn = false;
 static bool exitspawn_start_game = false;
+#endif
 
 #ifndef IS_SALAMANDER
 
