@@ -15,6 +15,7 @@
 
 #include <file/file_path.h>
 #include <retro_stat.h>
+#include <retro_file.h>
 #include <string/stdstring.h>
 
 #include "../menu_driver.h"
@@ -1216,6 +1217,156 @@ static int action_ok_save_state(const char *path,
       return -1;
    return generic_action_ok_command(EVENT_CMD_RESUME);
 }
+
+#ifdef HAVE_NETWORKING
+static void cb_decompressed(void *task_data, void *user_data, const char *err)
+{
+   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
+   unsigned type_hash = (uintptr_t)user_data;
+
+   if (dec && !err)
+   {
+      if (type_hash == CB_CORE_UPDATER_DOWNLOAD)
+         event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
+      else if (type_hash == CB_UPDATE_ASSETS)
+         event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+   }
+
+   if (err)
+      RARCH_ERR("%s", err);
+
+   if (dec)
+   {
+      if (path_file_exists(dec->source_file))
+         remove(dec->source_file);
+
+      free(dec->source_file);
+      free(dec);
+   }
+}
+
+/* expects http_transfer_t*, menu_file_transfer_t* */
+static void cb_generic_download(void *task_data,
+      void *user_data, const char *err)
+{
+   char output_path[PATH_MAX_LENGTH];
+   char shaderdir[PATH_MAX_LENGTH];
+   const char             *file_ext      = NULL;
+   const char             *dir_path      = NULL;
+   menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;
+   settings_t              *settings     = config_get_ptr();
+   http_transfer_data_t        *data     = (http_transfer_data_t*)task_data;
+
+   if (!data || !data->data | !transf)
+      goto finish;
+
+   /* we have to determine dir_path at the time of writting or else
+    * we'd run into races when the user changes the setting during an
+    * http transfer. */
+   switch (transf->type_hash)
+   {
+      case CB_CORE_UPDATER_DOWNLOAD:
+         dir_path = settings->libretro_directory;
+         break;
+      case CB_CORE_CONTENT_DOWNLOAD:
+         dir_path = settings->core_assets_directory;
+         break;
+      case CB_UPDATE_CORE_INFO_FILES:
+         dir_path = settings->libretro_info_path;
+         break;
+      case CB_UPDATE_ASSETS:
+         dir_path = settings->assets_directory;
+         break;
+      case CB_UPDATE_AUTOCONFIG_PROFILES:
+         dir_path = settings->input.autoconfig_dir;
+         break;
+      case CB_UPDATE_DATABASES:
+         dir_path = settings->content_database;
+         break;
+      case CB_UPDATE_OVERLAYS:
+         dir_path = settings->overlay_directory;
+         break;
+      case CB_UPDATE_CHEATS:
+         dir_path = settings->cheat_database;
+         break;
+      case CB_UPDATE_SHADERS_CG:
+      case CB_UPDATE_SHADERS_GLSL:
+      {
+         const char *dirname = transf->type_hash == CB_UPDATE_SHADERS_CG ?
+                  "shaders_cg" : "shaders_glsl";
+
+         fill_pathname_join(shaderdir, settings->video.shader_dir, dirname,
+               sizeof(shaderdir));
+         if (!path_file_exists(shaderdir))
+            if (!path_mkdir(shaderdir))
+               goto finish;
+
+         dir_path = shaderdir;
+         break;
+      }
+      case CB_LAKKA_DOWNLOAD:
+         dir_path = "/storage/.update/"; /* TODO unhardcode this ? */
+         break;
+      default:
+         RARCH_WARN("Unknown transfer type '%u' bailing out.\n",
+               transf->type_hash);
+         break;
+   }
+
+   fill_pathname_join(output_path, dir_path,
+         transf->path, sizeof(output_path));
+
+   /* Make sure the directory exists */
+   path_basedir(output_path);
+   if (!path_mkdir(output_path))
+   {
+      err = "Failed to create the directory.";
+      goto finish;
+   }
+
+   fill_pathname_join(output_path, dir_path,
+         transf->path, sizeof(output_path));
+
+   if (!retro_write_file(output_path, data->data, data->len))
+   {
+      err = "Write failed.";
+      goto finish;
+   }
+
+#ifdef HAVE_ZLIB
+   file_ext = path_get_extension(output_path);
+
+   if (!settings->network.buildbot_auto_extract_archive)
+      goto finish;
+
+   if (string_is_equal_noncase(file_ext, "zip"))
+   {
+      rarch_task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
+            cb_decompressed, (void*)(uintptr_t)transf->type_hash);
+   }
+#else
+   if (transf->type_hash == CB_CORE_UPDATER_DOWNLOAD)
+      event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
+#endif
+
+finish:
+   if (err)
+   {
+      RARCH_ERR("Download of '%s' failed: %s\n",
+            (transf ? transf->path: "unknown"), err);
+   }
+
+   if (data)
+   {
+      if (data->data)
+         free(data->data);
+      free(data);
+   }
+
+   if (transf)
+      free(transf);
+}
+#endif
 
 static int action_ok_download_generic(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,

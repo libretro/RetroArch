@@ -23,6 +23,20 @@
 #include "menu_entries.h"
 #include "menu_hash.h"
 
+#define CB_CORE_UPDATER_DOWNLOAD       0x7412da7dU
+#define CB_CORE_UPDATER_LIST           0x32fd4f01U
+#define CB_UPDATE_ASSETS               0xbf85795eU
+#define CB_UPDATE_CORE_INFO_FILES      0xe6084091U
+#define CB_UPDATE_AUTOCONFIG_PROFILES  0x28ada67dU
+#define CB_UPDATE_CHEATS               0xc360fec3U
+#define CB_UPDATE_OVERLAYS             0x699009a0U
+#define CB_UPDATE_DATABASES            0x931eb8d3U
+#define CB_UPDATE_SHADERS_GLSL         0x0121a186U
+#define CB_UPDATE_SHADERS_CG           0xc93a53feU
+#define CB_CORE_CONTENT_LIST           0xebc51227U
+#define CB_CORE_CONTENT_DOWNLOAD       0x03b3c0a3U
+#define CB_LAKKA_DOWNLOAD              0x54eaa904U
+
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,
@@ -209,7 +223,6 @@ typedef struct
     uint32_t type_hash;
     char path[PATH_MAX_LENGTH];
 } menu_file_transfer_t;
-void cb_generic_download(void *task_data, void *user_data, const char *err);
 #endif
 
 #endif
