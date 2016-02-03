@@ -564,6 +564,8 @@ dat_converter_rdb_mappings_t rdb_mappings[] =
    {"publisher",      "publisher",      DAT_CONVERTER_RDB_TYPE_STRING},
    {"origin",         "origin",         DAT_CONVERTER_RDB_TYPE_STRING},
 
+   {"coop",           "coop",           DAT_CONVERTER_RDB_TYPE_UINT},
+
    {"rom.crc",        "crc",            DAT_CONVERTER_RDB_TYPE_HEX},
    {"rom.md5",        "md5",            DAT_CONVERTER_RDB_TYPE_HEX},
    {"rom.sha1",       "sha1",           DAT_CONVERTER_RDB_TYPE_HEX},
