@@ -137,7 +137,6 @@ ifeq ($(platform), wii)
   HAVE_WIIUSB_HID          := 1
   HAVE_RARCH_EXEC          := 1
   HAVE_RSOUND              := 1
-  HAVE_LIBRETRO_MANAGEMENT := 1
 
   APP_BOOTER_DIR = wii/app_booter
   PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
@@ -185,7 +184,6 @@ else ifeq ($(platform), psp1)
   LDFLAGS +=  -Wl,-q
 
   BUILD_PRX                 = 1
-  HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_RPNG                := 1
   HAVE_KERNEL_PRX          := 1
   RARCH_CONSOLE          = 1
@@ -214,7 +212,6 @@ else ifeq ($(platform), vita)
   LDFLAGS +=  -Wl,-q
 
   HAVE_FILTERS_BUILTIN     := 1
-  HAVE_LIBRETRO_MANAGEMENT := 1
   HAVE_BUILTIN_AUTOCONFIG  := 1
   HAVE_RPNG                := 1
   HAVE_ZLIB                := 1
@@ -243,10 +240,6 @@ endif
 
 ifeq ($(platform), vita)
 CFLAGS      += -DHAVE_SOCKET_LEGACY
-endif
-
-ifeq ($(HAVE_LIBRETRO_MANAGEMENT), 1)
-CFLAGS		+= -DHAVE_LIBRETRO_MANAGEMENT
 endif
 
 ifeq ($(HAVE_KERNEL_PRX), 1)

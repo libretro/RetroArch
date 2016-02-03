@@ -2259,9 +2259,12 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
                file_type = MENU_FILE_PLAYLIST_COLLECTION;
             break;
          case MENU_LABEL_CORE_LIST:
-#ifdef HAVE_LIBRETRO_MANAGEMENT
-            if (is_dir || string_is_equal_noncase(path, SALAMANDER_FILE))
-               continue;
+#ifndef HAVE_DYNAMIC
+            if (frontend_driver_has_fork())
+            {
+               if (is_dir || string_is_equal_noncase(path, SALAMANDER_FILE))
+                  continue;
+            }
 #endif
             /* Compressed cores are unsupported */
             if (file_type == MENU_FILE_CARCHIVE)
@@ -2612,10 +2615,14 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_START_CORE), PARSE_ACTION, false);
 
-#if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_CORE_LIST), PARSE_ACTION, false);
+#ifndef HAVE_DYNAMIC
+         if (frontend_driver_has_fork())
 #endif
+         {
+            menu_displaylist_parse_settings(menu, info,
+                  menu_hash_to_str(MENU_LABEL_CORE_LIST), PARSE_ACTION, false);
+         }
+
          menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST), PARSE_ACTION, false);
          menu_displaylist_parse_settings(menu, info,

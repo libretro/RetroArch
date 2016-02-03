@@ -365,9 +365,10 @@ static void frontend_gx_process_args(int *argc, char *argv[])
 #endif
 }
 
+#ifdef HW_RVL
 static void frontend_gx_set_fork(bool exitspawn, bool start_game, bool restart)
 {
-#if defined(HW_RVL) && !defined(IS_SALAMANDER)
+#ifndef IS_SALAMANDER
    if (restart)
    {
       char new_path[PATH_MAX_LENGTH];
@@ -383,6 +384,7 @@ static void frontend_gx_set_fork(bool exitspawn, bool start_game, bool restart)
    rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
 #endif
 }
+#endif
 
 static int frontend_gx_get_rating(void)
 {
@@ -431,7 +433,11 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_exitspawn,
    frontend_gx_process_args,
    frontend_gx_exec,
+#ifdef HW_RVL
    frontend_gx_set_fork,
+#else
+   NULL,
+#endif
    frontend_gx_shutdown,
    NULL,                            /* get_name */
    NULL,                            /* get_os */

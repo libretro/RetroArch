@@ -3314,20 +3314,23 @@ static bool setting_append_list_main_menu_options(
          &subgroup_info,
          parent_group);
 
-#if defined(HAVE_DYNAMIC) || defined(HAVE_LIBRETRO_MANAGEMENT)
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_CORE_LIST),
-         menu_hash_to_str(MENU_LABEL_VALUE_CORE_LIST),
-         &group_info,
-         &subgroup_info,
-         parent_group);
-   (*list)[list_info->index - 1].size = sizeof(settings->libretro);
-   (*list)[list_info->index - 1].value.string = settings->libretro;
-   (*list)[list_info->index - 1].values = EXT_EXECUTABLES;
-   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
+#if !defined(HAVE_DYNAMIC)
+   if (frontend_driver_has_fork())
 #endif
+   {
+      CONFIG_ACTION(
+            list, list_info,
+            menu_hash_to_str(MENU_LABEL_CORE_LIST),
+            menu_hash_to_str(MENU_LABEL_VALUE_CORE_LIST),
+            &group_info,
+            &subgroup_info,
+            parent_group);
+      (*list)[list_info->index - 1].size = sizeof(settings->libretro);
+      (*list)[list_info->index - 1].value.string = settings->libretro;
+      (*list)[list_info->index - 1].values = EXT_EXECUTABLES;
+      menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
+      settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
+   }
 
    CONFIG_ACTION(
          list, list_info,
