@@ -38,7 +38,6 @@
 #include "performance.h"
 #include "system.h"
 
-#include "libretro_private.h"
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
 #include "retroarch.h"
@@ -1214,31 +1213,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                (struct retro_framebuffer*)data);
 
       /* Private extensions for internal use, not part of libretro API. */
-      case RETRO_ENVIRONMENT_EXEC:
-         {
-            char *fullpath = NULL;
-
-            RARCH_LOG("Environ (Private) EXEC.\n");
-
-            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-            if (fullpath != data)
-            {
-               runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-               if (data)
-                  runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, data);
-            }
-
-#if defined(HAVE_DYNAMIC)
-            rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
-#else
-            if (frontend_driver_has_fork())
-               frontend_driver_set_fork(true, true, false);
-#endif
-
-         }
-         break;
-
+      /* None yet. */
+       
+      /* Default */
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
          return false;

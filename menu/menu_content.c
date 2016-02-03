@@ -30,7 +30,6 @@
 #include "../defaults.h"
 #include "../frontend/frontend.h"
 #include "../playlist.h"
-#include "../libretro_private.h"
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"
@@ -196,7 +195,7 @@ void menu_content_playlist_load(void *data, unsigned idx)
    else
       menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
 
-   rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)path);
+   event_cmd_exec((void*)path);
 
    event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
 }

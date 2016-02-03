@@ -33,7 +33,6 @@
 #include <boolean.h>
 
 #include "../../dynamic.h"
-#include "../../libretro_private.h"
 
 static void frontend_xenon_init(void *data)
 {

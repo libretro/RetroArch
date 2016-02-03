@@ -211,6 +211,8 @@ enum event_command
    EVENT_CMD_VOLUME_DOWN
 };
 
+bool event_cmd_exec(void *data);
+
 /**
  * event_command:
  * @cmd                  : Command index.

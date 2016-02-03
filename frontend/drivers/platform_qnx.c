@@ -23,7 +23,6 @@
 #include <bps/bps.h>
 
 #include "../../dynamic.h"
-#include "../../libretro_private.h"
 
 static void frontend_qnx_init(void *data)
 {

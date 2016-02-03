@@ -37,7 +37,6 @@
 
 #include "../frontend_driver.h"
 #include "../../defaults.h"
-#include "../../libretro_private.h"
 #include "../../defines/gx_defines.h"
 
 #ifdef HW_RVL

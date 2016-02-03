@@ -42,7 +42,6 @@
 #include "cheevos.h"
 #endif
 
-#include "libretro_private.h"
 #include "libretro_version_1.h"
 #include "verbosity.h"
 #include "runloop.h"
@@ -907,6 +906,31 @@ static bool event_update_system_info(struct retro_system_info *_info,
 }
 #endif
 
+bool event_cmd_exec(void *data)
+{
+   char *fullpath = NULL;
+
+   RARCH_LOG("Environ (Private) EXEC.\n");
+
+   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+
+   if (fullpath != data)
+   {
+      runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+      if (data)
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, data);
+   }
+
+#if defined(HAVE_DYNAMIC)
+   rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
+#else
+   if (frontend_driver_has_fork())
+      frontend_driver_set_fork(true, true, false);
+#endif
+
+   return true;
+}
+
 /**
  * event_cmd_ctl:
  * @cmd                  : Event command index.
@@ -974,7 +998,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             char *fullpath = NULL;
             runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
             runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, settings->libretro);
-            rarch_environment_cb(RETRO_ENVIRONMENT_EXEC, (void*)fullpath);
+            event_cmd_exec((void*)fullpath);
             event_cmd_ctl(EVENT_CMD_QUIT, NULL);
 #endif
          }
