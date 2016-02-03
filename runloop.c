@@ -1097,7 +1097,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             to that file instead */
          if(!string_is_empty(runloop_system.game_options_path))
          {
-            core_option_flush_game_specific(runloop_system.core_options, runloop_system.game_options_path);
+            core_option_flush_game_specific(runloop_system.core_options,
+                  runloop_system.game_options_path);
             runloop_system.game_options_path[0] = '\0';
          }
          else
@@ -1191,8 +1192,9 @@ static int runloop_iterate_time_to_exit_load_dummy(void)
 static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
 {
    settings_t *settings          = NULL;
-   bool time_to_exit             = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL) || quit_key_pressed;
-   time_to_exit                  = time_to_exit || (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL) == false);
+   bool time_to_exit             = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL);
+   time_to_exit                  = time_to_exit || quit_key_pressed;
+   time_to_exit                  = time_to_exit || !video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL);
    time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
    time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_FRAME_COUNT_END, NULL);
    time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL);
