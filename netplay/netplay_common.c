@@ -266,7 +266,8 @@ bool np_get_info(netplay_t *netplay)
 
    if (np_impl_magic() != ntohl(header[1]))
    {
-      RARCH_ERR("Implementations differ, make sure you're using exact same libretro implementations and RetroArch version.\n");
+      RARCH_ERR("Implementations differ, make sure you're using exact same "
+            "libretro implementations and RetroArch version.\n");
       return false;
    }
 
