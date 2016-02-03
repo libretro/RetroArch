@@ -137,6 +137,9 @@ void frontend_driver_shutdown(bool a);
 void frontend_driver_deinit(void *args);
 
 void frontend_driver_exitspawn(char *s, size_t len);
+
+bool frontend_driver_has_fork(void);
+
 #ifdef __cplusplus
 }
 #endif

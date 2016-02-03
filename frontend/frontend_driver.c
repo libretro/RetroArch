@@ -131,6 +131,15 @@ void frontend_driver_content_loaded(void)
    frontend->content_loaded();
 }
 
+bool frontend_driver_has_fork(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+
+   if (!frontend || !frontend->set_fork)
+      return false;
+   return true;
+}
+
 void frontend_driver_set_fork(bool a, bool b, bool restart)
 {
    frontend_ctx_driver_t *frontend = frontend_get_ptr();
