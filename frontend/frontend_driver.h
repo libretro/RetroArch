@@ -140,6 +140,8 @@ void frontend_driver_exitspawn(char *s, size_t len);
 
 bool frontend_driver_has_fork(void);
 
+bool frontend_driver_get_core_extension(char *s, size_t len);
+
 bool frontend_driver_get_salamander_basename(char *s, size_t len);
 
 #ifdef __cplusplus

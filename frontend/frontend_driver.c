@@ -107,6 +107,48 @@ frontend_ctx_driver_t *frontend_ctx_init_first(void)
    return frontend;
 }
 
+bool frontend_driver_get_core_extension(char *s, size_t len)
+{
+#ifdef HAVE_DYNAMIC
+
+#ifdef _WIN32
+   strlcpy(s, "dll", len);
+   return true;
+#elif defined(__APPLE__) || defined(__MACH__)
+   strlcpy(s, "dylib", len);
+   return true;
+#else
+   strlcpy(s, "so", len);
+   return true;
+#endif
+
+#else
+
+#if defined(__CELLOS_LV2__)
+   strlcpy(s, "self|bin", len);
+   return true;
+#elif defined(PSP)
+   strlcpy(s, "pbp", len);
+   return true;
+#elif defined(VITA)
+   strlcpy(s, "velf", len);
+   return true;
+#elif defined(_XBOX1)
+   strlcpy(s, "xbe", len);
+   return true;
+#elif defined(_XBOX360)
+   strlcpy(s, "xex", len);
+   return true;
+#elif defined(GEKKO)
+   strlcpy(s, "dol", len);
+   return true;
+#else
+   return false;
+#endif
+
+#endif
+}
+
 bool frontend_driver_get_salamander_basename(char *s, size_t len)
 {
 #ifdef HAVE_DYNAMIC

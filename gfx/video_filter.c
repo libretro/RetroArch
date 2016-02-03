@@ -21,8 +21,8 @@
 #include <file/dir_list.h>
 #include <dynamic/dylib.h>
 
+#include "../frontend/frontend_driver.h"
 #include "../dynamic.h"
-#include "../file_ext.h"
 #include "../general.h"
 #include "../performance.h"
 #include "../verbosity.h"
@@ -382,7 +382,10 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       unsigned max_width, unsigned max_height)
 {
    softfilter_simd_mask_t cpu_features = retro_get_cpu_features();
-   char basedir[PATH_MAX_LENGTH] = {0};
+   char basedir[PATH_MAX_LENGTH];
+#ifdef HAVE_DYLIB
+   char ext_name[PATH_MAX_LENGTH];
+#endif
    struct string_list *plugs     = NULL;
    rarch_softfilter_t *filt      = NULL;
 
@@ -402,7 +405,11 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
 #if defined(HAVE_DYLIB)
    fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
 
-   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false, false);
+   if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+         goto error;
+
+   plugs = dir_list_new(basedir, ext_name, false, false);
+
    if (!plugs)
    {
       RARCH_ERR("[SoftFilter]: Could not build up string list...\n");

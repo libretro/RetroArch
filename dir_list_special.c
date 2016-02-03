@@ -15,13 +15,16 @@
  */
 
 #include "dir_list_special.h"
+#include "frontend/frontend_driver.h"
 #include "general.h"
-#include "file_ext.h"
 #include "configuration.h"
 #include "core_info.h"
 
 struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_type type, const char *filter)
 {
+#ifdef HAVE_DYLIB
+   char ext_name[PATH_MAX_LENGTH];
+#endif
    const char *dir   = NULL;
    const char *exts  = NULL;
    bool include_dirs = false;
@@ -35,7 +38,11 @@ struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_ty
    {
       case DIR_LIST_CORES:
          dir  = settings->libretro_directory;
-         exts = EXT_EXECUTABLES;
+
+         if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+            return NULL;
+
+         exts = ext_name;
          break;
       case DIR_LIST_CORE_INFO:
          dir  = input_dir;

@@ -42,7 +42,6 @@
 
 #include "../../verbosity.h"
 #include "../../configuration.h"
-#include "../../file_ext.h"
 #include "../../system.h"
 
 #include "../../tasks/tasks.h"

@@ -28,8 +28,9 @@
 #include <file/config_file.h>
 #include <string/stdstring.h>
 
-#include "menu_setting.h"
+#include "../frontend/frontend_driver.h"
 
+#include "menu_setting.h"
 #include "menu_driver.h"
 #include "menu_animation.h"
 #include "menu_display.h"
@@ -50,7 +51,6 @@
 #include "../input/input_config.h"
 #include "../input/input_autodetect.h"
 #include "../config.def.h"
-#include "../file_ext.h"
 #include "../performance.h"
 
 
@@ -3318,18 +3318,23 @@ static bool setting_append_list_main_menu_options(
    if (frontend_driver_has_fork())
 #endif
    {
-      CONFIG_ACTION(
-            list, list_info,
-            menu_hash_to_str(MENU_LABEL_CORE_LIST),
-            menu_hash_to_str(MENU_LABEL_VALUE_CORE_LIST),
-            &group_info,
-            &subgroup_info,
-            parent_group);
-      (*list)[list_info->index - 1].size = sizeof(settings->libretro);
-      (*list)[list_info->index - 1].value.string = settings->libretro;
-      (*list)[list_info->index - 1].values = EXT_EXECUTABLES;
-      menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
-      settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
+      char ext_name[PATH_MAX_LENGTH];
+
+      if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+      {
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_CORE_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_CORE_LIST),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         (*list)[list_info->index - 1].size         = sizeof(settings->libretro);
+         (*list)[list_info->index - 1].value.string = settings->libretro;
+         (*list)[list_info->index - 1].values       = ext_name;
+         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
+      }
    }
 
    CONFIG_ACTION(

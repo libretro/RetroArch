@@ -38,7 +38,6 @@
 #include "../gfx/video_shader_driver.h"
 #include "../config.features.h"
 #include "../git_version.h"
-#include "../file_ext.h"
 #include "../input/input_config.h"
 #include "../dir_list_special.h"
 #include "../string_list_special.h"
@@ -3181,8 +3180,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          strlcpy(info->exts, "lpl", sizeof(info->exts));
          break;
       case DISPLAYLIST_CORES:
-         info->type_default = MENU_FILE_PLAIN;
-         strlcpy(info->exts, EXT_EXECUTABLES, sizeof(info->exts));
+         {
+            char ext_name[PATH_MAX_LENGTH];
+
+            info->type_default = MENU_FILE_PLAIN;
+            if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+               strlcpy(info->exts, ext_name, sizeof(info->exts));
+         }
          break;
       case DISPLAYLIST_CONFIG_FILES:
          info->type_default = MENU_FILE_CONFIG;

@@ -25,13 +25,12 @@
 #include <file/config_file_userdata.h>
 #include <file/dir_list.h>
 
-#include "../performance.h"
-
 #include "audio_dsp_filter.h"
-#include "../dynamic.h"
 #include "audio_filters/dspfilter.h"
-#include "../file_ext.h"
 
+#include "../frontend/frontend_driver.h"
+#include "../performance.h"
+#include "../dynamic.h"
 
 struct rarch_dsp_plug
 {
@@ -226,12 +225,13 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 rarch_dsp_filter_t *rarch_dsp_filter_new(
       const char *filter_config, float sample_rate)
 {
-   char basedir[PATH_MAX_LENGTH] = {0};
+#ifdef HAVE_DYLIB
+   char basedir[PATH_MAX_LENGTH];
+   char ext_name[PATH_MAX_LENGTH];
+#endif
    struct string_list *plugs     = NULL;
    rarch_dsp_filter_t *dsp       = NULL;
 
-   (void)basedir;
-   
    dsp = (rarch_dsp_filter_t*)calloc(1, sizeof(*dsp));
    if (!dsp)
       return NULL;
@@ -243,7 +243,10 @@ rarch_dsp_filter_t *rarch_dsp_filter_new(
 #if !defined(HAVE_FILTERS_BUILTIN) && defined(HAVE_DYLIB)
    fill_pathname_basedir(basedir, filter_config, sizeof(basedir));
 
-   plugs = dir_list_new(basedir, EXT_EXECUTABLES, false, false);
+   if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+         goto error;
+
+   plugs = dir_list_new(basedir, ext_name, false, false);
    if (!plugs)
       goto error;
 #endif
