@@ -24,10 +24,10 @@
 #include <file/dir_list.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <compat/strl.h>
 
 #include "frontend_driver.h"
 #include "../defaults.h"
-#include "../file_ext.h"
 #include "../verbosity.h"
 
 struct defaults g_defaults;
@@ -135,7 +135,12 @@ static void salamander_init(char *s, size_t len)
    }
 
    if (!config_file_exists || !strcmp(s, ""))
-      find_and_set_first_file(s, len, EXT_EXECUTABLES);
+   {
+      char executable_name[PATH_MAX_LENGTH];
+
+      frontend_driver_get_core_extension(executable_name, sizeof(executable_name));
+      find_and_set_first_file(s, len, executable_name);
+   }
    else
       RARCH_LOG("Start [%s] found in retroarch.cfg.\n", s);
 
