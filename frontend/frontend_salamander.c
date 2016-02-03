@@ -39,19 +39,19 @@ static void find_first_libretro_core(char *first_file,
    size_t size_of_first_file, const char *dir,
    const char * ext)
 {
-   struct string_list *list;
    size_t i;
    bool ret = false;
+   struct string_list *list = dir_list_new(dir, ext, false, false);
+
+   if (!list)
+   {
+      RARCH_ERR("Couldn't read directory."
+            " Cannot infer default libretro core.\n");
+      return;
+   }
 
    RARCH_LOG("Searching for valid libretro implementation in: \"%s\".\n",
          dir);
-
-   list = dir_list_new(dir, ext, false, false);
-   if (!list)
-   {
-      RARCH_ERR("Couldn't read directory. Cannot infer default libretro core.\n");
-      return;
-   }
    
    for (i = 0; i < list->size && !ret; i++)
    {
@@ -66,14 +66,16 @@ static void find_first_libretro_core(char *first_file,
 
       fill_pathname_base(fname, libretro_elem, sizeof(fname));
 
-      if (!frontend_driver_get_salamander_basename(salamander_name, sizeof(salamander_name)))
+      if (!frontend_driver_get_salamander_basename(
+               salamander_name, sizeof(salamander_name)))
          break;
 
       if (!strncmp(fname, salamander_name, sizeof(fname)))
       {
          if (list->size == (i + 1))
          {
-            RARCH_WARN("Entry is RetroArch Salamander itself, but is last entry. No choice but to set it.\n");
+            RARCH_WARN("Entry is RetroArch Salamander itself, "
+                  "but is last entry. No choice but to set it.\n");
             strlcpy(first_file, fname, size_of_first_file);
          }
 
@@ -129,8 +131,12 @@ static void salamander_init(char *s, size_t len)
          strlcpy(s, tmp_str, len);
       }
 #ifdef GEKKO
-      else /* stupid libfat bug or something; sometimes it says the file is there when it doesn't */
+      /* stupid libfat bug or something; sometimes it says 
+       * the file is there when it doesn't. */
+      else 
+      {
          config_file_exists = false;
+      }
 #endif
    }
 
@@ -138,7 +144,8 @@ static void salamander_init(char *s, size_t len)
    {
       char executable_name[PATH_MAX_LENGTH];
 
-      frontend_driver_get_core_extension(executable_name, sizeof(executable_name));
+      frontend_driver_get_core_extension(
+            executable_name, sizeof(executable_name));
       find_and_set_first_file(s, len, executable_name);
    }
    else
