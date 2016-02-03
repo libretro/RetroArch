@@ -172,8 +172,7 @@ static bool menu_list_pop_stack(menu_list_t *list, size_t idx, size_t *directory
       menu_driver_list_free(menu_list, menu_list->size - 1, menu_list->size - 1);
 
    file_list_pop(menu_list, directory_ptr);
-   menu_driver_list_set_selection(menu_list);
-
+   menu_driver_ctl(RARCH_MENU_CTL_LIST_SET_SELECTION, menu_list);
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
    return true;
