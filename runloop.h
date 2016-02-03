@@ -101,6 +101,7 @@ enum runloop_ctl_state
    RUNLOOP_CTL_MSG_QUEUE_UNLOCK,
    RUNLOOP_CTL_MSG_QUEUE_FREE,
    RUNLOOP_CTL_MSG_QUEUE_PULL,
+   RUNLOOP_CTL_MSG_QUEUE_PUSH,
    RUNLOOP_CTL_MSG_QUEUE_CLEAR,
    RUNLOOP_CTL_HAS_CORE_OPTIONS,
    RUNLOOP_CTL_GET_CORE_OPTION_SIZE,
@@ -284,6 +285,14 @@ typedef struct global
    } console;
 } global_t;
 
+typedef struct runloop_ctx_msg_info
+{
+   const char *msg;
+   unsigned prio;
+   unsigned duration;
+   bool flush;
+} runloop_ctx_msg_info_t;
+
 global_t *global_get_ptr(void);
 
 /**
@@ -302,6 +311,7 @@ void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
 
 const char *runloop_msg_queue_pull(void);
+
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 

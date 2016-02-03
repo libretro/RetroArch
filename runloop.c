@@ -93,7 +93,6 @@ typedef struct event_cmd_state
    retro_input_t state[3];
 } event_cmd_state_t;
 
-static msg_queue_t *g_msg_queue;
 
 global_t *global_get_ptr(void)
 {
@@ -116,8 +115,9 @@ void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,
       bool flush)
 {
+   runloop_ctx_msg_info_t msg_info;
    settings_t *settings = config_get_ptr();
-   if(!settings->video.font_enable || !g_msg_queue)
+   if(!settings->video.font_enable)
       return;
 
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
@@ -125,14 +125,12 @@ void runloop_msg_queue_push(const char *msg,
    if (flush)
       runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_CLEAR, NULL);
 
-   msg_queue_push(g_msg_queue, msg, prio, duration);
+   msg_info.msg      = msg;
+   msg_info.prio     = prio;
+   msg_info.duration = duration;
+   msg_info.flush    = flush;
 
-   if (ui_companion_is_on_foreground())
-   {
-      const ui_companion_driver_t *ui = ui_companion_get_ptr();
-      if (ui->msg_queue_push)
-         ui->msg_queue_push(msg, prio, duration, flush);
-   }
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PUSH, &msg_info);
 
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
 
@@ -375,6 +373,7 @@ static void check_shader_dir(rarch_dir_list_t *dir_list,
          msg_hash_to_str(MSG_SHADER),
          (unsigned)dir_list->ptr, shader);
    runloop_msg_queue_push(msg, 1, 120, true);
+
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_APPLYING_SHADER),
          shader);
@@ -437,6 +436,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #endif
    static core_info_t *core_info_current            = NULL;
    static core_info_list_t *core_info_curr_list     = NULL;
+   static msg_queue_t *runloop_msg_queue            = NULL;
    settings_t *settings                             = config_get_ptr();
 
    switch (state)
@@ -940,12 +940,29 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_PAUSED:
          return runloop_paused;
+      case RUNLOOP_CTL_MSG_QUEUE_PUSH:
+         {
+            runloop_ctx_msg_info_t *msg_info = (runloop_ctx_msg_info_t*)data;
+            if (!msg_info || !runloop_msg_queue)
+               return false;
+            msg_queue_push(runloop_msg_queue, msg_info->msg,
+                  msg_info->prio, msg_info->duration);
+
+            if (ui_companion_is_on_foreground())
+            {
+               const ui_companion_driver_t *ui = ui_companion_get_ptr();
+               if (ui->msg_queue_push)
+                  ui->msg_queue_push(msg_info->msg,
+                        msg_info->prio, msg_info->duration, msg_info->flush);
+            }
+         }
+         return true;
       case RUNLOOP_CTL_MSG_QUEUE_PULL:
          {
             const char **ret = (const char**)data;
             if (!ret)
                return false;
-            *ret = msg_queue_pull(g_msg_queue);
+            *ret = msg_queue_pull(runloop_msg_queue);
          }
          return true;
       case RUNLOOP_CTL_MSG_QUEUE_FREE:
@@ -955,25 +972,25 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #endif
          break;
       case RUNLOOP_CTL_MSG_QUEUE_CLEAR:
-         msg_queue_clear(g_msg_queue);
+         msg_queue_clear(runloop_msg_queue);
          return true;
       case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
-         if (!g_msg_queue)
+         if (!runloop_msg_queue)
             return true;
 
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
 
-         msg_queue_free(g_msg_queue);
+         msg_queue_free(runloop_msg_queue);
 
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_FREE, NULL);
 
-         g_msg_queue = NULL;
+         runloop_msg_queue = NULL;
          break;
       case RUNLOOP_CTL_MSG_QUEUE_INIT:
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
-         g_msg_queue = msg_queue_new(8);
-         retro_assert(g_msg_queue);
+         runloop_msg_queue = msg_queue_new(8);
+         retro_assert(runloop_msg_queue);
 
 #ifdef HAVE_THREADS
          runloop_msg_queue_lock = slock_new();
