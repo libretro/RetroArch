@@ -22,9 +22,7 @@
 
 struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_type type, const char *filter)
 {
-#ifdef HAVE_DYLIB
    char ext_name[PATH_MAX_LENGTH];
-#endif
    const char *dir   = NULL;
    const char *exts  = NULL;
    bool include_dirs = false;
