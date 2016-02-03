@@ -332,19 +332,22 @@ static void frontend_gx_exitspawn(char *s, size_t len)
    if (!string_is_empty(gx_rom_path))
       should_load_game = true;
 #elif defined(HW_RVL)
+   char salamander_basename[PATH_MAX_LENGTH];
    should_load_game = exitspawn_start_game;
 
    if (!exit_spawn)
       return;
 
    frontend_gx_exec(s, should_load_game);
+   frontend_driver_get_salamander_basename(salamander_basename,
+         sizeof(salamander_basename));
 
    /* FIXME/TODO - hack
     * direct loading failed (out of memory), 
     * try to jump to Salamander,
     * then load the correct core */
    fill_pathname_join(s, g_defaults.dir.core,
-         "boot.dol", len);
+         salamander_basename, len);
 #endif
    frontend_gx_exec(s, should_load_game);
 }
