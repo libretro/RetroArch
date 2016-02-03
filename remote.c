@@ -65,7 +65,8 @@ static input_remote_state_t *input_remote_get_state_ptr(void)
 }
 
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
-static bool remote_init_network(rarch_remote_t *handle, uint16_t port, unsigned user)
+static bool remote_init_network(rarch_remote_t *handle,
+      uint16_t port, unsigned user)
 {
    struct addrinfo hints = {0};
    char port_buf[16]     = {0};
@@ -125,7 +126,8 @@ rarch_remote_t *rarch_remote_new(uint16_t port)
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
    settings_t   *settings = config_get_ptr();
 #endif
-   rarch_remote_t *handle = (rarch_remote_t*)calloc(1, sizeof(*handle));
+   rarch_remote_t *handle = (rarch_remote_t*)
+      calloc(1, sizeof(*handle));
 
    if (!handle)
       return NULL;

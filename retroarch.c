@@ -381,8 +381,6 @@ static void set_special_paths(char **argv, unsigned num_content)
       return;
 
    RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
-   /*fill_pathname_basedir(settings->system_directory, argv[0],
-     sizeof(settings->system_directory));*/
 }
 
 const char *rarch_get_current_savefile_dir(void)
