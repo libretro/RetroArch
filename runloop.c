@@ -106,9 +106,7 @@ const char *runloop_msg_queue_pull(void)
    const char *ret = NULL;
 
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
-
-   ret = msg_queue_pull(g_msg_queue);
-
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &ret);
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
 
    return ret;
@@ -940,6 +938,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_PAUSED:
          return runloop_paused;
+      case RUNLOOP_CTL_MSG_QUEUE_PULL:
+         {
+            const char **ret = (const char**)data;
+            if (!ret)
+               return false;
+            *ret = msg_queue_pull(g_msg_queue);
+         }
+         return true;
       case RUNLOOP_CTL_MSG_QUEUE_FREE:
 #ifdef HAVE_THREADS
          slock_free(runloop_msg_queue_lock);
