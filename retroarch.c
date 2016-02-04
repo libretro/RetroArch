@@ -1362,17 +1362,11 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          config_free();
          break;
       case RARCH_CTL_DEINIT:
-         {
-            bool inited      = false;
-            if (!global)
-               return false;
-            inited           = rarch_ctl(RARCH_CTL_IS_INITED, NULL);
-            if (!inited)
-               return false;
+         if (!rarch_ctl(RARCH_CTL_IS_INITED, NULL))
+            return false;
 
-            event_cmd_ctl(EVENT_CMD_DRIVERS_DEINIT, NULL);
-            event_cmd_ctl(EVENT_CMD_DRIVERS_INIT, NULL);
-         }
+         event_cmd_ctl(EVENT_CMD_DRIVERS_DEINIT, NULL);
+         event_cmd_ctl(EVENT_CMD_DRIVERS_INIT, NULL);
          break;
       case RARCH_CTL_PREINIT:
          if (!config_realloc())
