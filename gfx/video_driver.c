@@ -97,7 +97,7 @@ static video_driver_t *current_video = NULL;
 /* Interface for "poking". */
 static const video_poke_interface_t *video_driver_poke = NULL;
 
-static video_driver_state_t video_driver_state = NULL;
+static video_driver_state_t video_driver_state;
 
 /* Used for 16-bit -> 16-bit conversions that take place before
  * being passed to video driver. */
