@@ -353,8 +353,6 @@ void init_menu(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
 
-void menu_driver_free(menu_handle_t *menu);
-
 bool menu_driver_load_image(void *data, menu_image_type_t type);
 
 void menu_driver_list_cache(menu_list_type_t type, unsigned action);

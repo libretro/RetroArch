@@ -142,6 +142,17 @@ menu_handle_t *menu_driver_get_ptr(void)
    return menu_driver_data;
 }
 
+static void menu_driver_free(void)
+{
+   if (menu_driver_ctx && menu_driver_ctx->free)
+      menu_driver_ctx->free(menu_userdata);
+   menu_driver_ctx = NULL;
+
+   if (menu_userdata)
+      free(menu_userdata);
+   menu_userdata = NULL;
+}
+
 /**
  * menu_free:
  * @menu                     : Menu handle.
@@ -157,7 +168,9 @@ static void menu_free(menu_handle_t *menu)
    menu_shader_free(menu);
    menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_DEINIT, NULL);
-   menu_driver_free(menu);
+
+   menu_driver_free();
+
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
    menu_display_free();
    menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
@@ -381,20 +394,6 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
    return ret;
 }
 
-void menu_driver_free(menu_handle_t *menu)
-{
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
-
-   if (driver->free)
-      driver->free(menu_userdata);
-
-   if (!menu_driver_data)
-      return;
-
-   if (menu_userdata)
-      free(menu_userdata);
-   menu_userdata = NULL;
-}
 
 int menu_driver_iterate(enum menu_action action)
 {
