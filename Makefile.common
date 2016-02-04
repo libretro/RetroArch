@@ -554,7 +554,8 @@ ifeq ($(HAVE_HID), 1)
                input/connect/connect_wii.o \
                input/connect/connect_nesusb.o \
                input/connect/connect_snesusb.o \
-               input/connect/connect_wiiupro.o
+               input/connect/connect_wiiupro.o \
+               input/connect/connect_wiiugca.o
 endif
 
 ifeq ($(HAVE_PARPORT), 1)

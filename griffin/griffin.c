@@ -418,9 +418,7 @@ INPUT (HID)
 #include "../input/connect/connect_wiiupro.c"
 #include "../input/connect/connect_snesusb.c"
 #include "../input/connect/connect_nesusb.c"
-#ifdef HAVE_WIIUSB_HID
 #include "../input/connect/connect_wiiugca.c"
-#endif
 #endif
 
 /*============================================================

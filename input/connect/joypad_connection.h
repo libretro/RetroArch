@@ -51,9 +51,7 @@ extern pad_connection_interface_t pad_connection_ps3;
 extern pad_connection_interface_t pad_connection_ps4;
 extern pad_connection_interface_t pad_connection_snesusb;
 extern pad_connection_interface_t pad_connection_nesusb;
-#ifdef HAVE_WIIUSB_HID
 extern pad_connection_interface_t pad_connection_wiiugca;
-#endif
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,

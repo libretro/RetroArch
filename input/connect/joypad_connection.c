@@ -84,9 +84,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       { "PLAYSTATION(R)3 Controller",  787,   8406,   &pad_connection_ps3 },
       { "Generic SNES USB Controller", 2079,  58369,  &pad_connection_snesusb },
       { "Generic NES USB Controller",  121,   17,     &pad_connection_nesusb },
-#ifdef HAVE_WIIUSB_HID
       { "Wii U GC Controller Adapter", 1406,  823,    &pad_connection_wiiugca },
-#endif
       { 0, 0}
    };
    joypad_connection_t *s = NULL;
