@@ -411,6 +411,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "video_shader_num_passes";
       case MENU_LABEL_RDB_ENTRY_DESCRIPTION:
          return "rdb_entry_description";
+      case MENU_LABEL_RDB_ENTRY_GENRE:
+         return "rdb_entry_genre";
       case MENU_LABEL_RDB_ENTRY_ORIGIN:
          return "rdb_entry_origin";
       case MENU_LABEL_RDB_ENTRY_PUBLISHER:
@@ -1421,6 +1423,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Püblìsher";
       case MENU_LABEL_VALUE_RDB_ENTRY_DESCRIPTION:
          return "Ðéscrîptioñ";
+      case MENU_LABEL_VALUE_RDB_ENTRY_GENRE:
+         return "Génre";
       case MENU_LABEL_VALUE_RDB_ENTRY_NAME:
          return "Name";
       case MENU_LABEL_VALUE_RDB_ENTRY_ORIGIN:

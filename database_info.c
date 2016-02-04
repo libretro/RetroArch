@@ -50,6 +50,7 @@
 #define DB_CURSOR_ROM_NAME                      0x16bbcf13U
 #define DB_CURSOR_NAME                          0x7c9b0c46U
 #define DB_CURSOR_DESCRIPTION                   0x91b0c789U
+#define DB_CURSOR_GENRE                         0x0f802156U
 #define DB_CURSOR_PUBLISHER                     0x5e099013U
 #define DB_CURSOR_DEVELOPER                     0x1783d2abU
 #define DB_CURSOR_ORIGIN                        0x1315e3edU
@@ -266,6 +267,9 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
             break;
          case DB_CURSOR_DESCRIPTION:
             db_info->description = strdup(val->val.string.buff);
+            break;
+         case DB_CURSOR_GENRE:
+            db_info->genre = strdup(val->val.string.buff);
             break;
          case DB_CURSOR_PUBLISHER:
             db_info->publisher = strdup(val->val.string.buff);

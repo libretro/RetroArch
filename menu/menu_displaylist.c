@@ -1254,6 +1254,17 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
                menu_hash_to_str(MENU_LABEL_RDB_ENTRY_DESCRIPTION),
                0, 0, 0);
       }
+      if (db_info_entry->genre)
+      {
+         strlcpy(tmp,
+               menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_GENRE),
+               sizeof(tmp));
+         strlcat(tmp, ": ", sizeof(tmp));
+         strlcat(tmp, db_info_entry->genre, sizeof(tmp));
+         menu_entries_push(info->list, tmp,
+               menu_hash_to_str(MENU_LABEL_RDB_ENTRY_GENRE),
+               0, 0, 0);
+      }
       if (db_info_entry->publisher)
       {
          if (create_string_list_rdb_entry_string(

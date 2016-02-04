@@ -539,6 +539,7 @@ dat_converter_rdb_mappings_t rdb_mappings[] =
 {
    {"name",           "name",           DAT_CONVERTER_RDB_TYPE_STRING},
    {"description",    "description",    DAT_CONVERTER_RDB_TYPE_STRING},
+   {"genre",          "genre",          DAT_CONVERTER_RDB_TYPE_STRING},
    {"rom.name",       "rom_name",       DAT_CONVERTER_RDB_TYPE_STRING},
    {"rom.size",       "size",           DAT_CONVERTER_RDB_TYPE_UINT},
    {"users",          "users",          DAT_CONVERTER_RDB_TYPE_UINT},
