@@ -445,6 +445,7 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx,
       uint32_t hash_label,
       unsigned type, bool is_carchive)
 {
+   menu_content_ctx_defer_info_t def_info;
    char menu_path_new[PATH_MAX_LENGTH];
    const char *menu_path    = NULL;
    const char *menu_label   = NULL;
@@ -477,9 +478,15 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx,
 
    runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
 
-   ret = menu_content_defer_core(list,
-         menu_path_new, path, menu_label, menu->deferred_path,
-         sizeof(menu->deferred_path));
+   def_info.data       = list;
+   def_info.dir        = menu_path_new;
+   def_info.path       = path;
+   def_info.menu_label = menu_label;
+   def_info.s          = menu->deferred_path;
+   def_info.len        = sizeof(menu->deferred_path);
+
+   if (menu_content_ctl(MENU_CONTENT_CTL_FIND_FIRST_CORE, &def_info))
+      ret = -1;
 
    if (!is_carchive && !string_is_empty(path) && !string_is_empty(menu_path_new))
       fill_pathname_join(detect_content_path, menu_path_new, path,
@@ -2044,6 +2051,7 @@ static int action_ok_load_archive(const char *path,
 static int action_ok_load_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   menu_content_ctx_defer_info_t def_info;
    int ret                  = 0;
    core_info_list_t *list   = NULL;
    menu_handle_t *menu      = menu_driver_get_ptr();
@@ -2058,8 +2066,15 @@ static int action_ok_load_archive_detect_core(const char *path,
 
    runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
 
-   ret = menu_content_defer_core(list, menu_path, content_path, label,
-         menu->deferred_path, sizeof(menu->deferred_path));
+   def_info.data       = list;
+   def_info.dir        = menu_path;
+   def_info.path       = content_path;
+   def_info.menu_label = label;
+   def_info.s          = menu->deferred_path;
+   def_info.len        = sizeof(menu->deferred_path);
+
+   if (menu_content_ctl(MENU_CONTENT_CTL_FIND_FIRST_CORE, &def_info))
+      ret = -1;
 
    fill_pathname_join(detect_content_path, menu_path, content_path,
          sizeof(detect_content_path));

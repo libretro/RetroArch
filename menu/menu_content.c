@@ -229,31 +229,33 @@ static bool menu_content_load_from_playlist(void *data)
  * selection needs to be made from a list, otherwise
  * returns -1 and fills in @s with path to core.
  **/
-int menu_content_defer_core(void *data, const char *dir,
-      const char *path, const char *menu_label,
-      char *s, size_t len)
+static bool menu_content_defer_core(void *data)
 {
    char new_core_path[PATH_MAX_LENGTH];
-   const core_info_t *info             = NULL;
-   size_t supported                    = 0;
-   core_info_list_t *core_info         = (core_info_list_t*)data;
-   uint32_t menu_label_hash            = menu_hash_calculate(menu_label);
+   const core_info_t *info                 = NULL;
+   size_t supported                        = 0;
+   menu_content_ctx_defer_info_t *def_info = (menu_content_ctx_defer_info_t *)data;
+   core_info_list_t *core_info             = (core_info_list_t*)def_info->data;
+   uint32_t menu_label_hash                = 
+      menu_hash_calculate(def_info->menu_label);
 
-   if (!string_is_empty(dir) && !string_is_empty(path))
-      fill_pathname_join(s, dir, path, len);
+   if (!string_is_empty(def_info->dir) && !string_is_empty(def_info->path))
+      fill_pathname_join(def_info->s, 
+            def_info->dir, def_info->path, def_info->len);
 
 #ifdef HAVE_COMPRESSION
-   if (path_is_compressed_file(dir))
+   if (path_is_compressed_file(def_info->dir))
    {
       /* In case of a compressed archive, we have to join with a hash */
       /* We are going to write at the position of dir: */
-      retro_assert(strlen(dir) < strlen(s));
-      s[strlen(dir)] = '#';
+      retro_assert(strlen(def_info->dir) < strlen(def_info->s));
+      def_info->s[strlen(def_info->dir)] = '#';
    }
 #endif
 
    if (core_info)
-      core_info_list_get_supported_cores(core_info, s, &info,
+      core_info_list_get_supported_cores(core_info,
+            def_info->s, &info,
             &supported);
 
    /* We started the menu with 'Load Content', we are 
@@ -271,22 +273,25 @@ int menu_content_defer_core(void *data, const char *dir,
    /* There are multiple deferred cores and a
     * selection needs to be made from a list, return 0. */
    if (supported != 1)
-      return 0;
+      return false;
 
     if (info)
       strlcpy(new_core_path, info->path, sizeof(new_core_path));
 
-   runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, s);
+   runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, def_info->s);
 
    if (path_file_exists(new_core_path))
       runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, new_core_path);
-   return -1;
+
+   return true;
 }
 
 bool menu_content_ctl(enum menu_content_ctl_state state, void *data)
 {
    switch (state)
    {
+      case MENU_CONTENT_CTL_FIND_FIRST_CORE:
+         return menu_content_defer_core(data);
       case MENU_CONTENT_CTL_LOAD:
          return menu_content_load();
       case MENU_CONTENT_CTL_LOAD_PLAYLIST:

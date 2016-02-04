@@ -36,7 +36,18 @@ enum menu_content_ctl_state
 
    /* Initializes core and loads content 
     * (based on playlist entry). */
-   MENU_CONTENT_CTL_LOAD_PLAYLIST
+   MENU_CONTENT_CTL_LOAD_PLAYLIST,
+
+   /* Find first core that is compatible with the
+    * content.
+    *
+    * Returns false if there are multiple compatible
+    * cores and a selection needs to be made from
+    * a list. 
+    *
+    * Returns true and fills in @s with path to core.
+    */
+   MENU_CONTENT_CTL_FIND_FIRST_CORE
 };
 
 typedef struct menu_content_ctx_playlist_info
@@ -45,28 +56,17 @@ typedef struct menu_content_ctx_playlist_info
    unsigned idx;
 } menu_content_ctx_playlist_info_t;
 
-bool menu_content_ctl(enum menu_content_ctl_state state, void *data);
+typedef struct menu_content_ctx_defer_info
+{
+   void *data;
+   const char *dir;
+   const char *path;
+   const char *menu_label;
+   char *s;
+   size_t len;
+} menu_content_ctx_defer_info_t;
 
-/**
- * menu_content_defer_core:
- * @core_info            : Core info list handle.
- * @dir                  : Directory. Gets joined with @path.
- * @path                 : Path. Gets joined with @dir.
- * @menu_label           : Label identifier of menu setting.
- * @s                    : Deferred core path. Will be filled in
- *                         by function.
- * @len                  : Size of @s.
- *
- * Gets deferred core.
- *
- * Returns: 0 if there are multiple deferred cores and a
- * selection needs to be made from a list, otherwise
- * returns -1 and fills in @s with path to core.
- **/
-int menu_content_defer_core(void *data,
-      const char *dir, const char *path,
-      const char *menu_label,
-      char *s, size_t len);
+bool menu_content_ctl(enum menu_content_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }
