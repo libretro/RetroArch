@@ -66,6 +66,11 @@ static  cpu_family         g_cpuFamily;
 static  uint64_t           g_cpuFeatures;
 static  int                g_cpuCount;
 
+#ifndef HAVE_DYNAMIC
+static bool exit_spawn = false;
+static bool exitspawn_start_game = false;
+#endif
+
 #ifdef __arm__
 #  define DEFAULT_CPU_FAMILY  CPU_FAMILY_ARM
 #elif defined __i386__
@@ -2115,6 +2120,15 @@ static int frontend_android_parse_drive_list(void *data)
 }
 #endif
 
+#ifndef HAVE_DYNAMIC
+static void frontend_linux_set_fork(bool exitspawn, 
+      bool start_game, bool restart)
+{
+   exit_spawn           = exitspawn;
+   exitspawn_start_game = start_game;
+}
+#endif
+
 frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_env,       /* environment_get */
    frontend_linux_init,          /* init */
@@ -2122,7 +2136,11 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
    NULL,                         /* exec */
+#ifdef HAVE_DYNAMIC
    NULL,                         /* set_fork */
+#else
+   frontend_linux_set_fork,      /* set_fork */
+#endif
 #ifdef ANDROID
    frontend_android_shutdown,    /* shutdown */
    frontend_android_get_name,    /* get_name */
