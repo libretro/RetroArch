@@ -64,6 +64,7 @@ typedef struct
    char *rom_name;
    char *serial;
    char *description;
+   char *genre;
    char *publisher;
    struct string_list *developer;
    char *origin;
