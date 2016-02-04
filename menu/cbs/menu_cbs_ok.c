@@ -556,6 +556,7 @@ static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t selection;
+   menu_content_ctx_playlist_info_t playlist_info;
    uint32_t core_name_hash, core_path_hash;
    const char *entry_path           = NULL;
    const char *entry_label          = NULL;
@@ -657,7 +658,10 @@ static int action_ok_playlist_entry(const char *path,
       content_playlist_write_file(tmp_playlist);
    }
 
-   menu_content_playlist_load(playlist, selection_ptr);
+   playlist_info.data = playlist;
+   playlist_info.idx  = selection_ptr;
+
+   menu_content_ctl(MENU_CONTENT_CTL_LOAD_PLAYLIST, &playlist_info);
 
    if (is_history)
    {

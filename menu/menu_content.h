@@ -28,22 +28,24 @@ extern "C" {
 enum menu_content_ctl_state
 {
    MENU_CONTENT_CTL_NONE = 0,
+
    /* Loads content into currently selected core.
     * Will also optionally push the content entry 
     * to the history playlist. */
-   MENU_CONTENT_CTL_LOAD
+   MENU_CONTENT_CTL_LOAD,
+
+   /* Initializes core and loads content 
+    * (based on playlist entry). */
+   MENU_CONTENT_CTL_LOAD_PLAYLIST
 };
 
-bool menu_content_ctl(enum menu_content_ctl_state state, void *data);
+typedef struct menu_content_ctx_playlist_info
+{
+   void *data;
+   unsigned idx;
+} menu_content_ctx_playlist_info_t;
 
-/**
- * menu_content_playlist_load:
- * @playlist             : Playlist handle.
- * @idx                  : Index in playlist.
- *
- * Initializes core and loads content based on playlist entry.
- **/
-void menu_content_playlist_load(void *data, unsigned index);
+bool menu_content_ctl(enum menu_content_ctl_state state, void *data);
 
 /**
  * menu_content_defer_core:

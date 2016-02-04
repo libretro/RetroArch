@@ -140,20 +140,29 @@ static bool menu_content_load(void)
 }
 
 /**
- * menu_content_playlist_load:
+ * menu_content_load_from_playlist:
  * @playlist             : Playlist handle.
  * @idx                  : Index in playlist.
  *
  * Initializes core and loads content based on playlist entry.
  **/
-void menu_content_playlist_load(void *data, unsigned idx)
+static bool menu_content_load_from_playlist(void *data)
 {
+   unsigned idx;
    const char *core_path        = NULL;
    const char *path             = NULL;
-   content_playlist_t *playlist = (content_playlist_t*)data;
+   menu_content_ctx_playlist_info_t *info = 
+      (menu_content_ctx_playlist_info_t *)data;
+   content_playlist_t *playlist = NULL;
+   
+   if (!info)
+      return false;
+
+   playlist = (content_playlist_t*)info->data;
+   idx      = info->idx;
 
    if (!playlist)
-      return;
+      return false;
 
    content_playlist_get_index(playlist,
          idx, &path, NULL, &core_path, NULL, NULL, NULL);
@@ -183,7 +192,7 @@ void menu_content_playlist_load(void *data, unsigned idx)
          RARCH_LOG("File at %s failed to load.\n", path_check);
          free(path_tolower);
          free(path_check);
-         return;
+         return false;
       }
       retro_fclose(fp);
       free(path_tolower);
@@ -200,6 +209,8 @@ void menu_content_playlist_load(void *data, unsigned idx)
    event_cmd_exec((void*)path);
 
    event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+
+   return true;
 }
 
 /**
@@ -278,6 +289,8 @@ bool menu_content_ctl(enum menu_content_ctl_state state, void *data)
    {
       case MENU_CONTENT_CTL_LOAD:
          return menu_content_load();
+      case MENU_CONTENT_CTL_LOAD_PLAYLIST:
+         return menu_content_load_from_playlist(data);
       case MENU_CONTENT_CTL_NONE:
       default:
          return false;
