@@ -287,7 +287,8 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
    return easing_in_bounce((t * 2) - d, b + c / 2, c / 2, d);
 }
 
-static int menu_animation_iterate(menu_animation_t *anim, unsigned idx, float dt, unsigned *active_tweens)
+static int menu_animation_iterate(menu_animation_t *anim,
+      unsigned idx, float dt, unsigned *active_tweens)
 {
    struct tween    *tween = anim ? &anim->list[idx] : NULL;
 
@@ -354,7 +355,8 @@ static void menu_animation_ticker_generic(uint64_t idx,
    *width = max_width;
 }
 
-static void menu_animation_push_internal(menu_animation_t *anim, const struct tween *t)
+static void menu_animation_push_internal(menu_animation_t *anim,
+      const struct tween *t)
 {
    struct tween *target = NULL;
 

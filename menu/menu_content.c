@@ -64,27 +64,39 @@ static void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
-   char *fullpath       = NULL;
-   global_t *global     = global_get_ptr();
-   settings_t *settings = config_get_ptr();
+   char *fullpath                    = NULL;
+   global_t *global                  = global_get_ptr();
+   settings_t *settings              = config_get_ptr();
     
    if (!wrap_args)
       return;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-   wrap_args->no_content       = menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
+   wrap_args->no_content       = menu_driver_ctl(
+         RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
+
    if (!global->has_set.verbosity)
       wrap_args->verbose       = *retro_main_verbosity();
 
-   wrap_args->config_path      = *global->path.config   ? global->path.config   : NULL;
-   wrap_args->sram_path        = *global->dir.savefile  ? global->dir.savefile  : NULL;
-   wrap_args->state_path       = *global->dir.savestate ? global->dir.savestate : NULL;
-   wrap_args->content_path     = *fullpath              ? fullpath              : NULL;
+   wrap_args->touched          = true;
+   wrap_args->config_path      = NULL;
+   wrap_args->sram_path        = NULL;
+   wrap_args->state_path       = NULL;
+   wrap_args->content_path     = NULL;
 
+   if (*global->path.config)
+      wrap_args->config_path   = global->path.config;
+   if (*global->dir.savefile)
+      wrap_args->sram_path     = global->dir.savefile;
+   if (*global->dir.savestate)
+      wrap_args->state_path    = global->dir.savestate;
+   if (*fullpath)
+      wrap_args->content_path  = fullpath;
    if (!global->has_set.libretro)
-      wrap_args->libretro_path = *settings->libretro ? settings->libretro : NULL;
-   wrap_args->touched       = true;
+      wrap_args->libretro_path = *settings->libretro 
+         ? settings->libretro : NULL;
+
 }
 
 /**
@@ -235,8 +247,10 @@ static bool menu_content_find_first_core(void *data)
    char new_core_path[PATH_MAX_LENGTH];
    const core_info_t *info                 = NULL;
    size_t supported                        = 0;
-   menu_content_ctx_defer_info_t *def_info = (menu_content_ctx_defer_info_t *)data;
-   core_info_list_t *core_info             = (core_info_list_t*)def_info->data;
+   menu_content_ctx_defer_info_t *def_info = 
+      (menu_content_ctx_defer_info_t *)data;
+   core_info_list_t *core_info             = 
+      (core_info_list_t*)def_info->data;
    uint32_t menu_label_hash                = 
       menu_hash_calculate(def_info->menu_label);
 
@@ -266,7 +280,8 @@ static bool menu_content_find_first_core(void *data)
       runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, (void*)&info);
       if (info)
       {
-         RARCH_LOG("Use the current core (%s) to load this content...\n", info->path);
+         RARCH_LOG("Use the current core (%s) to load this content...\n",
+               info->path);
          supported = 1;
       }
    }
