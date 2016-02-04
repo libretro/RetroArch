@@ -100,7 +100,8 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       {
          const char *name_match = strstr(pad_map[i].name, name);
 
-         if(pad_map[i].vid == 1406 && pad_map[i].pid == 816)  /* Never change, Nintendo. */
+         /* Never change, Nintendo. */
+         if(pad_map[i].vid == 1406 && pad_map[i].pid == 816)  
          {
             if(!string_is_equal(pad_map[i].name, name))
                continue;
@@ -163,7 +164,9 @@ int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
 
 bool pad_connection_has_interface(joypad_connection_t *joyconn, unsigned pad)
 {
-   if (joyconn && pad < MAX_USERS && joyconn[pad].connected && joyconn[pad].iface)
+   if (     joyconn && pad < MAX_USERS 
+         && joyconn[pad].connected 
+         && joyconn[pad].iface)
       return true;
    return false;
 }

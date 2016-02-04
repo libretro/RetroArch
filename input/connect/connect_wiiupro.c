@@ -74,10 +74,12 @@ static void hidpad_wiiupro_send_control(struct hidpad_wiiupro_data* device)
 {
    /* 0x12 = Set data report; 0x34 = All buttons and analogs */
    static uint8_t report_buffer[4] = { 0xA2, 0x12, 0x00, 0x34 };
-   device->send_control(device->connection, report_buffer, sizeof(report_buffer));
+   device->send_control(device->connection,
+         report_buffer, sizeof(report_buffer));
 }
 
-static void* hidpad_wiiupro_init(void *data, uint32_t slot, send_control_t ptr)
+static void* hidpad_wiiupro_init(void *data,
+      uint32_t slot, send_control_t ptr)
 {
    struct pad_connection* connection = (struct pad_connection*)data;
    struct hidpad_wiiupro_data* device    = (struct hidpad_wiiupro_data*)
@@ -163,7 +165,8 @@ static int16_t hidpad_wiiupro_get_axis(void *data, unsigned axis)
    return 0;
 }
 
-static void hidpad_wiiupro_packet_handler(void *data, uint8_t *packet, uint16_t size)
+static void hidpad_wiiupro_packet_handler(void *data,
+      uint8_t *packet, uint16_t size)
 {
    struct hidpad_wiiupro_data *device = (struct hidpad_wiiupro_data*)data;
 
@@ -215,10 +218,14 @@ static void hidpad_wiiupro_packet_handler(void *data, uint8_t *packet, uint16_t 
    }
    else
    {
-       device->data.hatvalue[0] = (packet[4] |  (packet[4 + 1] << 8)) - calib_data->hatvalue_calib[0];
-       device->data.hatvalue[1] = (packet[8] |  (packet[8 + 1] << 8)) - calib_data->hatvalue_calib[1];
-       device->data.hatvalue[2] = (packet[6] |  (packet[6 + 1] << 8)) - calib_data->hatvalue_calib[2];
-       device->data.hatvalue[3] = (packet[10] | (packet[10 + 1] << 8)) - calib_data->hatvalue_calib[3];
+       device->data.hatvalue[0] = (packet[4] |  (packet[4 + 1] << 8)) 
+          - calib_data->hatvalue_calib[0];
+       device->data.hatvalue[1] = (packet[8] |  (packet[8 + 1] << 8)) 
+          - calib_data->hatvalue_calib[1];
+       device->data.hatvalue[2] = (packet[6] |  (packet[6 + 1] << 8)) 
+          - calib_data->hatvalue_calib[2];
+       device->data.hatvalue[3] = (packet[10] | (packet[10 + 1] << 8)) 
+          - calib_data->hatvalue_calib[3];
    }
 }
 

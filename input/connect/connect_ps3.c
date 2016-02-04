@@ -118,7 +118,8 @@ static int16_t hidpad_ps3_get_axis(void *data, unsigned axis)
    return (abs(val) > 0x1000) ? val : 0;
 }
 
-static void hidpad_ps3_packet_handler(void *data, uint8_t *packet, uint16_t size)
+static void hidpad_ps3_packet_handler(void *data,
+      uint8_t *packet, uint16_t size)
 {
    uint32_t i, pressed_keys;
    static const uint32_t button_mapping[17] =

@@ -110,7 +110,8 @@ static void hidpad_ps4_send_control(struct hidpad_ps4_data* device)
    report_buffer[11] = rgb[(device->slot % 4)][2];
 #endif
 
-   device->send_control(device->connection, report_buffer, sizeof(report_buffer));
+   device->send_control(device->connection,
+         report_buffer, sizeof(report_buffer));
 }
 
 static void* hidpad_ps4_init(void *data, uint32_t slot, send_control_t ptr)
@@ -221,7 +222,8 @@ static int16_t hidpad_ps4_get_axis(void *data, unsigned axis)
    return 0;
 }
 
-static void hidpad_ps4_packet_handler(void *data, uint8_t *packet, uint16_t size)
+static void hidpad_ps4_packet_handler(void *data,
+      uint8_t *packet, uint16_t size)
 {
    struct hidpad_ps4_data *device = (struct hidpad_ps4_data*)data;
 
