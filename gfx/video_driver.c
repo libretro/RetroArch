@@ -544,7 +544,7 @@ static bool uninit_video_input(void)
    if (
          !video_driver_ctl(RARCH_DISPLAY_CTL_OWNS_DRIVER, NULL)
          && video_driver_data 
-         && current_video->free
+         && current_video && current_video->free
       )
       current_video->free(video_driver_data);
 

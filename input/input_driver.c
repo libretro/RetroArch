@@ -762,8 +762,8 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 
                current_input = (const input_driver_t*)input_driver_find_handle(0);
 
-               if (!current_input)
-                  return false;
+               if (current_input)
+                  return true;
                retro_fail(1, "find_input_driver()");
                return false;
             }
