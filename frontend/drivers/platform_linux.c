@@ -2143,9 +2143,14 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
 
 static void frontend_linux_exec(const char *path, bool should_load_game)
 {
-   char *newargv[]    = { "/home/squarepusher/libretro-super/dist/unix-static/snes9x_next_libretro.elf", NULL };
+   char *newargv[]    = { NULL, NULL };
+   size_t len         = strlen(path);
 
-   execv("/home/squarepusher/libretro-super/dist/unix-static/snes9x_next_libretro.elf", newargv);
+   newargv[0] = malloc(len);
+
+   strlcpy(newargv[0], path, len);
+
+   execv(path, newargv);
    perror("execv");
 }
 
