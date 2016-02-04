@@ -1477,10 +1477,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_LOAD_CONTENT_IMAGEVIEWER:
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
-         if (!menu_content_load())
+         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
 #endif
-         frontend_driver_content_loaded();
          break;
       case RARCH_CTL_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU

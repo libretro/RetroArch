@@ -96,11 +96,11 @@ static void menu_content_environment_get(int *argc, char *argv[],
  * Returns: true (1) if successful, otherwise false (0).
  **/
 
-bool menu_content_load(void)
+static bool menu_content_load(void)
 {
-   bool msg_force       = true;
    char name[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
+   bool msg_force       = true;
    char *fullpath       = NULL;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
@@ -133,6 +133,8 @@ bool menu_content_load(void)
 
    event_cmd_ctl(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
    event_cmd_ctl(EVENT_CMD_RESUME, NULL);
+
+   frontend_driver_content_loaded();
 
    return true;
 }
@@ -268,4 +270,18 @@ int menu_content_defer_core(void *data, const char *dir,
    if (path_file_exists(new_core_path))
       runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, new_core_path);
    return -1;
+}
+
+bool menu_content_ctl(enum menu_content_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case MENU_CONTENT_CTL_LOAD:
+         return menu_content_load();
+      case MENU_CONTENT_CTL_NONE:
+      default:
+         return false;
+   }
+
+   return true;
 }
