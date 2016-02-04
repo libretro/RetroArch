@@ -67,7 +67,8 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 
    if (!buf || !buf_size)
    {
-      menu_entries_push(list, "No entries to display.", "", MENU_FILE_NONE, 0, 0);
+      menu_entries_push(list, "No entries to display.", "",
+            MENU_FILE_NONE, 0, 0);
       return;
    }
 
@@ -130,9 +131,8 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
       *(buf + i + 1) = c;
       line_start     = buf + i + 1;
    }
-   /* If the buffer was completely full, and didn't end with a newline, just
-    * ignore the partial last line.
-    */
+   /* If the buffer was completely full, and didn't end 
+    * with a newline, just ignore the partial last line. */
 }
 #endif
 
@@ -173,7 +173,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       return 0;
    }
 
-   strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CORE_NAME), sizeof(tmp));
+   strlcpy(tmp,
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CORE_NAME), sizeof(tmp));
    strlcat(tmp, ": ", sizeof(tmp));
    if (core_info->core_name)
       strlcat(tmp, core_info->core_name, sizeof(tmp));
@@ -181,7 +182,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-   strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CORE_LABEL), sizeof(tmp));
+   strlcpy(tmp,
+         menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CORE_LABEL), sizeof(tmp));
    strlcat(tmp, ": ", sizeof(tmp));
    if (core_info->display_name)
       strlcat(tmp, core_info->display_name, sizeof(tmp));
@@ -190,7 +192,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->systemname)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_SYSTEM_NAME), sizeof(tmp));
+      strlcpy(tmp,
+            menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_SYSTEM_NAME), sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       strlcat(tmp, core_info->systemname, sizeof(tmp));
       menu_entries_push(info->list, tmp, "",
@@ -199,7 +202,9 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->system_manufacturer)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER), sizeof(tmp));
+      strlcpy(tmp,
+            menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER),
+            sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       strlcat(tmp, core_info->system_manufacturer, sizeof(tmp));
       menu_entries_push(info->list, tmp, "",
@@ -208,7 +213,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->categories_list)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CATEGORIES), sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CATEGORIES),
+            sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->categories_list, ", ");
@@ -218,7 +224,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->authors_list)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_AUTHORS), sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_AUTHORS),
+            sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->authors_list, ", ");
@@ -228,7 +235,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->permissions_list)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_PERMISSIONS), sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_PERMISSIONS),
+            sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->permissions_list, ", ");
@@ -238,7 +246,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->licenses_list)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_LICENSES), sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_LICENSES),
+            sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->licenses_list, ", ");
@@ -248,7 +257,9 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->supported_extensions_list)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS), sizeof(tmp));
+      strlcpy(tmp,
+            menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS),
+            sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
             core_info->supported_extensions_list, ", ");
@@ -265,12 +276,15 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       core_info_list_update_missing_firmware(list, core_info->path,
             settings->system_directory);
 
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_FIRMWARE), sizeof(tmp));
+      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_FIRMWARE),
+            sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       menu_entries_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-      /* FIXME: This looks hacky and probably needs to be improved for good translation support. */
+      /* FIXME: This looks hacky and probably 
+       * needs to be improved for good translation support. */
+
       for (i = 0; i < core_info->firmware_count; i++)
       {
          if (core_info->firmware[i].desc)
@@ -299,7 +313,9 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->notes)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CORE_NOTES), sizeof(tmp));
+      strlcpy(tmp,
+            menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CORE_NOTES),
+            sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       menu_entries_push(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -330,14 +346,17 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
 
    /* Assume libretro directory exists and check if stat works */
    ret = path_is_directory(settings->libretro_directory);
-   snprintf(tmp, sizeof(tmp), "- stat directory... %s",  ret ? "passed" : "failed");
+   snprintf(tmp, sizeof(tmp), "- stat directory... %s",
+         ret ? "passed" : "failed");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Try to create a "test" subdirectory on top of libretro directory */
-   fill_pathname_join(tmp, settings->libretro_directory, ".retroarch", sizeof(tmp));
+   fill_pathname_join(tmp,
+         settings->libretro_directory, ".retroarch", sizeof(tmp));
    ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "- create a directory... %s",  ret ? "passed" : "failed");
+   snprintf(tmp, sizeof(tmp), "- create a directory... %s",
+         ret ? "passed" : "failed");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
@@ -348,17 +367,21 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    menu_entries_push(info->list, "Savefile Directory", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(global->dir.savefile);
-   snprintf(tmp, sizeof(tmp), "- directory name: %s", global->dir.savefile);
+   snprintf(tmp, sizeof(tmp), "- directory name: %s",
+         global->dir.savefile);
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "- directory exists: %s",  ret ? "true" : "false");
+   snprintf(tmp, sizeof(tmp), "- directory exists: %s",
+         ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
-   fill_pathname_join(tmp, global->dir.savefile, ".retroarch", sizeof(tmp));
+   fill_pathname_join(tmp, global->dir.savefile, ".retroarch",
+         sizeof(tmp));
    ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "- directory writable: %s",  ret ? "true" : "false");
+   snprintf(tmp, sizeof(tmp), "- directory writable: %s",
+         ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
@@ -372,14 +395,16 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    snprintf(tmp, sizeof(tmp), "- directory name: %s", global->dir.savestate);
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "- directory exists: %s",  ret ? "true" : "false");
+   snprintf(tmp, sizeof(tmp), "- directory exists: %s",
+         ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
    fill_pathname_join(tmp, global->dir.savestate, ".retroarch", sizeof(tmp));
    ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "- directory writable: %s",  ret ? "true" : "false");
+   snprintf(tmp, sizeof(tmp), "- directory writable: %s",
+         ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
@@ -390,17 +415,21 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    menu_entries_push(info->list, "System Directory", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(settings->system_directory);
-   snprintf(tmp, sizeof(tmp), "- directory name: %s", settings->system_directory);
+   snprintf(tmp, sizeof(tmp), "- directory name: %s",
+         settings->system_directory);
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   snprintf(tmp, sizeof(tmp), "- directory exists: %s",  ret ? "true" : "false");
+   snprintf(tmp, sizeof(tmp), "- directory exists: %s",
+         ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
-   fill_pathname_join(tmp, settings->system_directory, ".retroarch", sizeof(tmp));
+   fill_pathname_join(tmp, settings->system_directory, ".retroarch",
+         sizeof(tmp));
    ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "- directory writable: %s",  ret ? "true" : "false");
+   snprintf(tmp, sizeof(tmp), "- directory writable: %s", 
+         ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
@@ -415,7 +444,8 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
    settings_t                  *settings = config_get_ptr();
 
-   snprintf(tmp, sizeof(tmp), "%s: %s", menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
+   snprintf(tmp, sizeof(tmp), "%s: %s",
+         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
@@ -435,7 +465,8 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #ifdef ANDROID
    bool perms = test_permissions(sdcard_dir);
 
-   snprintf(tmp, sizeof(tmp), "%s: %s", "Internal SD card status", perms ? "read-write" : "read-only");
+   snprintf(tmp, sizeof(tmp), "%s: %s", "Internal SD card status",
+         perms ? "read-write" : "read-only");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
@@ -443,7 +474,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    {
       char cpu_str[PATH_MAX_LENGTH];
 
-      strlcpy(cpu_str, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES), sizeof(cpu_str));
+      strlcpy(cpu_str,
+            menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
+            sizeof(cpu_str));
       strlcat(cpu_str, ": ", sizeof(cpu_str));
 
       rarch_info_get_capabilities(RARCH_CAPABILITIES_CPU, cpu_str, sizeof(cpu_str));
@@ -454,10 +487,16 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    {
        if (settings->input.autoconfigured[controller])
        {
-           snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)", controller, settings->input.device_names[controller], settings->input.device_name_index[controller]);
-           menu_entries_push(info->list, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-           snprintf(tmp, sizeof(tmp), "Port #%d device VID/PID: %d/%d", controller, settings->input.vid[controller], settings->input.pid[controller]);
-           menu_entries_push(info->list, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+           snprintf(tmp, sizeof(tmp), "Port #%d device name: %s (#%d)",
+                 controller, settings->input.device_names[controller],
+                 settings->input.device_name_index[controller]);
+           menu_entries_push(info->list, tmp, "",
+                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+           snprintf(tmp, sizeof(tmp), "Port #%d device VID/PID: %d/%d",
+                 controller, settings->input.vid[controller],
+                 settings->input.pid[controller]);
+           menu_entries_push(info->list, tmp, "",
+                 MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
        }
    }
 
@@ -466,7 +505,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       char tmp2[PATH_MAX_LENGTH];
       int major = 0, minor = 0;
 
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER), sizeof(tmp));
+      strlcpy(tmp,
+            menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER),
+            sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       strlcat(tmp, frontend->ident, sizeof(tmp));
       menu_entries_push(info->list, tmp, "",
@@ -475,9 +516,12 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       if (frontend->get_name)
       {
          frontend->get_name(tmp2, sizeof(tmp2));
-         strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME), sizeof(tmp));
+         strlcpy(tmp,
+               menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME),
+               sizeof(tmp));
          strlcat(tmp, ": ", sizeof(tmp));
-         strlcat(tmp, frontend->get_name ? tmp2 : menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), sizeof(tmp));
+         strlcat(tmp, frontend->get_name ? 
+               tmp2 : menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), sizeof(tmp));
          menu_entries_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
@@ -487,7 +531,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
          snprintf(tmp, sizeof(tmp), "%s : %s %d.%d",
                menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
-               frontend->get_os ? tmp2 : menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), major, minor);
+               frontend->get_os 
+               ? tmp2 : menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE),
+               major, minor);
          menu_entries_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
@@ -501,7 +547,8 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       if (frontend->get_powerstate)
       {
          int seconds = 0, percent = 0;
-         enum frontend_powerstate state = frontend->get_powerstate(&seconds, &percent);
+         enum frontend_powerstate state = 
+            frontend->get_powerstate(&seconds, &percent);
 
          tmp2[0] = '\0';
 
@@ -516,7 +563,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
                break;
             case FRONTEND_POWERSTATE_NO_SOURCE:
                strlcat(tmp2, " (", sizeof(tmp));
-               strlcat(tmp2, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE), sizeof(tmp));
+               strlcat(tmp2,
+                     menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE),
+                     sizeof(tmp));
                strlcat(tmp2, ")", sizeof(tmp));
                break;
             case FRONTEND_POWERSTATE_CHARGING:
