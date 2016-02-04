@@ -113,7 +113,8 @@ typedef struct mui_handle
    float scroll_y;
 } mui_handle_t;
 
-static void mui_context_reset_textures(mui_handle_t *mui, const char *iconpath)
+static void mui_context_reset_textures(mui_handle_t *mui,
+      const char *iconpath)
 {
    unsigned i;
 
@@ -125,34 +126,44 @@ static void mui_context_reset_textures(mui_handle_t *mui, const char *iconpath)
       switch(i)
       {
          case MUI_TEXTURE_POINTER:
-            fill_pathname_join(path, iconpath, "pointer.png",   sizeof(path));
+            fill_pathname_join(path, iconpath,
+                  "pointer.png", sizeof(path));
             break;
          case MUI_TEXTURE_BACK:
-            fill_pathname_join(path, iconpath, "back.png",   sizeof(path));
+            fill_pathname_join(path, iconpath,
+                  "back.png", sizeof(path));
             break;
          case MUI_TEXTURE_SWITCH_ON:
-            fill_pathname_join(path, iconpath, "on.png",   sizeof(path));
+            fill_pathname_join(path, iconpath,
+                  "on.png", sizeof(path));
             break;
          case MUI_TEXTURE_SWITCH_OFF:
-            fill_pathname_join(path, iconpath, "off.png",   sizeof(path));
+            fill_pathname_join(path, iconpath,
+                  "off.png", sizeof(path));
             break;
          case MUI_TEXTURE_TAB_MAIN_ACTIVE:
-            fill_pathname_join(path, iconpath, "main_tab_active.png",   sizeof(path));
+            fill_pathname_join(path, iconpath,
+                  "main_tab_active.png", sizeof(path));
             break;
          case MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE:
-            fill_pathname_join(path, iconpath, "playlists_tab_active.png",   sizeof(path));
+            fill_pathname_join(path, iconpath,
+                  "playlists_tab_active.png", sizeof(path));
             break;
          case MUI_TEXTURE_TAB_SETTINGS_ACTIVE:
-            fill_pathname_join(path, iconpath, "settings_tab_active.png",   sizeof(path));
+            fill_pathname_join(path, iconpath,
+                  "settings_tab_active.png", sizeof(path));
             break;
          case MUI_TEXTURE_TAB_MAIN_PASSIVE:
-            fill_pathname_join(path, iconpath, "main_tab_passive.png",   sizeof(path));
+            fill_pathname_join(path, iconpath,
+                  "main_tab_passive.png", sizeof(path));
             break;
          case MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE:
-            fill_pathname_join(path, iconpath, "playlists_tab_passive.png",   sizeof(path));
+            fill_pathname_join(path, iconpath,
+                  "playlists_tab_passive.png", sizeof(path));
             break;
          case MUI_TEXTURE_TAB_SETTINGS_PASSIVE:
-            fill_pathname_join(path, iconpath, "settings_tab_passive.png",   sizeof(path));
+            fill_pathname_join(path, iconpath,
+                  "settings_tab_passive.png", sizeof(path));
             break;
       }
 
@@ -180,7 +191,8 @@ static void mui_draw_icon(mui_handle_t *mui,
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-   menu_display_matrix_4x4_rotate_z(&mymat, rotation, scale_factor, scale_factor, 1, true);
+   menu_display_matrix_4x4_rotate_z(&mymat,
+         rotation, scale_factor, scale_factor, 1, true);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -323,7 +335,8 @@ static void mui_draw_scrollbar(mui_handle_t *mui,
       unsigned width, unsigned height, float *coord_color)
 {
    unsigned header_height;
-   float content_height, total_height, scrollbar_height, scrollbar_margin, y;
+   float content_height, total_height,
+         scrollbar_height, scrollbar_margin, y;
 
    if (!mui)
       return;
@@ -770,9 +783,11 @@ static void mui_frame(void *data)
    const uint32_t activetab_color  = 0x0096f2ff;
    const uint32_t passivetab_color = 0x9e9e9eff;
    bool background_rendered        = false;
-   bool libretro_running           = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
+   bool libretro_running           = menu_display_ctl(
+         MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
 
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+
    (void)passivetab_color;
    (void)activetab_color;
 
@@ -840,13 +855,15 @@ static void mui_frame(void *data)
 
    menu_display_font_bind_block(&mui->list_block);
 
-   mui_render_menu_list(mui, width, height, normal_color, hover_color, &pure_white[0]);
+   mui_render_menu_list(mui, width, height,
+         normal_color, hover_color, &pure_white[0]);
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK, NULL);
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */
-   mui_render_quad(mui, 0, 0, width, header_height, width, height, &blue_bg[0]);
+   mui_render_quad(mui, 0, 0, width, header_height,
+         width, height, &blue_bg[0]);
 
    mui->tabs_height = 0;
 
@@ -887,11 +904,13 @@ static void mui_frame(void *data)
       size_t usable_width = width - (mui->margin * 2);
       int ticker_limit, value_len;
       
-      snprintf(title_buf_msg, sizeof(title_buf), "%s (%s)", title_buf, title_msg);
+      snprintf(title_buf_msg, sizeof(title_buf), "%s (%s)",
+            title_buf, title_msg);
       value_len = strlen(title_buf);
       ticker_limit = (usable_width / mui->glyph_width) - (value_len + 2);
 
-      menu_animation_ticker_str(title_buf_msg_tmp, ticker_limit, *frame_count / 20, title_buf_msg, true);
+      menu_animation_ticker_str(title_buf_msg_tmp,
+            ticker_limit, *frame_count / 20, title_buf_msg, true);
 
       strlcpy(title_buf, title_buf_msg_tmp, sizeof(title_buf));
    }
@@ -923,7 +942,8 @@ static void mui_frame(void *data)
       mui->box_message[0] = '\0';
    }
 
-   if (settings->menu.mouse.enable && (settings->video.fullscreen || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
+   if (settings->menu.mouse.enable && (settings->video.fullscreen 
+            || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
    {
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
@@ -956,8 +976,10 @@ static void mui_font(void)
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
-   fill_pathname_join(mediapath, settings->assets_directory, "glui", sizeof(mediapath));
-   fill_pathname_join(fontpath, mediapath, "Roboto-Regular.ttf", sizeof(fontpath));
+   fill_pathname_join(mediapath, settings->assets_directory,
+         "glui", sizeof(mediapath));
+   fill_pathname_join(fontpath, mediapath,
+         "Roboto-Regular.ttf", sizeof(fontpath));
 
    if (!menu_display_init_main_font(fontpath, font_size))
       RARCH_WARN("Failed to load font.");
@@ -972,10 +994,12 @@ static void mui_layout(mui_handle_t *mui)
 
    video_driver_get_size(&width, &height);
 
-   /* Mobiles platforms may have very small display metrics coupled to a high
-      resolution, so we should be dpi aware to ensure the entries hitboxes are
-      big enough. On desktops, we just care about readability, with every widget
-      size proportional to the display width. */
+   /* Mobiles platforms may have very small display metrics 
+    * coupled to a high resolution, so we should be DPI aware 
+    * to ensure the entries hitboxes are big enough.
+    *
+    * On desktops, we just care about readability, with every widget
+    * size proportional to the display width. */
    menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
 
    new_header_height    = scale_factor / 3;
@@ -988,8 +1012,10 @@ static void mui_layout(mui_handle_t *mui)
    mui->margin          = scale_factor / 9;
    mui->icon_size       = scale_factor / 3;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT,
+         &new_header_height);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,
+         &new_font_size);
 
    /* we assume the average glyph aspect ratio is close to 3:4 */
    mui->glyph_width = new_font_size * 3/4;
@@ -1000,7 +1026,8 @@ static void mui_layout(mui_handle_t *mui)
 
    if (fb_buf) /* calculate a more realistic ticker_limit */
    {
-      unsigned m_width = font_driver_get_message_width(fb_buf, "a", 1, 1);
+      unsigned m_width = 
+         font_driver_get_message_width(fb_buf, "a", 1, 1);
 
       if (m_width)
          mui->glyph_width = m_width;
@@ -1010,7 +1037,8 @@ static void mui_layout(mui_handle_t *mui)
 static void *mui_init(void **userdata)
 {
    mui_handle_t   *mui = NULL;
-   menu_handle_t *menu = (menu_handle_t*)calloc(1, sizeof(*menu));
+   menu_handle_t *menu = (menu_handle_t*)
+      calloc(1, sizeof(*menu));
 
    if (!menu)
       goto error;
@@ -1073,7 +1101,8 @@ static void mui_context_destroy(void *data)
    mui_context_bg_destroy(mui);
 }
 
-static bool mui_load_image(void *userdata, void *data, menu_image_type_t type)
+static bool mui_load_image(void *userdata, void *data,
+      menu_image_type_t type)
 {
    mui_handle_t *mui = (mui_handle_t*)userdata;
 
