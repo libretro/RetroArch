@@ -236,7 +236,8 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       libretrodb_index_t *idx)
 {
    ssize_t eof    = retro_fseek(db->fd, 0, SEEK_END);
-   ssize_t offset = retro_fseek(db->fd, (ssize_t)db->first_index_offset, SEEK_SET);
+   ssize_t offset = retro_fseek(db->fd,
+         (ssize_t)db->first_index_offset, SEEK_SET);
 
    while (offset < eof)
    {

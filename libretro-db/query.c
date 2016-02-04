@@ -70,6 +70,12 @@ struct registered_func
 
 static char tmp_error_buff [MAX_ERROR_LEN] = {0};
 
+/* Forward declarations */
+static struct buffer parse_method_call(struct buffer buff,
+      struct invocation *invocation, const char **error);
+static struct buffer parse_table(struct buffer buff,
+      struct invocation *invocation, const char **error);
+
 /* Errors */
 static void raise_too_many_arguments(const char **error)
 {
@@ -77,6 +83,192 @@ static void raise_too_many_arguments(const char **error)
          "Too many arguments in function call.", sizeof(tmp_error_buff));
    *error = tmp_error_buff;
 }
+
+static struct rmsgpack_dom_value func_is_true(
+      struct rmsgpack_dom_value input,
+      unsigned argc, const struct argument *argv)
+{
+   struct rmsgpack_dom_value res;
+   memset(&res, 0, sizeof(res));
+
+   res.type  = RDT_BOOL;
+   res.val.bool_ = 0;
+
+   if (argc > 0 || input.type != RDT_BOOL)
+      res.val.bool_ = 0;
+   else
+      res.val.bool_ = input.val.bool_;
+
+   return res;
+}
+
+static struct rmsgpack_dom_value func_equals(
+      struct rmsgpack_dom_value input,
+      unsigned argc, const struct argument * argv)
+{
+   struct argument arg;
+   struct rmsgpack_dom_value res;
+   memset(&res, 0, sizeof(res));
+
+   res.type = RDT_BOOL;
+
+   if (argc != 1)
+      res.val.bool_ = 0;
+   else
+   {
+      arg = argv[0];
+
+      if (arg.type != AT_VALUE)
+         res.val.bool_ = 0;
+      else
+      {
+         if (input.type == RDT_UINT && arg.a.value.type == RDT_INT)
+         {
+            arg.a.value.type = RDT_UINT;
+            arg.a.value.val.uint_ = arg.a.value.val.int_;
+         }
+         res.val.bool_ = (rmsgpack_dom_value_cmp(&input, &arg.a.value) == 0);
+      }
+   }
+   return res;
+}
+
+static struct rmsgpack_dom_value func_operator_or(
+      struct rmsgpack_dom_value input,
+      unsigned argc, const struct argument * argv)
+{
+   unsigned i;
+   struct rmsgpack_dom_value res;
+   memset(&res, 0, sizeof(res));
+
+   res.type = RDT_BOOL;
+   res.val.bool_ = 0;
+
+   for (i = 0; i < argc; i++)
+   {
+      if (argv[i].type == AT_VALUE)
+         res = func_equals(input, 1, &argv[i]);
+      else
+      {
+         res = func_is_true(
+               argv[i].a.invocation.func(input,
+                  argv[i].a.invocation.argc,
+                  argv[i].a.invocation.argv
+                  ), 0, NULL);
+      }
+
+      if (res.val.bool_)
+         return res;
+   }
+
+   return res;
+}
+
+static struct rmsgpack_dom_value func_operator_and(
+      struct rmsgpack_dom_value input,
+      unsigned argc, const struct argument * argv)
+{
+   unsigned i;
+   struct rmsgpack_dom_value res;
+   memset(&res, 0, sizeof(res));
+
+   res.type = RDT_BOOL;
+   res.val.bool_ = 0;
+
+   for (i = 0; i < argc; i++)
+   {
+      if (argv[i].type == AT_VALUE)
+         res = func_equals(input, 1, &argv[i]);
+      else
+      {
+         res = func_is_true(
+               argv[i].a.invocation.func(input,
+                  argv[i].a.invocation.argc,
+                  argv[i].a.invocation.argv
+                  ),
+               0, NULL);
+      }
+
+      if (!res.val.bool_)
+         return res;
+   }
+   return res;
+}
+
+static struct rmsgpack_dom_value func_between(struct rmsgpack_dom_value input,
+      unsigned argc, const struct argument * argv)
+{
+   struct rmsgpack_dom_value res;
+   unsigned i                     = 0;
+
+   memset(&res, 0, sizeof(res));
+
+   res.type = RDT_BOOL;
+   res.val.bool_ = 0;
+
+   (void)i;
+
+   if (argc != 2)
+      return res;
+   if (argv[0].type != AT_VALUE || argv[1].type != AT_VALUE)
+      return res;
+   if (argv[0].a.value.type != RDT_INT || argv[1].a.value.type != RDT_INT)
+      return res;
+
+   switch (input.type)
+   {
+      case RDT_INT:
+         res.val.bool_ = (
+               (input.val.int_ >= argv[0].a.value.val.int_) 
+               && (input.val.int_ <= argv[1].a.value.val.int_));
+         break;
+      case RDT_UINT:
+         res.val.bool_ = (
+               ((unsigned)input.val.int_ >= argv[0].a.value.val.uint_) 
+               && (input.val.int_ <= argv[1].a.value.val.int_));
+         break;
+      default:
+         return res;
+   }
+
+   return res;
+}
+
+static struct rmsgpack_dom_value func_glob(
+      struct rmsgpack_dom_value input,
+      unsigned argc, const struct argument * argv)
+{
+   struct rmsgpack_dom_value res;
+   unsigned i = 0;
+   memset(&res, 0, sizeof(res));
+
+   res.type = RDT_BOOL;
+   res.val.bool_ = 0;
+
+   (void)i;
+
+   if (argc != 1)
+      return res;
+   if (argv[0].type != AT_VALUE || argv[0].a.value.type != RDT_STRING)
+      return res;
+   if (input.type != RDT_STRING)
+      return res;
+   res.val.bool_ = rl_fnmatch(
+         argv[0].a.value.val.string.buff,
+         input.val.string.buff,
+         0
+         ) == 0;
+   return res;
+}
+
+struct registered_func registered_functions[100] = {
+   {"is_true", func_is_true},
+   {"or",      func_operator_or},
+   {"and",     func_operator_and},
+   {"between", func_between},
+   {"glob",    func_glob},
+   {NULL, NULL}
+};
 
 static void raise_expected_number(ssize_t where, const char **error)
 {
@@ -197,257 +389,41 @@ static void argument_free(struct argument *arg)
       argument_free(&arg->a.invocation.argv[i]);
 }
 
-
-static struct buffer parse_argument(struct buffer buff, struct argument *arg,
-      const char **error);
-
-static struct rmsgpack_dom_value is_true(struct rmsgpack_dom_value input,
-      unsigned argc, const struct argument *argv)
+static struct buffer parse_integer(struct buffer buff,
+      struct rmsgpack_dom_value *value, const char **error)
 {
-   struct rmsgpack_dom_value res;
-   memset(&res, 0, sizeof(res));
+   bool test   = false;
 
-   res.type  = RDT_BOOL;
-   res.val.bool_ = 0;
+   value->type = RDT_INT;
 
-   if (argc > 0 || input.type != RDT_BOOL)
-      res.val.bool_ = 0;
-   else
-      res.val.bool_ = input.val.bool_;
+#ifdef _WIN32
+   test        = (sscanf(buff.data + buff.offset,
+            "%I64d",
+            (signed long long*)&value->val.int_) == 0);
+#else
+   test        = (sscanf(buff.data + buff.offset,
+            "%lld",
+            (signed long long*)&value->val.int_) == 0);
+#endif
 
-   return res;
-}
-
-static struct rmsgpack_dom_value equals(struct rmsgpack_dom_value input,
-      unsigned argc, const struct argument * argv)
-{
-   struct argument arg;
-   struct rmsgpack_dom_value res;
-   memset(&res, 0, sizeof(res));
-
-   res.type = RDT_BOOL;
-
-   if (argc != 1)
-      res.val.bool_ = 0;
+   if (test)
+      raise_expected_number(buff.offset, error);
    else
    {
-      arg = argv[0];
-
-      if (arg.type != AT_VALUE)
-         res.val.bool_ = 0;
-      else
-      {
-         if (input.type == RDT_UINT && arg.a.value.type == RDT_INT)
-         {
-            arg.a.value.type = RDT_UINT;
-            arg.a.value.val.uint_ = arg.a.value.val.int_;
-         }
-         res.val.bool_ = (rmsgpack_dom_value_cmp(&input, &arg.a.value) == 0);
-      }
-   }
-   return res;
-}
-
-static struct rmsgpack_dom_value operator_or(struct rmsgpack_dom_value input,
-      unsigned argc, const struct argument * argv)
-{
-   unsigned i;
-   struct rmsgpack_dom_value res;
-   memset(&res, 0, sizeof(res));
-
-   res.type = RDT_BOOL;
-   res.val.bool_ = 0;
-
-   for (i = 0; i < argc; i++)
-   {
-      if (argv[i].type == AT_VALUE)
-         res = equals(input, 1, &argv[i]);
-      else
-      {
-         res = is_true(argv[i].a.invocation.func(input,
-                  argv[i].a.invocation.argc,
-                  argv[i].a.invocation.argv
-                  ), 0, NULL);
-      }
-
-      if (res.val.bool_)
-         return res;
+      while (isdigit((int)buff.data[buff.offset]))
+         buff.offset++;
    }
 
-   return res;
+   return buff;
 }
-
-static struct rmsgpack_dom_value between(struct rmsgpack_dom_value input,
-      unsigned argc, const struct argument * argv)
-{
-   struct rmsgpack_dom_value res;
-   unsigned i                     = 0;
-
-   memset(&res, 0, sizeof(res));
-
-   res.type = RDT_BOOL;
-   res.val.bool_ = 0;
-
-   (void)i;
-
-   if (argc != 2)
-      return res;
-   if (argv[0].type != AT_VALUE || argv[1].type != AT_VALUE)
-      return res;
-   if (argv[0].a.value.type != RDT_INT || argv[1].a.value.type != RDT_INT)
-      return res;
-
-   switch (input.type)
-   {
-      case RDT_INT:
-         res.val.bool_ = ((input.val.int_ >= argv[0].a.value.val.int_) && (input.val.int_ <= argv[1].a.value.val.int_));
-         break;
-      case RDT_UINT:
-         res.val.bool_ = (((unsigned)input.val.int_ >= argv[0].a.value.val.uint_) && (input.val.int_ <= argv[1].a.value.val.int_));
-         break;
-      default:
-         return res;
-   }
-
-   return res;
-}
-
-static struct rmsgpack_dom_value operator_and(struct rmsgpack_dom_value input,
-      unsigned argc, const struct argument * argv)
-{
-   unsigned i;
-   struct rmsgpack_dom_value res;
-   memset(&res, 0, sizeof(res));
-
-   res.type = RDT_BOOL;
-   res.val.bool_ = 0;
-
-   for (i = 0; i < argc; i++)
-   {
-      if (argv[i].type == AT_VALUE)
-         res = equals(input, 1, &argv[i]);
-      else
-      {
-         res = is_true(
-               argv[i].a.invocation.func(input,
-                  argv[i].a.invocation.argc,
-                  argv[i].a.invocation.argv
-                  ),
-               0, NULL);
-      }
-
-      if (!res.val.bool_)
-         return res;
-   }
-   return res;
-}
-
-static struct rmsgpack_dom_value q_glob(struct rmsgpack_dom_value input,
-      unsigned argc, const struct argument * argv)
-{
-   struct rmsgpack_dom_value res;
-   unsigned i = 0;
-   memset(&res, 0, sizeof(res));
-
-   res.type = RDT_BOOL;
-   res.val.bool_ = 0;
-
-   (void)i;
-
-   if (argc != 1)
-      return res;
-   if (argv[0].type != AT_VALUE || argv[0].a.value.type != RDT_STRING)
-      return res;
-   if (input.type != RDT_STRING)
-      return res;
-   res.val.bool_ = rl_fnmatch(
-         argv[0].a.value.val.string.buff,
-         input.val.string.buff,
-         0
-         ) == 0;
-   return res;
-}
-
-static struct rmsgpack_dom_value all_map(struct rmsgpack_dom_value input,
-      unsigned argc, const struct argument *argv)
-{
-   unsigned i;
-   struct argument arg;
-   struct rmsgpack_dom_value res;
-   struct rmsgpack_dom_value nil_value;
-   struct rmsgpack_dom_value *value = NULL;
-   memset(&res, 0, sizeof(res));
-
-   nil_value.type = RDT_NULL;
-   res.type       = RDT_BOOL;
-   res.val.bool_      = 1;
-
-   if (argc % 2 != 0)
-   {
-      res.val.bool_ = 0;
-      return res;
-   }
-
-   if (input.type != RDT_MAP)
-      return res;
-
-   for (i = 0; i < argc; i += 2)
-   {
-      arg = argv[i];
-      if (arg.type != AT_VALUE)
-      {
-         res.val.bool_ = 0;
-         goto clean;
-      }
-      value = rmsgpack_dom_value_map_value(&input, &arg.a.value);
-      if (!value) /* All missing fields are nil */
-         value = &nil_value;
-      arg = argv[i + 1];
-      if (arg.type == AT_VALUE)
-         res = equals(*value, 1, &arg);
-      else
-      {
-         res = is_true(arg.a.invocation.func(
-                  *value,
-                  arg.a.invocation.argc,
-                  arg.a.invocation.argv
-                  ), 0, NULL);
-         value = NULL;
-      }
-      if (!res.val.bool_)
-         break;
-   }
-clean:
-   return res;
-}
-
-struct registered_func registered_functions[100] = {
-   {"is_true", is_true},
-   {"or", operator_or},
-   {"and", operator_and},
-   {"between", between},
-   {"glob", q_glob},
-   {NULL, NULL}
-};
 
 static struct buffer chomp(struct buffer buff)
 {
-   for (; (unsigned)buff.offset < buff.len && isspace((int)buff.data[buff.offset]); buff.offset++);
+   for (; (unsigned)buff.offset < buff.len 
+         && isspace((int)buff.data[buff.offset]); buff.offset++);
    return buff;
 }
 
-static struct buffer expect_char(struct buffer buff,
-      char c, const char ** error)
-{
-   if ((unsigned)buff.offset >= buff.len)
-      raise_unexpected_eof(buff.offset, error);
-   else if (buff.data[buff.offset] != c)
-      raise_unexpected_char(
-            buff.offset, c, buff.data[buff.offset], error);
-   else
-      buff.offset++;
-   return buff;
-}
 
 static struct buffer expect_eof(struct buffer buff, const char ** error)
 {
@@ -471,17 +447,6 @@ static int peek(struct buffer buff, const char * data)
 static int is_eot(struct buffer buff)
 {
    return ((unsigned)buff.offset >= buff.len);
-}
-
-static void peek_char(struct buffer buff, char *c, const char **error)
-{
-   if (is_eot(buff))
-   {
-      raise_unexpected_eof(buff.offset, error);
-      return;
-   }
-
-   *c = buff.data[buff.offset];
 }
 
 static struct buffer get_char(struct buffer buff, char * c,
@@ -578,34 +543,6 @@ static struct buffer parse_string(struct buffer buff,
    return buff;
 }
 
-static struct buffer parse_integer(struct buffer buff,
-      struct rmsgpack_dom_value *value, const char **error)
-{
-   bool test   = false;
-
-   value->type = RDT_INT;
-
-#ifdef _WIN32
-   test        = (sscanf(buff.data + buff.offset,
-            "%I64d",
-            (signed long long*)&value->val.int_) == 0);
-#else
-   test        = (sscanf(buff.data + buff.offset,
-            "%lld",
-            (signed long long*)&value->val.int_) == 0);
-#endif
-
-   if (test)
-      raise_expected_number(buff.offset, error);
-   else
-   {
-      while (isdigit((int)buff.data[buff.offset]))
-         buff.offset++;
-   }
-
-   return buff;
-}
-
 static struct buffer parse_value(struct buffer buff,
       struct rmsgpack_dom_value *value, const char **error)
 {
@@ -633,6 +570,17 @@ static struct buffer parse_value(struct buffer buff,
    else if (isdigit((int)buff.data[buff.offset]))
       buff = parse_integer(buff, value, error);
    return buff;
+}
+
+static void peek_char(struct buffer buff, char *c, const char **error)
+{
+   if (is_eot(buff))
+   {
+      raise_unexpected_eof(buff.offset, error);
+      return;
+   }
+
+   *c = buff.data[buff.offset];
 }
 
 static struct buffer get_ident(struct buffer buff,
@@ -670,6 +618,52 @@ static struct buffer get_ident(struct buffer buff,
    }
 
 clean:
+   return buff;
+}
+
+static struct buffer expect_char(struct buffer buff,
+      char c, const char ** error)
+{
+   if ((unsigned)buff.offset >= buff.len)
+      raise_unexpected_eof(buff.offset, error);
+   else if (buff.data[buff.offset] != c)
+      raise_unexpected_char(
+            buff.offset, c, buff.data[buff.offset], error);
+   else
+      buff.offset++;
+   return buff;
+}
+
+
+static struct buffer parse_argument(struct buffer buff,
+      struct argument *arg, const char **error)
+{
+   buff = chomp(buff);
+
+   if (
+         isalpha((int)buff.data[buff.offset])
+         && !(
+               peek(buff, "nil")
+            || peek(buff, "true")
+            || peek(buff, "false")
+            || peek(buff, "b\"") 
+            || peek(buff,  "b'") /* bin string prefix*/
+            )
+      )
+   {
+      arg->type = AT_FUNCTION;
+      buff = parse_method_call(buff, &arg->a.invocation, error);
+   }
+   else if (peek(buff, "{"))
+   {
+      arg->type = AT_FUNCTION;
+      buff = parse_table(buff, &arg->a.invocation, error);
+   }
+   else
+   {
+      arg->type = AT_VALUE;
+      buff = parse_value(buff, &arg->a.value, error);
+   }
    return buff;
 }
 
@@ -759,6 +753,60 @@ clean:
       argument_free(&args[i]);
 success:
    return buff;
+}
+
+static struct rmsgpack_dom_value func_all_map(
+      struct rmsgpack_dom_value input,
+      unsigned argc, const struct argument *argv)
+{
+   unsigned i;
+   struct argument arg;
+   struct rmsgpack_dom_value res;
+   struct rmsgpack_dom_value nil_value;
+   struct rmsgpack_dom_value *value = NULL;
+   memset(&res, 0, sizeof(res));
+
+   nil_value.type = RDT_NULL;
+   res.type       = RDT_BOOL;
+   res.val.bool_      = 1;
+
+   if (argc % 2 != 0)
+   {
+      res.val.bool_ = 0;
+      return res;
+   }
+
+   if (input.type != RDT_MAP)
+      return res;
+
+   for (i = 0; i < argc; i += 2)
+   {
+      arg = argv[i];
+      if (arg.type != AT_VALUE)
+      {
+         res.val.bool_ = 0;
+         goto clean;
+      }
+      value = rmsgpack_dom_value_map_value(&input, &arg.a.value);
+      if (!value) /* All missing fields are nil */
+         value = &nil_value;
+      arg = argv[i + 1];
+      if (arg.type == AT_VALUE)
+         res = func_equals(*value, 1, &arg);
+      else
+      {
+         res = func_is_true(arg.a.invocation.func(
+                  *value,
+                  arg.a.invocation.argc,
+                  arg.a.invocation.argv
+                  ), 0, NULL);
+         value = NULL;
+      }
+      if (!res.val.bool_)
+         break;
+   }
+clean:
+   return res;
 }
 
 static struct buffer parse_table(struct buffer buff,
@@ -852,7 +900,7 @@ static struct buffer parse_table(struct buffer buff,
    if (*error)
       goto clean;
 
-   invocation->func = all_map;
+   invocation->func = func_all_map;
    invocation->argc = argi;
    invocation->argv = (struct argument*)
       malloc(sizeof(struct argument) * argi);
@@ -870,37 +918,6 @@ clean:
    for (i = 0; i < argi; i++)
       argument_free(&args[i]);
 success:
-   return buff;
-}
-
-static struct buffer parse_argument(struct buffer buff,
-      struct argument *arg, const char **error)
-{
-   buff = chomp(buff);
-
-   if (
-         isalpha((int)buff.data[buff.offset])
-         && !(
-            peek(buff, "nil")
-            || peek(buff, "true")
-            || peek(buff, "false")
-            || peek(buff, "b\"") || peek(buff, "b'") /* bin string prefix*/
-            )
-      )
-   {
-      arg->type = AT_FUNCTION;
-      buff = parse_method_call(buff, &arg->a.invocation, error);
-   }
-   else if (peek(buff, "{"))
-   {
-      arg->type = AT_FUNCTION;
-      buff = parse_table(buff, &arg->a.invocation, error);
-   }
-   else
-   {
-      arg->type = AT_VALUE;
-      buff = parse_value(buff, &arg->a.value, error);
-   }
    return buff;
 }
 
@@ -979,4 +996,3 @@ int libretrodb_query_filter(libretrodb_query_t *q,
    struct rmsgpack_dom_value res = inv.func(*v, inv.argc, inv.argv);
    return (res.type == RDT_BOOL && res.val.bool_);
 }
-
