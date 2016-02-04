@@ -98,11 +98,10 @@ enum core_ctl_state
 
    CORE_CTL_RETRO_GET_MEMORY,
 
-   /**
-    * Initialize system A/V information.
-    **/
+   /* Initialize system A/V information. */
    CORE_CTL_INIT_SYSTEM_AV_INFO,
 
+   /* Get system A/V information. */
    CORE_CTL_RETRO_GET_SYSTEM_INFO,
 
    CORE_CTL_RETRO_LOAD_GAME,
