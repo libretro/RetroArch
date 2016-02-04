@@ -505,7 +505,8 @@ static struct buffer parse_string(struct buffer buff,
       value->type = is_binstr ? RDT_BINARY : RDT_STRING;
       value->val.string.len = (buff.data + buff.offset) - str_start - 1;
 
-      count = is_binstr ? (value->val.string.len + 1) / 2 : (value->val.string.len + 1);
+      count                  = is_binstr ? (value->val.string.len + 1) / 2 
+         : (value->val.string.len + 1);
       value->val.string.buff = (char*)calloc(count, sizeof(char));
 
       if (!value->val.string.buff)
