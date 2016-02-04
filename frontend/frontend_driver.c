@@ -215,7 +215,7 @@ void frontend_driver_set_fork(bool a, bool b, bool restart)
 {
    frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
-   if (!frontend || !frontend->set_fork)
+   if (!frontend_driver_has_fork())
       return;
    frontend->set_fork(a, b, restart);
 }

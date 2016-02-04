@@ -922,8 +922,7 @@ bool event_cmd_exec(void *data)
 #if defined(HAVE_DYNAMIC)
    rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
 #else
-   if (frontend_driver_has_fork())
-      frontend_driver_set_fork(true, true, false);
+   frontend_driver_set_fork(true, true, false);
 #endif
 
    return true;
