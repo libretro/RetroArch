@@ -91,15 +91,15 @@ struct turbo_buttons
    unsigned count;
 };
 
+static turbo_buttons_t input_driver_turbo_btns;
 #ifdef HAVE_COMMAND
-static rarch_cmd_t *input_driver_command;
+static rarch_cmd_t *input_driver_command = NULL;
 #endif
 #ifdef HAVE_NETWORK_GAMEPAD
-static rarch_remote_t *input_driver_remote;
+static rarch_remote_t *input_driver_remote = NULL;
 #endif
-static const input_driver_t *current_input;
-static void *current_input_data;
-static turbo_buttons_t input_driver_turbo_btns;
+static const input_driver_t *current_input = NULL;
+static void *current_input_data = NULL;
 
 /**
  * input_driver_find_handle:
