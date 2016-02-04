@@ -67,6 +67,7 @@
 #define DB_CURSOR_EDGE_MAGAZINE_RATING          0xd30dc4feU
 #define DB_CURSOR_EDGE_MAGAZINE_ISSUE           0xa0f30d42U
 #define DB_CURSOR_FAMITSU_MAGAZINE_RATING       0x0a50ca62U
+#define DB_CURSOR_TGDB_RATING                   0x8d61458aU
 #define DB_CURSOR_MAX_USERS                     0x1084ff77U
 #define DB_CURSOR_RELEASEDATE_MONTH             0x790ad76cU
 #define DB_CURSOR_RELEASEDATE_YEAR              0x7fd06ed7U
@@ -307,6 +308,9 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
             break;
          case DB_CURSOR_FAMITSU_MAGAZINE_RATING:
             db_info->famitsu_magazine_rating = val->val.uint_;
+            break;
+         case DB_CURSOR_TGDB_RATING:
+            db_info->tgdb_rating = val->val.uint_;
             break;
          case DB_CURSOR_MAX_USERS:
             db_info->max_users = val->val.uint_;

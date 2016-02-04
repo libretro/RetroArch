@@ -85,6 +85,7 @@ typedef struct
    unsigned max_users;
    unsigned releasemonth;
    unsigned releaseyear;
+   unsigned tgdb_rating;
    int analog_supported;
    int rumble_supported;
    int coop_supported;
