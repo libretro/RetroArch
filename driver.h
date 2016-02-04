@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 #include <boolean.h>
 #include <compat/posix_string.h>
@@ -220,7 +221,6 @@ typedef struct driver_ctx_info
    char *s;
    ssize_t len;
 } driver_ctx_info_t;
-
 
 /* TODO/FIXME - comment needs to be moved to each respective driver */
 
