@@ -33,10 +33,6 @@ extern "C" {
 #define KEY_ANALOG_LEFT  0x56b92e81U
 #define KEY_ANALOG_RIGHT 0x2e4dc654U
 
-#define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
-#define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
-#define OVERLAY_CLEAR_KEY(state, key) (state)->keys[(key) / 32] &= ~(1 << ((key) % 32))
-
 /* Overlay driver acts as a medium between input drivers 
  * and video driver.
  *
@@ -96,7 +92,6 @@ enum overlay_image_transfer_status
    OVERLAY_IMAGE_TRANSFER_DESC_DONE,
    OVERLAY_IMAGE_TRANSFER_ERROR
 };
-
 
 struct overlay
 {
