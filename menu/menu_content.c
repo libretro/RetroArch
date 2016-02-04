@@ -226,9 +226,9 @@ static bool menu_content_load_from_playlist(void *data)
  *
  * Gets deferred core.
  *
- * Returns: 0 if there are multiple deferred cores and a
+ * Returns: false if there are multiple deferred cores and a
  * selection needs to be made from a list, otherwise
- * returns -1 and fills in @s with path to core.
+ * returns true and fills in @s with path to core.
  **/
 static bool menu_content_find_first_core(void *data)
 {
