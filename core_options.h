@@ -74,7 +74,8 @@ bool core_option_flush(core_option_manager_t *opt);
  * Returns: true (1) if core option values could be
  * successfully saved to disk, otherwise false (0).
  **/
-bool core_option_flush_game_specific(core_option_manager_t *opt, char* path);
+bool core_option_flush_game_specific(
+      core_option_manager_t *opt, char* path);
 
 /**
  * core_option_free:
@@ -84,7 +85,8 @@ bool core_option_flush_game_specific(core_option_manager_t *opt, char* path);
  **/
 void core_option_free(core_option_manager_t *opt);
 
-void core_option_get(core_option_manager_t *opt, struct retro_variable *var);
+void core_option_get(core_option_manager_t *opt, 
+      struct retro_variable *var);
 
 /**
  * core_option_size:
@@ -105,7 +107,8 @@ size_t core_option_size(core_option_manager_t *opt);
  *
  * Returns: Description for an option.
  **/
-const char *core_option_get_desc(core_option_manager_t *opt, size_t idx);
+const char *core_option_get_desc(core_option_manager_t *opt, 
+      size_t idx);
 
 /**
  * core_option_get_val:
@@ -116,7 +119,8 @@ const char *core_option_get_desc(core_option_manager_t *opt, size_t idx);
  *
  * Returns: Value for an option.
  **/
-const char *core_option_get_val(core_option_manager_t *opt, size_t idx);
+const char *core_option_get_val(core_option_manager_t *opt, 
+      size_t idx);
 
 /**
  * core_option_get_vals:

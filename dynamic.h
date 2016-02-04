@@ -144,7 +144,8 @@ struct retro_core_t
    void (*retro_cheat_reset)(void);
    void (*retro_cheat_set)(unsigned, bool, const char*);
    bool (*retro_load_game)(const struct retro_game_info*);
-   bool (*retro_load_game_special)(unsigned, const struct retro_game_info*, size_t);
+   bool (*retro_load_game_special)(unsigned,
+         const struct retro_game_info*, size_t);
    void (*retro_unload_game)(void);
    unsigned (*retro_get_region)(void);
    void *(*retro_get_memory_data)(unsigned);
@@ -160,7 +161,8 @@ struct retro_core_t
  * Initializes libretro symbols and
  * setups environment callback functions.
  **/
-void init_libretro_sym(enum rarch_core_type type, struct retro_core_t *core);
+void init_libretro_sym(enum rarch_core_type type,
+      struct retro_core_t *core);
 
 /**
  * uninit_libretro_sym:

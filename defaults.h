@@ -77,5 +77,4 @@ struct defaults
 /* Public data structures. */
 extern struct defaults g_defaults;
 
-
 #endif

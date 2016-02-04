@@ -117,10 +117,8 @@ void database_info_free(database_info_handle_t *handle);
 int database_info_build_query(
       char *query, size_t len, const char *label, const char *path);
 
-/*
- * NOTE: Allocates memory, it is the caller's responsibility to free the
- * memory after it is no longer required.
- */
+/* NOTE: Allocates memory, it is the caller's responsibility to free the
+ * memory after it is no longer required. */
 char *bin_to_hex_alloc(const uint8_t *data, size_t len);
 
 #ifdef __cplusplus
