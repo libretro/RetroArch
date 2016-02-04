@@ -91,17 +91,17 @@ static enum rarch_display_type video_driver_display_type;
 
 static uint64_t video_driver_frame_count;
 
-static void *video_driver_data;
-static video_driver_t *current_video;
+static void *video_driver_data = NULL;
+static video_driver_t *current_video = NULL;
 
 /* Interface for "poking". */
-static const video_poke_interface_t *video_driver_poke;
+static const video_poke_interface_t *video_driver_poke = NULL;
 
-static video_driver_state_t video_driver_state;
+static video_driver_state_t video_driver_state = NULL;
 
 /* Used for 16-bit -> 16-bit conversions that take place before
  * being passed to video driver. */
-static video_pixel_scaler_t *video_driver_scaler_ptr;
+static video_pixel_scaler_t *video_driver_scaler_ptr = NULL;
 
 char rotation_lut[4][32] =
 {
