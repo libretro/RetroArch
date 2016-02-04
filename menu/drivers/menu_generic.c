@@ -96,12 +96,15 @@ static int action_iterate_help(menu_handle_t *menu,
 
             for (i = 0; i < ARRAY_SIZE(binds); i++)
             {
-               const struct retro_keybind *keybind = (const struct retro_keybind*)
+               const struct retro_keybind *keybind = 
+                  (const struct retro_keybind*)
                   &settings->input.binds[0][binds[i]];
-               const struct retro_keybind *auto_bind = (const struct retro_keybind*)
+               const struct retro_keybind *auto_bind = 
+                  (const struct retro_keybind*)
                   input_get_auto_bind(0, binds[i]);
 
-               input_config_get_bind_string(desc[i], keybind, auto_bind, sizeof(desc[i]));
+               input_config_get_bind_string(desc[i],
+                     keybind, auto_bind, sizeof(desc[i]));
             }
 
             menu_hash_get_help(MENU_LABEL_VALUE_MENU_CONTROLS_PROLOG,
@@ -260,14 +263,16 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    switch (iterate_type)
    {
       case ITERATE_TYPE_HELP:
-         ret = action_iterate_help(menu, menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
+         ret = action_iterate_help(menu,
+               menu->menu_state.msg, sizeof(menu->menu_state.msg), label);
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
          if (ret == 1 || action == MENU_ACTION_OK)
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          break;
       case ITERATE_TYPE_BIND:
-         if (menu_input_key_bind_iterate(menu->menu_state.msg, sizeof(menu->menu_state.msg)))
+         if (menu_input_key_bind_iterate(
+                  menu->menu_state.msg, sizeof(menu->menu_state.msg)))
          {
             menu_entries_pop_stack(&selection, 0);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
@@ -277,7 +282,8 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
          break;
       case ITERATE_TYPE_INFO:
          {
-            menu_file_list_cbs_t *cbs = menu_entries_get_actiondata_at_offset(selection_buf, selection);
+            menu_file_list_cbs_t *cbs = 
+               menu_entries_get_actiondata_at_offset(selection_buf, selection);
             rarch_setting_t *setting  = cbs->setting;
 
             if (setting)
@@ -287,7 +293,8 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                label_hash       = menu_hash_calculate(needle);
             }
 
-            ret = menu_hash_get_help(label_hash, menu->menu_state.msg, sizeof(menu->menu_state.msg));
+            ret = menu_hash_get_help(label_hash, 
+                  menu->menu_state.msg, sizeof(menu->menu_state.msg));
          }
          BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
@@ -350,13 +357,15 @@ int menu_iterate_render(void *data, void *userdata)
    if (!menu)
       return -1;
 
-   if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER) != BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX))
+   if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER) 
+         != BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX))
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
    if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER))
       menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
 
-   if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX) && !string_is_empty(menu->menu_state.msg))
+   if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX) 
+         && !string_is_empty(menu->menu_state.msg))
    {
       menu_driver_ctl(RARCH_MENU_CTL_RENDER_MESSAGEBOX, NULL);
 
@@ -374,7 +383,8 @@ int menu_iterate_render(void *data, void *userdata)
       menu_driver_ctl(RARCH_MENU_CTL_BLIT_RENDER, NULL);
    }
 
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) 
+         && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
       menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO, NULL);
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_TEXTURE, NULL);
@@ -390,9 +400,11 @@ bool generic_menu_init_list(void *data)
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
 
-   menu_entries_push(menu_stack, info.path, info.label, info.type, info.flags, 0);
+   menu_entries_push(menu_stack, info.path,
+         info.label, info.type, info.flags, 0);
 
    info.list  = selection_buf;
    menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);

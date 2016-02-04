@@ -56,7 +56,8 @@ static void *menu_display_gl_get_default_mvp(void)
    return &gl->mvp_no_rot;
 }
 
-static GLenum menu_display_prim_to_gl_enum(enum menu_display_prim_type prim_type)
+static GLenum menu_display_prim_to_gl_enum(
+      enum menu_display_prim_type prim_type)
 {
    switch (prim_type)
    {
@@ -164,8 +165,11 @@ static void menu_display_gl_draw_bg(
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   if ((settings->menu.pause_libretro
-      || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (
+         (settings->menu.pause_libretro
+          || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
+          || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+         )
       && !force_transparency
       && texture)
       coords.color = (const float*)coord_color2;
