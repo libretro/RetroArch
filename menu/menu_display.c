@@ -163,7 +163,8 @@ static const char *menu_video_get_ident(void)
    return video_driver_get_ident();
 }
 
-static bool menu_display_check_compatibility(enum menu_display_driver_type type)
+static bool menu_display_check_compatibility(
+      enum menu_display_driver_type type)
 {
    const char *video_driver = menu_video_get_ident();
 
@@ -191,7 +192,8 @@ bool menu_display_driver_init_first(void)
 
    for (i = 0; menu_display_ctx_drivers[i]; i++)
    {
-      if (!menu_display_check_compatibility(menu_display_ctx_drivers[i]->type))
+      if (!menu_display_check_compatibility(
+               menu_display_ctx_drivers[i]->type))
          continue;
 
       RARCH_LOG("Found menu display driver: \"%s\".\n",
@@ -308,7 +310,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          return true;
       case MENU_DISPLAY_CTL_LIBRETRO_RUNNING:
          if (!settings->menu.pause_libretro)
-            if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+            if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
+                  && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                return true;
          break;
       case MENU_DISPLAY_CTL_LIBRETRO:
@@ -316,7 +319,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
          if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
          {
-            bool libretro_input_is_blocked = input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL);
+            bool libretro_input_is_blocked = 
+               input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL);
 
             if (!libretro_input_is_blocked)
                input_driver_ctl(RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED, NULL);
@@ -534,7 +538,8 @@ void menu_display_timedate(char *s, size_t len, unsigned time_mode)
    }
 }
 
-void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
+void menu_display_msg_queue_push(const char *msg,
+      unsigned prio, unsigned duration,
       bool flush)
 {
    runloop_msg_queue_push(msg, prio, duration, flush);
@@ -542,8 +547,10 @@ void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned durati
 
 
 
-void menu_display_matrix_4x4_rotate_z(math_matrix_4x4 *matrix, float rotation,
-      float scale_x, float scale_y, float scale_z, bool scale_enable)
+void menu_display_matrix_4x4_rotate_z(
+      math_matrix_4x4 *matrix, float rotation,
+      float scale_x, float scale_y, float scale_z,
+      bool scale_enable)
 {
    math_matrix_4x4 matrix_rotated, matrix_scaled;
    math_matrix_4x4 *b                   = NULL;
@@ -586,11 +593,13 @@ void menu_display_draw(float x, float y,
       enum menu_display_prim_type prim_type
       )
 {
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
+   menu_display_ctx_driver_t *menu_disp = 
+      menu_display_context_get_ptr();
    if (!menu_disp || !menu_disp->draw)
       return;
 
-   menu_disp->draw(x, y, width, height, coords, matrix_data, texture, prim_type);
+   menu_disp->draw(x, y, width, height,
+         coords, matrix_data, texture, prim_type);
 }
 
 void menu_display_draw_bg(
@@ -610,7 +619,8 @@ void menu_display_draw_bg(
    if (!menu_disp || !menu_disp->draw_bg)
       return;
 
-   menu_disp->draw_bg(width, height, texture, handle_alpha, force_transparency, color,
+   menu_disp->draw_bg(width, height, texture, handle_alpha,
+         force_transparency, color,
          color2, vertex, tex_coord, vertex_count, prim_type);
 }
 
@@ -641,7 +651,8 @@ const float *menu_display_get_tex_coords(void)
    return menu_disp->get_tex_coords();
 }
 
-void menu_display_handle_wallpaper_upload(void *task_data, void *user_data, const char *err)
+void menu_display_handle_wallpaper_upload(void *task_data,
+      void *user_data, const char *err)
 {
    struct texture_image *img = (struct texture_image*)task_data;
    menu_driver_load_image(img, MENU_IMAGE_WALLPAPER);
@@ -649,7 +660,8 @@ void menu_display_handle_wallpaper_upload(void *task_data, void *user_data, cons
    free(img);
 }
 
-void menu_display_handle_boxart_upload(void *task_data, void *user_data, const char *err)
+void menu_display_handle_boxart_upload(void *task_data,
+      void *user_data, const char *err)
 {
    struct texture_image *img = (struct texture_image*)task_data;
    menu_driver_load_image(img, MENU_IMAGE_BOXART);

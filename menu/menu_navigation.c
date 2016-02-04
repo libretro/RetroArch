@@ -121,7 +121,8 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             if (!scroll_speed)
                return false;
 
-            if (selection == 0 && !settings->menu.navigation.wraparound.enable)
+            if (selection == 0 
+                  && !settings->menu.navigation.wraparound.enable)
                return false;
 
             if (selection >= *scroll_speed)
@@ -146,7 +147,8 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
       case MENU_NAVIGATION_CTL_SET_LAST:
          {
             size_t new_selection = menu_list_size - 1;
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection);
+            menu_navigation_ctl(
+                  MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection);
             menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET_LAST, NULL);
          }
          return true;
@@ -190,7 +192,8 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                i--;
             *ptr_out = nav->scroll.indices.list[i - 1];
 
-            menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET, ptr_out);
+            menu_driver_ctl(
+                  RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET, ptr_out);
          }
          return true;
       case MENU_NAVIGATION_CTL_GET_SELECTION:

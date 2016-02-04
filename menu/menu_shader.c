@@ -104,12 +104,14 @@ void menu_shader_manager_init(menu_handle_t *menu)
             const char *shader_dir = *settings->video.shader_dir ?
                settings->video.shader_dir : settings->system_directory;
 
-            fill_pathname_join(preset_path, shader_dir, "menu.glslp", sizeof(preset_path));
+            fill_pathname_join(preset_path, shader_dir,
+                  "menu.glslp", sizeof(preset_path));
             conf = config_file_new(preset_path);
 
             if (!conf)
             {
-               fill_pathname_join(preset_path, shader_dir, "menu.cgp", sizeof(preset_path));
+               fill_pathname_join(preset_path, shader_dir,
+                     "menu.cgp", sizeof(preset_path));
                conf = config_file_new(preset_path);
             }
 
@@ -169,7 +171,8 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
    if (!conf)
       return;
 
-   RARCH_LOG("Setting Menu shader: %s.\n", preset_path ? preset_path : "N/A (stock)");
+   RARCH_LOG("Setting Menu shader: %s.\n", preset_path 
+         ? preset_path : "N/A (stock)");
 
    if (video_shader_read_conf_cgp(conf, shader))
    {
@@ -193,7 +196,8 @@ void menu_shader_manager_save_preset(
       const char *basename, bool apply)
 {
 #ifdef HAVE_SHADER_MANAGER
-   char buffer[PATH_MAX_LENGTH], config_directory[PATH_MAX_LENGTH], preset_path[PATH_MAX_LENGTH];
+   char buffer[PATH_MAX_LENGTH], config_directory[PATH_MAX_LENGTH],
+        preset_path[PATH_MAX_LENGTH];
    unsigned d, type            = RARCH_SHADER_NONE;
    const char *dirs[3]         = {0};
    config_file_t *conf         = NULL;
@@ -205,7 +209,8 @@ void menu_shader_manager_save_preset(
 
    if (!menu)
    {
-      RARCH_ERR("Cannot save shader preset, menu handle is not initialized.\n");
+      RARCH_ERR("Cannot save shader preset, menu handle"
+            " is not initialized.\n");
       return;
    }
 
@@ -279,7 +284,8 @@ void menu_shader_manager_save_preset(
 
    config_file_free(conf);
    if (!ret)
-      RARCH_ERR("Failed to save shader preset. Make sure config directory and/or shader dir are writable.\n");
+      RARCH_ERR("Failed to save shader preset. Make sure config directory"
+            " and/or shader dir are writable.\n");
 #endif
 }
 
