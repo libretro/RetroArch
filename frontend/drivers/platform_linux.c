@@ -2127,6 +2127,15 @@ static void frontend_linux_set_fork(bool exitspawn,
    exit_spawn           = exitspawn;
    exitspawn_start_game = start_game;
 }
+
+static void frontend_linux_exec(const char *path, bool should_load_game)
+{
+   char *newargv[]    = { NULL };
+   char *newenviron[] = { NULL };
+
+   execve(path, newargv, newenviron);
+   perror("execve");
+}
 #endif
 
 frontend_ctx_driver_t frontend_ctx_linux = {
@@ -2135,10 +2144,11 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_deinit,        /* deinit */
    NULL,                         /* exitspawn */
    NULL,                         /* process_args */
-   NULL,                         /* exec */
 #ifdef HAVE_DYNAMIC
+   NULL,                         /* exec */
    NULL,                         /* set_fork */
 #else
+   frontend_linux_exec,          /* exec */
    frontend_linux_set_fork,      /* set_fork */
 #endif
 #ifdef ANDROID
