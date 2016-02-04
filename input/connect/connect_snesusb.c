@@ -20,6 +20,7 @@
 
 #include <boolean.h>
 #include "joypad_connection.h"
+#include "../../driver.h"
 
 struct hidpad_snesusb_data
 {
