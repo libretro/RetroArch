@@ -1689,7 +1689,7 @@ static void xmb_frame(void *data)
    size_t selection;
    math_matrix_4x4 mymat;
    unsigned depth, i, width, height;
-   char msg[256];
+   char msg[PATH_MAX_LENGTH];
    char title_msg[256];
    char timedate[256];
    float item_color[16];
