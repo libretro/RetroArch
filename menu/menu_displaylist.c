@@ -2128,7 +2128,8 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
    bool path_is_compressed, push_dir, filter_ext;
    size_t i, list_size;
    struct string_list *str_list = NULL;
-   core_info_list_t *list      = NULL;
+   core_info_list_t *list       = NULL;
+   unsigned items_found         = 0;
    int                   device = 0;
    settings_t *settings         = config_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(info->label);
@@ -2325,6 +2326,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
          }
       }
 
+      items_found++;
       menu_entries_push(info->list, path, label,
             file_type, 0, 0);
    }
@@ -2334,6 +2336,18 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
    switch (hash_label)
    {
       case MENU_LABEL_CORE_LIST:
+         if (items_found == 0)
+         {
+            if (!(info->flags & SL_FLAG_ALLOW_EMPTY_LIST))
+            {
+               menu_entries_push(info->list,
+                     menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
+                     "", MENU_SETTING_NO_ITEM, 0, 0);
+            }
+
+            return 0;
+         }
+
          {
             const char *dir = NULL;
 
