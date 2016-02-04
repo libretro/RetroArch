@@ -299,8 +299,8 @@ bool menu_content_ctl(enum menu_content_ctl_state state, void *data)
          return menu_content_load_from_playlist(data);
       case MENU_CONTENT_CTL_NONE:
       default:
-         return false;
+         break;
    }
 
-   return true;
+   return false;
 }
