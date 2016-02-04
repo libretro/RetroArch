@@ -81,7 +81,12 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       { "Nintendo RVL-CNT-01-UC",      1406,  816,    &pad_connection_wiiupro },
       { "Wireless Controller",         1356,  1476,   &pad_connection_ps4 },
       { "PLAYSTATION(R)3 Controller",  1356,  616,    &pad_connection_ps3 },
-      { "PLAYSTATION(R)3 Controller",   787,  8406,   &pad_connection_ps3 },
+      { "PLAYSTATION(R)3 Controller",  787,   8406,   &pad_connection_ps3 },
+#ifdef HAVE_WIIUSB_HID
+      { "Generic SNES USB Controller", 2079,  58369,  &pad_connection_snesusb },
+      { "Generic NES USB Controller",  121,   17,     &pad_connection_nesusb },
+      { "Wii U GC Controller Adapter", 1406,  823,    &pad_connection_wiiugca },
+#endif
       { 0, 0}
    };
    joypad_connection_t *s = NULL;
@@ -91,7 +96,7 @@ int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
       return -1;
 
    s = &joyconn[pad];
-       
+
    if (s)
    {
       unsigned i;
@@ -177,6 +182,8 @@ void pad_connection_destroy(joypad_connection_t *joyconn)
 
    for (i = 0; i < MAX_USERS; i ++)
       pad_connection_pad_deinit(&joyconn[i], i);
+
+   free(joyconn);
 }
 
 bool pad_connection_rumble(joypad_connection_t *joyconn,
@@ -189,4 +196,11 @@ bool pad_connection_rumble(joypad_connection_t *joyconn,
 
    joyconn->iface->set_rumble(joyconn->data, effect, strength);
    return true;
+}
+
+const char* pad_connection_get_name(joypad_connection_t *joyconn, unsigned pad)
+{
+   if (!joyconn->iface || !joyconn->iface->get_name)
+      return NULL;
+   return joyconn->iface->get_name(joyconn->data);
 }

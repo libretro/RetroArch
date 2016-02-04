@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -51,13 +51,20 @@ static void hidpad_ps3_send_control(struct hidpad_ps3_data* device)
    report_buffer[11] = 1 << ((device->slot % 4) + 1);
    report_buffer[4]  = device->motors[1] >> 8;
    report_buffer[6]  = device->motors[0] >> 8;
-
+#ifdef HAVE_WIIUSB_HID
+   report_buffer[1]  = 0x03; /* send control message type */
+   device->send_control(device->connection, &report_buffer[1], sizeof(report_buffer)-1);
+#else
    device->send_control(device->connection, report_buffer, sizeof(report_buffer));
+#endif
 }
 
 static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
 {
-#ifdef IOS
+#ifdef HAVE_WIIUSB_HID
+   /* Special command to enable Sixaxis, first byte defines the message type */
+   static uint8_t magic_data[]       = {0x02, 0x42, 0x0c, 0x00, 0x00};
+#elif defined(IOS)
    /* Magic packet to start reports. */
    static uint8_t magic_data[]       = {0x53, 0xF4, 0x42, 0x03, 0x00, 0x00};
 #endif
@@ -74,17 +81,18 @@ static void* hidpad_ps3_init(void *data, uint32_t slot, send_control_t ptr)
       return NULL;
    }
 
-   device->connection   = connection;  
+   device->connection   = connection;
    device->slot         = slot;
    device->send_control = ptr;
 
-#ifdef IOS
-   device->send_control(device->connection, magic_data, 6);
+#if defined(IOS) || defined(HAVE_WIIUSB_HID)
+   device->send_control(device->connection, magic_data, sizeof(magic_data));
 #endif
 
+#ifndef HAVE_WIIUSB_HID
    /* Without this, the digital buttons won't be reported. */
    hidpad_ps3_send_control(device);
-
+#endif
    return device;
 }
 
@@ -180,6 +188,13 @@ static void hidpad_ps3_set_rumble(void *data,
    hidpad_ps3_send_control(device);
 }
 
+const char * hidpad_ps3_get_name(void *data)
+{
+	(void)data;
+	/* For now we return a single static name */
+	return "PLAYSTATION(R)3 Controller";
+}
+
 pad_connection_interface_t pad_connection_ps3 = {
    hidpad_ps3_init,
    hidpad_ps3_deinit,
@@ -187,4 +202,5 @@ pad_connection_interface_t pad_connection_ps3 = {
    hidpad_ps3_set_rumble,
    hidpad_ps3_get_buttons,
    hidpad_ps3_get_axis,
+   hidpad_ps3_get_name,
 };
