@@ -2141,13 +2141,35 @@ static void frontend_linux_exec(const char *path, bool should_load_game)
    execve(path, newargv, newenviron);
    perror("execve");
 }
+
+static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
+{
+   bool should_load_game = exitspawn_start_game;
+
+#if 0
+   if (!exit_spawn)
+   {
+      frontend_ctx_driver_t *frontend = frontend_get_ptr();
+
+      if (frontend)
+         frontend->shutdown = frontend_linux_shutdown;
+      return;
+   }
+#endif
+
+   frontend_linux_exec(core_path, should_load_game);
+}
 #endif
 
 frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_env,       /* environment_get */
    frontend_linux_init,          /* init */
    frontend_linux_deinit,        /* deinit */
+#ifdef HAVE_DYNAMIC
    NULL,                         /* exitspawn */
+#else
+   frontend_linux_exitspawn,     /* exitspawn */
+#endif
    NULL,                         /* process_args */
 #ifdef HAVE_DYNAMIC
    NULL,                         /* exec */
