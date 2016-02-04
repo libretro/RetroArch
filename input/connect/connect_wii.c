@@ -724,4 +724,5 @@ pad_connection_interface_t pad_connection_wii = {
    hidpad_wii_set_rumble,
    hidpad_wii_get_buttons,
    hidpad_wii_get_axis,
+   NULL,
 };

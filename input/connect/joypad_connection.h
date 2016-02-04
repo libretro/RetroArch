@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2013-2014 - Jason Fetters
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -33,13 +33,14 @@ struct joypad_connection
 
 typedef struct pad_connection_interface
 {
-   void*    (*init)(void *data, uint32_t slot, send_control_t ptr);
-   void     (*deinit)(void* device);
-   void     (*packet_handler)(void* device, uint8_t *packet, uint16_t size);
-   void     (*set_rumble)(void* device, enum retro_rumble_effect effect,
-         uint16_t strength);
-   uint64_t (*get_buttons)(void *data);
-   int16_t  (*get_axis)(void *data, unsigned axis);
+   void*    	(*init)(void *data, uint32_t slot, send_control_t ptr);
+   void     	(*deinit)(void* device);
+   void     	(*packet_handler)(void* device, uint8_t *packet, uint16_t size);
+   void     	(*set_rumble)(void* device, enum retro_rumble_effect effect,
+					uint16_t strength);
+   uint64_t 	(*get_buttons)(void *data);
+   int16_t  	(*get_axis)(void *data, unsigned axis);
+   const char*	(*get_name)(void *data);
 } pad_connection_interface_t;
 
 typedef struct joypad_connection joypad_connection_t;
@@ -48,6 +49,11 @@ extern pad_connection_interface_t pad_connection_wii;
 extern pad_connection_interface_t pad_connection_wiiupro;
 extern pad_connection_interface_t pad_connection_ps3;
 extern pad_connection_interface_t pad_connection_ps4;
+#ifdef HAVE_WIIUSB_HID
+extern pad_connection_interface_t pad_connection_snesusb;
+extern pad_connection_interface_t pad_connection_nesusb;
+extern pad_connection_interface_t pad_connection_wiiugca;
+#endif
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,
@@ -79,5 +85,8 @@ int pad_connection_find_vacant_pad(joypad_connection_t *joyconn);
 
 bool pad_connection_rumble(joypad_connection_t *s,
    unsigned pad, enum retro_rumble_effect effect, uint16_t strength);
+
+const char* pad_connection_get_name(joypad_connection_t *joyconn,
+   unsigned idx);
 
 #endif

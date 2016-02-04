@@ -264,4 +264,5 @@ pad_connection_interface_t pad_connection_ps4 = {
    hidpad_ps4_set_rumble,
    hidpad_ps4_get_buttons,
    hidpad_ps4_get_axis,
+   NULL,
 };
