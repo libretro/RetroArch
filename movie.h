@@ -23,14 +23,15 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+
 #include <boolean.h>
 
-#define BSV_MAGIC 0x42535631
+#define BSV_MAGIC          0x42535631
 
-#define MAGIC_INDEX 0
-#define SERIALIZER_INDEX 1
-#define CRC_INDEX 2
-#define STATE_SIZE_INDEX 3
+#define MAGIC_INDEX        0
+#define SERIALIZER_INDEX   1
+#define CRC_INDEX          2
+#define STATE_SIZE_INDEX   3
 
 typedef struct bsv_movie bsv_movie_t;
 

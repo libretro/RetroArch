@@ -17,11 +17,12 @@
 #ifndef __RARCH_FILE_H
 #define __RARCH_FILE_H
 
-#include <boolean.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
+
+#include <boolean.h>
 
 #ifdef __cplusplus
 extern "C" {

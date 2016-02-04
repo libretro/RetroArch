@@ -29,10 +29,13 @@ extern "C" {
 
 enum
 {
-   /* Polling is performed before call to retro_run */
+   /* Polling is performed before 
+    * call to retro_run. */
    POLL_TYPE_EARLY = 0,
+
    /* Polling is performed when requested. */
    POLL_TYPE_NORMAL,
+
    /* Polling is performed on first call to 
     * retro_input_state per frame. */
    POLL_TYPE_LATE

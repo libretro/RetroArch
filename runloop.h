@@ -81,23 +81,35 @@ enum runloop_ctl_state
    RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET,
    RUNLOOP_CTL_KEY_EVENT_GET,
    RUNLOOP_CTL_DATA_DEINIT,
+
    /* Checks for state changes in this frame. */
    RUNLOOP_CTL_CHECK_STATE,
+
    RUNLOOP_CTL_CHECK_MOVIE,
+
    /* Checks if movie is being played. */
    RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK,
+
    RUNLOOP_CTL_CHECK_MOVIE_INIT,
+
    /* Checks if movie is being recorded. */
    RUNLOOP_CTL_CHECK_MOVIE_RECORD,
-   /* Checks if slowmotion toggle/hold was being pressed and/or held. */
+
+   /* Checks if slowmotion toggle/hold 
+    * was being pressed and/or held. */
    RUNLOOP_CTL_CHECK_SLOWMOTION,
+
    RUNLOOP_CTL_CHECK_PAUSE_STATE,
+
    /* Initializes message queue. */
    RUNLOOP_CTL_MSG_QUEUE_INIT,
+
    /* Deinitializes message queue. */
    RUNLOOP_CTL_MSG_QUEUE_DEINIT,
+
    /* Initializes dummy core. */
    RUNLOOP_CTL_MSG_QUEUE_LOCK,
+
    RUNLOOP_CTL_MSG_QUEUE_UNLOCK,
    RUNLOOP_CTL_MSG_QUEUE_FREE,
    RUNLOOP_CTL_MSG_QUEUE_PULL,
@@ -303,7 +315,8 @@ global_t *global_get_ptr(void);
  * Returns: 0 on successful run, 
  * Returns 1 if we have to wait until button input in order 
  * to wake up the loop.
- * Returns -1 if we forcibly quit out of the RetroArch iteration loop. 
+ * Returns -1 if we forcibly quit out of the 
+ * RetroArch iteration loop. 
  **/
 int runloop_iterate(unsigned *sleep_ms);
 

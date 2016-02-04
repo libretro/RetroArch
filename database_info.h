@@ -20,8 +20,10 @@
 
 #include <stdint.h>
 #include <stddef.h>
+
 #include <boolean.h>
 #include <file/file_archive.h>
+
 #include "libretro-db/libretrodb.h"
 
 #ifdef __cplusplus

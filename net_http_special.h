@@ -27,6 +27,7 @@ enum
    NET_HTTP_GET_TIMEOUT
 };
 
-int net_http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout);
+int net_http_get(const char **result, size_t *size,
+      const char *url, retro_time_t *timeout);
 
 #endif
