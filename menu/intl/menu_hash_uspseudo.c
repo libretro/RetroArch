@@ -429,6 +429,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "rdb_entry_edge_magazine_review";
       case MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING:
          return "rdb_entry_famitsu_magazine_rating";
+      case MENU_LABEL_RDB_ENTRY_TGDB_RATING:
+         return "rdb_entry_tgdb_rating";
       case MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE:
          return "rdb_entry_edge_magazine_issue";
       case MENU_LABEL_RDB_ENTRY_RELEASE_MONTH:

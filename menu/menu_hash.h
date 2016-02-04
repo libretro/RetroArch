@@ -578,6 +578,7 @@ extern "C" {
 #define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_ISSUE                               0xd5706415U
 #define MENU_LABEL_RDB_ENTRY_EDGE_MAGAZINE_REVIEW                              0x977f6fdeU
 #define MENU_LABEL_RDB_ENTRY_FAMITSU_MAGAZINE_RATING                           0x01a50315U
+#define MENU_LABEL_RDB_ENTRY_TGDB_RATING                                       0x225a9d72U
 #define MENU_LABEL_RDB_ENTRY_RELEASE_MONTH                                     0xad2f2c54U
 #define MENU_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH                               0xb68af36aU
 #define MENU_LABEL_RDB_ENTRY_RELEASE_YEAR                                      0x14c9c6bfU
