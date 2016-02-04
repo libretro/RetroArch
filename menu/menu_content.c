@@ -185,18 +185,19 @@ static bool menu_content_load_from_playlist(void *data)
       path_check = (char *)calloc(strlen(path_tolower) + 1, sizeof(char));
       strncpy(path_check, path, strlen(path_tolower));
 
+      free(path_tolower);
+
       fp = retro_fopen(path_check, RFILE_MODE_READ, -1);
+
+      free(path_check);
+
       if (!fp)
       {
          runloop_msg_queue_push("File could not be loaded.\n", 1, 100, true);
-         RARCH_LOG("File at %s failed to load.\n", path_check);
-         free(path_tolower);
-         free(path_check);
          return false;
       }
+
       retro_fclose(fp);
-      free(path_tolower);
-      free(path_check);
    }
 
    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
