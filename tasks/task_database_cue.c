@@ -38,6 +38,12 @@
 #define MAGIC_LEN       16
 #define MAX_TOKEN_LEN   255
 
+#ifdef MSB_FIRST
+#define MODETEST_VAL    0x00ffffff
+#else
+#define MODETEST_VAL    0xffffff00
+#endif
+
 struct magic_entry
 {
     const char *system_name;
@@ -130,11 +136,6 @@ static int find_token(RFILE *fd, const char *token)
    return 0;
 }
 
-#ifdef MSB_FIRST
-#define MODETEST_VAL 0x00ffffff
-#else
-#define MODETEST_VAL 0xffffff00
-#endif
 
 static int detect_ps1_game_sub(const char *track_path,
       char *game_id, int sub_channel_mixed)
