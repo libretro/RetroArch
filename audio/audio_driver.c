@@ -131,12 +131,12 @@ static const audio_driver_t *audio_drivers[] = {
    &audio_null,
    NULL,
 };
-static const rarch_resampler_t *audio_driver_resampler;
-static void *audio_driver_resampler_data;
-static const audio_driver_t *current_audio;
-static void *audio_driver_context_audio_data;
 
 static audio_driver_input_data_t audio_driver_data;
+static const rarch_resampler_t *audio_driver_resampler = NULL;
+static void *audio_driver_resampler_data = NULL;
+static const audio_driver_t *current_audio = NULL;
+static void *audio_driver_context_audio_data = NULL;
 
 /**
  * compute_audio_buffer_statistics:
