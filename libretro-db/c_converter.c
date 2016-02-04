@@ -84,14 +84,18 @@ struct dat_converter_bt_node_t
    dat_converter_bt_node_t* left;
 };
 
-static dat_converter_list_t* dat_converter_list_create(dat_converter_list_enum type)
+static dat_converter_list_t* dat_converter_list_create(
+      dat_converter_list_enum type)
 {
    dat_converter_list_t* list = malloc(sizeof(*list));
-   list->type = type;
-   list->count = 0;
-   list->capacity = (1 << 2);
-   list->values = (dat_converter_list_item_t*)malloc(sizeof(*list->values) * list->capacity);
-   list->bt_root = NULL;
+
+   list->type                 = type;
+   list->count                = 0;
+   list->capacity             = (1 << 2);
+   list->bt_root              = NULL;
+   list->values               = (dat_converter_list_item_t*)malloc(
+         sizeof(*list->values) * list->capacity);
+
    return list;
 }
 
@@ -99,6 +103,7 @@ static void dat_converter_bt_node_free(dat_converter_bt_node_t* node)
 {
    if (!node)
       return;
+
    dat_converter_bt_node_free(node->left);
    dat_converter_bt_node_free(node->right);
    free(node);
@@ -131,7 +136,9 @@ static void dat_converter_list_free(dat_converter_list_t* list)
 }
 static void dat_converter_list_append(dat_converter_list_t* dst, void* item);
 
-static dat_converter_bt_node_t* dat_converter_bt_node_insert(dat_converter_list_t* list, dat_converter_bt_node_t** node,
+static dat_converter_bt_node_t* dat_converter_bt_node_insert(
+      dat_converter_list_t* list,
+      dat_converter_bt_node_t** node,
       dat_converter_map_t* map)
 {
    assert(map->key);
@@ -160,9 +167,13 @@ static dat_converter_bt_node_t* dat_converter_bt_node_insert(dat_converter_list_
       if (map->type == DAT_CONVERTER_LIST_MAP)
       {
          int i;
-         assert(list->values[(*node)->index].map.value.list->type == map->value.list->type);
+         assert(list->values[(*node)->index].map.value.list->type 
+               == map->value.list->type);
+
          for (i = 0; i < map->value.list->count; i++)
-            dat_converter_list_append(list->values[(*node)->index].map.value.list, &map->value.list->values[i]);
+            dat_converter_list_append(
+                  list->values[(*node)->index].map.value.list,
+                  &map->value.list->values[i]);
 
          /* set count to 0 to prevent freeing the child nodes */
          map->value.list->count = 0;
@@ -205,15 +216,15 @@ static void dat_converter_list_append(dat_converter_list_t* dst, void* item)
       else
       {
          map->hash = djb2_calculate(map->key);
-         dat_converter_bt_node_t* new_node = dat_converter_bt_node_insert(dst, &dst->bt_root, map);
-         if (new_node)
-         {
-            dst->values[dst->count].map = *map;
-            new_node->index = dst->count;
-            new_node->hash = map->hash;
-         }
-         else
+         dat_converter_bt_node_t* new_node = 
+            dat_converter_bt_node_insert(dst, &dst->bt_root, map);
+
+         if (!new_node)
             return;
+
+         dst->values[dst->count].map = *map;
+         new_node->index = dst->count;
+         new_node->hash = map->hash;
       }
       break;
    }
@@ -229,14 +240,13 @@ static void dat_converter_list_append(dat_converter_list_t* dst, void* item)
    dst->count++;
 }
 
-static dat_converter_list_t* dat_converter_lexer(char* src, const char* dat_path)
+static dat_converter_list_t* dat_converter_lexer(
+      char* src, const char* dat_path)
 {
-
-
-   dat_converter_list_t* token_list = dat_converter_list_create(DAT_CONVERTER_TOKEN_LIST);
-   dat_converter_token_t token = {NULL, 1, 1, dat_path};
-
-   bool quoted_token = false;
+   dat_converter_list_t* token_list = 
+      dat_converter_list_create(DAT_CONVERTER_TOKEN_LIST);
+   dat_converter_token_t token      = {NULL, 1, 1, dat_path};
+   bool quoted_token                = false;
 
    while (*src)
    {
@@ -294,10 +304,12 @@ static dat_converter_list_t* dat_converter_lexer(char* src, const char* dat_path
    return token_list;
 }
 
-static dat_converter_list_t* dat_parser_table(dat_converter_list_item_t** start_token)
+static dat_converter_list_t* dat_parser_table(
+      dat_converter_list_item_t** start_token)
 {
-   dat_converter_list_t* parsed_table = dat_converter_list_create(DAT_CONVERTER_MAP_LIST);
-   dat_converter_map_t map = {0};
+   dat_converter_list_t* parsed_table = 
+      dat_converter_list_create(DAT_CONVERTER_MAP_LIST);
+   dat_converter_map_t map            = {0};
    dat_converter_list_item_t* current = *start_token;
 
    while (current->token.label)
@@ -372,7 +384,8 @@ struct dat_converter_match_key_t
    dat_converter_match_key_t* next;
 };
 
-static dat_converter_match_key_t* dat_converter_match_key_create(const char* format)
+static dat_converter_match_key_t* dat_converter_match_key_create(
+      const char* format)
 {
    dat_converter_match_key_t* match_key;
    dat_converter_match_key_t* current_mk;
@@ -416,7 +429,9 @@ static void dat_converter_match_key_free(dat_converter_match_key_t* match_key)
    }
 }
 
-static const char* dat_converter_get_match(dat_converter_list_t* list, dat_converter_match_key_t* match_key)
+static const char* dat_converter_get_match(
+      dat_converter_list_t* list,
+      dat_converter_match_key_t* match_key)
 {
    int i;
 
@@ -432,7 +447,8 @@ static const char* dat_converter_get_match(dat_converter_list_t* list, dat_conve
          assert(!strcmp(list->values[i].map.key, match_key->value));
 
          if (match_key->next)
-            return dat_converter_get_match(list->values[i].map.value.list, match_key->next);
+            return dat_converter_get_match(
+                  list->values[i].map.value.list, match_key->next);
          else  if ((list->values[i].map.type == DAT_CONVERTER_STRING_MAP))
             return list->values[i].map.value.string;
          else
@@ -443,7 +459,9 @@ static const char* dat_converter_get_match(dat_converter_list_t* list, dat_conve
    return NULL;
 }
 
-static dat_converter_list_t* dat_converter_parser(dat_converter_list_t* target, dat_converter_list_t* lexer_list,
+static dat_converter_list_t* dat_converter_parser(
+      dat_converter_list_t* target,
+      dat_converter_list_t* lexer_list,
       dat_converter_match_key_t* match_key)
 {
    bool skip = true;
@@ -573,7 +591,8 @@ dat_converter_rdb_mappings_t rdb_mappings[] =
    {"rom.serial",     "serial",         DAT_CONVERTER_RDB_TYPE_BINARY}
 };
 
-dat_converter_match_key_t* rdb_mappings_mk[(sizeof(rdb_mappings) / sizeof(*rdb_mappings))] = {0};
+dat_converter_match_key_t* rdb_mappings_mk[(sizeof(rdb_mappings) 
+      / sizeof(*rdb_mappings))] = {0};
 
 static void dat_converter_value_provider_init(void)
 {
@@ -590,12 +609,14 @@ static void dat_converter_value_provider_free(void)
       rdb_mappings_mk[i] = NULL;
    }
 }
-static int dat_converter_value_provider(dat_converter_list_item_t** current_item, struct rmsgpack_dom_value* out)
+static int dat_converter_value_provider(
+      dat_converter_list_item_t** current_item, struct rmsgpack_dom_value* out)
 {
    int i;
-   out->type = RDT_MAP;
-   out->val.map.len = 0;
-   out->val.map.items = calloc((sizeof(rdb_mappings) / sizeof(*rdb_mappings)), sizeof(struct rmsgpack_dom_pair));
+   out->type          = RDT_MAP;
+   out->val.map.len   = 0;
+   out->val.map.items = calloc((sizeof(rdb_mappings) / sizeof(*rdb_mappings)),
+         sizeof(struct rmsgpack_dom_pair));
 
    (*current_item)--;
 
@@ -643,11 +664,12 @@ static int dat_converter_value_provider(dat_converter_list_item_t** current_item
          break;
       case DAT_CONVERTER_RDB_TYPE_HEX:
          current->value.type = RDT_BINARY;
-         current->value.val.binary.len = strlen(value) / 2;
-         current->value.val.binary.buff = malloc(current->value.val.binary.len);
+         current->value.val.binary.len  = strlen(value) / 2;
+         current->value.val.binary.buff = 
+            malloc(current->value.val.binary.len);
          {
             const char* hex_char = value;
-            char* out_buff = current->value.val.binary.buff;
+            char* out_buff       = current->value.val.binary.buff;
             while (*hex_char && *(hex_char + 1))
             {
                char val = 0;
@@ -709,20 +731,22 @@ int main(int argc, char** argv)
       argv++;
    }
 
-   int dat_count = argc;
-   char** dat_buffers = (char**)malloc(dat_count * sizeof(*dat_buffers));
-   char** dat_buffer = dat_buffers;
+   int dat_count                         = argc;
+   char** dat_buffers                    = (char**)
+      malloc(dat_count * sizeof(*dat_buffers));
+   char** dat_buffer                     = dat_buffers;
    dat_converter_list_t* dat_parser_list = NULL;
 
    while (argc)
    {
-      dat_converter_list_t* dat_lexer_list;
       size_t dat_file_size;
-      FILE* dat_file = fopen(*argv, "r");
+      dat_converter_list_t* dat_lexer_list = NULL;
+      FILE* dat_file                       = fopen(*argv, "r");
 
       if (!dat_file)
       {
-         printf("could not open dat file '%s': %s\n", *argv, strerror(errno));
+         printf("could not open dat file '%s': %s\n",
+               *argv, strerror(errno));
          dat_converter_exit(1);
       }
 
@@ -735,8 +759,10 @@ int main(int argc, char** argv)
       (*dat_buffer)[dat_file_size] = '\0';
 
       printf("Parsing dat file '%s'...\n", *argv);
-      dat_lexer_list = dat_converter_lexer(*dat_buffer, *argv);
-      dat_parser_list = dat_converter_parser(dat_parser_list, dat_lexer_list, match_key);
+      dat_lexer_list  = dat_converter_lexer(*dat_buffer, *argv);
+      dat_parser_list = dat_converter_parser(
+            dat_parser_list, dat_lexer_list, match_key);
+
       dat_converter_list_free(dat_lexer_list);
 
       argc--;
@@ -756,9 +782,13 @@ int main(int argc, char** argv)
       dat_converter_exit(1);
    }
 
-   dat_converter_list_item_t* current_item = &dat_parser_list->values[dat_parser_list->count];
+   dat_converter_list_item_t* current_item = 
+      &dat_parser_list->values[dat_parser_list->count];
+
    dat_converter_value_provider_init();
-   libretrodb_create(rdb_file, (libretrodb_value_provider)&dat_converter_value_provider, &current_item);
+   libretrodb_create(rdb_file, 
+         (libretrodb_value_provider)&dat_converter_value_provider,
+         &current_item);
    dat_converter_value_provider_free();
 
    retro_fclose(rdb_file);
@@ -770,7 +800,6 @@ int main(int argc, char** argv)
    free(dat_buffers);
 
    dat_converter_match_key_free(match_key);
-
 
    return 0;
 }
