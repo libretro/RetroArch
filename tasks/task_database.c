@@ -201,7 +201,8 @@ static int database_info_iterate_playlist(
       default:
          {
             ssize_t ret;
-            int read_from            = retro_read_file(name, (void**)&db_state->buf, &ret);
+            int read_from            = retro_read_file(
+                  name, (void**)&db_state->buf, &ret);
 #ifdef HAVE_ZLIB
             const struct file_archive_file_backend *stream_backend = 
                file_archive_get_default_file_backend();
@@ -212,7 +213,8 @@ static int database_info_iterate_playlist(
 
 
 #ifdef HAVE_ZLIB
-            db_state->crc = stream_backend->stream_crc_calculate(0, db_state->buf, ret);
+            db_state->crc = stream_backend->stream_crc_calculate(
+                  0, db_state->buf, ret);
 #endif
             db->type = DATABASE_TYPE_CRC_LOOKUP;
          }
@@ -222,9 +224,11 @@ static int database_info_iterate_playlist(
    return 1;
 }
 
-static int database_info_list_iterate_end_no_match(database_state_handle_t *db_state)
+static int database_info_list_iterate_end_no_match(
+      database_state_handle_t *db_state)
 {
-   /* Reached end of database list, CRC match probably didn't succeed. */
+   /* Reached end of database list, 
+    * CRC match probably didn't succeed. */
    db_state->list_index  = 0;
    db_state->entry_index = 0;
 
@@ -242,7 +246,8 @@ static int database_info_iterate_next(database_info_handle_t *db)
    return -1;
 }
 
-static int database_info_list_iterate_new(database_state_handle_t *db_state, const char *query)
+static int database_info_list_iterate_new(database_state_handle_t *db_state,
+      const char *query)
 {
    const char *new_database = db_state->list->elems[db_state->list_index].data;
 #if 0
@@ -267,9 +272,12 @@ static int database_info_list_iterate_found_match(
    char entry_path_str[PATH_MAX_LENGTH]        = {0};
    content_playlist_t   *playlist = NULL;
    settings_t           *settings = config_get_ptr();
-   const char            *db_path = db_state->list->elems[db_state->list_index].data;
-   const char         *entry_path = db ? db->list->elems[db->list_ptr].data : NULL;
-   database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
+   const char            *db_path = db_state->list->elems[
+      db_state->list_index].data;
+   const char         *entry_path = db ? db->list->elems[
+      db->list_ptr].data : NULL;
+   database_info_t *db_info_entry = &db_state->info->list[
+      db_state->entry_index];
 
    fill_short_pathname_representation(db_playlist_base_str,
          db_path, sizeof(db_playlist_base_str));
@@ -306,7 +314,8 @@ static int database_info_list_iterate_found_match(
    if(!content_playlist_entry_exists(playlist, entry_path_str, db_crc))
    {
       content_playlist_push(playlist, entry_path_str,
-            db_info_entry->name, "DETECT", "DETECT", db_crc, db_playlist_base_str);
+            db_info_entry->name, "DETECT", "DETECT",
+            db_crc, db_playlist_base_str);
    }
 
    content_playlist_write_file(playlist);
@@ -341,29 +350,33 @@ static int database_info_iterate_crc_lookup(
       const char *zip_entry)
 {
 
-   if (!db_state->list || (unsigned)db_state->list_index == (unsigned)db_state->list->size)
+   if (!db_state->list || 
+         (unsigned)db_state->list_index == (unsigned)db_state->list->size)
       return database_info_list_iterate_end_no_match(db_state);
 
    if (db_state->entry_index == 0)
    {
       char query[50] = {0};
-      snprintf(query, sizeof(query), "{crc: b\"%08X\"}", swap_if_big32(db_state->crc));
+      snprintf(query, sizeof(query),
+            "{crc: b\"%08X\"}", swap_if_big32(db_state->crc));
 
       database_info_list_iterate_new(db_state, query);
    }
 
    if (db_state->info)
    {
-      database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
+      database_info_t *db_info_entry = 
+         &db_state->info->list[db_state->entry_index];
 
       if (db_info_entry && db_info_entry->crc32)
       {
 #if 0
          RARCH_LOG("CRC32: 0x%08X , entry CRC32: 0x%08X (%s).\n",
-                   db_state->crc, db_info_entry->crc32, db_info_entry->name);
+               db_state->crc, db_info_entry->crc32, db_info_entry->name);
 #endif
          if (db_state->crc == db_info_entry->crc32)
-            return database_info_list_iterate_found_match(db_state, db, zip_entry);
+            return database_info_list_iterate_found_match(
+                  db_state, db, zip_entry);
       }
    }
 
@@ -391,17 +404,16 @@ static int database_info_iterate_playlist_zip(
    bool returnerr = true;
 #ifdef HAVE_ZLIB
    if (db_state->crc != 0)
-      return database_info_iterate_crc_lookup(db_state, db, db_state->zip_name);
-   else
-   {
-      if (file_archive_parse_file_iterate(&db->state,
-               &returnerr, name, NULL, zlib_compare_crc32,
-               (void*)db_state) != 0)
-         return 0;
+      return database_info_iterate_crc_lookup(
+            db_state, db, db_state->zip_name);
 
-      if (db_state->crc)
-         file_archive_parse_file_iterate_stop(&db->state);
-   }
+   if (file_archive_parse_file_iterate(&db->state,
+            &returnerr, name, NULL, zlib_compare_crc32,
+            (void*)db_state) != 0)
+      return 0;
+
+   if (db_state->crc)
+      file_archive_parse_file_iterate_stop(&db->state);
 #endif
 
    return 1;
@@ -411,13 +423,15 @@ static int database_info_iterate_serial_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
-   if (!db_state->list || (unsigned)db_state->list_index == (unsigned)db_state->list->size)
+   if (!db_state->list || 
+         (unsigned)db_state->list_index == (unsigned)db_state->list->size)
       return database_info_list_iterate_end_no_match(db_state);
 
    if (db_state->entry_index == 0)
    {
       char query[50];
-      char *serial_buf = bin_to_hex_alloc((uint8_t*)db_state->serial, 10 * sizeof(uint8_t));
+      char *serial_buf = 
+         bin_to_hex_alloc((uint8_t*)db_state->serial, 10 * sizeof(uint8_t));
 
       if (!serial_buf)
          return 1;
@@ -430,13 +444,15 @@ static int database_info_iterate_serial_lookup(
 
    if (db_state->info)
    {
-      database_info_t *db_info_entry = &db_state->info->list[db_state->entry_index];
+      database_info_t *db_info_entry = &db_state->info->list[
+         db_state->entry_index];
 
       if (db_info_entry && db_info_entry->serial)
       {
 #if 0
          RARCH_LOG("serial: %s , entry serial: %s (%s).\n",
-                   db_state->serial, db_info_entry->serial, db_info_entry->name);
+                   db_state->serial, db_info_entry->serial,
+                   db_info_entry->name);
 #endif
          if (string_is_equal(db_state->serial, db_info_entry->serial))
             return database_info_list_iterate_found_match(db_state, db, NULL);
@@ -460,7 +476,8 @@ static int database_info_iterate_serial_lookup(
    return 0;
 }
 
-static int database_info_iterate(database_state_handle_t *db_state, database_info_handle_t *db)
+static int database_info_iterate(database_state_handle_t *db_state,
+      database_info_handle_t *db)
 {
    const char *name = db ? db->list->elems[db->list_ptr].data : NULL;
 
@@ -472,8 +489,6 @@ static int database_info_iterate(database_state_handle_t *db_state, database_inf
 
    switch (db->type)
    {
-      case DATABASE_TYPE_NONE:
-         break;
       case DATABASE_TYPE_ITERATE:
          return database_info_iterate_playlist(db_state, db, name);
       case DATABASE_TYPE_ITERATE_ZIP:
@@ -482,11 +497,16 @@ static int database_info_iterate(database_state_handle_t *db_state, database_inf
          return database_info_iterate_serial_lookup(db_state, db, name);
       case DATABASE_TYPE_CRC_LOOKUP:
          return database_info_iterate_crc_lookup(db_state, db, NULL);
+      case DATABASE_TYPE_NONE:
+      default:
+         break;
    }
+
    return 0;
 }
 
-static void rarch_main_data_db_cleanup_state(database_state_handle_t *db_state)
+static void rarch_main_data_db_cleanup_state(
+      database_state_handle_t *db_state)
 {
    if (!db_state)
       return;
@@ -498,10 +518,11 @@ static void rarch_main_data_db_cleanup_state(database_state_handle_t *db_state)
 
 static void rarch_dbscan_task_handler(rarch_task_t *task)
 {
-   db_handle_t *db = (db_handle_t*)task->state;
+   db_handle_t *db                  = (db_handle_t*)task->state;
    database_info_handle_t  *dbinfo  = db->handle;
    database_state_handle_t *dbstate = &db->state;
-   const char *name = dbinfo ? dbinfo->list->elems[dbinfo->list_ptr].data    : NULL;
+   const char *name                 = dbinfo ? 
+      dbinfo->list->elems[dbinfo->list_ptr].data : NULL;
 
    if (!dbinfo || task->cancelled)
       goto task_finished;
@@ -510,7 +531,8 @@ static void rarch_dbscan_task_handler(rarch_task_t *task)
    {
       case DATABASE_STATUS_ITERATE_BEGIN:
          if (dbstate && !dbstate->list)
-            dbstate->list = dir_list_new_special(NULL, DIR_LIST_DATABASES, NULL);
+            dbstate->list = dir_list_new_special(
+                  NULL, DIR_LIST_DATABASES, NULL);
          dbinfo->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
@@ -563,7 +585,8 @@ task_finished:
    free(db);
 }
 
-bool rarch_task_push_dbscan(const char *fullpath, bool directory, rarch_task_callback_t cb)
+bool rarch_task_push_dbscan(const char *fullpath,
+      bool directory, rarch_task_callback_t cb)
 {
    rarch_task_t *t   = (rarch_task_t*)calloc(1, sizeof(*t));
    db_handle_t *db   = (db_handle_t*)calloc(1, sizeof(db_handle_t));
