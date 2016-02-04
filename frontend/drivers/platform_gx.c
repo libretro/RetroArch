@@ -370,7 +370,7 @@ static void frontend_gx_process_args(int *argc, char *argv[])
 }
 
 #ifdef HW_RVL
-static void frontend_gx_set_fork(bool exitspawn, bool start_game, bool restart)
+static bool frontend_gx_set_fork(bool exitspawn, bool start_game, bool restart)
 {
 #ifndef IS_SALAMANDER
    if (restart)
@@ -395,6 +395,8 @@ static void frontend_gx_set_fork(bool exitspawn, bool start_game, bool restart)
 #ifndef IS_SALAMANDER
    rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
 #endif
+
+   return true;
 }
 #endif
 

@@ -328,10 +328,12 @@ static void frontend_ps3_deinit(void *data)
 }
 
 #ifndef IS_SALAMANDER
-static void frontend_ps3_set_fork(bool exit, bool start_game, bool restart)
+static bool frontend_ps3_set_fork(bool exit, bool start_game, bool restart)
 {
    exit_spawn = exitspawn;
    exitspawn_start_game = start_game;
+
+   return true;
 }
 #endif
 

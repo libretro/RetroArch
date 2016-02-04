@@ -1292,10 +1292,12 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #endif
 }
 
-static void frontend_xdk_set_fork(bool exit, bool start_game, bool restart)
+static bool frontend_xdk_set_fork(bool exit, bool start_game, bool restart)
 {
    exit_spawn = exit;
    exitspawn_start_game = start_game;
+
+   return true;
 }
 
 static void frontend_xdk_exitspawn(char *s, size_t len)

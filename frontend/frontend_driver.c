@@ -214,13 +214,13 @@ bool frontend_driver_has_fork(void)
    return true;
 }
 
-void frontend_driver_set_fork(bool a, bool b, bool restart)
+bool frontend_driver_set_fork(bool a, bool b, bool restart)
 {
    frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
    if (!frontend_driver_has_fork())
-      return;
-   frontend->set_fork(a, b, restart);
+      return false;
+   return frontend->set_fork(a, b, restart);
 }
 
 void frontend_driver_process_args(int *argc, char *argv[])

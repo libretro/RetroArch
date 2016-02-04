@@ -2121,11 +2121,16 @@ static int frontend_android_parse_drive_list(void *data)
 #endif
 
 #ifndef HAVE_DYNAMIC
-static void frontend_linux_set_fork(bool exitspawn, 
+static bool frontend_linux_set_fork(bool exitspawn, 
       bool start_game, bool restart)
 {
    exit_spawn           = exitspawn;
    exitspawn_start_game = start_game;
+
+   if (restart) /* not implemented */
+      return false;
+
+   return true;
 }
 
 static void frontend_linux_exec(const char *path, bool should_load_game)

@@ -758,17 +758,16 @@ static int generic_action_ok(const char *path,
          flush_char = NULL;
          flush_type = MENU_SETTINGS;
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, action_path);
-         event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
-
-#if !defined(HAVE_DYNAMIC)
-         /* Core selection on non-console just updates directory listing.
-          * Will take effect on new content load. */
-         ret = -1;
-         event_cmd_ctl(EVENT_CMD_RESTART_RETROARCH, NULL);
+         if (event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL))
+         {
+#ifndef HAVE_DYNAMIC
+            /* Core selection on non-console just updates directory listing.
+             * Will take effect on new content load. */
+            if (event_cmd_ctl(EVENT_CMD_RESTART_RETROARCH, NULL))
+               ret = -1;
 #endif
-
+         }
          break;
-
       case ACTION_OK_LOAD_CONFIG_FILE:
          {
             bool msg_force  = true;
