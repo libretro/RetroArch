@@ -54,10 +54,10 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
-static menu_handle_t *menu_driver_data;
-static const menu_ctx_driver_t *menu_driver_ctx;
-static struct video_shader *menu_driver_shader;
-static void *menu_userdata;
+static menu_handle_t *menu_driver_data = NULL;
+static const menu_ctx_driver_t *menu_driver_ctx = NULL;
+static struct video_shader *menu_driver_shader = NULL;
+static void *menu_userdata = NULL;
 
 /**
  * menu_driver_find_handle:
