@@ -38,6 +38,7 @@
 
 #include "../../core_info.h"
 #include "../../configuration.h"
+#include "../../frontend/frontend_driver.h"
 #include "../../system.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"

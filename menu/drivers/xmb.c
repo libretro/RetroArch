@@ -40,6 +40,7 @@
 
 #include "../menu_cbs.h"
 
+#include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../system.h"
