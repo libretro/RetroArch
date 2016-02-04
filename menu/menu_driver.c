@@ -142,17 +142,6 @@ menu_handle_t *menu_driver_get_ptr(void)
    return menu_driver_data;
 }
 
-static void menu_driver_free(void)
-{
-   if (menu_driver_ctx && menu_driver_ctx->free)
-      menu_driver_ctx->free(menu_userdata);
-   menu_driver_ctx = NULL;
-
-   if (menu_userdata)
-      free(menu_userdata);
-   menu_userdata = NULL;
-}
-
 /**
  * menu_free:
  * @menu                     : Menu handle.
@@ -169,7 +158,13 @@ static void menu_free(menu_handle_t *menu)
    menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_DEINIT, NULL);
 
-   menu_driver_free();
+   if (menu_driver_ctx && menu_driver_ctx->free)
+      menu_driver_ctx->free(menu_userdata);
+   menu_driver_ctx = NULL;
+
+   if (menu_userdata)
+      free(menu_userdata);
+   menu_userdata = NULL;
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
    menu_display_free();
