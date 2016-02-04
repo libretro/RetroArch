@@ -119,6 +119,7 @@ enum menu_entries_ctl_state
    MENU_ENTRIES_CTL_SET_START,
    /* Returns the starting index of the menu entry list. */
    MENU_ENTRIES_CTL_START_GET,
+   MENU_ENTRIES_CTL_REFRESH,
    MENU_ENTRIES_CTL_SHOW_BACK
 };
 
@@ -175,8 +176,6 @@ bool menu_entries_increment_menu_stack(void);
 
 void menu_entries_push_selection_buf(file_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx);
-
-void menu_entries_refresh(file_list_t *list);
 
 rarch_setting_t *menu_entries_get_setting(uint32_t i);
 

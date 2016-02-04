@@ -3325,7 +3325,7 @@ void menu_displaylist_push_list_process(menu_displaylist_info_t *info)
       file_list_sort_on_alt(info->list);
 
    if (info->need_refresh)
-      menu_entries_refresh(info->list);
+      menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
 
    if (info->need_push)
    {

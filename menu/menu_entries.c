@@ -317,13 +317,15 @@ static void menu_entries_build_scroll_indices(file_list_t *list)
  *
  * Ensure it doesn't overflow.
  **/
-void menu_entries_refresh(file_list_t *list)
+static bool menu_entries_refresh(void *data)
 {
    size_t list_size, selection;
+   file_list_t *list = (file_list_t*)data;
+
    if (!list)
-      return;
+      return false;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
+      return false;
 
    menu_entries_build_scroll_indices(list);
 
@@ -341,6 +343,8 @@ void menu_entries_refresh(file_list_t *list)
       bool pending_push = true;
       menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
    }
+
+   return true;
 }
 
 /* Returns the last index (+1) of the menu entry list. */
@@ -715,6 +719,8 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
             *idx = menu_entries_begin;
          }
          return true;
+      case MENU_ENTRIES_CTL_REFRESH:
+         return menu_entries_refresh(data);
       case MENU_ENTRIES_CTL_INIT:
          return menu_entries_init();
       case MENU_ENTRIES_CTL_SHOW_BACK:
