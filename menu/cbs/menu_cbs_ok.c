@@ -1603,27 +1603,6 @@ static int action_ok_screenshot(const char *path,
    return generic_action_ok_command(EVENT_CMD_TAKE_SCREENSHOT);
 }
 
-static int action_ok_file_load_or_resume(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx)
-{
-   char *fullpath        = NULL;
-   menu_handle_t *menu   = menu_driver_get_ptr();
-
-   if (!menu)
-      return -1;
-
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-   if (string_is_equal(menu->deferred_path, fullpath))
-      return generic_action_ok_command(EVENT_CMD_RESUME);
-
-   runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, menu->deferred_path);
-   event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
-   rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
-
-   return -1;
-}
-
 static int action_ok_shader_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2254,9 +2233,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_TAKE_SCREENSHOT:
          BIND_ACTION_OK(cbs, action_ok_screenshot);
-         break;
-      case MENU_LABEL_FILE_LOAD_OR_RESUME:
-         BIND_ACTION_OK(cbs, action_ok_file_load_or_resume);
          break;
       case MENU_LABEL_QUIT_RETROARCH:
          BIND_ACTION_OK(cbs, action_ok_quit);
