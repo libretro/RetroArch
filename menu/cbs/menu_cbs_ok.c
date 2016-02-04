@@ -60,7 +60,7 @@ char *core_buf;
 size_t core_len;
 
 /* defined in menu_cbs_deferred_push */
-void cb_net_generic(void *task_data, void *user_data, const char *err)
+static void cb_net_generic(void *task_data, void *user_data, const char *err)
 {
    bool refresh = false;
    http_transfer_data_t *data = (http_transfer_data_t*)task_data;
@@ -99,7 +99,7 @@ finish:
 }
 #endif
 
-int generic_action_ok_displaylist_push(const char *path,
+static int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {

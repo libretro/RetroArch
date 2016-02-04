@@ -115,9 +115,6 @@ int action_right_input_desc(unsigned type, const char *label,
 int action_right_cheat(unsigned type, const char *label,
       bool wraparound);
 
-int generic_action_ok_displaylist_push(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx,
-      unsigned action_type);
 /* End of function callbacks */
 
 int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
