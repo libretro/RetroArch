@@ -2121,14 +2121,22 @@ static int frontend_android_parse_drive_list(void *data)
 #endif
 
 #ifndef HAVE_DYNAMIC
-static bool frontend_linux_set_fork(bool exitspawn, 
-      bool start_game, bool restart)
+static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
 {
-   exit_spawn           = exitspawn;
-   exitspawn_start_game = start_game;
-
-   if (restart) /* not implemented */
-      return false;
+   switch (fork_mode)
+   {
+      case FRONTEND_FORK_CORE:
+         exit_spawn           = true;
+         break;
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         exit_spawn           = true;
+         exitspawn_start_game = true;
+         break;
+      case FRONTEND_FORK_SALAMANDER_RESTART:
+      case FRONTEND_FORK_NONE:
+      default:
+         return false;
+   }
 
    return true;
 }

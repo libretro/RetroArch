@@ -370,27 +370,38 @@ static void frontend_gx_process_args(int *argc, char *argv[])
 }
 
 #ifdef HW_RVL
-static bool frontend_gx_set_fork(bool exitspawn, bool start_game, bool restart)
+static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
 {
-#ifndef IS_SALAMANDER
-   if (restart)
+   switch (fork_mode)
    {
-      char new_path[PATH_MAX_LENGTH];
-      char salamander_name[PATH_MAX_LENGTH];
+      case FRONTEND_FORK_CORE:
+         exit_spawn           = true;
+         break;
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         exit_spawn           = true;
+         exitspawn_start_game = true;
+         break;
+      case FRONTEND_FORK_SALAMANDER_RESTART:
+#ifndef IS_SALAMANDER
+         {
+            char new_path[PATH_MAX_LENGTH];
+            char salamander_name[PATH_MAX_LENGTH];
 
-      if (frontend_driver_get_salamander_basename(salamander_name,
-               sizeof(salamander_name)))
-      {
-         fill_pathname_join(new_path, g_defaults.dir.core,
-               salamander_name, sizeof(new_path));
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
-      }
-
-   }
+            if (frontend_driver_get_salamander_basename(salamander_name,
+                     sizeof(salamander_name)))
+            {
+               fill_pathname_join(new_path, g_defaults.dir.core,
+                     salamander_name, sizeof(new_path));
+               runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
+            }
+         }
+         exit_spawn = true;
 #endif
-
-   exit_spawn           = exitspawn;
-   exitspawn_start_game = start_game;
+         break;
+      default:
+      case FRONTEND_FORK_NONE:
+         return false;
+   }
 
 #ifndef IS_SALAMANDER
    rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);

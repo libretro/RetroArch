@@ -922,7 +922,7 @@ bool event_cmd_exec(void *data)
 #if defined(HAVE_DYNAMIC)
    rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
 #else
-   frontend_driver_set_fork(true, true, false);
+   frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif
 
    return true;
@@ -1375,7 +1375,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          break;
       case EVENT_CMD_RESTART_RETROARCH:
-         if (!frontend_driver_set_fork(true, false, true))
+         if (!frontend_driver_set_fork(FRONTEND_FORK_SALAMANDER_RESTART))
             return false;
          break;
       case EVENT_CMD_MENU_SAVE_CURRENT_CONFIG:

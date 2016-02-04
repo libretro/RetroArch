@@ -40,6 +40,14 @@ enum frontend_powerstate
    FRONTEND_POWERSTATE_ON_POWER_SOURCE
 };
 
+enum frontend_fork
+{
+   FRONTEND_FORK_NONE = 0,
+   FRONTEND_FORK_CORE,
+   FRONTEND_FORK_CORE_WITH_ARGS,
+   FRONTEND_FORK_SALAMANDER_RESTART
+};
+
 enum frontend_architecture
 {
    FRONTEND_ARCH_NONE = 0,
@@ -64,7 +72,7 @@ typedef struct frontend_ctx_driver
 
    process_args_t process_args;
    void (*exec)(const char *, bool);
-   bool (*set_fork)(bool exitspawn, bool start_game, bool restart);
+   bool (*set_fork)(enum frontend_fork fork_mode);
    void (*shutdown)(bool);
    void (*get_name)(char *, size_t);
    void (*get_os)(char *, size_t, int *major, int *minor);
@@ -116,7 +124,7 @@ int frontend_driver_parse_drive_list(void *data);
 
 void frontend_driver_content_loaded(void);
 
-bool frontend_driver_set_fork(bool a, bool b, bool restart);
+bool frontend_driver_set_fork(enum frontend_fork fork_mode);
 
 void frontend_driver_process_args(int *argc, char *argv[]);
 
