@@ -78,8 +78,8 @@ const void *menu_driver_find_handle(int idx)
  * menu_driver_find_ident:
  * @idx              : index of driver to get handle to.
  *
- * Returns: Human-readable identifier of menu driver at index. Can be NULL
- * if nothing found.
+ * Returns: Human-readable identifier of menu driver at index. 
+ * Can be NULL if nothing found.
  **/
 const char *menu_driver_find_ident(int idx)
 {
@@ -184,7 +184,8 @@ static void menu_free(menu_handle_t *menu)
 }
 
 #ifdef HAVE_ZLIB
-static void bundle_decompressed(void *task_data, void *user_data, const char *err)
+static void bundle_decompressed(void *task_data,
+      void *user_data, const char *err)
 {
    settings_t      *settings   = config_get_ptr();
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
@@ -202,7 +203,8 @@ static void bundle_decompressed(void *task_data, void *user_data, const char *er
       free(dec);
    }
 
-   settings->bundle_assets_extract_last_version = settings->bundle_assets_extract_version_current;
+   settings->bundle_assets_extract_last_version = 
+      settings->bundle_assets_extract_version_current;
    settings->bundle_finished = true;
 }
 #endif
@@ -239,7 +241,8 @@ static void *menu_init(const void *data)
       goto error;
 
 #ifdef HAVE_SHADER_MANAGER
-   menu_driver_shader = (struct video_shader*)calloc(1, sizeof(struct video_shader));
+   menu_driver_shader = (struct video_shader*)
+      calloc(1, sizeof(struct video_shader));
    if (!menu_driver_shader)
       goto error;
 #endif
@@ -258,15 +261,18 @@ static void *menu_init(const void *data)
 #ifdef IOS
          && menu->push_help_screen
 #else
-         && (settings->bundle_assets_extract_version_current != settings->bundle_assets_extract_last_version)
+         && (settings->bundle_assets_extract_version_current 
+            != settings->bundle_assets_extract_last_version)
 #endif
       )
    {
       menu->help_screen_type           = MENU_HELP_EXTRACT;
       menu->push_help_screen           = true;
 #ifdef HAVE_ZLIB
-      rarch_task_push_decompress(settings->bundle_assets_src_path, settings->bundle_assets_dst_path,
-         NULL, settings->bundle_assets_dst_path_subdir, NULL, bundle_decompressed, NULL);
+      rarch_task_push_decompress(settings->bundle_assets_src_path, 
+            settings->bundle_assets_dst_path,
+            NULL, settings->bundle_assets_dst_path_subdir,
+            NULL, bundle_decompressed, NULL);
 #endif
    }
 
@@ -304,7 +310,8 @@ void menu_driver_list_insert(file_list_t *list, const char *path,
    const menu_ctx_driver_t *driver = menu_driver_ctx;
 
    if (driver->list_insert)
-      driver->list_insert(menu_userdata ? menu_userdata : NULL, list, path, label, idx);
+      driver->list_insert(menu_userdata ? 
+            menu_userdata : NULL, list, path, label, idx);
 }
 
 void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
@@ -351,7 +358,8 @@ bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type)
    const menu_ctx_driver_t *driver = menu_driver_ctx;
 
    if (driver->list_push)
-      if (driver->list_push(menu_driver_data, menu_userdata ? menu_userdata : NULL,
+      if (driver->list_push(menu_driver_data, menu_userdata ? 
+               menu_userdata : NULL,
                info, type) == 0)
          return true;
    return false;
@@ -379,7 +387,8 @@ void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
    const menu_ctx_driver_t *driver = menu_driver_ctx;
 
    if (driver && driver->list_get_entry)
-      return driver->list_get_entry(menu_userdata ? menu_userdata : NULL, type, i);
+      return driver->list_get_entry(menu_userdata ? 
+            menu_userdata : NULL, type, i);
    return NULL;
 }
 
@@ -424,8 +433,8 @@ static void menu_driver_toggle(bool latch)
 {
    retro_keyboard_event_t *key_event          = NULL;
    retro_keyboard_event_t *frontend_key_event = NULL;
-   settings_t                 *settings = config_get_ptr();
-   rarch_system_info_t          *system = NULL;
+   settings_t                 *settings       = config_get_ptr();
+   rarch_system_info_t          *system       = NULL;
    
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    menu_driver_ctl(RARCH_MENU_CTL_TOGGLE, &latch);
@@ -484,7 +493,8 @@ bool menu_driver_load_image(void *data, menu_image_type_t type)
    const menu_ctx_driver_t      *driver = menu_driver_ctx;
 
    if (driver->load_image)
-      return driver->load_image(menu_userdata ? menu_userdata : NULL, data, type);
+      return driver->load_image(menu_userdata ? 
+            menu_userdata : NULL, data, type);
 
    return false;
 }
@@ -495,7 +505,9 @@ bool menu_environment_cb(menu_environ_cb_t type, void *data)
 
    if (driver->environ_cb)
    {
-      int ret = driver->environ_cb(type, data, menu_userdata ? menu_userdata : NULL);
+      int ret = driver->environ_cb(type, data, menu_userdata 
+            ? menu_userdata : NULL);
+
       if (ret == 0)
          return true;
    }
@@ -510,7 +522,8 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
    const menu_ctx_driver_t      *driver = menu_driver_ctx;
 
    if (driver->pointer_tap)
-      return driver->pointer_tap(menu_userdata ? menu_userdata : NULL, x, y, ptr, cbs, entry, action);
+      return driver->pointer_tap(menu_userdata 
+            ? menu_userdata : NULL, x, y, ptr, cbs, entry, action);
 
    return 0;
 }
@@ -561,7 +574,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          return true;
       case RARCH_MENU_CTL_SYSTEM_INFO_GET:
          {
-            struct retro_system_info **system = (struct retro_system_info**)data;
+            struct retro_system_info **system = 
+               (struct retro_system_info**)data;
             if (!system)
                return false;
             *system = &menu_driver_system;
@@ -575,7 +589,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_RENDER_MESSAGEBOX:
          if (driver->render_messagebox)
-            driver->render_messagebox(menu_userdata, menu_driver_data->menu_state.msg);
+            driver->render_messagebox(menu_userdata,
+                  menu_driver_data->menu_state.msg);
          break;
       case RARCH_MENU_CTL_BLIT_RENDER:
          if (driver->render)
@@ -715,7 +730,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!pending_push)
                return false;
             if (driver->navigation_clear)
-               driver->navigation_clear(menu_userdata ? menu_userdata : NULL, pending_push);
+               driver->navigation_clear(menu_userdata ? 
+                     menu_userdata : NULL, pending_push);
          }
          break;
        case RARCH_MENU_CTL_POPULATE_ENTRIES:
