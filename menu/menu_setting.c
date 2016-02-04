@@ -3314,7 +3314,7 @@ static bool setting_append_list_main_menu_options(
          &subgroup_info,
          parent_group);
 
-#if !defined(HAVE_DYNAMIC)
+#ifndef HAVE_DYNAMIC
    if (frontend_driver_has_fork())
 #endif
    {
