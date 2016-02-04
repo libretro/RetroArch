@@ -215,7 +215,7 @@ static bool menu_content_load_from_playlist(void *data)
 }
 
 /**
- * menu_content_defer_core:
+ * menu_content_find_first_core:
  * @core_info            : Core info list handle.
  * @dir                  : Directory. Gets joined with @path.
  * @path                 : Path. Gets joined with @dir.
@@ -230,7 +230,7 @@ static bool menu_content_load_from_playlist(void *data)
  * selection needs to be made from a list, otherwise
  * returns -1 and fills in @s with path to core.
  **/
-static bool menu_content_defer_core(void *data)
+static bool menu_content_find_first_core(void *data)
 {
    char new_core_path[PATH_MAX_LENGTH];
    const core_info_t *info                 = NULL;
@@ -292,7 +292,7 @@ bool menu_content_ctl(enum menu_content_ctl_state state, void *data)
    switch (state)
    {
       case MENU_CONTENT_CTL_FIND_FIRST_CORE:
-         return menu_content_defer_core(data);
+         return menu_content_find_first_core(data);
       case MENU_CONTENT_CTL_LOAD:
          return menu_content_load();
       case MENU_CONTENT_CTL_LOAD_PLAYLIST:
