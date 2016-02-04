@@ -2144,10 +2144,9 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
 static void frontend_linux_exec(const char *path, bool should_load_game)
 {
    char *newargv[]    = { "/home/squarepusher/libretro-super/dist/unix-static/snes9x_next_libretro.elf", NULL };
-   char *newenviron[] = { NULL };
 
-   execve("/home/squarepusher/libretro-super/dist/unix-static/snes9x_next_libretro.elf", newargv, newenviron);
-   perror("execve");
+   execv("/home/squarepusher/libretro-super/dist/unix-static/snes9x_next_libretro.elf", newargv);
+   perror("execv");
 }
 
 static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
