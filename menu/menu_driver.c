@@ -407,7 +407,6 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
    return ret;
 }
 
-
 int menu_driver_iterate(enum menu_action action)
 {
    const menu_ctx_driver_t *driver = menu_driver_ctx;
@@ -527,9 +526,6 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
 
    return 0;
 }
-
-
-
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
