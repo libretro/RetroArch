@@ -2145,6 +2145,8 @@ static int frontend_android_parse_drive_list(void *data)
 #endif
 
 #ifndef HAVE_DYNAMIC
+#include "../../retroarch.h"
+
 static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
 {
    switch (fork_mode)
@@ -2159,9 +2161,16 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
          break;
       case FRONTEND_FORK_RESTART:
          RARCH_LOG("FRONTEND_FORK_RESTART\n");
-         /* NOTE: We don't implement Salamander, so just turn
-          * this into FRONTEND_FORK_CORE. */
          linux_fork_mode  = FRONTEND_FORK_CORE;
+
+         {
+            char executable_path[PATH_MAX_LENGTH];
+            settings_t *settings = config_get_ptr();
+
+            fill_pathname_application_path(executable_path, sizeof(executable_path));
+            strlcpy(settings->libretro, executable_path, sizeof(settings->libretro));
+         }
+         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
          break;
       case FRONTEND_FORK_NONE:
       default:

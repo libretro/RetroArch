@@ -138,7 +138,7 @@ void fill_pathname_abbreviate_special(char *out_path,
 }
 
 #if !defined(RARCH_CONSOLE)
-void fill_pathname_application_path(char *buf, size_t size)
+void fill_pathname_application_path(char *s, size_t len)
 {
 #ifdef __APPLE__
   CFBundleRef bundle = CFBundleGetMainBundle();
@@ -146,22 +146,22 @@ void fill_pathname_application_path(char *buf, size_t size)
    size_t i;
    (void)i;
 
-   if (!size)
+   if (!len)
       return;
 
 #ifdef _WIN32
-   DWORD ret = GetModuleFileName(GetModuleHandle(NULL), buf, size - 1);
-   buf[ret] = '\0';
+   DWORD ret = GetModuleFileName(GetModuleHandle(NULL), s, len - 1);
+   s[ret] = '\0';
 #elif defined(__APPLE__)
    if (bundle)
    {
       CFURLRef bundle_url = CFBundleCopyBundleURL(bundle);
       CFStringRef bundle_path = CFURLCopyPath(bundle_url);
-      CFStringGetCString(bundle_path, buf, size, kCFStringEncodingUTF8);
+      CFStringGetCString(bundle_path, s, len, kCFStringEncodingUTF8);
       CFRelease(bundle_path);
       CFRelease(bundle_url);
       
-      retro_assert(strlcat(buf, "nobin", size) < size);
+      retro_assert(strlcat(s, "nobin", len) < len);
       return;
    }
 #elif defined(__HAIKU__)
@@ -172,7 +172,7 @@ void fill_pathname_application_path(char *buf, size_t size)
    {
       if (info.type == B_APP_IMAGE)
       {
-         strlcpy(buf, info.name, size);
+         strlcpy(s, info.name, len);
          return;
       }
    }
@@ -182,7 +182,7 @@ void fill_pathname_application_path(char *buf, size_t size)
       static const char *exts[] = { "exe", "file", "path/a.out" };
       char link_path[PATH_MAX_LENGTH] = {0};
 
-      *buf      = '\0';
+      *s        = '\0';
       pid       = getpid(); 
 
       /* Linux, BSD and Solaris paths. Not standardized. */
@@ -192,11 +192,11 @@ void fill_pathname_application_path(char *buf, size_t size)
 
          snprintf(link_path, sizeof(link_path), "/proc/%u/%s",
                (unsigned)pid, exts[i]);
-         ret = readlink(link_path, buf, size - 1);
+         ret = readlink(link_path, s, len - 1);
 
          if (ret >= 0)
          {
-            buf[ret] = '\0';
+            s[ret] = '\0';
             return;
          }
       }
