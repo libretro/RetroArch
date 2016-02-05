@@ -50,11 +50,13 @@
 #include "../../verbosity.h"
 #include "platform_linux.h"
 
-/* This small data type is used to represent a CPU list / mask, as read
- * from sysfs on Linux. See http://www.kernel.org/doc/Documentation/cputopology.txt
+/* This small data type is used to represent a CPU list / mask,
+ * as read from sysfs on Linux.
  *
- * For now, we don't expect more than 32 cores on mobile devices, so keep
- * everything simple.
+ * See http://www.kernel.org/doc/Documentation/cputopology.txt
+ *
+ * For now, we don't expect more than 32 cores on mobile devices, 
+ * so keep everything simple.
  */
 typedef struct
 {
@@ -89,14 +91,16 @@ void x86_cpuid(int func, int flags[4]);
  *
  * Return NULL if not found
  */
-static char *extract_cpuinfo_field(char* buffer, ssize_t length, const char* field)
+static char *extract_cpuinfo_field(char* buffer,
+      ssize_t length, const char* field)
 {
    int len;
    const char *q;
    int  fieldlen = strlen(field);
    char* bufend  = buffer + length;
    char* result  = NULL;
-   /* Look for first field occurrence, and ensures it starts the line. */
+   /* Look for first field occurrence, 
+    * and ensures it starts the line. */
    const char *p = buffer;
 
    for (;;)
@@ -135,7 +139,8 @@ static char *extract_cpuinfo_field(char* buffer, ssize_t length, const char* fie
    return result;
 }
 
-/* Checks that a space-separated list of items contains one given 'item'.
+/* Checks that a space-separated list of items 
+ * contains one given 'item'.
  * Returns 1 if found, 0 otherwise.
  */
 static int has_list_item(const char* list, const char* item)
@@ -180,7 +185,8 @@ static int has_list_item(const char* list, const char* item)
  * position after the decimal number in case of success (which will always
  * be <= 'limit').
  */
-static const char *parse_decimal(const char* input, const char* limit, int* result)
+static const char *parse_decimal(const char* input,
+      const char* limit, int* result)
 {
     const char* p = input;
     int       val = 0;
@@ -434,7 +440,8 @@ int linux_get_cpu_count(void)
     return g_cpuCount;
 }
 
-int system_property_get(const char *command, const char *args, char *value)
+int system_property_get(const char *command,
+      const char *args, char *value)
 {
    FILE *pipe;
    int length                   = 0;
@@ -503,7 +510,8 @@ void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
       RARCH_ERR("Failure writing android_app cmd: %s\n", strerror(errno));
 }
 
-static void android_app_set_input(struct android_app *android_app, AInputQueue* inputQueue)
+static void android_app_set_input(struct android_app *android_app,
+      AInputQueue* inputQueue)
 {
    if (!android_app)
       return;
@@ -518,7 +526,8 @@ static void android_app_set_input(struct android_app *android_app, AInputQueue* 
    slock_unlock(android_app->mutex);
 }
 
-static void android_app_set_window(struct android_app *android_app, ANativeWindow* window)
+static void android_app_set_window(struct android_app *android_app,
+      ANativeWindow* window)
 {
    if (!android_app)
       return;
@@ -538,7 +547,8 @@ static void android_app_set_window(struct android_app *android_app, ANativeWindo
    slock_unlock(android_app->mutex);
 }
 
-static void android_app_set_activity_state(struct android_app *android_app, int8_t cmd)
+static void android_app_set_activity_state(
+      struct android_app *android_app, int8_t cmd)
 {
    if (!android_app)
       return;
@@ -587,10 +597,12 @@ static void onResume(ANativeActivity* activity)
          activity->instance, APP_CMD_RESUME);
 }
 
-static void* onSaveInstanceState(ANativeActivity* activity, size_t* outLen)
+static void* onSaveInstanceState(
+      ANativeActivity* activity, size_t* outLen)
 {
    void* savedState = NULL;
-   struct android_app* android_app = (struct android_app*)activity->instance;
+   struct android_app* android_app = (struct android_app*)
+      activity->instance;
 
    RARCH_LOG("SaveInstanceState: %p\n", activity);
 
@@ -632,13 +644,15 @@ static void onStop(ANativeActivity* activity)
 static void onConfigurationChanged(ANativeActivity *activity)
 {
    RARCH_LOG("ConfigurationChanged: %p\n", activity);
-   android_app_write_cmd((struct android_app*)activity->instance, APP_CMD_CONFIG_CHANGED);
+   android_app_write_cmd((struct android_app*)
+         activity->instance, APP_CMD_CONFIG_CHANGED);
 }
 
 static void onLowMemory(ANativeActivity* activity)
 {
    RARCH_LOG("LowMemory: %p\n", activity);
-   android_app_write_cmd((struct android_app*)activity->instance, APP_CMD_LOW_MEMORY);
+   android_app_write_cmd((struct android_app*)
+         activity->instance, APP_CMD_LOW_MEMORY);
 }
 
 static void onWindowFocusChanged(ANativeActivity* activity, int focused)
@@ -810,7 +824,8 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    if (pthread_key_create(&thread_key, jni_thread_destruct))
       RARCH_ERR("Error initializing pthread_key\n");
 
-   activity->instance = android_app_create(activity, savedState, savedStateSize);
+   activity->instance = android_app_create(activity,
+         savedState, savedStateSize);
 }
 
 static void frontend_android_get_name(char *s, size_t len)
@@ -822,7 +837,8 @@ static void frontend_android_get_version(int32_t *major,
       int32_t *minor, int32_t *rel)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
-   system_property_get("getprop", "ro.build.version.release", os_version_str);
+   system_property_get("getprop", "ro.build.version.release",
+         os_version_str);
 
    *major  = 0;
    *minor  = 0;
@@ -1090,8 +1106,9 @@ end:
    buf_info = NULL;
 }
 
-static void check_proc_acpi_sysfs_battery(const char * node, bool * have_battery,
-      bool * charging, int *seconds, int *percent)
+static void check_proc_acpi_sysfs_battery(const char *node,
+      bool *have_battery, bool *charging,
+      int *seconds, int *percent)
 {
    unsigned capacity;
    char path[1024], info[1024];
@@ -1330,7 +1347,8 @@ static bool frontend_linux_powerstate_check_acpi(
       goto end;
 
    while (retro_readdir(entry))
-      check_proc_acpi_ac_adapter(retro_dirent_get_name(entry), &have_ac);
+      check_proc_acpi_ac_adapter(
+            retro_dirent_get_name(entry), &have_ac);
 
    if (!have_battery)
       *state = FRONTEND_POWERSTATE_NO_SOURCE;
@@ -1350,7 +1368,8 @@ end:
    return ret;
 }
 
-static bool frontend_linux_powerstate_check_acpi_sysfs(enum frontend_powerstate *state,
+static bool frontend_linux_powerstate_check_acpi_sysfs(
+      enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
    bool ret            = false;
@@ -1419,7 +1438,8 @@ static int frontend_linux_get_rating(void)
    return -1;
 }
 
-static enum frontend_powerstate frontend_linux_get_powerstate(int *seconds, int *percent)
+static enum frontend_powerstate frontend_linux_get_powerstate(
+      int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
 
@@ -1490,7 +1510,8 @@ static enum frontend_architecture frontend_linux_get_architecture(void)
    return FRONTEND_ARCH_NONE;
 }
 
-static void frontend_linux_get_os(char *s, size_t len, int *major, int *minor)
+static void frontend_linux_get_os(char *s,
+      size_t len, int *major, int *minor)
 {
 #ifdef ANDROID
    int rel;
@@ -1934,49 +1955,52 @@ static void frontend_linux_get_env(int *argc,
 #if 0
    /* Explicitly disable input overlay by default
     * for gamepad-like/console devices. */
-                  if (device_is_game_console(device_model))
-                     g_defaults.settings.input_overlay_enable = false;
+
+   if (device_is_game_console(device_model))
+      g_defaults.settings.input_overlay_enable = false;
 #endif
 #else
-                  char base_path[PATH_MAX];
-                  const char *xdg  = getenv("XDG_CONFIG_HOME");
-                  const char *home = getenv("HOME");
+   char base_path[PATH_MAX];
+   const char *xdg  = getenv("XDG_CONFIG_HOME");
+   const char *home = getenv("HOME");
 
-                  if (xdg)
-                     snprintf(base_path, sizeof(base_path), "%s/retroarch", xdg);
-                  else if (home)
-                     snprintf(base_path, sizeof(base_path), "%s/.config/retroarch", home);
-                  else
-                     snprintf(base_path, sizeof(base_path), "retroarch");
+   if (xdg)
+      snprintf(base_path, sizeof(base_path),
+            "%s/retroarch", xdg);
+   else if (home)
+      snprintf(base_path, sizeof(base_path),
+            "%s/.config/retroarch", home);
+   else
+      snprintf(base_path, sizeof(base_path), "retroarch");
 
-                  fill_pathname_join(g_defaults.dir.core, base_path,
-                        "cores", sizeof(g_defaults.dir.core));
-                  fill_pathname_join(g_defaults.dir.core_info, base_path,
-                        "cores", sizeof(g_defaults.dir.core_info));
-                  fill_pathname_join(g_defaults.dir.autoconfig, base_path,
-                        "autoconf", sizeof(g_defaults.dir.autoconfig));
-                  fill_pathname_join(g_defaults.dir.assets, base_path,
-                        "assets", sizeof(g_defaults.dir.assets));
-                  fill_pathname_join(g_defaults.dir.remap, base_path,
-                        "remap", sizeof(g_defaults.dir.remap));
-                  fill_pathname_join(g_defaults.dir.playlist, base_path,
-                        "playlists", sizeof(g_defaults.dir.playlist));
-                  fill_pathname_join(g_defaults.dir.cursor, base_path,
-                        "database/cursors", sizeof(g_defaults.dir.cursor));
-                  fill_pathname_join(g_defaults.dir.database, base_path,
-                        "database/rdb", sizeof(g_defaults.dir.database));
-                  fill_pathname_join(g_defaults.dir.shader, base_path,
-                        "shaders", sizeof(g_defaults.dir.shader));
-                  fill_pathname_join(g_defaults.dir.cheats, base_path,
-                        "cheats", sizeof(g_defaults.dir.cheats));
-                  fill_pathname_join(g_defaults.dir.overlay, base_path,
-                        "overlay", sizeof(g_defaults.dir.overlay));
-                  fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
-                        "overlay", sizeof(g_defaults.dir.osk_overlay));
-                  fill_pathname_join(g_defaults.dir.core_assets, base_path,
-                        "downloads", sizeof(g_defaults.dir.core_assets));
-                  fill_pathname_join(g_defaults.dir.screenshot, base_path,
-                        "screenshots", sizeof(g_defaults.dir.screenshot));
+   fill_pathname_join(g_defaults.dir.core, base_path,
+         "cores", sizeof(g_defaults.dir.core));
+   fill_pathname_join(g_defaults.dir.core_info, base_path,
+         "cores", sizeof(g_defaults.dir.core_info));
+   fill_pathname_join(g_defaults.dir.autoconfig, base_path,
+         "autoconf", sizeof(g_defaults.dir.autoconfig));
+   fill_pathname_join(g_defaults.dir.assets, base_path,
+         "assets", sizeof(g_defaults.dir.assets));
+   fill_pathname_join(g_defaults.dir.remap, base_path,
+         "remap", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.dir.playlist, base_path,
+         "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.dir.cursor, base_path,
+         "database/cursors", sizeof(g_defaults.dir.cursor));
+   fill_pathname_join(g_defaults.dir.database, base_path,
+         "database/rdb", sizeof(g_defaults.dir.database));
+   fill_pathname_join(g_defaults.dir.shader, base_path,
+         "shaders", sizeof(g_defaults.dir.shader));
+   fill_pathname_join(g_defaults.dir.cheats, base_path,
+         "cheats", sizeof(g_defaults.dir.cheats));
+   fill_pathname_join(g_defaults.dir.overlay, base_path,
+         "overlay", sizeof(g_defaults.dir.overlay));
+   fill_pathname_join(g_defaults.dir.osk_overlay, base_path,
+         "overlay", sizeof(g_defaults.dir.osk_overlay));
+   fill_pathname_join(g_defaults.dir.core_assets, base_path,
+         "downloads", sizeof(g_defaults.dir.core_assets));
+   fill_pathname_join(g_defaults.dir.screenshot, base_path,
+         "screenshots", sizeof(g_defaults.dir.screenshot));
 #endif
 }
 
@@ -2046,7 +2070,8 @@ static void frontend_linux_init(void *data)
       return;
 
    android_app->config             = AConfiguration_new();
-   AConfiguration_fromAssetManager(android_app->config, android_app->activity->assetManager);
+   AConfiguration_fromAssetManager(android_app->config,
+         android_app->activity->assetManager);
 
    looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
    ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
