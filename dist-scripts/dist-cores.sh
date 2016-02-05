@@ -150,6 +150,8 @@ for f in *_${platform}.${EXT} ; do
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
       elif [ $PLATFORM = "emscripten" ]; then
          make -C ../ -f Makefile.emscripten LTO=$lto -j7 clean || exit 1
+      elif [ $PLATFORM = "unix" ]; then
+         make -C ../ -f Makefile LINK=g++ LTO=$lto -j7 clean || exit 1
       else
          make -C ../ -f Makefile.${platform} clean || exit 1
       fi
