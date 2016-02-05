@@ -21,11 +21,15 @@
 
 #include <boolean.h>
 
-bool udev_mon_new(bool is_joypad);
+enum udev_ctl_state
+{
+   UDEV_CTL_NONE = 0,
+   UDEV_CTL_MONITOR_HOTPLUG_AVAIL
+};
+
+bool udev_ctl(enum udev_ctl_state state, void *data);
 
 void udev_mon_free(bool is_joypad);
-
-bool udev_mon_hotplug_available(void);
 
 struct udev_device *udev_mon_receive_device(void);
 
