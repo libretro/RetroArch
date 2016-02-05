@@ -994,8 +994,7 @@ extern "C"
 
 #endif
 
-static bool exit_spawn;
-static bool exitspawn_start_game;
+static enum frontend_fork xdk_fork_mode = FRONTEND_FORK_NONE;
 
 #ifdef _XBOX360
 typedef struct _STRING 
@@ -1292,34 +1291,50 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #endif
 }
 
+#ifndef IS_SALAMANDER
 static bool frontend_xdk_set_fork(enum frontend_fork fork_mode)
 {
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         exit_spawn           = true;
+         RARCH_LOG("FRONTEND_FORK_CORE\n");
+         xdk_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         exit_spawn           = true;
-         exitspawn_start_game = true;
+         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
+         xdk_fork_mode  = fork_mode;
+         break;
+      case FRONTEND_FORK_SALAMANDER_RESTART:
+         RARCH_LOG("FRONTEND_FORK_SALAMANDER_RESTART\n");
+         /* NOTE: We don't implement Salamander, so just turn
+          * this into FRONTEND_FORK_CORE. */
+         xdk_fork_mode  = FRONTEND_FORK_CORE;
          break;
       case FRONTEND_FORK_NONE:
-      case FRONTEND_FORK_SALAMANDER_RESTART:
       default:
          return false;
    }
 
    return true;
 }
+#endif
 
 static void frontend_xdk_exitspawn(char *s, size_t len)
 {
    bool should_load_game = false;
 #ifndef IS_SALAMANDER
-   should_load_game = exitspawn_start_game;
-
-   if (!exit_spawn)
+   if (xdk_fork_mode == FRONTEND_FORK_NONE)
       return;
+
+   switch (xdk_fork_mode)
+   {
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         should_load_game = true;
+         break;
+      case FRONTEND_FORK_NONE:
+      default:
+         break;
+   }
 #endif
    frontend_xdk_exec(s, should_load_game);
 }
@@ -1376,7 +1391,11 @@ frontend_ctx_driver_t frontend_ctx_xdk = {
    frontend_xdk_exitspawn,
    NULL,                         /* process_args */
    frontend_xdk_exec,
+#ifdef IS_SALAMANDER
+   NULL,
+#else
    frontend_xdk_set_fork,
+#endif
    NULL,                         /* shutdown */
    NULL,                         /* get_name */
    NULL,                         /* get_os */
