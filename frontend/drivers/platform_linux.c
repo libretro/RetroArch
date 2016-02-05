@@ -2158,16 +2158,8 @@ static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
 {
    bool should_load_game = exitspawn_start_game;
 
-#if 0
    if (!exit_spawn)
-   {
-      frontend_ctx_driver_t *frontend = frontend_get_ptr();
-
-      if (frontend)
-         frontend->shutdown = frontend_linux_shutdown;
       return;
-   }
-#endif
 
    frontend_linux_exec(core_path, should_load_game);
 }
