@@ -17,13 +17,13 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <boolean.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <dynamic/dylib.h>
 #include <string/stdstring.h>
-
-#include <boolean.h>
+#include <retro_assert.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

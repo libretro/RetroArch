@@ -21,6 +21,7 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <retro_stat.h>
+#include <retro_assert.h>
 #include <string/stdstring.h>
 
 #include "audio/audio_driver.h"

@@ -40,6 +40,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <retro_stat.h>
+#include <retro_assert.h>
 
 #include "content.h"
 #include "core_info.h"

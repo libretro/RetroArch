@@ -19,10 +19,8 @@
 
 #include <stdint.h>
 
-#include <boolean.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include <retro_assert.h>
 
 #include "runloop.h"
 #include "verbosity.h"

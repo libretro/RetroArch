@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+#include <retro_assert.h>
 #include <retro_stat.h>
 #include <retro_file.h>
 #include <string/stdstring.h>

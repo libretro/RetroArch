@@ -32,6 +32,7 @@
 #include <compat/posix_string.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
+#include <retro_assert.h>
 #include <rhash.h>
 #include <string/stdstring.h>
 

@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <retro_assert.h>
+
 #ifdef ANDROID
 #include <android/keycodes.h>
 #include "drivers_keyboard/keyboard_event_android.h"
