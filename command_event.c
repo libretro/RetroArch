@@ -1376,7 +1376,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          break;
       case EVENT_CMD_RESTART_RETROARCH:
-         if (!frontend_driver_set_fork(FRONTEND_FORK_SALAMANDER_RESTART))
+         if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
             return false;
          break;
       case EVENT_CMD_MENU_SAVE_CURRENT_CONFIG:

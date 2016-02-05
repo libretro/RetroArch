@@ -768,9 +768,7 @@ static int generic_action_ok(const char *path,
          if (event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL))
          {
 #ifndef HAVE_DYNAMIC
-            /* Core selection on non-console just updates directory listing.
-             * Will take effect on new content load. */
-            if (event_cmd_ctl(EVENT_CMD_RESTART_RETROARCH, NULL))
+            if (frontend_driver_set_fork(FRONTEND_FORK_CORE))
                ret = -1;
 #endif
          }

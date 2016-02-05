@@ -340,7 +340,7 @@ static void frontend_gx_exitspawn(char *s, size_t len)
       case FRONTEND_FORK_CORE_WITH_ARGS:
          should_load_game = true;
          break;
-      case FRONTEND_FORK_SALAMANDER_RESTART:
+      case FRONTEND_FORK_RESTART:
          {
             char new_path[PATH_MAX_LENGTH];
             char salamander_name[PATH_MAX_LENGTH];
@@ -402,17 +402,17 @@ static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
    {
       case FRONTEND_FORK_CORE:
          RARCH_LOG("FRONTEND_FORK_CORE\n");
-         gx_fork_mode  = fork_mode;
+         /* NOTE: We implement Salamander, so just turn
+          * this into FRONTEND_FORK_RESTART. */
+         gx_fork_mode  = FRONTEND_FORK_RESTART;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
          RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
          gx_fork_mode  = fork_mode;
          break;
-      case FRONTEND_FORK_SALAMANDER_RESTART:
-         RARCH_LOG("FRONTEND_FORK_SALAMANDER_RESTART\n");
-         /* NOTE: We don't implement Salamander, so just turn
-          * this into FRONTEND_FORK_CORE. */
-         gx_fork_mode  = FRONTEND_FORK_CORE;
+      case FRONTEND_FORK_RESTART:
+         RARCH_LOG("FRONTEND_FORK_RESTART\n");
+         gx_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_NONE:
       default:

@@ -339,8 +339,8 @@ static bool frontend_ps3_set_fork(enum frontend_fork fork_mode)
          RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
          ps3_fork_mode  = fork_mode;
          break;
-      case FRONTEND_FORK_SALAMANDER_RESTART:
-         RARCH_LOG("FRONTEND_FORK_SALAMANDER_RESTART\n");
+      case FRONTEND_FORK_RESTART:
+         RARCH_LOG("FRONTEND_FORK_RESTART\n");
          /* NOTE: We don't implement Salamander, so just turn
           * this into FRONTEND_FORK_CORE. */
          ps3_fork_mode  = FRONTEND_FORK_CORE;
