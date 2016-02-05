@@ -62,8 +62,7 @@ PSP_HEAP_SIZE_MAX();
 
 char eboot_path[512];
 
-static bool exit_spawn = false;
-static bool exitspawn_start_game = false;
+static enum frontend_fork psp_fork_mode = FRONTEND_FORK_NONE;
 
 static void frontend_psp_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
@@ -269,18 +268,25 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #endif
 }
 
+#ifndef IS_SALAMANDER
 static bool frontend_psp_set_fork(enum frontend_fork fork_mode)
 {
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         exit_spawn           = true;
+         RARCH_LOG("FRONTEND_FORK_CORE\n");
+         psp_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         exit_spawn           = true;
-         exitspawn_start_game = true;
+         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
+         psp_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_SALAMANDER_RESTART:
+         RARCH_LOG("FRONTEND_FORK_SALAMANDER_RESTART\n");
+         /* NOTE: We don't implement Salamander, so just turn
+          * this into FRONTEND_FORK_CORE. */
+         psp_fork_mode  = FRONTEND_FORK_CORE;
+         break;
       case FRONTEND_FORK_NONE:
       default:
          return false;
@@ -288,15 +294,24 @@ static bool frontend_psp_set_fork(enum frontend_fork fork_mode)
 
    return true;
 }
+#endif
 
 static void frontend_psp_exitspawn(char *s, size_t len)
 {
    bool should_load_game = false;
 #ifndef IS_SALAMANDER
-   should_load_game = exitspawn_start_game;
-
-   if (!exit_spawn)
+   if (psp_fork_mode == FRONTEND_FORK_NONE)
       return;
+
+   switch (psp_fork_mode)
+   {
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         should_load_game = true;
+         break;
+      case FRONTEND_FORK_NONE:
+      default:
+         break;
+   }
 #endif
    frontend_psp_exec(s, should_load_game);
 }
@@ -378,7 +393,11 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_exitspawn,
    NULL,                         /* process_args */
    frontend_psp_exec,
+#ifdef IS_SALAMANDER
+   NULL,
+#else
    frontend_psp_set_fork,
+#endif
    frontend_psp_shutdown,
    NULL,                         /* get_name */
    NULL,                         /* get_os */
