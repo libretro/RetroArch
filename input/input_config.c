@@ -136,7 +136,8 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
 
 static const void *input_config_bind_map_get(unsigned i)
 {
-   const struct input_bind_map* keybind = (const struct input_bind_map*)&input_config_bind_map[i];
+   const struct input_bind_map *keybind = 
+      (const struct input_bind_map*)&input_config_bind_map[i];
    if (!keybind)
       return NULL;
    return keybind;
@@ -144,7 +145,8 @@ static const void *input_config_bind_map_get(unsigned i)
 
 bool input_config_bind_map_get_valid(unsigned i)
 {
-   const struct input_bind_map* keybind = (const struct input_bind_map*)input_config_bind_map_get(i);
+   const struct input_bind_map *keybind = 
+      (const struct input_bind_map*)input_config_bind_map_get(i);
    if (!keybind)
       return false;
    return keybind->valid;
@@ -152,7 +154,8 @@ bool input_config_bind_map_get_valid(unsigned i)
 
 unsigned input_config_bind_map_get_meta(unsigned i)
 {
-   const struct input_bind_map* keybind = (const struct input_bind_map*)input_config_bind_map_get(i);
+   const struct input_bind_map *keybind = 
+      (const struct input_bind_map*)input_config_bind_map_get(i);
    if (!keybind)
       return 0;
    return keybind->meta;
@@ -160,7 +163,8 @@ unsigned input_config_bind_map_get_meta(unsigned i)
 
 const char *input_config_bind_map_get_base(unsigned i)
 {
-   const struct input_bind_map* keybind = (const struct input_bind_map*)input_config_bind_map_get(i);
+   const struct input_bind_map *keybind = 
+      (const struct input_bind_map*)input_config_bind_map_get(i);
    if (!keybind)
       return NULL;
    return keybind->base;
@@ -168,7 +172,8 @@ const char *input_config_bind_map_get_base(unsigned i)
 
 const char *input_config_bind_map_get_desc(unsigned i)
 {
-   const struct input_bind_map* keybind = (const struct input_bind_map*)input_config_bind_map_get(i);
+   const struct input_bind_map *keybind = 
+      (const struct input_bind_map*)input_config_bind_map_get(i);
    if (!keybind)
       return NULL;
    return keybind->desc;
@@ -233,7 +238,8 @@ enum retro_key input_config_translate_str_to_rk(const char *str)
  *
  * Translate string representation to bind ID.
  *
- * Returns: Bind ID value on success, otherwise RARCH_BIND_LIST_END on not found.
+ * Returns: Bind ID value on success, otherwise 
+ * RARCH_BIND_LIST_END on not found.
  **/
 unsigned input_config_translate_str_to_bind_id(const char *str)
 {
@@ -288,9 +294,12 @@ void input_config_parse_joy_button(config_file_t *conf, const char *prefix,
    char key_label[64] = {0};
    char *tmp_a        = NULL;
 
-   fill_pathname_join_delim(str, prefix, btn, '_', sizeof(str));
-   fill_pathname_join_delim(key, str, "btn", '_', sizeof(key));
-   fill_pathname_join_delim(key_label, str, "btn_label", '_', sizeof(key_label));
+   fill_pathname_join_delim(str, prefix, btn,
+         '_', sizeof(str));
+   fill_pathname_join_delim(key, str,
+         "btn", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, str,
+         "btn_label", '_', sizeof(key_label));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
@@ -322,9 +331,12 @@ void input_config_parse_joy_axis(config_file_t *conf, const char *prefix,
    char key_label[64] = {0};
    char        *tmp_a = NULL;
 
-   fill_pathname_join_delim(str, prefix, axis, '_', sizeof(str));
-   fill_pathname_join_delim(key, str, "axis", '_', sizeof(key));
-   fill_pathname_join_delim(key_label, str, "axis_label", '_', sizeof(key_label));
+   fill_pathname_join_delim(str, prefix, axis,
+         '_', sizeof(str));
+   fill_pathname_join_delim(key, str,
+         "axis", '_', sizeof(key));
+   fill_pathname_join_delim(key_label, str,
+         "axis_label", '_', sizeof(key_label));
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
@@ -378,7 +390,8 @@ static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
             break;
       }
 
-      if (!string_is_empty(bind->joykey_label) && settings->input.input_descriptor_label_show)
+      if (!string_is_empty(bind->joykey_label) 
+            && settings->input.input_descriptor_label_show)
          snprintf(buf, size, "%s %s ", prefix, bind->joykey_label);
       else
          snprintf(buf, size, "%sHat #%u %s ", prefix,
@@ -386,7 +399,8 @@ static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
    }
    else
    {
-      if (!string_is_empty(bind->joykey_label) && settings->input.input_descriptor_label_show)
+      if (!string_is_empty(bind->joykey_label) 
+            && settings->input.input_descriptor_label_show)
          snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
       else
          snprintf(buf, size, "%s%u (btn) ", prefix, (unsigned)bind->joykey);
@@ -410,7 +424,8 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
       dir = '+';
       axis = AXIS_POS_GET(bind->joyaxis);
    }
-   if (!string_is_empty(bind->joyaxis_label) && settings->input.input_descriptor_label_show)
+   if (!string_is_empty(bind->joyaxis_label) 
+         && settings->input.input_descriptor_label_show)
       snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
    else
       snprintf(buf, size, "%s%c%u (axis) ", prefix, dir, axis);
@@ -419,11 +434,10 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
 void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind, size_t size)
 {
-   char key[64]    = {0};
-   char keybuf[64] = {0};
-
-   (void)key;
-   (void)keybuf;
+#ifndef RARCH_CONSOLE
+   char key[64];
+   char keybuf[64];
+#endif
 
    *buf = '\0';
    if (bind->joykey != NO_BTN)
