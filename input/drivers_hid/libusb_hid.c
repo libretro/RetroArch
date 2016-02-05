@@ -87,18 +87,27 @@ static void adapter_thread(void *data)
       int size = 0;
 
       slock_lock(adapter->send_control_lock);
-      if (fifo_read_avail(adapter->send_control_buffer) >= sizeof(send_command_size))
+      if (fifo_read_avail(adapter->send_control_buffer) 
+            >= sizeof(send_command_size))
       {
-         fifo_read(adapter->send_control_buffer, &send_command_size, sizeof(send_command_size));
-         if (fifo_read_avail(adapter->send_control_buffer) >= sizeof(send_command_size))
+         fifo_read(adapter->send_control_buffer,
+               &send_command_size, sizeof(send_command_size));
+
+         if (fifo_read_avail(adapter->send_control_buffer) 
+               >= sizeof(send_command_size))
          {
-            fifo_read(adapter->send_control_buffer, send_command_buf, send_command_size);
-            libusb_interrupt_transfer(adapter->handle, adapter->endpoint_out, send_command_buf, send_command_size, &tmp, 1000);
+            fifo_read(adapter->send_control_buffer,
+                  send_command_buf, send_command_size);
+            libusb_interrupt_transfer(adapter->handle,
+                  adapter->endpoint_out, send_command_buf,
+                  send_command_size, &tmp, 1000);
          }
       }
       slock_unlock(adapter->send_control_lock);
 
-      libusb_interrupt_transfer(adapter->handle, adapter->endpoint_in, &adapter->data[1], adapter->endpoint_in_max_size, &size, 1000);
+      libusb_interrupt_transfer(adapter->handle,
+            adapter->endpoint_in, &adapter->data[1],
+            adapter->endpoint_in_max_size, &size, 1000);
 
       if (adapter && hid && hid->slots && size)
          pad_connection_packet(&hid->slots[adapter->slot], adapter->slot,
@@ -159,7 +168,8 @@ static void libusb_get_description(struct libusb_device *device,
 
       for(j = 0; j < inter->num_altsetting; j++)
       {
-         const struct libusb_interface_descriptor *interdesc = &inter->altsetting[j];
+         const struct libusb_interface_descriptor *interdesc = 
+            &inter->altsetting[j];
 
 #if 0
          if (interdesc->bInterfaceClass == LIBUSB_CLASS_HID)
@@ -169,10 +179,15 @@ static void libusb_get_description(struct libusb_device *device,
 
             for(k = 0; k < (int)interdesc->bNumEndpoints; k++)
             {
-               const struct libusb_endpoint_descriptor *epdesc = &interdesc->endpoint[k];
-               bool is_int = (epdesc->bmAttributes & LIBUSB_TRANSFER_TYPE_MASK) == LIBUSB_TRANSFER_TYPE_INTERRUPT;
-               bool is_out = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_OUT;
-               bool is_in = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_IN;
+               const struct libusb_endpoint_descriptor *epdesc = 
+                  &interdesc->endpoint[k];
+               bool is_int = (epdesc->bmAttributes & LIBUSB_TRANSFER_TYPE_MASK) 
+                  == LIBUSB_TRANSFER_TYPE_INTERRUPT;
+               bool is_out = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) 
+                  == LIBUSB_ENDPOINT_OUT;
+               bool is_in = (epdesc->bEndpointAddress & LIBUSB_ENDPOINT_DIR_MASK) 
+                  == LIBUSB_ENDPOINT_IN;
+
                if (is_int)
                {
                   if (is_in)
@@ -249,7 +264,8 @@ static int add_adapter(void *data, struct libusb_device *dev)
             desc.iManufacturer, adapter->manufacturer_name,
             sizeof(adapter->manufacturer_name));
 #if 0
-      RARCH_ERR(" Adapter Manufacturer name: %s\n", adapter->manufacturer_name);
+      RARCH_ERR(" Adapter Manufacturer name: %s\n",
+            adapter->manufacturer_name);
 #endif
    }
 
@@ -363,7 +379,8 @@ static int remove_adapter(void *data, struct libusb_device *dev)
       slock_free(adapter->send_control_lock);
       fifo_free(adapter->send_control_buffer);
 
-      libusb_release_interface(adapter->next->handle, adapter->next->interface_number);
+      libusb_release_interface(adapter->next->handle,
+            adapter->next->interface_number);
       libusb_close(adapter->next->handle);
 
       new_next = adapter->next->next;
@@ -422,7 +439,8 @@ static uint64_t libusb_hid_joypad_get_buttons(void *data, unsigned port)
    return 0;
 }
 
-static bool libusb_hid_joypad_button(void *data, unsigned port, uint16_t joykey)
+static bool libusb_hid_joypad_button(void *data,
+      unsigned port, uint16_t joykey)
 {
    uint64_t buttons          = libusb_hid_joypad_get_buttons(data, port);
 

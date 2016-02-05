@@ -128,7 +128,8 @@ BTDIMPORT char* (*bd_addr_to_str_ptr)(bd_addr_t addr);
 BTDIMPORT btstack_packet_handler_t (*bt_register_packet_handler_ptr)
    (btstack_packet_handler_t handler);
 BTDIMPORT int (*bt_send_cmd_ptr)(const hci_cmd_t *cmd, ...);
-BTDIMPORT void (*bt_send_l2cap_ptr)(uint16_t local_cid, uint8_t *data, uint16_t len);
+BTDIMPORT void (*bt_send_l2cap_ptr)(uint16_t local_cid,
+      uint8_t *data, uint16_t len);
 BTDIMPORT void (*run_loop_init_ptr)(RUN_LOOP_TYPE type);
 BTDIMPORT void (*run_loop_execute_ptr)(void);
 
