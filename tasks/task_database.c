@@ -17,6 +17,7 @@
 #include <compat/strl.h>
 #include <retro_endianness.h>
 #include <string/stdstring.h>
+#include <file/dir_list.h>
 
 #include <queues/message_queue.h>
 

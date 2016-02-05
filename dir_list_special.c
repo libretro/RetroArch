@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <file/dir_list.h>
+
 #include "dir_list_special.h"
 #include "frontend/frontend_driver.h"
 #include "general.h"

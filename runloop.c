@@ -19,6 +19,7 @@
 #include <stdarg.h>
 #include <math.h>
 
+#include <file/dir_list.h>
 #include <file/file_path.h>
 #include <retro_inline.h>
 #include <retro_assert.h>

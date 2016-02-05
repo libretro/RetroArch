@@ -16,6 +16,7 @@
  */
 
 #include <file/file_path.h>
+#include <file/dir_list.h>
 #include <file/file_archive.h>
 
 #include <string/stdstring.h>

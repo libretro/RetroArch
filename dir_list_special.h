@@ -20,7 +20,6 @@
 #include <stdint.h>
 
 #include <file/file_path.h>
-#include <file/dir_list.h>
 
 #include <string/string_list.h>
 
