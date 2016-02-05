@@ -54,8 +54,7 @@ extern void system_exec_wii(const char *path, bool should_load_game);
 #endif
 
 #if defined(HW_RVL)
-static bool exit_spawn = false;
-static bool exitspawn_start_game = false;
+static enum frontend_fork gx_fork_mode = FRONTEND_FORK_NONE;
 #endif
 
 #ifndef IS_SALAMANDER
@@ -332,10 +331,37 @@ static void frontend_gx_exitspawn(char *s, size_t len)
       should_load_game = true;
 #elif defined(HW_RVL)
    char salamander_basename[PATH_MAX_LENGTH];
-   should_load_game = exitspawn_start_game;
 
-   if (!exit_spawn)
+   if (gx_fork_mode == FRONTEND_FORK_NONE)
       return;
+
+   switch (gx_fork_mode)
+   {
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         should_load_game = true;
+         break;
+      case FRONTEND_FORK_SALAMANDER_RESTART:
+         {
+            char new_path[PATH_MAX_LENGTH];
+            char salamander_name[PATH_MAX_LENGTH];
+
+            if (frontend_driver_get_salamander_basename(salamander_name,
+                     sizeof(salamander_name)))
+            {
+               fill_pathname_join(new_path, g_defaults.dir.core,
+                     salamander_name, sizeof(new_path));
+               runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
+            }
+         }
+         break;
+      case FRONTEND_FORK_NONE:
+      default:
+         break;
+   }
+
+#ifndef IS_SALAMANDER
+   rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+#endif
 
    frontend_gx_exec(s, should_load_game);
    frontend_driver_get_salamander_basename(salamander_basename,
@@ -375,37 +401,23 @@ static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         exit_spawn           = true;
+         RARCH_LOG("FRONTEND_FORK_CORE\n");
+         gx_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         exit_spawn           = true;
-         exitspawn_start_game = true;
+         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
+         gx_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_SALAMANDER_RESTART:
-#ifndef IS_SALAMANDER
-         {
-            char new_path[PATH_MAX_LENGTH];
-            char salamander_name[PATH_MAX_LENGTH];
-
-            if (frontend_driver_get_salamander_basename(salamander_name,
-                     sizeof(salamander_name)))
-            {
-               fill_pathname_join(new_path, g_defaults.dir.core,
-                     salamander_name, sizeof(new_path));
-               runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
-            }
-         }
-         exit_spawn = true;
-#endif
+         RARCH_LOG("FRONTEND_FORK_SALAMANDER_RESTART\n");
+         /* NOTE: We don't implement Salamander, so just turn
+          * this into FRONTEND_FORK_CORE. */
+         gx_fork_mode  = FRONTEND_FORK_CORE;
          break;
-      default:
       case FRONTEND_FORK_NONE:
+      default:
          return false;
    }
-
-#ifndef IS_SALAMANDER
-   rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
-#endif
 
    return true;
 }
