@@ -24,7 +24,6 @@ extern "C" {
 
 #include <boolean.h>
 
-#include "content.h"
 #include "libretro.h"
 
 enum

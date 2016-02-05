@@ -26,6 +26,7 @@
 #include "menu_hash.h"
 #include "menu_shader.h"
 
+#include "../content.h"
 #include "../general.h"
 #include "../system.h"
 #include "../defaults.h"
