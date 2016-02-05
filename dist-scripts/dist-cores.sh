@@ -6,7 +6,19 @@ SALAMANDER=no
 MAKEFILE_GRIFFIN=no
 
 # PSP
-if [ $PLATFORM = "psp1" ] ; then
+if [ $PLATFORM = "linux" ] ; then
+platform=linux
+SALAMANDER=no
+EXT=a
+
+mkdir -p ../pkg/${platform}/
+
+# For statically linked cores, we need to configure once
+cd ..
+LDFLAGS=-L. ./configure --disable-dynamic
+cd dist-scripts
+   
+elif [ $PLATFORM = "psp1" ] ; then
 platform=psp1
 SALAMANDER=yes
 EXT=a
@@ -89,11 +101,14 @@ if [ $SALAMANDER = "yes" ]; then
 make -C ../ -f Makefile.${platform}.salamander clean || exit 1
 fi
 
+
 # Cleanup existing core if it exists
 if [ $PLATFORM = "ode-ps3" ]; then
    make -C ../ -f Makefile.${platform}.cobra clean || exit 1
 elif [ $MAKEFILE_GRIFFIN = "yes" ]; then
    make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
+elif [ $PLATFORM = "linux" ]; then
+   LINK=g++ make -C ../ -f Makefile clean || exit 1
 else
    make -C ../ -f Makefile.${platform} clean || exit 1
 fi
@@ -123,7 +138,11 @@ for f in *_${platform}.${EXT} ; do
       big_stack="BIG_STACK=1"
    fi
    echo "-- Building core: $name --"
-   cp -f "$f" ../libretro_${platform}.${EXT}
+   if [ $PLATFORM = "linux" ]; then
+      cp -f "$f" ../libretro.${EXT}
+   else
+      cp -f "$f" ../libretro_${platform}.${EXT}
+   fi
 
    # Do cleanup if this is a big stack core
    if [ "$big_stack" = "BIG_STACK=1" ] ; then
@@ -143,6 +162,8 @@ for f in *_${platform}.${EXT} ; do
       make -C ../ -f Makefile.griffin platform=${platform} $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "emscripten" ]; then
       make -C ../ -f Makefile.emscripten LTO=$lto -j7 || exit 1
+   elif [ $PLATFORM = "linux" ]; then
+      make -C ../ -f Makefile LINK=g++ $whole_archive $big_stack -j3 || exit 1
    elif [ $PLATFORM = "ctr" ]; then
       make -C ../ -f Makefile.${platform} LIBRETRO=$name $whole_archive $big_stack -j3 || exit 1
    else
@@ -176,6 +197,8 @@ for f in *_${platform}.${EXT} ; do
       mv -f ../retroarch_3ds.3dsx ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.3dsx
       mv -f ../retroarch_3ds.smdh ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.smdh
       mv -f ../retroarch_3ds.xml  ../pkg/3ds/3ds/${name}_libretro/${name}_libretro.xml
+   elif [ $PLATFORM = "linux" ] ; then
+      mv -f ../retroarch ../pkg/${platform}/${name}_libretro_${platform}.elf
    elif [ $PLATFORM = "ngc" ] ; then
       mv -f ../retroarch_${platform}.dol ../pkg/${platform}/${name}_libretro_${platform}.dol
    elif [ $PLATFORM = "wii" ] ; then
@@ -195,6 +218,8 @@ for f in *_${platform}.${EXT} ; do
       rm -f ../retroarch_3ds.elf
       rm -f ../retroarch_3ds.bnr
       rm -f ../retroarch_3ds.icn
+   elif [ $PLATFORM = "linux" ] ; then
+      rm -f ../retroarch
    elif [ $PLATFORM = "ngc" ] ; then
       rm -f ../retroarch_${platform}.dol ../retroarch_${platform}.elf ../retroarch_${platform}.elf.map
    elif [ $PLATFORM = "wii" ] ; then
@@ -209,6 +234,8 @@ for f in *_${platform}.${EXT} ; do
          make -C ../ -f Makefile.griffin platform=${platform} clean || exit 1
       elif [ $PLATFORM = "emscripten" ]; then
          make -C ../ -f Makefile.emscripten LTO=$lto -j7 clean || exit 1
+      elif [ $PLATFORM = "linux" ]; then
+         make -C ../ -f Makefile LTO=$lto -j7 clean || exit 1
       else
          make -C ../ -f Makefile.${platform} clean || exit 1
       fi
