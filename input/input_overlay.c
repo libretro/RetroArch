@@ -70,8 +70,8 @@ typedef struct input_overlay_state
    uint32_t keys[RETROK_LAST / 32 + 1];
 } input_overlay_state_t;
 
-static input_overlay_t *overlay_ptr;
 static input_overlay_state_t overlay_st_ptr;
+static input_overlay_t *overlay_ptr = NULL;
 
 /**
  * input_overlay_scale:

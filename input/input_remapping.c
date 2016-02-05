@@ -45,8 +45,11 @@ bool input_remapping_load_file(void *data, const char *path)
    {
       char buf[64]                                       = {0};
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
-      char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] = { "b", "y", "select", "start",
-         "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3", "l_x", "l_y", "r_x", "r_y" };
+      char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] = 
+      { "b", "y", "select", "start",
+         "up", "down", "left", "right", 
+         "a", "x", "l", "r", "l2", "r2", 
+         "l3", "r3", "l_x", "l_y", "r_x", "r_y" };
 
       snprintf(buf, sizeof(buf), "input_player%u", i + 1);
 
@@ -54,8 +57,10 @@ bool input_remapping_load_file(void *data, const char *path)
       {
          int key_remap = -1;
 
-         fill_pathname_join_delim(key_ident[j], buf, key_strings[j], '_', sizeof(key_ident[j]));
-         if (config_get_int(conf, key_ident[j], &key_remap) && key_remap < RARCH_FIRST_CUSTOM_BIND)
+         fill_pathname_join_delim(key_ident[j], buf,
+               key_strings[j], '_', sizeof(key_ident[j]));
+         if (config_get_int(conf, key_ident[j], &key_remap)
+               && key_remap < RARCH_FIRST_CUSTOM_BIND)
             settings->input.remap_ids[i][j] = key_remap;
       }
 
@@ -69,8 +74,10 @@ bool input_remapping_load_file(void *data, const char *path)
                buf,
                key_strings[RARCH_FIRST_CUSTOM_BIND + j]);
 
-         if (config_get_int(conf, key_ident[RARCH_FIRST_CUSTOM_BIND + j], &key_remap) && (key_remap < 4))
-            settings->input.remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = key_remap;
+         if (config_get_int(conf, key_ident[RARCH_FIRST_CUSTOM_BIND + j],
+                  &key_remap) && (key_remap < 4))
+            settings->input.remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = 
+               key_remap;
       }
    }
 
@@ -113,14 +120,18 @@ bool input_remapping_save_file(const char *path)
    for (i = 0; i < settings->input.max_users; i++)
    {
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
-      char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] = { "b", "y", "select", "start",
-         "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3", "l_x", "l_y", "r_x", "r_y" };
+      char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] = { 
+         "b", "y", "select", "start",
+         "up", "down", "left", "right",
+         "a", "x", "l", "r", "l2", "r2",
+         "l3", "r3", "l_x", "l_y", "r_x", "r_y" };
 
       snprintf(buf, sizeof(buf), "input_player%u", i + 1);
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 4; j++)
       {
-         fill_pathname_join_delim(key_ident[j], buf, key_strings[j], '_', sizeof(key_ident[j]));
+         fill_pathname_join_delim(key_ident[j], buf,
+               key_strings[j], '_', sizeof(key_ident[j]));
          config_set_int(conf, key_ident[j], settings->input.remap_ids[i][j]);
       }
    }

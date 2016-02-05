@@ -40,7 +40,7 @@ static hid_driver_t *hid_drivers[] = {
    NULL,
 };
 
-static const void *hid_data;
+static const void *hid_data = NULL;
 
 /**
  * hid_driver_find_handle:

@@ -108,7 +108,8 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
    }
    else
    {
-      if (!string_is_empty(ident) && !strncmp(params->name, ident, strlen(ident)))
+      if (!string_is_empty(ident) 
+            && !strncmp(params->name, ident, strlen(ident)))
       {
          score += 1;
 #if 0
@@ -117,12 +118,14 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       }
    }
 #if 0
-   RARCH_LOG("Autodetect: configuration file: %s score: %d\n", conf->path, score);
+   RARCH_LOG("Autodetect: configuration file: %s score: %d\n",
+         conf->path, score);
 #endif
    return score;
 }
 
-static void input_autoconfigure_joypad_add(config_file_t *conf, autoconfig_params_t *params)
+static void input_autoconfigure_joypad_add(config_file_t *conf,
+      autoconfig_params_t *params)
 {
    bool block_osd_spam;
    static bool remote_is_bound        = false;
@@ -131,8 +134,10 @@ static void input_autoconfigure_joypad_add(config_file_t *conf, autoconfig_param
    char device_type[PATH_MAX_LENGTH]  = {0};
    settings_t      *settings          = config_get_ptr();
 
-   config_get_array(conf, "input_device_display_name", display_name, sizeof(display_name));
-   config_get_array(conf, "input_device_type", device_type, sizeof(device_type));
+   config_get_array(conf, "input_device_display_name",
+         display_name, sizeof(display_name));
+   config_get_array(conf, "input_device_type", device_type,
+         sizeof(device_type));
 
    if (!settings)
       return;
@@ -213,7 +218,8 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    list = dir_list_new(path, "cfg", false, false);
 
    if (!list || !list->size)
-      list = dir_list_new(settings->input.autoconfig_dir, "cfg", false, false);
+      list = dir_list_new(settings->input.autoconfig_dir,
+            "cfg", false, false);
 
    if(!list)
       return false;
@@ -323,8 +329,10 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
    {
       char msg[PATH_MAX_LENGTH];
 
-      RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)", params->name, params->vid, params->pid);
-      snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured", params->name, (long)params->vid, (long)params->pid);
+      RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)",
+            params->name, params->vid, params->pid);
+      snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured",
+            params->name, (long)params->vid, (long)params->pid);
       runloop_msg_queue_push(msg, 0, 60, false);
    }
    return ret;
