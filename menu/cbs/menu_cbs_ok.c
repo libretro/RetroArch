@@ -42,6 +42,12 @@ enum
    ACTION_OK_IMAGEVIEWER
 };
 
+typedef struct
+{
+   uint32_t type_hash;
+   char path[PATH_MAX_LENGTH];
+} menu_file_transfer_t;
+
 #ifndef BIND_ACTION_OK
 #define BIND_ACTION_OK(cbs, name) \
    cbs->action_ok = name; \
