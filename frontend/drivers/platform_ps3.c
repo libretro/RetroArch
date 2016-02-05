@@ -56,8 +56,7 @@ static bool multiman_detected  = false;
 #endif
 
 #ifndef IS_SALAMANDER
-static bool exit_spawn = false;
-static bool exitspawn_start_game = false;
+static enum frontend_fork ps3_fork_mode = FRONTEND_FORK_NONE;
 
 static void frontend_ps3_shutdown(bool unused)
 {
@@ -333,13 +332,19 @@ static bool frontend_ps3_set_fork(enum frontend_fork fork_mode)
    switch (fork_mode)
    {
       case FRONTEND_FORK_CORE:
-         exit_spawn = true;
+         RARCH_LOG("FRONTEND_FORK_CORE\n");
+         ps3_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
-         exit_spawn = true;
-         exitspawn_start_game = true;
+         RARCH_LOG("FRONTEND_FORK_CORE_WITH_ARGS\n");
+         ps3_fork_mode  = fork_mode;
          break;
       case FRONTEND_FORK_SALAMANDER_RESTART:
+         RARCH_LOG("FRONTEND_FORK_SALAMANDER_RESTART\n");
+         /* NOTE: We don't implement Salamander, so just turn
+          * this into FRONTEND_FORK_CORE. */
+         ps3_fork_mode  = FRONTEND_FORK_CORE;
+         break;
       case FRONTEND_FORK_NONE:
       default:
          return false;
@@ -429,18 +434,25 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
 #ifndef IS_SALAMANDER
    bool *verbose         = retro_main_verbosity();
    bool original_verbose = *verbose;
-
    *verbose              = true;
 
-   should_load_game = exitspawn_start_game;
-
-   if (!exit_spawn)
+   if (ps3_fork_mode == FRONTEND_FORK_NONE)
    {
       frontend_ctx_driver_t *frontend = frontend_get_ptr();
 
       if (frontend)
          frontend->shutdown = frontend_ps3_shutdown;
       return;
+   }
+
+   switch (ps3_fork_mode)
+   {
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+         should_load_game = true;
+         break;
+      case FRONTEND_FORK_NONE:
+      default:
+         break;
    }
 #endif
 
