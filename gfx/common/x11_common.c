@@ -112,14 +112,15 @@ void x11_move_window(Display *dpy, Window win, int x, int y,
 
    XA_INIT(_NET_MOVERESIZE_WINDOW);
 
-   xev.xclient.type = ClientMessage;
-   xev.xclient.send_event = True;
+   xev.xclient.type         = ClientMessage;
+   xev.xclient.send_event   = True;
    xev.xclient.message_type = XA_NET_MOVERESIZE_WINDOW;
-   xev.xclient.window = win;
-   xev.xclient.format = 32;
-   xev.xclient.data.l[0] = (1 << MOVERESIZE_X_SHIFT) | (1 << MOVERESIZE_Y_SHIFT);
-   xev.xclient.data.l[1] = x;
-   xev.xclient.data.l[2] = y;
+   xev.xclient.window       = win;
+   xev.xclient.format       = 32;
+   xev.xclient.data.l[0]    = (1 << MOVERESIZE_X_SHIFT) 
+      | (1 << MOVERESIZE_Y_SHIFT);
+   xev.xclient.data.l[1]    = x;
+   xev.xclient.data.l[2]    = y;
 
    XSendEvent(dpy, DefaultRootWindow(dpy), False,
          SubstructureRedirectMask | SubstructureNotifyMask,
@@ -160,11 +161,11 @@ static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
       XF86VidModeModeInfo *mode, XF86VidModeModeInfo *desktop_mode)
 {
    float refresh_mod;
-   int i, num_modes = 0;
-   bool ret = false;
-   float minimum_fps_diff = 0.0f;
+   int i, num_modes            = 0;
+   bool ret                    = false;
+   float minimum_fps_diff      = 0.0f;
    XF86VidModeModeInfo **modes = NULL;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings        = config_get_ptr();
 
    XF86VidModeGetAllModeLines(dpy, DefaultScreen(dpy), &num_modes, &modes);
 
@@ -548,7 +549,8 @@ void x11_update_window_title(void *data)
 
 bool x11_input_ctx_new(bool true_full)
 {
-   if (!x11_create_input_context(g_x11_dpy, g_x11_win, &g_x11_xim, &g_x11_xic))
+   if (!x11_create_input_context(g_x11_dpy, g_x11_win,
+            &g_x11_xim, &g_x11_xic))
       return false;
 
    video_driver_display_type_set(RARCH_DISPLAY_X11);
@@ -583,7 +585,8 @@ void x11_colormap_destroy(void)
 
 void x11_install_quit_atom(void)
 {
-   g_x11_quit_atom = XInternAtom(g_x11_dpy, "WM_DELETE_WINDOW", False);
+   g_x11_quit_atom = XInternAtom(g_x11_dpy,
+         "WM_DELETE_WINDOW", False);
    if (g_x11_quit_atom)
       XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
 }
@@ -606,7 +609,8 @@ void x11_save_last_used_monitor(Window win)
    int x = 0, y = 0;
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
-   XTranslateCoordinates(g_x11_dpy, g_x11_win, DefaultRootWindow(g_x11_dpy),
+   XTranslateCoordinates(g_x11_dpy, g_x11_win,
+         DefaultRootWindow(g_x11_dpy),
          target.x, target.y, &x, &y, &child);
 
    g_x11_screen = x11_get_xinerama_monitor(g_x11_dpy, x, y,

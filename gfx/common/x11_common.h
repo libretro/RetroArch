@@ -44,9 +44,12 @@ void x11_save_last_used_monitor(Window win);
 void x11_show_mouse(Display *dpy, Window win, bool state);
 void x11_windowed_fullscreen(Display *dpy, Window win);
 void x11_suspend_screensaver(Window win);
-bool x11_enter_fullscreen(Display *dpy, unsigned width, unsigned height, XF86VidModeModeInfo *desktop_mode);
+bool x11_enter_fullscreen(Display *dpy, unsigned width,
+      unsigned height, XF86VidModeModeInfo *desktop_mode);
+
 void x11_exit_fullscreen(Display *dpy, XF86VidModeModeInfo *desktop_mode);
-void x11_move_window(Display *dpy, Window win, int x, int y, unsigned width, unsigned height);
+void x11_move_window(Display *dpy, Window win,
+      int x, int y, unsigned width, unsigned height);
 
 /* Set icon, class, default stuff. */
 void x11_set_window_attr(Display *dpy, Window win);
