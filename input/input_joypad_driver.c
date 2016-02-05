@@ -126,7 +126,8 @@ const char* config_get_joypad_driver_options(void)
  *
  * Returns: joypad driver if found, otherwise NULL.
  **/
-const input_device_driver_t *input_joypad_init_driver(const char *ident, void *data)
+const input_device_driver_t *input_joypad_init_driver(
+      const char *ident, void *data)
 {
    unsigned i;
    if (!ident || !*ident)

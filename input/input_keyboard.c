@@ -30,7 +30,8 @@ struct input_keyboard_line
    size_t size;
 
    /** Line complete callback. 
-    * Calls back after return is pressed with the completed line.
+    * Calls back after return is 
+    * pressed with the completed line.
     * Line can be NULL.
     **/
    input_keyboard_line_complete_t cb;
@@ -126,7 +127,8 @@ bool input_keyboard_line_event(
    {
       if (state->ptr)
       {
-         memmove(state->buffer + state->ptr - 1, state->buffer + state->ptr,
+         memmove(state->buffer + state->ptr - 1,
+               state->buffer + state->ptr,
                state->size - state->ptr + 1);
          state->ptr--;
          state->size--;
@@ -141,7 +143,8 @@ bool input_keyboard_line_event(
          return false;
 
       memmove(newbuf + state->ptr + 1,
-            newbuf + state->ptr, state->size - state->ptr + 1);
+            newbuf + state->ptr,
+            state->size - state->ptr + 1);
       newbuf[state->ptr] = c;
       state->ptr++;
       state->size++;
@@ -165,7 +168,8 @@ bool input_keyboard_line_event(
  *
  * Returns: pointer to string.
  **/
-const char **input_keyboard_line_get_buffer(const input_keyboard_line_t *state)
+const char **input_keyboard_line_get_buffer(
+      const input_keyboard_line_t *state)
 {
    return (const char**)&state->buffer;
 }
@@ -264,7 +268,8 @@ void input_keyboard_event(bool down, unsigned code,
       switch (device)
       {
          case RETRO_DEVICE_POINTER:
-            if (!input_keyboard_line_event(g_keyboard_line, (code != 0x12d) ? (char)code : character))
+            if (!input_keyboard_line_event(g_keyboard_line,
+                     (code != 0x12d) ? (char)code : character))
                return;
             break;
          default:
