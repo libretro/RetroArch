@@ -2390,18 +2390,18 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
 
    string_list_free(str_list);
 
-   if (items_found == 0)
-   {
-      menu_entries_push(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
-            "", MENU_SETTING_NO_ITEM, 0, 0);
-
-      return 0;
-   }
-
    switch (hash_label)
    {
       case MENU_LABEL_CORE_LIST:
+         if (items_found == 0)
+         {
+            menu_entries_push(info->list,
+                  menu_hash_to_str(MENU_LABEL_VALUE_NO_ITEMS),
+                  "", MENU_SETTING_NO_ITEM, 0, 0);
+
+            return 0;
+         }
+
          {
             const char *dir = NULL;
 
