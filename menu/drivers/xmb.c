@@ -1032,7 +1032,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    info.menu_list    = NULL;
    info.type         = 0;
    info.type_default = MENU_FILE_PLAIN;
-   info.flags        = SL_FLAG_ALLOW_EMPTY_LIST;
+
    strlcpy(info.label,
          menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
          sizeof(info.label));
