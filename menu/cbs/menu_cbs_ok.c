@@ -448,7 +448,7 @@ int action_ok_push_quick_menu(void)
    return 0;
 }
 
-static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx,
+static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
       const char *path, const char *label,
       uint32_t hash_label,
       unsigned type, bool is_carchive)
@@ -469,20 +469,14 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx,
    if (!string_is_empty(menu_path))
       strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
-   if (
-         string_is_equal(menu_label,
-            menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE))
-      )
-   {
+   if (string_is_equal(menu_label,
+            menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)))
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
-   }
    else if (string_is_equal(menu_label,
             menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN)))
-   {
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
-   }
 
    runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
 
@@ -496,7 +490,8 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx,
    if (menu_content_ctl(MENU_CONTENT_CTL_FIND_FIRST_CORE, &def_info))
       ret = -1;
 
-   if (!is_carchive && !string_is_empty(path) && !string_is_empty(menu_path_new))
+   if (     !is_carchive && !string_is_empty(path) 
+         && !string_is_empty(menu_path_new))
       fill_pathname_join(detect_content_path, menu_path_new, path,
             sizeof(detect_content_path));
 
@@ -507,14 +502,12 @@ static int rarch_defer_core_wrapper(size_t idx, size_t entry_idx,
    switch (ret)
    {
       case -1:
-         {
-            event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+         event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
 
-            if (rarch_task_push_content_load_default(NULL, NULL,
+         if (rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL))
-               action_ok_push_quick_menu();
-            return ret;
-         }
+            action_ok_push_quick_menu();
+         return ret;
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
@@ -537,7 +530,7 @@ static int action_ok_file_load_with_detect_core_carchive(
    type = 0;
    label = NULL;
 
-   return rarch_defer_core_wrapper(idx, entry_idx,
+   return file_load_with_detect_core_wrapper(idx, entry_idx,
          path, label, hash_label, type, true);
 }
 
@@ -549,7 +542,7 @@ static int action_ok_file_load_with_detect_core(const char *path,
    type  = 0;
    label = NULL;
 
-   return rarch_defer_core_wrapper(idx, entry_idx,
+   return file_load_with_detect_core_wrapper(idx, entry_idx,
          path, label, hash_label, type, false);
 }
 
