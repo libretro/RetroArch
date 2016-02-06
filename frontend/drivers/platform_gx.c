@@ -355,8 +355,6 @@ static void frontend_gx_exitspawn(char *s, size_t len)
                runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
             }
          }
-         if (gx_fork_mode == FRONTEND_FORK_RESTART)
-            rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
          break;
       case FRONTEND_FORK_NONE:
       default:
@@ -395,7 +393,7 @@ static void frontend_gx_process_args(int *argc, char *argv[])
 #endif
 }
 
-#ifdef HW_RVL
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
 static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
 {
    switch (fork_mode)
@@ -411,6 +409,7 @@ static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
       case FRONTEND_FORK_RESTART:
          RARCH_LOG("FRONTEND_FORK_RESTART\n");
          gx_fork_mode  = fork_mode;
+         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
          break;
       case FRONTEND_FORK_NONE:
       default:
@@ -468,7 +467,7 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_exitspawn,
    frontend_gx_process_args,
    frontend_gx_exec,
-#ifdef HW_RVL
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
    frontend_gx_set_fork,
 #else
    NULL,
