@@ -36,7 +36,8 @@ static INLINE bool realloc_checked(void **ptr, size_t size)
    return *ptr == nptr;
 }
 
-bool gfx_coord_array_add(gfx_coord_array_t *ca, const gfx_coords_t *coords, unsigned count)
+bool gfx_coord_array_add(gfx_coord_array_t *ca,
+      const gfx_coords_t *coords, unsigned count)
 {
    size_t base_size, offset;
    bool success = false;

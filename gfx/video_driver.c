@@ -330,10 +330,13 @@ uintptr_t video_driver_get_current_framebuffer(void)
    return 0;
 }
 
-bool video_driver_get_current_software_framebuffer(struct retro_framebuffer *framebuffer)
+bool video_driver_get_current_software_framebuffer(
+      struct retro_framebuffer *framebuffer)
 {
-   if (video_driver_poke && video_driver_poke->get_current_software_framebuffer)
-      return video_driver_poke->get_current_software_framebuffer(video_driver_data, framebuffer);
+   if (video_driver_poke 
+         && video_driver_poke->get_current_software_framebuffer)
+      return video_driver_poke->get_current_software_framebuffer(
+            video_driver_data, framebuffer);
    return false;
 }
 
@@ -360,7 +363,8 @@ static void deinit_video_filter(void)
 #else
    free(video_driver_state.filter.buffer);
 #endif
-   memset(&video_driver_state.filter, 0, sizeof(video_driver_state.filter));
+   memset(&video_driver_state.filter, 0,
+         sizeof(video_driver_state.filter));
 }
 
 static void init_video_filter(enum retro_pixel_format colfmt)
@@ -419,9 +423,11 @@ static void init_video_filter(enum retro_pixel_format colfmt)
 
    /* TODO: Aligned output. */
 #ifdef _3DS
-   video_driver_state.filter.buffer = linearMemAlign(width * height * video_driver_state.filter.out_bpp, 0x80);
+   video_driver_state.filter.buffer = linearMemAlign(width 
+         * height * video_driver_state.filter.out_bpp, 0x80);
 #else
-   video_driver_state.filter.buffer = malloc(width * height * video_driver_state.filter.out_bpp);
+   video_driver_state.filter.buffer = malloc(width 
+         * height * video_driver_state.filter.out_bpp);
 #endif
    if (!video_driver_state.filter.buffer)
       goto error;
@@ -482,7 +488,8 @@ static void video_monitor_compute_fps_statistics(void)
       return;
    }
 
-   if (video_driver_state.frame_time_samples_count < 2 * MEASURE_FRAME_TIME_SAMPLES_COUNT)
+   if (video_driver_state.frame_time_samples_count < 
+         (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
    {
       RARCH_LOG(
             "Does not have enough samples for monitor refresh rate estimation. Requires to run for at least %u frames.\n",
@@ -571,12 +578,14 @@ static bool init_video_pixel_converter(unsigned size)
 
    RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");
 
-   video_driver_scaler_ptr = (video_pixel_scaler_t*)calloc(1, sizeof(*video_driver_scaler_ptr));
+   video_driver_scaler_ptr = (video_pixel_scaler_t*)
+      calloc(1, sizeof(*video_driver_scaler_ptr));
 
    if (!video_driver_scaler_ptr)
       goto error;
 
-   video_driver_scaler_ptr->scaler = (struct scaler_ctx*)calloc(1, sizeof(*video_driver_scaler_ptr->scaler));
+   video_driver_scaler_ptr->scaler = (struct scaler_ctx*)
+      calloc(1, sizeof(*video_driver_scaler_ptr->scaler));
 
    if (!video_driver_scaler_ptr->scaler)
       goto error;
@@ -590,7 +599,8 @@ static bool init_video_pixel_converter(unsigned size)
    if (!scaler_ctx_gen_filter(video_driver_scaler_ptr->scaler))
       goto error;
 
-   video_driver_scaler_ptr->scaler_out = calloc(sizeof(uint16_t), size * size);
+   video_driver_scaler_ptr->scaler_out = 
+      calloc(sizeof(uint16_t), size * size);
 
    if (!video_driver_scaler_ptr->scaler_out)
       goto error;
@@ -719,12 +729,14 @@ static bool init_video(void)
    video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
 
 #ifdef HAVE_THREADS
-   if (settings->video.threaded && !video_driver_state.hw_render_callback.context_type)
+   if (settings->video.threaded 
+         && !video_driver_state.hw_render_callback.context_type)
    {
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
 
-      if (!rarch_threaded_video_init((const video_driver_t**)&current_video, &video_driver_data,
+      if (!rarch_threaded_video_init((const video_driver_t**)&current_video,
+               &video_driver_data,
                input_get_double_ptr(), input_driver_get_data_ptr(),
                current_video, &video))
       {
@@ -813,7 +825,8 @@ bool video_driver_set_video_mode(unsigned width,
 {
    if (video_driver_poke && video_driver_poke->set_video_mode)
    {
-      video_driver_poke->set_video_mode(video_driver_data, width, height, fullscreen);
+      video_driver_poke->set_video_mode(video_driver_data,
+            width, height, fullscreen);
       return true;
    }
 
@@ -824,7 +837,8 @@ bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
 {
    if (video_driver_poke && video_driver_poke->get_video_output_size)
    {
-      video_driver_poke->get_video_output_size(video_driver_data, width, height);
+      video_driver_poke->get_video_output_size(video_driver_data,
+            width, height);
       return true;
    }
    return false;
@@ -841,7 +855,8 @@ void video_driver_set_texture_enable(bool enable, bool fullscreen)
 {
 #ifdef HAVE_MENU
    if (video_driver_poke && video_driver_poke->set_texture_enable)
-      video_driver_poke->set_texture_enable(video_driver_data, enable, fullscreen);
+      video_driver_poke->set_texture_enable(video_driver_data,
+            enable, fullscreen);
 #endif
 }
 
@@ -850,7 +865,8 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
 {
 #ifdef HAVE_MENU
    if (video_driver_poke && video_driver_poke->set_texture_frame)
-      video_driver_poke->set_texture_frame(video_driver_data, frame, rgb32, width, height, alpha);
+      video_driver_poke->set_texture_frame(video_driver_data,
+            frame, rgb32, width, height, alpha);
 #endif
 }
 
@@ -941,7 +957,8 @@ void video_monitor_set_refresh_rate(float hz)
    char msg[128];
    settings_t *settings = config_get_ptr();
 
-   snprintf(msg, sizeof(msg), "Setting refresh rate to: %.3f Hz.", hz);
+   snprintf(msg, sizeof(msg),
+         "Setting refresh rate to: %.3f Hz.", hz);
    runloop_msg_queue_push(msg, 1, 180, false);
    RARCH_LOG("%s\n", msg);
 
@@ -1285,7 +1302,8 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          1,
          true,
          true);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
+   settings_data_list_current_add_flags(list, list_info,
+         SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
 #endif
 #if defined(_XBOX1) || defined(HW_RVL)
    CONFIG_BOOL(
@@ -1456,13 +1474,18 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return video_viewport_set_config();
       case RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL:
          {
-            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-            struct retro_game_geometry *geom = av_info ? &av_info->geometry : NULL;
+            struct retro_system_av_info *av_info = 
+               video_viewport_get_system_av_info();
+            struct retro_game_geometry *geom     = NULL;
+            
+            if (av_info)
+               geom = &av_info->geometry;
 
             if (!geom)
                return false;
 
-            video_viewport_set_square_pixel(geom->base_width, geom->base_height);
+            video_viewport_set_square_pixel(
+                  geom->base_width, geom->base_height);
          }
          return true;
       case RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE:
@@ -1540,7 +1563,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_SET_ASPECT_RATIO:
          if (!video_driver_poke || !video_driver_poke->set_aspect_ratio)
             return false;
-         video_driver_poke->set_aspect_ratio(video_driver_data, settings->video.aspect_ratio_idx);
+         video_driver_poke->set_aspect_ratio(
+               video_driver_data, settings->video.aspect_ratio_idx);
          return true;
       case RARCH_DISPLAY_CTL_SHOW_MOUSE:
          if (!video_driver_poke)
@@ -1580,7 +1604,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB:
          if (!video_driver_state.frame_cache.data)
             return false;
-         return (video_driver_state.frame_cache.data == RETRO_HW_FRAME_BUFFER_VALID);
+         return (video_driver_state.frame_cache.data 
+               == RETRO_HW_FRAME_BUFFER_VALID);
       case RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER:
          if (!current_video)
             return false;
@@ -1629,21 +1654,27 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             if (!conf)
                return false;
 
-            CONFIG_GET_BOOL_BASE(conf, global, console.screen.gamma_correction, "gamma_correction");
+            CONFIG_GET_BOOL_BASE(conf, global,
+                  console.screen.gamma_correction, "gamma_correction");
             config_get_bool(conf, "flicker_filter_enable",
                   &global->console.flickerfilter_enable);
             config_get_bool(conf, "soft_filter_enable",
                   &global->console.softfilter_enable);
 
-            CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.width,
+            CONFIG_GET_INT_BASE(conf, global,
+                  console.screen.resolutions.width,
                   "console_resolution_width");
-            CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.height,
+            CONFIG_GET_INT_BASE(conf, global,
+                  console.screen.resolutions.height,
                   "console_resolution_height");
-            CONFIG_GET_INT_BASE(conf, global, console.screen.soft_filter_index,
+            CONFIG_GET_INT_BASE(conf, global,
+                  console.screen.soft_filter_index,
                   "soft_filter_index");
-            CONFIG_GET_INT_BASE(conf, global, console.screen.resolutions.current.id,
+            CONFIG_GET_INT_BASE(conf, global, 
+                  console.screen.resolutions.current.id,
                   "current_resolution_id");
-            CONFIG_GET_INT_BASE(conf, global, console.screen.flicker_filter_index,
+            CONFIG_GET_INT_BASE(conf, global, 
+                  console.screen.flicker_filter_index,
                   "flicker_filter_index");
          }
          return true;
@@ -1779,8 +1810,12 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned base_width;
       /* Use system reported sizes as these define the 
        * geometry for the "normal" case. */
-      struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-      unsigned base_height = av_info ? av_info->geometry.base_height : 0;
+      struct retro_system_av_info *av_info = 
+         video_viewport_get_system_av_info();
+      unsigned base_height = 0;
+      
+      if (av_info)
+         base_height = av_info->geometry.base_height;
 
       if (base_height == 0)
          base_height = 1;
@@ -1799,7 +1834,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
          if (keep_aspect)
          {
             /* X/Y scale must be same. */
-            unsigned max_scale = min(width / base_width, height / base_height);
+            unsigned max_scale = min(width / base_width,
+                  height / base_height);
             padding_x = width - base_width * max_scale;
             padding_y = height - base_height * max_scale;
          }
@@ -1853,7 +1889,8 @@ static bool video_pixel_frame_scale(const void *data,
 
    rarch_perf_init(&video_frame_conv, "video_frame_conv");
 
-   if (!data || video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
+   if (     !data 
+         || video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
       return false;
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
       return false;

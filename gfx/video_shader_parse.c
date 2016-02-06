@@ -111,7 +111,8 @@ static enum gfx_wrap_type wrap_str_to_mode(const char *wrap_mode)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool video_shader_parse_pass(config_file_t *conf, struct video_shader_pass *pass, unsigned i)
+static bool video_shader_parse_pass(config_file_t *conf,
+      struct video_shader_pass *pass, unsigned i)
 {
    char shader_name[64]         = {0};
    char filter_name_buf[64]     = {0};
@@ -135,7 +136,8 @@ static bool video_shader_parse_pass(config_file_t *conf, struct video_shader_pas
 
    /* Source */
    snprintf(shader_name, sizeof(shader_name), "shader%u", i);
-   if (!config_get_path(conf, shader_name, pass->source.path, sizeof(pass->source.path)))
+   if (!config_get_path(conf, shader_name,
+            pass->source.path, sizeof(pass->source.path)))
    {
       RARCH_ERR("Couldn't parse shader source (%s).\n", shader_name);
       return false;
@@ -364,7 +366,8 @@ static bool video_shader_parse_textures(config_file_t *conf,
  * Returns: handle to shader parameter if successful, otherwise NULL.
  **/
 static struct video_shader_parameter *video_shader_parse_find_parameter(
-      struct video_shader_parameter *params, unsigned num_params, const char *id)
+      struct video_shader_parameter *params,
+      unsigned num_params, const char *id)
 {
    unsigned i;
 

@@ -100,7 +100,8 @@ void video_shader_driver_scale(unsigned idx, struct gfx_fbo_scale *scale)
       current_shader->shader_scale(shader_data, idx, scale);
 }
 
-bool video_shader_driver_init(const shader_backend_t *shader, void *data, const char *path)
+bool video_shader_driver_init(const shader_backend_t *shader,
+      void *data, const char *path)
 {
    void *tmp = NULL;
 
@@ -220,6 +221,7 @@ void video_shader_driver_set_params(
 
    current_shader->set_params(data, shader_data,
          width, height, tex_width, tex_height,
-         out_width, out_height, frame_counter, info, prev_info, feedback_info,
+         out_width, out_height, frame_counter, info,
+         prev_info, feedback_info,
          fbo_info, fbo_info_cnt);
 }

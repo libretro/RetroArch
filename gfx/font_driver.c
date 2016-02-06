@@ -42,7 +42,8 @@ int font_renderer_create_default(const void **data, void **handle,
 {
 
    unsigned i;
-   const font_renderer_driver_t **drv = (const font_renderer_driver_t**)data;
+   const font_renderer_driver_t **drv = 
+      (const font_renderer_driver_t**)data;
 
    for (i = 0; font_backends[i]; i++)
    {
@@ -91,7 +92,8 @@ static bool d3d_font_init_first(
 
    for (i = 0; i < ARRAY_SIZE(d3d_font_backends); i++)
    {
-      void *data = d3d_font_backends[i]->init(video_data, font_path, font_size);
+      void *data = d3d_font_backends[i]->init(
+            video_data, font_path, font_size);
 
       if (!data)
          continue;
@@ -123,7 +125,8 @@ static bool gl_font_init_first(
 
    for (i = 0; gl_font_backends[i]; i++)
    {
-      void *data = gl_font_backends[i]->init(video_data, font_path, font_size);
+      void *data = gl_font_backends[i]->init(
+            video_data, font_path, font_size);
 
       if (!data)
          continue;
@@ -150,7 +153,8 @@ static bool vita2d_font_init_first(
 
    for (i = 0; vita2d_font_backends[i]; i++)
    {
-      void *data = vita2d_font_backends[i]->init(video_data, font_path, font_size);
+      void *data = vita2d_font_backends[i]->init(
+            video_data, font_path, font_size);
 
       if (!data)
          continue;
@@ -164,7 +168,8 @@ static bool vita2d_font_init_first(
 }
 #endif
 
-static bool font_init_first(const void **font_driver, void **font_handle,
+static bool font_init_first(
+      const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size,
       enum font_driver_render_api api)
 {
@@ -206,18 +211,21 @@ bool font_driver_has_render_msg(void)
    return true;
 }
 
-void font_driver_render_msg(void *font_data, const char *msg, const struct font_params *params)
+void font_driver_render_msg(void *font_data,
+      const char *msg, const struct font_params *params)
 {
    const font_renderer_t *font_ctx = font_osd_driver;
 
    if (font_ctx->render_msg)
-      font_ctx->render_msg(font_data ? font_data : font_osd_data, msg, params);
+      font_ctx->render_msg(font_data 
+            ? font_data : font_osd_data, msg, params);
 }
 
 void font_driver_bind_block(void *font_data, void *block)
 {
    const font_renderer_t *font_ctx = font_osd_driver;
-   void             *new_font_data = font_data ? font_data : font_osd_data;
+   void             *new_font_data = font_data 
+      ? font_data : font_osd_data;
 
    if (font_ctx->bind_block)
       font_ctx->bind_block(new_font_data, block);
@@ -231,7 +239,8 @@ void font_driver_flush(void *data)
       font_ctx->flush(data);
 }
 
-int font_driver_get_message_width(void *data, const char *msg, unsigned len, float scale)
+int font_driver_get_message_width(void *data,
+      const char *msg, unsigned len, float scale)
 {
    const font_renderer_t *font_ctx = font_osd_driver;
 
@@ -242,7 +251,8 @@ int font_driver_get_message_width(void *data, const char *msg, unsigned len, flo
 
 void font_driver_free(void *data)
 {
-   const font_renderer_t *font_ctx = (const font_renderer_t*)font_osd_driver;
+   const font_renderer_t *font_ctx = 
+      (const font_renderer_t*)font_osd_driver;
 
    if (font_ctx->free)
       font_ctx->free(data ? data : font_osd_data);
@@ -254,7 +264,8 @@ void font_driver_free(void *data)
    font_osd_driver = NULL;
 }
 
-bool font_driver_init_first(const void **font_driver, void **font_handle,
+bool font_driver_init_first(
+      const void **font_driver, void **font_handle,
       void *data, const char *font_path, float font_size,
       bool threading_hint,
       enum font_driver_render_api api)
