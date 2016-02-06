@@ -86,17 +86,18 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_LIBRETRODB
       case MENU_FILE_DIRECTORY:
          BIND_ACTION_SCAN(cbs, action_scan_directory);
-         break;
+         return 0;
       case MENU_FILE_CARCHIVE:
       case MENU_FILE_PLAIN:
          BIND_ACTION_SCAN(cbs, action_scan_file);
-         break;
+         return 0;
 #endif
+      case MENU_FILE_NONE:
       default:
-         return -1;
+         break;
    }
 
-   return 0;
+   return -1;
 }
 
 int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
