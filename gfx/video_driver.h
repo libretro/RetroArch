@@ -193,9 +193,11 @@ typedef struct video_poke_interface
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
    void (*unload_texture)(void *data, uintptr_t *id);
-   void (*set_video_mode)(void *data, unsigned width, unsigned height, bool fullscreen);
+   void (*set_video_mode)(void *data, unsigned width,
+         unsigned height, bool fullscreen);
    void (*set_filtering)(void *data, unsigned index, bool smooth);
-   void (*get_video_output_size)(void *data, unsigned *width, unsigned *height);
+   void (*get_video_output_size)(void *data,
+         unsigned *width, unsigned *height);
    void (*get_video_output_prev)(void *data);
    void (*get_video_output_next)(void *data);
    uintptr_t (*get_current_framebuffer)(void *data);
@@ -217,7 +219,8 @@ typedef struct video_poke_interface
    void (*grab_mouse_toggle)(void *data);
 
    struct video_shader *(*get_current_shader)(void *data);
-   bool (*get_current_software_framebuffer)(void *data, struct retro_framebuffer *framebuffer);
+   bool (*get_current_software_framebuffer)(void *data,
+         struct retro_framebuffer *framebuffer);
 } video_poke_interface_t;
 
 typedef struct video_viewport
@@ -230,9 +233,12 @@ typedef struct video_viewport
    unsigned full_height;
 } video_viewport_t;
 
-/* msg is for showing a message on the screen along with the video frame. */
-typedef bool (*video_driver_frame_t)(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg);
+/* msg is for showing a message on the screen 
+ * along with the video frame. */
+typedef bool (*video_driver_frame_t)(void *data,
+      const void *frame, unsigned width,
+      unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg);
 
 typedef struct video_driver
 {
@@ -240,7 +246,8 @@ typedef struct video_driver
     * The video initialization might preinitialize an input driver
     * to override the settings in case the video driver relies on
     * input driver for event handling. */
-   void *(*init)(const video_info_t *video, const input_driver_t **input,
+   void *(*init)(const video_info_t *video,
+         const input_driver_t **input,
          void **input_data);
 
    video_driver_frame_t frame;
@@ -288,15 +295,14 @@ typedef struct video_driver
    unsigned *height, size_t *pitch);
 
 #ifdef HAVE_OVERLAY
-   void (*overlay_interface)(void *data, const video_overlay_interface_t **iface);
+   void (*overlay_interface)(void *data,
+         const video_overlay_interface_t **iface);
 #endif
    void (*poke_interface)(void *data, const video_poke_interface_t **iface);
    unsigned (*wrap_type_to_enum)(enum gfx_wrap_type type);
 } video_driver_t;
 
-
 #define LAST_ASPECT_RATIO ASPECT_RATIO_CUSTOM
-
 
 extern char rotation_lut[4][32];
 
@@ -338,8 +344,8 @@ const void *video_driver_find_handle(int index);
  * video_driver_find_ident:
  * @index              : index of driver to get handle to.
  *
- * Returns: Human-readable identifier of video driver at index. Can be NULL
- * if nothing found.
+ * Returns: Human-readable identifier of video driver at index. 
+ * Can be NULL if nothing found.
  **/
 const char *video_driver_find_ident(int index);
 
@@ -372,7 +378,8 @@ void *video_driver_get_ptr(bool force_nonthreaded_data);
  **/
 uintptr_t video_driver_get_current_framebuffer(void);
 
-bool video_driver_get_current_software_framebuffer(struct retro_framebuffer *framebuffer);
+bool video_driver_get_current_software_framebuffer(
+      struct retro_framebuffer *framebuffer);
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym);
 
@@ -401,7 +408,8 @@ bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path);
 
 #ifdef HAVE_OVERLAY
-bool video_driver_overlay_interface(const video_overlay_interface_t **iface);
+bool video_driver_overlay_interface(
+      const video_overlay_interface_t **iface);
 #endif
 
 void * video_driver_read_frame_raw(unsigned *width,
