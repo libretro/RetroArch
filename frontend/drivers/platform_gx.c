@@ -353,15 +353,13 @@ static void frontend_gx_exitspawn(char *s, size_t len)
                runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, new_path);
             }
          }
+         if (gx_fork_mode == FRONTEND_FORK_RESTART)
+            rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
          break;
       case FRONTEND_FORK_NONE:
       default:
          break;
    }
-
-#ifndef IS_SALAMANDER
-   rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
-#endif
 
    frontend_gx_exec(s, should_load_game);
    frontend_driver_get_salamander_basename(salamander_basename,
@@ -403,7 +401,7 @@ static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
       case FRONTEND_FORK_CORE:
          RARCH_LOG("FRONTEND_FORK_CORE\n");
          /* NOTE: We implement Salamander, so just turn
-          * this into FRONTEND_FORK_RESTART. */
+-          * this into FRONTEND_FORK_RESTART. */
          gx_fork_mode  = FRONTEND_FORK_RESTART;
          break;
       case FRONTEND_FORK_CORE_WITH_ARGS:
