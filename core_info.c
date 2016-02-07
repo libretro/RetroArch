@@ -463,7 +463,7 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
    return false;
 }
 
-bool core_info_does_support_any_file(const core_info_t *core,
+static bool core_info_does_support_any_file(const core_info_t *core,
       const struct string_list *list)
 {
    size_t i;
