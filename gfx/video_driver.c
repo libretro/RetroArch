@@ -298,7 +298,8 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
    settings_t *settings = config_get_ptr();
 
    if (settings->video.threaded
-         && !video_driver_state.hw_render_callback.context_type && !force_nonthreaded_data)
+         && !video_driver_state.hw_render_callback.context_type 
+         && !force_nonthreaded_data)
       return rarch_threaded_video_get_ptr(NULL);
 #endif
 
@@ -524,23 +525,12 @@ static void deinit_pixel_converter(void)
    video_driver_scaler_ptr             = NULL;
 }
 
-void video_driver_callback_destroy_context(void)
-{
-   const struct retro_hw_render_callback *hw_render =
-      (const struct retro_hw_render_callback*)video_driver_callback();
-   if (hw_render->context_destroy)
-      hw_render->context_destroy();
-
-   memset(&video_driver_state.hw_render_callback, 0,
-         sizeof(video_driver_state.hw_render_callback));
-}
-
 static bool uninit_video_input(void)
 {
    event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
 
    if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
-      video_driver_callback_destroy_context();
+      video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT_VIDEO_CACHE_CONTEXT, NULL);
 
    if (
          !input_driver_ctl(RARCH_INPUT_CTL_OWNS_DRIVER, NULL) &&
@@ -1711,6 +1701,13 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          break;
       case RARCH_DISPLAY_CTL_OWNS_DRIVER:
          return video_driver_data_own;
+      case RARCH_DISPLAY_CTL_DEINIT_VIDEO_CACHE_CONTEXT:
+         if (hw_render->context_destroy)
+            hw_render->context_destroy();
+
+         memset(&video_driver_state.hw_render_callback, 0,
+               sizeof(video_driver_state.hw_render_callback));
+         break;
       case RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT:
          video_driver_cache_context = true;
          break;
