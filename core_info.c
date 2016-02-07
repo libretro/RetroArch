@@ -159,7 +159,8 @@ static void core_info_list_free(core_info_list_t *core_info_list)
    free(core_info_list);
 }
 
-static config_file_t *core_info_list_iterate(struct string_list *contents, size_t i)
+static config_file_t *core_info_list_iterate(
+      struct string_list *contents, size_t i)
 {
    char info_path_base[PATH_MAX_LENGTH];
    char info_path[PATH_MAX_LENGTH];
@@ -190,10 +191,9 @@ static config_file_t *core_info_list_iterate(struct string_list *contents, size_
 void core_info_get_name(const char *path, char *s, size_t len)
 {
    size_t i;
-   core_info_t *core_info = NULL;
+   core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
-   settings_t *settings = config_get_ptr();
-   struct string_list *contents = dir_list_new_special(
+   struct string_list *contents     = dir_list_new_special(
          NULL, DIR_LIST_CORES, NULL);
 
    if (!contents)
@@ -249,9 +249,9 @@ error:
 static core_info_list_t *core_info_list_new(void)
 {
    size_t i;
-   core_info_t *core_info = NULL;
+   core_info_t *core_info           = NULL;
    core_info_list_t *core_info_list = NULL;
-   struct string_list *contents = 
+   struct string_list *contents     = 
       dir_list_new_special(NULL, DIR_LIST_CORES, NULL);
 
    if (!contents)
