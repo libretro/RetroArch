@@ -419,8 +419,6 @@ void * video_driver_read_frame_raw(unsigned *width,
 
 void video_driver_set_filtering(unsigned index, bool smooth);
 
-bool video_driver_suppress_screensaver(bool enable);
-
 const char *video_driver_get_ident(void);
 
 bool video_driver_set_viewport(unsigned width, unsigned height,

@@ -755,7 +755,8 @@ static bool init_video(void)
    video_driver_set_rotation(
             (settings->video.rotation + system->rotation) % 4);
 
-   video_driver_suppress_screensaver(settings->ui.suspend_screensaver_enable);
+   current_video->suppress_screensaver(video_driver_data,
+         settings->ui.suspend_screensaver_enable);
 
    init_video_input(tmp);
 
@@ -775,10 +776,6 @@ error:
    return false;
 }
 
-bool video_driver_suppress_screensaver(bool enable)
-{
-   return current_video->suppress_screensaver(video_driver_data, enable);
-}
 
 
 bool video_driver_set_viewport(unsigned width, unsigned height,
