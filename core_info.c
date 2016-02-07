@@ -476,15 +476,6 @@ static bool core_info_does_support_file(
          core->supported_extensions_list, ".", path_get_extension(path));
 }
 
-const char *core_info_list_get_all_extensions(void)
-{
-   core_info_list_t *list = NULL;
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
-   if (!list)
-      return NULL;
-   return list->all_ext;
-}
-
 /* qsort_r() is not in standard C, sadly. */
 
 static int core_info_qsort_cmp(const void *a_, const void *b_)

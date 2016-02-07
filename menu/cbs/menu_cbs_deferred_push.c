@@ -328,8 +328,10 @@ static int general_push(menu_displaylist_info_t *info,
    struct retro_system_info *system_menu = NULL;
    settings_t        *settings = config_get_ptr();
    rarch_system_info_t *system = NULL;
+   core_info_list_t *list      = NULL;
    menu_handle_t        *menu  = menu_driver_get_ptr();
-   const char          *exts   = core_info_list_get_all_extensions();
+
+   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system_menu);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
@@ -354,8 +356,8 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
          info->setting      = menu_setting_find(info->label);
   
-         if (exts)
-            strlcpy(info->exts, exts, sizeof(info->exts));
+         if (!string_is_empty(list->all_ext))
+            strlcpy(info->exts, list->all_ext, sizeof(info->exts));
          else if (system_menu->valid_extensions)
          {
             if (*system_menu->valid_extensions)
@@ -391,8 +393,8 @@ static int general_push(menu_displaylist_info_t *info,
             strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
          break;
       case PUSH_DETECT_CORE_LIST:
-         if (exts)
-            strlcpy(info->exts, exts, sizeof(info->exts));
+         if (!string_is_empty(list->all_ext))
+            strlcpy(info->exts, list->all_ext, sizeof(info->exts));
          break;
    }
 

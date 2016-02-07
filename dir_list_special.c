@@ -45,8 +45,13 @@ struct string_list *dir_list_new_special(const char *input_dir,
          exts = ext_name;
          break;
       case DIR_LIST_CORE_INFO:
-         dir  = input_dir;
-         exts = core_info_list_get_all_extensions();
+         {
+            core_info_list_t *list = NULL;
+            core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+
+            dir  = input_dir;
+            exts = list->all_ext;
+         }
          break;
       case DIR_LIST_SHADERS:
          dir  = settings->video.shader_dir;

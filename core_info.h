@@ -100,8 +100,6 @@ void core_info_list_update_missing_firmware(core_info_list_t *list,
 bool core_info_list_get_info(core_info_list_t *list,
       core_info_t *info, const char *path);
 
-const char *core_info_list_get_all_extensions(void);
-
 bool core_info_list_get_display_name(core_info_list_t *list,
       const char *path, char *s, size_t len);
 
