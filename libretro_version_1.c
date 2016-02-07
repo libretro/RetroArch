@@ -305,12 +305,12 @@ bool core_ctl(enum core_ctl_state state, void *data)
          core.retro_init();
          break;
       case CORE_CTL_RETRO_DEINIT:
-         video_driver_callback_destroy_context();
-         video_driver_unset_callback();
          core.retro_deinit();
          uninit_libretro_sym(&core);
          break;
       case CORE_CTL_RETRO_UNLOAD_GAME:
+         video_driver_callback_destroy_context();
+         video_driver_unset_callback();
          core.retro_unload_game();
          break;
       case CORE_CTL_RETRO_RUN:
