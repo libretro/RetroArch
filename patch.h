@@ -25,7 +25,7 @@
 
 typedef enum
 {
-   PATCH_UNKNOWN,
+   PATCH_UNKNOWN = 0,
    PATCH_SUCCESS,
    PATCH_PATCH_TOO_SMALL,
    PATCH_PATCH_INVALID_HEADER,
@@ -41,22 +41,6 @@ typedef enum
 
 typedef patch_error_t (*patch_func_t)(const uint8_t*, size_t,
       const uint8_t*, size_t, uint8_t*, size_t*);
-
-patch_error_t bps_apply_patch(
-      const uint8_t *patch_data, size_t patch_length,
-      const uint8_t *source_data, size_t source_length,
-      uint8_t *target_data, size_t *target_length);
-
-patch_error_t ups_apply_patch(
-      const uint8_t *patch_data, size_t patch_length,
-      const uint8_t *source_data, size_t source_length,
-      uint8_t *target_data, size_t *target_length);
-
-
-patch_error_t ips_apply_patch(
-      const uint8_t *patch_data, size_t patch_length,
-      const uint8_t *source_data, size_t source_length,
-      uint8_t *target_data, size_t *target_length);
 
 /**
  * patch_content:

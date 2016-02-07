@@ -96,7 +96,7 @@ static void bps_write(struct bps_data *bps, uint8_t data)
 #endif
 }
 
-patch_error_t bps_apply_patch(
+static patch_error_t bps_apply_patch(
       const uint8_t *modify_data, size_t modify_length,
       const uint8_t *source_data, size_t source_length,
       uint8_t *target_data, size_t *target_length)
@@ -198,7 +198,8 @@ patch_error_t bps_apply_patch(
       modify_modify_checksum |= bps_read(&bps) << i;
 
 #ifdef HAVE_ZLIB
-   bps.source_checksum = stream_backend->stream_crc_calculate(0, bps.source_data, bps.source_length);
+   bps.source_checksum = stream_backend->stream_crc_calculate(0,
+         bps.source_data, bps.source_length);
 #else
    return PATCH_PATCH_CHECKSUM_INVALID;
 #endif
@@ -237,7 +238,8 @@ static uint8_t ups_patch_read(struct ups_data *data)
    {
       uint8_t n = data->patch_data[data->patch_offset++];
 #ifdef HAVE_ZLIB
-      data->patch_checksum = ~stream_backend->stream_crc_calculate(~data->patch_checksum, &n, 1);
+      data->patch_checksum = 
+         ~stream_backend->stream_crc_calculate(~data->patch_checksum, &n, 1);
 #endif
       return n;
    }
@@ -255,7 +257,8 @@ static uint8_t ups_source_read(struct ups_data *data)
    {
       uint8_t n = data->source_data[data->source_offset++];
 #ifdef HAVE_ZLIB
-      data->source_checksum = ~stream_backend->stream_crc_calculate(~data->source_checksum, &n, 1);
+      data->source_checksum = 
+         ~stream_backend->stream_crc_calculate(~data->source_checksum, &n, 1);
 #endif
       return n;
    }
@@ -273,7 +276,8 @@ static void ups_target_write(struct ups_data *data, uint8_t n)
    {
       data->target_data[data->target_offset] = n;
 #ifdef HAVE_ZLIB
-      data->target_checksum = ~stream_backend->stream_crc_calculate(~data->target_checksum, &n, 1);
+      data->target_checksum = 
+         ~stream_backend->stream_crc_calculate(~data->target_checksum, &n, 1);
 #endif
    }
 
@@ -297,7 +301,7 @@ static uint64_t ups_decode(struct ups_data *data)
    return offset;
 }
 
-patch_error_t ups_apply_patch(
+static patch_error_t ups_apply_patch(
       const uint8_t *patchdata, size_t patchlength,
       const uint8_t *sourcedata, size_t sourcelength,
       uint8_t *targetdata, size_t *targetlength)
@@ -396,7 +400,7 @@ patch_error_t ups_apply_patch(
    return PATCH_SOURCE_INVALID;
 }
 
-patch_error_t ips_apply_patch(
+static patch_error_t ips_apply_patch(
       const uint8_t *patchdata, size_t patchlen,
       const uint8_t *sourcedata, size_t sourcelength,
       uint8_t *targetdata, size_t *targetlength)
@@ -591,13 +595,17 @@ void patch_content(uint8_t **buf, ssize_t *size)
 {
    global_t *global = global_get_ptr();
 
-   if (global->patch.ips_pref + global->patch.bps_pref + global->patch.ups_pref > 1)
+   if (    global->patch.ips_pref 
+         + global->patch.bps_pref 
+         + global->patch.ups_pref > 1)
    {
       RARCH_WARN("Several patches are explicitly defined, ignoring all ...\n");
       return;
    }
 
-   if (!try_ips_patch(buf, size) && !try_bps_patch(buf, size) && !try_ups_patch(buf, size))
+   if (     !try_ips_patch(buf, size) 
+         && !try_bps_patch(buf, size) 
+         && !try_ups_patch(buf, size))
    {
       RARCH_LOG("Did not find a valid content patch.\n");
    }
