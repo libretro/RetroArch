@@ -530,7 +530,7 @@ static bool uninit_video_input(void)
    event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
 
    if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
-      video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT_VIDEO_CACHE_CONTEXT, NULL);
+      video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT_HW_CONTEXT, NULL);
 
    if (
          !input_driver_ctl(RARCH_INPUT_CTL_OWNS_DRIVER, NULL) &&
@@ -1701,7 +1701,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          break;
       case RARCH_DISPLAY_CTL_OWNS_DRIVER:
          return video_driver_data_own;
-      case RARCH_DISPLAY_CTL_DEINIT_VIDEO_CACHE_CONTEXT:
+      case RARCH_DISPLAY_CTL_DEINIT_HW_CONTEXT:
          if (hw_render->context_destroy)
             hw_render->context_destroy();
 
