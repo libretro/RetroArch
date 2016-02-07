@@ -41,9 +41,7 @@
 
 #include "../verbosity.h"
 
-#ifndef MEASURE_FRAME_TIME_SAMPLES_COUNT
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
-#endif
 
 typedef struct video_driver_state
 {
@@ -597,16 +595,7 @@ static bool init_video_pixel_converter(unsigned size)
    return true;
 
 error:
-   if (video_driver_scaler_ptr)
-   {
-      if (video_driver_scaler_ptr->scaler_out)
-         free(video_driver_scaler_ptr->scaler_out);
-      if (video_driver_scaler_ptr->scaler)
-         free(video_driver_scaler_ptr->scaler);
-
-      free(video_driver_scaler_ptr);
-      video_driver_scaler_ptr = NULL;
-   }
+   deinit_pixel_converter();
 
    return false;
 }
