@@ -549,24 +549,6 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    *num_infos = supported;
 }
 
-static core_info_t *core_info_find(core_info_list_t *list,
-      const char *core)
-{
-   size_t i;
-
-   for (i = 0; i < list->count; i++)
-   {
-      core_info_t *info = (core_info_t*)&list->list[i];
-
-      if (!info || !info->path)
-         continue;
-      if (string_is_equal(info->path, core))
-         return info;
-   }
-
-   return NULL;
-}
-
 core_info_t *core_info_get(core_info_list_t *list, size_t i)
 {
    core_info_t *info = NULL;
@@ -578,6 +560,24 @@ core_info_t *core_info_get(core_info_list_t *list, size_t i)
       return NULL;
 
    return info;
+}
+
+static core_info_t *core_info_find(core_info_list_t *list,
+      const char *core)
+{
+   size_t i;
+
+   for (i = 0; i < list->count; i++)
+   {
+      core_info_t *info = core_info_get(list, i);
+
+      if (!info)
+         continue;
+      if (string_is_equal(info->path, core))
+         return info;
+   }
+
+   return NULL;
 }
 
 
