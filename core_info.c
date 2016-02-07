@@ -378,7 +378,7 @@ size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
 }
 
 bool core_info_list_get_display_name(core_info_list_t *core_info_list,
-      const char *path, char *buf, size_t size)
+      const char *path, char *s, size_t len)
 {
    size_t i;
 
@@ -391,7 +391,7 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
       if (string_is_equal(path_basename(info->path), path_basename(path))
             && info->display_name)
       {
-         strlcpy(buf, info->display_name, size);
+         strlcpy(s, info->display_name, len);
          return true;
       }
    }
