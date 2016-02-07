@@ -631,8 +631,7 @@ static int action_ok_playlist_entry(const char *path,
    {
       char new_core_path[PATH_MAX_LENGTH];
       char new_display_name[PATH_MAX_LENGTH];
-      core_info_t            *core_info = NULL;
-      core_info_list_t *list            = NULL;
+      core_info_ctx_find_t core_info;
       const char *entry_path            = NULL;
       const char *entry_crc32           = NULL;
       const char *db_name               = NULL;
@@ -640,9 +639,10 @@ static int action_ok_playlist_entry(const char *path,
       bool        found_associated_core = menu_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
-      core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+      core_info.inf  = NULL;
+      core_info.path = new_core_path;
 
-      if (!(core_info = core_info_find(list, new_core_path)))
+      if (!core_info_ctl(CORE_INFO_CTL_FIND, &core_info))
          found_associated_core = false;
 
       if (!found_associated_core)
@@ -654,7 +654,7 @@ static int action_ok_playlist_entry(const char *path,
       content_playlist_get_index(tmp_playlist, selection_ptr,
             &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
 
-      strlcpy(new_display_name, core_info->display_name, sizeof(new_display_name));
+      strlcpy(new_display_name, core_info.inf->display_name, sizeof(new_display_name));
       content_playlist_update(tmp_playlist,
             selection_ptr,
             entry_path,

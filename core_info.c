@@ -671,12 +671,12 @@ bool core_info_ctl(enum core_info_state state, void *data)
          if (core_info_current)
             free(core_info_current);
          core_info_current = NULL;
-         return true;
+         break;
       case CORE_INFO_CTL_CURRENT_CORE_INIT:
          core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
          if (!core_info_current)
             return false;
-         return true;
+         break;
       case CORE_INFO_CTL_CURRENT_CORE_GET:
          {
             core_info_t **core = (core_info_t**)data;
@@ -684,15 +684,15 @@ bool core_info_ctl(enum core_info_state state, void *data)
                return false;
             *core = core_info_current;
          }
-         return true;
+         break;
       case CORE_INFO_CTL_LIST_DEINIT:
          if (core_info_curr_list)
             core_info_list_free(core_info_curr_list);
          core_info_curr_list = NULL;
-         return true;
+         break;
       case CORE_INFO_CTL_LIST_INIT:
          core_info_curr_list = core_info_list_new();
-         return true;
+         break;
       case CORE_INFO_CTL_LIST_GET:
          {
             core_info_list_t **core = (core_info_list_t**)data;
@@ -700,8 +700,18 @@ bool core_info_ctl(enum core_info_state state, void *data)
                return false;
             *core = core_info_curr_list;
          }
-         return true;
-
+         break;
+      case CORE_INFO_CTL_FIND:
+         {
+            core_info_ctx_find_t *info = (core_info_ctx_find_t*)data;
+            if (!info)
+               return false;
+            if (!core_info_curr_list)
+               return false;
+            if (!(info->inf = core_info_find(core_info_curr_list, info->path)))
+               return false;
+         }
+         break;
       case CORE_INFO_CTL_NONE:
       default:
          break;

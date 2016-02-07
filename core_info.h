@@ -32,7 +32,8 @@ enum core_info_state
    CORE_INFO_CTL_LIST_GET,
    CORE_INFO_CTL_CURRENT_CORE_FREE,
    CORE_INFO_CTL_CURRENT_CORE_INIT,
-   CORE_INFO_CTL_CURRENT_CORE_GET
+   CORE_INFO_CTL_CURRENT_CORE_GET,
+   CORE_INFO_CTL_FIND
 };
 
 typedef struct
@@ -80,6 +81,12 @@ typedef struct
    size_t count;
    char *all_ext;
 } core_info_list_t;
+
+typedef struct core_info_ctx_find
+{
+   core_info_t *inf;
+   const char *path;
+} core_info_ctx_find_t;
 
 core_info_list_t *core_info_list_new(void);
 void core_info_list_free(core_info_list_t *list);
