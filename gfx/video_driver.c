@@ -1617,7 +1617,11 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_IS_FOCUSED:
          return current_video->focus(video_driver_data);
       case RARCH_DISPLAY_CTL_HAS_WINDOWED:
+#if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
+         return false;
+#else
          return current_video->has_windowed(video_driver_data);
+#endif
       case RARCH_DISPLAY_CTL_GET_FRAME_COUNT:
          {
             uint64_t **ptr = (uint64_t**)data;

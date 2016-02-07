@@ -4348,7 +4348,6 @@ static bool setting_append_list_video_options(
       &setting_get_string_representation_uint_video_monitor_index;
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    if (video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
    {
       CONFIG_BOOL(
@@ -4367,7 +4366,6 @@ static bool setting_append_list_video_options(
       menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
       settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
    }
-#endif
    if (video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
    {
       CONFIG_BOOL(
@@ -4542,7 +4540,6 @@ static bool setting_append_list_video_options(
    END_SUB_GROUP(list, list_info, parent_group);
    START_SUB_GROUP(list, list_info, "Scaling", &group_info, &subgroup_info, parent_group);
 
-#if !defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)
    if (video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
    {
       CONFIG_FLOAT(
@@ -4559,7 +4556,6 @@ static bool setting_append_list_video_options(
             general_read_handler);
       menu_settings_list_current_add_range(list, list_info, 1.0, 10.0, 1.0, true, true);
    }
-#endif
 
    CONFIG_BOOL(
          list, list_info,
