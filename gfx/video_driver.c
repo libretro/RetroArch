@@ -43,6 +43,16 @@
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
+#define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
+
+#define FPS_UPDATE_INTERVAL 256
+
+#ifdef _WIN32
+#define U64_SIGN "%I64u"
+#else
+#define U64_SIGN "%llu"
+#endif
+
 typedef struct video_driver_state
 {
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
@@ -793,7 +803,6 @@ bool video_driver_set_rotation(unsigned rotation)
    return false;
 }
 
-
 bool video_driver_set_video_mode(unsigned width,
       unsigned height, bool fullscreen)
 {
@@ -993,11 +1002,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    return true;
 }
 
-#ifndef TIME_TO_FPS
-#define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
-#endif
-
-#define FPS_UPDATE_INTERVAL 256
 
 /**
  * video_monitor_get_fps:
@@ -1012,13 +1016,6 @@ bool video_monitor_fps_statistics(double *refresh_rate,
  * otherwise false.
  *
  **/
-
-#ifdef _WIN32
-#define U64_SIGN "%I64u"
-#else
-#define U64_SIGN "%llu"
-#endif
-
 bool video_monitor_get_fps(char *buf, size_t size,
       char *buf_fps, size_t size_fps)
 {
