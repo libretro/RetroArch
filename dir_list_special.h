@@ -19,8 +19,6 @@
 
 #include <stdint.h>
 
-#include <file/file_path.h>
-
 #include <string/string_list.h>
 
 enum dir_list_type
@@ -34,6 +32,7 @@ enum dir_list_type
    DIR_LIST_SHADERS
 };
 
-struct string_list *dir_list_new_special(const char *input_dir, enum dir_list_type type, const char *filter);
+struct string_list *dir_list_new_special(const char *input_dir,
+      enum dir_list_type type, const char *filter);
 
 #endif

@@ -18,7 +18,7 @@
 #include <retro_endianness.h>
 #include <string/stdstring.h>
 #include <file/dir_list.h>
-
+#include <file/file_path.h>
 #include <queues/message_queue.h>
 
 #include "tasks.h"

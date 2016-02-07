@@ -16,6 +16,7 @@
 #include <ctype.h>
 
 #include <compat/strl.h>
+#include <file/file_path.h>
 #include <file/dir_list.h>
 #include <string/stdstring.h>
 

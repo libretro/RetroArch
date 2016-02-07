@@ -19,6 +19,7 @@
 
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
+#include <file/file_path.h>
 #include <retro_endianness.h>
 #include <retro_file.h>
 #include <string/stdstring.h>
