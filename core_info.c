@@ -30,6 +30,9 @@
 #include "config.h"
 #endif
 
+static const char *core_info_tmp_path = NULL;
+static const struct string_list *core_info_tmp_list = NULL;
+
 static void core_info_list_resolve_all_extensions(
       core_info_list_t *core_info_list)
 {
@@ -491,8 +494,6 @@ const char *core_info_list_get_all_extensions(void)
 }
 
 /* qsort_r() is not in standard C, sadly. */
-static const char *core_info_tmp_path;
-static const struct string_list *core_info_tmp_list;
 
 static int core_info_qsort_cmp(const void *a_, const void *b_)
 {
@@ -561,7 +562,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    *num_infos = supported;
 }
 
-core_info_t *core_info_find(core_info_list_t *list,
+static core_info_t *core_info_find(core_info_list_t *list,
       const char *core)
 {
    size_t i;
@@ -704,9 +705,7 @@ bool core_info_ctl(enum core_info_state state, void *data)
       case CORE_INFO_CTL_FIND:
          {
             core_info_ctx_find_t *info = (core_info_ctx_find_t*)data;
-            if (!info)
-               return false;
-            if (!core_info_curr_list)
+            if (!info || !core_info_curr_list)
                return false;
             if (!(info->inf = core_info_find(core_info_curr_list, info->path)))
                return false;

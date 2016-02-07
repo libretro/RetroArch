@@ -118,9 +118,6 @@ bool core_info_list_get_info(core_info_list_t *list,
 
 const char *core_info_list_get_all_extensions(void);
 
-core_info_t *core_info_find(core_info_list_t *list,
-      const char *core);
-
 bool core_info_list_get_display_name(core_info_list_t *list,
       const char *path, char *buf, size_t size);
 
