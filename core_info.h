@@ -100,11 +100,6 @@ typedef struct core_info_ctx_find
 void core_info_list_get_supported_cores(core_info_list_t *list,
       const char *path, const core_info_t **infos, size_t *num_infos);
 
-/* Shallow-copies internal state. Data in *info is invalidated when the
- * core_info_list is freed. */
-bool core_info_list_get_info(core_info_list_t *list,
-      core_info_t *info, const char *path);
-
 bool core_info_list_get_display_name(core_info_list_t *list,
       const char *path, char *s, size_t len);
 

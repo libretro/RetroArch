@@ -429,7 +429,11 @@ error:
    return false;
 }
 
-bool core_info_list_get_info(core_info_list_t *core_info_list,
+/* Shallow-copies internal state. 
+ *
+ * Data in *info is invalidated when the
+ * core_info_list is freed. */
+static bool core_info_list_get_info(core_info_list_t *core_info_list,
       core_info_t *out_info, const char *path)
 {
    size_t i;
