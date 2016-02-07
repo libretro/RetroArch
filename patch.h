@@ -39,9 +39,6 @@ typedef enum
    PATCH_PATCH_CHECKSUM_INVALID
 } patch_error_t;
 
-typedef patch_error_t (*patch_func_t)(const uint8_t*, size_t,
-      const uint8_t*, size_t, uint8_t*, size_t*);
-
 /**
  * patch_content:
  * @buf          : buffer of the content file.

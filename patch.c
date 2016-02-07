@@ -52,6 +52,9 @@ struct bps_data
    size_t source_relative_offset, target_relative_offset, output_offset;
 };
 
+typedef patch_error_t (*patch_func_t)(const uint8_t*, size_t,
+      const uint8_t*, size_t, uint8_t*, size_t*);
+
 static uint8_t bps_read(struct bps_data *bps)
 {
    uint8_t data = bps->modify_data[bps->modify_offset++];
