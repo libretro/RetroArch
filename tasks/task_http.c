@@ -26,7 +26,6 @@
 #include <retro_stat.h>
 
 #include "../file_ops.h"
-#include "../general.h"
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "tasks.h"

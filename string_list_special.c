@@ -30,7 +30,6 @@
 #endif
 
 #include "core_info.h"
-#include "general.h"
 #include "gfx/video_driver.h"
 #include "input/input_driver.h"
 #include "input/input_hid_driver.h"

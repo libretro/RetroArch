@@ -24,7 +24,6 @@
 #include <compat/posix_string.h>
 
 #include "cheats.h"
-#include "general.h"
 #include "runloop.h"
 #include "dynamic.h"
 #include "libretro_version_1.h"

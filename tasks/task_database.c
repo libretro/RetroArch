@@ -30,7 +30,6 @@
 #include "../dir_list_special.h"
 #include "../file_ops.h"
 #include "../msg_hash.h"
-#include "../general.h"
 #include "../playlist.h"
 #include "../verbosity.h"
 

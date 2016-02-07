@@ -21,11 +21,12 @@
 
 #include <retro_inline.h>
 
-#include "general.h"
-#include "msg_hash.h"
 #include "rewind.h"
+#include "configuration.h"
+#include "msg_hash.h"
 #include "movie.h"
 #include "libretro_version_1.h"
+#include "runloop.h"
 #include "performance.h"
 #include "verbosity.h"
 #include "audio/audio_driver.h"

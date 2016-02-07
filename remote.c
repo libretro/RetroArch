@@ -28,11 +28,9 @@
 #include <retro_miscellaneous.h>
 #include <net/net_compat.h>
 
-#include "msg_hash.h"
-
 #include "remote.h"
 
-#include "general.h"
+#include "msg_hash.h"
 #include "runloop.h"
 #include "verbosity.h"
 

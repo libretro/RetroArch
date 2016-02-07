@@ -28,7 +28,6 @@
 #include "autosave.h"
 #include "core_info.h"
 #include "cheats.h"
-#include "general.h"
 #include "performance.h"
 #include "dynamic.h"
 #include "content.h"

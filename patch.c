@@ -30,7 +30,7 @@
 
 #include "patch.h"
 #include "file_ops.h"
-#include "general.h"
+#include "runloop.h"
 #include "verbosity.h"
 
 enum bps_mode
