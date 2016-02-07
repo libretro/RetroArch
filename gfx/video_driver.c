@@ -48,7 +48,6 @@
 typedef struct video_driver_state
 {
    retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
-   struct retro_hw_render_callback hw_render_callback;
    uint64_t frame_time_samples_count;
    enum retro_pixel_format pix_fmt;
 
@@ -1096,7 +1095,9 @@ void video_driver_set_aspect_ratio_value(float value)
 
 struct retro_hw_render_callback *video_driver_callback(void)
 {
-   return &video_driver_state.hw_render_callback;
+   struct retro_hw_render_callback *hwr = NULL;
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   return hwr;
 }
 
 static bool video_driver_frame_filter(const void *data,
@@ -1405,6 +1406,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
     * data into graphics driver. Kinda hackish to place it here, it is only
     * used for GLES.
     * TODO: Refactor this better. */
+   static struct retro_hw_render_callback hw_render;
    static bool video_driver_use_rgba                = false;
    static bool video_driver_data_own                = false;
    static bool video_driver_active                  = false;
@@ -1415,10 +1417,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
    static bool video_driver_cache_context           = false;
    /* Set to true by driver if context caching succeeded. */
    static bool video_driver_cache_context_ack       = false;
-   settings_t *settings                             = config_get_ptr();
-   const struct retro_hw_render_callback *hw_render = 
-      (const struct retro_hw_render_callback*)video_driver_callback();
    static uint8_t *video_driver_record_gpu_buffer   = NULL;
+   settings_t *settings                             = config_get_ptr();
 
    switch (state)
    {
@@ -1702,13 +1702,21 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_OWNS_DRIVER:
          return video_driver_data_own;
       case RARCH_DISPLAY_CTL_IS_HW_CONTEXT:
-         return (hw_render->context_type != RETRO_HW_CONTEXT_NONE);
+         return (hw_render.context_type != RETRO_HW_CONTEXT_NONE);
       case RARCH_DISPLAY_CTL_DEINIT_HW_CONTEXT:
-         if (hw_render->context_destroy)
-            hw_render->context_destroy();
+         if (hw_render.context_destroy)
+            hw_render.context_destroy();
 
-         memset(&video_driver_state.hw_render_callback, 0,
-               sizeof(video_driver_state.hw_render_callback));
+         memset(&hw_render, 0, sizeof(hw_render));
+         break;
+      case RARCH_DISPLAY_CTL_HW_CONTEXT_GET:
+         {
+            struct retro_hw_render_callback **hw_cb = 
+               (struct retro_hw_render_callback**)data;
+            if (!hw_cb)
+               return false;
+            *hw_cb = &hw_render;
+         }
          break;
       case RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT:
          video_driver_cache_context = true;
