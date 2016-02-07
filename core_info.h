@@ -105,7 +105,7 @@ bool core_info_list_get_info(core_info_list_t *list,
 const char *core_info_list_get_all_extensions(void);
 
 bool core_info_list_get_display_name(core_info_list_t *list,
-      const char *path, char *buf, size_t size);
+      const char *path, char *s, size_t len);
 
 bool core_info_get_display_name(const char *path, char *s, size_t len);
 
