@@ -159,6 +159,34 @@ static void core_info_list_free(core_info_list_t *core_info_list)
    free(core_info_list);
 }
 
+static config_file_t *core_info_list_iterate(struct string_list *contents, size_t i)
+{
+   char info_path_base[PATH_MAX_LENGTH];
+   char info_path[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
+
+   if (!contents->elems[i].data)
+      return NULL;
+
+   fill_pathname_base(info_path_base, contents->elems[i].data,
+         sizeof(info_path_base));
+   path_remove_extension(info_path_base);
+
+#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP))
+   char *substr = strrchr(info_path_base, '_');
+   if (substr)
+      *substr = '\0';
+#endif
+
+   strlcat(info_path_base, ".info", sizeof(info_path_base));
+
+   fill_pathname_join(info_path, (*settings->libretro_info_path) ?
+         settings->libretro_info_path : settings->libretro_directory,
+         info_path_base, sizeof(info_path));
+
+   return config_file_new(info_path);
+}
+
 void core_info_get_name(const char *path, char *s, size_t len)
 {
    size_t i;
@@ -184,35 +212,12 @@ void core_info_get_name(const char *path, char *s, size_t len)
 
    for (i = 0; i < contents->size; i++)
    {
-      config_file_t *conf                  = NULL;
-      char info_path_base[PATH_MAX_LENGTH] = {0};
-      char info_path[PATH_MAX_LENGTH]      = {0};
+      config_file_t *conf = NULL;
 
-      core_info[i].path = strdup(contents->elems[i].data);
-
-      if (!core_info[i].path)
-         break;
-
-      if (!string_is_equal(core_info[i].path, path))
-            continue;
-
-      fill_pathname_base(info_path_base, contents->elems[i].data,
-            sizeof(info_path_base));
-      path_remove_extension(info_path_base);
-
-#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP))
-      char *substr = strrchr(info_path_base, '_');
-      if (substr)
-         *substr = '\0';
-#endif
-
-      strlcat(info_path_base, ".info", sizeof(info_path_base));
-
-      fill_pathname_join(info_path, (*settings->libretro_info_path) ?
-            settings->libretro_info_path : settings->libretro_directory,
-            info_path_base, sizeof(info_path));
-
-      conf = config_file_new(info_path);
+      if (!string_is_equal(contents->elems[i].data, path))
+         continue;
+      
+      conf = core_info_list_iterate(contents, i);
 
       if (conf)
       {
@@ -220,6 +225,8 @@ void core_info_get_name(const char *path, char *s, size_t len)
                &core_info[i].core_name);
          core_info[i].config_data = (void*)conf;
       }
+
+      core_info[i].path = strdup(contents->elems[i].data);
 
       strlcpy(s, core_info[i].core_name, len);
    }
@@ -238,34 +245,6 @@ error:
    core_info_list_free(core_info_list);
 }
 
-static config_file_t *core_info_list_iterate(struct string_list *contents, size_t i)
-{
-   char info_path_base[PATH_MAX_LENGTH];
-   char info_path[PATH_MAX_LENGTH];
-   config_file_t *conf  = NULL;
-   settings_t *settings = config_get_ptr();
-
-   if (!contents->elems[i].data)
-      return NULL;
-
-   fill_pathname_base(info_path_base, contents->elems[i].data,
-         sizeof(info_path_base));
-   path_remove_extension(info_path_base);
-
-#if defined(RARCH_MOBILE) || (defined(RARCH_CONSOLE) && !defined(PSP))
-   char *substr = strrchr(info_path_base, '_');
-   if (substr)
-      *substr = '\0';
-#endif
-
-   strlcat(info_path_base, ".info", sizeof(info_path_base));
-
-   fill_pathname_join(info_path, (*settings->libretro_info_path) ?
-         settings->libretro_info_path : settings->libretro_directory,
-         info_path_base, sizeof(info_path));
-
-   return config_file_new(info_path);
-}
 
 static core_info_list_t *core_info_list_new(void)
 {
