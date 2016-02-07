@@ -554,10 +554,6 @@ static bool uninit_video_input(void)
 
 static bool init_video_pixel_converter(unsigned size)
 {
-   /* This function can be called multiple times
-    * without deiniting first on consoles. */
-   deinit_pixel_converter();
-
    /* If pixel format is not 0RGB1555, we don't need to do
     * any internal pixel conversion. */
    if (video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
