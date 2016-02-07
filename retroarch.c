@@ -1113,7 +1113,7 @@ static bool init_state(void)
    return true;
 }
 
-bool rarch_option_create(char *path, size_t len)
+bool rarch_option_create(char *s, size_t len)
 {
    char core_path[PATH_MAX_LENGTH];
    char config_directory[PATH_MAX_LENGTH];
@@ -1146,10 +1146,10 @@ bool rarch_option_create(char *path, size_t len)
       return false;
 
    /* Concatenate strings into full paths for game_path */
-   fill_pathname_join(path,
+   fill_pathname_join(s,
          config_directory, core_name, len);
-   fill_string_join(path, game_name, len);
-   strlcat(path, ".opt", len);
+   fill_string_join(s, game_name, len);
+   strlcat(s, ".opt", len);
 
    fill_pathname_join(core_path,
          config_directory, core_name, sizeof(core_path));

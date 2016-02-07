@@ -172,7 +172,7 @@ enum rarch_content_type rarch_path_is_media_type(const char *path);
 
 const char *rarch_get_current_savefile_dir(void);
 
-bool rarch_option_create(char *path, size_t len);
+bool rarch_option_create(char *s, size_t len);
 
 #ifdef __cplusplus
 }
