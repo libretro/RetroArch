@@ -76,8 +76,6 @@ void bsv_movie_set_path(const char *path);
 
 void bsv_movie_set_start_path(const char *path);
 
-void bsv_movie_free(bsv_movie_t *handle);
-
 bool bsv_movie_ctl(enum bsv_ctl_state state, void *data);
 
 bool bsv_movie_init_handle(const char *path, enum rarch_movie_type type);

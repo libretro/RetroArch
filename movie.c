@@ -186,7 +186,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
    return true;
 }
 
-void bsv_movie_free(bsv_movie_t *handle)
+static void bsv_movie_free(bsv_movie_t *handle)
 {
    if (!handle)
       return;
@@ -198,7 +198,8 @@ void bsv_movie_free(bsv_movie_t *handle)
    free(handle);
 }
 
-static bsv_movie_t *bsv_movie_init(const char *path, enum rarch_movie_type type)
+static bsv_movie_t *bsv_movie_init(const char *path,
+      enum rarch_movie_type type)
 {
    bsv_movie_t *handle = (bsv_movie_t*)calloc(1, sizeof(*handle));
    if (!handle)
@@ -250,7 +251,8 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
 {
    handle->did_rewind = true;
 
-   if ((handle->frame_ptr <= 1) && (handle->frame_pos[0] == handle->min_file_pos))
+   if (     (handle->frame_ptr <= 1) 
+         && (handle->frame_pos[0] == handle->min_file_pos))
    {
       /* If we're at the beginning... */
       handle->frame_ptr = 0;
@@ -310,7 +312,8 @@ static void bsv_movie_init_state(void)
       }
 
       bsv_movie_state.movie_playback = true;
-      runloop_msg_queue_push(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK), 2, 180, false);
+      runloop_msg_queue_push(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK),
+            2, 180, false);
       RARCH_LOG("%s.\n", msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
       settings->rewind_granularity = 1;
    }
@@ -325,7 +328,9 @@ static void bsv_movie_init_state(void)
       if (!(bsv_movie_init_handle(bsv_movie_state.movie_start_path,
                   RARCH_MOVIE_RECORD)))
       {
-         runloop_msg_queue_push(msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD), 1, 180, true);
+         runloop_msg_queue_push(
+               msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
+               1, 180, true);
          RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
          return;
       }
@@ -431,7 +436,8 @@ const char *bsv_movie_get_path(void)
 
 void bsv_movie_set_path(const char *path)
 {
-   strlcpy(bsv_movie_state.movie_path, path, sizeof(bsv_movie_state.movie_path));
+   strlcpy(bsv_movie_state.movie_path,
+         path, sizeof(bsv_movie_state.movie_path));
 }
 
 void bsv_movie_set_start_path(const char *path)
@@ -440,7 +446,8 @@ void bsv_movie_set_start_path(const char *path)
          sizeof(bsv_movie_state.movie_start_path));
 }
 
-bool bsv_movie_init_handle(const char *path, enum rarch_movie_type type)
+bool bsv_movie_init_handle(const char *path,
+      enum rarch_movie_type type)
 {
    bsv_movie_state.movie = bsv_movie_init(path, type);
    if (!bsv_movie_state.movie)
