@@ -249,7 +249,7 @@ local int gz_fetch(gz_statep state)
 /* Skip len uncompressed bytes of output.  Return -1 on error, 0 on success. */
 local int gz_skip(gz_statep state, z_off64_t len)
 {
-   unsigned n = 0;
+   unsigned n;
 
    /* skip over len bytes or reach end-of-file, whichever comes first */
    while (len)

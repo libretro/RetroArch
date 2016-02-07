@@ -132,7 +132,7 @@ local int gz_comp(gz_statep state, int flush)
 local int gz_zero(gz_statep state, z_off64_t len)
 {
     int first;
-    unsigned n     = 0;
+    unsigned n;
     z_streamp strm = &(state->strm);
 
     /* consume whatever's left in the input buffer */
