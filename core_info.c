@@ -585,7 +585,9 @@ static bool core_info_list_update_missing_firmware(
    if (!core_info_list || !core)
       return false;
 
-   if (!(info = core_info_find(core_info_list, core)))
+   info = core_info_find(core_info_list, core);
+
+   if (!info)
       return false;
 
    for (i = 0; i < info->firmware_count; i++)
