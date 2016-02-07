@@ -530,6 +530,9 @@ void video_driver_callback_destroy_context(void)
       (const struct retro_hw_render_callback*)video_driver_callback();
    if (hw_render->context_destroy)
       hw_render->context_destroy();
+
+   memset(&video_driver_state.hw_render_callback, 0,
+         sizeof(video_driver_state.hw_render_callback));
 }
 
 static bool uninit_video_input(void)
@@ -537,10 +540,7 @@ static bool uninit_video_input(void)
    event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
 
    if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
-   {
       video_driver_callback_destroy_context();
-      video_driver_unset_callback();
-   }
 
    if (
          !input_driver_ctl(RARCH_INPUT_CTL_OWNS_DRIVER, NULL) &&
@@ -1107,12 +1107,6 @@ void video_driver_set_aspect_ratio_value(float value)
 struct retro_hw_render_callback *video_driver_callback(void)
 {
    return &video_driver_state.hw_render_callback;
-}
-
-void video_driver_unset_callback(void)
-{
-   memset(&video_driver_state.hw_render_callback, 0,
-         sizeof(video_driver_state.hw_render_callback));
 }
 
 static bool video_driver_frame_filter(const void *data,
