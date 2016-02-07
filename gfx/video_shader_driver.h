@@ -48,9 +48,12 @@ typedef struct shader_backend
    unsigned (*num_shaders)(void *data);
    bool (*filter_type)(void *data, unsigned index, bool *smooth);
    enum gfx_wrap_type (*wrap_type)(void *data, unsigned index);
-   void (*shader_scale)(void *data, unsigned index, struct gfx_fbo_scale *scale);
-   bool (*set_coords)(void *handle_data, void *shader_data, const void *data);
-   bool (*set_mvp)(void *data, void *shader_data, const math_matrix_4x4 *mat);
+   void (*shader_scale)(void *data,
+         unsigned index, struct gfx_fbo_scale *scale);
+   bool (*set_coords)(void *handle_data,
+         void *shader_data, const void *data);
+   bool (*set_mvp)(void *data, void *shader_data,
+         const math_matrix_4x4 *mat);
    unsigned (*get_prev_textures)(void *data);
    bool (*get_feedback_pass)(void *data, unsigned *pass);
    bool (*mipmap_input)(void *data, unsigned index);
@@ -115,7 +118,8 @@ bool video_shader_driver_init_first(void);
 
 struct video_shader *video_shader_driver_get_current_shader(void);
 
-bool video_shader_driver_init(const shader_backend_t *shader, void *data, const char *path);
+bool video_shader_driver_init(const shader_backend_t *shader,
+      void *data, const char *path);
 
 void video_shader_driver_deinit(void);
 
