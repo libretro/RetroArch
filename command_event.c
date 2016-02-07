@@ -922,7 +922,8 @@ bool event_cmd_exec(void *data)
    }
 
 #if defined(HAVE_DYNAMIC)
-   rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
+   if (!rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL))
+      return false;
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif

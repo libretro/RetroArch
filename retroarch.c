@@ -1473,7 +1473,10 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #ifdef HAVE_MENU
          /* If content loading fails, we go back to menu. */
          if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+         {
             rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+            return false;
+         }
 #endif
          break;
       case RARCH_CTL_MENU_RUNNING_FINISHED:
