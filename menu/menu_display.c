@@ -320,14 +320,17 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
          {
             bool libretro_input_is_blocked = 
-               input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL);
+               input_driver_ctl(
+                     RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL);
 
             if (!libretro_input_is_blocked)
-               input_driver_ctl(RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED, NULL);
+               input_driver_ctl(
+                     RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED, NULL);
 
             core_ctl(CORE_CTL_RETRO_RUN, NULL);
 
-            input_driver_ctl(RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED, NULL);
+            input_driver_ctl(
+                  RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED, NULL);
             return true;
          }
 
@@ -463,7 +466,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
       case MENU_DISPLAY_CTL_UPDATE_PENDING:
          {
             bool ptr;
-            menu_display_ctl(MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG, &ptr);
+            menu_display_ctl(
+                  MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG, &ptr);
             if (menu_animation_ctl(MENU_ANIMATION_CTL_IS_ACTIVE, NULL) || ptr)
                return true;
          }
