@@ -112,7 +112,8 @@ void core_info_get_name(const char *path, char *s, size_t len)
    core_info_t *core_info = NULL;
    core_info_list_t *core_info_list = NULL;
    settings_t *settings = config_get_ptr();
-   struct string_list *contents = dir_list_new_special(NULL, DIR_LIST_CORES, NULL);
+   struct string_list *contents = dir_list_new_special(
+         NULL, DIR_LIST_CORES, NULL);
 
    if (!contents)
       return;
@@ -183,7 +184,8 @@ core_info_list_t *core_info_list_new(void)
    core_info_t *core_info = NULL;
    core_info_list_t *core_info_list = NULL;
    settings_t *settings = config_get_ptr();
-   struct string_list *contents = dir_list_new_special(NULL, DIR_LIST_CORES, NULL);
+   struct string_list *contents = 
+      dir_list_new_special(NULL, DIR_LIST_CORES, NULL);
 
    if (!contents)
       return NULL;
@@ -288,7 +290,8 @@ core_info_list_t *core_info_list_new(void)
       }
 
       if (!core_info[i].display_name)
-         core_info[i].display_name = strdup(path_basename(core_info[i].path));
+         core_info[i].display_name = 
+            strdup(path_basename(core_info[i].path));
    }
 
    core_info_list_resolve_all_extensions(core_info_list);
@@ -362,7 +365,8 @@ size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
 
    for (i = 0; i < core_info_list->count; i++)
    {
-      config_file_t *conf = (config_file_t*)core_info_list->list[i].config_data;
+      config_file_t *conf = (config_file_t*)
+         core_info_list->list[i].config_data;
       num += !!conf;
    }
 
@@ -444,7 +448,8 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
    {
       const core_info_t *info = &core_info_list->list[i];
 
-      if (string_is_equal(path_basename(info->path), path_basename(path)))
+      if (string_is_equal(path_basename(info->path), 
+               path_basename(path)))
       {
          *out_info = *info;
          return true;
@@ -493,10 +498,12 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
 {
    const core_info_t *a = (const core_info_t*)a_;
    const core_info_t *b = (const core_info_t*)b_;
-   int support_a        = core_info_does_support_any_file(a, core_info_tmp_list) ||
-      core_info_does_support_file(a, core_info_tmp_path);
-   int support_b        = core_info_does_support_any_file(b, core_info_tmp_list) ||
-      core_info_does_support_file(b, core_info_tmp_path);
+   int support_a        = 
+         core_info_does_support_any_file(a, core_info_tmp_list)
+      || core_info_does_support_file(a, core_info_tmp_path);
+   int support_b        = 
+         core_info_does_support_any_file(b, core_info_tmp_list)
+      || core_info_does_support_file(b, core_info_tmp_path);
 
    if (support_a != support_b)
       return support_b - support_a;
@@ -596,7 +603,8 @@ static int core_info_firmware_cmp(const void *a_, const void *b_)
    return strcasecmp(a->path, b->path);
 }
 
-void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
+void core_info_list_update_missing_firmware(
+      core_info_list_t *core_info_list,
       const char *core, const char *systemdir)
 {
    size_t i;
@@ -620,7 +628,8 @@ void core_info_list_update_missing_firmware(core_info_list_t *core_info_list,
    }
 }
 
-void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
+void core_info_list_get_missing_firmware(
+      core_info_list_t *core_info_list,
       const char *core, const char *systemdir,
       const core_info_firmware_t **firmware, size_t *num_firmware)
 {
@@ -641,7 +650,8 @@ void core_info_list_get_missing_firmware(core_info_list_t *core_info_list,
 
    for (i = 1; i < info->firmware_count; i++)
    {
-      fill_pathname_join(path, systemdir, info->firmware[i].path, sizeof(path));
+      fill_pathname_join(path, systemdir,
+            info->firmware[i].path, sizeof(path));
       info->firmware[i].missing = !path_file_exists(path);
       *num_firmware += info->firmware[i].missing;
    }
