@@ -2011,8 +2011,6 @@ bool video_driver_texture_load(void *data,
 {
 #ifdef HAVE_THREADS
    settings_t *settings = config_get_ptr();
-   const struct retro_hw_render_callback *hw_render =
-      (const struct retro_hw_render_callback*)video_driver_callback();
 #endif
 
    if (!id || !video_driver_poke || !video_driver_poke->load_texture)
