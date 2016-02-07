@@ -436,7 +436,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static slock_t *runloop_msg_queue_lock           = NULL;
 #endif
    static core_info_t *core_info_current            = NULL;
-   static core_info_list_t *core_info_curr_list     = NULL;
    static msg_queue_t *runloop_msg_queue            = NULL;
    settings_t *settings                             = config_get_ptr();
 
@@ -489,21 +488,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:
          return runloop_system.core_options;
       case RUNLOOP_CTL_CURRENT_CORE_LIST_FREE:
-         if (core_info_curr_list)
-            core_info_list_free(core_info_curr_list);
-         core_info_curr_list = NULL;
-         return true;
+         return core_info_ctl(CORE_INFO_CTL_LIST_DEINIT, NULL);
       case RUNLOOP_CTL_CURRENT_CORE_LIST_INIT:
-         core_info_curr_list = core_info_list_new();
-         return true;
+         return core_info_ctl(CORE_INFO_CTL_LIST_INIT, NULL);
       case RUNLOOP_CTL_CURRENT_CORE_LIST_GET:
-         {
-            core_info_list_t **core = (core_info_list_t**)data;
-            if (!core)
-               return false;
-            *core = core_info_curr_list;
-         }
-         return true;
+         return core_info_ctl(CORE_INFO_CTL_LIST_GET, data);
       case RUNLOOP_CTL_CURRENT_CORE_FREE:
          if (core_info_current)
             free(core_info_current);

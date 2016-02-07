@@ -26,7 +26,10 @@ extern "C" {
 
 enum core_info_state
 {
-   CORE_INFO_CTL_NONE = 0
+   CORE_INFO_CTL_NONE = 0,
+   CORE_INFO_CTL_LIST_DEINIT,
+   CORE_INFO_CTL_LIST_INIT,
+   CORE_INFO_CTL_LIST_GET
 };
 
 typedef struct

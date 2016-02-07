@@ -662,8 +662,27 @@ void core_info_list_get_missing_firmware(
 
 bool core_info_ctl(enum core_info_state state, void *data)
 {
+   static core_info_list_t *core_info_curr_list     = NULL;
+
    switch (state)
    {
+      case CORE_INFO_CTL_LIST_DEINIT:
+         if (core_info_curr_list)
+            core_info_list_free(core_info_curr_list);
+         core_info_curr_list = NULL;
+         return true;
+      case CORE_INFO_CTL_LIST_INIT:
+         core_info_curr_list = core_info_list_new();
+         return true;
+      case CORE_INFO_CTL_LIST_GET:
+         {
+            core_info_list_t **core = (core_info_list_t**)data;
+            if (!core)
+               return false;
+            *core = core_info_curr_list;
+         }
+         return true;
+
       case CORE_INFO_CTL_NONE:
       default:
          break;
