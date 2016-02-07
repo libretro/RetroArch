@@ -478,7 +478,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
 
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 
    def_info.data       = list;
    def_info.dir        = menu_path_new;
@@ -640,7 +640,7 @@ static int action_ok_playlist_entry(const char *path,
       bool        found_associated_core = menu_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
-      runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+      core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 
       if (!(core_info = core_info_find(list, new_core_path)))
          found_associated_core = false;
@@ -2041,7 +2041,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &idx))
       return false;
 
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 
    def_info.data       = list;
    def_info.dir        = menu_path;

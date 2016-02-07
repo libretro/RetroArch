@@ -484,7 +484,7 @@ bool core_info_does_support_file(const core_info_t *core, const char *path)
 const char *core_info_list_get_all_extensions(void)
 {
    core_info_list_t *list = NULL;
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
    if (!list)
       return NULL;
    return list->all_ext;
@@ -662,10 +662,29 @@ void core_info_list_get_missing_firmware(
 
 bool core_info_ctl(enum core_info_state state, void *data)
 {
+   static core_info_t *core_info_current            = NULL;
    static core_info_list_t *core_info_curr_list     = NULL;
 
    switch (state)
    {
+      case CORE_INFO_CTL_CURRENT_CORE_FREE:
+         if (core_info_current)
+            free(core_info_current);
+         core_info_current = NULL;
+         return true;
+      case CORE_INFO_CTL_CURRENT_CORE_INIT:
+         core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
+         if (!core_info_current)
+            return false;
+         return true;
+      case CORE_INFO_CTL_CURRENT_CORE_GET:
+         {
+            core_info_t **core = (core_info_t**)data;
+            if (!core)
+               return false;
+            *core = core_info_current;
+         }
+         return true;
       case CORE_INFO_CTL_LIST_DEINIT:
          if (core_info_curr_list)
             core_info_list_free(core_info_curr_list);

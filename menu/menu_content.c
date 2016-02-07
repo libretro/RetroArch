@@ -277,7 +277,7 @@ static bool menu_content_find_first_core(void *data)
     * going to use the current core to load this. */
    if (menu_label_hash == MENU_LABEL_LOAD_CONTENT)
    {
-      runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, (void*)&info);
+      core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, (void*)&info);
       if (info)
       {
          RARCH_LOG("Use the current core (%s) to load this content...\n",

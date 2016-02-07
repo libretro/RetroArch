@@ -27,6 +27,7 @@
 #include "menu_shader.h"
 
 #include "../content.h"
+#include "../core_info.h"
 #include "../general.h"
 #include "../system.h"
 #include "../defaults.h"
@@ -173,8 +174,8 @@ static void menu_free(menu_handle_t *menu)
 
    event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
 
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_FREE, NULL);
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_FREE, NULL);
+   core_info_ctl(CORE_INFO_CTL_LIST_DEINIT, NULL);
+   core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_FREE, NULL);
 
    free(menu);
 }
@@ -233,7 +234,7 @@ static void *menu_init(const void *data)
    if (!menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL))
       goto error;
 
-   if (!runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_INIT, NULL))
+   if (!core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_INIT, NULL))
       goto error;
 
 #ifdef HAVE_SHADER_MANAGER

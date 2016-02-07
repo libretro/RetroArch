@@ -435,7 +435,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #ifdef HAVE_THREADS
    static slock_t *runloop_msg_queue_lock           = NULL;
 #endif
-   static core_info_t *core_info_current            = NULL;
    static msg_queue_t *runloop_msg_queue            = NULL;
    settings_t *settings                             = config_get_ptr();
 
@@ -487,30 +486,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          return true;
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:
          return runloop_system.core_options;
-      case RUNLOOP_CTL_CURRENT_CORE_LIST_FREE:
-         return core_info_ctl(CORE_INFO_CTL_LIST_DEINIT, NULL);
-      case RUNLOOP_CTL_CURRENT_CORE_LIST_INIT:
-         return core_info_ctl(CORE_INFO_CTL_LIST_INIT, NULL);
-      case RUNLOOP_CTL_CURRENT_CORE_LIST_GET:
-         return core_info_ctl(CORE_INFO_CTL_LIST_GET, data);
-      case RUNLOOP_CTL_CURRENT_CORE_FREE:
-         if (core_info_current)
-            free(core_info_current);
-         core_info_current = NULL;
-         return true;
-      case RUNLOOP_CTL_CURRENT_CORE_INIT:
-         core_info_current = (core_info_t*)calloc(1, sizeof(core_info_t));
-         if (!core_info_current)
-            return false;
-         return true;
-      case RUNLOOP_CTL_CURRENT_CORE_GET:
-         {
-            core_info_t **core = (core_info_t**)data;
-            if (!core)
-               return false;
-            *core = core_info_current;
-         }
-         return true;
       case RUNLOOP_CTL_SYSTEM_INFO_GET:
          {
             rarch_system_info_t **system = (rarch_system_info_t**)data;

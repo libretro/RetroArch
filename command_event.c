@@ -894,8 +894,8 @@ static bool event_update_system_info(struct retro_system_info *_info,
    libretro_get_system_info(settings->libretro, _info,
          load_no_content);
 #endif
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, &core_info);
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &core_info_list);
+   core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, &core_info);
+   core_info_ctl(CORE_INFO_CTL_LIST_GET, &core_info_list);
 
    if (!core_info_list)
       return false;
@@ -1274,13 +1274,13 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
                settings->content_history_size);
          break;
       case EVENT_CMD_CORE_INFO_DEINIT:
-         runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_FREE, NULL);
+         core_info_ctl(CORE_INFO_CTL_LIST_DEINIT, NULL);
          break;
       case EVENT_CMD_CORE_INFO_INIT:
          event_cmd_ctl(EVENT_CMD_CORE_INFO_DEINIT, NULL);
 
          if (*settings->libretro_directory)
-            runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_INIT, NULL);
+            core_info_ctl(CORE_INFO_CTL_LIST_INIT, NULL);
          break;
       case EVENT_CMD_CORE_DEINIT:
          {

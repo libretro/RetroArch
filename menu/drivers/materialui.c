@@ -1333,7 +1333,7 @@ static int mui_list_push(void *data, void *userdata,
                menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
                MENU_SETTING_ACTION, 0, 0);
 
-         runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+         core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
          if (core_info_list_num_info_files(list))
          {
             menu_entries_push(info->list,

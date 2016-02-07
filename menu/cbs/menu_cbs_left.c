@@ -299,7 +299,7 @@ static int playlist_association_left(unsigned type, const char *label,
    const char *path                 = path_basename(label);
    core_info_list_t           *list = NULL;
    
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 
    if (!list)
       return -1;

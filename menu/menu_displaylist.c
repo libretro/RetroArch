@@ -163,7 +163,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    settings_t *settings      = config_get_ptr();
    core_info_t *core_info    = NULL;
    
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, &core_info);
+   core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, &core_info);
 
    if (!core_info || !core_info->config_data)
    {
@@ -271,7 +271,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    {
       core_info_list_t *list = NULL;
 
-      runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+      core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 
       core_info_list_update_missing_firmware(list, core_info->path,
             settings->system_directory);
@@ -2194,7 +2194,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
    settings_t *settings         = config_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(info->label);
 
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 
    (void)device;
 
@@ -2539,7 +2539,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
    rarch_system_info_t *system = NULL;
    core_info_list_t *list      = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (menu_driver_list_push(info, type))

@@ -675,7 +675,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
       if (!zui->load_dlist)
       {
          core_info_t *core_info = NULL;
-         runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_GET, &core_info);
+         core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, &core_info);
 
          zui->load_dlist = dir_list_new(zui->load_cwd, core_info->supported_extensions, true, true);
          dir_list_sort(zui->load_dlist, true);
@@ -752,7 +752,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
                   zui->pick_supported = 0;
                   strncpy(zui->pick_content, path, sizeof(zui->pick_content)-1);
 
-                  runloop_ctl(RUNLOOP_CTL_CURRENT_CORE_LIST_GET, &list);
+                  core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 
                   core_info_list_get_supported_cores(list, path,
                         &zui->pick_cores, &zui->pick_supported);
