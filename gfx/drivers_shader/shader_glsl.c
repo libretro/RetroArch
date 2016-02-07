@@ -353,7 +353,7 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
       RARCH_LOG("[GL]: Using GLSL version %u.\n", version_no);
    }
 
-   source[0]= version;
+   source[0] = version;
    source[1] = define;
    source[2] = glsl->glsl_alias_define;
    source[3] = program;
