@@ -878,35 +878,6 @@ static void event_main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
-#ifdef HAVE_MENU
-static bool event_update_system_info(struct retro_system_info *_info,
-      bool *load_no_content)
-{
-   core_info_list_t *core_info_list = NULL;
-   core_info_t *core_info           = NULL;
-   settings_t *settings             = config_get_ptr();
-
-#if defined(HAVE_DYNAMIC)
-   if (!(*settings->libretro))
-      return false;
-
-   libretro_get_system_info(settings->libretro, _info,
-         load_no_content);
-#endif
-   core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, &core_info);
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &core_info_list);
-
-   if (!core_info_list)
-      return false;
-
-   if (!core_info_list_get_info(core_info_list,
-            core_info, settings->libretro))
-      return false;
-
-   return true;
-}
-#endif
-
 bool event_cmd_exec(void *data)
 {
    char *fullpath = NULL;
@@ -1017,7 +988,29 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
 
             if (menu_driver_ctl(RARCH_MENU_CTL_LOAD_NO_CONTENT_GET, &ptr))
-               event_update_system_info(system, ptr);
+            {
+               core_info_list_t *core_info_list = NULL;
+               core_info_t *core_info           = NULL;
+
+#if defined(HAVE_DYNAMIC)
+               if (!(*settings->libretro))
+                  return false;
+
+               libretro_get_system_info(settings->libretro, system,
+                     ptr);
+#endif
+               core_info_ctl(CORE_INFO_CTL_LIST_GET, &core_info_list);
+
+               if (!core_info_list)
+                  return false;
+
+               /* Load core info file */
+               core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, &core_info);
+
+               if (!core_info_list_get_info(core_info_list,
+                        core_info, settings->libretro))
+                  return false;
+            }
 #endif
          }
          break;
