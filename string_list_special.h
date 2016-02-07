@@ -34,8 +34,7 @@ enum string_list_type
    STRING_LIST_INPUT_HID_DRIVERS,
    STRING_LIST_RECORD_DRIVERS,
    STRING_LIST_SUPPORTED_CORES_PATHS,
-   STRING_LIST_SUPPORTED_CORES_NAMES,
-   STRING_LIST_CORES_NAMES
+   STRING_LIST_SUPPORTED_CORES_NAMES
 };
 
 struct string_list *string_list_new_special(enum string_list_type type,
