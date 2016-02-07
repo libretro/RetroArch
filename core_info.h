@@ -88,9 +88,6 @@ typedef struct core_info_ctx_find
    const char *path;
 } core_info_ctx_find_t;
 
-core_info_list_t *core_info_list_new(void);
-void core_info_list_free(core_info_list_t *list);
-
 size_t core_info_list_num_info_files(core_info_list_t *list);
 
 bool core_info_does_support_file(const core_info_t *info,
@@ -102,11 +99,6 @@ bool core_info_does_support_any_file(const core_info_t *info,
 /* Non-reentrant, does not allocate. Returns pointer to internal state. */
 void core_info_list_get_supported_cores(core_info_list_t *list,
       const char *path, const core_info_t **infos, size_t *num_infos);
-
-/* Non-reentrant, does not allocate. Returns pointer to internal state. */
-void core_info_list_get_missing_firmware(core_info_list_t *list,
-      const char *core, const char *systemdir,
-      const core_info_firmware_t **firmware, size_t *num_firmware);
 
 void core_info_list_update_missing_firmware(core_info_list_t *list,
       const char *core, const char *systemdir);	  

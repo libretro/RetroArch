@@ -109,6 +109,55 @@ static void core_info_list_resolve_all_firmware(
    }
 }
 
+static void core_info_list_free(core_info_list_t *core_info_list)
+{
+   size_t i, j;
+
+   if (!core_info_list)
+      return;
+
+   for (i = 0; i < core_info_list->count; i++)
+   {
+      core_info_t *info = (core_info_t*)&core_info_list->list[i];
+
+      if (!info)
+         continue;
+
+      free(info->path);
+      free(info->core_name);
+      free(info->systemname);
+      free(info->system_manufacturer);
+      free(info->display_name);
+      free(info->supported_extensions);
+      free(info->authors);
+      free(info->permissions);
+      free(info->licenses);
+      free(info->categories);
+      free(info->databases);
+      free(info->notes);
+      if (info->supported_extensions_list)
+         string_list_free(info->supported_extensions_list);
+      string_list_free(info->authors_list);
+      string_list_free(info->note_list);
+      string_list_free(info->permissions_list);
+      string_list_free(info->licenses_list);
+      string_list_free(info->categories_list);
+      string_list_free(info->databases_list);
+      config_file_free((config_file_t*)info->config_data);
+
+      for (j = 0; j < info->firmware_count; j++)
+      {
+         free(info->firmware[j].path);
+         free(info->firmware[j].desc);
+      }
+      free(info->firmware);
+   }
+
+   free(core_info_list->all_ext);
+   free(core_info_list->list);
+   free(core_info_list);
+}
+
 void core_info_get_name(const char *path, char *s, size_t len)
 {
    size_t i;
@@ -181,7 +230,7 @@ error:
    core_info_list_free(core_info_list);
 }
 
-core_info_list_t *core_info_list_new(void)
+static core_info_list_t *core_info_list_new(void)
 {
    size_t i;
    core_info_t *core_info = NULL;
@@ -310,54 +359,6 @@ error:
    return NULL;
 }
 
-void core_info_list_free(core_info_list_t *core_info_list)
-{
-   size_t i, j;
-
-   if (!core_info_list)
-      return;
-
-   for (i = 0; i < core_info_list->count; i++)
-   {
-      core_info_t *info = (core_info_t*)&core_info_list->list[i];
-
-      if (!info)
-         continue;
-
-      free(info->path);
-      free(info->core_name);
-      free(info->systemname);
-      free(info->system_manufacturer);
-      free(info->display_name);
-      free(info->supported_extensions);
-      free(info->authors);
-      free(info->permissions);
-      free(info->licenses);
-      free(info->categories);
-      free(info->databases);
-      free(info->notes);
-      if (info->supported_extensions_list)
-         string_list_free(info->supported_extensions_list);
-      string_list_free(info->authors_list);
-      string_list_free(info->note_list);
-      string_list_free(info->permissions_list);
-      string_list_free(info->licenses_list);
-      string_list_free(info->categories_list);
-      string_list_free(info->databases_list);
-      config_file_free((config_file_t*)info->config_data);
-
-      for (j = 0; j < info->firmware_count; j++)
-      {
-         free(info->firmware[j].path);
-         free(info->firmware[j].desc);
-      }
-      free(info->firmware);
-   }
-
-   free(core_info_list->all_ext);
-   free(core_info_list->list);
-   free(core_info_list);
-}
 
 size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
 {
@@ -593,16 +594,6 @@ core_info_t *core_info_get(core_info_list_t *list, size_t i)
    return info;
 }
 
-static int core_info_firmware_cmp(const void *a_, const void *b_)
-{
-   const core_info_firmware_t *a = (const core_info_firmware_t*)a_;
-   const core_info_firmware_t *b = (const core_info_firmware_t*)b_;
-   int                     order = b->missing - a->missing;
-
-   if (order)
-      return order;
-   return strcasecmp(a->path, b->path);
-}
 
 void core_info_list_update_missing_firmware(
       core_info_list_t *core_info_list,
@@ -629,7 +620,21 @@ void core_info_list_update_missing_firmware(
    }
 }
 
-void core_info_list_get_missing_firmware(
+#if 0
+static int core_info_firmware_cmp(const void *a_, const void *b_)
+{
+   const core_info_firmware_t *a = (const core_info_firmware_t*)a_;
+   const core_info_firmware_t *b = (const core_info_firmware_t*)b_;
+   int                     order = b->missing - a->missing;
+
+   if (order)
+      return order;
+   return strcasecmp(a->path, b->path);
+}
+
+/* Non-reentrant, does not allocate. Returns pointer to internal state. */
+
+static void core_info_list_get_missing_firmware(
       core_info_list_t *core_info_list,
       const char *core, const char *systemdir,
       const core_info_firmware_t **firmware, size_t *num_firmware)
@@ -660,6 +665,7 @@ void core_info_list_get_missing_firmware(
    qsort(info->firmware, info->firmware_count, sizeof(*info->firmware),
          core_info_firmware_cmp);
 }
+#endif
 
 bool core_info_ctl(enum core_info_state state, void *data)
 {
