@@ -477,7 +477,8 @@ bool core_info_does_support_any_file(const core_info_t *core,
    return false;
 }
 
-bool core_info_does_support_file(const core_info_t *core, const char *path)
+static bool core_info_does_support_file(
+      const core_info_t *core, const char *path)
 {
    if (!path || !core || !core->supported_extensions_list)
       return false;

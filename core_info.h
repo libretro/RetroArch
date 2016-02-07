@@ -90,9 +90,6 @@ typedef struct core_info_ctx_find
 
 size_t core_info_list_num_info_files(core_info_list_t *list);
 
-bool core_info_does_support_file(const core_info_t *info,
-      const char *path);
-
 bool core_info_does_support_any_file(const core_info_t *info,
       const struct string_list *list);
 
