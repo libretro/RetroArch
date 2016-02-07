@@ -24,6 +24,11 @@
 extern "C" {
 #endif
 
+enum core_info_state
+{
+   CORE_INFO_CTL_NONE = 0
+};
+
 typedef struct
 {
    char *path;
@@ -111,6 +116,8 @@ bool core_info_get_display_name(const char *path, char *s, size_t len);
 void core_info_get_name(const char *path, char *s, size_t len);
 
 core_info_t *core_info_get(core_info_list_t *list, size_t i);
+
+bool core_info_ctl(enum core_info_state action, void *data);
 
 #ifdef __cplusplus
 }

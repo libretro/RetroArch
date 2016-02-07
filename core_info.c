@@ -659,3 +659,15 @@ void core_info_list_get_missing_firmware(
    qsort(info->firmware, info->firmware_count, sizeof(*info->firmware),
          core_info_firmware_cmp);
 }
+
+bool core_info_ctl(enum core_info_state state, void *data)
+{
+   switch (state)
+   {
+      case CORE_INFO_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}
