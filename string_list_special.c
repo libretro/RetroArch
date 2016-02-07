@@ -172,22 +172,6 @@ struct string_list *string_list_new_special(enum string_list_type type,
             string_list_append(s, opt, attr);
          }
          break;
-      case STRING_LIST_CORES_PATHS:
-         core_info_ctl(CORE_INFO_CTL_LIST_GET, &core_info_list);
-
-         for (i = 0; i < core_info_list_num_info_files(core_info_list); i++)
-         {
-            const char *opt  = NULL;
-            core_info        = (const core_info_t*)&core_info_list->list[i];
-            opt              = core_info ? core_info->path : NULL;
-
-            if (!opt)
-               goto error;
-
-            *len            += strlen(opt) + 1;
-            string_list_append(s, opt, attr);
-         }
-         break; 
       case STRING_LIST_SUPPORTED_CORES_NAMES:
          core_info_ctl(CORE_INFO_CTL_LIST_GET, &core_info_list);
          core_info_list_get_supported_cores(core_info_list,
