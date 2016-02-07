@@ -694,10 +694,15 @@ static bool rarch_task_push_overlay_load(const char *overlay_path,
       rarch_task_callback_t cb, void *user_data)
 {
    rarch_task_t *t          = NULL;
+   config_file_t *conf      = NULL;
    overlay_loader_t *loader = (overlay_loader_t*)calloc(1, sizeof(*loader));
-   config_file_t *conf      = config_file_new(overlay_path);
+   
+   if (!loader)
+      goto error;
 
-   if (!conf || !loader)
+   conf = config_file_new(overlay_path);
+
+   if (!conf)
       goto error;
 
    if (!config_get_uint(conf, "overlays", &loader->size))
