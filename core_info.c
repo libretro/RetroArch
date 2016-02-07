@@ -18,11 +18,12 @@
 #include <file/file_path.h>
 #include <file/dir_list.h>
 #include <file/file_archive.h>
+#include <compat/strl.h>
 
 #include <string/stdstring.h>
 
 #include "core_info.h"
-#include "general.h"
+#include "configuration.h"
 #include "dir_list_special.h"
 #include "config.def.h"
 
