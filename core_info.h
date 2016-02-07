@@ -30,6 +30,7 @@ enum core_info_state
    CORE_INFO_CTL_LIST_DEINIT,
    CORE_INFO_CTL_LIST_INIT,
    CORE_INFO_CTL_LIST_GET,
+   CORE_INFO_CTL_LIST_UPDATE_MISSING_FIRMWARE,
    CORE_INFO_CTL_CURRENT_CORE_FREE,
    CORE_INFO_CTL_CURRENT_CORE_INIT,
    CORE_INFO_CTL_CURRENT_CORE_GET,
@@ -82,6 +83,12 @@ typedef struct
    char *all_ext;
 } core_info_list_t;
 
+typedef struct core_info_ctx_firmware
+{
+   const char *path;
+   const char *system_directory;
+} core_info_ctx_firmware_t;
+
 typedef struct core_info_ctx_find
 {
    core_info_t *inf;
@@ -92,9 +99,6 @@ typedef struct core_info_ctx_find
 void core_info_list_get_supported_cores(core_info_list_t *list,
       const char *path, const core_info_t **infos, size_t *num_infos);
 
-void core_info_list_update_missing_firmware(core_info_list_t *list,
-      const char *core, const char *systemdir);	  
-	  
 /* Shallow-copies internal state. Data in *info is invalidated when the
  * core_info_list is freed. */
 bool core_info_list_get_info(core_info_list_t *list,

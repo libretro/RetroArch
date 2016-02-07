@@ -577,7 +577,7 @@ core_info_t *core_info_get(core_info_list_t *list, size_t i)
 }
 
 
-void core_info_list_update_missing_firmware(
+static bool core_info_list_update_missing_firmware(
       core_info_list_t *core_info_list,
       const char *core, const char *systemdir)
 {
@@ -586,10 +586,10 @@ void core_info_list_update_missing_firmware(
    core_info_t          *info = NULL;
 
    if (!core_info_list || !core)
-      return;
+      return false;
 
    if (!(info = core_info_find(core_info_list, core)))
-      return;
+      return false;
 
    for (i = 0; i < info->firmware_count; i++)
    {
@@ -600,6 +600,8 @@ void core_info_list_update_missing_firmware(
             info->firmware[i].path, sizeof(path));
       info->firmware[i].missing = !path_file_exists(path);
    }
+
+   return true;
 }
 
 #if 0
@@ -688,6 +690,16 @@ bool core_info_ctl(enum core_info_state state, void *data)
             if (!core)
                return false;
             *core = core_info_curr_list;
+         }
+         break;
+      case CORE_INFO_CTL_LIST_UPDATE_MISSING_FIRMWARE:
+         {
+            core_info_ctx_firmware_t *info = (core_info_ctx_firmware_t*)data;
+            if (!info)
+               return false;
+
+            return core_info_list_update_missing_firmware(core_info_curr_list,
+                  info->path, info->system_directory);
          }
          break;
       case CORE_INFO_CTL_FIND:

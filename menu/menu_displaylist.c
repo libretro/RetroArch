@@ -269,44 +269,45 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->firmware_count > 0)
    {
-      core_info_list_t *list = NULL;
+      core_info_ctx_firmware_t firmware_info;
 
-      core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+      firmware_info.path             = core_info->path;
+      firmware_info.system_directory = settings->system_directory;
 
-      core_info_list_update_missing_firmware(list, core_info->path,
-            settings->system_directory);
-
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_FIRMWARE),
-            sizeof(tmp));
-      strlcat(tmp, ": ", sizeof(tmp));
-      menu_entries_push(info->list, tmp, "",
-            MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-
-      /* FIXME: This looks hacky and probably 
-       * needs to be improved for good translation support. */
-
-      for (i = 0; i < core_info->firmware_count; i++)
+      if (core_info_ctl(CORE_INFO_CTL_LIST_UPDATE_MISSING_FIRMWARE, &firmware_info))
       {
-         if (core_info->firmware[i].desc)
-         {
-            snprintf(tmp, sizeof(tmp), "	%s: %s",
-                  menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_NAME),
-                  core_info->firmware[i].desc ?
-                  core_info->firmware[i].desc : "");
-            menu_entries_push(info->list, tmp, "",
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_FIRMWARE),
+               sizeof(tmp));
+         strlcat(tmp, ": ", sizeof(tmp));
+         menu_entries_push(info->list, tmp, "",
+               MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-            snprintf(tmp, sizeof(tmp), "	%s: %s, %s",
-                  menu_hash_to_str(MENU_VALUE_STATUS),
-                  core_info->firmware[i].missing ?
-                  menu_hash_to_str(MENU_VALUE_MISSING) :
-                  menu_hash_to_str(MENU_VALUE_PRESENT),
-                  core_info->firmware[i].optional ?
-                  menu_hash_to_str(MENU_VALUE_OPTIONAL) :
-                  menu_hash_to_str(MENU_VALUE_REQUIRED)
-                  );
-            menu_entries_push(info->list, tmp, "",
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         /* FIXME: This looks hacky and probably 
+          * needs to be improved for good translation support. */
+
+         for (i = 0; i < core_info->firmware_count; i++)
+         {
+            if (core_info->firmware[i].desc)
+            {
+               snprintf(tmp, sizeof(tmp), "	%s: %s",
+                     menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_NAME),
+                     core_info->firmware[i].desc ?
+                     core_info->firmware[i].desc : "");
+               menu_entries_push(info->list, tmp, "",
+                     MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+               snprintf(tmp, sizeof(tmp), "	%s: %s, %s",
+                     menu_hash_to_str(MENU_VALUE_STATUS),
+                     core_info->firmware[i].missing ?
+                     menu_hash_to_str(MENU_VALUE_MISSING) :
+                     menu_hash_to_str(MENU_VALUE_PRESENT),
+                     core_info->firmware[i].optional ?
+                     menu_hash_to_str(MENU_VALUE_OPTIONAL) :
+                     menu_hash_to_str(MENU_VALUE_REQUIRED)
+                     );
+               menu_entries_push(info->list, tmp, "",
+                     MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            }
          }
       }
    }
