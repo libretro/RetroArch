@@ -25,7 +25,8 @@
 #include "input_config.h"
 #include "input_autodetect.h"
 
-#include "../general.h"
+#include "../configuration.h"
+#include "../runloop.h"
 #include "../verbosity.h"
 
 /* Adds an index for devices with the same name,
