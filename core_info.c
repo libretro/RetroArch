@@ -711,6 +711,24 @@ bool core_info_ctl(enum core_info_state state, void *data)
                return false;
          }
          break;
+      case CORE_INFO_CTL_LOAD:
+         {
+            core_info_t *core_info     = NULL;
+            core_info_ctx_find_t *info = (core_info_ctx_find_t*)data;
+
+            if (!info)
+               return false;
+
+            core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, &core_info);
+
+            if (!core_info_curr_list)
+               return false;
+
+            if (!core_info_list_get_info(core_info_curr_list,
+                     core_info, info->path))
+               return false;
+         }
+         break;
       case CORE_INFO_CTL_NONE:
       default:
          break;

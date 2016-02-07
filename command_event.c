@@ -989,8 +989,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 
             if (menu_driver_ctl(RARCH_MENU_CTL_LOAD_NO_CONTENT_GET, &ptr))
             {
-               core_info_list_t *core_info_list = NULL;
-               core_info_t *core_info           = NULL;
+               core_info_ctx_find_t info_find;
 
 #if defined(HAVE_DYNAMIC)
                if (!(*settings->libretro))
@@ -999,16 +998,9 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
                libretro_get_system_info(settings->libretro, system,
                      ptr);
 #endif
-               core_info_ctl(CORE_INFO_CTL_LIST_GET, &core_info_list);
+               info_find.path = settings->libretro;
 
-               if (!core_info_list)
-                  return false;
-
-               /* Load core info file */
-               core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, &core_info);
-
-               if (!core_info_list_get_info(core_info_list,
-                        core_info, settings->libretro))
+               if (!core_info_ctl(CORE_INFO_CTL_LOAD, &info_find))
                   return false;
             }
 #endif
