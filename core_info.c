@@ -501,13 +501,13 @@ static int core_info_qsort_cmp(const void *a_, const void *b_)
 void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       const char *path, const core_info_t **infos, size_t *num_infos)
 {
+#ifdef HAVE_ZLIB
    struct string_list *list = NULL;
+#endif
    size_t supported = 0, i;
 
    if (!core_info_list)
       return;
-
-   (void)list;
 
    core_info_tmp_path = path;
 
@@ -545,7 +545,7 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
       string_list_free(list);
 #endif
 
-   *infos = core_info_list->list;
+   *infos     = core_info_list->list;
    *num_infos = supported;
 }
 
