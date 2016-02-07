@@ -298,8 +298,6 @@ bool recording_init(void)
    global_t *global                     = global_get_ptr();
    settings_t *settings                 = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-   const struct retro_hw_render_callback *hw_render = 
-      (const struct retro_hw_render_callback*)video_driver_callback();
    bool *recording_enabled              = recording_is_enabled();
 
    if (!*recording_enabled)
@@ -307,13 +305,16 @@ bool recording_init(void)
 
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
-      RARCH_WARN("%s\n", msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
+      RARCH_WARN("%s\n",
+            msg_hash_to_str(MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED));
       return false;
    }
 
-   if (!settings->video.gpu_record && hw_render->context_type)
+   if (!settings->video.gpu_record 
+         && video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
    {
-      RARCH_WARN("%s.\n", msg_hash_to_str(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING));
+      RARCH_WARN("%s.\n",
+            msg_hash_to_str(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING));
       return false;
    }
 
@@ -394,7 +395,8 @@ bool recording_init(void)
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
-      if (settings->video.post_filter_record && video_driver_ctl(RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE, NULL))
+      if (settings->video.post_filter_record 
+            && video_driver_ctl(RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE, NULL))
       {
          unsigned max_width  = 0;
          unsigned max_height = 0;

@@ -276,10 +276,10 @@ bool font_driver_init_first(
       : (void**)&font_osd_data;
 #ifdef HAVE_THREADS
    settings_t *settings = config_get_ptr();
-   const struct retro_hw_render_callback *hw_render =
-      (const struct retro_hw_render_callback*)video_driver_callback();
 
-   if (threading_hint && settings->video.threaded && !hw_render->context_type)
+   if (threading_hint 
+         && settings->video.threaded 
+         && !video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
       return rarch_threaded_video_font_init(new_font_driver, new_font_handle,
             data, font_path, font_size, api, font_init_first);
 #endif

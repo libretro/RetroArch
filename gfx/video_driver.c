@@ -239,7 +239,7 @@ static bool find_video_driver(void)
    settings_t *settings = config_get_ptr();
 
 #if defined(HAVE_OPENGL) && defined(HAVE_FBO)
-   if (video_driver_state.hw_render_callback.context_type)
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
    {
       RARCH_LOG("Using HW render, OpenGL driver forced.\n");
       current_video = &video_gl;
@@ -298,7 +298,7 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
    settings_t *settings = config_get_ptr();
 
    if (settings->video.threaded
-         && !video_driver_state.hw_render_callback.context_type 
+         && !(video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
          && !force_nonthreaded_data)
       return rarch_threaded_video_get_ptr(NULL);
 #endif
@@ -385,7 +385,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    if (colfmt == RETRO_PIXEL_FORMAT_0RGB1555)
       colfmt = RETRO_PIXEL_FORMAT_RGB565;
 
-   if (video_driver_state.hw_render_callback.context_type)
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
    {
       RARCH_WARN("Cannot use CPU filters when hardware rendering is used.\n");
       return;
@@ -720,7 +720,7 @@ static bool init_video(void)
 
 #ifdef HAVE_THREADS
    if (settings->video.threaded 
-         && !video_driver_state.hw_render_callback.context_type)
+         && !video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
    {
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
@@ -1449,8 +1449,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return settings->video.gpu_record && current_video->read_viewport;
       case RARCH_DISPLAY_CTL_SUPPORTS_VIEWPORT_READ:
          return (settings->video.gpu_screenshot ||
-         ((hw_render->context_type
-         != RETRO_HW_CONTEXT_NONE) && !current_video->read_frame_raw))
+         (video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL)
+          && !current_video->read_frame_raw))
          && current_video->read_viewport && current_video->viewport_info;
       case RARCH_DISPLAY_CTL_SUPPORTS_READ_FRAME_RAW:
          return current_video->read_frame_raw;
@@ -1701,6 +1701,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          break;
       case RARCH_DISPLAY_CTL_OWNS_DRIVER:
          return video_driver_data_own;
+      case RARCH_DISPLAY_CTL_IS_HW_CONTEXT:
+         return (hw_render->context_type != RETRO_HW_CONTEXT_NONE);
       case RARCH_DISPLAY_CTL_DEINIT_HW_CONTEXT:
          if (hw_render->context_destroy)
             hw_render->context_destroy();
@@ -2018,7 +2020,8 @@ bool video_driver_texture_load(void *data,
 
    *id = video_driver_poke->load_texture(video_driver_data, data,
 #ifdef HAVE_THREADS
-         settings->video.threaded && !hw_render->context_type,
+         settings->video.threaded
+         && !video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL),
 #else
          false,
 #endif
