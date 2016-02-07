@@ -711,7 +711,8 @@ bool core_info_ctl(enum core_info_state state, void *data)
             core_info_ctx_find_t *info = (core_info_ctx_find_t*)data;
             if (!info || !core_info_curr_list)
                return false;
-            if (!(info->inf = core_info_find(core_info_curr_list, info->path)))
+            info->inf = core_info_find(core_info_curr_list, info->path);
+            if (!info->inf)
                return false;
          }
          break;
