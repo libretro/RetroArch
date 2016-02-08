@@ -52,8 +52,6 @@ typedef struct menu_display
       void *buf;
       int size;
 
-      const uint8_t *framebuf;
-      bool alloc_framebuf;
    } font;
 
    unsigned header_height;
@@ -231,13 +229,15 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
    static menu_framebuf_t menu_display_framebuf;
-   static uint16_t *menu_display_framebuf_data = NULL;
-   static bool menu_display_framebuf_dirty     = false;
-   static menu_display_draw_t draw_bak         = NULL;
-   static menu_display_draw_bg_t draw_bg_bak   = NULL;
-   menu_display_t  *disp                       = menu_display_get_ptr();
-   menu_display_ctx_driver_t *menu_disp        = menu_display_context_get_ptr();
-   settings_t *settings                        = config_get_ptr();
+   static uint16_t *menu_display_framebuf_data      = NULL;
+   static const uint8_t *menu_display_font_framebuf = NULL;
+   static bool menu_display_font_alloc_framebuf     = false;
+   static bool menu_display_framebuf_dirty          = false;
+   static menu_display_draw_t draw_bak              = NULL;
+   static menu_display_draw_bg_t draw_bg_bak        = NULL;
+   menu_display_t  *disp                            = menu_display_get_ptr();
+   menu_display_ctx_driver_t *menu_disp             = menu_display_context_get_ptr();
+   settings_t *settings                             = config_get_ptr();
 
    switch (state)
    {
@@ -297,7 +297,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             uint8_t **ptr = (uint8_t**)data;
             if (!ptr)
                return false;
-            *ptr = (uint8_t*)disp->font.framebuf;
+            *ptr = (uint8_t*)menu_display_font_framebuf;
          }
          return true;
       case MENU_DISPLAY_CTL_SET_FONT_FB:
@@ -305,7 +305,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             uint8_t **ptr = (uint8_t**)data;
             if (!ptr)
                return false;
-            disp->font.framebuf = *ptr;
+            menu_display_font_framebuf = *ptr;
          }
          return true;
       case MENU_DISPLAY_CTL_LIBRETRO_RUNNING:
@@ -452,7 +452,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            *ptr = disp->font.alloc_framebuf;
+            *ptr = menu_display_font_alloc_framebuf;
          }
          return true;
       case MENU_DISPLAY_CTL_SET_FONT_DATA_INIT:
@@ -460,7 +460,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            disp->font.alloc_framebuf = *ptr;
+            menu_display_font_alloc_framebuf = *ptr;
          }
          return true;
       case MENU_DISPLAY_CTL_UPDATE_PENDING:
