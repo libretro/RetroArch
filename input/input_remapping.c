@@ -34,6 +34,7 @@ bool input_remapping_load_file(void *data, const char *path)
    unsigned i, j;
    config_file_t *conf  = (config_file_t*)data;
    settings_t *settings = config_get_ptr();
+   global_t   *global   = global_get_ptr();
 
    if (!conf ||  string_is_empty(path))
       return false;
@@ -78,6 +79,34 @@ bool input_remapping_load_file(void *data, const char *path)
                   &key_remap) && (key_remap < 4))
             settings->input.remap_ids[i][RARCH_FIRST_CUSTOM_BIND + j] = 
                key_remap;
+      }
+
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         char buf[64] = {0};
+         snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
+         CONFIG_GET_INT_BASE(conf, settings, input.joypad_map[i], buf);
+
+         snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
+         CONFIG_GET_INT_BASE(conf, settings, input.analog_dpad_mode[i], buf);
+
+         if (!global->has_set.libretro_device[i])
+         {
+            snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
+            CONFIG_GET_INT_BASE(conf, settings, input.libretro_device[i], buf);
+         }
+
+         snprintf(buf, sizeof(buf), "input_player%u_joypad_index", i + 1);
+         CONFIG_GET_INT_BASE(conf, settings, input.joypad_map[i], buf);
+
+         snprintf(buf, sizeof(buf), "input_player%u_analog_dpad_mode", i + 1);
+         CONFIG_GET_INT_BASE(conf, settings, input.analog_dpad_mode[i], buf);
+
+         if (!global->has_set.libretro_device[i])
+         {
+            snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
+            CONFIG_GET_INT_BASE(conf, settings, input.libretro_device[i], buf);
+         }
       }
    }
 
@@ -133,6 +162,16 @@ bool input_remapping_save_file(const char *path)
          fill_pathname_join_delim(key_ident[j], buf,
                key_strings[j], '_', sizeof(key_ident[j]));
          config_set_int(conf, key_ident[j], settings->input.remap_ids[i][j]);
+      }
+
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         char cfg[64] = {0};
+
+         snprintf(cfg, sizeof(cfg), "input_libretro_device_p%u", i + 1);
+         config_set_int(conf, cfg, settings->input.libretro_device[i]);
+         snprintf(cfg, sizeof(cfg), "input_player%u_analog_dpad_mode", i + 1);
+         config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
       }
    }
 
