@@ -1727,8 +1727,9 @@ static void xmb_frame(void *data)
    }
 
    /* set alpha components of colors */
-   coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  = 
-      (0.75f > xmb->alpha) ? xmb->alpha : 0.75f;
+   coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  =
+       ((float)settings->menu.xmb_alpha_factor/100 > xmb->alpha) ?
+       xmb->alpha : (float)settings->menu.xmb_alpha_factor/100;
    coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] = 
       xmb->alpha;
 
@@ -1890,13 +1891,14 @@ static void xmb_layout(xmb_handle_t *xmb)
    float scale_factor;
    unsigned width, height, i, current, end, new_header_height;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   settings_t *settings = config_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
    video_driver_get_size(&width, &height);
 
-   scale_factor                 = width / 1920.0;
+   scale_factor                 = (settings->menu.xmb_scale_factor * width) / (1920.0 * 100);
    new_font_size                = 32.0  * scale_factor;
    new_header_height            = 128.0 * scale_factor;
 

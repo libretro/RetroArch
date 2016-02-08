@@ -164,6 +164,9 @@ typedef struct settings
       unsigned entry_normal_color;
       unsigned entry_hover_color;
       unsigned title_color;
+      unsigned xmb_scale_factor;
+      unsigned xmb_alpha_factor;
+
    } menu;
 #endif
 

@@ -373,6 +373,10 @@ extern "C" {
 #define MENU_LABEL_VALUE_DPI_OVERRIDE_ENABLE                                   0xd535f449U
 #define MENU_LABEL_DPI_OVERRIDE_VALUE                                          0x543a3efdU
 #define MENU_LABEL_VALUE_DPI_OVERRIDE_VALUE                                    0x1462aba2U
+#define MENU_LABEL_XMB_SCALE_FACTOR                                            0x0177E8DF1
+#define MENU_LABEL_VALUE_XMB_SCALE_FACTOR                                      0x0DCDBDB13
+#define MENU_LABEL_XMB_ALPHA_FACTOR                                            0x01049C5CF
+#define MENU_LABEL_VALUE_XMB_ALPHA_FACTOR                                      0x0D5A712F1
 #define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
 #define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 #define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
