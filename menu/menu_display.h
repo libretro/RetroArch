@@ -54,6 +54,7 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_UNSET_STUB_DRAW_FRAME,
    MENU_DISPLAY_CTL_FRAMEBUF_DEINIT,
    MENU_DISPLAY_CTL_DEINIT,
+   MENU_DISPLAY_CTL_INIT,
    MENU_DISPLAY_CTL_FONT_DATA_INIT,
    MENU_DISPLAY_CTL_SET_FONT_DATA_INIT,
    MENU_DISPLAY_CTL_FONT_SIZE,
@@ -121,10 +122,6 @@ typedef struct menu_display_ctx_driver
    enum menu_display_driver_type type;
    const char *ident;
 } menu_display_ctx_driver_t;
-
-void menu_display_free(void);
-
-bool menu_display_init(void);
 
 bool menu_display_font_bind_block(void *userdata);
 

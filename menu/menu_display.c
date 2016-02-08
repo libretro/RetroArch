@@ -78,22 +78,6 @@ static menu_display_ctx_driver_t *menu_display_context_get_ptr(void)
    return disp->display_ctx;
 }
 
-void menu_display_free(void)
-{
-   menu_display_ctl(MENU_DISPLAY_CTL_DEINIT, NULL);
-}
-
-bool menu_display_init(void)
-{
-   menu_display_t *disp = menu_display_get_ptr();
-   if (!disp)
-      return false;
-
-   retro_assert(disp->msg_queue = msg_queue_new(8));
-
-   return true;
-}
-
 static bool menu_display_font_init_first(void **font_handle,
       void *video_data, const char *font_path,
       float font_size)
@@ -257,6 +241,9 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          menu_display_ctl(MENU_DISPLAY_CTL_FRAMEBUF_DEINIT, NULL);
          memset(disp, 0, sizeof(menu_display_t));
          break;
+      case MENU_DISPLAY_CTL_INIT:
+         retro_assert(disp->msg_queue = msg_queue_new(8));
+         break;
       case MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME:
          draw_bak           = menu_disp->draw;
          draw_bg_bak        = menu_disp->draw_bg;
@@ -276,7 +263,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             *ptr = disp->font.buf;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_SET_FONT_BUF:
          {
             void **ptr = (void**)data;
@@ -284,7 +271,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             disp->font.buf = *ptr;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_FONT_FB:
          {
             uint8_t **ptr = (uint8_t**)data;
@@ -292,7 +279,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             *ptr = (uint8_t*)menu_display_font_framebuf;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_SET_FONT_FB:
          {
             uint8_t **ptr = (uint8_t**)data;
@@ -300,13 +287,13 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             menu_display_font_framebuf = *ptr;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_LIBRETRO_RUNNING:
          if (!settings->menu.pause_libretro)
             if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
                   && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                return true;
-         break;
+         return false;
       case MENU_DISPLAY_CTL_LIBRETRO:
          video_driver_set_texture_enable(true, false);
 
@@ -335,7 +322,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             menu_display_framebuf_width = *ptr;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_WIDTH:
          {
             unsigned *ptr = (unsigned*)data;
@@ -343,7 +330,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             *ptr = menu_display_framebuf_width;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_HEIGHT:
          {
             unsigned *ptr = (unsigned*)data;
@@ -351,7 +338,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             *ptr = menu_display_framebuf_height;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_HEADER_HEIGHT:
          {
             unsigned *ptr = (unsigned*)data;
@@ -359,7 +346,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             *ptr = disp->header_height;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_SET_HEADER_HEIGHT:
          {
             unsigned *ptr = (unsigned*)data;
@@ -367,7 +354,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             disp->header_height = *ptr;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_FONT_SIZE:
          {
             unsigned *ptr = (unsigned*)data;
@@ -375,7 +362,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             *ptr = disp->font.size;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_SET_FONT_SIZE:
          {
             unsigned *ptr = (unsigned*)data;
@@ -383,7 +370,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             disp->font.size = *ptr;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_SET_HEIGHT:
          {
             unsigned *ptr = (unsigned*)data;
@@ -391,7 +378,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             menu_display_framebuf_height = *ptr;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_FB_PITCH:
          {
             size_t *ptr = (size_t*)data;
@@ -399,7 +386,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             *ptr = menu_display_framebuf_pitch;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_SET_FB_PITCH:
          {
             size_t *ptr = (size_t*)data;
@@ -407,7 +394,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             menu_display_framebuf_pitch = *ptr;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_MSG_FORCE:
          {
             bool *ptr = (bool*)data;
@@ -415,7 +402,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             *ptr = menu_display_msg_force;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_SET_MSG_FORCE:
          {
             bool *ptr = (bool*)data;
@@ -423,7 +410,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             menu_display_msg_force = *ptr;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_FONT_DATA_INIT:
          {
             bool *ptr = (bool*)data;
@@ -439,7 +426,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                return false;
             menu_display_font_alloc_framebuf = *ptr;
          }
-         return true;
+         break;
       case MENU_DISPLAY_CTL_UPDATE_PENDING:
          {
             if (menu_animation_ctl(MENU_ANIMATION_CTL_IS_ACTIVE, NULL))
@@ -453,20 +440,20 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          video_driver_get_size(&width, &height);
          video_driver_set_viewport(width,
                height, true, false);
-         return true;
+         break;
       case MENU_DISPLAY_CTL_UNSET_VIEWPORT:
          video_driver_get_size(&width, &height);
          video_driver_set_viewport(width,
                height, false, true);
-         return true;
+         break;
       case MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG:
          return menu_display_framebuf_dirty;
       case MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG:
          menu_display_framebuf_dirty = true;
-         return true;
+         break;
       case MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG:
          menu_display_framebuf_dirty = false;
-         return true;
+         break;
       case MENU_DISPLAY_CTL_GET_DPI:
          {
             float           *dpi = (float*)data;
@@ -480,10 +467,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             else if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, dpi) || !*dpi)
                *dpi = menu_dpi_override_value;
          }
-         return true;
+         break;
    }
 
-   return false;
+   return true;
 }
 
 void menu_display_timedate(char *s, size_t len, unsigned time_mode)
@@ -517,8 +504,6 @@ void menu_display_msg_queue_push(const char *msg,
 {
    runloop_msg_queue_push(msg, prio, duration, flush);
 }
-
-
 
 void menu_display_matrix_4x4_rotate_z(
       math_matrix_4x4 *matrix, float rotation,

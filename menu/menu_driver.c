@@ -169,7 +169,7 @@ static void menu_free(menu_handle_t *menu)
    menu_userdata = NULL;
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
-   menu_display_free();
+   menu_display_ctl(MENU_DISPLAY_CTL_DEINIT, NULL);
    menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
 
    event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
@@ -275,7 +275,7 @@ static void *menu_init(const void *data)
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
 
-   if (!menu_display_init())
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT, NULL))
       goto error;
 
    return menu;
