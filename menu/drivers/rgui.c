@@ -192,15 +192,22 @@ static uint32_t string_walk(const char **string)
 #define string_walk string_walkbyte
 #endif
 
-static void blit_line(uint16_t *data,
-      size_t pitch, int x, int y,
+static void blit_line(int x, int y,
       const char *message, uint16_t color)
 {
    unsigned i, j;
+   uint16_t *data = NULL;
+   size_t pitch   = 0;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_FB_DATA,  &data);
+   menu_display_ctl(MENU_DISPLAY_CTL_FB_PITCH, &pitch);
+
+   if (!data)
+      return;
 
    while (*message)
    {
-      uint8_t *font_fb;
+      uint8_t *font_fb  = NULL;
       uint32_t symbol   = string_walk(&message);
 
       menu_display_ctl(MENU_DISPLAY_CTL_FONT_FB, &font_fb);
@@ -382,8 +389,7 @@ static void rgui_render_messagebox(const char *message)
       int offset_x    = FONT_WIDTH_STRIDE * (glyphs_width - strlen(msg)) / 2;
       int offset_y    = FONT_HEIGHT_STRIDE * i;
 
-      blit_line(fb_data, fb_pitch,
-            x + 8 + offset_x, y + 8 + offset_y, msg, color);
+      blit_line(x + 8 + offset_x, y + 8 + offset_y, msg, color);
    }
 
 end:
@@ -540,7 +546,7 @@ static void rgui_render(void *data)
    normal_color = NORMAL_COLOR(settings);
 
    if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
-      blit_line(fb_data, fb_pitch,
+      blit_line(
             RGUI_TERM_START_X(fb_width),
             RGUI_TERM_START_X(fb_width),
             menu_hash_to_str(MENU_VALUE_BACK),
@@ -548,14 +554,14 @@ static void rgui_render(void *data)
 
    strlcpy(title_buf, string_to_upper(title_buf), sizeof(title_buf));
 
-   blit_line(fb_data, fb_pitch,
+   blit_line(
          RGUI_TERM_START_X(fb_width) + (RGUI_TERM_WIDTH(fb_width)
             - strlen(title_buf)) * FONT_WIDTH_STRIDE / 2,
          RGUI_TERM_START_X(fb_width),
          title_buf, TITLE_COLOR(settings));
 
    if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
-      blit_line(fb_data, fb_pitch,
+      blit_line(
             RGUI_TERM_START_X(fb_width),
             (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
             RGUI_TERM_START_Y(fb_height) + 2, title_msg, hover_color);
@@ -564,7 +570,7 @@ static void rgui_render(void *data)
    {
       menu_display_timedate(timedate, sizeof(timedate), 3);
 
-      blit_line(fb_data, fb_pitch,
+      blit_line(
             RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width),
             (RGUI_TERM_HEIGHT(fb_width, fb_height) * FONT_HEIGHT_STRIDE) +
             RGUI_TERM_START_Y(fb_height) + 2, timedate, hover_color);
@@ -618,7 +624,7 @@ static void rgui_render(void *data)
             entry_spacing,
             type_str_buf);
 
-      blit_line(fb_data, fb_pitch, x, y, message,
+      blit_line(x, y, message,
             entry_selected ? hover_color : normal_color);
    }
 
