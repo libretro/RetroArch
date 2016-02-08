@@ -229,7 +229,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
    static menu_framebuf_t menu_display_framebuf;
-   static uint16_t *menu_display_framebuf_data      = NULL;
    static const uint8_t *menu_display_font_framebuf = NULL;
    static bool menu_display_font_alloc_framebuf     = false;
    static bool menu_display_framebuf_dirty          = false;
@@ -259,9 +258,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
          return menu_display_font_bind_block(NULL);
       case MENU_DISPLAY_CTL_FRAMEBUF_DEINIT:
-         if (menu_display_framebuf_data)
-            free(menu_display_framebuf_data);
-         menu_display_framebuf_data = NULL;
          memset(&menu_display_framebuf,    0, sizeof(menu_framebuf_t));
          break;
       case MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME:
@@ -399,22 +395,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             menu_display_framebuf.height = *ptr;
          }
          return true;
-      case MENU_DISPLAY_CTL_FB_DATA:
-         {
-            uint16_t **ptr = (uint16_t**)data;
-            if (!ptr)
-               return false;
-            *ptr = menu_display_framebuf_data;
-         }
-         return true;
-      case MENU_DISPLAY_CTL_SET_FB_DATA:
-         {
-            uint16_t *ptr = (uint16_t*)data;
-            if (!ptr)
-               return false;
-            menu_display_framebuf_data = ptr;
-         }
-         return true;
       case MENU_DISPLAY_CTL_FB_PITCH:
          {
             size_t *ptr = (size_t*)data;
@@ -485,12 +465,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
       case MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG:
          return menu_display_framebuf_dirty;
       case MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG:
-         if (menu_display_framebuf_data)
-            menu_display_framebuf_dirty = true;
+         menu_display_framebuf_dirty = true;
          return true;
       case MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG:
-         if (menu_display_framebuf_data)
-            menu_display_framebuf_dirty = false;
+         menu_display_framebuf_dirty = false;
          return true;
       case MENU_DISPLAY_CTL_GET_DPI:
          {
