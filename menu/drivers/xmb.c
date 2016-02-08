@@ -1864,7 +1864,7 @@ static void xmb_frame(void *data)
 }
 
 
-static void xmb_font(void)
+static void xmb_font(xmb_handle_t *xmb)
 {
    int font_size;
    char mediapath[PATH_MAX_LENGTH],
@@ -1877,8 +1877,10 @@ static void xmb_font(void)
          settings->assets_directory, "xmb", sizeof(mediapath));
    fill_pathname_join(themepath,
          mediapath, XMB_THEME, sizeof(themepath));
-   fill_pathname_join(fontpath,
-         themepath, "font.ttf", sizeof(fontpath));
+   if (string_is_empty(settings->menu.xmb_font))
+         fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
+   else
+         strlcpy(fontpath, settings->menu.xmb_font,sizeof(fontpath));
 
    if (!menu_display_init_main_font(fontpath, font_size))
       RARCH_WARN("Failed to load font.");
@@ -2024,7 +2026,7 @@ static void *xmb_init(void **userdata)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
 
    xmb_init_horizontal_list(xmb);
-   xmb_font();
+   xmb_font(xmb);
 
    return menu;
 
@@ -2297,7 +2299,7 @@ static void xmb_context_reset(void *data)
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    xmb_layout(xmb);
-   xmb_font();
+   xmb_font(xmb);
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb, themepath);
