@@ -166,7 +166,7 @@ typedef struct settings
       unsigned title_color;
       unsigned xmb_scale_factor;
       unsigned xmb_alpha_factor;
-
+      char xmb_font[PATH_MAX_LENGTH];
    } menu;
 #endif
 
