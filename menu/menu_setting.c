@@ -5038,7 +5038,7 @@ static bool setting_append_list_audio_options(
          parent_group,
          general_write_handler,
          general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, 16, 512, 16.0, true, true);
+   menu_settings_list_current_add_range(list, list_info, 8, 512, 16.0, true, true);
 
    CONFIG_FLOAT(
          list, list_info,
