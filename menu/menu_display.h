@@ -134,7 +134,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 
 void menu_display_timedate(char *s, size_t len, unsigned time_mode);
 
-void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
+void menu_display_msg_queue_push(const char *msg,
+      unsigned prio, unsigned duration,
       bool flush);
 
 
@@ -159,8 +160,10 @@ void menu_display_draw_bg(
       enum menu_display_prim_type prim_type
       );
 
-void menu_display_matrix_4x4_rotate_z(math_matrix_4x4 *matrix, float rotation,
-      float scale_x, float scale_y, float scale_z, bool scale_enable);
+void menu_display_matrix_4x4_rotate_z(
+      math_matrix_4x4 *matrix, float rotation,
+      float scale_x, float scale_y, float scale_z,
+      bool scale_enable);
 
 unsigned menu_display_texture_load(void *data,
       enum texture_filter_type  filter_type);
@@ -171,9 +174,11 @@ void menu_display_clear_color(float r, float g, float b, float a);
 
 void menu_display_texture_unload(uintptr_t *id);
 
-void menu_display_handle_wallpaper_upload(void *task_data, void *user_data, const char *err);
+void menu_display_handle_wallpaper_upload(void *task_data,
+      void *user_data, const char *err);
 
-void menu_display_handle_boxart_upload(void *task_data, void *user_data, const char *err);
+void menu_display_handle_boxart_upload(void *task_data,
+      void *user_data, const char *err);
 
 const float *menu_display_get_tex_coords(void);
 
