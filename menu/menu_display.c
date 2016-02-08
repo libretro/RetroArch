@@ -36,17 +36,8 @@
 #include "../gfx/video_thread_wrapper.h"
 #endif
 
-typedef struct menu_framebuf
-{
-   unsigned width;
-   unsigned height;
-   size_t pitch;
-} menu_framebuf_t;
-
 typedef struct menu_display
 {
-   bool msg_force;
-
    struct
    {
       void *buf;
@@ -89,17 +80,7 @@ static menu_display_ctx_driver_t *menu_display_context_get_ptr(void)
 
 void menu_display_free(void)
 {
-   menu_display_t *disp = menu_display_get_ptr();
-   if (!disp)
-      return;
-
-   if (disp->msg_queue)
-      msg_queue_free(disp->msg_queue);
-   disp->msg_queue = NULL;
-
-   menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_FRAMEBUF_DEINIT, NULL);
-   memset(menu_display_get_ptr(), 0, sizeof(menu_display_t));
+   menu_display_ctl(MENU_DISPLAY_CTL_DEINIT, NULL);
 }
 
 bool menu_display_init(void)
@@ -228,7 +209,10 @@ bool menu_display_init_main_font(const char *font_path, float font_size)
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
-   static menu_framebuf_t menu_display_framebuf;
+   static bool menu_display_msg_force               = false;
+   static unsigned menu_display_framebuf_width      = 0;
+   static unsigned menu_display_framebuf_height     = 0;
+   static size_t menu_display_framebuf_pitch        = 0;
    static const uint8_t *menu_display_font_framebuf = NULL;
    static bool menu_display_font_alloc_framebuf     = false;
    static bool menu_display_framebuf_dirty          = false;
@@ -258,7 +242,20 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
          return menu_display_font_bind_block(NULL);
       case MENU_DISPLAY_CTL_FRAMEBUF_DEINIT:
-         memset(&menu_display_framebuf,    0, sizeof(menu_framebuf_t));
+         menu_display_framebuf_width  = 0;
+         menu_display_framebuf_height = 0;
+         menu_display_framebuf_pitch  = 0;
+         break;
+      case MENU_DISPLAY_CTL_DEINIT:
+         if (disp->msg_queue)
+            msg_queue_free(disp->msg_queue);
+         disp->msg_queue              = NULL;
+
+         menu_display_msg_force       = false;
+
+         menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
+         menu_display_ctl(MENU_DISPLAY_CTL_FRAMEBUF_DEINIT, NULL);
+         memset(disp, 0, sizeof(menu_display_t));
          break;
       case MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME:
          draw_bak           = menu_disp->draw;
@@ -336,7 +333,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            menu_display_framebuf.width = *ptr;
+            menu_display_framebuf_width = *ptr;
          }
          return true;
       case MENU_DISPLAY_CTL_WIDTH:
@@ -344,7 +341,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            *ptr = menu_display_framebuf.width;
+            *ptr = menu_display_framebuf_width;
          }
          return true;
       case MENU_DISPLAY_CTL_HEIGHT:
@@ -352,7 +349,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            *ptr = menu_display_framebuf.height;
+            *ptr = menu_display_framebuf_height;
          }
          return true;
       case MENU_DISPLAY_CTL_HEADER_HEIGHT:
@@ -392,7 +389,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            menu_display_framebuf.height = *ptr;
+            menu_display_framebuf_height = *ptr;
          }
          return true;
       case MENU_DISPLAY_CTL_FB_PITCH:
@@ -400,7 +397,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             size_t *ptr = (size_t*)data;
             if (!ptr)
                return false;
-            *ptr = menu_display_framebuf.pitch;
+            *ptr = menu_display_framebuf_pitch;
          }
          return true;
       case MENU_DISPLAY_CTL_SET_FB_PITCH:
@@ -408,7 +405,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             size_t *ptr = (size_t*)data;
             if (!ptr)
                return false;
-            menu_display_framebuf.pitch = *ptr;
+            menu_display_framebuf_pitch = *ptr;
          }
          return true;
       case MENU_DISPLAY_CTL_MSG_FORCE:
@@ -416,7 +413,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            *ptr = disp->msg_force;
+            *ptr = menu_display_msg_force;
          }
          return true;
       case MENU_DISPLAY_CTL_SET_MSG_FORCE:
@@ -424,7 +421,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             bool *ptr = (bool*)data;
             if (!ptr)
                return false;
-            disp->msg_force = *ptr;
+            menu_display_msg_force = *ptr;
          }
          return true;
       case MENU_DISPLAY_CTL_FONT_DATA_INIT:
