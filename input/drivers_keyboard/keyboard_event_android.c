@@ -21,7 +21,19 @@
 
 #define MAX_KEYS ((LAST_KEYCODE + 7) / 8)
 
-static uint8_t android_key_state[MAX_PADS][MAX_KEYS];
+// First ports are used to keeping track of gamepad states. Last port is used for keyboard state
+static uint8_t android_key_state[MAX_PADS+1][MAX_KEYS];
+
+bool android_keyboard_port_input_pressed(const struct retro_keybind *binds, unsigned id)
+{
+   if (id < RARCH_BIND_LIST_END)
+   {
+      const struct retro_keybind *bind = &binds[id];
+      unsigned bit = input_keymaps_translate_rk_to_keysym(binds[id].key);
+      return bind->valid && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], bit);
+   }
+   return false;
+}
 
 bool android_keyboard_input_pressed(unsigned key)
 {

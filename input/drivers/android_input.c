@@ -976,7 +976,11 @@ static void android_input_poll_input(void *data)
 
                   if (is_keyboard_id(id))
                   {
-                     if (!predispatched) android_input_poll_event_type_keyboard(event, keycode, &handled);
+                     if (!predispatched)
+                     {
+                        android_input_poll_event_type_keyboard(event, keycode, &handled);
+                        android_input_poll_event_type_key(android_app, event, ANDROID_KEYBOARD_PORT, keycode, source, type_event, &handled);
+                     }
                   }
                   else
                      android_input_poll_event_type_key(android_app,
@@ -1110,7 +1114,8 @@ static int16_t android_input_state(void *data,
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(android->joypad, port, binds[port], id);
+         return input_joypad_pressed(android->joypad, port, binds[port], id) ||
+                android_keyboard_port_input_pressed(binds[port],id);
       case RETRO_DEVICE_ANALOG:
          return input_joypad_analog(android->joypad, port, idx, id,
                binds[port]);
@@ -1155,6 +1160,9 @@ static bool android_input_key_pressed(void *data, int key)
 {
    android_input_t *android = (android_input_t*)data;
    settings_t *settings     = config_get_ptr();
+
+   if(android_keyboard_port_input_pressed(settings->input.binds[0],key))
+      return true;
 
    if (input_joypad_pressed(android->joypad,
          0, settings->input.binds[0], key))
