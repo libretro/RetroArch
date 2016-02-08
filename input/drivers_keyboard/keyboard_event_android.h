@@ -135,6 +135,10 @@ enum {
 #define MAX_PADS 8
 #endif
 
+#define ANDROID_KEYBOARD_PORT MAX_PADS
+
+bool android_keyboard_port_input_pressed(const struct retro_keybind *binds, unsigned id);
+
 bool android_keyboard_input_pressed(unsigned key);
 
 uint8_t *android_keyboard_state_get(unsigned port);
