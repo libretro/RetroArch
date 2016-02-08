@@ -1113,7 +1113,7 @@ static bool init_state(void)
    return true;
 }
 
-bool rarch_option_create(char *s, size_t len)
+bool rarch_game_options_validate(char *s, size_t len, bool mkdir)
 {
    char core_path[PATH_MAX_LENGTH];
    char config_directory[PATH_MAX_LENGTH];
@@ -1153,7 +1153,8 @@ bool rarch_option_create(char *s, size_t len)
 
    fill_pathname_join(core_path,
          config_directory, core_name, sizeof(core_path));
-   if (!path_is_directory(core_path))
+
+   if (!path_is_directory(core_path) && mkdir)
       path_mkdir(core_path);
 
    return true;
