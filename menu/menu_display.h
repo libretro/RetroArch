@@ -68,6 +68,7 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_SET_FONT_BUF,
    MENU_DISPLAY_CTL_FONT_FB,
    MENU_DISPLAY_CTL_SET_FONT_FB,
+   MENU_DISPLAY_CTL_FONT_BIND_BLOCK,
    MENU_DISPLAY_CTL_BLEND_BEGIN,
    MENU_DISPLAY_CTL_BLEND_END
 };
@@ -124,8 +125,6 @@ typedef struct menu_display_ctx_driver
    enum menu_display_driver_type type;
    const char *ident;
 } menu_display_ctx_driver_t;
-
-bool menu_display_font_bind_block(void *userdata);
 
 bool menu_display_init_main_font(const char *font_path, float font_size);
 

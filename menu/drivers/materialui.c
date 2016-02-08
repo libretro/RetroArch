@@ -853,7 +853,7 @@ static void mui_frame(void *data)
          width, height,
          &lightblue_bg[0]);
 
-   menu_display_font_bind_block(&mui->list_block);
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BIND_BLOCK, &mui->list_block);
 
    mui_render_menu_list(mui, width, height,
          normal_color, hover_color, &pure_white[0]);

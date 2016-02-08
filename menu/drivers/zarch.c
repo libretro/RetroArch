@@ -990,7 +990,7 @@ static void zarch_frame(void *data)
 
    zui->tmp_block.carr.coords.vertices = 0;
 
-   menu_display_font_bind_block(&zui->tmp_block);
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BIND_BLOCK, &zui->tmp_block);
 
    zarch_zui_push_quad(zui->width, zui->height, ZUI_BG_SCREEN, &zui->ca, 0, 0, zui->width, zui->height);
    zarch_zui_snow(zui, &zui->ca, zui->width, zui->height);

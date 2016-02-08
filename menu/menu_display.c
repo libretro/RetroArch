@@ -89,17 +89,6 @@ static bool menu_display_font_init_first(void **font_handle,
          font_path, font_size);
 }
 
-bool menu_display_font_bind_block(void *userdata)
-{
-   menu_display_t *disp = menu_display_get_ptr();
-   if (!disp)
-      return false;
-
-   font_driver_bind_block(disp->font.buf, userdata);
-
-   return true;
-}
-
 void menu_display_free_main_font(void)
 {
    menu_display_t *disp = menu_display_get_ptr();
@@ -145,10 +134,9 @@ static bool menu_display_check_compatibility(
    return false;
 }
 
-static bool menu_display_driver_init_first(void)
+static bool menu_display_driver_init_first(menu_display_t *disp)
 {
    unsigned i;
-   menu_display_t *disp = menu_display_get_ptr();
 
    for (i = 0; menu_display_ctx_drivers[i]; i++)
    {
@@ -218,13 +206,18 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             return false;
          menu_disp->blend_end();
          break;
+      case MENU_DISPLAY_CTL_FONT_BIND_BLOCK:
+         if (!disp)
+            return false;
+         font_driver_bind_block(disp->font.buf, data);
+         break;
       case MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK:
          if (!disp || !disp->font.buf)
             return false;
 
          font_driver_flush(disp->font.buf);
-
-         return menu_display_font_bind_block(NULL);
+         font_driver_bind_block(disp->font.buf, NULL);
+         break;
       case MENU_DISPLAY_CTL_FRAMEBUF_DEINIT:
          menu_display_framebuf_width  = 0;
          menu_display_framebuf_height = 0;
@@ -469,7 +462,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          }
          break;
       case MENU_DISPLAY_CTL_INIT_FIRST_DRIVER:
-         return menu_display_driver_init_first();
+         return menu_display_driver_init_first(disp);
       case MENU_DISPLAY_CTL_NONE:
       default:
          break;
