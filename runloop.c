@@ -386,8 +386,6 @@ static void check_shader_dir(rarch_dir_list_t *dir_list,
 /**
  * rarch_game_specific_options:
  *
- * Environment callback function implementation.
- *
  * Returns: true (1) if a game specific core 
  * options path has been found,
  * otherwise false (0).
@@ -397,7 +395,7 @@ static bool rarch_game_specific_options(char **output)
    char game_path[PATH_MAX_LENGTH];
    config_file_t *option_file = NULL;
    
-   if (!rarch_option_create(game_path, sizeof(game_path)))
+   if (!rarch_game_options_validate(game_path, sizeof(game_path), false))
          return false;
 
    option_file = config_file_new(game_path);

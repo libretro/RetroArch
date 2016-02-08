@@ -1535,7 +1535,7 @@ static int action_ok_option_create(const char *path,
    rarch_system_info_t *system            = NULL;
    config_file_t *conf                    = NULL;
 
-   if (!rarch_option_create(game_path, sizeof(game_path)))
+   if (!rarch_game_options_validate(game_path, sizeof(game_path), true))
    {
       menu_display_msg_queue_push("Error saving core options file",
             1, 100, true);
