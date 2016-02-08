@@ -42,7 +42,6 @@ typedef struct menu_framebuf
    unsigned width;
    unsigned height;
    size_t pitch;
-   bool dirty;
 } menu_framebuf_t;
 
 typedef struct menu_display
@@ -233,6 +232,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
    static menu_framebuf_t menu_display_framebuf;
+   static bool menu_display_framebuf_dirty   = false;
    static menu_display_draw_t draw_bak       = NULL;
    static menu_display_draw_bg_t draw_bg_bak = NULL;
    menu_display_t  *disp                     = menu_display_get_ptr();
@@ -483,14 +483,14 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                height, false, true);
          return true;
       case MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG:
-         return menu_display_framebuf.dirty;
+         return menu_display_framebuf_dirty;
       case MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG:
          if (menu_display_framebuf.data)
-            menu_display_framebuf.dirty = true;
+            menu_display_framebuf_dirty = true;
          return true;
       case MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG:
          if (menu_display_framebuf.data)
-            menu_display_framebuf.dirty = false;
+            menu_display_framebuf_dirty = false;
          return true;
       case MENU_DISPLAY_CTL_GET_DPI:
          {
