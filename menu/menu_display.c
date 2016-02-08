@@ -465,10 +465,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          return true;
       case MENU_DISPLAY_CTL_UPDATE_PENDING:
          {
-            bool ptr;
-            menu_display_ctl(
-                  MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG, &ptr);
-            if (menu_animation_ctl(MENU_ANIMATION_CTL_IS_ACTIVE, NULL) || ptr)
+            if (menu_animation_ctl(MENU_ANIMATION_CTL_IS_ACTIVE, NULL))
+               return true;
+            if (menu_display_ctl(
+                  MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG, NULL))
                return true;
          }
          return false;
@@ -483,13 +483,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                height, false, true);
          return true;
       case MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            *ptr = menu_display_framebuf.dirty;
-         }
-         return true;
+         return menu_display_framebuf.dirty;
       case MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG:
          if (menu_display_framebuf.data)
             menu_display_framebuf.dirty = true;

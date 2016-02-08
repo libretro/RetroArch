@@ -730,12 +730,9 @@ static void rgui_free(void *data)
 static void rgui_set_texture(void)
 {
    unsigned fb_width, fb_height;
-   uint16_t *fb_data          = NULL;
-   bool              fb_dirty = false;
+   uint16_t *fb_data = NULL;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG, &fb_dirty);
-
-   if (!fb_dirty)
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG, NULL))
       return;
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
