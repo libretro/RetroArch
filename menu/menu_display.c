@@ -47,7 +47,6 @@ typedef struct menu_display
 
    unsigned header_height;
 
-   msg_queue_t *msg_queue;
    menu_display_ctx_driver_t *display_ctx;
 } menu_display_t;
 
@@ -202,6 +201,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
    static bool menu_display_framebuf_dirty          = false;
    static menu_display_draw_t draw_bak              = NULL;
    static menu_display_draw_bg_t draw_bg_bak        = NULL;
+   static msg_queue_t *menu_display_msg_queue       = NULL;
    menu_display_t  *disp                            = menu_display_get_ptr();
    menu_display_ctx_driver_t *menu_disp             = menu_display_context_get_ptr();
    settings_t *settings                             = config_get_ptr();
@@ -231,9 +231,9 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          menu_display_framebuf_pitch  = 0;
          break;
       case MENU_DISPLAY_CTL_DEINIT:
-         if (disp->msg_queue)
-            msg_queue_free(disp->msg_queue);
-         disp->msg_queue              = NULL;
+         if (menu_display_msg_queue)
+            msg_queue_free(menu_display_msg_queue);
+         menu_display_msg_queue       = NULL;
 
          menu_display_msg_force       = false;
 
@@ -242,7 +242,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          memset(disp, 0, sizeof(menu_display_t));
          break;
       case MENU_DISPLAY_CTL_INIT:
-         retro_assert(disp->msg_queue = msg_queue_new(8));
+         retro_assert(menu_display_msg_queue = msg_queue_new(8));
          break;
       case MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME:
          draw_bak           = menu_disp->draw;
