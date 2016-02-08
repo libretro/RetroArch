@@ -195,11 +195,16 @@ task_finished:
 static bool rarch_task_http_finder(rarch_task_t *task, void *user_data)
 {
    http_handle_t *http = (http_handle_t*)task->state;
-   const char *handle_url;
-   if (task->handler != rarch_task_http_transfer_handler)
+   const char *handle_url = NULL;
+   if (!http || !user_data || !task || task->handler != rarch_task_http_transfer_handler)
       return false;
+   if (!http->connection.handle)
+	   return false;
 
    handle_url = net_http_connection_url(http->connection.handle);
+
+   if (!handle_url)
+	   return false;
 
    return string_is_equal(handle_url, (const char*)user_data);
 }
