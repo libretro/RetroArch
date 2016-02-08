@@ -145,7 +145,7 @@ static bool menu_display_check_compatibility(
    return false;
 }
 
-bool menu_display_driver_init_first(void)
+static bool menu_display_driver_init_first(void)
 {
    unsigned i;
    menu_display_t *disp = menu_display_get_ptr();
@@ -467,6 +467,11 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             else if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, dpi) || !*dpi)
                *dpi = menu_dpi_override_value;
          }
+         break;
+      case MENU_DISPLAY_CTL_INIT_FIRST_DRIVER:
+         return menu_display_driver_init_first();
+      case MENU_DISPLAY_CTL_NONE:
+      default:
          break;
    }
 

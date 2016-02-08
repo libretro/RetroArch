@@ -33,7 +33,8 @@ extern "C" {
 
 enum menu_display_ctl_state
 {
-   MENU_DISPLAY_CTL_SET_VIEWPORT = 0,
+   MENU_DISPLAY_CTL_NONE = 0,
+   MENU_DISPLAY_CTL_SET_VIEWPORT,
    MENU_DISPLAY_CTL_UNSET_VIEWPORT,
    MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG,
    MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG,
@@ -55,6 +56,7 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_FRAMEBUF_DEINIT,
    MENU_DISPLAY_CTL_DEINIT,
    MENU_DISPLAY_CTL_INIT,
+   MENU_DISPLAY_CTL_INIT_FIRST_DRIVER,
    MENU_DISPLAY_CTL_FONT_DATA_INIT,
    MENU_DISPLAY_CTL_SET_FONT_DATA_INIT,
    MENU_DISPLAY_CTL_FONT_SIZE,
@@ -136,8 +138,6 @@ void menu_display_timedate(char *s, size_t len, unsigned time_mode);
 void menu_display_msg_queue_push(const char *msg, unsigned prio, unsigned duration,
       bool flush);
 
-
-bool menu_display_driver_init_first(void);
 
 void menu_display_draw(float x, float y,
       unsigned width, unsigned height,

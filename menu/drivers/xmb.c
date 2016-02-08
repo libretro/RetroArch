@@ -1986,7 +1986,7 @@ static void *xmb_init(void **userdata)
    if (!menu)
       goto error;
 
-   if (!menu_display_driver_init_first())
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT_FIRST_DRIVER, NULL))
       goto error;
 
    video_driver_get_size(&width, &height);

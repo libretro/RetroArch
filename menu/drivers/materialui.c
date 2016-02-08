@@ -1043,7 +1043,7 @@ static void *mui_init(void **userdata)
    if (!menu)
       goto error;
 
-   if (!menu_display_driver_init_first())
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT_FIRST_DRIVER, NULL))
       goto error;
 
    mui = (mui_handle_t*)calloc(1, sizeof(mui_handle_t));
