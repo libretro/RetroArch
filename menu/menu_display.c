@@ -463,7 +463,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
       case MENU_DISPLAY_CTL_DRAW:
          {
             menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-            if (!menu_disp || !menu_disp->draw || !data)
+            if (!menu_disp || !menu_disp->draw)
                return false;
             menu_disp->draw(draw->x, draw->y, draw->width, draw->height,
                   draw->coords, draw->matrix_data,
@@ -473,7 +473,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
       case MENU_DISPLAY_CTL_DRAW_BG:
          {
             menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-            if (!menu_disp || !menu_disp->draw_bg || !data)
+            if (!menu_disp || !menu_disp->draw_bg)
                return false;
 
             menu_disp->draw_bg(draw->width, draw->height, 
