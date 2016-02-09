@@ -536,6 +536,15 @@ static void xmb_update_boxart_path(xmb_handle_t *xmb, unsigned i)
    strlcat(xmb->boxart_file_path, ".png", sizeof(xmb->boxart_file_path));
 }
 
+static void menu_display_handle_boxart_upload(void *task_data,
+      void *user_data, const char *err)
+{
+   struct texture_image *img = (struct texture_image*)task_data;
+   menu_driver_load_image(img, MENU_IMAGE_BOXART);
+   video_texture_image_free(img);
+   free(img);
+}
+
 static void xmb_update_boxart_image(xmb_handle_t *xmb)
 {
    if (path_file_exists(xmb->boxart_file_path))

@@ -578,12 +578,3 @@ void menu_display_handle_wallpaper_upload(void *task_data,
    video_texture_image_free(img);
    free(img);
 }
-
-void menu_display_handle_boxart_upload(void *task_data,
-      void *user_data, const char *err)
-{
-   struct texture_image *img = (struct texture_image*)task_data;
-   menu_driver_load_image(img, MENU_IMAGE_BOXART);
-   video_texture_image_free(img);
-   free(img);
-}
