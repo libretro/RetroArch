@@ -341,6 +341,7 @@ static void xmb_draw_icon(xmb_handle_t *xmb,
       float rotation, float scale_factor,
       float *color)
 {
+   menu_display_ctx_rotate_draw_t rotate_draw;
    menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
@@ -352,8 +353,14 @@ static void xmb_draw_icon(xmb_handle_t *xmb,
          y > height + xmb->icon.size)
       return;
 
-   menu_display_matrix_4x4_rotate_z(&mymat, rotation,
-         scale_factor, scale_factor, 1, true);
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = rotation;
+   rotate_draw.scale_x      = scale_factor;
+   rotate_draw.scale_y      = scale_factor;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -413,6 +420,7 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
 static void xmb_draw_boxart(xmb_handle_t *xmb, float *color,
       unsigned width, unsigned height)
 {
+   menu_display_ctx_rotate_draw_t rotate_draw;
    menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
@@ -420,7 +428,14 @@ static void xmb_draw_boxart(xmb_handle_t *xmb, float *color,
    float x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
       xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
-   menu_display_matrix_4x4_rotate_z(&mymat, 0, 1, 1, 1, true);
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = 0;
+   rotate_draw.scale_x      = 1;
+   rotate_draw.scale_y      = 1;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -1353,6 +1368,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
    size_t i;
    unsigned ticker_limit;
    math_matrix_4x4 mymat;
+   menu_display_ctx_rotate_draw_t rotate_draw;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
    settings_t   *settings      = config_get_ptr();
@@ -1368,7 +1384,14 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
    end = file_list_get_size(list);
 
-   menu_display_matrix_4x4_rotate_z(&mymat, 0, 1, 1, 1, true);
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = 0;
+   rotate_draw.scale_x      = 1;
+   rotate_draw.scale_y      = 1;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
 
    menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &i);
 
@@ -1719,6 +1742,7 @@ static void xmb_frame(void *data)
    float coord_color[16];
    float coord_color2[16];
    menu_display_ctx_draw_t draw;
+   menu_display_ctx_rotate_draw_t rotate_draw;
    bool display_kb;
    bool render_background                  = false;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
@@ -1810,7 +1834,14 @@ static void xmb_frame(void *data)
          xmb->categories.selection_ptr,
          &item_color[0], width, height);
 
-   menu_display_matrix_4x4_rotate_z(&mymat, 0, 1, 1, 1, true);
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = 0;
+   rotate_draw.scale_x      = 1;
+   rotate_draw.scale_y      = 1;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 

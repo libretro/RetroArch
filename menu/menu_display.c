@@ -478,6 +478,26 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                   draw->vertex_count, draw->prim_type);
          }
          break;
+      case MENU_DISPLAY_CTL_ROTATE_Z:
+         {
+            math_matrix_4x4 matrix_rotated, matrix_scaled;
+            math_matrix_4x4 *b                   = NULL;
+            menu_display_ctx_rotate_draw_t *draw = (menu_display_ctx_rotate_draw_t*)data;
+            if (!draw || !menu_disp || !menu_disp->get_default_mvp)
+               return false;
+
+            b = (math_matrix_4x4*)menu_disp->get_default_mvp();
+
+            matrix_4x4_rotate_z(&matrix_rotated, draw->rotation);
+            matrix_4x4_multiply(draw->matrix, &matrix_rotated, b);
+
+            if (!draw->scale_enable)
+               return false;
+
+            matrix_4x4_scale(&matrix_scaled, draw->scale_x, draw->scale_y, draw->scale_z);
+            matrix_4x4_multiply(draw->matrix, &matrix_scaled, draw->matrix);
+         }
+         break;
       case MENU_DISPLAY_CTL_NONE:
       default:
          break;
@@ -509,29 +529,6 @@ void menu_display_timedate(char *s, size_t len, unsigned time_mode)
          strftime(s, len, "%d/%m %H:%M", localtime(&time_));
          break;
    }
-}
-
-void menu_display_matrix_4x4_rotate_z(
-      math_matrix_4x4 *matrix, float rotation,
-      float scale_x, float scale_y, float scale_z,
-      bool scale_enable)
-{
-   math_matrix_4x4 matrix_rotated, matrix_scaled;
-   math_matrix_4x4 *b                   = NULL;
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!matrix || !menu_disp || !menu_disp->get_default_mvp)
-      return;
-
-   b = (math_matrix_4x4*)menu_disp->get_default_mvp();
-
-   matrix_4x4_rotate_z(&matrix_rotated, rotation);
-   matrix_4x4_multiply(matrix, &matrix_rotated, b);
-
-   if (!scale_enable)
-      return;
-
-   matrix_4x4_scale(&matrix_scaled, scale_x, scale_y, scale_z);
-   matrix_4x4_multiply(matrix, &matrix_scaled, matrix);
 }
 
 const float *menu_display_get_tex_coords(void)

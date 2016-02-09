@@ -185,14 +185,21 @@ static void mui_draw_icon(mui_handle_t *mui,
       float rotation, float scale_factor,
       float *color)
 {
+   menu_display_ctx_rotate_draw_t rotate_draw;
    menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-   menu_display_matrix_4x4_rotate_z(&mymat,
-         rotation, scale_factor, scale_factor, 1, true);
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = rotation;
+   rotate_draw.scale_x      = scale_factor;
+   rotate_draw.scale_y      = scale_factor;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;

@@ -76,7 +76,8 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR,
    MENU_DISPLAY_CTL_CLEAR_COLOR,
    MENU_DISPLAY_CTL_DRAW,
-   MENU_DISPLAY_CTL_DRAW_BG
+   MENU_DISPLAY_CTL_DRAW_BG,
+   MENU_DISPLAY_CTL_ROTATE_Z
 };
 
 enum menu_display_prim_type
@@ -178,12 +179,6 @@ typedef struct menu_display_ctx_rotate_draw
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 
 void menu_display_timedate(char *s, size_t len, unsigned time_mode);
-
-void menu_display_matrix_4x4_rotate_z(
-      math_matrix_4x4 *matrix, float rotation,
-      float scale_x, float scale_y, float scale_z,
-      bool scale_enable);
-
 
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err);
