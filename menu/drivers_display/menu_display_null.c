@@ -37,30 +37,14 @@ static void menu_display_null_blend_end(void)
 {
 }
 
-static void menu_display_null_draw(
-      float x, float y,
-      unsigned width, unsigned height,
-      struct gfx_coords *coords,
-      void *matrix_data,
-      uintptr_t texture,
-      enum menu_display_prim_type prim_type
-      )
+static void menu_display_null_draw(menu_display_ctx_draw_t *draw)
 {
+   (void)draw;
 }
 
-static void menu_display_null_draw_bg(
-      unsigned width,
-      unsigned height,
-      uintptr_t texture,
-      float handle_alpha,
-      bool force_transparency,
-      float *coord_color,
-      float *coord_color2,
-      const float *vertex,
-      const float *tex_coord,
-      size_t vertex_count,
-      enum menu_display_prim_type prim_type)
+static void menu_display_null_draw_bg(menu_display_ctx_draw_t *draw)
 {
+   (void)draw;
 }
 
 static void menu_display_null_restore_clear_color(void)

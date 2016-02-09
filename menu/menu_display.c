@@ -121,21 +121,19 @@ static void menu_display_timedate(void *data)
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
-   static bool menu_display_msg_force               = false;
    static unsigned menu_display_framebuf_width      = 0;
    static unsigned menu_display_framebuf_height     = 0;
    static size_t menu_display_framebuf_pitch        = 0;
    static int menu_display_font_size                = 0;
    static unsigned menu_display_header_height       = 0;
-   static const uint8_t *menu_display_font_framebuf = NULL;
-   static void *menu_display_font_buf               = NULL;
+   static bool menu_display_msg_force               = false;
    static bool menu_display_font_alloc_framebuf     = false;
    static bool menu_display_framebuf_dirty          = false;
-   static menu_display_draw_t draw_bak              = NULL;
-   static menu_display_draw_bg_t draw_bg_bak        = NULL;
+   static const uint8_t *menu_display_font_framebuf = NULL;
+   static void *menu_display_font_buf               = NULL;
    static msg_queue_t *menu_display_msg_queue       = NULL;
-   settings_t *settings                             = config_get_ptr();
    static menu_display_ctx_driver_t *menu_disp      = NULL;
+   settings_t *settings                             = config_get_ptr();
 
    switch (state)
    {
@@ -205,16 +203,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          retro_assert(menu_display_msg_queue = msg_queue_new(8));
          break;
       case MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME:
-         draw_bak           = menu_disp->draw;
-         draw_bg_bak        = menu_disp->draw_bg;
-         menu_disp->draw    = menu_display_ctx_null.draw;
-         menu_disp->draw_bg = menu_display_ctx_null.draw_bg;
          break;
       case MENU_DISPLAY_CTL_UNSET_STUB_DRAW_FRAME:
-         if (draw_bak != NULL)
-            menu_disp->draw    = draw_bak;
-         if (draw_bg_bak != NULL)
-            menu_disp->draw_bg = draw_bg_bak;
          break;
       case MENU_DISPLAY_CTL_FONT_BUF:
          {
@@ -465,9 +455,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
             if (!menu_disp || !menu_disp->draw)
                return false;
-            menu_disp->draw(draw->x, draw->y, draw->width, draw->height,
-                  draw->coords, draw->matrix_data,
-                  draw->texture, draw->prim_type);
+            menu_disp->draw(draw);
          }
          break;
       case MENU_DISPLAY_CTL_DRAW_BG:
@@ -476,11 +464,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             if (!menu_disp || !menu_disp->draw_bg)
                return false;
 
-            menu_disp->draw_bg(draw->width, draw->height, 
-                  draw->texture, draw->handle_alpha,
-                  draw->force_transparency, draw->color,
-                  draw->color2, draw->vertex, draw->tex_coord,
-                  draw->vertex_count, draw->prim_type);
+            menu_disp->draw_bg(draw);
          }
          break;
       case MENU_DISPLAY_CTL_ROTATE_Z:

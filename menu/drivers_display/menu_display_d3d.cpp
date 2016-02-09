@@ -107,20 +107,13 @@ static void menu_display_d3d_blend_end(void)
    d3d_disable_blend_func(d3d->dev);
 }
 
-static void menu_display_d3d_draw(
-      float x, float y,
-      unsigned width, unsigned height,
-      struct gfx_coords *coords,
-      void *matrix_data,
-      uintptr_t texture,
-      enum menu_display_prim_type prim_type
-      )
+static void menu_display_d3d_draw(menu_display_ctx_draw_t *draw)
 {
    D3DVIEWPORT vp       = {0};
    d3d_video_t     *d3d = d3d_get_ptr();
    math_matrix_4x4 *mat = (math_matrix_4x4*)matrix_data;
 
-   if (!d3d)
+   if (!d3d || !draw)
       return;
 
    /* TODO - edge case */
@@ -129,47 +122,37 @@ static void menu_display_d3d_draw(
 
    if (!mat)
       mat = (math_matrix_4x4*)menu_display_d3d_get_default_mvp();
-   if (!coords->vertex)
-      coords->vertex = &d3d_vertexes[0];
-   if (!coords->tex_coord)
-      coords->tex_coord = &d3d_tex_coords[0];
-   if (!coords->lut_tex_coord)
-      coords->lut_tex_coord = &d3d_tex_coords[0];
+   if (!draw->coords->vertex)
+      draw->coords->vertex = &d3d_vertexes[0];
+   if (!draw->coords->tex_coord)
+      draw->coords->tex_coord = &d3d_tex_coords[0];
+   if (!draw->coords->lut_tex_coord)
+      draw->coords->lut_tex_coord = &d3d_tex_coords[0];
 
-   vp.X      = x;
-   vp.Y      = y;
-   vp.Width  = width;
-   vp.Height = height;
+   vp.X      = draw->x;
+   vp.Y      = draw->y;
+   vp.Width  = draw->width;
+   vp.Height = draw->height;
    vp.MinZ   = 0.0f;
    vp.MaxZ   = 1.0f;
 
    d3d_set_viewports(d3d->dev, &vp);
-   d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE)texture);
+   d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE)draw->texture);
 
 #if 0
-   video_shader_driver_set_coords(d3d, coords);
+   video_shader_driver_set_coords(d3d, draw->coords);
    video_shader_driver_set_mvp(d3d, mat);
 #endif
 
-   d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)menu_display_prim_to_d3d_enum(prim_type), 0, coords->vertices);
+   d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)
+         menu_display_prim_to_d3d_enum(draw->prim_type), 0, draw->coords->vertices);
 
 #if 0
    gl->coords.color     = gl->white_color_ptr;
 #endif
 }
 
-static void menu_display_d3d_draw_bg(
-      unsigned width,
-      unsigned height,
-      uintptr_t texture,
-      float handle_alpha,
-      bool force_transparency,
-      float *coord_color,
-      float *coord_color2,
-      const float *vertex,
-      const float *tex_coord,
-      size_t vertex_count,
-      enum menu_display_prim_type prim_type)
+static void menu_display_d3d_draw_bg(menu_display_ctx_draw_t *draw)
 {
    struct gfx_coords coords;
    const float *new_vertex    = NULL;
@@ -178,7 +161,7 @@ static void menu_display_d3d_draw_bg(
    settings_t *settings = config_get_ptr();
    d3d_video_t     *d3d = d3d_get_ptr();
 
-   if (!d3d)
+   if (!d3d || !draw)
       return;
 
    new_vertex    = vertex;
@@ -189,7 +172,7 @@ static void menu_display_d3d_draw_bg(
    if (!new_tex_coord)
       new_tex_coord = &d3d_tex_coords[0];
 
-   coords.vertices      = vertex_count;
+   coords.vertices      = draw->vertex_count;
    coords.vertex        = new_vertex;
    coords.tex_coord     = new_tex_coord;
    coords.lut_tex_coord = new_tex_coord;
@@ -201,13 +184,12 @@ static void menu_display_d3d_draw_bg(
 
    if ((settings->menu.pause_libretro
       || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-      && !force_transparency
-      && texture)
+      && !draw->force_transparency && draw->texture)
       coords.color = (const float*)coord_color2;
 
-   menu_display_d3d_draw(0, 0, width, height,
-         &coords, (math_matrix_4x4*)menu_display_d3d_get_default_mvp(),
-         (uintptr_t)texture, prim_type);
+   menu_display_d3d_draw(0, 0, draw->width, draw->height,
+         &draw->coords, (math_matrix_4x4*)menu_display_d3d_get_default_mvp(),
+         (uintptr_t)draw->texture, draw->prim_type);
 
    menu_display_d3d_blend_end();
 

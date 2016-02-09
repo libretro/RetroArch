@@ -86,57 +86,42 @@ static void menu_display_gl_blend_end(void)
    glDisable(GL_BLEND);
 }
 
-static void menu_display_gl_draw(
-      float x, float y,
-      unsigned width, unsigned height,
-      struct gfx_coords *coords,
-      void *matrix_data,
-      uintptr_t texture,
-      enum menu_display_prim_type prim_type
-      )
+static void menu_display_gl_draw(menu_display_ctx_draw_t *draw)
 {
    gl_t             *gl = gl_get_ptr();
-   math_matrix_4x4 *mat = (math_matrix_4x4*)matrix_data;
-
-   if (!gl)
+   math_matrix_4x4 *mat = NULL;
+   
+   if (!gl || !draw)
       return;
 
+   mat = (math_matrix_4x4*)draw->matrix_data;
+
    /* TODO - edge case */
-   if (height <= 0)
-      height = 1;
+   if (draw->height <= 0)
+      draw->height = 1;
 
    if (!mat)
       mat = (math_matrix_4x4*)menu_display_gl_get_default_mvp();
-   if (!coords->vertex)
-      coords->vertex = &gl_vertexes[0];
-   if (!coords->tex_coord)
-      coords->tex_coord = &gl_tex_coords[0];
-   if (!coords->lut_tex_coord)
-      coords->lut_tex_coord = &gl_tex_coords[0];
+   if (!draw->coords->vertex)
+      draw->coords->vertex = &gl_vertexes[0];
+   if (!draw->coords->tex_coord)
+      draw->coords->tex_coord = &gl_tex_coords[0];
+   if (!draw->coords->lut_tex_coord)
+      draw->coords->lut_tex_coord = &gl_tex_coords[0];
 
-   glViewport(x, y, width, height);
-   glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
+   glViewport(draw->x, draw->y, draw->width, draw->height);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   video_shader_driver_set_coords(gl, coords);
+   video_shader_driver_set_coords(gl, draw->coords);
    video_shader_driver_set_mvp(gl, mat);
 
-   glDrawArrays(menu_display_prim_to_gl_enum(prim_type), 0, coords->vertices);
+   glDrawArrays(menu_display_prim_to_gl_enum(
+            draw->prim_type), 0, draw->coords->vertices);
 
    gl->coords.color     = gl->white_color_ptr;
 }
 
-static void menu_display_gl_draw_bg(
-      unsigned width,
-      unsigned height,
-      uintptr_t texture,
-      float handle_alpha,
-      bool force_transparency,
-      GLfloat *coord_color,
-      GLfloat *coord_color2,
-      const float *vertex,
-      const float *tex_coord,
-      size_t vertex_count,
-      enum menu_display_prim_type prim_type)
+static void menu_display_gl_draw_bg(menu_display_ctx_draw_t *draw)
 {
    struct gfx_coords coords;
    const GLfloat *new_vertex    = NULL;
@@ -144,22 +129,22 @@ static void menu_display_gl_draw_bg(
    settings_t *settings = config_get_ptr();
    gl_t             *gl = gl_get_ptr();
 
-   if (!gl)
+   if (!gl || !draw)
       return;
 
-   new_vertex    = vertex;
-   new_tex_coord = tex_coord;
+   new_vertex    = draw->vertex;
+   new_tex_coord = draw->tex_coord;
 
    if (!new_vertex)
       new_vertex = &gl_vertexes[0];
    if (!new_tex_coord)
       new_tex_coord = &gl_tex_coords[0];
 
-   coords.vertices      = vertex_count;
+   coords.vertices      = draw->vertex_count;
    coords.vertex        = new_vertex;
    coords.tex_coord     = new_tex_coord;
    coords.lut_tex_coord = new_tex_coord;
-   coords.color         = (const float*)coord_color;
+   coords.color         = (const float*)draw->color;
 
    menu_display_gl_blend_begin();
 
@@ -170,13 +155,15 @@ static void menu_display_gl_draw_bg(
           || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
           || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          )
-      && !force_transparency
-      && texture)
-      coords.color = (const float*)coord_color2;
+      && !draw->force_transparency && draw->texture)
+      coords.color = (const float*)draw->color2;
 
-   menu_display_gl_draw(0, 0, width, height,
-         &coords, (math_matrix_4x4*)menu_display_gl_get_default_mvp(),
-         (GLuint)texture, prim_type);
+   draw->x           = 0;
+   draw->y           = 0;
+   draw->coords      = &coords;
+   draw->matrix_data = (math_matrix_4x4*)menu_display_gl_get_default_mvp();
+
+   menu_display_gl_draw(draw);
 
    menu_display_gl_blend_end();
 

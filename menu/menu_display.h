@@ -96,51 +96,6 @@ enum menu_display_driver_type
    MENU_VIDEO_DRIVER_DIRECT3D
 };
 
-typedef void (*menu_display_draw_t)(float x, float y,
-      unsigned width, unsigned height,
-      struct gfx_coords *coords,
-      void *matrix_data, 
-      uintptr_t texture,
-      enum menu_display_prim_type prim_type
-      );
-typedef void (*menu_display_draw_bg_t)(
-      unsigned width, unsigned height,
-      uintptr_t texture,
-      float handle_alpha,
-      bool force_transparency,
-      float *color,
-      float *color2,
-      const float *vertex,
-      const float *tex_coord,
-      size_t vertex_count,
-      enum menu_display_prim_type prim_type
-      );
-
-typedef struct menu_display_ctx_driver
-{
-   menu_display_draw_t draw;
-   menu_display_draw_bg_t draw_bg;
-   void (*blend_begin)(void);
-   void (*blend_end)(void);
-   void (*restore_clear_color)(void);
-
-   void (*clear_color)(float r, float g, float b, float a);
-
-   void *(*get_default_mvp)(void);
-   const float *(*get_tex_coords)(void);
-   bool (*font_init_first)(
-         void **font_handle, void *video_data, const char *font_path,
-         float font_size);
-   enum menu_display_driver_type type;
-   const char *ident;
-} menu_display_ctx_driver_t;
-
-typedef struct menu_display_ctx_font
-{
-   const char *path;
-   float size;
-} menu_display_ctx_font_t;
-
 typedef struct menu_display_ctx_clearcolor
 {
    float r;
@@ -189,6 +144,32 @@ typedef struct menu_display_ctx_datetime
    size_t len;
    unsigned time_mode;
 } menu_display_ctx_datetime_t;
+
+typedef struct menu_display_ctx_driver
+{
+   void (*draw)(menu_display_ctx_draw_t *draw);
+   void (*draw_bg)(menu_display_ctx_draw_t *draw);
+   void (*blend_begin)(void);
+   void (*blend_end)(void);
+   void (*restore_clear_color)(void);
+
+   void (*clear_color)(float r, float g, float b, float a);
+
+   void *(*get_default_mvp)(void);
+   const float *(*get_tex_coords)(void);
+   bool (*font_init_first)(
+         void **font_handle, void *video_data, const char *font_path,
+         float font_size);
+   enum menu_display_driver_type type;
+   const char *ident;
+} menu_display_ctx_driver_t;
+
+typedef struct menu_display_ctx_font
+{
+   const char *path;
+   float size;
+} menu_display_ctx_font_t;
+
 
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 
