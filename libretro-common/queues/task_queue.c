@@ -398,7 +398,9 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
          return task_threaded_enable;
       case TASK_QUEUE_CTL_INIT:
          {
+#ifdef HAVE_THREADS
             bool *boolean_val = (bool*)data;
+#endif
 
             impl_current = &impl_regular;
 #ifdef HAVE_THREADS
