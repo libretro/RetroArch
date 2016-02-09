@@ -286,21 +286,6 @@ error:
    return NULL;
 }
 
-void init_menu(void)
-{
-   if (menu_driver_data)
-      return;
-
-   find_menu_driver();
-
-   if (!(menu_driver_data = (menu_handle_t*)menu_init(menu_driver_ctx)))
-      retro_fail(1, "init_menu()");
-
-   if (menu_driver_ctx->lists_init)
-      if (!menu_driver_ctx->lists_init(menu_driver_data))
-         retro_fail(1, "init_menu()");
-}
-
 void menu_driver_list_insert(file_list_t *list, const char *path,
       const char *label, size_t idx)
 {
@@ -656,6 +641,29 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_DEINIT:
          menu_free(menu_driver_data);
          menu_driver_data = NULL;
+         break;
+      case RARCH_MENU_CTL_INIT:
+         if (menu_driver_data)
+            return false;
+
+         find_menu_driver();
+
+         menu_driver_data = (menu_handle_t*)menu_init(menu_driver_ctx);
+
+         if (!menu_driver_data)
+         {
+            retro_fail(1, "init_menu()");
+            return false;
+         }
+
+         if (menu_driver_ctx->lists_init)
+         {
+            if (!menu_driver_ctx->lists_init(menu_driver_data))
+            {
+               retro_fail(1, "init_menu()");
+               return false;
+            }
+         }
          break;
       case RARCH_MENU_CTL_LOAD_NO_CONTENT_GET:
          {

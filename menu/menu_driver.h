@@ -99,6 +99,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET,
    RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET,
    RARCH_MENU_CTL_DEINIT,
+   RARCH_MENU_CTL_INIT,
    RARCH_MENU_CTL_SHADER_DEINIT,
    RARCH_MENU_CTL_SHADER_GET,
    RARCH_MENU_CTL_BLIT_RENDER,
@@ -348,8 +349,6 @@ const char *menu_driver_find_ident(int index);
 const char* config_get_menu_driver_options(void);
 
 void find_menu_driver(void);
-
-void init_menu(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
 

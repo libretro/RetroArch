@@ -362,7 +362,7 @@ static void init_drivers(int flags)
 
    if (flags & DRIVER_MENU)
    {
-      init_menu();
+      menu_driver_ctl(RARCH_MENU_CTL_INIT, NULL);
       menu_driver_ctl(RARCH_MENU_CTL_CONTEXT_RESET, NULL);
    }
 #endif
