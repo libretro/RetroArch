@@ -19,7 +19,7 @@ ifeq ($(HAVE_LIBRETRODB),)
 endif
 
 ifeq ($(HAVE_LIBRETRODB), 1)
-	DEFINES += -DHAVE_LIBRETRODB
+   DEFINES += -DHAVE_LIBRETRODB
 endif
 
 ifeq ($(HAVE_FBO), 1)
@@ -77,8 +77,8 @@ endif
 ifneq ($(findstring Linux,$(OS)),)
    LIBS += -lrt
    OBJ += input/drivers/linuxraw_input.o \
-			 input/common/linux_common.o \
-			 input/common/epoll_common.o \
+          input/common/linux_common.o \
+          input/common/epoll_common.o \
           input/drivers_joypad/linuxraw_joypad.o \
           frontend/drivers/platform_linux.o
 endif
@@ -109,7 +109,7 @@ OBJ += frontend/frontend.o \
        ui/drivers/ui_null.o \
        libretro_version_1.o \
        retroarch.o \
-		 input/input_keyboard.o \
+       input/input_keyboard.o \
        command_event.o \
        msg_hash.o \
        intl/msg_hash_de.o \
@@ -124,10 +124,10 @@ OBJ += frontend/frontend.o \
        runloop.o \
        tasks/tasks.o \
        tasks/tasks_internal.o \
-		 tasks/task_content.o \
+       tasks/task_content.o \
        tasks/task_file_transfer.o \
        content.o \
-		 libretro-common/encodings/encoding_utf.o \
+       libretro-common/encodings/encoding_utf.o \
        libretro-common/file/file_list.o \
        libretro-common/file/dir_list.o \
        libretro-common/file/retro_dirent.o \
@@ -169,7 +169,7 @@ OBJ += frontend/frontend.o \
        libretro-common/queues/fifo_buffer.o \
        core_options.o \
        libretro-common/compat/compat_fnmatch.o \
-		 libretro-common/compat/compat_posix_string.o \
+       libretro-common/compat/compat_posix_string.o \
        cheats.o \
        core_info.o \
        libretro-common/file/config_file.o \
@@ -202,7 +202,7 @@ OBJ += frontend/frontend.o \
        record/record_driver.o \
        record/drivers/record_null.o \
        performance.o \
-		 verbosity.o
+       verbosity.o
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
 OBJ += libretro-common/compat/compat_getopt.o
@@ -284,7 +284,7 @@ endif
 
 ifeq ($(HAVE_ALSA), 1)
    OBJ += audio/drivers/alsa.o \
-			 audio/drivers/alsathread.o
+          audio/drivers/alsathread.o
    LIBS += $(ALSA_LIBS)
    DEFINES += $(ALSA_CFLAGS)
 endif
@@ -349,10 +349,10 @@ ifeq ($(HAVE_NEON),1)
           audio/drivers_resampler/cc_resampler_neon.o
    # When compiled without this, tries to attempt to compile sinc lerp,
    # which will error out
-	#
-	# TODO - we need to make quality levels of sinc
-	# runtime toggleable instead of going by compile-time
-	# defines
+   #
+   # TODO - we need to make quality levels of sinc
+   # runtime toggleable instead of going by compile-time
+   # defines
    DEFINES += -DSINC_LOWER_QUALITY
 endif
 
@@ -409,8 +409,8 @@ ifeq ($(HAVE_MENU_COMMON), 1)
       PSEUDO_NS :=
    endif
    OBJ += menu/menu_hash.o \
-			 menu/menu_driver.o \
-			 menu/menu_content.o \
+          menu/menu_driver.o \
+          menu/menu_content.o \
           menu/intl/menu_hash_de.o \
           menu/intl/menu_hash_es.o \
           menu/intl/menu_hash_eo.o \
@@ -466,11 +466,11 @@ endif
 
 ifeq ($(HAVE_THREADS), 1)
    OBJ += autosave.o \
-			 libretro-common/rthreads/rthreads.o \
-			 libretro-common/rthreads/rsemaphore.o  \
-			 libretro-common/rthreads/async_job.o \
-			 gfx/video_thread_wrapper.o \
-			 audio/audio_thread_wrapper.o
+          libretro-common/rthreads/rthreads.o \
+          libretro-common/rthreads/rsemaphore.o  \
+          libretro-common/rthreads/async_job.o \
+          gfx/video_thread_wrapper.o \
+          audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += -lpthread
@@ -505,7 +505,7 @@ endif
 
 ifeq ($(HAVE_X11), 1)
    OBJ += input/common/input_x11_common.o \
-			 input/drivers/x11_input.o \
+          input/drivers/x11_input.o \
           gfx/common/x11_common.o \
           input/drivers_keyboard/keyboard_event_x11.o
 
@@ -515,7 +515,7 @@ endif
 
 ifeq ($(HAVE_XKBCOMMON), 1)
    DEFINES += $(XKBCOMMON_CFLAGS)
-	OBJ += input/drivers_keyboard/keyboard_event_xkb.o
+   OBJ += input/drivers_keyboard/keyboard_event_xkb.o
    LIBS += $(XKBCOMMON_LIBS)
 endif
 
@@ -523,32 +523,32 @@ ifeq ($(HAVE_UDEV), 1)
    DEFINES += $(UDEV_CFLAGS)
    LIBS += $(UDEV_LIBS)
    OBJ += input/drivers/udev_input.o \
-			 input/drivers_keyboard/keyboard_event_udev.o \
+          input/drivers_keyboard/keyboard_event_udev.o \
           input/drivers_joypad/udev_joypad.o
 endif
 
 ifeq ($(HAVE_LIBUSB), 1)
-	DEFINES += -DHAVE_LIBUSB
-	OBJ += input/drivers_hid/libusb_hid.o
-	LIBS += -lusb-1.0
-	HAVE_HID = 1
+   DEFINES += -DHAVE_LIBUSB
+   OBJ += input/drivers_hid/libusb_hid.o
+   LIBS += -lusb-1.0
+   HAVE_HID = 1
 endif
 
 ifeq ($(HAVE_IOHIDMANAGER), 1)
-	DEFINES += -DHAVE_IOHIDMANAGER
-	OBJ += input/drivers_hid/iohidmanager_hid.o
-	HAVE_HID = 1
-	LIBS += -framework IOKit
+   DEFINES += -DHAVE_IOHIDMANAGER
+   OBJ += input/drivers_hid/iohidmanager_hid.o
+   HAVE_HID = 1
+   LIBS += -framework IOKit
 endif
 
 ifeq ($(HAVE_CORELOCATION), 1)
-	DEFINES += -DHAVE_CORELOCATION
-	LIBS += -framework CoreLocation
+   DEFINES += -DHAVE_CORELOCATION
+   LIBS += -framework CoreLocation
 endif
 
 ifeq ($(HAVE_HID), 1)
-	DEFINES += -DHAVE_HID
-	OBJ +=      input/connect/joypad_connection.o \
+   DEFINES += -DHAVE_HID
+   OBJ +=      input/connect/joypad_connection.o \
                input/connect/connect_ps3.o \
                input/connect/connect_ps4.o \
                input/connect/connect_wii.o \
@@ -573,8 +573,8 @@ endif
 OBJ += gfx/video_context_driver.o \
        gfx/drivers_context/gfx_null_ctx.o \
        gfx/video_state_tracker.o \
-		 libretro-common/gfx/math/matrix_4x4.o \
-		 libretro-common/gfx/math/matrix_3x3.o
+       libretro-common/gfx/math/matrix_4x4.o \
+       libretro-common/gfx/math/matrix_3x3.o
 
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
@@ -582,13 +582,13 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
           gfx/common/gl_common.o \
           gfx/drivers_font/gl_raster_font.o \
           libretro-common/glsym/rglgen.o
-	
+
    ifeq ($(HAVE_MENU_COMMON), 1)
-		OBJ += menu/drivers_display/menu_display_gl.o
-	endif
+      OBJ += menu/drivers_display/menu_display_gl.o
+   endif
 
    ifeq ($(HAVE_KMS), 1)
-	   HAVE_AND_WILL_USE_DRM = 1
+      HAVE_AND_WILL_USE_DRM = 1
       OBJ += gfx/drivers_context/drm_egl_ctx.o
       DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
       LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
@@ -623,13 +623,13 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
          LIBS += $(EGL_LIBS)
       endif
       ifneq ($(HAVE_GLES), 1)
-			OBJ += gfx/drivers_context/glx_ctx.o
-		endif
+         OBJ += gfx/drivers_context/glx_ctx.o
+      endif
    endif
 
    ifeq ($(HAVE_WAYLAND), 1)
-	   ifeq ($(HAVE_EGL), 1)
-	     OBJ += gfx/drivers_context/wayland_ctx.o
+      ifeq ($(HAVE_EGL), 1)
+        OBJ += gfx/drivers_context/wayland_ctx.o
       endif
    endif
 
@@ -643,7 +643,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    else
       DEFINES += -DHAVE_GL_SYNC
       OBJ += libretro-common/glsym/glsym_gl.o
-		GL_LIBS := -lGL
+      GL_LIBS := -lGL
       ifeq ($(OSX), 1)
          GL_LIBS := -framework OpenGL
          OBJ += gfx/drivers_context/cgl_ctx.o
@@ -651,7 +651,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
          GL_LIBS := -lopengl32 -lgdi32 -lcomdlg32 -lcomctl32
          OBJ += gfx/drivers_context/wgl_ctx.o
       endif
-		LIBS += $(GL_LIBS)
+      LIBS += $(GL_LIBS)
    endif
 
    OBJ += gfx/drivers_shader/shader_glsl.o
@@ -659,7 +659,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 endif
 
 ifeq ($(HAVE_EGL), 1)
-	OBJ += gfx/common/egl_common.o
+   OBJ += gfx/common/egl_common.o
 endif
 
 ifeq ($(HAVE_SDL2), 1)
@@ -704,16 +704,16 @@ ifeq ($(HAVE_EXYNOS), 1)
           memory/neon/memcpy-neon.o
    LIBS += $(DRM_LIBS) $(EXYNOS_LIBS)
    DEFINES += $(DRM_CFLAGS) $(EXYNOS_CFLAGS)
-	HAVE_AND_WILL_USE_DRM = 1
+   HAVE_AND_WILL_USE_DRM = 1
 endif
 
 ifeq ($(HAVE_AND_WILL_USE_DRM), 1)
-	OBJ += gfx/common/drm_common.o
+   OBJ += gfx/common/drm_common.o
 endif
 
 ifeq ($(HAVE_DISPMANX), 1)
    OBJ += gfx/drivers/dispmanx_gfx.o
-	HAVE_VIDEOCORE = 1
+   HAVE_VIDEOCORE = 1
    LIBS += $(DISPMANX_LIBS)
    DEFINES += $(DISPMANX_CFLAGS)
 endif
@@ -742,7 +742,7 @@ ifeq ($(HAVE_XSHM), 1)
 endif
 
 ifeq ($(HAVE_CG), 1)
-	DEFINES += -DHAVE_CG
+   DEFINES += -DHAVE_CG
    OBJ += gfx/drivers_shader/shader_gl_cg.o
    LIBS += $(CG_LIBS)
 endif
@@ -758,8 +758,8 @@ ifeq ($(HAVE_D3D9), 1)
    LIBS += -ld3d9 -ld3dx9 -ldxguid
 
    ifeq ($(HAVE_MENU_COMMON), 1)
-		OBJ += menu/drivers_display/menu_display_d3d.o
-	endif
+      OBJ += menu/drivers_display/menu_display_d3d.o
+   endif
 
    ifeq ($(HAVE_CG), 1)
       LIBS += -lcgD3D9
@@ -800,22 +800,22 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    OBJ += libretro-common/file/file_archive.o \
-			 libretro-common/file/file_archive_zlib.o \
+          libretro-common/file/file_archive_zlib.o \
           tasks/task_decompress.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
-	HAVE_RPNG = 1
+   HAVE_RPNG = 1
    HAVE_COMPRESSION = 1
    ifeq ($(WANT_ZLIB), 1)
       DEFINES += -DWANT_ZLIB
    else
       LIBS += -lz
-		HAVE_ZLIB_DEFLATE = 1
+      HAVE_ZLIB_DEFLATE = 1
    endif
 endif
 
 ifdef HAVE_RPNG
-	DEFINES += -DHAVE_RPNG
+   DEFINES += -DHAVE_RPNG
 endif
 
 ifeq ($(HAVE_RPNG), 1)
@@ -868,9 +868,9 @@ endif
 ifeq ($(HAVE_NETWORKING), 1)
    DEFINES += -DHAVE_NETWORKING
    OBJ += libretro-common/net/net_compat.o \
-			 libretro-common/net/net_http.o \
-			 net_http_special.o \
-			 tasks/task_http.o
+          libretro-common/net/net_http.o \
+          net_http_special.o \
+          tasks/task_http.o
 
    ifneq ($(findstring Win32,$(OS)),)
       LIBS += -lws2_32
@@ -920,7 +920,7 @@ ifeq ($(HAVE_FFMPEG), 1)
           cores/libretro-ffmpeg/ffmpeg_core.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
-	DEFINES += -DHAVE_FFMPEG -Iffmpeg
+   DEFINES += -DHAVE_FFMPEG -Iffmpeg
 endif
 
 ifeq ($(HAVE_COMPRESSION), 1)
@@ -928,8 +928,8 @@ ifeq ($(HAVE_COMPRESSION), 1)
 endif
 
 ifeq ($(HAVE_COCOA),1)
-	DEFINES += -DHAVE_MAIN
-	OBJ += input/drivers/cocoa_input.o \
+   DEFINES += -DHAVE_MAIN
+   OBJ += input/drivers/cocoa_input.o \
                input/drivers_keyboard/keyboard_event_apple.o \
                ui/drivers/ui_cocoa.o \
                ui/drivers/cocoa/cocoa_common.o \
