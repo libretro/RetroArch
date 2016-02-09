@@ -511,14 +511,6 @@ void menu_display_matrix_4x4_rotate_z(
    matrix_4x4_multiply(matrix, &matrix_scaled, matrix);
 }
 
-unsigned menu_display_texture_load(void *data,
-      enum texture_filter_type filter_type)
-{
-   unsigned id = 0;
-   video_driver_texture_load(data, filter_type, &id);
-   return id;
-}
-
 void menu_display_draw(float x, float y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,

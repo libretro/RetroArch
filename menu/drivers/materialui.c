@@ -171,9 +171,8 @@ static void mui_context_reset_textures(mui_handle_t *mui,
          continue;
 
       video_texture_image_load(&ti, path);
-
-      mui->textures.list[i].id   = menu_display_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR);
+      video_driver_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR, (unsigned*)&mui->textures.list[i].id);
 
       video_texture_image_free(&ti);
    }
@@ -964,8 +963,8 @@ static void mui_allocate_white_texture(mui_handle_t *mui)
    ti.height = 1;
    ti.pixels = (uint32_t*)&white_data;
 
-   mui->textures.white   = menu_display_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST);
+   video_driver_texture_load(&ti,
+         TEXTURE_FILTER_NEAREST, (unsigned*)&mui->textures.white);
 }
 
 static void mui_font(void)
@@ -1116,9 +1115,8 @@ static bool mui_load_image(void *userdata, void *data,
          break;
       case MENU_IMAGE_WALLPAPER:
          mui_context_bg_destroy(mui);
-
-         mui->textures.bg.id = menu_display_texture_load(data,
-               TEXTURE_FILTER_MIPMAP_LINEAR);
+         video_driver_texture_load(data,
+               TEXTURE_FILTER_MIPMAP_LINEAR, (unsigned*)&mui->textures.bg.id);
          mui_allocate_white_texture(mui);
          break;
       case MENU_IMAGE_BOXART:

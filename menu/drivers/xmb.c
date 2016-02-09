@@ -1124,15 +1124,15 @@ static void xmb_context_reset_horizontal_list(
 
       video_texture_image_load(&ti, texturepath);
 
-      node->icon         = menu_display_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR);
+      video_driver_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR, (unsigned*)&node->icon);
 
       video_texture_image_free(&ti);
 
       video_texture_image_load(&ti, content_texturepath);
 
-      node->content_icon = menu_display_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR);
+      video_driver_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR, (unsigned*)&node->content_icon);
 
       video_texture_image_free(&ti);
    }
@@ -2093,16 +2093,17 @@ static bool xmb_load_image(void *userdata, void *data, menu_image_type_t type)
          break;
       case MENU_IMAGE_WALLPAPER:
          xmb_context_bg_destroy(xmb);
-         xmb->textures.bg.id   = menu_display_texture_load(data,
-               TEXTURE_FILTER_MIPMAP_LINEAR);
+         video_driver_texture_load(data,
+               TEXTURE_FILTER_MIPMAP_LINEAR,
+               (unsigned*)&xmb->textures.bg.id);
          break;
       case MENU_IMAGE_BOXART:
          {
             struct texture_image *img = (struct texture_image*)data;
             xmb->boxart_height = xmb->boxart_width 
                * (float)img->height / (float)img->width;
-            xmb->boxart = menu_display_texture_load(data,
-                  TEXTURE_FILTER_MIPMAP_LINEAR);
+            video_driver_texture_load(data,
+                  TEXTURE_FILTER_MIPMAP_LINEAR, (unsigned*)&xmb->boxart);
          }
          break;
    }
@@ -2240,8 +2241,9 @@ static void xmb_context_reset_textures(
 
       video_texture_image_load(&ti, path);
 
-      xmb->textures.list[i].id   = menu_display_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR);
+      video_driver_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR,
+            (unsigned*)&xmb->textures.list[i].id);
 
       video_texture_image_free(&ti);
    }

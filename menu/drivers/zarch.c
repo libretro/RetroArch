@@ -1149,8 +1149,9 @@ static bool zarch_load_image(void *userdata,
          break;
       case MENU_IMAGE_WALLPAPER:
          zarch_context_bg_destroy(zui);
-         zui->textures.bg.id   = menu_display_texture_load(data,
-               TEXTURE_FILTER_MIPMAP_LINEAR);
+         video_driver_texture_load(data,
+               TEXTURE_FILTER_MIPMAP_LINEAR,
+               (unsigned*)&zui->textures.bg.id);
          break;
       case MENU_IMAGE_BOXART:
          break;
@@ -1168,8 +1169,9 @@ static void zarch_allocate_white_texture(zui_t *zui)
    ti.height = 1;
    ti.pixels = (uint32_t*)&data;
 
-   zui->textures.white = menu_display_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST);
+   video_driver_texture_load(&ti,
+         TEXTURE_FILTER_NEAREST,
+         (unsigned*)&zui->textures.white);
 }
 
 static void zarch_context_reset(void *data)
