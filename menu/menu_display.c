@@ -149,9 +149,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
    static menu_display_draw_t draw_bak              = NULL;
    static menu_display_draw_bg_t draw_bg_bak        = NULL;
    static msg_queue_t *menu_display_msg_queue       = NULL;
-   menu_display_t  *disp                            = menu_display_get_ptr();
-   menu_display_ctx_driver_t *menu_disp             = menu_display_context_get_ptr();
    settings_t *settings                             = config_get_ptr();
+   menu_display_t  *disp                            = menu_display_get_ptr();
+   menu_display_ctx_driver_t *menu_disp             = 
+      menu_display_context_get_ptr();
 
    switch (state)
    {
@@ -178,7 +179,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
 
             if (!font || !menu_display_font_init_first(
-                     &menu_display_font_buf, video_driver_get_ptr(false), font->path, font->size))
+                     &menu_display_font_buf,
+                     video_driver_get_ptr(false), font->path, font->size))
                return false;
 
             menu_display_font_size = font->size;
