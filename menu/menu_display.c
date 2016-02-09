@@ -114,25 +114,6 @@ static bool menu_display_check_compatibility(
    return false;
 }
 
-static bool menu_display_driver_init_first(menu_display_t *disp)
-{
-   unsigned i;
-
-   for (i = 0; menu_display_ctx_drivers[i]; i++)
-   {
-      if (!menu_display_check_compatibility(
-               menu_display_ctx_drivers[i]->type))
-         continue;
-
-      RARCH_LOG("Found menu display driver: \"%s\".\n",
-            menu_display_ctx_drivers[i]->ident);
-      disp->display_ctx = menu_display_ctx_drivers[i];
-      return true;
-   }
-
-   return false;
-}
-
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
@@ -440,7 +421,22 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          }
          break;
       case MENU_DISPLAY_CTL_INIT_FIRST_DRIVER:
-         return menu_display_driver_init_first(disp);
+         {
+            unsigned i;
+
+            for (i = 0; menu_display_ctx_drivers[i]; i++)
+            {
+               if (!menu_display_check_compatibility(
+                        menu_display_ctx_drivers[i]->type))
+                  continue;
+
+               RARCH_LOG("Found menu display driver: \"%s\".\n",
+                     menu_display_ctx_drivers[i]->ident);
+               disp->display_ctx = menu_display_ctx_drivers[i];
+               return true;
+            }
+         }
+         return false;
       case MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR:
          if (!menu_disp || !menu_disp->restore_clear_color)
             return false;
