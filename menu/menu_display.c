@@ -38,15 +38,6 @@
 
 typedef struct menu_display
 {
-   struct
-   {
-      void *buf;
-      int size;
-
-   } font;
-
-   unsigned header_height;
-
    menu_display_ctx_driver_t *display_ctx;
 } menu_display_t;
 
@@ -149,7 +140,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
    static unsigned menu_display_framebuf_width      = 0;
    static unsigned menu_display_framebuf_height     = 0;
    static size_t menu_display_framebuf_pitch        = 0;
+   static int menu_display_font_size                = 0;
+   static unsigned menu_display_header_height       = 0;
    static const uint8_t *menu_display_font_framebuf = NULL;
+   static void *menu_display_font_buf               = NULL;
    static bool menu_display_font_alloc_framebuf     = false;
    static bool menu_display_framebuf_dirty          = false;
    static menu_display_draw_t draw_bak              = NULL;
@@ -172,9 +166,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          menu_disp->blend_end();
          break;
       case MENU_DISPLAY_CTL_FONT_MAIN_DEINIT:
-         if (disp && disp->font.buf)
-            font_driver_free(disp->font.buf);
-         disp->font.buf = NULL;
+         if (menu_display_font_buf)
+            font_driver_free(menu_display_font_buf);
+         menu_display_font_buf  = NULL;
+         menu_display_font_size = 0;
          break;
       case MENU_DISPLAY_CTL_FONT_MAIN_INIT:
          {
@@ -183,23 +178,23 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
 
             if (!font || !menu_display_font_init_first(
-                     &disp->font.buf, video_driver_get_ptr(false), font->path, font->size))
+                     &menu_display_font_buf, video_driver_get_ptr(false), font->path, font->size))
                return false;
 
-            disp->font.size = font->size;
+            menu_display_font_size = font->size;
          }
          break;
       case MENU_DISPLAY_CTL_FONT_BIND_BLOCK:
          if (!disp)
             return false;
-         font_driver_bind_block(disp->font.buf, data);
+         font_driver_bind_block(menu_display_font_buf, data);
          break;
       case MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK:
-         if (!disp || !disp->font.buf)
+         if (!menu_display_font_buf)
             return false;
 
-         font_driver_flush(disp->font.buf);
-         font_driver_bind_block(disp->font.buf, NULL);
+         font_driver_flush(menu_display_font_buf);
+         font_driver_bind_block(menu_display_font_buf, NULL);
          break;
       case MENU_DISPLAY_CTL_FRAMEBUF_DEINIT:
          menu_display_framebuf_width  = 0;
@@ -210,8 +205,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          if (menu_display_msg_queue)
             msg_queue_free(menu_display_msg_queue);
          menu_display_msg_queue       = NULL;
-
          menu_display_msg_force       = false;
+         menu_display_header_height   = 0;
 
          menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
          menu_display_ctl(MENU_DISPLAY_CTL_FRAMEBUF_DEINIT, NULL);
@@ -237,7 +232,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             void **ptr = (void**)data;
             if (!ptr)
                return false;
-            *ptr = disp->font.buf;
+            *ptr = menu_display_font_buf;
          }
          break;
       case MENU_DISPLAY_CTL_SET_FONT_BUF:
@@ -245,7 +240,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             void **ptr = (void**)data;
             if (!ptr)
                return false;
-            disp->font.buf = *ptr;
+            menu_display_font_buf = *ptr;
          }
          break;
       case MENU_DISPLAY_CTL_FONT_FB:
@@ -320,7 +315,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            *ptr = disp->header_height;
+            *ptr = menu_display_header_height;
          }
          break;
       case MENU_DISPLAY_CTL_SET_HEADER_HEIGHT:
@@ -328,7 +323,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            disp->header_height = *ptr;
+            menu_display_header_height = *ptr;
          }
          break;
       case MENU_DISPLAY_CTL_FONT_SIZE:
@@ -336,7 +331,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            *ptr = disp->font.size;
+            *ptr = menu_display_font_size;
          }
          break;
       case MENU_DISPLAY_CTL_SET_FONT_SIZE:
@@ -344,7 +339,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             unsigned *ptr = (unsigned*)data;
             if (!ptr)
                return false;
-            disp->font.size = *ptr;
+            menu_display_font_size = *ptr;
          }
          break;
       case MENU_DISPLAY_CTL_SET_HEIGHT:
