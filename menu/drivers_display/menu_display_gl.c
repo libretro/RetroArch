@@ -163,7 +163,8 @@ static void menu_display_gl_draw_bg(void *data)
    draw->x           = 0;
    draw->y           = 0;
    draw->coords      = &coords;
-   draw->matrix_data = (math_matrix_4x4*)menu_display_gl_get_default_mvp();
+   draw->matrix_data = (math_matrix_4x4*)
+      menu_display_gl_get_default_mvp();
 
    menu_display_gl_draw(draw);
 
@@ -179,11 +180,13 @@ static void menu_display_gl_restore_clear_color(void)
 
 static void menu_display_gl_clear_color(void *data)
 {
-   menu_display_ctx_clearcolor_t *clearcolor = (menu_display_ctx_clearcolor_t*)data;
+   menu_display_ctx_clearcolor_t *clearcolor = 
+      (menu_display_ctx_clearcolor_t*)data;
    if (!clearcolor)
       return;
 
-   glClearColor(clearcolor->r, clearcolor->g, clearcolor->b, clearcolor->a);
+   glClearColor(clearcolor->r,
+         clearcolor->g, clearcolor->b, clearcolor->a);
    glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -193,8 +196,8 @@ static const float *menu_display_gl_get_tex_coords(void)
 }
 
 static bool menu_display_gl_font_init_first(
-      void **font_handle, void *video_data, const char *font_path,
-      float font_size)
+      void **font_handle, void *video_data,
+      const char *font_path, float font_size)
 {
    return font_driver_init_first(NULL, font_handle, video_data,
          font_path, font_size, true, FONT_DRIVER_RENDER_OPENGL_API);
