@@ -36,10 +36,6 @@
 #include "../gfx/video_thread_wrapper.h"
 #endif
 
-typedef struct menu_display
-{
-   menu_display_ctx_driver_t *display_ctx;
-} menu_display_t;
 
 
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
@@ -52,21 +48,6 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
    &menu_display_ctx_null,
    NULL,
 };
-
-
-static menu_display_t *menu_display_get_ptr(void)
-{
-   static menu_display_t  menu_display_state;
-   return &menu_display_state;
-}
-
-static menu_display_ctx_driver_t *menu_display_context_get_ptr(void)
-{
-   menu_display_t *disp = menu_display_get_ptr();
-   if (!disp)
-      return NULL;
-   return disp->display_ctx;
-}
 
 static const char *menu_video_get_ident(void)
 {
@@ -119,9 +100,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
    static menu_display_draw_bg_t draw_bg_bak        = NULL;
    static msg_queue_t *menu_display_msg_queue       = NULL;
    settings_t *settings                             = config_get_ptr();
-   menu_display_t  *disp                            = menu_display_get_ptr();
-   menu_display_ctx_driver_t *menu_disp             = 
-      menu_display_context_get_ptr();
+   static menu_display_ctx_driver_t *menu_disp      = NULL;
 
    switch (state)
    {
@@ -182,10 +161,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          menu_display_msg_queue       = NULL;
          menu_display_msg_force       = false;
          menu_display_header_height   = 0;
+         menu_disp                    = NULL;
 
          menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
          menu_display_ctl(MENU_DISPLAY_CTL_FRAMEBUF_DEINIT, NULL);
-         memset(disp, 0, sizeof(menu_display_t));
          break;
       case MENU_DISPLAY_CTL_INIT:
          retro_assert(menu_display_msg_queue = msg_queue_new(8));
@@ -426,7 +405,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
                RARCH_LOG("Found menu display driver: \"%s\".\n",
                      menu_display_ctx_drivers[i]->ident);
-               disp->display_ctx = menu_display_ctx_drivers[i];
+               menu_disp = menu_display_ctx_drivers[i];
                return true;
             }
          }
