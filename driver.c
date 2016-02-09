@@ -454,7 +454,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          find_camera_driver();
          find_location_driver();
 #ifdef HAVE_MENU
-         find_menu_driver();
+         menu_driver_ctl(RARCH_MENU_CTL_FIND_DRIVER, NULL);
 #endif
          break;
       case RARCH_DRIVER_CTL_SET_REFRESH_RATE:

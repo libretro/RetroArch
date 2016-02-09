@@ -105,7 +105,7 @@ const char *config_get_menu_driver_options(void)
    return char_list_new_special(STRING_LIST_MENU_DRIVERS, NULL);
 }
 
-void find_menu_driver(void)
+static bool find_menu_driver(void)
 {
    int i;
    driver_ctx_info_t drv;
@@ -133,8 +133,13 @@ void find_menu_driver(void)
       menu_driver_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(0);
 
       if (!menu_driver_ctx)
+      {
          retro_fail(1, "find_menu_driver()");
+         return false;
+      }
    }
+
+   return true;
 }
 
 menu_handle_t *menu_driver_get_ptr(void)
@@ -533,6 +538,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             content_playlist_free(menu_driver_playlist);
          menu_driver_playlist = NULL;
          break;
+      case RARCH_MENU_CTL_FIND_DRIVER:
+         return find_menu_driver();
       case RARCH_MENU_CTL_PLAYLIST_INIT:
          {
             const char *path = (const char*)data;
@@ -646,7 +653,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (menu_driver_data)
             return false;
 
-         find_menu_driver();
+         if (!menu_display_ctl(RARCH_MENU_CTL_FIND_DRIVER, NULL))
+            return false;
 
          menu_driver_data = (menu_handle_t*)menu_init(menu_driver_ctx);
 

@@ -135,7 +135,8 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_CONTEXT_DESTROY,
    RARCH_MENU_CTL_SHADER_MANAGER_INIT,
    RARCH_MENU_CTL_LIST_SET_SELECTION,
-   RARCH_MENU_CTL_POPULATE_ENTRIES
+   RARCH_MENU_CTL_POPULATE_ENTRIES,
+   RARCH_MENU_CTL_FIND_DRIVER
 };
 
 typedef enum
@@ -347,8 +348,6 @@ const char *menu_driver_find_ident(int index);
  * separated by '|'.
  **/
 const char* config_get_menu_driver_options(void);
-
-void find_menu_driver(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
 
