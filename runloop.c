@@ -27,7 +27,7 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
-#include <rthreads/task_queue.h>
+#include <queues/task_queue.h>
 #include <string/stdstring.h>
 
 #include <compat/strl.h>

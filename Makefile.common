@@ -122,7 +122,7 @@ OBJ += frontend/frontend.o \
        intl/msg_hash_pt.o \
        intl/msg_hash_us.o \
        runloop.o \
-       libretro-common/rthreads/task_queue.o \
+       libretro-common/queues/task_queue.o \
        tasks/tasks_internal.o \
        tasks/task_content.o \
        tasks/task_file_transfer.o \
