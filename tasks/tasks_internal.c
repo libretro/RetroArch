@@ -18,12 +18,12 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "task_queue.h"
+#include "tasks_internal.h"
 
 #include "../msg_hash.h"
 #include "../runloop.h"
 
-static void task_msg_queue_pushf(unsigned prio, unsigned duration,
+static void task_queue_msg_push(unsigned prio, unsigned duration,
       bool flush, const char *fmt, ...)
 {
    char buf[1024];
@@ -42,18 +42,18 @@ void task_queue_push_progress(retro_task_t *task)
       if (task->finished)
       {
          if (task->error)
-            task_msg_queue_pushf(1, 60, true, "%s: %s",
+            task_queue_msg_push(1, 60, true, "%s: %s",
                msg_hash_to_str(MSG_TASK_FAILED), task->title);
          else
-            task_msg_queue_pushf(1, 60, true, "100%%: %s", task->title);
+            task_queue_msg_push(1, 60, true, "100%%: %s", task->title);
       }
       else
       {
          if (task->progress >= 0 && task->progress <= 100)
-            task_msg_queue_pushf(1, 60, true, "%i%%: %s",
+            task_queue_msg_push(1, 60, true, "%i%%: %s",
                   task->progress, task->title);
          else
-            task_msg_queue_pushf(1, 60, true, "%s...", task->title);
+            task_queue_msg_push(1, 60, true, "%s...", task->title);
       }
    }
 }

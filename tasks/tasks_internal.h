@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <boolean.h>
 
-#include "task_queue.h"
+#include <rthreads/task_queue.h>
 
 #include "../runloop.h"
 

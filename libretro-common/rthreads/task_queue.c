@@ -1,24 +1,30 @@
-/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2016 - Higor Euripedes
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (task_queue.c).
+ * ---------------------------------------------------------------------------------------
  *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "task_queue.h"
+#include <rthreads/task_queue.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -43,6 +49,44 @@ struct retro_task_impl
 
 static task_queue_t tasks_running  = {NULL, NULL};
 static task_queue_t tasks_finished = {NULL, NULL};
+
+#ifndef RARCH_INTERNAL
+static void task_queue_msg_push(unsigned prio, unsigned duration,
+      bool flush, const char *fmt, ...)
+{
+   char buf[1024];
+   va_list ap;
+   
+   va_start(ap, fmt);
+   vsnprintf(buf, sizeof(buf), fmt, ap);
+   va_end(ap);
+
+   /* print something here */
+}
+
+void task_queue_push_progress(retro_task_t *task)
+{
+   if (task->title)
+   {
+      if (task->finished)
+      {
+         if (task->error)
+            task_queue_msg_push(1, 60, true, "%s: %s",
+               "Task failed\n", task->title);
+         else
+            task_queue_msg_push(1, 60, true, "100%%: %s", task->title);
+      }
+      else
+      {
+         if (task->progress >= 0 && task->progress <= 100)
+            task_queue_msg_push(1, 60, true, "%i%%: %s",
+                  task->progress, task->title);
+         else
+            task_queue_msg_push(1, 60, true, "%s...", task->title);
+      }
+   }
+}
+#endif
 
 static void task_queue_put(task_queue_t *queue, retro_task_t *task)
 {

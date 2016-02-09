@@ -27,6 +27,7 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
+#include <rthreads/task_queue.h>
 #include <string/stdstring.h>
 
 #include <compat/strl.h>
@@ -54,7 +55,6 @@
 
 #include "msg_hash.h"
 
-#include "tasks/task_queue.h"
 #include "input/input_keyboard.h"
 
 #ifdef HAVE_MENU
