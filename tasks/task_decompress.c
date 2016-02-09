@@ -24,7 +24,7 @@
 #include <retro_miscellaneous.h>
 #include <retro_stat.h>
 
-#include "tasks.h"
+#include "tasks_internal.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"
 

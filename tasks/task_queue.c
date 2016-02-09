@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "tasks.h"
+#include "task_queue.h"
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>

@@ -22,7 +22,7 @@
 #include <string/stdstring.h>
 #include <rhash.h>
 
-#include "tasks.h"
+#include "tasks_internal.h"
 
 #include "../input/input_config.h"
 #include "../input/input_overlay.h"

@@ -24,7 +24,7 @@
 #include <retro_file.h>
 #include <string/stdstring.h>
 
-#include "tasks.h"
+#include "tasks_internal.h"
 
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"

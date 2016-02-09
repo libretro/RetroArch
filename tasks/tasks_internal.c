@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "tasks.h"
+#include "task_queue.h"
 
 #include "../msg_hash.h"
 #include "../runloop.h"

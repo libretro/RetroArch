@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TASKS_HANDLER_H
-#define TASKS_HANDLER_H
+#ifndef TASK_QUEUE_H
+#define TASK_QUEUE_H
 
 #include <stdint.h>
 #include <boolean.h>

@@ -54,7 +54,7 @@
 
 #include "msg_hash.h"
 
-#include "tasks/tasks.h"
+#include "tasks/task_queue.h"
 #include "input/input_keyboard.h"
 
 #ifdef HAVE_MENU

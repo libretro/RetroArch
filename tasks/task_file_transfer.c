@@ -25,7 +25,6 @@
 #include <string/string_list.h>
 #include <rhash.h>
 
-#include "tasks.h"
 #include "tasks_internal.h"
 #include "../verbosity.h"
 
