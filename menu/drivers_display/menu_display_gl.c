@@ -86,10 +86,11 @@ static void menu_display_gl_blend_end(void)
    glDisable(GL_BLEND);
 }
 
-static void menu_display_gl_draw(menu_display_ctx_draw_t *draw)
+static void menu_display_gl_draw(void *data)
 {
-   gl_t             *gl = gl_get_ptr();
-   math_matrix_4x4 *mat = NULL;
+   gl_t             *gl          = gl_get_ptr();
+   math_matrix_4x4 *mat          = NULL;
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    
    if (!gl || !draw)
       return;
@@ -121,13 +122,14 @@ static void menu_display_gl_draw(menu_display_ctx_draw_t *draw)
    gl->coords.color     = gl->white_color_ptr;
 }
 
-static void menu_display_gl_draw_bg(menu_display_ctx_draw_t *draw)
+static void menu_display_gl_draw_bg(void *data)
 {
    struct gfx_coords coords;
-   const GLfloat *new_vertex    = NULL;
-   const GLfloat *new_tex_coord = NULL;
-   settings_t *settings = config_get_ptr();
-   gl_t             *gl = gl_get_ptr();
+   const GLfloat *new_vertex     = NULL;
+   const GLfloat *new_tex_coord  = NULL;
+   settings_t *settings          = config_get_ptr();
+   gl_t             *gl          = gl_get_ptr();
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
    if (!gl || !draw)
       return;
@@ -175,9 +177,13 @@ static void menu_display_gl_restore_clear_color(void)
    glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
 }
 
-static void menu_display_gl_clear_color(float r, float g, float b, float a)
+static void menu_display_gl_clear_color(void *data)
 {
-   glClearColor(r, g, b, a);
+   menu_display_ctx_clearcolor_t *clearcolor = (menu_display_ctx_clearcolor_t*)data;
+   if (!clearcolor)
+      return;
+
+   glClearColor(clearcolor->r, clearcolor->g, clearcolor->b, clearcolor->a);
    glClear(GL_COLOR_BUFFER_BIT);
 }
 

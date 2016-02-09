@@ -442,29 +442,24 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          break;
       case MENU_DISPLAY_CTL_CLEAR_COLOR:
          {
-            menu_display_ctx_clearcolor_t *clearcolor = 
-               (menu_display_ctx_clearcolor_t*)data;
-            if (!menu_disp || !menu_disp->clear_color || !clearcolor)
+            if (!menu_disp || !menu_disp->clear_color)
                return false;
-            menu_disp->clear_color(clearcolor->r,
-                  clearcolor->g, clearcolor->b, clearcolor->a);
+            menu_disp->clear_color(data);
          }
          break;
       case MENU_DISPLAY_CTL_DRAW:
          {
-            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
             if (!menu_disp || !menu_disp->draw)
                return false;
-            menu_disp->draw(draw);
+            menu_disp->draw(data);
          }
          break;
       case MENU_DISPLAY_CTL_DRAW_BG:
          {
-            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
             if (!menu_disp || !menu_disp->draw_bg)
                return false;
 
-            menu_disp->draw_bg(draw);
+            menu_disp->draw_bg(data);
          }
          break;
       case MENU_DISPLAY_CTL_ROTATE_Z:

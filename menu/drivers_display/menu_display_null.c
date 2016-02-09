@@ -37,22 +37,23 @@ static void menu_display_null_blend_end(void)
 {
 }
 
-static void menu_display_null_draw(menu_display_ctx_draw_t *draw)
+static void menu_display_null_draw(void *data)
 {
-   (void)draw;
+   (void)data;
 }
 
-static void menu_display_null_draw_bg(menu_display_ctx_draw_t *draw)
+static void menu_display_null_draw_bg(void *data)
 {
-   (void)draw;
+   (void)data;
 }
 
 static void menu_display_null_restore_clear_color(void)
 {
 }
 
-static void menu_display_null_clear_color(float r, float g, float b, float a)
+static void menu_display_null_clear_color(void *data)
 {
+   (void)data;
 }
 
 static const float *menu_display_null_get_tex_coords(void)
@@ -62,8 +63,8 @@ static const float *menu_display_null_get_tex_coords(void)
 }
 
 static bool menu_display_null_font_init_first(
-      void **font_handle, void *video_data, const char *font_path,
-      float font_size)
+      void **font_handle, void *video_data,
+      const char *font_path, float font_size)
 {
    return true;
 }

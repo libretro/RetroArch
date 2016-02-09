@@ -64,7 +64,8 @@ static void *menu_display_d3d_get_default_mvp(void)
 #ifdef _XBOX
    return NULL; /* TODO/FIXME */
 #else
-   D3DXMatrixOrthoOffCenterLH(&ortho, 0, d3d->final_viewport.Width, 0, d3d->final_viewport.Height, 0, 1);
+   D3DXMatrixOrthoOffCenterLH(&ortho, 0,
+         d3d->final_viewport.Width, 0, d3d->final_viewport.Height, 0, 1);
    D3DXMatrixTranspose(&mvp, &ortho);
    memcpy(default_mvp.data, (FLOAT*)mvp, sizeof(default_mvp.data));
 
@@ -72,7 +73,8 @@ static void *menu_display_d3d_get_default_mvp(void)
 #endif
 }
 
-static unsigned menu_display_prim_to_d3d_enum(enum menu_display_prim_type prim_type)
+static unsigned menu_display_prim_to_d3d_enum(
+      enum menu_display_prim_type prim_type)
 {
    switch (prim_type)
    {
@@ -107,14 +109,17 @@ static void menu_display_d3d_blend_end(void)
    d3d_disable_blend_func(d3d->dev);
 }
 
-static void menu_display_d3d_draw(menu_display_ctx_draw_t *draw)
+static void menu_display_d3d_draw(void *data)
 {
-   D3DVIEWPORT vp       = {0};
-   d3d_video_t     *d3d = d3d_get_ptr();
-   math_matrix_4x4 *mat = draw ? (math_matrix_4x4*)draw->matrix_data : NULL;
+   D3DVIEWPORT                vp = {0};
+   math_matrix_4x4          *mat = NULL;
+   d3d_video_t              *d3d = d3d_get_ptr();
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
    if (!d3d || !draw)
       return;
+   
+   mat = (math_matrix_4x4*)draw->matrix_data;
 
    /* TODO - edge case */
    if (draw->height <= 0)
@@ -145,21 +150,23 @@ static void menu_display_d3d_draw(menu_display_ctx_draw_t *draw)
 #endif
 
    d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)
-         menu_display_prim_to_d3d_enum(draw->prim_type), 0, draw->coords->vertices);
+         menu_display_prim_to_d3d_enum(draw->prim_type),
+         0, draw->coords->vertices);
 
 #if 0
    gl->coords.color     = gl->white_color_ptr;
 #endif
 }
 
-static void menu_display_d3d_draw_bg(menu_display_ctx_draw_t *draw)
+static void menu_display_d3d_draw_bg(void *data)
 {
    struct gfx_coords coords;
-   const float *new_vertex    = NULL;
-   const float *new_tex_coord = NULL;
-   global_t     *global = global_get_ptr();
-   settings_t *settings = config_get_ptr();
-   d3d_video_t     *d3d = d3d_get_ptr();
+   const float    *new_vertex    = NULL;
+   const float    *new_tex_coord = NULL;
+   global_t              *global = global_get_ptr();
+   settings_t          *settings = config_get_ptr();
+   d3d_video_t              *d3d = d3d_get_ptr();
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
    if (!d3d || !draw)
       return;
@@ -182,14 +189,18 @@ static void menu_display_d3d_draw_bg(menu_display_ctx_draw_t *draw)
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   if ((settings->menu.pause_libretro
-      || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (
+         (   settings->menu.pause_libretro
+          || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
+          || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+         )
       && !draw->force_transparency && draw->texture)
       coords.color = (const float*)draw->color2;
 
    draw->x           = 0;
    draw->y           = 0;
-   draw->matrix_data = (math_matrix_4x4*)menu_display_d3d_get_default_mvp();
+   draw->matrix_data = (math_matrix_4x4*)
+      menu_display_d3d_get_default_mvp();
 
    menu_display_d3d_draw(draw);
 
@@ -208,10 +219,22 @@ static void menu_display_d3d_restore_clear_color(void)
    d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
 }
 
-static void menu_display_d3d_clear_color(float r, float g, float b, float a)
+static void menu_display_d3d_clear_color(void *data)
 {
-   d3d_video_t     *d3d = d3d_get_ptr();
-   DWORD    clear_color = D3DCOLOR_ARGB(BYTE_CLAMP(a * 255.0f), BYTE_CLAMP(r * 255.0f), BYTE_CLAMP(g * 255.0f), BYTE_CLAMP(b * 255.0f));
+   DWORD    clear_color                      = 0;
+   d3d_video_t     *d3d                      = d3d_get_ptr();
+   menu_display_ctx_clearcolor_t *clearcolor = 
+      (menu_display_ctx_clearcolor_t*)data;
+
+   if (!d3d || !clearcolor)
+      return;
+   
+   clear_color = D3DCOLOR_ARGB(
+         BYTE_CLAMP(clearcolor->a * 255.0f), /* A */
+         BYTE_CLAMP(clearcolor->r * 255.0f), /* R */
+         BYTE_CLAMP(clearcolor->g * 255.0f), /* G */
+         BYTE_CLAMP(clearcolor->b * 255.0f)  /* B */
+         );
 
    d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
 }
@@ -222,8 +245,8 @@ static const float *menu_display_d3d_get_tex_coords(void)
 }
 
 static bool menu_display_d3d_font_init_first(
-      void **font_handle, void *video_data, const char *font_path,
-      float font_size)
+      void **font_handle, void *video_data,
+      const char *font_path, float font_size)
 {
    return font_driver_init_first(NULL, font_handle, video_data,
          font_path, font_size, true, FONT_DRIVER_RENDER_DIRECT3D_API);

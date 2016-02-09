@@ -147,19 +147,17 @@ typedef struct menu_display_ctx_datetime
 
 typedef struct menu_display_ctx_driver
 {
-   void (*draw)(menu_display_ctx_draw_t *draw);
-   void (*draw_bg)(menu_display_ctx_draw_t *draw);
+   void (*draw)(void *data);
+   void (*draw_bg)(void *data);
    void (*blend_begin)(void);
    void (*blend_end)(void);
    void (*restore_clear_color)(void);
-
-   void (*clear_color)(float r, float g, float b, float a);
-
+   void (*clear_color)(void *data);
    void *(*get_default_mvp)(void);
    const float *(*get_tex_coords)(void);
    bool (*font_init_first)(
-         void **font_handle, void *video_data, const char *font_path,
-         float font_size);
+         void **font_handle, void *video_data,
+         const char *font_path, float font_size);
    enum menu_display_driver_type type;
    const char *ident;
 } menu_display_ctx_driver_t;
