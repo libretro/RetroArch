@@ -209,6 +209,7 @@ static void zarch_zui_font(void)
 {
    int font_size;
    char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
+   menu_display_ctx_font_t font_info;
    settings_t *settings = config_get_ptr();
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
@@ -216,7 +217,10 @@ static void zarch_zui_font(void)
    fill_pathname_join(mediapath, settings->assets_directory, "zarch", sizeof(mediapath));
    fill_pathname_join(fontpath, mediapath, "Roboto-Condensed.ttf", sizeof(fontpath));
 
-   if (!menu_display_init_main_font(fontpath, font_size))
+   font_info.path = fontpath;
+   font_info.size = font_size;
+
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_INIT, &font_info))
       RARCH_WARN("Failed to load font.");
 }
 
@@ -1116,22 +1120,19 @@ static void zarch_free(void *data)
    font_driver_bind_block(NULL, NULL);
 }
 
-static void zarch_context_bg_destroy(zui_t *zui)
+static void zarch_context_bg_destroy(void *data)
 {
+   zui_t        *zui     = (zui_t*)data;
+   if (!zui)
+      return;
    menu_display_texture_unload((uintptr_t*)&zui->textures.bg.id);
    menu_display_texture_unload((uintptr_t*)&zui->textures.white);
 }
 
 static void zarch_context_destroy(void *data)
 {
-   zui_t        *zui     = (zui_t*)data;
-    
-   if (!zui)
-      return;
-
-   menu_display_free_main_font();
-
-   zarch_context_bg_destroy(zui);
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
+   zarch_context_bg_destroy(data);
 }
 
 static bool zarch_load_image(void *userdata, 
@@ -1173,6 +1174,7 @@ static void zarch_allocate_white_texture(zui_t *zui)
 
 static void zarch_context_reset(void *data)
 {
+   menu_display_ctx_font_t font_info;
    const char *font_path = NULL;
    settings_t *settings  = config_get_ptr();
    zui_t          *zui   = (zui_t*)data;
@@ -1180,9 +1182,13 @@ static void zarch_context_reset(void *data)
    if (!zui || !settings)
       return;
 
-   font_path = settings->video.font_enable ? settings->video.font_path : NULL;
+   font_info.path    = NULL;
+   font_info.size    = zui->font_size;
 
-   if (!menu_display_init_main_font(font_path, zui->font_size))
+   if (settings->video.font_enable)
+      font_info.path = settings->video.font_path;
+
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_INIT, &font_info))
       RARCH_WARN("Failed to load font.");
 
    zarch_context_bg_destroy(zui);

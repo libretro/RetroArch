@@ -972,6 +972,7 @@ static void mui_font(void)
 {
    int font_size;
    char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
+   menu_display_ctx_font_t font_info;
    settings_t *settings = config_get_ptr();
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
@@ -981,7 +982,10 @@ static void mui_font(void)
    fill_pathname_join(fontpath, mediapath,
          "Roboto-Regular.ttf", sizeof(fontpath));
 
-   if (!menu_display_init_main_font(fontpath, font_size))
+   font_info.path = fontpath;
+   font_info.size = font_size;
+
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_INIT, &font_info))
       RARCH_WARN("Failed to load font.");
 }
 
@@ -1096,7 +1100,7 @@ static void mui_context_destroy(void *data)
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
       menu_display_texture_unload((uintptr_t*)&mui->textures.list[i].id);
 
-   menu_display_free_main_font();
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
 
    mui_context_bg_destroy(mui);
 }

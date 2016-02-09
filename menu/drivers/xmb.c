@@ -1869,6 +1869,7 @@ static void xmb_font(xmb_handle_t *xmb)
    int font_size;
    char mediapath[PATH_MAX_LENGTH],
         themepath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
+   menu_display_ctx_font_t font_info;
    settings_t *settings = config_get_ptr();
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
@@ -1882,7 +1883,10 @@ static void xmb_font(xmb_handle_t *xmb)
    else
          strlcpy(fontpath, settings->menu.xmb_font,sizeof(fontpath));
 
-   if (!menu_display_init_main_font(fontpath, font_size))
+   font_info.path = fontpath;
+   font_info.size = font_size;
+
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_INIT, &font_info))
       RARCH_WARN("Failed to load font.");
 }
 
@@ -2562,7 +2566,7 @@ static void xmb_context_destroy(void *data)
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
 
-   menu_display_free_main_font();
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
 }
 
 static void xmb_toggle(void *userdata, bool menu_on)

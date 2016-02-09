@@ -89,17 +89,6 @@ static bool menu_display_font_init_first(void **font_handle,
          font_path, font_size);
 }
 
-void menu_display_free_main_font(void)
-{
-   menu_display_t *disp = menu_display_get_ptr();
-    
-   if (disp && disp->font.buf)
-   {
-      font_driver_free(disp->font.buf);
-      disp->font.buf = NULL;
-   }
-}
-
 static const char *menu_video_get_ident(void)
 {
 #ifdef HAVE_THREADS
@@ -153,30 +142,6 @@ static bool menu_display_driver_init_first(menu_display_t *disp)
    return false;
 }
 
-bool menu_display_init_main_font(const char *font_path, float font_size)
-{
-   bool      ret;
-   void        *video   = video_driver_get_ptr(false);
-   menu_display_t *disp = menu_display_get_ptr();
-
-   if (!disp)
-      return false;
-
-   if (disp->font.buf)
-      menu_display_free_main_font();
-
-   ret = menu_display_font_init_first(
-         &disp->font.buf, video,
-         font_path, font_size);
-
-   if (ret)
-      disp->font.size = font_size;
-   else
-      disp->font.buf = NULL;
-
-   return ret;
-}
-
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
@@ -205,6 +170,24 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          if (!menu_disp || !menu_disp->blend_end)
             return false;
          menu_disp->blend_end();
+         break;
+      case MENU_DISPLAY_CTL_FONT_MAIN_DEINIT:
+         if (disp && disp->font.buf)
+            font_driver_free(disp->font.buf);
+         disp->font.buf = NULL;
+         break;
+      case MENU_DISPLAY_CTL_FONT_MAIN_INIT:
+         {
+            menu_display_ctx_font_t *font = (menu_display_ctx_font_t*)data;
+
+            menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
+
+            if (!font || !menu_display_font_init_first(
+                     &disp->font.buf, video_driver_get_ptr(false), font->path, font->size))
+               return false;
+
+            disp->font.size = font->size;
+         }
          break;
       case MENU_DISPLAY_CTL_FONT_BIND_BLOCK:
          if (!disp)
