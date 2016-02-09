@@ -68,18 +68,6 @@ static menu_display_ctx_driver_t *menu_display_context_get_ptr(void)
    return disp->display_ctx;
 }
 
-static bool menu_display_font_init_first(void **font_handle,
-      void *video_data, const char *font_path,
-      float font_size)
-{
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp || !menu_disp->font_init_first)
-      return false;
-
-   return menu_disp->font_init_first(font_handle, video_data,
-         font_path, font_size);
-}
-
 static const char *menu_video_get_ident(void)
 {
 #ifdef HAVE_THREADS
@@ -159,9 +147,15 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
             menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
 
-            if (!font || !menu_display_font_init_first(
-                     &menu_display_font_buf,
-                     video_driver_get_ptr(false), font->path, font->size))
+            if (!font || !menu_disp)
+               return false;
+
+            if (!menu_disp->font_init_first)
+               return false;
+
+            if (!menu_disp->font_init_first(&menu_display_font_buf,
+                     video_driver_get_ptr(false),
+                     font->path, font->size))
                return false;
 
             menu_display_font_size = font->size;
