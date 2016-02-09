@@ -26,17 +26,17 @@
 
 typedef struct
 {
-   rarch_task_t *front;
-   rarch_task_t *back;
+   retro_task_t *front;
+   retro_task_t *back;
 } task_queue_t;
 
-struct rarch_task_impl
+struct retro_task_impl
 {
-   void (*push_running)(rarch_task_t *);
+   void (*push_running)(retro_task_t *);
    void (*reset)(void);
    void (*wait)(void);
    void (*gather)(void);
-   bool (*find)(rarch_task_finder_t, void*);
+   bool (*find)(retro_task_finder_t, void*);
    void (*init)(void);
    void (*deinit)(void);
 };
@@ -44,7 +44,7 @@ struct rarch_task_impl
 static task_queue_t tasks_running  = {NULL, NULL};
 static task_queue_t tasks_finished = {NULL, NULL};
 
-static void task_queue_put(task_queue_t *queue, rarch_task_t *task)
+static void task_queue_put(task_queue_t *queue, retro_task_t *task)
 {
    task->next = NULL;
 
@@ -56,9 +56,9 @@ static void task_queue_put(task_queue_t *queue, rarch_task_t *task)
    queue->back = task;
 }
 
-static rarch_task_t *task_queue_get(task_queue_t *queue)
+static retro_task_t *task_queue_get(task_queue_t *queue)
 {
-   rarch_task_t *task = queue->front;
+   retro_task_t *task = queue->front;
 
    if (task)
    {
@@ -69,9 +69,9 @@ static rarch_task_t *task_queue_get(task_queue_t *queue)
    return task;
 }
 
-static void rarch_task_internal_gather(void)
+static void retro_task_internal_gather(void)
 {
-   rarch_task_t *task = NULL;
+   retro_task_t *task = NULL;
    while ((task = task_queue_get(&tasks_finished)) != NULL)
    {
       push_task_progress(task);
@@ -89,16 +89,16 @@ static void rarch_task_internal_gather(void)
    }
 }
 
-static void regular_push_running(rarch_task_t *task)
+static void regular_push_running(retro_task_t *task)
 {
    task_queue_put(&tasks_running, task);
 }
 
 static void regular_gather(void)
 {
-   rarch_task_t *task  = NULL;
-   rarch_task_t *queue = NULL;
-   rarch_task_t *next  = NULL;
+   retro_task_t *task  = NULL;
+   retro_task_t *queue = NULL;
+   retro_task_t *next  = NULL;
 
    while ((task = task_queue_get(&tasks_running)) != NULL)
    {
@@ -119,7 +119,7 @@ static void regular_gather(void)
          regular_push_running(task);
    }
 
-   rarch_task_internal_gather();
+   retro_task_internal_gather();
 }
 
 static void regular_wait(void)
@@ -130,7 +130,7 @@ static void regular_wait(void)
 
 static void regular_reset(void)
 {
-   rarch_task_t *task = tasks_running.front;
+   retro_task_t *task = tasks_running.front;
 
    for (; task; task = task->next)
       task->cancelled = true;
@@ -144,9 +144,9 @@ static void regular_deinit(void)
 {
 }
 
-static bool regular_find(rarch_task_finder_t func, void *user_data)
+static bool regular_find(retro_task_finder_t func, void *user_data)
 {
-   rarch_task_t *task = tasks_running.front;
+   retro_task_t *task = tasks_running.front;
 
    for (; task; task = task->next)
    {
@@ -157,7 +157,7 @@ static bool regular_find(rarch_task_finder_t func, void *user_data)
    return false;
 }
 
-static struct rarch_task_impl impl_regular = {
+static struct retro_task_impl impl_regular = {
    regular_push_running,
    regular_reset,
    regular_wait,
@@ -174,7 +174,7 @@ static scond_t *worker_cond     = NULL;
 static sthread_t *worker_thread = NULL;
 static bool worker_continue     = true; /* use running_lock when touching it */
 
-static void threaded_push_running(rarch_task_t *task)
+static void threaded_push_running(retro_task_t *task)
 {
    slock_lock(running_lock);
    task_queue_put(&tasks_running, task);
@@ -184,7 +184,7 @@ static void threaded_push_running(rarch_task_t *task)
 
 static void threaded_gather(void)
 {
-   rarch_task_t *task = NULL;
+   retro_task_t *task = NULL;
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
@@ -193,7 +193,7 @@ static void threaded_gather(void)
    slock_unlock(running_lock);
 
    slock_lock(finished_lock);
-   rarch_task_internal_gather();
+   retro_task_internal_gather();
    slock_unlock(finished_lock);
 }
 
@@ -213,7 +213,7 @@ static void threaded_wait(void)
 
 static void threaded_reset(void)
 {
-   rarch_task_t *task = NULL;
+   retro_task_t *task = NULL;
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
@@ -227,9 +227,9 @@ static void threaded_worker(void *userdata)
 
    for (;;)
    {
-      rarch_task_t *queue = NULL;
-      rarch_task_t *task  = NULL;
-      rarch_task_t *next  = NULL;
+      retro_task_t *queue = NULL;
+      retro_task_t *task  = NULL;
+      retro_task_t *next  = NULL;
 
       /* pop all into a local queue,
        * tasks are in the reverse order here. */
@@ -272,9 +272,9 @@ static void threaded_worker(void *userdata)
    slock_unlock(running_lock);
 }
 
-static bool threaded_find(rarch_task_finder_t func, void *user_data)
+static bool threaded_find(retro_task_finder_t func, void *user_data)
 {
-   rarch_task_t *task = NULL;
+   retro_task_t *task = NULL;
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
@@ -319,7 +319,7 @@ static void threaded_deinit(void)
    finished_lock = NULL;
 }
 
-static struct rarch_task_impl impl_threaded = {
+static struct retro_task_impl impl_threaded = {
    threaded_push_running,
    threaded_reset,
    threaded_wait,
@@ -332,7 +332,7 @@ static struct rarch_task_impl impl_threaded = {
 
 bool task_ctl(enum task_ctl_state state, void *data)
 {
-   static struct rarch_task_impl *impl_current = NULL;
+   static struct retro_task_impl *impl_current = NULL;
    static bool task_threaded_enable            = false;
 
    switch (state)
@@ -393,7 +393,7 @@ bool task_ctl(enum task_ctl_state state, void *data)
          {
             /* The lack of NULL checks in the following functions 
              * is proposital to ensure correct control flow by the users. */
-            rarch_task_t *task = (rarch_task_t*)data;
+            retro_task_t *task = (retro_task_t*)data;
             impl_current->push_running(task);
             break;
          }

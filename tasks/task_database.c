@@ -517,7 +517,7 @@ static void rarch_main_data_db_cleanup_state(
    db_state->buf = NULL;
 }
 
-static void rarch_dbscan_task_handler(rarch_task_t *task)
+static void rarch_dbscan_task_handler(retro_task_t *task)
 {
    db_handle_t *db                  = (db_handle_t*)task->state;
    database_info_handle_t  *dbinfo  = db->handle;
@@ -587,9 +587,9 @@ task_finished:
 }
 
 bool rarch_task_push_dbscan(const char *fullpath,
-      bool directory, rarch_task_callback_t cb)
+      bool directory, retro_task_callback_t cb)
 {
-   rarch_task_t *t   = (rarch_task_t*)calloc(1, sizeof(*t));
+   retro_task_t *t   = (retro_task_t*)calloc(1, sizeof(*t));
    db_handle_t *db   = (db_handle_t*)calloc(1, sizeof(db_handle_t));
 
    if (!t || !db)

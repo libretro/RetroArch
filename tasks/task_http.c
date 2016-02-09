@@ -109,7 +109,7 @@ static int cb_http_conn_default(void *data_, size_t len)
  * Returns: 0 when finished, -1 when we should continue
  * with the transfer on the next frame.
  **/
-static int rarch_main_data_http_iterate_transfer(rarch_task_t *task)
+static int rarch_main_data_http_iterate_transfer(retro_task_t *task)
 {
    http_handle_t *http  = (http_handle_t*)task->state;
    size_t pos  = 0, tot = 0;
@@ -123,7 +123,7 @@ static int rarch_main_data_http_iterate_transfer(rarch_task_t *task)
    return 0;
 }
 
-static void rarch_task_http_transfer_handler(rarch_task_t *task)
+static void rarch_task_http_transfer_handler(retro_task_t *task)
 {
    http_handle_t *http = (http_handle_t*)task->state;
    http_transfer_data_t *data;
@@ -192,7 +192,7 @@ task_finished:
    free(http);
 }
 
-static bool rarch_task_http_finder(rarch_task_t *task, void *user_data)
+static bool rarch_task_http_finder(retro_task_t *task, void *user_data)
 {
    http_handle_t *http = (http_handle_t*)task->state;
    const char *handle_url = NULL;
@@ -211,12 +211,12 @@ static bool rarch_task_http_finder(rarch_task_t *task, void *user_data)
 }
 
 bool rarch_task_push_http_transfer(const char *url, const char *type,
-      rarch_task_callback_t cb, void *user_data)
+      retro_task_callback_t cb, void *user_data)
 {
    char tmp[PATH_MAX_LENGTH];
    task_finder_data_t find_data;
    struct http_connection_t *conn = NULL;
-   rarch_task_t  *t               = NULL;
+   retro_task_t  *t               = NULL;
    http_handle_t *http            = NULL;
 
    if (string_is_empty(url))
@@ -249,7 +249,7 @@ bool rarch_task_push_http_transfer(const char *url, const char *type,
       strlcpy(http->connection.elem1, type, sizeof(http->connection.elem1));
 
    http->status            = HTTP_STATUS_CONNECTION_TRANSFER;
-   t                       = (rarch_task_t*)calloc(1, sizeof(*t));
+   t                       = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
       goto error;

@@ -25,7 +25,7 @@
 bool rarch_task_push_content_load_default(
       const char *core_path, const char *fullpath,
       bool persist, enum rarch_core_type type,
-      rarch_task_callback_t cb, void *user_data)
+      retro_task_callback_t cb, void *user_data)
 {
    enum event_command cmd       = EVENT_CMD_NONE;
 

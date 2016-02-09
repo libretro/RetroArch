@@ -34,20 +34,20 @@ typedef struct {
 } http_transfer_data_t;
 
 bool rarch_task_push_http_transfer(const char *url, const char *type,
-      rarch_task_callback_t cb, void *userdata);
+      retro_task_callback_t cb, void *userdata);
 #endif
 
 bool rarch_task_push_image_load(const char *fullpath, const char *type,
-      rarch_task_callback_t cb, void *userdata);
+      retro_task_callback_t cb, void *userdata);
 
 #ifdef HAVE_LIBRETRODB
 bool rarch_task_push_dbscan(const char *fullpath,
-      bool directory, rarch_task_callback_t cb);
+      bool directory, retro_task_callback_t cb);
 #endif
 
 #ifdef HAVE_OVERLAY
 bool rarch_task_push_overlay_load_default(
-        rarch_task_callback_t cb, void *user_data);
+        retro_task_callback_t cb, void *user_data);
 #endif
     
 int find_first_data_track(const char* cue_path,
@@ -66,12 +66,16 @@ bool rarch_task_push_decompress(
       const char *target_file,
       const char *subdir,
       const char *valid_ext,
-      rarch_task_callback_t cb, void *user_data);
+      retro_task_callback_t cb,
+      void *user_data);
 
 bool rarch_task_push_content_load_default(
-      const char *core_path, const char *fullpath,
-      bool persist, enum rarch_core_type type,
-      rarch_task_callback_t cb, void *user_data);
+      const char *core_path,
+      const char *fullpath,
+      bool persist,
+      enum rarch_core_type type,
+      retro_task_callback_t cb,
+      void *user_data);
 
 #ifdef __cplusplus
 }

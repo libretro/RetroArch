@@ -1630,7 +1630,7 @@ static int generic_action_ok_network(const char *path,
    settings_t *settings           = config_get_ptr();
    unsigned type_id2              = 0;
    const char *url_label          = NULL;
-   rarch_task_callback_t callback = NULL;
+   retro_task_callback_t callback = NULL;
    bool refresh                   = true;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);

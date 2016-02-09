@@ -84,7 +84,7 @@ typedef struct nbio_handle
 #include "../menu/menu_driver.h"
 
 #ifdef HAVE_RPNG
-static void rarch_task_file_load_handler(rarch_task_t *task);
+static void rarch_task_file_load_handler(retro_task_t *task);
 static int cb_image_menu_upload_generic(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data;
@@ -314,11 +314,11 @@ static int cb_nbio_image_menu_boxart(void *data, size_t len)
 #endif
 
 bool rarch_task_push_image_load(const char *fullpath,
-      const char *type, rarch_task_callback_t cb, void *user_data)
+      const char *type, retro_task_callback_t cb, void *user_data)
 {
 #if defined(HAVE_RPNG) && defined(HAVE_MENU)
-   rarch_task_t *t;
-   nbio_handle_t *nbio;
+   nbio_handle_t *nbio          = NULL;
+   retro_task_t *t              = NULL;
    uint32_t cb_type_hash        = 0;
    struct nbio_t* handle        = NULL;
 
@@ -351,7 +351,7 @@ bool rarch_task_push_image_load(const char *fullpath,
 
    nbio_begin_read(handle);
 
-   t = (rarch_task_t*)calloc(1, sizeof(*t));
+   t = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
    {
@@ -407,7 +407,7 @@ static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
    return 0;
 }
 
-static void rarch_task_file_load_handler(rarch_task_t *task)
+static void rarch_task_file_load_handler(retro_task_t *task)
 {
    nbio_handle_t         *nbio  = (nbio_handle_t*)task->state;
    nbio_image_handle_t   *image = nbio    ? &nbio->image   : NULL;

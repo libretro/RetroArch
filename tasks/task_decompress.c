@@ -131,10 +131,9 @@ error:
    return 0;
 }
 
-static void rarch_task_decompress_handler_finished(rarch_task_t *task,
+static void rarch_task_decompress_handler_finished(retro_task_t *task,
       decompress_state_t *dec)
 {
-
    task->finished = true;
 
    if (!task->error && task->cancelled)
@@ -159,7 +158,7 @@ static void rarch_task_decompress_handler_finished(rarch_task_t *task,
    free(dec);
 }
 
-static void rarch_task_decompress_handler(rarch_task_t *task)
+static void rarch_task_decompress_handler(retro_task_t *task)
 {
    bool retdec             = false;
    decompress_state_t *dec = (decompress_state_t*)task->state;
@@ -178,7 +177,7 @@ static void rarch_task_decompress_handler(rarch_task_t *task)
    }
 }
 
-static void rarch_task_decompress_handler_target_file(rarch_task_t *task)
+static void rarch_task_decompress_handler_target_file(retro_task_t *task)
 {
    bool retdec;
    decompress_state_t *dec = (decompress_state_t*)task->state;
@@ -197,7 +196,7 @@ static void rarch_task_decompress_handler_target_file(rarch_task_t *task)
    }
 }
 
-static void rarch_task_decompress_handler_subdir(rarch_task_t *task)
+static void rarch_task_decompress_handler_subdir(retro_task_t *task)
 {
    bool retdec;
    decompress_state_t *dec = (decompress_state_t*)task->state;
@@ -217,7 +216,7 @@ static void rarch_task_decompress_handler_subdir(rarch_task_t *task)
 }
 
 static bool rarch_task_decompress_finder(
-      rarch_task_t *task, void *user_data)
+      retro_task_t *task, void *user_data)
 {
    decompress_state_t *dec = (decompress_state_t*)task->state;
 
@@ -233,13 +232,13 @@ bool rarch_task_push_decompress(
       const char *target_file,
       const char *subdir,
       const char *valid_ext,
-      rarch_task_callback_t cb,
+      retro_task_callback_t cb,
       void *user_data)
 {
    task_finder_data_t find_data;
    char tmp[PATH_MAX_LENGTH];
    decompress_state_t *s      = NULL;
-   rarch_task_t *t            = NULL;
+   retro_task_t *t            = NULL;
    bool is_compressed         = false;
 
    if (string_is_empty(target_dir) || string_is_empty(source_file))
@@ -287,7 +286,7 @@ bool rarch_task_push_decompress(
    s->valid_ext   = valid_ext ? strdup(valid_ext) : NULL;
    s->zlib.type   = ZLIB_TRANSFER_INIT;
 
-   t              = (rarch_task_t*)calloc(1, sizeof(*t));
+   t              = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
       goto error;

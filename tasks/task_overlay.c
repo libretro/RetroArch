@@ -623,7 +623,7 @@ error:
    loader->state = OVERLAY_STATUS_DEFERRED_ERROR;
 }
 
-static void rarch_task_overlay_handler(rarch_task_t *task)
+static void rarch_task_overlay_handler(retro_task_t *task)
 {
    overlay_loader_t *loader = (overlay_loader_t*)task->state;
    overlay_task_data_t *data;
@@ -691,9 +691,9 @@ task_finished:
 
 
 static bool rarch_task_push_overlay_load(const char *overlay_path,
-      rarch_task_callback_t cb, void *user_data)
+      retro_task_callback_t cb, void *user_data)
 {
-   rarch_task_t *t          = NULL;
+   retro_task_t *t          = NULL;
    config_file_t *conf      = NULL;
    overlay_loader_t *loader = (overlay_loader_t*)calloc(1, sizeof(*loader));
    
@@ -722,7 +722,7 @@ static bool rarch_task_push_overlay_load(const char *overlay_path,
    loader->state            = OVERLAY_STATUS_DEFERRED_LOAD;
    loader->pos_increment    = (loader->size / 4) ? (loader->size / 4) : 4;
 
-   t                        = (rarch_task_t*)calloc(1, sizeof(*t));
+   t                        = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
       goto error;
@@ -752,7 +752,7 @@ error:
 }
 
 bool rarch_task_push_overlay_load_default(
-      rarch_task_callback_t cb, void *user_data)
+      retro_task_callback_t cb, void *user_data)
 {
    settings_t *settings = config_get_ptr();
    bool osk_enable      = 

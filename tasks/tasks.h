@@ -79,13 +79,13 @@ enum task_ctl_state
    TASK_CTL_IS_THREADED
 };
 
-typedef struct rarch_task rarch_task_t;
-typedef void (*rarch_task_callback_t)(void *task_data,
+typedef struct retro_task retro_task_t;
+typedef void (*retro_task_callback_t)(void *task_data,
       void *user_data, const char *error);
 
-typedef void (*rarch_task_handler_t)(rarch_task_t *task);
+typedef void (*retro_task_handler_t)(retro_task_t *task);
 
-typedef bool (*rarch_task_finder_t)(rarch_task_t *task,
+typedef bool (*retro_task_finder_t)(retro_task_t *task,
       void *userdata);
 
 typedef struct
@@ -93,12 +93,12 @@ typedef struct
    char *source_file;
 } decompress_task_data_t;
 
-struct rarch_task
+struct retro_task
 {
-   rarch_task_handler_t  handler;
+   retro_task_handler_t  handler;
 
    /* always called from the main loop */
-   rarch_task_callback_t callback;
+   retro_task_callback_t callback;
 
    /* set to true by the handler to signal 
     * the task has finished executing. */
@@ -129,16 +129,16 @@ struct rarch_task
    char *title;
 
    /* don't touch this. */
-   rarch_task_t *next;
+   retro_task_t *next;
 };
 
 typedef struct task_finder_data
 {
-   rarch_task_finder_t func;
+   retro_task_finder_t func;
    void *userdata;
 } task_finder_data_t;
 
-void push_task_progress(rarch_task_t *task);
+void push_task_progress(retro_task_t *task);
 
 bool task_ctl(enum task_ctl_state state, void *data);
 
