@@ -138,7 +138,7 @@ typedef struct task_finder_data
    void *userdata;
 } task_finder_data_t;
 
-void push_task_progress(retro_task_t *task);
+void task_queue_push_progress(retro_task_t *task);
 
 bool task_queue_ctl(enum task_queue_ctl_state state, void *data);
 

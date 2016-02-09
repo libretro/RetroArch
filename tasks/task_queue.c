@@ -74,7 +74,7 @@ static void retro_task_internal_gather(void)
    retro_task_t *task = NULL;
    while ((task = task_queue_get(&tasks_finished)) != NULL)
    {
-      push_task_progress(task);
+      task_queue_push_progress(task);
 
       if (task->callback)
          task->callback(task->task_data, task->user_data, task->error);
@@ -111,7 +111,7 @@ static void regular_gather(void)
       next = task->next;
       task->handler(task);
 
-      push_task_progress(task);
+      task_queue_push_progress(task);
 
       if (task->finished)
          task_queue_put(&tasks_finished, task);
@@ -188,7 +188,7 @@ static void threaded_gather(void)
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
-      push_task_progress(task);
+      task_queue_push_progress(task);
 
    slock_unlock(running_lock);
 

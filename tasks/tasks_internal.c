@@ -35,7 +35,7 @@ static void task_msg_queue_pushf(unsigned prio, unsigned duration,
    runloop_msg_queue_push(buf, prio, duration, flush);
 }
 
-void push_task_progress(retro_task_t *task)
+void task_queue_push_progress(retro_task_t *task)
 {
    if (task->title)
    {
