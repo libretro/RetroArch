@@ -95,19 +95,24 @@ static void menu_display_timedate(void *data)
    switch (datetime->time_mode)
    {
       case 0: /* Date and time */
-         strftime(datetime->s, datetime->len, "%Y-%m-%d %H:%M:%S", localtime(&time_));
+         strftime(datetime->s, datetime->len,
+               "%Y-%m-%d %H:%M:%S", localtime(&time_));
          break;
       case 1: /* Date */
-         strftime(datetime->s, datetime->len, "%Y-%m-%d", localtime(&time_));
+         strftime(datetime->s, datetime->len,
+               "%Y-%m-%d", localtime(&time_));
          break;
       case 2: /* Time */
-         strftime(datetime->s, datetime->len, "%H:%M:%S", localtime(&time_));
+         strftime(datetime->s, datetime->len,
+               "%H:%M:%S", localtime(&time_));
          break;
       case 3: /* Time (hours-minutes) */
-         strftime(datetime->s, datetime->len, "%H:%M", localtime(&time_));
+         strftime(datetime->s, datetime->len,
+               "%H:%M", localtime(&time_));
          break;
       case 4: /* Date and time, without year and seconds */
-         strftime(datetime->s, datetime->len, "%d/%m %H:%M", localtime(&time_));
+         strftime(datetime->s, datetime->len,
+               "%d/%m %H:%M", localtime(&time_));
          break;
    }
 }
@@ -461,7 +466,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             if (!menu_disp || !menu_disp->draw || !data)
                return false;
             menu_disp->draw(draw->x, draw->y, draw->width, draw->height,
-                  draw->coords, draw->matrix_data, draw->texture, draw->prim_type);
+                  draw->coords, draw->matrix_data,
+                  draw->texture, draw->prim_type);
          }
          break;
       case MENU_DISPLAY_CTL_DRAW_BG:
@@ -481,7 +487,9 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          {
             math_matrix_4x4 matrix_rotated, matrix_scaled;
             math_matrix_4x4 *b                   = NULL;
-            menu_display_ctx_rotate_draw_t *draw = (menu_display_ctx_rotate_draw_t*)data;
+            menu_display_ctx_rotate_draw_t *draw = 
+               (menu_display_ctx_rotate_draw_t*)data;
+
             if (!draw || !menu_disp || !menu_disp->get_default_mvp)
                return false;
 
@@ -493,13 +501,15 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             if (!draw->scale_enable)
                return false;
 
-            matrix_4x4_scale(&matrix_scaled, draw->scale_x, draw->scale_y, draw->scale_z);
+            matrix_4x4_scale(&matrix_scaled,
+                  draw->scale_x, draw->scale_y, draw->scale_z);
             matrix_4x4_multiply(draw->matrix, &matrix_scaled, draw->matrix);
          }
          break;
       case MENU_DISPLAY_CTL_TEX_COORDS_GET:
          {
-            menu_display_ctx_coord_draw_t *draw = (menu_display_ctx_coord_draw_t*)data;
+            menu_display_ctx_coord_draw_t *draw = 
+               (menu_display_ctx_coord_draw_t*)data;
             if (!draw)
                return false;
 
@@ -519,7 +529,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
    return true;
 }
-
 
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err)
