@@ -648,7 +648,8 @@ static void input_driver_command_init(void)
    if (!settings->stdin_cmd_enable && !settings->network_cmd_enable)
       return;
 
-   if (settings->stdin_cmd_enable && input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL))
+   if (settings->stdin_cmd_enable 
+         && input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL))
    {
       RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
             "Cannot use this command interface.\n");
@@ -668,7 +669,8 @@ static void input_driver_remote_init(void)
 
    if (settings->network_remote_enable)
    {
-      if (!(input_driver_remote = rarch_remote_new(settings->network_remote_base_port)))
+      if (!(input_driver_remote 
+               = rarch_remote_new(settings->network_remote_base_port)))
          RARCH_ERR("Failed to initialize remote gamepad interface.\n");
    }
 
@@ -749,7 +751,8 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
             i = drv.len;
 
             if (i >= 0)
-               current_input = (const input_driver_t*)input_driver_find_handle(i);
+               current_input = (const input_driver_t*)
+                  input_driver_find_handle(i);
             else
             {
                unsigned d;
@@ -760,7 +763,8 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
                   RARCH_LOG_OUTPUT("\t%s\n", input_driver_find_ident(d));
                RARCH_WARN("Going to default to first input driver...\n");
 
-               current_input = (const input_driver_t*)input_driver_find_handle(0);
+               current_input = (const input_driver_t*)
+                  input_driver_find_handle(0);
 
                if (current_input)
                   return true;
