@@ -266,7 +266,7 @@ bool rarch_task_push_decompress(
    find_data.func     = rarch_task_decompress_finder;
    find_data.userdata = (void*)source_file;
 
-   if (task_ctl(TASK_CTL_FIND, &find_data))
+   if (task_queue_ctl(TASK_CTL_FIND, &find_data))
    {
       RARCH_LOG("[decompress] File '%s' already being decompressed.\n",
             source_file);
@@ -313,7 +313,7 @@ bool rarch_task_push_decompress(
 
    t->title       = strdup(tmp);
 
-   task_ctl(TASK_CTL_PUSH, t);
+   task_queue_ctl(TASK_CTL_PUSH, t);
 
    return true;
 

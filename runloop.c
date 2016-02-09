@@ -439,7 +439,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    switch (state)
    {
       case RUNLOOP_CTL_DATA_ITERATE:
-         task_ctl(TASK_CTL_CHECK, NULL);
+         task_queue_ctl(TASK_CTL_CHECK, NULL);
          return true;
       case RUNLOOP_CTL_SHADER_DIR_DEINIT:
          shader_dir_free(&runloop_shader_dir);
@@ -973,7 +973,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_TASK_INIT:
          {
             bool threaded_enable = settings->threaded_data_runloop_enable;
-            task_ctl(TASK_CTL_INIT, &threaded_enable);
+            task_queue_ctl(TASK_CTL_INIT, &threaded_enable);
          }
          break;
       case RUNLOOP_CTL_PREPARE_DUMMY:
@@ -1011,7 +1011,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_IS_EXEC:
          return runloop_exec;
       case RUNLOOP_CTL_DATA_DEINIT:
-         task_ctl(TASK_CTL_DEINIT, NULL);
+         task_queue_ctl(TASK_CTL_DEINIT, NULL);
          break;
       case RUNLOOP_CTL_IS_CORE_OPTION_UPDATED:
          if (!runloop_system.core_options)

@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-enum task_ctl_state
+enum task_queue_ctl_state
 {
    TASK_CTL_NONE = 0,
 
@@ -140,7 +140,7 @@ typedef struct task_finder_data
 
 void push_task_progress(retro_task_t *task);
 
-bool task_ctl(enum task_ctl_state state, void *data);
+bool task_queue_ctl(enum task_queue_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

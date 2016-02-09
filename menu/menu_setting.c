@@ -2826,9 +2826,9 @@ void general_write_handler(void *data)
       case MENU_LABEL_VIDEO_THREADED:
          {
             if (*setting->value.boolean)
-               task_ctl(TASK_CTL_SET_THREADED, NULL);
+               task_queue_ctl(TASK_CTL_SET_THREADED, NULL);
             else
-               task_ctl(TASK_CTL_UNSET_THREADED, NULL);
+               task_queue_ctl(TASK_CTL_UNSET_THREADED, NULL);
          }
          break;
       case MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR:

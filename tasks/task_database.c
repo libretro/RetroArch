@@ -607,7 +607,7 @@ bool rarch_task_push_dbscan(const char *fullpath,
    if (db->handle)
       db->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
 
-   task_ctl(TASK_CTL_PUSH, t);
+   task_queue_ctl(TASK_CTL_PUSH, t);
 
    return true;
 

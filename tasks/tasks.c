@@ -330,7 +330,7 @@ static struct retro_task_impl impl_threaded = {
 };
 #endif
 
-bool task_ctl(enum task_ctl_state state, void *data)
+bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
 {
    static struct retro_task_impl *impl_current = NULL;
    static bool task_threaded_enable            = false;
@@ -358,7 +358,7 @@ bool task_ctl(enum task_ctl_state state, void *data)
 #ifdef HAVE_THREADS
             if (*boolean_val)
             {
-               task_ctl(TASK_CTL_SET_THREADED, NULL);
+               task_queue_ctl(TASK_CTL_SET_THREADED, NULL);
                impl_current = &impl_threaded;
             }
 #endif
@@ -377,13 +377,13 @@ bool task_ctl(enum task_ctl_state state, void *data)
          {
 #ifdef HAVE_THREADS
             bool current_threaded = (impl_current == &impl_threaded);
-            bool want_threaded    = task_ctl(TASK_CTL_IS_THREADED, NULL);
+            bool want_threaded    = task_queue_ctl(TASK_CTL_IS_THREADED, NULL);
 
             if (want_threaded != current_threaded)
-               task_ctl(TASK_CTL_DEINIT, NULL);
+               task_queue_ctl(TASK_CTL_DEINIT, NULL);
 
             if (!impl_current)
-               task_ctl(TASK_CTL_INIT, NULL);
+               task_queue_ctl(TASK_CTL_INIT, NULL);
 #endif
 
             impl_current->gather();
