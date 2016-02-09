@@ -36,8 +36,6 @@
 #include "../gfx/video_thread_wrapper.h"
 #endif
 
-
-
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D
    &menu_display_ctx_d3d,
@@ -82,6 +80,38 @@ static bool menu_display_check_compatibility(
 
    return false;
 }
+
+static void menu_display_timedate(void *data)
+{
+   time_t time_;
+   menu_display_ctx_datetime_t *datetime =
+      (menu_display_ctx_datetime_t *)data;
+
+   if (!datetime)
+      return;
+
+   time(&time_);
+
+   switch (datetime->time_mode)
+   {
+      case 0: /* Date and time */
+         strftime(datetime->s, datetime->len, "%Y-%m-%d %H:%M:%S", localtime(&time_));
+         break;
+      case 1: /* Date */
+         strftime(datetime->s, datetime->len, "%Y-%m-%d", localtime(&time_));
+         break;
+      case 2: /* Time */
+         strftime(datetime->s, datetime->len, "%H:%M:%S", localtime(&time_));
+         break;
+      case 3: /* Time (hours-minutes) */
+         strftime(datetime->s, datetime->len, "%H:%M", localtime(&time_));
+         break;
+      case 4: /* Date and time, without year and seconds */
+         strftime(datetime->s, datetime->len, "%d/%m %H:%M", localtime(&time_));
+         break;
+   }
+}
+
 
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
@@ -479,6 +509,9 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             draw->ptr = menu_disp->get_tex_coords();
          }
          break;
+      case MENU_DISPLAY_CTL_TIMEDATE:
+         menu_display_timedate(data);
+         break;
       case MENU_DISPLAY_CTL_NONE:
       default:
          break;
@@ -487,30 +520,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
    return true;
 }
 
-void menu_display_timedate(char *s, size_t len, unsigned time_mode)
-{
-   time_t time_;
-   time(&time_);
-
-   switch (time_mode)
-   {
-      case 0: /* Date and time */
-         strftime(s, len, "%Y-%m-%d %H:%M:%S", localtime(&time_));
-         break;
-      case 1: /* Date */
-         strftime(s, len, "%Y-%m-%d", localtime(&time_));
-         break;
-      case 2: /* Time */
-         strftime(s, len, "%H:%M:%S", localtime(&time_));
-         break;
-      case 3: /* Time (hours-minutes) */
-         strftime(s, len, "%H:%M", localtime(&time_));
-         break;
-      case 4: /* Date and time, without year and seconds */
-         strftime(s, len, "%d/%m %H:%M", localtime(&time_));
-         break;
-   }
-}
 
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err)

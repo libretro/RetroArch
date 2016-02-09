@@ -78,7 +78,8 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_DRAW,
    MENU_DISPLAY_CTL_DRAW_BG,
    MENU_DISPLAY_CTL_ROTATE_Z,
-   MENU_DISPLAY_CTL_TEX_COORDS_GET
+   MENU_DISPLAY_CTL_TEX_COORDS_GET,
+   MENU_DISPLAY_CTL_TIMEDATE
 };
 
 enum menu_display_prim_type
@@ -182,9 +183,14 @@ typedef struct menu_display_ctx_coord_draw
    const float *ptr;
 } menu_display_ctx_coord_draw_t;
 
-bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
+typedef struct menu_display_ctx_datetime
+{
+   char *s;
+   size_t len;
+   unsigned time_mode;
+} menu_display_ctx_datetime_t;
 
-void menu_display_timedate(char *s, size_t len, unsigned time_mode);
+bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err);

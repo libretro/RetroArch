@@ -1737,7 +1737,6 @@ static void xmb_frame(void *data)
    unsigned depth, i, width, height;
    char msg[PATH_MAX_LENGTH];
    char title_msg[256];
-   char timedate[256];
    float item_color[16];
    float coord_color[16];
    float coord_color2[16];
@@ -1759,7 +1758,6 @@ static void xmb_frame(void *data)
 
    msg[0]       = '\0';
    title_msg[0] = '\0';
-   timedate[0]  = '\0';
 
    video_driver_get_size(&width, &height);
 
@@ -1804,7 +1802,14 @@ static void xmb_frame(void *data)
 
    if (settings->menu.timedate_enable)
    {
-      menu_display_timedate(timedate, sizeof(timedate), 4);
+      menu_display_ctx_datetime_t datetime;
+      char timedate[256];
+
+      datetime.s         = timedate;
+      datetime.len       = sizeof(timedate);
+      datetime.time_mode = 4;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_TIMEDATE, &datetime);
 
       xmb_draw_text(xmb, timedate,
             width - xmb->margins.title.left - xmb->icon.size / 4, 

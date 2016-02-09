@@ -419,7 +419,7 @@ static void rgui_render(void *data)
    int bottom;
    uint64_t *frame_count;
    char title[256], title_buf[256], title_msg[64];
-   char msg[PATH_MAX_LENGTH], timedate[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH];
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
 
@@ -429,7 +429,6 @@ static void rgui_render(void *data)
    title[0]     = '\0';
    title_buf[0] = '\0';
    title_msg[0] = '\0';
-   timedate[0]  = '\0';
 
    if (!rgui)
       return;
@@ -562,7 +561,14 @@ static void rgui_render(void *data)
 
    if (settings->menu.timedate_enable)
    {
-      menu_display_timedate(timedate, sizeof(timedate), 3);
+      menu_display_ctx_datetime_t datetime;
+      char timedate[PATH_MAX_LENGTH];
+
+      datetime.s         = timedate;
+      datetime.len       = sizeof(timedate);
+      datetime.time_mode = 3;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_TIMEDATE, &datetime);
 
       blit_line(
             RGUI_TERM_WIDTH(fb_width) * FONT_WIDTH_STRIDE - RGUI_TERM_START_X(fb_width),
