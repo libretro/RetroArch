@@ -111,14 +111,14 @@ static void menu_display_d3d_draw(menu_display_ctx_draw_t *draw)
 {
    D3DVIEWPORT vp       = {0};
    d3d_video_t     *d3d = d3d_get_ptr();
-   math_matrix_4x4 *mat = (math_matrix_4x4*)matrix_data;
+   math_matrix_4x4 *mat = draw ? (math_matrix_4x4*)draw->matrix_data : NULL;
 
    if (!d3d || !draw)
       return;
 
    /* TODO - edge case */
-   if (height <= 0)
-      height = 1;
+   if (draw->height <= 0)
+      draw->height = 1;
 
    if (!mat)
       mat = (math_matrix_4x4*)menu_display_d3d_get_default_mvp();
@@ -164,8 +164,8 @@ static void menu_display_d3d_draw_bg(menu_display_ctx_draw_t *draw)
    if (!d3d || !draw)
       return;
 
-   new_vertex    = vertex;
-   new_tex_coord = tex_coord;
+   new_vertex    = draw->vertex;
+   new_tex_coord = draw->tex_coord;
 
    if (!new_vertex)
       new_vertex = &d3d_vertexes[0];
@@ -176,7 +176,7 @@ static void menu_display_d3d_draw_bg(menu_display_ctx_draw_t *draw)
    coords.vertex        = new_vertex;
    coords.tex_coord     = new_tex_coord;
    coords.lut_tex_coord = new_tex_coord;
-   coords.color         = (const float*)coord_color;
+   coords.color         = (const float*)draw->color;
 
    menu_display_d3d_blend_begin();
 
@@ -185,11 +185,13 @@ static void menu_display_d3d_draw_bg(menu_display_ctx_draw_t *draw)
    if ((settings->menu.pause_libretro
       || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       && !draw->force_transparency && draw->texture)
-      coords.color = (const float*)coord_color2;
+      coords.color = (const float*)draw->color2;
 
-   menu_display_d3d_draw(0, 0, draw->width, draw->height,
-         &draw->coords, (math_matrix_4x4*)menu_display_d3d_get_default_mvp(),
-         (uintptr_t)draw->texture, draw->prim_type);
+   draw->x           = 0;
+   draw->y           = 0;
+   draw->matrix_data = (math_matrix_4x4*)menu_display_d3d_get_default_mvp();
+
+   menu_display_d3d_draw(draw);
 
    menu_display_d3d_blend_end();
 
