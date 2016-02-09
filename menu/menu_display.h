@@ -144,6 +144,35 @@ typedef struct menu_display_ctx_clearcolor
    float a;
 } menu_display_ctx_clearcolor_t;
 
+typedef struct menu_display_ctx_draw
+{
+   float x;
+   float y;
+   unsigned width;
+   unsigned height;
+   struct gfx_coords *coords;
+   void *matrix_data;
+   uintptr_t texture;
+   enum menu_display_prim_type prim_type;
+   float handle_alpha;
+   bool force_transparency;
+   float *color;
+   float *color2;
+   const float *vertex;
+   const float *tex_coord;
+   size_t vertex_count;
+} menu_display_ctx_draw_t;
+
+typedef struct menu_display_ctx_rotate_draw
+{
+   math_matrix_4x4 *matrix;
+   float rotation;
+   float scale_x;
+   float scale_y;
+   float scale_z;
+   bool scale_enable;
+} menu_display_ctx_rotate_draw_t;
+
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 
 void menu_display_timedate(char *s, size_t len, unsigned time_mode);
