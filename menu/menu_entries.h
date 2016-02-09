@@ -157,9 +157,11 @@ void menu_entries_get_at_offset(const file_list_t *list, size_t idx,
       const char **path, const char **label, unsigned *file_type,
       size_t *entry_idx, const char **alt);
 
-void *menu_entries_get_userdata_at_offset(const file_list_t *list, size_t idx);
+void *menu_entries_get_userdata_at_offset(
+      const file_list_t *list, size_t idx);
 
-menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(const file_list_t *list, size_t idx);
+menu_file_list_cbs_t *menu_entries_get_actiondata_at_offset(
+      const file_list_t *list, size_t idx);
 
 void menu_entries_get_last(const file_list_t *list,
       const char **path, const char **label,
@@ -174,7 +176,8 @@ bool menu_entries_increment_selection_buf(void);
 
 bool menu_entries_increment_menu_stack(void);
 
-void menu_entries_push_selection_buf(file_list_t *list, const char *path, const char *label,
+void menu_entries_push_selection_buf(file_list_t *list,
+      const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx);
 
 rarch_setting_t *menu_entries_get_setting(uint32_t i);
