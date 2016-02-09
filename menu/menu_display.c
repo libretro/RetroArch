@@ -443,6 +443,11 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          break;
       case MENU_DISPLAY_CTL_INIT_FIRST_DRIVER:
          return menu_display_driver_init_first(disp);
+      case MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR:
+         if (!menu_disp || !menu_disp->restore_clear_color)
+            return false;
+         menu_disp->restore_clear_color();
+         break;
       case MENU_DISPLAY_CTL_NONE:
       default:
          break;
@@ -560,14 +565,6 @@ void menu_display_draw_bg(
          color2, vertex, tex_coord, vertex_count, prim_type);
 }
 
-void menu_display_restore_clear_color(void)
-{
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp || !menu_disp->restore_clear_color)
-      return;
-
-   menu_disp->restore_clear_color();
-}
 
 void menu_display_clear_color(float r, float g, float b, float a)
 {

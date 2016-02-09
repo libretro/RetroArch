@@ -951,7 +951,7 @@ static void mui_frame(void *data)
       mui_draw_cursor(mui, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
-   menu_display_restore_clear_color();
+   menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 

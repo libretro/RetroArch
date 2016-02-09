@@ -72,7 +72,8 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_FONT_MAIN_INIT,
    MENU_DISPLAY_CTL_FONT_BIND_BLOCK,
    MENU_DISPLAY_CTL_BLEND_BEGIN,
-   MENU_DISPLAY_CTL_BLEND_END
+   MENU_DISPLAY_CTL_BLEND_END,
+   MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR
 };
 
 enum menu_display_prim_type
@@ -171,8 +172,6 @@ void menu_display_matrix_4x4_rotate_z(
 
 unsigned menu_display_texture_load(void *data,
       enum texture_filter_type  filter_type);
-
-void menu_display_restore_clear_color(void);
 
 void menu_display_clear_color(float r, float g, float b, float a);
 
