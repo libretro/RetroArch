@@ -383,20 +383,20 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
 
    switch (state)
    {
-      case TASK_CTL_DEINIT:
+      case TASK_QUEUE_CTL_DEINIT:
          if (impl_current)
             impl_current->deinit();
          impl_current = NULL;
          break;
-      case TASK_CTL_SET_THREADED:
+      case TASK_QUEUE_CTL_SET_THREADED:
          task_threaded_enable = true;
          break;
-      case TASK_CTL_UNSET_THREADED:
+      case TASK_QUEUE_CTL_UNSET_THREADED:
          task_threaded_enable = false;
          break;
-      case TASK_CTL_IS_THREADED:
+      case TASK_QUEUE_CTL_IS_THREADED:
          return task_threaded_enable;
-      case TASK_CTL_INIT:
+      case TASK_QUEUE_CTL_INIT:
          {
             bool *boolean_val = (bool*)data;
 
@@ -404,7 +404,7 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
 #ifdef HAVE_THREADS
             if (*boolean_val)
             {
-               task_queue_ctl(TASK_CTL_SET_THREADED, NULL);
+               task_queue_ctl(TASK_QUEUE_CTL_SET_THREADED, NULL);
                impl_current = &impl_threaded;
             }
 #endif
@@ -412,30 +412,31 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
             impl_current->init();
          }
          break;
-      case TASK_CTL_FIND:
+      case TASK_QUEUE_CTL_FIND:
          {
             task_finder_data_t *find_data = (task_finder_data_t*)data;
             if (!impl_current->find(find_data->func, find_data->userdata))
                return false;
          }
          break;
-      case TASK_CTL_CHECK:
+      case TASK_QUEUE_CTL_CHECK:
          {
 #ifdef HAVE_THREADS
             bool current_threaded = (impl_current == &impl_threaded);
-            bool want_threaded    = task_queue_ctl(TASK_CTL_IS_THREADED, NULL);
+            bool want_threaded    = 
+               task_queue_ctl(TASK_QUEUE_CTL_IS_THREADED, NULL);
 
             if (want_threaded != current_threaded)
-               task_queue_ctl(TASK_CTL_DEINIT, NULL);
+               task_queue_ctl(TASK_QUEUE_CTL_DEINIT, NULL);
 
             if (!impl_current)
-               task_queue_ctl(TASK_CTL_INIT, NULL);
+               task_queue_ctl(TASK_QUEUE_CTL_INIT, NULL);
 #endif
 
             impl_current->gather();
          }
          break;
-      case TASK_CTL_PUSH:
+      case TASK_QUEUE_CTL_PUSH:
          {
             /* The lack of NULL checks in the following functions 
              * is proposital to ensure correct control flow by the users. */
@@ -443,13 +444,13 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
             impl_current->push_running(task);
             break;
          }
-      case TASK_CTL_RESET:
+      case TASK_QUEUE_CTL_RESET:
          impl_current->reset();
          break;
-      case TASK_CTL_WAIT:
+      case TASK_QUEUE_CTL_WAIT:
          impl_current->wait();
          break;
-      case TASK_CTL_NONE:
+      case TASK_QUEUE_CTL_NONE:
       default:
          break;
    }

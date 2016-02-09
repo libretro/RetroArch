@@ -363,7 +363,7 @@ bool rarch_task_push_image_load(const char *fullpath,
    t->callback = cb;
    t->user_data = user_data;
 
-   task_queue_ctl(TASK_CTL_PUSH, t);
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
 #endif
    return true;
 }

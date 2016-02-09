@@ -226,7 +226,7 @@ bool rarch_task_push_http_transfer(const char *url, const char *type,
    find_data.userdata = (void*)url;
 
    /* Concurrent download of the same file is not allowed */
-   if (task_queue_ctl(TASK_CTL_FIND, &find_data))
+   if (task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data))
    {
       RARCH_LOG("[http] '%s'' is already being downloaded.\n", url);
       return false;
@@ -265,7 +265,7 @@ bool rarch_task_push_http_transfer(const char *url, const char *type,
 
    t->title                = strdup(tmp);
 
-   task_queue_ctl(TASK_CTL_PUSH, t);
+   task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
 
    return true;
 

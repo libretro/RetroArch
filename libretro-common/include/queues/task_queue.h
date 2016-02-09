@@ -32,14 +32,14 @@ extern "C" {
 
 enum task_queue_ctl_state
 {
-   TASK_CTL_NONE = 0,
+   TASK_QUEUE_CTL_NONE = 0,
 
    /* Deinitializes the task system.
     * This deinitializes the task system. 
     * The tasks that are running at
     * the moment will stay on hold 
-    * until TASK_CTL_INIT is called again. */
-   TASK_CTL_DEINIT,
+    * until TASK_QUEUE_CTL_INIT is called again. */
+   TASK_QUEUE_CTL_DEINIT,
 
    /* Initializes the task system.
     * This initializes the task system 
@@ -47,28 +47,28 @@ enum task_queue_ctl_state
     * implementation according to the settings.
     *
     * This must only be called from the main thread. */
-   TASK_CTL_INIT,
+   TASK_QUEUE_CTL_INIT,
 
    /**
     * Calls func for every running task 
     * until it returns true.
     * Returns a task or NULL if not found.
     */
-   TASK_CTL_FIND,
+   TASK_QUEUE_CTL_FIND,
 
    /* Blocks until all tasks have finished.
     * This must only be called from the main thread. */
-   TASK_CTL_WAIT,
+   TASK_QUEUE_CTL_WAIT,
 
    /* Checks for finished tasks
     * Takes the finished tasks, if any, 
     * and runs their callbacks.
     * This must only be called from the main thread. */
-   TASK_CTL_CHECK,
+   TASK_QUEUE_CTL_CHECK,
 
    /* Pushes a task
     * The task will start as soon as possible. */
-   TASK_CTL_PUSH,
+   TASK_QUEUE_CTL_PUSH,
 
    /* Sends a signal to terminate all the tasks.
     *
@@ -76,13 +76,13 @@ enum task_queue_ctl_state
     * They will finish as soon as possible.
     *
     * This must only be called from the main thread. */
-   TASK_CTL_RESET,
+   TASK_QUEUE_CTL_RESET,
 
-   TASK_CTL_SET_THREADED,
+   TASK_QUEUE_CTL_SET_THREADED,
 
-   TASK_CTL_UNSET_THREADED,
+   TASK_QUEUE_CTL_UNSET_THREADED,
 
-   TASK_CTL_IS_THREADED
+   TASK_QUEUE_CTL_IS_THREADED
 };
 
 typedef struct retro_task retro_task_t;
