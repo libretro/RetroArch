@@ -341,6 +341,7 @@ static void xmb_draw_icon(xmb_handle_t *xmb,
       float rotation, float scale_factor,
       float *color)
 {
+   menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
 
@@ -360,13 +361,16 @@ static void xmb_draw_icon(xmb_handle_t *xmb,
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   menu_display_draw(
-         x,
-         height - y,
-         xmb->icon.size,
-         xmb->icon.size,
-         &coords, &mymat, texture,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+   draw.x           = x;
+   draw.y           = height - y;
+   draw.width       = xmb->icon.size;
+   draw.height      = xmb->icon.size;
+   draw.coords      = &coords;
+   draw.matrix_data = &mymat;
+   draw.texture     = texture;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 }
 
 static void xmb_draw_icon_predone(xmb_handle_t *xmb,
@@ -377,6 +381,8 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
       float alpha, float rotation, float scale_factor,
       float *color)
 {
+   menu_display_ctx_draw_t draw;
+
    struct gfx_coords coords;
 
    if (
@@ -392,18 +398,22 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
    coords.lut_tex_coord = NULL;
    coords.color         = color;
 
-   menu_display_draw(
-         x,
-         height - y,
-         xmb->icon.size,
-         xmb->icon.size,
-         &coords, mymat, texture,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+   draw.x           = x;
+   draw.y           = height - y;
+   draw.width       = xmb->icon.size;
+   draw.height      = xmb->icon.size;
+   draw.coords      = &coords;
+   draw.matrix_data = &mymat;
+   draw.texture     = texture;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 }
 
 static void xmb_draw_boxart(xmb_handle_t *xmb, float *color,
       unsigned width, unsigned height)
 {
+   menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
    float y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_height;
@@ -418,13 +428,16 @@ static void xmb_draw_boxart(xmb_handle_t *xmb, float *color,
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   menu_display_draw(
-         x,
-         height - y,
-         xmb->boxart_width,
-         xmb->boxart_height,
-         &coords, &mymat, xmb->boxart,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+   draw.x           = x;
+   draw.y           = height - y;
+   draw.width       = xmb->boxart_width;
+   draw.height      = xmb->boxart_height;
+   draw.coords      = &coords;
+   draw.matrix_data = &mymat;
+   draw.texture     = xmb->boxart;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 }
 
 static void xmb_draw_text(xmb_handle_t *xmb,
@@ -1575,6 +1588,7 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
       float *color,
       float x, float y, unsigned width, unsigned height)
 {
+   menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
 
    coords.vertices      = 4;
@@ -1585,13 +1599,16 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-   menu_display_draw(
-         x - (xmb->cursor.size/2),
-         height - y - (xmb->cursor.size/2),
-         xmb->cursor.size,
-         xmb->cursor.size,
-         &coords, NULL, xmb->textures.list[XMB_TEXTURE_POINTER].id,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+   draw.x           = x - (xmb->cursor.size / 2);
+   draw.y           = height - y - (xmb->cursor.size / 2);
+   draw.width       = xmb->cursor.size;
+   draw.height      = xmb->cursor.size;
+   draw.coords      = &coords;
+   draw.matrix_data = NULL;
+   draw.texture     = xmb->textures.list[XMB_TEXTURE_POINTER].id;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
@@ -1701,6 +1718,7 @@ static void xmb_frame(void *data)
    float item_color[16];
    float coord_color[16];
    float coord_color2[16];
+   menu_display_ctx_draw_t draw;
    bool display_kb;
    bool render_background                  = false;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
@@ -1739,10 +1757,21 @@ static void xmb_frame(void *data)
    coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] = 
       xmb->alpha;
 
-   menu_display_draw_bg(
-         width, height, xmb->textures.bg.id, xmb->alpha, false, &coord_color[0],
-         &coord_color2[0], NULL, NULL, 4,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+   memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
+
+   draw.width              = width;
+   draw.height             = height;
+   draw.texture            = xmb->textures.bg.id;
+   draw.handle_alpha       = xmb->alpha;
+   draw.force_transparency = false;
+   draw.color              = &coord_color[0];
+   draw.color2             = &coord_color2[0];
+   draw.vertex             = NULL;
+   draw.tex_coord          = NULL;
+   draw.vertex_count       = 4;
+   draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
 
    xmb_draw_text(xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -1844,12 +1873,22 @@ static void xmb_frame(void *data)
 
    if (render_background)
    {
-      menu_display_draw_bg(
-            width, height,
-            xmb->textures.bg.id, xmb->alpha, true,
-            &coord_color[0], &coord_color2[0],
-            NULL, NULL, 4,
-            MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+      memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
+
+      draw.width              = width;
+      draw.height             = height;
+      draw.texture            = xmb->textures.bg.id;
+      draw.handle_alpha       = xmb->alpha;
+      draw.force_transparency = true;
+      draw.color              = &coord_color[0];
+      draw.color2             = &coord_color2[0];
+      draw.vertex             = NULL;
+      draw.tex_coord          = NULL;
+      draw.vertex_count       = 4;
+      draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
+
       xmb_render_messagebox_internal(xmb, msg);
    }
 

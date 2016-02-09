@@ -74,7 +74,9 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_BLEND_BEGIN,
    MENU_DISPLAY_CTL_BLEND_END,
    MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR,
-   MENU_DISPLAY_CTL_CLEAR_COLOR
+   MENU_DISPLAY_CTL_CLEAR_COLOR,
+   MENU_DISPLAY_CTL_DRAW,
+   MENU_DISPLAY_CTL_DRAW_BG
 };
 
 enum menu_display_prim_type
@@ -176,27 +178,6 @@ typedef struct menu_display_ctx_rotate_draw
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 
 void menu_display_timedate(char *s, size_t len, unsigned time_mode);
-
-void menu_display_draw(float x, float y,
-      unsigned width, unsigned height,
-      struct gfx_coords *coords,
-      void *matrix_data, 
-      uintptr_t texture,
-      enum menu_display_prim_type prim_type
-      );
-
-void menu_display_draw_bg(
-      unsigned width, unsigned height,
-      uintptr_t texture,
-      float handle_alpha,
-      bool force_transparency,
-      float *color,
-      float *color2,
-      const float *vertex,
-      const float *tex_coord,
-      size_t vertex_count,
-      enum menu_display_prim_type prim_type
-      );
 
 void menu_display_matrix_4x4_rotate_z(
       math_matrix_4x4 *matrix, float rotation,

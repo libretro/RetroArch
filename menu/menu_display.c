@@ -456,6 +456,28 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                   clearcolor->g, clearcolor->b, clearcolor->a);
          }
          break;
+      case MENU_DISPLAY_CTL_DRAW:
+         {
+            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+            if (!menu_disp || !menu_disp->draw || !data)
+               return false;
+            menu_disp->draw(draw->x, draw->y, draw->width, draw->height,
+                  draw->coords, draw->matrix_data, draw->texture, draw->prim_type);
+         }
+         break;
+      case MENU_DISPLAY_CTL_DRAW_BG:
+         {
+            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+            if (!menu_disp || !menu_disp->draw_bg || !data)
+               return false;
+
+            menu_disp->draw_bg(draw->width, draw->height, 
+                  draw->texture, draw->handle_alpha,
+                  draw->force_transparency, draw->color,
+                  draw->color2, draw->vertex, draw->tex_coord,
+                  draw->vertex_count, draw->prim_type);
+         }
+         break;
       case MENU_DISPLAY_CTL_NONE:
       default:
          break;
@@ -511,46 +533,6 @@ void menu_display_matrix_4x4_rotate_z(
    matrix_4x4_scale(&matrix_scaled, scale_x, scale_y, scale_z);
    matrix_4x4_multiply(matrix, &matrix_scaled, matrix);
 }
-
-void menu_display_draw(float x, float y,
-      unsigned width, unsigned height,
-      struct gfx_coords *coords,
-      void *matrix_data, 
-      uintptr_t texture,
-      enum menu_display_prim_type prim_type
-      )
-{
-   menu_display_ctx_driver_t *menu_disp = 
-      menu_display_context_get_ptr();
-   if (!menu_disp || !menu_disp->draw)
-      return;
-
-   menu_disp->draw(x, y, width, height,
-         coords, matrix_data, texture, prim_type);
-}
-
-void menu_display_draw_bg(
-      unsigned width, unsigned height,
-      uintptr_t texture,
-      float handle_alpha,
-      bool force_transparency,
-      float *color,
-      float *color2,
-      const float *vertex,
-      const float *tex_coord,
-      size_t vertex_count,
-      enum menu_display_prim_type prim_type
-      )
-{
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp || !menu_disp->draw_bg)
-      return;
-
-   menu_disp->draw_bg(width, height, texture, handle_alpha,
-         force_transparency, color,
-         color2, vertex, tex_coord, vertex_count, prim_type);
-}
-
 
 const float *menu_display_get_tex_coords(void)
 {

@@ -959,6 +959,7 @@ static void zarch_frame(void *data)
    unsigned i;
    float coord_color[16];
    float coord_color2[16];
+   menu_display_ctx_draw_t draw;
    settings_t *settings = config_get_ptr();
    zui_t *zui           = (zui_t*)data;
    
@@ -1019,7 +1020,9 @@ static void zarch_frame(void *data)
    }
 
    if (settings->menu.mouse.enable)
-      zarch_zui_draw_cursor(zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_X), zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_Y));
+      zarch_zui_draw_cursor(
+            zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_X),
+            zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_Y));
          
 
    if (!zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
@@ -1028,24 +1031,35 @@ static void zarch_frame(void *data)
       zui->item.active = -1;
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   
+   draw.x           = 0;
+   draw.y           = 0;
+   draw.width       = zui->width;
+   draw.height      = zui->height;
+   draw.coords      = (struct gfx_coords*)&zui->ca;
+   draw.matrix_data = &zui->mvp;
+   draw.texture     = zui->textures.white;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLES;
 
-   menu_display_draw(
-         0,
-         0,
-         zui->width,
-         zui->height,
-         (struct gfx_coords*)&zui->ca,
-         &zui->mvp, zui->textures.white,
-         MENU_DISPLAY_PRIM_TRIANGLES);
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 
-   menu_display_draw_bg(
-         zui->width, zui->height,
-         zui->textures.bg.id, 0.75f, false,
-         &coord_color[0],   &coord_color2[0],
-         NULL, menu_display_get_tex_coords(), 4,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+   memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
+
+   draw.width              = zui->width;
+   draw.height             = zui->height;
+   draw.texture            = zui->textures.bg.id;
+   draw.handle_alpha       = 0.75f;
+   draw.force_transparency = false;
+   draw.color              = &coord_color[0];
+   draw.color2             = &coord_color2[0];
+   draw.vertex             = NULL;
+   draw.tex_coord          = menu_display_get_tex_coords();
+   draw.vertex_count       = 4;
+   draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
 
    zui->rendering = false;
 

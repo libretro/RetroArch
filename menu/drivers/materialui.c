@@ -185,6 +185,7 @@ static void mui_draw_icon(mui_handle_t *mui,
       float rotation, float scale_factor,
       float *color)
 {
+   menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
 
@@ -199,13 +200,16 @@ static void mui_draw_icon(mui_handle_t *mui,
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   menu_display_draw(
-         x,
-         height - y - mui->icon_size,
-         mui->icon_size,
-         mui->icon_size,
-         &coords, &mymat, texture,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+   draw.x           = x;
+   draw.y           = height - y - mui->icon_size;
+   draw.width       = mui->icon_size;
+   draw.height      = mui->icon_size;
+   draw.coords      = &coords;
+   draw.matrix_data = &mymat;
+   draw.texture     = texture;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
@@ -271,6 +275,7 @@ static void mui_render_quad(mui_handle_t *mui,
       unsigned width, unsigned height,
       float *coord_color)
 {
+   menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
 
    coords.vertices      = 4;
@@ -281,13 +286,16 @@ static void mui_render_quad(mui_handle_t *mui,
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-   menu_display_draw(
-         x,
-         (int)height - y - (int)h,
-         w,
-         h,
-         &coords, NULL, mui->textures.white,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+   draw.x           = x;
+   draw.y           = (int)height - y - (int)h;
+   draw.width       = w;
+   draw.height      = h;
+   draw.coords      = &coords;
+   draw.matrix_data = NULL;
+   draw.texture     = mui->textures.white;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
@@ -630,6 +638,7 @@ static void mui_draw_cursor(mui_handle_t *mui,
       float *color,
       float x, float y, unsigned width, unsigned height)
 {
+   menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
 
    coords.vertices      = 4;
@@ -640,14 +649,16 @@ static void mui_draw_cursor(mui_handle_t *mui,
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-   menu_display_draw(
-         x - 32,
-         height - y - 32,
-         64,
-         64,
-         &coords, NULL,
-         mui->textures.list[MUI_TEXTURE_POINTER].id,
-         MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+   draw.x           = x - 32;
+   draw.y           = (int)height - y - 32;
+   draw.width       = 64;
+   draw.height      = 64;
+   draw.coords      = &coords;
+   draw.matrix_data = NULL;
+   draw.texture     = mui->textures.list[MUI_TEXTURE_POINTER].id;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
@@ -774,6 +785,7 @@ static void mui_frame(void *data)
    size_t selection;
    size_t title_margin;
    uint64_t *frame_count;
+   menu_display_ctx_draw_t draw;
    mui_handle_t *mui               = (mui_handle_t*)data;
    settings_t *settings            = config_get_ptr();
    const uint32_t normal_color     = 0x212121ff;
@@ -800,12 +812,21 @@ static void mui_frame(void *data)
 
    if (libretro_running)
    {
-      menu_display_draw_bg(
-            width, height,
-            mui->textures.white, 0.75f, false,
-            &white_transp_bg[0],   &white_bg[0],
-            NULL, NULL, 4,
-            MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+      memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
+
+      draw.width              = width;
+      draw.height             = height;
+      draw.texture            = mui->textures.white;
+      draw.handle_alpha       = 0.75f;
+      draw.force_transparency = false;
+      draw.color              = &white_transp_bg[0];
+      draw.color2             = &white_bg[0];
+      draw.vertex             = NULL;
+      draw.tex_coord          = NULL;
+      draw.vertex_count       = 4;
+      draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
    }
    else
    {
@@ -825,12 +846,21 @@ static void mui_frame(void *data)
          /* Set new opacity for transposed white background */
          bgcolor_setalpha(white_transp_bg, 0.30);
 
-         menu_display_draw_bg(
-               width, height,
-               mui->textures.bg.id, 0.75f, true,
-               &white_transp_bg[0],   &white_bg[0],
-               NULL, NULL, 4,
-               MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+         memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
+
+         draw.width              = width;
+         draw.height             = height;
+         draw.texture            = mui->textures.bg.id;
+         draw.handle_alpha       = 0.75f;
+         draw.force_transparency = true;
+         draw.color              = &white_transp_bg[0];
+         draw.color2             = &white_bg[0];
+         draw.vertex             = NULL;
+         draw.tex_coord          = NULL;
+         draw.vertex_count       = 4;
+         draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+         menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
 
          /* Restore opacity of transposed white background */
          bgcolor_setalpha(white_transp_bg, 0.90);
