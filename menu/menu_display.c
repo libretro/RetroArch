@@ -498,6 +498,18 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             matrix_4x4_multiply(draw->matrix, &matrix_scaled, draw->matrix);
          }
          break;
+      case MENU_DISPLAY_CTL_TEX_COORDS_GET:
+         {
+            menu_display_ctx_coord_draw_t *draw = (menu_display_ctx_coord_draw_t*)data;
+            if (!draw)
+               return false;
+
+            if (!menu_disp || !menu_disp->get_tex_coords)
+               return false;
+
+            draw->ptr = menu_disp->get_tex_coords();
+         }
+         break;
       case MENU_DISPLAY_CTL_NONE:
       default:
          break;
@@ -529,15 +541,6 @@ void menu_display_timedate(char *s, size_t len, unsigned time_mode)
          strftime(s, len, "%d/%m %H:%M", localtime(&time_));
          break;
    }
-}
-
-const float *menu_display_get_tex_coords(void)
-{
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp || !menu_disp->get_tex_coords)
-      return NULL;
-
-   return menu_disp->get_tex_coords();
 }
 
 void menu_display_handle_wallpaper_upload(void *task_data,

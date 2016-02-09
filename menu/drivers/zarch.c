@@ -338,6 +338,7 @@ static void zarch_zui_push_quad(unsigned width, unsigned height,
       const float *colors, gfx_coord_array_t *ca, int x1, int y1,
       int x2, int y2)
 {
+   menu_display_ctx_coord_draw_t coord_draw;
    gfx_coords_t coords;
    float vertex[8];
 
@@ -350,10 +351,14 @@ static void zarch_zui_push_quad(unsigned width, unsigned height,
    vertex[6] = x2 / (float)width;
    vertex[7] = y2 / (float)height;
 
+   coord_draw.ptr       = NULL;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_TEX_COORDS_GET, &coord_draw);
+
    coords.color         = colors;
    coords.vertex        = vertex;
-   coords.tex_coord     = menu_display_get_tex_coords();
-   coords.lut_tex_coord = menu_display_get_tex_coords();
+   coords.tex_coord     = coord_draw.ptr;
+   coords.lut_tex_coord = coord_draw.ptr;
    coords.vertices      = 3;
 
    gfx_coord_array_add(ca, &coords, 3);
@@ -960,6 +965,7 @@ static void zarch_frame(void *data)
    float coord_color[16];
    float coord_color2[16];
    menu_display_ctx_draw_t draw;
+   menu_display_ctx_coord_draw_t coord_draw;
    settings_t *settings = config_get_ptr();
    zui_t *zui           = (zui_t*)data;
    
@@ -1047,6 +1053,10 @@ static void zarch_frame(void *data)
 
    memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
 
+   coord_draw.ptr       = NULL;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_TEX_COORDS_GET, &coord_draw);
+
    draw.width              = zui->width;
    draw.height             = zui->height;
    draw.texture            = zui->textures.bg.id;
@@ -1055,7 +1065,7 @@ static void zarch_frame(void *data)
    draw.color              = &coord_color[0];
    draw.color2             = &coord_color2[0];
    draw.vertex             = NULL;
-   draw.tex_coord          = menu_display_get_tex_coords();
+   draw.tex_coord          = coord_draw.ptr;
    draw.vertex_count       = 4;
    draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 

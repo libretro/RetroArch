@@ -77,7 +77,8 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_CLEAR_COLOR,
    MENU_DISPLAY_CTL_DRAW,
    MENU_DISPLAY_CTL_DRAW_BG,
-   MENU_DISPLAY_CTL_ROTATE_Z
+   MENU_DISPLAY_CTL_ROTATE_Z,
+   MENU_DISPLAY_CTL_TEX_COORDS_GET
 };
 
 enum menu_display_prim_type
@@ -176,14 +177,17 @@ typedef struct menu_display_ctx_rotate_draw
    bool scale_enable;
 } menu_display_ctx_rotate_draw_t;
 
+typedef struct menu_display_ctx_coord_draw
+{
+   const float *ptr;
+} menu_display_ctx_coord_draw_t;
+
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 
 void menu_display_timedate(char *s, size_t len, unsigned time_mode);
 
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err);
-
-const float *menu_display_get_tex_coords(void);
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d;
