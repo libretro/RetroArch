@@ -410,7 +410,7 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
    draw.width       = xmb->icon.size;
    draw.height      = xmb->icon.size;
    draw.coords      = &coords;
-   draw.matrix_data = &mymat;
+   draw.matrix_data = mymat;
    draw.texture     = texture;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
