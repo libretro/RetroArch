@@ -126,14 +126,14 @@ static bool menu_content_load(void)
    if (!(main_load_content(0, NULL, NULL, menu_content_environment_get)))
    {
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
-      menu_display_msg_queue_push(msg, 1, 90, false);
+      runloop_msg_queue_push(msg, 1, 90, false);
       return false;
    }
 
    if (*fullpath)
    {
       snprintf(msg, sizeof(msg), "INFO - Loading %s ...", name);
-      menu_display_msg_queue_push(msg, 1, 1, false);
+      runloop_msg_queue_push(msg, 1, 1, false);
    }
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);

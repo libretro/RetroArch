@@ -1010,10 +1010,10 @@ static int generic_action_ok_remap_file_save(const char *path,
        path_mkdir(directory);
 
    if(input_remapping_save_file(file))
-      menu_display_msg_queue_push("Remap file saved successfully",
+      runloop_msg_queue_push("Remap file saved successfully",
             1, 100, true);
    else
-      menu_display_msg_queue_push("Error saving remap file",
+      runloop_msg_queue_push("Error saving remap file",
             1, 100, true);
 
    return 0;
@@ -1537,7 +1537,7 @@ static int action_ok_option_create(const char *path,
 
    if (!rarch_game_options_validate(game_path, sizeof(game_path), true))
    {
-      menu_display_msg_queue_push("Error saving core options file",
+      runloop_msg_queue_push("Error saving core options file",
             1, 100, true);
       return 0;
    }
@@ -1555,7 +1555,7 @@ static int action_ok_option_create(const char *path,
 
    if(config_file_write(conf, game_path))
    {
-      menu_display_msg_queue_push("Core options file created successfully",
+      runloop_msg_queue_push("Core options file created successfully",
             1, 100, true);
       strlcpy(system->game_options_path, game_path, sizeof(system->game_options_path));
    }
@@ -2140,7 +2140,7 @@ static int action_ok_video_resolution(const char *path,
       video_driver_set_video_mode(width, height, true);
       snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset",
             width, height);
-      menu_display_msg_queue_push(msg, 1, 100, true);
+      runloop_msg_queue_push(msg, 1, 100, true);
    }
 
    return 0;

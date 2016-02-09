@@ -148,11 +148,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 
 void menu_display_timedate(char *s, size_t len, unsigned time_mode);
 
-void menu_display_msg_queue_push(const char *msg,
-      unsigned prio, unsigned duration,
-      bool flush);
-
-
 void menu_display_draw(float x, float y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,

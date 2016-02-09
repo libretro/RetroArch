@@ -489,13 +489,6 @@ void menu_display_timedate(char *s, size_t len, unsigned time_mode)
    }
 }
 
-void menu_display_msg_queue_push(const char *msg,
-      unsigned prio, unsigned duration,
-      bool flush)
-{
-   runloop_msg_queue_push(msg, prio, duration, flush);
-}
-
 void menu_display_matrix_4x4_rotate_z(
       math_matrix_4x4 *matrix, float rotation,
       float scale_x, float scale_y, float scale_z,
