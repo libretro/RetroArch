@@ -134,9 +134,9 @@ static void regular_wait(void)
 
 static void regular_reset(void)
 {
-   rarch_task_t *task = NULL;
+   rarch_task_t *task = tasks_running.front;
 
-   for (task = tasks_running.front; task; task = task->next)
+   for (; task; task = task->next)
       task->cancelled = true;
 }
 
@@ -150,9 +150,9 @@ static void regular_deinit(void)
 
 static bool regular_find(rarch_task_finder_t func, void *user_data)
 {
-   rarch_task_t *task = NULL;
+   rarch_task_t *task = tasks_running.front;
 
-   for (task = tasks_running.front; task; task = task->next)
+   for (; task; task = task->next)
    {
       if (func(task, user_data))
          return true;
