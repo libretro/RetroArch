@@ -53,6 +53,8 @@
 #include "../config.def.h"
 #include "../performance.h"
 
+#include "../tasks/tasks_internal.h"
+
 
 struct rarch_setting_info
 {
@@ -2821,6 +2823,14 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_VIDEO_THREADED:
+         {
+            if (*setting->value.boolean)
+               task_ctl(TASK_CTL_SET_THREADED, NULL);
+            else
+               task_ctl(TASK_CTL_UNSET_THREADED, NULL);
+         }
+         break;
       case MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          core_ctl(CORE_CTL_SET_POLL_TYPE, setting->value.integer);
          break;

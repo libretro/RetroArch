@@ -970,12 +970,18 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          slock_unlock(runloop_msg_queue_lock);
 #endif
          break;
+      case RUNLOOP_CTL_TASK_INIT:
+         {
+            bool threaded_enable = settings->threaded_data_runloop_enable;
+            task_ctl(TASK_CTL_INIT, &threaded_enable);
+         }
+         break;
       case RUNLOOP_CTL_PREPARE_DUMMY:
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
 #endif
          runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
-         task_ctl(TASK_CTL_INIT, NULL);
+         runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 
          rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);

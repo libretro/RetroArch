@@ -1205,7 +1205,8 @@ static int rarch_main_init(int argc, char *argv[])
 
    rarch_ctl(RARCH_CTL_VALIDATE_CPU_FEATURES, NULL);
    config_load();
-   task_ctl(TASK_CTL_INIT, NULL);
+
+   runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
 
    {
       settings_t *settings = config_get_ptr();

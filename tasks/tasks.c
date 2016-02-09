@@ -18,10 +18,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#ifdef HAVE_THREADS
-#include "../configuration.h"
-#endif
-
 #include "tasks.h"
 
 #ifdef HAVE_THREADS
@@ -337,9 +333,7 @@ static struct rarch_task_impl impl_threaded = {
 bool task_ctl(enum task_ctl_state state, void *data)
 {
    static struct rarch_task_impl *impl_current = NULL;
-#ifdef HAVE_THREADS
-   settings_t *settings = config_get_ptr();
-#endif
+   static bool task_threaded_enable            = false;
 
    switch (state)
    {
@@ -348,14 +342,29 @@ bool task_ctl(enum task_ctl_state state, void *data)
             impl_current->deinit();
          impl_current = NULL;
          break;
+      case TASK_CTL_SET_THREADED:
+         task_threaded_enable = true;
+         break;
+      case TASK_CTL_UNSET_THREADED:
+         task_threaded_enable = false;
+         break;
+      case TASK_CTL_IS_THREADED:
+         return task_threaded_enable;
       case TASK_CTL_INIT:
-         impl_current = &impl_regular;
+         {
+            bool *boolean_val = (bool*)data;
+
+            impl_current = &impl_regular;
 #ifdef HAVE_THREADS
-         if (settings->threaded_data_runloop_enable)
-            impl_current = &impl_threaded;
+            if (*boolean_val)
+            {
+               task_ctl(TASK_CTL_SET_THREADED, NULL);
+               impl_current = &impl_threaded;
+            }
 #endif
 
-         impl_current->init();
+            impl_current->init();
+         }
          break;
       case TASK_CTL_FIND:
          {
@@ -368,7 +377,7 @@ bool task_ctl(enum task_ctl_state state, void *data)
          {
 #ifdef HAVE_THREADS
             bool current_threaded = (impl_current == &impl_threaded);
-            bool want_threaded    = settings->threaded_data_runloop_enable;
+            bool want_threaded    = task_ctl(TASK_CTL_IS_THREADED, NULL);
 
             if (want_threaded != current_threaded)
                task_ctl(TASK_CTL_DEINIT, NULL);
@@ -382,8 +391,8 @@ bool task_ctl(enum task_ctl_state state, void *data)
          break;
       case TASK_CTL_PUSH:
          {
-            /* The lack of NULL checks in the following functions is proposital
-             * to ensure correct control flow by the users. */
+            /* The lack of NULL checks in the following functions 
+             * is proposital to ensure correct control flow by the users. */
             rarch_task_t *task = (rarch_task_t*)data;
             impl_current->push_running(task);
             break;

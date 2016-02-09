@@ -70,7 +70,13 @@ enum task_ctl_state
     * They will finish as soon as possible.
     *
     * This must only be called from the main thread. */
-   TASK_CTL_RESET
+   TASK_CTL_RESET,
+
+   TASK_CTL_SET_THREADED,
+
+   TASK_CTL_UNSET_THREADED,
+
+   TASK_CTL_IS_THREADED
 };
 
 typedef struct rarch_task rarch_task_t;
