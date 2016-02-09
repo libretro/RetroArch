@@ -187,8 +187,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          }
          break;
       case MENU_DISPLAY_CTL_FONT_BIND_BLOCK:
-         if (!disp)
-            return false;
          font_driver_bind_block(menu_display_font_buf, data);
          break;
       case MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK:
