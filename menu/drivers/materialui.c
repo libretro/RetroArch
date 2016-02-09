@@ -42,7 +42,7 @@
 #include "../../system.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
-#include "../../tasks/tasks.h"
+#include "../../tasks/tasks_internal.h"
 
 enum
 {

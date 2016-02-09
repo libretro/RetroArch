@@ -33,7 +33,7 @@
 #include "../defaults.h"
 #include "../frontend/frontend.h"
 #include "../string_list_special.h"
-#include "../tasks/tasks.h"
+#include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
 static const menu_ctx_driver_t *menu_ctx_drivers[] = {

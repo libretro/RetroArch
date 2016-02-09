@@ -21,6 +21,7 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <file/file_archive.h>
+#include <retro_miscellaneous.h>
 #include <retro_stat.h>
 
 #include "tasks.h"

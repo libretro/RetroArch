@@ -123,6 +123,7 @@ OBJ += frontend/frontend.o \
        intl/msg_hash_us.o \
        runloop.o \
        tasks/tasks.o \
+       tasks/tasks_internal.o \
 		 tasks/task_content.o \
        tasks/task_file_transfer.o \
        content.o \

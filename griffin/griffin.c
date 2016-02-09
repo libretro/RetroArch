@@ -701,6 +701,7 @@ RETROARCH
 #include "../retroarch.c"
 #include "../runloop.c"
 #include "../tasks/tasks.c"
+#include "../tasks/tasks_internal.c"
 
 #include "../msg_hash.c"
 #include "../intl/msg_hash_de.c"

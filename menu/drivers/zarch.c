@@ -1,4 +1,5 @@
 /*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2011-2016 - Higor Euripedes
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2014-2015 - Jean-André Santoni
  *
@@ -49,7 +50,7 @@
 #include "../../configuration.h"
 #include "../../runloop.h"
 #include "../../verbosity.h"
-#include "../../tasks/tasks.h"
+#include "../../tasks/tasks_internal.h"
 
 #if 0
 #define ZARCH_DEBUG

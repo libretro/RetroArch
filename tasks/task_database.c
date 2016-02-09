@@ -15,13 +15,14 @@
 
 #include <compat/strcasestr.h>
 #include <compat/strl.h>
+#include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 #include <string/stdstring.h>
 #include <file/dir_list.h>
 #include <file/file_path.h>
 #include <queues/message_queue.h>
 
-#include "tasks.h"
+#include "tasks_internal.h"
 
 #ifdef HAVE_LIBRETRODB
 #include "../database_info.h"

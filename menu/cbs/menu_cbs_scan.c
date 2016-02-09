@@ -22,7 +22,7 @@
 #include "../menu_setting.h"
 
 #include "../../runloop.h"
-#include "../../tasks/tasks.h"
+#include "../../tasks/tasks_internal.h"
 
 #ifndef BIND_ACTION_SCAN
 #define BIND_ACTION_SCAN(cbs, name) \

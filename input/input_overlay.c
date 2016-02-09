@@ -33,7 +33,7 @@
 
 #include "../configuration.h"
 #include "../verbosity.h"
-#include "../tasks/tasks.h"
+#include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"

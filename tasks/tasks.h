@@ -1,4 +1,5 @@
 /*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2011-2016 - Higor Euripedes
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -13,13 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef COMMON_TASKS_H
-#define COMMON_TASKS_H
+#ifndef TASKS_HANDLER_H
+#define TASKS_HANDLER_H
 
 #include <stdint.h>
 #include <boolean.h>
-
-#include "../runloop.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,7 +44,8 @@ enum task_ctl_state
    TASK_CTL_INIT,
 
    /**
-    * Calls func for every running task until it returns true.
+    * Calls func for every running task 
+    * until it returns true.
     * Returns a task or NULL if not found.
     */
    TASK_CTL_FIND,
@@ -55,7 +55,8 @@ enum task_ctl_state
    TASK_CTL_WAIT,
 
    /* Checks for finished tasks
-    * Takes the finished tasks, if any, and runs their callbacks.
+    * Takes the finished tasks, if any, 
+    * and runs their callbacks.
     * This must only be called from the main thread. */
    TASK_CTL_CHECK,
 
@@ -75,8 +76,11 @@ enum task_ctl_state
 typedef struct rarch_task rarch_task_t;
 typedef void (*rarch_task_callback_t)(void *task_data,
       void *user_data, const char *error);
+
 typedef void (*rarch_task_handler_t)(rarch_task_t *task);
-typedef bool (*rarch_task_finder_t)(rarch_task_t *task, void *userdata);
+
+typedef bool (*rarch_task_finder_t)(rarch_task_t *task,
+      void *userdata);
 
 typedef struct
 {
@@ -94,7 +98,8 @@ struct rarch_task
     * the task has finished executing. */
    bool finished;
 
-   /* set to true by the task system to signal the task *must* end. */
+   /* set to true by the task system 
+    * to signal the task *must* end. */
    bool cancelled;
 
    /* created by the handler, destroyed by the user */
@@ -113,7 +118,8 @@ struct rarch_task
    /* -1 = unmettered, 0-100 progress value */
    int8_t progress;
 
-   /* handler can modify but will be free()d automatically if non-null */
+   /* handler can modify but will be 
+    * free()d automatically if non-NULL. */
    char *title;
 
    /* don't touch this. */
@@ -126,52 +132,7 @@ typedef struct task_finder_data
    void *userdata;
 } task_finder_data_t;
 
-
-#ifdef HAVE_NETWORKING
-typedef struct {
-    char *data;
-    size_t len;
-} http_transfer_data_t;
-
-bool rarch_task_push_http_transfer(const char *url, const char *type,
-      rarch_task_callback_t cb, void *userdata);
-#endif
-
-bool rarch_task_push_image_load(const char *fullpath, const char *type,
-      rarch_task_callback_t cb, void *userdata);
-
-#ifdef HAVE_LIBRETRODB
-bool rarch_task_push_dbscan(const char *fullpath,
-      bool directory, rarch_task_callback_t cb);
-#endif
-
-#ifdef HAVE_OVERLAY
-bool rarch_task_push_overlay_load_default(
-        rarch_task_callback_t cb, void *user_data);
-#endif
-    
-int find_first_data_track(const char* cue_path,
-      int32_t* offset, char* track_path, size_t max_len);
-
-int detect_system(const char* track_path, int32_t offset,
-        const char** system_name);
-
-int detect_ps1_game(const char *track_path, char *game_id);
-
-int detect_psp_game(const char *track_path, char *game_id);
-
-bool rarch_task_push_decompress(
-      const char *source_file,
-      const char *target_dir,
-      const char *target_file,
-      const char *subdir,
-      const char *valid_ext,
-      rarch_task_callback_t cb, void *user_data);
-
-bool rarch_task_push_content_load_default(
-      const char *core_path, const char *fullpath,
-      bool persist, enum rarch_core_type type,
-      rarch_task_callback_t cb, void *user_data);
+void push_task_progress(rarch_task_t *task);
 
 bool task_ctl(enum task_ctl_state state, void *data);
 

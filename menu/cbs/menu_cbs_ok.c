@@ -33,7 +33,7 @@
 #include "../../defaults.h"
 #include "../../cheats.h"
 #include "../../general.h"
-#include "../../tasks/tasks.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
 #include "../../system.h"
 

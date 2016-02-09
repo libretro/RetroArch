@@ -28,7 +28,7 @@
 #include "../file_ops.h"
 #include "../msg_hash.h"
 #include "../verbosity.h"
-#include "tasks.h"
+#include "tasks_internal.h"
 
 enum http_status_enum
 {

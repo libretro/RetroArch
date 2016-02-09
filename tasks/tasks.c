@@ -1,4 +1,5 @@
 /*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2011-2016 - Higor Euripedes
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -13,10 +14,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "../msg_hash.h"
+#ifdef HAVE_THREADS
+#include "../configuration.h"
+#endif
+
 #include "tasks.h"
 
 #ifdef HAVE_THREADS
@@ -68,44 +73,9 @@ static rarch_task_t *task_queue_get(task_queue_t *queue)
    return task;
 }
 
-static void task_msg_queue_pushf(unsigned prio, unsigned duration,
-      bool flush, const char *fmt, ...)
-{
-   char buf[1024];
-   va_list ap;
-   
-   va_start(ap, fmt);
-   vsnprintf(buf, sizeof(buf), fmt, ap);
-   va_end(ap);
-   runloop_msg_queue_push(buf, prio, duration, flush);
-}
-
-static void push_task_progress(rarch_task_t *task)
-{
-   if (task->title)
-   {
-      if (task->finished)
-      {
-         if (task->error)
-            task_msg_queue_pushf(1, 60, true, "%s: %s",
-               msg_hash_to_str(MSG_TASK_FAILED), task->title);
-         else
-            task_msg_queue_pushf(1, 60, true, "100%%: %s", task->title);
-      }
-      else
-      {
-         if (task->progress >= 0 && task->progress <= 100)
-            task_msg_queue_pushf(1, 60, true, "%i%%: %s",
-                  task->progress, task->title);
-         else
-            task_msg_queue_pushf(1, 60, true, "%s...", task->title);
-      }
-   }
-}
-
 static void rarch_task_internal_gather(void)
 {
-   rarch_task_t *task;
+   rarch_task_t *task = NULL;
    while ((task = task_queue_get(&tasks_finished)) != NULL)
    {
       push_task_progress(task);

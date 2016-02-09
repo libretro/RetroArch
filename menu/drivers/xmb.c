@@ -45,7 +45,7 @@
 #include "../../configuration.h"
 #include "../../system.h"
 
-#include "../../tasks/tasks.h"
+#include "../../tasks/tasks_internal.h"
 
 #ifndef XMB_THEME
 #define XMB_THEME "monochrome"

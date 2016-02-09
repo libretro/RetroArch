@@ -16,6 +16,8 @@
 #include <stdlib.h>
 
 #include "tasks.h"
+#include "tasks_internal.h"
+
 #include "../command_event.h"
 
 /* TODO/FIXME - turn this into actual task */
