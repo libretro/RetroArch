@@ -448,6 +448,16 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             return false;
          menu_disp->restore_clear_color();
          break;
+      case MENU_DISPLAY_CTL_CLEAR_COLOR:
+         {
+            menu_display_ctx_clearcolor_t *clearcolor = 
+               (menu_display_ctx_clearcolor_t*)data;
+            if (!menu_disp || !menu_disp->clear_color || !clearcolor)
+               return false;
+            menu_disp->clear_color(clearcolor->r,
+                  clearcolor->g, clearcolor->b, clearcolor->a);
+         }
+         break;
       case MENU_DISPLAY_CTL_NONE:
       default:
          break;
@@ -550,15 +560,6 @@ void menu_display_draw_bg(
          color2, vertex, tex_coord, vertex_count, prim_type);
 }
 
-
-void menu_display_clear_color(float r, float g, float b, float a)
-{
-   menu_display_ctx_driver_t *menu_disp = menu_display_context_get_ptr();
-   if (!menu_disp || !menu_disp->clear_color)
-      return;
-
-   menu_disp->clear_color(r, g, b, a);
-}
 
 const float *menu_display_get_tex_coords(void)
 {

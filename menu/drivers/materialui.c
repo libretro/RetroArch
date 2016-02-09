@@ -793,11 +793,6 @@ static void mui_frame(void *data)
    if (!mui)
       return;
 
-   msg[0]       = '\0';
-   title[0]     = '\0';
-   title_buf[0] = '\0';
-   title_msg[0] = '\0';
-
    video_driver_get_size(&width, &height);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
@@ -814,7 +809,14 @@ static void mui_frame(void *data)
    }
    else
    {
-      menu_display_clear_color(1.0f, 1.0f, 1.0f, 0.75f);
+      menu_display_ctx_clearcolor_t clearcolor;
+
+      clearcolor.r = 1.0f;
+      clearcolor.g = 1.0f;
+      clearcolor.b = 1.0f;
+      clearcolor.a = 0.75f;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_CLEAR_COLOR, &clearcolor);
 
       if (mui->textures.bg.id)
       {
