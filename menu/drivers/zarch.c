@@ -1125,8 +1125,8 @@ static void zarch_context_bg_destroy(void *data)
    zui_t        *zui     = (zui_t*)data;
    if (!zui)
       return;
-   menu_display_texture_unload((uintptr_t*)&zui->textures.bg.id);
-   menu_display_texture_unload((uintptr_t*)&zui->textures.white);
+   video_driver_texture_unload((uintptr_t*)&zui->textures.bg.id);
+   video_driver_texture_unload((uintptr_t*)&zui->textures.white);
 }
 
 static void zarch_context_destroy(void *data)

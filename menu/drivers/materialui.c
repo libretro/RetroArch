@@ -1085,8 +1085,8 @@ static void mui_context_bg_destroy(mui_handle_t *mui)
    if (!mui)
       return;
 
-   menu_display_texture_unload((uintptr_t*)&mui->textures.bg.id);
-   menu_display_texture_unload((uintptr_t*)&mui->textures.white);
+   video_driver_texture_unload((uintptr_t*)&mui->textures.bg.id);
+   video_driver_texture_unload((uintptr_t*)&mui->textures.white);
 }
 
 static void mui_context_destroy(void *data)
@@ -1098,7 +1098,7 @@ static void mui_context_destroy(void *data)
       return;
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
-      menu_display_texture_unload((uintptr_t*)&mui->textures.list[i].id);
+      video_driver_texture_unload((uintptr_t*)&mui->textures.list[i].id);
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
 

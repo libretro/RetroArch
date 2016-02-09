@@ -519,13 +519,6 @@ unsigned menu_display_texture_load(void *data,
    return id;
 }
 
-void menu_display_texture_unload(uintptr_t *id)
-{
-   if (!id)
-      return;
-   video_driver_texture_unload(id);
-}
-
 void menu_display_draw(float x, float y,
       unsigned width, unsigned height,
       struct gfx_coords *coords,

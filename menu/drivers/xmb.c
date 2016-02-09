@@ -1007,14 +1007,11 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
       file_list_get_at_offset(xmb->horizontal_list, i,
             &path, NULL, NULL, NULL);
       
-      if (!path)
+      if (!path || !strstr(path, ".lpl"))
          continue;
 
-      if (!strstr(path, ".lpl"))
-         continue;
-
-      menu_display_texture_unload((uintptr_t*)&node->icon);
-      menu_display_texture_unload((uintptr_t*)&node->content_icon);
+      video_driver_texture_unload((uintptr_t*)&node->icon);
+      video_driver_texture_unload((uintptr_t*)&node->content_icon);
    }
 }
 
@@ -2080,8 +2077,7 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
 {
    if (!xmb)
       return;
-
-   menu_display_texture_unload((uintptr_t*)&xmb->textures.bg.id);
+   video_driver_texture_unload((uintptr_t*)&xmb->textures.bg.id);
 }
 
 static bool xmb_load_image(void *userdata, void *data, menu_image_type_t type)
@@ -2561,7 +2557,7 @@ static void xmb_context_destroy(void *data)
       return;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
-      menu_display_texture_unload((uintptr_t*)&xmb->textures.list[i].id);
+      video_driver_texture_unload((uintptr_t*)&xmb->textures.list[i].id);
 
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);

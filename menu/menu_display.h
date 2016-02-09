@@ -175,8 +175,6 @@ unsigned menu_display_texture_load(void *data,
 
 void menu_display_clear_color(float r, float g, float b, float a);
 
-void menu_display_texture_unload(uintptr_t *id);
-
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err);
 
