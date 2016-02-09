@@ -16,7 +16,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "../verbosity.h"
 #include "../msg_hash.h"
 #include "tasks.h"
 
@@ -203,11 +202,11 @@ static struct rarch_task_impl impl_regular = {
 };
 
 #ifdef HAVE_THREADS
-static slock_t *running_lock  = NULL;
-static slock_t *finished_lock = NULL;
-static scond_t *worker_cond   = NULL;
+static slock_t *running_lock    = NULL;
+static slock_t *finished_lock   = NULL;
+static scond_t *worker_cond     = NULL;
 static sthread_t *worker_thread = NULL;
-static bool worker_continue = true; /* use running_lock when touching it */
+static bool worker_continue     = true; /* use running_lock when touching it */
 
 static void threaded_push_running(rarch_task_t *task)
 {
@@ -260,15 +259,13 @@ static void threaded_worker(void *userdata)
 {
    (void)userdata;
 
-   RARCH_LOG("Threaded rarch_task started\n");
-
    for (;;)
    {
       rarch_task_t *queue = NULL;
       rarch_task_t *task  = NULL;
       rarch_task_t *next  = NULL;
 
-      /* pop all into a local queue to avoid trouble with rarch_task_push(),
+      /* pop all into a local queue,
        * tasks are in the reverse order here. */
       slock_lock(running_lock);
 
@@ -377,10 +374,8 @@ bool task_ctl(enum task_ctl_state state, void *data)
    switch (state)
    {
       case TASK_CTL_DEINIT:
-         if (!impl_current)
-            return false;
-
-         impl_current->deinit();
+         if (impl_current)
+            impl_current->deinit();
          impl_current = NULL;
          break;
       case TASK_CTL_INIT:
@@ -406,10 +401,7 @@ bool task_ctl(enum task_ctl_state state, void *data)
             bool want_threaded    = settings->threaded_data_runloop_enable;
 
             if (want_threaded != current_threaded)
-            {
-               RARCH_LOG("Switching rarch_task implementation.\n");
                task_ctl(TASK_CTL_DEINIT, NULL);
-            }
 
             if (!impl_current)
                task_ctl(TASK_CTL_INIT, NULL);
