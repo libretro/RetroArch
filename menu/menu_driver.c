@@ -700,12 +700,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
          break;
        case RARCH_MENU_CTL_CONTEXT_RESET:
-         if (menu_driver_ctx && menu_driver_ctx->context_reset)
-            menu_driver_ctx->context_reset(menu_userdata);
+         if (!menu_driver_ctx || !menu_driver_ctx->context_reset)
+            return false;
+         menu_driver_ctx->context_reset(menu_userdata);
          break;
        case RARCH_MENU_CTL_CONTEXT_DESTROY:
-         if (menu_driver_ctx && menu_driver_ctx->context_destroy)
-            menu_driver_ctx->context_destroy(menu_userdata);
+         if (!menu_driver_ctx || !menu_driver_ctx->context_destroy)
+            return false;
+         menu_driver_ctx->context_destroy(menu_userdata);
          break;
        case RARCH_MENU_CTL_SHADER_MANAGER_INIT:
          menu_shader_manager_init(menu_driver_data);
