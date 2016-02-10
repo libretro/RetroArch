@@ -131,7 +131,8 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
       *(buf + i + 1) = c;
       line_start     = buf + i + 1;
    }
-   /* If the buffer was completely full, and didn't end 
+   file_list_sort_on_alt(list);
+   /* If the buffer was completely full, and didn't end
     * with a newline, just ignore the partial last line. */
 }
 #endif
@@ -162,7 +163,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    char tmp[PATH_MAX_LENGTH];
    settings_t *settings      = config_get_ptr();
    core_info_t *core_info    = NULL;
-   
+
    core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, &core_info);
 
    if (!core_info || !core_info->config_data)
@@ -282,7 +283,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
          menu_entries_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
-         /* FIXME: This looks hacky and probably 
+         /* FIXME: This looks hacky and probably
           * needs to be improved for good translation support. */
 
          for (i = 0; i < core_info->firmware_count; i++)
@@ -429,7 +430,7 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    fill_pathname_join(tmp, settings->system_directory, ".retroarch",
          sizeof(tmp));
    ret = path_mkdir(tmp);
-   snprintf(tmp, sizeof(tmp), "- directory writable: %s", 
+   snprintf(tmp, sizeof(tmp), "- directory writable: %s",
          ret ? "true" : "false");
    menu_entries_push(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -521,7 +522,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
                menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME),
                sizeof(tmp));
          strlcat(tmp, ": ", sizeof(tmp));
-         strlcat(tmp, frontend->get_name ? 
+         strlcat(tmp, frontend->get_name ?
                tmp2 : menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), sizeof(tmp));
          menu_entries_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -532,7 +533,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          frontend->get_os(tmp2, sizeof(tmp2), &major, &minor);
          snprintf(tmp, sizeof(tmp), "%s : %s %d.%d",
                menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
-               frontend->get_os 
+               frontend->get_os
                ? tmp2 : menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE),
                major, minor);
          menu_entries_push(info->list, tmp, "",
@@ -548,7 +549,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       if (frontend->get_powerstate)
       {
          int seconds = 0, percent = 0;
-         enum frontend_powerstate state = 
+         enum frontend_powerstate state =
             frontend->get_powerstate(&seconds, &percent);
 
          tmp2[0] = '\0';
@@ -1807,7 +1808,7 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
    {
       rarch_system_info_t *system = NULL;
-      
+
       runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
       menu_entries_push(info->list,
@@ -3140,7 +3141,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->need_push    = true;
          info->need_refresh = true;
          break;
-         
+
 #ifdef HAVE_CHEEVOS
       case DISPLAYLIST_ACHIEVEMENT_LIST:
          cheevos_populate_menu(info);
