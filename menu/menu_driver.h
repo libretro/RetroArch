@@ -147,7 +147,8 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_LOAD_IMAGE,
    RARCH_MENU_CTL_LIST_CACHE,
    RARCH_MENU_CTL_LIST_INSERT,
-   RARCH_MENU_CTL_ITERATE
+   RARCH_MENU_CTL_ITERATE,
+   RARCH_MENU_CTL_ENVIRONMENT
 };
 
 typedef enum
@@ -345,6 +346,12 @@ typedef struct menu_ctx_iterate
    enum menu_action action;
 } menu_ctx_iterate_t;
 
+typedef struct menu_ctx_environment
+{
+   menu_environ_cb_t type;
+   void *data;
+} menu_ctx_environment_t;
+
 /**
  * menu_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -385,8 +392,6 @@ void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i);
 bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type);
 
 size_t  menu_driver_list_get_selection(void);
-
-bool menu_environment_cb(menu_environ_cb_t type, void *data);
 
 int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,

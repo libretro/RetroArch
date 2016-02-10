@@ -359,19 +359,6 @@ static void menu_driver_toggle(bool latch)
    }
 }
 
-bool menu_environment_cb(menu_environ_cb_t type, void *data)
-{
-   if (menu_driver_ctx->environ_cb)
-   {
-      int ret = menu_driver_ctx->environ_cb(type, data, menu_userdata);
-
-      if (ret == 0)
-         return true;
-   }
-
-   return false;
-}
-
 int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
@@ -784,6 +771,17 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
          }
          break;
+       case RARCH_MENU_CTL_ENVIRONMENT:
+         {
+            menu_ctx_environment_t *menu_environ = (menu_ctx_environment_t*)data;
+            if (menu_driver_ctx->environ_cb)
+            {
+               if (menu_driver_ctx->environ_cb(menu_environ->type, menu_environ->data,
+                        menu_userdata) == 0)
+                  return true;
+            }
+         }
+         return false;
       default:
       case RARCH_MENU_CTL_NONE:
          break;

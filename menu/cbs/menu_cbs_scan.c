@@ -33,7 +33,11 @@
 #ifdef HAVE_LIBRETRODB
 static void handle_dbscan_finished(void *task_data, void *user_data, const char *err)
 {
-   menu_environment_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST, NULL);
+   menu_ctx_environment_t menu_environ;
+   menu_environ.type = MENU_ENVIRON_RESET_HORIZONTAL_LIST;
+   menu_environ.data = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_ENVIRONMENT, &menu_environ);
 }
 
 int action_scan_file(const char *path,
