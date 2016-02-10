@@ -186,15 +186,6 @@ static bool menu_init(void)
 {
    settings_t *settings        = config_get_ptr();
 
-   menu_driver_data = (menu_handle_t*)
-      menu_driver_ctx->init(&menu_userdata);
-
-   if (!menu_driver_data)
-      return false;
-
-   strlcpy(settings->menu.driver, menu_driver_ctx->ident,
-         sizeof(settings->menu.driver));
-
    if (!menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL))
       return false;
 
@@ -440,6 +431,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    static bool menu_driver_data_own                = false;
    static content_playlist_t *menu_driver_playlist = NULL;
    static struct video_shader *menu_driver_shader  = NULL;
+   settings_t *settings                            = config_get_ptr();
 
    switch (state)
    {
@@ -606,12 +598,18 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (!menu_display_ctl(RARCH_MENU_CTL_FIND_DRIVER, NULL))
             return false;
 
-         if (!menu_init())
+         menu_driver_data = (menu_handle_t*)
+            menu_driver_ctx->init(&menu_userdata);
+
+         if (!menu_driver_data || !menu_init())
          {
             menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
             retro_fail(1, "init_menu()");
             return false;
          }
+
+         strlcpy(settings->menu.driver, menu_driver_ctx->ident,
+               sizeof(settings->menu.driver));
 
          if (menu_driver_ctx->lists_init)
          {
