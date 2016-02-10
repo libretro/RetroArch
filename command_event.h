@@ -178,10 +178,6 @@ enum event_command
    EVENT_CMD_REMOTE_INIT,
    /* Deinitializes remote gamepad interface. */
    EVENT_CMD_REMOTE_DEINIT,
-   /* Deinitializes drivers. */
-   EVENT_CMD_DRIVERS_DEINIT,
-   /* Initializes drivers. */
-   EVENT_CMD_DRIVERS_INIT,
    /* Reinitializes audio driver. */
    EVENT_CMD_AUDIO_REINIT,
    /* Resizes windowed scale. Will reinitialize video driver. */

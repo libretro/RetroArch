@@ -83,7 +83,6 @@ extern "C" {
 #define GET_HAT_DIR(x)     (x & HAT_MASK)
 #define GET_HAT(x)         (x & (~HAT_MASK))
 
-/* Drivers for EVENT_CMD_DRIVERS_DEINIT and EVENT_CMD_DRIVERS_INIT */
 #define DRIVERS_CMD_ALL \
       ( DRIVER_AUDIO \
       | DRIVER_VIDEO \

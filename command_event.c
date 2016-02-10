@@ -402,7 +402,10 @@ static void event_deinit_core(bool reinit)
    core_ctl(CORE_CTL_RETRO_DEINIT, NULL);
 
    if (reinit)
-      event_cmd_ctl(EVENT_CMD_DRIVERS_DEINIT, NULL);
+   {
+      int flags = DRIVERS_CMD_ALL;
+      driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
+   }
 
    /* auto overrides: reload the original config */
    if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
@@ -1307,18 +1310,6 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          input_overlay_set_alpha_mod(settings->input.overlay_opacity);
 #endif
          break;
-      case EVENT_CMD_DRIVERS_DEINIT:
-         {
-            int flags = DRIVERS_CMD_ALL;
-            driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
-         }
-         break;
-      case EVENT_CMD_DRIVERS_INIT:
-         {
-            int flags = DRIVERS_CMD_ALL;
-            driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
-         }
-         break;
       case EVENT_CMD_AUDIO_REINIT:
          {
             int flags = DRIVER_AUDIO;
@@ -1328,17 +1319,18 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_RESET_CONTEXT:
          {
-            /* EVENT_CMD_DRIVERS_DEINIT clears the callback struct so we
+            /* RARCH_DRIVER_CTL_UNINIT clears the callback struct so we
              * need to make sure to keep a copy */
             struct retro_hw_render_callback hw_render;
+            int flags = DRIVERS_CMD_ALL;
 
             memcpy(&hw_render, video_driver_callback(), sizeof(hw_render));
 
-            event_cmd_ctl(EVENT_CMD_DRIVERS_DEINIT, NULL);
+            driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
 
             memcpy(video_driver_callback(), &hw_render, sizeof(hw_render));
 
-            event_cmd_ctl(EVENT_CMD_DRIVERS_INIT, NULL);
+            driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
          }
          break;
       case EVENT_CMD_QUIT_RETROARCH:
