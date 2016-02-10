@@ -387,11 +387,7 @@ static void uninit_drivers(int flags)
 {
 #ifdef HAVE_MENU
    if (flags & DRIVER_MENU)
-   {
-      menu_driver_ctl(RARCH_MENU_CTL_CONTEXT_DESTROY, NULL);
-      if (!menu_driver_ctl(RARCH_MENU_CTL_OWNS_DRIVER, NULL))
-         menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
-   }
+      menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
 #endif
 
    if ((flags & DRIVER_LOCATION) && !location_driver_ctl(RARCH_LOCATION_CTL_OWNS_DRIVER, NULL))

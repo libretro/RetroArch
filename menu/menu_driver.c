@@ -530,6 +530,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_OWNS_DRIVER:
          return menu_driver_data_own;
       case RARCH_MENU_CTL_DEINIT:
+         menu_driver_ctl(RARCH_MENU_CTL_CONTEXT_DESTROY, NULL);
+         if (menu_driver_ctl(RARCH_MENU_CTL_OWNS_DRIVER, NULL))
+            return true;
          if (menu_driver_data)
          {
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
@@ -563,7 +566,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
          if (!menu_driver_data || !menu_init())
          {
-            menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
             retro_fail(1, "init_menu()");
             return false;
          }
