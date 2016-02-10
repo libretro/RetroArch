@@ -148,42 +148,6 @@ menu_handle_t *menu_driver_get_ptr(void)
    return menu_driver_data;
 }
 
-/**
- * menu_free:
- * @menu                     : Menu handle.
- *
- * Frees a menu handle
- **/
-static void menu_free(menu_handle_t *menu)
-{
-   if (!menu)
-      return;
-
-   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
-   menu_shader_free(menu);
-   menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_DEINIT, NULL);
-
-   if (menu_driver_ctx && menu_driver_ctx->free)
-      menu_driver_ctx->free(menu_userdata);
-   menu_driver_ctx = NULL;
-
-   if (menu_userdata)
-      free(menu_userdata);
-   menu_userdata = NULL;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_DEINIT, NULL);
-   menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
-
-   event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
-
-   core_info_ctl(CORE_INFO_CTL_LIST_DEINIT, NULL);
-   core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_FREE, NULL);
-
-   free(menu);
-}
-
 #ifdef HAVE_ZLIB
 static void bundle_decompressed(void *task_data,
       void *user_data, const char *err)
@@ -218,31 +182,30 @@ static void bundle_decompressed(void *task_data,
  *
  * Returns: menu handle on success, otherwise NULL.
  **/
-static bool menu_init(const void *data)
+static bool menu_init(void)
 {
    menu_handle_t *menu         = NULL;
-   menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
    settings_t *settings        = config_get_ptr();
    
-   if (!menu_ctx)
+   if (!menu_driver_ctx)
       return false;
 
-   menu = (menu_handle_t*)menu_ctx->init(&menu_userdata);
+   menu = (menu_handle_t*)menu_driver_ctx->init(&menu_userdata);
 
    if (!menu)
       return false;
 
-   strlcpy(settings->menu.driver, menu_ctx->ident,
+   strlcpy(settings->menu.driver, menu_driver_ctx->ident,
          sizeof(settings->menu.driver));
 
    if (!menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL))
-      goto error;
+      return false;
 
    if (!core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_INIT, NULL))
-      goto error;
+      return false;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_SHADER_INIT, NULL))
-      goto error;
+      return false;
 
    if (settings->menu_show_start_screen)
    {
@@ -276,26 +239,20 @@ static bool menu_init(const void *data)
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
 
    if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT, NULL))
-      goto error;
+      return false;
 
    menu_driver_data = (void*)menu;
 
    return true;
-   
-error:
-   menu_free(menu);
-
-   return false;
 }
 
 void menu_driver_list_insert(file_list_t *list, const char *path,
       const char *label, size_t idx)
 {
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
-
-   if (driver->list_insert)
-      driver->list_insert(menu_userdata ? 
-            menu_userdata : NULL, list, path, label, idx);
+   if (!menu_driver_ctx || !menu_driver_ctx->list_insert)
+      return;
+   menu_driver_ctx->list_insert(menu_userdata ? 
+         menu_userdata : NULL, list, path, label, idx);
 }
 
 void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
@@ -316,34 +273,30 @@ void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
 static bool menu_driver_list_set_selection(void *data)
 {
    file_list_t *list               = (file_list_t*)data;
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
 
    if (!list)
       return false;
 
-   if (!driver || !driver->list_set_selection)
+   if (!menu_driver_ctx || !menu_driver_ctx->list_set_selection)
       return false;
 
-   driver->list_set_selection(menu_userdata ? menu_userdata : NULL, list);
+   menu_driver_ctx->list_set_selection(menu_userdata ? menu_userdata : NULL, list);
    return true;
 }
 
 size_t  menu_driver_list_get_selection(void)
 {
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
-
-   if (driver && driver->list_get_selection)
-      return driver->list_get_selection(menu_userdata ? menu_userdata : NULL);
+   if (menu_driver_ctx && menu_driver_ctx->list_get_selection)
+      return menu_driver_ctx->list_get_selection(
+            menu_userdata ? menu_userdata : NULL);
    return 0;
 }
 
 bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type)
 {
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
-
-   if (driver->list_push)
-      if (driver->list_push(menu_driver_data, menu_userdata ? 
-               menu_userdata : NULL,
+   if (menu_driver_ctx->list_push)
+      if (menu_driver_ctx->list_push(menu_driver_data,
+               menu_userdata ? menu_userdata : NULL,
                info, type) == 0)
          return true;
    return false;
@@ -351,27 +304,23 @@ bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type)
 
 void menu_driver_list_cache(menu_list_type_t type, unsigned action)
 {
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
-
-   if (driver->list_cache)
-      driver->list_cache(menu_userdata ? menu_userdata : NULL, type, action);
+   if (menu_driver_ctx->list_cache)
+      menu_driver_ctx->list_cache(
+            menu_userdata ? menu_userdata : NULL, type, action);
 }
 
 size_t menu_driver_list_get_size(menu_list_type_t type)
 {
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
-
-   if (driver && driver->list_get_size)
-      return driver->list_get_size(menu_userdata ? menu_userdata : NULL, type);
+   if (menu_driver_ctx && menu_driver_ctx->list_get_size)
+      return menu_driver_ctx->list_get_size(
+            menu_userdata ? menu_userdata : NULL, type);
    return 0;
 }
 
 void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
 {
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
-
-   if (driver && driver->list_get_entry)
-      return driver->list_get_entry(menu_userdata ? 
+   if (menu_driver_ctx && menu_driver_ctx->list_get_entry)
+      return menu_driver_ctx->list_get_entry(menu_userdata ? 
             menu_userdata : NULL, type, i);
    return NULL;
 }
@@ -382,10 +331,9 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    int ret = 0;
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
 
-   if (driver && driver->bind_init)
-      ret = driver->bind_init(cbs, path, label, type, idx, elem0, elem1,
+   if (menu_driver_ctx && menu_driver_ctx->bind_init)
+      ret = menu_driver_ctx->bind_init(cbs, path, label, type, idx, elem0, elem1,
             label_hash, menu_label_hash);
 
    return ret;
@@ -393,12 +341,10 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
 
 int menu_driver_iterate(enum menu_action action)
 {
-   const menu_ctx_driver_t *driver = menu_driver_ctx;
-
-   if (driver->iterate)
-      return driver->iterate(menu_driver_data, 
-            menu_userdata ? menu_userdata : NULL, action);
-   return -1;
+   if (!menu_driver_ctx || !menu_driver_ctx->iterate)
+      return -1;
+   return menu_driver_ctx->iterate(menu_driver_data, 
+         menu_userdata ? menu_userdata : NULL, action);
 }
 
 static void menu_input_key_event(bool down, unsigned keycode,
@@ -473,22 +419,18 @@ static void menu_driver_toggle(bool latch)
 
 bool menu_driver_load_image(void *data, menu_image_type_t type)
 {
-   const menu_ctx_driver_t      *driver = menu_driver_ctx;
-
-   if (driver->load_image)
-      return driver->load_image(menu_userdata ? 
-            menu_userdata : NULL, data, type);
-
-   return false;
+   if (!menu_driver_ctx || !menu_driver_ctx->load_image)
+      return false;
+   return menu_driver_ctx->load_image(menu_userdata ? 
+         menu_userdata : NULL, data, type);
 }
 
 bool menu_environment_cb(menu_environ_cb_t type, void *data)
 {
-   const menu_ctx_driver_t      *driver = menu_driver_ctx;
-
-   if (driver->environ_cb)
+   if (menu_driver_ctx->environ_cb)
    {
-      int ret = driver->environ_cb(type, data, menu_userdata 
+      int ret = menu_driver_ctx->environ_cb(
+            type, data, menu_userdata 
             ? menu_userdata : NULL);
 
       if (ret == 0)
@@ -502,13 +444,10 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   const menu_ctx_driver_t      *driver = menu_driver_ctx;
-
-   if (driver->pointer_tap)
-      return driver->pointer_tap(menu_userdata 
-            ? menu_userdata : NULL, x, y, ptr, cbs, entry, action);
-
-   return 0;
+   if (!menu_driver_ctx || !menu_driver_ctx->pointer_tap)
+      return 0;
+   return menu_driver_ctx->pointer_tap(menu_userdata 
+         ? menu_userdata : NULL, x, y, ptr, cbs, entry, action);
 }
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
@@ -520,7 +459,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    static bool menu_driver_data_own                = false;
    static content_playlist_t *menu_driver_playlist = NULL;
    static struct video_shader *menu_driver_shader  = NULL;
-   const menu_ctx_driver_t                 *driver = menu_driver_ctx;
 
    switch (state)
    {
@@ -546,7 +484,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_driver_playlist  = content_playlist_init(path,
                   COLLECTION_SIZE);
          }
-         return true;
+         break;
       case RARCH_MENU_CTL_PLAYLIST_GET:
          {
             content_playlist_t **playlist = (content_playlist_t**)data;
@@ -554,7 +492,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
             *playlist = menu_driver_playlist;
          }
-         return true;
+         break;
       case RARCH_MENU_CTL_SYSTEM_INFO_GET:
          {
             struct retro_system_info **system = 
@@ -563,7 +501,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
             *system = &menu_driver_system;
          }
-         return true;
+         break;
       case RARCH_MENU_CTL_SYSTEM_INFO_DEINIT:
 #ifdef HAVE_DYNAMIC
          libretro_free_system_info(&menu_driver_system);
@@ -571,13 +509,13 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #endif
          break;
       case RARCH_MENU_CTL_RENDER_MESSAGEBOX:
-         if (driver->render_messagebox)
-            driver->render_messagebox(menu_userdata,
+         if (menu_driver_ctx->render_messagebox)
+            menu_driver_ctx->render_messagebox(menu_userdata,
                   menu_driver_data->menu_state.msg);
          break;
       case RARCH_MENU_CTL_BLIT_RENDER:
-         if (driver->render)
-            driver->render(menu_userdata);
+         if (menu_driver_ctx->render)
+            menu_driver_ctx->render(menu_userdata);
          break;
       case RARCH_MENU_CTL_RENDER:
          menu_iterate_render(menu_driver_data, menu_userdata);
@@ -588,7 +526,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             free(menu_driver_shader);
          menu_driver_shader = NULL;
 #endif
-         return true;
+         break;
       case RARCH_MENU_CTL_SHADER_INIT:
 #ifdef HAVE_SHADER_MANAGER
          menu_driver_shader = (struct video_shader*)
@@ -596,7 +534,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (!menu_driver_shader)
             return false;
 #endif
-         return true;
+         break;
       case RARCH_MENU_CTL_SHADER_GET:
          {
             struct video_shader **shader = (struct video_shader**)data;
@@ -604,12 +542,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
             *shader = menu_driver_shader;
          }
-         return true;
+         break;
       case RARCH_MENU_CTL_FRAME:
          if (!menu_driver_alive)
             return false;
-         if (driver->frame)
-            driver->frame(menu_userdata);
+         if (menu_driver_ctx->frame)
+            menu_driver_ctx->frame(menu_userdata);
          break;
       case RARCH_MENU_CTL_SET_PREVENT_POPULATE:
          menu_driver_prevent_populate = true;
@@ -642,8 +580,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_data_own = false;
          break;
       case RARCH_MENU_CTL_SET_TEXTURE:
-         if (driver->set_texture)
-            driver->set_texture();
+         if (menu_driver_ctx->set_texture)
+            menu_driver_ctx->set_texture();
          break;
       case RARCH_MENU_CTL_IS_SET_TEXTURE:
          if (!menu_driver_ctx)
@@ -652,7 +590,32 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_OWNS_DRIVER:
          return menu_driver_data_own;
       case RARCH_MENU_CTL_DEINIT:
-         menu_free(menu_driver_data);
+         if (menu_driver_data)
+         {
+            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
+            menu_shader_free(menu_driver_data);
+            menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_DEINIT, NULL);
+
+            if (menu_driver_ctx && menu_driver_ctx->free)
+               menu_driver_ctx->free(menu_userdata);
+            menu_driver_ctx = NULL;
+
+            if (menu_userdata)
+               free(menu_userdata);
+            menu_userdata = NULL;
+
+            menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
+            menu_display_ctl(MENU_DISPLAY_CTL_DEINIT, NULL);
+            menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
+
+            event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
+
+            core_info_ctl(CORE_INFO_CTL_LIST_DEINIT, NULL);
+            core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_FREE, NULL);
+
+            free(menu_driver_data);
+         }
          menu_driver_data = NULL;
          break;
       case RARCH_MENU_CTL_INIT:
@@ -662,8 +625,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (!menu_display_ctl(RARCH_MENU_CTL_FIND_DRIVER, NULL))
             return false;
 
-         if (!menu_init(menu_driver_ctx))
+         if (!menu_init())
          {
+            menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
             retro_fail(1, "init_menu()");
             return false;
          }
@@ -676,7 +640,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
             }
          }
-         return true;
+         break;
       case RARCH_MENU_CTL_LOAD_NO_CONTENT_GET:
          {
             bool **ptr = (bool**)data;
@@ -684,7 +648,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
             *ptr = (bool*)&menu_driver_load_no_content;
          }
-         return true;
+         break;
       case RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT:
          return menu_driver_load_no_content;
       case RARCH_MENU_CTL_SET_LOAD_NO_CONTENT:
@@ -694,12 +658,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_load_no_content = false;
          break;
       case RARCH_MENU_CTL_NAVIGATION_INCREMENT:
-         if (driver->navigation_increment)
-            driver->navigation_increment(menu_userdata);
+         if (menu_driver_ctx->navigation_increment)
+            menu_driver_ctx->navigation_increment(menu_userdata);
          break;
       case RARCH_MENU_CTL_NAVIGATION_DECREMENT:
-         if (driver->navigation_decrement)
-            driver->navigation_decrement(menu_userdata);
+         if (menu_driver_ctx->navigation_decrement)
+            menu_driver_ctx->navigation_decrement(menu_userdata);
          break;
       case RARCH_MENU_CTL_NAVIGATION_SET:
          {
@@ -707,13 +671,13 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (!scroll)
                return false;
-            if (driver->navigation_set)
-               driver->navigation_set(menu_userdata, *scroll);
+            if (menu_driver_ctx->navigation_set)
+               menu_driver_ctx->navigation_set(menu_userdata, *scroll);
          }
-         return true;
+         break;
       case RARCH_MENU_CTL_NAVIGATION_SET_LAST:
-         if (driver->navigation_set_last)
-            driver->navigation_set_last(menu_userdata);
+         if (menu_driver_ctx->navigation_set_last)
+            menu_driver_ctx->navigation_set_last(menu_userdata);
          break;
       case RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET:
          {
@@ -722,8 +686,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!ptr_out)
                return false;
 
-            if (driver->navigation_ascend_alphabet)
-               driver->navigation_ascend_alphabet(menu_userdata, ptr_out);
+            if (menu_driver_ctx->navigation_ascend_alphabet)
+               menu_driver_ctx->navigation_ascend_alphabet(menu_userdata, ptr_out);
          }
        case RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET:
          {
@@ -732,8 +696,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!ptr_out)
                return false;
 
-            if (driver->navigation_descend_alphabet)
-               driver->navigation_descend_alphabet(menu_userdata, ptr_out);
+            if (menu_driver_ctx->navigation_descend_alphabet)
+               menu_driver_ctx->navigation_descend_alphabet(menu_userdata, ptr_out);
          }
          break;
        case RARCH_MENU_CTL_NAVIGATION_CLEAR:
@@ -742,8 +706,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (!pending_push)
                return false;
-            if (driver->navigation_clear)
-               driver->navigation_clear(menu_userdata ? 
+            if (menu_driver_ctx->navigation_clear)
+               menu_driver_ctx->navigation_clear(menu_userdata ? 
                      menu_userdata : NULL, pending_push);
          }
          break;
@@ -753,28 +717,28 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (!info)
                return false;
-            if (driver->populate_entries)
-               driver->populate_entries(
+            if (menu_driver_ctx->populate_entries)
+               menu_driver_ctx->populate_entries(
                      menu_userdata, info->path, info->label, info->type);
          }
-         return true;
+         break;
        case RARCH_MENU_CTL_LIST_CLEAR:
          {
             file_list_t *list = (file_list_t*)data;
             if (!list)
                return false;
-            if (driver->list_clear)
-               driver->list_clear(list);
+            if (menu_driver_ctx->list_clear)
+               menu_driver_ctx->list_clear(list);
          }
-         return true;
+         break;
        case RARCH_MENU_CTL_TOGGLE:
          {
             bool *latch = (bool*)data;
             if (!latch)
                return false;
 
-            if (driver->toggle)
-               driver->toggle(menu_userdata, *latch);
+            if (menu_driver_ctx->toggle)
+               menu_driver_ctx->toggle(menu_userdata, *latch);
          }
          break;
        case RARCH_MENU_CTL_REFRESH:
@@ -789,16 +753,16 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
          break;
        case RARCH_MENU_CTL_CONTEXT_RESET:
-         if (driver->context_reset)
-            driver->context_reset(menu_userdata ? menu_userdata : NULL);
+         if (menu_driver_ctx->context_reset)
+            menu_driver_ctx->context_reset(menu_userdata ? menu_userdata : NULL);
          break;
        case RARCH_MENU_CTL_CONTEXT_DESTROY:
-         if (driver && driver->context_destroy)
-            driver->context_destroy(menu_userdata ? menu_userdata : NULL);
+         if (menu_driver_ctx && menu_driver_ctx->context_destroy)
+            menu_driver_ctx->context_destroy(menu_userdata ? menu_userdata : NULL);
          break;
        case RARCH_MENU_CTL_SHADER_MANAGER_INIT:
          menu_shader_manager_init(menu_driver_data);
-         return true;
+         break;
        case RARCH_MENU_CTL_LIST_SET_SELECTION:
          return menu_driver_list_set_selection(data);
       default:
@@ -806,5 +770,5 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
    }
 
-   return false;
+   return true;
 }
