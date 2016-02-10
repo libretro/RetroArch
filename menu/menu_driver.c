@@ -768,7 +768,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_ctx_list_t *list = (menu_ctx_list_t*)data;
             if (!list || !menu_driver_ctx || !menu_driver_ctx->list_cache)
                return false;
-            menu_driver_ctx->list_cache(menu_userdata, list->type, list->action);
+            menu_driver_ctx->list_cache(menu_userdata,
+                  list->type, list->action);
          }
          break;
       case RARCH_MENU_CTL_LIST_INSERT:
@@ -776,12 +777,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_ctx_list_t *list = (menu_ctx_list_t*)data;
             if (!list || !menu_driver_ctx || !menu_driver_ctx->list_insert)
                return false;
-            menu_driver_ctx->list_insert(menu_userdata, list->list, list->path, list->label, list->idx);
+            menu_driver_ctx->list_insert(menu_userdata,
+                  list->list, list->path, list->label, list->idx);
          }
          break;
       case RARCH_MENU_CTL_LOAD_IMAGE:
          {
-            menu_ctx_load_image_t *load_image_info = (menu_ctx_load_image_t*)data;
+            menu_ctx_load_image_t *load_image_info = 
+               (menu_ctx_load_image_t*)data;
             if (!menu_driver_ctx || !menu_driver_ctx->load_image)
                return false;
             return menu_driver_ctx->load_image(menu_userdata,
@@ -805,17 +808,20 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
             if (!menu_driver_ctx || !menu_driver_ctx->iterate)
                return false;
-            if (menu_driver_ctx->iterate(menu_driver_data, menu_userdata, iterate->action) == -1)
+            if (menu_driver_ctx->iterate(menu_driver_data,
+                     menu_userdata, iterate->action) == -1)
                return false;
          }
          break;
       case RARCH_MENU_CTL_ENVIRONMENT:
          {
-            menu_ctx_environment_t *menu_environ = (menu_ctx_environment_t*)data;
+            menu_ctx_environment_t *menu_environ = 
+               (menu_ctx_environment_t*)data;
+
             if (menu_driver_ctx->environ_cb)
             {
-               if (menu_driver_ctx->environ_cb(menu_environ->type, menu_environ->data,
-                        menu_userdata) == 0)
+               if (menu_driver_ctx->environ_cb(menu_environ->type,
+                        menu_environ->data, menu_userdata) == 0)
                   return true;
             }
          }
