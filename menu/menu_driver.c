@@ -296,14 +296,11 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
-   int ret = 0;
-
-   if (menu_driver_ctx && menu_driver_ctx->bind_init)
-      ret = menu_driver_ctx->bind_init(cbs, path, label,
-            type, idx, elem0, elem1,
-            label_hash, menu_label_hash);
-
-   return ret;
+   if (!menu_driver_ctx || !menu_driver_ctx->bind_init)
+      return 0;
+   return menu_driver_ctx->bind_init(cbs, path, label,
+         type, idx, elem0, elem1,
+         label_hash, menu_label_hash);
 }
 
 int menu_driver_iterate(enum menu_action action)
