@@ -676,7 +676,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
             }
          }
-         break;
+         return true;
       case RARCH_MENU_CTL_LOAD_NO_CONTENT_GET:
          {
             bool **ptr = (bool**)data;
