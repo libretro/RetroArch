@@ -561,6 +561,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_data = NULL;
          break;
       case RARCH_MENU_CTL_INIT:
+         if (menu_driver_data)
+            return true;
+
          menu_driver_data = (menu_handle_t*)
             menu_driver_ctx->init(&menu_userdata);
 
