@@ -2532,19 +2532,23 @@ static void menu_displaylist_parse_playlist_associations(menu_displaylist_info_t
 int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    size_t i;
+   menu_ctx_displaylist_t disp_list;
    int ret                     = 0;
 #ifdef HAVE_SHADER_MANAGER
    struct video_shader *shader = NULL;
 #endif
-   menu_handle_t       *menu   = menu_driver_get_ptr();
-   settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
    core_info_list_t *list      = NULL;
+   menu_handle_t       *menu   = menu_driver_get_ptr();
+   settings_t      *settings   = config_get_ptr();
 
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+   core_info_ctl(CORE_INFO_CTL_LIST_GET,    &list);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   if (menu_driver_list_push(info, type))
+   disp_list.info = info;
+   disp_list.type = type;
+
+   if (menu_driver_ctl(RARCH_MENU_CTL_LIST_PUSH, &disp_list))
       return 0;
 
    switch (type)

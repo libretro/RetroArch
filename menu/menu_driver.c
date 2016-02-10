@@ -256,15 +256,6 @@ size_t  menu_driver_list_get_selection(void)
    return menu_driver_ctx->list_get_selection(menu_userdata);
 }
 
-bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type)
-{
-   if (menu_driver_ctx->list_push)
-      if (menu_driver_ctx->list_push(menu_driver_data,
-               menu_userdata, info, type) == 0)
-         return true;
-   return false;
-}
-
 size_t menu_driver_list_get_size(menu_list_type_t type)
 {
    if (!menu_driver_ctx || !menu_driver_ctx->list_get_size)
@@ -706,6 +697,16 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                      info->label, info->type);
          }
          break;
+      case RARCH_MENU_CTL_LIST_PUSH:
+         {
+            menu_ctx_displaylist_t *disp_list = (menu_ctx_displaylist_t*)data;
+
+            if (menu_driver_ctx->list_push)
+               if (menu_driver_ctx->list_push(menu_driver_data,
+                        menu_userdata, disp_list->info, disp_list->type) == 0)
+                  return true;
+         }
+         return false;
       case RARCH_MENU_CTL_LIST_CLEAR:
          {
             file_list_t *list = (file_list_t*)data;

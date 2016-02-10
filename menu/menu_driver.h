@@ -145,17 +145,18 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_PLAYLIST_FREE,
    RARCH_MENU_CTL_PLAYLIST_INIT,
    RARCH_MENU_CTL_PLAYLIST_GET,
-   RARCH_MENU_CTL_LIST_CLEAR,
    RARCH_MENU_CTL_TOGGLE,
    RARCH_MENU_CTL_CONTEXT_RESET,
    RARCH_MENU_CTL_CONTEXT_DESTROY,
    RARCH_MENU_CTL_SHADER_MANAGER_INIT,
-   RARCH_MENU_CTL_LIST_SET_SELECTION,
    RARCH_MENU_CTL_POPULATE_ENTRIES,
    RARCH_MENU_CTL_FIND_DRIVER,
    RARCH_MENU_CTL_LOAD_IMAGE,
+   RARCH_MENU_CTL_LIST_CLEAR,
+   RARCH_MENU_CTL_LIST_SET_SELECTION,
    RARCH_MENU_CTL_LIST_CACHE,
    RARCH_MENU_CTL_LIST_INSERT,
+   RARCH_MENU_CTL_LIST_PUSH,
    RARCH_MENU_CTL_ITERATE,
    RARCH_MENU_CTL_ENVIRONMENT
 };
@@ -350,6 +351,12 @@ typedef struct menu_ctx_list
    unsigned action;
 } menu_ctx_list_t;
 
+typedef struct menu_ctx_displaylist
+{
+   menu_displaylist_info_t *info;
+   unsigned type;
+} menu_ctx_displaylist_t;
+
 typedef struct menu_ctx_iterate
 {
    enum menu_action action;
@@ -398,7 +405,6 @@ size_t menu_driver_list_get_size(menu_list_type_t type);
 
 void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i);
 
-bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type);
 
 size_t  menu_driver_list_get_selection(void);
 
