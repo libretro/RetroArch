@@ -161,7 +161,22 @@ bool input_remapping_save_file(const char *path)
       {
          fill_pathname_join_delim(key_ident[j], buf,
                key_strings[j], '_', sizeof(key_ident[j]));
-         config_set_int(conf, key_ident[j], settings->input.remap_ids[i][j]);
+
+         /* only save values that have been modified */
+         if(j < RARCH_FIRST_CUSTOM_BIND)
+         {
+            if(settings->input.remap_ids[i][j] != j)
+               config_set_int(conf, key_ident[j], settings->input.remap_ids[i][j]);
+            else
+               config_unset(conf,key_ident[j]);
+         }
+         else
+         {
+            if(settings->input.remap_ids[i][j] != j - RARCH_FIRST_CUSTOM_BIND)
+               config_set_int(conf, key_ident[j], settings->input.remap_ids[i][j]);
+            else
+               config_unset(conf,key_ident[j]);
+         }
       }
 
       for (i = 0; i < MAX_USERS; i++)
