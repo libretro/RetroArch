@@ -648,7 +648,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
 
             if (menu_driver_ctx->navigation_ascend_alphabet)
-               menu_driver_ctx->navigation_ascend_alphabet(menu_userdata, ptr_out);
+               menu_driver_ctx->navigation_ascend_alphabet(
+                     menu_userdata, ptr_out);
          }
        case RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET:
          {
@@ -658,7 +659,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
 
             if (menu_driver_ctx->navigation_descend_alphabet)
-               menu_driver_ctx->navigation_descend_alphabet(menu_userdata, ptr_out);
+               menu_driver_ctx->navigation_descend_alphabet(
+                     menu_userdata, ptr_out);
          }
          break;
        case RARCH_MENU_CTL_NAVIGATION_CLEAR:
@@ -668,7 +670,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!pending_push)
                return false;
             if (menu_driver_ctx->navigation_clear)
-               menu_driver_ctx->navigation_clear(menu_userdata, pending_push);
+               menu_driver_ctx->navigation_clear(
+                     menu_userdata, pending_push);
          }
          break;
        case RARCH_MENU_CTL_POPULATE_ENTRIES:
@@ -679,7 +682,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
             if (menu_driver_ctx->populate_entries)
                menu_driver_ctx->populate_entries(
-                     menu_userdata, info->path, info->label, info->type);
+                     menu_userdata, info->path,
+                     info->label, info->type);
          }
          break;
        case RARCH_MENU_CTL_LIST_CLEAR:
@@ -725,7 +729,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
        case RARCH_MENU_CTL_LIST_SET_SELECTION:
          {
-            file_list_t *list               = (file_list_t*)data;
+            file_list_t *list = (file_list_t*)data;
 
             if (!list)
                return false;
