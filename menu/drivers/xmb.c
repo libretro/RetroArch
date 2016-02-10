@@ -567,8 +567,14 @@ static void xmb_update_boxart_path(xmb_handle_t *xmb, unsigned i)
 static void menu_display_handle_boxart_upload(void *task_data,
       void *user_data, const char *err)
 {
+   menu_ctx_load_image_t load_image_info;
    struct texture_image *img = (struct texture_image*)task_data;
-   menu_driver_load_image(img, MENU_IMAGE_BOXART);
+
+   load_image_info.data = img;
+   load_image_info.type = MENU_IMAGE_BOXART;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
+
    video_texture_image_free(img);
    free(img);
 }

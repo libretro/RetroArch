@@ -380,13 +380,6 @@ static void menu_driver_toggle(bool latch)
    }
 }
 
-bool menu_driver_load_image(void *data, menu_image_type_t type)
-{
-   if (!menu_driver_ctx || !menu_driver_ctx->load_image)
-      return false;
-   return menu_driver_ctx->load_image(menu_userdata, data, type);
-}
-
 bool menu_environment_cb(menu_environ_cb_t type, void *data)
 {
    if (menu_driver_ctx->environ_cb)
@@ -740,6 +733,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_driver_ctx->list_set_selection(menu_userdata, list);
          }
          break;
+       case RARCH_MENU_CTL_LOAD_IMAGE:
+         {
+            menu_ctx_load_image_t *load_image_info = (menu_ctx_load_image_t*)data;
+            if (!menu_driver_ctx || !menu_driver_ctx->load_image)
+               return false;
+            return menu_driver_ctx->load_image(menu_userdata,
+                  load_image_info->data, load_image_info->type);
+         }
       default:
       case RARCH_MENU_CTL_NONE:
          break;
