@@ -32,7 +32,7 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../system.h"
-#include "../../tasks/tasks.h"
+#include "../../tasks/tasks_internal.h"
 
 static id apple_platform;
 
