@@ -291,6 +291,11 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
 
 int menu_driver_iterate(enum menu_action action)
 {
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
+   {
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUIT, NULL);
+      return -1;
+   }
    if (!menu_driver_ctx || !menu_driver_ctx->iterate)
       return -1;
    return menu_driver_ctx->iterate(menu_driver_data, menu_userdata, action);
@@ -396,12 +401,21 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    static bool menu_driver_load_no_content         = false;
    static bool menu_driver_alive                   = false;
    static bool menu_driver_data_own                = false;
+   static bool menu_driver_pending_quit            = false;
    static content_playlist_t *menu_driver_playlist = NULL;
    static struct video_shader *menu_driver_shader  = NULL;
    settings_t *settings                            = config_get_ptr();
 
    switch (state)
    {
+      case RARCH_MENU_CTL_IS_PENDING_QUIT:
+         return menu_driver_pending_quit;
+      case RARCH_MENU_CTL_SET_PENDING_QUIT:
+         menu_driver_pending_quit     = true;
+         break;
+      case RARCH_MENU_CTL_UNSET_PENDING_QUIT:
+         menu_driver_pending_quit     = false;
+         break;
       case RARCH_MENU_CTL_DESTROY:
          menu_driver_prevent_populate = false;
          menu_driver_load_no_content  = false;
