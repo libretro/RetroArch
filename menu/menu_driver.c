@@ -210,18 +210,6 @@ void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
    return menu_driver_ctx->list_get_entry(menu_userdata, type, i);
 }
 
-int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx,
-      const char *elem0, const char *elem1,
-      uint32_t label_hash, uint32_t menu_label_hash)
-{
-   if (!menu_driver_ctx || !menu_driver_ctx->bind_init)
-      return 0;
-   return menu_driver_ctx->bind_init(cbs, path, label,
-         type, idx, elem0, elem1,
-         label_hash, menu_label_hash);
-}
-
 static void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
@@ -827,6 +815,27 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             point->retcode = menu_driver_ctx->pointer_tap(menu_userdata,
                   point->x, point->y, point->ptr,
                   point->cbs, point->entry, point->action);
+         }
+         break;
+      case RARCH_MENU_CTL_BIND_INIT:
+         {
+            menu_ctx_bind_t *bind = (menu_ctx_bind_t*)data;
+
+            if (!menu_driver_ctx || !menu_driver_ctx->bind_init)
+            {
+               bind->retcode = 0;
+               return false;
+            }
+            bind->retcode = menu_driver_ctx->bind_init(
+                  bind->cbs,
+                  bind->path,
+                  bind->label,
+                  bind->type,
+                  bind->idx,
+                  bind->elem0,
+                  bind->elem1,
+                  bind->label_hash,
+                  bind->menu_label_hash);
          }
          break;
       default:

@@ -39,6 +39,7 @@ void menu_cbs_init(void *data,
       const char *path, const char *label,
       unsigned type, size_t idx)
 {
+   menu_ctx_bind_t bind_info;
    char elem0[PATH_MAX_LENGTH];
    char elem1[PATH_MAX_LENGTH];
    const char *repr_label       = NULL;
@@ -136,7 +137,19 @@ void menu_cbs_init(void *data,
 
    menu_cbs_init_log(repr_label, "GET TITLE", cbs->action_get_title_ident);
 
-   ret = menu_driver_bind_init(cbs, path, label, type, idx, elem0, elem1, label_hash, menu_label_hash);
+   bind_info.cbs             = cbs;
+   bind_info.path            = path;
+   bind_info.label           = label;
+   bind_info.type            = type;
+   bind_info.idx             = idx;
+   bind_info.elem0           = elem0;
+   bind_info.elem1           = elem1;
+   bind_info.label_hash      = label_hash;
+   bind_info.menu_label_hash = menu_label_hash;
+
+   menu_driver_ctl(RARCH_MENU_CTL_BIND_INIT, &bind_info);
+
+   ret = bind_info.retcode;
 
    (void)ret;
 
