@@ -87,6 +87,15 @@ typedef enum
    MENU_HELP_LAST
 } menu_help_type_t;
 
+enum menu_state_changes
+{
+   MENU_STATE_RENDER_FRAMEBUFFER = 0,
+   MENU_STATE_RENDER_MESSAGEBOX,
+   MENU_STATE_BLIT,
+   MENU_STATE_POP_STACK,
+   MENU_STATE_POST_ITERATE
+}; 
+
 enum rarch_menu_ctl_state
 {
    RARCH_MENU_CTL_NONE = 0,
@@ -406,8 +415,6 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
 extern unsigned int rdb_entry_start_game_selection_ptr;
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
-
-int menu_iterate_render(void *data, void *userdata);
 
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;

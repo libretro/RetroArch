@@ -21,7 +21,6 @@
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
-#include "../menu_animation.h"
 #include "../menu_display.h"
 #include "../menu_displaylist.h"
 #include "../menu_navigation.h"
@@ -33,9 +32,7 @@
 #include "../../input/input_autodetect.h"
 #include "../../input/input_config.h"
 #include "../../cheevos.h"
-#include "../../ui/ui_companion_driver.h"
 
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 static int action_iterate_help(menu_handle_t *menu, 
@@ -378,50 +375,6 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 end:
    if (ret)
       return -1;
-   return 0;
-}
-
-int menu_iterate_render(void *data, void *userdata)
-{
-   menu_handle_t *menu             = (menu_handle_t*)data;
-
-   if (!menu)
-      return -1;
-
-   if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER) 
-         != BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX))
-      BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
-
-   if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER))
-      menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
-
-   if (BIT64_GET(menu->state, MENU_STATE_RENDER_MESSAGEBOX) 
-         && !string_is_empty(menu->menu_state.msg))
-   {
-      menu_driver_ctl(RARCH_MENU_CTL_RENDER_MESSAGEBOX, NULL);
-
-      if (ui_companion_is_on_foreground())
-      {
-         const ui_companion_driver_t *ui = ui_companion_get_ptr();
-         if (ui->render_messagebox)
-            ui->render_messagebox(menu->menu_state.msg);
-      }
-   }
-      
-   if (BIT64_GET(menu->state, MENU_STATE_BLIT))
-   {
-      menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE_TIME, NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_BLIT_RENDER, NULL);
-   }
-
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) 
-         && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
-      menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO, NULL);
-
-   menu_driver_ctl(RARCH_MENU_CTL_SET_TEXTURE, NULL);
-
-   menu->state               = 0;
-
    return 0;
 }
 
