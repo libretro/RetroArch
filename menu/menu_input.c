@@ -859,8 +859,18 @@ static int menu_input_mouse_frame(
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L))
    {
-      ret = menu_driver_pointer_tap(menu_input->mouse.x, menu_input->mouse.y,
-         menu_input->mouse.ptr, cbs, entry, action);
+      menu_ctx_pointer_t point;
+
+      point.x      = menu_input->mouse.x;
+      point.y      = menu_input->mouse.y;
+      point.ptr    = menu_input->mouse.ptr;
+      point.cbs    = cbs;
+      point.entry  = entry;
+      point.action = action;
+
+      menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
+
+      ret = point.retcode;
    }
 
    if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
@@ -1088,8 +1098,20 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
       if (menu_input->pointer.oldpressed[0])
       {
          if (!menu_input->pointer.dragging)
-            ret = menu_driver_pointer_tap(menu_input->pointer.start_x,
-                  menu_input->pointer.start_y, menu_input->pointer.ptr, cbs, entry, action);
+         {
+            menu_ctx_pointer_t point;
+
+            point.x      = menu_input->pointer.start_x;
+            point.y      = menu_input->pointer.start_y;
+            point.ptr    = menu_input->pointer.ptr;
+            point.cbs    = cbs;
+            point.entry  = entry;
+            point.action = action;
+
+            menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
+
+            ret = point.retcode;
+         }
 
          menu_input->pointer.oldpressed[0] = false;
          menu_input->pointer.start_x       = 0;

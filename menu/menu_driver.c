@@ -290,16 +290,6 @@ static void menu_driver_toggle(bool latch)
    }
 }
 
-int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
-      menu_file_list_cbs_t *cbs,
-      menu_entry_t *entry, unsigned action)
-{
-   if (!menu_driver_ctx || !menu_driver_ctx->pointer_tap)
-      return 0;
-   return menu_driver_ctx->pointer_tap(menu_userdata,
-         x, y, ptr, cbs, entry, action);
-}
-
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    static struct retro_system_info menu_driver_system;
@@ -826,6 +816,19 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
          }
          return false;
+      case RARCH_MENU_CTL_POINTER_TAP:
+         {
+            menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
+            if (!menu_driver_ctx || !menu_driver_ctx->pointer_tap)
+            {
+               point->retcode = 0;
+               return false;
+            }
+            point->retcode = menu_driver_ctx->pointer_tap(menu_userdata,
+                  point->x, point->y, point->ptr,
+                  point->cbs, point->entry, point->action);
+         }
+         break;
       default:
       case RARCH_MENU_CTL_NONE:
          break;

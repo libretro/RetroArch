@@ -160,7 +160,8 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_LIST_PUSH,
    RARCH_MENU_CTL_ITERATE,
    RARCH_MENU_CTL_ENVIRONMENT,
-   RARCH_MENU_CTL_DRIVER_DATA_GET
+   RARCH_MENU_CTL_DRIVER_DATA_GET,
+   RARCH_MENU_CTL_POINTER_TAP
 };
 
 typedef enum
@@ -371,6 +372,17 @@ typedef struct menu_ctx_environment
    void *data;
 } menu_ctx_environment_t;
 
+typedef struct menu_ctx_pointer
+{
+   unsigned x;
+   unsigned y;
+   unsigned ptr;
+   menu_file_list_cbs_t *cbs;
+   menu_entry_t *entry;
+   unsigned action;
+   int retcode;
+} menu_ctx_pointer_t;
+
 /**
  * menu_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -411,10 +423,6 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
       const char *elem0, const char *elem1,
       uint32_t label_hash, uint32_t menu_label_hash);
-
-int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
-      menu_file_list_cbs_t *cbs,
-      menu_entry_t *entry, unsigned action);
 
 /* HACK */
 extern unsigned int rdb_entry_start_game_selection_ptr;
