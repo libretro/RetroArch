@@ -40,7 +40,15 @@ static void menu_list_free_list(file_list_t *list)
    unsigned i;
 
    for (i = 0; i < list->size; i++)
-      menu_driver_list_free(list, i, list->size);
+   {
+      menu_ctx_list_t list_info;
+
+      list_info.list      = list;
+      list_info.idx       = i;
+      list_info.list_size = list->size;
+
+      menu_driver_ctl(RARCH_MENU_CTL_LIST_FREE, &list_info);
+   }
 
    if (list)
       file_list_free(list);
@@ -173,7 +181,15 @@ static bool menu_list_pop_stack(menu_list_t *list, size_t idx, size_t *directory
    menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
 
    if (menu_list->size != 0)
-      menu_driver_list_free(menu_list, menu_list->size - 1, menu_list->size - 1);
+   {
+      menu_ctx_list_t list_info;
+
+      list_info.list      = menu_list;
+      list_info.idx       = menu_list->size - 1;
+      list_info.list_size = menu_list->size - 1;
+
+      menu_driver_ctl(RARCH_MENU_CTL_LIST_FREE, &list_info);
+   }
 
    file_list_pop(menu_list, directory_ptr);
    menu_driver_ctl(RARCH_MENU_CTL_LIST_SET_SELECTION, menu_list);

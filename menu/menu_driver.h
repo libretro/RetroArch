@@ -152,6 +152,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_POPULATE_ENTRIES,
    RARCH_MENU_CTL_FIND_DRIVER,
    RARCH_MENU_CTL_LOAD_IMAGE,
+   RARCH_MENU_CTL_LIST_FREE,
    RARCH_MENU_CTL_LIST_CLEAR,
    RARCH_MENU_CTL_LIST_SET_SELECTION,
    RARCH_MENU_CTL_LIST_CACHE,
@@ -345,6 +346,7 @@ typedef struct menu_ctx_load_image
 typedef struct menu_ctx_list
 {
    file_list_t *list;
+   size_t list_size;
    const char *path;
    const char *label;
    size_t idx;
@@ -397,8 +399,6 @@ const char *menu_driver_find_ident(int index);
  * separated by '|'.
  **/
 const char* config_get_menu_driver_options(void);
-
-void  menu_driver_list_free(file_list_t *list, size_t i, size_t list_size);
 
 size_t menu_driver_list_get_size(menu_list_type_t type);
 

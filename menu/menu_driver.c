@@ -189,21 +189,6 @@ static bool menu_init(menu_handle_t *menu_data)
    return true;
 }
 
-void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
-{
-   if (menu_driver_ctx)
-   {
-      if (menu_driver_ctx->list_free)
-         menu_driver_ctx->list_free(list, idx, list_size);
-   }
-
-   if (list)
-   {
-      file_list_free_userdata  (list, idx);
-      file_list_free_actiondata(list, idx);
-   }
-}
-
 size_t  menu_driver_list_get_selection(void)
 {
    if (!menu_driver_ctx || !menu_driver_ctx->list_get_selection)
@@ -693,6 +678,23 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                menu_driver_ctx->populate_entries(
                      menu_userdata, info->path,
                      info->label, info->type);
+         }
+         break;
+      case RARCH_MENU_CTL_LIST_FREE:
+         {
+            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
+
+            if (menu_driver_ctx)
+            {
+               if (menu_driver_ctx->list_free)
+                  menu_driver_ctx->list_free(list->list, list->idx, list->list_size);
+            }
+
+            if (list->list)
+            {
+               file_list_free_userdata  (list->list, list->idx);
+               file_list_free_actiondata(list->list, list->idx);
+            }
          }
          break;
       case RARCH_MENU_CTL_LIST_PUSH:
