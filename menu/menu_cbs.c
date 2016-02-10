@@ -144,3 +144,8 @@ error:
    string_list_free(str_list);
    str_list = NULL;
 }
+
+int menu_cbs_exit(void)
+{
+   return -1;
+}

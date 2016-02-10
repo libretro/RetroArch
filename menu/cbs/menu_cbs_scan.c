@@ -49,7 +49,7 @@ int action_scan_file(const char *path,
    menu_handle_t *menu            = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return -1;
+      return menu_cbs_exit();
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 
@@ -69,7 +69,7 @@ int action_scan_directory(const char *path,
    menu_handle_t *menu            = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return -1;
+      return menu_cbs_exit();
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 

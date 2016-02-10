@@ -48,7 +48,7 @@ enum
 static int deferred_push_dlist(menu_displaylist_info_t *info, unsigned val)
 {
    if (menu_displaylist_push_list(info, val) != 0)
-      return -1;
+      return menu_cbs_exit();
    menu_displaylist_push_list_process(info);
    return 0;
 }
@@ -331,7 +331,7 @@ static int general_push(menu_displaylist_info_t *info,
    menu_handle_t        *menu  = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return -1;
+      return menu_cbs_exit();
 
    core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 

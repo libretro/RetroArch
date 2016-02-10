@@ -107,11 +107,6 @@ finish:
 }
 #endif
 
-static int action_ok_exit(void)
-{
-   return -1;
-}
-
 static int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
@@ -133,7 +128,7 @@ static int generic_action_ok_displaylist_push(const char *path,
    file_list_t           *menu_stack = menu_entries_get_menu_stack_ptr(0);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return action_ok_exit();
+      return menu_cbs_exit();
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 
@@ -439,7 +434,7 @@ static int generic_action_ok_displaylist_push(const char *path,
 
    ret = menu_displaylist_push_list(&info, dl_type);
    if (ret != 0)
-      return action_ok_exit();
+      return menu_cbs_exit();
 
    menu_displaylist_push_list_process(&info);
    return 0;
@@ -470,7 +465,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    core_info_list_t *list   = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return action_ok_exit();
+      return menu_cbs_exit();
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 
@@ -515,7 +510,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
          if (rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL))
             action_ok_push_quick_menu();
-         return action_ok_exit();
+         return menu_cbs_exit();
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
@@ -562,7 +557,7 @@ static int action_ok_file_load_detect_core(const char *path,
          false, CORE_TYPE_PLAIN, NULL, NULL))
    {
       action_ok_push_quick_menu();
-      return action_ok_exit();
+      return menu_cbs_exit();
    }
 
    return 0;
@@ -586,9 +581,9 @@ static int action_ok_playlist_entry(const char *path,
    uint32_t hash_label              = menu_hash_calculate(label);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return action_ok_exit();
+      return menu_cbs_exit();
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return action_ok_exit();
+      return menu_cbs_exit();
 
    switch (hash_label)
    {
@@ -602,7 +597,7 @@ static int action_ok_playlist_entry(const char *path,
                   menu->db_playlist_file, COLLECTION_SIZE);
 
             if (!tmp_playlist)
-               return action_ok_exit();
+               return menu_cbs_exit();
          }
 
          playlist   = tmp_playlist;
@@ -698,7 +693,7 @@ static int action_ok_playlist_entry(const char *path,
             "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
    }
 
-   return action_ok_exit();
+   return menu_cbs_exit();
 }
 
 static int action_ok_cheat_apply_changes(const char *path,
@@ -855,7 +850,7 @@ static int generic_action_ok(const char *path,
    return ret;
 
 error:
-   return action_ok_exit();
+   return menu_cbs_exit();
 }
 
 static int action_ok_set_path(const char *path,
@@ -1078,7 +1073,7 @@ static int action_ok_core_deferred_set(const char *path,
    content_playlist_t *playlist      = NULL;
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return action_ok_exit();
+      return menu_cbs_exit();
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
@@ -1102,7 +1097,7 @@ static int action_ok_core_deferred_set(const char *path,
    menu_entries_pop_stack(&selection, 0);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
 
-   return action_ok_exit();
+   return menu_cbs_exit();
 }
 
 static int action_ok_core_load_deferred(const char *path,
@@ -1111,13 +1106,13 @@ static int action_ok_core_load_deferred(const char *path,
    menu_handle_t *menu      = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return action_ok_exit();
+      return menu_cbs_exit();
 
    if (rarch_task_push_content_load_default(path, menu->deferred_path,
             false, CORE_TYPE_PLAIN, NULL, NULL))
       action_ok_push_quick_menu();
 
-   return action_ok_exit();
+   return menu_cbs_exit();
 }
 
 static int action_ok_deferred_list_stub(const char *path,
@@ -1183,7 +1178,7 @@ static int action_ok_file_load(const char *path,
    file_list_t  *menu_stack = menu_entries_get_menu_stack_ptr(0);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return action_ok_exit();
+      return menu_cbs_exit();
 
    menu_entries_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
 
@@ -1215,14 +1210,14 @@ static int action_ok_file_load(const char *path,
    if (rarch_task_push_content_load_default(NULL, full_path_new,
             true, CORE_TYPE_PLAIN, NULL, NULL))
       action_ok_push_quick_menu();
-   return action_ok_exit();
+   return menu_cbs_exit();
 }
 
 
 static int generic_action_ok_command(enum event_command cmd)
 {
    if (!event_cmd_ctl(cmd, NULL))
-      return action_ok_exit();
+      return menu_cbs_exit();
    return 0;
 }
 
@@ -1230,7 +1225,7 @@ static int action_ok_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    if (generic_action_ok_command(EVENT_CMD_LOAD_STATE) == -1)
-      return action_ok_exit();
+      return menu_cbs_exit();
    return generic_action_ok_command(EVENT_CMD_RESUME);
  }
 
@@ -1239,7 +1234,7 @@ static int action_ok_save_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    if (generic_action_ok_command(EVENT_CMD_SAVE_STATE) == -1)
-      return action_ok_exit();
+      return menu_cbs_exit();
    return generic_action_ok_command(EVENT_CMD_RESUME);
 }
 
@@ -1652,7 +1647,7 @@ static int generic_action_ok_network(const char *path,
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
    if (string_is_empty(settings->network.buildbot_url))
-      return action_ok_exit();
+      return menu_cbs_exit();
 
    event_cmd_ctl(EVENT_CMD_NETWORK_INIT, NULL);
 
@@ -1729,7 +1724,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
    struct string_list *str_list2   = NULL;
 
    if (!label)
-      return action_ok_exit();
+      return menu_cbs_exit();
 
    str_list = string_split(label, "|");
 
@@ -2033,7 +2028,7 @@ static int action_ok_load_archive(const char *path,
    const char *content_path = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return action_ok_exit();
+      return menu_cbs_exit();
 
    menu_path    = menu->scratch2_buf;
    content_path = menu->scratch_buf;
@@ -2060,7 +2055,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    const char *content_path = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return action_ok_exit();
+      return menu_cbs_exit();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &idx))
       return false;
@@ -2090,7 +2085,7 @@ static int action_ok_load_archive_detect_core(const char *path,
          if (rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL))
             action_ok_push_quick_menu();
-         return action_ok_exit();
+         return menu_cbs_exit();
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);

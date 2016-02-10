@@ -44,7 +44,7 @@ static int generic_shader_action_parameter_right(
       unsigned type, const char *label, bool wraparound)
 {
    if (!shader)
-      return -1;
+      return menu_cbs_exit();
 
    param->current += param->step;
    param->current  = min(max(param->minimum, param->current), param->maximum);
@@ -212,10 +212,10 @@ static int action_right_shader_scale_pass(unsigned type, const char *label,
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
          &shader);
    if (!shader)
-      return -1;
+      return menu_cbs_exit();
    shader_pass = &shader->pass[pass];
    if (!shader_pass)
-      return -1;
+      return menu_cbs_exit();
 
    {
       unsigned current_scale   = shader_pass->fbo.scale_x;
@@ -242,10 +242,10 @@ static int action_right_shader_filter_pass(unsigned type, const char *label,
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
          &shader);
    if (!shader)
-      return -1;
+      return menu_cbs_exit();
    shader_pass = &shader->pass[pass];
    if (!shader_pass)
-      return -1;
+      return menu_cbs_exit();
 
    shader_pass->filter = ((shader_pass->filter + delta) % 3);
 #endif
@@ -258,7 +258,7 @@ static int action_right_shader_filter_default(unsigned type, const char *label,
 #ifdef HAVE_SHADER_MANAGER
    rarch_setting_t *setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_VIDEO_SMOOTH));
    if (!setting)
-      return -1;
+      return menu_cbs_exit();
    return menu_action_handle_setting(setting, menu_setting_get_type(setting), MENU_ACTION_RIGHT,
          wraparound);
 #else
@@ -290,7 +290,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
          &shader);
    if (!shader)
-      return -1;
+      return menu_cbs_exit();
 
    if ((shader->passes < GFX_MAX_SHADERS))
       shader->passes++;
@@ -325,7 +325,7 @@ static int playlist_association_right(unsigned type, const char *label,
    
    core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
    if (!list)
-      return -1;
+      return menu_cbs_exit();
 
    stnames = string_split(settings->playlist_names, ";");
    stcores = string_split(settings->playlist_cores, ";");
@@ -560,7 +560,7 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
       uint32_t label_hash, uint32_t menu_label_hash)
 {
    if (!cbs)
-      return -1;
+      return menu_cbs_exit();
 
    BIND_ACTION_RIGHT(cbs, bind_right_generic);
     
@@ -584,5 +584,5 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
    if (menu_cbs_init_bind_right_compare_type(cbs, type, label_hash, menu_label_hash) == 0)
       return 0;
 
-   return -1;
+   return menu_cbs_exit();
 }
