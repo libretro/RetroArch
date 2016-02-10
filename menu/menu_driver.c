@@ -106,43 +106,6 @@ const char *config_get_menu_driver_options(void)
    return char_list_new_special(STRING_LIST_MENU_DRIVERS, NULL);
 }
 
-static bool find_menu_driver(void)
-{
-   int i;
-   driver_ctx_info_t drv;
-   settings_t *settings = config_get_ptr();
-
-   drv.label = "menu_driver";
-   drv.s     = settings->menu.driver;
-
-   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
-
-   i = drv.len;
-
-   if (i >= 0)
-      menu_driver_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(i);
-   else
-   {
-      unsigned d;
-      RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
-            settings->menu.driver);
-      RARCH_LOG_OUTPUT("Available menu drivers are:\n");
-      for (d = 0; menu_driver_find_handle(d); d++)
-         RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
-      RARCH_WARN("Going to default to first menu driver...\n");
-
-      menu_driver_ctx = (const menu_ctx_driver_t*)menu_driver_find_handle(0);
-
-      if (!menu_driver_ctx)
-      {
-         retro_fail(1, "find_menu_driver()");
-         return false;
-      }
-   }
-
-   return true;
-}
-
 menu_handle_t *menu_driver_get_ptr(void)
 {
    if (!menu_driver_data)
@@ -298,9 +261,7 @@ static void menu_driver_toggle(bool latch)
    retro_keyboard_event_t *key_event          = NULL;
    retro_keyboard_event_t *frontend_key_event = NULL;
    settings_t                 *settings       = config_get_ptr();
-   rarch_system_info_t          *system       = NULL;
    
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    menu_driver_ctl(RARCH_MENU_CTL_TOGGLE, &latch);
 
    if (latch)
@@ -309,7 +270,7 @@ static void menu_driver_toggle(bool latch)
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_ALIVE, NULL);
 
    runloop_ctl(RUNLOOP_CTL_FRONTEND_KEY_EVENT_GET, &frontend_key_event);
-   runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET, &key_event);
+   runloop_ctl(RUNLOOP_CTL_KEY_EVENT_GET,          &key_event);
 
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
@@ -408,7 +369,42 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_playlist = NULL;
          break;
       case RARCH_MENU_CTL_FIND_DRIVER:
-         return find_menu_driver();
+         {
+            int i;
+            driver_ctx_info_t drv;
+            settings_t *settings = config_get_ptr();
+
+            drv.label = "menu_driver";
+            drv.s     = settings->menu.driver;
+
+            driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+            i = drv.len;
+
+            if (i >= 0)
+               menu_driver_ctx = (const menu_ctx_driver_t*)
+                  menu_driver_find_handle(i);
+            else
+            {
+               unsigned d;
+               RARCH_WARN("Couldn't find any menu driver named \"%s\"\n",
+                     settings->menu.driver);
+               RARCH_LOG_OUTPUT("Available menu drivers are:\n");
+               for (d = 0; menu_driver_find_handle(d); d++)
+                  RARCH_LOG_OUTPUT("\t%s\n", menu_driver_find_ident(d));
+               RARCH_WARN("Going to default to first menu driver...\n");
+
+               menu_driver_ctx = (const menu_ctx_driver_t*)
+                  menu_driver_find_handle(0);
+
+               if (!menu_driver_ctx)
+               {
+                  retro_fail(1, "find_menu_driver()");
+                  return false;
+               }
+            }
+         }
+         break;
       case RARCH_MENU_CTL_PLAYLIST_INIT:
          {
             const char *path = (const char*)data;
