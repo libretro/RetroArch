@@ -58,7 +58,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 
 static menu_handle_t *menu_driver_data = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
-static struct video_shader *menu_driver_shader = NULL;
 static void *menu_userdata = NULL;
 
 /**
@@ -219,19 +218,19 @@ static void bundle_decompressed(void *task_data,
  *
  * Returns: menu handle on success, otherwise NULL.
  **/
-static void *menu_init(const void *data)
+static bool menu_init(const void *data)
 {
    menu_handle_t *menu         = NULL;
    menu_ctx_driver_t *menu_ctx = (menu_ctx_driver_t*)data;
    settings_t *settings        = config_get_ptr();
    
    if (!menu_ctx)
-      return NULL;
+      return false;
 
    menu = (menu_handle_t*)menu_ctx->init(&menu_userdata);
 
    if (!menu)
-      return NULL;
+      return false;
 
    strlcpy(settings->menu.driver, menu_ctx->ident,
          sizeof(settings->menu.driver));
@@ -242,12 +241,8 @@ static void *menu_init(const void *data)
    if (!core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_INIT, NULL))
       goto error;
 
-#ifdef HAVE_SHADER_MANAGER
-   menu_driver_shader = (struct video_shader*)
-      calloc(1, sizeof(struct video_shader));
-   if (!menu_driver_shader)
+   if (!menu_driver_ctl(RARCH_MENU_CTL_SHADER_INIT, NULL))
       goto error;
-#endif
 
    if (settings->menu_show_start_screen)
    {
@@ -283,12 +278,14 @@ static void *menu_init(const void *data)
    if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT, NULL))
       goto error;
 
-   return menu;
+   menu_driver_data = (void*)menu;
+
+   return true;
    
 error:
    menu_free(menu);
 
-   return NULL;
+   return false;
 }
 
 void menu_driver_list_insert(file_list_t *list, const char *path,
@@ -517,11 +514,12 @@ int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    static struct retro_system_info menu_driver_system;
-   static content_playlist_t *menu_driver_playlist = NULL;
    static bool menu_driver_prevent_populate        = false;
    static bool menu_driver_load_no_content         = false;
    static bool menu_driver_alive                   = false;
    static bool menu_driver_data_own                = false;
+   static content_playlist_t *menu_driver_playlist = NULL;
+   static struct video_shader *menu_driver_shader  = NULL;
    const menu_ctx_driver_t                 *driver = menu_driver_ctx;
 
    switch (state)
@@ -591,6 +589,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_shader = NULL;
 #endif
          return true;
+      case RARCH_MENU_CTL_SHADER_INIT:
+#ifdef HAVE_SHADER_MANAGER
+         menu_driver_shader = (struct video_shader*)
+            calloc(1, sizeof(struct video_shader));
+         if (!menu_driver_shader)
+            return false;
+#endif
+         return true;
       case RARCH_MENU_CTL_SHADER_GET:
          {
             struct video_shader **shader = (struct video_shader**)data;
@@ -656,9 +662,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (!menu_display_ctl(RARCH_MENU_CTL_FIND_DRIVER, NULL))
             return false;
 
-         menu_driver_data = (menu_handle_t*)menu_init(menu_driver_ctx);
-
-         if (!menu_driver_data)
+         if (!menu_init(menu_driver_ctx))
          {
             retro_fail(1, "init_menu()");
             return false;
