@@ -156,6 +156,7 @@ static int menu_entries_flush_stack_type(const char *needle, const char *label,
 
 static bool menu_list_pop_stack(menu_list_t *list, size_t idx, size_t *directory_ptr)
 {
+   menu_ctx_list_t list_info;
    bool refresh           = false;
    file_list_t *menu_list = NULL;
    if (!list)
@@ -166,7 +167,10 @@ static bool menu_list_pop_stack(menu_list_t *list, size_t idx, size_t *directory
    if (menu_list_get_stack_size(list, idx) <= 1)
       return false;
 
-   menu_driver_list_cache(MENU_LIST_PLAIN, 0);
+   list_info.type   = MENU_LIST_PLAIN;
+   list_info.action = 0;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
 
    if (menu_list->size != 0)
       menu_driver_list_free(menu_list, menu_list->size - 1, menu_list->size - 1);

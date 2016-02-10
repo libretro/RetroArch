@@ -138,7 +138,8 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_LIST_SET_SELECTION,
    RARCH_MENU_CTL_POPULATE_ENTRIES,
    RARCH_MENU_CTL_FIND_DRIVER,
-   RARCH_MENU_CTL_LOAD_IMAGE
+   RARCH_MENU_CTL_LOAD_IMAGE,
+   RARCH_MENU_CTL_LIST_CACHE
 };
 
 typedef enum
@@ -321,6 +322,12 @@ typedef struct menu_ctx_load_image
    menu_image_type_t type;
 } menu_ctx_load_image_t;
 
+typedef struct menu_ctx_list
+{
+   menu_list_type_t type;
+   unsigned action;
+} menu_ctx_list_t;
+
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
@@ -360,7 +367,6 @@ const char* config_get_menu_driver_options(void);
 menu_handle_t *menu_driver_get_ptr(void);
 
 
-void menu_driver_list_cache(menu_list_type_t type, unsigned action);
 
 void  menu_driver_list_free(file_list_t *list, size_t i, size_t list_size);
 
