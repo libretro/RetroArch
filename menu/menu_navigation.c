@@ -18,12 +18,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _WIN32
-#include <direct.h>
-#else
-#include <unistd.h>
-#endif
-#include <limits.h>
 #include <ctype.h>
 
 #include <boolean.h>
