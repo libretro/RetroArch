@@ -289,23 +289,25 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
          label_hash, menu_label_hash);
 }
 
-int menu_driver_iterate(enum menu_action action)
+bool menu_driver_iterate(enum menu_action action)
 {
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
    {
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUIT, NULL);
-      return -1;
+      return false;
    }
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_SHUTDOWN, NULL))
    {
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_SHUTDOWN, NULL);
       if (!event_cmd_ctl(EVENT_CMD_QUIT, NULL))
-         return -1;
-      return 0;
+         return false;
+      return true;
    }
    if (!menu_driver_ctx || !menu_driver_ctx->iterate)
-      return -1;
-   return menu_driver_ctx->iterate(menu_driver_data, menu_userdata, action);
+      return false;
+   if (menu_driver_ctx->iterate(menu_driver_data, menu_userdata, action) == -1)
+      return false;
+   return true;
 }
 
 static void menu_input_key_event(bool down, unsigned keycode,
