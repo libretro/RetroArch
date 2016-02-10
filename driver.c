@@ -438,7 +438,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                return false;
             uninit_drivers(*flags);
          }
-         return true;
+         break;
       case RARCH_DRIVER_CTL_INIT:
          {
             int *flags = (int*)data;
@@ -446,7 +446,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
                return false;
             init_drivers(*flags);
          }
-         return true;
+         break;
       case RARCH_DRIVER_CTL_INIT_PRE:
          audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
          video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
@@ -502,12 +502,12 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             if (!drv)
                return false;
             drv->len = driver_find_index(drv->label, drv->s);
-            return true;
          }
+         break;
       case RARCH_DRIVER_CTL_NONE:
       default:
          break;
    }
 
-   return false;
+   return true;
 }
