@@ -205,9 +205,9 @@ void menu_shader_manager_save_preset(
    struct video_shader *shader = NULL;
    global_t *global            = global_get_ptr();
    settings_t *settings        = config_get_ptr();
-   menu_handle_t *menu         = menu_driver_get_ptr();
+   menu_handle_t *menu         = NULL;
 
-   if (!menu)
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
    {
       RARCH_ERR("Cannot save shader preset, menu handle"
             " is not initialized.\n");

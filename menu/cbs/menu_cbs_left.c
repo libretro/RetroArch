@@ -134,10 +134,11 @@ static int action_left_mainmenu(unsigned type, const char *label,
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    settings_t       *settings = config_get_ptr();
-   menu_handle_t       *menu  = menu_driver_get_ptr();
+   menu_handle_t       *menu  = NULL;
    unsigned           action  = MENU_ACTION_LEFT;
    size_t          list_size  = menu_driver_list_get_size(MENU_LIST_PLAIN);
-   if (!menu)
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
    if (list_size == 1)

@@ -328,7 +328,10 @@ static int general_push(menu_displaylist_info_t *info,
    settings_t        *settings = config_get_ptr();
    rarch_system_info_t *system = NULL;
    core_info_list_t *list      = NULL;
-   menu_handle_t        *menu  = menu_driver_get_ptr();
+   menu_handle_t        *menu  = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return -1;
 
    core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 

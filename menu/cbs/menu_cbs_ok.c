@@ -121,11 +121,14 @@ static int generic_action_ok_displaylist_push(const char *path,
    const char          *content_path = NULL;
    const char          *info_label   = NULL;
    const char          *info_path    = NULL;
+   menu_handle_t            *menu    = NULL;
    global_t                 *global  = global_get_ptr();
    settings_t            *settings   = config_get_ptr();
    file_list_t        *selection_buf = menu_entries_get_selection_buf_ptr(0);
    file_list_t           *menu_stack = menu_entries_get_menu_stack_ptr(0);
-   menu_handle_t            *menu    = menu_driver_get_ptr();
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return -1;
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
 
@@ -455,13 +458,13 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
 {
    menu_content_ctx_defer_info_t def_info;
    char menu_path_new[PATH_MAX_LENGTH];
+   int ret                  = 0;
    const char *menu_path    = NULL;
    const char *menu_label   = NULL;
-   int ret                  = 0;
-   menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_handle_t *menu      = NULL;
    core_info_list_t *list   = NULL;
 
-   if (!menu)
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
@@ -566,18 +569,18 @@ static int action_ok_playlist_entry(const char *path,
    size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
    uint32_t core_name_hash, core_path_hash;
+   size_t selection_ptr             = 0;
+   content_playlist_t *playlist     = g_defaults.history;
+   bool is_history                  = true;
    const char *entry_path           = NULL;
    const char *entry_label          = NULL;
    const char *core_path            = NULL;
    const char *core_name            = NULL;
-   size_t selection_ptr             = 0;
    content_playlist_t *tmp_playlist = NULL;
-   content_playlist_t *playlist     = g_defaults.history;
-   bool is_history                  = true;
-   menu_handle_t *menu              = menu_driver_get_ptr();
+   menu_handle_t *menu              = NULL;
    uint32_t hash_label              = menu_hash_calculate(label);
 
-   if (!menu)
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
@@ -726,9 +729,9 @@ static int generic_action_ok(const char *path,
    const char             *menu_path = NULL;
    const char *flush_char            = NULL;
    struct video_shader      *shader  = NULL;
-   menu_handle_t               *menu = menu_driver_get_ptr();
+   menu_handle_t               *menu = NULL;
 
-   if (!menu)
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
@@ -926,9 +929,12 @@ static int  generic_action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, menu_help_type_t id2)
 {
-   const char *lbl        = menu_hash_to_str(id);
-   menu_handle_t            *menu    = menu_driver_get_ptr();
+   const char               *lbl  = menu_hash_to_str(id);
+   menu_handle_t            *menu = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
    menu->help_screen_type = id2;
+
    return generic_action_ok_displaylist_push(path, lbl, type, idx,
          entry_idx, ACTION_OK_DL_HELP);
 }
@@ -936,8 +942,10 @@ static int  generic_action_ok_help(const char *path,
 static int action_ok_cheevos(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_handle_t *menu    = NULL;
    unsigned new_id        = type - MENU_SETTINGS_CHEEVOS_START;
+
+   menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
 
    menu->help_screen_id   = new_id;
    return generic_action_ok_help(path, label, type, idx, entry_idx,
@@ -1095,9 +1103,9 @@ static int action_ok_core_deferred_set(const char *path,
 static int action_ok_core_load_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_handle_t *menu      = NULL;
 
-   if (!menu)
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
    if (rarch_task_push_content_load_default(path, menu->deferred_path,
@@ -1166,8 +1174,11 @@ static int action_ok_file_load(const char *path,
    const char *menu_label   = NULL;
    const char *menu_path    = NULL;
    rarch_setting_t *setting = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
+   menu_handle_t *menu      = NULL;
    file_list_t  *menu_stack = menu_entries_get_menu_stack_ptr(0);
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return -1;
 
    menu_entries_get_last(menu_stack, &menu_path, &menu_label, NULL, NULL);
 
@@ -2012,9 +2023,15 @@ static int action_ok_open_archive(const char *path,
 static int action_ok_load_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   const char *menu_path    = menu ? menu->scratch2_buf : NULL;
-   const char *content_path = menu ? menu->scratch_buf  : NULL;
+   menu_handle_t *menu      = NULL;
+   const char *menu_path    = NULL;
+   const char *content_path = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return -1;
+
+   menu_path    = menu->scratch2_buf;
+   content_path = menu->scratch_buf;
 
    fill_pathname_join(detect_content_path, menu_path, content_path,
          sizeof(detect_content_path));
@@ -2033,15 +2050,18 @@ static int action_ok_load_archive_detect_core(const char *path,
    menu_content_ctx_defer_info_t def_info;
    int ret                  = 0;
    core_info_list_t *list   = NULL;
-   menu_handle_t *menu      = menu_driver_get_ptr();
-   const char *menu_path    = menu ? menu->scratch2_buf : NULL;
-   const char *content_path = menu ? menu->scratch_buf  : NULL;
+   menu_handle_t *menu      = NULL;
+   const char *menu_path    = NULL;
+   const char *content_path = NULL;
 
-   if (!menu)
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &idx))
       return false;
+
+   menu_path    = menu->scratch2_buf;
+   content_path = menu->scratch_buf;
 
    core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 

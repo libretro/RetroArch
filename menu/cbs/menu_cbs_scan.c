@@ -46,8 +46,9 @@ int action_scan_file(const char *path,
    char fullpath[PATH_MAX_LENGTH] = {0};
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
-   menu_handle_t *menu            = menu_driver_get_ptr();
-   if (!menu)
+   menu_handle_t *menu            = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
@@ -65,8 +66,9 @@ int action_scan_directory(const char *path,
    char fullpath[PATH_MAX_LENGTH] = {0};
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
-   menu_handle_t *menu            = menu_driver_get_ptr();
-   if (!menu)
+   menu_handle_t *menu            = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
    menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);

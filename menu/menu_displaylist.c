@@ -1190,13 +1190,14 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 #ifdef HAVE_LIBRETRODB
    unsigned i, j, k;
    char path_playlist[PATH_MAX_LENGTH];
-   content_playlist_t *playlist        = NULL;
-   database_info_list_t *db_info       = NULL;
    char path_base[PATH_MAX_LENGTH]     = {0};
    char query[PATH_MAX_LENGTH]         = {0};
-   menu_handle_t *menu                 = menu_driver_get_ptr();
+   content_playlist_t *playlist        = NULL;
+   database_info_list_t *db_info       = NULL;
+   menu_handle_t *menu                 = NULL;
    settings_t *settings                = config_get_ptr();
-   if (!menu)
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
 
    database_info_build_query(query, sizeof(query), "displaylist_parse_database_entry", info->path_b);
@@ -1759,10 +1760,13 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
    bool is_historylist                 = false;
    content_playlist_t *playlist        = NULL;
    settings_t      *settings           = config_get_ptr();
-   menu_handle_t        *menu          = menu_driver_get_ptr();
+   menu_handle_t        *menu          = NULL;
    struct item_file *item              = (struct item_file*)
       menu_driver_list_get_entry(MENU_LIST_HORIZONTAL,
       menu_driver_list_get_selection() - (menu_driver_list_get_size(MENU_LIST_TABS)+1));
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return -1;
 
    if (!item)
       return -1;
@@ -1797,12 +1801,12 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 
 static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t *info)
 {
-   menu_handle_t *menu    = menu_driver_get_ptr();
+   menu_handle_t *menu    = NULL;
    global_t *global       = global_get_ptr();
 #ifdef HAVE_CHEEVOS
    settings_t *settings   = config_get_ptr();
 #endif
-   if (!menu)
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
    if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
@@ -1889,9 +1893,9 @@ static int menu_displaylist_parse_load_content_settings(menu_displaylist_info_t 
 
 static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_info_t *info)
 {
-   menu_handle_t *menu             = menu_driver_get_ptr();
-   settings_t *settings            = config_get_ptr();
    unsigned idx                    = rpl_entry_selection_ptr;
+   settings_t *settings            = NULL;
+   menu_handle_t *menu             = NULL;
    const char *label               = NULL;
    const char *core_path           = NULL;
    const char *core_name           = NULL;
@@ -1899,8 +1903,10 @@ static int menu_displaylist_parse_horizontal_content_actions(menu_displaylist_in
    char *fullpath                  = NULL;
    content_playlist_t *playlist    = NULL;
 
-   if (!menu)
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
+
+   settings = config_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
@@ -2124,9 +2130,14 @@ static int menu_displaylist_parse_options_cheats(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_options_remappings(menu_displaylist_info_t *info)
 {
    unsigned p, retro_id;
-   settings_t        *settings = config_get_ptr();
+   settings_t        *settings = NULL;
    rarch_system_info_t *system = NULL;
-   menu_handle_t       *menu   = menu_driver_get_ptr();
+   menu_handle_t       *menu   = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return -1;
+
+   settings = config_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
@@ -2539,8 +2550,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 #endif
    rarch_system_info_t *system = NULL;
    core_info_list_t *list      = NULL;
-   menu_handle_t       *menu   = menu_driver_get_ptr();
-   settings_t      *settings   = config_get_ptr();
+   menu_handle_t       *menu   = NULL;
+   settings_t      *settings   = NULL;
+   
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return -1;
+
+   settings = config_get_ptr();
 
    core_info_ctl(CORE_INFO_CTL_LIST_GET,    &list);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);

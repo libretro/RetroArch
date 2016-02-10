@@ -158,7 +158,8 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_LIST_INSERT,
    RARCH_MENU_CTL_LIST_PUSH,
    RARCH_MENU_CTL_ITERATE,
-   RARCH_MENU_CTL_ENVIRONMENT
+   RARCH_MENU_CTL_ENVIRONMENT,
+   RARCH_MENU_CTL_DRIVER_DATA_GET
 };
 
 typedef enum
@@ -396,8 +397,6 @@ const char *menu_driver_find_ident(int index);
  * separated by '|'.
  **/
 const char* config_get_menu_driver_options(void);
-
-menu_handle_t *menu_driver_get_ptr(void);
 
 void  menu_driver_list_free(file_list_t *list, size_t i, size_t list_size);
 

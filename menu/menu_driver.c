@@ -58,7 +58,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
-static menu_handle_t *menu_driver_data = NULL;
 static const menu_ctx_driver_t *menu_driver_ctx = NULL;
 static void *menu_userdata = NULL;
 
@@ -104,13 +103,6 @@ const char *menu_driver_find_ident(int idx)
 const char *config_get_menu_driver_options(void)
 {
    return char_list_new_special(STRING_LIST_MENU_DRIVERS, NULL);
-}
-
-menu_handle_t *menu_driver_get_ptr(void)
-{
-   if (!menu_driver_data)
-      return NULL;
-   return menu_driver_data;
 }
 
 #ifdef HAVE_ZLIB
@@ -334,10 +326,19 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    static bool menu_driver_pending_shutdown        = false;
    static content_playlist_t *menu_driver_playlist = NULL;
    static struct video_shader *menu_driver_shader  = NULL;
+   static menu_handle_t *menu_driver_data          = NULL;
    settings_t *settings                            = config_get_ptr();
 
    switch (state)
    {
+      case RARCH_MENU_CTL_DRIVER_DATA_GET:
+         {
+            menu_handle_t **driver_data = (menu_handle_t**)data;
+            if (!driver_data)
+               return false;
+            *driver_data = menu_driver_data;
+         }
+         break;
       case RARCH_MENU_CTL_IS_PENDING_QUIT:
          return menu_driver_pending_quit;
       case RARCH_MENU_CTL_SET_PENDING_QUIT:

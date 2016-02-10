@@ -200,7 +200,8 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          memset(menu_input, 0, sizeof(menu_input_t));
          break;
       case MENU_INPUT_CTL_SEARCH_START:
-         menu = menu_driver_get_ptr();
+         if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+            return false;
 
          menu_input->keyboard.display = true;
          menu_input->keyboard.label   = menu_hash_to_str(MENU_VALUE_SEARCH);
@@ -308,9 +309,11 @@ void menu_input_key_start_line(const char *label,
       input_keyboard_line_complete_t cb)
 {
    bool keyboard_display    = true;
-   menu_handle_t    *menu   = menu_driver_get_ptr();
+   menu_handle_t    *menu   = NULL;
    menu_input_t *menu_input = menu_input_get_ptr();
-   if (!menu || !menu_input)
+   if (!menu_input)
+      return;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return;
 
    menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,       &keyboard_display);
@@ -669,12 +672,14 @@ int menu_input_key_bind_set_mode(void *data,
       enum menu_input_bind_mode type)
 {
    unsigned index_offset;
-   menu_handle_t       *menu = menu_driver_get_ptr();
+   menu_handle_t       *menu = NULL;
    menu_input_t  *menu_input = menu_input_get_ptr();
    rarch_setting_t  *setting = (rarch_setting_t*)data;
    settings_t *settings      = config_get_ptr();
 
    if (!setting)
+      return -1;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
    if (menu_input_key_bind_set_mode_common(setting, type) == -1)
       return -1;
