@@ -613,12 +613,15 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 
 - (void)alertView:(UIAlertView*)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
-    switch (buttonIndex)
-    {
-        case 0:
-           menu_driver_iterate(MENU_ACTION_OK);
-           break;
-    }
+   menu_ctx_iterate_t iter;
+
+   switch (buttonIndex)
+   {
+      case 0:
+         iter.action = MENU_ACTION_OK;
+         menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter);
+         break;
+   }
 }
 
 @end

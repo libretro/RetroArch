@@ -1360,13 +1360,16 @@ int runloop_iterate(unsigned *sleep_ms)
 #ifdef HAVE_MENU
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
+      menu_ctx_iterate_t iter;
       bool focused            = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL) 
          && !ui_companion_is_on_foreground();
       bool is_idle            = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
       enum menu_action action = (enum menu_action)
                menu_input_frame_retropad(cmd.state[0], cmd.state[2]);
 
-      if (!menu_driver_iterate(action))
+      iter.action = action;
+
+      if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
       if (focused || !is_idle)

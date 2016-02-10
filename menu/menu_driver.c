@@ -289,27 +289,6 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
          label_hash, menu_label_hash);
 }
 
-bool menu_driver_iterate(enum menu_action action)
-{
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
-   {
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUIT, NULL);
-      return false;
-   }
-   if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_SHUTDOWN, NULL))
-   {
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_SHUTDOWN, NULL);
-      if (!event_cmd_ctl(EVENT_CMD_QUIT, NULL))
-         return false;
-      return true;
-   }
-   if (!menu_driver_ctx || !menu_driver_ctx->iterate)
-      return false;
-   if (menu_driver_ctx->iterate(menu_driver_data, menu_userdata, action) == -1)
-      return false;
-   return true;
-}
-
 static void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
@@ -783,6 +762,28 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             return menu_driver_ctx->load_image(menu_userdata,
                   load_image_info->data, load_image_info->type);
          }
+       case RARCH_MENU_CTL_ITERATE:
+         {
+            menu_ctx_iterate_t *iterate = (menu_ctx_iterate_t*)data;
+
+            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
+            {
+               menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUIT, NULL);
+               return false;
+            }
+            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_SHUTDOWN, NULL))
+            {
+               menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_SHUTDOWN, NULL);
+               if (!event_cmd_ctl(EVENT_CMD_QUIT, NULL))
+                  return false;
+               return true;
+            }
+            if (!menu_driver_ctx || !menu_driver_ctx->iterate)
+               return false;
+            if (menu_driver_ctx->iterate(menu_driver_data, menu_userdata, iterate->action) == -1)
+               return false;
+         }
+         break;
       default:
       case RARCH_MENU_CTL_NONE:
          break;

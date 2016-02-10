@@ -146,7 +146,8 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_FIND_DRIVER,
    RARCH_MENU_CTL_LOAD_IMAGE,
    RARCH_MENU_CTL_LIST_CACHE,
-   RARCH_MENU_CTL_LIST_INSERT
+   RARCH_MENU_CTL_LIST_INSERT,
+   RARCH_MENU_CTL_ITERATE
 };
 
 typedef enum
@@ -339,12 +340,10 @@ typedef struct menu_ctx_list
    unsigned action;
 } menu_ctx_list_t;
 
-extern menu_ctx_driver_t menu_ctx_xui;
-extern menu_ctx_driver_t menu_ctx_rgui;
-extern menu_ctx_driver_t menu_ctx_mui;
-extern menu_ctx_driver_t menu_ctx_xmb;
-extern menu_ctx_driver_t menu_ctx_zarch;
-extern menu_ctx_driver_t menu_ctx_null;
+typedef struct menu_ctx_iterate
+{
+   enum menu_action action;
+} menu_ctx_iterate_t;
 
 /**
  * menu_driver_find_handle:
@@ -377,8 +376,6 @@ const char* config_get_menu_driver_options(void);
 
 menu_handle_t *menu_driver_get_ptr(void);
 
-
-
 void  menu_driver_list_free(file_list_t *list, size_t i, size_t list_size);
 
 size_t menu_driver_list_get_size(menu_list_type_t type);
@@ -390,8 +387,6 @@ bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type);
 size_t  menu_driver_list_get_selection(void);
 
 bool menu_environment_cb(menu_environ_cb_t type, void *data);
-
-bool menu_driver_iterate(enum menu_action action);
 
 int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx,
@@ -408,6 +403,13 @@ extern unsigned int rdb_entry_start_game_selection_ptr;
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
 int menu_iterate_render(void *data, void *userdata);
+
+extern menu_ctx_driver_t menu_ctx_xui;
+extern menu_ctx_driver_t menu_ctx_rgui;
+extern menu_ctx_driver_t menu_ctx_mui;
+extern menu_ctx_driver_t menu_ctx_xmb;
+extern menu_ctx_driver_t menu_ctx_zarch;
+extern menu_ctx_driver_t menu_ctx_null;
 
 #ifdef __cplusplus
 }
