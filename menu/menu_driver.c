@@ -147,7 +147,7 @@ static void bundle_decompressed(void *task_data,
  *
  * Returns: menu handle on success, otherwise NULL.
  **/
-static bool menu_init(void)
+static bool menu_init(menu_handle_t *menu_data)
 {
    settings_t *settings        = config_get_ptr();
 
@@ -162,8 +162,8 @@ static bool menu_init(void)
 
    if (settings->menu_show_start_screen)
    {
-      menu_driver_data->push_help_screen = true;
-      menu_driver_data->help_screen_type = MENU_HELP_WELCOME;
+      menu_data->push_help_screen = true;
+      menu_data->help_screen_type = MENU_HELP_WELCOME;
       settings->menu_show_start_screen   = false;
       event_cmd_ctl(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
    }
@@ -172,15 +172,15 @@ static bool menu_init(void)
          && !string_is_empty(settings->bundle_assets_src_path) 
          && !string_is_empty(settings->bundle_assets_dst_path)
 #ifdef IOS
-         && menu_driver_data->push_help_screen
+         && menu_data->push_help_screen
 #else
          && (settings->bundle_assets_extract_version_current 
             != settings->bundle_assets_extract_last_version)
 #endif
       )
    {
-      menu_driver_data->help_screen_type           = MENU_HELP_EXTRACT;
-      menu_driver_data->push_help_screen           = true;
+      menu_data->help_screen_type           = MENU_HELP_EXTRACT;
+      menu_data->push_help_screen           = true;
 #ifdef HAVE_ZLIB
       rarch_task_push_decompress(settings->bundle_assets_src_path, 
             settings->bundle_assets_dst_path,
@@ -362,6 +362,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_alive            = false;
          menu_driver_data_own         = false;
          menu_driver_ctx              = NULL;
+         menu_userdata                = NULL;
          break;
       case RARCH_MENU_CTL_PLAYLIST_FREE:
          if (menu_driver_playlist)
@@ -591,7 +592,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_data = (menu_handle_t*)
             menu_driver_ctx->init(&menu_userdata);
 
-         if (!menu_driver_data || !menu_init())
+         if (!menu_driver_data || !menu_init(menu_driver_data))
          {
             retro_fail(1, "init_menu()");
             return false;
