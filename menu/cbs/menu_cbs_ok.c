@@ -507,7 +507,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
          if (rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL))
             action_ok_push_quick_menu();
-         return ret;
+         return -1;
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
@@ -1755,6 +1755,8 @@ static int action_ok_rdb_entry_submenu(const char *path,
          ACTION_OK_DL_RDB_ENTRY_SUBMENU);
 
 end:
+   if (rdb)
+      free(rdb);
    if (str_list)
       string_list_free(str_list);
    if (str_list2)
