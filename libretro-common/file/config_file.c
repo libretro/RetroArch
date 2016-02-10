@@ -773,6 +773,20 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       conf->entries = entry;
 }
 
+void config_unset(config_file_t *conf, const char *key)
+{
+   struct config_entry_list *last  = conf->entries;
+   struct config_entry_list *entry = config_get_entry(conf, key, &last);
+
+   if (!entry)
+      return;
+
+   entry->key   = NULL;
+   entry->value = NULL;
+   free(entry->key);
+   free(entry->value);
+}
+
 void config_set_path(config_file_t *conf, const char *entry, const char *val)
 {
 #if defined(RARCH_CONSOLE)
@@ -873,7 +887,7 @@ void config_file_dump(config_file_t *conf, FILE *file)
    list = (struct config_entry_list*)conf->entries;
    while (list)
    {
-      if (!list->readonly)
+      if (!list->readonly && list->key)
          fprintf(file, "%s = \"%s\"\n", list->key, list->value);
       list = list->next;
    }
