@@ -482,6 +482,7 @@ error:
 void menu_entries_push(file_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
+   menu_ctx_list_t list_info;
    size_t idx;
    menu_file_list_cbs_t *cbs       = NULL;
    if (!list || !label)
@@ -489,9 +490,14 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
 
    file_list_push(list, path, label, type, directory_ptr, entry_idx);
 
-   idx = list->size - 1;
+   idx              = list->size - 1;
 
-   menu_driver_list_insert(list, path, label, idx);
+   list_info.list   = list;
+   list_info.path   = path;
+   list_info.label  = label;
+   list_info.idx    = idx;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LIST_INSERT, &list_info);
 
    file_list_free_actiondata(list, idx);
    cbs = (menu_file_list_cbs_t*)

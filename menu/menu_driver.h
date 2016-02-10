@@ -139,7 +139,8 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_POPULATE_ENTRIES,
    RARCH_MENU_CTL_FIND_DRIVER,
    RARCH_MENU_CTL_LOAD_IMAGE,
-   RARCH_MENU_CTL_LIST_CACHE
+   RARCH_MENU_CTL_LIST_CACHE,
+   RARCH_MENU_CTL_LIST_INSERT
 };
 
 typedef enum
@@ -324,6 +325,10 @@ typedef struct menu_ctx_load_image
 
 typedef struct menu_ctx_list
 {
+   file_list_t *list;
+   const char *path;
+   const char *label;
+   size_t idx;
    menu_list_type_t type;
    unsigned action;
 } menu_ctx_list_t;
@@ -390,9 +395,6 @@ int menu_driver_bind_init(menu_file_list_cbs_t *cbs,
 int menu_driver_pointer_tap(unsigned x, unsigned y, unsigned ptr,
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action);
-
-void menu_driver_list_insert(file_list_t *list, const char *path,
-      const char *label, size_t idx);
 
 /* HACK */
 extern unsigned int rdb_entry_start_game_selection_ptr;

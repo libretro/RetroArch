@@ -232,14 +232,6 @@ static bool menu_init(void)
    return true;
 }
 
-void menu_driver_list_insert(file_list_t *list, const char *path,
-      const char *label, size_t idx)
-{
-   if (!menu_driver_ctx || !menu_driver_ctx->list_insert)
-      return;
-   menu_driver_ctx->list_insert(menu_userdata, list, path, label, idx);
-}
-
 void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
 {
    if (menu_driver_ctx)
@@ -731,6 +723,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
 
             menu_driver_ctx->list_set_selection(menu_userdata, list);
+         }
+         break;
+       case RARCH_MENU_CTL_LIST_INSERT:
+         {
+            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
+            if (!list || !menu_driver_ctx || !menu_driver_ctx->list_insert)
+               return false;
+            menu_driver_ctx->list_insert(menu_userdata, list->list, list->path, list->label, list->idx);
          }
          break;
        case RARCH_MENU_CTL_LOAD_IMAGE:
