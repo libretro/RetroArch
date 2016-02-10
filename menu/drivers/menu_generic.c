@@ -130,16 +130,45 @@ static int action_iterate_help(menu_handle_t *menu,
                   "%-20s\n"
                   "[%s]: "
                   "%-20s\n",
+
                   s2,
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),    desc[0],
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),  desc[1],
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),      desc[2],
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),         desc[3],
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO),         desc[4],
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_START),        desc[5],
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU),  desc[6],
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT),         desc[7],
-                  menu_hash_to_str(MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD), desc[8]
+
+                  menu_hash_to_str(
+                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),
+                  desc[0],
+
+                  menu_hash_to_str(
+                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),
+                  desc[1],
+
+                  menu_hash_to_str(
+                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),
+                  desc[2],
+
+                  menu_hash_to_str(
+                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),
+                  desc[3],
+
+                  menu_hash_to_str(
+                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO),
+                  desc[4],
+
+                  menu_hash_to_str(
+                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_START),
+                  desc[5],
+
+                  menu_hash_to_str(
+                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU),
+                  desc[6],
+
+                  menu_hash_to_str(
+                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT),
+                  desc[7],
+
+                  menu_hash_to_str(
+                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD),
+                  desc[8]
+
                   );
          }
          break;
@@ -159,11 +188,13 @@ static int action_iterate_help(menu_handle_t *menu,
                s, len);
          break;
       case MENU_HELP_CHANGE_VIRTUAL_GAMEPAD:
-         menu_hash_get_help(MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC,
+         menu_hash_get_help(
+               MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD_DESC,
                s, len);
          break;
       case MENU_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
-         menu_hash_get_help(MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC,
+         menu_hash_get_help(
+               MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING_DESC,
                s, len);
          break;
       case MENU_HELP_SCANNING_CONTENT:
