@@ -184,15 +184,12 @@ static void bundle_decompressed(void *task_data,
  **/
 static bool menu_init(void)
 {
-   menu_handle_t *menu         = NULL;
    settings_t *settings        = config_get_ptr();
-   
-   if (!menu_driver_ctx)
-      return false;
 
-   menu = (menu_handle_t*)menu_driver_ctx->init(&menu_userdata);
+   menu_driver_data = (menu_handle_t*)
+      menu_driver_ctx->init(&menu_userdata);
 
-   if (!menu)
+   if (!menu_driver_data)
       return false;
 
    strlcpy(settings->menu.driver, menu_driver_ctx->ident,
@@ -209,9 +206,9 @@ static bool menu_init(void)
 
    if (settings->menu_show_start_screen)
    {
-      menu->push_help_screen           = true;
-      menu->help_screen_type           = MENU_HELP_WELCOME;
-      settings->menu_show_start_screen = false;
+      menu_driver_data->push_help_screen = true;
+      menu_driver_data->help_screen_type = MENU_HELP_WELCOME;
+      settings->menu_show_start_screen   = false;
       event_cmd_ctl(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
    }
 
@@ -219,15 +216,15 @@ static bool menu_init(void)
          && !string_is_empty(settings->bundle_assets_src_path) 
          && !string_is_empty(settings->bundle_assets_dst_path)
 #ifdef IOS
-         && menu->push_help_screen
+         && menu_driver_data->push_help_screen
 #else
          && (settings->bundle_assets_extract_version_current 
             != settings->bundle_assets_extract_last_version)
 #endif
       )
    {
-      menu->help_screen_type           = MENU_HELP_EXTRACT;
-      menu->push_help_screen           = true;
+      menu_driver_data->help_screen_type           = MENU_HELP_EXTRACT;
+      menu_driver_data->push_help_screen           = true;
 #ifdef HAVE_ZLIB
       rarch_task_push_decompress(settings->bundle_assets_src_path, 
             settings->bundle_assets_dst_path,
@@ -240,8 +237,6 @@ static bool menu_init(void)
 
    if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT, NULL))
       return false;
-
-   menu_driver_data = (void*)menu;
 
    return true;
 }
