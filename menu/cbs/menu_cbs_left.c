@@ -158,11 +158,18 @@ static int action_left_mainmenu(unsigned type, const char *label,
    switch (push_list)
    {
       case 1:
-         menu_driver_list_cache(MENU_LIST_HORIZONTAL, action);
+         {
+            menu_ctx_list_t list_info;
 
-         if (cbs && cbs->action_content_list_switch)
-            return cbs->action_content_list_switch(
-                  selection_buf, menu_stack, "", "", 0);
+            list_info.type   = MENU_LIST_HORIZONTAL;
+            list_info.action = action;
+
+            menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+
+            if (cbs && cbs->action_content_list_switch)
+               return cbs->action_content_list_switch(
+                     selection_buf, menu_stack, "", "", 0);
+         }
          break;
       case 2:
          action_left_scroll(0, "", false);

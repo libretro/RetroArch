@@ -249,9 +249,9 @@ void  menu_driver_list_free(file_list_t *list, size_t idx, size_t list_size)
 
 size_t  menu_driver_list_get_selection(void)
 {
-   if (menu_driver_ctx && menu_driver_ctx->list_get_selection)
-      return menu_driver_ctx->list_get_selection(menu_userdata);
-   return 0;
+   if (!menu_driver_ctx || !menu_driver_ctx->list_get_selection)
+      return 0;
+   return menu_driver_ctx->list_get_selection(menu_userdata);
 }
 
 bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type)
@@ -261,12 +261,6 @@ bool menu_driver_list_push(menu_displaylist_info_t *info, unsigned type)
                menu_userdata, info, type) == 0)
          return true;
    return false;
-}
-
-void menu_driver_list_cache(menu_list_type_t type, unsigned action)
-{
-   if (menu_driver_ctx->list_cache)
-      menu_driver_ctx->list_cache(menu_userdata, type, action);
 }
 
 size_t menu_driver_list_get_size(menu_list_type_t type)
@@ -706,7 +700,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_driver_ctx->context_reset(menu_userdata);
          break;
        case RARCH_MENU_CTL_CONTEXT_DESTROY:
-         if (menu_driver_ctx && menu_driver_ctx->context_destroy)
+         if (menu_driver_ctx->context_destroy)
             menu_driver_ctx->context_destroy(menu_userdata);
          break;
        case RARCH_MENU_CTL_SHADER_MANAGER_INIT:
@@ -723,6 +717,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                return false;
 
             menu_driver_ctx->list_set_selection(menu_userdata, list);
+         }
+         break;
+       case RARCH_MENU_CTL_LIST_CACHE:
+         {
+            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
+            if (!list || !menu_driver_ctx || !menu_driver_ctx->list_cache)
+               return false;
+            menu_driver_ctx->list_cache(menu_userdata, list->type, list->action);
          }
          break;
        case RARCH_MENU_CTL_LIST_INSERT:
