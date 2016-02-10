@@ -119,7 +119,6 @@ typedef struct zarch_handle
    unsigned height;
    gfx_font_raster_block_t tmp_block;
    unsigned hash;
-   bool time_to_quit;
 
    struct {
       bool enable;
@@ -881,7 +880,7 @@ static int zarch_zui_render_sidebar(zui_t *zui)
 
    if (zarch_zui_button_full(zui, x1, y1, x1 + width, y1 + 64, "Exit"))
    {
-      zui->time_to_quit = true;
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_SHUTDOWN, NULL);
       return 1;
    }
 
@@ -1269,14 +1268,6 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 
    if (perform_action)
       ret = menu_entry_action(&entry, action_id, act);
-
-   if (zui->time_to_quit)
-   {
-      zui->time_to_quit = false;
-      if (!event_cmd_ctl(EVENT_CMD_QUIT, NULL))
-         return -1;
-      return 0;
-   }
 
    return ret;
 }

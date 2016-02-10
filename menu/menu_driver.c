@@ -296,6 +296,13 @@ int menu_driver_iterate(enum menu_action action)
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUIT, NULL);
       return -1;
    }
+   if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_SHUTDOWN, NULL))
+   {
+      menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_SHUTDOWN, NULL);
+      if (!event_cmd_ctl(EVENT_CMD_QUIT, NULL))
+         return -1;
+      return 0;
+   }
    if (!menu_driver_ctx || !menu_driver_ctx->iterate)
       return -1;
    return menu_driver_ctx->iterate(menu_driver_data, menu_userdata, action);
@@ -402,6 +409,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    static bool menu_driver_alive                   = false;
    static bool menu_driver_data_own                = false;
    static bool menu_driver_pending_quit            = false;
+   static bool menu_driver_pending_shutdown        = false;
    static content_playlist_t *menu_driver_playlist = NULL;
    static struct video_shader *menu_driver_shader  = NULL;
    settings_t *settings                            = config_get_ptr();
@@ -416,7 +424,17 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_UNSET_PENDING_QUIT:
          menu_driver_pending_quit     = false;
          break;
+      case RARCH_MENU_CTL_IS_PENDING_SHUTDOWN:
+         return menu_driver_pending_shutdown;
+      case RARCH_MENU_CTL_SET_PENDING_SHUTDOWN:
+         menu_driver_pending_shutdown = true;
+         break;
+      case RARCH_MENU_CTL_UNSET_PENDING_SHUTDOWN:
+         menu_driver_pending_shutdown = false;
+         break;
       case RARCH_MENU_CTL_DESTROY:
+         menu_driver_pending_quit     = false;
+         menu_driver_pending_shutdown = false;
          menu_driver_prevent_populate = false;
          menu_driver_load_no_content  = false;
          menu_driver_alive            = false;
