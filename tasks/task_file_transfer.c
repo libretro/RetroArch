@@ -126,7 +126,9 @@ static int cb_image_menu_generic(nbio_handle_t *nbio)
    nbio->image.ti.width  = width;
    nbio->image.ti.height = height;
 
-   if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
+   if (retval == IMAGE_PROCESS_ERROR)
+      return -1;
+   if (retval == IMAGE_PROCESS_ERROR_END)
       return -1;
 
    nbio->image.is_blocking_on_processing         = true;
@@ -455,7 +457,9 @@ static void rarch_task_file_load_handler(retro_task_t *task)
             break;
       }
 
-      if (nbio->is_finished && nbio->image.is_finished && !task->cancelled)
+      if (     nbio->is_finished 
+            && nbio->image.is_finished 
+            && !task->cancelled)
       {
          task->task_data = malloc(sizeof(nbio->image.ti));
 
@@ -464,8 +468,8 @@ static void rarch_task_file_load_handler(retro_task_t *task)
 
          goto task_finished;
       }
-
-   } else
+   }
+   else
       if (nbio->is_finished)
          goto task_finished;
 
