@@ -539,7 +539,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (menu_driver_ctx && menu_driver_ctx->free)
                menu_driver_ctx->free(menu_userdata);
-            menu_driver_ctx = NULL;
 
             if (menu_userdata)
                free(menu_userdata);
@@ -696,14 +695,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
          break;
        case RARCH_MENU_CTL_CONTEXT_RESET:
-         if (!menu_driver_ctx)
-            return true;
          if (menu_driver_ctx->context_reset)
             menu_driver_ctx->context_reset(menu_userdata);
          break;
        case RARCH_MENU_CTL_CONTEXT_DESTROY:
-         if (!menu_driver_ctx)
-            return true;
          if (menu_driver_ctx->context_destroy)
             menu_driver_ctx->context_destroy(menu_userdata);
          break;
