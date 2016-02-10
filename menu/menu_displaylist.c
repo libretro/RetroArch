@@ -1756,14 +1756,19 @@ static int menu_displaylist_sort_playlist(const content_playlist_entry_t *a,
 
 static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 {
+   menu_ctx_list_t list_info;
    char path_playlist[PATH_MAX_LENGTH], lpl_basename[PATH_MAX_LENGTH];
    bool is_historylist                 = false;
    content_playlist_t *playlist        = NULL;
    settings_t      *settings           = config_get_ptr();
    menu_handle_t        *menu          = NULL;
-   struct item_file *item              = (struct item_file*)
+   struct item_file *item              = NULL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
+   
+   item = (struct item_file*)
       menu_driver_list_get_entry(MENU_LIST_HORIZONTAL,
-      menu_driver_list_get_selection() - (menu_driver_list_get_size(MENU_LIST_TABS)+1));
+      list_info.selection - (menu_driver_list_get_size(MENU_LIST_TABS)+1));
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
