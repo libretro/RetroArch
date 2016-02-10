@@ -119,7 +119,6 @@ typedef struct zarch_handle
    unsigned height;
    gfx_font_raster_block_t tmp_block;
    unsigned hash;
-   bool time_to_exit;
    bool time_to_quit;
 
    struct {
@@ -917,7 +916,7 @@ static int zarch_zui_render_pick_core(zui_t *zui)
       (void)ret;
 
       layout = LAY_HOME;
-      zui->time_to_exit = true;
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT, NULL);
       return 1;
    }
 
@@ -951,7 +950,7 @@ static int zarch_zui_render_pick_core(zui_t *zui)
 
          layout = LAY_HOME;
 
-         zui->time_to_exit = true;
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT, NULL);
          break;
       }
       j++;
@@ -1271,11 +1270,6 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
    if (perform_action)
       ret = menu_entry_action(&entry, action_id, act);
 
-   if (zui->time_to_exit)
-   {
-      zui->time_to_exit = false;
-      return -1;
-   }
    if (zui->time_to_quit)
    {
       zui->time_to_quit = false;
