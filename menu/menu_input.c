@@ -207,101 +207,104 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          menu_input->keyboard.label   = menu_hash_to_str(MENU_VALUE_SEARCH);
          menu_input->keyboard.buffer  =
             input_keyboard_start_line(menu, menu_input_search_callback);
-         return true;
+         break;
       case MENU_INPUT_CTL_MOUSE_SCROLL_DOWN:
          {
             bool *ptr = (bool*)data;
             *ptr = menu_input->mouse.scrolldown;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_MOUSE_SCROLL_UP:
          {
             bool *ptr = (bool*)data;
             *ptr = menu_input->mouse.scrollup;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_MOUSE_PTR:
          {
             unsigned *ptr = (unsigned*)data;
             menu_input->mouse.ptr = *ptr;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_POINTER_PTR:
          {
             unsigned *ptr = (unsigned*)data;
             menu_input->pointer.ptr = *ptr;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_POINTER_ACCEL_READ:
          {
             float *ptr = (float*)data;
             *ptr = menu_input->pointer.accel;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_POINTER_ACCEL_WRITE:
          {
             float *ptr = (float*)data;
             menu_input->pointer.accel = *ptr;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_POINTER_DRAGGING:
          {
             bool *ptr = (bool*)data;
             *ptr = menu_input->pointer.dragging;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_KEYBOARD_DISPLAY:
          {
             bool *ptr = (bool*)data;
             *ptr = menu_input->keyboard.display;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY:
          {
             bool *ptr = (bool*)data;
             menu_input->keyboard.display = *ptr;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_KEYBOARD_BUFF_PTR:
          {
             const char **ptr = (const char**)data;
             *ptr = *menu_input->keyboard.buffer;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_KEYBOARD_LABEL:
          {
             const char **ptr = (const char**)data;
             *ptr = menu_input->keyboard.label;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_SET_KEYBOARD_LABEL:
          {
             char **ptr = (char**)data;
             menu_input->keyboard.label = *ptr;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL:
          menu_input->keyboard.label = NULL;
-         return true;
+         break;
       case MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING:
          {
             const char **ptr = (const char**)data;
             *ptr = menu_input->keyboard.label_setting;
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING:
          {
             char **ptr = (char**)data;
             strlcpy(menu_input->keyboard.label_setting,
             *ptr, sizeof(menu_input->keyboard.label_setting));
          }
-         return true;
+         break;
       case MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING:
          menu_input->keyboard.label_setting[0] = '\0';
-         return true;
+         break;
+      default:
+      case MENU_INPUT_CTL_NONE:
+         break;
    }
 
-   return false;
+   return true;
 }
 
 void menu_input_key_start_line(const char *label,
