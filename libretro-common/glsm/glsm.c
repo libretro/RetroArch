@@ -170,7 +170,7 @@ static struct gl_cached_state gl_state;
 void rglClearDepth(GLdouble depth)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
-#ifdef GLES
+#ifdef HAVE_OPENGLES
    glClearDepthf(depth);
 #else
    glClearDepth(depth);
@@ -181,7 +181,7 @@ void rglClearDepth(GLdouble depth)
 
 void rglDepthRange(GLclampd zNear, GLclampd zFar)
 {
-#ifdef GLES
+#ifdef HAVE_OPENGLES
    glDepthRangef(zNear, zFar);
 #else
    glDepthRange(zNear, zFar);
@@ -459,7 +459,9 @@ GLenum rglCheckFramebufferStatus(GLenum target)
 void rglBindFragDataLocation(GLuint program, GLuint colorNumber,
                                    const char * name)
 {
+#if !defined(HAVE_OPENGLES2)
    glBindFragDataLocation(program, colorNumber, name);
+#endif
 }
 
 void rglBindAttribLocation(GLuint program, GLuint index, const GLchar *name)
@@ -864,12 +866,12 @@ static bool glsm_state_ctx_init(void *data)
    if (!params || !params->environ_cb)
       return false;
 
-#ifdef GLES
-#if defined(GLES31)
+#ifdef HAVE_OPENGLES
+#if defined(HAVE_OPENGLES31)
    hw_render.context_type       = RETRO_HW_CONTEXT_OPENGLES_VERSION;
    hw_render.version_major      = 3;
    hw_render.version_minor      = 1;
-#elif defined(GLES3)
+#elif defined(HAVE_OPENGLES3)
    hw_render.context_type       = RETRO_HW_CONTEXT_OPENGLES3;
 #else
    hw_render.context_type       = RETRO_HW_CONTEXT_OPENGLES2;
