@@ -440,8 +440,10 @@ void rglBindFramebuffer(GLenum target, GLuint framebuffer)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
    if (!glsm_ctl(GLSM_CTL_IS_FRAMEBUFFER_LOCKED, NULL))
-      glBindFramebuffer(GL_FRAMEBUFFER, framebuffer 
-            ? framebuffer : hw_render.get_current_framebuffer());
+   {
+      glBindFramebuffer(target, framebuffer);
+      gl_state.framebuf = framebuffer;
+   }
 }
 
 void rglGenerateMipmap(GLenum target)
@@ -698,9 +700,7 @@ static void glsm_state_bind(void)
          glDisableVertexAttribArray(i);
    }
 
-   glBindFramebuffer(
-         RARCH_GL_FRAMEBUFFER,
-         hw_render.get_current_framebuffer());
+   rglBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl_state.framebuf);
 
    if (gl_state.blendfunc.used)
       glBlendFunc(
