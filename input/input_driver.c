@@ -697,24 +697,24 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          }
          return false;
       case RARCH_INPUT_CTL_HAS_CAPABILITIES:
-         if (current_input->get_capabilities && current_input_data)
-            return true;
-         return false;
+         if (!current_input->get_capabilities || !current_input_data)
+            return false;
+         break;
       case RARCH_INPUT_CTL_POLL:
          current_input->poll(current_input_data);
-         return true;
+         break;
       case RARCH_INPUT_CTL_INIT:
          if (current_input)
             current_input_data = current_input->init();
 
          if (!current_input_data)
             return false;
-         return true;
+         break;
       case RARCH_INPUT_CTL_DEINIT:
          if (current_input && current_input->free)
             current_input->free(current_input_data);
          current_input_data = NULL;
-         return true;
+         break;
       case RARCH_INPUT_CTL_DESTROY_DATA:
          current_input_data = NULL;
          break;
@@ -727,16 +727,16 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          input_driver_data_own                 = false;
          memset(&input_driver_turbo_btns, 0, sizeof(turbo_buttons_t));
          current_input                         = NULL;
-         return true;
+         break;
       case RARCH_INPUT_CTL_GRAB_STDIN:
-         if (current_input->grab_stdin)
-            return current_input->grab_stdin(current_input_data);
-         return false;
+         if (!current_input->grab_stdin)
+            return false;
+         return current_input->grab_stdin(current_input_data);
       case RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED:
-         if (current_input->keyboard_mapping_is_blocked)
-            return current_input->keyboard_mapping_is_blocked(
-                  current_input_data);
-         return false;
+         if (!current_input->keyboard_mapping_is_blocked)
+            return false;
+         return current_input->keyboard_mapping_is_blocked(
+               current_input_data);
       case RARCH_INPUT_CTL_FIND_DRIVER:
          {
             int i;
@@ -772,7 +772,7 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
                return false;
             }
          }
-         return true;
+         break;
       case RARCH_INPUT_CTL_SET_FLUSHING_INPUT:
          input_driver_flushing_input = true;
          break;
@@ -858,5 +858,5 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          break;
    }
 
-   return false;
+   return true;
 }
