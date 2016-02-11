@@ -1757,6 +1757,7 @@ static int menu_displaylist_sort_playlist(const content_playlist_entry_t *a,
 static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 {
    menu_ctx_list_t list_info;
+   menu_ctx_list_t list_horiz_info;
    char path_playlist[PATH_MAX_LENGTH], lpl_basename[PATH_MAX_LENGTH];
    bool is_historylist                 = false;
    content_playlist_t *playlist        = NULL;
@@ -1766,12 +1767,15 @@ static int menu_displaylist_parse_horizontal_list(menu_displaylist_info_t *info)
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
 
-   list_info.type = MENU_LIST_TABS;
+   list_info.type       = MENU_LIST_TABS;
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE,      &list_info);
+
+   list_horiz_info.type = MENU_LIST_HORIZONTAL;
+   list_horiz_info.idx  = list_info.selection - (list_info.size +1);
+
+   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_ENTRY,      &list_horiz_info);
    
-   item = (struct item_file*)
-      menu_driver_list_get_entry(MENU_LIST_HORIZONTAL,
-      list_info.selection - (list_info.size +1));
+   item = (struct item_file*)list_horiz_info.entry;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;

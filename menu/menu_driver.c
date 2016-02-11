@@ -58,8 +58,6 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
    NULL
 };
 
-static const menu_ctx_driver_t *menu_driver_ctx = NULL;
-static void *menu_userdata = NULL;
 
 /**
  * menu_driver_find_handle:
@@ -189,13 +187,6 @@ static bool menu_init(menu_handle_t *menu_data)
    return true;
 }
 
-void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i)
-{
-   if (!menu_driver_ctx || !menu_driver_ctx->list_get_entry)
-      return NULL;
-   return menu_driver_ctx->list_get_entry(menu_userdata, type, i);
-}
-
 static void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
@@ -276,6 +267,8 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    static content_playlist_t *menu_driver_playlist = NULL;
    static struct video_shader *menu_driver_shader  = NULL;
    static menu_handle_t *menu_driver_data          = NULL;
+   static const menu_ctx_driver_t *menu_driver_ctx = NULL;
+   static void *menu_userdata                      = NULL;
    settings_t *settings                            = config_get_ptr();
 
    switch (state)
@@ -642,6 +635,19 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                menu_driver_ctx->populate_entries(
                      menu_userdata, info->path,
                      info->label, info->type);
+         }
+         break;
+      case RARCH_MENU_CTL_LIST_GET_ENTRY:
+         {
+            menu_ctx_list_t *list = (menu_ctx_list_t*)data;
+
+            if (!menu_driver_ctx || !menu_driver_ctx->list_get_entry)
+            {
+               list->entry = NULL;
+               return false;
+            }
+            list->entry = menu_driver_ctx->list_get_entry(menu_userdata,
+                  list->type, list->idx);
          }
          break;
       case RARCH_MENU_CTL_LIST_GET_SIZE:

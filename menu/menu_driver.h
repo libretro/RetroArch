@@ -157,6 +157,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_LIST_SET_SELECTION,
    RARCH_MENU_CTL_LIST_GET_SELECTION,
    RARCH_MENU_CTL_LIST_GET_SIZE,
+   RARCH_MENU_CTL_LIST_GET_ENTRY,
    RARCH_MENU_CTL_LIST_CACHE,
    RARCH_MENU_CTL_LIST_INSERT,
    RARCH_MENU_CTL_LIST_PUSH,
@@ -431,8 +432,6 @@ const char *menu_driver_find_ident(int index);
  * separated by '|'.
  **/
 const char* config_get_menu_driver_options(void);
-
-void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i);
 
 /* HACK */
 extern unsigned int rdb_entry_start_game_selection_ptr;
