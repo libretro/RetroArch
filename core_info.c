@@ -207,8 +207,8 @@ void core_info_get_name(const char *path, char *s, size_t len)
    if (!core_info)
       goto error;
 
-   core_info_list->list  = core_info;
-   core_info_list->count = 0;
+   core_info_list->list = core_info;
+   core_info_list->count = contents->size;
 
    for (i = 0; i < contents->size; i++)
    {
@@ -229,13 +229,6 @@ void core_info_get_name(const char *path, char *s, size_t len)
       core_info[i].path = strdup(contents->elems[i].data);
 
       strlcpy(s, core_info[i].core_name, len);
-   }
-
-   for (i = 0; i < contents->size; i++)
-   {
-      config_file_t *conf = (config_file_t*)
-         core_info_list->list[i].config_data;
-      core_info_list->count += !!conf;
    }
 
 error:
@@ -351,6 +344,24 @@ error:
       dir_list_free(contents);
    core_info_list_free(core_info_list);
    return NULL;
+}
+
+
+size_t core_info_list_num_info_files(core_info_list_t *core_info_list)
+{
+   size_t i, num = 0;
+
+   if (!core_info_list)
+      return 0;
+
+   for (i = 0; i < core_info_list->count; i++)
+   {
+      config_file_t *conf = (config_file_t*)
+         core_info_list->list[i].config_data;
+      num += !!conf;
+   }
+
+   return num;
 }
 
 bool core_info_list_get_display_name(core_info_list_t *core_info_list,

@@ -2960,7 +2960,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
                menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
                MENU_SETTING_ACTION, 0, 0);
 
-         if (list->count > 0)
+         if (core_info_list_num_info_files(list))
          {
             menu_entries_push(info->list,
                   menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
