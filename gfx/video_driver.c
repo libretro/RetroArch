@@ -1414,7 +1414,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          if (!data)
             return false;
          video_driver_state.frame_cache.data   = (const void*)data;
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_SET_STUB_FRAME:
          frame_bak                      = current_video->frame;
          current_video->frame           = video_null.frame;
@@ -1450,7 +1450,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             video_viewport_set_square_pixel(
                   geom->base_width, geom->base_height);
          }
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE:
          {
             struct retro_system_av_info *av_info = 
@@ -1467,7 +1467,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
                aspectratio_lut[ASPECT_RATIO_CORE].value = 
                   (float)geom->base_width / geom->base_height;
          }
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_RESET_CUSTOM_VIEWPORT:
          {
             struct video_viewport *custom_vp = video_viewport_get_custom();
@@ -1479,7 +1479,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             custom_vp->x      = 0;
             custom_vp->y      = 0;
          }
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_SET_RGBA:
          video_driver_use_rgba = true;
          break;
@@ -1516,19 +1516,19 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_DEINIT:
          uninit_video_input();
          video_driver_data = NULL;
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_MONITOR_RESET:
          video_driver_state.frame_time_samples_count = 0;
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_MONITOR_ADJUST_SYSTEM_RATES:
          video_monitor_adjust_system_rates();
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_SET_ASPECT_RATIO:
          if (!video_driver_poke || !video_driver_poke->set_aspect_ratio)
             return false;
          video_driver_poke->set_aspect_ratio(
                video_driver_data, settings->video.aspect_ratio_idx);
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_SHOW_MOUSE:
          if (!video_driver_poke)
             return false;
@@ -1539,7 +1539,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             if (video_driver_poke->show_mouse)
                video_driver_poke->show_mouse(video_driver_data, *toggle);
          }
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE:
          {
             bool *toggle                  = (bool*)data;
@@ -1550,7 +1550,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             if (current_video->set_nonblock_state)
                current_video->set_nonblock_state(video_driver_data, *toggle);
          }
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_FIND_DRIVER:
          return find_video_driver();
       case RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES:
@@ -1558,12 +1558,12 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             return false;
          if (video_driver_poke->apply_state_changes)
             video_driver_poke->apply_state_changes(video_driver_data);
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_READ_VIEWPORT:
-         if (current_video->read_viewport)
-            return current_video->read_viewport(video_driver_data,
-                  (uint8_t*)data);
-         return false;
+         if (!current_video->read_viewport)
+            return false;
+         return current_video->read_viewport(video_driver_data,
+               (uint8_t*)data);
       case RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB:
          if (!video_driver_state.frame_cache.data)
             return false;
@@ -1592,11 +1592,11 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
                return false;
             *ptr = &video_driver_frame_count;
          }
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE:
-         if (video_driver_state.filter.filter)
-            return true;
-         return false;
+         if (!video_driver_state.filter.filter)
+            return false;
+         break;
       case RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT:
          return video_driver_state.filter.out_rgb32;
       case RARCH_DISPLAY_CTL_DEFAULT_SETTINGS:
@@ -1612,7 +1612,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
             global->console.screen.resolutions.current.id = 0;
          }
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_LOAD_SETTINGS:
          {
             global_t *global    = global_get_ptr();
@@ -1644,7 +1644,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
                   console.screen.flicker_filter_index,
                   "flicker_filter_index");
          }
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_SAVE_SETTINGS:
          {
             global_t *global    = global_get_ptr();
@@ -1671,7 +1671,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             config_set_int(conf, "flicker_filter_index",
                   global->console.screen.flicker_filter_index);
          }
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_SET_OWN_DRIVER:
          video_driver_data_own = true;
          break;
@@ -1731,7 +1731,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
                return false;
             *new_data = video_driver_record_gpu_buffer;
          }
-         return true;
+         break;
       case RARCH_DISPLAY_CTL_GPU_RECORD_INIT:
          {
             unsigned *new_size  = (unsigned*)data;
@@ -1740,8 +1740,8 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             video_driver_record_gpu_buffer = (uint8_t*)malloc(*new_size);
             if (!video_driver_record_gpu_buffer)
                return false;
-            return true;
          }
+         break;
       case RARCH_DISPLAY_CTL_GPU_RECORD_DEINIT:
          if (video_driver_record_gpu_buffer)
             free(video_driver_record_gpu_buffer);
@@ -1752,7 +1752,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          break;
    }
 
-   return false;
+   return true;
 }
 
 
