@@ -221,21 +221,6 @@ typedef struct driver_ctx_info
    ssize_t len;
 } driver_ctx_info_t;
 
-/* TODO/FIXME - comment needs to be moved to each respective driver */
-
-/* Set this to true if the platform in question needs to 'own' 
- * the respective handle and therefore skip regular RetroArch 
- * driver teardown/reiniting procedure.
- *
- * If set to true, the 'free' function will get skipped. It is 
- * then up to the driver implementation to properly handle 
- * 'reiniting' inside the 'init' function and make sure it 
- * returns the existing handle instead of allocating and 
- * returning a pointer to a new handle.
- *
- * Typically, if a driver intends to make use of this, it should 
- * set this to true at the end of its 'init' function. */
-
 bool driver_ctl(enum driver_ctl_state state, void *data);
 
 #ifdef __cplusplus
