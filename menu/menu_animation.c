@@ -641,10 +641,10 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
          return anim->is_active;
       case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
          anim->is_active           = false;
-         return true;
+         break;
       case MENU_ANIMATION_CTL_SET_ACTIVE:
          anim->is_active           = true;
-         return true;
+         break;
       case MENU_ANIMATION_CTL_DELTA_TIME:
          {
             float *ptr = (float*)data;
@@ -652,7 +652,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                return false;
             *ptr = anim->delta_time;
          }
-         return true;
+         break;
       case MENU_ANIMATION_CTL_UPDATE_TIME:
          {
             static retro_time_t last_clock_update = 0;
@@ -674,7 +674,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                last_clock_update = anim->cur_time;
             }
          }
-         return true;
+         break;
       case MENU_ANIMATION_CTL_UPDATE:
          {
             unsigned i;
@@ -696,8 +696,11 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 
             anim->is_active = true;
          }
-         return true;
+         break;
+      default:
+      case MENU_ANIMATION_CTL_NONE:
+         break;
    }
 
-   return false;
+   return true;
 }
