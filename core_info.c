@@ -265,8 +265,8 @@ static core_info_list_t *core_info_list_new(void)
    if (!core_info)
       goto error;
 
-   core_info_list->list  = core_info;
-   core_info_list->count = 0;
+   core_info_list->list = core_info;
+   core_info_list->count = contents->size;
 
    for (i = 0; i < contents->size; i++)
    {
@@ -338,13 +338,6 @@ static core_info_list_t *core_info_list_new(void)
       if (!core_info[i].display_name)
          core_info[i].display_name = 
             strdup(path_basename(core_info[i].path));
-   }
-
-   for (i = 0; i < contents->size; i++)
-   {
-      config_file_t *conf = (config_file_t*)
-         core_info_list->list[i].config_data;
-      core_info_list->count += !!conf;
    }
 
    core_info_list_resolve_all_extensions(core_info_list);
