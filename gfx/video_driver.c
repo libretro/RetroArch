@@ -341,26 +341,27 @@ uintptr_t video_driver_get_current_framebuffer(void)
 bool video_driver_get_current_software_framebuffer(
       struct retro_framebuffer *framebuffer)
 {
-   if (video_driver_poke 
-         && video_driver_poke->get_current_software_framebuffer)
-      return video_driver_poke->get_current_software_framebuffer(
-            video_driver_data, framebuffer);
-   return false;
+   if (
+         !video_driver_poke || 
+         !video_driver_poke->get_current_software_framebuffer)
+      return false;
+   return video_driver_poke->get_current_software_framebuffer(
+         video_driver_data, framebuffer);
 }
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {
-   if (video_driver_poke && video_driver_poke->get_proc_address)
-      return video_driver_poke->get_proc_address(video_driver_data, sym);
-   return NULL;
+   if (!video_driver_poke || !video_driver_poke->get_proc_address)
+      return NULL;
+   return video_driver_poke->get_proc_address(video_driver_data, sym);
 }
 
 bool video_driver_set_shader(enum rarch_shader_type type,
       const char *path)
 {
-   if (current_video->set_shader)
-      return current_video->set_shader(video_driver_data, type, path);
-   return false;
+   if (!current_video->set_shader)
+      return false;
+   return current_video->set_shader(video_driver_data, type, path);
 }
 
 static void deinit_video_filter(void)
@@ -1041,7 +1042,8 @@ bool video_monitor_get_fps(char *buf, size_t size,
          curr_time = new_time;
 
          snprintf(buf, size, "%s || FPS: %6.1f || Frames: " U64_SIGN,
-               system->title_buf, last_fps, (unsigned long long)video_driver_frame_count);
+               system->title_buf, last_fps,
+               (unsigned long long)video_driver_frame_count);
          ret = true;
       }
 
