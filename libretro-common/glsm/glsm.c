@@ -162,7 +162,7 @@ struct gl_cached_state
 static glsm_framebuffer_lock glsm_fb_lock = NULL;
 static glsm_imm_vbo_draw imm_vbo_draw     = NULL;
 static glsm_imm_vbo_draw imm_vbo_disable  = NULL;
-struct retro_hw_render_callback hw_render;
+static struct retro_hw_render_callback hw_render;
 static struct gl_cached_state gl_state;
 
 /* GL wrapper-side */
