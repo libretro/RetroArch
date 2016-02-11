@@ -440,10 +440,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    {
       case RUNLOOP_CTL_DATA_ITERATE:
          task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
-         return true;
+         break;
       case RUNLOOP_CTL_SHADER_DIR_DEINIT:
          shader_dir_free(&runloop_shader_dir);
-         return true;
+         break;
       case RUNLOOP_CTL_SHADER_DIR_INIT:
          return shader_dir_init(&runloop_shader_dir);
       case RUNLOOP_CTL_SYSTEM_INFO_INIT:
@@ -481,7 +481,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
             *idx = core_option_size(runloop_system.core_options);
          }
-         return true;
+         break;
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:
          return runloop_system.core_options;
       case RUNLOOP_CTL_SYSTEM_INFO_GET:
@@ -491,7 +491,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
             *system = &runloop_system;
          }
-         return true;
+         break;
       case RUNLOOP_CTL_SYSTEM_INFO_FREE:
          if (runloop_system.core_options)
          {
@@ -559,7 +559,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
             *perfcnt = &runloop_perfcnt_enable;
          }
-         return true;
+         break;
       case RUNLOOP_CTL_SET_PERFCNT_ENABLE:
          runloop_perfcnt_enable = true;
          break;
@@ -614,7 +614,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_CHECK_FOCUS:
          if (settings->pause_nonactive)
             return video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL);
-         return true;
+         break;
       case RUNLOOP_CTL_CHECK_IDLE_STATE:
          {
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
@@ -627,8 +627,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             if (!runloop_ctl(RUNLOOP_CTL_CHECK_PAUSE_STATE, cmd) || !focused)
                return false;
-            break;
          }
+         break;
       case RUNLOOP_CTL_CHECK_STATE:
          {
             bool tmp                  = false;
@@ -919,7 +919,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                         msg_info->prio, msg_info->duration, msg_info->flush);
             }
          }
-         return true;
+         break;
       case RUNLOOP_CTL_MSG_QUEUE_PULL:
          {
             const char **ret = (const char**)data;
@@ -927,7 +927,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
             *ret = msg_queue_pull(runloop_msg_queue);
          }
-         return true;
+         break;
       case RUNLOOP_CTL_MSG_QUEUE_FREE:
 #ifdef HAVE_THREADS
          slock_free(runloop_msg_queue_lock);
@@ -936,7 +936,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_MSG_QUEUE_CLEAR:
          msg_queue_clear(runloop_msg_queue);
-         return true;
+         break;
       case RUNLOOP_CTL_MSG_QUEUE_DEINIT:
          if (!runloop_msg_queue)
             return true;
@@ -1029,7 +1029,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (ui_companion_is_on_foreground())
                ui_companion_driver_notify_refresh();
          }
-         return true;
+         break;
       case RUNLOOP_CTL_CORE_OPTION_NEXT:
          {
             unsigned *idx = (unsigned*)data;
@@ -1039,7 +1039,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (ui_companion_is_on_foreground())
                ui_companion_driver_notify_refresh();
          }
-         return true;
+         break;
       case RUNLOOP_CTL_CORE_OPTIONS_GET:
          {
             struct retro_variable *var = (struct retro_variable*)data;
@@ -1051,7 +1051,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             core_option_get(runloop_system.core_options, var);
             RARCH_LOG("\t%s\n", var->value ? var->value : "N/A");
          }
-         return true;
+         break;
       case RUNLOOP_CTL_CORE_OPTIONS_INIT:
          {
             char *game_options_path           = NULL;
@@ -1110,7 +1110,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
 
          runloop_system.core_options = NULL;
-         return true;
+         break;
       case RUNLOOP_CTL_KEY_EVENT_GET:
          {
             retro_keyboard_event_t **key_event = 
@@ -1131,7 +1131,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_NONE:
       default:
-         return false;
+         break;
    }
 
    return true;
