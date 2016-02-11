@@ -66,7 +66,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
             menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_CLEAR, data);
          }
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_INCREMENT:
          {
             unsigned *scroll_speed = (unsigned*)data;
@@ -105,7 +105,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             
             menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_INCREMENT, NULL);
          }
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_DECREMENT:
          {
             size_t idx             = 0;
@@ -134,10 +134,10 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_DECREMENT, NULL);
 
          }
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_SET:
          menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET, data);
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_SET_LAST:
          {
             size_t new_selection = menu_list_size - 1;
@@ -145,7 +145,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                   MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection);
             menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_SET_LAST, NULL);
          }
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_ASCEND_ALPHABET:
          {
             size_t i = 0, ptr;
@@ -166,7 +166,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
 
             menu_driver_ctl(RARCH_MENU_CTL_NAVIGATION_ASCEND_ALPHABET, ptr_out);
          }
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_DESCEND_ALPHABET:
          {
             size_t i = 0, ptr;
@@ -189,7 +189,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
             menu_driver_ctl(
                   RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET, ptr_out);
          }
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_GET_SELECTION:
          {
             size_t *sel = (size_t*)data;
@@ -197,7 +197,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                return false;
             *sel = selection;
          }
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_SET_SELECTION:
          {
             size_t *sel = (size_t*)data;
@@ -205,14 +205,14 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                return false;
             nav->selection_ptr = *sel;
          }
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_CLEAR_SCROLL_INDICES:
          {
             if (!nav)
                return false;
             nav->scroll.indices.size = 0;
          }
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_ADD_SCROLL_INDEX:
          {
             size_t *sel = (size_t*)data;
@@ -220,7 +220,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                return false;
             nav->scroll.indices.list[nav->scroll.indices.size++] = *sel;
          }
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL:
          {
             size_t *sel = (size_t*)data;
@@ -228,7 +228,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                return false;
             *sel = nav->scroll.acceleration;
          }
-         return true;
+         break;
       case MENU_NAVIGATION_CTL_SET_SCROLL_ACCEL:
          {
             size_t *sel = (size_t*)data;
@@ -236,8 +236,11 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
                return false;
             nav->scroll.acceleration = *sel;
          }
-         return true;
+         break;
+      default:
+      case MENU_NAVIGATION_CTL_NONE:
+         break;
    }
 
-   return false;
+   return true;
 }
