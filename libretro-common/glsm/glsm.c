@@ -925,6 +925,14 @@ bool glsm_ctl(enum glsm_state_ctl state, void *data)
       case GLSM_CTL_UNSET_IMM_VBO:
          imm_vbo_enable = false;
          break;
+      case GLSM_CTL_PROC_ADDRESS_GET:
+         {
+            glsm_ctx_proc_address_t *proc = (glsm_ctx_proc_address_t*)data;
+            if (!hw_render.get_proc_address)
+               return false;
+            proc->addr = hw_render.get_proc_address;
+         }
+         break;
       case GLSM_CTL_STATE_CONTEXT_RESET:
          rglgen_resolve_symbols(hw_render.get_proc_address);
          break;

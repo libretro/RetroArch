@@ -109,12 +109,18 @@ enum glsm_state_ctl
    GLSM_CTL_UNSET_IMM_VBO,
    GLSM_CTL_IMM_VBO_DISABLE,
    GLSM_CTL_IMM_VBO_DRAW,
-   GLSM_CTL_IS_FRAMEBUFFER_LOCKED
+   GLSM_CTL_IS_FRAMEBUFFER_LOCKED,
+   GLSM_CTL_PROC_ADDRESS_GET
 };
 
 typedef bool (*glsm_imm_vbo_draw)(void *);
 typedef bool (*glsm_imm_vbo_disable)(void *);
 typedef bool (*glsm_framebuffer_lock)(void *);
+
+typedef struct glsm_ctx_proc_address
+{
+   retro_get_proc_address_t addr;
+} glsm_ctx_proc_address_t;
 
 typedef struct glsm_ctx_params
 {
