@@ -91,56 +91,63 @@ void main_exit(void *args)
    frontend_driver_free();
 }
 
+static void check_defaults_dir_create_dir(const char *path)
+{
+   if (path_is_directory(path))
+      return;
+   path_mkdir(path);
+}
+
 static void check_defaults_dirs(void)
 {
    if (*g_defaults.dir.core_assets)
-      path_mkdir(g_defaults.dir.core_assets);
+      check_defaults_dir_create_dir(g_defaults.dir.core_assets);
    if (*g_defaults.dir.remap)
-      path_mkdir(g_defaults.dir.remap);
+      check_defaults_dir_create_dir(g_defaults.dir.remap);
    if (*g_defaults.dir.screenshot)
-      path_mkdir(g_defaults.dir.screenshot);
+      check_defaults_dir_create_dir(g_defaults.dir.screenshot);
    if (*g_defaults.dir.core)
-      path_mkdir(g_defaults.dir.core);
+      check_defaults_dir_create_dir(g_defaults.dir.core);
    if (*g_defaults.dir.autoconfig)
-      path_mkdir(g_defaults.dir.autoconfig);
+      check_defaults_dir_create_dir(g_defaults.dir.autoconfig);
    if (*g_defaults.dir.audio_filter)
-      path_mkdir(g_defaults.dir.audio_filter);
+      check_defaults_dir_create_dir(g_defaults.dir.audio_filter);
    if (*g_defaults.dir.video_filter)
-      path_mkdir(g_defaults.dir.video_filter);
+      check_defaults_dir_create_dir(g_defaults.dir.video_filter);
    if (*g_defaults.dir.assets)
-      path_mkdir(g_defaults.dir.assets);
+      check_defaults_dir_create_dir(g_defaults.dir.assets);
    if (*g_defaults.dir.playlist)
-      path_mkdir(g_defaults.dir.playlist);
+      check_defaults_dir_create_dir(g_defaults.dir.playlist);
    if (*g_defaults.dir.core)
-      path_mkdir(g_defaults.dir.core);
+      check_defaults_dir_create_dir(g_defaults.dir.core);
    if (*g_defaults.dir.core_info)
-      path_mkdir(g_defaults.dir.core_info);
+      check_defaults_dir_create_dir(g_defaults.dir.core_info);
    if (*g_defaults.dir.overlay)
-      path_mkdir(g_defaults.dir.overlay);
+      check_defaults_dir_create_dir(g_defaults.dir.overlay);
    if (*g_defaults.dir.port)
-      path_mkdir(g_defaults.dir.port);
+      check_defaults_dir_create_dir(g_defaults.dir.port);
    if (*g_defaults.dir.shader)
-      path_mkdir(g_defaults.dir.shader);
+      check_defaults_dir_create_dir(g_defaults.dir.shader);
    if (*g_defaults.dir.savestate)
-      path_mkdir(g_defaults.dir.savestate);
+      check_defaults_dir_create_dir(g_defaults.dir.savestate);
    if (*g_defaults.dir.sram)
-      path_mkdir(g_defaults.dir.sram);
+      check_defaults_dir_create_dir(g_defaults.dir.sram);
    if (*g_defaults.dir.system)
-      path_mkdir(g_defaults.dir.system);
+      check_defaults_dir_create_dir(g_defaults.dir.system);
    if (*g_defaults.dir.resampler)
-      path_mkdir(g_defaults.dir.resampler);
+      check_defaults_dir_create_dir(g_defaults.dir.resampler);
    if (*g_defaults.dir.menu_config)
-      path_mkdir(g_defaults.dir.menu_config);
+      check_defaults_dir_create_dir(g_defaults.dir.menu_config);
    if (*g_defaults.dir.content_history)
-      path_mkdir(g_defaults.dir.content_history);
+      check_defaults_dir_create_dir(g_defaults.dir.content_history);
    if (*g_defaults.dir.cache)
-      path_mkdir(g_defaults.dir.cache);
+      check_defaults_dir_create_dir(g_defaults.dir.cache);
    if (*g_defaults.dir.database)
-      path_mkdir(g_defaults.dir.database);
+      check_defaults_dir_create_dir(g_defaults.dir.database);
    if (*g_defaults.dir.cursor)
-      path_mkdir(g_defaults.dir.cursor);
+      check_defaults_dir_create_dir(g_defaults.dir.cursor);
    if (*g_defaults.dir.cheats)
-      path_mkdir(g_defaults.dir.cheats);
+      check_defaults_dir_create_dir(g_defaults.dir.cheats);
 }
 
 static void history_playlist_push(content_playlist_t *playlist,
