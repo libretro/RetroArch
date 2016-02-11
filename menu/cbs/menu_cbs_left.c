@@ -137,14 +137,17 @@ static int action_left_mainmenu(unsigned type, const char *label,
    settings_t       *settings = config_get_ptr();
    menu_handle_t       *menu  = NULL;
    unsigned           action  = MENU_ACTION_LEFT;
-   size_t          list_size  = menu_driver_list_get_size(MENU_LIST_PLAIN);
-
+   
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
 
-   if (list_size == 1)
+   list_info.type = MENU_LIST_PLAIN;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_info);
+
+   if (list_info.size == 1)
    {
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
       if ((list_info.selection != 0)

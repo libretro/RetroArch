@@ -156,6 +156,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_LIST_CLEAR,
    RARCH_MENU_CTL_LIST_SET_SELECTION,
    RARCH_MENU_CTL_LIST_GET_SELECTION,
+   RARCH_MENU_CTL_LIST_GET_SIZE,
    RARCH_MENU_CTL_LIST_CACHE,
    RARCH_MENU_CTL_LIST_INSERT,
    RARCH_MENU_CTL_LIST_PUSH,
@@ -356,6 +357,8 @@ typedef struct menu_ctx_list
    menu_list_type_t type;
    unsigned action;
    size_t selection;
+   size_t size;
+   void *entry;
 } menu_ctx_list_t;
 
 typedef struct menu_ctx_displaylist
@@ -428,8 +431,6 @@ const char *menu_driver_find_ident(int index);
  * separated by '|'.
  **/
 const char* config_get_menu_driver_options(void);
-
-size_t menu_driver_list_get_size(menu_list_type_t type);
 
 void *menu_driver_list_get_entry(menu_list_type_t type, unsigned i);
 

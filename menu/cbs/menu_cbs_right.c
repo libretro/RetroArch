@@ -156,17 +156,27 @@ static int action_right_mainmenu(unsigned type, const char *label,
    file_list_t *menu_stack   = menu_entries_get_menu_stack_ptr(0);
    settings_t      *settings = config_get_ptr();
    unsigned           action = MENU_ACTION_RIGHT;
-   size_t          list_size = menu_driver_list_get_size(MENU_LIST_PLAIN);
 
-   if (list_size == 1)
+   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
+
+   list_info.type = MENU_LIST_PLAIN;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE,      &list_info);
+
+   if (list_info.size == 1)
    {
-      size_t list_size_horiz = menu_driver_list_get_size(MENU_LIST_HORIZONTAL);
-      size_t list_size_tabs  = menu_driver_list_get_size(MENU_LIST_TABS);
+      menu_ctx_list_t list_horiz_info;
+      menu_ctx_list_t list_tabs_info;
+
+      list_horiz_info.type = MENU_LIST_HORIZONTAL;
+      list_tabs_info.type  = MENU_LIST_TABS;
+
+      menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_horiz_info);
+      menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SIZE, &list_tabs_info);
+
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
 
-      menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
-
-      if ((list_info.selection != (list_size_horiz + list_size_tabs))
+      if ((list_info.selection != (list_horiz_info.size + list_tabs_info.size))
          || settings->menu.navigation.wraparound.enable)
          push_list = 1;
    }
