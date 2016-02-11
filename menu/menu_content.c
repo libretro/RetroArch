@@ -318,5 +318,5 @@ bool menu_content_ctl(enum menu_content_ctl_state state, void *data)
          break;
    }
 
-   return false;
+   return true;
 }
