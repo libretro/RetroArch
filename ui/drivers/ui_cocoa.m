@@ -303,13 +303,13 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
                 runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
                 ui_companion_event_command(EVENT_CMD_LOAD_CORE);
                 
-                if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) && settings->set_supports_no_game_enable)
+                if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) 
+                      && settings->set_supports_no_game_enable)
                 {
                     runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-                    if (rarch_task_push_content_load_default(
+                    rarch_task_push_content_load_default(
                              NULL, NULL, false, CORE_TYPE_PLAIN,
-                             NULL, NULL))
-                       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+                             NULL, NULL);
                 }
             }
             break;

@@ -15,6 +15,10 @@
 
 #include <stdlib.h>
 
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
+
 #include "tasks_internal.h"
 
 #include "../command_event.h"
@@ -57,6 +61,11 @@ bool rarch_task_push_content_load_default(
 
    if (cmd != EVENT_CMD_NONE)
       event_cmd_ctl(cmd, NULL);
+
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT,       NULL);
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
 
    return true;
 }

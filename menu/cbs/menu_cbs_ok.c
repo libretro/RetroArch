@@ -496,10 +496,9 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
       case -1:
          event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
 
-         if (rarch_task_push_content_load_default(NULL, NULL,
-                  false, CORE_TYPE_PLAIN, NULL, NULL))
-            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-         return menu_cbs_exit();
+         rarch_task_push_content_load_default(NULL, NULL,
+                  false, CORE_TYPE_PLAIN, NULL, NULL);
+         return 0;
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);
@@ -542,12 +541,8 @@ static int action_ok_file_load_with_detect_core(const char *path,
 static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   if (rarch_task_push_content_load_default(path, detect_content_path,
-         false, CORE_TYPE_PLAIN, NULL, NULL))
-   {
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-      return menu_cbs_exit();
-   }
+   rarch_task_push_content_load_default(path, detect_content_path,
+         false, CORE_TYPE_PLAIN, NULL, NULL);
 
    return 0;
 }
@@ -1097,11 +1092,10 @@ static int action_ok_core_load_deferred(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   if (rarch_task_push_content_load_default(path, menu->deferred_path,
-            false, CORE_TYPE_PLAIN, NULL, NULL))
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+   rarch_task_push_content_load_default(path, menu->deferred_path,
+            false, CORE_TYPE_PLAIN, NULL, NULL);
 
-   return menu_cbs_exit();
+   return 0;
 }
 
 static int action_ok_deferred_list_stub(const char *path,
@@ -1128,9 +1122,8 @@ static int generic_action_ok_file_load(const char *path,
    {
       case ACTION_OK_FFMPEG:
       case ACTION_OK_IMAGEVIEWER:
-         if (rarch_task_push_content_load_default(
-                  NULL, new_path, true, action_type, NULL, NULL))
-            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+         rarch_task_push_content_load_default(
+               NULL, new_path, true, action_type, NULL, NULL);
          break;
       default:
          break;
@@ -1196,10 +1189,10 @@ static int action_ok_file_load(const char *path,
       fill_pathname_join(full_path_new, menu_path_new, path,
             sizeof(full_path_new));
 
-   if (rarch_task_push_content_load_default(NULL, full_path_new,
-            true, CORE_TYPE_PLAIN, NULL, NULL))
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-   return menu_cbs_exit();
+   rarch_task_push_content_load_default(NULL, full_path_new,
+            true, CORE_TYPE_PLAIN, NULL, NULL);
+
+   return 0;
 }
 
 
@@ -1945,9 +1938,8 @@ static int action_ok_start_core(const char *path,
    if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
    {
       runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-      if (rarch_task_push_content_load_default(NULL, NULL,
-               false, CORE_TYPE_PLAIN, NULL, NULL))
-         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+      rarch_task_push_content_load_default(NULL, NULL,
+               false, CORE_TYPE_PLAIN, NULL, NULL);
    }
 
    return 0;
@@ -2026,9 +2018,8 @@ static int action_ok_load_archive(const char *path,
          sizeof(detect_content_path));
 
    event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
-   if (rarch_task_push_content_load_default(
-            NULL, detect_content_path, false, CORE_TYPE_PLAIN, NULL, NULL))
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+   rarch_task_push_content_load_default(
+            NULL, detect_content_path, false, CORE_TYPE_PLAIN, NULL, NULL);
 
    return 0;
 }
@@ -2071,10 +2062,9 @@ static int action_ok_load_archive_detect_core(const char *path,
    {
       case -1:
          event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
-         if (rarch_task_push_content_load_default(NULL, NULL,
-                  false, CORE_TYPE_PLAIN, NULL, NULL))
-            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-         return menu_cbs_exit();
+         rarch_task_push_content_load_default(NULL, NULL,
+                  false, CORE_TYPE_PLAIN, NULL, NULL);
+         return 0;
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
                idx, entry_idx, ACTION_OK_DL_DEFERRED_CORE_LIST);

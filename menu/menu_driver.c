@@ -807,6 +807,13 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
                generic_action_ok_displaylist_push("",
                      "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
+
+               if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
+               {
+                  menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUIT, NULL);
+                  return false;
+               }
+
                return true;
             }
 
