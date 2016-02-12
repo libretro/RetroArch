@@ -1200,7 +1200,6 @@ static void zarch_allocate_white_texture(zui_t *zui)
 static void zarch_context_reset(void *data)
 {
    menu_display_ctx_font_t font_info;
-   const char *font_path = NULL;
    settings_t *settings  = config_get_ptr();
    zui_t          *zui   = (zui_t*)data;
 
