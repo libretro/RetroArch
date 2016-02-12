@@ -192,7 +192,8 @@ static menu_ctx_iterate_t pending_iter;
 static void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
-
+   static bool block_pending = false;
+    
    (void)down;
    (void)keycode;
    (void)mod;
@@ -200,17 +201,25 @@ static void menu_input_key_event(bool down, unsigned keycode,
    if (character == '/')
       menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
 
-   switch (keycode)
+   if (!block_pending)
    {
-      case RETROK_RETURN:
-         pending_iter.action = MENU_ACTION_OK;
-         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
-         break;
-      case RETROK_BACKSPACE:
-         pending_iter.action = MENU_ACTION_CANCEL;
-         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
-         break;
+       switch (keycode)
+       {
+           case RETROK_RETURN:
+               pending_iter.action = MENU_ACTION_OK;
+               menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
+               block_pending = true;
+               break;
+           case RETROK_BACKSPACE:
+               pending_iter.action = MENU_ACTION_CANCEL;
+               menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
+               block_pending = true;
+               break;
+       }
+       return;
    }
+    
+    block_pending = false;
 }
 
 static void menu_driver_toggle(bool latch)
@@ -291,21 +300,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    switch (state)
    {
       case RARCH_MENU_CTL_IS_PENDING_ACTION:
-         {
-            bool *data_b = (bool*)data;
-            bool retcode = false;
-
-            if (!menu_driver_pending_action)
-               return false;
-
-            retcode = menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &pending_iter);
-            pending_iter.action = MENU_ACTION_NOOP;
-
-            if (!retcode)
-               *data_b = true;
-
-            menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_ACTION, NULL);
-         }
+         if (!menu_driver_pending_action)
+            return false;
+         menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_ACTION, NULL);
          break;
       case RARCH_MENU_CTL_SET_PENDING_ACTION:
          menu_driver_pending_action = true;
@@ -835,6 +832,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          }
       case RARCH_MENU_CTL_ITERATE:
          {
+            bool retcode = false;
             menu_ctx_iterate_t *iterate = (menu_ctx_iterate_t*)data;
 
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUICK_MENU, NULL))
@@ -871,6 +869,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
             if (!menu_driver_ctx || !menu_driver_ctx->iterate)
                return false;
+             
+            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_ACTION, &retcode))
+            {
+                iterate->action = pending_iter.action;
+                pending_iter.action = MENU_ACTION_NOOP;
+            }
             if (menu_driver_ctx->iterate(menu_driver_data,
                      menu_userdata, iterate->action) == -1)
                return false;

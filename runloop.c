@@ -1361,7 +1361,6 @@ int runloop_iterate(unsigned *sleep_ms)
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       menu_ctx_iterate_t iter;
-      bool time_to_exit       = false;
       bool focused            = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL) 
          && !ui_companion_is_on_foreground();
       bool is_idle            = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
@@ -1370,12 +1369,7 @@ int runloop_iterate(unsigned *sleep_ms)
 
       iter.action = action;
 
-      if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_ACTION, &time_to_exit))
-      {
-         if (time_to_exit)
-            rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-      }
-      else if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
+      if (!menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter))
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 
       if (focused || !is_idle)
