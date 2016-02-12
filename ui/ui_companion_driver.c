@@ -132,6 +132,13 @@ void ui_companion_driver_init_first(void)
    }
 }
 
+void ui_companion_driver_toggle(void)
+{
+   const ui_companion_driver_t *ui = ui_companion_get_ptr();
+   if (ui_companion && ui_companion->toggle)
+      ui_companion->toggle(ui_companion_data);
+}
+
 void ui_companion_driver_notify_refresh(void)
 {
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
