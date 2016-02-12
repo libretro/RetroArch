@@ -37,6 +37,7 @@
 #include "retroarch.h"
 #include "rewind.h"
 #include "system.h"
+#include "ui/ui_companion_driver.h"
 #include "dir_list_special.h"
 
 #ifdef HAVE_CHEEVOS
@@ -1352,7 +1353,8 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_RESUME:
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-         ui_companion_driver_toggle();
+         if (ui_companion_is_on_foreground())
+            ui_companion_driver_toggle();
          break;
       case EVENT_CMD_RESTART_RETROARCH:
          if (!frontend_driver_set_fork(FRONTEND_FORK_RESTART))
