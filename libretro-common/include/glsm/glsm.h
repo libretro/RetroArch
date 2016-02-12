@@ -86,13 +86,20 @@ typedef GLclampf GLclampd;
 enum
 {
    SGL_DEPTH_TEST             = 0,
-   SGL_BLEND                  = 1,
-   SGL_POLYGON_OFFSET_FILL    = 2,
-   SGL_FOG                    = 3,
-   SGL_CULL_FACE              = 4,
-   SGL_ALPHA_TEST             = 5,
-   SGL_SCISSOR_TEST           = 6,
-   SGL_STENCIL_TEST           = 7,
+   SGL_BLEND,
+   SGL_POLYGON_OFFSET_FILL,
+   SGL_FOG,
+   SGL_CULL_FACE,
+   SGL_ALPHA_TEST,
+   SGL_SCISSOR_TEST,
+   SGL_STENCIL_TEST,
+#if !defined(HAVE_OPENGLES)
+   SGL_DEPTH_CLAMP,
+   SGL_CLIP_DISTANCE0,
+#endif
+   SGL_DITHER,
+   SGL_SAMPLE_ALPHA_TO_COVERAGE,
+   SGL_SAMPLE_COVERAGE,
    SGL_CAP_MAX
 };
 

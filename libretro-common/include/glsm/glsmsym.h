@@ -33,6 +33,7 @@ extern "C" {
 #define glTexCoord2f                rglTexCoord2f
 
 /* more forward-compatible GL subset symbols */
+#define glBlitFramebuffer           rglBlitFramebuffer
 #define glVertexAttrib4f            rglVertexAttrib4f
 #define glVertexAttrib4fv           rglVertexAttrib4fv
 #define glDrawArrays                rglDrawArrays
@@ -73,6 +74,7 @@ extern "C" {
 #define glGenBuffers                rglGenBuffers
 #define glDisable(T)                rglDisable(S##T)
 #define glEnable(T)                 rglEnable(S##T)
+#define glIsEnabled(T)              rglIsEnabled(S##T)
 #define glUseProgram                rglUseProgram
 #define glDepthMask                 rglDepthMask
 #define glStencilMask               rglStencilMask
@@ -85,6 +87,7 @@ extern "C" {
 #define glUniform1f                 rglUniform1f
 #define glUniform1i                 rglUniform1i
 #define glUniform2f                 rglUniform2f
+#define glUniform2i                 rglUniform2i
 #define glUniform2fv                rglUniform2fv
 #define glUniform3f                 rglUniform3f
 #define glUniform3fv                rglUniform3fv
@@ -97,7 +100,6 @@ extern "C" {
 #define glClearColor                rglClearColor
 #define glViewport                  rglViewport
 #define glScissor                   rglScissor
-#define glIsEnabled                 rglIsEnabled
 #define glStencilFunc               rglStencilFunc
 #define glCullFace                  rglCullFace
 #define glStencilOp                 rglStencilOp
@@ -105,7 +107,11 @@ extern "C" {
 #define glDepthRange                rglDepthRange
 #define glClearDepth                rglClearDepth
 #define glPolygonOffset             rglPolygonOffset
+#define glPixelStorei               rglPixelStorei
+#define glReadBuffer                rglReadBuffer
 
+void rglReadBuffer(GLenum mode);
+void rglPixelStorei(GLenum pname, GLint param);
 void rglTexCoord2f(GLfloat s, GLfloat t);
 void rglDrawElements(GLenum mode, GLsizei count, GLenum type,
                            const GLvoid * indices);
@@ -167,6 +173,7 @@ void rglDeleteShader(GLuint shader);
 void rglUniform1f(GLint location, GLfloat v0);
 void rglUniform1i(GLint location, GLint v0);
 void rglUniform2f(GLint location, GLfloat v0, GLfloat v1);
+void rglUniform2i(GLint location, GLint v0, GLint v1);
 void rglUniform2fv(GLint location, GLsizei count, const GLfloat *value);
 void rglUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
 void rglUniform3fv(GLint location, GLsizei count, const GLfloat *value);
@@ -194,6 +201,13 @@ void rglVertexAttrib4f(GLuint name, GLfloat x, GLfloat y,
 void rglVertexAttrib4fv(GLuint name, GLfloat* v);
 void rglDeleteProgram(GLuint program);
 void rglDeleteBuffers(GLsizei n, const GLuint *buffers);
+void rglBlitFramebuffer(
+      GLint srcX0, GLint srcY0,
+      GLint srcX1, GLint srcY1,
+      GLint dstX0, GLint dstY0,
+      GLint dstX1, GLint dstY1,
+      GLbitfield mask, GLenum filter);
+
 
 #ifdef __cplusplus
 }

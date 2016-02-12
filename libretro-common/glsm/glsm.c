@@ -23,6 +23,7 @@
 #include <glsym/glsym.h>
 #include <glsm/glsm.h>
 
+
 struct gl_cached_state
 {
    struct
@@ -34,6 +35,12 @@ struct gl_cached_state
    {
       bool enabled[MAX_ATTRIB];
    } vertex_attrib_pointer;
+
+   struct
+   {
+      GLenum pname;
+      GLint param;
+   } pixelstore_i;
 
    struct
    {
@@ -97,6 +104,7 @@ struct gl_cached_state
       GLenum func;
    } depthfunc;
 
+
    struct
    {
       bool used;
@@ -151,6 +159,11 @@ struct gl_cached_state
       GLboolean mask;
    } depthmask;
 
+   struct
+   {
+      GLenum mode;
+   } readbuffer;
+
    GLuint vao;
    GLuint framebuf;
    GLuint program; 
@@ -167,6 +180,28 @@ static struct gl_cached_state gl_state;
 
 /* GL wrapper-side */
 
+void rglBlitFramebuffer(
+      GLint srcX0, GLint srcY0,
+      GLint srcX1, GLint srcY1,
+      GLint dstX0, GLint dstY0,
+      GLint dstX1, GLint dstY1,
+      GLbitfield mask, GLenum filter)
+{
+#ifndef HAVE_OPENGLES2
+   glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1,
+         dstX0, dstY0, dstX1, dstY1,
+         mask, filter);
+#endif
+}
+
+void rglReadBuffer(GLenum mode)
+{
+#ifndef HAVE_OPENGLES2
+   glReadBuffer(mode);
+#endif
+   gl_state.readbuffer.mode = mode;
+}
+
 void rglClearDepth(GLdouble depth)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -177,6 +212,13 @@ void rglClearDepth(GLdouble depth)
 #endif
    gl_state.cleardepth.used  = true;
    gl_state.cleardepth.depth = depth;
+}
+
+void rglPixelStorei(GLenum pname, GLint param)
+{
+   glPixelStorei(pname, param);
+   gl_state.pixelstore_i.pname = pname;
+   gl_state.pixelstore_i.param = param;
 }
 
 void rglDepthRange(GLclampd zNear, GLclampd zFar)
@@ -609,6 +651,11 @@ void rglUniform1i(GLint location, GLint v0)
 void rglUniform2f(GLint location, GLfloat v0, GLfloat v1)
 {
    glUniform2f(location, v0, v1);
+}
+
+void rglUniform2i(GLint location, GLint v0, GLint v1)
+{
+   glUniform2i(location, v0, v1);
 }
 
 void rglUniform2fv(GLint location, GLsizei count, const GLfloat *value)
