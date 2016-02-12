@@ -194,7 +194,7 @@ static void menu_input_key_event(bool down, unsigned keycode,
 {
    static unsigned timeout   = 0;
    static bool block_pending = false;
-    
+
    (void)down;
    (void)keycode;
    (void)mod;
@@ -204,33 +204,33 @@ static void menu_input_key_event(bool down, unsigned keycode,
 
    if (!block_pending)
    {
-       switch (keycode)
-       {
-           case RETROK_RETURN:
-               pending_iter.action = MENU_ACTION_OK;
-               menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
-			   timeout       = 1;
-               block_pending = true;
-               break;
-           case RETROK_BACKSPACE:
-               pending_iter.action = MENU_ACTION_CANCEL;
-               menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
-			   timeout       = 1;
-               block_pending = true;
-               break;
-       }
-       return;
+      switch (keycode)
+      {
+         case RETROK_RETURN:
+            pending_iter.action = MENU_ACTION_OK;
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
+            timeout       = 1;
+            block_pending = true;
+            break;
+         case RETROK_BACKSPACE:
+            pending_iter.action = MENU_ACTION_CANCEL;
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
+            timeout       = 1;
+            block_pending = true;
+            break;
+      }
+      return;
    }
-    
+
    if (timeout >= 1)
    {
       timeout++;
 
       if (timeout > 2)
-	  {
+      {
          timeout       = 0;
          block_pending = false;
-	  }
+      }
    }
 }
 
