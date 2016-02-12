@@ -192,6 +192,7 @@ static menu_ctx_iterate_t pending_iter;
 static void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
+   static unsigned timeout   = 0;
    static bool block_pending = false;
     
    (void)down;
@@ -208,18 +209,29 @@ static void menu_input_key_event(bool down, unsigned keycode,
            case RETROK_RETURN:
                pending_iter.action = MENU_ACTION_OK;
                menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
+			   timeout       = 1;
                block_pending = true;
                break;
            case RETROK_BACKSPACE:
                pending_iter.action = MENU_ACTION_CANCEL;
                menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
+			   timeout       = 1;
                block_pending = true;
                break;
        }
        return;
    }
     
-    block_pending = false;
+   if (timeout >= 1)
+   {
+      timeout++;
+
+      if (timeout > 2)
+	  {
+         timeout       = 0;
+         block_pending = false;
+	  }
+   }
 }
 
 static void menu_driver_toggle(bool latch)
