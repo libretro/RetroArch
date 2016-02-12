@@ -76,7 +76,29 @@
             -pre-clean
     -->
     <import file="custom_rules.xml" optional="true" />
+
+    <target name="set-debuggable" description="sets internal named property">
+        <property name="set.debuggable" value="true" />
+    </target>
+
     <target name="-pre-build">
+       <if>
+          <condition>
+              <isset property="set.debuggable"/>
+          </condition>
+          <then>
+              <replaceregexp
+                      file="AndroidManifest.xml"
+                      match="(android:debuggable=&#34;).*(&#34;)"
+                      replace="\1true\2"/>
+          </then>
+          <else>
+              <replaceregexp
+                      file="AndroidManifest.xml"
+                      match="(android:debuggable=&#34;).*(&#34;)"
+                      replace="\1false\2"/>
+          </else>
+       </if>
        <exec executable="${ndk.dir}/${ndk.cmd}" failonerror="true">
           <arg value="-j4"/>
        </exec>
