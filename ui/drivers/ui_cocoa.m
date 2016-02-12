@@ -259,8 +259,6 @@ static void poll_iteration(void)
 }
 
 
-extern void action_ok_push_quick_menu(void);
-
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
    if (filenames.count == 1 && [filenames objectAtIndex:0])
@@ -311,7 +309,7 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
                     if (rarch_task_push_content_load_default(
                              NULL, NULL, false, CORE_TYPE_PLAIN,
                              NULL, NULL))
-                        action_ok_push_quick_menu();
+                       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
                 }
             }
             break;
