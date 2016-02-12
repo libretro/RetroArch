@@ -107,7 +107,7 @@ finish:
 }
 #endif
 
-static int generic_action_ok_displaylist_push(const char *path,
+int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
@@ -440,17 +440,6 @@ static int generic_action_ok_displaylist_push(const char *path,
    return 0;
 }
 
-int action_ok_push_quick_menu(void)
-{
-   bool msg_force               = true;
-   menu_entries_flush_stack(NULL, MENU_SETTINGS);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
-
-   generic_action_ok_displaylist_push("",
-         "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
-   return 0;
-}
-
 static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
       const char *path, const char *label,
       uint32_t hash_label,
@@ -509,7 +498,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
 
          if (rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL))
-            action_ok_push_quick_menu();
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
          return menu_cbs_exit();
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,
@@ -556,7 +545,7 @@ static int action_ok_file_load_detect_core(const char *path,
    if (rarch_task_push_content_load_default(path, detect_content_path,
          false, CORE_TYPE_PLAIN, NULL, NULL))
    {
-      action_ok_push_quick_menu();
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
       return menu_cbs_exit();
    }
 
@@ -1110,7 +1099,7 @@ static int action_ok_core_load_deferred(const char *path,
 
    if (rarch_task_push_content_load_default(path, menu->deferred_path,
             false, CORE_TYPE_PLAIN, NULL, NULL))
-      action_ok_push_quick_menu();
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 
    return menu_cbs_exit();
 }
@@ -1141,7 +1130,7 @@ static int generic_action_ok_file_load(const char *path,
       case ACTION_OK_IMAGEVIEWER:
          if (rarch_task_push_content_load_default(
                   NULL, new_path, true, action_type, NULL, NULL))
-            action_ok_push_quick_menu();
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
          break;
       default:
          break;
@@ -1209,7 +1198,7 @@ static int action_ok_file_load(const char *path,
 
    if (rarch_task_push_content_load_default(NULL, full_path_new,
             true, CORE_TYPE_PLAIN, NULL, NULL))
-      action_ok_push_quick_menu();
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
    return menu_cbs_exit();
 }
 
@@ -1958,7 +1947,7 @@ static int action_ok_start_core(const char *path,
       runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
       if (rarch_task_push_content_load_default(NULL, NULL,
                false, CORE_TYPE_PLAIN, NULL, NULL))
-         action_ok_push_quick_menu();
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
    }
 
    return 0;
@@ -2039,7 +2028,7 @@ static int action_ok_load_archive(const char *path,
    event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
    if (rarch_task_push_content_load_default(
             NULL, detect_content_path, false, CORE_TYPE_PLAIN, NULL, NULL))
-      action_ok_push_quick_menu();
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 
    return 0;
 }
@@ -2084,7 +2073,7 @@ static int action_ok_load_archive_detect_core(const char *path,
          event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
          if (rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL))
-            action_ok_push_quick_menu();
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
          return menu_cbs_exit();
       case 0:
          return generic_action_ok_displaylist_push(path, label, type,

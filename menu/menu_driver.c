@@ -258,6 +258,7 @@ static void menu_driver_toggle(bool latch)
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    static struct retro_system_info menu_driver_system;
+   static bool menu_driver_pending_quick_menu      = false;
    static bool menu_driver_prevent_populate        = false;
    static bool menu_driver_load_no_content         = false;
    static bool menu_driver_alive                   = false;
@@ -281,6 +282,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             *driver_data = menu_driver_data;
          }
          break;
+      case RARCH_MENU_CTL_IS_PENDING_QUICK_MENU:
+         return menu_driver_pending_quick_menu;
+      case RARCH_MENU_CTL_SET_PENDING_QUICK_MENU:
+         menu_driver_pending_quick_menu = true;
+         break;
+      case RARCH_MENU_CTL_UNSET_PENDING_QUICK_MENU:
+         menu_driver_pending_quick_menu = false;
+         break;
       case RARCH_MENU_CTL_IS_PENDING_QUIT:
          return menu_driver_pending_quit;
       case RARCH_MENU_CTL_SET_PENDING_QUIT:
@@ -298,14 +307,15 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_pending_shutdown = false;
          break;
       case RARCH_MENU_CTL_DESTROY:
-         menu_driver_pending_quit     = false;
-         menu_driver_pending_shutdown = false;
-         menu_driver_prevent_populate = false;
-         menu_driver_load_no_content  = false;
-         menu_driver_alive            = false;
-         menu_driver_data_own         = false;
-         menu_driver_ctx              = NULL;
-         menu_userdata                = NULL;
+         menu_driver_pending_quick_menu = false;
+         menu_driver_pending_quit       = false;
+         menu_driver_pending_shutdown   = false;
+         menu_driver_prevent_populate   = false;
+         menu_driver_load_no_content    = false;
+         menu_driver_alive              = false;
+         menu_driver_data_own           = false;
+         menu_driver_ctx                = NULL;
+         menu_userdata                  = NULL;
          break;
       case RARCH_MENU_CTL_PLAYLIST_FREE:
          if (menu_driver_playlist)
@@ -786,6 +796,19 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
       case RARCH_MENU_CTL_ITERATE:
          {
             menu_ctx_iterate_t *iterate = (menu_ctx_iterate_t*)data;
+
+            if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUICK_MENU, NULL))
+            {
+               bool msg_force               = true;
+
+               menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUICK_MENU, NULL);
+               menu_entries_flush_stack(NULL, MENU_SETTINGS);
+               menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
+
+               generic_action_ok_displaylist_push("",
+                     "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
+               return true;
+            }
 
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUIT, NULL))
             {
