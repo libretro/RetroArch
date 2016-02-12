@@ -187,10 +187,11 @@ static bool menu_init(menu_handle_t *menu_data)
    return true;
 }
 
+static menu_ctx_iterate_t pending_iter;
+
 static void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
-   menu_ctx_iterate_t iter;
 
    (void)down;
    (void)keycode;
@@ -202,12 +203,12 @@ static void menu_input_key_event(bool down, unsigned keycode,
    switch (keycode)
    {
       case RETROK_RETURN:
-         iter.action = MENU_ACTION_OK;
-         menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter);
+         pending_iter.action = MENU_ACTION_OK;
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
          break;
       case RETROK_BACKSPACE:
-         iter.action = MENU_ACTION_CANCEL;
-         menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter);
+         pending_iter.action = MENU_ACTION_CANCEL;
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
          break;
    }
 }
@@ -273,6 +274,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 {
    static struct retro_system_info menu_driver_system;
    static bool menu_driver_pending_quick_menu      = false;
+   static bool menu_driver_pending_action          = false;
    static bool menu_driver_prevent_populate        = false;
    static bool menu_driver_load_no_content         = false;
    static bool menu_driver_alive                   = false;
@@ -288,6 +290,29 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_MENU_CTL_IS_PENDING_ACTION:
+         {
+            bool *data_b = (bool*)data;
+            bool retcode = false;
+
+            if (!menu_driver_pending_action)
+               return false;
+
+            retcode = menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &pending_iter);
+            pending_iter.action = MENU_ACTION_NOOP;
+
+            if (!retcode)
+               *data_b = true;
+
+            menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_ACTION, NULL);
+         }
+         break;
+      case RARCH_MENU_CTL_SET_PENDING_ACTION:
+         menu_driver_pending_action = true;
+         break;
+      case RARCH_MENU_CTL_UNSET_PENDING_ACTION:
+         menu_driver_pending_action = false;
+         break;
       case RARCH_MENU_CTL_DRIVER_DATA_GET:
          {
             menu_handle_t **driver_data = (menu_handle_t**)data;
@@ -322,6 +347,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_DESTROY:
          menu_driver_pending_quick_menu = false;
+         menu_driver_pending_action     = false;
          menu_driver_pending_quit       = false;
          menu_driver_pending_shutdown   = false;
          menu_driver_prevent_populate   = false;
