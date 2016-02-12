@@ -1065,6 +1065,8 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          cheevos_set_cheats();
 #endif
          core_ctl(CORE_CTL_RETRO_RESET, NULL);
+         if (ui_companion_is_on_foreground())
+            ui_companion_driver_toggle();
          break;
       case EVENT_CMD_SAVE_STATE:
          if (settings->savestate_auto_index)
