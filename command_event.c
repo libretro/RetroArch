@@ -944,7 +944,10 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 
                video_driver_set_video_mode(width, height, true);
 
-               snprintf(msg, sizeof(msg),"Resolution: %dx%d",width, height);
+               if (width == 0 || height == 0)
+                  strlcpy(msg, "Resolution: DEFAULT", sizeof(msg));
+               else
+                  snprintf(msg, sizeof(msg),"Resolution: %dx%d",width, height);
                runloop_msg_queue_push(msg, 1, 100, true);
             }
          }

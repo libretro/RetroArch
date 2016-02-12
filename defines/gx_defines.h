@@ -16,95 +16,12 @@
 #ifndef _GX_DEFINES_H
 #define _GX_DEFINES_H
 
-#define _SHIFTL(v, s, w)	((uint32_t) (((uint32_t)(v) & ((0x01 << (w)) - 1)) << (s)))
-#define _SHIFTR(v, s, w)	((uint32_t)(((uint32_t)(v) >> (s)) & ((0x01 << (w)) - 1)))
-
-#ifndef __lhbrx
-#define __lhbrx(base,index)			\
-({	register u16 res;				\
-	__asm__ volatile ("lhbrx	%0,%1,%2" : "=r"(res) : "b%"(index), "r"(base) : "memory"); \
-	res; })
-#endif
-
-#ifndef __sthbrx
-#define __sthbrx(base,index,value)	\
-	__asm__ volatile ("sthbrx	%0,%1,%2" : : "r"(value), "b%"(index), "r"(base) : "memory")
-#endif
-
-#ifndef __stwbrx
-#define __stwbrx(base,index,value)	\
-	__asm__ volatile ("stwbrx	%0,%1,%2" : : "r"(value), "b%"(index), "r"(base) : "memory")
-#endif
-
-#ifndef _sync
-#define _sync() asm volatile("sync")
-#endif
-
-#ifndef _nop
-#define _nop() asm volatile("nop")
-#endif
-
-#ifndef ppcsync
-#define ppcsync() asm volatile("sc")
-#endif
-
-#ifndef ppchalt
-#define ppchalt() ({					\
-      _sync(); \
-	while(1) {							\
-      _nop(); \
-		asm volatile("li 3,0");			\
-      _nop(); \
-	}									\
-})
-#endif
-
-#ifndef _CPU_ISR_Enable
-#define _CPU_ISR_Enable() \
-	{ register u32 _val = 0; \
-	  __asm__ __volatile__ ( \
-		"mfmsr %0\n" \
-		"ori %0,%0,0x8000\n" \
-		"mtmsr %0" \
-		: "=&r" ((_val)) : "0" ((_val)) \
-	  ); \
-	}
-#endif
-
-#ifndef _CPU_ISR_Disable
-#define _CPU_ISR_Disable( _isr_cookie ) \
-  { register u32 _disable_mask = 0; \
-	_isr_cookie = 0; \
-    __asm__ __volatile__ ( \
-	  "mfmsr %0\n" \
-	  "rlwinm %1,%0,0,17,15\n" \
-	  "mtmsr %1\n" \
-	  "extrwi %0,%0,1,16" \
-	  : "=&r" ((_isr_cookie)), "=&r" ((_disable_mask)) \
-	  : "0" ((_isr_cookie)), "1" ((_disable_mask)) \
-	); \
-  }
-#endif
-
-#ifndef _CPU_ISR_Restore
-#define _CPU_ISR_Restore( _isr_cookie )  \
-  { register u32 _enable_mask = 0; \
-	__asm__ __volatile__ ( \
-    "    cmpwi %0,0\n" \
-	"    beq 1f\n" \
-	"    mfmsr %1\n" \
-	"    ori %1,%1,0x8000\n" \
-	"    mtmsr %1\n" \
-	"1:" \
-	: "=r"((_isr_cookie)),"=&r" ((_enable_mask)) \
-	: "0"((_isr_cookie)),"1" ((_enable_mask)) \
-	); \
-  }
-#endif
-
 #ifdef GEKKO
 
-extern void __lwp_thread_stopmultitasking(void (*exitfunc)());
+#define SYSMEM1_SIZE 0x01800000
+
+#define _SHIFTL(v, s, w)	((uint32_t) (((uint32_t)(v) & ((0x01 << (w)) - 1)) << (s)))
+#define _SHIFTR(v, s, w)	((uint32_t)(((uint32_t)(v) >> (s)) & ((0x01 << (w)) - 1)))
 
 #define OSThread lwp_t
 #define OSCond lwpq_t
@@ -120,19 +37,52 @@ extern void __lwp_thread_stopmultitasking(void (*exitfunc)());
 #define OSWaitCond(cond, mutex) LWP_CondWait(cond, mutex)
 
 #define OSInitThreadQueue(queue) LWP_InitQueue(queue)
+#define OSCloseThreadQueue(queue) LWP_CloseQueue(queue)
 #define OSSleepThread(queue) LWP_ThreadSleep(queue)
 #define OSJoinThread(thread, val) LWP_JoinThread(thread, val)
 
 #define OSCreateThread(thread, func, intarg, ptrarg, stackbase, stacksize, priority, attrs) LWP_CreateThread(thread, func, ptrarg, stackbase, stacksize, priority)
 
-#define VISetPostRetraceCallback(cb) VIDEO_SetPostRetraceCallback(cb)
-#define VISetBlack(black) VIDEO_SetBlack(black)
-#define VIFlush() VIDEO_Flush()
-#define VISetNextFrameBuffer(fb) VIDEO_SetNextFramebuffer(fb)
-#define VIWaitForRetrace() VIDEO_WaitVSync()
-#define VIConfigure(rm) VIDEO_Configure(rm)
-#define VIInit() VIDEO_Init()
-#define VIPadFrameBufferWidth(width) VIDEO_PadFramebufferWidth(width)
+#define BLIT_LINE_16(off) \
+{ \
+   const uint32_t *tmp_src = src; \
+   uint32_t       *tmp_dst = dst; \
+   for (unsigned x = 0; x < width2 >> 1; x++, tmp_src += 2, tmp_dst += 8) \
+   { \
+      tmp_dst[ 0 + off] = BLIT_LINE_16_CONV(tmp_src[0]); \
+      tmp_dst[ 1 + off] = BLIT_LINE_16_CONV(tmp_src[1]); \
+   } \
+   src += tmp_pitch; \
+}
+
+#define BLIT_LINE_32(off) \
+{ \
+   const uint16_t *tmp_src = src; \
+   uint16_t       *tmp_dst = dst; \
+   for (unsigned x = 0; x < width2 >> 3; x++, tmp_src += 8, tmp_dst += 32) \
+   { \
+      tmp_dst[  0 + off] = tmp_src[0] | 0xFF00; \
+      tmp_dst[ 16 + off] = tmp_src[1]; \
+      tmp_dst[  1 + off] = tmp_src[2] | 0xFF00; \
+      tmp_dst[ 17 + off] = tmp_src[3]; \
+      tmp_dst[  2 + off] = tmp_src[4] | 0xFF00; \
+      tmp_dst[ 18 + off] = tmp_src[5]; \
+      tmp_dst[  3 + off] = tmp_src[6] | 0xFF00; \
+      tmp_dst[ 19 + off] = tmp_src[7]; \
+   } \
+   src += tmp_pitch; \
+}
+
+#define CHUNK_FRAMES 64
+#define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))
+#define BLOCKS 16
+
+#define AIInit AUDIO_Init
+#define AIInitDMA AUDIO_InitDMA
+#define AIStartDMA AUDIO_StartDMA
+#define AIStopDMA AUDIO_StopDMA
+#define AIRegisterDMACallback AUDIO_RegisterDMACallback
+#define AISetDSPSampleRate AUDIO_SetDSPSampleRate
 
 #endif
 

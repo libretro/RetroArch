@@ -37,7 +37,6 @@
 
 #include "../frontend_driver.h"
 #include "../../defaults.h"
-#include "../../defines/gx_defines.h"
 
 #ifdef HW_RVL
 #include <ogc/ios.h>
@@ -53,7 +52,7 @@ extern void system_exec_wii(const char *path, bool should_load_game);
 #include <debug.h>
 #endif
 
-#if defined(HW_RVL)
+#if defined(HW_RVL) && ! defined(IS_SALAMANDER)
 static enum frontend_fork gx_fork_mode = FRONTEND_FORK_NONE;
 #endif
 

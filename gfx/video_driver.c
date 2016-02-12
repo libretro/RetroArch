@@ -1629,12 +1629,6 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
                   &global->console.softfilter_enable);
 
             CONFIG_GET_INT_BASE(conf, global,
-                  console.screen.resolutions.width,
-                  "console_resolution_width");
-            CONFIG_GET_INT_BASE(conf, global,
-                  console.screen.resolutions.height,
-                  "console_resolution_height");
-            CONFIG_GET_INT_BASE(conf, global,
                   console.screen.soft_filter_index,
                   "soft_filter_index");
             CONFIG_GET_INT_BASE(conf, global, 
@@ -1660,10 +1654,6 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             config_set_bool(conf, "soft_filter_enable",
                   global->console.softfilter_enable);
 
-            config_set_int(conf, "console_resolution_width",
-                  global->console.screen.resolutions.width);
-            config_set_int(conf, "console_resolution_height",
-                  global->console.screen.resolutions.height);
             config_set_int(conf, "soft_filter_index",
                   global->console.screen.soft_filter_index);
             config_set_int(conf, "current_resolution_id",

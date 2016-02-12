@@ -680,13 +680,17 @@ static void menu_action_setting_disp_set_label_menu_video_resolution(
    *w = 19;
    *s = '\0';
 
-   (void)width;
-   (void)height;
-
    strlcpy(s2, path, len2);
 
    if (video_driver_get_video_output_size(&width, &height))
-      snprintf(s, len, "%ux%u", width, height);
+   {
+#ifdef GEKKO
+      if (width == 0 || height == 0)
+         strlcpy(s, "DEFAULT", len);
+      else
+#endif
+         snprintf(s, len, "%ux%u", width, height);
+   }
    else
       strlcpy(s, menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE), len);
 }
