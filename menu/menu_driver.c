@@ -190,12 +190,26 @@ static bool menu_init(menu_handle_t *menu_data)
 static void menu_input_key_event(bool down, unsigned keycode,
       uint32_t character, uint16_t mod)
 {
+   menu_ctx_iterate_t iter;
+
    (void)down;
    (void)keycode;
    (void)mod;
 
    if (character == '/')
       menu_entry_action(NULL, 0, MENU_ACTION_SEARCH);
+
+   switch (keycode)
+   {
+      case RETROK_RETURN:
+         iter.action = MENU_ACTION_OK;
+         menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter);
+         break;
+      case RETROK_BACKSPACE:
+         iter.action = MENU_ACTION_CANCEL;
+         menu_driver_ctl(RARCH_MENU_CTL_ITERATE, &iter);
+         break;
+   }
 }
 
 static void menu_driver_toggle(bool latch)
