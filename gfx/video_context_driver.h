@@ -64,7 +64,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_SET,
    GFX_CTL_BIND_HW_RENDER,
    GFX_CTL_GET_VIDEO_OUTPUT_PREV,
-   GFX_CTL_GET_VIDEO_OUTPUT_NEXT
+   GFX_CTL_GET_VIDEO_OUTPUT_NEXT,
+   GFX_CTL_IMAGE_BUFFER_INIT
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -221,8 +222,6 @@ void gfx_ctx_translate_aspect(float *aspect,
 
 bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
       bool fullscreen);
-
-bool gfx_ctx_image_buffer_init(const video_info_t *info);
 
 bool gfx_ctx_image_buffer_write(const void *frame,
       unsigned width, unsigned height, unsigned pitch, bool rgb32,

@@ -128,12 +128,6 @@ bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
          value);
 }
 
-bool gfx_ctx_image_buffer_init(const video_info_t* info)
-{
-   if (!current_video_context || !current_video_context->image_buffer_init)
-      return false;
-   return current_video_context->image_buffer_init(video_context_data, info);
-}
 
 bool gfx_ctx_image_buffer_write(const void *frame, unsigned width,
          unsigned height, unsigned pitch, bool rgb32,
@@ -369,6 +363,10 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
    switch (state)
    {
+      case GFX_CTL_IMAGE_BUFFER_INIT:
+         if (!current_video_context || !current_video_context->image_buffer_init)
+            return false;
+         return current_video_context->image_buffer_init(video_context_data, (const video_info_t*)data);
       case GFX_CTL_GET_VIDEO_OUTPUT_PREV:
          if (!current_video_context 
                || !current_video_context->get_video_output_prev)
