@@ -65,7 +65,11 @@ enum gfx_ctx_ctl_state
    GFX_CTL_BIND_HW_RENDER,
    GFX_CTL_GET_VIDEO_OUTPUT_PREV,
    GFX_CTL_GET_VIDEO_OUTPUT_NEXT,
-   GFX_CTL_IMAGE_BUFFER_INIT
+   GFX_CTL_IMAGE_BUFFER_INIT,
+   /* Finds next driver in graphics context driver array. */
+   GFX_CTL_FIND_NEXT_DRIVER,
+   /* Finds previous driver in graphics context driver array. */
+   GFX_CTL_FIND_PREV_DRIVER
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -201,19 +205,6 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
 const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *ident,
       enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx);
     
-/**
- * find_next_context_driver:
- *
- * Finds next driver in graphics context driver array.
- **/
-void find_next_context_driver(void);
-    
-/**
- * find_prev_context_driver:
- *
- * Finds previous driver in graphics context driver array.
- **/
-void find_prev_gfx_context_driver(void);
 
 bool gfx_ctx_get_metrics(enum display_metric_types type, float *value);
 

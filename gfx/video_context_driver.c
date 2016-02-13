@@ -83,7 +83,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 static const gfx_ctx_driver_t  *current_video_context;
 static        void *video_context_data;
 
-
 const char *gfx_ctx_get_ident(void)
 {
    const gfx_ctx_driver_t *ctx = current_video_context;
@@ -220,7 +219,7 @@ static int find_gfx_ctx_driver_index(const char *ident)
  *
  * Finds previous driver in graphics context driver array.
  **/
-void find_prev_gfx_context_driver(void)
+static bool gfx_ctl_find_prev_driver(void)
 {
    settings_t *settings = config_get_ptr();
    int i = find_gfx_ctx_driver_index(settings->video.context_driver);
@@ -229,9 +228,11 @@ void find_prev_gfx_context_driver(void)
    {
       strlcpy(settings->video.context_driver, gfx_ctx_drivers[i - 1]->ident,
             sizeof(settings->video.context_driver));
+      return true;
    }
-   else
-      RARCH_WARN("Couldn't find any previous video context driver.\n");
+
+   RARCH_WARN("Couldn't find any previous video context driver.\n");
+   return false;
 }
 
 /**
@@ -239,7 +240,7 @@ void find_prev_gfx_context_driver(void)
  *
  * Finds next driver in graphics context driver array.
  **/
-void find_next_context_driver(void)
+static bool gfx_ctl_find_next_driver(void)
 {
    settings_t *settings = config_get_ptr();
    int i = find_gfx_ctx_driver_index(settings->video.context_driver);
@@ -248,9 +249,11 @@ void find_next_context_driver(void)
    {
       strlcpy(settings->video.context_driver, gfx_ctx_drivers[i + 1]->ident,
             sizeof(settings->video.context_driver));
+      return true;
    }
-   else
-      RARCH_WARN("Couldn't find any next video context driver.\n");
+
+   RARCH_WARN("Couldn't find any next video context driver.\n");
+   return false;
 }
 
 /**
@@ -363,10 +366,15 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
    switch (state)
    {
+      case GFX_CTL_FIND_PREV_DRIVER:
+         return gfx_ctl_find_prev_driver();
+      case GFX_CTL_FIND_NEXT_DRIVER:
+         return gfx_ctl_find_next_driver();
       case GFX_CTL_IMAGE_BUFFER_INIT:
          if (!current_video_context || !current_video_context->image_buffer_init)
             return false;
-         return current_video_context->image_buffer_init(video_context_data, (const video_info_t*)data);
+         return current_video_context->image_buffer_init(video_context_data,
+               (const video_info_t*)data);
       case GFX_CTL_GET_VIDEO_OUTPUT_PREV:
          if (!current_video_context 
                || !current_video_context->get_video_output_prev)
