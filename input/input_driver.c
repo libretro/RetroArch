@@ -624,11 +624,6 @@ void **input_driver_get_data_ptr(void)
    return (void**)&current_input_data;
 }
 
-bool input_driver_data_ptr_is_same(void *data)
-{
-   return (current_input_data == data);
-}
-
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 {
    static bool input_driver_block_hotkey             = false;
@@ -842,6 +837,8 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
             current_input->grab_mouse(current_input_data, *bool_data);
          }
          break;
+      case RARCH_INPUT_CTL_IS_DATA_PTR_SAME:
+         return (current_input_data == data);
       case RARCH_INPUT_CTL_NONE:
       default:
          break;

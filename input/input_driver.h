@@ -83,7 +83,8 @@ enum rarch_input_ctl_state
    RARCH_INPUT_CTL_REMOTE_INIT,
    RARCH_INPUT_CTL_REMOTE_DEINIT,
    RARCH_INPUT_CTL_KEY_PRESSED,
-   RARCH_INPUT_CTL_GRAB_MOUSE
+   RARCH_INPUT_CTL_GRAB_MOUSE,
+   RARCH_INPUT_CTL_IS_DATA_PTR_SAME
 };
 
 struct retro_keybind
@@ -289,8 +290,6 @@ const input_driver_t *input_get_ptr(void);
 const input_driver_t **input_get_double_ptr(void);
 
 void **input_driver_get_data_ptr(void);
-
-bool input_driver_data_ptr_is_same(void *data);
 
 #ifdef __cplusplus
 }

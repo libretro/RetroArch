@@ -542,7 +542,7 @@ static bool uninit_video_input(void)
 
    if (
          !input_driver_ctl(RARCH_INPUT_CTL_OWNS_DRIVER, NULL) &&
-         !input_driver_data_ptr_is_same(video_driver_data)
+         !input_driver_ctl(RARCH_INPUT_CTL_IS_DATA_PTR_SAME, video_driver_data)
       )
       input_driver_ctl(RARCH_INPUT_CTL_DEINIT, NULL);
 
