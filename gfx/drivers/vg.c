@@ -87,16 +87,11 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    unsigned temp_width = 0, temp_height = 0;
    VGfloat clearColor[4] = {0, 0, 0, 1};
    settings_t        *settings = config_get_ptr();
-   const gfx_ctx_driver_t *ctx = NULL;
    vg_t                    *vg = (vg_t*)calloc(1, sizeof(vg_t));
-
-   if (!vg)
-      goto error;
-
-   ctx = gfx_ctx_init_first(vg, settings->video.context_driver,
+   const gfx_ctx_driver_t *ctx = gfx_ctx_init_first(vg, settings->video.context_driver,
          GFX_CTX_OPENVG_API, 0, 0, false);
 
-   if (!ctx)
+   if (!vg || !ctx)
       goto error;
 
    gfx_ctx_set(ctx);
@@ -199,7 +194,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 error:
    if (vg)
       free(vg);
-   gfx_ctx_destroy(ctx);
+   gfx_ctx_ctl(GFX_CTL_DESTROY, NULL);
    return NULL;
 }
 

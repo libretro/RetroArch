@@ -1138,7 +1138,7 @@ static void *d3d_init(const video_info_t *info,
    return d3d;
 
 error:
-   gfx_ctx_destroy(ctx_driver);
+   gfx_ctx_ctl(GFX_CTL_DESTROY, NULL);
    if (d3d)
       delete d3d;
    return NULL;

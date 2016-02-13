@@ -90,11 +90,6 @@ void gfx_ctx_set(const gfx_ctx_driver_t *ctx_driver)
    current_video_context = ctx_driver;
 }
 
-void gfx_ctx_destroy(const gfx_ctx_driver_t *ctx_driver)
-{
-   current_video_context = NULL;
-}
-
 const char *gfx_ctx_get_ident(void)
 {
    const gfx_ctx_driver_t *ctx = current_video_context;
@@ -412,6 +407,9 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
    switch (state)
    {
+      case GFX_CTL_DESTROY:
+         current_video_context = NULL;
+         break;
       case GFX_CTL_UPDATE_WINDOW_TITLE:
          if (!current_video_context || !current_video_context->update_window_title)
             return false;

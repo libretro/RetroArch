@@ -2454,18 +2454,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 {
    unsigned win_width, win_height, temp_width = 0, temp_height = 0;
    bool force_smooth                  = false;
-   const gfx_ctx_driver_t *ctx_driver = NULL;
    const char *vendor                 = NULL;
    const char *renderer               = NULL;
    const char *version                = NULL;
    struct retro_hw_render_callback *hw_render = NULL;
    settings_t *settings               = config_get_ptr();
    gl_t *gl                           = (gl_t*)calloc(1, sizeof(gl_t));
-   if (!gl)
-      return NULL;
-
-   ctx_driver = gl_get_context(gl);
-   if (!ctx_driver)
+   const gfx_ctx_driver_t *ctx_driver = gl_get_context(gl);
+   if (!gl || !ctx_driver)
       goto error;
 
    gfx_ctx_set(ctx_driver);
@@ -2672,7 +2668,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    return gl;
 
 error:
-   gfx_ctx_destroy(ctx_driver);
+   gfx_ctx_ctl(GFX_CTL_DESTROY, NULL);
    free(gl);
    return NULL;
 }

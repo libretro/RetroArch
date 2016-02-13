@@ -55,6 +55,7 @@ enum gfx_ctx_ctl_state
 {
    GFX_CTL_NONE = 0,
    GFX_CTL_FOCUS,
+   GFX_CTL_DESTROY,
    GFX_CTL_FREE,
    GFX_CTL_SWAP_BUFFERS,
    GFX_CTL_HAS_WINDOWED,
@@ -251,8 +252,6 @@ void gfx_ctx_input_driver(
 retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
 
 void gfx_ctx_set(const gfx_ctx_driver_t *ctx_driver);
-
-void gfx_ctx_destroy(const gfx_ctx_driver_t *ctx_driver);
 
 bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data);
 
