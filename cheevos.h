@@ -24,7 +24,13 @@ enum cheevos_ctl_state
    CHEEVOS_CTL_NONE = 0,
    CHEEVOS_CTL_TEST,
    CHEEVOS_CTL_LOAD,
-   CHEEVOS_CTL_UNLOAD
+
+   /* Unload the achievements from memory. */
+   CHEEVOS_CTL_UNLOAD,
+
+   /* Load the achievements into memory if 
+    * the game has content. */
+   CHEEVOS_CTL_SET_CHEATS
 };
 
 #ifdef HAVE_MENU
@@ -32,8 +38,6 @@ void cheevos_populate_menu(void *data);
 #endif
 
 void cheevos_get_description(unsigned idx, char *str, size_t len);
-
-void cheevos_set_cheats(void);
 
 void cheevos_apply_cheats(bool enable);
 

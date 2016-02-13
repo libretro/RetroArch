@@ -395,7 +395,6 @@ static void event_init_controllers(void)
 static void event_deinit_core(bool reinit)
 {
 #ifdef HAVE_CHEEVOS
-   /* Unload the achievements from memory. */
    cheevos_ctl(CHEEVOS_CTL_UNLOAD, NULL);
 #endif
 
@@ -1065,11 +1064,9 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true);
 
 #ifdef HAVE_CHEEVOS
-         cheevos_set_cheats();
+         cheevos_ctl(CHEEVOS_CTL_SET_CHEATS, NULL);
 #endif
          core_ctl(CORE_CTL_RETRO_RESET, NULL);
-         if (ui_companion_is_on_foreground())
-            ui_companion_driver_toggle();
          break;
       case EVENT_CMD_SAVE_STATE:
          if (settings->savestate_auto_index)

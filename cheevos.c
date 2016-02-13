@@ -2169,11 +2169,6 @@ void cheevos_get_description(unsigned idx, char *str, size_t len)
    str[len - 1] = 0;
 }
 
-void cheevos_set_cheats(void)
-{
-   cheevos_globals.cheats_were_enabled = cheevos_globals.cheats_are_enabled;
-}
-
 void cheevos_apply_cheats(bool enable)
 {
    cheevos_globals.cheats_are_enabled = enable;
@@ -2214,6 +2209,10 @@ bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
             if (settings->cheevos.test_unofficial)
                cheevos_test_cheevo_set(&cheevos_locals.unofficial);
          }
+         break;
+      case CHEEVOS_CTL_SET_CHEATS:
+         cheevos_globals.cheats_were_enabled = 
+            cheevos_globals.cheats_are_enabled;
          break;
       case CHEEVOS_CTL_NONE:
       default:

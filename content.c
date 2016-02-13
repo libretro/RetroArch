@@ -586,8 +586,7 @@ static bool load_content(
    {
       const void *load_data = NULL;
 
-      /* Load the achievements into memory if the game has content. */
-      cheevos_set_cheats();
+      cheevos_ctl(CHEEVOS_CTL_SET_CHEATS, NULL);
 
       if (*content->elems[0].data)
          load_data = info;
