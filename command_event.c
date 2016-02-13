@@ -1635,7 +1635,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 
             grab_mouse_state = !grab_mouse_state;
 
-            if (!input_driver_grab_mouse(grab_mouse_state))
+            if (!input_driver_ctl(RARCH_INPUT_CTL_GRAB_MOUSE, &grab_mouse_state))
                return false;
 
             RARCH_LOG("%s: %s.\n",

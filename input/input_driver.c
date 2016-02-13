@@ -165,10 +165,10 @@ const input_driver_t **input_get_double_ptr(void)
 bool input_driver_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   if (current_input->set_rumble)
-      return current_input->set_rumble(current_input_data,
-            port, effect, strength);
-   return false;
+   if (!current_input || !current_input->set_rumble)
+      return false;
+   return current_input->set_rumble(current_input_data,
+         port, effect, strength);
 }
 
 int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
@@ -180,33 +180,28 @@ int16_t input_driver_state(const struct retro_keybind **retro_keybinds,
 
 const input_device_driver_t *input_driver_get_joypad_driver(void)
 {
-   if (current_input->get_joypad_driver)
-      return current_input->get_joypad_driver(current_input_data);
-   return NULL;
+   if (!current_input || !current_input->get_joypad_driver)
+      return NULL;
+   return current_input->get_joypad_driver(current_input_data);
 }
 
 const input_device_driver_t *input_driver_get_sec_joypad_driver(void)
 {
-    if (current_input->get_sec_joypad_driver)
-        return current_input->get_sec_joypad_driver(current_input_data);
-    return NULL;
+    if (!current_input || !current_input->get_sec_joypad_driver)
+       return NULL;
+    return current_input->get_sec_joypad_driver(current_input_data);
 }
 
 uint64_t input_driver_get_capabilities(void)
 {
-   if (current_input->get_capabilities)
-      return current_input->get_capabilities(current_input_data);
-   return 0; 
+   if (!current_input || !current_input->get_capabilities)
+      return 0;
+   return current_input->get_capabilities(current_input_data);
 }
 
 bool input_driver_grab_mouse(bool state)
 {
-   if (current_input->grab_mouse)
-   {
-      current_input->grab_mouse(current_input_data, state);
-      return true;
-   }
-   return false;
+   return true;
 }
 
 void input_driver_set(const input_driver_t **input, void **input_data)
@@ -842,6 +837,15 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
             }
          }
 #endif
+         break;
+      case RARCH_INPUT_CTL_GRAB_MOUSE:
+         {
+            bool *bool_data = (bool*)data;
+            if (!current_input || !current_input->grab_mouse)
+               return false;
+
+            current_input->grab_mouse(current_input_data, *bool_data);
+         }
          break;
       case RARCH_INPUT_CTL_NONE:
       default:
