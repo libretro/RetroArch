@@ -639,28 +639,6 @@ bool input_driver_data_ptr_is_same(void *data)
    return (current_input_data == data);
 }
 
-#ifdef HAVE_COMMAND
-static void input_driver_command_init(void)
-{
-   settings_t *settings = config_get_ptr();
-
-   if (!settings->stdin_cmd_enable && !settings->network_cmd_enable)
-      return;
-
-   if (settings->stdin_cmd_enable 
-         && input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL))
-   {
-      RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
-            "Cannot use this command interface.\n");
-   }
-
-   if (!(input_driver_command = rarch_cmd_new(settings->stdin_cmd_enable
-               && !input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL),
-               settings->network_cmd_enable, settings->network_cmd_port)))
-      RARCH_ERR("Failed to initialize command interface.\n");
-}
-#endif
-
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 {
    static bool input_driver_block_hotkey             = false;
@@ -815,7 +793,25 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          return input_driver_keyboard_linefeed_enable;
       case RARCH_INPUT_CTL_COMMAND_INIT:
 #ifdef HAVE_COMMAND
-         input_driver_command_init();
+         if (!settings->stdin_cmd_enable && !settings->network_cmd_enable)
+            return false;
+
+         if (settings->stdin_cmd_enable 
+               && input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL))
+         {
+            RARCH_WARN("stdin command interface is desired, but input driver has already claimed stdin.\n"
+                  "Cannot use this command interface.\n");
+         }
+
+         input_driver_command = rarch_cmd_new(settings->stdin_cmd_enable
+               && !input_driver_ctl(RARCH_INPUT_CTL_GRAB_STDIN, NULL),
+               settings->network_cmd_enable, settings->network_cmd_port);
+
+         if (!input_driver_command)
+         {
+            RARCH_ERR("Failed to initialize command interface.\n");
+            return false;
+         }
 #endif
          break;
       case RARCH_INPUT_CTL_COMMAND_DEINIT:
