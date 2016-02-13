@@ -593,13 +593,12 @@ static bool load_content(
    return true;
 }
 
-static bool init_content_file_subsystem(
-      const struct retro_subsystem_info *special,
-      rarch_system_info_t *system
-      )
+static const struct retro_subsystem_info *init_content_file_subsystem(
+      bool *ret, rarch_system_info_t *system)
 {
    global_t *global = global_get_ptr();
-   special = libretro_find_subsystem_info(system->special,
+   const struct retro_subsystem_info *special = 
+      libretro_find_subsystem_info(system->special,
          system->num_special, global->subsystem);
 
    if (!special)
@@ -607,14 +606,14 @@ static bool init_content_file_subsystem(
       RARCH_ERR(
             "Failed to find subsystem \"%s\" in libretro implementation.\n",
             global->subsystem);
-      return false;
+      goto error;
    }
 
    if (special->num_roms && !global->subsystem_fullpaths)
    {
       RARCH_ERR("libretro core requires special content, "
             "but none were provided.\n");
-      return false;
+      goto error;
    }
    else if (special->num_roms && special->num_roms
          != global->subsystem_fullpaths->size)
@@ -623,7 +622,7 @@ static bool init_content_file_subsystem(
             "subsystem \"%s\", but %u content files were provided.\n",
             special->num_roms, special->desc,
             (unsigned)global->subsystem_fullpaths->size);
-      return false;
+      goto error;
    }
    else if (!special->num_roms && global->subsystem_fullpaths
          && global->subsystem_fullpaths->size)
@@ -632,10 +631,15 @@ static bool init_content_file_subsystem(
             "but %u content files were provided.\n",
             special->desc,
             (unsigned)global->subsystem_fullpaths->size);
-      return false;
+      goto error;
    }
 
-   return true;
+   *ret = true;
+   return special;
+
+error:
+   *ret = false;
+   return NULL;
 }
 
 #ifdef HAVE_ZLIB
@@ -773,8 +777,11 @@ static bool content_init_file(struct string_list *temporary_content)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (*global->subsystem)
-      if (!init_content_file_subsystem(special, system))
+   {
+      special = init_content_file_subsystem(&ret, system);
+      if (!ret)
          goto error;
+   }
 
    content = string_list_new();
 
