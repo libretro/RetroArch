@@ -3176,7 +3176,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 
 #ifdef HAVE_CHEEVOS
       case DISPLAYLIST_ACHIEVEMENT_LIST:
-         cheevos_populate_menu(info);
+         cheevos_ctl(CHEEVOS_CTL_POPULATE_MENU, info);
          info->need_push    = true;
          info->need_refresh = true;
          break;

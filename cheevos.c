@@ -2086,7 +2086,7 @@ static bool cheevos_load(const void *data)
 }
 
 #ifdef HAVE_MENU
-void cheevos_populate_menu(void *data)
+static void cheevos_populate_menu(void *data)
 {
    unsigned i;
    const cheevo_t *end           = NULL;
@@ -2209,6 +2209,11 @@ bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
             if (settings->cheevos.test_unofficial)
                cheevos_test_cheevo_set(&cheevos_locals.unofficial);
          }
+         break;
+      case CHEEVOS_CTL_POPULATE_MENU:
+#ifdef HAVE_MENU
+         cheevos_populate_menu(data);
+#endif
          break;
       case CHEEVOS_CTL_SET_CHEATS:
          cheevos_globals.cheats_were_enabled = 

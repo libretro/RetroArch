@@ -30,12 +30,10 @@ enum cheevos_ctl_state
 
    /* Load the achievements into memory if 
     * the game has content. */
-   CHEEVOS_CTL_SET_CHEATS
-};
+   CHEEVOS_CTL_SET_CHEATS,
 
-#ifdef HAVE_MENU
-void cheevos_populate_menu(void *data);
-#endif
+   CHEEVOS_CTL_POPULATE_MENU
+};
 
 void cheevos_get_description(unsigned idx, char *str, size_t len);
 
