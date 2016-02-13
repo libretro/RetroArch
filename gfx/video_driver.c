@@ -1905,9 +1905,7 @@ void video_driver_frame(const void *data, unsigned width,
    const char *msg        = NULL;
    settings_t *settings   = config_get_ptr();
 
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK,   NULL);
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL,   &msg);
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
 
    if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_ACTIVE, NULL))
       return;
