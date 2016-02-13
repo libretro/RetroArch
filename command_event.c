@@ -396,7 +396,7 @@ static void event_deinit_core(bool reinit)
 {
 #ifdef HAVE_CHEEVOS
    /* Unload the achievements from memory. */
-   cheevos_unload();
+   cheevos_ctl(CHEEVOS_CTL_UNLOAD, NULL);
 #endif
 
    core_ctl(CORE_CTL_RETRO_UNLOAD_GAME, NULL);

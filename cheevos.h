@@ -23,7 +23,8 @@ enum cheevos_ctl_state
 {
    CHEEVOS_CTL_NONE = 0,
    CHEEVOS_CTL_TEST,
-   CHEEVOS_CTL_LOAD
+   CHEEVOS_CTL_LOAD,
+   CHEEVOS_CTL_UNLOAD
 };
 
 #ifdef HAVE_MENU
@@ -35,8 +36,6 @@ void cheevos_get_description(unsigned idx, char *str, size_t len);
 void cheevos_set_cheats(void);
 
 void cheevos_apply_cheats(bool enable);
-
-void cheevos_unload(void);
 
 bool cheevos_ctl(enum cheevos_ctl_state state, void *data);
 

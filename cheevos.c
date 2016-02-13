@@ -964,7 +964,7 @@ static int cheevos_parse(const char *json)
 
    if (jsonsax_parse(json, &handlers, (void*)&ud) != JSONSAX_OK)
    {
-      cheevos_unload();
+      cheevos_ctl(CHEEVOS_CTL_UNLOAD, NULL);
       return -1;
    }
    
@@ -1446,16 +1446,6 @@ static void cheevos_free_cheevo_set(const cheevoset_t *set)
    free((void*)set->cheevos);
 }
 
-void cheevos_unload(void)
-{
-   if (cheevos_locals.loaded)
-   {
-      cheevos_free_cheevo_set(&cheevos_locals.core);
-      cheevos_free_cheevo_set(&cheevos_locals.unofficial);
-      
-      cheevos_locals.loaded = 0;
-   }
-}
 
 /*****************************************************************************
 Load achievements from retroachievements.org.
@@ -2199,6 +2189,15 @@ bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
       case CHEEVOS_CTL_LOAD:
          if (!cheevos_load((const void*)data))
             return false;
+         break;
+      case CHEEVOS_CTL_UNLOAD:
+         if (!cheevos_locals.loaded)
+            return false;
+
+         cheevos_free_cheevo_set(&cheevos_locals.core);
+         cheevos_free_cheevo_set(&cheevos_locals.unofficial);
+
+         cheevos_locals.loaded = 0;
          break;
       case CHEEVOS_CTL_TEST:
          if (!cheevos_locals.loaded)
