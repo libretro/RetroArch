@@ -118,13 +118,6 @@ bool gfx_ctx_get_video_output_next(void)
    return true;
 }
 
-void gfx_ctx_bind_hw_render(bool enable)
-{
-   if (current_video_context->bind_hw_render)
-      current_video_context->bind_hw_render(video_context_data, enable);
-}
-
-
 bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       bool fullscreen)
@@ -394,6 +387,14 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
    switch (state)
    {
+      case GFX_CTL_BIND_HW_RENDER:
+         {
+            bool *enable = (bool*)data;
+            if (!current_video_context || !current_video_context->bind_hw_render)
+               return false;
+            current_video_context->bind_hw_render(video_context_data, *enable);
+         }
+         break;
       case GFX_CTL_SET:
          if (!data)
             return false;
