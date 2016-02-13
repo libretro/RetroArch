@@ -211,6 +211,10 @@ static void menu_input_key_event(bool down, unsigned keycode,
             pending_iter.action = MENU_ACTION_CANCEL;
             menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
             break;
+         case RETROK_SPACE:
+            pending_iter.action = MENU_ACTION_START;
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_ACTION, NULL);
+            break;
       }
    }
 }
