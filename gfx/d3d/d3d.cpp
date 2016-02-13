@@ -1504,7 +1504,7 @@ static bool d3d_frame(void *data, const void *frame,
    }
 #endif
 
-   gfx_ctx_update_window_title();
+   gfx_ctx_ctl(GFX_CTL_UPDATE_WINDOW_TITLE, NULL);
 
    retro_perf_stop(&d3d_frame);
 

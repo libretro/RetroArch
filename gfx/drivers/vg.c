@@ -109,7 +109,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    gfx_ctx_swap_interval(video->vsync ? 1 : 0);
 
-   gfx_ctx_update_window_title();
+   gfx_ctx_ctl(GFX_CTL_UPDATE_WINDOW_TITLE, NULL);
 
    vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->keep_aspect = video->force_aspect;
@@ -353,7 +353,7 @@ static bool vg_frame(void *data, const void *frame,
       vg_draw_message(vg, msg);
 #endif
 
-   gfx_ctx_update_window_title();
+   gfx_ctx_ctl(GFX_CTL_UPDATE_WINDOW_TITLE, NULL);
 
    retro_perf_stop(&vg_fr);
 

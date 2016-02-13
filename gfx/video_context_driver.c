@@ -104,12 +104,6 @@ const char *gfx_ctx_get_ident(void)
    return ctx->ident;
 }
 
-void gfx_ctx_update_window_title(void)
-{
-   if (current_video_context->update_window_title)
-      current_video_context->update_window_title(video_context_data);
-}
-
 void gfx_ctx_get_video_output_size(unsigned *width, unsigned *height)
 {
    if (!current_video_context || !current_video_context->get_video_output_size)
@@ -418,6 +412,11 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
    switch (state)
    {
+      case GFX_CTL_UPDATE_WINDOW_TITLE:
+         if (!current_video_context || !current_video_context->update_window_title)
+            return false;
+         current_video_context->update_window_title(video_context_data);
+         break;
       case GFX_CTL_SWAP_BUFFERS:
          if (!current_video_context || !current_video_context->swap_buffers)
             return false;

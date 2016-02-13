@@ -1815,7 +1815,7 @@ static bool gl_frame(void *data, const void *frame,
       gl_render_overlay(gl);
 #endif
 
-   gfx_ctx_update_window_title();
+   gfx_ctx_ctl(GFX_CTL_UPDATE_WINDOW_TITLE, NULL);
 
    retro_perf_stop(&frame_run);
 

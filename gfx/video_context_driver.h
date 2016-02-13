@@ -57,7 +57,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_FOCUS,
    GFX_CTL_FREE,
    GFX_CTL_SWAP_BUFFERS,
-   GFX_CTL_HAS_WINDOWED
+   GFX_CTL_HAS_WINDOWED,
+   GFX_CTL_UPDATE_WINDOW_TITLE
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -227,8 +228,6 @@ bool gfx_ctx_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height);
 
 bool gfx_ctx_suppress_screensaver(bool enable);
-
-void gfx_ctx_update_window_title(void);
 
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 
