@@ -1492,22 +1492,18 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          if (!video_driver_poke)
             return false;
 
-         if (video_driver_poke->get_video_output_next)
-         {
-            video_driver_poke->get_video_output_next(video_driver_data);
-            return true;
-         }
-         return gfx_ctx_get_video_output_next();
+         if (!video_driver_poke->get_video_output_next)
+            return gfx_ctx_ctl(GFX_CTL_GET_VIDEO_OUTPUT_NEXT, NULL);
+         video_driver_poke->get_video_output_next(video_driver_data);
+         break;
       case RARCH_DISPLAY_CTL_GET_PREV_VIDEO_OUT:
          if (!video_driver_poke)
             return false;
 
-         if (video_driver_poke->get_video_output_prev)
-         {
-            video_driver_poke->get_video_output_prev(video_driver_data);
-            return true;
-         }
-         return gfx_ctx_get_video_output_next();
+         if (!video_driver_poke->get_video_output_prev)
+            return gfx_ctx_ctl(GFX_CTL_GET_VIDEO_OUTPUT_NEXT, NULL);
+         video_driver_poke->get_video_output_prev(video_driver_data);
+         break;
       case RARCH_DISPLAY_CTL_INIT:
          return init_video();
       case RARCH_DISPLAY_CTL_DESTROY_DATA:

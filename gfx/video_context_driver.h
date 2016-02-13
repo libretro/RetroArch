@@ -62,7 +62,9 @@ enum gfx_ctx_ctl_state
    GFX_CTL_UPDATE_WINDOW_TITLE,
    GFX_CTL_SHOW_MOUSE,
    GFX_CTL_SET,
-   GFX_CTL_BIND_HW_RENDER
+   GFX_CTL_BIND_HW_RENDER,
+   GFX_CTL_GET_VIDEO_OUTPUT_PREV,
+   GFX_CTL_GET_VIDEO_OUTPUT_NEXT
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -238,10 +240,6 @@ bool gfx_ctx_set_resize(unsigned width, unsigned height);
 void gfx_ctx_swap_interval(unsigned interval);
 
 void gfx_ctx_get_video_output_size(unsigned *width, unsigned *height);
-
-bool gfx_ctx_get_video_output_prev(void);
-
-bool gfx_ctx_get_video_output_next(void);
 
 const char *gfx_ctx_get_ident(void);
 

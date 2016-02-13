@@ -100,24 +100,6 @@ void gfx_ctx_get_video_output_size(unsigned *width, unsigned *height)
    current_video_context->get_video_output_size(video_context_data, width, height);
 }
 
-bool gfx_ctx_get_video_output_prev(void)
-{
-   if (!current_video_context 
-         || !current_video_context->get_video_output_prev)
-      return false;
-   current_video_context->get_video_output_prev(video_context_data);
-   return true;
-}
-
-bool gfx_ctx_get_video_output_next(void)
-{
-   if (!current_video_context || 
-         !current_video_context->get_video_output_next)
-      return false;
-   current_video_context->get_video_output_next(video_context_data);
-   return true;
-}
-
 bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       bool fullscreen)
@@ -387,6 +369,18 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
    switch (state)
    {
+      case GFX_CTL_GET_VIDEO_OUTPUT_PREV:
+         if (!current_video_context 
+               || !current_video_context->get_video_output_prev)
+            return false;
+         current_video_context->get_video_output_prev(video_context_data);
+         break;
+      case GFX_CTL_GET_VIDEO_OUTPUT_NEXT:
+         if (!current_video_context || 
+               !current_video_context->get_video_output_next)
+            return false;
+         current_video_context->get_video_output_next(video_context_data);
+         break;
       case GFX_CTL_BIND_HW_RENDER:
          {
             bool *enable = (bool*)data;

@@ -3404,12 +3404,12 @@ static void gl_get_video_output_size(void *data,
 
 static void gl_get_video_output_prev(void *data)
 {
-   gfx_ctx_get_video_output_prev();
+   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_OUTPUT_PREV, NULL);
 }
 
 static void gl_get_video_output_next(void *data)
 {
-   gfx_ctx_get_video_output_next();
+   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_OUTPUT_NEXT, NULL);
 }
 
 void gl_load_texture_data(uint32_t id_data,
