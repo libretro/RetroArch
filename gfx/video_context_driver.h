@@ -53,7 +53,8 @@ enum display_metric_types
 
 enum gfx_ctx_ctl_state
 {
-   GFX_CTL_NONE = 0
+   GFX_CTL_NONE = 0,
+   GFX_CTL_FREE
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -247,8 +248,6 @@ bool gfx_ctx_get_video_output_prev(void);
 bool gfx_ctx_get_video_output_next(void);
 
 const char *gfx_ctx_get_ident(void);
-
-void gfx_ctx_free(void);
 
 void gfx_ctx_input_driver(
         const input_driver_t **input, void **input_data);

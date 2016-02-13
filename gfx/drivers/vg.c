@@ -220,7 +220,7 @@ static void vg_free(void *data)
       vgDestroyPaint(vg->mPaintBg);
    }
 
-   gfx_ctx_free();
+   gfx_ctx_ctl(GFX_CTL_FREE, NULL);
 
    free(vg);
 }

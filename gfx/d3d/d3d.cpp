@@ -1171,7 +1171,7 @@ static void d3d_free(void *data)
    d3d_free_overlays(d3d);
 #endif
 
-   gfx_ctx_free();
+   gfx_ctx_ctl(GFX_CTL_FREE, NULL);
 
 #ifndef _XBOX
 #ifdef HAVE_MENU

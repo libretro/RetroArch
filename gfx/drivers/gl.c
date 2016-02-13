@@ -1994,7 +1994,7 @@ static void gl_free(void *data)
    }
 #endif
 
-   gfx_ctx_free();
+   gfx_ctx_ctl(GFX_CTL_FREE, NULL);
 
    free(gl->empty_buf);
    free(gl->conv_buffer);

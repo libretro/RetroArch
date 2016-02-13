@@ -95,14 +95,6 @@ void gfx_ctx_destroy(const gfx_ctx_driver_t *ctx_driver)
    current_video_context = NULL;
 }
 
-void gfx_ctx_free(void)
-{
-   if (current_video_context->destroy)
-      current_video_context->destroy(video_context_data);
-   current_video_context = NULL;
-   video_context_data    = NULL;
-}
-
 const char *gfx_ctx_get_ident(void)
 {
    const gfx_ctx_driver_t *ctx = current_video_context;
@@ -447,6 +439,12 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
    switch (state)
    {
+      case GFX_CTL_FREE:
+         if (current_video_context->destroy)
+            current_video_context->destroy(video_context_data);
+         current_video_context = NULL;
+         video_context_data    = NULL;
+         break;
       case GFX_CTL_NONE:
       default:
          break;
