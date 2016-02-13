@@ -312,7 +312,7 @@ static void parse_sub_msg(rarch_cmd_t *handle, const char *tok)
 
 static void parse_msg(rarch_cmd_t *handle, char *buf)
 {
-   char *save = NULL;
+   char *save      = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
 
    while (tok)
@@ -373,9 +373,9 @@ static size_t read_stdin(char *buf, size_t size)
 {
    DWORD i;
    DWORD has_read = 0;
-   DWORD avail = 0;
-   bool echo = false;
-   HANDLE hnd = GetStdHandle(STD_INPUT_HANDLE);
+   DWORD avail    = 0;
+   bool echo      = false;
+   HANDLE hnd     = GetStdHandle(STD_INPUT_HANDLE);
 
    if (hnd == INVALID_HANDLE_VALUE)
       return 0;
