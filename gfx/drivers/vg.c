@@ -69,7 +69,8 @@ static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
 
 static void vg_set_nonblock_state(void *data, bool state)
 {
-   gfx_ctx_swap_interval(state ? 0 : 1);
+   unsigned interval = state ? 0 : 1;
+   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
 }
 
 static INLINE bool vg_query_extension(const char *ext)
@@ -84,6 +85,7 @@ static INLINE bool vg_query_extension(const char *ext)
 
 static void *vg_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   unsigned interval;
    unsigned temp_width = 0, temp_height = 0;
    VGfloat clearColor[4] = {0, 0, 0, 1};
    settings_t        *settings = config_get_ptr();
@@ -102,8 +104,9 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
 
-   gfx_ctx_swap_interval(video->vsync ? 1 : 0);
+   interval = video->vsync ? 1 : 0;
 
+   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
    gfx_ctx_ctl(GFX_CTL_UPDATE_WINDOW_TITLE, NULL);
 
    vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;

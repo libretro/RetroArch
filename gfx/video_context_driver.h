@@ -71,7 +71,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_FIND_NEXT_DRIVER,
    /* Finds previous driver in graphics context driver array. */
    GFX_CTL_FIND_PREV_DRIVER,
-   GFX_CTL_GET_VIDEO_OUTPUT_SIZE
+   GFX_CTL_GET_VIDEO_OUTPUT_SIZE,
+   GFX_CTL_SWAP_INTERVAL
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -233,8 +234,6 @@ bool gfx_ctx_suppress_screensaver(bool enable);
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 
 bool gfx_ctx_set_resize(unsigned width, unsigned height);
-
-void gfx_ctx_swap_interval(unsigned interval);
 
 const char *gfx_ctx_get_ident(void);
 

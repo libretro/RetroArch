@@ -150,12 +150,6 @@ void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    current_video_context->get_video_size(video_context_data, width, height);
 }
 
-void gfx_ctx_swap_interval(unsigned interval)
-{
-   if (current_video_context)
-      current_video_context->swap_interval(video_context_data, interval);
-}
-
 bool gfx_ctx_set_resize(unsigned width, unsigned height)
 {
    if (!current_video_context)
@@ -430,6 +424,14 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
                return false;
             current_video_context->get_video_output_size(video_context_data,
                   size_data->width, size_data->height);
+         }
+         break;
+      case GFX_CTL_SWAP_INTERVAL:
+         {
+            unsigned *interval = (unsigned*)data;
+            if (!current_video_context || !current_video_context->swap_interval)
+               return false;
+            current_video_context->swap_interval(video_context_data, *interval);
          }
          break;
       case GFX_CTL_NONE:

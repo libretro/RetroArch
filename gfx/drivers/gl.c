@@ -2003,6 +2003,7 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
+   unsigned interval;
    gl_t             *gl        = (gl_t*)data;
    settings_t        *settings = config_get_ptr();
 
@@ -2012,8 +2013,10 @@ static void gl_set_nonblock_state(void *data, bool state)
    RARCH_LOG("[GL]: VSync => %s\n", state ? "off" : "on");
 
    context_bind_hw_render(gl, false);
-   gfx_ctx_swap_interval(
-         state ? 0 : settings->video.swap_interval);
+
+   interval = state ? 0 : settings->video.swap_interval;
+
+   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
    context_bind_hw_render(gl, true);
 }
 
@@ -2452,6 +2455,7 @@ static void gl_begin_debug(gl_t *gl)
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   unsigned interval;
    unsigned win_width, win_height, temp_width = 0, temp_height = 0;
    bool force_smooth                  = false;
    const char *vendor                 = NULL;
@@ -2473,8 +2477,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_ctx_get_video_size(&gl->full_x, &gl->full_y);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", gl->full_x, gl->full_y);
 
-   gfx_ctx_swap_interval(
-         video->vsync ? settings->video.swap_interval : 0);
+   interval = video->vsync ? settings->video.swap_interval : 0;
+
+   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
 
    win_width  = video->width;
    win_height = video->height;

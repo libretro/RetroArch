@@ -825,6 +825,7 @@ static bool d3d_restore(void *data)
 
 static void d3d_set_nonblock_state(void *data, bool state)
 {
+   unsigned interval            = state ? 0 : 1;
    d3d_video_t            *d3d = (d3d_video_t*)data;
 
    if (!d3d)
@@ -832,7 +833,7 @@ static void d3d_set_nonblock_state(void *data, bool state)
 
    d3d->video_info.vsync = !state;
 
-   gfx_ctx_swap_interval(state ? 0 : 1);
+   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
 #ifndef _XBOX
    d3d->needs_restore = true;
    d3d_restore(d3d);
