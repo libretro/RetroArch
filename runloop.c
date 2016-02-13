@@ -1417,8 +1417,7 @@ int runloop_iterate(unsigned *sleep_ms)
    core_ctl(CORE_CTL_RETRO_RUN, NULL);
 
 #ifdef HAVE_CHEEVOS
-   /* Test the achievements. */
-   cheevos_test();
+   cheevos_ctl(CHEEVOS_CTL_TEST, NULL);
 #endif
 
    for (i = 0; i < settings->input.max_users; i++)

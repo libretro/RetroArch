@@ -1417,26 +1417,6 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
    }
 }
 
-void cheevos_test(void)
-{
-   if (!cheevos_locals.loaded)
-      return;
-
-   if (     !cheevos_globals.cheats_are_enabled 
-         && !cheevos_globals.cheats_were_enabled)
-   {
-      settings_t *settings = config_get_ptr();
-
-      if (!settings->cheevos.enable)
-         return;
-
-      cheevos_test_cheevo_set(&cheevos_locals.core);
-
-      if (settings->cheevos.test_unofficial)
-         cheevos_test_cheevo_set(&cheevos_locals.unofficial);
-   }
-}
-
 /*****************************************************************************
 Free the loaded achievements.
 *****************************************************************************/
@@ -2212,11 +2192,29 @@ void cheevos_apply_cheats(bool enable)
 
 bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
 {
+   settings_t *settings = config_get_ptr();
+
    switch (state)
    {
       case CHEEVOS_CTL_LOAD:
          if (!cheevos_load((const void*)data))
             return false;
+         break;
+      case CHEEVOS_CTL_TEST:
+         if (!cheevos_locals.loaded)
+            return false;
+
+         if (     !cheevos_globals.cheats_are_enabled 
+               && !cheevos_globals.cheats_were_enabled)
+         {
+            if (!settings->cheevos.enable)
+               return false;
+
+            cheevos_test_cheevo_set(&cheevos_locals.core);
+
+            if (settings->cheevos.test_unofficial)
+               cheevos_test_cheevo_set(&cheevos_locals.unofficial);
+         }
          break;
       case CHEEVOS_CTL_NONE:
       default:
