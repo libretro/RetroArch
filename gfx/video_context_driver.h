@@ -51,6 +51,11 @@ enum display_metric_types
    DISPLAY_METRIC_DPI
 };
 
+enum gfx_ctx_ctl_state
+{
+   GFX_CTL_NONE = 0
+};
+
 typedef void (*gfx_ctx_proc_t)(void);
 
 typedef struct gfx_ctx_driver
@@ -253,6 +258,8 @@ retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
 void gfx_ctx_set(const gfx_ctx_driver_t *ctx_driver);
 
 void gfx_ctx_destroy(const gfx_ctx_driver_t *ctx_driver);
+
+bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

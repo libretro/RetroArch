@@ -442,3 +442,15 @@ const gfx_ctx_driver_t *gfx_ctx_init_first(void *data,
    return gfx_ctx_find_driver(data, ident, api,
          major, minor, hw_render_ctx);
 }
+
+bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case GFX_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}
