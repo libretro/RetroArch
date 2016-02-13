@@ -298,10 +298,20 @@ static void vg_copy_frame(void *data, const void *frame,
 
    if (vg->mEglImageBuf)
    {
+      gfx_ctx_image_t img_info;
       EGLImageKHR img = 0;
-      bool                new_egl = gfx_ctx_image_buffer_write(
-            frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), 0, &img);
+      bool new_egl    = false;
 
+      img_info.frame  = frame;
+      img_info.width  = width;
+      img_info.height = height;
+      img_info.pitch  = pitch;
+      img_info.rgb32  = (vg->mTexType == VG_sXRGB_8888);
+      img_info.index  = 0;
+      img_info        = &img;
+      
+      new_egl         = gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_WRITE, &img_info);
+      
       retro_assert(img != EGL_NO_IMAGE_KHR);
 
       if (new_egl)

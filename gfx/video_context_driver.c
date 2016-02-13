@@ -100,18 +100,6 @@ bool gfx_ctx_set_video_mode(
          video_context_data, width, height, fullscreen);
 }
 
-bool gfx_ctx_image_buffer_write(const void *frame, unsigned width,
-         unsigned height, unsigned pitch, bool rgb32,
-         unsigned index, void **image_handle)
-{
-   if (!current_video_context || !current_video_context->image_buffer_write)
-      return false;
-   return current_video_context->image_buffer_write(video_context_data,
-         frame, width, height, pitch,
-         rgb32, index, image_handle);
-}
-
-
 bool gfx_ctx_suppress_screensaver(bool enable)
 {
    if (!video_context_data || !current_video_context)
@@ -335,6 +323,16 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             return false;
          return current_video_context->image_buffer_init(video_context_data,
                (const video_info_t*)data);
+      case GFX_CTL_IMAGE_BUFFER_WRITE:
+         {
+            gfx_ctx_image_t *img = (gfx_ctx_image_t*)data;
+
+            if (!current_video_context || !current_video_context->image_buffer_write)
+               return false;
+            return current_video_context->image_buffer_write(video_context_data,
+                  img->frame, img->width, img->height, img->pitch,
+                  img->rgb32, img->index, img->handle);
+         }
       case GFX_CTL_GET_VIDEO_OUTPUT_PREV:
          if (!current_video_context 
                || !current_video_context->get_video_output_prev)

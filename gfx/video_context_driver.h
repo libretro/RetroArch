@@ -67,6 +67,7 @@ enum gfx_ctx_ctl_state
    GFX_CTL_GET_VIDEO_OUTPUT_PREV,
    GFX_CTL_GET_VIDEO_OUTPUT_NEXT,
    GFX_CTL_IMAGE_BUFFER_INIT,
+   GFX_CTL_IMAGE_BUFFER_WRITE,
    /* Finds next driver in graphics context driver array. */
    GFX_CTL_FIND_NEXT_DRIVER,
    /* Finds previous driver in graphics context driver array. */
@@ -258,10 +259,6 @@ const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *ident,
 
 bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
       bool fullscreen);
-
-bool gfx_ctx_image_buffer_write(const void *frame,
-      unsigned width, unsigned height, unsigned pitch, bool rgb32,
-      unsigned index, void **image_handle);
 
 bool gfx_ctx_suppress_screensaver(bool enable);
 

@@ -1414,10 +1414,19 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
 #if defined(HAVE_EGL)
    if (gl->egl_images)
    {
+      gfx_ctx_image_t img_info;
+      bool new_egl    = false;
       EGLImageKHR img = 0;
-      bool new_egl    = gfx_ctx_image_buffer_write(
-            frame, width, height, pitch, (gl->base_size == 4),
-            gl->tex_index, &img);
+
+      img_info.frame  = frame;
+      img_info.width  = width;
+      img_info.height = height;
+      img_info.pitch  = pitch;
+      img_info.index  = gl->tex_index;
+      img_info.rgb32  = (gl->base_size == 4);
+      img_info        = &img;
+
+      new_egl = gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_WRITE, &img_info);
 
       if (img == EGL_NO_IMAGE_KHR)
       {
