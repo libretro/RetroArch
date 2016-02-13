@@ -1656,6 +1656,9 @@ static bool gl_frame(void *data, const void *frame,
    rarch_perf_init(&frame_run, "frame_run");
    retro_perf_start(&frame_run);
 
+   if (!gl)
+      return false;
+
    video_driver_get_size(&width, &height);
 
    context_bind_hw_render(gl, false);
