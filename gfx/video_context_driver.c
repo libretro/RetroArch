@@ -100,14 +100,6 @@ bool gfx_ctx_set_video_mode(
          video_context_data, width, height, fullscreen);
 }
 
-bool gfx_ctx_suppress_screensaver(bool enable)
-{
-   if (!video_context_data || !current_video_context)
-      return false;
-   return current_video_context->suppress_screensaver(
-         video_context_data, enable);
-}
-
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
    if (!current_video_context || !current_video_context->get_video_size)
@@ -431,6 +423,14 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
                   video_context_data, inp->input, inp->input_data);
          }
          break;
+      case GFX_CTL_SUPPRESS_SCREENSAVER:
+         {
+            bool *bool_data = (bool*)data;
+            if (!video_context_data || !current_video_context)
+               return false;
+            return current_video_context->suppress_screensaver(
+                  video_context_data, *bool_data);
+         }
       case GFX_CTL_NONE:
       default:
          break;

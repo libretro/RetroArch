@@ -78,6 +78,7 @@ enum gfx_ctx_ctl_state
    GFX_CTL_TRANSLATE_ASPECT,
    GFX_CTL_GET_METRICS,
    GFX_CTL_INPUT_DRIVER,
+   GFX_CTL_SUPPRESS_SCREENSAVER
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -259,8 +260,6 @@ const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *ident,
 
 bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
       bool fullscreen);
-
-bool gfx_ctx_suppress_screensaver(bool enable);
 
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 

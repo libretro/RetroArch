@@ -889,7 +889,8 @@ static bool d3d_focus(void *data)
 
 static bool d3d_suppress_screensaver(void *data, bool enable)
 {
-   return gfx_ctx_suppress_screensaver(enable);
+   bool enabled = enable;
+   return gfx_ctl(GFX_CTL_SUPPRESS_SCREENSAVER, &enabled);
 }
 
 static bool d3d_has_windowed(void *data)

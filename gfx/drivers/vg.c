@@ -413,7 +413,8 @@ static bool vg_focus(void *data)
 
 static bool vg_suppress_screensaver(void *data, bool enable)
 {
-   return gfx_ctx_suppress_screensaver(enable);
+   bool enabled = enable;
+   return gfx_ctx_ctl(GFX_CTL_SUPPRESS_SCREENSAVER, &enabled);
 }
 
 static bool vg_has_windowed(void *data)
