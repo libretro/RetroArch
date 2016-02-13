@@ -429,13 +429,18 @@ static void xui_frame(void *data)
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
 
-   message = runloop_msg_queue_pull();
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &message);
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
 
    if (message)
       xui_render_message(message);
    else
    {
-      message = runloop_msg_queue_pull();
+      runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
+      runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &message);
+      runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
+
       if (message)
          xui_render_message(message);
    }

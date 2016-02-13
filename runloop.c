@@ -101,17 +101,6 @@ global_t *global_get_ptr(void)
    return &g_extern;
 }
 
-const char *runloop_msg_queue_pull(void)
-{
-   const char *ret = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &ret);
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
-
-   return ret;
-}
-
 void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,
       bool flush)
