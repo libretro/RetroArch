@@ -1134,7 +1134,7 @@ static void *d3d_init(const video_info_t *info,
 #endif
 #endif
 
-   gfx_ctx_ctl(GFX_CTL_SET, ctx_driver);
+   gfx_ctx_ctl(GFX_CTL_SET, (void*)ctx_driver);
 
    if (!d3d_construct(d3d, info, input, input_data))
    {
