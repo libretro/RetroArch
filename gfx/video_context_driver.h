@@ -59,7 +59,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_FREE,
    GFX_CTL_SWAP_BUFFERS,
    GFX_CTL_HAS_WINDOWED,
-   GFX_CTL_UPDATE_WINDOW_TITLE
+   GFX_CTL_UPDATE_WINDOW_TITLE,
+   GFX_CTL_SHOW_MOUSE
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -222,8 +223,6 @@ bool gfx_ctx_image_buffer_init(const video_info_t *info);
 bool gfx_ctx_image_buffer_write(const void *frame,
       unsigned width, unsigned height, unsigned pitch, bool rgb32,
       unsigned index, void **image_handle);
-
-void gfx_ctx_show_mouse(bool state);
 
 bool gfx_ctx_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height);

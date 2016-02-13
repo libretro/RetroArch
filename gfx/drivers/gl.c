@@ -3195,7 +3195,7 @@ static void gl_overlay_enable(void *data, bool state)
    gl->overlay_enable = state;
 
    if (gl->fullscreen)
-      gfx_ctx_show_mouse(state);
+      gfx_ctx_ctl(GFX_CTL_SHOW_MOUSE, &state);
 }
 
 static void gl_overlay_full_screen(void *data, bool enable)
@@ -3387,7 +3387,7 @@ static void gl_set_osd_msg(void *data, const char *msg,
 
 static void gl_show_mouse(void *data, bool state)
 {
-   gfx_ctx_show_mouse(state);
+   gfx_ctx_ctl(GFX_CTL_SHOW_MOUSE, &state);
 }
 
 static struct video_shader *gl_get_current_shader(void *data)

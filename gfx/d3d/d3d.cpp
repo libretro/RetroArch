@@ -1051,7 +1051,7 @@ static void d3d_set_rotation(void *data, unsigned rot)
 
 static void d3d_show_mouse(void *data, bool state)
 {
-   gfx_ctx_show_mouse(state);
+   gfx_ctx_ctl(GFX_CTL_SHOW_MOUSE, &state);
 }
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
@@ -1359,7 +1359,7 @@ static void d3d_overlay_enable(void *data, bool state)
    for (i = 0; i < d3d->overlays.size(); i++)
       d3d->overlays_enabled = state;
 
-   gfx_ctx_show_mouse(state);
+   gfx_ctx_ctl(GFX_CTL_SHOW_MOUSE, &state);
 }
 
 static void d3d_overlay_full_screen(void *data, bool enable)
