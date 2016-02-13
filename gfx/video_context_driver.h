@@ -181,6 +181,42 @@ typedef struct gfx_ctx_size
    unsigned *height;
 } gfx_ctx_size_t;
 
+typedef struct gfx_ctx_metrics
+{
+   enum display_metric_types type;
+   float *value;
+} gfx_ctx_metrics_t;
+
+typedef struct gfx_ctx_aspect
+{
+   float *aspect;
+   unsigned *width;
+   unsigned *height;
+} gfx_ctx_aspect_t;
+
+typedef struct gfx_ctx_image
+{
+   const void *frame;
+   unsigned width;
+   unsigned height;
+   unsigned pitch;
+   unsigned index;
+   bool rgb32;
+   void **handle;
+} gfx_ctx_image_t;
+
+typedef struct gfx_ctx_input
+{
+   const input_driver_t **input;
+   void **input_data;
+} gfx_ctx_input_t;
+
+typedef struct gfx_ctx_proc_address
+{
+   const char *sym;
+   retro_proc_address_t addr;
+} gfx_ctx_proc_address_t;
+
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
 extern const gfx_ctx_driver_t gfx_ctx_x_egl;
 extern const gfx_ctx_driver_t gfx_ctx_wayland;
@@ -219,11 +255,13 @@ const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *ident,
 
 bool gfx_ctx_get_metrics(enum display_metric_types type, float *value);
 
+
 void gfx_ctx_translate_aspect(float *aspect,
       unsigned width, unsigned height);
 
 bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
       bool fullscreen);
+
 
 bool gfx_ctx_image_buffer_write(const void *frame,
       unsigned width, unsigned height, unsigned pitch, bool rgb32,
