@@ -176,13 +176,6 @@ retro_proc_address_t gfx_ctx_get_proc_address(const char *sym)
    return current_video_context->get_proc_address(sym);
 }
 
-void gfx_ctx_show_mouse(bool state)
-{
-   if (!video_context_data || !current_video_context->show_mouse)
-      return;
-   current_video_context->show_mouse(video_context_data, state);
-}
-
 bool gfx_ctx_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
