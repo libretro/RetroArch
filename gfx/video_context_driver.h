@@ -54,6 +54,7 @@ enum display_metric_types
 enum gfx_ctx_ctl_state
 {
    GFX_CTL_NONE = 0,
+   GFX_CTL_CHECK_WINDOW,
    GFX_CTL_FOCUS,
    GFX_CTL_DESTROY,
    GFX_CTL_FREE,
@@ -173,6 +174,8 @@ typedef struct gfx_ctx_driver
 
 typedef struct gfx_ctx_size
 {
+   bool *quit;
+   bool *resize;
    unsigned *width;
    unsigned *height;
 } gfx_ctx_size_t;
@@ -224,9 +227,6 @@ bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
 bool gfx_ctx_image_buffer_write(const void *frame,
       unsigned width, unsigned height, unsigned pitch, bool rgb32,
       unsigned index, void **image_handle);
-
-bool gfx_ctx_check_window(bool *quit, bool *resize,
-      unsigned *width, unsigned *height);
 
 bool gfx_ctx_suppress_screensaver(bool enable);
 

@@ -841,14 +841,20 @@ static void d3d_set_nonblock_state(void *data, bool state)
 
 static bool d3d_alive(void *data)
 {
-   unsigned temp_width = 0, temp_height = 0;
-   bool ret = false;
-   d3d_video_t *d3d   = (d3d_video_t*)data;
-   bool        quit   = false;
-   bool        resize = false;
+   gfx_ctx_size_t size_data;
+   unsigned temp_width  = 0;
+   unsigned temp_height = 0;
+   bool ret             = false;
+   d3d_video_t *d3d     = (d3d_video_t*)data;
+   bool        quit     = false;
+   bool        resize   = false;
 
-   if (gfx_ctx_check_window(&quit, &resize,
-            &temp_width, &temp_height))
+   size_data.quit       = &quit;
+   size_data.resize     = &resize;
+   size_data.width      = &temp_width;
+   size_data.height     = &temp_height;
+
+   if (gfx_ctx_ctl(GFX_CTL_CHECK_WINDOW, &size_data))
    {
       if (quit)
          d3d->quitting = quit;

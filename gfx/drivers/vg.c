@@ -359,12 +359,18 @@ static bool vg_frame(void *data, const void *frame,
 
 static bool vg_alive(void *data)
 {
-   bool quit;
-   unsigned temp_width = 0, temp_height = 0;
-   vg_t            *vg = (vg_t*)data;
+   gfx_ctx_size_t size_data;
+   bool quit            = false;
+   unsigned temp_width  = 0;
+   unsigned temp_height = 0;
+   vg_t            *vg  = (vg_t*)data;
 
-   gfx_ctx_check_window(&quit,
-         &vg->should_resize, &temp_width, &temp_height);
+   size_data.quit       = &quit;
+   size_data.resize     = &vg->should_resize;
+   size_data.width      = &temp_width;
+   size_data.height     = &temp_height;
+
+   gfx_ctx_ctl(GFX_CTL_CHECK_WINDOW, &size_data);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);

@@ -137,22 +137,6 @@ retro_proc_address_t gfx_ctx_get_proc_address(const char *sym)
    return current_video_context->get_proc_address(sym);
 }
 
-bool gfx_ctx_check_window(bool *quit, bool *resize,
-      unsigned *width, unsigned *height)
-{
-   uint64_t       *frame_count;
-   
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
-
-   if (!video_context_data)
-      return false;
-   
-   current_video_context->check_window(video_context_data, quit,
-         resize, width, height, (unsigned int)*frame_count);
-
-   return true;
-}
-
 bool gfx_ctx_suppress_screensaver(bool enable)
 {
    if (video_context_data && current_video_context)
@@ -359,6 +343,23 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
    switch (state)
    {
+      case GFX_CTL_CHECK_WINDOW:
+         {
+            uint64_t       *frame_count = NULL;
+            gfx_ctx_size_t *size_data   = (gfx_ctx_size_t*)data;
+
+            video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+
+            if (!video_context_data)
+               return false;
+
+            current_video_context->check_window(video_context_data,
+                  size_data->quit,
+                  size_data->resize,
+                  size_data->width,
+                  size_data->height, (unsigned int)*frame_count);
+         }
+         break;
       case GFX_CTL_FIND_PREV_DRIVER:
          return gfx_ctl_find_prev_driver();
       case GFX_CTL_FIND_NEXT_DRIVER:
