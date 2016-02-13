@@ -647,12 +647,18 @@ static void d3d_calculate_rect(void *data,
       bool force_full,
       bool allow_rotate)
 {
+   gfx_ctx_aspect_t aspect_data;
    float device_aspect  = (float)*width / *height;
    d3d_video_t *d3d     = (d3d_video_t*)data;
    settings_t *settings = config_get_ptr();
 
    video_driver_get_size(width, height);
-   gfx_ctx_translate_aspect(&device_aspect, *width, *height);
+
+   aspect_data.aspect   = &device_aspect;
+   aspect_data.width    = *width;
+   aspect_data.height   = *height;
+
+   gfx_ctx_ctl(GFX_CTL_TRANSLATE_ASPECT, &aspect_data);
 
    *x = 0;
    *y = 0;

@@ -85,6 +85,7 @@ static INLINE bool vg_query_extension(const char *ext)
 
 static void *vg_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   gfx_ctx_aspect_t aspect_data;
    unsigned interval;
    unsigned temp_width = 0, temp_height = 0;
    VGfloat clearColor[4] = {0, 0, 0, 1};
@@ -142,7 +143,11 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    vg->mScreenAspect = (float)temp_width / temp_height;
 
-   gfx_ctx_translate_aspect(&vg->mScreenAspect, temp_width, temp_height);
+   aspect_data.aspect   = &vg->mScreenAspect;
+   aspect_data.width    = temp_width;
+   aspect_data.height   = temp_height;
+
+   gfx_ctx_ctl(GFX_CTL_TRANSLATE_ASPECT, &aspect_data);
 
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 

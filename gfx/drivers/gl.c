@@ -848,6 +848,7 @@ static void gl_set_projection(gl_t *gl, struct gfx_ortho *ortho, bool allow_rota
 static void gl_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate)
 {
+   gfx_ctx_aspect_t aspect_data;
    unsigned width, height;
    int x = 0, y = 0;
    float device_aspect   = (float)viewport_width / viewport_height;
@@ -857,8 +858,11 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
 
    video_driver_get_size(&width, &height);
 
-   gfx_ctx_translate_aspect(&device_aspect,
-         viewport_width, viewport_height);
+   aspect_data.aspect   = &device_aspect;
+   aspect_data.width    = viewport_width;
+   aspect_data.height   = viewport_height;
+
+   gfx_ctx_ctl(GFX_CTL_TRANSLATE_ASPECT, &aspect_data);
 
    if (settings->video.scale_integer && !force_full)
    {
