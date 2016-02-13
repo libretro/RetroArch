@@ -24,12 +24,12 @@
 #include <ogc/cache.h>
 #include <ogc/system.h>
 #include <ogc/usbstorage.h>
+#include <ogc/lwp_threads.h>
 #include <sdcard/wiisd_io.h>
 
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
-#include "../../defines/gx_defines.h"
 #include "../../verbosity.h"
 
 #define EXECUTE_ADDR ((uint8_t *) 0x91800000)

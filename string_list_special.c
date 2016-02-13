@@ -209,7 +209,7 @@ error:
 
 const char *char_list_new_special(enum string_list_type type, void *data)
 {
-   unsigned len;
+   unsigned len = 0;
    size_t list_size;
    struct string_list *s = string_list_new_special(type, data, &len, &list_size);
    char         *options = (len > 0) ? (char*)calloc(len, sizeof(char)): NULL;

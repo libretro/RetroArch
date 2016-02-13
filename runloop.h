@@ -271,8 +271,6 @@ typedef struct global
             uint32_t *list;
             unsigned count;
             bool check;
-		    unsigned width;
-		    unsigned height;
          } resolutions;
 
          unsigned gamma_correction;

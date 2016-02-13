@@ -31,19 +31,6 @@
 #include "../../configuration.h"
 #include "../../defines/gx_defines.h"
 
-#define CHUNK_FRAMES 64
-#define CHUNK_SIZE (CHUNK_FRAMES * sizeof(uint32_t))
-#define BLOCKS 16
-
-#ifdef GEKKO
-#define AIInit AUDIO_Init
-#define AIInitDMA AUDIO_InitDMA
-#define AIStartDMA AUDIO_StartDMA
-#define AIStopDMA AUDIO_StopDMA
-#define AIRegisterDMACallback AUDIO_RegisterDMACallback
-#define AISetDSPSampleRate AUDIO_SetDSPSampleRate
-#endif
-
 typedef struct
 {
    uint32_t data[BLOCKS][CHUNK_FRAMES];
@@ -218,7 +205,7 @@ static void gx_audio_free(void *data)
    AIRegisterDMACallback(NULL);
 
    if (wa->cond)
-      LWP_CloseQueue(wa->cond);
+      OSCloseThreadQueue(wa->cond);
    wa->cond = 0;
 
    free(data);

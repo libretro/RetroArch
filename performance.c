@@ -36,7 +36,7 @@
 #include <intrin.h>
 #endif
 
-#if defined(__CELLOS_LV2__) || defined(GEKKO)
+#if defined(__CELLOS_LV2__)
 #ifndef _PPU_INTRINSICS_H
 #include <ppu_intrinsics.h>
 #endif
@@ -221,8 +221,10 @@ retro_perf_tick_t retro_get_perf_counter(void)
 
 #elif defined(__ARM_ARCH_6__)
    __asm__ volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
-#elif defined(__CELLOS_LV2__) || defined(GEKKO) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
+#elif defined(__CELLOS_LV2__) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
    time_ticks = __mftb();
+#elif defined(GEKKO)
+   time_ticks = gettime();
 #elif defined(PSP) || defined(VITA)
    sceRtcGetCurrentTick(&time_ticks);
 #elif defined(_3DS)

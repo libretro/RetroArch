@@ -303,9 +303,6 @@ static bool gfx_ctx_ps3_set_video_mode(void *data,
    if (!global)
       return false;
 
-   global->console.screen.resolutions.width  = width;
-   global->console.screen.resolutions.height = height;
-
    return true;
 }
 

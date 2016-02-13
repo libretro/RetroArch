@@ -2139,7 +2139,12 @@ static int action_ok_video_resolution(const char *path,
       event_cmd_ctl(EVENT_CMD_REINIT, NULL);
 #endif
       video_driver_set_video_mode(width, height, true);
-      snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset",
+#ifdef GEKKO
+      if (width == 0 || height == 0)
+         strlcpy(msg, "Applying: DEFAULT", sizeof(msg));
+      else
+#endif
+         snprintf(msg, sizeof(msg),"Applying: %dx%d\n START to reset",            
             width, height);
       runloop_msg_queue_push(msg, 1, 100, true);
    }

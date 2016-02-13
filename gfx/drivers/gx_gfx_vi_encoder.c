@@ -41,6 +41,7 @@
 #include <string.h>
 #include <gccore.h>
 #include <ogcsys.h>
+#include <ogc/machine/processor.h>
 
 #include <retro_miscellaneous.h>
 

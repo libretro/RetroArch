@@ -292,14 +292,18 @@ static int action_start_playlist_association(unsigned type, const char *label)
 static int action_start_video_resolution(unsigned type, const char *label)
 {
    unsigned width = 0, height = 0;
+   global_t *global = global_get_ptr();
 
-   video_driver_set_video_mode(640, 480, true);
+   /*  Reset the resolution id to zero */
+   global->console.screen.resolutions.current.id = 0;
 
    if (video_driver_get_video_output_size(&width, &height))
    {
-      char msg[PATH_MAX_LENGTH];
+      char msg[PATH_MAX_LENGTH] = {0};
 
-      snprintf(msg, sizeof(msg),"Resetting to: %dx%d", width, height);
+      video_driver_set_video_mode(width, height, true);
+
+      strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
       runloop_msg_queue_push(msg, 1, 100, true);
    }
 
