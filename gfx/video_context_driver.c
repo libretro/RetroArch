@@ -116,14 +116,16 @@ bool gfx_ctx_image_buffer_write(const void *frame, unsigned width,
 
 bool gfx_ctx_suppress_screensaver(bool enable)
 {
-   if (video_context_data && current_video_context)
-      return current_video_context->suppress_screensaver(
-            video_context_data, enable);
-   return false;
+   if (!video_context_data || !current_video_context)
+      return false;
+   return current_video_context->suppress_screensaver(
+         video_context_data, enable);
 }
 
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
+   if (!current_video_context || !current_video_context->get_video_size)
+      return;
    current_video_context->get_video_size(video_context_data, width, height);
 }
 
@@ -139,9 +141,10 @@ bool gfx_ctx_set_resize(unsigned width, unsigned height)
 void gfx_ctx_input_driver(
       const input_driver_t **input, void **input_data)
 {
-   if (current_video_context)
-      current_video_context->input_driver(
-            video_context_data, input, input_data);
+   if (!current_video_context || !current_video_context->input_driver)
+      return;
+   current_video_context->input_driver(
+         video_context_data, input, input_data);
 }
 
 /**
