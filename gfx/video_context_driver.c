@@ -200,13 +200,6 @@ void gfx_ctx_show_mouse(bool state)
    current_video_context->show_mouse(video_context_data, state);
 }
 
-bool gfx_ctx_has_windowed(void)
-{
-   if (!video_context_data)
-      return false;
-   return current_video_context->has_windowed(video_context_data);
-}
-
 bool gfx_ctx_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height)
 {
@@ -434,6 +427,10 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
          if (!video_context_data || !current_video_context->has_focus)
             return false;
          return current_video_context->has_focus(video_context_data);
+      case GFX_CTL_HAS_WINDOWED:
+         if (!video_context_data)
+            return false;
+         return current_video_context->has_windowed(video_context_data);
       case GFX_CTL_FREE:
          if (current_video_context->destroy)
             current_video_context->destroy(video_context_data);

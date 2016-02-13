@@ -56,7 +56,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_NONE = 0,
    GFX_CTL_FOCUS,
    GFX_CTL_FREE,
-   GFX_CTL_SWAP_BUFFERS
+   GFX_CTL_SWAP_BUFFERS,
+   GFX_CTL_HAS_WINDOWED
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -221,8 +222,6 @@ bool gfx_ctx_image_buffer_write(const void *frame,
       unsigned index, void **image_handle);
 
 void gfx_ctx_show_mouse(bool state);
-
-bool gfx_ctx_has_windowed(void);
 
 bool gfx_ctx_check_window(bool *quit, bool *resize,
       unsigned *width, unsigned *height);

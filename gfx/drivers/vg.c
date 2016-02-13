@@ -389,7 +389,7 @@ static bool vg_suppress_screensaver(void *data, bool enable)
 
 static bool vg_has_windowed(void *data)
 {
-   return gfx_ctx_has_windowed();
+   return gfx_ctx_ctl(GFX_CTL_HAS_WINDOWED, NULL);
 }
 
 static bool vg_set_shader(void *data,

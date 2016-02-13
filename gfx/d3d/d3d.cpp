@@ -881,7 +881,7 @@ static bool d3d_suppress_screensaver(void *data, bool enable)
 
 static bool d3d_has_windowed(void *data)
 {
-   return gfx_ctx_has_windowed();
+   return gfx_ctx_ctl(GFX_CTL_HAS_WINDOWED, NULL);
 }
 
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
