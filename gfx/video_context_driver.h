@@ -72,7 +72,8 @@ enum gfx_ctx_ctl_state
    /* Finds previous driver in graphics context driver array. */
    GFX_CTL_FIND_PREV_DRIVER,
    GFX_CTL_GET_VIDEO_OUTPUT_SIZE,
-   GFX_CTL_SWAP_INTERVAL
+   GFX_CTL_SWAP_INTERVAL,
+   GFX_CTL_PROC_ADDRESS_GET
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -251,17 +252,14 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
  **/
 const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *ident,
       enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx);
-    
 
 bool gfx_ctx_get_metrics(enum display_metric_types type, float *value);
-
 
 void gfx_ctx_translate_aspect(float *aspect,
       unsigned width, unsigned height);
 
 bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
       bool fullscreen);
-
 
 bool gfx_ctx_image_buffer_write(const void *frame,
       unsigned width, unsigned height, unsigned pitch, bool rgb32,
@@ -277,8 +275,6 @@ const char *gfx_ctx_get_ident(void);
 
 void gfx_ctx_input_driver(
         const input_driver_t **input, void **input_data);
-
-retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
 
 bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data);
 

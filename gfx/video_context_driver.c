@@ -132,10 +132,6 @@ bool gfx_ctx_image_buffer_write(const void *frame, unsigned width,
          rgb32, index, image_handle);
 }
 
-retro_proc_address_t gfx_ctx_get_proc_address(const char *sym)
-{
-   return current_video_context->get_proc_address(sym);
-}
 
 bool gfx_ctx_suppress_screensaver(bool enable)
 {
@@ -432,6 +428,15 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             if (!current_video_context || !current_video_context->swap_interval)
                return false;
             current_video_context->swap_interval(video_context_data, *interval);
+         }
+         break;
+      case GFX_CTL_PROC_ADDRESS_GET:
+         {
+            gfx_ctx_proc_address_t *proc = (gfx_ctx_proc_address_t*)data;
+            if (!current_video_context || !current_video_context->get_proc_address)
+               return false;
+
+            proc->addr = current_video_context->get_proc_address(proc->sym);
          }
          break;
       case GFX_CTL_NONE:

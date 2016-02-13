@@ -3307,7 +3307,13 @@ static uintptr_t gl_get_current_framebuffer(void *data)
 
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 {
-   return gfx_ctx_get_proc_address(sym);
+   gfx_ctx_proc_address_t proc_address;
+
+   proc_address.sym = sym;
+
+   gfx_ctx_ctl(GFX_CTL_PROC_ADDRESS_GET, &proc_address);
+
+   return proc_address.addr;
 }
 
 static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)

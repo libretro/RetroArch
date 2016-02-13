@@ -177,7 +177,13 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (vg_query_extension("KHR_EGL_image") && gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_INIT, video))
    {
-      pvgCreateEGLImageTargetKHR = (PFNVGCREATEEGLIMAGETARGETKHRPROC)gfx_ctx_get_proc_address("vgCreateEGLImageTargetKHR");
+      gfx_ctx_proc_address_t proc_address;
+
+      proc_address.sym = "vgCreateEGLImageTargetKHR";
+
+      gfx_ctx_ctl(GFX_CTL_PROC_ADDRESS_GET, &proc_address);
+
+      pvgCreateEGLImageTargetKHR = (PFNVGCREATEEGLIMAGETARGETKHRPROC)proc_address.addr;
 
       if (pvgCreateEGLImageTargetKHR)
       {
