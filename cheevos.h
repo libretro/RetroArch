@@ -25,6 +25,8 @@ enum cheevos_ctl_state
    CHEEVOS_CTL_TEST,
    CHEEVOS_CTL_LOAD,
 
+   CHEEVOS_CTL_APPLY_CHEATS,
+
    /* Unload the achievements from memory. */
    CHEEVOS_CTL_UNLOAD,
 
@@ -36,8 +38,6 @@ enum cheevos_ctl_state
 };
 
 void cheevos_get_description(unsigned idx, char *str, size_t len);
-
-void cheevos_apply_cheats(bool enable);
 
 bool cheevos_ctl(enum cheevos_ctl_state state, void *data);
 

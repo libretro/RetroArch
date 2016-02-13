@@ -72,6 +72,9 @@ unsigned cheat_manager_get_size(void)
 
 void cheat_manager_apply_cheats(void)
 {
+#ifdef HAVE_CHEEVOS
+   bool data_bool  = false;
+#endif
    unsigned i, idx = 0;
    cheat_manager_t *handle = cheat_manager_state;
 
@@ -95,7 +98,8 @@ void cheat_manager_apply_cheats(void)
    }
    
 #ifdef HAVE_CHEEVOS
-   cheevos_apply_cheats(idx != 0);
+   data_bool = idx != 0;
+   cheevos_ctl(CHEEVOS_CTL_APPLY_CHEATS, &data_bool);
 #endif
 }
 

@@ -230,11 +230,6 @@ typedef struct
    const uint32_t *ext_hashes;
 } cheevos_finder_t;
 
-typedef struct
-{
-   int cheats_are_enabled;
-   int cheats_were_enabled;
-} cheevos_globals_t;
 
 static cheevos_locals_t cheevos_locals =
 {
@@ -244,11 +239,6 @@ static cheevos_locals_t cheevos_locals =
    {0},
 };
 
-static cheevos_globals_t cheevos_globals =
-{
-   0,
-   0
-};
 
 /* forward declaration */
 
@@ -956,10 +946,9 @@ static int cheevos_parse(const char *json)
          0, unofficial_count * sizeof(cheevo_t));
 
    /* Load the achievements. */
-
-   ud.in_cheevos = 0;
-   ud.field = NULL;
-   ud.core_count = 0;
+   ud.in_cheevos       = 0;
+   ud.field            = NULL;
+   ud.core_count       = 0;
    ud.unofficial_count = 0;
 
    if (jsonsax_parse(json, &handlers, (void*)&ud) != JSONSAX_OK)
@@ -977,8 +966,8 @@ Test all the achievements (call once per frame).
 
 static const uint8_t *cheevos_get_memory(unsigned offset)
 {
-   uint8_t *memory;
    retro_ctx_memory_info_t mem_info;
+   uint8_t *memory = NULL;
 
    mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
 
@@ -1037,9 +1026,9 @@ static const uint8_t *cheevos_get_memory(unsigned offset)
 
 static unsigned cheevos_get_var_value(cheevos_var_t *var)
 {
-   unsigned previous = var->previous;
-   unsigned live_val = 0;
-   const uint8_t *memory;
+   unsigned previous     = var->previous;
+   unsigned live_val     = 0;
+   const uint8_t *memory = NULL;
 
    if (var->type == CHEEVOS_VAR_TYPE_VALUE_COMP)
       return var->value;
@@ -1130,10 +1119,10 @@ static int cheevos_test_condition(cheevos_cond_t *cond)
 static int cheevos_test_cond_set(const cheevos_condset_t *condset,
       int *dirty_conds, int *reset_conds, int match_any)
 {
-   int cond_valid = 0;
-   int set_valid = 1;
+   int cond_valid            = 0;
+   int set_valid             = 1;
    const cheevos_cond_t *end = condset->conds + condset->count;
-   cheevos_cond_t *cond;
+   cheevos_cond_t *cond      = NULL;
 
    /* Now, read all Pause conditions, and if any are true, 
     * do not process further (retain old state). */
@@ -1209,9 +1198,9 @@ static int cheevos_test_cond_set(const cheevos_condset_t *condset,
 
 static int cheevos_reset_cond_set(cheevos_condset_t *condset, int deltas)
 {
-   int dirty = 0;
+   int dirty                 = 0;
    const cheevos_cond_t *end = condset->conds + condset->count;
-   cheevos_cond_t *cond;
+   cheevos_cond_t *cond      = NULL;
 
    if (deltas)
    {
@@ -1238,13 +1227,13 @@ static int cheevos_reset_cond_set(cheevos_condset_t *condset, int deltas)
 
 static int cheevos_test_cheevo(cheevo_t *cheevo)
 {
-   int dirty_conds = 0;
-   int reset_conds = 0;
-   int ret_val = 0;
-   int ret_val_sub_cond = cheevo->count == 1;
-   cheevos_condset_t *condset = cheevo->condsets;
-   const cheevos_condset_t *end = condset + cheevo->count;
    int dirty;
+   int dirty_conds              = 0;
+   int reset_conds              = 0;
+   int ret_val                  = 0;
+   int ret_val_sub_cond         = cheevo->count == 1;
+   cheevos_condset_t *condset   = cheevo->condsets;
+   const cheevos_condset_t *end = condset + cheevo->count;
 
    if (condset < end)
    {
@@ -1280,7 +1269,9 @@ static void cheevos_url_encode(const char *str, char *encoded, size_t len)
 {
    while (*str)
    {
-      if (isalnum(*str) || *str == '-' || *str == '_' || *str == '.' || *str == '~')
+      if (     isalnum(*str) || *str == '-' 
+            || *str == '_' || *str == '.'
+            || *str == '~')
       {
          if (len >= 2)
          {
@@ -1357,9 +1348,12 @@ static int cheevos_login(retro_time_t *timeout)
       }
    }
 
-   runloop_msg_queue_push("Retro Achievements login error", 0, 5 * 60, false);
-   runloop_msg_queue_push("Please make sure your account information is correct", 0, 5 * 60, false);
-   RARCH_LOG("CHEEVOS error getting user token\n");
+   runloop_msg_queue_push("Retro Achievements login error",
+         0, 5 * 60, false);
+   runloop_msg_queue_push(
+         "Please make sure your account information is correct",
+         0, 5 * 60, false);
+   RARCH_LOG("CHEEVOS error getting user token.\n");
    return -1;
 }
 
@@ -1388,7 +1382,7 @@ static void cheevos_unlocker(void *payload)
       }
       else
       {
-         RARCH_LOG("CHEEVOS error awarding achievement %u, will retry\n", cheevo_id);
+         RARCH_LOG("CHEEVOS error awarding achievement %u, will retry...\n", cheevo_id);
          rarch_main_async_job_add(cheevos_unlocker, (void*)(uintptr_t)cheevo_id);
       }
    }
@@ -1446,7 +1440,6 @@ static void cheevos_free_cheevo_set(const cheevoset_t *set)
    free((void*)set->cheevos);
 }
 
-
 /*****************************************************************************
 Load achievements from retroachievements.org.
 *****************************************************************************/
@@ -1455,7 +1448,7 @@ static int cheevos_get_by_game_id(const char **json,
       unsigned game_id, retro_time_t *timeout)
 {
    char request[256];
-   settings_t *settings         = config_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    /* Just return OK if cheevos are disabled. */
    if (!settings->cheevos.enable)
@@ -1632,10 +1625,10 @@ static int cheevos_deactivate_unlocks(unsigned game_id, retro_time_t *timeout)
       NULL
    };
    
-   char request[256];
-   const char* json;
-   cheevos_deactivate_t ud;
    int res;
+   char request[256];
+   cheevos_deactivate_t ud;
+   const char* json             = NULL;
    settings_t *settings         = config_get_ptr();
    
    if (!cheevos_login(timeout))
@@ -1721,8 +1714,8 @@ static size_t cheevos_eval_md5(
 
 static void cheevos_fill_md5(size_t size, size_t total, MD5_CTX *ctx)
 {
-   ssize_t fill = total - size;
    char buffer[4096];
+   ssize_t fill = total - size;
    
    memset((void*)buffer, 0, sizeof(buffer));
 
@@ -2013,9 +2006,9 @@ static bool cheevos_load(const void *data)
          
          while (ext)
          {
-            const char *end = strchr(ext, '|');
-            unsigned hash;
             int j;
+            unsigned hash;
+            const char *end = strchr(ext, '|');
             
             if (end)
             {
@@ -2169,18 +2162,21 @@ void cheevos_get_description(unsigned idx, char *str, size_t len)
    str[len - 1] = 0;
 }
 
-void cheevos_apply_cheats(bool enable)
-{
-   cheevos_globals.cheats_are_enabled = enable;
-   cheevos_globals.cheats_were_enabled |= cheevos_globals.cheats_are_enabled;
-}
-
 bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
 {
+   static int cheats_are_enabled  = 0;
+   static int cheats_were_enabled = 0;
    settings_t *settings = config_get_ptr();
 
    switch (state)
    {
+      case CHEEVOS_CTL_APPLY_CHEATS:
+         {
+            bool *data_bool      = (bool*)data;
+            cheats_are_enabled   = *data_bool;
+            cheats_were_enabled |= cheats_are_enabled;
+         }
+         break;
       case CHEEVOS_CTL_LOAD:
          if (!cheevos_load((const void*)data))
             return false;
@@ -2198,8 +2194,7 @@ bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
          if (!cheevos_locals.loaded)
             return false;
 
-         if (     !cheevos_globals.cheats_are_enabled 
-               && !cheevos_globals.cheats_were_enabled)
+         if (!cheats_are_enabled && !cheats_were_enabled)
          {
             if (!settings->cheevos.enable)
                return false;
@@ -2216,8 +2211,7 @@ bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
 #endif
          break;
       case CHEEVOS_CTL_SET_CHEATS:
-         cheevos_globals.cheats_were_enabled = 
-            cheevos_globals.cheats_are_enabled;
+         cheats_were_enabled = cheats_are_enabled;
          break;
       case CHEEVOS_CTL_NONE:
       default:
