@@ -199,11 +199,6 @@ uint64_t input_driver_get_capabilities(void)
    return current_input->get_capabilities(current_input_data);
 }
 
-bool input_driver_grab_mouse(bool state)
-{
-   return true;
-}
-
 void input_driver_set(const input_driver_t **input, void **input_data)
 {
    if (input && input_data)
