@@ -149,12 +149,6 @@ void gfx_ctx_bind_hw_render(bool enable)
       current_video_context->bind_hw_render(video_context_data, enable);
 }
 
-bool gfx_ctx_focus(void)
-{
-   if (!video_context_data || !current_video_context->has_focus)
-      return false;
-   return current_video_context->has_focus(video_context_data);
-}
 
 bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
@@ -439,6 +433,10 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
    switch (state)
    {
+      case GFX_CTL_FOCUS:
+         if (!video_context_data || !current_video_context->has_focus)
+            return false;
+         return current_video_context->has_focus(video_context_data);
       case GFX_CTL_FREE:
          if (current_video_context->destroy)
             current_video_context->destroy(video_context_data);

@@ -379,7 +379,7 @@ static bool vg_alive(void *data)
 
 static bool vg_focus(void *data)
 {
-   return gfx_ctx_focus();
+   return gfx_ctx_ctl(GFX_CTL_FOCUS, NULL);
 }
 
 static bool vg_suppress_screensaver(void *data, bool enable)

@@ -54,6 +54,7 @@ enum display_metric_types
 enum gfx_ctx_ctl_state
 {
    GFX_CTL_NONE = 0,
+   GFX_CTL_FOCUS,
    GFX_CTL_FREE
 };
 
@@ -213,8 +214,6 @@ bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
       bool fullscreen);
 
 void gfx_ctx_swap_buffers(void);
-
-bool gfx_ctx_focus(void);
 
 bool gfx_ctx_image_buffer_init(const video_info_t *info);
 
