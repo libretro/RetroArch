@@ -94,7 +94,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    if (!vg || !ctx)
       goto error;
 
-   gfx_ctx_set(ctx);
+   gfx_ctx_ctl(GFX_CTL_SET, ctx);
 
    gfx_ctx_get_video_size(&temp_width, &temp_height);
    RARCH_LOG("Detecting screen resolution %ux%u.\n", temp_width, temp_height);

@@ -60,7 +60,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_SWAP_BUFFERS,
    GFX_CTL_HAS_WINDOWED,
    GFX_CTL_UPDATE_WINDOW_TITLE,
-   GFX_CTL_SHOW_MOUSE
+   GFX_CTL_SHOW_MOUSE,
+   GFX_CTL_SET
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -249,8 +250,6 @@ void gfx_ctx_input_driver(
         const input_driver_t **input, void **input_data);
 
 retro_proc_address_t gfx_ctx_get_proc_address(const char *sym);
-
-void gfx_ctx_set(const gfx_ctx_driver_t *ctx_driver);
 
 bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data);
 

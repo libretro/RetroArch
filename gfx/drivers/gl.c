@@ -2464,7 +2464,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl || !ctx_driver)
       goto error;
 
-   gfx_ctx_set(ctx_driver);
+   gfx_ctx_ctl(GFX_CTL_SET, ctx_driver);
 
    gl->video_info        = *video;
 

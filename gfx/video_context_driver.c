@@ -83,12 +83,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 static const gfx_ctx_driver_t  *current_video_context;
 static        void *video_context_data;
 
-void gfx_ctx_set(const gfx_ctx_driver_t *ctx_driver)
-{
-   if (!ctx_driver)
-      return;
-   current_video_context = ctx_driver;
-}
 
 const char *gfx_ctx_get_ident(void)
 {
@@ -407,6 +401,11 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
    switch (state)
    {
+      case GFX_CTL_SET:
+         if (!data)
+            return false;
+         current_video_context = (const gfx_ctx_driver_t*)data;
+         break;
       case GFX_CTL_DESTROY:
          current_video_context = NULL;
          break;
