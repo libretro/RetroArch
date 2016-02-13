@@ -28,18 +28,23 @@
 extern "C" {
 #endif
 
+enum rarch_cmd_ctl_state
+{
+   RARCH_CMD_CTL_NONE = 0,
+   RARCH_CMD_CTL_POLL,
+   RARCH_CMD_CTL_FREE
+};
+
 typedef struct rarch_cmd rarch_cmd_t;
 
 rarch_cmd_t *rarch_cmd_new(bool stdin_enable,
       bool network_enable, uint16_t port);
 
-void rarch_cmd_free(rarch_cmd_t *handle);
-
-void rarch_cmd_poll(rarch_cmd_t *handle);
-
 void rarch_cmd_set(rarch_cmd_t *handle, unsigned id);
 
 bool rarch_cmd_get(rarch_cmd_t *handle, unsigned id);
+
+bool rarch_cmd_ctl(enum rarch_cmd_ctl_state state, void *data);
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 bool network_cmd_send(const char *cmd);

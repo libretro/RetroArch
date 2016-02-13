@@ -36,7 +36,12 @@
 #include "verbosity.h"
 
 #define DEFAULT_NETWORK_CMD_PORT 55355
-#define STDIN_BUF_SIZE 4096
+#define STDIN_BUF_SIZE           4096
+
+#define COMMAND_EXT_GLSL         0x7c976537U
+#define COMMAND_EXT_GLSLP        0x0f840c87U
+#define COMMAND_EXT_CG           0x0059776fU
+#define COMMAND_EXT_CGP          0x0b8865bfU
 
 struct rarch_cmd
 {
@@ -51,6 +56,65 @@ struct rarch_cmd
 #endif
 
    bool state[RARCH_BIND_LIST_END];
+};
+
+struct cmd_map
+{
+   const char *str;
+   unsigned id;
+};
+
+struct cmd_action_map
+{
+   const char *str;
+   bool (*action)(const char *arg);
+   const char *arg_desc;
+};
+
+static bool cmd_set_shader(const char *arg);
+
+static const struct cmd_action_map action_map[] = {
+   { "SET_SHADER", cmd_set_shader, "<shader path>" },
+};
+
+static const struct cmd_map map[] = {
+   { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },
+   { "FAST_FORWARD_HOLD",      RARCH_FAST_FORWARD_HOLD_KEY },
+   { "LOAD_STATE",             RARCH_LOAD_STATE_KEY },
+   { "SAVE_STATE",             RARCH_SAVE_STATE_KEY },
+   { "FULLSCREEN_TOGGLE",      RARCH_FULLSCREEN_TOGGLE_KEY },
+   { "QUIT",                   RARCH_QUIT_KEY },
+   { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
+   { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
+   { "REWIND",                 RARCH_REWIND },
+   { "MOVIE_RECORD_TOGGLE",    RARCH_MOVIE_RECORD_TOGGLE },
+   { "PAUSE_TOGGLE",           RARCH_PAUSE_TOGGLE },
+   { "FRAMEADVANCE",           RARCH_FRAMEADVANCE },
+   { "RESET",                  RARCH_RESET },
+   { "SHADER_NEXT",            RARCH_SHADER_NEXT },
+   { "SHADER_PREV",            RARCH_SHADER_PREV },
+   { "CHEAT_INDEX_PLUS",       RARCH_CHEAT_INDEX_PLUS },
+   { "CHEAT_INDEX_MINUS",      RARCH_CHEAT_INDEX_MINUS },
+   { "CHEAT_TOGGLE",           RARCH_CHEAT_TOGGLE },
+   { "SCREENSHOT",             RARCH_SCREENSHOT },
+   { "MUTE",                   RARCH_MUTE },
+   { "OSK",                   RARCH_OSK },
+   { "NETPLAY_FLIP",           RARCH_NETPLAY_FLIP },
+   { "SLOWMOTION",             RARCH_SLOWMOTION },
+   { "VOLUME_UP",              RARCH_VOLUME_UP },
+   { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
+   { "OVERLAY_NEXT",           RARCH_OVERLAY_NEXT },
+   { "DISK_EJECT_TOGGLE",      RARCH_DISK_EJECT_TOGGLE },
+   { "DISK_NEXT",              RARCH_DISK_NEXT },
+   { "DISK_PREV",              RARCH_DISK_PREV },
+   { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
+   { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
+   { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
+   { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
+   { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
+   { "MENU_RIGHT",             RETRO_DEVICE_ID_JOYPAD_RIGHT },
+   { "MENU_A",                 RETRO_DEVICE_ID_JOYPAD_A },
+   { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
@@ -148,78 +212,10 @@ rarch_cmd_t *rarch_cmd_new(bool stdin_enable,
 
 #if (defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)) || defined(HAVE_STDIN_CMD)
 error:
-   rarch_cmd_free(handle);
+   rarch_cmd_ctl(RARCH_CMD_CTL_FREE, handle);
    return NULL;
 #endif
 }
-
-void rarch_cmd_free(rarch_cmd_t *handle)
-{
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   if (handle && handle->net_fd >= 0)
-      socket_close(handle->net_fd);
-#endif
-
-   free(handle);
-}
-
-struct cmd_map
-{
-   const char *str;
-   unsigned id;
-};
-
-struct cmd_action_map
-{
-   const char *str;
-   bool (*action)(const char *arg);
-   const char *arg_desc;
-};
-
-static const struct cmd_map map[] = {
-   { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },
-   { "FAST_FORWARD_HOLD",      RARCH_FAST_FORWARD_HOLD_KEY },
-   { "LOAD_STATE",             RARCH_LOAD_STATE_KEY },
-   { "SAVE_STATE",             RARCH_SAVE_STATE_KEY },
-   { "FULLSCREEN_TOGGLE",      RARCH_FULLSCREEN_TOGGLE_KEY },
-   { "QUIT",                   RARCH_QUIT_KEY },
-   { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
-   { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
-   { "REWIND",                 RARCH_REWIND },
-   { "MOVIE_RECORD_TOGGLE",    RARCH_MOVIE_RECORD_TOGGLE },
-   { "PAUSE_TOGGLE",           RARCH_PAUSE_TOGGLE },
-   { "FRAMEADVANCE",           RARCH_FRAMEADVANCE },
-   { "RESET",                  RARCH_RESET },
-   { "SHADER_NEXT",            RARCH_SHADER_NEXT },
-   { "SHADER_PREV",            RARCH_SHADER_PREV },
-   { "CHEAT_INDEX_PLUS",       RARCH_CHEAT_INDEX_PLUS },
-   { "CHEAT_INDEX_MINUS",      RARCH_CHEAT_INDEX_MINUS },
-   { "CHEAT_TOGGLE",           RARCH_CHEAT_TOGGLE },
-   { "SCREENSHOT",             RARCH_SCREENSHOT },
-   { "MUTE",                   RARCH_MUTE },
-   { "OSK",                   RARCH_OSK },
-   { "NETPLAY_FLIP",           RARCH_NETPLAY_FLIP },
-   { "SLOWMOTION",             RARCH_SLOWMOTION },
-   { "VOLUME_UP",              RARCH_VOLUME_UP },
-   { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
-   { "OVERLAY_NEXT",           RARCH_OVERLAY_NEXT },
-   { "DISK_EJECT_TOGGLE",      RARCH_DISK_EJECT_TOGGLE },
-   { "DISK_NEXT",              RARCH_DISK_NEXT },
-   { "DISK_PREV",              RARCH_DISK_PREV },
-   { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
-   { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
-   { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
-   { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
-   { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
-   { "MENU_RIGHT",             RETRO_DEVICE_ID_JOYPAD_RIGHT },
-   { "MENU_A",                 RETRO_DEVICE_ID_JOYPAD_A },
-   { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
-};
-
-#define COMMAND_EXT_GLSL      0x7c976537U
-#define COMMAND_EXT_GLSLP     0x0f840c87U
-#define COMMAND_EXT_CG        0x0059776fU
-#define COMMAND_EXT_CGP       0x0b8865bfU
 
 static bool cmd_set_shader(const char *arg)
 {
@@ -250,10 +246,6 @@ static bool cmd_set_shader(const char *arg)
 
    return video_driver_set_shader(type, arg);
 }
-
-static const struct cmd_action_map action_map[] = {
-   { "SET_SHADER", cmd_set_shader, "<shader path>" },
-};
 
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
@@ -524,19 +516,6 @@ static void stdin_cmd_poll(rarch_cmd_t *handle)
 }
 #endif
 
-void rarch_cmd_poll(rarch_cmd_t *handle)
-{
-   memset(handle->state, 0, sizeof(handle->state));
-
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   network_cmd_poll(handle);
-#endif
-
-#ifdef HAVE_STDIN_CMD
-   stdin_cmd_poll(handle);
-#endif
-}
-
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool send_udp_packet(const char *host,
       uint16_t port, const char *msg)
@@ -656,3 +635,40 @@ bool network_cmd_send(const char *cmd_)
    return ret;
 }
 #endif
+
+bool rarch_cmd_ctl(enum rarch_cmd_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case RARCH_CMD_CTL_POLL:
+         {
+            rarch_cmd_t *handle = (rarch_cmd_t*)data;
+            memset(handle->state, 0, sizeof(handle->state));
+
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+            network_cmd_poll(handle);
+#endif
+
+#ifdef HAVE_STDIN_CMD
+            stdin_cmd_poll(handle);
+#endif
+         }
+         break;
+      case RARCH_CMD_CTL_FREE:
+         {
+            rarch_cmd_t *handle = (rarch_cmd_t*)data;
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+            if (handle && handle->net_fd >= 0)
+               socket_close(handle->net_fd);
+#endif
+
+            free(handle);
+         }
+         break;
+      case RARCH_CMD_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}
