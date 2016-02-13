@@ -136,15 +136,6 @@ bool gfx_ctx_set_resize(unsigned width, unsigned height)
          video_context_data, width, height);
 }
 
-void gfx_ctx_input_driver(
-      const input_driver_t **input, void **input_data)
-{
-   if (!current_video_context || !current_video_context->input_driver)
-      return;
-   current_video_context->input_driver(
-         video_context_data, input, input_data);
-}
-
 /**
  * find_gfx_ctx_driver_index:
  * @ident                      : Identifier of resampler driver to find.
@@ -433,6 +424,15 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
                   metrics->type,
                   metrics->value);
          }
+      case GFX_CTL_INPUT_DRIVER:
+         {
+            gfx_ctx_input_t *inp = (gfx_ctx_input_t*)data;
+            if (!current_video_context || !current_video_context->input_driver)
+               return false;
+            current_video_context->input_driver(
+                  video_context_data, inp->input, inp->input_data);
+         }
+         break;
       case GFX_CTL_NONE:
       default:
          break;

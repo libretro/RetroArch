@@ -2462,6 +2462,7 @@ static void gl_begin_debug(gl_t *gl)
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   gfx_ctx_input_t inp;
    unsigned interval;
    unsigned win_width, win_height, temp_width = 0, temp_height = 0;
    bool force_smooth                  = false;
@@ -2659,7 +2660,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       goto error;
 #endif
 
-   gfx_ctx_input_driver(input, input_data);
+   inp.input      = input;
+   inp.input_data = input_data;
+
+   gfx_ctx_ctl(GFX_CTL_INPUT_DRIVER, &inp);
    
    if (settings->video.font_enable)
    {

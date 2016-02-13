@@ -956,6 +956,7 @@ static bool d3d_construct(d3d_video_t *d3d,
       const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
+   gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    settings_t    *settings     = config_get_ptr();
 
@@ -1045,7 +1046,10 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (!d3d_initialize(d3d, &d3d->video_info))
       return false;
 
-   gfx_ctx_input_driver(input, input_data);
+   inp.input      = input;
+   inp.input_data = input_data;
+
+   gfx_ctx_ctl(GFX_CTL_INPUT_DRIVER, &inp);
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;

@@ -75,7 +75,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_SWAP_INTERVAL,
    GFX_CTL_PROC_ADDRESS_GET,
    GFX_CTL_TRANSLATE_ASPECT,
-   GFX_CTL_GET_METRICS
+   GFX_CTL_GET_METRICS,
+   GFX_CTL_INPUT_DRIVER,
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -269,9 +270,6 @@ void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 bool gfx_ctx_set_resize(unsigned width, unsigned height);
 
 const char *gfx_ctx_get_ident(void);
-
-void gfx_ctx_input_driver(
-        const input_driver_t **input, void **input_data);
 
 bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data);
 
