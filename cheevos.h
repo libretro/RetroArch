@@ -19,7 +19,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-int cheevos_load(const void *data);
+enum cheevos_ctl_state
+{
+   CHEEVOS_CTL_NONE = 0,
+   CHEEVOS_CTL_LOAD
+};
 
 #ifdef HAVE_MENU
 void cheevos_populate_menu(void *data);
@@ -34,5 +38,7 @@ void cheevos_apply_cheats(bool enable);
 void cheevos_test(void);
 
 void cheevos_unload(void);
+
+bool cheevos_ctl(enum cheevos_ctl_state state, void *data);
 
 #endif /* __RARCH_CHEEVOS_H */

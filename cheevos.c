@@ -1933,7 +1933,7 @@ static unsigned cheevos_find_game_id_nes(
 }
 
 
-int cheevos_load(const void *data)
+static bool cheevos_load(const void *data)
 {
    retro_ctx_memory_info_t mem_info;
 
@@ -1986,11 +1986,11 @@ int cheevos_load(const void *data)
    
    /* Just return OK if cheevos are disabled. */
    if (!settings->cheevos.enable)
-      return 0;
+      return true;
    
    /* Also return OK if there's no content. */
    if (!info)
-      return 0;
+      return true;
 
    mem_info.data = NULL;
    mem_info.size = 0;
@@ -2028,7 +2028,7 @@ int cheevos_load(const void *data)
    {
       runloop_msg_queue_push("This core doesn't support achievements", 0, 5 * 60, false);
       RARCH_LOG("This core doesn't support achievements\n");
-      return -1;
+      return false;
    }
    
    /* The the supported extensions as a hint to what method we should use. */
@@ -2092,7 +2092,7 @@ int cheevos_load(const void *data)
    
    runloop_msg_queue_push("This game doesn't feature achievements",
          0, 5 * 60, false);
-   return -1;
+   return false;
    
    found:
    
@@ -2105,14 +2105,14 @@ int cheevos_load(const void *data)
          cheevos_locals.loaded = 1;
          
          rarch_main_async_job_add(cheevos_playing, (void*)(uintptr_t)game_id);
-         return 0;
+         return true;
       }
       
       free((void*)json);
    }
    
    runloop_msg_queue_push("Error loading achievements", 0, 5 * 60, false);
-   return -1;
+   return false;
 }
 
 #ifdef HAVE_MENU
@@ -2208,4 +2208,19 @@ void cheevos_apply_cheats(bool enable)
 {
    cheevos_globals.cheats_are_enabled = enable;
    cheevos_globals.cheats_were_enabled |= cheevos_globals.cheats_are_enabled;
+}
+
+bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case CHEEVOS_CTL_LOAD:
+         if (!cheevos_load((const void*)data))
+            return false;
+         break;
+      case CHEEVOS_CTL_NONE:
+      default:
+         break;
+   }
+   return true;
 }
