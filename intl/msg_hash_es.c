@@ -15,6 +15,10 @@
 
 #include "../msg_hash.h"
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Winvalid-source-encoding"
+#endif
+
  /* IMPORTANT:
   * For non-english characters to work without proper unicode support,
   * we need this file to be encoded in ISO 8859-1 (Latin1), not UTF-8.
