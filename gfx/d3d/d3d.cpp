@@ -1508,7 +1508,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    retro_perf_stop(&d3d_frame);
 
-   gfx_ctx_swap_buffers();
+   gfx_ctx_ctl(GFX_CTL_SWAP_BUFFERS, NULL);
 
    return true;
 }

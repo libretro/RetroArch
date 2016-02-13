@@ -135,14 +135,6 @@ bool gfx_ctx_get_video_output_next(void)
    return true;
 }
 
-void gfx_ctx_swap_buffers(void)
-{
-   if (!current_video_context)
-      return;
-   if (current_video_context->swap_buffers)
-      current_video_context->swap_buffers(video_context_data);
-}
-
 void gfx_ctx_bind_hw_render(bool enable)
 {
    if (current_video_context->bind_hw_render)
@@ -433,6 +425,11 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
    switch (state)
    {
+      case GFX_CTL_SWAP_BUFFERS:
+         if (!current_video_context || !current_video_context->swap_buffers)
+            return false;
+         current_video_context->swap_buffers(video_context_data);
+         break;
       case GFX_CTL_FOCUS:
          if (!video_context_data || !current_video_context->has_focus)
             return false;

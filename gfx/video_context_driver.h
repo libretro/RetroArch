@@ -55,7 +55,8 @@ enum gfx_ctx_ctl_state
 {
    GFX_CTL_NONE = 0,
    GFX_CTL_FOCUS,
-   GFX_CTL_FREE
+   GFX_CTL_FREE,
+   GFX_CTL_SWAP_BUFFERS
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -212,8 +213,6 @@ void gfx_ctx_translate_aspect(float *aspect,
 
 bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
       bool fullscreen);
-
-void gfx_ctx_swap_buffers(void);
 
 bool gfx_ctx_image_buffer_init(const video_info_t *info);
 

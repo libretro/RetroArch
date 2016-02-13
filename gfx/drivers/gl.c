@@ -1862,11 +1862,11 @@ static bool gl_frame(void *data, const void *frame,
          && !input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)
          && !is_slowmotion && !is_paused)
    {
-      gfx_ctx_swap_buffers();
+      gfx_ctx_ctl(GFX_CTL_SWAP_BUFFERS, NULL);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   gfx_ctx_swap_buffers();
+   gfx_ctx_ctl(GFX_CTL_SWAP_BUFFERS, NULL);
 
 #ifdef HAVE_GL_SYNC
    if (settings->video.hard_sync && gl->have_sync)
