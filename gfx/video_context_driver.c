@@ -85,11 +85,9 @@ static        void *video_context_data;
 
 const char *gfx_ctx_get_ident(void)
 {
-   const gfx_ctx_driver_t *ctx = current_video_context;
-
-   if (!ctx)
+   if (!current_video_context)
       return NULL;
-   return ctx->ident;
+   return current_video_context->ident;
 }
 
 bool gfx_ctx_set_video_mode(
@@ -173,11 +171,13 @@ static int find_gfx_ctx_driver_index(const char *ident)
 static bool gfx_ctl_find_prev_driver(void)
 {
    settings_t *settings = config_get_ptr();
-   int i = find_gfx_ctx_driver_index(settings->video.context_driver);
+   int                i = find_gfx_ctx_driver_index(
+         settings->video.context_driver);
    
    if (i > 0)
    {
-      strlcpy(settings->video.context_driver, gfx_ctx_drivers[i - 1]->ident,
+      strlcpy(settings->video.context_driver,
+            gfx_ctx_drivers[i - 1]->ident,
             sizeof(settings->video.context_driver));
       return true;
    }
@@ -198,7 +198,8 @@ static bool gfx_ctl_find_next_driver(void)
 
    if (i >= 0 && gfx_ctx_drivers[i + 1])
    {
-      strlcpy(settings->video.context_driver, gfx_ctx_drivers[i + 1]->ident,
+      strlcpy(settings->video.context_driver,
+            gfx_ctx_drivers[i + 1]->ident,
             sizeof(settings->video.context_driver));
       return true;
    }
