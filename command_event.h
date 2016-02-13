@@ -204,10 +204,9 @@ enum event_command
    EVENT_CMD_REMAPPING_INIT,
    EVENT_CMD_REMAPPING_DEINIT,
    EVENT_CMD_VOLUME_UP,
-   EVENT_CMD_VOLUME_DOWN
+   EVENT_CMD_VOLUME_DOWN,
+   EVENT_CMD_EXEC
 };
-
-bool event_cmd_exec(void *data);
 
 /**
  * event_command:

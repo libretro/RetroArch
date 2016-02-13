@@ -882,7 +882,7 @@ static void event_main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
-bool event_cmd_exec(void *data)
+static bool event_cmd_exec(void *data)
 {
    char *fullpath = NULL;
 
@@ -975,7 +975,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             char *fullpath = NULL;
             runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
             runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, settings->libretro);
-            event_cmd_exec((void*)fullpath);
+            event_cmd_ctl(EVENT_CMD_EXEC, (void*)fullpath);
             event_cmd_ctl(EVENT_CMD_QUIT, NULL);
 #endif
          }
@@ -1662,6 +1662,8 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
       case EVENT_CMD_SET_FRAME_LIMIT:
          runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
          break;
+      case EVENT_CMD_EXEC:
+         return event_cmd_exec(data);
       case EVENT_CMD_NONE:
       default:
          return false;

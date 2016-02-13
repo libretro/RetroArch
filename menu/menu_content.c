@@ -219,7 +219,7 @@ static bool menu_content_load_from_playlist(void *data)
    else
       menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
 
-   if (!event_cmd_exec((void*)path))
+   if (!event_cmd_ctl(EVENT_CMD_EXEC, (void*)path))
       return false;
 
    event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
