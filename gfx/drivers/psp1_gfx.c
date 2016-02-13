@@ -21,6 +21,7 @@
 #include <pspgum.h>
 #include <psprtc.h>
 
+#include <retro_assert.h>
 #include <retro_inline.h>
 
 #include "../../defines/psp_defines.h"
