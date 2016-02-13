@@ -406,15 +406,19 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          break;
       case MENU_DISPLAY_CTL_GET_DPI:
          {
+            gfx_ctx_metrics_t metrics;
             float           *dpi = (float*)data;
             *dpi                 = menu_dpi_override_value;
 
             if (!settings)
                return true;
 
+            metrics.type  = DISPLAY_METRIC_DPI;
+            metrics.value = dpi; 
+
             if (settings->menu.dpi.override_enable)
                *dpi = settings->menu.dpi.override_value;
-            else if (!gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, dpi) || !*dpi)
+            else if (!gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics) || !*dpi)
                *dpi = menu_dpi_override_value;
          }
          break;

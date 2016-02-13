@@ -102,25 +102,6 @@ bool gfx_ctx_set_video_mode(
          video_context_data, width, height, fullscreen);
 }
 
-void gfx_ctx_translate_aspect(float *aspect,
-      unsigned width, unsigned height)
-{
-   if (!current_video_context || !current_video_context->translate_aspect)
-      return;
-
-   *aspect = current_video_context->translate_aspect(
-         video_context_data, width, height);
-}
-
-bool gfx_ctx_get_metrics(enum display_metric_types type, float *value)
-{
-   if (!current_video_context || !current_video_context->get_metrics)
-      return false;
-   return current_video_context->get_metrics(video_context_data, type,
-         value);
-}
-
-
 bool gfx_ctx_image_buffer_write(const void *frame, unsigned width,
          unsigned height, unsigned pitch, bool rgb32,
          unsigned index, void **image_handle)
@@ -439,6 +420,15 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             proc->addr = current_video_context->get_proc_address(proc->sym);
          }
          break;
+      case GFX_CTL_GET_METRICS:
+         {
+            gfx_ctx_metrics_t *metrics = (gfx_ctx_metrics_t*)data;
+            if (!current_video_context || !current_video_context->get_metrics)
+               return false;
+            return current_video_context->get_metrics(video_context_data,
+                  metrics->type,
+                  metrics->value);
+         }
       case GFX_CTL_NONE:
       default:
          break;

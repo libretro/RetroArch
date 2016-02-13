@@ -1061,11 +1061,15 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
 
    if (menu_input->pointer.pressed[0])
    {
+      gfx_ctx_metrics_t metrics;
+      float dpi;
       int16_t pointer_x = menu_input_pointer_state(MENU_POINTER_X_AXIS);
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-      float dpi;
-      gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &dpi);
 
+      metrics.type  = DISPLAY_METRIC_DPI;
+      metrics.value = &dpi; 
+
+      gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics);
 
       if (!menu_input->pointer.oldpressed[0])
       {

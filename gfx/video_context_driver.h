@@ -74,7 +74,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_GET_VIDEO_OUTPUT_SIZE,
    GFX_CTL_SWAP_INTERVAL,
    GFX_CTL_PROC_ADDRESS_GET,
-   GFX_CTL_TRANSLATE_ASPECT
+   GFX_CTL_TRANSLATE_ASPECT,
+   GFX_CTL_GET_METRICS
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -253,8 +254,6 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
  **/
 const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *ident,
       enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx);
-
-bool gfx_ctx_get_metrics(enum display_metric_types type, float *value);
 
 bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
       bool fullscreen);

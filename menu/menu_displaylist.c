@@ -605,8 +605,13 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    {
+      gfx_ctx_metrics_t metrics;
       float val = 0.0f;
-      if (gfx_ctx_get_metrics(DISPLAY_METRIC_MM_WIDTH, &val))
+
+      metrics.type  = DISPLAY_METRIC_MM_WIDTH;
+      metrics.value = &val; 
+
+      if (gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH), val);
@@ -614,7 +619,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
 
-      if (gfx_ctx_get_metrics(DISPLAY_METRIC_MM_HEIGHT, &val))
+      metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
+
+      if (gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH), val);
@@ -622,7 +629,9 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }
 
-      if (gfx_ctx_get_metrics(DISPLAY_METRIC_DPI, &val))
+      metrics.type  = DISPLAY_METRIC_DPI;
+
+      if (gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI), val);
