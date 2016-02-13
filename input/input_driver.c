@@ -624,7 +624,6 @@ retro_input_t input_keys_pressed(void)
    return ret;
 }
 
-
 void *input_driver_get_data(void)
 {
    return current_input_data;
@@ -662,21 +661,6 @@ static void input_driver_command_init(void)
 }
 #endif
 
-#ifdef HAVE_NETWORK_GAMEPAD
-static void input_driver_remote_init(void)
-{
-   settings_t *settings = config_get_ptr();
-
-   if (settings->network_remote_enable)
-   {
-      if (!(input_driver_remote 
-               = rarch_remote_new(settings->network_remote_base_port)))
-         RARCH_ERR("Failed to initialize remote gamepad interface.\n");
-   }
-
-}
-#endif
-
 bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 {
    static bool input_driver_block_hotkey             = false;
@@ -686,6 +670,7 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
    static bool input_driver_nonblock_state           = false;
    static bool input_driver_flushing_input           = false;
    static bool input_driver_data_own                 = false;
+   settings_t *settings                              = config_get_ptr();
 
    switch (state)
    {
@@ -741,7 +726,6 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          {
             int i;
             driver_ctx_info_t drv;
-            settings_t *settings = config_get_ptr();
 
             drv.label = "input_driver";
             drv.s     = settings->input.driver;
@@ -850,7 +834,17 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          break;
       case RARCH_INPUT_CTL_REMOTE_INIT:
 #ifdef HAVE_NETWORK_GAMEPAD
-         input_driver_remote_init();
+         if (settings->network_remote_enable)
+         {
+            input_driver_remote 
+               = rarch_remote_new(settings->network_remote_base_port);
+
+            if (!input_driver_remote)
+            {
+               RARCH_ERR("Failed to initialize remote gamepad interface.\n");
+               return false;
+            }
+         }
 #endif
          break;
       case RARCH_INPUT_CTL_NONE:
