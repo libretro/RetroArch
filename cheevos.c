@@ -2146,22 +2146,6 @@ static void cheevos_populate_menu(void *data)
 }
 #endif
 
-void cheevos_get_description(unsigned idx, char *str, size_t len)
-{
-   cheevo_t *cheevos = NULL;
-   
-   if (idx >= cheevos_locals.core.count)
-   {
-      cheevos = cheevos_locals.unofficial.cheevos;
-      idx    -= cheevos_locals.unofficial.count;
-   }
-   else
-      cheevos = cheevos_locals.core.cheevos;
-   
-   strncpy(str, cheevos[idx].description, len);
-   str[len - 1] = 0;
-}
-
 bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
 {
    static int cheats_are_enabled  = 0;
@@ -2170,6 +2154,21 @@ bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
 
    switch (state)
    {
+      case CHEEVOS_CTL_GET_DESCRIPTION:
+         {
+            cheevos_ctx_desc_t *desc = (cheevos_ctx_desc_t*)data;
+            cheevo_t *cheevos        = cheevos_locals.core.cheevos;
+
+            if (desc->idx >= cheevos_locals.core.count)
+            {
+               cheevos       = cheevos_locals.unofficial.cheevos;
+               desc->idx    -= cheevos_locals.unofficial.count;
+            }
+
+            strncpy(desc->s, cheevos[desc->idx].description, desc->len);
+            desc->s[desc->len - 1] = 0;
+         }
+         break;
       case CHEEVOS_CTL_APPLY_CHEATS:
          {
             bool *data_bool      = (bool*)data;

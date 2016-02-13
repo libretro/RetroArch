@@ -34,10 +34,17 @@ enum cheevos_ctl_state
     * the game has content. */
    CHEEVOS_CTL_SET_CHEATS,
 
+   CHEEVOS_CTL_GET_DESCRIPTION,
+
    CHEEVOS_CTL_POPULATE_MENU
 };
 
-void cheevos_get_description(unsigned idx, char *str, size_t len);
+typedef struct cheevos_ctx_desc
+{
+   unsigned idx;
+   char *s;
+   size_t len;
+} cheevos_ctx_desc_t;
 
 bool cheevos_ctl(enum cheevos_ctl_state state, void *data);
 

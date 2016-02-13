@@ -38,6 +38,9 @@
 static int action_iterate_help(menu_handle_t *menu, 
       char *s, size_t len, const char *label)
 {
+#ifdef HAVE_CHEEVOS
+   cheevos_ctx_desc_t desc_info;
+#endif
    bool do_exit = false;
    settings_t *settings      = config_get_ptr();
 
@@ -172,7 +175,10 @@ static int action_iterate_help(menu_handle_t *menu,
          
 #ifdef HAVE_CHEEVOS
       case MENU_HELP_CHEEVOS_DESCRIPTION:
-         cheevos_get_description(menu->help_screen_id, s, len);
+         desc_info.idx = menu->help_screen_id;
+         desc_info.s   = s;
+         desc_info.len = len;
+         cheevos_ctl(CHEEVOS_CTL_GET_DESCRIPTION, &desc_info);
          break;
 #endif
 
