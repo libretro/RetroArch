@@ -3399,7 +3399,10 @@ static struct video_shader *gl_get_current_shader(void *data)
 static void gl_get_video_output_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_get_video_output_size(width, height);
+   gfx_ctx_size_t size_data;
+   size_data.width  = width;
+   size_data.height = height;
+   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_OUTPUT_SIZE, &size_data);
 }
 
 static void gl_get_video_output_prev(void *data)

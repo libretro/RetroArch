@@ -69,7 +69,8 @@ enum gfx_ctx_ctl_state
    /* Finds next driver in graphics context driver array. */
    GFX_CTL_FIND_NEXT_DRIVER,
    /* Finds previous driver in graphics context driver array. */
-   GFX_CTL_FIND_PREV_DRIVER
+   GFX_CTL_FIND_PREV_DRIVER,
+   GFX_CTL_GET_VIDEO_OUTPUT_SIZE
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -170,6 +171,12 @@ typedef struct gfx_ctx_driver
    void (*bind_hw_render)(void *data, bool enable);
 } gfx_ctx_driver_t;
 
+typedef struct gfx_ctx_size
+{
+   unsigned *width;
+   unsigned *height;
+} gfx_ctx_size_t;
+
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
 extern const gfx_ctx_driver_t gfx_ctx_x_egl;
 extern const gfx_ctx_driver_t gfx_ctx_wayland;
@@ -228,8 +235,6 @@ void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 bool gfx_ctx_set_resize(unsigned width, unsigned height);
 
 void gfx_ctx_swap_interval(unsigned interval);
-
-void gfx_ctx_get_video_output_size(unsigned *width, unsigned *height);
 
 const char *gfx_ctx_get_ident(void);
 

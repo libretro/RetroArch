@@ -92,13 +92,6 @@ const char *gfx_ctx_get_ident(void)
    return ctx->ident;
 }
 
-void gfx_ctx_get_video_output_size(unsigned *width, unsigned *height)
-{
-   if (!current_video_context || !current_video_context->get_video_output_size)
-      return;
-   current_video_context->get_video_output_size(video_context_data, width, height);
-}
-
 bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       bool fullscreen)
@@ -426,6 +419,17 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             current_video_context->destroy(video_context_data);
          current_video_context = NULL;
          video_context_data    = NULL;
+         break;
+      case GFX_CTL_GET_VIDEO_OUTPUT_SIZE:
+         {
+            gfx_ctx_size_t *size_data = (gfx_ctx_size_t*)data;
+            if (!size_data)
+               return false;
+            if (!current_video_context || !current_video_context->get_video_output_size)
+               return false;
+            current_video_context->get_video_output_size(video_context_data,
+                  size_data->width, size_data->height);
+         }
          break;
       case GFX_CTL_NONE:
       default:
