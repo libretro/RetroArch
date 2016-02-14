@@ -1139,6 +1139,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       const struct gfx_tex_info *feedback_info)
 {
    unsigned mip_level;
+   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    unsigned width, height;
@@ -1159,6 +1160,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
     * and render all passes from FBOs, to another FBO. */
    for (i = 1; i < gl->fbo_pass; i++)
    {
+      video_shader_ctx_mvp_t mvp;
       video_shader_ctx_coords_t coords;
       video_shader_ctx_params_t params;
       const struct gfx_fbo_rect *rect = &gl->fbo_rect[i];
@@ -1217,7 +1219,11 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
       video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
 
-      video_shader_driver_set_mvp(gl, &gl->mvp);
+      mvp.data = gl;
+      mvp.matrix = &gl->mvp;
+
+      video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
+
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
 
@@ -1282,7 +1288,11 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    coords.data        = &gl->coords;
 
    video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
-   video_shader_driver_set_mvp(gl, &gl->mvp);
+
+   mvp.data = gl;
+   mvp.matrix = &gl->mvp;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_info.coord;
@@ -1701,6 +1711,7 @@ static void gl_pbo_async_readback(gl_t *gl)
 #if defined(HAVE_MENU)
 static INLINE void gl_draw_texture(gl_t *gl)
 {
+   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    unsigned width, height;
    GLfloat color[16];
@@ -1741,7 +1752,10 @@ static INLINE void gl_draw_texture(gl_t *gl)
 
    video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
 
-   video_shader_driver_set_mvp(gl, &gl->mvp_no_rot);
+   mvp.data   = gl;
+   mvp.matrix = &gl->mvp_no_rot;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
 
    glEnable(GL_BLEND);
 
@@ -1767,6 +1781,7 @@ static bool gl_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
+   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    bool is_slowmotion, is_paused;
@@ -1930,7 +1945,11 @@ static bool gl_frame(void *data, const void *frame,
 
    video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
 
-   video_shader_driver_set_mvp(gl, &gl->mvp);
+   mvp.data             = gl;
+   mvp.matrix           = &gl->mvp;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
+
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 #ifdef HAVE_FBO
@@ -3435,6 +3454,7 @@ static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
 
 static void gl_render_overlay(void *data)
 {
+   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    unsigned i, width, height;
    gl_t *gl = (gl_t*)data;
@@ -3460,7 +3480,11 @@ static void gl_render_overlay(void *data)
    coords.data          = &gl->coords;
 
    video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
-   video_shader_driver_set_mvp(gl, &gl->mvp_no_rot);
+
+   mvp.data             = gl;
+   mvp.matrix           = &gl->mvp_no_rot;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
 
    for (i = 0; i < gl->overlays; i++)
    {

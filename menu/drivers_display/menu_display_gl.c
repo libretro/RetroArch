@@ -88,6 +88,7 @@ static void menu_display_gl_blend_end(void)
 
 static void menu_display_gl_draw(void *data)
 {
+   video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    gl_t             *gl          = gl_get_ptr();
    math_matrix_4x4 *mat          = NULL;
@@ -118,7 +119,11 @@ static void menu_display_gl_draw(void *data)
    coords.data        = draw->coords;
    
    video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
-   video_shader_driver_set_mvp(gl, mat);
+
+   mvp.data   = gl;
+   mvp.matrix = mat;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
 
    glDrawArrays(menu_display_prim_to_gl_enum(
             draw->prim_type), 0, draw->coords->vertices);

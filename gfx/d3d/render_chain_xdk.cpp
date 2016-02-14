@@ -40,12 +40,17 @@ typedef struct xdk_renderchain
 static void renderchain_set_mvp(void *data, unsigned vp_width,
       unsigned vp_height, unsigned rotation)
 {
+   video_shader_ctx_mvp_t mvp;
    d3d_video_t      *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3dr = (LPDIRECT3DDEVICE)d3d->dev;
 
 #if defined(_XBOX360) && defined(HAVE_HLSL)
    hlsl_set_proj_matrix(XMMatrixRotationZ(rotation * (M_PI / 2.0)));
-   video_shader_driver_set_mvp(d3d, NULL);
+
+   mvp.data   = d3d;
+   mvp.matrix = NULL;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
 #elif defined(HAVE_D3D8)
    D3DXMATRIX p_out, p_rotate, mat;
    D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);

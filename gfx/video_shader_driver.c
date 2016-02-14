@@ -90,13 +90,6 @@ unsigned video_shader_driver_get_prev_textures(void)
    return current_shader->get_prev_textures(shader_data);
 }
 
-bool video_shader_driver_set_mvp(void *data, const math_matrix_4x4 *mat)
-{
-   if (!current_shader || !current_shader->set_mvp || !mat)
-      return false;
-   return current_shader->set_mvp(data, shader_data, mat);
-}
-
 bool video_shader_driver_filter_type(unsigned index, bool *smooth)
 {
    if (!current_shader || !current_shader->filter_type)
@@ -229,6 +222,15 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
                shader_info->num = current_shader->num_shaders(shader_data);
          }
          break;
+      case SHADER_CTL_SET_MVP:
+         {
+            video_shader_ctx_mvp_t *mvp = (video_shader_ctx_mvp_t*)data;
+            if (!current_shader || !current_shader->set_mvp)
+               return false;
+            if (!mvp || !mvp->matrix)
+               return false;
+            return current_shader->set_mvp(mvp->data, shader_data, mvp->matrix);
+         }
       case SHADER_CTL_NONE:
       default:
          break;
