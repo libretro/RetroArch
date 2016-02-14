@@ -370,6 +370,7 @@ ifeq ($(HAVE_RGUI)$(HAVE_GL_CONTEXT), 11)
    ifeq ($(HAVE_MATERIALUI),)
       HAVE_MATERIALUI = 1
    endif
+
    ifeq ($(HAVE_WIMP),)
       HAVE_WIMP = 1
    endif
