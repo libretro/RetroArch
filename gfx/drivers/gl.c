@@ -2804,7 +2804,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    {
-      unsigned minimum = video_shader_driver_get_prev_textures();
+      video_shader_ctx_texture_t texture_info;
+
+      video_shader_driver_ctl(SHADER_CTL_GET_PREV_TEXTURES, &texture_info);
+
+      unsigned minimum = texture_info.id;
       gl->textures     = max(minimum + 1, gl->textures);
    }
 
@@ -3093,7 +3097,12 @@ static bool gl_set_shader(void *data,
 
    if (shader)
    {
-      unsigned textures = video_shader_driver_get_prev_textures() + 1;
+      unsigned textures;
+      video_shader_ctx_texture_t texture_info;
+
+      video_shader_driver_ctl(SHADER_CTL_GET_PREV_TEXTURES, &texture_info);
+
+      textures = texture_info.id + 1;
 
       if (textures > gl->textures) /* Have to reinit a bit. */
       {

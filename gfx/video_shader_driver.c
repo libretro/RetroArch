@@ -34,20 +34,26 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
-static const shader_backend_t *current_shader;
-static void *shader_data;
-
-unsigned video_shader_driver_get_prev_textures(void)
-{
-   if (!current_shader)
-      return 0;
-   return current_shader->get_prev_textures(shader_data);
-}
-
 bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *data)
 {
+   static const shader_backend_t *current_shader = NULL;
+   static void *shader_data                      = NULL;
+
    switch (state)
    {
+      case SHADER_CTL_GET_PREV_TEXTURES:
+         {
+            video_shader_ctx_texture_t *texture = (video_shader_ctx_texture_t*)data;
+            if (!!texture)
+               return false;
+            if (!current_shader)
+            {
+               texture->id = 0;
+               return false;
+            }
+            texture->id = current_shader->get_prev_textures(shader_data);
+         }
+         break;
       case SHADER_CTL_GET_IDENT:
          {
             video_shader_ctx_ident_t *ident = (video_shader_ctx_ident_t*)data;

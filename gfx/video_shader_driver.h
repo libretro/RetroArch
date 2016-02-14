@@ -72,7 +72,8 @@ enum video_shader_driver_ctl_state
    SHADER_CTL_WRAP_TYPE,
    SHADER_CTL_GET_CURRENT_SHADER,
    SHADER_CTL_DIRECT_GET_CURRENT_SHADER,
-   SHADER_CTL_GET_IDENT
+   SHADER_CTL_GET_IDENT,
+   SHADER_CTL_GET_PREV_TEXTURES
 };
 
 typedef struct shader_backend
@@ -182,12 +183,15 @@ typedef struct video_shader_ctx_ident
    const char *ident;
 } video_shader_ctx_ident_t;
 
+typedef struct video_shader_ctx_texture
+{
+   unsigned id;
+} video_shader_ctx_texture_t;
+
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
-
-unsigned video_shader_driver_get_prev_textures(void);
 
 bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *data);
 
