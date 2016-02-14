@@ -1124,6 +1124,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       const struct gfx_tex_info *feedback_info)
 {
    unsigned mip_level;
+   video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    unsigned width, height;
    const struct gfx_fbo_rect *prev_rect;
@@ -1143,6 +1144,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
     * and render all passes from FBOs, to another FBO. */
    for (i = 1; i < gl->fbo_pass; i++)
    {
+      video_shader_ctx_coords_t coords;
       video_shader_ctx_params_t params;
       const struct gfx_fbo_rect *rect = &gl->fbo_rect[i];
 
@@ -1194,7 +1196,12 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
 
       gl->coords.vertices = 4;
-      video_shader_driver_set_coords(NULL, &gl->coords);
+
+      coords.handle_data  = NULL;
+      coords.data         = &gl->coords;
+
+      video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
+
       video_shader_driver_set_mvp(gl, &gl->mvp);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -1255,7 +1262,11 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    gl->coords.vertex = gl->vertex_ptr;
 
    gl->coords.vertices = 4;
-   video_shader_driver_set_coords(NULL, &gl->coords);
+
+   coords.handle_data = NULL;
+   coords.data        = &gl->coords;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
    video_shader_driver_set_mvp(gl, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -1675,6 +1686,7 @@ static void gl_pbo_async_readback(gl_t *gl)
 #if defined(HAVE_MENU)
 static INLINE void gl_draw_texture(gl_t *gl)
 {
+   video_shader_ctx_coords_t coords;
    unsigned width, height;
    GLfloat color[16];
 
@@ -1706,8 +1718,14 @@ static INLINE void gl_draw_texture(gl_t *gl)
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
    video_shader_driver_use(gl, GL_SHADER_STOCK_BLEND);
+
    gl->coords.vertices  = 4;
-   video_shader_driver_set_coords(NULL, &gl->coords);
+
+   coords.handle_data   = NULL;
+   coords.data          = &gl->coords;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
+
    video_shader_driver_set_mvp(gl, &gl->mvp_no_rot);
 
    glEnable(GL_BLEND);
@@ -1734,6 +1752,7 @@ static bool gl_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
+   video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    bool is_slowmotion, is_paused;
    unsigned width, height;
@@ -1891,7 +1910,11 @@ static bool gl_frame(void *data, const void *frame,
    video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
 
    gl->coords.vertices = 4;
-   video_shader_driver_set_coords(NULL, &gl->coords);
+   coords.handle_data   = NULL;
+   coords.data          = &gl->coords;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
+
    video_shader_driver_set_mvp(gl, &gl->mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -3393,8 +3416,8 @@ static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
 
 static void gl_render_overlay(void *data)
 {
-   unsigned i;
-   unsigned width, height;
+   video_shader_ctx_coords_t coords;
+   unsigned i, width, height;
    gl_t *gl = (gl_t*)data;
    if (!gl)
       return;
@@ -3414,7 +3437,10 @@ static void gl_render_overlay(void *data)
    gl->coords.color     = gl->overlay_color_coord;
    gl->coords.vertices  = 4 * gl->overlays;
 
-   video_shader_driver_set_coords(NULL, &gl->coords);
+   coords.handle_data   = NULL;
+   coords.data          = &gl->coords;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
    video_shader_driver_set_mvp(gl, &gl->mvp_no_rot);
 
    for (i = 0; i < gl->overlays; i++)

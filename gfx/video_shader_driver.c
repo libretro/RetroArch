@@ -108,13 +108,6 @@ unsigned video_shader_driver_get_prev_textures(void)
    return current_shader->get_prev_textures(shader_data);
 }
 
-bool video_shader_driver_set_coords(void *handle_data, const void *data)
-{
-   if (!current_shader || !current_shader->set_coords)
-      return false;
-   return current_shader->set_coords(handle_data, shader_data, data);
-}
-
 bool video_shader_driver_set_mvp(void *data, const math_matrix_4x4 *mat)
 {
    if (!current_shader || !current_shader->set_mvp || !mat)
@@ -210,7 +203,8 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
       case SHADER_CTL_GET_FEEDBACK_PASS:
          if (!current_shader || !current_shader->get_feedback_pass)
             return false;
-         return current_shader->get_feedback_pass(shader_data, (unsigned*)data);
+         return current_shader->get_feedback_pass(shader_data,
+               (unsigned*)data);
       case SHADER_CTL_MIPMAP_INPUT:
          if (!current_shader)
             return false;
@@ -219,6 +213,15 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
             return current_shader->mipmap_input(shader_data, *index);
          }
          break;
+      case SHADER_CTL_SET_COORDS:
+         {
+            video_shader_ctx_coords_t *coords = (video_shader_ctx_coords_t*)
+               data;
+            if (!current_shader || !current_shader->set_coords)
+               return false;
+            return current_shader->set_coords(coords->handle_data,
+                  shader_data, coords->data);
+         }
       case SHADER_CTL_NONE:
       default:
          break;

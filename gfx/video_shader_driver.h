@@ -39,7 +39,8 @@ enum video_shader_driver_ctl_state
    SHADER_CTL_INIT_FIRST,
    SHADER_CTL_SET_PARAMS,
    SHADER_CTL_GET_FEEDBACK_PASS,
-   SHADER_CTL_MIPMAP_INPUT
+   SHADER_CTL_MIPMAP_INPUT,
+   SHADER_CTL_SET_COORDS
 };
 
 typedef struct shader_backend
@@ -102,6 +103,12 @@ typedef struct video_shader_ctx_params
    unsigned fbo_info_cnt;
 } video_shader_ctx_params_t;
 
+typedef struct video_shader_ctx_coords
+{
+   void *handle_data;
+   const void *data;
+} video_shader_ctx_coords_t;
+
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
@@ -151,8 +158,6 @@ void video_shader_driver_use(void *data, unsigned index);
 const char *video_shader_driver_get_ident(void);
 
 unsigned video_shader_driver_num_shaders(void);
-
-bool video_shader_driver_set_coords(void *handle_data, const void *data);
 
 bool video_shader_driver_set_mvp(void *data, const math_matrix_4x4 *mat);
 
