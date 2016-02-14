@@ -99,18 +99,6 @@ bool video_shader_driver_init(const shader_backend_t *shader,
    return true;
 }
 
-void video_shader_driver_deinit(void)
-{
-   if (!current_shader)
-      return;
-
-   if (current_shader->deinit)
-      current_shader->deinit(shader_data);
-
-   shader_data    = NULL;
-   current_shader = NULL;
-}
-
 void video_shader_driver_use(void *data, unsigned index)
 {
    if (!current_shader)
@@ -183,6 +171,16 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
 {
    switch (state)
    {
+      case SHADER_CTL_DEINIT:
+         if (!current_shader)
+            return false;
+
+         if (current_shader->deinit)
+            current_shader->deinit(shader_data);
+
+         shader_data    = NULL;
+         current_shader = NULL;
+         break;
       case SHADER_CTL_SET_PARAMS:
          {
             video_shader_ctx_params_t *params = (video_shader_ctx_params_t*)data;

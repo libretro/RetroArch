@@ -33,6 +33,7 @@ extern "C" {
 enum video_shader_driver_ctl_state
 {
    SHADER_CTL_NONE = 0,
+   SHADER_CTL_DEINIT,
    /* Finds first suitable shader context driver. */
    SHADER_CTL_INIT_FIRST,
    SHADER_CTL_SET_PARAMS,
@@ -137,8 +138,6 @@ struct video_shader *video_shader_driver_get_current_shader(void);
 
 bool video_shader_driver_init(const shader_backend_t *shader,
       void *data, const char *path);
-
-void video_shader_driver_deinit(void);
 
 void video_shader_driver_use(void *data, unsigned index);
 

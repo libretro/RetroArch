@@ -307,7 +307,7 @@ static bool gl_shader_init(gl_t *gl)
 
 static void gl_shader_deinit(gl_t *gl)
 {
-   video_shader_driver_deinit();
+   video_shader_driver_ctl(SHADER_CTL_DEINIT, NULL);
 }
 
 #ifndef NO_GL_FF_VERTEX
