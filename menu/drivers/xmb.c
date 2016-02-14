@@ -38,6 +38,8 @@
 #include "../menu_display.h"
 #include "../menu_navigation.h"
 
+#include "../../gfx/common/gl_common.h"
+
 #include "../menu_cbs.h"
 
 #include "../../frontend/frontend_driver.h"
@@ -46,10 +48,6 @@
 #include "../../system.h"
 
 #include "../../tasks/tasks_internal.h"
-
-#include <GL/glew.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -523,9 +521,6 @@ void zdraw(int width, int height)
 {
    /* OpenGL */
    glViewport(0, 0, width, height);
-   glewExperimental = 1;
-   if (glewInit() != GLEW_OK)
-      die("Failed to setup GLEW\n");
    alloc.userdata.ptr = NULL;
    alloc.alloc = mem_alloc;
    alloc.free = mem_free;

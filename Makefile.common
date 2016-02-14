@@ -395,7 +395,6 @@ endif
 ifeq ($(HAVE_XMB), 1)
    OBJ += deps/zahnrad/zahnrad.o
    OBJ += menu/drivers/xmb.o
-   LIBS += -lGLEW32
    DEFINES += -DHAVE_XMB
 endif
 endif
