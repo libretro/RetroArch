@@ -69,17 +69,6 @@ struct video_shader *video_shader_driver_get_current_shader(void)
    return video_poke->get_current_shader(video_driver);
 }
 
-void video_shader_driver_scale(unsigned idx, struct gfx_fbo_scale *scale)
-{
-   if (!scale || !current_shader)
-      return;
-
-   scale->valid = false;
-
-   if (current_shader->shader_scale)
-      current_shader->shader_scale(shader_data, idx, scale);
-}
-
 void video_shader_driver_use(void *data, unsigned index)
 {
    if (!current_shader)
@@ -222,6 +211,20 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
             return current_shader->set_coords(coords->handle_data,
                   shader_data, coords->data);
          }
+      case SHADER_CTL_SCALE:
+         {
+            video_shader_ctx_scale_t *scaler = (video_shader_ctx_scale_t*)data;
+            if (!scaler || !scaler->scale)
+               return false;
+
+            scaler->scale->valid = false;
+
+            if (!current_shader || !current_shader->shader_scale)
+               return false;
+
+            current_shader->shader_scale(shader_data, scaler->idx, scaler->scale);
+         }
+         break;
       case SHADER_CTL_NONE:
       default:
          break;

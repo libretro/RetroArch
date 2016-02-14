@@ -656,6 +656,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 {
    int i;
    unsigned width, height;
+   video_shader_ctx_scale_t scaler;
    struct gfx_fbo_scale scale, scale_last;
 
    if (!gl || video_shader_driver_num_shaders() == 0)
@@ -663,8 +664,15 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 
    video_driver_get_size(&width, &height);
 
-   video_shader_driver_scale(1, &scale);
-   video_shader_driver_scale(video_shader_driver_num_shaders(), &scale_last);
+   scaler.idx   = 1;
+   scaler.scale = &scale;
+
+   video_shader_driver_ctl(SHADER_CTL_SCALE, &scaler);
+
+   scaler.idx   = video_shader_driver_num_shaders();
+   scaler.scale = &scale_last;
+
+   video_shader_driver_ctl(SHADER_CTL_SCALE, &scaler);
 
    /* we always want FBO to be at least initialized on startup for consoles */
    if (video_shader_driver_num_shaders() == 1 && !scale.valid)
@@ -692,7 +700,10 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 
    for (i = 1; i < gl->fbo_pass; i++)
    {
-      video_shader_driver_scale(i + 1, &gl->fbo_scale[i]);
+      scaler.idx   = i + 1;
+      scaler.scale = &gl->fbo_scale[i];
+
+      video_shader_driver_ctl(SHADER_CTL_SCALE, &scaler);
 
       if (!gl->fbo_scale[i].valid)
       {

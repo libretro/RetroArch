@@ -63,7 +63,8 @@ enum video_shader_driver_ctl_state
    SHADER_CTL_SET_PARAMS,
    SHADER_CTL_GET_FEEDBACK_PASS,
    SHADER_CTL_MIPMAP_INPUT,
-   SHADER_CTL_SET_COORDS
+   SHADER_CTL_SET_COORDS,
+   SHADER_CTL_SCALE
 };
 
 typedef struct shader_backend
@@ -132,12 +133,16 @@ typedef struct video_shader_ctx_coords
    const void *data;
 } video_shader_ctx_coords_t;
 
+typedef struct video_shader_ctx_scale
+{
+   unsigned idx;
+   struct gfx_fbo_scale *scale;
+} video_shader_ctx_scale_t;
+
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
-
-void video_shader_driver_scale(unsigned idx, struct gfx_fbo_scale *scale);
 
 /**
  * shader_ctx_find_driver:
