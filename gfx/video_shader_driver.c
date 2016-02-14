@@ -58,26 +58,6 @@ const shader_backend_t *shader_ctx_find_driver(const char *ident)
    return NULL;
 }
 
-/**
- * video_shader_driver_init_first:
- *
- * Finds first suitable shader context driver.
- *
- * Returns: true (1) if found, otherwise false (0).
- **/
-bool video_shader_driver_init_first(void)
-{
-   unsigned i;
-
-   for (i = 0; shader_ctx_drivers[i]; i++)
-   {
-      current_shader = shader_ctx_drivers[i];
-      return true;
-   }
-
-   return false;
-}
-
 struct video_shader *video_shader_driver_get_current_shader(void)
 {
    void *video_driver                       = video_driver_get_ptr(false);
@@ -233,6 +213,18 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
                   params->fbo_info_cnt);
          }
          break;
+         /* Finds first suitable shader context driver. */
+      case SHADER_CTL_INIT_FIRST:
+         {
+            unsigned i;
+
+            for (i = 0; shader_ctx_drivers[i]; i++)
+            {
+               current_shader = shader_ctx_drivers[i];
+               return true;
+            }
+         }
+         return false;
       case SHADER_CTL_NONE:
       default:
          break;

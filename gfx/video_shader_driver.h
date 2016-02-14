@@ -33,6 +33,8 @@ extern "C" {
 enum video_shader_driver_ctl_state
 {
    SHADER_CTL_NONE = 0,
+   /* Finds first suitable shader context driver. */
+   SHADER_CTL_INIT_FIRST,
    SHADER_CTL_SET_PARAMS
 };
 
@@ -129,15 +131,6 @@ void video_shader_driver_scale(unsigned idx, struct gfx_fbo_scale *scale);
  * Returns: shader context driver if found, otherwise NULL.
  **/
 const shader_backend_t *shader_ctx_find_driver(const char *ident);
-
-/**
- * video_shader_driver_init_first:
- *
- * Finds first suitable shader context driver.
- *
- * Returns: shader context driver if found, otherwise NULL.
- **/
-bool video_shader_driver_init_first(void);
 
 struct video_shader *video_shader_driver_get_current_shader(void);
 

@@ -2683,7 +2683,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
          hw_render->version_major, hw_render->version_minor);
 #endif
 
-   if (!video_shader_driver_init_first())
+   if (!video_shader_driver_ctl(SHADER_CTL_INIT_FIRST, NULL))
       goto error;
 
    RARCH_LOG("[GL]: Default shader backend found: %s.\n",
