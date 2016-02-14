@@ -78,7 +78,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_TRANSLATE_ASPECT,
    GFX_CTL_GET_METRICS,
    GFX_CTL_INPUT_DRIVER,
-   GFX_CTL_SUPPRESS_SCREENSAVER
+   GFX_CTL_SUPPRESS_SCREENSAVER,
+   GFX_CTL_IDENT_GET
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -223,6 +224,11 @@ typedef struct gfx_ctx_proc_address
    retro_proc_address_t addr;
 } gfx_ctx_proc_address_t;
 
+typedef struct gfx_ctx_ident
+{
+   const char *ident;
+} gfx_ctx_ident_t;
+
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
 extern const gfx_ctx_driver_t gfx_ctx_x_egl;
 extern const gfx_ctx_driver_t gfx_ctx_wayland;
@@ -264,8 +270,6 @@ bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 
 bool gfx_ctx_set_resize(unsigned width, unsigned height);
-
-const char *gfx_ctx_get_ident(void);
 
 bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data);
 

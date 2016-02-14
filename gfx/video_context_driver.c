@@ -83,13 +83,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 static const gfx_ctx_driver_t  *current_video_context;
 static        void *video_context_data;
 
-const char *gfx_ctx_get_ident(void)
-{
-   if (!current_video_context)
-      return NULL;
-   return current_video_context->ident;
-}
-
 bool gfx_ctx_set_video_mode(
       unsigned width, unsigned height,
       bool fullscreen)
@@ -431,6 +424,14 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             return current_video_context->suppress_screensaver(
                   video_context_data, *bool_data);
          }
+      case GFX_CTL_IDENT_GET:
+         {
+            gfx_ctx_ident_t *ident = (gfx_ctx_ident_t*)data;
+            ident->ident = NULL;
+            if (current_video_context)
+               ident->ident = current_video_context->ident;
+         }
+         break;
       case GFX_CTL_NONE:
       default:
          break;
