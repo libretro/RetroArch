@@ -83,16 +83,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 static const gfx_ctx_driver_t  *current_video_context;
 static        void *video_context_data;
 
-bool gfx_ctx_set_video_mode(
-      unsigned width, unsigned height,
-      bool fullscreen)
-{
-   if (!current_video_context || !current_video_context->set_video_mode)
-      return false;
-   return current_video_context->set_video_mode(
-         video_context_data, width, height, fullscreen);
-}
-
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
 {
    if (!current_video_context || !current_video_context->get_video_size)
@@ -430,6 +420,16 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             ident->ident = NULL;
             if (current_video_context)
                ident->ident = current_video_context->ident;
+         }
+         break;
+      case GFX_CTL_SET_VIDEO_MODE:
+         {
+            gfx_ctx_mode_t *mode_info = (gfx_ctx_mode_t*)data;
+            if (!current_video_context || !current_video_context->set_video_mode)
+               return false;
+            return current_video_context->set_video_mode(
+                  video_context_data, mode_info->width,
+                  mode_info->height, mode_info->fullscreen);
          }
          break;
       case GFX_CTL_NONE:

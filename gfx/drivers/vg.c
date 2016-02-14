@@ -85,6 +85,7 @@ static INLINE bool vg_query_extension(const char *ext)
 
 static void *vg_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    gfx_ctx_aspect_t aspect_data;
    unsigned interval;
@@ -124,7 +125,11 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = temp_height;
    }
 
-   if (!gfx_ctx_set_video_mode(win_width, win_height, video->fullscreen))
+   mode.width      = win_width;
+   mode.height     = win_height;
+   mode.fullscreen = video->fullscreen;
+
+   if !(gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode))
       goto error;
 
    video_driver_get_size(&temp_width, &temp_height);

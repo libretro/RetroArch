@@ -79,7 +79,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_GET_METRICS,
    GFX_CTL_INPUT_DRIVER,
    GFX_CTL_SUPPRESS_SCREENSAVER,
-   GFX_CTL_IDENT_GET
+   GFX_CTL_IDENT_GET,
+   GFX_CTL_SET_VIDEO_MODE
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -188,6 +189,13 @@ typedef struct gfx_ctx_size
    unsigned *height;
 } gfx_ctx_size_t;
 
+typedef struct gfx_ctx_mode
+{
+   unsigned width;
+   unsigned height;
+   bool fullscreen;
+} gfx_ctx_mode_t;
+
 typedef struct gfx_ctx_metrics
 {
    enum display_metric_types type;
@@ -263,9 +271,6 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
  **/
 const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *ident,
       enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx);
-
-bool gfx_ctx_set_video_mode(unsigned width, unsigned height,
-      bool fullscreen);
 
 void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 

@@ -804,6 +804,8 @@ bool video_driver_set_rotation(unsigned rotation)
 bool video_driver_set_video_mode(unsigned width,
       unsigned height, bool fullscreen)
 {
+   gfx_ctx_mode_t mode;
+
    if (video_driver_poke && video_driver_poke->set_video_mode)
    {
       video_driver_poke->set_video_mode(video_driver_data,
@@ -811,7 +813,11 @@ bool video_driver_set_video_mode(unsigned width,
       return true;
    }
 
-   return gfx_ctx_set_video_mode(width, height, fullscreen);
+   mode.width      = width;
+   mode.height     = height;
+   mode.fullscreen = fullscreen;
+
+   return gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode);
 }
 
 bool video_driver_get_video_output_size(unsigned *width, unsigned *height)

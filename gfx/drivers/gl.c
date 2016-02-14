@@ -961,7 +961,13 @@ static void gl_set_rotation(void *data, unsigned rotation)
 static void gl_set_video_mode(void *data, unsigned width, unsigned height,
       bool fullscreen)
 {
-   gfx_ctx_set_video_mode(width, height, fullscreen);
+   gfx_ctx_mode_t mode;
+
+   mode.width      = width;
+   mode.height     = height;
+   mode.fullscreen = fullscreen;
+
+   gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode);
 }
 
 #ifdef HAVE_FBO
@@ -2471,6 +2477,7 @@ static void gl_begin_debug(gl_t *gl)
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned interval;
    unsigned win_width, win_height, temp_width = 0, temp_height = 0;
@@ -2507,7 +2514,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = gl->full_y;
    }
 
-   if (!gfx_ctx_set_video_mode(win_width, win_height, video->fullscreen))
+   mode.width      = win_width;
+   mode.height     = win_height;
+   mode.fullscreen = video->fullscreen;
+
+   if (!gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode))
       goto error;
 
    /* Clear out potential error flags in case we use cached context. */
