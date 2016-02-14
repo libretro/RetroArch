@@ -3687,7 +3687,11 @@ static void gl_show_mouse(void *data, bool state)
 
 static struct video_shader *gl_get_current_shader(void *data)
 {
-   return video_shader_driver_direct_get_current_shader();
+   video_shader_ctx_t shader_info;
+
+   video_shader_driver_ctl(SHADER_CTL_DIRECT_GET_CURRENT_SHADER, &shader_info);
+
+   return shader_info.data;
 }
 #endif
 

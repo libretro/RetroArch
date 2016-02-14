@@ -84,17 +84,21 @@ unsigned video_shader_driver_get_prev_textures(void)
    return current_shader->get_prev_textures(shader_data);
 }
 
-struct video_shader *video_shader_driver_direct_get_current_shader(void)
-{
-   if (!current_shader || !current_shader->get_current_shader)
-      return NULL;
-   return current_shader->get_current_shader(shader_data);
-}
-
 bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *data)
 {
    switch (state)
    {
+      case SHADER_CTL_DIRECT_GET_CURRENT_SHADER:
+         {
+            video_shader_ctx_t *shader = (video_shader_ctx_t*)data;
+
+            shader->data = NULL;
+            if (!current_shader || !current_shader->get_current_shader)
+               return false;
+
+            shader->data = current_shader->get_current_shader(shader_data);
+         }
+         break;
       case SHADER_CTL_DEINIT:
          if (!current_shader)
             return false;
