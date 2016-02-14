@@ -1229,6 +1229,19 @@ static int setting_generic_action_start_default(void *data)
    return 0;
 }
 
+static int setting_bool_action_ok_default(void *data, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   if (!setting)
+      return -1;
+
+   menu_setting_set_with_string_representation(setting,
+         *setting->value.boolean ? "false" : "true");
+
+   return 0;
+}
+
 static int setting_bool_action_toggle_default(void *data, bool wraparound)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -1405,7 +1418,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.action_start           = setting_generic_action_start_default;
    result.action_left            = setting_bool_action_toggle_default;
    result.action_right           = setting_bool_action_toggle_default;
-   result.action_ok              = setting_generic_action_ok_default;
+   result.action_ok              = setting_bool_action_ok_default;
    result.action_select          = setting_generic_action_ok_default;
    result.action_cancel          = NULL;
 

@@ -1207,6 +1207,8 @@ unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_in
       | (1UL << RETRO_DEVICE_ID_JOYPAD_DOWN)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_LEFT)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
+      | (1UL << RETRO_DEVICE_ID_JOYPAD_B)
+      | (1UL << RETRO_DEVICE_ID_JOYPAD_A)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_L)
       | (1UL << RETRO_DEVICE_ID_JOYPAD_R);
    bool set_scroll                         = false;
