@@ -66,7 +66,8 @@ enum video_shader_driver_ctl_state
    SHADER_CTL_SET_COORDS,
    SHADER_CTL_SCALE,
    SHADER_CTL_INFO,
-   SHADER_CTL_SET_MVP
+   SHADER_CTL_SET_MVP,
+   SHADER_CTL_FILTER_TYPE
 };
 
 typedef struct shader_backend
@@ -152,6 +153,12 @@ typedef struct video_shader_ctx_mvp
    const math_matrix_4x4 *matrix;
 } video_shader_ctx_mvp_t;
 
+typedef struct video_shader_ctx_filter
+{
+   unsigned index;
+   bool *smooth;
+} video_shader_ctx_filter_t;
+
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
@@ -174,8 +181,6 @@ void video_shader_driver_use(void *data, unsigned index);
 const char *video_shader_driver_get_ident(void);
 
 unsigned video_shader_driver_get_prev_textures(void);
-
-bool video_shader_driver_filter_type(unsigned index, bool *smooth);
 
 enum gfx_wrap_type video_shader_driver_wrap_type(unsigned index);
 

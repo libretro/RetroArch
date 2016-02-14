@@ -459,6 +459,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
    enum gfx_wrap_type wrap;
    bool fp_fbo, srgb_fbo;
    GLenum min_filter, mag_filter, wrap_enum;
+   video_shader_ctx_filter_t filter_type;
    bool mipmapped = false;
    bool smooth = false;
    settings_t *settings = config_get_ptr();
@@ -468,12 +469,13 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   mip_level  = i + 2;
+   mip_level          = i + 2;
+   mipmapped          = video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT, &mip_level);
+   min_filter         = mipmapped ? base_mip_filt : base_filt;
+   filter_type.index  = i + 2;
+   filter_type.smooth = &smooth;
 
-   mipmapped  = video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT, &mip_level);
-   min_filter = mipmapped ? base_mip_filt : base_filt;
-
-   if (video_shader_driver_filter_type(i + 2, &smooth))
+   if (video_shader_driver_ctl(SHADER_CTL_FILTER_TYPE, &filter_type))
    {
       min_filter = mipmapped ? (smooth ? 
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
@@ -2621,6 +2623,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned interval, mip_level;
+   video_shader_ctx_filter_t shader_filter;
    video_shader_ctx_info_t shader_info;
    unsigned win_width, win_height, temp_width = 0, temp_height = 0;
    bool force_smooth                  = false;
@@ -2789,11 +2792,14 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_set_shader_viewport(gl, 0);
    gl_set_shader_viewport(gl, 1);
 
-   mip_level           = 1;
-   gl->tex_mipmap      = video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT,
+   mip_level            = 1;
+   gl->tex_mipmap       = video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT,
          &mip_level);
 
-   if (video_shader_driver_filter_type(1, &force_smooth))
+   shader_filter.index  = 1;
+   shader_filter.smooth = &force_smooth;
+
+   if (video_shader_driver_ctl(SHADER_CTL_FILTER_TYPE, &shader_filter))
       gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ? 
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) 
          : (force_smooth ? GL_LINEAR : GL_NEAREST);
@@ -2926,6 +2932,7 @@ static bool gl_has_windowed(void *data)
 
 static void gl_update_tex_filter_frame(gl_t *gl)
 {
+   video_shader_ctx_filter_t shader_filter;
    unsigned i, mip_level;
    GLenum wrap_mode;
    GLuint new_filt;
@@ -2937,7 +2944,10 @@ static void gl_update_tex_filter_frame(gl_t *gl)
 
    context_bind_hw_render(gl, false);
 
-   if (!video_shader_driver_filter_type(1, &smooth))
+   shader_filter.index  = 1;
+   shader_filter.smooth = &smooth;
+
+   if (!video_shader_driver_ctl(SHADER_CTL_FILTER_TYPE, &shader_filter))
       smooth = settings->video.smooth;
 
    mip_level             = 1;

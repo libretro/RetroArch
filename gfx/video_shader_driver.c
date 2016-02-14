@@ -90,13 +90,6 @@ unsigned video_shader_driver_get_prev_textures(void)
    return current_shader->get_prev_textures(shader_data);
 }
 
-bool video_shader_driver_filter_type(unsigned index, bool *smooth)
-{
-   if (!current_shader || !current_shader->filter_type)
-      return false;
-   return current_shader->filter_type(shader_data, index, smooth);
-}
-
 enum gfx_wrap_type video_shader_driver_wrap_type(unsigned index)
 {
    return current_shader->wrap_type(shader_data, index);
@@ -125,7 +118,8 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
          break;
       case SHADER_CTL_SET_PARAMS:
          {
-            video_shader_ctx_params_t *params = (video_shader_ctx_params_t*)data;
+            video_shader_ctx_params_t *params = 
+               (video_shader_ctx_params_t*)data;
 
             if (!current_shader || !current_shader->set_params)
                return false;
@@ -213,7 +207,8 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
          break;
       case SHADER_CTL_INFO:
          {
-            video_shader_ctx_info_t *shader_info = (video_shader_ctx_info_t*)data;
+            video_shader_ctx_info_t *shader_info = 
+               (video_shader_ctx_info_t*)data;
             if (!shader_info || !current_shader)
                return false;
 
@@ -230,6 +225,15 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
             if (!mvp || !mvp->matrix)
                return false;
             return current_shader->set_mvp(mvp->data, shader_data, mvp->matrix);
+         }
+      case SHADER_CTL_FILTER_TYPE:
+         {
+            video_shader_ctx_filter_t *filter = 
+               (video_shader_ctx_filter_t*)data;
+            if (!current_shader || !current_shader->filter_type || !filter)
+               return false;
+            return current_shader->filter_type(shader_data,
+                  filter->index, filter->smooth);
          }
       case SHADER_CTL_NONE:
       default:
