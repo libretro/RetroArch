@@ -568,7 +568,7 @@ static int setting_uint_action_left_custom_viewport_width(void *data, bool wrapa
    if (!settings || !av_info)
       return -1;
 
-   video_driver_viewport_info(&vp);
+   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
 
    if (custom->width <= 1)
       custom->width = 1;
@@ -595,7 +595,7 @@ static int setting_uint_action_right_custom_viewport_width(void *data, bool wrap
    if (!settings || !av_info)
       return -1;
 
-   video_driver_viewport_info(&vp);
+   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
 
    if (settings->video.scale_integer)
       custom->width += geom->base_width;
@@ -620,7 +620,7 @@ static int setting_uint_action_left_custom_viewport_height(void *data, bool wrap
    if (!settings || !av_info)
       return -1;
 
-   video_driver_viewport_info(&vp);
+   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
 
    if (custom->height <= 1)
       custom->height = 1;
@@ -647,7 +647,7 @@ static int setting_uint_action_right_custom_viewport_height(void *data, bool wra
    if (!settings || !av_info)
       return -1;
 
-   video_driver_viewport_info(&vp);
+   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
 
    if (settings->video.scale_integer)
       custom->height += geom->base_height;
@@ -2158,7 +2158,7 @@ static int setting_action_start_custom_viewport_width(void *data)
    if (!settings || !av_info)
       return -1;
 
-   video_driver_viewport_info(&vp);
+   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
 
    if (settings->video.scale_integer)
       custom->width = ((custom->width + geom->base_width - 1) /
@@ -2184,7 +2184,7 @@ static int setting_action_start_custom_viewport_height(void *data)
    if (!settings || !av_info)
       return -1;
 
-   video_driver_viewport_info(&vp);
+   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
 
    if (settings->video.scale_integer)
       custom->height = ((custom->height + geom->base_height - 1) /
@@ -2855,7 +2855,7 @@ void general_write_handler(void *data)
             struct retro_game_geometry     *geom = (struct retro_game_geometry*)
                &av_info->geometry;
 
-            video_driver_viewport_info(&vp);
+            video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
 
             if (*setting->value.boolean)
             {

@@ -369,7 +369,7 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
    int scaled_screen_x, scaled_screen_y, scaled_x, scaled_y;
    struct video_viewport vp = {0};
 
-   if (!video_driver_viewport_info(&vp))
+   if (!video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp))
       return false;
 
    scaled_screen_x = (2 * mouse_x * 0x7fff) / (int)vp.full_width - 0x7fff;

@@ -784,7 +784,7 @@ static int menu_input_mouse(unsigned *action)
    const struct retro_keybind *binds[MAX_USERS];
    menu_input_t *menu_input  = menu_input_get_ptr();
 
-   if (!video_driver_viewport_info(&vp))
+   if (!video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp))
       return -1;
 
    if (menu_input->mouse.hwheeldown)

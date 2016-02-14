@@ -317,7 +317,7 @@ static void x_input_poll_mouse(x11_input_t *x11)
       int mid_w, mid_h;
       struct video_viewport vp = {0};
 
-      video_driver_viewport_info(&vp);
+      video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
 
       mid_w = vp.full_width >> 1;
       mid_h = vp.full_height >> 1;

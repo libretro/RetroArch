@@ -742,7 +742,8 @@ static bool init_video(void)
       /* Force custom viewport to have sane parameters. */
       custom_vp->width = width;
       custom_vp->height = height;
-      video_driver_viewport_info(custom_vp);
+
+      video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, custom_vp);
    }
 
    video_driver_set_rotation(
@@ -841,13 +842,6 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
 #endif
 }
 
-bool video_driver_viewport_info(struct video_viewport *vp)
-{
-   if (!current_video || !current_video->viewport_info)
-      return false;
-   current_video->viewport_info(video_driver_data, vp);
-   return true;
-}
 
 
 #ifdef HAVE_OVERLAY
@@ -1728,6 +1722,11 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             return false;
          return video_driver_poke->get_current_software_framebuffer(
                video_driver_data, (struct retro_framebuffer *)data);
+      case RARCH_DISPLAY_CTL_VIEWPORT_INFO:
+         if (!current_video || !current_video->viewport_info)
+            return false;
+         current_video->viewport_info(video_driver_data, (struct video_viewport*)data);
+         break;
       case RARCH_DISPLAY_CTL_NONE:
       default:
          break;
