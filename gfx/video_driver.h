@@ -403,9 +403,6 @@ void video_driver_set_texture_enable(bool enable, bool full_screen);
 void video_driver_set_texture_frame(const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha);
 
-bool video_driver_set_shader(enum rarch_shader_type type,
-      const char *path);
-
 #ifdef HAVE_OVERLAY
 bool video_driver_overlay_interface(
       const video_overlay_interface_t **iface);
