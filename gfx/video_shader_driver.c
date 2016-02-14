@@ -44,9 +44,7 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
       case SHADER_CTL_GET_PREV_TEXTURES:
          {
             video_shader_ctx_texture_t *texture = (video_shader_ctx_texture_t*)data;
-            if (!!texture)
-               return false;
-            if (!current_shader)
+            if (!!texture || !current_shader)
             {
                texture->id = 0;
                return false;
