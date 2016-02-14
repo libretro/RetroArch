@@ -455,21 +455,22 @@ static void gl_compute_fbo_geometry(gl_t *gl,
 
 static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 {
-   settings_t *settings = config_get_ptr();
-
+   unsigned mip_level;
    enum gfx_wrap_type wrap;
+   bool fp_fbo, srgb_fbo;
    GLenum min_filter, mag_filter, wrap_enum;
    bool mipmapped = false;
    bool smooth = false;
-   bool fp_fbo, srgb_fbo;
-
+   settings_t *settings = config_get_ptr();
    GLuint base_filt     = settings->video.smooth ? GL_LINEAR : GL_NEAREST;
    GLuint base_mip_filt = settings->video.smooth ? 
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
 
    glBindTexture(GL_TEXTURE_2D, texture);
 
-   mipmapped  = video_shader_driver_mipmap_input(i + 2);
+   mip_level  = i + 2;
+
+   mipmapped  = video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT, &mip_level);
    min_filter = mipmapped ? base_mip_filt : base_filt;
 
    if (video_shader_driver_filter_type(i + 2, &smooth))
@@ -1122,6 +1123,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       const struct gfx_tex_info *tex_info,
       const struct gfx_tex_info *feedback_info)
 {
+   unsigned mip_level;
    video_shader_ctx_params_t params;
    unsigned width, height;
    const struct gfx_fbo_rect *prev_rect;
@@ -1165,7 +1167,9 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       video_shader_driver_use(gl, i + 1);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
-      if (video_shader_driver_mipmap_input(i + 1))
+      mip_level = i + 1;
+
+      if (video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT, &mip_level))
          glGenerateMipmap(GL_TEXTURE_2D);
 
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1224,7 +1228,9 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
-   if (video_shader_driver_mipmap_input(gl->fbo_pass + 1))
+   mip_level = gl->fbo_pass + 1;
+
+   if (video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT, &mip_level))
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
@@ -2557,7 +2563,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 {
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
-   unsigned interval;
+   unsigned interval, mip_level;
    unsigned win_width, win_height, temp_width = 0, temp_height = 0;
    bool force_smooth                  = false;
    const char *vendor                 = NULL;
@@ -2722,7 +2728,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_set_shader_viewport(gl, 0);
    gl_set_shader_viewport(gl, 1);
 
-   gl->tex_mipmap      = video_shader_driver_mipmap_input(1);
+   mip_level           = 1;
+   gl->tex_mipmap      = video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT,
+         &mip_level);
 
    if (video_shader_driver_filter_type(1, &force_smooth))
       gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ? 
@@ -2857,10 +2865,10 @@ static bool gl_has_windowed(void *data)
 
 static void gl_update_tex_filter_frame(gl_t *gl)
 {
-   unsigned i;
+   unsigned i, mip_level;
    GLenum wrap_mode;
    GLuint new_filt;
-   bool smooth = false;
+   bool smooth          = false;
    settings_t *settings = config_get_ptr();
 
    if (!gl)
@@ -2871,9 +2879,12 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    if (!video_shader_driver_filter_type(1, &smooth))
       smooth = settings->video.smooth;
 
+   mip_level             = 1;
    wrap_mode             = 
       gl_wrap_type_to_enum(video_shader_driver_wrap_type(1));
-   gl->tex_mipmap        = video_shader_driver_mipmap_input(1);
+
+   gl->tex_mipmap        = video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT,
+         &mip_level);
 
    gl->video_info.smooth = smooth;
    new_filt = gl->tex_mipmap ? (smooth ? 

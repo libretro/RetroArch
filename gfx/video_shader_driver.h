@@ -38,7 +38,8 @@ enum video_shader_driver_ctl_state
    /* Finds first suitable shader context driver. */
    SHADER_CTL_INIT_FIRST,
    SHADER_CTL_SET_PARAMS,
-   SHADER_CTL_GET_FEEDBACK_PASS
+   SHADER_CTL_GET_FEEDBACK_PASS,
+   SHADER_CTL_MIPMAP_INPUT
 };
 
 typedef struct shader_backend
@@ -148,8 +149,6 @@ struct video_shader *video_shader_driver_get_current_shader(void);
 void video_shader_driver_use(void *data, unsigned index);
 
 const char *video_shader_driver_get_ident(void);
-
-bool video_shader_driver_mipmap_input(unsigned index);
 
 unsigned video_shader_driver_num_shaders(void);
 

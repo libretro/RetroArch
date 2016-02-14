@@ -94,13 +94,6 @@ const char *video_shader_driver_get_ident(void)
    return current_shader->ident;
 }
 
-bool video_shader_driver_mipmap_input(unsigned index)
-{
-   if (!current_shader)
-      return false;
-   return current_shader->mipmap_input(shader_data, index);
-}
-
 unsigned video_shader_driver_num_shaders(void)
 {
    if (!current_shader)
@@ -218,6 +211,14 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
          if (!current_shader || !current_shader->get_feedback_pass)
             return false;
          return current_shader->get_feedback_pass(shader_data, (unsigned*)data);
+      case SHADER_CTL_MIPMAP_INPUT:
+         if (!current_shader)
+            return false;
+         {
+            unsigned *index = (unsigned*)data;
+            return current_shader->mipmap_input(shader_data, *index);
+         }
+         break;
       case SHADER_CTL_NONE:
       default:
          break;
