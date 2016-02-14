@@ -456,7 +456,7 @@ static void gl_compute_fbo_geometry(gl_t *gl,
 static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 {
    unsigned mip_level;
-   enum gfx_wrap_type wrap;
+   video_shader_ctx_wrap_t wrap;
    bool fp_fbo, srgb_fbo;
    GLenum min_filter, mag_filter, wrap_enum;
    video_shader_ctx_filter_t filter_type;
@@ -484,8 +484,11 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 
    mag_filter = min_filter_to_mag(min_filter);
 
-   wrap      = video_shader_driver_wrap_type(i + 2);
-   wrap_enum = gl_wrap_type_to_enum(wrap);
+   wrap.idx = i + 2;
+
+   video_shader_driver_ctl(SHADER_CTL_WRAP_TYPE, &wrap);
+
+   wrap_enum = gl_wrap_type_to_enum(wrap.type);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
@@ -2648,6 +2651,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned interval, mip_level;
+   video_shader_ctx_wrap_t wrap_info;
    video_shader_ctx_filter_t shader_filter;
    video_shader_ctx_info_t shader_info;
    unsigned win_width, win_height, temp_width = 0, temp_height = 0;
@@ -2834,7 +2838,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
          : (video->smooth ? GL_LINEAR : GL_NEAREST);
    
    gl->tex_mag_filter = min_filter_to_mag(gl->tex_min_filter);
-   gl->wrap_mode      = gl_wrap_type_to_enum(video_shader_driver_wrap_type(1));
+
+   wrap_info.idx      = 1;
+
+   video_shader_driver_ctl(SHADER_CTL_WRAP_TYPE, &wrap_info);
+
+   gl->wrap_mode      = gl_wrap_type_to_enum(wrap_info.type);
 
    gl_set_texture_fmts(gl, video->rgb32);
 
@@ -2957,6 +2966,7 @@ static bool gl_has_windowed(void *data)
 
 static void gl_update_tex_filter_frame(gl_t *gl)
 {
+   video_shader_ctx_wrap_t wrap_info;
    video_shader_ctx_filter_t shader_filter;
    unsigned i, mip_level;
    GLenum wrap_mode;
@@ -2976,8 +2986,11 @@ static void gl_update_tex_filter_frame(gl_t *gl)
       smooth = settings->video.smooth;
 
    mip_level             = 1;
-   wrap_mode             = 
-      gl_wrap_type_to_enum(video_shader_driver_wrap_type(1));
+   wrap_info.idx         = 1;
+
+   video_shader_driver_ctl(SHADER_CTL_WRAP_TYPE, &wrap_info);
+
+   wrap_mode             =  gl_wrap_type_to_enum(wrap_info.type);
 
    gl->tex_mipmap        = video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT,
          &mip_level);

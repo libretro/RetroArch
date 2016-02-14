@@ -84,11 +84,6 @@ unsigned video_shader_driver_get_prev_textures(void)
    return current_shader->get_prev_textures(shader_data);
 }
 
-enum gfx_wrap_type video_shader_driver_wrap_type(unsigned index)
-{
-   return current_shader->wrap_type(shader_data, index);
-}
-
 struct video_shader *video_shader_driver_direct_get_current_shader(void)
 {
    if (!current_shader || !current_shader->get_current_shader)
@@ -235,6 +230,14 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
             if (!current_shader || !shader_info)
                return false;
             current_shader->use(shader_info->data, shader_data, shader_info->idx);
+         }
+         break;
+      case SHADER_CTL_WRAP_TYPE:
+         {
+            video_shader_ctx_wrap_t *wrap = (video_shader_ctx_wrap_t*)data;
+            if (!current_shader || !current_shader->wrap_type)
+               return false;
+            wrap->type = current_shader->wrap_type(shader_data, wrap->idx);
          }
          break;
       case SHADER_CTL_NONE:
