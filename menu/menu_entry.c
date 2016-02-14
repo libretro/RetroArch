@@ -55,7 +55,8 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
 
    if (setting)
    {
-      enum setting_type setting_type = menu_setting_get_type(setting);
+      enum setting_type setting_type = 
+         menu_setting_get_type(setting);
 
       switch (setting_type)
       {
@@ -158,7 +159,8 @@ int32_t menu_entry_bind_index(uint32_t i)
 void menu_entry_bind_key_set(uint32_t i, int32_t value)
 {
    rarch_setting_t      *setting = menu_entries_get_setting(i);
-   struct retro_keybind *keybind = (struct retro_keybind*)setting_get_ptr(setting);
+   struct retro_keybind *keybind = (struct retro_keybind*)
+      setting_get_ptr(setting);
    if (keybind)
       keybind->key = (enum retro_key)value;
 }
@@ -166,7 +168,8 @@ void menu_entry_bind_key_set(uint32_t i, int32_t value)
 void menu_entry_bind_joykey_set(uint32_t i, int32_t value)
 {
    rarch_setting_t      *setting = menu_entries_get_setting(i);
-   struct retro_keybind *keybind = (struct retro_keybind*)setting_get_ptr(setting);
+   struct retro_keybind *keybind = (struct retro_keybind*)
+      setting_get_ptr(setting);
    if (keybind)
       keybind->joykey = value;
 }
@@ -174,7 +177,8 @@ void menu_entry_bind_joykey_set(uint32_t i, int32_t value)
 void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
-   struct retro_keybind *keybind = (struct retro_keybind*)setting_get_ptr(setting);
+   struct retro_keybind *keybind = (struct retro_keybind*)
+      setting_get_ptr(setting);
    if (keybind)
       keybind->joyaxis = value;
 }
@@ -354,8 +358,10 @@ int menu_entry_select(uint32_t i)
 int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 {
    int ret                    = 0;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_file_list_cbs_t *cbs  = menu_entries_get_actiondata_at_offset(selection_buf, i);
+   file_list_t *selection_buf = 
+      menu_entries_get_selection_buf_ptr(0);
+   menu_file_list_cbs_t *cbs  = 
+      menu_entries_get_actiondata_at_offset(selection_buf, i);
 
    switch (action)
    {
@@ -375,12 +381,14 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          break;
       case MENU_ACTION_CANCEL:
          if (cbs && cbs->action_cancel)
-            ret = cbs->action_cancel(entry->path, entry->label, entry->type, i);
+            ret = cbs->action_cancel(entry->path,
+                  entry->label, entry->type, i);
          break;
 
       case MENU_ACTION_OK:
          if (cbs && cbs->action_ok)
-            ret = cbs->action_ok(entry->path, entry->label, entry->type, i, entry->entry_idx);
+            ret = cbs->action_ok(entry->path,
+                  entry->label, entry->type, i, entry->entry_idx);
          break;
       case MENU_ACTION_START:
          if (cbs && cbs->action_start)
@@ -400,7 +408,8 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
          break;
       case MENU_ACTION_SELECT:
          if (cbs && cbs->action_select)
-            ret = cbs->action_select(entry->path, entry->label, entry->type, i);
+            ret = cbs->action_select(entry->path,
+                  entry->label, entry->type, i);
          break;
       case MENU_ACTION_SEARCH:
          menu_input_ctl(MENU_INPUT_CTL_SEARCH_START, NULL);
@@ -408,7 +417,8 @@ int menu_entry_action(menu_entry_t *entry, unsigned i, enum menu_action action)
 
       case MENU_ACTION_SCAN:
          if (cbs && cbs->action_scan)
-            ret = cbs->action_scan(entry->path, entry->label, entry->type, i);
+            ret = cbs->action_scan(entry->path,
+                  entry->label, entry->type, i);
          break;
 
       default:
