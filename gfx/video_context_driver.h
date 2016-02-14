@@ -81,7 +81,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_SUPPRESS_SCREENSAVER,
    GFX_CTL_IDENT_GET,
    GFX_CTL_SET_VIDEO_MODE,
-   GFX_CTL_SET_RESIZE
+   GFX_CTL_SET_RESIZE,
+   GFX_CTL_GET_VIDEO_SIZE
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -272,8 +273,6 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
  **/
 const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *ident,
       enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx);
-
-void gfx_ctx_get_video_size(unsigned *width, unsigned *height);
 
 bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data);
 

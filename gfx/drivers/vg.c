@@ -101,7 +101,13 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    gfx_ctx_ctl(GFX_CTL_SET, ctx);
 
-   gfx_ctx_get_video_size(&temp_width, &temp_height);
+   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+
+   temp_width  = mode.width;
+   temp_height = mode.height;
+   mode.width  = 0;
+   mode.height = 0;
+
    RARCH_LOG("Detecting screen resolution %ux%u.\n", temp_width, temp_height);
 
    if (temp_width != 0 && temp_height != 0)
@@ -136,7 +142,16 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    temp_width  = 0;
    temp_height = 0;
-   gfx_ctx_get_video_size(&temp_width, &temp_height);
+   mode.width  = 0;
+   mode.height = 0;
+
+   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+
+   temp_width  = mode.width;
+   temp_height = mode.height;
+   mode.width  = 0;
+   mode.height = 0;
+
    vg->should_resize = true;
 
    if (temp_width != 0 && temp_height != 0)

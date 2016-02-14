@@ -540,10 +540,16 @@ void d3d_make_d3dpp(void *data,
    if (!d3dpp->Windowed)
    {
 #ifdef _XBOX
+      gfx_ctx_mode_t mode;
       unsigned width          = 0;
       unsigned height         = 0;
 
-      gfx_ctx_get_video_size(&width, &height);
+      gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+
+      width                   = mode.width;
+      height                  = mode.height;
+      mode.width              = 0;
+      mode.height             = 0;
       video_driver_set_size(&width, &height);
 #endif
       video_driver_get_size(&d3dpp->BackBufferWidth, &d3dpp->BackBufferHeight);
@@ -1012,7 +1018,14 @@ static bool d3d_construct(d3d_video_t *d3d,
          (int)(mon_rect.right  - mon_rect.left),
          (int)(mon_rect.bottom - mon_rect.top));
 #else
-   gfx_ctx_get_video_size(&full_x, &full_y);
+   {
+      gfx_ctx_mode_t mode;
+
+      gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+
+      full_x   = mode.width;
+      full_y   = mode.height;
+   }
 #endif
    {
       unsigned new_width  = info->fullscreen ? full_x : info->width;
