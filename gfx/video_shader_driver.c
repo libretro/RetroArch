@@ -220,7 +220,6 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
          if (!current_shader || !current_shader->get_feedback_pass)
             return false;
          return current_shader->get_feedback_pass(shader_data, (unsigned*)data);
-         break;
       case SHADER_CTL_NONE:
       default:
          break;
