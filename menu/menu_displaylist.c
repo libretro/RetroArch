@@ -2569,10 +2569,10 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
 {
    size_t i;
    menu_ctx_displaylist_t disp_list;
-   int ret                     = 0;
 #ifdef HAVE_SHADER_MANAGER
-   struct video_shader *shader = NULL;
+   video_shader_ctx_t shader_info;
 #endif
+   int ret                     = 0;
    rarch_system_info_t *system = NULL;
    core_info_list_t *list      = NULL;
    menu_handle_t       *menu   = NULL;
@@ -3014,11 +3014,13 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
 #ifdef HAVE_SHADER_MANAGER
-         shader = video_shader_driver_get_current_shader();
-         if (shader)
-            ret = deferred_push_video_shader_parameters_common(info, shader,
+         video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+
+         if (shader_info.data)
+            ret = deferred_push_video_shader_parameters_common(info, shader_info.data,
                   (type == DISPLAYLIST_SHADER_PARAMETERS)
-                  ? MENU_SETTINGS_SHADER_PARAMETER_0 : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
+                  ? MENU_SETTINGS_SHADER_PARAMETER_0 
+                  : MENU_SETTINGS_SHADER_PRESET_PARAMETER_0
                   );
          else
          {

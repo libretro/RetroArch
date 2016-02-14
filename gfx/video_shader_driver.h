@@ -70,6 +70,7 @@ enum video_shader_driver_ctl_state
    SHADER_CTL_FILTER_TYPE,
    SHADER_CTL_USE,
    SHADER_CTL_WRAP_TYPE,
+   SHADER_CTL_GET_CURRENT_SHADER,
    SHADER_CTL_DIRECT_GET_CURRENT_SHADER
 };
 
@@ -189,8 +190,6 @@ extern const shader_backend_t shader_null_backend;
  * Returns: shader context driver if found, otherwise NULL.
  **/
 const shader_backend_t *shader_ctx_find_driver(const char *ident);
-
-struct video_shader *video_shader_driver_get_current_shader(void);
 
 const char *video_shader_driver_get_ident(void);
 

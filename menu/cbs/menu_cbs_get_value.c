@@ -252,20 +252,20 @@ static void menu_action_setting_disp_set_label_shader_parameter(
       char *s2, size_t len2)
 {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
+   video_shader_ctx_t shader_info;
    const struct video_shader_parameter *param = NULL;
-   struct video_shader *shader = NULL;
 #endif
    *s = '\0';
    *w = 19;
    strlcpy(s2, path, len2);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   shader = video_shader_driver_get_current_shader();
+   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
 
-   if (!shader)
+   if (!shader_info.data)
       return;
 
-   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
+   param = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
 
    if (!param)
       return;

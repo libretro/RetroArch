@@ -58,18 +58,6 @@ const shader_backend_t *shader_ctx_find_driver(const char *ident)
    return NULL;
 }
 
-struct video_shader *video_shader_driver_get_current_shader(void)
-{
-   void *video_driver                       = video_driver_get_ptr(false);
-   const video_poke_interface_t *video_poke = video_driver_get_poke();
-   if (!video_poke || !video_driver)
-      return NULL;
-   if (!video_poke->get_current_shader)
-      return NULL;
-   return video_poke->get_current_shader(video_driver);
-}
-
-
 const char *video_shader_driver_get_ident(void)
 {
    if (!current_shader)
@@ -88,6 +76,20 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
 {
    switch (state)
    {
+      case SHADER_CTL_GET_CURRENT_SHADER:
+         {
+            video_shader_ctx_t *shader = (video_shader_ctx_t*)data;
+            void *video_driver                       = video_driver_get_ptr(false);
+            const video_poke_interface_t *video_poke = video_driver_get_poke();
+
+            shader->data = NULL;
+            if (!video_poke || !video_driver)
+               return false;
+            if (!video_poke->get_current_shader)
+               return false;
+            shader->data = video_poke->get_current_shader(video_driver);
+         }
+         break;
       case SHADER_CTL_DIRECT_GET_CURRENT_SHADER:
          {
             video_shader_ctx_t *shader = (video_shader_ctx_t*)data;

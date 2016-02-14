@@ -114,13 +114,16 @@ static int action_start_input_desc(unsigned type, const char *label)
 static int action_start_shader_action_parameter(unsigned type, const char *label)
 {
 #ifdef HAVE_SHADER_MANAGER
+   video_shader_ctx_t shader_info;
    struct video_shader_parameter *param = NULL;
-   struct video_shader *shader = video_shader_driver_get_current_shader();
 
-   if (!shader)
+   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+
+   if (!shader_info.data)
       return 0;
 
-   param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
+   param          = &shader_info.data->parameters
+      [type - MENU_SETTINGS_SHADER_PARAMETER_0];
    param->current = param->initial;
    param->current = min(max(param->minimum, param->current), param->maximum);
 

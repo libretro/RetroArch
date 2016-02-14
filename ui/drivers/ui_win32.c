@@ -118,13 +118,18 @@ static shader_dlg_t g_shader_dlg = {0};
 
 static void shader_dlg_refresh_trackbar_label(int index)
 {
+   video_shader_ctx_t shader_info;
    char val_buffer[32]         = {0};
-   struct video_shader* shader = video_shader_driver_get_current_shader();
 
-   if (floorf(shader->parameters[index].current) == shader->parameters[index].current)
-      snprintf(val_buffer, sizeof(val_buffer), "%.0f", shader->parameters[index].current);
+   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+
+   if (floorf(shader_info.data->parameters[index].current) 
+         == shader_info.data->parameters[index].current)
+      snprintf(val_buffer, sizeof(val_buffer), "%.0f",
+            shader_info.data->parameters[index].current);
    else
-      snprintf(val_buffer, sizeof(val_buffer), "%.2f", shader->parameters[index].current);
+      snprintf(val_buffer, sizeof(val_buffer), "%.2f",
+            shader_info.data->parameters[index].current);
 
    SendMessage(g_shader_dlg.controls[index].trackbar.label_val, WM_SETTEXT, 0, (LPARAM)val_buffer);
 
@@ -133,7 +138,9 @@ static void shader_dlg_refresh_trackbar_label(int index)
 static void shader_dlg_params_refresh(void)
 {
    int i;
-   struct video_shader* shader = video_shader_driver_get_current_shader();
+   video_shader_ctx_t shader_info;
+
+   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
 
    for (i = 0; i < GFX_MAX_PARAMETERS; i++)
    {
@@ -146,7 +153,9 @@ static void shader_dlg_params_refresh(void)
       {
          case SHADER_PARAM_CTRL_CHECKBOX:
             {
-               bool checked = (shader->parameters[i].current == shader->parameters[i].maximum);
+               bool checked = 
+                  (shader_info.data->parameters[i].current == 
+                   shader_info.data->parameters[i].maximum);
                SendMessage(control->checkbox.hwnd, BM_SETCHECK, checked, 0);
             }
             break;
@@ -155,9 +164,13 @@ static void shader_dlg_params_refresh(void)
 
             SendMessage(control->trackbar.hwnd, TBM_SETRANGEMIN, (WPARAM)TRUE, (LPARAM)0);
             SendMessage(control->trackbar.hwnd, TBM_SETRANGEMAX, (WPARAM)TRUE,
-                  (LPARAM)((shader->parameters[i].maximum - shader->parameters[i].minimum) / shader->parameters[i].step));
+                  (LPARAM)((shader_info.data->parameters[i].maximum - 
+                        shader_info.data->parameters[i].minimum) 
+                     / shader_info.data->parameters[i].step));
             SendMessage(control->trackbar.hwnd, TBM_SETPOS, (WPARAM)TRUE,
-                  (LPARAM)((shader->parameters[i].current - shader->parameters[i].minimum) / shader->parameters[i].step));
+                  (LPARAM)((shader_info.data->parameters[i].current - 
+                        shader_info.data->parameters[i].minimum) / 
+                     shader_info.data->parameters[i].step));
             break;
          case SHADER_PARAM_CTRL_NONE:
          default:
@@ -200,25 +213,28 @@ void shader_dlg_params_reload(void)
    HFONT hFont;
    RECT parent_rect;
    int i, pos_x, pos_y;
-   struct video_shader* shader = video_shader_driver_get_current_shader();
+   video_shader_ctx_t shader_info;
+
+   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
 
    shader_dlg_params_clear();
 
-   if (!shader)
+   if (!shader_info.data)
       return;
-   if (shader->num_parameters > GFX_MAX_PARAMETERS)
+   if (shader_info.data->num_parameters > GFX_MAX_PARAMETERS)
       return;
 
    hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
    pos_y = g_shader_dlg.parameters_start_y;
    pos_x = SHADER_DLG_CTRL_X;
 
-   for (i = 0; i < (int)shader->num_parameters; i++)
+   for (i = 0; i < (int)shader_info.data->num_parameters; i++)
    {
       shader_param_ctrl_t*control = &g_shader_dlg.controls[i];
 
-      if ((shader->parameters[i].minimum == 0.0)
-            && (shader->parameters[i].maximum == (shader->parameters[i].minimum + shader->parameters[i].step)))
+      if ((shader_info.data->parameters[i].minimum == 0.0)
+            && (shader_info.data->parameters[i].maximum 
+               == (shader_info.data->parameters[i].minimum + shader_info.data->parameters[i].step)))
       {
          if ((pos_y + SHADER_DLG_CHECKBOX_HEIGHT + SHADER_DLG_CTRL_MARGIN + 20) > SHADER_DLG_MAX_HEIGHT)
          {
@@ -227,7 +243,7 @@ void shader_dlg_params_reload(void)
          }
 
          control->type          = SHADER_PARAM_CTRL_CHECKBOX;
-         control->checkbox.hwnd = CreateWindowEx(0, "BUTTON", shader->parameters[i].desc,
+         control->checkbox.hwnd = CreateWindowEx(0, "BUTTON", shader_info.data->parameters[i].desc,
                WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, pos_x, pos_y, SHADER_DLG_CTRL_WIDTH, SHADER_DLG_CHECKBOX_HEIGHT,
                g_shader_dlg.hwnd, (HMENU)(size_t)i, NULL, NULL);
          SendMessage(control->checkbox.hwnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
@@ -243,7 +259,7 @@ void shader_dlg_params_reload(void)
          }
 
          control->type                 = SHADER_PARAM_CTRL_TRACKBAR;
-         control->trackbar.label_title = CreateWindowEx(0, "STATIC", shader->parameters[i].desc,
+         control->trackbar.label_title = CreateWindowEx(0, "STATIC", shader_info.data->parameters[i].desc,
                WS_CHILD | WS_VISIBLE | SS_LEFT, pos_x, pos_y, SHADER_DLG_CTRL_WIDTH, SHADER_DLG_LABEL_HEIGHT, g_shader_dlg.hwnd,
                (HMENU)(size_t)i, NULL, NULL);
          SendMessage(control->trackbar.label_title, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
@@ -318,7 +334,9 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    int i, pos;
-   struct video_shader* shader = video_shader_driver_get_current_shader();
+   video_shader_ctx_t shader_info;
+
+   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
 
    switch (message)
    {
@@ -347,9 +365,9 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
             break;
 
          if (SendMessage(g_shader_dlg.controls[i].checkbox.hwnd, BM_GETCHECK, 0, 0) == BST_CHECKED)
-            shader->parameters[i].current = shader->parameters[i].maximum;
+            shader_info.data->parameters[i].current = shader_info.data->parameters[i].maximum;
          else
-            shader->parameters[i].current = shader->parameters[i].minimum;
+            shader_info.data->parameters[i].current = shader_info.data->parameters[i].minimum;
 
          break;
 
@@ -363,7 +381,8 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
             break;
 
          pos = (int)SendMessage(g_shader_dlg.controls[i].trackbar.hwnd, TBM_GETPOS, 0, 0);
-         shader->parameters[i].current = shader->parameters[i].minimum + pos * shader->parameters[i].step;
+         shader_info.data->parameters[i].current = 
+            shader_info.data->parameters[i].minimum + pos * shader_info.data->parameters[i].step;
 
          shader_dlg_refresh_trackbar_label(i);
          break;

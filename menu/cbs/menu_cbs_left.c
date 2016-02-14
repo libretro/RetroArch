@@ -52,9 +52,13 @@ static int generic_shader_action_parameter_left(
 static int shader_action_parameter_left(unsigned type, const char *label,
       bool wraparound)
 {
-   struct video_shader          *shader = video_shader_driver_get_current_shader();
-   struct video_shader_parameter *param = &shader->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
-   return generic_shader_action_parameter_left(shader, param, type, label, wraparound);
+   video_shader_ctx_t shader_info;
+   struct video_shader_parameter *param = NULL;
+
+   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+
+   param = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
+   return generic_shader_action_parameter_left(shader_info.data, param, type, label, wraparound);
 }
 
 static int shader_action_parameter_preset_left(unsigned type, const char *label,
