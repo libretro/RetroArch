@@ -474,34 +474,6 @@ int width = 0, height = 0;
 struct zr_user_font usrfnt;
 struct zr_allocator alloc;
 
-void init()
-{
-   settings_t *settings = config_get_ptr();   
-   fill_pathname_join(font_path, settings->assets_directory,
-         "wimp", sizeof(font_path));
-   printf("Font: \n%s\n\n\n",settings->assets_directory);
-   fill_pathname_join(font_path, font_path,
-         "Roboto-Regular.ttf", sizeof(font_path));
-   printf("Font: %s\n\n\n\n",font_path);
-}
-
-void zdraw(int width, int height)
-{
-   /* OpenGL */
-   glViewport(0, 0, width, height);
-   alloc.userdata.ptr = NULL;
-   alloc.alloc = mem_alloc;
-   alloc.free = mem_free;
-   zr_buffer_init(&device.cmds, &alloc, 1024);
-   usrfnt = font_bake_and_upload(&device, &font, font_path, 14,
-        zr_font_default_glyph_ranges());
-   zr_init(&gui.ctx, &alloc, &usrfnt);
-   device_init(&device);
-   run_demo(&gui);
-   glViewport(0, 0, width, height);
-   device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
-}
-
 enum
 {
    wimp_TEXTURE_POINTER = 0,
@@ -1332,8 +1304,6 @@ static void wimp_frame(void *data)
       }
    }
 
-   zdraw(width, height);
-
    menu_entries_get_title(title, sizeof(title));
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
@@ -1449,6 +1419,19 @@ static void wimp_frame(void *data)
       wimp_draw_cursor(wimp, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
+   glViewport(0, 0, width, height);
+   alloc.userdata.ptr = NULL;
+   alloc.alloc = mem_alloc;
+   alloc.free = mem_free;
+   zr_buffer_init(&device.cmds, &alloc, 1024);
+   usrfnt = font_bake_and_upload(&device, &font, font_path, 14,
+        zr_font_default_glyph_ranges());
+   zr_init(&gui.ctx, &alloc, &usrfnt);
+   device_init(&device);
+   run_demo(&gui);
+   glViewport(0, 0, width, height);
+   device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
+
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
@@ -1558,7 +1541,11 @@ static void *wimp_init(void **userdata)
    wimp_layout(wimp);
    wimp_allocate_white_texture(wimp);
 
-   init();
+   settings_t *settings = config_get_ptr();   
+   fill_pathname_join(font_path, settings->assets_directory,
+         "wimp", sizeof(font_path));
+   fill_pathname_join(font_path, font_path,
+         "Roboto-Regular.ttf", sizeof(font_path));
 
    return menu;
 error:
