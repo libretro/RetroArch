@@ -135,7 +135,7 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    mode.height     = win_height;
    mode.fullscreen = video->fullscreen;
 
-   if !(gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode))
+   if (!gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode))
       goto error;
 
    video_driver_get_size(&temp_width, &temp_height);
