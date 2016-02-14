@@ -82,10 +82,10 @@ struct wimp {
    struct zr_memory_status status;
 };
 
-static void wimp_demo(struct zr_context *ctx)
+static void wimp_main(struct zr_context *ctx, int width, int height)
 {
     struct zr_panel layout;
-    if (zr_begin(ctx, &layout, "Show", zr_rect(100, 100, 200, 200),
+    if (zr_begin(ctx, &layout, "Show", zr_rect(width / 2, 0, width/2, height),
         ZR_WINDOW_BORDER|ZR_WINDOW_MOVABLE|ZR_WINDOW_SCALABLE|
         ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_TITLE))
     {
@@ -109,7 +109,7 @@ static void wimp_demo(struct zr_context *ctx)
    zr_end(ctx);
 }
 
-static int run_demo(struct wimp *gui)
+static int wimp_start(struct wimp *gui, int width, int height)
 {
    int ret = 1;
    static int init = 0;
@@ -119,7 +119,7 @@ static int run_demo(struct wimp *gui)
      init = 1;
    }
 
-   wimp_demo(ctx);
+   wimp_main(ctx, width, height);
    zr_buffer_info(&gui->status, &gui->ctx.memory);
    return ret;
 }
@@ -1406,7 +1406,7 @@ static void wimp_frame(void *data)
         zr_font_default_glyph_ranges());
    zr_init(&gui.ctx, &alloc, &usrfnt);
    device_init(&device);
-   run_demo(&gui);
+   wimp_start(&gui, width, height);
    glViewport(0, 0, width, height);
    device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
    /* zahnrad code */
