@@ -2654,6 +2654,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    video_shader_ctx_wrap_t wrap_info;
    video_shader_ctx_filter_t shader_filter;
    video_shader_ctx_info_t shader_info;
+   video_shader_ctx_ident_t ident_info;
    unsigned win_width, win_height, temp_width = 0, temp_height = 0;
    bool force_smooth                  = false;
    const char *vendor                 = NULL;
@@ -2792,8 +2793,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!video_shader_driver_ctl(SHADER_CTL_INIT_FIRST, NULL))
       goto error;
 
-   RARCH_LOG("[GL]: Default shader backend found: %s.\n",
-         video_shader_driver_get_ident());
+   video_shader_driver_ctl(SHADER_CTL_GET_IDENT, &ident_info);
+
+   RARCH_LOG("[GL]: Default shader backend found: %s.\n", ident_info.ident);
 
    if (!gl_shader_init(gl))
    {

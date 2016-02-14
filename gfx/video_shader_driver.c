@@ -58,13 +58,6 @@ const shader_backend_t *shader_ctx_find_driver(const char *ident)
    return NULL;
 }
 
-const char *video_shader_driver_get_ident(void)
-{
-   if (!current_shader)
-      return NULL;
-   return current_shader->ident;
-}
-
 unsigned video_shader_driver_get_prev_textures(void)
 {
    if (!current_shader)
@@ -76,6 +69,14 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
 {
    switch (state)
    {
+      case SHADER_CTL_GET_IDENT:
+         {
+            video_shader_ctx_ident_t *ident = (video_shader_ctx_ident_t*)data;
+            if (!current_shader || !ident)
+               return false;
+            ident->ident = current_shader->ident;
+         }
+         break;
       case SHADER_CTL_GET_CURRENT_SHADER:
          {
             video_shader_ctx_t *shader = (video_shader_ctx_t*)data;
