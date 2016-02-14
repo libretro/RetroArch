@@ -83,13 +83,6 @@ const char *video_shader_driver_get_ident(void)
    return current_shader->ident;
 }
 
-unsigned video_shader_driver_num_shaders(void)
-{
-   if (!current_shader)
-      return 0;
-   return current_shader->num_shaders(shader_data);
-}
-
 unsigned video_shader_driver_get_prev_textures(void)
 {
    if (!current_shader)
@@ -223,6 +216,17 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
                return false;
 
             current_shader->shader_scale(shader_data, scaler->idx, scaler->scale);
+         }
+         break;
+      case SHADER_CTL_INFO:
+         {
+            video_shader_ctx_info_t *shader_info = (video_shader_ctx_info_t*)data;
+            if (!shader_info || !current_shader)
+               return false;
+
+            shader_info->num = 0;
+            if (current_shader->num_shaders)
+               shader_info->num = current_shader->num_shaders(shader_data);
          }
          break;
       case SHADER_CTL_NONE:

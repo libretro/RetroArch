@@ -657,9 +657,13 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
    int i;
    unsigned width, height;
    video_shader_ctx_scale_t scaler;
+   video_shader_ctx_info_t shader_info;
    struct gfx_fbo_scale scale, scale_last;
 
-   if (!gl || video_shader_driver_num_shaders() == 0)
+   if (!video_shader_driver_ctl(SHADER_CTL_INFO, &shader_info))
+      return;
+
+   if (!gl || shader_info.num == 0)
       return;
 
    video_driver_get_size(&width, &height);
@@ -669,13 +673,13 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
 
    video_shader_driver_ctl(SHADER_CTL_SCALE, &scaler);
 
-   scaler.idx   = video_shader_driver_num_shaders();
+   scaler.idx   = shader_info.num;
    scaler.scale = &scale_last;
 
    video_shader_driver_ctl(SHADER_CTL_SCALE, &scaler);
 
    /* we always want FBO to be at least initialized on startup for consoles */
-   if (video_shader_driver_num_shaders() == 1 && !scale.valid)
+   if (shader_info.num == 1 && !scale.valid)
       return;
 
    if (!gl_check_fbo_proc(gl))
@@ -684,7 +688,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
       return;
    }
 
-   gl->fbo_pass = video_shader_driver_num_shaders() - 1;
+   gl->fbo_pass = shader_info.num - 1;
    if (scale_last.valid)
       gl->fbo_pass++;
 
@@ -2598,6 +2602,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned interval, mip_level;
+   video_shader_ctx_info_t shader_info;
    unsigned win_width, win_height, temp_width = 0, temp_height = 0;
    bool force_smooth                  = false;
    const char *vendor                 = NULL;
@@ -2750,9 +2755,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->textures     = max(minimum + 1, gl->textures);
    }
 
+   if (!video_shader_driver_ctl(SHADER_CTL_INFO, &shader_info))
+      goto error;
+
    RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
    RARCH_LOG("[GL]: Loaded %u program(s).\n",
-         video_shader_driver_num_shaders());
+         shader_info.num);
 
    gl->tex_w = gl->tex_h = (RARCH_SCALE_BASE * video->input_scale);
    gl->keep_aspect     = video->force_aspect;
