@@ -272,7 +272,8 @@ static void gfx_ctx_wgl_update_window_title(void *data)
       runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
-static void gfx_ctx_wgl_get_video_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_wgl_get_video_size(void *data,
+      unsigned *width, unsigned *height)
 {
    (void)data;
    HWND         window  = win32_get_window();
@@ -366,7 +367,8 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
       goto error;
 
-   p_swap_interval = (BOOL (APIENTRY *)(int))wglGetProcAddress("wglSwapIntervalEXT");
+   p_swap_interval = (BOOL (APIENTRY *)(int))
+      wglGetProcAddress("wglSwapIntervalEXT");
 
    gfx_ctx_wgl_swap_interval(data, g_interval);
 

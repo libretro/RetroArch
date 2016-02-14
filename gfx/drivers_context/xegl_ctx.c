@@ -50,7 +50,8 @@ static void gfx_ctx_xegl_destroy(void *data)
    if (g_x11_win)
    {
       /* Save last used monitor for later. */
-      x11_save_last_used_monitor(RootWindow(g_x11_dpy, DefaultScreen(g_x11_dpy)));
+      x11_save_last_used_monitor(RootWindow(
+               g_x11_dpy, DefaultScreen(g_x11_dpy)));
       x11_window_destroy(false);
    }
 
@@ -271,9 +272,11 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    if (!vi)
       goto error;
 
-   swa.colormap = g_x11_cmap = XCreateColormap(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
+   swa.colormap = g_x11_cmap = XCreateColormap(
+         g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
          vi->visual, AllocNone);
-   swa.event_mask = StructureNotifyMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | KeyReleaseMask;
+   swa.event_mask = StructureNotifyMask | KeyPressMask | 
+      ButtonPressMask | ButtonReleaseMask | KeyReleaseMask;
    swa.override_redirect = fullscreen ? True : False;
 
    if (fullscreen && !windowed_full)
@@ -296,7 +299,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       unsigned new_width  = width;
       unsigned new_height = height;
 
-      if (x11_get_xinerama_coord(g_x11_dpy, g_x11_screen, &x_off, &y_off, &new_width, &new_height))
+      if (x11_get_xinerama_coord(g_x11_dpy, g_x11_screen,
+               &x_off, &y_off, &new_width, &new_height))
          RARCH_LOG("[X/EGL]: Using Xinerama on screen #%u.\n", g_x11_screen);
       else
          RARCH_LOG("[X/EGL]: Xinerama is not active on screen.\n");
@@ -315,7 +319,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    g_x11_win = XCreateWindow(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
          x_off, y_off, width, height, 0,
          vi->depth, InputOutput, vi->visual, 
-         CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
+         CWBorderPixel | CWColormap | CWEventMask | 
+         (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
    if (!egl_create_context(xegl, (attr != egl_attribs) ? egl_attribs : NULL))
@@ -440,20 +445,20 @@ static bool gfx_ctx_xegl_bind_api(void *video_driver,
 {
    g_egl_major  = major;
    g_egl_minor  = minor;
-   g_egl_api = api;
+   g_egl_api    = api;
 
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
 #ifndef EGL_KHR_create_context
          if ((major * 1000 + minor) >= 3001)
-            return false;
+            break;
 #endif
          return eglBindAPI(EGL_OPENGL_API);
       case GFX_CTX_OPENGL_ES_API:
 #ifndef EGL_KHR_create_context
          if (major >= 3)
-            return false;
+            break;
 #endif
          return eglBindAPI(EGL_OPENGL_ES_API);
       case GFX_CTX_OPENVG_API:
