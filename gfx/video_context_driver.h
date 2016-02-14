@@ -82,7 +82,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_IDENT_GET,
    GFX_CTL_SET_VIDEO_MODE,
    GFX_CTL_SET_RESIZE,
-   GFX_CTL_GET_VIDEO_SIZE
+   GFX_CTL_GET_VIDEO_SIZE,
+   GFX_CTL_SET_VIDEO_CONTEXT_DATA
 };
 
 typedef void (*gfx_ctx_proc_t)(void);

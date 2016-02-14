@@ -80,8 +80,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
-static const gfx_ctx_driver_t  *current_video_context;
-static        void *video_context_data;
 
 /**
  * find_gfx_ctx_driver_index:
@@ -180,7 +178,7 @@ static const gfx_ctx_driver_t *gfx_ctx_init(void *data,
          ctx->bind_hw_render(ctx_data,
                settings->video.shared_context && hw_render_ctx);
 
-      video_context_data = ctx_data;
+      gfx_ctx_ctl(GFX_CTL_SET_VIDEO_CONTEXT_DATA, ctx_data);
       return ctx;
    }
 
@@ -254,6 +252,9 @@ const gfx_ctx_driver_t *gfx_ctx_init_first(void *data,
 
 bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
+   static const gfx_ctx_driver_t *current_video_context = NULL;
+   static void *video_context_data                      = NULL;
+
    switch (state)
    {
       case GFX_CTL_CHECK_WINDOW:
@@ -431,6 +432,9 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
                return false;
             current_video_context->get_video_size(video_context_data, &mode_info->width, &mode_info->height);
          }
+         break;
+      case GFX_CTL_SET_VIDEO_CONTEXT_DATA:
+         video_context_data = data;
          break;
       case GFX_CTL_NONE:
       default:
