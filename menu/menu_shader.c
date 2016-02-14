@@ -70,11 +70,13 @@ void menu_shader_manager_init(menu_handle_t *menu)
    }
    else
    {
-      strlcpy(menu->default_glslp, "menu.glslp", sizeof(menu->default_glslp));
-      strlcpy(menu->default_cgp, "menu.cgp", sizeof(menu->default_cgp));
+      strlcpy(menu->default_glslp, "menu.glslp",
+            sizeof(menu->default_glslp));
+      strlcpy(menu->default_cgp, "menu.cgp",
+            sizeof(menu->default_cgp));
    }
 
-   ext = path_get_extension(settings->video.shader_path);
+   ext      = path_get_extension(settings->video.shader_path);
    ext_hash = menu_hash_calculate(ext);
 
    switch (ext_hash)
@@ -86,7 +88,8 @@ void menu_shader_manager_init(menu_handle_t *menu)
          {
             if (video_shader_read_conf_cgp(conf, shader))
             {
-               video_shader_resolve_relative(shader, settings->video.shader_path);
+               video_shader_resolve_relative(shader,
+                     settings->video.shader_path);
                video_shader_resolve_parameters(conf, shader);
             }
             config_file_free(conf);
@@ -153,13 +156,12 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
 
    /* Makes sure that we use Menu Preset shader on driver reinit.
     * Only do this when the cgp actually works to avoid potential errors. */
-   strlcpy(settings->video.shader_path, preset_path ? preset_path : "",
+   strlcpy(settings->video.shader_path,
+         preset_path ? preset_path : "",
          sizeof(settings->video.shader_path));
    settings->video.shader_enable = true;
 
-   if (!preset_path)
-      return;
-   if (!shader)
+   if (!preset_path || !shader)
       return;
 
    /* Load stored Preset into menu on success. 
@@ -232,7 +234,8 @@ void menu_shader_manager_save_preset(
       strlcpy(buffer, basename, sizeof(buffer));
 
       /* Append extension automatically as appropriate. */
-      if (!strstr(basename, ".cgp") && !strstr(basename, ".glslp"))
+      if (     !strstr(basename, ".cgp") 
+            && !strstr(basename, ".glslp"))
       {
          switch (type)
          {
@@ -269,7 +272,9 @@ void menu_shader_manager_save_preset(
       if (!*dirs[d])
          continue;
 
-      fill_pathname_join(preset_path, dirs[d], buffer, sizeof(preset_path));
+      fill_pathname_join(preset_path, dirs[d],
+            buffer, sizeof(preset_path));
+
       if (config_file_write(conf, preset_path))
       {
          RARCH_LOG("Saved shader preset to %s.\n", preset_path);
