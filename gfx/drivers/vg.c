@@ -308,7 +308,7 @@ static void vg_copy_frame(void *data, const void *frame,
       img_info.pitch  = pitch;
       img_info.rgb32  = (vg->mTexType == VG_sXRGB_8888);
       img_info.index  = 0;
-      img_info        = &img;
+      img_info.handle = &img;
       
       new_egl         = gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_WRITE, &img_info);
       

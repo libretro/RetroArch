@@ -1348,7 +1348,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    /* Use regular textures if we use HW render. */
    gl->egl_images = !gl->hw_render_use && gl_check_eglimage_proc() &&
-      gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_INIT, video);
+      gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_INIT, (void*)video);
 #else
    (void)video;
 #endif
@@ -1424,7 +1424,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       img_info.pitch  = pitch;
       img_info.index  = gl->tex_index;
       img_info.rgb32  = (gl->base_size == 4);
-      img_info        = &img;
+      img_info.handle = &img;
 
       new_egl = gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_WRITE, &img_info);
 
