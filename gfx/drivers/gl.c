@@ -235,6 +235,7 @@ static bool gl_check_fbo_proc(gl_t *gl)
 
 static bool gl_shader_init(gl_t *gl)
 {
+   video_shader_ctx_init_t init_data;
    enum rarch_shader_type type;
    bool ret                        = false;
    const shader_backend_t *backend = NULL;
@@ -294,12 +295,21 @@ static bool gl_shader_init(gl_t *gl)
 #endif
 #endif
 
-   ret = video_shader_driver_init(backend, gl, shader_path);
+   init_data.shader = backend;
+   init_data.data   = gl;
+   init_data.path   = shader_path;
+
+   ret = video_shader_driver_ctl(SHADER_CTL_INIT, &init_data);
 
    if (!ret)
    {
       RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
-      ret = video_shader_driver_init(backend, gl, NULL);
+
+      init_data.shader = backend;
+      init_data.data   = gl;
+      init_data.path   = NULL;
+
+      ret = video_shader_driver_ctl(SHADER_CTL_INIT, &init_data);
    }
 
    return ret;
@@ -2897,6 +2907,7 @@ static bool gl_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
+   video_shader_ctx_init_t init_data;
    const shader_backend_t *shader = NULL;
    gl_t *gl = (gl_t*)data;
 
@@ -2940,9 +2951,15 @@ static bool gl_set_shader(void *data,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 #endif
 
-   if (!video_shader_driver_init(shader, gl, path))
+   init_data.shader = shader;
+   init_data.data   = gl;
+   init_data.path   = path;
+
+   if (!video_shader_driver_ctl(SHADER_CTL_INIT, &init_data))
    {
-      video_shader_driver_init(shader, gl, NULL);
+      init_data.path = NULL;
+
+      video_shader_driver_ctl(SHADER_CTL_INIT, &init_data);
 
       RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
 

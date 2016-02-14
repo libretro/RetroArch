@@ -80,25 +80,6 @@ void video_shader_driver_scale(unsigned idx, struct gfx_fbo_scale *scale)
       current_shader->shader_scale(shader_data, idx, scale);
 }
 
-bool video_shader_driver_init(const shader_backend_t *shader,
-      void *data, const char *path)
-{
-   void *tmp = NULL;
-
-   if (!shader || !shader->init)
-      return false;
-
-   tmp = shader->init(data, path);
-
-   if (!tmp)
-      return false;
-
-   shader_data    = tmp;
-   current_shader = shader;
-
-   return true;
-}
-
 void video_shader_driver_use(void *data, unsigned index)
 {
    if (!current_shader)
@@ -216,6 +197,23 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
             }
          }
          return false;
+      case SHADER_CTL_INIT:
+         {
+            video_shader_ctx_init_t *init = (video_shader_ctx_init_t*)data;
+            void *tmp = NULL;
+
+            if (!init->shader || !init->shader->init)
+               return false;
+
+            tmp = init->shader->init(init->data, init->path);
+
+            if (!tmp)
+               return false;
+
+            shader_data    = tmp;
+            current_shader = init->shader;
+         }
+         break;
       case SHADER_CTL_GET_FEEDBACK_PASS:
          if (!current_shader || !current_shader->get_feedback_pass)
             return false;

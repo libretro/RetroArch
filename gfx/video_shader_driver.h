@@ -34,6 +34,7 @@ enum video_shader_driver_ctl_state
 {
    SHADER_CTL_NONE = 0,
    SHADER_CTL_DEINIT,
+   SHADER_CTL_INIT,
    /* Finds first suitable shader context driver. */
    SHADER_CTL_INIT_FIRST,
    SHADER_CTL_SET_PARAMS,
@@ -75,6 +76,13 @@ typedef struct shader_backend
    /* Human readable string. */
    const char *ident;
 } shader_backend_t;
+
+typedef struct video_shader_ctx_init
+{
+   const shader_backend_t *shader;
+   void *data;
+   const char *path;
+} video_shader_ctx_init_t;
 
 typedef struct video_shader_ctx_params
 {
@@ -136,8 +144,6 @@ const shader_backend_t *shader_ctx_find_driver(const char *ident);
 
 struct video_shader *video_shader_driver_get_current_shader(void);
 
-bool video_shader_driver_init(const shader_backend_t *shader,
-      void *data, const char *path);
 
 void video_shader_driver_use(void *data, unsigned index);
 
