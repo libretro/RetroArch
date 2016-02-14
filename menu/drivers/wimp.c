@@ -131,7 +131,7 @@ static char* file_load(const char* path, size_t* siz)
 {
     char *buf;
     FILE *fd = fopen(path, "rb");
-    if (!fd) die("Failed to open file: %s\n", path);
+
     fseek(fd, 0, SEEK_END);
     *siz = (size_t)ftell(fd);
     fseek(fd, 0, SEEK_SET);
@@ -261,9 +261,6 @@ static struct zr_user_font font_bake_and_upload(struct device *dev, struct zr_fo
         const char *custom_data = "....";
         struct zr_font_config config;
         char *ttf_blob = file_load(path, &ttf_size);
-        if (!ttf_blob)
-            die("[Font]: %s is not a file or cannot be found!\n", path);
-
         /* setup font configuration */
         memset(&config, 0, sizeof(config));
         config.ttf_blob = ttf_blob;
@@ -284,8 +281,7 @@ static struct zr_user_font font_bake_and_upload(struct device *dev, struct zr_fo
 
         /* pack all glyphes and return needed image width, height and memory size*/
         custom.w = 2; custom.h = 2;
-        if (!zr_font_bake_pack(&img_size, &img_width,&img_height,&custom,tmp,tmp_size,&config, 1))
-            die("[Font]: failed to load font!\n");
+        zr_font_bake_pack(&img_size, &img_width,&img_height,&custom,tmp,tmp_size,&config, 1);
 
         /* bake all glyphes and custom white pixel into image */
         img = calloc(1, img_size);
