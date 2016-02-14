@@ -75,16 +75,15 @@
 
 enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK};
 
-struct demo {
+struct wimp {
     void *memory;
     struct zr_context ctx;
     enum theme theme;
     struct zr_memory_status status;
 };
-static void
-simple_window(struct zr_context *ctx)
+
+static void wimp_demo(struct zr_context *ctx)
 {
-    /* simple demo window */
     struct zr_panel layout;
     if (zr_begin(ctx, &layout, "Show", zr_rect(100, 100, 200, 200),
         ZR_WINDOW_BORDER|ZR_WINDOW_MOVABLE|ZR_WINDOW_SCALABLE|
@@ -108,8 +107,7 @@ simple_window(struct zr_context *ctx)
     zr_end(ctx);
 }
 
-static int
-run_demo(struct demo *gui)
+static int run_demo(struct wimp *gui)
 {
     int ret = 1;
     static int init = 0;
@@ -120,32 +118,16 @@ run_demo(struct demo *gui)
     }
 
     /* windows */
-    simple_window(ctx);
+    wimp_demo(ctx);
 
 //    ret = control_window(ctx, gui);
     zr_buffer_info(&gui->status, &gui->ctx.memory);
     return ret;
 }
 
-static struct demo gui;
-/* ==============================================================
- *
- *                      Utility
- *
- * ===============================================================*/
-static void
-die(const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-    fputs("\n", stderr);
-    exit(EXIT_FAILURE);
-}
+static struct wimp gui;
 
-static char*
-file_load(const char* path, size_t* siz)
+static char* file_load(const char* path, size_t* siz)
 {
     char *buf;
     FILE *fd = fopen(path, "rb");
@@ -177,8 +159,7 @@ struct device {
     GLuint font_tex;
 };
 
-static void
-device_init(struct device *dev)
+static void device_init(struct device *dev)
 {
     GLint status;
     static const GLchar *vertex_shader =
@@ -258,8 +239,7 @@ device_init(struct device *dev)
     glBindVertexArray(0);
 }
 
-static struct zr_user_font
-font_bake_and_upload(struct device *dev, struct zr_font *font,
+static struct zr_user_font font_bake_and_upload(struct device *dev, struct zr_font *font,
     const char *path, unsigned int font_height, const zr_rune *range)
 {
     int glyph_count;
@@ -346,8 +326,7 @@ font_bake_and_upload(struct device *dev, struct zr_font *font,
     return user_font;
 }
 
-static void
-device_shutdown(struct device *dev)
+static void device_shutdown(struct device *dev)
 {
     glDetachShader(dev->prog, dev->vert_shdr);
     glDetachShader(dev->prog, dev->frag_shdr);
@@ -359,8 +338,7 @@ device_shutdown(struct device *dev)
     glDeleteBuffers(1, &dev->ebo);
 }
 
-static void
-device_draw(struct device *dev, struct zr_context *ctx, int width, int height,
+static void device_draw(struct device *dev, struct zr_context *ctx, int width, int height,
     enum zr_anti_aliasing AA)
 {
     GLint last_prog, last_tex;
@@ -455,8 +433,7 @@ device_draw(struct device *dev, struct zr_context *ctx, int width, int height,
     glDisable(GL_SCISSOR_TEST);
 }
 
-static void
-error_callback(int error, const char *description)
+static void error_callback(int error, const char *description)
 {
     fprintf(stderr, "Error %d: %s\n", error, description);
 }
