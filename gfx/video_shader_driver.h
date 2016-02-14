@@ -66,6 +66,23 @@ typedef struct shader_backend
    const char *ident;
 } shader_backend_t;
 
+typedef struct video_shader_ctx_params
+{
+   void *data;
+   unsigned width;
+   unsigned height;
+   unsigned tex_width;
+   unsigned tex_height;
+   unsigned out_width;
+   unsigned out_height;
+   unsigned frame_counter;
+   const void *info;
+   const void *prev_info;
+   const void *feedback_info;
+   const void *fbo_info;
+   unsigned fbo_info_cnt;
+} video_shader_ctx_params_t;
+
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
@@ -145,15 +162,7 @@ bool video_shader_driver_get_feedback_pass(unsigned *pass);
 
 struct video_shader *video_shader_driver_direct_get_current_shader(void);
 
-void video_shader_driver_set_params( 
-      void *data, unsigned width, unsigned height, 
-      unsigned tex_width, unsigned tex_height, 
-      unsigned out_width, unsigned out_height,
-      unsigned frame_counter,
-      const void *info, 
-      const void *prev_info,
-      const void *feedback_info,
-      const void *fbo_info, unsigned fbo_info_cnt);
+void video_shader_driver_set_params(video_shader_ctx_params_t *params);
 
 #ifdef __cplusplus
 }

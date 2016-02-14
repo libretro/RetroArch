@@ -23,7 +23,7 @@
 
 static INLINE bool realloc_checked(void **ptr, size_t size)
 {
-   void *nptr;
+   void *nptr = NULL;
 
    if (*ptr)
       nptr = realloc(*ptr, size);
@@ -49,10 +49,14 @@ bool gfx_coord_array_add(gfx_coord_array_t *ca,
       unsigned alloc_size = next_pow2(ca->coords.vertices + count);
       size_t base_size    = sizeof(float) * alloc_size;
 
-      bool vert_ok        = realloc_checked((void**)&ca->coords.vertex,        2 * base_size);
-      bool color_ok       = realloc_checked((void**)&ca->coords.color,         4 * base_size);
-      bool tex_ok         = realloc_checked((void**)&ca->coords.tex_coord,     2 * base_size);
-      bool lut_ok         = realloc_checked((void**)&ca->coords.lut_tex_coord, 2 * base_size);
+      bool vert_ok        = realloc_checked((void**)&ca->coords.vertex,
+            2 * base_size);
+      bool color_ok       = realloc_checked((void**)&ca->coords.color,
+            4 * base_size);
+      bool tex_ok         = realloc_checked((void**)&ca->coords.tex_coord,
+            2 * base_size);
+      bool lut_ok         = realloc_checked((void**)&ca->coords.lut_tex_coord,
+            2 * base_size);
 
       if (vert_ok && color_ok && tex_ok && lut_ok)
       {
@@ -69,11 +73,19 @@ bool gfx_coord_array_add(gfx_coord_array_t *ca,
    base_size = count * sizeof(float);
    offset    = ca->coords.vertices;
 
-   /* XXX: i wish we used interlaced arrays so we could call memcpy only once */
-   memcpy(ca->coords.vertex        + offset * 2,        coords->vertex, base_size * 2);
-   memcpy(ca->coords.color         + offset * 4,         coords->color, base_size * 4);
-   memcpy(ca->coords.tex_coord     + offset * 2,     coords->tex_coord, base_size * 2);
-   memcpy(ca->coords.lut_tex_coord + offset * 2, coords->lut_tex_coord, base_size * 2);
+   /* XXX: I wish we used interlaced arrays so 
+    * we could call memcpy only once. */
+   memcpy(ca->coords.vertex        + offset * 2,
+         coords->vertex, base_size * 2);
+
+   memcpy(ca->coords.color         + offset * 4,
+         coords->color, base_size * 4);
+
+   memcpy(ca->coords.tex_coord     + offset * 2,
+         coords->tex_coord, base_size * 2);
+
+   memcpy(ca->coords.lut_tex_coord + offset * 2,
+         coords->lut_tex_coord, base_size * 2);
 
    ca->coords.vertices += count;
 

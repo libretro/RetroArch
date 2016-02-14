@@ -1112,6 +1112,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       const struct gfx_tex_info *tex_info,
       const struct gfx_tex_info *feedback_info)
 {
+   video_shader_ctx_params_t params;
    unsigned width, height;
    const struct gfx_fbo_rect *prev_rect;
    struct gfx_tex_info *fbo_info;
@@ -1130,6 +1131,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
     * and render all passes from FBOs, to another FBO. */
    for (i = 1; i < gl->fbo_pass; i++)
    {
+      video_shader_ctx_params_t params;
       const struct gfx_fbo_rect *rect = &gl->fbo_rect[i];
 
       prev_rect = &gl->fbo_rect[i - 1];
@@ -1160,12 +1162,22 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
       /* Render to FBO with certain size. */
       gl_set_viewport(gl, rect->img_width, rect->img_height, true, false);
-      video_shader_driver_set_params(gl,
-            prev_rect->img_width, prev_rect->img_height, 
-            prev_rect->width, prev_rect->height, 
-            gl->vp.width, gl->vp.height, (unsigned int)frame_count, 
-            tex_info, gl->prev_info, feedback_info, fbo_tex_info,
-            fbo_tex_info_cnt);
+
+      params.data          = gl;
+      params.width         = prev_rect->img_width;
+      params.height        = prev_rect->img_height;
+      params.tex_width     = prev_rect->width;
+      params.tex_height    = prev_rect->height;
+      params.out_width     = gl->vp.width;
+      params.out_height    = gl->vp.height;
+      params.frame_counter = (unsigned int)frame_count;
+      params.info          = tex_info;
+      params.prev_info     = gl->prev_info;
+      params.feedback_info = feedback_info;
+      params.fbo_info      = fbo_tex_info;
+      params.fbo_info_cnt  = fbo_tex_info_cnt;
+
+      video_shader_driver_set_params(&params);
 
       gl->coords.vertices = 4;
       video_shader_driver_set_coords(NULL, &gl->coords);
@@ -1208,12 +1220,21 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    glClear(GL_COLOR_BUFFER_BIT);
    gl_set_viewport(gl, width, height, false, true);
 
-   video_shader_driver_set_params(gl,
-         prev_rect->img_width, prev_rect->img_height, 
-         prev_rect->width, prev_rect->height, 
-         gl->vp.width, gl->vp.height, (unsigned int)frame_count, 
-         tex_info, gl->prev_info, feedback_info, fbo_tex_info,
-         fbo_tex_info_cnt);
+   params.data          = gl;
+   params.width         = prev_rect->img_width;
+   params.height        = prev_rect->img_height;
+   params.tex_width     = prev_rect->width;
+   params.tex_height    = prev_rect->height;
+   params.out_width     = gl->vp.width;
+   params.out_height    = gl->vp.height;
+   params.frame_counter = (unsigned int)frame_count;
+   params.info          = tex_info;
+   params.prev_info     = gl->prev_info;
+   params.feedback_info = feedback_info;
+   params.fbo_info      = fbo_tex_info;
+   params.fbo_info_cnt  = fbo_tex_info_cnt;
+
+   video_shader_driver_set_params(&params);
 
    gl->coords.vertex = gl->vertex_ptr;
 
@@ -1697,6 +1718,7 @@ static bool gl_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
+   video_shader_ctx_params_t params;
    bool is_slowmotion, is_paused;
    unsigned width, height;
    struct gfx_tex_info feedback_info;
@@ -1836,13 +1858,21 @@ static bool gl_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   video_shader_driver_set_params(gl,
-         frame_width, frame_height,
-         gl->tex_w, gl->tex_h,
-         gl->vp.width, gl->vp.height,
-         (unsigned int)frame_count, 
-         &gl->tex_info, gl->prev_info, &feedback_info,
-         NULL, 0);
+   params.data          = gl;
+   params.width         = frame_width;
+   params.height        = frame_height;
+   params.tex_width     = gl->tex_w;
+   params.tex_height    = gl->tex_h;
+   params.out_width     = gl->vp.width;
+   params.out_height    = gl->vp.height;
+   params.frame_counter = (unsigned int)frame_count;
+   params.info          = &gl->tex_info;
+   params.prev_info     = gl->prev_info;
+   params.feedback_info = &feedback_info;
+   params.fbo_info      = NULL;
+   params.fbo_info_cnt  = 0;
+
+   video_shader_driver_set_params(&params);
 
    gl->coords.vertices = 4;
    video_shader_driver_set_coords(NULL, &gl->coords);

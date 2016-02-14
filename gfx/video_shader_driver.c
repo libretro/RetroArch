@@ -206,22 +206,24 @@ struct video_shader *video_shader_driver_direct_get_current_shader(void)
    return current_shader->get_current_shader(shader_data);
 }
 
-void video_shader_driver_set_params( 
-      void *data, unsigned width, unsigned height, 
-      unsigned tex_width, unsigned tex_height, 
-      unsigned out_width, unsigned out_height,
-      unsigned frame_counter,
-      const void *info, 
-      const void *prev_info,
-      const void *feedback_info,
-      const void *fbo_info, unsigned fbo_info_cnt)
+void video_shader_driver_set_params(video_shader_ctx_params_t *params)
 {
    if (!current_shader || !current_shader->set_params)
       return;
 
-   current_shader->set_params(data, shader_data,
-         width, height, tex_width, tex_height,
-         out_width, out_height, frame_counter, info,
-         prev_info, feedback_info,
-         fbo_info, fbo_info_cnt);
+   current_shader->set_params(
+         params->data,
+         shader_data,
+         params->width,
+         params->height,
+         params->tex_width,
+         params->tex_height,
+         params->out_width,
+         params->out_height,
+         params->frame_counter,
+         params->info,
+         params->prev_info,
+         params->feedback_info,
+         params->fbo_info,
+         params->fbo_info_cnt);
 }
