@@ -72,7 +72,7 @@
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
 
-
+/* zahnrad code */
 enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK};
 
 struct wimp {
@@ -449,6 +449,7 @@ int width = 0, height = 0;
 
 struct zr_user_font usrfnt;
 struct zr_allocator alloc;
+/* zahnrad code */
 
 enum
 {
@@ -1395,6 +1396,7 @@ static void wimp_frame(void *data)
       wimp_draw_cursor(wimp, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
+   /* zahnrad code */
    glViewport(0, 0, width, height);
    alloc.userdata.ptr = NULL;
    alloc.alloc = mem_alloc;
@@ -1407,6 +1409,7 @@ static void wimp_frame(void *data)
    run_demo(&gui);
    glViewport(0, 0, width, height);
    device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
+   /* zahnrad code */
 
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
@@ -1497,6 +1500,7 @@ static void wimp_layout(wimp_handle_t *wimp)
 
 static void *wimp_init(void **userdata)
 {
+   settings_t *settings = config_get_ptr();
    wimp_handle_t   *wimp = NULL;
    menu_handle_t *menu = (menu_handle_t*)
       calloc(1, sizeof(*menu));
@@ -1517,11 +1521,14 @@ static void *wimp_init(void **userdata)
    wimp_layout(wimp);
    wimp_allocate_white_texture(wimp);
 
-   settings_t *settings = config_get_ptr();   
+   /* zahnrad code
+      just init the font_path variable for the
+      drawing function */
    fill_pathname_join(font_path, settings->assets_directory,
          "wimp", sizeof(font_path));
    fill_pathname_join(font_path, font_path,
          "Roboto-Regular.ttf", sizeof(font_path));
+   /* zahnrad code */
 
    return menu;
 error:
@@ -1536,12 +1543,13 @@ static void wimp_free(void *data)
 
    if (!wimp)
       return;
-      
-      
+
+   /* zahnrad code */
    free(font.glyphs);
    zr_free(&gui.ctx);
    zr_buffer_free(&device.cmds);
    device_shutdown(&device);
+   /* zahnrad code */
 
    gfx_coord_array_free(&wimp->list_block.carr);
 
