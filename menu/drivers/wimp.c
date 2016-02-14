@@ -429,11 +429,6 @@ static void device_draw(struct device *dev, struct zr_context *ctx, int width, i
     glDisable(GL_SCISSOR_TEST);
 }
 
-static void error_callback(int error, const char *description)
-{
-    fprintf(stderr, "Error %d: %s\n", error, description);
-}
-
 static void* mem_alloc(zr_handle unused, size_t size)
 {UNUSED(unused); return calloc(1, size);}
 static void mem_free(zr_handle unused, void *ptr)
@@ -1533,6 +1528,12 @@ static void wimp_free(void *data)
 
    if (!wimp)
       return;
+      
+      
+   free(font.glyphs);
+   zr_free(&gui.ctx);
+   zr_buffer_free(&device.cmds);
+   device_shutdown(&device);
 
    gfx_coord_array_free(&wimp->list_block.carr);
 
