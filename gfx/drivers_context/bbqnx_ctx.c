@@ -36,11 +36,12 @@
 
 screen_context_t screen_ctx;
 
-typedef struct {
-    egl_ctx_data_t egl;
-    screen_window_t screen_win;
-    screen_display_t screen_disp;
-    bool resize;
+typedef struct
+{
+   egl_ctx_data_t egl;
+   screen_window_t screen_win;
+   screen_display_t screen_disp;
+   bool resize;
 } qnx_ctx_data_t;
 
 static void gfx_ctx_qnx_destroy(void *data)
@@ -132,19 +133,22 @@ static void *gfx_ctx_qnx_init(void *video_driver)
       }
    }
 
-   if (screen_set_window_property_iv(qnx->screen_win, SCREEN_PROPERTY_FORMAT, &format))
+   if (screen_set_window_property_iv(qnx->screen_win,
+            SCREEN_PROPERTY_FORMAT, &format))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_FORMAT] failed.\n");
       goto error;
    }
 
-   if (screen_set_window_property_iv(qnx->screen_win, SCREEN_PROPERTY_USAGE, &usage))
+   if (screen_set_window_property_iv(qnx->screen_win,
+            SCREEN_PROPERTY_USAGE, &usage))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_USAGE] failed.\n");
       goto error;
    }
 
-   if (screen_get_window_property_pv(qnx->screen_win, SCREEN_PROPERTY_DISPLAY, (void **)&qnx->screen_disp))
+   if (screen_get_window_property_pv(qnx->screen_win,
+            SCREEN_PROPERTY_DISPLAY, (void **)&qnx->screen_disp))
    {
       RARCH_ERR("screen_get_window_property_pv [SCREEN_PROPERTY_DISPLAY] failed.\n");
       goto error;
@@ -152,7 +156,8 @@ static void *gfx_ctx_qnx_init(void *video_driver)
 
    int screen_resolution[2];
 
-   if (screen_get_display_property_iv(qnx->screen_disp, SCREEN_PROPERTY_SIZE, screen_resolution))
+   if (screen_get_display_property_iv(qnx->screen_disp,
+            SCREEN_PROPERTY_SIZE, screen_resolution))
    {
       RARCH_ERR("screen_get_window_property_iv [SCREEN_PROPERTY_SIZE] failed.\n");
       goto error;
@@ -162,13 +167,15 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    angle = atoi(getenv("ORIENTATION"));
 
    screen_display_mode_t screen_mode;
-   if (screen_get_display_property_pv(qnx->screen_disp, SCREEN_PROPERTY_MODE, (void**)&screen_mode))
+   if (screen_get_display_property_pv(qnx->screen_disp,
+            SCREEN_PROPERTY_MODE, (void**)&screen_mode))
    {
       RARCH_ERR("screen_get_display_property_pv [SCREEN_PROPERTY_MODE] failed.\n");
       goto error;
    }
 
-   if (screen_get_window_property_iv(qnx->screen_win, SCREEN_PROPERTY_BUFFER_SIZE, size))
+   if (screen_get_window_property_iv(qnx->screen_win,
+            SCREEN_PROPERTY_BUFFER_SIZE, size))
    {
       RARCH_ERR("screen_get_window_property_iv [SCREEN_PROPERTY_BUFFER_SIZE] failed.\n");
       goto error;
@@ -201,13 +208,15 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    }
 
 
-   if (screen_set_window_property_iv(qnx->screen_win, SCREEN_PROPERTY_BUFFER_SIZE, buffer_size))
+   if (screen_set_window_property_iv(qnx->screen_win,
+            SCREEN_PROPERTY_BUFFER_SIZE, buffer_size))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_BUFFER_SIZE] failed.\n");
       goto error;
    }
 
-   if (screen_set_window_property_iv(qnx->screen_win, SCREEN_PROPERTY_ROTATION, &angle))
+   if (screen_set_window_property_iv(qnx->screen_win,
+            SCREEN_PROPERTY_ROTATION, &angle))
    {
       RARCH_ERR("screen_set_window_property_iv [SCREEN_PROPERTY_ROTATION] failed.\n");
       goto error;
@@ -256,7 +265,8 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
       *quit = true;
 }
 
-static bool gfx_ctx_qnx_set_resize(void *data, unsigned width, unsigned height)
+static bool gfx_ctx_qnx_set_resize(void *data,
+      unsigned width, unsigned height)
 {
    (void)data;
    (void)width;
