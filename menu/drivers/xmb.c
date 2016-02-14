@@ -125,7 +125,7 @@ simple_window(struct zr_context *ctx)
 {
     /* simple demo window */
     struct zr_panel layout;
-    if (zr_begin(ctx, &layout, "Show", zr_rect(420, 350, 200, 200),
+    if (zr_begin(ctx, &layout, "Show", zr_rect(100, 100, 200, 200),
         ZR_WINDOW_BORDER|ZR_WINDOW_MOVABLE|ZR_WINDOW_SCALABLE|
         ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_TITLE))
     {
@@ -534,13 +534,9 @@ void zdraw(int width, int height)
         zr_font_default_glyph_ranges());
    zr_init(&gui.ctx, &alloc, &usrfnt);
    device_init(&device);
-   printf("%d %d \n", width, height);
    run_demo(&gui);
    glViewport(0, 0, width, height);
-   glClear(GL_COLOR_BUFFER_BIT);
-   glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
    device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
-
 }
 
 typedef struct
