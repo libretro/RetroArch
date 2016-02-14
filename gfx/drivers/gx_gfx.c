@@ -222,7 +222,8 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    VIDEO_SetPostRetraceCallback(NULL);
    g_draw_done = false;
    /* wait for next even field */
-   /* this prevents screen artefacts when switching between interlaced & non-interlaced modes */
+   /* this prevents screen artefacts when switching 
+    * between interlaced & non-interlaced modes */
    do VIDEO_WaitVSync();
    while (!VIDEO_GetNextField());
 
@@ -351,7 +352,9 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    /* calculate menu dimensions */
    size_t new_fb_pitch;
    unsigned new_fb_width;
-   unsigned new_fb_height  = (gx_mode.efbHeight / (gx->double_strike ? 1 : 2)) & ~3;
+   unsigned new_fb_height  = (gx_mode.efbHeight / 
+         (gx->double_strike ? 1 : 2)) & ~3;
+
    if (new_fb_height > 240)
       new_fb_height = 240;
    new_fb_width = (gx_mode.fbWidth / (gx_mode.fbWidth < 400 ? 1 : 2)) & ~3;
@@ -373,7 +376,8 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    GX_SetDispCopyDst(xfbWidth, xfbHeight);
 
    GX_SetCopyFilter(gx_mode.aa, gx_mode.sample_pattern,
-         (gx_mode.xfbMode == VI_XFBMODE_SF) ? GX_FALSE : settings->video.vfilter,
+         (gx_mode.xfbMode == VI_XFBMODE_SF) 
+         ? GX_FALSE : settings->video.vfilter,
          gx_mode.vfilter);
    GXColor color = { 0, 0, 0, 0xff };
    GX_SetCopyClear(color, GX_MAX_Z24);
@@ -441,7 +445,8 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    if (cmd != RARCH_DISPLAY_CTL_NONE)
       video_driver_ctl(cmd, NULL);
 
-   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
+   video_driver_set_aspect_ratio_value(
+         aspectratio_lut[aspect_ratio_idx].value);
 
    if (!gx)
       return;
@@ -450,7 +455,8 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gx->should_resize = true;
 }
 
-static void gx_get_video_output_size(void *data, unsigned *width, unsigned *height)
+static void gx_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
 {
    global_t *global = global_get_ptr();
 
@@ -460,8 +466,10 @@ static void gx_get_video_output_size(void *data, unsigned *width, unsigned *heig
    if (global->console.screen.resolutions.current.id > GX_RESOLUTIONS_LAST)
       global->console.screen.resolutions.current.id = 0;
 
-   *width  = menu_gx_resolutions[global->console.screen.resolutions.current.id][0];
-   *height = menu_gx_resolutions[global->console.screen.resolutions.current.id][1];
+   *width  = menu_gx_resolutions[
+      global->console.screen.resolutions.current.id][0];
+   *height = menu_gx_resolutions[
+      global->console.screen.resolutions.current.id][1];
 }
 
 static void setup_video_mode(gx_video_t *gx)
@@ -803,7 +811,8 @@ static void gx_resize(void *data)
 #endif
    GX_SetDispCopyGamma(global->console.screen.gamma_correction);
 
-   if (gx->keep_aspect && gx_mode.efbHeight >= 240) /* ignore this for custom resolutions */
+   /* Ignore this for custom resolutions */
+   if (gx->keep_aspect && gx_mode.efbHeight >= 240)
    {
       float desired_aspect = video_driver_get_aspect_ratio();
       if (desired_aspect == 0.0)
@@ -894,7 +903,8 @@ static void gx_resize(void *data)
    gx->should_resize = false;
 }
 
-static void gx_blit_line(gx_video_t *gx, unsigned x, unsigned y, const char *message)
+static void gx_blit_line(gx_video_t *gx,
+      unsigned x, unsigned y, const char *message)
 {
    unsigned width, height, h;
    bool double_width = false;
@@ -939,7 +949,9 @@ static void gx_blit_line(gx_video_t *gx, unsigned x, unsigned y, const char *mes
          {
             uint8_t     rem = 1 << ((i + j * FONT_WIDTH) & 7);
             unsigned offset = (i + j * FONT_WIDTH) >> 3;
-            bool        col = (bitmap_bin[FONT_OFFSET((unsigned char)*message) + offset] & rem);
+            bool        col = 
+               (bitmap_bin[FONT_OFFSET((unsigned char)*message) + offset] 
+                & rem);
             GXColor       c = b;
 
             if (col)
@@ -1113,7 +1125,8 @@ static const video_poke_interface_t gx_poke_interface = {
    gx_set_texture_enable,
 };
 
-static void gx_get_poke_interface(void *data, const video_poke_interface_t **iface)
+static void gx_get_poke_interface(void *data,
+      const video_poke_interface_t **iface)
 {
    (void)data;
    *iface = &gx_poke_interface;
@@ -1182,7 +1195,8 @@ static void gx_free_overlay(gx_video_t *gx)
    GX_InvalidateTexAll();
 }
 
-static bool gx_overlay_load(void *data, const void *image_data, unsigned num_images)
+static bool gx_overlay_load(void *data,
+      const void *image_data, unsigned num_images)
 {
    unsigned i;
    gx_video_t *gx = (gx_video_t*)data;
@@ -1205,7 +1219,9 @@ static bool gx_overlay_load(void *data, const void *image_data, unsigned num_ima
       GX_InitTexObjFilterMode(&g_tex.obj, GX_LINEAR, GX_LINEAR);
       DCFlushRange(images[i].pixels, images[i].width *
             images[i].height * sizeof(uint32_t));
-      gx_overlay_tex_geom(gx, i, 0, 0, 1, 1); /* Default. Stretch to whole screen. */
+
+      /* Default. Stretch to whole screen. */
+      gx_overlay_tex_geom(gx, i, 0, 0, 1, 1); 
       gx_overlay_vertex_geom(gx, i, 0, 0, 1, 1);
       gx->overlay[i].alpha_mod = 1.0f;
    }
@@ -1289,7 +1305,8 @@ static const video_overlay_interface_t gx_overlay_interface = {
    gx_overlay_set_alpha,
 };
 
-static void gx_get_overlay_interface(void *data, const video_overlay_interface_t **iface)
+static void gx_get_overlay_interface(void *data,
+      const video_overlay_interface_t **iface)
 {
    (void)data;
    *iface = &gx_overlay_interface;
