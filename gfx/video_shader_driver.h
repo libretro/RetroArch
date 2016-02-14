@@ -24,6 +24,29 @@
 #include "../config.h"
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifndef HAVE_SHADER_MANAGER
+#define HAVE_SHADER_MANAGER
+#endif
+
+#include "video_shader_parse.h"
+
+#define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
+
+#endif
+
+#if defined(_XBOX360)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
+#elif defined(__PSL1GHT__)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#elif defined(__CELLOS_LV2__)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
+#elif defined(HAVE_OPENGLES2)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#else
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
+#endif
+
 #include "video_context_driver.h"
 
 #ifdef __cplusplus
@@ -114,30 +137,6 @@ extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
 
-#if defined(_XBOX360)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
-#elif defined(__PSL1GHT__)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
-#elif defined(__CELLOS_LV2__)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
-#elif defined(HAVE_OPENGLES2)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
-#else
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
-#endif
-
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-
-#ifndef HAVE_SHADER_MANAGER
-#define HAVE_SHADER_MANAGER
-#endif
-
-#include "video_shader_parse.h"
-
-#define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
-
-#endif
-
 void video_shader_driver_scale(unsigned idx, struct gfx_fbo_scale *scale);
 
 /**
@@ -151,7 +150,6 @@ void video_shader_driver_scale(unsigned idx, struct gfx_fbo_scale *scale);
 const shader_backend_t *shader_ctx_find_driver(const char *ident);
 
 struct video_shader *video_shader_driver_get_current_shader(void);
-
 
 void video_shader_driver_use(void *data, unsigned index);
 
