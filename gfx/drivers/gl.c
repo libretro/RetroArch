@@ -1177,7 +1177,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       params.fbo_info      = fbo_tex_info;
       params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-      video_shader_driver_set_params(&params);
+      video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
 
       gl->coords.vertices = 4;
       video_shader_driver_set_coords(NULL, &gl->coords);
@@ -1234,7 +1234,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    params.fbo_info      = fbo_tex_info;
    params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-   video_shader_driver_set_params(&params);
+   video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
 
    gl->coords.vertex = gl->vertex_ptr;
 
@@ -1872,7 +1872,7 @@ static bool gl_frame(void *data, const void *frame,
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
-   video_shader_driver_set_params(&params);
+   video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
 
    gl->coords.vertices = 4;
    video_shader_driver_set_coords(NULL, &gl->coords);

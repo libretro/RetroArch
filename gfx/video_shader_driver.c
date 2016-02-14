@@ -206,32 +206,33 @@ struct video_shader *video_shader_driver_direct_get_current_shader(void)
    return current_shader->get_current_shader(shader_data);
 }
 
-void video_shader_driver_set_params(video_shader_ctx_params_t *params)
-{
-   if (!current_shader || !current_shader->set_params)
-      return;
-
-   current_shader->set_params(
-         params->data,
-         shader_data,
-         params->width,
-         params->height,
-         params->tex_width,
-         params->tex_height,
-         params->out_width,
-         params->out_height,
-         params->frame_counter,
-         params->info,
-         params->prev_info,
-         params->feedback_info,
-         params->fbo_info,
-         params->fbo_info_cnt);
-}
-
 bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *data)
 {
    switch (state)
    {
+      case SHADER_CTL_SET_PARAMS:
+         {
+            video_shader_ctx_params_t *params = (video_shader_ctx_params_t*)data;
+
+            if (!current_shader || !current_shader->set_params)
+               return false;
+            current_shader->set_params(
+                  params->data,
+                  shader_data,
+                  params->width,
+                  params->height,
+                  params->tex_width,
+                  params->tex_height,
+                  params->out_width,
+                  params->out_height,
+                  params->frame_counter,
+                  params->info,
+                  params->prev_info,
+                  params->feedback_info,
+                  params->fbo_info,
+                  params->fbo_info_cnt);
+         }
+         break;
       case SHADER_CTL_NONE:
       default:
          break;

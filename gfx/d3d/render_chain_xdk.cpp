@@ -229,7 +229,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
-   video_shader_driver_set_params(&params);
+   video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
 #endif
 #endif
 }
