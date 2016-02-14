@@ -75,10 +75,15 @@ static GLenum menu_display_prim_to_gl_enum(
 
 static void menu_display_gl_blend_begin(void)
 {
+   video_shader_ctx_info_t shader_info;
+
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-   video_shader_driver_use(NULL, GL_SHADER_STOCK_BLEND);
+   shader_info.data = NULL;
+   shader_info.idx  = GL_SHADER_STOCK_BLEND;
+
+   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 }
 
 static void menu_display_gl_blend_end(void)

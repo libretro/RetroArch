@@ -1144,6 +1144,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
+   video_shader_ctx_info_t shader_info;
    unsigned width, height;
    const struct gfx_fbo_rect *prev_rect;
    struct gfx_tex_info *fbo_info;
@@ -1185,7 +1186,10 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
 
-      video_shader_driver_use(gl, i + 1);
+      shader_info.data = gl;
+      shader_info.idx  = i + 1;
+
+      video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
       mip_level = i + 1;
@@ -1254,7 +1258,11 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
    /* Render our FBO texture to back buffer. */
    gl_bind_backbuffer();
-   video_shader_driver_use(gl, gl->fbo_pass + 1);
+
+   shader_info.data = gl;
+   shader_info.idx  = gl->fbo_pass + 1;
+
+   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
@@ -1665,13 +1673,17 @@ static INLINE void gl_set_prev_texture(gl_t *gl,
 #endif
 }
 
-static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned shader)
+static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
 {
    unsigned width, height;
+   video_shader_ctx_info_t shader_info;
 
    video_driver_get_size(&width, &height);
 
-   video_shader_driver_use(gl, shader);
+   shader_info.data = gl;
+   shader_info.idx  = idx;
+
+   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
    gl_set_viewport(gl, width, height, false, true);
 }
 
@@ -1715,6 +1727,7 @@ static INLINE void gl_draw_texture(gl_t *gl)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
+   video_shader_ctx_info_t shader_info;
    unsigned width, height;
    GLfloat color[16];
 
@@ -1745,7 +1758,10 @@ static INLINE void gl_draw_texture(gl_t *gl)
    gl->coords.color     = color;
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   video_shader_driver_use(gl, GL_SHADER_STOCK_BLEND);
+   shader_info.data = gl;
+   shader_info.idx  = GL_SHADER_STOCK_BLEND;
+
+   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
    gl->coords.vertices  = 4;
 
@@ -1789,6 +1805,7 @@ static bool gl_frame(void *data, const void *frame,
    bool is_slowmotion, is_paused;
    unsigned width, height;
    struct gfx_tex_info feedback_info;
+   video_shader_ctx_info_t shader_info;
    static struct retro_perf_counter frame_run = {0};
    gl_t                            *gl = (gl_t*)data;
    settings_t                *settings = config_get_ptr();
@@ -1808,7 +1825,11 @@ static bool gl_frame(void *data, const void *frame,
       glBindVertexArray(gl->vao);
 #endif
 
-   video_shader_driver_use(gl, 1);
+
+   shader_info.data = gl;
+   shader_info.idx  = 1;
+
+   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1987,7 +2008,11 @@ static bool gl_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      video_shader_driver_use(gl, 0);
+      shader_info.data = gl;
+      shader_info.idx  = 0;
+
+      video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
       gl_disable_client_arrays(gl);
@@ -3466,6 +3491,7 @@ static void gl_render_overlay(void *data)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
+   video_shader_ctx_info_t shader_info;
    unsigned i, width, height;
    gl_t *gl = (gl_t*)data;
    if (!gl)
@@ -3479,7 +3505,10 @@ static void gl_render_overlay(void *data)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
-   video_shader_driver_use(gl, GL_SHADER_STOCK_BLEND);
+   shader_info.data = gl;
+   shader_info.idx  = GL_SHADER_STOCK_BLEND;
+
+   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;

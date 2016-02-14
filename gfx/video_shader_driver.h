@@ -67,7 +67,8 @@ enum video_shader_driver_ctl_state
    SHADER_CTL_SCALE,
    SHADER_CTL_INFO,
    SHADER_CTL_SET_MVP,
-   SHADER_CTL_FILTER_TYPE
+   SHADER_CTL_FILTER_TYPE,
+   SHADER_CTL_USE
 };
 
 typedef struct shader_backend
@@ -145,6 +146,8 @@ typedef struct video_shader_ctx_scale
 typedef struct video_shader_ctx_info
 {
    unsigned num;
+   unsigned idx;
+   void *data;
 } video_shader_ctx_info_t;
 
 typedef struct video_shader_ctx_mvp
@@ -175,8 +178,6 @@ extern const shader_backend_t shader_null_backend;
 const shader_backend_t *shader_ctx_find_driver(const char *ident);
 
 struct video_shader *video_shader_driver_get_current_shader(void);
-
-void video_shader_driver_use(void *data, unsigned index);
 
 const char *video_shader_driver_get_ident(void);
 

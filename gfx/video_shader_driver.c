@@ -69,12 +69,6 @@ struct video_shader *video_shader_driver_get_current_shader(void)
    return video_poke->get_current_shader(video_driver);
 }
 
-void video_shader_driver_use(void *data, unsigned index)
-{
-   if (!current_shader)
-      return;
-   current_shader->use(data, shader_data, index);
-}
 
 const char *video_shader_driver_get_ident(void)
 {
@@ -235,6 +229,14 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
             return current_shader->filter_type(shader_data,
                   filter->index, filter->smooth);
          }
+      case SHADER_CTL_USE:
+         {
+            video_shader_ctx_info_t *shader_info = (video_shader_ctx_info_t*)data;
+            if (!current_shader || !shader_info)
+               return false;
+            current_shader->use(shader_info->data, shader_data, shader_info->idx);
+         }
+         break;
       case SHADER_CTL_NONE:
       default:
          break;

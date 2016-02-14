@@ -136,6 +136,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 {
 #ifdef _XBOX
    video_shader_ctx_params_t params;
+   video_shader_ctx_info_t shader_info;
 #endif
    unsigned width, height;
    d3d_video_t *d3d         = (d3d_video_t*)data;
@@ -218,7 +219,11 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
 #ifdef _XBOX
    renderchain_set_mvp(d3d, width, height, d3d->dev_rotation);
-   video_shader_driver_use(d3d, pass);
+
+   shader_info.data = d3d;
+   shader_info.idx  = pass;
+
+   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
    params.data          = d3d;
    params.width         = vert_width;
