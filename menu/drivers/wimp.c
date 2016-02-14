@@ -76,10 +76,10 @@
 enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK};
 
 struct wimp {
-    void *memory;
-    struct zr_context ctx;
-    enum theme theme;
-    struct zr_memory_status status;
+   void *memory;
+   struct zr_context ctx;
+   enum theme theme;
+   struct zr_memory_status status;
 };
 
 static void wimp_demo(struct zr_context *ctx)
@@ -89,249 +89,248 @@ static void wimp_demo(struct zr_context *ctx)
         ZR_WINDOW_BORDER|ZR_WINDOW_MOVABLE|ZR_WINDOW_SCALABLE|
         ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_TITLE))
     {
-        enum {EASY, HARD};
-        static int op = EASY;
-        static int property = 20;
+      enum {EASY, HARD};
+      static int op = EASY;
+      static int property = 20;
 
-        zr_layout_row_static(ctx, 30, 80, 1);
-        if (zr_button_text(ctx, "button", ZR_BUTTON_DEFAULT)) {
+      zr_layout_row_static(ctx, 30, 80, 1);
+      if (zr_button_text(ctx, "button", ZR_BUTTON_DEFAULT)) {
             /* event handling */
-        }
-        zr_layout_row_dynamic(ctx, 30, 2);
-        if (zr_option(ctx, "easy", op == EASY)) op = EASY;
-        if (zr_option(ctx, "hard", op == HARD)) op = HARD;
+      }
+      zr_layout_row_dynamic(ctx, 30, 2);
+      if (zr_option(ctx, "easy", op == EASY))
+         op = EASY;
+      if (zr_option(ctx, "hard", op == HARD))
+         op = HARD;
 
-        zr_layout_row_dynamic(ctx, 22, 1);
-        zr_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
-    }
-    zr_end(ctx);
+      zr_layout_row_dynamic(ctx, 22, 1);
+      zr_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
+   }
+   zr_end(ctx);
 }
 
 static int run_demo(struct wimp *gui)
 {
-    int ret = 1;
-    static int init = 0;
-    struct zr_context *ctx = &gui->ctx;
+   int ret = 1;
+   static int init = 0;
+   struct zr_context *ctx = &gui->ctx;
 
-    if (!init) {
-        init = 1;
-    }
+   if (!init) {
+     init = 1;
+   }
 
-    /* windows */
-    wimp_demo(ctx);
-
-//    ret = control_window(ctx, gui);
-    zr_buffer_info(&gui->status, &gui->ctx.memory);
-    return ret;
+   wimp_demo(ctx);
+   zr_buffer_info(&gui->status, &gui->ctx.memory);
+   return ret;
 }
 
 static struct wimp gui;
 
 static char* file_load(const char* path, size_t* siz)
 {
-    char *buf;
-    FILE *fd = fopen(path, "rb");
+   char *buf;
+   FILE *fd = fopen(path, "rb");
 
-    fseek(fd, 0, SEEK_END);
-    *siz = (size_t)ftell(fd);
-    fseek(fd, 0, SEEK_SET);
-    buf = (char*)calloc(*siz, 1);
-    fread(buf, *siz, 1, fd);
-    fclose(fd);
-    return buf;
+   fseek(fd, 0, SEEK_END);
+   *siz = (size_t)ftell(fd);
+   fseek(fd, 0, SEEK_SET);
+   buf = (char*)calloc(*siz, 1);
+   fread(buf, *siz, 1, fd);
+   fclose(fd);
+   return buf;
 }
 
 struct device {
-    struct zr_buffer cmds;
-    struct zr_draw_null_texture null;
-    GLuint vbo, vao, ebo;
+   struct zr_buffer cmds;
+   struct zr_draw_null_texture null;
+   GLuint vbo, vao, ebo;
 
-    GLuint prog;
-    GLuint vert_shdr;
-    GLuint frag_shdr;
+   GLuint prog;
+   GLuint vert_shdr;
+   GLuint frag_shdr;
 
-    GLint attrib_pos;
-    GLint attrib_uv;
-    GLint attrib_col;
+   GLint attrib_pos;
+   GLint attrib_uv;
+   GLint attrib_col;
 
-    GLint uniform_tex;
-    GLint uniform_proj;
-    GLuint font_tex;
+   GLint uniform_tex;
+   GLint uniform_proj;
+   GLuint font_tex;
 };
 
 static void device_init(struct device *dev)
 {
-    GLint status;
-    static const GLchar *vertex_shader =
-        "#version 300 es\n"
-        "uniform mat4 ProjMtx;\n"
-        "in vec2 Position;\n"
-        "in vec2 TexCoord;\n"
-        "in vec4 Color;\n"
-        "out vec2 Frag_UV;\n"
-        "out vec4 Frag_Color;\n"
-        "void main() {\n"
-        "   Frag_UV = TexCoord;\n"
-        "   Frag_Color = Color;\n"
-        "   gl_Position = ProjMtx * vec4(Position.xy, 0, 1);\n"
-        "}\n";
-    static const GLchar *fragment_shader =
-        "#version 300 es\n"
-        "precision mediump float;\n"
-        "uniform sampler2D Texture;\n"
-        "in vec2 Frag_UV;\n"
-        "in vec4 Frag_Color;\n"
-        "out vec4 Out_Color;\n"
-        "void main(){\n"
-        "   Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
-        "}\n";
+   GLint status;
+   static const GLchar *vertex_shader =
+      "#version 300 es\n"
+      "uniform mat4 ProjMtx;\n"
+      "in vec2 Position;\n"
+      "in vec2 TexCoord;\n"
+      "in vec4 Color;\n"
+      "out vec2 Frag_UV;\n"
+      "out vec4 Frag_Color;\n"
+      "void main() {\n"
+      "   Frag_UV = TexCoord;\n"
+      "   Frag_Color = Color;\n"
+      "   gl_Position = ProjMtx * vec4(Position.xy, 0, 1);\n"
+      "}\n";
+   static const GLchar *fragment_shader =
+      "#version 300 es\n"
+      "precision mediump float;\n"
+      "uniform sampler2D Texture;\n"
+      "in vec2 Frag_UV;\n"
+      "in vec4 Frag_Color;\n"
+      "out vec4 Out_Color;\n"
+      "void main(){\n"
+      "   Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
+      "}\n";
 
-    dev->prog = glCreateProgram();
-    dev->vert_shdr = glCreateShader(GL_VERTEX_SHADER);
-    dev->frag_shdr = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(dev->vert_shdr, 1, &vertex_shader, 0);
-    glShaderSource(dev->frag_shdr, 1, &fragment_shader, 0);
-    glCompileShader(dev->vert_shdr);
-    glCompileShader(dev->frag_shdr);
-    glGetShaderiv(dev->vert_shdr, GL_COMPILE_STATUS, &status);
-    assert(status == GL_TRUE);
-    glGetShaderiv(dev->frag_shdr, GL_COMPILE_STATUS, &status);
-    assert(status == GL_TRUE);
-    glAttachShader(dev->prog, dev->vert_shdr);
-    glAttachShader(dev->prog, dev->frag_shdr);
-    glLinkProgram(dev->prog);
-    glGetProgramiv(dev->prog, GL_LINK_STATUS, &status);
-    assert(status == GL_TRUE);
+   dev->prog = glCreateProgram();
+   dev->vert_shdr = glCreateShader(GL_VERTEX_SHADER);
+   dev->frag_shdr = glCreateShader(GL_FRAGMENT_SHADER);
+   glShaderSource(dev->vert_shdr, 1, &vertex_shader, 0);
+   glShaderSource(dev->frag_shdr, 1, &fragment_shader, 0);
+   glCompileShader(dev->vert_shdr);
+   glCompileShader(dev->frag_shdr);
+   glGetShaderiv(dev->vert_shdr, GL_COMPILE_STATUS, &status);
+   assert(status == GL_TRUE);
+   glGetShaderiv(dev->frag_shdr, GL_COMPILE_STATUS, &status);
+   assert(status == GL_TRUE);
+   glAttachShader(dev->prog, dev->vert_shdr);
+   glAttachShader(dev->prog, dev->frag_shdr);
+   glLinkProgram(dev->prog);
+   glGetProgramiv(dev->prog, GL_LINK_STATUS, &status);
+   assert(status == GL_TRUE);
 
-    dev->uniform_tex = glGetUniformLocation(dev->prog, "Texture");
-    dev->uniform_proj = glGetUniformLocation(dev->prog, "ProjMtx");
-    dev->attrib_pos = glGetAttribLocation(dev->prog, "Position");
-    dev->attrib_uv = glGetAttribLocation(dev->prog, "TexCoord");
-    dev->attrib_col = glGetAttribLocation(dev->prog, "Color");
+   dev->uniform_tex = glGetUniformLocation(dev->prog, "Texture");
+   dev->uniform_proj = glGetUniformLocation(dev->prog, "ProjMtx");
+   dev->attrib_pos = glGetAttribLocation(dev->prog, "Position");
+   dev->attrib_uv = glGetAttribLocation(dev->prog, "TexCoord");
+   dev->attrib_col = glGetAttribLocation(dev->prog, "Color");
 
-    {
-        /* buffer setup */
-        GLsizei vs = sizeof(struct zr_draw_vertex);
-        size_t vp = offsetof(struct zr_draw_vertex, position);
-        size_t vt = offsetof(struct zr_draw_vertex, uv);
-        size_t vc = offsetof(struct zr_draw_vertex, col);
+   {
+       /* buffer setup */
+      GLsizei vs = sizeof(struct zr_draw_vertex);
+      size_t vp = offsetof(struct zr_draw_vertex, position);
+      size_t vt = offsetof(struct zr_draw_vertex, uv);
+      size_t vc = offsetof(struct zr_draw_vertex, col);
 
-        glGenBuffers(1, &dev->vbo);
-        glGenBuffers(1, &dev->ebo);
-        glGenVertexArrays(1, &dev->vao);
+      glGenBuffers(1, &dev->vbo);
+      glGenBuffers(1, &dev->ebo);
+      glGenVertexArrays(1, &dev->vao);
 
-        glBindVertexArray(dev->vao);
-        glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dev->ebo);
+      glBindVertexArray(dev->vao);
+      glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dev->ebo);
 
-        glEnableVertexAttribArray((GLuint)dev->attrib_pos);
-        glEnableVertexAttribArray((GLuint)dev->attrib_uv);
-        glEnableVertexAttribArray((GLuint)dev->attrib_col);
+      glEnableVertexAttribArray((GLuint)dev->attrib_pos);
+      glEnableVertexAttribArray((GLuint)dev->attrib_uv);
+      glEnableVertexAttribArray((GLuint)dev->attrib_col);
 
-        glVertexAttribPointer((GLuint)dev->attrib_pos, 2, GL_FLOAT, GL_FALSE, vs, (void*)vp);
-        glVertexAttribPointer((GLuint)dev->attrib_uv, 2, GL_FLOAT, GL_FALSE, vs, (void*)vt);
-        glVertexAttribPointer((GLuint)dev->attrib_col, 4, GL_UNSIGNED_BYTE, GL_TRUE, vs, (void*)vc);
-    }
+      glVertexAttribPointer((GLuint)dev->attrib_pos, 2, GL_FLOAT, GL_FALSE, vs, (void*)vp);
+      glVertexAttribPointer((GLuint)dev->attrib_uv, 2, GL_FLOAT, GL_FALSE, vs, (void*)vt);
+      glVertexAttribPointer((GLuint)dev->attrib_col, 4, GL_UNSIGNED_BYTE, GL_TRUE, vs, (void*)vc);
+   }
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+   glBindVertexArray(0);
 }
 
 static struct zr_user_font font_bake_and_upload(struct device *dev, struct zr_font *font,
     const char *path, unsigned int font_height, const zr_rune *range)
 {
-    int glyph_count;
-    int img_width, img_height;
-    struct zr_font_glyph *glyphes;
-    struct zr_baked_font baked_font;
-    struct zr_user_font user_font;
-    struct zr_recti custom;
+   int glyph_count;
+   int img_width, img_height;
+   struct zr_font_glyph *glyphes;
+   struct zr_baked_font baked_font;
+   struct zr_user_font user_font;
+   struct zr_recti custom;
 
-    memset(&baked_font, 0, sizeof(baked_font));
-    memset(&user_font, 0, sizeof(user_font));
-    memset(&custom, 0, sizeof(custom));
+   memset(&baked_font, 0, sizeof(baked_font));
+   memset(&user_font, 0, sizeof(user_font));
+   memset(&custom, 0, sizeof(custom));
 
-    {
-        /* bake and upload font texture */
-        void *img, *tmp;
-        size_t ttf_size;
-        size_t tmp_size, img_size;
-        const char *custom_data = "....";
-        struct zr_font_config config;
-        char *ttf_blob = file_load(path, &ttf_size);
-        /* setup font configuration */
-        memset(&config, 0, sizeof(config));
-        config.ttf_blob = ttf_blob;
-        config.ttf_size = ttf_size;
-        config.font = &baked_font;
-        config.coord_type = ZR_COORD_UV;
-        config.range = range;
-        config.pixel_snap = zr_false;
-        config.size = (float)font_height;
-        config.spacing = zr_vec2(0,0);
-        config.oversample_h = 1;
-        config.oversample_v = 1;
+   {
+      /* bake and upload font texture */
+      void *img, *tmp;
+      size_t ttf_size;
+      size_t tmp_size, img_size;
+      const char *custom_data = "....";
+      struct zr_font_config config;
+      char *ttf_blob = file_load(path, &ttf_size);
+       /* setup font configuration */
+      memset(&config, 0, sizeof(config));
+      config.ttf_blob = ttf_blob;
+      config.ttf_size = ttf_size;
+      config.font = &baked_font;
+      config.coord_type = ZR_COORD_UV;
+      config.range = range;
+      config.pixel_snap = zr_false;
+      config.size = (float)font_height;
+      config.spacing = zr_vec2(0,0);
+      config.oversample_h = 1;
+      config.oversample_v = 1;
 
-        /* query needed amount of memory for the font baking process */
-        zr_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
-        glyphes = (struct zr_font_glyph*)calloc(sizeof(struct zr_font_glyph), (size_t)glyph_count);
-        tmp = calloc(1, tmp_size);
+      /* query needed amount of memory for the font baking process */
+      zr_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
+      glyphes = (struct zr_font_glyph*)calloc(sizeof(struct zr_font_glyph), (size_t)glyph_count);
+      tmp = calloc(1, tmp_size);
 
-        /* pack all glyphes and return needed image width, height and memory size*/
-        custom.w = 2; custom.h = 2;
-        zr_font_bake_pack(&img_size, &img_width,&img_height,&custom,tmp,tmp_size,&config, 1);
+      /* pack all glyphes and return needed image width, height and memory size*/
+      custom.w = 2; custom.h = 2;
+      zr_font_bake_pack(&img_size, &img_width,&img_height,&custom,tmp,tmp_size,&config, 1);
 
-        /* bake all glyphes and custom white pixel into image */
-        img = calloc(1, img_size);
-        zr_font_bake(img, img_width, img_height, tmp, tmp_size, glyphes, glyph_count, &config, 1);
-        zr_font_bake_custom_data(img, img_width, img_height, custom, custom_data, 2, 2, '.', 'X');
-        {
-            /* convert alpha8 image into rgba8 image */
-            void *img_rgba = calloc(4, (size_t)(img_height * img_width));
-            zr_font_bake_convert(img_rgba, img_width, img_height, img);
-            free(img);
-            img = img_rgba;
-        }
-        {
-            /* upload baked font image */
-            glGenTextures(1, &dev->font_tex);
-            glBindTexture(GL_TEXTURE_2D, dev->font_tex);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)img_width, (GLsizei)img_height, 0,
-                        GL_RGBA, GL_UNSIGNED_BYTE, img);
-        }
-        free(ttf_blob);
-        free(tmp);
-        free(img);
-    }
+      /* bake all glyphes and custom white pixel into image */
+      img = calloc(1, img_size);
+      zr_font_bake(img, img_width, img_height, tmp, tmp_size, glyphes, glyph_count, &config, 1);
+      zr_font_bake_custom_data(img, img_width, img_height, custom, custom_data, 2, 2, '.', 'X');
+      {
+         /* convert alpha8 image into rgba8 image */
+         void *img_rgba = calloc(4, (size_t)(img_height * img_width));
+         zr_font_bake_convert(img_rgba, img_width, img_height, img);
+         free(img);
+         img = img_rgba;
+      }
+      {
+         /* upload baked font image */
+         glGenTextures(1, &dev->font_tex);
+         glBindTexture(GL_TEXTURE_2D, dev->font_tex);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)img_width, (GLsizei)img_height, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, img);
+      }
+      free(ttf_blob);
+      free(tmp);
+      free(img);
+   }
 
-    /* default white pixel in a texture which is needed to draw primitives */
-    dev->null.texture.id = (int)dev->font_tex;
-    dev->null.uv = zr_vec2((custom.x + 0.5f)/(float)img_width,
-                            (custom.y + 0.5f)/(float)img_height);
+   /* default white pixel in a texture which is needed to draw primitives */
+   dev->null.texture.id = (int)dev->font_tex;
+   dev->null.uv = zr_vec2((custom.x + 0.5f)/(float)img_width,
+      (custom.y + 0.5f)/(float)img_height);
 
-    /* setup font with glyphes. IMPORTANT: the font only references the glyphes
+   /* setup font with glyphes. IMPORTANT: the font only references the glyphes
       this was done to have the possibility to have multible fonts with one
       total glyph array. Not quite sure if it is a good thing since the
       glyphes have to be freed as well. */
-    zr_font_init(font, (float)font_height, '?', glyphes, &baked_font, dev->null.texture);
-    user_font = zr_font_ref(font);
-    return user_font;
+   zr_font_init(font, (float)font_height, '?', glyphes, &baked_font, dev->null.texture);
+   user_font = zr_font_ref(font);
+   return user_font;
 }
 
 static void device_shutdown(struct device *dev)
 {
-    glDetachShader(dev->prog, dev->vert_shdr);
-    glDetachShader(dev->prog, dev->frag_shdr);
-    glDeleteShader(dev->vert_shdr);
-    glDeleteShader(dev->frag_shdr);
-    glDeleteProgram(dev->prog);
-    glDeleteTextures(1, &dev->font_tex);
-    glDeleteBuffers(1, &dev->vbo);
-    glDeleteBuffers(1, &dev->ebo);
+   glDetachShader(dev->prog, dev->vert_shdr);
+   glDetachShader(dev->prog, dev->frag_shdr);
+   glDeleteShader(dev->vert_shdr);
+   glDeleteShader(dev->frag_shdr);
+   glDeleteProgram(dev->prog);
+   glDeleteTextures(1, &dev->font_tex);
+   glDeleteBuffers(1, &dev->vbo);
+   glDeleteBuffers(1, &dev->ebo);
 }
 
 static void device_draw(struct device *dev, struct zr_context *ctx, int width, int height,
