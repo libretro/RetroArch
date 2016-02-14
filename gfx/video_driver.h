@@ -155,7 +155,8 @@ enum rarch_display_ctl_state
    RARCH_DISPLAY_CTL_HAS_GPU_RECORD,
    RARCH_DISPLAY_CTL_GPU_RECORD_GET,
    RARCH_DISPLAY_CTL_GPU_RECORD_INIT,
-   RARCH_DISPLAY_CTL_GPU_RECORD_DEINIT
+   RARCH_DISPLAY_CTL_GPU_RECORD_DEINIT,
+   RARCH_DISPLAY_CTL_GET_CURRENT_SOFTWARE_FRAMEBUFFER
 };
 
 typedef struct video_info
@@ -379,9 +380,6 @@ void *video_driver_get_ptr(bool force_nonthreaded_data);
  * Returns: pointer to hardware framebuffer object, otherwise 0.
  **/
 uintptr_t video_driver_get_current_framebuffer(void);
-
-bool video_driver_get_current_software_framebuffer(
-      struct retro_framebuffer *framebuffer);
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym);
 

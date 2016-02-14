@@ -338,17 +338,6 @@ uintptr_t video_driver_get_current_framebuffer(void)
    return video_driver_poke->get_current_framebuffer(video_driver_data);
 }
 
-bool video_driver_get_current_software_framebuffer(
-      struct retro_framebuffer *framebuffer)
-{
-   if (
-         !video_driver_poke || 
-         !video_driver_poke->get_current_software_framebuffer)
-      return false;
-   return video_driver_poke->get_current_software_framebuffer(
-         video_driver_data, framebuffer);
-}
-
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
 {
    if (!video_driver_poke || !video_driver_poke->get_proc_address)
@@ -1732,6 +1721,13 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             free(video_driver_record_gpu_buffer);
          video_driver_record_gpu_buffer = NULL;
          break;
+      case RARCH_DISPLAY_CTL_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
+         if (
+               !video_driver_poke || 
+               !video_driver_poke->get_current_software_framebuffer)
+            return false;
+         return video_driver_poke->get_current_software_framebuffer(
+               video_driver_data, (struct retro_framebuffer *)data);
       case RARCH_DISPLAY_CTL_NONE:
       default:
          break;
