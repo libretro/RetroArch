@@ -335,104 +335,113 @@ static void device_shutdown(struct device *dev)
 }
 
 static void device_draw(struct device *dev, struct zr_context *ctx, int width, int height,
-    enum zr_anti_aliasing AA)
+   enum zr_anti_aliasing AA)
 {
-    GLint last_prog, last_tex;
-    GLint last_ebo, last_vbo, last_vao;
-    GLfloat ortho[4][4] = {
-        {2.0f, 0.0f, 0.0f, 0.0f},
-        {0.0f,-2.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f,-1.0f, 0.0f},
-        {-1.0f,1.0f, 0.0f, 1.0f},
-    };
-    ortho[0][0] /= (GLfloat)width;
-    ortho[1][1] /= (GLfloat)height;
+   GLint last_prog, last_tex;
+   GLint last_ebo, last_vbo, last_vao;
+   GLfloat ortho[4][4] = {
+      {2.0f, 0.0f, 0.0f, 0.0f},
+      {0.0f,-2.0f, 0.0f, 0.0f},
+      {0.0f, 0.0f,-1.0f, 0.0f},
+      {-1.0f,1.0f, 0.0f, 1.0f},
+   };
+   ortho[0][0] /= (GLfloat)width;
+   ortho[1][1] /= (GLfloat)height;
 
-    /* save previous opengl state */
-    glGetIntegerv(GL_CURRENT_PROGRAM, &last_prog);
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_tex);
-    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_vao);
-    glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_ebo);
-    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vbo);
+   /* save previous opengl state */
+   glGetIntegerv(GL_CURRENT_PROGRAM, &last_prog);
+   glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_tex);
+   glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_vao);
+   glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_ebo);
+   glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vbo);
 
-    /* setup global state */
-    glEnable(GL_BLEND);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_SCISSOR_TEST);
-    glActiveTexture(GL_TEXTURE0);
+   /* setup global state */
+   glEnable(GL_BLEND);
+   glBlendEquation(GL_FUNC_ADD);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+   glDisable(GL_CULL_FACE);
+   glDisable(GL_DEPTH_TEST);
+   glEnable(GL_SCISSOR_TEST);
+   glActiveTexture(GL_TEXTURE0);
 
-    /* setup program */
-    glUseProgram(dev->prog);
-    glUniform1i(dev->uniform_tex, 0);
-    glUniformMatrix4fv(dev->uniform_proj, 1, GL_FALSE, &ortho[0][0]);
+   /* setup program */
+   glUseProgram(dev->prog);
+   glUniform1i(dev->uniform_tex, 0);
+   glUniformMatrix4fv(dev->uniform_proj, 1, GL_FALSE, &ortho[0][0]);
 
-    {
-        /* convert from command queue into draw list and draw to screen */
-        const struct zr_draw_command *cmd;
-        void *vertices, *elements;
-        const zr_draw_index *offset = NULL;
+   {
+      /* convert from command queue into draw list and draw to screen */
+      const struct zr_draw_command *cmd;
+      void *vertices, *elements;
+      const zr_draw_index *offset = NULL;
 
-        /* allocate vertex and element buffer */
-        glBindVertexArray(dev->vao);
-        glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dev->ebo);
+      /* allocate vertex and element buffer */
+      glBindVertexArray(dev->vao);
+      glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dev->ebo);
 
-        glBufferData(GL_ARRAY_BUFFER, MAX_VERTEX_MEMORY, NULL, GL_STREAM_DRAW);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_ELEMENT_MEMORY, NULL, GL_STREAM_DRAW);
+      glBufferData(GL_ARRAY_BUFFER, MAX_VERTEX_MEMORY, NULL, GL_STREAM_DRAW);
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_ELEMENT_MEMORY, NULL, GL_STREAM_DRAW);
 
-        /* load draw vertices & elements directly into vertex + element buffer */
-        vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-        elements = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
-        {
-            struct zr_buffer vbuf, ebuf;
+      /* load draw vertices & elements directly into vertex + element buffer */
+      vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+      elements = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
+      {
+         struct zr_buffer vbuf, ebuf;
 
-            /* fill converting configuration */
-            struct zr_convert_config config;
-            memset(&config, 0, sizeof(config));
-            config.global_alpha = 1.0f;
-            config.shape_AA = AA;
-            config.line_AA = AA;
-            config.circle_segment_count = 22;
-            config.line_thickness = 1.0f;
-            config.null = dev->null;
+         /* fill converting configuration */
+         struct zr_convert_config config;
+         memset(&config, 0, sizeof(config));
+         config.global_alpha = 1.0f;
+         config.shape_AA = AA;
+         config.line_AA = AA;
+         config.circle_segment_count = 22;
+         config.line_thickness = 1.0f;
+         config.null = dev->null;
 
-            /* setup buffers to load vertices and elements */
-            zr_buffer_init_fixed(&vbuf, vertices, MAX_VERTEX_MEMORY);
-            zr_buffer_init_fixed(&ebuf, elements, MAX_ELEMENT_MEMORY);
-            zr_convert(ctx, &dev->cmds, &vbuf, &ebuf, &config);
-        }
-        glUnmapBuffer(GL_ARRAY_BUFFER);
-        glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+         /* setup buffers to load vertices and elements */
+         zr_buffer_init_fixed(&vbuf, vertices, MAX_VERTEX_MEMORY);
+         zr_buffer_init_fixed(&ebuf, elements, MAX_ELEMENT_MEMORY);
+         zr_convert(ctx, &dev->cmds, &vbuf, &ebuf, &config);
+      }
+      glUnmapBuffer(GL_ARRAY_BUFFER);
+      glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
-        /* iterate over and execute each draw command */
-        zr_draw_foreach(cmd, ctx, &dev->cmds) {
-            if (!cmd->elem_count) continue;
-            glBindTexture(GL_TEXTURE_2D, (GLuint)cmd->texture.id);
-            glScissor((GLint)cmd->clip_rect.x,
-                height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h),
-                (GLint)cmd->clip_rect.w, (GLint)cmd->clip_rect.h);
-            glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count, GL_UNSIGNED_SHORT, offset);
-            offset += cmd->elem_count;
-        }
-        zr_clear(ctx);
-    }
+      /* iterate over and execute each draw command */
+      zr_draw_foreach(cmd, ctx, &dev->cmds) 
+      {
+         if (!cmd->elem_count)
+            continue;
+         glBindTexture(GL_TEXTURE_2D, (GLuint)cmd->texture.id);
+         glScissor((GLint)cmd->clip_rect.x,
+            height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h),
+            (GLint)cmd->clip_rect.w, (GLint)cmd->clip_rect.h);
+         glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count, GL_UNSIGNED_SHORT, offset);
+         offset += cmd->elem_count;
+       }
+       zr_clear(ctx);
+   }
 
-    /* restore old state */
-    glUseProgram((GLuint)last_prog);
-    glBindTexture(GL_TEXTURE_2D, (GLuint)last_tex);
-    glBindBuffer(GL_ARRAY_BUFFER, (GLuint)last_vbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)last_ebo);
-    glBindVertexArray((GLuint)last_vao);
-    glDisable(GL_SCISSOR_TEST);
+   /* restore old state */
+   glUseProgram((GLuint)last_prog);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)last_tex);
+   glBindBuffer(GL_ARRAY_BUFFER, (GLuint)last_vbo);
+   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)last_ebo);
+   glBindVertexArray((GLuint)last_vao);
+   glDisable(GL_SCISSOR_TEST);
 }
 
 static void* mem_alloc(zr_handle unused, size_t size)
-{UNUSED(unused); return calloc(1, size);}
+{
+   UNUSED(unused);
+   return calloc(1, size);
+}
+
 static void mem_free(zr_handle unused, void *ptr)
-{UNUSED(unused); free(ptr);}
+{
+   UNUSED(unused);
+   free(ptr);
+}
 
 struct device device;
 struct zr_font font;
