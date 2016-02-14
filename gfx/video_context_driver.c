@@ -90,15 +90,6 @@ void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
    current_video_context->get_video_size(video_context_data, width, height);
 }
 
-bool gfx_ctx_set_resize(unsigned width, unsigned height)
-{
-   if (!current_video_context)
-      return false;
-
-   return current_video_context->set_resize(
-         video_context_data, width, height);
-}
-
 /**
  * find_gfx_ctx_driver_index:
  * @ident                      : Identifier of resampler driver to find.
@@ -432,6 +423,14 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
                   mode_info->height, mode_info->fullscreen);
          }
          break;
+      case GFX_CTL_SET_RESIZE:
+         {
+            gfx_ctx_mode_t *mode_info = (gfx_ctx_mode_t*)data;
+            if (!current_video_context)
+               return false;
+            return current_video_context->set_resize(
+                  video_context_data, mode_info->width, mode_info->height);
+         }
       case GFX_CTL_NONE:
       default:
          break;

@@ -868,8 +868,14 @@ static bool d3d_alive(void *data)
 
       if (resize)
       {
+         gfx_ctx_mode_t mode;
+
          d3d->should_resize = true;
-         gfx_ctx_set_resize(temp_width, temp_height);
+
+         mode.width  = temp_width;
+         mode.height = temp_height;
+
+         gfx_ctx_ctl(GFX_CTL_SET_RESIZE, &mode);
          d3d_restore(d3d);
       }
 

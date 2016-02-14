@@ -1706,9 +1706,14 @@ static bool gl_frame(void *data, const void *frame,
 
    if (gl->should_resize)
    {
+      gfx_ctx_mode_t mode;
+
       gl->should_resize = false;
 
-      gfx_ctx_set_resize(width, height);
+      mode.width  = width;
+      mode.height = height;
+
+      gfx_ctx_ctl(GFX_CTL_SET_RESIZE, &mode);
 
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
