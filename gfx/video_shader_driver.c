@@ -172,13 +172,6 @@ enum gfx_wrap_type video_shader_driver_wrap_type(unsigned index)
    return current_shader->wrap_type(shader_data, index);
 }
 
-bool video_shader_driver_get_feedback_pass(unsigned *pass)
-{
-   if (!current_shader || !current_shader->get_feedback_pass)
-      return false;
-   return current_shader->get_feedback_pass(shader_data, pass);
-}
-
 struct video_shader *video_shader_driver_direct_get_current_shader(void)
 {
    if (!current_shader || !current_shader->get_current_shader)
@@ -225,6 +218,11 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
             }
          }
          return false;
+      case SHADER_CTL_GET_FEEDBACK_PASS:
+         if (!current_shader || !current_shader->get_feedback_pass)
+            return false;
+         return current_shader->get_feedback_pass(shader_data, (unsigned*)data);
+         break;
       case SHADER_CTL_NONE:
       default:
          break;

@@ -35,7 +35,8 @@ enum video_shader_driver_ctl_state
    SHADER_CTL_NONE = 0,
    /* Finds first suitable shader context driver. */
    SHADER_CTL_INIT_FIRST,
-   SHADER_CTL_SET_PARAMS
+   SHADER_CTL_SET_PARAMS,
+   SHADER_CTL_GET_FEEDBACK_PASS
 };
 
 typedef struct shader_backend
@@ -156,8 +157,6 @@ unsigned video_shader_driver_get_prev_textures(void);
 bool video_shader_driver_filter_type(unsigned index, bool *smooth);
 
 enum gfx_wrap_type video_shader_driver_wrap_type(unsigned index);
-
-bool video_shader_driver_get_feedback_pass(unsigned *pass);
 
 struct video_shader *video_shader_driver_direct_get_current_shader(void);
 

@@ -702,8 +702,8 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
             gl->fbo_rect[i].width, gl->fbo_rect[i].height);
    }
 
-   gl->fbo_feedback_enable = 
-      video_shader_driver_get_feedback_pass(&gl->fbo_feedback_pass);
+   gl->fbo_feedback_enable = video_shader_driver_ctl(
+         SHADER_CTL_GET_FEEDBACK_PASS, &gl->fbo_feedback_pass);
 
    if (gl->fbo_feedback_enable && gl->fbo_feedback_pass 
          < (unsigned)gl->fbo_pass)
