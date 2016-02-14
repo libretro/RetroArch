@@ -129,6 +129,9 @@ static bool renderchain_create_first_pass(void *data,
 static void renderchain_set_vertices(void *data, unsigned pass,
       unsigned vert_width, unsigned vert_height, uint64_t frame_count)
 {
+#ifdef _XBOX
+   video_shader_ctx_params_t params;
+#endif
    unsigned width, height;
    d3d_video_t *d3d         = (d3d_video_t*)data;
    xdk_renderchain_t *chain = d3d ? (xdk_renderchain_t*)d3d->renderchain_data : NULL;
@@ -211,10 +214,22 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 #ifdef _XBOX
    renderchain_set_mvp(d3d, width, height, d3d->dev_rotation);
    video_shader_driver_use(d3d, pass);
-   video_shader_driver_set_params(
-         d3d, vert_width, vert_height, chain->tex_w,
-         chain->tex_h, width, height, frame_count,
-         NULL, NULL, NULL, NULL, 0);
+
+   params.data          = d3d;
+   params.width         = vert_width;
+   params.height        = vert_height;
+   params.tex_width     = chain->tex_w;
+   params.tex_height    = chain->tex_h;
+   params.out_width     = width;
+   params.out_height    = height;
+   params.frame_counter = (unsigned int)frame_count;
+   params.info          = NULL;
+   params.prev_info     = NULL;
+   params.feedback_info = NULL;
+   params.fbo_info      = NULL;
+   params.fbo_info_cnt  = 0;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
 #endif
 #endif
 }

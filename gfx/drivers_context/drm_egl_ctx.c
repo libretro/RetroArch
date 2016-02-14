@@ -97,9 +97,11 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
    stride = gbm_bo_get_stride(bo);
    handle = gbm_bo_get_handle(bo).u32;
 
-   RARCH_LOG("[KMS/EGL]: New FB: %ux%u (stride: %u).\n", width, height, stride);
+   RARCH_LOG("[KMS/EGL]: New FB: %ux%u (stride: %u).\n",
+         width, height, stride);
 
-   ret = drmModeAddFB(g_drm_fd, width, height, 24, 32, stride, handle, &fb->fb_id);
+   ret = drmModeAddFB(g_drm_fd, width, height, 24, 32,
+         stride, handle, &fb->fb_id);
    if (ret < 0)
       goto error;
 
@@ -314,7 +316,8 @@ static void *gfx_ctx_drm_egl_init(void *video_driver)
    unsigned gpu_index                   = 0;
    const char *gpu                      = NULL;
    struct string_list *gpu_descriptors  = NULL;
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)calloc(1, sizeof(gfx_ctx_drm_egl_data_t));
+   gfx_ctx_drm_egl_data_t *drm          = (gfx_ctx_drm_egl_data_t*)
+      calloc(1, sizeof(gfx_ctx_drm_egl_data_t));
 
    if (!drm)
       return NULL;
@@ -494,9 +497,9 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    const EGLint *attrib_ptr;
    EGLint major, minor, n, egl_attribs[16], *attr;
    float refresh_mod;
-   int i, ret = 0;
-   struct drm_fb *fb = NULL;
-   settings_t *settings = config_get_ptr();
+   int i, ret                  = 0;
+   struct drm_fb *fb           = NULL;
+   settings_t *settings        = config_get_ptr();
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
 
    if (!drm)
@@ -562,7 +565,8 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
 
    if (!g_drm_mode)
    {
-      RARCH_ERR("[KMS/EGL]: Did not find suitable video mode for %u x %u.\n", width, height);
+      RARCH_ERR("[KMS/EGL]: Did not find suitable video mode for %u x %u.\n",
+            width, height);
       goto error;
    }
 
@@ -594,7 +598,8 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    attr            = egl_fill_attribs(drm, egl_attribs);
    egl_attribs_ptr = &egl_attribs[0];
 
-   if (!egl_create_context(drm, (attr != egl_attribs_ptr) ? egl_attribs_ptr : NULL))
+   if (!egl_create_context(drm, (attr != egl_attribs_ptr) 
+            ? egl_attribs_ptr : NULL))
    {
       egl_report_error();
       goto error;

@@ -540,10 +540,16 @@ void d3d_make_d3dpp(void *data,
    if (!d3dpp->Windowed)
    {
 #ifdef _XBOX
+      gfx_ctx_mode_t mode;
       unsigned width          = 0;
       unsigned height         = 0;
 
-      gfx_ctx_get_video_size(&width, &height);
+      gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+
+      width                   = mode.width;
+      height                  = mode.height;
+      mode.width              = 0;
+      mode.height             = 0;
       video_driver_set_size(&width, &height);
 #endif
       video_driver_get_size(&d3dpp->BackBufferWidth, &d3dpp->BackBufferHeight);
@@ -868,8 +874,14 @@ static bool d3d_alive(void *data)
 
       if (resize)
       {
+         gfx_ctx_mode_t mode;
+
          d3d->should_resize = true;
-         gfx_ctx_set_resize(temp_width, temp_height);
+
+         mode.width  = temp_width;
+         mode.height = temp_height;
+
+         gfx_ctx_ctl(GFX_CTL_SET_RESIZE, &mode);
          d3d_restore(d3d);
       }
 
@@ -889,7 +901,8 @@ static bool d3d_focus(void *data)
 
 static bool d3d_suppress_screensaver(void *data, bool enable)
 {
-   return gfx_ctx_suppress_screensaver(enable);
+   bool enabled = enable;
+   return gfx_ctx_ctl(GFX_CTL_SUPPRESS_SCREENSAVER, &enabled);
 }
 
 static bool d3d_has_windowed(void *data)
@@ -956,6 +969,7 @@ static bool d3d_construct(d3d_video_t *d3d,
       const video_info_t *info, const input_driver_t **input,
       void **input_data)
 {
+   gfx_ctx_input_t inp;
    unsigned full_x, full_y;
    settings_t    *settings     = config_get_ptr();
 
@@ -1004,7 +1018,14 @@ static bool d3d_construct(d3d_video_t *d3d,
          (int)(mon_rect.right  - mon_rect.left),
          (int)(mon_rect.bottom - mon_rect.top));
 #else
-   gfx_ctx_get_video_size(&full_x, &full_y);
+   {
+      gfx_ctx_mode_t mode;
+
+      gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+
+      full_x   = mode.width;
+      full_y   = mode.height;
+   }
 #endif
    {
       unsigned new_width  = info->fullscreen ? full_x : info->width;
@@ -1045,7 +1066,10 @@ static bool d3d_construct(d3d_video_t *d3d,
    if (!d3d_initialize(d3d, &d3d->video_info))
       return false;
 
-   gfx_ctx_input_driver(input, input_data);
+   inp.input      = input;
+   inp.input_data = input_data;
+
+   gfx_ctx_ctl(GFX_CTL_INPUT_DRIVER, &inp);
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;

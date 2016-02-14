@@ -459,7 +459,8 @@ static void gl_cg_deinit(void *data)
       listing_##type = strdup(list); \
 }
 
-static bool gl_cg_load_program(void *data, unsigned idx, const char *prog, bool path_is_file)
+static bool gl_cg_load_program(void *data, unsigned idx,
+      const char *prog, bool path_is_file)
 {
    const char *argv[2 + GFX_MAX_SHADERS];
    bool ret         = true;
@@ -478,10 +479,12 @@ static bool gl_cg_load_program(void *data, unsigned idx, const char *prog, bool 
 
    if (path_is_file)
    {
-      cg_data->prg[idx].fprg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
+      cg_data->prg[idx].fprg = cgCreateProgramFromFile(
+            cg_data->cgCtx, CG_SOURCE,
             prog, cg_data->cgFProf, "main_fragment", argv);
       CG_GL_SET_LISTING(cg_data, f);
-      cg_data->prg[idx].vprg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
+      cg_data->prg[idx].vprg = cgCreateProgramFromFile(
+            cg_data->cgCtx, CG_SOURCE,
             prog, cg_data->cgVProf, "main_vertex", argv);
       CG_GL_SET_LISTING(cg_data, v);
    }
@@ -519,7 +522,8 @@ end:
 static void gl_cg_set_program_base_attrib(void *data, unsigned i)
 {
    cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
-   CGparameter         param = cgGetFirstParameter(cg_data->prg[i].vprg, CG_PROGRAM);
+   CGparameter         param = cgGetFirstParameter(
+         cg_data->prg[i].vprg, CG_PROGRAM);
 
    for (; param; param = cgGetNextParameter(param))
    {
@@ -760,7 +764,9 @@ static bool gl_cg_load_preset(void *data, const char *path)
    return true;
 }
 
-static void gl_cg_set_pass_attrib(struct cg_program *program, struct cg_fbo_params *fbo,
+static void gl_cg_set_pass_attrib(
+      struct cg_program *program,
+      struct cg_fbo_params *fbo,
       const char *attr)
 {
    char attr_buf[64] = {0};
@@ -861,7 +867,8 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
       snprintf(attr_buf_coord,    sizeof(attr_buf_coord),
             "%s.tex_coord", prev_names[j]);
 
-      cg_data->prg[i].prev[j].tex = cgGetNamedParameter(cg_data->prg[i].fprg, attr_buf_tex);
+      cg_data->prg[i].prev[j].tex = cgGetNamedParameter(cg_data->prg[i].fprg,
+            attr_buf_tex);
 
       cg_data->prg[i].prev[j].vid_size_v = 
          cgGetNamedParameter(cg_data->prg[i].vprg, attr_buf_vid_size);
@@ -873,7 +880,8 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
       cg_data->prg[i].prev[j].tex_size_f = 
          cgGetNamedParameter(cg_data->prg[i].fprg, attr_buf_tex_size);
 
-      cg_data->prg[i].prev[j].coord = cgGetNamedParameter(cg_data->prg[i].vprg, attr_buf_coord);
+      cg_data->prg[i].prev[j].coord = cgGetNamedParameter(cg_data->prg[i].vprg,
+            attr_buf_coord);
    }
 
    for (j = 0; j + 1 < i; j++)
@@ -886,7 +894,8 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
       gl_cg_set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], pass_str);
 
       if (*cg_data->shader->pass[j].alias)
-         gl_cg_set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j], cg_data->shader->pass[j].alias);
+         gl_cg_set_pass_attrib(&cg_data->prg[i], &cg_data->prg[i].fbo[j],
+               cg_data->shader->pass[j].alias);
    }
 }
 
@@ -949,7 +958,9 @@ static void *gl_cg_init(void *data, const char *path)
          goto error;
    }
 
-   cg_data->prg[0].mvp = cgGetNamedParameter(cg_data->prg[0].vprg, "IN.mvp_matrix");
+   cg_data->prg[0].mvp = cgGetNamedParameter(
+         cg_data->prg[0].vprg, "IN.mvp_matrix");
+
    for (i = 1; i <= cg_data->shader->passes; i++)
       gl_cg_set_program_attributes(cg_data, i);
 

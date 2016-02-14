@@ -46,7 +46,8 @@ typedef struct gfx_ctx_ps3_data
 #endif
 } gfx_ctx_ps3_data_t;
 
-static void gfx_ctx_ps3_get_resolution(unsigned idx, unsigned *width, unsigned *height)
+static void gfx_ctx_ps3_get_resolution(unsigned idx,
+      unsigned *width, unsigned *height)
 {
    CellVideoOutResolution resolution;
    cellVideoOutGetResolution(idx, &resolution);
@@ -95,7 +96,8 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
 
    for (i = 0; i < num_videomodes; i++)
    {
-      if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i],
+      if (cellVideoOutGetResolutionAvailability(
+               CELL_VIDEO_OUT_PRIMARY, videomode[i],
                CELL_VIDEO_OUT_ASPECT_AUTO, 0))
          resolution_count++;
    }
@@ -106,10 +108,13 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
 
    for (i = 0; i < num_videomodes; i++)
    {
-      if (cellVideoOutGetResolutionAvailability(CELL_VIDEO_OUT_PRIMARY, videomode[i],
+      if (cellVideoOutGetResolutionAvailability(
+               CELL_VIDEO_OUT_PRIMARY,
+               videomode[i],
                CELL_VIDEO_OUT_ASPECT_AUTO, 0))
       {
-         global->console.screen.resolutions.list[global->console.screen.resolutions.count++] = videomode[i];
+         global->console.screen.resolutions.list[
+            global->console.screen.resolutions.count++] = videomode[i];
          global->console.screen.resolutions.initial.id = videomode[i];
 
          if (global->console.screen.resolutions.current.id == videomode[i])
@@ -121,10 +126,14 @@ static void gfx_ctx_ps3_get_available_resolutions(void)
       }
    }
 
-   /* In case we didn't specify a resolution - make the last resolution
-      that was added to the list (the highest resolution) the default resolution */
-   if (global->console.screen.resolutions.current.id > num_videomodes || defaultresolution)
-      global->console.screen.resolutions.current.idx = global->console.screen.resolutions.count - 1;
+   /* In case we didn't specify a resolution - 
+    * make the last resolution
+      that was added to the list (the highest resolution) 
+      the default resolution */
+   if (global->console.screen.resolutions.current.id > num_videomodes 
+         || defaultresolution)
+      global->console.screen.resolutions.current.idx = 
+         global->console.screen.resolutions.count - 1;
 
    global->console.screen.resolutions.check = true;
 }
@@ -349,7 +358,8 @@ static bool gfx_ctx_ps3_bind_api(void *data,
    return api == GFX_CTX_OPENGL_API || GFX_CTX_OPENGL_ES_API;
 }
 
-static void gfx_ctx_ps3_get_video_output_size(void *data, unsigned *width, unsigned *height)
+static void gfx_ctx_ps3_get_video_output_size(void *data,
+      unsigned *width, unsigned *height)
 {
    global_t *global = global_get_ptr();
 

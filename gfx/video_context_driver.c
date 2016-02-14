@@ -80,69 +80,6 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
-static const gfx_ctx_driver_t  *current_video_context;
-static        void *video_context_data;
-
-const char *gfx_ctx_get_ident(void)
-{
-   const gfx_ctx_driver_t *ctx = current_video_context;
-
-   if (!ctx)
-      return NULL;
-   return ctx->ident;
-}
-
-bool gfx_ctx_set_video_mode(
-      unsigned width, unsigned height,
-      bool fullscreen)
-{
-   if (!current_video_context || !current_video_context->set_video_mode)
-      return false;
-   return current_video_context->set_video_mode(
-         video_context_data, width, height, fullscreen);
-}
-
-bool gfx_ctx_image_buffer_write(const void *frame, unsigned width,
-         unsigned height, unsigned pitch, bool rgb32,
-         unsigned index, void **image_handle)
-{
-   if (!current_video_context || !current_video_context->image_buffer_write)
-      return false;
-   return current_video_context->image_buffer_write(video_context_data,
-         frame, width, height, pitch,
-         rgb32, index, image_handle);
-}
-
-
-bool gfx_ctx_suppress_screensaver(bool enable)
-{
-   if (video_context_data && current_video_context)
-      return current_video_context->suppress_screensaver(
-            video_context_data, enable);
-   return false;
-}
-
-void gfx_ctx_get_video_size(unsigned *width, unsigned *height)
-{
-   current_video_context->get_video_size(video_context_data, width, height);
-}
-
-bool gfx_ctx_set_resize(unsigned width, unsigned height)
-{
-   if (!current_video_context)
-      return false;
-
-   return current_video_context->set_resize(
-         video_context_data, width, height);
-}
-
-void gfx_ctx_input_driver(
-      const input_driver_t **input, void **input_data)
-{
-   if (current_video_context)
-      current_video_context->input_driver(
-            video_context_data, input, input_data);
-}
 
 /**
  * find_gfx_ctx_driver_index:
@@ -170,11 +107,13 @@ static int find_gfx_ctx_driver_index(const char *ident)
 static bool gfx_ctl_find_prev_driver(void)
 {
    settings_t *settings = config_get_ptr();
-   int i = find_gfx_ctx_driver_index(settings->video.context_driver);
+   int                i = find_gfx_ctx_driver_index(
+         settings->video.context_driver);
    
    if (i > 0)
    {
-      strlcpy(settings->video.context_driver, gfx_ctx_drivers[i - 1]->ident,
+      strlcpy(settings->video.context_driver,
+            gfx_ctx_drivers[i - 1]->ident,
             sizeof(settings->video.context_driver));
       return true;
    }
@@ -195,7 +134,8 @@ static bool gfx_ctl_find_next_driver(void)
 
    if (i >= 0 && gfx_ctx_drivers[i + 1])
    {
-      strlcpy(settings->video.context_driver, gfx_ctx_drivers[i + 1]->ident,
+      strlcpy(settings->video.context_driver,
+            gfx_ctx_drivers[i + 1]->ident,
             sizeof(settings->video.context_driver));
       return true;
    }
@@ -238,7 +178,7 @@ static const gfx_ctx_driver_t *gfx_ctx_init(void *data,
          ctx->bind_hw_render(ctx_data,
                settings->video.shared_context && hw_render_ctx);
 
-      video_context_data = ctx_data;
+      gfx_ctx_ctl(GFX_CTL_SET_VIDEO_CONTEXT_DATA, ctx_data);
       return ctx;
    }
 
@@ -312,6 +252,9 @@ const gfx_ctx_driver_t *gfx_ctx_init_first(void *data,
 
 bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
+   static const gfx_ctx_driver_t *current_video_context = NULL;
+   static void *video_context_data                      = NULL;
+
    switch (state)
    {
       case GFX_CTL_CHECK_WINDOW:
@@ -340,6 +283,16 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             return false;
          return current_video_context->image_buffer_init(video_context_data,
                (const video_info_t*)data);
+      case GFX_CTL_IMAGE_BUFFER_WRITE:
+         {
+            gfx_ctx_image_t *img = (gfx_ctx_image_t*)data;
+
+            if (!current_video_context || !current_video_context->image_buffer_write)
+               return false;
+            return current_video_context->image_buffer_write(video_context_data,
+                  img->frame, img->width, img->height, img->pitch,
+                  img->rgb32, img->index, img->handle);
+         }
       case GFX_CTL_GET_VIDEO_OUTPUT_PREV:
          if (!current_video_context 
                || !current_video_context->get_video_output_prev)
@@ -429,6 +382,60 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
                   metrics->type,
                   metrics->value);
          }
+      case GFX_CTL_INPUT_DRIVER:
+         {
+            gfx_ctx_input_t *inp = (gfx_ctx_input_t*)data;
+            if (!current_video_context || !current_video_context->input_driver)
+               return false;
+            current_video_context->input_driver(
+                  video_context_data, inp->input, inp->input_data);
+         }
+         break;
+      case GFX_CTL_SUPPRESS_SCREENSAVER:
+         {
+            bool *bool_data = (bool*)data;
+            if (!video_context_data || !current_video_context)
+               return false;
+            return current_video_context->suppress_screensaver(
+                  video_context_data, *bool_data);
+         }
+      case GFX_CTL_IDENT_GET:
+         {
+            gfx_ctx_ident_t *ident = (gfx_ctx_ident_t*)data;
+            ident->ident = NULL;
+            if (current_video_context)
+               ident->ident = current_video_context->ident;
+         }
+         break;
+      case GFX_CTL_SET_VIDEO_MODE:
+         {
+            gfx_ctx_mode_t *mode_info = (gfx_ctx_mode_t*)data;
+            if (!current_video_context || !current_video_context->set_video_mode)
+               return false;
+            return current_video_context->set_video_mode(
+                  video_context_data, mode_info->width,
+                  mode_info->height, mode_info->fullscreen);
+         }
+         break;
+      case GFX_CTL_SET_RESIZE:
+         {
+            gfx_ctx_mode_t *mode_info = (gfx_ctx_mode_t*)data;
+            if (!current_video_context)
+               return false;
+            return current_video_context->set_resize(
+                  video_context_data, mode_info->width, mode_info->height);
+         }
+      case GFX_CTL_GET_VIDEO_SIZE:
+         {
+            gfx_ctx_mode_t *mode_info = (gfx_ctx_mode_t*)data;
+            if (!current_video_context || !current_video_context->get_video_size)
+               return false;
+            current_video_context->get_video_size(video_context_data, &mode_info->width, &mode_info->height);
+         }
+         break;
+      case GFX_CTL_SET_VIDEO_CONTEXT_DATA:
+         video_context_data = data;
+         break;
       case GFX_CTL_NONE:
       default:
          break;

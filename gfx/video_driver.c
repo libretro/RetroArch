@@ -98,7 +98,7 @@ static enum rarch_display_type video_driver_display_type;
 
 static uint64_t video_driver_frame_count;
 
-static void *video_driver_data = NULL;
+static void *video_driver_data       = NULL;
 static video_driver_t *current_video = NULL;
 
 /* Interface for "poking". */
@@ -333,20 +333,9 @@ const video_poke_interface_t *video_driver_get_poke(void)
  **/
 uintptr_t video_driver_get_current_framebuffer(void)
 {
-   if (video_driver_poke && video_driver_poke->get_current_framebuffer)
-      return video_driver_poke->get_current_framebuffer(video_driver_data);
-   return 0;
-}
-
-bool video_driver_get_current_software_framebuffer(
-      struct retro_framebuffer *framebuffer)
-{
-   if (
-         !video_driver_poke || 
-         !video_driver_poke->get_current_software_framebuffer)
-      return false;
-   return video_driver_poke->get_current_software_framebuffer(
-         video_driver_data, framebuffer);
+   if (!video_driver_poke || !video_driver_poke->get_current_framebuffer)
+      return 0;
+   return video_driver_poke->get_current_framebuffer(video_driver_data);
 }
 
 retro_proc_address_t video_driver_get_proc_address(const char *sym)
@@ -399,7 +388,8 @@ static void init_video_filter(enum retro_pixel_format colfmt)
       return;
    }
 
-   geom    = av_info ? (struct retro_game_geometry*)&av_info->geometry : NULL;
+   if (av_info)
+      geom = (struct retro_game_geometry*)&av_info->geometry;
 
    if (!geom)
       return;
@@ -420,22 +410,23 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    rarch_softfilter_get_max_output_size(video_driver_state.filter.filter,
          &width, &height);
 
-   pow2_x                    = next_pow2(width);
-   pow2_y                    = next_pow2(height);
-   maxsize                   = max(pow2_x, pow2_y);
-   video_driver_state.filter.scale  = maxsize / RARCH_SCALE_BASE;
+   pow2_x                              = next_pow2(width);
+   pow2_y                              = next_pow2(height);
+   maxsize                             = max(pow2_x, pow2_y);
+   video_driver_state.filter.scale     = maxsize / RARCH_SCALE_BASE;
    video_driver_state.filter.out_rgb32 = rarch_softfilter_get_output_format(
          video_driver_state.filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
 
-   video_driver_state.filter.out_bpp = video_driver_state.filter.out_rgb32 ?
+   video_driver_state.filter.out_bpp   = 
+      video_driver_state.filter.out_rgb32 ?
       sizeof(uint32_t) : sizeof(uint16_t);
 
    /* TODO: Aligned output. */
 #ifdef _3DS
-   video_driver_state.filter.buffer = linearMemAlign(width 
+   video_driver_state.filter.buffer    = linearMemAlign(width 
          * height * video_driver_state.filter.out_bpp, 0x80);
 #else
-   video_driver_state.filter.buffer = malloc(width 
+   video_driver_state.filter.buffer    = malloc(width 
          * height * video_driver_state.filter.out_bpp);
 #endif
    if (!video_driver_state.filter.buffer)
@@ -487,8 +478,9 @@ error:
  **/
 static void video_monitor_compute_fps_statistics(void)
 {
-   double avg_fps = 0.0, stddev = 0.0;
-   unsigned samples = 0;
+   double avg_fps       = 0.0;
+   double stddev        = 0.0;
+   unsigned samples     = 0;
    settings_t *settings = config_get_ptr();
 
    if (settings->video.threaded)
@@ -750,7 +742,8 @@ static bool init_video(void)
       /* Force custom viewport to have sane parameters. */
       custom_vp->width = width;
       custom_vp->height = height;
-      video_driver_viewport_info(custom_vp);
+
+      video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, custom_vp);
    }
 
    video_driver_set_rotation(
@@ -782,28 +775,26 @@ error:
 bool video_driver_set_viewport(unsigned width, unsigned height,
       bool force_fullscreen, bool allow_rotate)
 {
-   if (current_video->set_viewport)
-   {
-      current_video->set_viewport(video_driver_data, width, height,
-            force_fullscreen, allow_rotate);
-      return true;
-   }
-   return false;
+   if (!current_video || !current_video->set_viewport)
+      return false;
+   current_video->set_viewport(video_driver_data, width, height,
+         force_fullscreen, allow_rotate);
+   return true;
 }
 
 bool video_driver_set_rotation(unsigned rotation)
 {
-   if (current_video->set_rotation)
-   {
-      current_video->set_rotation(video_driver_data, rotation);
-      return true;
-   }
-   return false;
+   if (!current_video || !current_video->set_rotation)
+      return false;
+   current_video->set_rotation(video_driver_data, rotation);
+   return true;
 }
 
 bool video_driver_set_video_mode(unsigned width,
       unsigned height, bool fullscreen)
 {
+   gfx_ctx_mode_t mode;
+
    if (video_driver_poke && video_driver_poke->set_video_mode)
    {
       video_driver_poke->set_video_mode(video_driver_data,
@@ -811,18 +802,20 @@ bool video_driver_set_video_mode(unsigned width,
       return true;
    }
 
-   return gfx_ctx_set_video_mode(width, height, fullscreen);
+   mode.width      = width;
+   mode.height     = height;
+   mode.fullscreen = fullscreen;
+
+   return gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode);
 }
 
 bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
 {
-   if (video_driver_poke && video_driver_poke->get_video_output_size)
-   {
-      video_driver_poke->get_video_output_size(video_driver_data,
-            width, height);
-      return true;
-   }
-   return false;
+   if (!video_driver_poke || !video_driver_poke->get_video_output_size)
+      return false;
+   video_driver_poke->get_video_output_size(video_driver_data,
+         width, height);
+   return true;
 }
 
 void video_driver_set_osd_msg(const char *msg,
@@ -849,36 +842,25 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
 #endif
 }
 
-bool video_driver_viewport_info(struct video_viewport *vp)
-{
-   if (current_video->viewport_info)
-   {
-      current_video->viewport_info(video_driver_data, vp);
-      return true;
-   }
-   return false;
-}
 
 
 #ifdef HAVE_OVERLAY
 bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
 {
-   if (current_video->overlay_interface)
-   {
-      current_video->overlay_interface(video_driver_data, iface);
-      return true;
-   }
-   return false;
+   if (!current_video || !current_video->overlay_interface)
+      return false;
+   current_video->overlay_interface(video_driver_data, iface);
+   return true;
 }
 #endif
 
 void *video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch)
 {
-   if (current_video->read_frame_raw)
-      return current_video->read_frame_raw(video_driver_data, width,
-            height, pitch);
-   return NULL;
+   if (!current_video || !current_video->read_frame_raw)
+      return NULL;
+   return current_video->read_frame_raw(video_driver_data, width,
+         height, pitch);
 }
 
 void video_driver_set_filtering(unsigned index, bool smooth)
@@ -1029,7 +1011,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
    if (video_driver_frame_count)
    {
       static float last_fps;
-      bool ret = false;
+      bool ret             = false;
       unsigned write_index = video_driver_state.frame_time_samples_count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
 
@@ -1344,7 +1326,7 @@ static void video_viewport_set_square_pixel(unsigned width, unsigned height)
  **/
 static bool video_viewport_set_config(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings                 = config_get_ptr();
    struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
 
    if (settings->video.aspect_ratio < 0.0f)
@@ -1437,9 +1419,9 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          return video_viewport_set_config();
       case RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL:
          {
+            struct retro_game_geometry *geom     = NULL;
             struct retro_system_av_info *av_info = 
                video_viewport_get_system_av_info();
-            struct retro_game_geometry *geom     = NULL;
             
             if (av_info)
                geom = &av_info->geometry;
@@ -1733,6 +1715,18 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             free(video_driver_record_gpu_buffer);
          video_driver_record_gpu_buffer = NULL;
          break;
+      case RARCH_DISPLAY_CTL_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
+         if (
+               !video_driver_poke || 
+               !video_driver_poke->get_current_software_framebuffer)
+            return false;
+         return video_driver_poke->get_current_software_framebuffer(
+               video_driver_data, (struct retro_framebuffer *)data);
+      case RARCH_DISPLAY_CTL_VIEWPORT_INFO:
+         if (!current_video || !current_video->viewport_info)
+            return false;
+         current_video->viewport_info(video_driver_data, (struct video_viewport*)data);
+         break;
       case RARCH_DISPLAY_CTL_NONE:
       default:
          break;
@@ -1757,7 +1751,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       unsigned width, unsigned height,
       float aspect_ratio, bool keep_aspect)
 {
-   int padding_x = 0, padding_y = 0;
+   int padding_x        = 0;
+   int padding_y        = 0;
    settings_t *settings = config_get_ptr();
 
    if (!vp)
@@ -1771,8 +1766,8 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
       {
          padding_x = width - custom->width;
          padding_y = height - custom->height;
-         width = custom->width;
-         height = custom->height;
+         width     = custom->width;
+         height    = custom->height;
       }
    }
    else
@@ -1943,7 +1938,8 @@ void video_driver_frame(const void *data, unsigned width,
       strlcpy(video_driver_msg, msg, sizeof(video_driver_msg));
 
    if (!current_video || !current_video->frame(
-            video_driver_data, data, width, height, video_driver_frame_count,
+            video_driver_data, data, width, height,
+            video_driver_frame_count,
             pitch, video_driver_msg))
       video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_ACTIVE, NULL);
 

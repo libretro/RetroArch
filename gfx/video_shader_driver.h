@@ -24,11 +24,47 @@
 #include "../config.h"
 #endif
 
+#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
+#ifndef HAVE_SHADER_MANAGER
+#define HAVE_SHADER_MANAGER
+#endif
+
+#include "video_shader_parse.h"
+
+#define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
+
+#endif
+
+#if defined(_XBOX360)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
+#elif defined(__PSL1GHT__)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#elif defined(__CELLOS_LV2__)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
+#elif defined(HAVE_OPENGLES2)
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
+#else
+#define DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
+#endif
+
 #include "video_context_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+enum video_shader_driver_ctl_state
+{
+   SHADER_CTL_NONE = 0,
+   SHADER_CTL_DEINIT,
+   SHADER_CTL_INIT,
+   /* Finds first suitable shader context driver. */
+   SHADER_CTL_INIT_FIRST,
+   SHADER_CTL_SET_PARAMS,
+   SHADER_CTL_GET_FEEDBACK_PASS,
+   SHADER_CTL_MIPMAP_INPUT,
+   SHADER_CTL_SET_COORDS
+};
 
 typedef struct shader_backend
 {
@@ -66,34 +102,40 @@ typedef struct shader_backend
    const char *ident;
 } shader_backend_t;
 
+typedef struct video_shader_ctx_init
+{
+   const shader_backend_t *shader;
+   void *data;
+   const char *path;
+} video_shader_ctx_init_t;
+
+typedef struct video_shader_ctx_params
+{
+   void *data;
+   unsigned width;
+   unsigned height;
+   unsigned tex_width;
+   unsigned tex_height;
+   unsigned out_width;
+   unsigned out_height;
+   unsigned frame_counter;
+   const void *info;
+   const void *prev_info;
+   const void *feedback_info;
+   const void *fbo_info;
+   unsigned fbo_info_cnt;
+} video_shader_ctx_params_t;
+
+typedef struct video_shader_ctx_coords
+{
+   void *handle_data;
+   const void *data;
+} video_shader_ctx_coords_t;
+
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
-
-#if defined(_XBOX360)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_HLSL
-#elif defined(__PSL1GHT__)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
-#elif defined(__CELLOS_LV2__)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_CG
-#elif defined(HAVE_OPENGLES2)
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
-#else
-#define DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
-#endif
-
-#if defined(HAVE_CG) || defined(HAVE_HLSL) || defined(HAVE_GLSL)
-
-#ifndef HAVE_SHADER_MANAGER
-#define HAVE_SHADER_MANAGER
-#endif
-
-#include "video_shader_parse.h"
-
-#define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
-
-#endif
 
 void video_shader_driver_scale(unsigned idx, struct gfx_fbo_scale *scale);
 
@@ -107,31 +149,13 @@ void video_shader_driver_scale(unsigned idx, struct gfx_fbo_scale *scale);
  **/
 const shader_backend_t *shader_ctx_find_driver(const char *ident);
 
-/**
- * video_shader_driver_init_first:
- *
- * Finds first suitable shader context driver.
- *
- * Returns: shader context driver if found, otherwise NULL.
- **/
-bool video_shader_driver_init_first(void);
-
 struct video_shader *video_shader_driver_get_current_shader(void);
-
-bool video_shader_driver_init(const shader_backend_t *shader,
-      void *data, const char *path);
-
-void video_shader_driver_deinit(void);
 
 void video_shader_driver_use(void *data, unsigned index);
 
 const char *video_shader_driver_get_ident(void);
 
-bool video_shader_driver_mipmap_input(unsigned index);
-
 unsigned video_shader_driver_num_shaders(void);
-
-bool video_shader_driver_set_coords(void *handle_data, const void *data);
 
 bool video_shader_driver_set_mvp(void *data, const math_matrix_4x4 *mat);
 
@@ -141,19 +165,9 @@ bool video_shader_driver_filter_type(unsigned index, bool *smooth);
 
 enum gfx_wrap_type video_shader_driver_wrap_type(unsigned index);
 
-bool video_shader_driver_get_feedback_pass(unsigned *pass);
-
 struct video_shader *video_shader_driver_direct_get_current_shader(void);
 
-void video_shader_driver_set_params( 
-      void *data, unsigned width, unsigned height, 
-      unsigned tex_width, unsigned tex_height, 
-      unsigned out_width, unsigned out_height,
-      unsigned frame_counter,
-      const void *info, 
-      const void *prev_info,
-      const void *feedback_info,
-      const void *fbo_info, unsigned fbo_info_cnt);
+bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

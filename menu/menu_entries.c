@@ -162,7 +162,8 @@ static int menu_entries_flush_stack_type(const char *needle, const char *label,
    return needle ? strcmp(needle, label) : (type != final_type);
 }
 
-static bool menu_list_pop_stack(menu_list_t *list, size_t idx, size_t *directory_ptr)
+static bool menu_list_pop_stack(menu_list_t *list,
+      size_t idx, size_t *directory_ptr)
 {
    menu_ctx_list_t list_info;
    bool refresh           = false;
@@ -218,12 +219,14 @@ static void menu_list_flush_stack(menu_list_t *list,
    {
       size_t new_selection_ptr;
 
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &new_selection_ptr);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION,
+            &new_selection_ptr);
 
       if (!menu_list_pop_stack(list, idx, &new_selection_ptr))
          break;
 
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection_ptr);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION,
+            &new_selection_ptr);
 
       menu_entries_get_last(list->menu_stack[idx],
             &path, &label, &type, &entry_idx);
@@ -593,7 +596,8 @@ menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
    menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
    if (!menu_list)
       return NULL;
-   return (menu_file_list_cbs_t*)file_list_get_last_actiondata(menu_list->menu_stack[0]);
+   return (menu_file_list_cbs_t*)file_list_get_last_actiondata(
+         menu_list->menu_stack[0]);
 }
 
 void menu_entries_get_last_stack(const char **path, const char **label,
@@ -602,7 +606,8 @@ void menu_entries_get_last_stack(const char **path, const char **label,
    menu_list_t *menu_list         = NULL;
    menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
    if (menu_list)
-      menu_entries_get_last(menu_list->menu_stack[0], path, label, file_type, entry_idx);
+      menu_entries_get_last(menu_list->menu_stack[0],
+            path, label, file_type, entry_idx);
 }
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)
@@ -642,7 +647,8 @@ size_t menu_entries_get_size(void)
 rarch_setting_t *menu_entries_get_setting(uint32_t i)
 {
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   menu_file_list_cbs_t *cbs  = menu_entries_get_actiondata_at_offset(selection_buf, i);
+   menu_file_list_cbs_t *cbs  = 
+      menu_entries_get_actiondata_at_offset(selection_buf, i);
 
    if (!cbs)
       return NULL;

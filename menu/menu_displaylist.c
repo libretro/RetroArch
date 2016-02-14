@@ -441,6 +441,9 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
 static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 {
    int controller;
+#if defined(HAVE_OPENGL) || defined(HAVE_GLES)
+   gfx_ctx_ident_t ident_info;
+#endif
    char tmp[PATH_MAX_LENGTH], feat_str[PATH_MAX_LENGTH];
    const char *tmp_string                = NULL;
    const frontend_ctx_driver_t *frontend = frontend_get_ptr();
@@ -596,7 +599,8 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    }
 
 #if defined(HAVE_OPENGL) || defined(HAVE_GLES)
-   tmp_string = gfx_ctx_get_ident();
+   gfx_ctx_ctl(GFX_CTL_IDENT_GET, &ident_info);
+   tmp_string = ident_info.ident;
 
    strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER), sizeof(tmp));
    strlcat(tmp, ": ", sizeof(tmp));

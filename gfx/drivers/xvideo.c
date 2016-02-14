@@ -71,7 +71,8 @@ typedef struct xv
    uint8_t font_u;
    uint8_t font_v;
 
-   void (*render_func)(struct xv*, const void *frame, unsigned width, unsigned height, unsigned pitch);
+   void (*render_func)(struct xv*, const void *frame,
+         unsigned width, unsigned height, unsigned pitch);
 } xv_t;
 
 static void xv_set_nonblock_state(void *data, bool state)
@@ -84,11 +85,15 @@ static void xv_set_nonblock_state(void *data, bool state)
       RARCH_WARN("Failed to set SYNC_TO_VBLANK attribute.\n");
 }
 
-static INLINE void calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v, unsigned r, unsigned g, unsigned b)
+static INLINE void calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v,
+      unsigned r, unsigned g, unsigned b)
 {
-   int y_ = (int)(+((double)r * 0.257) + ((double)g * 0.504) + ((double)b * 0.098) +  16.0);
-   int u_ = (int)(-((double)r * 0.148) - ((double)g * 0.291) + ((double)b * 0.439) + 128.0);
-   int v_ = (int)(+((double)r * 0.439) - ((double)g * 0.368) - ((double)b * 0.071) + 128.0);
+   int y_ = (int)(+((double)r * 0.257) + ((double)g * 0.504) 
+         + ((double)b * 0.098) +  16.0);
+   int u_ = (int)(-((double)r * 0.148) - ((double)g * 0.291) 
+         + ((double)b * 0.439) + 128.0);
+   int v_ = (int)(+((double)r * 0.439) - ((double)g * 0.368) 
+         - ((double)b * 0.071) + 128.0);
 
    *y = y_ < 0 ? 0 : (y_ > 255 ? 255 : y_);
    *u = y_ < 0 ? 0 : (u_ > 255 ? 255 : u_);
@@ -218,7 +223,8 @@ static void render32_yuy2(xv_t *xv, const void *input_,
          uint8_t y0, u, v;
          unsigned img_width;
          uint32_t p = *input++;
-         p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0) | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
+         p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0) 
+            | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
 
          y0 = xv->ytable[p];
          u = xv->utable[p];
@@ -251,7 +257,8 @@ static void render32_uyvy(xv_t *xv, const void *input_,
          uint8_t y0, u, v;
          unsigned img_width;
          uint32_t p = *input++;
-         p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0) | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
+         p = ((p >> 8) & 0xf800) 
+            | ((p >> 5) & 0x07e0) | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
 
          y0 = xv->ytable[p];
          u = xv->utable[p];
@@ -316,18 +323,21 @@ static bool adaptor_set_format(xv_t *xv, Display *dpy,
    {
       for (j = 0; j < ARRAY_SIZE(formats); j++)
       {
-         if (format[i].type == XvYUV && format[i].bits_per_pixel == 16 && format[i].format == XvPacked)
+         if (format[i].type == XvYUV 
+               && format[i].bits_per_pixel == 16 
+               && format[i].format == XvPacked)
          {
             if (format[i].component_order[0] == formats[j].components[0] &&
                   format[i].component_order[1] == formats[j].components[1] &&
                   format[i].component_order[2] == formats[j].components[2] &&
                   format[i].component_order[3] == formats[j].components[3])
             {
-               xv->fourcc = format[i].id;
-               xv->render_func = video->rgb32 ? formats[j].render_32 : formats[j].render_16;
+               xv->fourcc         = format[i].id;
+               xv->render_func    = video->rgb32 
+                  ? formats[j].render_32 : formats[j].render_16;
 
-               xv->luma_index[0] = formats[j].luma_index[0];
-               xv->luma_index[1] = formats[j].luma_index[1];
+               xv->luma_index[0]  = formats[j].luma_index[0];
+               xv->luma_index[1]  = formats[j].luma_index[1];
                xv->chroma_u_index = formats[j].u_index;
                xv->chroma_v_index = formats[j].v_index;
                XFree(format);
@@ -350,7 +360,8 @@ static void calc_out_rect(bool keep_aspect, struct video_viewport *vp,
    vp->full_height = vp_height;
 
    if (settings->video.scale_integer)
-      video_viewport_get_scaled_integer(vp, vp_width, vp_height, video_driver_get_aspect_ratio(), keep_aspect);
+      video_viewport_get_scaled_integer(vp, vp_width, vp_height,
+            video_driver_get_aspect_ratio(), keep_aspect);
    else if (!keep_aspect)
    {
       vp->x = 0; vp->y = 0;
@@ -491,9 +502,11 @@ static void *xv_init(const video_info_t *video,
    attributes.event_mask   = StructureNotifyMask | KeyPressMask | 
       KeyReleaseMask | ButtonReleaseMask | ButtonPressMask | DestroyNotify | ClientMessage;
 
-   width      = video->fullscreen ? ( (video->width  == 0) ? geom->base_width : video->width) : video->width;
-   height     = video->fullscreen ? ((video->height == 0) ? geom->base_height : video->height) : video->height;
-   g_x11_win = XCreateWindow(g_x11_dpy, DefaultRootWindow(g_x11_dpy),
+   width      = video->fullscreen ? ( (video->width  == 0) ? 
+         geom->base_width : video->width) : video->width;
+   height     = video->fullscreen ? ((video->height == 0)  ? 
+         geom->base_height : video->height) : video->height;
+   g_x11_win  = XCreateWindow(g_x11_dpy, DefaultRootWindow(g_x11_dpy),
          0, 0, width, height,
          0, xv->depth, InputOutput, visualinfo->visual,
          CWColormap | CWBorderPixel | CWEventMask, &attributes);
@@ -598,7 +611,9 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
       XFree(xv->image);
 
       memset(&xv->shminfo, 0, sizeof(xv->shminfo));
-      xv->image = XvShmCreateImage(g_x11_dpy, xv->port, xv->fourcc, NULL, xv->width, xv->height, &xv->shminfo);
+      xv->image = XvShmCreateImage(g_x11_dpy, xv->port, xv->fourcc,
+            NULL, xv->width, xv->height, &xv->shminfo);
+
       if (xv->image == None)
       {
          RARCH_ERR("Failed to create image.\n");
@@ -608,14 +623,17 @@ static bool check_resize(xv_t *xv, unsigned width, unsigned height)
       xv->width  = xv->image->width;
       xv->height = xv->image->height;
 
-      xv->shminfo.shmid = shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
+      xv->shminfo.shmid = 
+         shmget(IPC_PRIVATE, xv->image->data_size, IPC_CREAT | 0777);
+
       if (xv->shminfo.shmid < 0)
       {
          RARCH_ERR("Failed to init SHM.\n");
          return false;
       }
 
-      xv->shminfo.shmaddr  = xv->image->data = (char*)shmat(xv->shminfo.shmid, NULL, 0);
+      xv->shminfo.shmaddr  = xv->image->data = 
+         (char*)shmat(xv->shminfo.shmid, NULL, 0);
       xv->shminfo.readOnly = false;
 
       if (!XShmAttach(g_x11_dpy, &xv->shminfo))
@@ -661,11 +679,14 @@ static void xv_render_msg(xv_t *xv, const char *msg,
       int base_x, base_y, glyph_width, glyph_height, max_width, max_height;
       const uint8_t *src             = NULL;
       uint8_t *out                   = NULL;
-      const struct font_glyph *glyph = xv->font_driver->get_glyph(xv->font, (uint8_t)*msg);
+      const struct font_glyph *glyph = 
+         xv->font_driver->get_glyph(xv->font, (uint8_t)*msg);
+
       if (!glyph)
          continue;
 
-      /* Make sure we always start on the correct boundary so the indices are correct. */
+      /* Make sure we always start on the correct boundary 
+       * so the indices are correct. */
       base_x          = (msg_base_x + glyph->draw_offset_x + 1) & ~1; 
       base_y          = msg_base_y + glyph->draw_offset_y;
 
@@ -722,15 +743,18 @@ static void xv_render_msg(xv_t *xv, const char *msg,
 
             for (i = 0; i < 2; i++)
             {
-               unsigned blended = (xv->font_y * alpha[i] + ((256 - alpha[i]) * out[out_x + luma_index[i]])) >> 8;
+               unsigned blended = (xv->font_y * alpha[i] 
+                     + ((256 - alpha[i]) * out[out_x + luma_index[i]])) >> 8;
                out[out_x + luma_index[i]] = blended;
             }
 
             /* Blend chroma channels */
-            blended = (xv->font_u * alpha_sub + ((256 - alpha_sub) * out[out_x + chroma_u_index])) >> 8;
+            blended = (xv->font_u * alpha_sub 
+                  + ((256 - alpha_sub) * out[out_x + chroma_u_index])) >> 8;
             out[out_x + chroma_u_index] = blended;
 
-            blended = (xv->font_v * alpha_sub + ((256 - alpha_sub) * out[out_x + chroma_v_index])) >> 8;
+            blended = (xv->font_v * alpha_sub 
+                  + ((256 - alpha_sub) * out[out_x + chroma_v_index])) >> 8;
             out[out_x + chroma_v_index] = blended;
          }
       }

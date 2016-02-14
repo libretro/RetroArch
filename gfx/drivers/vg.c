@@ -85,6 +85,8 @@ static INLINE bool vg_query_extension(const char *ext)
 
 static void *vg_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
+   gfx_ctx_mode_t mode;
+   gfx_ctx_input_t inp;
    gfx_ctx_aspect_t aspect_data;
    unsigned interval;
    unsigned temp_width = 0, temp_height = 0;
@@ -99,7 +101,13 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
    gfx_ctx_ctl(GFX_CTL_SET, ctx);
 
-   gfx_ctx_get_video_size(&temp_width, &temp_height);
+   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+
+   temp_width  = mode.width;
+   temp_height = mode.height;
+   mode.width  = 0;
+   mode.height = 0;
+
    RARCH_LOG("Detecting screen resolution %ux%u.\n", temp_width, temp_height);
 
    if (temp_width != 0 && temp_height != 0)
@@ -123,14 +131,27 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       win_height = temp_height;
    }
 
-   if (!gfx_ctx_set_video_mode(win_width, win_height, video->fullscreen))
+   mode.width      = win_width;
+   mode.height     = win_height;
+   mode.fullscreen = video->fullscreen;
+
+   if (!gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode))
       goto error;
 
    video_driver_get_size(&temp_width, &temp_height);
 
    temp_width  = 0;
    temp_height = 0;
-   gfx_ctx_get_video_size(&temp_width, &temp_height);
+   mode.width  = 0;
+   mode.height = 0;
+
+   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+
+   temp_width  = mode.width;
+   temp_height = mode.height;
+   mode.width  = 0;
+   mode.height = 0;
+
    vg->should_resize = true;
 
    if (temp_width != 0 && temp_height != 0)
@@ -156,7 +177,10 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
          video->smooth ? VG_IMAGE_QUALITY_BETTER : VG_IMAGE_QUALITY_NONANTIALIASED);
    vg_set_nonblock_state(vg, !video->vsync);
 
-   gfx_ctx_input_driver(input, input_data);
+   inp.input      = input;
+   inp.input_data = input_data;
+
+   gfx_ctx_ctl(GFX_CTL_INPUT_DRIVER, &inp);
 
    if (settings->video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer,
             *settings->video.font_path ? settings->video.font_path : NULL, settings->video.font_size))
@@ -294,10 +318,20 @@ static void vg_copy_frame(void *data, const void *frame,
 
    if (vg->mEglImageBuf)
    {
+      gfx_ctx_image_t img_info;
       EGLImageKHR img = 0;
-      bool                new_egl = gfx_ctx_image_buffer_write(
-            frame, width, height, pitch, (vg->mTexType == VG_sXRGB_8888), 0, &img);
+      bool new_egl    = false;
 
+      img_info.frame  = frame;
+      img_info.width  = width;
+      img_info.height = height;
+      img_info.pitch  = pitch;
+      img_info.rgb32  = (vg->mTexType == VG_sXRGB_8888);
+      img_info.index  = 0;
+      img_info.handle = &img;
+      
+      new_egl         = gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_WRITE, &img_info);
+      
       retro_assert(img != EGL_NO_IMAGE_KHR);
 
       if (new_egl)
@@ -399,7 +433,8 @@ static bool vg_focus(void *data)
 
 static bool vg_suppress_screensaver(void *data, bool enable)
 {
-   return gfx_ctx_suppress_screensaver(enable);
+   bool enabled = enable;
+   return gfx_ctx_ctl(GFX_CTL_SUPPRESS_SCREENSAVER, &enabled);
 }
 
 static bool vg_has_windowed(void *data)

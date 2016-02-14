@@ -38,13 +38,15 @@ void gl_ff_vertex(const void *data)
 void gl_ff_matrix(const void *data)
 {
 #ifndef NO_GL_FF_MATRIX
+   math_matrix_4x4 ident;
    const math_matrix_4x4 *mat = (const math_matrix_4x4*)data;
 
    /* Fall back to fixed function-style if needed and possible. */
    glMatrixMode(GL_PROJECTION);
    glLoadMatrixf(mat->data);
    glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
+   matrix_4x4_identity(&ident);
+   glLoadMatrixf(ident.data);
 #endif
 }
 

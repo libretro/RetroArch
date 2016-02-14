@@ -88,6 +88,7 @@ static void menu_display_gl_blend_end(void)
 
 static void menu_display_gl_draw(void *data)
 {
+   video_shader_ctx_coords_t coords;
    gl_t             *gl          = gl_get_ptr();
    math_matrix_4x4 *mat          = NULL;
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
@@ -113,7 +114,10 @@ static void menu_display_gl_draw(void *data)
    glViewport(draw->x, draw->y, draw->width, draw->height);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   video_shader_driver_set_coords(gl, draw->coords);
+   coords.handle_data = gl;
+   coords.data        = draw->coords;
+   
+   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
    video_shader_driver_set_mvp(gl, mat);
 
    glDrawArrays(menu_display_prim_to_gl_enum(

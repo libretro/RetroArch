@@ -1209,7 +1209,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
-         return video_driver_get_current_software_framebuffer(
+         return video_driver_ctl(
+               RARCH_DISPLAY_CTL_GET_CURRENT_SOFTWARE_FRAMEBUFFER,
                (struct retro_framebuffer*)data);
 
       /* Private extensions for internal use, not part of libretro API. */

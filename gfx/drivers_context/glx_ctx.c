@@ -101,7 +101,8 @@ static void ctx_glx_destroy_resources(gfx_ctx_glx_data_t *glx)
       glx->g_should_reset_mode = false;
    }
 
-   if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL) && g_x11_dpy)
+   if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL) 
+         && g_x11_dpy)
    {
       XCloseDisplay(g_x11_dpy);
       g_x11_dpy = NULL;
@@ -186,7 +187,8 @@ static void *gfx_ctx_glx_init(void *data)
    };
    int nelements, major, minor;
    GLXFBConfig *fbcs       = NULL;
-   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)calloc(1, sizeof(gfx_ctx_glx_data_t));
+   gfx_ctx_glx_data_t *glx = (gfx_ctx_glx_data_t*)
+      calloc(1, sizeof(gfx_ctx_glx_data_t));
 #ifndef GL_DEBUG
    const struct retro_hw_render_callback *hw_render =
       (const struct retro_hw_render_callback*)video_driver_callback();
@@ -206,7 +208,8 @@ static void *gfx_ctx_glx_init(void *data)
    if ((major * 1000 + minor) < 1003)
       goto error;
 
-   glx_create_context_attribs = (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
+   glx_create_context_attribs = (PFNGLXCREATECONTEXTATTRIBSARBPROC)
+      glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
 
 #ifdef GL_DEBUG
    glx->g_debug = true;
@@ -324,7 +327,8 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    g_x11_win = XCreateWindow(g_x11_dpy, RootWindow(g_x11_dpy, vi->screen),
          x_off, y_off, width, height, 0,
          vi->depth, InputOutput, vi->visual, 
-         CWBorderPixel | CWColormap | CWEventMask | (true_full ? CWOverrideRedirect : 0), &swa);
+         CWBorderPixel | CWColormap | CWEventMask | 
+         (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
    glx->g_glx_win = glXCreateWindow(g_x11_dpy, glx->g_fbc, g_x11_win, 0);
@@ -339,11 +343,16 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
       RARCH_LOG("[GLX]: Using true fullscreen.\n");
       XMapRaised(g_x11_dpy, g_x11_win);
    }
-   else if (fullscreen) /* We attempted true fullscreen, but failed. Attempt using windowed fullscreen. */
+   else if (fullscreen)
    {
+      /* We attempted true fullscreen, but failed. 
+       * Attempt using windowed fullscreen. */
+
       XMapRaised(g_x11_dpy, g_x11_win);
       RARCH_LOG("[GLX]: Using windowed fullscreen.\n");
-      /* We have to move the window to the screen we want to go fullscreen on first.
+
+      /* We have to move the window to the screen we want 
+       * to go fullscreen on first.
        * x_off and y_off usually get ignored in XCreateWindow().
        */
       x11_move_window(g_x11_dpy, g_x11_win, x_off, y_off, width, height);
@@ -352,7 +361,8 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    else
    {
       XMapWindow(g_x11_dpy, g_x11_win);
-      /* If we want to map the window on a different screen, we'll have to do it by force.
+      /* If we want to map the window on a different screen, 
+       * we'll have to do it by force.
        * Otherwise, we should try to let the window manager sort it out.
        * x_off and y_off usually get ignored in XCreateWindow(). */
       if (g_x11_screen)
@@ -378,7 +388,8 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
             if (glx->g_core_es_core)
             {
                /* Technically, we don't have core/compat until 3.2.
-                * Version 3.1 is either compat or not depending on GL_ARB_compatibility.
+                * Version 3.1 is either compat or not depending on 
+                * GL_ARB_compatibility.
                 */
                *aptr++ = GLX_CONTEXT_PROFILE_MASK_ARB;
 #ifdef HAVE_OPENGLES2
@@ -396,21 +407,27 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
          }
 
          *aptr = None;
-         glx->g_ctx = glx_create_context_attribs(g_x11_dpy, glx->g_fbc, NULL, True, attribs);
+         glx->g_ctx = glx_create_context_attribs(g_x11_dpy,
+               glx->g_fbc, NULL, True, attribs);
+
          if (glx->g_use_hw_ctx)
          {
             RARCH_LOG("[GLX]: Creating shared HW context.\n");
-            glx->g_hw_ctx = glx_create_context_attribs(g_x11_dpy, glx->g_fbc, glx->g_ctx, True, attribs);
+            glx->g_hw_ctx = glx_create_context_attribs(g_x11_dpy,
+                  glx->g_fbc, glx->g_ctx, True, attribs);
+
             if (!glx->g_hw_ctx)
                RARCH_ERR("[GLX]: Failed to create new shared context.\n");
          }
       }
       else
       {
-         glx->g_ctx = glXCreateNewContext(g_x11_dpy, glx->g_fbc, GLX_RGBA_TYPE, 0, True);
+         glx->g_ctx = glXCreateNewContext(g_x11_dpy, glx->g_fbc,
+               GLX_RGBA_TYPE, 0, True);
          if (glx->g_use_hw_ctx)
          {
-            glx->g_hw_ctx = glXCreateNewContext(g_x11_dpy, glx->g_fbc, GLX_RGBA_TYPE, glx->g_ctx, True);
+            glx->g_hw_ctx = glXCreateNewContext(g_x11_dpy, glx->g_fbc,
+                  GLX_RGBA_TYPE, glx->g_ctx, True);
             if (!glx->g_hw_ctx)
                RARCH_ERR("[GLX]: Failed to create new shared context.\n");
          }
@@ -428,7 +445,8 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
       RARCH_LOG("[GLX]: Using cached GL context.\n");
    }
 
-   glXMakeContextCurrent(g_x11_dpy, glx->g_glx_win, glx->g_glx_win, glx->g_ctx);
+   glXMakeContextCurrent(g_x11_dpy,
+         glx->g_glx_win, glx->g_glx_win, glx->g_ctx);
    XSync(g_x11_dpy, False);
 
    x11_install_quit_atom();
@@ -440,9 +458,12 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
    {
       const char *swap_func = NULL;
 
-      g_pglSwapIntervalEXT = (void (*)(Display*, GLXDrawable, int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalEXT");
-      g_pglSwapIntervalSGI = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalSGI");
-      g_pglSwapInterval    = (int (*)(int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalMESA");
+      g_pglSwapIntervalEXT = (void (*)(Display*, GLXDrawable, int))
+         glXGetProcAddress((const GLubyte*)"glXSwapIntervalEXT");
+      g_pglSwapIntervalSGI = (int (*)(int))
+         glXGetProcAddress((const GLubyte*)"glXSwapIntervalSGI");
+      g_pglSwapInterval    = (int (*)(int))
+         glXGetProcAddress((const GLubyte*)"glXSwapIntervalMESA");
 
       if (g_pglSwapIntervalEXT)
          swap_func = "glXSwapIntervalEXT";
@@ -461,7 +482,8 @@ static bool gfx_ctx_glx_set_video_mode(void *data,
 
    gfx_ctx_glx_swap_interval(data, glx->g_interval);
 
-   /* This can blow up on some drivers. It's not fatal, so override errors for this call. */
+   /* This can blow up on some drivers. 
+    * It's not fatal, so override errors for this call. */
    old_handler = XSetErrorHandler(glx_nul_handler);
    XSetInputFocus(g_x11_dpy, g_x11_win, RevertToNone, CurrentTime);
    XSync(g_x11_dpy, False);
