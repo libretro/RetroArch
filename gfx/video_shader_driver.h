@@ -30,6 +30,11 @@
 extern "C" {
 #endif
 
+enum video_shader_driver_ctl_state
+{
+   SHADER_CTL_NONE = 0
+};
+
 typedef struct shader_backend
 {
    void *(*init)(void *data, const char *path);
@@ -163,6 +168,8 @@ bool video_shader_driver_get_feedback_pass(unsigned *pass);
 struct video_shader *video_shader_driver_direct_get_current_shader(void);
 
 void video_shader_driver_set_params(video_shader_ctx_params_t *params);
+
+bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

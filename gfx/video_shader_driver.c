@@ -227,3 +227,15 @@ void video_shader_driver_set_params(video_shader_ctx_params_t *params)
          params->fbo_info,
          params->fbo_info_cnt);
 }
+
+bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case SHADER_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}
