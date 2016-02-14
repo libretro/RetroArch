@@ -37,27 +37,6 @@ static const shader_backend_t *shader_ctx_drivers[] = {
 static const shader_backend_t *current_shader;
 static void *shader_data;
 
-/**
- * shader_ctx_find_driver:
- * @ident                   : Identifier of shader context driver to find.
- *
- * Finds shader context driver and initializes.
- *
- * Returns: shader context driver if found, otherwise NULL.
- **/
-const shader_backend_t *shader_ctx_find_driver(const char *ident)
-{
-   unsigned i;
-
-   for (i = 0; shader_ctx_drivers[i]; i++)
-   {
-      if (string_is_equal(shader_ctx_drivers[i]->ident, ident))
-         return shader_ctx_drivers[i];
-   }
-
-   return NULL;
-}
-
 unsigned video_shader_driver_get_prev_textures(void)
 {
    if (!current_shader)

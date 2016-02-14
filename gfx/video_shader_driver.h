@@ -187,16 +187,6 @@ extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
 
-/**
- * shader_ctx_find_driver:
- * @ident                   : Identifier of shader context driver to find.
- *
- * Finds shader context driver and initializes.
- *
- * Returns: shader context driver if found, otherwise NULL.
- **/
-const shader_backend_t *shader_ctx_find_driver(const char *ident);
-
 unsigned video_shader_driver_get_prev_textures(void);
 
 bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *data);
