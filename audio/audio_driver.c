@@ -133,9 +133,7 @@ static const audio_driver_t *audio_drivers[] = {
 };
 
 static audio_driver_input_data_t audio_driver_data;
-static const rarch_resampler_t *audio_driver_resampler = NULL;
-static void *audio_driver_resampler_data = NULL;
-static const audio_driver_t *current_audio = NULL;
+static const audio_driver_t *current_audio   = NULL;
 static void *audio_driver_context_audio_data = NULL;
 
 /**
@@ -258,8 +256,7 @@ static bool uninit_audio(void)
       return false;
    }
 
-   rarch_resampler_freep(&audio_driver_resampler,
-         &audio_driver_resampler_data);
+   audio_driver_ctl(RARCH_AUDIO_CTL_RESAMPLER_DEINIT, NULL);
 
    if (audio_driver_data.data)
       free(audio_driver_data.data);
@@ -367,9 +364,7 @@ static bool init_audio(void)
    audio_driver_data.orig_src_ratio = audio_driver_data.src_ratio =
       (double)settings->audio.out_rate / audio_driver_data.in_rate;
 
-   if (!rarch_resampler_realloc(&audio_driver_resampler_data,
-            &audio_driver_resampler,
-         settings->audio.resampler, audio_driver_data.orig_src_ratio))
+   if (!audio_driver_ctl(RARCH_AUDIO_CTL_RESAMPLER_INIT, NULL))
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
             settings->audio.resampler);
@@ -492,7 +487,6 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    static struct retro_perf_counter audio_convert_s16 = {0};
    static struct retro_perf_counter audio_convert_float = {0};
    static struct retro_perf_counter audio_dsp         = {0};
-   static struct retro_perf_counter resampler_proc    = {0};
    struct resampler_data src_data              = {0};
    struct rarch_dsp_data dsp_data              = {0};
    const void *output_data                     = NULL;
@@ -547,11 +541,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (is_slowmotion)
       src_data.ratio *= settings->slowmotion_ratio;
 
-   rarch_perf_init(&resampler_proc, "resampler_proc");
-   retro_perf_start(&resampler_proc);
-   rarch_resampler_process(audio_driver_resampler, 
-         audio_driver_resampler_data, &src_data);
-   retro_perf_stop(&resampler_proc);
+   audio_driver_ctl(RARCH_AUDIO_CTL_RESAMPLER_PROCESS, &src_data);
 
    output_data   = audio_driver_data.outsamples;
    output_frames = src_data.output_frames;
@@ -786,13 +776,32 @@ static bool find_audio_driver(void)
 
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
-   static bool audio_driver_active   = false;
-   static bool audio_driver_data_own = false;
-   settings_t        *settings       = config_get_ptr();
+   static struct retro_perf_counter resampler_proc        = {0};
+   static const rarch_resampler_t *audio_driver_resampler = NULL;
+   static void *audio_driver_resampler_data               = NULL;
+   static bool audio_driver_active                        = false;
+   static bool audio_driver_data_own                      = false;
+   settings_t        *settings                            = config_get_ptr();
 
    switch (state)
    {
-      case RARCH_AUDIO_CTL_NONE:
+      case RARCH_AUDIO_CTL_RESAMPLER_DEINIT:
+         rarch_resampler_freep(&audio_driver_resampler,
+               &audio_driver_resampler_data);
+         break;
+      case RARCH_AUDIO_CTL_RESAMPLER_INIT:
+         return rarch_resampler_realloc(
+               &audio_driver_resampler_data,
+               &audio_driver_resampler,
+               settings->audio.resampler,
+               audio_driver_data.orig_src_ratio);
+      case RARCH_AUDIO_CTL_RESAMPLER_PROCESS:
+         rarch_perf_init(&resampler_proc, "resampler_proc");
+         retro_perf_start(&resampler_proc);
+         rarch_resampler_process(audio_driver_resampler, 
+               audio_driver_resampler_data,
+               (struct resampler_data*)data);
+         retro_perf_stop(&resampler_proc);
          break;
       case RARCH_AUDIO_CTL_INIT:
          return init_audio();
@@ -887,6 +896,9 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
                audio_driver_data.rewind_buf + audio_driver_data.rewind_ptr,
                audio_driver_data.rewind_size - audio_driver_data.rewind_ptr);
          return true;
+      case RARCH_AUDIO_CTL_NONE:
+      default:
+         break;
    }
 
    return false;
