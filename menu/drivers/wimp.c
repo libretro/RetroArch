@@ -1408,6 +1408,7 @@ static void wimp_frame(void *data)
    wimp_start(&gui, width, height);
    glViewport(0, 0, width, height);
    device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
+   zr_input_motion(&gui,  menu_input_mouse_state(MENU_MOUSE_X_AXIS),  menu_input_mouse_state(MENU_MOUSE_Y_AXIS));
    /* zahnrad code */
 
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
