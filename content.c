@@ -454,9 +454,11 @@ error:
  * buf will be 0 then.
  */
 
-static int content_zip_file_decompressed(const char *name, const char *valid_exts,
-   const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
-   uint32_t crc32, void *userdata)
+static int content_zip_file_decompressed(
+      const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode,
+      uint32_t csize, uint32_t size,
+      uint32_t crc32, void *userdata)
 {
    struct decomp_state *st = (struct decomp_state*)userdata;
 
