@@ -61,7 +61,11 @@ enum content_ctl_state
    CONTENT_CTL_SAVE_STATE,
 
    /* Frees temporary content handle. */
-   CONTENT_CTL_TEMPORARY_FREE
+   CONTENT_CTL_TEMPORARY_FREE,
+
+   CONTENT_CTL_STREAM_INIT,
+
+   CONTENT_CTL_STREAM_CRC_CALCULATE
 };
 
 typedef struct ram_type
@@ -69,6 +73,14 @@ typedef struct ram_type
    const char *path;
    int type;
 } ram_type_t;
+
+typedef struct content_stream
+{
+   uint32_t a;
+   const uint8_t *b;
+   size_t c;
+   uint32_t crc;
+} content_stream_t;
 
 /**
  * main_load_content:

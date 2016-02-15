@@ -89,7 +89,6 @@ struct sram_block
 };
 
 #ifdef HAVE_COMPRESSION
-static const struct file_archive_file_backend *stream_backend;
 
 #ifdef HAVE_7ZIP
 static bool utf16_to_char(uint8_t **utf_data,
@@ -611,7 +610,6 @@ static int content_file_compressed_read(
 #ifdef HAVE_ZLIB
    if (string_is_equal_noncase(file_ext, "zip"))
    {
-      stream_backend = file_archive_get_default_file_backend();
       *length        = content_zip_file_read(str_list->elems[0].data,
             str_list->elems[1].data, buf, optional_filename);
       if (*length != -1)
@@ -914,9 +912,8 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
       ssize_t *length)
 {
 #ifdef HAVE_ZLIB
+   content_stream_t stream_info;
    uint32_t *content_crc_ptr = NULL;
-   const struct file_archive_file_backend *stream_backend = 
-      file_archive_get_default_file_backend();
 #endif
    uint8_t *ret_buf          = NULL;
    global_t *global          = global_get_ptr();
@@ -938,8 +935,15 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 
 #ifdef HAVE_ZLIB
    content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
-   *content_crc_ptr = stream_backend->stream_crc_calculate(
-         0, ret_buf, *length);
+
+   stream_info.a = 0;
+   stream_info.b = ret_buf;
+   stream_info.c = *length;
+
+   content_ctl(CONTENT_CTL_STREAM_CRC_CALCULATE, &stream_info);
+
+   *content_crc_ptr = stream_info.crc;
+
 
    RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
 #endif
@@ -1657,10 +1661,11 @@ error:
 bool content_ctl(enum content_ctl_state state, void *data)
 {
    unsigned i;
-   static struct string_list *temporary_content = NULL;
-   static bool content_is_inited                = false;
-   static bool core_does_not_need_content       = false;
-   static uint32_t content_crc                  = 0;
+   static const struct file_archive_file_backend *stream_backend = NULL;
+   static struct string_list *temporary_content                  = NULL;
+   static bool content_is_inited                                 = false;
+   static bool core_does_not_need_content                        = false;
+   static uint32_t content_crc                                   = 0;
 
    switch(state)
    {
@@ -1739,6 +1744,20 @@ bool content_ctl(enum content_ctl_state state, void *data)
          string_list_free(temporary_content);
 
          temporary_content = NULL;
+         break;
+      case CONTENT_CTL_STREAM_INIT:
+         if (!stream_backend)
+            stream_backend = file_archive_get_default_file_backend();
+         break;
+      case CONTENT_CTL_STREAM_CRC_CALCULATE:
+         {
+            content_stream_t *stream = NULL;
+            content_ctl(CONTENT_CTL_STREAM_INIT, NULL);
+
+            stream = (content_stream_t*)data;
+            stream->crc = stream_backend->stream_crc_calculate(
+                  stream->a, stream->b, stream->c);
+         }
          break;
       case CONTENT_CTL_NONE:
       default:
