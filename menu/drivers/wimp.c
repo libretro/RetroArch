@@ -91,7 +91,7 @@ static void wimp_main(struct zr_context *ctx, int width, int height)
     
     int show_fps = settings->fps_show ? 0 : 1;
     
-    if (zr_begin(ctx, &layout, "Show", zr_rect(0, 0, width/2, height),
+    if (zr_begin(ctx, &layout, "Show", zr_rect(width/2, 0, width/2, height),
         ZR_WINDOW_BORDER))
    {
       enum {EASY, HARD};
