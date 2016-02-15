@@ -99,11 +99,7 @@ static bool menu_content_load(void)
       fill_pathname_base(name, fullpath, sizeof(name));
 
    if (!(content_load(0, NULL, NULL, menu_content_environment_get)))
-   {
-      snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
-      runloop_msg_queue_push(msg, 1, 90, false);
-      return false;
-   }
+      goto error;
 
    if (*fullpath)
    {
@@ -111,7 +107,8 @@ static bool menu_content_load(void)
       runloop_msg_queue_push(msg, 1, 1, false);
    }
 
-   if (*fullpath || menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
+   if (*fullpath || 
+         menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
    {
       struct retro_system_info *info = NULL;
       menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
@@ -121,6 +118,11 @@ static bool menu_content_load(void)
    }
 
    return true;
+
+error:
+   snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
+   runloop_msg_queue_push(msg, 1, 90, false);
+   return false;
 }
 
 /**
@@ -166,7 +168,9 @@ static bool menu_content_load_from_playlist(void *data)
       else if (strstr(path_tolower, ".7z"))
          strstr(path_tolower, ".7z")[3] = '\0';
 
-      path_check = (char *)calloc(strlen(path_tolower) + 1, sizeof(char));
+      path_check = (char *)
+         calloc(strlen(path_tolower) + 1, sizeof(char));
+
       strncpy(path_check, path, strlen(path_tolower));
 
       free(path_tolower);
@@ -176,10 +180,7 @@ static bool menu_content_load_from_playlist(void *data)
       free(path_check);
 
       if (!fp)
-      {
-         runloop_msg_queue_push("File could not be loaded.\n", 1, 100, true);
-         return false;
-      }
+         goto error;
 
       retro_fclose(fp);
    }
@@ -197,6 +198,10 @@ static bool menu_content_load_from_playlist(void *data)
    event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
 
    return true;
+
+error:
+   runloop_msg_queue_push("File could not be loaded.\n", 1, 100, true);
+   return false;
 }
 
 /**
@@ -227,7 +232,8 @@ static bool menu_content_find_first_core(void *data)
    uint32_t menu_label_hash                = 
       menu_hash_calculate(def_info->menu_label);
 
-   if (!string_is_empty(def_info->dir) && !string_is_empty(def_info->path))
+   if (     !string_is_empty(def_info->dir) 
+         && !string_is_empty(def_info->path))
       fill_pathname_join(def_info->s, 
             def_info->dir, def_info->path, def_info->len);
 
