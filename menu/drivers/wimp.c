@@ -465,13 +465,9 @@ static void wimp_input_button(struct zr_context *ctx)
 {
    int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-   
-   if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
-   {
-      zr_input_button(ctx, ZR_BUTTON_LEFT, mouse_x, mouse_y, 1);
-   }
-   else if (menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
-      zr_input_button(ctx, ZR_BUTTON_RIGHT, mouse_x, mouse_y, 1);
+
+   zr_input_button(ctx, ZR_BUTTON_LEFT, mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON));
+   zr_input_button(ctx, ZR_BUTTON_RIGHT, mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON));
 }
 
 /* zahnrad code */
@@ -1415,9 +1411,6 @@ static void wimp_frame(void *data)
 
 
    /* zahnrad code */
-
-   
-   //printf("mouse state: %d %d %d\n", mouse_x, mouse_y, left);
    zr_input_begin(&gui.ctx);
    wimp_input_motion(&gui.ctx);
    wimp_input_button(&gui.ctx);
