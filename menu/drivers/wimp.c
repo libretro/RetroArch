@@ -85,7 +85,7 @@ struct wimp {
 static void wimp_main(struct zr_context *ctx, int width, int height)
 {
     struct zr_panel layout;
-    if (zr_begin(ctx, &layout, "Show", zr_rect(width/2, 0, width/2, height),
+    if (zr_begin(ctx, &layout, "Show", zr_rect(0, 0, width, height),
         ZR_WINDOW_BORDER))
    {
       enum {EASY, HARD};
@@ -1386,14 +1386,7 @@ static void wimp_frame(void *data)
       wimp->box_message[0] = '\0';
    }
 
-   if (settings->menu.mouse.enable && (settings->video.fullscreen 
-            || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
-   {
-      int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-      int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      wimp_draw_cursor(wimp, &white_bg[0], mouse_x, mouse_y, width, height);
-   }
 
    /* zahnrad code */
    glViewport(0, 0, width, height);
@@ -1407,9 +1400,26 @@ static void wimp_frame(void *data)
    device_init(&device);
    wimp_start(&gui, width, height);
    glViewport(0, 0, width, height);
-   device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
-   zr_input_motion(&gui,  menu_input_mouse_state(MENU_MOUSE_X_AXIS),  menu_input_mouse_state(MENU_MOUSE_Y_AXIS));
+   device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);   
+
+   int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+   bool left = menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON);
+   
+   printf("mouse state: %d %d %d\n", mouse_x, mouse_y, left);
+   zr_input_begin(&gui.ctx);
+   zr_input_motion(&gui.ctx,  mouse_x,  mouse_y);
+   zr_input_button(&gui.ctx, ZR_BUTTON_LEFT, mouse_x, mouse_y, left);
+   zr_input_end(&gui.ctx);
+
+
    /* zahnrad code */
+
+   if (settings->menu.mouse.enable && (settings->video.fullscreen 
+            || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
+   {
+      wimp_draw_cursor(wimp, &white_bg[0], mouse_x, mouse_y, width, height);
+   }
 
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
