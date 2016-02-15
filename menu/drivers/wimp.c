@@ -85,10 +85,9 @@ struct wimp {
 static void wimp_main(struct zr_context *ctx, int width, int height)
 {
     struct zr_panel layout;
-    if (zr_begin(ctx, &layout, "Show", zr_rect(width / 2, 0, width/2, height),
-        ZR_WINDOW_BORDER|ZR_WINDOW_MOVABLE|ZR_WINDOW_SCALABLE|
-        ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_TITLE))
-    {
+    if (zr_begin(ctx, &layout, "Show", zr_rect(width/2, 0, width/2, height),
+        ZR_WINDOW_BORDER))
+   {
       enum {EASY, HARD};
       static int op = EASY;
       static int property = 20;
