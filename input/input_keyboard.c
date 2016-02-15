@@ -93,7 +93,7 @@ input_keyboard_line_t *input_keyboard_line_new(void *userdata,
    if (!state)
       return NULL;
 
-   state->cb = cb;
+   state->cb       = cb;
    state->userdata = userdata;
 
    input_keyboard_line_toggle_osk(true);
@@ -138,7 +138,8 @@ bool input_keyboard_line_event(
    {
       /* Handle left/right here when suitable */
 
-      char *newbuf = (char*)realloc(state->buffer, state->size + 2);
+      char *newbuf = (char*)
+         realloc(state->buffer, state->size + 2);
       if (!newbuf)
          return false;
 
