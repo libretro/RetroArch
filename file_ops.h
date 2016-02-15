@@ -30,12 +30,12 @@ extern "C" {
  * Extracts to buf, unless optional_filename != 0
  * Then extracts to optional_filename and leaves buf alone.
  */
-int read_compressed_file(const char * path, void **buf,
+int content_file_compressed_read(const char * path, void **buf,
       const char* optional_filename, ssize_t *length);
 #endif
 
 /**
- * read_file:
+ * content_file_read:
  * @path             : path to file.
  * @buf              : buffer to allocate and read the contents of the
  *                     file into. Needs to be freed manually.
@@ -46,7 +46,7 @@ int read_compressed_file(const char * path, void **buf,
  *
  * Returns: true (1) if file read, false (0) on error.
  */
-int read_file(const char *path, void **buf, ssize_t *length);
+int content_file_read(const char *path, void **buf, ssize_t *length);
 
 #ifdef __cplusplus
 }

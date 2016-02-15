@@ -318,7 +318,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
 
    RARCH_LOG("%s: %s.\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
-   if (!read_file(path, (void**) &ret_buf, length))
+   if (!content_file_read(path, (void**) &ret_buf, length))
       return false;
 
    if (*length < 0)
@@ -661,7 +661,7 @@ static bool load_content_into_memory(
       ret = read_content_file(i, path, (void**)&info->data, &len);
    }
    else
-      ret = read_file(path, (void**)&info->data, &len);
+      ret = content_file_read(path, (void**)&info->data, &len);
 
    if (!ret || len < 0)
       goto error;
@@ -719,7 +719,7 @@ static bool load_content_from_compressed_archive(
    fill_pathname_join(new_path, new_basedir,
          path_basename(path), sizeof(new_path));
 
-   ret = read_compressed_file(path, NULL, new_path, &new_path_len);
+   ret = content_file_compressed_read(path, NULL, new_path, &new_path_len);
 
    if (!ret || new_path_len < 0)
    {

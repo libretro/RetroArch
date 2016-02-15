@@ -524,7 +524,7 @@ static int read_zip_file(const char *path,
  * Extracts to buf, unless optional_filename != 0
  * Then extracts to optional_filename and leaves buf alone.
  */
-int read_compressed_file(const char * path, void **buf,
+int content_file_compressed_read(const char * path, void **buf,
       const char* optional_filename, ssize_t *length)
 {
    int ret                            = 0;
@@ -589,23 +589,23 @@ error:
 #endif
 
 /**
- * read_file:
+ * content_file_read:
  * @path             : path to file.
  * @buf              : buffer to allocate and read the contents of the
  *                     file into. Needs to be freed manually.
  * @length           : Number of items read, -1 on error.
  *
- * Read the contents of a file into @buf. Will call read_compressed_file
+ * Read the contents of a file into @buf. Will call content_file_compressed_read 
  * if path contains a compressed file, otherwise will call retro_read_file().
  *
  * Returns: 1 if file read, 0 on error.
  */
-int read_file(const char *path, void **buf, ssize_t *length)
+int content_file_read(const char *path, void **buf, ssize_t *length)
 {
 #ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
    {
-      if (read_compressed_file(path, buf, NULL, length))
+      if (content_file_compressed_read(path, buf, NULL, length))
          return 1;
    }
 #endif
