@@ -792,8 +792,10 @@ static bool codec_id_is_ass(enum AVCodecID id)
 #endif
          return true;
       default:
-         return false;
+         break;
    }
+
+   return false;
 }
 #endif
 
@@ -801,13 +803,14 @@ static bool open_codecs(void)
 {
    unsigned i;
 
-   video_stream = -1;
-   memset(audio_streams,    0, sizeof(audio_streams));
-   memset(subtitle_streams, 0, sizeof(subtitle_streams));
+   video_stream         = -1;
    audio_streams_num    = 0;
    audio_streams_ptr    = 0;
    subtitle_streams_num = 0;
    subtitle_streams_ptr = 0;
+
+   memset(audio_streams,    0, sizeof(audio_streams));
+   memset(subtitle_streams, 0, sizeof(subtitle_streams));
 
    for (i = 0; i < fctx->nb_streams; i++)
    {
@@ -858,12 +861,12 @@ static bool open_codecs(void)
             break;
 
          case AVMEDIA_TYPE_ATTACHMENT:
-         {
-            AVCodecContext *ctx = fctx->streams[i]->codec;
-            if (codec_id_is_ttf(ctx->codec_id))
-               append_attachment(ctx->extradata, ctx->extradata_size);
+            {
+               AVCodecContext *ctx = fctx->streams[i]->codec;
+               if (codec_id_is_ttf(ctx->codec_id))
+                  append_attachment(ctx->extradata, ctx->extradata_size);
+            }
             break;
-         }
 
          default:
             break;
@@ -883,7 +886,8 @@ static bool init_media_info(void)
    {
       media.width  = vctx->width;
       media.height = vctx->height;
-      media.aspect = (float)vctx->width * av_q2d(vctx->sample_aspect_ratio) / vctx->height;
+      media.aspect = (float)vctx->width * 
+         av_q2d(vctx->sample_aspect_ratio) / vctx->height;
    }
 
 #ifdef HAVE_SSA
@@ -895,7 +899,8 @@ static bool init_media_info(void)
       ass_set_message_cb(ass, ass_msg_cb, NULL);
 
       for (i = 0; i < attachments_size; i++)
-         ass_add_font(ass, (char*)"", (char*)attachments[i].data, attachments[i].size);
+         ass_add_font(ass, (char*)"",
+               (char*)attachments[i].data, attachments[i].size);
 
       ass_render = ass_renderer_init(ass);
       ass_set_frame_size(ass_render, media.width, media.height);
@@ -916,7 +921,8 @@ static bool init_media_info(void)
 }
 
 static void set_colorspace(struct SwsContext *sws,
-      unsigned width, unsigned height, enum AVColorSpace default_color, int in_range)
+      unsigned width, unsigned height,
+      enum AVColorSpace default_color, int in_range)
 {
    const int *coeffs = NULL;
 
@@ -951,7 +957,8 @@ static void set_colorspace(struct SwsContext *sws,
    }
 }
 
-static bool decode_video(AVPacket *pkt, AVFrame *frame, AVFrame *conv, struct SwsContext *sws)
+static bool decode_video(AVPacket *pkt, AVFrame *frame,
+      AVFrame *conv, struct SwsContext *sws)
 {
    int got_ptr = 0;
    int ret     = avcodec_decode_video2(vctx, frame, &got_ptr, pkt);
@@ -971,7 +978,8 @@ static bool decode_video(AVPacket *pkt, AVFrame *frame, AVFrame *conv, struct Sw
    return false;
 }
 
-static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt, AVFrame *frame, int16_t *buffer, size_t *buffer_cap,
+static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
+      AVFrame *frame, int16_t *buffer, size_t *buffer_cap,
       SwrContext *swr)
 {
    AVPacket pkt_tmp = *pkt;
@@ -1020,7 +1028,9 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt, AVFrame *frame,
          }
       }
 
-      decode_last_audio_time = pts * av_q2d(fctx->streams[audio_streams[audio_streams_ptr]]->time_base);
+      decode_last_audio_time = pts * av_q2d(
+            fctx->streams[audio_streams[audio_streams_ptr]]->time_base);
+
       if (!decode_thread_dead)
          fifo_write(audio_decode_fifo, buffer, required_buffer);
 
@@ -1101,7 +1111,8 @@ static void render_ass_img(AVFrame *conv_frame, ASS_Image *img)
             dst_g = (g * src_alpha + dst_g * dst_alpha) >> 8;
             dst_b = (b * src_alpha + dst_b * dst_alpha) >> 8;
 
-            dst[x] = (0xffu << 24) | (dst_r << 16) | (dst_g << 8) | (dst_b << 0);
+            dst[x] = (0xffu << 24) | (dst_r << 16) | 
+               (dst_g << 8) | (dst_b << 0);
          }
       }
    }
@@ -1285,7 +1296,8 @@ static void decode_thread(void *data)
          for (i = 0; i < sub.num_rects; i++)
          {
             if (sub.rects[i]->ass)
-               ass_process_data(ass_track_active, sub.rects[i]->ass, strlen(sub.rects[i]->ass));
+               ass_process_data(ass_track_active,
+                     sub.rects[i]->ass, strlen(sub.rects[i]->ass));
          }
 #endif
 
@@ -1406,14 +1418,16 @@ static void context_reset(void)
 #if !defined(HAVE_OPENGLES)
       glGenBuffers(1, &frames[i].pbo);
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, frames[i].pbo);
-      glBufferData(GL_PIXEL_UNPACK_BUFFER, media.width * media.height * sizeof(uint32_t), NULL, GL_STREAM_DRAW);
+      glBufferData(GL_PIXEL_UNPACK_BUFFER, media.width 
+            * media.height * sizeof(uint32_t), NULL, GL_STREAM_DRAW);
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 #endif
    }
 
    glGenBuffers(1, &vbo);
    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
+   glBufferData(GL_ARRAY_BUFFER,
+         sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
 
    glBindBuffer(GL_ARRAY_BUFFER, 0);
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -1569,7 +1583,8 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    if (video_stream >= 0 || is_glfft)
    {
-      video_decode_fifo = fifo_new(media.width * media.height * sizeof(uint32_t) * 32);
+      video_decode_fifo = fifo_new(media.width 
+            * media.height * sizeof(uint32_t) * 32);
 
 #ifdef HAVE_OPENGL
       use_gl = true;
