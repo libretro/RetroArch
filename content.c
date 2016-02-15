@@ -566,7 +566,8 @@ static int content_zip_file_read(
  * Extracts to buf, unless optional_filename != 0
  * Then extracts to optional_filename and leaves buf alone.
  */
-int content_file_compressed_read(const char * path, void **buf,
+static int content_file_compressed_read(
+      const char * path, void **buf,
       const char* optional_filename, ssize_t *length)
 {
    int ret                            = 0;
@@ -642,7 +643,7 @@ error:
  *
  * Returns: 1 if file read, 0 on error.
  */
-int content_file_read(const char *path, void **buf, ssize_t *length)
+static int content_file_read(const char *path, void **buf, ssize_t *length)
 {
 #ifdef HAVE_COMPRESSION
    if (path_contains_compressed_file(path))
