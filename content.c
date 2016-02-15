@@ -124,7 +124,7 @@ static void check_defaults_dirs(void)
 }
 
 /**
- * rarch_main_init_wrap:
+ * content_load_init_wrap:
  * @args                 : Input arguments.
  * @argc                 : Count of arguments.
  * @argv                 : Arguments.
@@ -132,7 +132,7 @@ static void check_defaults_dirs(void)
  * Generates an @argc and @argv pair based on @args
  * of type rarch_main_wrap.
  **/
-static void rarch_main_init_wrap(
+static void content_load_init_wrap(
       const struct rarch_main_wrap *args,
       int *argc, char **argv)
 {
@@ -233,7 +233,7 @@ bool content_load(int argc, char **argv, void *args,
 
    if (wrap_args->touched)
    {
-      rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
+      content_load_init_wrap(wrap_args, &rarch_argc, rarch_argv);
       memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
       rarch_argv_ptr = (char**)rarch_argv;
       rarch_argc_ptr = (int*)&rarch_argc;
