@@ -123,6 +123,29 @@ static void check_defaults_dirs(void)
       check_defaults_dir_create_dir(g_defaults.dir.cheats);
 }
 
+void content_push_to_history_playlist(bool do_push,
+      const char *path, void *data)
+{
+   settings_t *settings             = config_get_ptr();
+   struct retro_system_info *info   = (struct retro_system_info*)data;
+
+   /* If the history list is not enabled, early return. */
+   if (!settings->history_list_enable)
+      return;
+   if (!g_defaults.history)
+      return;
+   if (!do_push)
+      return;
+
+   content_playlist_push(g_defaults.history,
+         path,
+         NULL,
+         settings->libretro,
+         info->library_name,
+         NULL,
+         NULL);
+}
+
 /**
  * content_load_init_wrap:
  * @args                 : Input arguments.

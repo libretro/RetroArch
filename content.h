@@ -86,6 +86,9 @@ typedef struct ram_type
 bool content_load(int argc, char **argv,
       void *args, environment_get_t environ_get);
 
+void content_push_to_history_playlist(bool do_push,
+      const char *path, void *data);
+
 bool content_ctl(enum content_ctl_state state, void *data);
 
 #ifdef __cplusplus

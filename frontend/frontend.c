@@ -88,36 +88,6 @@ void main_exit(void *args)
    frontend_driver_free();
 }
 
-static void history_playlist_push(content_playlist_t *playlist,
-      const char *path, const char *core_path,
-      struct retro_system_info *info)
-{
-   char tmp[PATH_MAX_LENGTH];
-   rarch_system_info_t *system           = NULL;
-   
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   if (!playlist || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) || !info)
-      return;
-
-   /* Path can be relative here.
-    * Ensure we're pushing absolute path. */
-
-   strlcpy(tmp, path, sizeof(tmp));
-
-   if (*tmp)
-      path_resolve_realpath(tmp, sizeof(tmp));
-
-   if (system->no_content || *tmp)
-      content_playlist_push(playlist,
-            *tmp ? tmp : NULL,
-            NULL,
-            core_path,
-            info->library_name,
-            NULL,
-            NULL);
-}
-
 /**
  * main_entry:
  *
@@ -131,9 +101,10 @@ static void history_playlist_push(content_playlist_t *playlist,
  **/
 int rarch_main(int argc, char *argv[], void *data)
 {
+   char *fullpath                  = NULL;
+   rarch_system_info_t *system     = NULL;
    void *args                      = (void*)data;
    int ret                         = 0;
-   settings_t *settings            = NULL;
 
    rarch_ctl(RARCH_CTL_PREINIT, NULL);
 
@@ -155,22 +126,29 @@ int rarch_main(int argc, char *argv[], void *data)
 
    event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
 
-   settings = config_get_ptr();
 
-   if (settings->history_list_enable)
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET,  &system);
+   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+
+   if (content_ctl(CONTENT_CTL_IS_INITED, NULL) || system->no_content)
    {
-      char *fullpath              = NULL;
-      rarch_system_info_t *system = NULL;
-      
-      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET,  &system);
-      runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+      char tmp[PATH_MAX_LENGTH];
+      struct retro_system_info *info = system ? &system->info : NULL;
 
-      if (content_ctl(CONTENT_CTL_IS_INITED, NULL) || system->no_content)
-         history_playlist_push(
-               g_defaults.history,
-               fullpath,
-               settings->libretro,
-               system ? &system->info : NULL);
+      strlcpy(tmp, fullpath, sizeof(tmp));
+
+      if (*tmp)
+      {
+         /* Path can be relative here.
+          * Ensure we're pushing absolute path. */
+         path_resolve_realpath(tmp, sizeof(tmp));
+      }
+
+      if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) || !info)
+         content_push_to_history_playlist(
+               system->no_content || *tmp,
+               *tmp ? tmp : NULL,
+               info);
    }
 
    ui_companion_driver_init_first();

@@ -35,32 +35,6 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 
-static void menu_content_push_to_history_playlist(void)
-{
-   struct retro_system_info *system = NULL;
-   settings_t *settings             = config_get_ptr();
-   char *fullpath                   = NULL;
-
-   /* If the history list is not enabled, early return. */
-   if (!settings->history_list_enable)
-      return;
-
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-   menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-         &system);
-
-   content_playlist_push(g_defaults.history,
-         fullpath,
-         NULL,
-         settings->libretro,
-         system->library_name,
-         NULL,
-         NULL);
-
-   content_playlist_write_file(g_defaults.history);
-}
-
 static void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -142,7 +116,13 @@ static bool menu_content_load(void)
    event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
 
    if (*fullpath || menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
-      menu_content_push_to_history_playlist();
+   {
+      struct retro_system_info *info = NULL;
+      menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+            &info);
+      content_push_to_history_playlist(true, fullpath, info);
+      content_playlist_write_file(g_defaults.history);
+   }
 
    event_cmd_ctl(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
 
