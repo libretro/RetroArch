@@ -36,6 +36,7 @@
 #include <string/stdstring.h>
 #include <retro_file.h>
 #include <retro_stat.h>
+#include <retro_assert.h>
 
 #include "msg_hash.h"
 #include "content.h"
@@ -45,12 +46,16 @@
 #include "movie.h"
 #include "patch.h"
 #include "system.h"
+#include "retroarch.h"
+#include "command_event.h"
 #include "libretro_version_1.h"
 #include "verbosity.h"
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos.h"
 #endif
+
+#define MAX_ARGS 32
 
 struct sram_block
 {
@@ -59,6 +64,204 @@ struct sram_block
    size_t size;
 };
 
+static void check_defaults_dir_create_dir(const char *path)
+{
+   if (path_is_directory(path))
+      return;
+   path_mkdir(path);
+}
+
+static void check_defaults_dirs(void)
+{
+   if (*g_defaults.dir.core_assets)
+      check_defaults_dir_create_dir(g_defaults.dir.core_assets);
+   if (*g_defaults.dir.remap)
+      check_defaults_dir_create_dir(g_defaults.dir.remap);
+   if (*g_defaults.dir.screenshot)
+      check_defaults_dir_create_dir(g_defaults.dir.screenshot);
+   if (*g_defaults.dir.core)
+      check_defaults_dir_create_dir(g_defaults.dir.core);
+   if (*g_defaults.dir.autoconfig)
+      check_defaults_dir_create_dir(g_defaults.dir.autoconfig);
+   if (*g_defaults.dir.audio_filter)
+      check_defaults_dir_create_dir(g_defaults.dir.audio_filter);
+   if (*g_defaults.dir.video_filter)
+      check_defaults_dir_create_dir(g_defaults.dir.video_filter);
+   if (*g_defaults.dir.assets)
+      check_defaults_dir_create_dir(g_defaults.dir.assets);
+   if (*g_defaults.dir.playlist)
+      check_defaults_dir_create_dir(g_defaults.dir.playlist);
+   if (*g_defaults.dir.core)
+      check_defaults_dir_create_dir(g_defaults.dir.core);
+   if (*g_defaults.dir.core_info)
+      check_defaults_dir_create_dir(g_defaults.dir.core_info);
+   if (*g_defaults.dir.overlay)
+      check_defaults_dir_create_dir(g_defaults.dir.overlay);
+   if (*g_defaults.dir.port)
+      check_defaults_dir_create_dir(g_defaults.dir.port);
+   if (*g_defaults.dir.shader)
+      check_defaults_dir_create_dir(g_defaults.dir.shader);
+   if (*g_defaults.dir.savestate)
+      check_defaults_dir_create_dir(g_defaults.dir.savestate);
+   if (*g_defaults.dir.sram)
+      check_defaults_dir_create_dir(g_defaults.dir.sram);
+   if (*g_defaults.dir.system)
+      check_defaults_dir_create_dir(g_defaults.dir.system);
+   if (*g_defaults.dir.resampler)
+      check_defaults_dir_create_dir(g_defaults.dir.resampler);
+   if (*g_defaults.dir.menu_config)
+      check_defaults_dir_create_dir(g_defaults.dir.menu_config);
+   if (*g_defaults.dir.content_history)
+      check_defaults_dir_create_dir(g_defaults.dir.content_history);
+   if (*g_defaults.dir.cache)
+      check_defaults_dir_create_dir(g_defaults.dir.cache);
+   if (*g_defaults.dir.database)
+      check_defaults_dir_create_dir(g_defaults.dir.database);
+   if (*g_defaults.dir.cursor)
+      check_defaults_dir_create_dir(g_defaults.dir.cursor);
+   if (*g_defaults.dir.cheats)
+      check_defaults_dir_create_dir(g_defaults.dir.cheats);
+}
+
+/**
+ * rarch_main_init_wrap:
+ * @args                 : Input arguments.
+ * @argc                 : Count of arguments.
+ * @argv                 : Arguments.
+ *
+ * Generates an @argc and @argv pair based on @args
+ * of type rarch_main_wrap.
+ **/
+static void rarch_main_init_wrap(
+      const struct rarch_main_wrap *args,
+      int *argc, char **argv)
+{
+#ifdef HAVE_FILE_LOGGER
+   int i;
+#endif
+
+   *argc = 0;
+   argv[(*argc)++] = strdup("retroarch");
+
+   if (!args->no_content)
+   {
+      if (args->content_path)
+      {
+         RARCH_LOG("Using content: %s.\n", args->content_path);
+         argv[(*argc)++] = strdup(args->content_path);
+      }
+#ifdef HAVE_MENU
+      else
+      {
+         RARCH_LOG("No content, starting dummy core.\n");
+         argv[(*argc)++] = strdup("--menu");
+      }
+#endif
+   }
+
+   if (args->sram_path)
+   {
+      argv[(*argc)++] = strdup("-s");
+      argv[(*argc)++] = strdup(args->sram_path);
+   }
+
+   if (args->state_path)
+   {
+      argv[(*argc)++] = strdup("-S");
+      argv[(*argc)++] = strdup(args->state_path);
+   }
+
+   if (args->config_path)
+   {
+      argv[(*argc)++] = strdup("-c");
+      argv[(*argc)++] = strdup(args->config_path);
+   }
+
+#ifdef HAVE_DYNAMIC
+   if (args->libretro_path)
+   {
+      argv[(*argc)++] = strdup("-L");
+      argv[(*argc)++] = strdup(args->libretro_path);
+   }
+#endif
+
+   if (args->verbose)
+      argv[(*argc)++] = strdup("-v");
+
+#ifdef HAVE_FILE_LOGGER
+   for (i = 0; i < *argc; i++)
+      RARCH_LOG("arg #%d: %s\n", i, argv[i]);
+#endif
+}
+
+/**
+ * content_load:
+ * @argc             : Argument count.
+ * @argv             : Argument variable list.
+ * @args             : Arguments passed from callee.
+ * @environ_get      : Function passed for environment_get function.
+ *
+ * Loads content file and starts up RetroArch.
+ * If no content file can be loaded, will start up RetroArch
+ * as-is.
+ *
+ * Returns: false (0) if rarch_main_init failed, otherwise true (1).
+ **/
+bool content_load(int argc, char **argv, void *args,
+      environment_get_t environ_get)
+{
+   unsigned i;
+   bool retval                       = true;
+   int rarch_argc                    = 0;
+   char *rarch_argv[MAX_ARGS]        = {NULL};
+   char *argv_copy [MAX_ARGS]        = {NULL};
+   char **rarch_argv_ptr             = (char**)argv;
+   int *rarch_argc_ptr               = (int*)&argc;
+   struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)
+      calloc(1, sizeof(*wrap_args));
+
+   if (!wrap_args)
+      return false;
+
+   (void)rarch_argc_ptr;
+   (void)rarch_argv_ptr;
+
+   retro_assert(wrap_args);
+
+   if (environ_get)
+      environ_get(rarch_argc_ptr, rarch_argv_ptr, args, wrap_args);
+
+   if (wrap_args->touched)
+   {
+      rarch_main_init_wrap(wrap_args, &rarch_argc, rarch_argv);
+      memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
+      rarch_argv_ptr = (char**)rarch_argv;
+      rarch_argc_ptr = (int*)&rarch_argc;
+   }
+
+   rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
+
+   wrap_args->argc = *rarch_argc_ptr;
+   wrap_args->argv = rarch_argv_ptr;
+
+   if (!rarch_ctl(RARCH_CTL_MAIN_INIT, wrap_args))
+   {
+      retval = false;
+      goto error;
+   }
+
+   event_cmd_ctl(EVENT_CMD_RESUME, NULL);
+
+   check_defaults_dirs();
+
+   frontend_driver_process_args(rarch_argc_ptr, rarch_argv_ptr);
+
+error:
+   for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
+      free(argv_copy[i]);
+   free(wrap_args);
+   return retval;
+}
 
 /**
  * read_content_file:

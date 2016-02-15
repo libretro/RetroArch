@@ -25,6 +25,7 @@
 #include "menu_shader.h"
 
 #include "../core_info.h"
+#include "../content.h"
 #include "../configuration.h"
 #include "../dynamic.h"
 #include "../defaults.h"
@@ -123,7 +124,7 @@ static bool menu_content_load(void)
    if (*fullpath)
       fill_pathname_base(name, fullpath, sizeof(name));
 
-   if (!(main_load_content(0, NULL, NULL, menu_content_environment_get)))
+   if (!(content_load(0, NULL, NULL, menu_content_environment_get)))
    {
       snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
       runloop_msg_queue_push(msg, 1, 90, false);

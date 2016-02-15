@@ -24,6 +24,8 @@
 
 #include <boolean.h>
 
+#include "frontend/frontend_driver.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -67,6 +69,22 @@ typedef struct ram_type
    const char *path;
    int type;
 } ram_type_t;
+
+/**
+ * main_load_content:
+ * @argc             : Argument count.
+ * @argv             : Argument variable list.
+ * @args             : Arguments passed from callee.
+ * @environ_get      : Function passed for environment_get function.
+ *
+ * Loads content file and starts up RetroArch.
+ * If no content file can be loaded, will start up RetroArch
+ * as-is.
+ *
+ * Returns: false (0) if rarch_main_init failed, otherwise true (1).
+ **/
+bool content_load(int argc, char **argv,
+      void *args, environment_get_t environ_get);
 
 bool content_ctl(enum content_ctl_state state, void *data);
 
