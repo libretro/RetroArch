@@ -223,9 +223,6 @@ bool content_load(int argc, char **argv, void *args,
    if (!wrap_args)
       return false;
 
-   (void)rarch_argc_ptr;
-   (void)rarch_argv_ptr;
-
    retro_assert(wrap_args);
 
    if (environ_get)
