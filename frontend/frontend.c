@@ -124,9 +124,6 @@ int rarch_main(int argc, char *argv[], void *data)
          return ret;
    }
 
-   event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
-
-
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET,  &system);
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 

@@ -111,10 +111,6 @@ static bool menu_content_load(void)
       runloop_msg_queue_push(msg, 1, 1, false);
    }
 
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
-
-   event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
-
    if (*fullpath || menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
    {
       struct retro_system_info *info = NULL;
@@ -123,10 +119,6 @@ static bool menu_content_load(void)
       content_push_to_history_playlist(true, fullpath, info);
       content_playlist_write_file(g_defaults.history);
    }
-
-   event_cmd_ctl(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
-
-   frontend_driver_content_loaded();
 
    return true;
 }

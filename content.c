@@ -51,6 +51,10 @@
 #include "libretro_version_1.h"
 #include "verbosity.h"
 
+#ifdef HAVE_MENU
+#include "menu/menu_driver.h"
+#endif
+
 #ifdef HAVE_CHEEVOS
 #include "cheevos.h"
 #endif
@@ -270,11 +274,17 @@ bool content_load(int argc, char **argv, void *args,
       goto error;
    }
 
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
+#endif
+   event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
    event_cmd_ctl(EVENT_CMD_RESUME, NULL);
+   event_cmd_ctl(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
 
    check_defaults_dirs();
 
    frontend_driver_process_args(rarch_argc_ptr, rarch_argv_ptr);
+   frontend_driver_content_loaded();
 
 error:
    for (i = 0; i < ARRAY_SIZE(argv_copy); i++)
