@@ -5938,6 +5938,7 @@ zr_input_button(struct zr_context *ctx, enum zr_buttons id, int x, int y, int do
     btn = &in->mouse.buttons[id];
     btn->clicked_pos.x = (float)x;
     btn->clicked_pos.y = (float)y;
+    //printf("x:%d y:%d id:%d %d\n ", x , y, id, down);
     btn->down = down;
     btn->clicked++;
 }

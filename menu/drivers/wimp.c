@@ -72,6 +72,8 @@
 #define WINDOW_WIDTH 1200
 #define WINDOW_HEIGHT 800
 
+static int z =0 ;
+
 /* zahnrad code */
 enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK};
 
@@ -85,11 +87,12 @@ struct wimp {
 static void wimp_main(struct zr_context *ctx, int width, int height)
 {
     struct zr_panel layout;
-    if (zr_begin(ctx, &layout, "Show", zr_rect(0, 0, width, height),
+    
+    if (zr_begin(ctx, &layout, "Show", zr_rect(0, 0, width/2, height),
         ZR_WINDOW_BORDER))
    {
       enum {EASY, HARD};
-      static int op = EASY;
+      static int op = HARD;
       static int property = 20;
 
       zr_layout_row_static(ctx, 30, 80, 1);
@@ -466,7 +469,6 @@ static void wimp_input_button(struct zr_context *ctx)
    if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
    {
       zr_input_button(ctx, ZR_BUTTON_LEFT, mouse_x, mouse_y, 1);
-      printf("Mouse X: %d Y: %d, LEFT: %d\n", mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON));
    }
    else if (menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
       zr_input_button(ctx, ZR_BUTTON_RIGHT, mouse_x, mouse_y, 1);
@@ -1413,25 +1415,20 @@ static void wimp_frame(void *data)
 
 
    /* zahnrad code */
-   glViewport(0, 0, width, height);
-   alloc.userdata.ptr = NULL;
-   alloc.alloc = mem_alloc;
-   alloc.free = mem_free;
-   zr_buffer_init(&device.cmds, &alloc, 1024);
-   usrfnt = font_bake_and_upload(&device, &font, font_path, 14,
-        zr_font_default_glyph_ranges());
-   zr_init(&gui.ctx, &alloc, &usrfnt);
-   device_init(&device);
-   wimp_start(&gui, width, height);
-   glViewport(0, 0, width, height);
-   device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);   
 
-
+   
    //printf("mouse state: %d %d %d\n", mouse_x, mouse_y, left);
    zr_input_begin(&gui.ctx);
    wimp_input_motion(&gui.ctx);
    wimp_input_button(&gui.ctx);
    zr_input_end(&gui.ctx);
+   
+   wimp_start(&gui, width, height);
+   glViewport(0, 0, width, height);
+   device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);   
+
+
+
    
    /* zahnrad code */
 
@@ -1560,6 +1557,16 @@ static void *wimp_init(void **userdata)
          "wimp", sizeof(font_path));
    fill_pathname_join(font_path, font_path,
          "Roboto-Regular.ttf", sizeof(font_path));
+         
+   glViewport(0, 0, width, height);
+   alloc.userdata.ptr = NULL;
+   alloc.alloc = mem_alloc;
+   alloc.free = mem_free;
+   zr_buffer_init(&device.cmds, &alloc, 1024);
+   usrfnt = font_bake_and_upload(&device, &font, font_path, 14,
+      zr_font_default_glyph_ranges());
+   zr_init(&gui.ctx, &alloc, &usrfnt);
+   device_init(&device);
    /* zahnrad code */
 
    return menu;
