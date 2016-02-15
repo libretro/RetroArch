@@ -145,7 +145,6 @@ static bool menu_content_load(void)
       menu_content_push_to_history_playlist();
 
    event_cmd_ctl(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
-   event_cmd_ctl(EVENT_CMD_RESUME, NULL);
 
    frontend_driver_content_loaded();
 
