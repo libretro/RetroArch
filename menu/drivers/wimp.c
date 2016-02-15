@@ -95,6 +95,7 @@ static void wimp_main(struct zr_context *ctx, int width, int height)
       zr_layout_row_static(ctx, 30, 80, 1);
       if (zr_button_text(ctx, "button", ZR_BUTTON_DEFAULT)) {
             /* event handling */
+            printf("pressed\n");
       }
       zr_layout_row_dynamic(ctx, 30, 2);
       if (zr_option(ctx, "easy", op == EASY))
@@ -448,6 +449,29 @@ int width = 0, height = 0;
 
 struct zr_user_font usrfnt;
 struct zr_allocator alloc;
+
+static void wimp_input_motion(struct zr_context *ctx)
+{
+   int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+   
+   zr_input_motion(ctx, mouse_x, mouse_y);
+}
+
+static void wimp_input_button(struct zr_context *ctx)
+{
+   int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+   int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+   
+   if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
+   {
+      zr_input_button(ctx, ZR_BUTTON_LEFT, mouse_x, mouse_y, 1);
+      printf("Mouse X: %d Y: %d, LEFT: %d\n", mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON));
+   }
+   else if (menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
+      zr_input_button(ctx, ZR_BUTTON_RIGHT, mouse_x, mouse_y, 1);
+}
+
 /* zahnrad code */
 
 enum
@@ -1402,22 +1426,20 @@ static void wimp_frame(void *data)
    glViewport(0, 0, width, height);
    device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);   
 
-   int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-   int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-   bool left = menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON);
-   
-   printf("mouse state: %d %d %d\n", mouse_x, mouse_y, left);
+
+   //printf("mouse state: %d %d %d\n", mouse_x, mouse_y, left);
    zr_input_begin(&gui.ctx);
-   zr_input_motion(&gui.ctx,  mouse_x,  mouse_y);
-   zr_input_button(&gui.ctx, ZR_BUTTON_LEFT, mouse_x, mouse_y, left);
+   wimp_input_motion(&gui.ctx);
+   wimp_input_button(&gui.ctx);
    zr_input_end(&gui.ctx);
-
-
+   
    /* zahnrad code */
 
    if (settings->menu.mouse.enable && (settings->video.fullscreen 
             || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
    {
+      int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+      int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
       wimp_draw_cursor(wimp, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
