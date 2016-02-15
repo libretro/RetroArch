@@ -22,7 +22,6 @@
 #include "../font_driver.h"
 #include "../../general.h"
 #include "../../verbosity.h"
-#include "../../file_ops.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STB_RECT_PACK_IMPLEMENTATION

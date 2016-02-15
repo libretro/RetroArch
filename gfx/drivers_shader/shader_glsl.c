@@ -27,7 +27,6 @@
 #include "shader_glsl.h"
 #include "../video_state_tracker.h"
 #include "../../dynamic.h"
-#include "../../file_ops.h"
 #include "../../rewind.h"
 #include "../../libretro_version_1.h"
 

@@ -91,6 +91,29 @@ void content_push_to_history_playlist(bool do_push,
 
 bool content_ctl(enum content_ctl_state state, void *data);
 
+#ifdef HAVE_COMPRESSION
+/* Generic compressed file loader.
+ * Extracts to buf, unless optional_filename != 0
+ * Then extracts to optional_filename and leaves buf alone.
+ */
+int content_file_compressed_read(const char * path, void **buf,
+      const char* optional_filename, ssize_t *length);
+#endif
+
+/**
+ * content_file_read:
+ * @path             : path to file.
+ * @buf              : buffer to allocate and read the contents of the
+ *                     file into. Needs to be freed manually.
+ * @length           : Number of items read, -1 on error.
+ *
+ * Read the contents of a file into @buf. Will call read_compressed_file
+ * if path contains a compressed file, otherwise will call read_generic_file.
+ *
+ * Returns: true (1) if file read, false (0) on error.
+ */
+int content_file_read(const char *path, void **buf, ssize_t *length);
+
 #ifdef __cplusplus
 }
 #endif

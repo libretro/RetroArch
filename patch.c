@@ -30,7 +30,6 @@
 #include <string/stdstring.h>
 
 #include "patch.h"
-#include "file_ops.h"
 #include "runloop.h"
 #include "verbosity.h"
 

@@ -29,7 +29,6 @@
 #endif
 
 #include "../dir_list_special.h"
-#include "../file_ops.h"
 #include "../msg_hash.h"
 #include "../playlist.h"
 #include "../verbosity.h"

@@ -31,7 +31,6 @@
 #include <formats/tga.h>
 #include <retro_file.h>
 
-#include "../file_ops.h"
 #include "../general.h"
 
 bool video_texture_image_set_color_shifts(

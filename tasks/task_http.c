@@ -25,7 +25,6 @@
 #include <retro_file.h>
 #include <retro_stat.h>
 
-#include "../file_ops.h"
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"

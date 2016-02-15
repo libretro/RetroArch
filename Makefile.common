@@ -138,7 +138,6 @@ OBJ += frontend/frontend.o \
        libretro-common/memmap/memalign.o \
        dir_list_special.o \
        string_list_special.o \
-       file_ops.o \
        libretro-common/file/nbio/nbio_stdio.o \
        libretro-common/file/file_path.o \
        file_path_special.o \

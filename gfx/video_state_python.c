@@ -30,7 +30,6 @@
 #include "../general.h"
 #include "../verbosity.h"
 #include "../input/input_config.h"
-#include "../file_ops.h"
 
 static PyObject* py_read_wram(PyObject *self, PyObject *args)
 {

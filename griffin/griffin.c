@@ -610,7 +610,6 @@ FILE
 #include "../string_list_special.c"
 #include "../libretro-common/string/string_list.c"
 #include "../libretro-common/string/stdstring.c"
-#include "../file_ops.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
 #include "../libretro-common/file/file_list.c"
 
