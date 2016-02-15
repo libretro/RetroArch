@@ -91,7 +91,7 @@ static bool utf16_to_char_string(const uint16_t *in, char *s, size_t len)
  * If optional_outfile is set, extract to that instead 
  * and don't allocate buffer.
  */
-static int read_7zip_file(
+static int content_7zip_file_read(
       const char *path,
       const char *needle, void **buf,
       const char *optional_outfile)
@@ -364,7 +364,7 @@ struct decomp_state
    bool found;
 };
 
-static bool zip_file_decompressed_handle(file_archive_file_handle_t *handle,
+static bool content_zip_file_decompressed_handle(file_archive_file_handle_t *handle,
       const uint8_t *cdata, uint32_t csize,
       uint32_t size, uint32_t crc32)
 {
@@ -414,7 +414,7 @@ error:
  * buf will be 0 then.
  */
 
-static int zip_file_decompressed(const char *name, const char *valid_exts,
+static int content_zip_file_decompressed(const char *name, const char *valid_exts,
    const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
    uint32_t crc32, void *userdata)
 {
@@ -433,7 +433,7 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
 
       st->found = true;
 
-      if (zip_file_decompressed_handle(&handle,
+      if (content_zip_file_decompressed_handle(&handle,
                cdata, csize, size, crc32))
       {
          if (st->opt_file != 0)
@@ -474,7 +474,8 @@ static int zip_file_decompressed(const char *name, const char *valid_exts,
    return 1;
 }
 
-static int read_zip_file(const char *path,
+static int content_zip_file_read(
+      const char *path,
       const char *needle, void **buf,
       const char* optional_outfile)
 {
@@ -498,7 +499,7 @@ static int read_zip_file(const char *path,
    do
    {
       ret = file_archive_parse_file_iterate(&zlib, &returnerr, path,
-            "", zip_file_decompressed, &st);
+            "", content_zip_file_decompressed, &st);
       if (!returnerr)
          break;
    }while(ret == 0 && !st.found);
@@ -559,7 +560,7 @@ int content_file_compressed_read(const char * path, void **buf,
 #ifdef HAVE_7ZIP
    if (string_is_equal_noncase(file_ext, "7z"))
    {
-      *length = read_7zip_file(str_list->elems[0].data,
+      *length = content_7zip_file_read(str_list->elems[0].data,
             str_list->elems[1].data, buf, optional_filename);
       if (*length != -1)
          ret = 1;
@@ -569,7 +570,7 @@ int content_file_compressed_read(const char * path, void **buf,
    if (string_is_equal_noncase(file_ext, "zip"))
    {
       stream_backend = file_archive_get_default_file_backend();
-      *length        = read_zip_file(str_list->elems[0].data,
+      *length        = content_zip_file_read(str_list->elems[0].data,
             str_list->elems[1].data, buf, optional_filename);
       if (*length != -1)
          ret = 1;
