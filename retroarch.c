@@ -993,7 +993,12 @@ static void parse_input(int argc, char *argv[])
       }
    }
    else if (!*global->subsystem && optind < argc)
-      rarch_ctl(RARCH_CTL_SET_PATHS, (void*)argv[optind]);
+   {
+      if (rarch_ctl(RARCH_CTL_IS_STDIN_CLAIMED, NULL))
+         rarch_ctl(RARCH_CTL_VERIFY_STDIN_PATHS, NULL);
+      else
+         rarch_ctl(RARCH_CTL_SET_PATHS, (void*)argv[optind]);
+   }
    else if (*global->subsystem && optind < argc)
       set_special_paths(argv + optind, argc - optind);
    else
