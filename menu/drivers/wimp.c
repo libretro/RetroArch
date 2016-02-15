@@ -87,6 +87,9 @@ struct wimp {
 static void wimp_main(struct zr_context *ctx, int width, int height)
 {
     struct zr_panel layout;
+    settings_t *settings     = config_get_ptr();
+    
+    int show_fps = settings->fps_show ? 0 : 1;
     
     if (zr_begin(ctx, &layout, "Show", zr_rect(0, 0, width/2, height),
         ZR_WINDOW_BORDER))
@@ -101,13 +104,10 @@ static void wimp_main(struct zr_context *ctx, int width, int height)
             printf("pressed\n");
       }
       zr_layout_row_dynamic(ctx, 30, 2);
-      if (zr_option(ctx, "easy", op == EASY))
-         op = EASY;
-      if (zr_option(ctx, "hard", op == HARD))
-         op = HARD;
-
-      zr_layout_row_dynamic(ctx, 22, 1);
-      zr_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
+      if (zr_checkbox(ctx, "Show fps", &show_fps))
+      {
+         settings->fps_show = !settings->fps_show;
+      }
    }
    zr_end(ctx);
 }
