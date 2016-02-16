@@ -403,7 +403,7 @@ static void menu_action_setting_disp_set_label_input_desc(
 
    if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
    {
-      if(strstr(descriptor,"Auto"))
+      if(strstr(descriptor,"Auto") && !strstr(descriptor,"(N/A)"))
          strlcpy(s, 
             descriptor,
             len);
