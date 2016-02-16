@@ -485,6 +485,7 @@ static int content_zip_file_decompressed(
 
             if (buf)
             {
+               RARCH_LOG("Extracting file : %s\n", st->opt_file);
                memcpy(buf, handle.data, size);
                if (!retro_write_file(st->opt_file, buf, size))
                   goto_error = true;
