@@ -1335,7 +1335,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          rarch_stdin_claimed = true;
          break;
       case RARCH_CTL_UNSET_STDIN_CLAIMED:
-         rarch_stdin_claimed = true;
+         rarch_stdin_claimed = false;
          break;
       case RARCH_CTL_VERIFY_STDIN_PATHS:
          if (!*global->name.savefile)
