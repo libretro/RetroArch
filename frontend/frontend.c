@@ -117,11 +117,15 @@ int rarch_main(int argc, char *argv[], void *data)
    
    if (frontend_driver_is_inited())
    {
-      ret = content_load(argc, argv, args,
-            frontend_driver_environment_get_ptr());
+      content_ctx_info_t info;
 
-      if (!ret)
-         return ret;
+      info.argc            = argc;
+      info.argv            = argv;
+      info.args            = args;
+      info.environ_get     = frontend_driver_environment_get_ptr();
+
+      if (!content_ctl(CONTENT_CTL_LOAD, &info))
+         return 0;
    }
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET,  &system);

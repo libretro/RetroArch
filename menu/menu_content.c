@@ -85,6 +85,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
 
 static bool menu_content_load(void)
 {
+   content_ctx_info_t content_info;
    char name[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
    bool msg_force       = true;
@@ -98,7 +99,12 @@ static bool menu_content_load(void)
    if (*fullpath)
       fill_pathname_base(name, fullpath, sizeof(name));
 
-   if (!(content_load(0, NULL, NULL, menu_content_environment_get)))
+   content_info.argc        = 0;
+   content_info.argv        = NULL;
+   content_info.args        = NULL;
+   content_info.environ_get = menu_content_environment_get;
+
+   if (!content_ctl(CONTENT_CTL_LOAD, &content_info))
       goto error;
 
    if (*fullpath)

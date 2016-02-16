@@ -828,10 +828,6 @@ static void content_load_init_wrap(
 
 /**
  * content_load:
- * @argc             : Argument count.
- * @argv             : Argument variable list.
- * @args             : Arguments passed from callee.
- * @environ_get      : Function passed for environment_get function.
  *
  * Loads content file and starts up RetroArch.
  * If no content file can be loaded, will start up RetroArch
@@ -839,16 +835,15 @@ static void content_load_init_wrap(
  *
  * Returns: false (0) if rarch_main_init failed, otherwise true (1).
  **/
-bool content_load(int argc, char **argv, void *args,
-      environment_get_t environ_get)
+static bool content_load(content_ctx_info_t *info)
 {
    unsigned i;
    bool retval                       = true;
    int rarch_argc                    = 0;
    char *rarch_argv[MAX_ARGS]        = {NULL};
    char *argv_copy [MAX_ARGS]        = {NULL};
-   char **rarch_argv_ptr             = (char**)argv;
-   int *rarch_argc_ptr               = (int*)&argc;
+   char **rarch_argv_ptr             = (char**)info->argv;
+   int *rarch_argc_ptr               = (int*)&info->argc;
    struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)
       calloc(1, sizeof(*wrap_args));
 
@@ -857,8 +852,9 @@ bool content_load(int argc, char **argv, void *args,
 
    retro_assert(wrap_args);
 
-   if (environ_get)
-      environ_get(rarch_argc_ptr, rarch_argv_ptr, args, wrap_args);
+   if (info->environ_get)
+      info->environ_get(rarch_argc_ptr,
+            rarch_argv_ptr, info->args, wrap_args);
 
    if (wrap_args->touched)
    {
@@ -1761,6 +1757,8 @@ bool content_ctl(enum content_ctl_state state, void *data)
                   stream->a, stream->b, stream->c);
          }
          break;
+      case CONTENT_CTL_LOAD:
+         return content_load((content_ctx_info_t*)data);
       case CONTENT_CTL_NONE:
       default:
          break;
