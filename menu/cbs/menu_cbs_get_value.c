@@ -22,6 +22,9 @@
 #include "../menu_shader.h"
 #include "../menu_hash.h"
 
+#include "../../input/input_autodetect.h"
+#include "../../input/input_config.h"
+
 #include "../../core_info.h"
 #include "../../cheats.h"
 #include "../../general.h"
