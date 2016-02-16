@@ -403,7 +403,7 @@ static void input_config_get_bind_string_joykey(char *buf, const char *prefix,
             && settings->input.input_descriptor_label_show)
          snprintf(buf, size, "%s%s (btn) ", prefix, bind->joykey_label);
       else
-         snprintf(buf, size, "%s%u (btn)(N/A) ", prefix, (unsigned)bind->joykey);
+         snprintf(buf, size, "%s%u (N/A) ", prefix, (unsigned)bind->joykey);
    }
 }
 
@@ -428,7 +428,7 @@ static void input_config_get_bind_string_joyaxis(char *buf, const char *prefix,
          && settings->input.input_descriptor_label_show)
       snprintf(buf, size, "%s%s (axis) ", prefix, bind->joyaxis_label);
    else
-      snprintf(buf, size, "%s%c%u (axis)(N/A) ", prefix, dir, axis);
+      snprintf(buf, size, "%s%c%u (N/A) ", prefix, dir, axis);
 }
 
 void input_config_get_bind_string(char *buf, const struct retro_keybind *bind,
