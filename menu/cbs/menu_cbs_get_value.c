@@ -390,15 +390,37 @@ static void menu_action_setting_disp_set_label_input_desc(
    remap_id = settings->input.remap_ids
       [inp_desc_user][inp_desc_button_index_offset];
 
+   const struct retro_keybind *keybind = 
+      (const struct retro_keybind*)
+      &settings->input.binds[inp_desc_user][remap_id];
+   const struct retro_keybind *auto_bind = 
+      (const struct retro_keybind*)
+      input_get_auto_bind(inp_desc_user, remap_id);
+
+   char descriptor[PATH_MAX_LENGTH];
+   input_config_get_bind_string(descriptor,
+      keybind, auto_bind, sizeof(descriptor));
+
    if (inp_desc_button_index_offset < RARCH_FIRST_CUSTOM_BIND)
-      strlcpy(s, 
+   {
+      if(strstr(descriptor,"Auto"))
+         strlcpy(s, 
+            descriptor,
+            len);
+      else
+         strlcpy(s, 
             settings->input.binds[inp_desc_user][remap_id].desc,
             len);
+   }
+
+
+
    else
       strlcpy(s, axis_labels[remap_id], len);
 
    *w = 19;
    strlcpy(s2, path, len2);
+
 }
 
 static void menu_action_setting_disp_set_label_cheat(
