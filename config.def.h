@@ -29,6 +29,7 @@
 enum
 {
    VIDEO_GL = 0,
+   VIDEO_VULKAN,
    VIDEO_XVIDEO,
    VIDEO_SDL,
    VIDEO_SDL2,

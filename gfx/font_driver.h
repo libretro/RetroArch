@@ -30,7 +30,8 @@ enum font_driver_render_api
    FONT_DRIVER_RENDER_DONT_CARE,
    FONT_DRIVER_RENDER_OPENGL_API,
    FONT_DRIVER_RENDER_DIRECT3D_API,
-   FONT_DRIVER_RENDER_VITA2D
+   FONT_DRIVER_RENDER_VITA2D,
+   FONT_DRIVER_RENDER_VULKAN_API
 };
 
 enum text_alignment
@@ -149,6 +150,7 @@ extern font_renderer_t d3d_xbox360_font;
 extern font_renderer_t d3d_xdk1_font;
 extern font_renderer_t d3d_win32_font;
 extern font_renderer_t vita2d_vita_font;
+extern font_renderer_t vulkan_raster_font;
 
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t freetype_font_renderer;

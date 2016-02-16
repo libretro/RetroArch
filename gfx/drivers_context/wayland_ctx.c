@@ -452,7 +452,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    wl->win = wl_egl_window_create(wl->surface, wl->width, wl->height);
    wl->shell_surf = wl_shell_get_shell_surface(wl->shell, wl->surface);
 
-   wl_shell_surface_add_listener(wl->shell_surf, &shell_surface_listener, NULL);
+   wl_shell_surface_add_listener(wl->shell_surf, &shell_surface_listener, wl);
    wl_shell_surface_set_toplevel(wl->shell_surf);
    wl_shell_surface_set_class(wl->shell_surf, "RetroArch");
    wl_shell_surface_set_title(wl->shell_surf, "RetroArch");

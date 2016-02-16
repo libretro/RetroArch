@@ -389,6 +389,7 @@ if [ "$OS" != 'Win32' ]; then
 fi
 check_lib STRCASESTR "$CLIB" strcasestr
 check_lib MMAP "$CLIB" mmap
+check_lib VULKAN -lvulkan vkCreateInstance
 
 check_pkgconf PYTHON python3
 

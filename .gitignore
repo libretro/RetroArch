@@ -62,6 +62,9 @@ menu/driverspzarch.c
 /media/shaders_glsl/
 /obj-w32/
 
+# Ctags
+/tags
+
 # Android
 /pkg/android/phoenix/obj/
 /pkg/android/phoenix/assets/

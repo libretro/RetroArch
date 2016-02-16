@@ -1145,8 +1145,8 @@ static void zarch_context_bg_destroy(void *data)
    zui_t        *zui     = (zui_t*)data;
    if (!zui)
       return;
-   video_driver_texture_unload((uintptr_t*)&zui->textures.bg.id);
-   video_driver_texture_unload((uintptr_t*)&zui->textures.white);
+   video_driver_texture_unload(&zui->textures.bg.id);
+   video_driver_texture_unload(&zui->textures.white);
 }
 
 static void zarch_context_destroy(void *data)
@@ -1171,7 +1171,7 @@ static bool zarch_load_image(void *userdata,
          zarch_context_bg_destroy(zui);
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR,
-               (unsigned*)&zui->textures.bg.id);
+               &zui->textures.bg.id);
          break;
       case MENU_IMAGE_BOXART:
          break;
@@ -1191,7 +1191,7 @@ static void zarch_allocate_white_texture(zui_t *zui)
 
    video_driver_texture_load(&ti,
          TEXTURE_FILTER_NEAREST,
-         (unsigned*)&zui->textures.white);
+         &zui->textures.white);
 }
 
 static void zarch_context_reset(void *data)

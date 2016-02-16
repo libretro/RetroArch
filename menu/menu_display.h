@@ -93,6 +93,7 @@ enum menu_display_driver_type
 {
    MENU_VIDEO_DRIVER_GENERIC = 0,
    MENU_VIDEO_DRIVER_OPENGL,
+   MENU_VIDEO_DRIVER_VULKAN,
    MENU_VIDEO_DRIVER_DIRECT3D
 };
 
@@ -175,6 +176,7 @@ void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err);
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;
+extern menu_display_ctx_driver_t menu_display_ctx_vulkan;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 

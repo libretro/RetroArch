@@ -921,6 +921,31 @@ enum retro_mod
                                             * writeable (and readable).
                                             */
 
+enum retro_hw_render_interface_type
+{
+   RETRO_HW_RENDER_INTERFACE_VULKAN = 0,
+   RETRO_HW_RENDER_INTERFACE_DUMMY = INT_MAX
+};
+
+/* Base struct. All retro_hw_render_interface_* types
+ * contain at least these fields. */
+struct retro_hw_render_interface
+{
+   enum retro_hw_render_interface_type interface_type;
+   unsigned interface_version;
+};
+#define RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE (41 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* const struct retro_hw_render_interface ** --
+                                            * Returns an API specific rendering interface for accessing API specific data.
+                                            * Not all HW rendering APIs support or need this.
+                                            * The contents of the returned pointer is specific to the rendering API
+                                            * being used. See the various headers like libretro_vulkan.h, etc.
+                                            *
+                                            * GET_HW_RENDER_INTERFACE cannot be called before context_reset has been called.
+                                            * Similarly, after context_destroyed callback returns,
+                                            * the contents of the HW_RENDER_INTERFACE are invalidated.
+                                            */
+
 #define RETRO_MEMDESC_CONST     (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
 #define RETRO_MEMDESC_BIGENDIAN (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
 #define RETRO_MEMDESC_ALIGN_2   (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
@@ -1537,6 +1562,9 @@ enum retro_hw_context_type
     * use the corresponding enums directly. */
    RETRO_HW_CONTEXT_OPENGLES_VERSION = 5,
 
+   /* Vulkan, see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE. */
+   RETRO_HW_CONTEXT_VULKAN           = 6,
+
    RETRO_HW_CONTEXT_DUMMY = INT_MAX
 };
 
@@ -1559,23 +1587,28 @@ struct retro_hw_render_callback
     */
    retro_hw_context_reset_t context_reset;
 
-   /* Set by frontend. */
+   /* Set by frontend.
+    * TODO: This is rather obsolete. The frontend should not
+    * be providing preallocated framebuffers. */
    retro_hw_get_current_framebuffer_t get_current_framebuffer;
 
    /* Set by frontend. */
    retro_hw_get_proc_address_t get_proc_address;
 
-   /* Set if render buffers should have depth component attached. */
+   /* Set if render buffers should have depth component attached.
+    * TODO: Obsolete. */
    bool depth;
 
-   /* Set if stencil buffers should be attached. */
+   /* Set if stencil buffers should be attached.
+    * TODO: Obsolete. */
    bool stencil;
 
    /* If depth and stencil are true, a packed 24/8 buffer will be added. 
     * Only attaching stencil is invalid and will be ignored. */
 
    /* Use conventional bottom-left origin convention. If false, 
-    * standard libretro top-left origin semantics are used. */
+    * standard libretro top-left origin semantics are used.
+    * TODO: Move to GL specific interface. */
    bool bottom_left_origin;
    
    /* Major version number for core GL context or GLES 3.1+. */
@@ -1586,6 +1619,7 @@ struct retro_hw_render_callback
 
    /* If this is true, the frontend will go very far to avoid 
     * resetting context in scenarios like toggling fullscreen, etc.
+    * TODO: Obsolete? Maybe frontend should just always assume this ...
     */
    bool cache_context;
 

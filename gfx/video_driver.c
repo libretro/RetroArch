@@ -145,6 +145,9 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 };
 
 static const video_driver_t *video_drivers[] = {
+#ifdef HAVE_VULKAN
+   &video_vulkan,
+#endif
 #ifdef HAVE_OPENGL
    &video_gl,
 #endif
@@ -239,18 +242,57 @@ const char* config_get_video_driver_options(void)
    return char_list_new_special(STRING_LIST_VIDEO_DRIVERS, NULL);
 }
 
+static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
+{
+   return type == RETRO_HW_CONTEXT_VULKAN;
+}
+
+static bool hw_render_context_is_gl(enum retro_hw_context_type type)
+{
+   switch (type)
+   {
+      case RETRO_HW_CONTEXT_OPENGL:
+      case RETRO_HW_CONTEXT_OPENGLES2:
+      case RETRO_HW_CONTEXT_OPENGL_CORE:
+      case RETRO_HW_CONTEXT_OPENGLES3:
+      case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+         return true;
+      default:
+         return false;
+   }
+}
+
 static bool find_video_driver(void)
 {
    int i;
    driver_ctx_info_t drv;
    settings_t *settings = config_get_ptr();
 
-#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
+#if (defined(HAVE_OPENGL) && defined(HAVE_FBO)) || defined(HAVE_VULKAN)
    if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
    {
-      RARCH_LOG("Using HW render, OpenGL driver forced.\n");
-      current_video = &video_gl;
-      return true;
+      struct retro_hw_render_callback *hwr =
+         video_driver_callback();
+      current_video = NULL;
+
+#if defined(HAVE_VULKAN)
+      if (hwr && hw_render_context_is_vulkan(hwr->context_type))
+      {
+         RARCH_LOG("Using HW render, Vulkan driver forced.\n");
+         current_video = &video_vulkan;
+      }
+#endif
+
+#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
+      if (hwr && hw_render_context_is_gl(hwr->context_type))
+      {
+         RARCH_LOG("Using HW render, OpenGL driver forced.\n");
+         current_video = &video_gl;
+      }
+#endif
+
+      if (current_video)
+         return true;
    }
 #endif
 
@@ -557,9 +599,15 @@ static bool uninit_video_input(void)
 
 static bool init_video_pixel_converter(unsigned size)
 {
+   struct retro_hw_render_callback *hwr = video_driver_callback();
+
    /* If pixel format is not 0RGB1555, we don't need to do
     * any internal pixel conversion. */
    if (video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
+      return true;
+
+   /* No need to perform pixel conversion for HW rendering contexts. */
+   if (hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
       return true;
 
    RARCH_WARN("0RGB1555 pixel format is deprecated, and will be slower. For 15/16-bit, RGB565 format is preferred.\n");
@@ -1722,6 +1770,13 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
             return false;
          return video_driver_poke->get_current_software_framebuffer(
                video_driver_data, (struct retro_framebuffer *)data);
+      case RARCH_DISPLAY_CTL_GET_HW_RENDER_INTERFACE:
+         if (
+               !video_driver_poke || 
+               !video_driver_poke->get_hw_render_interface)
+            return false;
+         return video_driver_poke->get_hw_render_interface(video_driver_data,
+               (const struct retro_hw_render_interface**)data);
       case RARCH_DISPLAY_CTL_VIEWPORT_INFO:
          if (!current_video || !current_video->viewport_info)
             return false;
@@ -1978,7 +2033,7 @@ uintptr_t video_driver_window_get(void)
 
 bool video_driver_texture_load(void *data,
       enum texture_filter_type  filter_type,
-      unsigned *id)
+      uintptr_t *id)
 {
 #ifdef HAVE_THREADS
    settings_t *settings = config_get_ptr();
@@ -2004,7 +2059,7 @@ bool video_driver_texture_unload(uintptr_t *id)
    if (!video_driver_poke || !video_driver_poke->unload_texture)
       return false;
 
-   video_driver_poke->unload_texture(video_driver_data, id);
-
+   video_driver_poke->unload_texture(video_driver_data, *id);
+   *id = 0;
    return true;
 }

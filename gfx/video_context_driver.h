@@ -40,7 +40,8 @@ enum gfx_ctx_api
    GFX_CTX_OPENGL_ES_API,
    GFX_CTX_DIRECT3D8_API,
    GFX_CTX_DIRECT3D9_API,
-   GFX_CTX_OPENVG_API
+   GFX_CTX_OPENVG_API,
+   GFX_CTX_VULKAN_API
 };
     
 enum display_metric_types
@@ -83,7 +84,8 @@ enum gfx_ctx_ctl_state
    GFX_CTL_SET_VIDEO_MODE,
    GFX_CTL_SET_RESIZE,
    GFX_CTL_GET_VIDEO_SIZE,
-   GFX_CTL_SET_VIDEO_CONTEXT_DATA
+   GFX_CTL_SET_VIDEO_CONTEXT_DATA,
+   GFX_CTL_GET_CONTEXT_DATA
 };
 
 typedef void (*gfx_ctx_proc_t)(void);
@@ -182,6 +184,11 @@ typedef struct gfx_ctx_driver
 
    /* Optional. Binds HW-render offscreen context. */
    void (*bind_hw_render)(void *data, bool enable);
+
+   /* Optional. Gets base data for the context which is used by the driver.
+    * This is mostly relevant for graphics APIs such as Vulkan
+    * which do not have global context state. */
+   void *(*get_context_data)(void *data);
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_size
@@ -243,6 +250,7 @@ typedef struct gfx_ctx_ident
 extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
 extern const gfx_ctx_driver_t gfx_ctx_x_egl;
 extern const gfx_ctx_driver_t gfx_ctx_wayland;
+extern const gfx_ctx_driver_t gfx_ctx_wayland_vulkan;
 extern const gfx_ctx_driver_t gfx_ctx_glx;
 extern const gfx_ctx_driver_t gfx_ctx_d3d;
 extern const gfx_ctx_driver_t gfx_ctx_drm_egl;

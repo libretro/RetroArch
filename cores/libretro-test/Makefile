@@ -120,6 +120,8 @@ else
 CFLAGS += -std=gnu99
 endif
 
+CFLAGS += -I../../libretro-common/include
+
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)

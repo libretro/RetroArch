@@ -77,6 +77,8 @@
 #define SHADER_EXT_GLSLP     0x0f840c87U
 #define SHADER_EXT_CG        0x0059776fU
 #define SHADER_EXT_CGP       0x0b8865bfU
+#define SHADER_EXT_SLANG     0x105ce63aU
+#define SHADER_EXT_SLANGP    0x1bf9adeaU
 
 #define runloop_cmd_triggered(cmd, id) BIT64_GET(cmd->state[2], id) 
 
@@ -350,6 +352,10 @@ static void check_shader_dir(rarch_dir_list_t *dir_list,
       case SHADER_EXT_GLSL:
       case SHADER_EXT_GLSLP:
          type = RARCH_SHADER_GLSL;
+         break;
+      case SHADER_EXT_SLANG:
+      case SHADER_EXT_SLANGP:
+         type = RARCH_SHADER_SLANG;
          break;
       case SHADER_EXT_CG:
       case SHADER_EXT_CGP:

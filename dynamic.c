@@ -878,6 +878,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                RARCH_LOG("Requesting no HW context.\n");
                break;
 
+#ifdef HAVE_VULKAN
+            case RETRO_HW_CONTEXT_VULKAN:
+               RARCH_LOG("Requesting Vulkan context.\n");
+               break;
+#else
+            case RETRO_HW_CONTEXT_VULKAN:
+               RARCH_ERR("Requesting Vulkan context, but RetroArch is not compiled against Vulkan. Cannot use HW context.\n");
+               return false;
+#endif
+
 #if defined(HAVE_OPENGLES2)
             case RETRO_HW_CONTEXT_OPENGLES2:
 #if defined(HAVE_OPENGLES3)
@@ -1212,6 +1222,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          return video_driver_ctl(
                RARCH_DISPLAY_CTL_GET_CURRENT_SOFTWARE_FRAMEBUFFER,
                (struct retro_framebuffer*)data);
+
+      case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
+         return video_driver_ctl(
+               RARCH_DISPLAY_CTL_GET_HW_RENDER_INTERFACE,
+               (const struct retro_hw_render_interface**)data);
 
       /* Private extensions for internal use, not part of libretro API. */
       /* None yet. */

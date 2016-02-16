@@ -140,6 +140,34 @@ static bool gl_font_init_first(
 }
 #endif
 
+#ifdef HAVE_VULKAN
+static const font_renderer_t *vulkan_font_backends[] = {
+   &vulkan_raster_font,
+   NULL,
+};
+
+static bool vulkan_font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size)
+{
+   unsigned i;
+
+   for (i = 0; vulkan_font_backends[i]; i++)
+   {
+      void *data = vulkan_font_backends[i]->init(video_data, font_path, font_size);
+
+      if (!data)
+         continue;
+
+      *font_driver = vulkan_font_backends[i];
+      *font_handle = data;
+      return true;
+   }
+
+   return false;
+}
+#endif
+
 #ifdef HAVE_VITA2D
 static const font_renderer_t *vita2d_font_backends[] = {
    &vita2d_vita_font
@@ -186,6 +214,11 @@ static bool font_init_first(
 #ifdef HAVE_OPENGL
       case FONT_DRIVER_RENDER_OPENGL_API:
          return gl_font_init_first(font_driver, font_handle,
+               video_data, font_path, font_size);
+#endif
+#ifdef HAVE_VULKAN
+      case FONT_DRIVER_RENDER_VULKAN_API:
+         return vulkan_font_init_first(font_driver, font_handle,
                video_data, font_path, font_size);
 #endif
 #ifdef HAVE_VITA2D

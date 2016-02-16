@@ -187,7 +187,7 @@ static void gl_raster_font_free_font(void *data)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
-   video_driver_texture_unload((uintptr_t*)&font->tex);
+   glDeleteTextures(1, &font->tex);
    free(font);
 }
 
@@ -197,8 +197,8 @@ static int gl_get_message_width(void *data, const char *msg,
    gl_raster_t *font = (gl_raster_t*)data;
       
    unsigned i;
-   unsigned msg_len        = min(msg_len_full, MAX_MSG_LEN_CHUNK);
-   int      delta_x        = 0;
+   unsigned msg_len = min(msg_len_full, MAX_MSG_LEN_CHUNK);
+   int      delta_x = 0;
 
    if (!font)
       return 0;

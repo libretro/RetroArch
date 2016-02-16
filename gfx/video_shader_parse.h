@@ -47,7 +47,8 @@ enum rarch_shader_type
    RARCH_SHADER_NONE = 0,
    RARCH_SHADER_CG,
    RARCH_SHADER_HLSL,
-   RARCH_SHADER_GLSL
+   RARCH_SHADER_GLSL,
+   RARCH_SHADER_SLANG
 };
 
 enum gfx_scale_type
