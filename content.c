@@ -898,6 +898,51 @@ error:
    return retval;
 }
 
+static bool read_content_stdin(struct retro_game_info *info)
+{
+   size_t buf_size;
+   size_t buf_ptr;
+   uint8_t *rom_buf = NULL;
+
+#if defined(_WIN32) && !defined(_XBOX)
+   _setmode(0, O_BINARY);
+#endif
+
+   RARCH_LOG("Reading content from stdin ...\n");
+   buf_size  = 0xfffff; /* Some initial guesstimate. */
+   buf_ptr   = 0;
+   rom_buf   = (uint8_t*)malloc(buf_size);
+
+   if (!rom_buf)
+         goto error;
+
+   for (;;)
+   {
+      size_t ret   = fread(rom_buf + buf_ptr, 1,
+            buf_size - buf_ptr, stdin);
+      buf_ptr     += ret;
+
+      /* We've reached the end */
+      if (buf_ptr < buf_size)
+         break;
+
+      rom_buf = (uint8_t*)realloc(rom_buf, buf_size * 2);
+      if (!rom_buf)
+         goto error;
+
+      buf_size *= 2;
+   }
+
+   info->data     = &rom_buf;
+   info->size     = buf_ptr;
+
+   return true;
+
+error:
+   RARCH_ERR("Couldn't allocate memory.\n");
+   return false;
+}
+
 /**
  * read_content_file:
  * @path         : buffer of the content file.
@@ -920,10 +965,12 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    uint8_t *ret_buf          = NULL;
    global_t *global          = global_get_ptr();
 
-   RARCH_LOG("%s: %s.\n",
-         msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
-   if (!content_file_read(path, (void**) &ret_buf, length))
-      return false;
+   {
+      RARCH_LOG("%s: %s.\n",
+            msg_hash_to_str(MSG_LOADING_CONTENT_FILE), path);
+      if (!content_file_read(path, (void**) &ret_buf, length))
+         return false;
+   }
 
    if (*length < 0)
       return false;
@@ -1383,7 +1430,8 @@ static bool load_content(
       bool require_content = attr & 4;
       const char *path     = content->elems[i].data;
 
-      if (require_content && string_is_empty(path))
+      if (require_content && string_is_empty(path) &&
+            !content_ctl(RARCH_CTL_IS_STDIN_CLAIMED, NULL))
       {
          RARCH_LOG("libretro core requires content, "
                "but nothing was provided.\n");
@@ -1395,6 +1443,14 @@ static bool load_content(
       if (*path)
          info[i].path = path;
 
+      if (!need_fullpath && 
+            content_ctl(RARCH_CTL_IS_STDIN_CLAIMED, NULL))
+      {
+         if (read_content_stdin(&info[0]))
+            break;
+         return false;
+      }
+      else
       if (!need_fullpath && !string_is_empty(path))
       {
          if (!load_content_into_memory(&info[i], i, path))
