@@ -63,10 +63,16 @@ void menu_shader_manager_init(menu_handle_t *menu)
             sizeof(menu->default_glslp));
       path_remove_extension(menu->default_glslp);
       strlcat(menu->default_glslp, ".glslp", sizeof(menu->default_glslp));
+
       fill_pathname_base(menu->default_cgp, config_path,
             sizeof(menu->default_cgp));
       path_remove_extension(menu->default_cgp);
       strlcat(menu->default_cgp, ".cgp", sizeof(menu->default_cgp));
+
+      fill_pathname_base(menu->default_slangp, config_path,
+            sizeof(menu->default_slangp));
+      path_remove_extension(menu->default_slangp);
+      strlcat(menu->default_slangp, ".slangp", sizeof(menu->default_slangp));
    }
    else
    {
@@ -74,6 +80,8 @@ void menu_shader_manager_init(menu_handle_t *menu)
             sizeof(menu->default_glslp));
       strlcpy(menu->default_cgp, "menu.cgp",
             sizeof(menu->default_cgp));
+      strlcpy(menu->default_slangp, "menu.slangp",
+            sizeof(menu->default_slangp));
    }
 
    ext      = path_get_extension(settings->video.shader_path);
@@ -83,6 +91,7 @@ void menu_shader_manager_init(menu_handle_t *menu)
    {
       case MENU_VALUE_GLSLP:
       case MENU_VALUE_CGP:
+      case MENU_VALUE_SLANGP:
          conf = config_file_new(settings->video.shader_path);
          if (conf)
          {
@@ -97,6 +106,7 @@ void menu_shader_manager_init(menu_handle_t *menu)
          break;
       case MENU_VALUE_GLSL:
       case MENU_VALUE_CG:
+      case MENU_VALUE_SLANG:
          strlcpy(shader->pass[0].source.path, settings->video.shader_path,
                sizeof(shader->pass[0].source.path));
          shader->passes = 1;
@@ -115,6 +125,12 @@ void menu_shader_manager_init(menu_handle_t *menu)
             {
                fill_pathname_join(preset_path, shader_dir,
                      "menu.cgp", sizeof(preset_path));
+               conf = config_file_new(preset_path);
+            }
+
+            if (!conf)
+            {
+               fill_pathname_join(preset_path, shader_dir, "menu.slangp", sizeof(preset_path));
                conf = config_file_new(preset_path);
             }
 
@@ -235,12 +251,16 @@ void menu_shader_manager_save_preset(
 
       /* Append extension automatically as appropriate. */
       if (     !strstr(basename, ".cgp") 
-            && !strstr(basename, ".glslp"))
+            && !strstr(basename, ".glslp")
+            && !strstr(basename, ".slangp"))
       {
          switch (type)
          {
             case RARCH_SHADER_GLSL:
                strlcat(buffer, ".glslp", sizeof(buffer));
+               break;
+            case RARCH_SHADER_SLANG:
+               strlcat(buffer, ".slangp", sizeof(buffer));
                break;
             case RARCH_SHADER_CG:
                strlcat(buffer, ".cgp", sizeof(buffer));
@@ -250,8 +270,22 @@ void menu_shader_manager_save_preset(
    }
    else
    {
-      const char *conf_path = (type == RARCH_SHADER_GLSL) ?
-         menu->default_glslp : menu->default_cgp;
+      const char *conf_path = NULL;
+      switch (type)
+      {
+         case RARCH_SHADER_GLSL:
+            conf_path = menu->default_glslp;
+            break;
+
+         case RARCH_SHADER_SLANG:
+            conf_path = menu->default_slangp;
+            break;
+
+         default:
+         case RARCH_SHADER_CG:
+            conf_path = menu->default_cgp;
+            break;
+      }
       strlcpy(buffer, conf_path, sizeof(buffer));
    }
 
@@ -323,6 +357,7 @@ unsigned menu_shader_manager_get_type(const struct video_shader *shader)
       {
          case RARCH_SHADER_CG:
          case RARCH_SHADER_GLSL:
+         case RARCH_SHADER_SLANG:
             if (type == RARCH_SHADER_NONE)
                type = pass_type;
             else if (type != pass_type)
@@ -373,6 +408,8 @@ void menu_shader_manager_apply_changes(void)
       shader_type = RARCH_SHADER_GLSL;
 #elif defined(HAVE_CG) || defined(HAVE_HLSL)
       shader_type = RARCH_SHADER_CG;
+#elif defined(HAVE_VULKAN)
+      shader_type = RARCH_SHADER_SLANG;
 #endif
    }
    menu_shader_manager_set_preset(NULL, shader_type, NULL);

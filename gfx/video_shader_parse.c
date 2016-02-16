@@ -923,6 +923,8 @@ enum rarch_shader_type video_shader_parse_type(const char *path,
       return RARCH_SHADER_CG;
    else if (string_is_equal(ext, "glslp") || string_is_equal(ext, "glsl"))
       return RARCH_SHADER_GLSL;
+   else if (string_is_equal(ext, "slangp") || string_is_equal(ext, "slang"))
+      return RARCH_SHADER_SLANG;
 
    return fallback;
 }

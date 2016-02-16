@@ -60,7 +60,9 @@ endif
 endif
 
 CFLAGS   += -Wall $(OPTIMIZE_FLAG) $(INCLUDE_DIRS) $(DEBUG_FLAG) -I.
-CXXFLAGS := $(CFLAGS) -std=c++98 -D__STDC_CONSTANT_MACROS
+
+APPEND_CFLAGS := $(CFLAGS)
+CXXFLAGS += $(APPEND_CFLAGS) -std=c++11 -D__STDC_CONSTANT_MACROS
 OBJCFLAGS :=  $(CFLAGS) -D__STDC_CONSTANT_MACROS
 
 ifeq ($(CXX_BUILD), 1)
@@ -127,7 +129,7 @@ $(OBJDIR)/%.o: %.c config.h config.mk
 	@$(if $(Q), $(shell echo echo CC $<),)
 	$(Q)$(CC) $(CFLAGS) $(DEFINES) -MMD -c -o $@ $<
 
-$(OBJDIR)/%.o: %.cpp
+$(OBJDIR)/%.o: %.cpp config.h config.mk
 	@mkdir -p $(dir $@)
 	@$(if $(Q), $(shell echo echo CXX $<),)
 	$(Q)$(CXX) $(CXXFLAGS) $(DEFINES) -MMD -c -o $@ $<

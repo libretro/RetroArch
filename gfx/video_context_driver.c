@@ -52,6 +52,9 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_WAYLAND) && defined(HAVE_OPENGL) && defined(HAVE_EGL)
    &gfx_ctx_wayland,
 #endif
+#if defined(HAVE_WAYLAND) && defined(HAVE_VULKAN)
+   &gfx_ctx_wayland_vulkan,
+#endif
 #if defined(HAVE_X11) && defined(HAVE_OPENGL) && defined(HAVE_EGL)
    &gfx_ctx_x_egl,
 #endif
@@ -431,6 +434,13 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             if (!current_video_context || !current_video_context->get_video_size)
                return false;
             current_video_context->get_video_size(video_context_data, &mode_info->width, &mode_info->height);
+         }
+         break;
+      case GFX_CTL_GET_CONTEXT_DATA:
+         {
+            if (!current_video_context || !current_video_context->get_context_data)
+               return false;
+            *(void**)data = current_video_context->get_context_data(video_context_data);
          }
          break;
       case GFX_CTL_SET_VIDEO_CONTEXT_DATA:

@@ -1146,7 +1146,7 @@ static uintptr_t thread_load_texture(void *video_data, void *data,
    return thr->poke->load_texture(thr->driver_data, data, threaded, filter_type);
 }
 
-static void thread_unload_texture(void *video_data, uintptr_t *id)
+static void thread_unload_texture(void *video_data, uintptr_t id)
 {
    thread_video_t *thr = (thread_video_t*)video_data;
 

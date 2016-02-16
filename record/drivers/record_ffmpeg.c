@@ -627,6 +627,7 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
          handle->video.encoder);
 
    stream->codec = handle->video.codec;
+   stream->time_base = stream->codec->time_base;
    handle->muxer.vstream = stream;
    handle->muxer.vstream->sample_aspect_ratio = 
       handle->video.codec->sample_aspect_ratio;
@@ -636,6 +637,7 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
       stream = avformat_new_stream(handle->muxer.ctx,
             handle->audio.encoder);
       stream->codec = handle->audio.codec;
+      stream->time_base = stream->codec->time_base;
       handle->muxer.astream = stream;
    }
 

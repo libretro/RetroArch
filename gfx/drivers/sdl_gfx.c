@@ -19,6 +19,7 @@
 
 #include <retro_assert.h>
 #include <gfx/scaler/scaler.h>
+#include <retro_assert.h>
 
 #include "SDL.h"
 

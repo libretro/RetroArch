@@ -42,6 +42,8 @@
 #define COMMAND_EXT_GLSLP        0x0f840c87U
 #define COMMAND_EXT_CG           0x0059776fU
 #define COMMAND_EXT_CGP          0x0b8865bfU
+#define COMMAND_EXT_SLANG        0x105ce63aU
+#define COMMAND_EXT_SLANGP       0x1bf9adeaU
 
 struct rarch_cmd
 {
@@ -233,6 +235,10 @@ static bool cmd_set_shader(const char *arg)
       case COMMAND_EXT_CG:
       case COMMAND_EXT_CGP:
          type = RARCH_SHADER_CG;
+         break;
+      case COMMAND_EXT_SLANG:
+      case COMMAND_EXT_SLANGP:
+         type = RARCH_SHADER_SLANG;
          break;
       default:
          return false;

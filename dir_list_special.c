@@ -55,7 +55,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
          break;
       case DIR_LIST_SHADERS:
          dir  = settings->video.shader_dir;
-         exts = "cg|cgp|glsl|glslp";
+         exts = "cg|cgp|glsl|glslp|slang|slangp";
          break;
       case DIR_LIST_COLLECTIONS:
          dir  = settings->playlist_directory;

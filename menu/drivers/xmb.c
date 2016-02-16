@@ -1053,8 +1053,8 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
       if (!path || !strstr(path, ".lpl"))
          continue;
 
-      video_driver_texture_unload((uintptr_t*)&node->icon);
-      video_driver_texture_unload((uintptr_t*)&node->content_icon);
+      video_driver_texture_unload(&node->icon);
+      video_driver_texture_unload(&node->content_icon);
    }
 }
 
@@ -1168,14 +1168,14 @@ static void xmb_context_reset_horizontal_list(
       video_texture_image_load(&ti, texturepath);
 
       video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR, (unsigned*)&node->icon);
+            TEXTURE_FILTER_MIPMAP_LINEAR, &node->icon);
 
       video_texture_image_free(&ti);
 
       video_texture_image_load(&ti, content_texturepath);
 
       video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR, (unsigned*)&node->content_icon);
+            TEXTURE_FILTER_MIPMAP_LINEAR, &node->content_icon);
 
       video_texture_image_free(&ti);
    }
@@ -2167,7 +2167,7 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
 {
    if (!xmb)
       return;
-   video_driver_texture_unload((uintptr_t*)&xmb->textures.bg.id);
+   video_driver_texture_unload(&xmb->textures.bg.id);
 }
 
 static bool xmb_load_image(void *userdata, void *data, menu_image_type_t type)
@@ -2185,7 +2185,7 @@ static bool xmb_load_image(void *userdata, void *data, menu_image_type_t type)
          xmb_context_bg_destroy(xmb);
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR,
-               (unsigned*)&xmb->textures.bg.id);
+               &xmb->textures.bg.id);
          break;
       case MENU_IMAGE_BOXART:
          {
@@ -2193,7 +2193,7 @@ static bool xmb_load_image(void *userdata, void *data, menu_image_type_t type)
             xmb->boxart_height = xmb->boxart_width 
                * (float)img->height / (float)img->width;
             video_driver_texture_load(data,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, (unsigned*)&xmb->boxart);
+                  TEXTURE_FILTER_MIPMAP_LINEAR, &xmb->boxart);
          }
          break;
    }
@@ -2333,7 +2333,7 @@ static void xmb_context_reset_textures(
 
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR,
-            (unsigned*)&xmb->textures.list[i].id);
+            &xmb->textures.list[i].id);
 
       video_texture_image_free(&ti);
    }
@@ -2649,7 +2649,7 @@ static void xmb_context_destroy(void *data)
       return;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
-      video_driver_texture_unload((uintptr_t*)&xmb->textures.list[i].id);
+      video_driver_texture_unload(&xmb->textures.list[i].id);
 
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);

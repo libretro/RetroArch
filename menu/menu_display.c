@@ -43,6 +43,9 @@ static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_OPENGL
    &menu_display_ctx_gl,
 #endif
+#ifdef HAVE_VULKAN
+   &menu_display_ctx_vulkan,
+#endif
    &menu_display_ctx_null,
    NULL,
 };
@@ -70,6 +73,10 @@ static bool menu_display_check_compatibility(
          return true;
       case MENU_VIDEO_DRIVER_OPENGL:
          if (string_is_equal(video_driver, "gl"))
+            return true;
+         break;
+      case MENU_VIDEO_DRIVER_VULKAN:
+         if (!strcmp(video_driver, "vulkan"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:

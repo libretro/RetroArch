@@ -9,7 +9,7 @@
 
 #include "../../libretro.h"
 
-static uint16_t *frame_buf;
+static uint32_t *frame_buf;
 static struct retro_log_callback logging;
 static retro_log_printf_t log_cb;
 static bool use_audio_cb;
@@ -27,7 +27,7 @@ static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 
 void retro_init(void)
 {
-   frame_buf = calloc(320 * 240, sizeof(uint16_t));
+   frame_buf = calloc(320 * 240, sizeof(uint32_t));
 }
 
 void retro_deinit(void)
@@ -278,11 +278,29 @@ static void update_input(void)
 
 static void render_checkered(void)
 {
-   uint16_t color_r = 31 << 11;
-   uint16_t color_g = 63 <<  5;
+   /* Try rendering straight into VRAM if we can. */
+   uint32_t *buf = NULL;
+   unsigned stride = 0;
+   struct retro_framebuffer fb = {0};
+   fb.width = 320;
+   fb.height = 240;
+   fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb) && fb.format == RETRO_PIXEL_FORMAT_XRGB8888)
+   {
+      buf = fb.data;
+      stride = fb.pitch >> 2;
+   }
+   else
+   {
+      buf = frame_buf;
+      stride = 320;
+   }
 
-   uint16_t *line = frame_buf;
-   for (unsigned y = 0; y < 240; y++, line += 320)
+   uint32_t color_r = 0xff << 16;
+   uint32_t color_g = 0xff <<  8;
+
+   uint32_t *line = buf;
+   for (unsigned y = 0; y < 240; y++, line += stride)
    {
       unsigned index_y = ((y - y_coord) >> 4) & 1;
       for (unsigned x = 0; x < 320; x++)
@@ -294,9 +312,9 @@ static void render_checkered(void)
 
    for (unsigned y = mouse_rel_y - 5; y <= mouse_rel_y + 5; y++)
       for (unsigned x = mouse_rel_x - 5; x <= mouse_rel_x + 5; x++)
-         frame_buf[y * 320 + x] = 0x1f;
+         buf[y * stride + x] = 0xff;
 
-   video_cb(frame_buf, 320, 240, 320 << 1);
+   video_cb(buf, 320, 240, stride << 2);
 }
 
 static void check_variables(void)
@@ -381,10 +399,10 @@ bool retro_load_game(const struct retro_game_info *info)
 
    environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, desc);
 
-   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
+   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
-      log_cb(RETRO_LOG_INFO, "RGB565 is not supported.\n");
+      log_cb(RETRO_LOG_INFO, "XRGB8888 is not supported.\n");
       return false;
    }
 

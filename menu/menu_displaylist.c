@@ -3337,11 +3337,11 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          break;
       case DISPLAYLIST_SHADER_PRESET:
          info->type_default = MENU_FILE_SHADER_PRESET;
-         strlcpy(info->exts, "cgp|glslp", sizeof(info->exts));
+         strlcpy(info->exts, "cgp|glslp|slangp", sizeof(info->exts));
          break;
       case DISPLAYLIST_SHADER_PASS:
          info->type_default = MENU_FILE_SHADER;
-         strlcpy(info->exts, "cg|glsl", sizeof(info->exts));
+         strlcpy(info->exts, "cg|glsl|slang", sizeof(info->exts));
          break;
       case DISPLAYLIST_VIDEO_FILTERS:
          info->type_default = MENU_FILE_VIDEOFILTER;

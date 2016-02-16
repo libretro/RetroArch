@@ -645,6 +645,9 @@ extern "C" {
 #define MENU_VALUE_CGP                                                         0x0b8865bfU
 #define MENU_VALUE_GLSL                                                        0x7c976537U
 #define MENU_VALUE_CG                                                          0x0059776fU
+#define MENU_VALUE_SLANG                                                       0x105ce63aU
+#define MENU_VALUE_SLANGP                                                      0x1bf9adeaU
+
 #define MENU_VALUE_RETROPAD                                                    0x9e6703e6U
 #define MENU_VALUE_RETROKEYBOARD                                               0x9d8b6ea2U
 

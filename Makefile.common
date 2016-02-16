@@ -630,6 +630,9 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       ifeq ($(HAVE_EGL), 1)
         OBJ += gfx/drivers_context/wayland_ctx.o
       endif
+      ifeq ($(HAVE_VULKAN), 1)
+         OBJ += gfx/drivers_context/wayland_ctx_vulkan.o
+      endif
    endif
 
    ifeq ($(HAVE_GLES), 1)
@@ -692,6 +695,45 @@ ifeq ($(HAVE_SDL2), 1)
    DEFINES += $(SDL2_CFLAGS) $(BSD_LOCAL_INC)
    LIBS += $(SDL2_LIBS)
    HAVE_SDL = 0
+endif
+
+ifeq ($(HAVE_VULKAN), 1)
+	ifeq ($(platform), win)
+		GLSLANG_PLATFORM := Windows
+	else
+		GLSLANG_PLATFORM := Unix
+	endif
+	GLSLANG_SOURCES := \
+		$(wildcard deps/glslang/*.cpp) \
+		$(wildcard deps/glslang/glslang/SPIRV/*.cpp) \
+		$(wildcard deps/glslang/glslang/glslang/GenericCodeGen/*.cpp) \
+		$(wildcard deps/glslang/glslang/OGLCompilersDLL/*.cpp) \
+		$(wildcard deps/glslang/glslang/glslang/MachineIndependent/*.cpp) \
+		$(wildcard deps/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
+		$(wildcard deps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
+
+	DEFINES += \
+			  -Ideps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
+			  -Ideps/glslang/glslang \
+			  -Ideps/glslang/glslang/glslang/MachineIndependent \
+			  -Ideps/glslang/glslang/glslang/Public \
+			  -Ideps/glslang/glslang/SPIRV \
+			  -Ideps/glslang
+
+	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized
+
+	GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
+
+	OBJ += gfx/drivers/vulkan.o \
+			 gfx/common/vulkan_common.o \
+			 gfx/drivers_font/vulkan_raster_font.o \
+			 gfx/drivers_shader/shader_vulkan.o \
+			 gfx/drivers_shader/glslang_util.o \
+			 $(GLSLANG_OBJ)
+	ifeq ($(HAVE_MENU_COMMON), 1)
+		OBJ += menu/drivers_display/menu_display_vulkan.o
+	endif
+	LIBS += -lvulkan -lstdc++
 endif
 
 ifeq ($(HAVE_OMAP), 1)
