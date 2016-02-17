@@ -1742,14 +1742,14 @@ static uintptr_t d3d_load_texture(void *video_data, void *data,
    return id;
 }
 
-static void d3d_unload_texture(void *data, uintptr_t *id)
+static void d3d_unload_texture(void *data, uintptr_t id)
 {
-   LPDIRECT3DTEXTURE texid = (LPDIRECT3DTEXTURE)id;
+   LPDIRECT3DTEXTURE texid;
    if (!id)
 	   return;
 
+   texid = (LPDIRECT3DTEXTURE)id;
    d3d_texture_free(texid);
-   *id = 0;
 }
 
 static const video_poke_interface_t d3d_poke_interface = {
