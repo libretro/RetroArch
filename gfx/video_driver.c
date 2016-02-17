@@ -242,10 +242,12 @@ const char* config_get_video_driver_options(void)
    return char_list_new_special(STRING_LIST_VIDEO_DRIVERS, NULL);
 }
 
+#ifdef HAVE_VULKAN
 static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
 {
    return type == RETRO_HW_CONTEXT_VULKAN;
 }
+#endif
 
 static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 {
@@ -268,7 +270,6 @@ static bool find_video_driver(void)
    driver_ctx_info_t drv;
    settings_t *settings = config_get_ptr();
 
-#if (defined(HAVE_OPENGL) && defined(HAVE_FBO)) || defined(HAVE_VULKAN)
    if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
    {
       struct retro_hw_render_callback *hwr =
@@ -294,7 +295,6 @@ static bool find_video_driver(void)
       if (current_video)
          return true;
    }
-#endif
 
    if (frontend_driver_has_get_video_driver_func())
    {
