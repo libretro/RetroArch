@@ -123,6 +123,7 @@ static void print_features(void)
    _PSUPP(x11, "X11", "X11 input/video drivers");
    _PSUPP(wayland, "wayland", "Wayland input/video drivers");
    _PSUPP(thread, "Threads", "Threading support");
+   _PSUPP(vulkan, "Vulkan", "Vulkan driver");
    _PSUPP(opengl, "OpenGL", "OpenGL driver");
    _PSUPP(opengles, "OpenGL ES", "OpenGL ES driver");
    _PSUPP(xvideo, "XVideo", "Video driver");

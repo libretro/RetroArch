@@ -74,6 +74,12 @@ static const bool _opengl_supp = true;
 static const bool _opengl_supp = false;
 #endif
 
+#ifdef HAVE_VULKAN
+static const bool _vulkan_supp = true;
+#else
+static const bool _vulkan_supp = false;
+#endif
+
 #if defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES3)
 static const bool _opengles_supp = true;
 #else
