@@ -634,7 +634,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       ifeq ($(HAVE_VULKAN), 1)
          OBJ += gfx/drivers_context/wayland_ctx_vulkan.o
       endif
-		UNIX_COMMON=1
    endif
 
    ifeq ($(HAVE_GLES), 1)
@@ -661,11 +660,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    OBJ += gfx/drivers_shader/shader_glsl.o
    DEFINES += -DHAVE_GLSL
 endif
-
-ifeq ($(UNIX_COMMON),1)
-   OBJ += gfx/common/unix_common.o
-endif
-
 
 ifeq ($(HAVE_EGL), 1)
    OBJ += gfx/common/egl_common.o
