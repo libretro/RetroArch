@@ -1474,6 +1474,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "SDL1.2 support";
       case MENU_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT:
          return "SDL2 support";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT:
+         return "Vulkan support";
       case MENU_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT:
          return "OpenGL support";
       case MENU_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT:

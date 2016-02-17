@@ -1025,6 +1025,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT                              0xe1dcea36U
 #define MENU_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT                               0xf9bc2a42U
 #define MENU_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT                              0x3c2d6134U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT                            0x6a06e373U
 #define MENU_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT                            0xa4d164a4U
 #define MENU_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT                          0xe2e627dcU
 #define MENU_LABEL_VALUE_SYSTEM_INFO_THREADING_SUPPORT                         0x282bf995U
