@@ -249,6 +249,7 @@ static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
 }
 #endif
 
+#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
 static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 {
    switch (type)
@@ -263,6 +264,7 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
          return false;
    }
 }
+#endif
 
 static bool find_video_driver(void)
 {
