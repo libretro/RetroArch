@@ -995,10 +995,7 @@ static void parse_input(int argc, char *argv[])
    }
    else if (!*global->subsystem && optind < argc)
    {
-      if (rarch_ctl(RARCH_CTL_IS_STDIN_CLAIMED, NULL))
-         rarch_ctl(RARCH_CTL_VERIFY_STDIN_PATHS, NULL);
-      else
-         rarch_ctl(RARCH_CTL_SET_PATHS, (void*)argv[optind]);
+      rarch_ctl(RARCH_CTL_SET_PATHS, (void*)argv[optind]);
    }
    else if (*global->subsystem && optind < argc)
       set_special_paths(argv + optind, argc - optind);
@@ -1324,55 +1321,11 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    static bool rarch_error_on_init         = false;
    static bool rarch_block_config_read     = false;
    static bool rarch_force_fullscreen      = false;
-   static bool rarch_stdin_claimed         = false;
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
 
    switch(state)
    {
-      case RARCH_CTL_IS_STDIN_CLAIMED:
-         return rarch_stdin_claimed;
-      case RARCH_CTL_SET_STDIN_CLAIMED:
-         rarch_stdin_claimed = true;
-         break;
-      case RARCH_CTL_UNSET_STDIN_CLAIMED:
-         rarch_stdin_claimed = false;
-         break;
-      case RARCH_CTL_VERIFY_STDIN_PATHS:
-         if (!*global->name.savefile)
-         {
-            RARCH_ERR("Need savefile path argument (--save) when reading rom from stdin.\n");
-            print_help("retroarch");
-            retro_fail(1, "verify_stdin_paths()");
-         }
-         else if (!*global->name.savestate)
-         {
-            RARCH_ERR("Need savestate path argument (--savestate) when reading rom from stdin.\n");
-            print_help("retroarch");
-            retro_fail(1, "verify_stdin_paths()");
-         }
-
-         if (path_is_directory(global->name.savefile))
-         {
-            RARCH_ERR("Cannot specify directory for path argument (--save) when reading from stdin.\n");
-            print_help("retroarch");
-            retro_fail(1, "verify_stdin_paths()");
-         }
-         else if (path_is_directory(global->name.savestate))
-         {
-            RARCH_ERR("Cannot specify directory for path argument (--savestate) when reading from stdin.\n");
-            print_help("retroarch");
-            retro_fail(1, "verify_stdin_paths()");
-         }
-         else if (path_is_directory(global->path.config))
-         {
-            RARCH_ERR("Cannot specify directory for config file (--config) when reading from stdin.\n");
-            print_help("retroarch");
-            retro_fail(1, "verify_stdin_paths()");
-         }
-
-         rarch_ctl(RARCH_CTL_SET_STDIN_CLAIMED, NULL);
-         break;
       case RARCH_CTL_SET_PATHS:
          set_basename((const char*)data);
 
