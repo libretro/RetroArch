@@ -76,7 +76,7 @@ static bool menu_display_check_compatibility(
             return true;
          break;
       case MENU_VIDEO_DRIVER_VULKAN:
-         if (!strcmp(video_driver, "vulkan"))
+         if (string_is_equal(video_driver, "vulkan"))
             return true;
          break;
       case MENU_VIDEO_DRIVER_DIRECT3D:

@@ -5839,7 +5839,7 @@ static bool setting_append_list_menu_options(
    START_SUB_GROUP(list, list_info, "Display", &group_info, &subgroup_info, parent_group);
 
    /* only glui uses these values, don't show them on other drivers */
-   if (!strcmp(settings->menu.driver,"glui"))
+   if (string_is_equal(settings->menu.driver, "glui"))
    {
       CONFIG_BOOL(
             list, list_info,
@@ -5869,7 +5869,7 @@ static bool setting_append_list_menu_options(
       menu_settings_list_current_add_range(list, list_info, 72, 999, 1, true, true);
    }
    /* only XMB uses these values, don't show them on other drivers */
-   if (!strcmp(settings->menu.driver,"xmb"))
+   if (string_is_equal(settings->menu.driver, "xmb"))
    {
       CONFIG_UINT(
             list, list_info,
