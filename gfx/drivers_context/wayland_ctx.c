@@ -46,6 +46,8 @@ typedef struct gfx_ctx_wayland_data
    struct wl_pointer  *wl_pointer;
 } gfx_ctx_wayland_data_t;
 
+static enum gfx_ctx_api wl_api;
+
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
@@ -253,24 +255,33 @@ static void gfx_ctx_wl_get_video_size(void *data,
 
 static void *gfx_ctx_wl_init(void *video_driver)
 {
+#ifdef HAVE_OPENGL
    static const EGLint egl_attribs_gl[] = {
       WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
       EGL_NONE,
    };
+#endif
 
+#ifdef HAVE_OPENGLES
+#ifdef HAVE_OPENGLES2
    static const EGLint egl_attribs_gles[] = {
       WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
       EGL_NONE,
    };
+#endif
 
+#ifdef HAVE_OPENGLES3
 #ifdef EGL_KHR_create_context
    static const EGLint egl_attribs_gles3[] = {
       WL_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT_KHR,
       EGL_NONE,
    };
+#endif
+#endif
+
 #endif
 
    static const EGLint egl_attribs_vg[] = {
@@ -281,7 +292,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
 
    EGLint major = 0, minor = 0;
    EGLint n;
-   const EGLint *attrib_ptr;
+   const EGLint *attrib_ptr = NULL;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)
       calloc(1, sizeof(gfx_ctx_wayland_data_t));
 
@@ -293,21 +304,29 @@ static void *gfx_ctx_wl_init(void *video_driver)
    switch (wl->egl.api)
    {
       case GFX_CTX_OPENGL_API:
+#ifdef HAVE_OPENGL
          attrib_ptr = egl_attribs_gl;
+#endif
          break;
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGLES
+#ifdef HAVE_OPENGLES3
 #ifdef EGL_KHR_create_context
          if (g_egl_major >= 3)
             attrib_ptr = egl_attribs_gles3;
          else
 #endif
+#endif
             attrib_ptr = egl_attribs_gles;
+#endif
          break;
       case GFX_CTX_OPENVG_API:
+#ifdef HAVE_VG
          attrib_ptr = egl_attribs_vg;
+#endif
          break;
       default:
-         attrib_ptr = NULL;
+         break;
    }
 
    g_egl_quit = 0;
@@ -366,6 +385,7 @@ static EGLint *egl_fill_attribs(gfx_ctx_wayland_data_t *wl, EGLint *attr)
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
       {
+#ifdef HAVE_OPENGL
          unsigned version = wl->egl.major * 1000 + wl->egl.minor;
          bool core = version >= 3001;
 #ifdef GL_DEBUG
@@ -396,12 +416,14 @@ static EGLint *egl_fill_attribs(gfx_ctx_wayland_data_t *wl, EGLint *attr)
             *attr++ = EGL_CONTEXT_FLAGS_KHR;
             *attr++ = EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
          }
+#endif
 
          break;
       }
 #endif
 
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGLES
          *attr++ = EGL_CONTEXT_CLIENT_VERSION; /* Same as EGL_CONTEXT_MAJOR_VERSION */
          *attr++ = wl->egl.major ? (EGLint)wl->egl.major : 2;
 #ifdef EGL_KHR_create_context
@@ -410,6 +432,7 @@ static EGLint *egl_fill_attribs(gfx_ctx_wayland_data_t *wl, EGLint *attr)
             *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
             *attr++ = wl->egl.minor;
          }
+#endif
 #endif
          break;
 
@@ -521,19 +544,34 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
+#ifdef HAVE_OPENGL
 #ifndef EGL_KHR_create_context
          if ((major * 1000 + minor) >= 3001)
             return false;
 #endif
+         wl_api = api;
          return eglBindAPI(EGL_OPENGL_API);
+#else
+         break;
+#endif
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGLES
 #ifndef EGL_KHR_create_context
          if (major >= 3)
             return false;
 #endif
+         wl_api = api;
          return eglBindAPI(EGL_OPENGL_ES_API);
+#else
+         break;
+#endif
       case GFX_CTX_OPENVG_API:
+#ifdef HAVE_VG
+         wl_api = api;
          return eglBindAPI(EGL_OPENVG_API);
+#else
+         break;
+#endif
       default:
          break;
    }
