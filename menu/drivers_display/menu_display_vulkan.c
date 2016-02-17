@@ -59,13 +59,6 @@ static unsigned to_display_pipeline(enum menu_display_prim_type prim_type, bool 
 }
 
 static void menu_display_vk_draw(void *data)
-   /*
-      float x, float y,
-      unsigned width, unsigned height,
-      struct gfx_coords *coords,
-      void *matrix_data,
-      uintptr_t handle,
-      enum menu_display_prim_type prim_type) */
 {
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    struct vk_texture *texture;
