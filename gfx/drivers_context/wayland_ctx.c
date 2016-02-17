@@ -1002,6 +1002,7 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
 #endif
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN_SUPPORT
+         wl_api = api;
          return true;
 #else
          break;
