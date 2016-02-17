@@ -89,6 +89,11 @@ VIDEO DRIVER
 #endif
 #endif
 
+#ifdef HAVE_VULKAN
+#include "../gfx/drivers_shader/shader_vulkan.cpp"
+#include "../gfx/drivers_shader/glslang_util.cpp"
+#endif
+
 /*============================================================
 FONTS
 ============================================================ */

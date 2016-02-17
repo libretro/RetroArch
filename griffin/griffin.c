@@ -129,8 +129,24 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/cgl_ctx.c"
 #endif
 
+#ifdef HAVE_WAYLAND
+
+#ifdef HAVE_EGL
+#include "../gfx/drivers_context/wayland_ctx.c"
+#endif
+
+#ifdef HAVE_VULKAN
+#include "../gfx/drivers_context/wayland_ctx_vulkan.c"
+#endif
+
+#endif
+
 #ifdef HAVE_DRM
 #include "../gfx/common/drm_common.c"
+#endif
+
+#ifdef HAVE_VULKAN
+#include "../gfx/common/vulkan_common.c"
 #endif
 
 #if defined(HAVE_OPENGL)
@@ -228,6 +244,11 @@ VIDEO DRIVER
 #include "../gfx/drivers/omap_gfx.c"
 #endif
 
+#ifdef HAVE_VULKAN
+#include "../gfx/drivers/vulkan.c"
+#include "../gfx/common/vulkan_common.c"
+#endif
+
 #ifdef HAVE_OPENGL
 #include "../gfx/common/gl_common.c"
 #include "../gfx/drivers/gl.c"
@@ -298,6 +319,10 @@ FONTS
 
 #if defined(VITA)
 #include "../gfx/drivers_font/vita2d_font.c"
+#endif
+
+#if defined(HAVE_VULKAN)
+#include "../gfx/drivers_font/vulkan_raster_font.c"
 #endif
 
 /*============================================================
@@ -828,7 +853,12 @@ MENU
 #include "../menu/drivers_display/menu_display_gl.c"
 #endif
 
+#ifdef HAVE_VULKAN
+#include "../menu/drivers_display/menu_display_vulkan.c"
 #endif
+
+#endif
+
 
 #ifdef HAVE_RGUI
 #include "../menu/drivers/rgui.c"
