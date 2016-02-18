@@ -170,7 +170,8 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_ITERATE,
    RARCH_MENU_CTL_ENVIRONMENT,
    RARCH_MENU_CTL_DRIVER_DATA_GET,
-   RARCH_MENU_CTL_POINTER_TAP,
+   RARCH_MENU_CTL_POINTER_TOUCH_DOWN,
+   RARCH_MENU_CTL_POINTER_TOUCH_UP,
    RARCH_MENU_CTL_BIND_INIT
 };
 
@@ -344,7 +345,10 @@ typedef struct menu_ctx_driver
    bool  (*load_image)(void *userdata, void *data, menu_image_type_t type);
    const char *ident;
    int (*environ_cb)(menu_environ_cb_t type, void *data, void *userdata);
-   int (*pointer_tap)(void *data, unsigned x, unsigned y, unsigned ptr,
+   int (*pointer_touch_down)(void *data, unsigned x, unsigned y, unsigned ptr,
+         menu_file_list_cbs_t *cbs,
+         menu_entry_t *entry, unsigned action);
+   int (*pointer_touch_up)(void *data, unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
 } menu_ctx_driver_t;

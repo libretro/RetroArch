@@ -1462,7 +1462,38 @@ static size_t mui_list_get_selection(void *data)
    return mui->categories.selection_ptr;
 }
 
-static int mui_pointer_tap(void *userdata,
+static int mui_pointer_touch_down(void *userdata,
+      unsigned x, unsigned y, 
+      unsigned ptr, menu_file_list_cbs_t *cbs,
+      menu_entry_t *entry, unsigned action)
+{
+   size_t selection, idx;
+   unsigned header_height, width, height, i;
+   bool scroll                = false;
+   mui_handle_t *mui          = (mui_handle_t*)userdata;
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+
+   if (!mui)
+      return 0;
+
+   video_driver_get_size(&width, &height);
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+
+   if (ptr <= (menu_entries_get_size() - 1))
+   {
+      idx  = ptr;
+
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
+   }
+
+   return 0;
+}
+
+static int mui_pointer_touch_up(void *userdata,
       unsigned x, unsigned y, 
       unsigned ptr, menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
@@ -1553,5 +1584,6 @@ menu_ctx_driver_t menu_ctx_mui = {
    mui_load_image,
    "glui",
    mui_environ,
-   mui_pointer_tap,
+   mui_pointer_touch_down,
+   mui_pointer_touch_up
 };

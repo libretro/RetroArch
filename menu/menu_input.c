@@ -44,12 +44,12 @@
 enum menu_mouse_action
 {
    MOUSE_ACTION_NONE = 0,
-   MOUSE_ACTION_BUTTON_L,
-   MOUSE_ACTION_BUTTON_L_TOGGLE,
-   MOUSE_ACTION_BUTTON_L_SET_NAVIGATION,
-   MOUSE_ACTION_BUTTON_R,
-   MOUSE_ACTION_WHEEL_UP,
-   MOUSE_ACTION_WHEEL_DOWN
+   MOUSE_ACTION_BUTTON_L_DOWN,
+   MOUSE_ACTION_BUTTON_L_UP,
+   MOUSE_ACTION_BUTTON_R_DOWN,
+   MOUSE_ACTION_BUTTON_R_UP,
+   MOUSE_ACTION_WHEEL_DOWN,
+   MOUSE_ACTION_WHEEL_UP
 };
 
 struct menu_bind_state_port
@@ -882,7 +882,7 @@ static int menu_input_mouse_frame(
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
-   if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L))
+   if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_DOWN))
    {
       menu_ctx_pointer_t point;
 
@@ -893,12 +893,28 @@ static int menu_input_mouse_frame(
       point.entry  = entry;
       point.action = action;
 
-      menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
+      menu_driver_ctl(RARCH_MENU_CTL_POINTER_TOUCH_DOWN, &point);
 
       ret = point.retcode;
    }
 
-   if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
+   if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L_UP))
+   {
+      menu_ctx_pointer_t point;
+
+      point.x      = menu_input->mouse.x;
+      point.y      = menu_input->mouse.y;
+      point.ptr    = menu_input->mouse.ptr;
+      point.cbs    = cbs;
+      point.entry  = entry;
+      point.action = action;
+
+      menu_driver_ctl(RARCH_MENU_CTL_POINTER_TOUCH_UP, &point);
+
+      ret = point.retcode;
+   }
+
+   if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R_UP))
    {
       menu_entries_pop_stack(&selection, 0);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
@@ -946,45 +962,24 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       return 0;
    }
 
-   if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
+   if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON) && !menu_input->mouse.oldleft)
    {
-      if (!menu_input->mouse.oldleft)
-      {
-         menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
-
-         BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L);
-
-         menu_input->mouse.oldleft = true;
-
-         if ((unsigned)menu_input->mouse.y < header_height)
-         {
-            menu_entries_pop_stack(&selection, 0);
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
-            return 0;
-         }
-         if ((menu_input->mouse.ptr == selection) && cbs && cbs->action_select)
-         {
-            BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE);
-         }
-         else if (menu_input->mouse.ptr <= (menu_entries_get_size() - 1))
-         {
-            BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_SET_NAVIGATION);
-         }
-      }
+      BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_DOWN);
    }
-   else
-      menu_input->mouse.oldleft = false;
 
-   if (menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
+   if (!menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON) && menu_input->mouse.oldleft)
    {
-      if (!menu_input->mouse.oldright)
-      {
-         menu_input->mouse.oldright = true;
-         BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_R);
-      }
+      BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_UP);
    }
-   else
-      menu_input->mouse.oldright = false;
+
+   menu_input->mouse.oldleft = menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON);
+
+   if (!menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON) && menu_input->mouse.oldright)
+   {
+      BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_R_UP);
+   }
+
+   menu_input->mouse.oldright = menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON);
 
    if (menu_input->mouse.wheeldown)
    {
@@ -1110,7 +1105,17 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
          menu_input->pointer.start_y       = pointer_y;
          menu_input->pointer.old_x         = pointer_x;
          menu_input->pointer.old_y         = pointer_y;
-         menu_input->pointer.oldpressed[0] = true;
+
+         menu_ctx_pointer_t point;
+
+         point.x      = menu_input->pointer.start_x;
+         point.y      = menu_input->pointer.start_y;
+         point.ptr    = menu_input->pointer.ptr;
+         point.cbs    = cbs;
+         point.entry  = entry;
+         point.action = action;
+
+         menu_driver_ctl(RARCH_MENU_CTL_POINTER_TOUCH_DOWN, &point);
       }
       else if (abs(pointer_x - menu_input->pointer.start_x) > (dpi / 10)
             || abs(pointer_y - menu_input->pointer.start_y) > (dpi / 10))
@@ -1146,12 +1151,11 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
             point.entry  = entry;
             point.action = action;
 
-            menu_driver_ctl(RARCH_MENU_CTL_POINTER_TAP, &point);
+            menu_driver_ctl(RARCH_MENU_CTL_POINTER_TOUCH_UP, &point);
 
             ret = point.retcode;
          }
 
-         menu_input->pointer.oldpressed[0] = false;
          menu_input->pointer.start_x       = 0;
          menu_input->pointer.start_y       = 0;
          menu_input->pointer.old_x         = 0;
@@ -1161,6 +1165,8 @@ static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
          menu_input->pointer.dragging      = false;
       }
    }
+
+   menu_input->pointer.oldpressed[0] = menu_input->pointer.pressed[0];
 
    if (menu_input->pointer.back)
    {

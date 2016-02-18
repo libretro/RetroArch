@@ -890,15 +890,28 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
          }
          return false;
-      case RARCH_MENU_CTL_POINTER_TAP:
+      case RARCH_MENU_CTL_POINTER_TOUCH_DOWN:
          {
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
-            if (!menu_driver_ctx || !menu_driver_ctx->pointer_tap)
+            if (!menu_driver_ctx || !menu_driver_ctx->pointer_touch_down)
             {
                point->retcode = 0;
                return false;
             }
-            point->retcode = menu_driver_ctx->pointer_tap(menu_userdata,
+            point->retcode = menu_driver_ctx->pointer_touch_down(menu_userdata,
+                  point->x, point->y, point->ptr,
+                  point->cbs, point->entry, point->action);
+         }
+         break;
+      case RARCH_MENU_CTL_POINTER_TOUCH_UP:
+         {
+            menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
+            if (!menu_driver_ctx || !menu_driver_ctx->pointer_touch_up)
+            {
+               point->retcode = 0;
+               return false;
+            }
+            point->retcode = menu_driver_ctx->pointer_touch_up(menu_userdata,
                   point->x, point->y, point->ptr,
                   point->cbs, point->entry, point->action);
          }
