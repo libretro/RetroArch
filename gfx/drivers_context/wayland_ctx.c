@@ -18,8 +18,6 @@
 #include "../../config.h"
 #endif
 
-/* Temporary switch until this driver is ready for Vulkan,
- * replace HAVE_VULKAN_SUPPORT with HAVE_VULKAN then */
 #if 0
 #ifdef HAVE_VULKAN
 #define HAVE_VULKAN_SUPPORT
@@ -114,7 +112,7 @@ typedef struct gfx_ctx_wayland_data
    PFN_vkCreateWaylandSurfaceKHR fpCreateWaylandSurfaceKHR;
    PFN_vkDestroySurfaceKHR fpDestroySurfaceKHR;
 
-   VkSurfaceKHR surface;
+   VkSurfaceKHR vk_surface;
    VkSwapchainKHR swapchain;
 #endif
 } gfx_ctx_wayland_data_t;
@@ -238,8 +236,12 @@ static void gfx_ctx_wl_get_video_size(void *data,
 
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
+   unsigned i;
+
    if (!wl)
       return;
+
+   (void)i;
 
    switch (wl_api)
    {
@@ -261,7 +263,7 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
             wl->fpDestroySwapchainKHR(wl->context.device, wl->swapchain, NULL);
 
          if (wl->surface)
-            wl->fpDestroySurfaceKHR(wl->context.instance, wl->surface, NULL);
+            wl->fpDestroySurfaceKHR(wl->context.instance, wl->vk_surface, NULL);
 
          for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
          {
@@ -940,10 +942,10 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
             wl_display_roundtrip(wl->dpy);
 
             wl_info.display = wl->dpy;
-            wl_info.surface = wl->surf;
+            wl_info.surface = wl->surface;
 
             wl->fpCreateWaylandSurfaceKHR(wl->context.instance,
-                  &wl_info, NULL, &wl->surface);
+                  &wl_info, NULL, &wl->vk_surface);
 
             if (!vulkan_create_swapchain(wl))
                goto error;
@@ -1250,9 +1252,9 @@ static bool vulkan_create_swapchain(gfx_ctx_wayland_data_t *wl)
 
    RARCH_LOG("[Wayland/Vulkan]: Creating swapchain with present mode: %u\n", (unsigned)swapchain_present_mode);
 
-   wl->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(wl->context.gpu, wl->surface, &surface_properties);
-   wl->fpGetPhysicalDeviceSurfaceFormatsKHR(wl->context.gpu, wl->surface, &format_count, NULL);
-   wl->fpGetPhysicalDeviceSurfaceFormatsKHR(wl->context.gpu, wl->surface, &format_count, formats);
+   wl->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(wl->context.gpu, wl->vk_surface, &surface_properties);
+   wl->fpGetPhysicalDeviceSurfaceFormatsKHR(wl->context.gpu, wl->vk_surface, &format_count, NULL);
+   wl->fpGetPhysicalDeviceSurfaceFormatsKHR(wl->context.gpu, wl->vk_surface, &format_count, formats);
 
    if (format_count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
    {
@@ -1272,70 +1274,71 @@ static bool vulkan_create_swapchain(gfx_ctx_wayland_data_t *wl)
 
    if (surface_properties.currentExtent.width == -1)
    {
-      swapchain_size.width = wl->width;
-      swapchain_size.height = wl->height;
+      swapchain_size.width     = wl->width;
+      swapchain_size.height    = wl->height;
    }
    else
-      swapchain_size = surface_properties.currentExtent;
+      swapchain_size           = surface_properties.currentExtent;
 
-   desired_swapchain_images = surface_properties.minImageCount + 1;
+   desired_swapchain_images    = surface_properties.minImageCount + 1;
    if ((surface_properties.maxImageCount > 0) && (desired_swapchain_images > surface_properties.maxImageCount))
       desired_swapchain_images = surface_properties.maxImageCount;
 
    if (surface_properties.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
-      pre_transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+      pre_transform            = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
    else
-      pre_transform = surface_properties.currentTransform;
+      pre_transform            = surface_properties.currentTransform;
 
-   old_swapchain = wl->swapchain;
+   old_swapchain               = wl->swapchain;
 
-   info.surface = wl->surface;
-   info.minImageCount = desired_swapchain_images;
-   info.imageFormat = format.format;
-   info.imageColorSpace = format.colorSpace;
-   info.imageExtent.width = swapchain_size.width;
-   info.imageExtent.height = swapchain_size.height;
-   info.imageArrayLayers = 1;
-   info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-   info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-   info.preTransform = pre_transform;
-   info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-   info.presentMode = swapchain_present_mode;
-   info.clipped = true;
-   info.oldSwapchain = old_swapchain;
+   info.surface                = wl->vk_surface;
+   info.minImageCount          = desired_swapchain_images;
+   info.imageFormat            = format.format;
+   info.imageColorSpace        = format.colorSpace;
+   info.imageExtent.width      = swapchain_size.width;
+   info.imageExtent.height     = swapchain_size.height;
+   info.imageArrayLayers       = 1;
+   info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
+      | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+   info.imageSharingMode       = VK_SHARING_MODE_EXCLUSIVE;
+   info.preTransform           = pre_transform;
+   info.compositeAlpha         = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+   info.presentMode            = swapchain_present_mode;
+   info.clipped                = true;
+   info.oldSwapchain           = old_swapchain;
 
    wl->fpCreateSwapchainKHR(wl->context.device, &info, NULL, &wl->swapchain);
    if (old_swapchain != VK_NULL_HANDLE)
       wl->fpDestroySwapchainKHR(wl->context.device, old_swapchain, NULL);
 
-   wl->context.swapchain_width = swapchain_size.width;
+   wl->context.swapchain_width  = swapchain_size.width;
    wl->context.swapchain_height = swapchain_size.height;
 
    /* Make sure we create a backbuffer format that is as we expect. */
    switch (format.format)
    {
       case VK_FORMAT_B8G8R8A8_SRGB:
-         wl->context.swapchain_format = VK_FORMAT_B8G8R8A8_UNORM;
+         wl->context.swapchain_format  = VK_FORMAT_B8G8R8A8_UNORM;
          wl->context.swapchain_is_srgb = true;
          break;
 
       case VK_FORMAT_R8G8B8A8_SRGB:
-         wl->context.swapchain_format = VK_FORMAT_R8G8B8A8_UNORM;
+         wl->context.swapchain_format  = VK_FORMAT_R8G8B8A8_UNORM;
          wl->context.swapchain_is_srgb = true;
          break;
 
       case VK_FORMAT_R8G8B8_SRGB:
-         wl->context.swapchain_format = VK_FORMAT_R8G8B8_UNORM;
+         wl->context.swapchain_format  = VK_FORMAT_R8G8B8_UNORM;
          wl->context.swapchain_is_srgb = true;
          break;
 
       case VK_FORMAT_B8G8R8_SRGB:
-         wl->context.swapchain_format = VK_FORMAT_B8G8R8_UNORM;
+         wl->context.swapchain_format  = VK_FORMAT_B8G8R8_UNORM;
          wl->context.swapchain_is_srgb = true;
          break;
 
       default:
-         wl->context.swapchain_format = format.format;
+         wl->context.swapchain_format  = format.format;
          break;
    }
 
