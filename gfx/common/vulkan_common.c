@@ -331,22 +331,36 @@ void vulkan_destroy_texture(VkDevice device, struct vk_texture *tex)
 
 static void vulkan_write_quad_descriptors(VkDevice device,
       VkDescriptorSet set,
+      VkBuffer buffer,
+      VkDeviceSize offset,
+      VkDeviceSize range,
       const struct vk_texture *texture,
       VkSampler sampler)
 {
    VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
    VkDescriptorImageInfo image_info;
+   VkDescriptorBufferInfo buffer_info;
 
    image_info.sampler = sampler;
    image_info.imageView = texture->view;
    image_info.imageLayout = texture->layout;
 
+   buffer_info.buffer = buffer;
+   buffer_info.offset = offset;
+   buffer_info.range = range;
+
    write.dstSet = set;
    write.dstBinding = 0;
    write.descriptorCount = 1;
+   write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   write.pBufferInfo = &buffer_info;
+   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+
+   write.dstSet = set;
+   write.dstBinding = 1;
+   write.descriptorCount = 1;
    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
    write.pImageInfo = &image_info;
-
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
 }
 
@@ -395,20 +409,25 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
    /* Upload descriptors */
    {
-      struct vk_draw_uniform ubo;
       VkDescriptorSet set;
 
-      ubo.mvp = *call->mvp;
-      ubo.texsize[0] = call->texture->width;
-      ubo.texsize[1] = call->texture->height;
-      ubo.texsize[2] = 1.0f / call->texture->width;
-      ubo.texsize[3] = 1.0f / call->texture->height;
-
-      if (call->texture->view != vk->tracker.view || call->sampler != vk->tracker.sampler)
+      if (memcmp(call->mvp, &vk->tracker.mvp, sizeof(*call->mvp)) ||
+            call->texture->view != vk->tracker.view ||
+            call->sampler != vk->tracker.sampler)
       {
+         /* Upload UBO */
+         struct vk_buffer_range range;
+         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+                  sizeof(*call->mvp), &range))
+            return;
+         memcpy(range.data, call->mvp, sizeof(*call->mvp));
+
          set = vulkan_descriptor_manager_alloc(vk->context->device, &vk->chain->descriptor_manager);
          vulkan_write_quad_descriptors(vk->context->device,
                set,
+               range.buffer,
+               range.offset,
+               sizeof(*call->mvp),
                call->texture,
                call->sampler);
 
@@ -418,10 +437,8 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
          vk->tracker.view = call->texture->view;
          vk->tracker.sampler = call->sampler;
+         vk->tracker.mvp = *call->mvp;
       }
-
-      vkCmdPushConstants(vk->cmd, vk->pipelines.layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0, sizeof(struct vk_draw_uniform), &ubo);
    }
 
    /* VBO is already uploaded. */
@@ -449,24 +466,29 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 
    /* Upload descriptors */
    {
-      struct vk_draw_uniform ubo;
       VkDescriptorSet set;
       struct vk_buffer_range range;
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
-               sizeof(struct vk_draw_uniform), &range))
+               sizeof(*quad->mvp), &range))
          return;
 
-      ubo.mvp = *quad->mvp;
-      ubo.texsize[0] = quad->texture->width;
-      ubo.texsize[1] = quad->texture->height;
-      ubo.texsize[2] = 1.0f / quad->texture->width;
-      ubo.texsize[3] = 1.0f / quad->texture->height;
-
-      if (quad->texture->view != vk->tracker.view || quad->sampler != vk->tracker.sampler)
+      if (memcmp(quad->mvp, &vk->tracker.mvp, sizeof(*quad->mvp)) ||
+            quad->texture->view != vk->tracker.view ||
+            quad->sampler != vk->tracker.sampler)
       {
+         /* Upload UBO */
+         struct vk_buffer_range range;
+         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+                  sizeof(*quad->mvp), &range))
+            return;
+         memcpy(range.data, quad->mvp, sizeof(*quad->mvp));
+
          set = vulkan_descriptor_manager_alloc(vk->context->device, &vk->chain->descriptor_manager);
          vulkan_write_quad_descriptors(vk->context->device,
                set,
+               range.buffer,
+               range.offset,
+               sizeof(*quad->mvp),
                quad->texture,
                quad->sampler);
 
@@ -476,10 +498,8 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 
          vk->tracker.view = quad->texture->view;
          vk->tracker.sampler = quad->sampler;
+         vk->tracker.mvp = *quad->mvp;
       }
-
-      vkCmdPushConstants(vk->cmd, vk->pipelines.layout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            0, sizeof(struct vk_draw_uniform), &ubo);
    }
 
    /* Upload VBO */
