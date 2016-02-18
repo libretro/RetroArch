@@ -184,7 +184,25 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    (void)version;
 
    if (string_is_equal(interface, "wl_compositor"))
-      wl->compositor = (struct wl_compositor*)wl_registry_bind(reg, id, &wl_compositor_interface, 1);
+   {
+      unsigned num = 1;
+      switch (wl_api)
+      {
+         case GFX_CTX_OPENGL_API:
+         case GFX_CTX_OPENGL_ES_API:
+         case GFX_CTX_OPENVG_API:
+            break;
+         case GFX_CTX_VULKAN_API:
+            num = 3;
+            break;
+         case GFX_CTX_NONE:
+         default:
+            break;
+      }
+
+      wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
+            id, &wl_compositor_interface, num);
+   }
    else if (string_is_equal(interface, "wl_shell"))
       wl->shell = (struct wl_shell*)wl_registry_bind(reg, id, &wl_shell_interface, 1);
 }
@@ -373,15 +391,16 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN_SUPPORT
-         wl->width = width;
+         wl->width  = width;
          wl->height = height;
-         if (!vulkan_create_swapchain(wl))
+
+         if (vulkan_create_swapchain(wl))
+            wl->context.invalid_swapchain = true;
+         else
          {
             RARCH_ERR("[Wayland/Vulkan]: Failed to update swapchain.\n");
             return false;
          }
-         else
-            wl->context.invalid_swapchain = true;
 
          wl->need_new_swapchain = false;
 #endif
@@ -596,95 +615,97 @@ static void *gfx_ctx_wl_init(void *video_driver)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN_SUPPORT
-         app.pApplicationName = "RetroArch";
-         app.applicationVersion = 0;
-         app.pEngineName = "RetroArch";
-         app.engineVersion = 0;
-         app.apiVersion = VK_API_VERSION;
-
-         info.pApplicationInfo = &app;
-         info.enabledExtensionCount = ARRAY_SIZE(instance_extensions);
-         info.ppEnabledExtensionNames = instance_extensions;
-
-         if (cached_instance)
          {
-            wl->context.instance = cached_instance;
-            cached_instance = NULL;
-         }
-         else if (vkCreateInstance(&info, NULL, &wl->context.instance) != VK_SUCCESS)
-            goto error;
+            app.pApplicationName = "RetroArch";
+            app.applicationVersion = 0;
+            app.pEngineName = "RetroArch";
+            app.engineVersion = 0;
+            app.apiVersion = VK_API_VERSION;
 
-         if (vkEnumeratePhysicalDevices(wl->context.instance, &gpu_count, &wl->context.gpu) != VK_SUCCESS)
-            goto error;
+            info.pApplicationInfo = &app;
+            info.enabledExtensionCount = ARRAY_SIZE(instance_extensions);
+            info.ppEnabledExtensionNames = instance_extensions;
 
-         if (gpu_count != 1)
-         {
-            RARCH_ERR("[Wayland/Vulkan]: Failed to enumerate Vulkan physical device.\n");
-            goto error;
-         }
-
-         vkGetPhysicalDeviceProperties(wl->context.gpu, &wl->context.gpu_properties);
-         vkGetPhysicalDeviceMemoryProperties(wl->context.gpu, &wl->context.memory_properties);
-         vkGetPhysicalDeviceQueueFamilyProperties(wl->context.gpu, &queue_count, NULL);
-         if (queue_count < 1 || queue_count > 32)
-            goto error;
-         vkGetPhysicalDeviceQueueFamilyProperties(wl->context.gpu, &queue_count, queue_properties);
-
-         for (i = 0; i < queue_count; i++)
-         {
-            if (queue_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            if (cached_instance)
             {
-               wl->context.graphics_queue_index = i;
-               RARCH_LOG("[Wayland/Vulkan]: Device supports %u sub-queues.\n",
-                     queue_properties[i].queueCount);
-               found_queue = true;
-               break;
+               wl->context.instance = cached_instance;
+               cached_instance = NULL;
             }
+            else if (vkCreateInstance(&info, NULL, &wl->context.instance) != VK_SUCCESS)
+               goto error;
+
+            if (vkEnumeratePhysicalDevices(wl->context.instance, &gpu_count, &wl->context.gpu) != VK_SUCCESS)
+               goto error;
+
+            if (gpu_count != 1)
+            {
+               RARCH_ERR("[Wayland/Vulkan]: Failed to enumerate Vulkan physical device.\n");
+               goto error;
+            }
+
+            vkGetPhysicalDeviceProperties(wl->context.gpu, &wl->context.gpu_properties);
+            vkGetPhysicalDeviceMemoryProperties(wl->context.gpu, &wl->context.memory_properties);
+            vkGetPhysicalDeviceQueueFamilyProperties(wl->context.gpu, &queue_count, NULL);
+            if (queue_count < 1 || queue_count > 32)
+               goto error;
+            vkGetPhysicalDeviceQueueFamilyProperties(wl->context.gpu, &queue_count, queue_properties);
+
+            for (i = 0; i < queue_count; i++)
+            {
+               if (queue_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+               {
+                  wl->context.graphics_queue_index = i;
+                  RARCH_LOG("[Wayland/Vulkan]: Device supports %u sub-queues.\n",
+                        queue_properties[i].queueCount);
+                  found_queue = true;
+                  break;
+               }
+            }
+
+            if (!found_queue)
+            {
+               RARCH_ERR("[Wayland/Vulkan]: Did not find suitable graphics queue.\n");
+               goto error;
+            }
+
+            queue_info.queueFamilyIndex = wl->context.graphics_queue_index;
+            queue_info.queueCount = 1;
+            queue_info.pQueuePriorities = &one;
+
+            device_info.queueCreateInfoCount = 1;
+            device_info.pQueueCreateInfos = &queue_info;
+            device_info.enabledExtensionCount = ARRAY_SIZE(device_extensions);
+            device_info.ppEnabledExtensionNames = device_extensions;
+            device_info.pEnabledFeatures = &features;
+
+            if (cached_device)
+            {
+               wl->context.device = cached_device;
+               cached_device = NULL;
+               video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+               RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
+            }
+            else if (vkCreateDevice(wl->context.gpu, &device_info, NULL, &wl->context.device) != VK_SUCCESS)
+               goto error;
+
+            vkGetDeviceQueue(wl->context.device, wl->context.graphics_queue_index, 0, &wl->context.queue);
+
+            GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
+            GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
+            GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
+            GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
+            GET_INSTANCE_PROC_ADDR(wl->context.instance, CreateWaylandSurfaceKHR);
+            GET_INSTANCE_PROC_ADDR(wl->context.instance, DestroySurfaceKHR);
+            GET_DEVICE_PROC_ADDR(wl->context.device, CreateSwapchainKHR);
+            GET_DEVICE_PROC_ADDR(wl->context.device, DestroySwapchainKHR);
+            GET_DEVICE_PROC_ADDR(wl->context.device, GetSwapchainImagesKHR);
+            GET_DEVICE_PROC_ADDR(wl->context.device, AcquireNextImageKHR);
+            GET_DEVICE_PROC_ADDR(wl->context.device, QueuePresentKHR);
+
+            wl->context.queue_lock = slock_new();
+            if (!wl->context.queue_lock)
+               goto error;
          }
-
-         if (!found_queue)
-         {
-            RARCH_ERR("[Wayland/Vulkan]: Did not find suitable graphics queue.\n");
-            goto error;
-         }
-
-         queue_info.queueFamilyIndex = wl->context.graphics_queue_index;
-         queue_info.queueCount = 1;
-         queue_info.pQueuePriorities = &one;
-
-         device_info.queueCreateInfoCount = 1;
-         device_info.pQueueCreateInfos = &queue_info;
-         device_info.enabledExtensionCount = ARRAY_SIZE(device_extensions);
-         device_info.ppEnabledExtensionNames = device_extensions;
-         device_info.pEnabledFeatures = &features;
-
-         if (cached_device)
-         {
-            wl->context.device = cached_device;
-            cached_device = NULL;
-            video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
-            RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
-         }
-         else if (vkCreateDevice(wl->context.gpu, &device_info, NULL, &wl->context.device) != VK_SUCCESS)
-            goto error;
-
-         vkGetDeviceQueue(wl->context.device, wl->context.graphics_queue_index, 0, &wl->context.queue);
-
-         GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
-         GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
-         GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
-         GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
-         GET_INSTANCE_PROC_ADDR(wl->context.instance, CreateWaylandSurfaceKHR);
-         GET_INSTANCE_PROC_ADDR(wl->context.instance, DestroySurfaceKHR);
-         GET_DEVICE_PROC_ADDR(wl->context.device, CreateSwapchainKHR);
-         GET_DEVICE_PROC_ADDR(wl->context.device, DestroySwapchainKHR);
-         GET_DEVICE_PROC_ADDR(wl->context.device, GetSwapchainImagesKHR);
-         GET_DEVICE_PROC_ADDR(wl->context.device, AcquireNextImageKHR);
-         GET_DEVICE_PROC_ADDR(wl->context.device, QueuePresentKHR);
-
-         wl->context.queue_lock = slock_new();
-         if (!wl->context.queue_lock)
-            goto error;
 #endif
          break;
       case GFX_CTX_NONE:
