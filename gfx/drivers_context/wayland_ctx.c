@@ -884,10 +884,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_VG)
 #ifdef HAVE_EGL
          wl->win        = wl_egl_window_create(wl->surface, wl->width, wl->height);
-#endif
 #endif
          break;
       case GFX_CTX_NONE:
@@ -906,7 +904,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_VG)
 #ifdef HAVE_EGL
 
          if (!egl_create_context(wl, (attr != egl_attribs) ? egl_attribs : NULL))
@@ -917,7 +914,6 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
          if (!egl_create_surface(wl, (EGLNativeWindowType)wl->win))
             goto error;
-#endif
          egl_set_swap_interval(wl, wl->egl.interval);
 #endif
          break;
