@@ -249,7 +249,8 @@ static void gfx_ctx_glx_check_window(void *data, bool *quit,
    {
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         glx->vk.need_new_swapchain = *resize;
+         if (glx->vk.need_new_swapchain)
+            *resize = true;
 #endif
          break;
 

@@ -1088,7 +1088,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 
             surf_info.sType  = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
             surf_info.flags  = 0;
-            surf_info.dpy    = *(const Display*)display;
+            surf_info.dpy    = (Display*)display;
             surf_info.window = *(const Window*)surface;
 
             if (vk->fpCreateXlibSurfaceKHR(vk->context.instance,
@@ -1262,6 +1262,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkExtent2D swapchain_size;
    VkSwapchainKHR old_swapchain;
    VkSurfaceTransformFlagBitsKHR pre_transform;
+
+   /* TODO: Properly query these. */
    VkPresentModeKHR swapchain_present_mode = swap_interval 
       ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
    VkSwapchainCreateInfoKHR info = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
