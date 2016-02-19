@@ -19,7 +19,6 @@
 #endif
 
 #ifdef HAVE_VULKAN
-#define VK_USE_PLATFORM_WAYLAND_KHR
 #include "../common/vulkan_common.h"
 #endif
 
@@ -49,49 +48,10 @@ static volatile sig_atomic_t g_quit = 0;
 #ifdef HAVE_VULKAN
 static VkInstance cached_instance;
 static VkDevice cached_device;
-
-typedef struct gfx_ctx_vulkan_data
-{
-   struct vulkan_context context;
-
-   PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
-   PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
-   PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fpGetPhysicalDeviceSurfaceFormatsKHR;
-   PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fpGetPhysicalDeviceSurfacePresentModesKHR;
-   PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
-   PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
-   PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
-   PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
-   PFN_vkQueuePresentKHR fpQueuePresentKHR;
-#ifdef _WIN32
-   PFN_vkCreateWin32SurfaceKHR fpCreateWin32SurfaceKHR;
-#endif
-#ifdef HAVE_XCB
-   PFN_vkCreateXcbSurfaceKHR fpCreateXcbSurfaceKHR;
-#endif
-#ifdef HAVE_XLIB
-   PFN_vkCreateXlibSurfaceKHR fpCreateXlibSurfaceKHR;
-#endif
-#ifdef ANDROID
-   PFN_vkCreateAndroidSurfaceKHR fpCreateAndroidSurfaceKHR;
-#endif
-#ifdef HAVE_WAYLAND
-   PFN_vkCreateWaylandSurfaceKHR fpCreateWaylandSurfaceKHR;
-#endif
-#ifdef HAVE_MIR
-   FN_vkCreateMirSurfaceKHR fpCreateMirSurfaceKHR;
-#endif
-   PFN_vkDestroySurfaceKHR fpDestroySurfaceKHR;
-
-   VkSurfaceKHR vk_surface;
-   VkSwapchainKHR swapchain;
-   bool need_new_swapchain;
-} gfx_ctx_vulkan_data_t;
 #endif
 
 typedef struct gfx_ctx_wayland_data
 {
-
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
    struct wl_egl_window *win;

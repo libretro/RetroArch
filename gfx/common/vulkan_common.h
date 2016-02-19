@@ -16,7 +16,16 @@
 #ifndef VULKAN_COMMON_H__
 #define VULKAN_COMMON_H__
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
 #define VK_PROTOTYPES
+
+#ifdef HAVE_WAYLAND
+#define VK_USE_PLATFORM_WAYLAND_KHR
+#endif
+
 #include <vulkan/vulkan.h>
 
 #include <gfx/math/matrix_4x4.h>
@@ -77,6 +86,44 @@ typedef struct vulkan_context
    /* Used by screenshot to get blits with correct colorspace. */
    bool swapchain_is_srgb;
 } vulkan_context_t;
+
+typedef struct gfx_ctx_vulkan_data
+{
+   vulkan_context_t context;
+
+   PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
+   PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
+   PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fpGetPhysicalDeviceSurfaceFormatsKHR;
+   PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fpGetPhysicalDeviceSurfacePresentModesKHR;
+   PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
+   PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
+   PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
+   PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
+   PFN_vkQueuePresentKHR fpQueuePresentKHR;
+#ifdef _WIN32
+   PFN_vkCreateWin32SurfaceKHR fpCreateWin32SurfaceKHR;
+#endif
+#ifdef HAVE_XCB
+   PFN_vkCreateXcbSurfaceKHR fpCreateXcbSurfaceKHR;
+#endif
+#ifdef HAVE_XLIB
+   PFN_vkCreateXlibSurfaceKHR fpCreateXlibSurfaceKHR;
+#endif
+#ifdef ANDROID
+   PFN_vkCreateAndroidSurfaceKHR fpCreateAndroidSurfaceKHR;
+#endif
+#ifdef HAVE_WAYLAND
+   PFN_vkCreateWaylandSurfaceKHR fpCreateWaylandSurfaceKHR;
+#endif
+#ifdef HAVE_MIR
+   FN_vkCreateMirSurfaceKHR fpCreateMirSurfaceKHR;
+#endif
+   PFN_vkDestroySurfaceKHR fpDestroySurfaceKHR;
+
+   VkSurfaceKHR vk_surface;
+   VkSwapchainKHR swapchain;
+   bool need_new_swapchain;
+} gfx_ctx_vulkan_data_t;
 
 struct vk_color
 {
