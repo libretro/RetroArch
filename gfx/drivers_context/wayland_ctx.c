@@ -472,6 +472,12 @@ static void gfx_ctx_wl_get_video_size(void *data,
    }                                                                                     \
 } while(0)
 
+static void vulkan_destroy_context(gfx_ctx_vulkan_data_t *vk)
+{
+   if (vk->context.queue_lock)
+      slock_free(vk->context.queue_lock);
+}
+
 static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned i;
@@ -848,8 +854,7 @@ static void gfx_ctx_wl_destroy(void *data)
    {
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         if (wl->vk.context.queue_lock)
-            slock_free(wl->vk.context.queue_lock);
+         vulkan_destroy_context(&wl->vk);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -1227,21 +1232,24 @@ static void *gfx_ctx_wl_get_context_data(void *data)
 
 static void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 {
+   unsigned index;
    VkResult err;
-   VkSemaphoreCreateInfo sem_info = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-   VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
    VkFence fence;
    VkFence *next_fence;
-   unsigned index;
+   VkSemaphoreCreateInfo sem_info = 
+   { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+   VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
 
    vkCreateFence(vk->context.device, &info, NULL, &fence);
 
-   err = vk->fpAcquireNextImageKHR(vk->context.device, vk->swapchain, UINT64_MAX,
+   err = vk->fpAcquireNextImageKHR(vk->context.device,
+         vk->swapchain, UINT64_MAX,
          VK_NULL_HANDLE, fence, &vk->context.current_swapchain_index);
 
    index = vk->context.current_swapchain_index;
    if (vk->context.swapchain_semaphores[index] == VK_NULL_HANDLE)
-      vkCreateSemaphore(vk->context.device, &sem_info, NULL, &vk->context.swapchain_semaphores[index]);
+      vkCreateSemaphore(vk->context.device, &sem_info,
+            NULL, &vk->context.swapchain_semaphores[index]);
 
    vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
    vkDestroyFence(vk->context.device, fence, NULL);
@@ -1262,26 +1270,32 @@ static void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    }
 }
 
-static bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk, unsigned width, unsigned height,
+static bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
+      unsigned width, unsigned height,
       unsigned swap_interval)
 {
+   unsigned i;
+   uint32_t format_count;
+   uint32_t desired_swapchain_images;
    VkSurfaceCapabilitiesKHR surface_properties;
    VkSurfaceFormatKHR formats[256];
    VkSurfaceFormatKHR format;
    VkExtent2D swapchain_size;
-   VkPresentModeKHR swapchain_present_mode = swap_interval ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
-   VkSurfaceTransformFlagBitsKHR pre_transform;
    VkSwapchainKHR old_swapchain;
+   VkSurfaceTransformFlagBitsKHR pre_transform;
+   VkPresentModeKHR swapchain_present_mode = swap_interval 
+      ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
    VkSwapchainCreateInfoKHR info = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
-   uint32_t format_count;
-   uint32_t desired_swapchain_images;
-   unsigned i;
 
-   RARCH_LOG("[Wayland/Vulkan]: Creating swapchain with present mode: %u\n", (unsigned)swapchain_present_mode);
+   RARCH_LOG("[Wayland/Vulkan]: Creating swapchain with present mode: %u\n",
+         (unsigned)swapchain_present_mode);
 
-   vk->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->context.gpu, vk->vk_surface, &surface_properties);
-   vk->fpGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu, vk->vk_surface, &format_count, NULL);
-   vk->fpGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu, vk->vk_surface, &format_count, formats);
+   vk->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->context.gpu,
+         vk->vk_surface, &surface_properties);
+   vk->fpGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
+         vk->vk_surface, &format_count, NULL);
+   vk->fpGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
+         vk->vk_surface, &format_count, formats);
 
    if (format_count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
    {
@@ -1308,10 +1322,12 @@ static bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk, unsigned width, u
       swapchain_size           = surface_properties.currentExtent;
 
    desired_swapchain_images    = surface_properties.minImageCount + 1;
-   if ((surface_properties.maxImageCount > 0) && (desired_swapchain_images > surface_properties.maxImageCount))
+   if ((surface_properties.maxImageCount > 0) 
+         && (desired_swapchain_images > surface_properties.maxImageCount))
       desired_swapchain_images = surface_properties.maxImageCount;
 
-   if (surface_properties.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+   if (surface_properties.supportedTransforms 
+         & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
       pre_transform            = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
    else
       pre_transform            = surface_properties.currentTransform;
@@ -1378,7 +1394,8 @@ static bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk, unsigned width, u
    {
       if (vk->context.swapchain_fences[i])
       {
-         vkDestroyFence(vk->context.device, vk->context.swapchain_fences[i], NULL);
+         vkDestroyFence(vk->context.device,
+               vk->context.swapchain_fences[i], NULL);
          vk->context.swapchain_fences[i] = VK_NULL_HANDLE;
       }
    }
@@ -1390,18 +1407,20 @@ static bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk, unsigned width, u
 
 static void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 {
-   VkResult result = VK_SUCCESS, err = VK_SUCCESS;
-   VkPresentInfoKHR present = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
-   present.swapchainCount = 1;
-   present.pSwapchains = &vk->swapchain;
-   present.pImageIndices = &index;
-   present.pResults = &result;
+   VkResult result            = VK_SUCCESS;
+   VkResult err               = VK_SUCCESS;
+   VkPresentInfoKHR present   = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+   present.swapchainCount     = 1;
+   present.pSwapchains        = &vk->swapchain;
+   present.pImageIndices      = &index;
+   present.pResults           = &result;
    present.waitSemaphoreCount = 1;
-   present.pWaitSemaphores = &vk->context.swapchain_semaphores[index];
+   present.pWaitSemaphores    = &vk->context.swapchain_semaphores[index];
 
    /* Better hope QueuePresent doesn't block D: */
    slock_lock(vk->context.queue_lock);
    err = vk->fpQueuePresentKHR(vk->context.queue, &present);
+
    if (err != VK_SUCCESS || result != VK_SUCCESS)
    {
       RARCH_LOG("[Wayland/Vulkan]: QueuePresent failed, invalidating swapchain.\n");
@@ -1446,8 +1465,9 @@ static gfx_ctx_proc_t gfx_ctx_wl_get_proc_address(const char *symbol)
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
          return egl_get_proc_address(symbol);
-#endif
+#else
          break;
+#endif
       case GFX_CTX_NONE:
       default:
          break;
