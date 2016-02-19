@@ -40,6 +40,12 @@
 
 #define VULKAN_DIRTY_DYNAMIC_BIT 0x0001
 
+enum vulkan_wsi_type
+{
+   VULKAN_WSI_NONE = 0,
+   VULKAN_WSI_WAYLAND
+};
+
 typedef struct vulkan_context
 {
    VkInstance instance;

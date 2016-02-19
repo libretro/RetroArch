@@ -216,19 +216,18 @@ static const struct wl_registry_listener registry_listener = {
    registry_handle_global_remove,
 };
 
-
-
 static void gfx_ctx_wl_get_video_size(void *data,
       unsigned *width, unsigned *height);
 
+#ifdef HAVE_VULKAN
+static void vulkan_destroy_context(gfx_ctx_vulkan_data_t *vk,
+      bool destroy_surface);
+#endif
+
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
-   unsigned i;
-
    if (!wl)
       return;
-
-   (void)i;
 
    switch (wl_api)
    {
@@ -244,38 +243,7 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         if (wl->vk.context.queue)
-            vkQueueWaitIdle(wl->vk.context.queue);
-         if (wl->vk.swapchain)
-            wl->vk.fpDestroySwapchainKHR(wl->vk.context.device,
-                  wl->vk.swapchain, NULL);
-
-         if (wl->surface)
-            wl->vk.fpDestroySurfaceKHR(wl->vk.context.instance,
-                  wl->vk.vk_surface, NULL);
-
-         for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
-         {
-            if (wl->vk.context.swapchain_semaphores[i] != VK_NULL_HANDLE)
-               vkDestroySemaphore(wl->vk.context.device,
-                     wl->vk.context.swapchain_semaphores[i], NULL);
-            if (wl->vk.context.swapchain_fences[i] != VK_NULL_HANDLE)
-               vkDestroyFence(wl->vk.context.device,
-                     wl->vk.context.swapchain_fences[i], NULL);
-         }
-
-         if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
-         {
-            cached_device   = wl->vk.context.device;
-            cached_instance = wl->vk.context.instance;
-         }
-         else
-         {
-            if (wl->vk.context.device)
-               vkDestroyDevice(wl->vk.context.device, NULL);
-            if (wl->vk.context.instance)
-               vkDestroyInstance(wl->vk.context.instance, NULL);
-         }
+         vulkan_destroy_context(&wl->vk, wl->surface);
 
          if (wl->fd >= 0)
             close(wl->fd);
@@ -311,8 +279,8 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    wl->shell_surf = NULL;
    wl->surface    = NULL;
 
-   wl->width  = 0;
-   wl->height = 0;
+   wl->width      = 0;
+   wl->height     = 0;
 }
 
 static void flush_wayland_fd(gfx_ctx_wayland_data_t *wl)
@@ -472,10 +440,41 @@ static void gfx_ctx_wl_get_video_size(void *data,
    }                                                                                     \
 } while(0)
 
-static void vulkan_destroy_context(gfx_ctx_vulkan_data_t *vk)
+static void vulkan_destroy_context(gfx_ctx_vulkan_data_t *vk, bool destroy_surface)
 {
-   if (vk->context.queue_lock)
-      slock_free(vk->context.queue_lock);
+   unsigned i;
+   if (vk->context.queue)
+      vkQueueWaitIdle(vk->context.queue);
+   if (vk->swapchain)
+      vk->fpDestroySwapchainKHR(vk->context.device,
+            vk->swapchain, NULL);
+
+   if (destroy_surface)
+      vk->fpDestroySurfaceKHR(vk->context.instance,
+            vk->vk_surface, NULL);
+
+   for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
+   {
+      if (vk->context.swapchain_semaphores[i] != VK_NULL_HANDLE)
+         vkDestroySemaphore(vk->context.device,
+               vk->context.swapchain_semaphores[i], NULL);
+      if (vk->context.swapchain_fences[i] != VK_NULL_HANDLE)
+         vkDestroyFence(vk->context.device,
+               vk->context.swapchain_fences[i], NULL);
+   }
+
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
+   {
+      cached_device   = vk->context.device;
+      cached_instance = vk->context.instance;
+   }
+   else
+   {
+      if (vk->context.device)
+         vkDestroyDevice(vk->context.device, NULL);
+      if (vk->context.instance)
+         vkDestroyInstance(vk->context.instance, NULL);
+   }
 }
 
 static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk)
@@ -860,7 +859,8 @@ static void gfx_ctx_wl_destroy(void *data)
    {
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         vulkan_destroy_context(&wl->vk);
+         if (wl->vk.context.queue_lock)
+            slock_free(wl->vk.context.queue_lock);
 #endif
          break;
       case GFX_CTX_NONE:
