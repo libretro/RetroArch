@@ -43,7 +43,10 @@
 enum vulkan_wsi_type
 {
    VULKAN_WSI_NONE = 0,
-   VULKAN_WSI_WAYLAND
+   VULKAN_WSI_WAYLAND,
+   VULKAN_WSI_ANDROID,
+   VULKAN_WSI_WIN32,
+   VULKAN_WSI_XLIB
 };
 
 typedef struct vulkan_context

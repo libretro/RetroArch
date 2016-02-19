@@ -971,14 +971,19 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    switch (wl_api)
    {
       case GFX_CTX_VULKAN_API:
+         wl_display_roundtrip(wl->dpy);
+
 #ifdef HAVE_VULKAN
          {
-            VkWaylandSurfaceCreateInfoKHR wl_info = 
-            { VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR };
-            wl_display_roundtrip(wl->dpy);
+            VkWaylandSurfaceCreateInfoKHR wl_info; 
 
-            wl_info.display = wl->dpy;
-            wl_info.surface = wl->surface;
+            memset(&wl_info, 0, sizeof(VkWaylandSurfaceCreateInfoKHR));
+
+            wl_info.sType   = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+            wl_info.pNext   = NULL;
+            wl_info.flags   = 0;
+            wl_info.display = (struct wl_display*)wl->dpy;
+            wl_info.surface = (struct wl_surface*)wl->surface;
 
             wl->vk.fpCreateWaylandSurfaceKHR(wl->vk.context.instance,
                   &wl_info, NULL, &wl->vk.vk_surface);
