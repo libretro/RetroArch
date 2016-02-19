@@ -78,6 +78,9 @@ typedef struct gfx_ctx_vulkan_data
 #ifdef HAVE_WAYLAND
    PFN_vkCreateWaylandSurfaceKHR fpCreateWaylandSurfaceKHR;
 #endif
+#ifdef HAVE_MIR
+   FN_vkCreateMirSurfaceKHR fpCreateMirSurfaceKHR;
+#endif
    PFN_vkDestroySurfaceKHR fpDestroySurfaceKHR;
 
    VkSurfaceKHR vk_surface;
@@ -818,6 +821,12 @@ static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk,
                vk->context.instance, CreateXcbSurfaceKHR);
 #endif
          break;
+      case VULKAN_WSI_MIR:
+#ifdef HAVE_MIR
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, CreateMirSurfaceKHR);
+#endif
+         break;
       case VULKAN_WSI_NONE:
       default:
          break;
@@ -1212,6 +1221,24 @@ static bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.window     = (xcb_window_t)surface;
 
             if (vk->fpCreateXcbSurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) 
+                  != VK_SUCCESS)
+               return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_MIR:
+#ifdef HAVE_MIR
+         {
+            VkMirSurfaceCreateInfoKHR surf_info;
+
+            memset(&surf_info, 0, sizeof(VkMirSurfaceCreateInfoKHR));
+
+            surf_info.sType      = VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR;
+            surf_info.connection = display;
+            surf_info.mirSurface = surface;
+
+            if (vk->fpCreateMirSurfaceKHR(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 
                   != VK_SUCCESS)
                return false;
