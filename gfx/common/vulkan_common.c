@@ -817,6 +817,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VkDeviceCreateInfo device_info     = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
    uint32_t gpu_count                 = 1;
    bool found_queue                   = false;
+   VkPhysicalDevice *gpus             = NULL;
    static const float one             = 1.0f;
    static const char *device_extensions[] = {
       "VK_KHR_swapchain",
@@ -869,14 +870,26 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
 
    if (vkEnumeratePhysicalDevices(vk->context.instance,
-            &gpu_count, &vk->context.gpu) != VK_SUCCESS)
+            &gpu_count, NULL) != VK_SUCCESS)
       return false;
 
-   if (gpu_count != 1)
+   gpus = (VkPhysicalDevice*)calloc(gpu_count, sizeof(*gpus));
+   if (!gpus)
+      return false;
+
+   if (vkEnumeratePhysicalDevices(vk->context.instance,
+            &gpu_count, gpus) != VK_SUCCESS)
+      return false;
+
+   if (gpu_count < 1)
    {
       RARCH_ERR("[Vulkan]: Failed to enumerate Vulkan physical device.\n");
+      free(gpus);
       return false;
    }
+
+   vk->context.gpu = gpus[0];
+   free(gpus);
 
    vkGetPhysicalDeviceProperties(vk->context.gpu,
          &vk->context.gpu_properties);
