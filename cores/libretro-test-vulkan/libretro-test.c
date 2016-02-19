@@ -668,6 +668,12 @@ static void vulkan_test_deinit(void)
 
 void retro_run(void)
 {
+   input_poll_cb();
+
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))
+   {
+   }
+
    /* Very lazy way to do this. */
    if (vulkan->get_sync_index_mask(vulkan->handle) != vk.swapchain_mask)
    {
@@ -676,7 +682,6 @@ void retro_run(void)
    }
 
    vulkan->wait_sync_index(vulkan->handle);
-   input_poll_cb();
 
    vk.index = vulkan->get_sync_index(vulkan->handle);
    vulkan_test_render();
