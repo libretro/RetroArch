@@ -1181,7 +1181,7 @@ static bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkAndroidSurfaceCreateInfoKHR surf_info;
 
-            memset(&surf_info, 0, sizeof(VkWaylandSurfaceCreateInfoKHR));
+            memset(&surf_info, 0, sizeof(VkAndroidSurfaceCreateInfoKHR));
 
             surf_info.sType  = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
             surf_info.flags  = 0;
@@ -1606,8 +1606,6 @@ static void *gfx_ctx_wl_get_context_data(void *data)
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    return &wl->vk.context;
 }
-
-
 
 static void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 {
