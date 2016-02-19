@@ -51,20 +51,43 @@ static VkInstance cached_instance;
 static VkDevice cached_device;
 
 #define GET_INSTANCE_PROC_ADDR(inst, entrypoint) do {                                      \
-   wl->fp##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
-   if (wl->fp##entrypoint == NULL) {                                                       \
+   wl->vk.fp##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
+   if (wl->vk.fp##entrypoint == NULL) {                                                       \
       RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);               \
       goto error;                                                                          \
    }                                                                                       \
 } while(0)
 
 #define GET_DEVICE_PROC_ADDR(dev, entrypoint) do {                                       \
-   wl->fp##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
-   if (wl->fp##entrypoint == NULL) {                                                     \
+   wl->vk.fp##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
+   if (wl->vk.fp##entrypoint == NULL) {                                                     \
       RARCH_ERR("vkGetDeviceProcAddr failed to find vk%s\n", #entrypoint);               \
       goto error;                                                                        \
    }                                                                                     \
 } while(0)
+#endif
+
+#ifdef HAVE_VULKAN
+typedef struct gfx_ctx_vulkan_data
+{
+   struct vulkan_context context;
+
+   PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
+   PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
+   PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fpGetPhysicalDeviceSurfaceFormatsKHR;
+   PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fpGetPhysicalDeviceSurfacePresentModesKHR;
+   PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
+   PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
+   PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
+   PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
+   PFN_vkQueuePresentKHR fpQueuePresentKHR;
+   PFN_vkCreateWaylandSurfaceKHR fpCreateWaylandSurfaceKHR;
+   PFN_vkDestroySurfaceKHR fpDestroySurfaceKHR;
+
+   VkSurfaceKHR vk_surface;
+   VkSwapchainKHR swapchain;
+   bool need_new_swapchain;
+} gfx_ctx_vulkan_data_t;
 #endif
 
 typedef struct gfx_ctx_wayland_data
@@ -87,33 +110,18 @@ typedef struct gfx_ctx_wayland_data
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
    unsigned swap_interval;
-   bool need_new_swapchain;
 
    unsigned buffer_scale;
 
 #ifdef HAVE_VULKAN
-   struct vulkan_context context;
-
-   PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
-   PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
-   PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fpGetPhysicalDeviceSurfaceFormatsKHR;
-   PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fpGetPhysicalDeviceSurfacePresentModesKHR;
-   PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
-   PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
-   PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
-   PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
-   PFN_vkQueuePresentKHR fpQueuePresentKHR;
-   PFN_vkCreateWaylandSurfaceKHR fpCreateWaylandSurfaceKHR;
-   PFN_vkDestroySurfaceKHR fpDestroySurfaceKHR;
-
-   VkSurfaceKHR vk_surface;
-   VkSwapchainKHR swapchain;
+   gfx_ctx_vulkan_data_t vk;
 #endif
 } gfx_ctx_wayland_data_t;
 
 #ifdef HAVE_VULKAN
 /* Forward declaration */
-static bool vulkan_create_swapchain(gfx_ctx_wayland_data_t *wl);
+static bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
+      unsigned width, unsigned height, unsigned swap_interval);
 #endif
 
 static enum gfx_ctx_api wl_api;
@@ -251,33 +259,37 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         if (wl->context.queue)
-            vkQueueWaitIdle(wl->context.queue);
-         if (wl->swapchain)
-            wl->fpDestroySwapchainKHR(wl->context.device, wl->swapchain, NULL);
+         if (wl->vk.context.queue)
+            vkQueueWaitIdle(wl->vk.context.queue);
+         if (wl->vk.swapchain)
+            wl->vk.fpDestroySwapchainKHR(wl->vk.context.device,
+                  wl->vk.swapchain, NULL);
 
          if (wl->surface)
-            wl->fpDestroySurfaceKHR(wl->context.instance, wl->vk_surface, NULL);
+            wl->vk.fpDestroySurfaceKHR(wl->vk.context.instance,
+                  wl->vk.vk_surface, NULL);
 
          for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
          {
-            if (wl->context.swapchain_semaphores[i] != VK_NULL_HANDLE)
-               vkDestroySemaphore(wl->context.device, wl->context.swapchain_semaphores[i], NULL);
-            if (wl->context.swapchain_fences[i] != VK_NULL_HANDLE)
-               vkDestroyFence(wl->context.device, wl->context.swapchain_fences[i], NULL);
+            if (wl->vk.context.swapchain_semaphores[i] != VK_NULL_HANDLE)
+               vkDestroySemaphore(wl->vk.context.device,
+                     wl->vk.context.swapchain_semaphores[i], NULL);
+            if (wl->vk.context.swapchain_fences[i] != VK_NULL_HANDLE)
+               vkDestroyFence(wl->vk.context.device,
+                     wl->vk.context.swapchain_fences[i], NULL);
          }
 
          if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
          {
-            cached_device = wl->context.device;
-            cached_instance = wl->context.instance;
+            cached_device   = wl->vk.context.device;
+            cached_instance = wl->vk.context.instance;
          }
          else
          {
-            if (wl->context.device)
-               vkDestroyDevice(wl->context.device, NULL);
-            if (wl->context.instance)
-               vkDestroyInstance(wl->context.instance, NULL);
+            if (wl->vk.context.device)
+               vkDestroyDevice(wl->vk.context.device, NULL);
+            if (wl->vk.context.instance)
+               vkDestroyInstance(wl->vk.context.instance, NULL);
          }
 
          if (wl->fd >= 0)
@@ -365,7 +377,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 #ifdef HAVE_VULKAN
          /* Swapchains are recreated in set_resize as a 
           * central place, so use that to trigger swapchain reinit. */
-         *resize = wl->need_new_swapchain;
+         *resize = wl->vk.need_new_swapchain;
 #endif
          break;
       case GFX_CTX_NONE:
@@ -401,15 +413,15 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
          wl->width  = width;
          wl->height = height;
 
-         if (vulkan_create_swapchain(wl))
-            wl->context.invalid_swapchain = true;
+         if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
+            wl->vk.context.invalid_swapchain = true;
          else
          {
             RARCH_ERR("[Wayland/Vulkan]: Failed to update swapchain.\n");
             return false;
          }
 
-         wl->need_new_swapchain = false;
+         wl->vk.need_new_swapchain = false;
 #endif
          break;
       case GFX_CTX_NONE:
@@ -635,13 +647,14 @@ static void *gfx_ctx_wl_init(void *video_driver)
 
             if (cached_instance)
             {
-               wl->context.instance = cached_instance;
+               wl->vk.context.instance = cached_instance;
                cached_instance = NULL;
             }
-            else if (vkCreateInstance(&info, NULL, &wl->context.instance) != VK_SUCCESS)
+            else if (vkCreateInstance(&info, NULL, &wl->vk.context.instance) != VK_SUCCESS)
                goto error;
 
-            if (vkEnumeratePhysicalDevices(wl->context.instance, &gpu_count, &wl->context.gpu) != VK_SUCCESS)
+            if (vkEnumeratePhysicalDevices(wl->vk.context.instance,
+                     &gpu_count, &wl->vk.context.gpu) != VK_SUCCESS)
                goto error;
 
             if (gpu_count != 1)
@@ -650,18 +663,18 @@ static void *gfx_ctx_wl_init(void *video_driver)
                goto error;
             }
 
-            vkGetPhysicalDeviceProperties(wl->context.gpu, &wl->context.gpu_properties);
-            vkGetPhysicalDeviceMemoryProperties(wl->context.gpu, &wl->context.memory_properties);
-            vkGetPhysicalDeviceQueueFamilyProperties(wl->context.gpu, &queue_count, NULL);
+            vkGetPhysicalDeviceProperties(wl->vk.context.gpu, &wl->vk.context.gpu_properties);
+            vkGetPhysicalDeviceMemoryProperties(wl->vk.context.gpu, &wl->vk.context.memory_properties);
+            vkGetPhysicalDeviceQueueFamilyProperties(wl->vk.context.gpu, &queue_count, NULL);
             if (queue_count < 1 || queue_count > 32)
                goto error;
-            vkGetPhysicalDeviceQueueFamilyProperties(wl->context.gpu, &queue_count, queue_properties);
+            vkGetPhysicalDeviceQueueFamilyProperties(wl->vk.context.gpu, &queue_count, queue_properties);
 
             for (i = 0; i < queue_count; i++)
             {
                if (queue_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
                {
-                  wl->context.graphics_queue_index = i;
+                  wl->vk.context.graphics_queue_index = i;
                   RARCH_LOG("[Wayland/Vulkan]: Device supports %u sub-queues.\n",
                         queue_properties[i].queueCount);
                   found_queue = true;
@@ -675,7 +688,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
                goto error;
             }
 
-            queue_info.queueFamilyIndex = wl->context.graphics_queue_index;
+            queue_info.queueFamilyIndex = wl->vk.context.graphics_queue_index;
             queue_info.queueCount = 1;
             queue_info.pQueuePriorities = &one;
 
@@ -687,30 +700,32 @@ static void *gfx_ctx_wl_init(void *video_driver)
 
             if (cached_device)
             {
-               wl->context.device = cached_device;
+               wl->vk.context.device = cached_device;
                cached_device = NULL;
                video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
                RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
             }
-            else if (vkCreateDevice(wl->context.gpu, &device_info, NULL, &wl->context.device) != VK_SUCCESS)
+            else if (vkCreateDevice(wl->vk.context.gpu, &device_info,
+                     NULL, &wl->vk.context.device) != VK_SUCCESS)
                goto error;
 
-            vkGetDeviceQueue(wl->context.device, wl->context.graphics_queue_index, 0, &wl->context.queue);
+            vkGetDeviceQueue(wl->vk.context.device,
+                  wl->vk.context.graphics_queue_index, 0, &wl->vk.context.queue);
 
-            GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
-            GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
-            GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
-            GET_INSTANCE_PROC_ADDR(wl->context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
-            GET_INSTANCE_PROC_ADDR(wl->context.instance, CreateWaylandSurfaceKHR);
-            GET_INSTANCE_PROC_ADDR(wl->context.instance, DestroySurfaceKHR);
-            GET_DEVICE_PROC_ADDR(wl->context.device, CreateSwapchainKHR);
-            GET_DEVICE_PROC_ADDR(wl->context.device, DestroySwapchainKHR);
-            GET_DEVICE_PROC_ADDR(wl->context.device, GetSwapchainImagesKHR);
-            GET_DEVICE_PROC_ADDR(wl->context.device, AcquireNextImageKHR);
-            GET_DEVICE_PROC_ADDR(wl->context.device, QueuePresentKHR);
+            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, GetPhysicalDeviceSurfaceSupportKHR);
+            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
+            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
+            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
+            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, CreateWaylandSurfaceKHR);
+            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, DestroySurfaceKHR);
+            GET_DEVICE_PROC_ADDR(wl->vk.context.device, CreateSwapchainKHR);
+            GET_DEVICE_PROC_ADDR(wl->vk.context.device, DestroySwapchainKHR);
+            GET_DEVICE_PROC_ADDR(wl->vk.context.device, GetSwapchainImagesKHR);
+            GET_DEVICE_PROC_ADDR(wl->vk.context.device, AcquireNextImageKHR);
+            GET_DEVICE_PROC_ADDR(wl->vk.context.device, QueuePresentKHR);
 
-            wl->context.queue_lock = slock_new();
-            if (!wl->context.queue_lock)
+            wl->vk.context.queue_lock = slock_new();
+            if (!wl->vk.context.queue_lock)
                goto error;
          }
 #endif
@@ -813,8 +828,8 @@ static void gfx_ctx_wl_destroy(void *data)
    {
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         if (wl->context.queue_lock)
-            slock_free(wl->context.queue_lock);
+         if (wl->vk.context.queue_lock)
+            slock_free(wl->vk.context.queue_lock);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -843,8 +858,8 @@ static void gfx_ctx_wl_set_swap_interval(void *data, unsigned swap_interval)
          if (wl->swap_interval != swap_interval)
          {
             wl->swap_interval = swap_interval;
-            if (wl->swapchain)
-               wl->need_new_swapchain = true;
+            if (wl->vk.swapchain)
+               wl->vk.need_new_swapchain = true;
          }
 #endif
          break;
@@ -934,10 +949,11 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
             wl_info.display = wl->dpy;
             wl_info.surface = wl->surface;
 
-            wl->fpCreateWaylandSurfaceKHR(wl->context.instance,
-                  &wl_info, NULL, &wl->vk_surface);
+            wl->vk.fpCreateWaylandSurfaceKHR(wl->vk.context.instance,
+                  &wl_info, NULL, &wl->vk.vk_surface);
 
-            if (!vulkan_create_swapchain(wl))
+            if (!vulkan_create_swapchain(
+                     &wl->vk, wl->width, wl->height, wl->swap_interval))
                goto error;
          }
 #endif
@@ -1186,10 +1202,10 @@ static const struct wl_seat_listener seat_listener = {
 static void *gfx_ctx_wl_get_context_data(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   return &wl->context;
+   return &wl->vk.context;
 }
 
-static void vulkan_acquire_next_image(gfx_ctx_wayland_data_t *wl)
+static void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 {
    VkResult err;
    VkSemaphoreCreateInfo sem_info = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
@@ -1198,41 +1214,42 @@ static void vulkan_acquire_next_image(gfx_ctx_wayland_data_t *wl)
    VkFence *next_fence;
    unsigned index;
 
-   vkCreateFence(wl->context.device, &info, NULL, &fence);
+   vkCreateFence(vk->context.device, &info, NULL, &fence);
 
-   err = wl->fpAcquireNextImageKHR(wl->context.device, wl->swapchain, UINT64_MAX,
-         VK_NULL_HANDLE, fence, &wl->context.current_swapchain_index);
+   err = vk->fpAcquireNextImageKHR(vk->context.device, vk->swapchain, UINT64_MAX,
+         VK_NULL_HANDLE, fence, &vk->context.current_swapchain_index);
 
-   index = wl->context.current_swapchain_index;
-   if (wl->context.swapchain_semaphores[index] == VK_NULL_HANDLE)
-      vkCreateSemaphore(wl->context.device, &sem_info, NULL, &wl->context.swapchain_semaphores[index]);
+   index = vk->context.current_swapchain_index;
+   if (vk->context.swapchain_semaphores[index] == VK_NULL_HANDLE)
+      vkCreateSemaphore(vk->context.device, &sem_info, NULL, &vk->context.swapchain_semaphores[index]);
 
-   vkWaitForFences(wl->context.device, 1, &fence, true, UINT64_MAX);
-   vkDestroyFence(wl->context.device, fence, NULL);
+   vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
+   vkDestroyFence(vk->context.device, fence, NULL);
 
-   next_fence = &wl->context.swapchain_fences[index];
+   next_fence = &vk->context.swapchain_fences[index];
    if (*next_fence != VK_NULL_HANDLE)
    {
-      vkWaitForFences(wl->context.device, 1, next_fence, true, UINT64_MAX);
-      vkResetFences(wl->context.device, 1, next_fence);
+      vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
+      vkResetFences(vk->context.device, 1, next_fence);
    }
    else
-      vkCreateFence(wl->context.device, &info, NULL, next_fence);
+      vkCreateFence(vk->context.device, &info, NULL, next_fence);
 
    if (err != VK_SUCCESS)
    {
       RARCH_LOG("[Wayland/Vulkan]: AcquireNextImage failed, invalidating swapchain.\n");
-      wl->context.invalid_swapchain = true;
+      vk->context.invalid_swapchain = true;
    }
 }
 
-static bool vulkan_create_swapchain(gfx_ctx_wayland_data_t *wl)
+static bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk, unsigned width, unsigned height,
+      unsigned swap_interval)
 {
    VkSurfaceCapabilitiesKHR surface_properties;
    VkSurfaceFormatKHR formats[256];
    VkSurfaceFormatKHR format;
    VkExtent2D swapchain_size;
-   VkPresentModeKHR swapchain_present_mode = wl->swap_interval ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
+   VkPresentModeKHR swapchain_present_mode = swap_interval ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
    VkSurfaceTransformFlagBitsKHR pre_transform;
    VkSwapchainKHR old_swapchain;
    VkSwapchainCreateInfoKHR info = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
@@ -1242,9 +1259,9 @@ static bool vulkan_create_swapchain(gfx_ctx_wayland_data_t *wl)
 
    RARCH_LOG("[Wayland/Vulkan]: Creating swapchain with present mode: %u\n", (unsigned)swapchain_present_mode);
 
-   wl->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(wl->context.gpu, wl->vk_surface, &surface_properties);
-   wl->fpGetPhysicalDeviceSurfaceFormatsKHR(wl->context.gpu, wl->vk_surface, &format_count, NULL);
-   wl->fpGetPhysicalDeviceSurfaceFormatsKHR(wl->context.gpu, wl->vk_surface, &format_count, formats);
+   vk->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->context.gpu, vk->vk_surface, &surface_properties);
+   vk->fpGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu, vk->vk_surface, &format_count, NULL);
+   vk->fpGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu, vk->vk_surface, &format_count, formats);
 
    if (format_count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
    {
@@ -1264,8 +1281,8 @@ static bool vulkan_create_swapchain(gfx_ctx_wayland_data_t *wl)
 
    if (surface_properties.currentExtent.width == -1)
    {
-      swapchain_size.width     = wl->width;
-      swapchain_size.height    = wl->height;
+      swapchain_size.width     = width;
+      swapchain_size.height    = height;
    }
    else
       swapchain_size           = surface_properties.currentExtent;
@@ -1279,9 +1296,9 @@ static bool vulkan_create_swapchain(gfx_ctx_wayland_data_t *wl)
    else
       pre_transform            = surface_properties.currentTransform;
 
-   old_swapchain               = wl->swapchain;
+   old_swapchain               = vk->swapchain;
 
-   info.surface                = wl->vk_surface;
+   info.surface                = vk->vk_surface;
    info.minImageCount          = desired_swapchain_images;
    info.imageFormat            = format.format;
    info.imageColorSpace        = format.colorSpace;
@@ -1297,80 +1314,80 @@ static bool vulkan_create_swapchain(gfx_ctx_wayland_data_t *wl)
    info.clipped                = true;
    info.oldSwapchain           = old_swapchain;
 
-   wl->fpCreateSwapchainKHR(wl->context.device, &info, NULL, &wl->swapchain);
+   vk->fpCreateSwapchainKHR(vk->context.device, &info, NULL, &vk->swapchain);
    if (old_swapchain != VK_NULL_HANDLE)
-      wl->fpDestroySwapchainKHR(wl->context.device, old_swapchain, NULL);
+      vk->fpDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
 
-   wl->context.swapchain_width  = swapchain_size.width;
-   wl->context.swapchain_height = swapchain_size.height;
+   vk->context.swapchain_width  = swapchain_size.width;
+   vk->context.swapchain_height = swapchain_size.height;
 
    /* Make sure we create a backbuffer format that is as we expect. */
    switch (format.format)
    {
       case VK_FORMAT_B8G8R8A8_SRGB:
-         wl->context.swapchain_format  = VK_FORMAT_B8G8R8A8_UNORM;
-         wl->context.swapchain_is_srgb = true;
+         vk->context.swapchain_format  = VK_FORMAT_B8G8R8A8_UNORM;
+         vk->context.swapchain_is_srgb = true;
          break;
 
       case VK_FORMAT_R8G8B8A8_SRGB:
-         wl->context.swapchain_format  = VK_FORMAT_R8G8B8A8_UNORM;
-         wl->context.swapchain_is_srgb = true;
+         vk->context.swapchain_format  = VK_FORMAT_R8G8B8A8_UNORM;
+         vk->context.swapchain_is_srgb = true;
          break;
 
       case VK_FORMAT_R8G8B8_SRGB:
-         wl->context.swapchain_format  = VK_FORMAT_R8G8B8_UNORM;
-         wl->context.swapchain_is_srgb = true;
+         vk->context.swapchain_format  = VK_FORMAT_R8G8B8_UNORM;
+         vk->context.swapchain_is_srgb = true;
          break;
 
       case VK_FORMAT_B8G8R8_SRGB:
-         wl->context.swapchain_format  = VK_FORMAT_B8G8R8_UNORM;
-         wl->context.swapchain_is_srgb = true;
+         vk->context.swapchain_format  = VK_FORMAT_B8G8R8_UNORM;
+         vk->context.swapchain_is_srgb = true;
          break;
 
       default:
-         wl->context.swapchain_format  = format.format;
+         vk->context.swapchain_format  = format.format;
          break;
    }
 
-   wl->fpGetSwapchainImagesKHR(wl->context.device, wl->swapchain,
-         &wl->context.num_swapchain_images, NULL);
-   wl->fpGetSwapchainImagesKHR(wl->context.device, wl->swapchain,
-         &wl->context.num_swapchain_images, wl->context.swapchain_images);
+   vk->fpGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
+         &vk->context.num_swapchain_images, NULL);
+   vk->fpGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
+         &vk->context.num_swapchain_images, vk->context.swapchain_images);
 
-   for (i = 0; i < wl->context.num_swapchain_images; i++)
+   for (i = 0; i < vk->context.num_swapchain_images; i++)
    {
-      if (wl->context.swapchain_fences[i])
+      if (vk->context.swapchain_fences[i])
       {
-         vkDestroyFence(wl->context.device, wl->context.swapchain_fences[i], NULL);
-         wl->context.swapchain_fences[i] = VK_NULL_HANDLE;
+         vkDestroyFence(vk->context.device, vk->context.swapchain_fences[i], NULL);
+         vk->context.swapchain_fences[i] = VK_NULL_HANDLE;
       }
    }
 
-   vulkan_acquire_next_image(wl);
+   vulkan_acquire_next_image(vk);
 
    return true;
 }
 
-static void vulkan_present(gfx_ctx_wayland_data_t *wl, unsigned index)
+static void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 {
    VkResult result = VK_SUCCESS, err = VK_SUCCESS;
    VkPresentInfoKHR present = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
    present.swapchainCount = 1;
-   present.pSwapchains = &wl->swapchain;
+   present.pSwapchains = &vk->swapchain;
    present.pImageIndices = &index;
    present.pResults = &result;
    present.waitSemaphoreCount = 1;
-   present.pWaitSemaphores = &wl->context.swapchain_semaphores[index];
+   present.pWaitSemaphores = &vk->context.swapchain_semaphores[index];
 
    /* Better hope QueuePresent doesn't block D: */
-   slock_lock(wl->context.queue_lock);
-   err = wl->fpQueuePresentKHR(wl->context.queue, &present);
+   slock_lock(vk->context.queue_lock);
+   err = vk->fpQueuePresentKHR(vk->context.queue, &present);
    if (err != VK_SUCCESS || result != VK_SUCCESS)
    {
       RARCH_LOG("[Wayland/Vulkan]: QueuePresent failed, invalidating swapchain.\n");
-      wl->context.invalid_swapchain = true;
+      vk->context.invalid_swapchain = true;
    }
-   slock_unlock(wl->context.queue_lock);
+   slock_unlock(vk->context.queue_lock);
 }
 #endif
 
@@ -1389,8 +1406,8 @@ static void gfx_ctx_wl_swap_buffers(void *data)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         vulkan_present(wl, wl->context.current_swapchain_index);
-         vulkan_acquire_next_image(wl);
+         vulkan_present(&wl->vk, wl->vk.context.current_swapchain_index);
+         vulkan_acquire_next_image(&wl->vk);
          flush_wayland_fd(wl);
 #endif
          break;
