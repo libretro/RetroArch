@@ -954,18 +954,12 @@ static bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.display = (struct wl_display*)display;
             surf_info.surface = (struct wl_surface*)surface;
 
-            vk->fpCreateWaylandSurfaceKHR(vk->context.instance,
-                  &surf_info, NULL, &vk->vk_surface);
-
-            if (!vulkan_create_swapchain(
-                     vk, width, height, swap_interval))
+            if (vk->fpCreateWaylandSurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
                return false;
          }
-
-         return true;
-#else
-         break;
 #endif
+         break;
       case VULKAN_WSI_ANDROID:
 #ifdef ANDROID
          {
@@ -980,15 +974,9 @@ static bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             if (vk->fpCreateAndroidSurfaceKHR(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
                return false;
-
-            if (!vulkan_create_swapchain(
-                     vk, width, height, swap_interval))
-               return false;
          }
-         return true;
-#else
-         break;
 #endif
+         break;
       case VULKAN_WSI_WIN32:
 #ifdef _WIN32
          {
@@ -1004,20 +992,19 @@ static bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             if (vk->fpCreateWin32SurfaceKHR(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
                return false;
-
-            if (!vulkan_create_swapchain(
-                     vk, width, height, swap_interval))
-               return false;
          }
-#else
-         break;
 #endif
+         break;
       case VULKAN_WSI_NONE:
       default:
-         break;
+         return false;
    }
 
-   return false;
+   if (!vulkan_create_swapchain(
+            vk, width, height, swap_interval))
+      return false;
+
+   return true;
 }
 #endif
 
