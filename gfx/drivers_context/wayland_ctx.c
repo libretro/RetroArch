@@ -477,7 +477,8 @@ static void vulkan_destroy_context(gfx_ctx_vulkan_data_t *vk, bool destroy_surfa
    }
 }
 
-static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk)
+static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk,
+      enum vulkan_wsi_type type)
 {
    unsigned i;
    uint32_t queue_count;
@@ -583,28 +584,38 @@ static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk)
    vkGetDeviceQueue(vk->context.device,
          vk->context.graphics_queue_index, 0, &vk->context.queue);
 
-   VK_GET_INSTANCE_PROC_ADDR(vk,
-         vk->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
-   VK_GET_INSTANCE_PROC_ADDR(vk,
-         vk->context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
-   VK_GET_INSTANCE_PROC_ADDR(vk,
-         vk->context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
-   VK_GET_INSTANCE_PROC_ADDR(vk,
-         vk->context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
-   VK_GET_INSTANCE_PROC_ADDR(vk,
-         vk->context.instance, CreateWaylandSurfaceKHR);
-   VK_GET_INSTANCE_PROC_ADDR(vk,
-         vk->context.instance, DestroySurfaceKHR);
-   VK_GET_DEVICE_PROC_ADDR(vk,
-         vk->context.device, CreateSwapchainKHR);
-   VK_GET_DEVICE_PROC_ADDR(vk,
-         vk->context.device, DestroySwapchainKHR);
-   VK_GET_DEVICE_PROC_ADDR(vk,
-         vk->context.device, GetSwapchainImagesKHR);
-   VK_GET_DEVICE_PROC_ADDR(vk,
-         vk->context.device, AcquireNextImageKHR);
-   VK_GET_DEVICE_PROC_ADDR(vk,
-         vk->context.device, QueuePresentKHR);
+   switch (type)
+   {
+      case VULKAN_WSI_WAYLAND:
+#ifdef HAVE_WAYLAND
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, CreateWaylandSurfaceKHR);
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, DestroySurfaceKHR);
+         VK_GET_DEVICE_PROC_ADDR(vk,
+               vk->context.device, CreateSwapchainKHR);
+         VK_GET_DEVICE_PROC_ADDR(vk,
+               vk->context.device, DestroySwapchainKHR);
+         VK_GET_DEVICE_PROC_ADDR(vk,
+               vk->context.device, GetSwapchainImagesKHR);
+         VK_GET_DEVICE_PROC_ADDR(vk,
+               vk->context.device, AcquireNextImageKHR);
+         VK_GET_DEVICE_PROC_ADDR(vk,
+               vk->context.device, QueuePresentKHR);
+#endif
+         break;
+      case VULKAN_WSI_NONE:
+      default:
+         break;
+   }
 
    vk->context.queue_lock = slock_new();
    if (!vk->context.queue_lock)
@@ -757,7 +768,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         if (!vulkan_init_context(&wl->vk))
+         if (!vulkan_init_context(&wl->vk, VULKAN_WSI_WAYLAND))
             goto error;
 #endif
          break;
