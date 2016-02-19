@@ -26,6 +26,22 @@
 #define VK_USE_PLATFORM_WAYLAND_KHR
 #endif
 
+#ifdef HAVE_MIR
+#define VK_USE_PLATFORM_MIR_KHR
+#endif
+
+#ifdef _WIN32
+#define VK_USE_PLATFORM_WIN32_KHR
+#endif
+
+#ifdef HAVE_XCB
+#define VK_USE_PLATFORM_XCB_KHR
+#endif
+
+#ifdef HAVE_XLIB
+#define VK_USE_PLATFORM_XLIB_KHR
+#endif
+
 #include <vulkan/vulkan.h>
 
 #include <gfx/math/matrix_4x4.h>
