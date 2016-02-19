@@ -511,11 +511,14 @@ ifeq ($(HAVE_X11), 1)
 
    LIBS += $(X11_LIBS) $(XEXT_LIBS) $(XF86VM_LIBS) $(XINERAMA_LIBS)
    DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
+ifeq ($(HAVE_XCB),1)
+	LIBS    += -lX11-xcb
+endif
 endif
 
 ifeq ($(HAVE_XCB),1)
 	DEFINES += $(XCB_CFLAGS)
-	LIBS    += $(XCB_LIBS) -lX11-xcb
+	LIBS    += $(XCB_LIBS)
 endif
 
 ifeq ($(HAVE_XKBCOMMON), 1)
