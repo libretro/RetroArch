@@ -668,22 +668,44 @@ static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk,
    uint32_t queue_count;
    VkQueueFamilyProperties queue_properties[32];
    VkInstanceCreateInfo info          = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
+   VkApplicationInfo app              = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
+   VkPhysicalDeviceFeatures features  = { false };
    VkDeviceQueueCreateInfo queue_info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
    VkDeviceCreateInfo device_info     = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
    uint32_t gpu_count                 = 1;
    bool found_queue                   = false;
    static const float one             = 1.0f;
-
-   static const char *instance_extensions[] = {
-      "VK_KHR_surface",
-      "VK_KHR_wayland_surface",
-   };
-
    static const char *device_extensions[] = {
       "VK_KHR_swapchain",
    };
-   VkApplicationInfo app             = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
-   VkPhysicalDeviceFeatures features = { false };
+   static const char *instance_extensions[2];
+   
+   instance_extensions[0] = "VK_KHR_surface";
+
+   switch (type)
+   {
+      case VULKAN_WSI_WAYLAND:
+         instance_extensions[1] = "VK_KHR_wayland_surface";
+         break;
+      case VULKAN_WSI_ANDROID:
+         instance_extensions[1] = "VK_KHR_android_surface";
+         break;
+      case VULKAN_WSI_WIN32:
+         instance_extensions[1] = "VK_KHR_win32_surface";
+         break;
+      case VULKAN_WSI_XLIB:
+         instance_extensions[1] = "VK_KHR_xlib_surface";
+         break;
+      case VULKAN_WSI_XCB:
+         instance_extensions[1] = "VK_KHR_xcb_surface";
+         break;
+      case VULKAN_WSI_MIR:
+         instance_extensions[1] = "VK_KHR_mir_surface";
+         break;
+      case VULKAN_WSI_NONE:
+      default:
+         break;
+   }
 
    app.pApplicationName              = "RetroArch";
    app.applicationVersion            = 0;
