@@ -20,6 +20,14 @@
 #include "../../config.h"
 #endif
 
+#define VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS    16
+#define VULKAN_MAX_DESCRIPTOR_POOL_SIZES        16
+#define VULKAN_BUFFER_BLOCK_SIZE                (4 * 1024)
+
+#define VULKAN_MAX_SWAPCHAIN_IMAGES             8
+
+#define VULKAN_DIRTY_DYNAMIC_BIT                0x0001
+
 #define VK_PROTOTYPES
 
 #ifdef HAVE_WAYLAND
@@ -61,9 +69,12 @@
 #include <rthreads/rthreads.h>
 #include <gfx/scaler/scaler.h>
 
-#define VULKAN_MAX_SWAPCHAIN_IMAGES 8
-
-#define VULKAN_DIRTY_DYNAMIC_BIT 0x0001
+enum vk_texture_type
+{
+   VULKAN_TEXTURE_STREAMED = 0,
+   VULKAN_TEXTURE_STATIC,
+   VULKAN_TEXTURE_READBACK
+};
 
 enum vulkan_wsi_type
 {
@@ -215,14 +226,16 @@ struct vk_buffer_chain vulkan_buffer_chain_init(
       VkDeviceSize block_size,
       VkDeviceSize alignment,
       VkBufferUsageFlags usage);
-void vulkan_buffer_chain_discard(struct vk_buffer_chain *chain);
-bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
-      struct vk_buffer_chain *chain, size_t size, struct vk_buffer_range *range);
-void vulkan_buffer_chain_free(VkDevice device, struct vk_buffer_chain *chain);
 
-#define VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS 16
-#define VULKAN_BUFFER_BLOCK_SIZE (4 * 1024)
-#define VULKAN_MAX_DESCRIPTOR_POOL_SIZES 16
+void vulkan_buffer_chain_discard(struct vk_buffer_chain *chain);
+
+bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
+      struct vk_buffer_chain *chain, size_t size,
+      struct vk_buffer_range *range);
+
+void vulkan_buffer_chain_free(VkDevice device,
+      struct vk_buffer_chain *chain);
+
 
 struct vk_descriptor_pool
 {
@@ -298,8 +311,10 @@ typedef struct vk
    struct vk_per_frame swapchain[VULKAN_MAX_SWAPCHAIN_IMAGES];
    unsigned num_swapchain_images;
 
-   VkCommandBuffer cmd; /* Currently active command buffer. */
-   VkCommandPool staging_pool; /* Staging pool for doing buffer transfers on GPU. */
+   /* Currently active command buffer. */
+   VkCommandBuffer cmd;
+   /* Staging pool for doing buffer transfers on GPU. */
+   VkCommandPool staging_pool;
 
    struct
    {
@@ -383,18 +398,14 @@ typedef struct vk
    vulkan_filter_chain_t *filter_chain;
 } vk_t;
 
-uint32_t vulkan_find_memory_type(const VkPhysicalDeviceMemoryProperties *mem_props,
+uint32_t vulkan_find_memory_type(
+      const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs);
 
-uint32_t vulkan_find_memory_type_fallback(const VkPhysicalDeviceMemoryProperties *mem_props,
+uint32_t vulkan_find_memory_type_fallback(
+      const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs);
 
-enum vk_texture_type
-{
-   VULKAN_TEXTURE_STREAMED = 0,
-   VULKAN_TEXTURE_STATIC,
-   VULKAN_TEXTURE_READBACK
-};
 
 struct vk_texture vulkan_create_texture(vk_t *vk,
       struct vk_texture *old,
@@ -421,7 +432,7 @@ void vulkan_image_layout_transition(vk_t *vk, VkCommandBuffer cmd, VkImage image
       VkAccessFlags srcAccess, VkAccessFlags dstAccess,
       VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages);
 
-static inline unsigned vulkan_format_to_bpp(VkFormat format)
+static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
 {
    switch (format)
    {
@@ -441,7 +452,7 @@ static inline unsigned vulkan_format_to_bpp(VkFormat format)
    }
 }
 
-static inline void vulkan_write_quad_vbo(struct vk_vertex *pv,
+static INLINE void vulkan_write_quad_vbo(struct vk_vertex *pv,
       float x, float y, float width, float height,
       float tex_x, float tex_y, float tex_width, float tex_height,
       const struct vk_color *color)
@@ -470,12 +481,36 @@ struct vk_buffer vulkan_create_buffer(const struct vulkan_context *context,
       size_t size, VkBufferUsageFlags usage);
 void vulkan_destroy_buffer(VkDevice device, struct vk_buffer *buffer);
 
-VkDescriptorSet vulkan_descriptor_manager_alloc(VkDevice device, struct vk_descriptor_manager *manager);
+VkDescriptorSet vulkan_descriptor_manager_alloc(VkDevice device,
+      struct vk_descriptor_manager *manager);
+
 void vulkan_descriptor_manager_restart(struct vk_descriptor_manager *manager);
+
 struct vk_descriptor_manager vulkan_create_descriptor_manager(VkDevice device,
       const VkDescriptorPoolSize *sizes, unsigned num_sizes,
       VkDescriptorSetLayout set_layout);
 void vulkan_destroy_descriptor_manager(VkDevice device,
       struct vk_descriptor_manager *manager);
+
+bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
+      enum vulkan_wsi_type type);
+
+void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
+      bool destroy_surface);
+
+bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
+      enum vulkan_wsi_type type,
+      void *display, void *surface,
+      unsigned width, unsigned height,
+      unsigned swap_interval);
+
+void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index);
+
+void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk);
+
+bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
+      unsigned width, unsigned height,
+      unsigned swap_interval);
+
 #endif
 

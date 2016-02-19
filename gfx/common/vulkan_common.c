@@ -13,8 +13,30 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "vulkan_common.h"
 #include <retro_assert.h>
+
+#include "vulkan_common.h"
+
+#ifdef HAVE_VULKAN
+static VkInstance cached_instance;
+static VkDevice cached_device;
+#endif
+
+#define VK_GET_INSTANCE_PROC_ADDR(vk, inst, entrypoint) do {                               \
+   vk->fp##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
+   if (vk->fp##entrypoint == NULL) {                                                       \
+      RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);               \
+      return false;                                                                        \
+   }                                                                                       \
+} while(0)
+
+#define VK_GET_DEVICE_PROC_ADDR(vk, dev, entrypoint) do {                                \
+   vk->fp##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
+   if (vk->fp##entrypoint == NULL) {                                                     \
+      RARCH_ERR("vkGetDeviceProcAddr failed to find vk%s\n", #entrypoint);               \
+      return false;                                                                      \
+   }                                                                                     \
+} while(0)
 
 uint32_t vulkan_find_memory_type(const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs)
@@ -774,3 +796,569 @@ void vulkan_buffer_chain_free(VkDevice device, struct vk_buffer_chain *chain)
    memset(chain, 0, sizeof(*chain));
 }
 
+bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
+      enum vulkan_wsi_type type)
+{
+   unsigned i;
+   uint32_t queue_count;
+   VkQueueFamilyProperties queue_properties[32];
+   VkInstanceCreateInfo info          = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
+   VkApplicationInfo app              = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
+   VkPhysicalDeviceFeatures features  = { false };
+   VkDeviceQueueCreateInfo queue_info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
+   VkDeviceCreateInfo device_info     = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+   uint32_t gpu_count                 = 1;
+   bool found_queue                   = false;
+   static const float one             = 1.0f;
+   static const char *device_extensions[] = {
+      "VK_KHR_swapchain",
+   };
+   static const char *instance_extensions[2];
+   
+   instance_extensions[0] = "VK_KHR_surface";
+
+   switch (type)
+   {
+      case VULKAN_WSI_WAYLAND:
+         instance_extensions[1] = "VK_KHR_wayland_surface";
+         break;
+      case VULKAN_WSI_ANDROID:
+         instance_extensions[1] = "VK_KHR_android_surface";
+         break;
+      case VULKAN_WSI_WIN32:
+         instance_extensions[1] = "VK_KHR_win32_surface";
+         break;
+      case VULKAN_WSI_XLIB:
+         instance_extensions[1] = "VK_KHR_xlib_surface";
+         break;
+      case VULKAN_WSI_XCB:
+         instance_extensions[1] = "VK_KHR_xcb_surface";
+         break;
+      case VULKAN_WSI_MIR:
+         instance_extensions[1] = "VK_KHR_mir_surface";
+         break;
+      case VULKAN_WSI_NONE:
+      default:
+         break;
+   }
+
+   app.pApplicationName              = "RetroArch";
+   app.applicationVersion            = 0;
+   app.pEngineName                   = "RetroArch";
+   app.engineVersion                 = 0;
+   app.apiVersion                    = VK_API_VERSION;
+
+   info.pApplicationInfo             = &app;
+   info.enabledExtensionCount        = ARRAY_SIZE(instance_extensions);
+   info.ppEnabledExtensionNames      = instance_extensions;
+
+   if (cached_instance)
+   {
+      vk->context.instance           = cached_instance;
+      cached_instance                = NULL;
+   }
+   else if (vkCreateInstance(&info, NULL, &vk->context.instance) != VK_SUCCESS)
+      return false;
+
+   if (vkEnumeratePhysicalDevices(vk->context.instance,
+            &gpu_count, &vk->context.gpu) != VK_SUCCESS)
+      return false;
+
+   if (gpu_count != 1)
+   {
+      RARCH_ERR("[Vulkan]: Failed to enumerate Vulkan physical device.\n");
+      return false;
+   }
+
+   vkGetPhysicalDeviceProperties(vk->context.gpu,
+         &vk->context.gpu_properties);
+   vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
+         &vk->context.memory_properties);
+   vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
+         &queue_count, NULL);
+
+   if (queue_count < 1 || queue_count > 32)
+      return false;
+
+   vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
+         &queue_count, queue_properties);
+
+   for (i = 0; i < queue_count; i++)
+   {
+      if (queue_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+      {
+         vk->context.graphics_queue_index = i;
+         RARCH_LOG("[Vulkan]: Device supports %u sub-queues.\n",
+               queue_properties[i].queueCount);
+         found_queue = true;
+         break;
+      }
+   }
+
+   if (!found_queue)
+   {
+      RARCH_ERR("[Vulkan]: Did not find suitable graphics queue.\n");
+      return false;
+   }
+
+   queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
+   queue_info.queueCount               = 1;
+   queue_info.pQueuePriorities         = &one;
+
+   device_info.queueCreateInfoCount    = 1;
+   device_info.pQueueCreateInfos       = &queue_info;
+   device_info.enabledExtensionCount   = ARRAY_SIZE(device_extensions);
+   device_info.ppEnabledExtensionNames = device_extensions;
+   device_info.pEnabledFeatures        = &features;
+
+   if (cached_device)
+   {
+      vk->context.device = cached_device;
+      cached_device = NULL;
+      video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+      RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
+   }
+   else if (vkCreateDevice(vk->context.gpu, &device_info,
+            NULL, &vk->context.device) != VK_SUCCESS)
+      return false;
+
+   vkGetDeviceQueue(vk->context.device,
+         vk->context.graphics_queue_index, 0, &vk->context.queue);
+
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, DestroySurfaceKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, CreateSwapchainKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, DestroySwapchainKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, GetSwapchainImagesKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, AcquireNextImageKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, QueuePresentKHR);
+
+   switch (type)
+   {
+      case VULKAN_WSI_WAYLAND:
+#ifdef HAVE_WAYLAND
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, CreateWaylandSurfaceKHR);
+#endif
+         break;
+      case VULKAN_WSI_ANDROID:
+#ifdef ANDROID
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, CreateAndroidSurfaceKHR);
+#endif
+         break;
+      case VULKAN_WSI_WIN32:
+#ifdef _WIN32
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, CreateWin32SurfaceKHR);
+#endif
+         break;
+      case VULKAN_WSI_XLIB:
+#ifdef HAVE_XLIB
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, CreateXlibSurfaceKHR);
+#endif
+         break;
+      case VULKAN_WSI_XCB:
+#ifdef HAVE_XCB
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, CreateXcbSurfaceKHR);
+#endif
+         break;
+      case VULKAN_WSI_MIR:
+#ifdef HAVE_MIR
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, CreateMirSurfaceKHR);
+#endif
+         break;
+      case VULKAN_WSI_NONE:
+      default:
+         break;
+   }
+
+   vk->context.queue_lock = slock_new();
+   if (!vk->context.queue_lock)
+      return false;
+
+   return true;
+}
+
+bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
+      enum vulkan_wsi_type type,
+      void *display, void *surface,
+      unsigned width, unsigned height,
+      unsigned swap_interval)
+{
+   switch (type)
+   {
+      case VULKAN_WSI_WAYLAND:
+#ifdef HAVE_WAYLAND
+         {
+            VkWaylandSurfaceCreateInfoKHR surf_info; 
+
+            memset(&surf_info, 0, sizeof(VkWaylandSurfaceCreateInfoKHR));
+
+            surf_info.sType   = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+            surf_info.pNext   = NULL;
+            surf_info.flags   = 0;
+            surf_info.display = (struct wl_display*)display;
+            surf_info.surface = (struct wl_surface*)surface;
+
+            if (vk->fpCreateWaylandSurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+               return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_ANDROID:
+#ifdef ANDROID
+         {
+            VkAndroidSurfaceCreateInfoKHR surf_info;
+
+            memset(&surf_info, 0, sizeof(VkAndroidSurfaceCreateInfoKHR));
+
+            surf_info.sType  = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+            surf_info.flags  = 0;
+            surf_info.window = (ANativeWindow*)surface;
+
+            if (vk->fpCreateAndroidSurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+               return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_WIN32:
+#ifdef _WIN32
+         {
+            VkWin32SurfaceCreateInfoKHR surf_info;
+
+            memset(&surf_info, 0, sizeof(VkWin32SurfaceCreateInfoKHR));
+
+            surf_info.sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+            surf_info.flags     = 0;
+            surf_info.hinstance = display;
+            surf_info.hwnd      = surface;
+
+            if (vk->fpCreateWin32SurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+               return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_XLIB:
+#ifdef HAVE_XLIB
+         {
+            VkXlibSurfaceCreateInfoKHR surf_info;
+
+            memset(&surf_info, 0, sizeof(VkXlibSurfaceCreateInfoKHR));
+
+            surf_info.sType  = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+            surf_info.flags  = 0;
+            surf_info.dpy    = display;
+            surf_info.window = surface;
+
+            if (vk->fpCreateXlibSurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) 
+                  != VK_SUCCESS)
+               return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_XCB:
+#ifdef HAVE_XCB
+         {
+            VkXcbSurfaceCreateInfoKHR surf_info;
+
+            memset(&surf_info, 0, sizeof(VkXcbSurfaceCreateInfoKHR));
+
+            surf_info.sType      = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
+            surf_info.flags      = 0;
+            surf_info.connection = XGetXCBConnection(display);
+            surf_info.window     = (xcb_window_t)surface;
+
+            if (vk->fpCreateXcbSurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) 
+                  != VK_SUCCESS)
+               return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_MIR:
+#ifdef HAVE_MIR
+         {
+            VkMirSurfaceCreateInfoKHR surf_info;
+
+            memset(&surf_info, 0, sizeof(VkMirSurfaceCreateInfoKHR));
+
+            surf_info.sType      = VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR;
+            surf_info.connection = display;
+            surf_info.mirSurface = surface;
+
+            if (vk->fpCreateMirSurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) 
+                  != VK_SUCCESS)
+               return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_NONE:
+      default:
+         return false;
+   }
+
+   if (!vulkan_create_swapchain(
+            vk, width, height, swap_interval))
+      return false;
+
+   return true;
+}
+
+void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
+{
+   VkResult result            = VK_SUCCESS;
+   VkResult err               = VK_SUCCESS;
+   VkPresentInfoKHR present   = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+   present.swapchainCount     = 1;
+   present.pSwapchains        = &vk->swapchain;
+   present.pImageIndices      = &index;
+   present.pResults           = &result;
+   present.waitSemaphoreCount = 1;
+   present.pWaitSemaphores    = &vk->context.swapchain_semaphores[index];
+
+   /* Better hope QueuePresent doesn't block D: */
+   slock_lock(vk->context.queue_lock);
+   err = vk->fpQueuePresentKHR(vk->context.queue, &present);
+
+   if (err != VK_SUCCESS || result != VK_SUCCESS)
+   {
+      RARCH_LOG("[Vulkan]: QueuePresent failed, invalidating swapchain.\n");
+      vk->context.invalid_swapchain = true;
+   }
+   slock_unlock(vk->context.queue_lock);
+}
+
+void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
+      bool destroy_surface)
+{
+   unsigned i;
+   if (vk->context.queue)
+      vkQueueWaitIdle(vk->context.queue);
+   if (vk->swapchain)
+      vk->fpDestroySwapchainKHR(vk->context.device,
+            vk->swapchain, NULL);
+
+   if (destroy_surface)
+      vk->fpDestroySurfaceKHR(vk->context.instance,
+            vk->vk_surface, NULL);
+
+   for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
+   {
+      if (vk->context.swapchain_semaphores[i] != VK_NULL_HANDLE)
+         vkDestroySemaphore(vk->context.device,
+               vk->context.swapchain_semaphores[i], NULL);
+      if (vk->context.swapchain_fences[i] != VK_NULL_HANDLE)
+         vkDestroyFence(vk->context.device,
+               vk->context.swapchain_fences[i], NULL);
+   }
+
+   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
+   {
+      cached_device   = vk->context.device;
+      cached_instance = vk->context.instance;
+   }
+   else
+   {
+      if (vk->context.device)
+         vkDestroyDevice(vk->context.device, NULL);
+      if (vk->context.instance)
+         vkDestroyInstance(vk->context.instance, NULL);
+   }
+}
+
+void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
+{
+   unsigned index;
+   VkResult err;
+   VkFence fence;
+   VkFence *next_fence;
+   VkSemaphoreCreateInfo sem_info = 
+   { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+   VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+
+   vkCreateFence(vk->context.device, &info, NULL, &fence);
+
+   err = vk->fpAcquireNextImageKHR(vk->context.device,
+         vk->swapchain, UINT64_MAX,
+         VK_NULL_HANDLE, fence, &vk->context.current_swapchain_index);
+
+   index = vk->context.current_swapchain_index;
+   if (vk->context.swapchain_semaphores[index] == VK_NULL_HANDLE)
+      vkCreateSemaphore(vk->context.device, &sem_info,
+            NULL, &vk->context.swapchain_semaphores[index]);
+
+   vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
+   vkDestroyFence(vk->context.device, fence, NULL);
+
+   next_fence = &vk->context.swapchain_fences[index];
+   if (*next_fence != VK_NULL_HANDLE)
+   {
+      vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
+      vkResetFences(vk->context.device, 1, next_fence);
+   }
+   else
+      vkCreateFence(vk->context.device, &info, NULL, next_fence);
+
+   if (err != VK_SUCCESS)
+   {
+      RARCH_LOG("[Vulkan]: AcquireNextImage failed, invalidating swapchain.\n");
+      vk->context.invalid_swapchain = true;
+   }
+}
+
+bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
+      unsigned width, unsigned height,
+      unsigned swap_interval)
+{
+   unsigned i;
+   uint32_t format_count;
+   uint32_t desired_swapchain_images;
+   VkSurfaceCapabilitiesKHR surface_properties;
+   VkSurfaceFormatKHR formats[256];
+   VkSurfaceFormatKHR format;
+   VkExtent2D swapchain_size;
+   VkSwapchainKHR old_swapchain;
+   VkSurfaceTransformFlagBitsKHR pre_transform;
+   VkPresentModeKHR swapchain_present_mode = swap_interval 
+      ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
+   VkSwapchainCreateInfoKHR info = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
+
+   RARCH_LOG("[Vulkan]: Creating swapchain with present mode: %u\n",
+         (unsigned)swapchain_present_mode);
+
+   vk->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->context.gpu,
+         vk->vk_surface, &surface_properties);
+   vk->fpGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
+         vk->vk_surface, &format_count, NULL);
+   vk->fpGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
+         vk->vk_surface, &format_count, formats);
+
+   if (format_count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
+   {
+      format = formats[0];
+      format.format = VK_FORMAT_B8G8R8A8_UNORM;
+   }
+   else
+   {
+      if (format_count == 0)
+      {
+         RARCH_ERR("[Vulkan]: Surface has no formats.\n");
+         return false;
+      }
+
+      format = formats[0];
+   }
+
+   if (surface_properties.currentExtent.width == -1)
+   {
+      swapchain_size.width     = width;
+      swapchain_size.height    = height;
+   }
+   else
+      swapchain_size           = surface_properties.currentExtent;
+
+   desired_swapchain_images    = surface_properties.minImageCount + 1;
+   if ((surface_properties.maxImageCount > 0) 
+         && (desired_swapchain_images > surface_properties.maxImageCount))
+      desired_swapchain_images = surface_properties.maxImageCount;
+
+   if (surface_properties.supportedTransforms 
+         & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+      pre_transform            = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+   else
+      pre_transform            = surface_properties.currentTransform;
+
+   old_swapchain               = vk->swapchain;
+
+   info.surface                = vk->vk_surface;
+   info.minImageCount          = desired_swapchain_images;
+   info.imageFormat            = format.format;
+   info.imageColorSpace        = format.colorSpace;
+   info.imageExtent.width      = swapchain_size.width;
+   info.imageExtent.height     = swapchain_size.height;
+   info.imageArrayLayers       = 1;
+   info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
+      | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+   info.imageSharingMode       = VK_SHARING_MODE_EXCLUSIVE;
+   info.preTransform           = pre_transform;
+   info.compositeAlpha         = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+   info.presentMode            = swapchain_present_mode;
+   info.clipped                = true;
+   info.oldSwapchain           = old_swapchain;
+
+   vk->fpCreateSwapchainKHR(vk->context.device, &info, NULL, &vk->swapchain);
+   if (old_swapchain != VK_NULL_HANDLE)
+      vk->fpDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+
+   vk->context.swapchain_width  = swapchain_size.width;
+   vk->context.swapchain_height = swapchain_size.height;
+
+   /* Make sure we create a backbuffer format that is as we expect. */
+   switch (format.format)
+   {
+      case VK_FORMAT_B8G8R8A8_SRGB:
+         vk->context.swapchain_format  = VK_FORMAT_B8G8R8A8_UNORM;
+         vk->context.swapchain_is_srgb = true;
+         break;
+
+      case VK_FORMAT_R8G8B8A8_SRGB:
+         vk->context.swapchain_format  = VK_FORMAT_R8G8B8A8_UNORM;
+         vk->context.swapchain_is_srgb = true;
+         break;
+
+      case VK_FORMAT_R8G8B8_SRGB:
+         vk->context.swapchain_format  = VK_FORMAT_R8G8B8_UNORM;
+         vk->context.swapchain_is_srgb = true;
+         break;
+
+      case VK_FORMAT_B8G8R8_SRGB:
+         vk->context.swapchain_format  = VK_FORMAT_B8G8R8_UNORM;
+         vk->context.swapchain_is_srgb = true;
+         break;
+
+      default:
+         vk->context.swapchain_format  = format.format;
+         break;
+   }
+
+   vk->fpGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
+         &vk->context.num_swapchain_images, NULL);
+   vk->fpGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
+         &vk->context.num_swapchain_images, vk->context.swapchain_images);
+
+   for (i = 0; i < vk->context.num_swapchain_images; i++)
+   {
+      if (vk->context.swapchain_fences[i])
+      {
+         vkDestroyFence(vk->context.device,
+               vk->context.swapchain_fences[i], NULL);
+         vk->context.swapchain_fences[i] = VK_NULL_HANDLE;
+      }
+   }
+
+   vulkan_acquire_next_image(vk);
+
+   return true;
+}
