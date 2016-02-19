@@ -66,7 +66,12 @@ typedef struct gfx_ctx_vulkan_data
    PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
    PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
    PFN_vkQueuePresentKHR fpQueuePresentKHR;
+#ifdef ANDROID
+   PFN_vkCreateAndroidSurfaceKHR fpCreateAndroidSurfaceKHR;
+#endif
+#ifdef HAVE_WAYLAND
    PFN_vkCreateWaylandSurfaceKHR fpCreateWaylandSurfaceKHR;
+#endif
    PFN_vkDestroySurfaceKHR fpDestroySurfaceKHR;
 
    VkSurfaceKHR vk_surface;
@@ -584,32 +589,39 @@ static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk,
    vkGetDeviceQueue(vk->context.device,
          vk->context.graphics_queue_index, 0, &vk->context.queue);
 
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, DestroySurfaceKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, CreateSwapchainKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, DestroySwapchainKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, GetSwapchainImagesKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, AcquireNextImageKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, QueuePresentKHR);
+
    switch (type)
    {
       case VULKAN_WSI_WAYLAND:
 #ifdef HAVE_WAYLAND
          VK_GET_INSTANCE_PROC_ADDR(vk,
-               vk->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
-         VK_GET_INSTANCE_PROC_ADDR(vk,
-               vk->context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
-         VK_GET_INSTANCE_PROC_ADDR(vk,
-               vk->context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
-         VK_GET_INSTANCE_PROC_ADDR(vk,
-               vk->context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
-         VK_GET_INSTANCE_PROC_ADDR(vk,
                vk->context.instance, CreateWaylandSurfaceKHR);
+#endif
+         break;
+      case VULKAN_WSI_ANDROID:
+#ifdef ANDROID
          VK_GET_INSTANCE_PROC_ADDR(vk,
-               vk->context.instance, DestroySurfaceKHR);
-         VK_GET_DEVICE_PROC_ADDR(vk,
-               vk->context.device, CreateSwapchainKHR);
-         VK_GET_DEVICE_PROC_ADDR(vk,
-               vk->context.device, DestroySwapchainKHR);
-         VK_GET_DEVICE_PROC_ADDR(vk,
-               vk->context.device, GetSwapchainImagesKHR);
-         VK_GET_DEVICE_PROC_ADDR(vk,
-               vk->context.device, AcquireNextImageKHR);
-         VK_GET_DEVICE_PROC_ADDR(vk,
-               vk->context.device, QueuePresentKHR);
+               vk->context.instance, CreateAndroidSurfaceKHR);
 #endif
          break;
       case VULKAN_WSI_NONE:
@@ -956,8 +968,7 @@ static bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.flags  = 0;
             surf_info.window = (ANativeWindow*)surface;
 
-            /* TODO - should go through function pointer */
-            if (vktsCreateAndroidSurfaceKHR(vk->context.instance,
+            if (vk->fpCreateAndroidSurfaceKHR(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
                return false;
 
