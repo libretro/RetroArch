@@ -355,6 +355,7 @@ fi
 
 check_pkgconf FREETYPE freetype2
 check_pkgconf X11 x11
+check_pkgconf XCB xcb
 [ "$HAVE_X11" = "no" ] && HAVE_XEXT=no && HAVE_XF86VM=no && HAVE_XINERAMA=no && HAVE_XSHM=no
 
 check_pkgconf WAYLAND wayland-egl
