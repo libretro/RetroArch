@@ -482,13 +482,13 @@ static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned i;
    uint32_t queue_count;
-   VkInstanceCreateInfo info = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
-   VkDeviceQueueCreateInfo queue_info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
-   VkDeviceCreateInfo device_info = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
    VkQueueFamilyProperties queue_properties[32];
-   uint32_t gpu_count = 1;
-   bool found_queue = false;
-   static const float one = 1.0f;
+   VkInstanceCreateInfo info          = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
+   VkDeviceQueueCreateInfo queue_info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
+   VkDeviceCreateInfo device_info     = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+   uint32_t gpu_count                 = 1;
+   bool found_queue                   = false;
+   static const float one             = 1.0f;
 
    static const char *instance_extensions[] = {
       "VK_KHR_surface",
@@ -498,23 +498,23 @@ static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk)
    static const char *device_extensions[] = {
       "VK_KHR_swapchain",
    };
-   VkApplicationInfo app = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
+   VkApplicationInfo app             = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
    VkPhysicalDeviceFeatures features = { false };
 
-   app.pApplicationName = "RetroArch";
-   app.applicationVersion = 0;
-   app.pEngineName = "RetroArch";
-   app.engineVersion = 0;
-   app.apiVersion = VK_API_VERSION;
+   app.pApplicationName              = "RetroArch";
+   app.applicationVersion            = 0;
+   app.pEngineName                   = "RetroArch";
+   app.engineVersion                 = 0;
+   app.apiVersion                    = VK_API_VERSION;
 
-   info.pApplicationInfo = &app;
-   info.enabledExtensionCount   = ARRAY_SIZE(instance_extensions);
-   info.ppEnabledExtensionNames = instance_extensions;
+   info.pApplicationInfo             = &app;
+   info.enabledExtensionCount        = ARRAY_SIZE(instance_extensions);
+   info.ppEnabledExtensionNames      = instance_extensions;
 
    if (cached_instance)
    {
-      vk->context.instance = cached_instance;
-      cached_instance         = NULL;
+      vk->context.instance           = cached_instance;
+      cached_instance                = NULL;
    }
    else if (vkCreateInstance(&info, NULL, &vk->context.instance) != VK_SUCCESS)
       return false;
@@ -529,12 +529,18 @@ static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk)
       return false;
    }
 
-   vkGetPhysicalDeviceProperties(vk->context.gpu, &vk->context.gpu_properties);
-   vkGetPhysicalDeviceMemoryProperties(vk->context.gpu, &vk->context.memory_properties);
-   vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu, &queue_count, NULL);
+   vkGetPhysicalDeviceProperties(vk->context.gpu,
+         &vk->context.gpu_properties);
+   vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
+         &vk->context.memory_properties);
+   vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
+         &queue_count, NULL);
+
    if (queue_count < 1 || queue_count > 32)
       return false;
-   vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu, &queue_count, queue_properties);
+
+   vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
+         &queue_count, queue_properties);
 
    for (i = 0; i < queue_count; i++)
    {
