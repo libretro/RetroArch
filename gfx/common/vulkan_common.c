@@ -1168,7 +1168,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       vk->fpDestroySwapchainKHR(vk->context.device,
             vk->swapchain, NULL);
 
-   if (destroy_surface)
+   if (destroy_surface && vk->vk_surface != VK_NULL_HANDLE)
       vk->fpDestroySurfaceKHR(vk->context.instance,
             vk->vk_surface, NULL);
 
