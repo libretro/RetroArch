@@ -50,21 +50,6 @@ static volatile sig_atomic_t g_quit = 0;
 static VkInstance cached_instance;
 static VkDevice cached_device;
 
-#define VK_GET_INSTANCE_PROC_ADDR(vk, inst, entrypoint) do {                               \
-   vk.fp##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint);  \
-   if (vk.fp##entrypoint == NULL) {                                                       \
-      RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);               \
-      goto error;                                                                          \
-   }                                                                                       \
-} while(0)
-
-#define VK_GET_DEVICE_PROC_ADDR(vk, dev, entrypoint) do {                               \
-   vk.fp##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
-   if (vk.fp##entrypoint == NULL) {                                                     \
-      RARCH_ERR("vkGetDeviceProcAddr failed to find vk%s\n", #entrypoint);              \
-      goto error;                                                                       \
-   }                                                                                    \
-} while(0)
 #endif
 
 #ifdef HAVE_VULKAN
@@ -469,15 +454,30 @@ static void gfx_ctx_wl_get_video_size(void *data,
    EGL_DEPTH_SIZE,      0
 #endif
 
-static void *gfx_ctx_wl_init(void *video_driver)
-{
 #ifdef HAVE_VULKAN
+
+#define VK_GET_INSTANCE_PROC_ADDR(vk, inst, entrypoint) do {                               \
+   vk->fp##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
+   if (vk->fp##entrypoint == NULL) {                                                       \
+      RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);               \
+      return false;                                                                        \
+   }                                                                                       \
+} while(0)
+
+#define VK_GET_DEVICE_PROC_ADDR(vk, dev, entrypoint) do {                                \
+   vk->fp##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
+   if (vk->fp##entrypoint == NULL) {                                                     \
+      RARCH_ERR("vkGetDeviceProcAddr failed to find vk%s\n", #entrypoint);               \
+      return false;                                                                      \
+   }                                                                                     \
+} while(0)
+
+static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk)
+{
    unsigned i;
    uint32_t queue_count;
-   VkApplicationInfo app = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
    VkInstanceCreateInfo info = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
    VkDeviceQueueCreateInfo queue_info = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
-   VkPhysicalDeviceFeatures features = { false };
    VkDeviceCreateInfo device_info = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
    VkQueueFamilyProperties queue_properties[32];
    uint32_t gpu_count = 1;
@@ -492,7 +492,119 @@ static void *gfx_ctx_wl_init(void *video_driver)
    static const char *device_extensions[] = {
       "VK_KHR_swapchain",
    };
+   VkApplicationInfo app = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
+   VkPhysicalDeviceFeatures features = { false };
+
+   app.pApplicationName = "RetroArch";
+   app.applicationVersion = 0;
+   app.pEngineName = "RetroArch";
+   app.engineVersion = 0;
+   app.apiVersion = VK_API_VERSION;
+
+   info.pApplicationInfo = &app;
+   info.enabledExtensionCount   = ARRAY_SIZE(instance_extensions);
+   info.ppEnabledExtensionNames = instance_extensions;
+
+   if (cached_instance)
+   {
+      vk->context.instance = cached_instance;
+      cached_instance         = NULL;
+   }
+   else if (vkCreateInstance(&info, NULL, &vk->context.instance) != VK_SUCCESS)
+      return false;
+
+   if (vkEnumeratePhysicalDevices(vk->context.instance,
+            &gpu_count, &vk->context.gpu) != VK_SUCCESS)
+      return false;
+
+   if (gpu_count != 1)
+   {
+      RARCH_ERR("[Wayland/Vulkan]: Failed to enumerate Vulkan physical device.\n");
+      return false;
+   }
+
+   vkGetPhysicalDeviceProperties(vk->context.gpu, &vk->context.gpu_properties);
+   vkGetPhysicalDeviceMemoryProperties(vk->context.gpu, &vk->context.memory_properties);
+   vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu, &queue_count, NULL);
+   if (queue_count < 1 || queue_count > 32)
+      return false;
+   vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu, &queue_count, queue_properties);
+
+   for (i = 0; i < queue_count; i++)
+   {
+      if (queue_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+      {
+         vk->context.graphics_queue_index = i;
+         RARCH_LOG("[Wayland/Vulkan]: Device supports %u sub-queues.\n",
+               queue_properties[i].queueCount);
+         found_queue = true;
+         break;
+      }
+   }
+
+   if (!found_queue)
+   {
+      RARCH_ERR("[Wayland/Vulkan]: Did not find suitable graphics queue.\n");
+      return false;
+   }
+
+   queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
+   queue_info.queueCount               = 1;
+   queue_info.pQueuePriorities         = &one;
+
+   device_info.queueCreateInfoCount    = 1;
+   device_info.pQueueCreateInfos       = &queue_info;
+   device_info.enabledExtensionCount   = ARRAY_SIZE(device_extensions);
+   device_info.ppEnabledExtensionNames = device_extensions;
+   device_info.pEnabledFeatures        = &features;
+
+   if (cached_device)
+   {
+      vk->context.device = cached_device;
+      cached_device = NULL;
+      video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+      RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
+   }
+   else if (vkCreateDevice(vk->context.gpu, &device_info,
+            NULL, &vk->context.device) != VK_SUCCESS)
+      return false;
+
+   vkGetDeviceQueue(vk->context.device,
+         vk->context.graphics_queue_index, 0, &vk->context.queue);
+
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, CreateWaylandSurfaceKHR);
+   VK_GET_INSTANCE_PROC_ADDR(vk,
+         vk->context.instance, DestroySurfaceKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, CreateSwapchainKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, DestroySwapchainKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, GetSwapchainImagesKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, AcquireNextImageKHR);
+   VK_GET_DEVICE_PROC_ADDR(vk,
+         vk->context.device, QueuePresentKHR);
+
+   vk->context.queue_lock = slock_new();
+   if (!vk->context.queue_lock)
+      return false;
+
+   return true;
+}
 #endif
+
+static void *gfx_ctx_wl_init(void *video_driver)
+{
 
 #ifdef HAVE_OPENGL
    static const EGLint egl_attribs_gl[] = {
@@ -634,100 +746,8 @@ static void *gfx_ctx_wl_init(void *video_driver)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         {
-            app.pApplicationName = "RetroArch";
-            app.applicationVersion = 0;
-            app.pEngineName = "RetroArch";
-            app.engineVersion = 0;
-            app.apiVersion = VK_API_VERSION;
-
-            info.pApplicationInfo = &app;
-            info.enabledExtensionCount   = ARRAY_SIZE(instance_extensions);
-            info.ppEnabledExtensionNames = instance_extensions;
-
-            if (cached_instance)
-            {
-               wl->vk.context.instance = cached_instance;
-               cached_instance         = NULL;
-            }
-            else if (vkCreateInstance(&info, NULL, &wl->vk.context.instance) != VK_SUCCESS)
-               goto error;
-
-            if (vkEnumeratePhysicalDevices(wl->vk.context.instance,
-                     &gpu_count, &wl->vk.context.gpu) != VK_SUCCESS)
-               goto error;
-
-            if (gpu_count != 1)
-            {
-               RARCH_ERR("[Wayland/Vulkan]: Failed to enumerate Vulkan physical device.\n");
-               goto error;
-            }
-
-            vkGetPhysicalDeviceProperties(wl->vk.context.gpu, &wl->vk.context.gpu_properties);
-            vkGetPhysicalDeviceMemoryProperties(wl->vk.context.gpu, &wl->vk.context.memory_properties);
-            vkGetPhysicalDeviceQueueFamilyProperties(wl->vk.context.gpu, &queue_count, NULL);
-            if (queue_count < 1 || queue_count > 32)
-               goto error;
-            vkGetPhysicalDeviceQueueFamilyProperties(wl->vk.context.gpu, &queue_count, queue_properties);
-
-            for (i = 0; i < queue_count; i++)
-            {
-               if (queue_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-               {
-                  wl->vk.context.graphics_queue_index = i;
-                  RARCH_LOG("[Wayland/Vulkan]: Device supports %u sub-queues.\n",
-                        queue_properties[i].queueCount);
-                  found_queue = true;
-                  break;
-               }
-            }
-
-            if (!found_queue)
-            {
-               RARCH_ERR("[Wayland/Vulkan]: Did not find suitable graphics queue.\n");
-               goto error;
-            }
-
-            queue_info.queueFamilyIndex = wl->vk.context.graphics_queue_index;
-            queue_info.queueCount = 1;
-            queue_info.pQueuePriorities = &one;
-
-            device_info.queueCreateInfoCount = 1;
-            device_info.pQueueCreateInfos = &queue_info;
-            device_info.enabledExtensionCount = ARRAY_SIZE(device_extensions);
-            device_info.ppEnabledExtensionNames = device_extensions;
-            device_info.pEnabledFeatures = &features;
-
-            if (cached_device)
-            {
-               wl->vk.context.device = cached_device;
-               cached_device = NULL;
-               video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
-               RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
-            }
-            else if (vkCreateDevice(wl->vk.context.gpu, &device_info,
-                     NULL, &wl->vk.context.device) != VK_SUCCESS)
-               goto error;
-
-            vkGetDeviceQueue(wl->vk.context.device,
-                  wl->vk.context.graphics_queue_index, 0, &wl->vk.context.queue);
-
-            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, GetPhysicalDeviceSurfaceSupportKHR);
-            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
-            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
-            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
-            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, CreateWaylandSurfaceKHR);
-            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, DestroySurfaceKHR);
-            VK_GET_DEVICE_PROC_ADDR(wl->vk, wl->vk.context.device, CreateSwapchainKHR);
-            VK_GET_DEVICE_PROC_ADDR(wl->vk, wl->vk.context.device, DestroySwapchainKHR);
-            VK_GET_DEVICE_PROC_ADDR(wl->vk, wl->vk.context.device, GetSwapchainImagesKHR);
-            VK_GET_DEVICE_PROC_ADDR(wl->vk, wl->vk.context.device, AcquireNextImageKHR);
-            VK_GET_DEVICE_PROC_ADDR(wl->vk, wl->vk.context.device, QueuePresentKHR);
-
-            wl->vk.context.queue_lock = slock_new();
-            if (!wl->vk.context.queue_lock)
-               goto error;
-         }
+         if (!vulkan_init_context(&wl->vk))
+            goto error;
 #endif
          break;
       case GFX_CTX_NONE:
