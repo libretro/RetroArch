@@ -67,12 +67,6 @@ typedef struct vulkan_context
    bool swapchain_is_srgb;
 } vulkan_context_t;
 
-struct vk_draw_uniform
-{
-   math_matrix_4x4 mvp;
-   float texsize[4];
-};
-
 struct vk_color
 {
    float r, g, b, a;
@@ -308,6 +302,7 @@ typedef struct vk
       VkPipeline pipeline;
       VkImageView view;
       VkSampler sampler;
+      math_matrix_4x4 mvp;
       uint64_t dirty;
    } tracker;
 

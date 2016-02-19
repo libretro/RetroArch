@@ -152,28 +152,28 @@ static void vulkan_init_pipeline_layout(vk_t *vk)
 {
    VkDescriptorSetLayoutCreateInfo set_layout_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
    VkPipelineLayoutCreateInfo layout_info = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-   VkDescriptorSetLayoutBinding binding = {0};
-   VkPushConstantRange push_range = {0};
+   VkDescriptorSetLayoutBinding bindings[2] = {{0}};
 
-   binding.binding = 0;
-   binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-   binding.descriptorCount = 1;
-   binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-   binding.pImmutableSamplers = NULL;
+   bindings[0].binding = 0;
+   bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   bindings[0].descriptorCount = 1;
+   bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+   bindings[0].pImmutableSamplers = NULL;
 
-   set_layout_info.bindingCount = 1;
-   set_layout_info.pBindings = &binding;
+   bindings[1].binding = 1;
+   bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+   bindings[1].descriptorCount = 1;
+   bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+   bindings[1].pImmutableSamplers = NULL;
+
+   set_layout_info.bindingCount = 2;
+   set_layout_info.pBindings = bindings;
 
    vkCreateDescriptorSetLayout(vk->context->device, &set_layout_info, NULL, &vk->pipelines.set_layout);
 
    layout_info.setLayoutCount = 1;
    layout_info.pSetLayouts = &vk->pipelines.set_layout;
-   layout_info.pushConstantRangeCount = 1;
-   layout_info.pPushConstantRanges = &push_range;
 
-   push_range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-   push_range.offset = 0;
-   push_range.size = sizeof(struct vk_draw_uniform);
    vkCreatePipelineLayout(vk->context->device, &layout_info, NULL, &vk->pipelines.layout);
 }
 
@@ -396,14 +396,15 @@ static void vulkan_init_descriptor_pool(vk_t *vk)
 {
    unsigned i;
    VkDescriptorPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-   static const VkDescriptorPoolSize pool_sizes[1] = {
+   static const VkDescriptorPoolSize pool_sizes[2] = {
+      { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
       { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
    };
 
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
       vk->swapchain[i].descriptor_manager = vulkan_create_descriptor_manager(vk->context->device,
-            pool_sizes, 1, vk->pipelines.set_layout);
+            pool_sizes, 2, vk->pipelines.set_layout);
    }
 }
 
