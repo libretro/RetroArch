@@ -50,20 +50,20 @@ static volatile sig_atomic_t g_quit = 0;
 static VkInstance cached_instance;
 static VkDevice cached_device;
 
-#define GET_INSTANCE_PROC_ADDR(inst, entrypoint) do {                                      \
-   wl->vk.fp##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
-   if (wl->vk.fp##entrypoint == NULL) {                                                       \
+#define VK_GET_INSTANCE_PROC_ADDR(vk, inst, entrypoint) do {                               \
+   vk.fp##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint);  \
+   if (vk.fp##entrypoint == NULL) {                                                       \
       RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);               \
       goto error;                                                                          \
    }                                                                                       \
 } while(0)
 
-#define GET_DEVICE_PROC_ADDR(dev, entrypoint) do {                                       \
-   wl->vk.fp##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
-   if (wl->vk.fp##entrypoint == NULL) {                                                     \
-      RARCH_ERR("vkGetDeviceProcAddr failed to find vk%s\n", #entrypoint);               \
-      goto error;                                                                        \
-   }                                                                                     \
+#define VK_GET_DEVICE_PROC_ADDR(vk, dev, entrypoint) do {                               \
+   vk.fp##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
+   if (vk.fp##entrypoint == NULL) {                                                     \
+      RARCH_ERR("vkGetDeviceProcAddr failed to find vk%s\n", #entrypoint);              \
+      goto error;                                                                       \
+   }                                                                                    \
 } while(0)
 #endif
 
@@ -642,13 +642,13 @@ static void *gfx_ctx_wl_init(void *video_driver)
             app.apiVersion = VK_API_VERSION;
 
             info.pApplicationInfo = &app;
-            info.enabledExtensionCount = ARRAY_SIZE(instance_extensions);
+            info.enabledExtensionCount   = ARRAY_SIZE(instance_extensions);
             info.ppEnabledExtensionNames = instance_extensions;
 
             if (cached_instance)
             {
                wl->vk.context.instance = cached_instance;
-               cached_instance = NULL;
+               cached_instance         = NULL;
             }
             else if (vkCreateInstance(&info, NULL, &wl->vk.context.instance) != VK_SUCCESS)
                goto error;
@@ -712,17 +712,17 @@ static void *gfx_ctx_wl_init(void *video_driver)
             vkGetDeviceQueue(wl->vk.context.device,
                   wl->vk.context.graphics_queue_index, 0, &wl->vk.context.queue);
 
-            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, GetPhysicalDeviceSurfaceSupportKHR);
-            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
-            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
-            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
-            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, CreateWaylandSurfaceKHR);
-            GET_INSTANCE_PROC_ADDR(wl->vk.context.instance, DestroySurfaceKHR);
-            GET_DEVICE_PROC_ADDR(wl->vk.context.device, CreateSwapchainKHR);
-            GET_DEVICE_PROC_ADDR(wl->vk.context.device, DestroySwapchainKHR);
-            GET_DEVICE_PROC_ADDR(wl->vk.context.device, GetSwapchainImagesKHR);
-            GET_DEVICE_PROC_ADDR(wl->vk.context.device, AcquireNextImageKHR);
-            GET_DEVICE_PROC_ADDR(wl->vk.context.device, QueuePresentKHR);
+            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, GetPhysicalDeviceSurfaceSupportKHR);
+            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
+            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
+            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
+            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, CreateWaylandSurfaceKHR);
+            VK_GET_INSTANCE_PROC_ADDR(wl->vk, wl->vk.context.instance, DestroySurfaceKHR);
+            VK_GET_DEVICE_PROC_ADDR(wl->vk, wl->vk.context.device, CreateSwapchainKHR);
+            VK_GET_DEVICE_PROC_ADDR(wl->vk, wl->vk.context.device, DestroySwapchainKHR);
+            VK_GET_DEVICE_PROC_ADDR(wl->vk, wl->vk.context.device, GetSwapchainImagesKHR);
+            VK_GET_DEVICE_PROC_ADDR(wl->vk, wl->vk.context.device, AcquireNextImageKHR);
+            VK_GET_DEVICE_PROC_ADDR(wl->vk, wl->vk.context.device, QueuePresentKHR);
 
             wl->vk.context.queue_lock = slock_new();
             if (!wl->vk.context.queue_lock)
