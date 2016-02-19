@@ -66,6 +66,12 @@ typedef struct gfx_ctx_vulkan_data
 #ifdef _WIN32
    PFN_vkCreateWin32SurfaceKHR fpCreateWin32SurfaceKHR;
 #endif
+#ifdef HAVE_XCB
+   PFN_vkCreateXcbSurfaceKHR fpCreateXcbSurfaceKHR;
+#endif
+#ifdef HAVE_XLIB
+   PFN_vkCreateXlibSurfaceKHR fpCreateXlibSurfaceKHR;
+#endif
 #ifdef ANDROID
    PFN_vkCreateAndroidSurfaceKHR fpCreateAndroidSurfaceKHR;
 #endif
@@ -800,6 +806,18 @@ static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk,
                vk->context.instance, CreateWin32SurfaceKHR);
 #endif
          break;
+      case VULKAN_WSI_XLIB:
+#ifdef HAVE_XLIB
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, CreateXlibSurfaceKHR);
+#endif
+         break;
+      case VULKAN_WSI_XCB:
+#ifdef HAVE_XCB
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, CreateXcbSurfaceKHR);
+#endif
+         break;
       case VULKAN_WSI_NONE:
       default:
          break;
@@ -1158,6 +1176,44 @@ static bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 
             if (vk->fpCreateWin32SurfaceKHR(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+               return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_XLIB:
+#ifdef HAVE_XLIB
+         {
+            VkXlibSurfaceCreateInfoKHR surf_info;
+
+            memset(&surf_info, 0, sizeof(VkXlibSurfaceCreateInfoKHR));
+
+            surf_info.sType  = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+            surf_info.flags  = 0;
+            surf_info.dpy    = display;
+            surf_info.window = surface;
+
+            if (vktsCreateXlibSurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) 
+                  != VK_SUCCESS)
+               return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_XCB:
+#ifdef HAVE_XCB
+         {
+            VkXcbSurfaceCreateInfoKHR surf_info;
+
+            memset(&surf_info, 0, sizeof(VkXcbSurfaceCreateInfoKHR));
+
+            surf_info.sType      = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
+            surf_info.flags      = 0;
+            surf_info.connection = XGetXCBConnection(display);
+            surf_info.window     = (xcb_window_t)surface;
+
+            if (vktsCreateXcbSurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) 
+                  != VK_SUCCESS)
                return false;
          }
 #endif
