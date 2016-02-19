@@ -130,15 +130,7 @@ VIDEO CONTEXT
 #endif
 
 #ifdef HAVE_WAYLAND
-
-#ifdef HAVE_EGL
 #include "../gfx/drivers_context/wayland_ctx.c"
-#endif
-
-#ifdef HAVE_VULKAN
-#include "../gfx/drivers_context/wayland_ctx_vulkan.c"
-#endif
-
 #endif
 
 #ifdef HAVE_DRM

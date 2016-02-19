@@ -18,13 +18,7 @@
 #include "../../config.h"
 #endif
 
-#if 0
 #ifdef HAVE_VULKAN
-#define HAVE_VULKAN_SUPPORT
-#endif
-#endif
-
-#ifdef HAVE_VULKAN_SUPPORT
 #define VK_USE_PLATFORM_WAYLAND_KHR
 #include "../common/vulkan_common.h"
 #endif
@@ -52,7 +46,7 @@
 
 static volatile sig_atomic_t g_quit = 0;
 
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
 static VkInstance cached_instance;
 static VkDevice cached_device;
 
@@ -97,7 +91,7 @@ typedef struct gfx_ctx_wayland_data
 
    unsigned buffer_scale;
 
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
    struct vulkan_context context;
 
    PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
@@ -117,7 +111,7 @@ typedef struct gfx_ctx_wayland_data
 #endif
 } gfx_ctx_wayland_data_t;
 
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
 /* Forward declaration */
 static bool vulkan_create_swapchain(gfx_ctx_wayland_data_t *wl);
 #endif
@@ -256,7 +250,7 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 #endif
          break;
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
          if (wl->context.queue)
             vkQueueWaitIdle(wl->context.queue);
          if (wl->swapchain)
@@ -368,7 +362,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
    switch (wl_api)
    {
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
          /* Swapchains are recreated in set_resize as a 
           * central place, so use that to trigger swapchain reinit. */
          *resize = wl->need_new_swapchain;
@@ -403,7 +397,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 #endif
          break;
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
          wl->width  = width;
          wl->height = height;
 
@@ -465,7 +459,7 @@ static void gfx_ctx_wl_get_video_size(void *data,
 
 static void *gfx_ctx_wl_init(void *video_driver)
 {
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
    unsigned i;
    uint32_t queue_count;
    VkApplicationInfo app = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
@@ -627,7 +621,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
 #endif
          break;
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
          {
             app.pApplicationName = "RetroArch";
             app.applicationVersion = 0;
@@ -818,7 +812,7 @@ static void gfx_ctx_wl_destroy(void *data)
    switch (wl_api)
    {
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
          if (wl->context.queue_lock)
             slock_free(wl->context.queue_lock);
 #endif
@@ -845,7 +839,7 @@ static void gfx_ctx_wl_set_swap_interval(void *data, unsigned swap_interval)
 #endif
          break;
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
          if (wl->swap_interval != swap_interval)
          {
             wl->swap_interval = swap_interval;
@@ -931,7 +925,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    switch (wl_api)
    {
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
          {
             VkWaylandSurfaceCreateInfoKHR wl_info = 
             { VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR };
@@ -1031,7 +1025,7 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
          break;
 #endif
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
          wl_api = api;
          return true;
 #else
@@ -1188,7 +1182,7 @@ static const struct wl_seat_listener seat_listener = {
 };
 
 
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
 static void *gfx_ctx_wl_get_context_data(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
@@ -1394,7 +1388,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 #endif
          break;
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
          vulkan_present(wl, wl->context.current_swapchain_index);
          vulkan_acquire_next_image(wl);
          flush_wayland_fd(wl);
@@ -1468,7 +1462,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL,
    "wayland",
    gfx_ctx_wl_bind_hw_render,
-#ifdef HAVE_VULKAN_SUPPORT
+#ifdef HAVE_VULKAN
    gfx_ctx_wl_get_context_data
 #else
    NULL
