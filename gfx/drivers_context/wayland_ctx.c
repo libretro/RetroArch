@@ -66,6 +66,9 @@ typedef struct gfx_ctx_vulkan_data
    PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
    PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
    PFN_vkQueuePresentKHR fpQueuePresentKHR;
+#ifdef _WIN32
+   PFN_vkCreateWin32SurfaceKHR fpCreateWin32SurfaceKHR;
+#endif
 #ifdef ANDROID
    PFN_vkCreateAndroidSurfaceKHR fpCreateAndroidSurfaceKHR;
 #endif
@@ -624,6 +627,12 @@ static bool vulkan_init_context(gfx_ctx_vulkan_data_t *vk,
                vk->context.instance, CreateAndroidSurfaceKHR);
 #endif
          break;
+      case VULKAN_WSI_WIN32:
+#ifdef _WIN32
+         VK_GET_INSTANCE_PROC_ADDR(vk,
+               vk->context.instance, CreateWin32SurfaceKHR);
+#endif
+         break;
       case VULKAN_WSI_NONE:
       default:
          break;
@@ -977,6 +986,29 @@ static bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
                return false;
          }
          return true;
+#else
+         break;
+#endif
+      case VULKAN_WSI_WIN32:
+#ifdef _WIN32
+         {
+            VkWin32SurfaceCreateInfoKHR surf_info;
+
+            memset(&surf_info, 0, sizeof(VkWin32SurfaceCreateInfoKHR));
+
+            surf_info.sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+            surf_info.flags     = 0;
+            surf_info.hinstance = display;
+            surf_info.hwnd      = surface;
+
+            if (vk->fpCreateWin32SurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+               return false;
+
+            if (!vulkan_create_swapchain(
+                     vk, width, height, swap_interval))
+               return false;
+         }
 #else
          break;
 #endif
