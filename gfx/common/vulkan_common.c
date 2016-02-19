@@ -1075,8 +1075,8 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 
             surf_info.sType  = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
             surf_info.flags  = 0;
-            surf_info.dpy    = display;
-            surf_info.window = surface;
+            surf_info.dpy    = *(const Display*)display;
+            surf_info.window = *(const Window*)surface;
 
             if (vk->fpCreateXlibSurfaceKHR(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 
@@ -1094,8 +1094,8 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 
             surf_info.sType      = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
             surf_info.flags      = 0;
-            surf_info.connection = XGetXCBConnection(display);
-            surf_info.window     = surface;
+            surf_info.connection = XGetXCBConnection((Display*)display);
+            surf_info.window     = *(const xcb_window_t*)surface;
 
             if (vk->fpCreateXcbSurfaceKHR(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 
