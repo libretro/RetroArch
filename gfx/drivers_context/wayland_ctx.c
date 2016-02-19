@@ -900,6 +900,49 @@ static void gfx_ctx_wl_set_swap_interval(void *data, unsigned swap_interval)
    }
 }
 
+#ifdef HAVE_VULKAN
+static bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
+      enum vulkan_wsi_type type,
+      void *display, void *surface,
+      unsigned width, unsigned height,
+      unsigned swap_interval)
+{
+   switch (type)
+   {
+      case VULKAN_WSI_WAYLAND:
+#ifdef HAVE_WAYLAND
+         {
+            VkWaylandSurfaceCreateInfoKHR wl_info; 
+
+            memset(&wl_info, 0, sizeof(VkWaylandSurfaceCreateInfoKHR));
+
+            wl_info.sType   = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+            wl_info.pNext   = NULL;
+            wl_info.flags   = 0;
+            wl_info.display = (struct wl_display*)display;
+            wl_info.surface = (struct wl_surface*)surface;
+
+            vk->fpCreateWaylandSurfaceKHR(vk->context.instance,
+                  &wl_info, NULL, &vk->vk_surface);
+
+            if (!vulkan_create_swapchain(
+                     vk, width, height, swap_interval))
+               return false;
+         }
+
+         return true;
+#else
+         break;
+#endif
+      case VULKAN_WSI_NONE:
+      default:
+         break;
+   }
+
+   return false;
+}
+#endif
+
 static bool gfx_ctx_wl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
@@ -974,24 +1017,10 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
          wl_display_roundtrip(wl->dpy);
 
 #ifdef HAVE_VULKAN
-         {
-            VkWaylandSurfaceCreateInfoKHR wl_info; 
-
-            memset(&wl_info, 0, sizeof(VkWaylandSurfaceCreateInfoKHR));
-
-            wl_info.sType   = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
-            wl_info.pNext   = NULL;
-            wl_info.flags   = 0;
-            wl_info.display = (struct wl_display*)wl->dpy;
-            wl_info.surface = (struct wl_surface*)wl->surface;
-
-            wl->vk.fpCreateWaylandSurfaceKHR(wl->vk.context.instance,
-                  &wl_info, NULL, &wl->vk.vk_surface);
-
-            if (!vulkan_create_swapchain(
-                     &wl->vk, wl->width, wl->height, wl->swap_interval))
-               goto error;
-         }
+         if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
+                  wl->dpy, wl->surface, 
+                  wl->width, wl->height, wl->swap_interval))
+            goto error;
 #endif
          break;
       case GFX_CTX_NONE:
