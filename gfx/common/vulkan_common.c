@@ -13,6 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_XCB
+#include <X11/Xlib-xcb.h>
+#endif
+
 #include <retro_assert.h>
 
 #include "vulkan_common.h"
@@ -1087,7 +1095,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.sType      = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
             surf_info.flags      = 0;
             surf_info.connection = XGetXCBConnection(display);
-            surf_info.window     = (xcb_window_t)surface;
+            surf_info.window     = surface;
 
             if (vk->fpCreateXcbSurfaceKHR(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 

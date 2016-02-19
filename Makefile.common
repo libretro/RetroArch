@@ -513,6 +513,11 @@ ifeq ($(HAVE_X11), 1)
    DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
 endif
 
+ifeq ($(HAVE_XCB),1)
+	DEFINES += $(XCB_CFLAGS)
+	LIBS    += $(XCB_LIBS) -lX11-xcb
+endif
+
 ifeq ($(HAVE_XKBCOMMON), 1)
    DEFINES += $(XKBCOMMON_CFLAGS)
    OBJ += input/drivers_keyboard/keyboard_event_xkb.o
