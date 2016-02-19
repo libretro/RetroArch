@@ -912,24 +912,48 @@ static bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       case VULKAN_WSI_WAYLAND:
 #ifdef HAVE_WAYLAND
          {
-            VkWaylandSurfaceCreateInfoKHR wl_info; 
+            VkWaylandSurfaceCreateInfoKHR surf_info; 
 
-            memset(&wl_info, 0, sizeof(VkWaylandSurfaceCreateInfoKHR));
+            memset(&surf_info, 0, sizeof(VkWaylandSurfaceCreateInfoKHR));
 
-            wl_info.sType   = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
-            wl_info.pNext   = NULL;
-            wl_info.flags   = 0;
-            wl_info.display = (struct wl_display*)display;
-            wl_info.surface = (struct wl_surface*)surface;
+            surf_info.sType   = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+            surf_info.pNext   = NULL;
+            surf_info.flags   = 0;
+            surf_info.display = (struct wl_display*)display;
+            surf_info.surface = (struct wl_surface*)surface;
 
             vk->fpCreateWaylandSurfaceKHR(vk->context.instance,
-                  &wl_info, NULL, &vk->vk_surface);
+                  &surf_info, NULL, &vk->vk_surface);
 
             if (!vulkan_create_swapchain(
                      vk, width, height, swap_interval))
                return false;
          }
 
+         return true;
+#else
+         break;
+#endif
+      case VULKAN_WSI_ANDROID:
+#ifdef ANDROID
+         {
+            VkAndroidSurfaceCreateInfoKHR surf_info;
+
+            memset(&surf_info, 0, sizeof(VkWaylandSurfaceCreateInfoKHR));
+
+            surf_info.sType  = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+            surf_info.flags  = 0;
+            surf_info.window = (ANativeWindow*)surface;
+
+            /* TODO - should go through function pointer */
+            if (vktsCreateAndroidSurfaceKHR(vk->context.instance,
+                     &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+               return false;
+
+            if (!vulkan_create_swapchain(
+                     vk, width, height, swap_interval))
+               return false;
+         }
          return true;
 #else
          break;
