@@ -102,6 +102,13 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
                   x->g_hw_ctx = NULL;
                }
             }
+            
+            if (g_x11_win)
+            {
+               if (x->g_glx_win)
+                  glXDestroyWindow(g_x11_dpy, x->g_glx_win);
+               x->g_glx_win = 0;
+            }
 #endif
             break;
 
@@ -119,12 +126,6 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 
    if (g_x11_win)
    {
-#ifdef HAVE_OPENGL
-      if (x->g_glx_win)
-         glXDestroyWindow(g_x11_dpy, x->g_glx_win);
-      x->g_glx_win = 0;
-#endif
-
       /* Save last used monitor for later. */
       x11_save_last_used_monitor(DefaultRootWindow(g_x11_dpy));
       x11_window_destroy(false);
