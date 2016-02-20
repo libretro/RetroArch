@@ -400,11 +400,11 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
 		HAVE_XMB=no
       HAVE_ZARCH=no
 		echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will be disabled."
-	elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_GLES" = 'no' ]; then
+	elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_GLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
 		HAVE_MATERIALUI=no
 		HAVE_XMB=no
       HAVE_ZARCH=no
-		echo "Notice: GL/GLES not available, XMB, MaterialUI and ZARCH will be disabled."
+		echo "Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will be disabled."
 	fi
 fi
 

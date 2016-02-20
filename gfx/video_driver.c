@@ -261,8 +261,10 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
          return true;
       default:
-         return false;
+         break;
    }
+
+   return false;
 }
 #endif
 

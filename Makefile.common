@@ -481,14 +481,13 @@ ifeq ($(HAVE_COMMAND), 1)
    OBJ += command.o
 endif
 
-
-#Input
-
 ifeq ($(HAVE_WAYLAND), 1)
- #OBJ += input/drivers/wayland.o
+ OBJ += gfx/drivers_context/wayland_ctx.o
  DEFINES += $(WAYLAND_CFLAGS)
  LIBS += $(WAYLAND_LIBS)
 endif
+
+#Input
 
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
@@ -513,6 +512,9 @@ ifeq ($(HAVE_X11), 1)
    DEFINES += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
 ifeq ($(HAVE_XCB),1)
 	LIBS    += -lX11-xcb
+endif
+ifneq ($(HAVE_GLES), 1)
+	OBJ += gfx/drivers_context/x_ctx.o
 endif
 endif
 
@@ -630,14 +632,8 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
          DEFINES += $(EGL_CFLAGS)
          LIBS += $(EGL_LIBS)
       endif
-      ifneq ($(HAVE_GLES), 1)
-         OBJ += gfx/drivers_context/x_ctx.o
-      endif
    endif
 
-   ifeq ($(HAVE_WAYLAND), 1)
-	OBJ += gfx/drivers_context/wayland_ctx.o
-   endif
 
    ifeq ($(HAVE_GLES), 1)
       LIBS += $(GLES_LIBS)

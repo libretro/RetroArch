@@ -17,7 +17,9 @@
 #include <stdint.h>
 #include <signal.h>
 
+#ifdef HAVE_OPENGL
 #include <GL/glx.h>
+#endif
 
 #include "../../driver.h"
 
@@ -30,7 +32,9 @@
 
 static int (*g_pglSwapInterval)(int);
 static int (*g_pglSwapIntervalSGI)(int);
+#ifdef HAVE_OPENGL
 static void (*g_pglSwapIntervalEXT)(Display*, GLXDrawable, int);
+#endif
 
 typedef struct gfx_ctx_x_data
 {
@@ -41,13 +45,13 @@ typedef struct gfx_ctx_x_data
    bool g_should_reset_mode;
    bool g_is_double;
 
+#ifdef HAVE_OPENGL
    GLXWindow g_glx_win;
-
-   unsigned g_interval;
-
    GLXContext g_ctx, g_hw_ctx;
    GLXFBConfig g_fbc;
+#endif
 
+   unsigned g_interval;
    XF86VidModeModeInfo g_desktop_mode;
 
 #ifdef HAVE_VULKAN
@@ -59,9 +63,11 @@ static unsigned g_major;
 static unsigned g_minor;
 static enum gfx_ctx_api g_api;
 
+#ifdef HAVE_OPENGL
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
+#endif
 
-static int glx_nul_handler(Display *dpy, XErrorEvent *event)
+static int x_nul_handler(Display *dpy, XErrorEvent *event)
 {
    (void)dpy;
    (void)event;
@@ -81,6 +87,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
       {
          case GFX_CTX_OPENGL_API:
          case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGL
             if (x->g_ctx)
             {
                glFinish();
@@ -95,6 +102,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
                   x->g_hw_ctx = NULL;
                }
             }
+#endif
             break;
 
          case GFX_CTX_VULKAN_API:
@@ -111,9 +119,11 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 
    if (g_x11_win)
    {
+#ifdef HAVE_OPENGL
       if (x->g_glx_win)
          glXDestroyWindow(g_x11_dpy, x->g_glx_win);
       x->g_glx_win = 0;
+#endif
 
       /* Save last used monitor for later. */
       x11_save_last_used_monitor(DefaultRootWindow(g_x11_dpy));
@@ -135,11 +145,14 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
       g_x11_dpy = NULL;
    }
 
-   g_pglSwapInterval = NULL;
+   g_pglSwapInterval    = NULL;
    g_pglSwapIntervalSGI = NULL;
+#ifdef HAVE_OPENGL
    g_pglSwapIntervalEXT = NULL;
-   g_major = g_minor = 0;
-   x->g_core_es = false;
+#endif
+   g_major              = 0;
+   g_minor              = 0;
+   x->g_core_es         = false;
 }
 
 static void gfx_ctx_x_destroy(void *data)
@@ -174,6 +187,7 @@ static void gfx_ctx_x_swap_interval(void *data, unsigned interval)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGL
          x->g_interval = interval;
 
          if (g_pglSwapIntervalEXT)
@@ -193,6 +207,7 @@ static void gfx_ctx_x_swap_interval(void *data, unsigned interval)
             if (g_pglSwapIntervalSGI(x->g_interval) != 0)
                RARCH_WARN("[GLX]: glXSwapIntervalSGI() failed.\n");
          }
+#endif
          break;
 
       case GFX_CTX_VULKAN_API:
@@ -220,8 +235,10 @@ static void gfx_ctx_x_swap_buffers(void *data)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGL
          if (x->g_is_double)
             glXSwapBuffers(g_x11_dpy, x->g_glx_win);
+#endif
          break;
 
       case GFX_CTX_VULKAN_API:
@@ -295,6 +312,8 @@ static bool gfx_ctx_x_set_resize(void *data,
 
 static void *gfx_ctx_x_init(void *data)
 {
+   int nelements, major, minor;
+#ifdef HAVE_OPENGL
    static const int visual_attribs[] = {
       GLX_X_RENDERABLE     , True,
       GLX_DRAWABLE_TYPE    , GLX_WINDOW_BIT,
@@ -308,8 +327,8 @@ static void *gfx_ctx_x_init(void *data)
       GLX_STENCIL_SIZE     , 0,
       None
    };
-   int nelements, major, minor;
    GLXFBConfig *fbcs       = NULL;
+#endif
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)
       calloc(1, sizeof(gfx_ctx_x_data_t));
 #ifndef GL_DEBUG
@@ -325,16 +344,18 @@ static void *gfx_ctx_x_init(void *data)
    if (!x11_connect())
       goto error;
 
-   glXQueryVersion(g_x11_dpy, &major, &minor);
-
-   /* GLX 1.3+ minimum required. */
-   if ((major * 1000 + minor) < 1003)
-      goto error;
 
    switch (g_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGL
+         glXQueryVersion(g_x11_dpy, &major, &minor);
+
+         /* GLX 1.3+ minimum required. */
+         if ((major * 1000 + minor) < 1003)
+            goto error;
+
          glx_create_context_attribs = (PFNGLXCREATECONTEXTATTRIBSARBPROC)
             glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
 
@@ -370,7 +391,8 @@ static void *gfx_ctx_x_init(void *data)
 
          x->g_fbc = fbcs[0];
          XFree(fbcs);
-
+#endif
+         break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
          /* Use XCB WSI since it's the most supported WSI over legacy Xlib. */
@@ -421,9 +443,11 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGL
          vi = glXGetVisualFromFBConfig(g_x11_dpy, x->g_fbc);
          if (!vi)
             goto error;
+#endif
          break;
 
       case GFX_CTX_NONE:
@@ -495,7 +519,9 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGL
          x->g_glx_win = glXCreateWindow(g_x11_dpy, x->g_fbc, g_x11_win, 0);
+#endif
          break;
 
       case GFX_CTX_NONE:
@@ -545,6 +571,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGL
          if (!x->g_ctx)
          {
             if (x->g_core_es || x->g_debug)
@@ -621,6 +648,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
          glXMakeContextCurrent(g_x11_dpy,
                x->g_glx_win, x->g_glx_win, x->g_ctx);
+#endif
          break;
 
       case GFX_CTX_VULKAN_API:
@@ -653,6 +681,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGL
          glXGetConfig(g_x11_dpy, vi, GLX_DOUBLEBUFFER, &val);
          x->g_is_double = val;
 
@@ -681,6 +710,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          }
          else
             RARCH_WARN("[GLX]: Context is not double buffered!.\n");
+#endif
          break;
 
       case GFX_CTX_NONE:
@@ -692,7 +722,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    /* This can blow up on some drivers. 
     * It's not fatal, so override errors for this call. */
-   old_handler = XSetErrorHandler(glx_nul_handler);
+   old_handler = XSetErrorHandler(x_nul_handler);
    XSetInputFocus(g_x11_dpy, g_x11_win, RevertToNone, CurrentTime);
    XSync(g_x11_dpy, False);
    XSetErrorHandler(old_handler);
@@ -750,8 +780,11 @@ static gfx_ctx_proc_t gfx_ctx_x_get_proc_address(const char *symbol)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGL
          return glXGetProcAddress((const GLubyte*)symbol);
-
+#else
+         break;
+#endif
       case GFX_CTX_NONE:
       default:
          break;
@@ -812,11 +845,13 @@ static void gfx_ctx_x_bind_hw_render(void *data, bool enable)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGL
          x->g_use_hw_ctx = enable;
          if (!g_x11_dpy || !x->g_glx_win)
             return;
          glXMakeContextCurrent(g_x11_dpy, x->g_glx_win,
                x->g_glx_win, enable ? x->g_hw_ctx : x->g_ctx);
+#endif
          break;
 
       case GFX_CTX_NONE:

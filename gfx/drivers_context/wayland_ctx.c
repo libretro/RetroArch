@@ -213,7 +213,9 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       wl_display_disconnect(wl->dpy);
    }
 
+#ifdef HAVE_EGL
    wl->win        = NULL;
+#endif
    wl->shell      = NULL;
    wl->compositor = NULL;
    wl->registry   = NULL;
@@ -415,6 +417,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
 
    (void)video_driver;
 
+#ifdef HAVE_EGL
    switch (wl->egl.api)
    {
       case GFX_CTX_OPENGL_API:
@@ -443,6 +446,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
       default:
          break;
    }
+#endif
 
    g_quit = 0;
 
@@ -777,9 +781,11 @@ static bool gfx_ctx_wl_has_windowed(void *data)
 static bool gfx_ctx_wl_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
+#ifdef HAVE_EGL
    g_egl_major = major;
    g_egl_minor = minor;
    g_egl_api   = api;
+#endif
 
    switch (api)
    {
