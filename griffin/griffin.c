@@ -160,7 +160,7 @@ VIDEO CONTEXT
 #include "../gfx/common/x11_common.c"
 
 #ifndef HAVE_OPENGLES
-#include "../gfx/drivers_context/glx_ctx.c"
+#include "../gfx/drivers_context/x_ctx.c"
 #endif
 
 #ifdef HAVE_EGL

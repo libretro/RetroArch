@@ -631,7 +631,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
          LIBS += $(EGL_LIBS)
       endif
       ifneq ($(HAVE_GLES), 1)
-         OBJ += gfx/drivers_context/glx_ctx.o
+         OBJ += gfx/drivers_context/x_ctx.o
       endif
    endif
 
