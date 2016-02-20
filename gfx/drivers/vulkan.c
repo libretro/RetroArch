@@ -1168,32 +1168,29 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
 
 static void vulkan_readback(vk_t *vk)
 {
-   VkImageBlit blit;
+   VkImageCopy region;
    struct vk_texture *staging;
 
-   /* FIXME: Is this inclusive or exclusive range? */
-   memset(&blit, 0, sizeof(blit));
-   blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   blit.srcSubresource.layerCount = 1;
-   blit.dstSubresource = blit.srcSubresource;
-   blit.srcOffsets[0].x = vk->vp.x;
-   blit.srcOffsets[0].y = vk->vp.y;
-   blit.srcOffsets[0].z = 0;
-   blit.srcOffsets[1].x = vk->vp.x + vk->vp.width;
-   blit.srcOffsets[1].y = vk->vp.y + vk->vp.height;
-   blit.srcOffsets[1].z = 1;
-   blit.dstOffsets[0].x = 0;
-   blit.dstOffsets[0].y = 0;
-   blit.dstOffsets[0].z = 0;
-   blit.dstOffsets[1].x = vk->vp.width;
-   blit.dstOffsets[1].y = vk->vp.height;
-   blit.dstOffsets[1].z = 1;
+   memset(&region, 0, sizeof(region));
+   region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.srcSubresource.layerCount = 1;
+   region.dstSubresource = region.srcSubresource;
+   region.srcOffset.x = vk->vp.x;
+   region.srcOffset.y = vk->vp.y;
+   region.extent.width = vk->vp.width;
+   region.extent.height = vk->vp.height;
+   region.extent.depth = 1;
+
+   /* FIXME: We won't actually get format conversion with vkCmdCopyImage, so have to check
+    * properly for this. BGRA seems to be the default for all swapchains. */
+   if (vk->context->swapchain_format != VK_FORMAT_B8G8R8A8_UNORM)
+      RARCH_WARN("[Vulkan]: Backbuffer is not BGRA8888, readbacks might not work properly.\n");
 
    staging = &vk->readback.staging[vk->context->current_swapchain_index];
    *staging = vulkan_create_texture(vk,
          staging->memory != VK_NULL_HANDLE ? staging : NULL,
          vk->vp.width, vk->vp.height,
-         vk->context->swapchain_is_srgb ? VK_FORMAT_B8G8R8A8_SRGB : VK_FORMAT_B8G8R8A8_UNORM,
+         VK_FORMAT_B8G8R8A8_UNORM,
          NULL, NULL, VULKAN_TEXTURE_READBACK);
 
    /* Go through the long-winded dance of remapping image layouts. */
@@ -1203,13 +1200,11 @@ static void vulkan_readback(vk_t *vk)
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
-   vkCmdBlitImage(vk->cmd,
-         vk->chain->backbuffer.image,
+   vkCmdCopyImage(vk->cmd, vk->chain->backbuffer.image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
          staging->image,
          VK_IMAGE_LAYOUT_GENERAL,
-         1, &blit,
-         VK_FILTER_NEAREST);
+         1, &region);
 
    /* Make the data visible to host. */
    vulkan_image_layout_transition(vk, vk->cmd, staging->image,
