@@ -34,6 +34,7 @@ typedef struct audio_thread
    scond_t *cond;
    bool alive;
    bool stopped;
+   bool stopped_ack;
    bool is_paused;
    bool use_float;
 
@@ -81,6 +82,7 @@ static void audio_thread_loop(void *data)
       {
          scond_signal(thr->cond);
          slock_unlock(thr->lock);
+         thr->stopped_ack = true;
          break;
       }
 
@@ -88,7 +90,14 @@ static void audio_thread_loop(void *data)
       {
          thr->driver->stop(thr->driver_data);
          while (thr->stopped)
+         {
+            /* If we stop right after start, we might not be able to properly ack.
+             * Signal in the loop instead. */
+            thr->stopped_ack = true;
+            scond_signal(thr->cond);
+
             scond_wait(thr->cond, thr->lock);
+         }
          thr->driver->start(thr->driver_data);
       }
 
@@ -105,9 +114,18 @@ static void audio_thread_block(audio_thread_t *thr)
    if (!thr)
       return;
 
+   if (thr->stopped)
+      return;
+
    slock_lock(thr->lock);
+   thr->stopped_ack = false;
    thr->stopped = true;
    scond_signal(thr->cond);
+
+   /* Wait until audio driver actually goes to sleep. */
+   while (!thr->stopped_ack)
+      scond_wait(thr->cond, thr->lock);
+
    slock_unlock(thr->lock);
 }
 
@@ -167,7 +185,7 @@ static bool audio_thread_stop(void *data)
    audio_thread_t *thr = (audio_thread_t*)data;
 
    if (!thr)
-      return false;
+      return false; 
 
    audio_thread_block(thr);
    thr->is_paused = true;
