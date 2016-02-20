@@ -191,12 +191,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    }
    else
    {
-      VkMemoryPropertyFlags cached = type == VULKAN_TEXTURE_READBACK ?
-         VK_MEMORY_PROPERTY_HOST_CACHED_BIT : 0;
-
       alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
             mem_reqs.memoryTypeBits,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | cached,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
    }
 
