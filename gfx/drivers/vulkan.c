@@ -1125,17 +1125,18 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
 {
    gfx_ctx_aspect_t aspect_data;
    unsigned width, height;
-   int x = 0, y = 0;
-   float device_aspect = (float)viewport_width / viewport_height;
+   int x                  = 0;
+   int y                  = 0;
+   float device_aspect    = (float)viewport_width / viewport_height;
    struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
-   settings_t *settings  = config_get_ptr();
-   vk_t *vk = (vk_t*)data;
+   settings_t *settings   = config_get_ptr();
+   vk_t *vk               = (vk_t*)data;
 
    video_driver_get_size(&width, &height);
 
-   aspect_data.aspect = &device_aspect;
-   aspect_data.width = viewport_width;
-   aspect_data.height = viewport_height;
+   aspect_data.aspect     = &device_aspect;
+   aspect_data.width      = viewport_width;
+   aspect_data.height     = viewport_height;
 
    gfx_ctx_ctl(GFX_CTL_TRANSLATE_ASPECT, &aspect_data);
 
@@ -1176,14 +1177,16 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
          }
          else if (device_aspect > desired_aspect)
          {
-            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(viewport_width * (0.5f - delta));
+            delta          = (desired_aspect / device_aspect - 1.0f) 
+               / 2.0f + 0.5f;
+            x              = (int)roundf(viewport_width * (0.5f - delta));
             viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
          }
          else
          {
-            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(viewport_height * (0.5f - delta));
+            delta           = (device_aspect / desired_aspect - 1.0f) 
+               / 2.0f + 0.5f;
+            y               = (int)roundf(viewport_height * (0.5f - delta));
             viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
          }
       }
@@ -1195,7 +1198,8 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
    }
    else
    {
-      vk->vp.x      = vk->vp.y = 0;
+      vk->vp.x      = 0;
+      vk->vp.y      = 0;
       vk->vp.width  = viewport_width;
       vk->vp.height = viewport_height;
    }
@@ -1215,12 +1219,12 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
       vk->vp_out_height = viewport_height;
    }
 
-   vk->vk_vp.x = (float)vk->vp.x;
-   vk->vk_vp.y = (float)vk->vp.y;
-   vk->vk_vp.width = (float)vk->vp.width;
-   vk->vk_vp.height = (float)vk->vp.height;
-   vk->vk_vp.minDepth = 0.0f;
-   vk->vk_vp.maxDepth = 1.0f;
+   vk->vk_vp.x          = (float)vk->vp.x;
+   vk->vk_vp.y          = (float)vk->vp.y;
+   vk->vk_vp.width      = (float)vk->vp.width;
+   vk->vk_vp.height     = (float)vk->vp.height;
+   vk->vk_vp.minDepth   = 0.0f;
+   vk->vk_vp.maxDepth   = 1.0f;
 
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 
@@ -1294,13 +1298,14 @@ static bool vulkan_frame(void *data, const void *frame,
    static struct retro_perf_counter copy_frame   = {0};
    static struct retro_perf_counter swapbuffers  = {0};
    static struct retro_perf_counter queue_submit = {0};
-   VkCommandBufferBeginInfo begin_info = { 
+   VkCommandBufferBeginInfo begin_info           = { 
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-   VkRenderPassBeginInfo rp_info       = { 
+   VkRenderPassBeginInfo rp_info                 = { 
       VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
-   VkSubmitInfo submit_info            = { 
+   VkSubmitInfo submit_info                      = { 
       VK_STRUCTURE_TYPE_SUBMIT_INFO };
-   unsigned frame_index                = vk->context->current_swapchain_index;
+   unsigned frame_index                          = 
+      vk->context->current_swapchain_index;
 
    rarch_perf_init(&frame_run, "frame_run");
    rarch_perf_init(&copy_frame, "copy_frame");
@@ -1327,10 +1332,12 @@ static bool vulkan_frame(void *data, const void *frame,
       const uint8_t *src  = (const uint8_t*)frame;
       unsigned bpp        = vk->video.rgb32 ? 4 : 2;
 
-      if (chain->texture.width != frame_width || chain->texture.height != frame_height)
+      if (     chain->texture.width != frame_width 
+            || chain->texture.height != frame_height)
       {
          chain->texture = vulkan_create_texture(vk, &chain->texture,
-               frame_width, frame_height, chain->texture.format, NULL, NULL, VULKAN_TEXTURE_STREAMED);
+               frame_width, frame_height, chain->texture.format,
+               NULL, NULL, VULKAN_TEXTURE_STREAMED);
          vulkan_map_persistent_texture(vk->context->device, &chain->texture);
       }
 
@@ -1340,7 +1347,8 @@ static bool vulkan_frame(void *data, const void *frame,
          if (chain->texture.stride == pitch && pitch == frame_width * bpp)
             memcpy(dst, src, frame_width * frame_height * bpp);
          else
-            for (y = 0; y < frame_height; y++, dst += chain->texture.stride, src += pitch)
+            for (y = 0; y < frame_height; y++, 
+                  dst += chain->texture.stride, src += pitch)
                memcpy(dst, src, frame_width * bpp);
       }
 
@@ -1470,11 +1478,14 @@ static bool vulkan_frame(void *data, const void *frame,
 
    if (vk->readback.pending || vk->readback.streamed)
    {
-      /* We cannot safely read back from an image which has already been presented
-       * as we need to maintain the PRESENT_SRC_KHR layout.
+      /* We cannot safely read back from an image which 
+       * has already been presented as we need to 
+       * maintain the PRESENT_SRC_KHR layout.
+       *
        * If we're reading back, perform the readback before presenting.
        */
-      vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
+      vulkan_image_layout_transition(vk,
+            vk->cmd, chain->backbuffer.image,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -1485,7 +1496,8 @@ static bool vulkan_frame(void *data, const void *frame,
       vulkan_readback(vk);
 
       /* Prepare for presentation after transfers are complete. */
-      vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
+      vulkan_image_layout_transition(vk, vk->cmd,
+            chain->backbuffer.image,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             VK_ACCESS_TRANSFER_READ_BIT,
@@ -1498,7 +1510,8 @@ static bool vulkan_frame(void *data, const void *frame,
    else
    {
       /* Prepare backbuffer for presentation. */
-      vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
+      vulkan_image_layout_transition(vk, vk->cmd,
+            chain->backbuffer.image,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -1864,8 +1877,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
 
       {
          unsigned x, y;
-         const uint8_t *src = (const uint8_t*)staging->mapped;
-         buffer += 3 * (vk->vp.height - 1) * vk->vp.width;
+         const uint8_t *src  = (const uint8_t*)staging->mapped;
+         buffer             += 3 * (vk->vp.height - 1) 
+            * vk->vp.width;
 
          for (y = 0; y < vk->vp.height; y++,
                src += staging->stride, buffer -= 3 * vk->vp.width)
@@ -1913,16 +1927,18 @@ static void vulkan_overlay_free(vk_t *vk)
    free(vk->overlay.vertex);
    for (i = 0; i < vk->overlay.count; i++)
       if (vk->overlay.images[i].memory != VK_NULL_HANDLE)
-         vulkan_destroy_texture(vk->context->device, &vk->overlay.images[i]);
+         vulkan_destroy_texture(vk->context->device,
+               &vk->overlay.images[i]);
 
    memset(&vk->overlay, 0, sizeof(vk->overlay));
 }
 
-static void vulkan_overlay_set_alpha(void *data, unsigned image, float mod)
+static void vulkan_overlay_set_alpha(void *data,
+      unsigned image, float mod)
 {
-   vk_t *vk = (vk_t*)data;
-   struct vk_vertex *pv;
    unsigned i;
+   struct vk_vertex *pv;
+   vk_t *vk = (vk_t*)data;
 
    if (!vk)
       return;
@@ -1979,11 +1995,13 @@ static void vulkan_overlay_vertex_geom(void *data, unsigned image,
       float x, float y,
       float w, float h)
 {
-   vk_t *vk = (vk_t*)data;
+   struct vk_vertex *pv = NULL;
+   vk_t             *vk = (vk_t*)data;
    if (!vk)
       return;
 
-   struct vk_vertex *pv = &vk->overlay.vertex[4 * image];
+   pv      = &vk->overlay.vertex[4 * image];
+
    pv[0].x = x;
    pv[0].y = y;
    pv[1].x = x;
@@ -1998,11 +2016,13 @@ static void vulkan_overlay_tex_geom(void *data, unsigned image,
       float x, float y,
       float w, float h)
 {
-   vk_t *vk = (vk_t*)data;
+   struct vk_vertex *pv = NULL;
+   vk_t *vk             = (vk_t*)data;
    if (!vk)
       return;
 
-   struct vk_vertex *pv = &vk->overlay.vertex[4 * image];
+   pv          = &vk->overlay.vertex[4 * image];
+
    pv[0].tex_x = x;
    pv[0].tex_y = y;
    pv[1].tex_x = x;
@@ -2016,9 +2036,10 @@ static void vulkan_overlay_tex_geom(void *data, unsigned image,
 static bool vulkan_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
-   const struct texture_image *images = (const struct texture_image*)image_data;
-   vk_t *vk = (vk_t*)data;
    unsigned i, j;
+   const struct texture_image *images = 
+      (const struct texture_image*)image_data;
+   vk_t *vk                           = (vk_t*)data;
    static const struct vk_color white = {
       1.0f, 1.0f, 1.0f, 1.0f,
    };
@@ -2031,12 +2052,15 @@ static bool vulkan_overlay_load(void *data,
    slock_unlock(vk->context->queue_lock);
    vulkan_overlay_free(vk);
 
-   vk->overlay.images = (struct vk_texture*)calloc(num_images, sizeof(*vk->overlay.images));
+   vk->overlay.images = (struct vk_texture*)
+      calloc(num_images, sizeof(*vk->overlay.images));
+
    if (!vk->overlay.images)
       goto error;
    vk->overlay.count  = num_images;
 
-   vk->overlay.vertex = (struct vk_vertex*)calloc(4 * num_images, sizeof(*vk->overlay.vertex));
+   vk->overlay.vertex = (struct vk_vertex*)
+      calloc(4 * num_images, sizeof(*vk->overlay.vertex));
    if (!vk->overlay.vertex)
       goto error;
 
