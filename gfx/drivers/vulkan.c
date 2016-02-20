@@ -1741,6 +1741,10 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
       const uint8_t *src;
       unsigned x, y;
 
+      static struct retro_perf_counter stream_readback = {0};
+      rarch_perf_init(&stream_readback, "stream_readback");
+      retro_perf_start(&stream_readback);
+
       buffer += 3 * (vk->vp.height - 1) * vk->vp.width;
       vkMapMemory(vk->context->device, staging->memory,
             staging->offset, staging->size, 0, (void**)&src);
@@ -1750,6 +1754,8 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
       scaler_ctx_scale(&vk->readback.scaler, buffer, src);
 
       vkUnmapMemory(vk->context->device, staging->memory);
+
+      retro_perf_stop(&stream_readback);
    }
    else
    {

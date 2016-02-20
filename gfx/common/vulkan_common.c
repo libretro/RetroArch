@@ -62,17 +62,23 @@ uint32_t vulkan_find_memory_type(const VkPhysicalDeviceMemoryProperties *mem_pro
 }
 
 uint32_t vulkan_find_memory_type_fallback(const VkPhysicalDeviceMemoryProperties *mem_props,
-      uint32_t device_reqs, uint32_t host_reqs)
+      uint32_t device_reqs, uint32_t host_reqs_first, uint32_t host_reqs_second)
 {
    uint32_t i;
    for (i = 0; i < VK_MAX_MEMORY_TYPES; i++)
    {
       if ((device_reqs & (1u << i)) &&
-            (mem_props->memoryTypes[i].propertyFlags & host_reqs) == host_reqs)
+            (mem_props->memoryTypes[i].propertyFlags & host_reqs_first) == host_reqs_first)
          return i;
    }
 
-   return vulkan_find_memory_type(mem_props, device_reqs, 0);
+   if (host_reqs_first == 0)
+   {
+      RARCH_ERR("[Vulkan]: Failed to find valid memory type. This should never happen.");
+      abort();
+   }
+
+   return vulkan_find_memory_type_fallback(mem_props, device_reqs, host_reqs_second, 0);
 }
 
 void vulkan_map_persistent_texture(VkDevice device, struct vk_texture *texture)
@@ -181,13 +187,16 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    {
       alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
             mem_reqs.memoryTypeBits,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
    }
    else
    {
-      /* This must exist. */
-      alloc.memoryTypeIndex = vulkan_find_memory_type(&vk->context->memory_properties,
+      VkMemoryPropertyFlags cached = type == VULKAN_TEXTURE_READBACK ?
+         VK_MEMORY_PROPERTY_HOST_CACHED_BIT : 0;
+
+      alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
             mem_reqs.memoryTypeBits,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | cached,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
    }
 
