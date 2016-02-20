@@ -1313,6 +1313,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       swapchain_size           = surface_properties.currentExtent;
 
    desired_swapchain_images    = surface_properties.minImageCount + 1;
+
+   /* Limit latency. */
+   if (desired_swapchain_images > 3)
+      desired_swapchain_images = 3;
+
    if ((surface_properties.maxImageCount > 0) 
          && (desired_swapchain_images > surface_properties.maxImageCount))
       desired_swapchain_images = surface_properties.maxImageCount;
@@ -1380,6 +1385,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          &vk->context.num_swapchain_images, NULL);
    vk->fpGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, vk->context.swapchain_images);
+
+   RARCH_LOG("[Vulkan]: Got %u swapchain images.\n", vk->context.num_swapchain_images);
 
    for (i = 0; i < vk->context.num_swapchain_images; i++)
    {
