@@ -42,11 +42,11 @@ struct vulkan_data
    VkPipelineLayout pipeline_layout;
    VkRenderPass render_pass;
    VkPipeline pipeline;
-   VkCommandPool cmd_pool;
 
    struct retro_vulkan_image images[MAX_SYNC];
    VkDeviceMemory image_memory[MAX_SYNC];
    VkFramebuffer framebuffers[MAX_SYNC];
+   VkCommandPool cmd_pool[MAX_SYNC];
    VkCommandBuffer cmd[MAX_SYNC];
 };
 static struct vulkan_data vk;
@@ -178,14 +178,14 @@ static void vulkan_test_render(void)
    update_ubo();
 
    VkCommandBuffer cmd = vk.cmd[vk.index];
-   vkResetCommandBuffer(cmd, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+   vkResetCommandPool(vulkan->device, vk.cmd_pool[vk.index], 0);
 
    VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
    vkBeginCommandBuffer(cmd, &begin_info);
 
    VkImageMemoryBarrier prepare_rendering = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-   prepare_rendering.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+   prepare_rendering.srcAccessMask = 0;
    prepare_rendering.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
    prepare_rendering.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
    prepare_rendering.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -236,15 +236,6 @@ static void vulkan_test_render(void)
    scissor.extent.width = BASE_WIDTH;
    scissor.extent.height = BASE_HEIGHT;
    vkCmdSetScissor(cmd, 0, 1, &scissor);
-
-   vkCmdSetLineWidth(cmd, 1.0f);
-   vkCmdSetDepthBias(cmd, 0.0f, 0.0f, 0.0f);
-   vkCmdSetDepthBounds(cmd, 0.0f, 1.0f);
-   vkCmdSetStencilCompareMask(cmd, VK_STENCIL_FACE_FRONT_BIT | VK_STENCIL_FACE_BACK_BIT, 0xff);
-   vkCmdSetStencilWriteMask(cmd, VK_STENCIL_FACE_FRONT_BIT | VK_STENCIL_FACE_BACK_BIT, 0xff);
-   vkCmdSetStencilReference(cmd, VK_STENCIL_FACE_FRONT_BIT | VK_STENCIL_FACE_BACK_BIT, 0);
-   static const float blend_const[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-   vkCmdSetBlendConstants(cmd, blend_const);
 
    VkDeviceSize offset = 0;
    vkCmdBindVertexBuffers(cmd, 0, 1, &vk.vbo.buffer, &offset);
@@ -431,6 +422,7 @@ static void init_pipeline(void)
    raster.depthClampEnable = false;
    raster.rasterizerDiscardEnable = false;
    raster.depthBiasEnable = false;
+   raster.lineWidth = 1.0f;
 
    VkPipelineColorBlendAttachmentState blend_attachment = { 0 };
    blend_attachment.blendEnable = false;
@@ -456,13 +448,6 @@ static void init_pipeline(void)
    static const VkDynamicState dynamics[] = {
       VK_DYNAMIC_STATE_VIEWPORT,
       VK_DYNAMIC_STATE_SCISSOR,
-      VK_DYNAMIC_STATE_LINE_WIDTH,
-      VK_DYNAMIC_STATE_DEPTH_BIAS,
-      VK_DYNAMIC_STATE_BLEND_CONSTANTS,
-      VK_DYNAMIC_STATE_DEPTH_BOUNDS,
-      VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
-      VK_DYNAMIC_STATE_STENCIL_WRITE_MASK,
-      VK_DYNAMIC_STATE_STENCIL_REFERENCE,
    };
    VkPipelineDynamicStateCreateInfo dynamic = { VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
    dynamic.pDynamicStates = dynamics;
@@ -542,7 +527,7 @@ static void init_swapchain(void)
       image.extent.height = BASE_HEIGHT;
       image.extent.depth = 1;
       image.samples = VK_SAMPLE_COUNT_1_BIT;
-      image.tiling = VK_IMAGE_TILING_LINEAR; /* Workaround. */
+      image.tiling = VK_IMAGE_TILING_OPTIMAL;
       image.usage =
          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
          VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -559,7 +544,7 @@ static void init_swapchain(void)
       vkGetImageMemoryRequirements(device, vk.images[i].create_info.image, &mem_reqs);
       alloc.allocationSize = mem_reqs.size;
       alloc.memoryTypeIndex = find_memory_type_from_requirements(
-            mem_reqs.memoryTypeBits, 0);
+            mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
       vkAllocateMemory(device, &alloc, NULL, &vk.image_memory[i]);
       vkBindImageMemory(device, vk.images[i].create_info.image, vk.image_memory[i], 0);
 
@@ -597,13 +582,15 @@ static void init_command(void)
    VkCommandBufferAllocateInfo info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 
    pool_info.queueFamilyIndex = vulkan->queue_index;
-   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-   vkCreateCommandPool(vulkan->device, &pool_info, NULL, &vk.cmd_pool);
 
-   info.commandPool = vk.cmd_pool;
-   info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-   info.commandBufferCount = vk.num_swapchain_images;
-   vkAllocateCommandBuffers(vulkan->device, &info, vk.cmd);
+   for (unsigned i = 0; i < vk.num_swapchain_images; i++)
+   {
+      vkCreateCommandPool(vulkan->device, &pool_info, NULL, &vk.cmd_pool[i]);
+      info.commandPool = vk.cmd_pool[i];
+      info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+      info.commandBufferCount = 1;
+      vkAllocateCommandBuffers(vulkan->device, &info, &vk.cmd[i]);
+   }
 }
 
 static void vulkan_test_init(void)
@@ -660,8 +647,11 @@ static void vulkan_test_deinit(void)
    vkDestroyBuffer(device, vk.vbo.buffer, NULL);
    vkDestroyPipelineCache(device, vk.pipeline_cache, NULL);
 
-   vkFreeCommandBuffers(device, vk.cmd_pool, vk.num_swapchain_images, vk.cmd);
-   vkDestroyCommandPool(device, vk.cmd_pool, NULL);
+   for (unsigned i = 0; i < vk.num_swapchain_images; i++)
+   {
+      vkFreeCommandBuffers(device, vk.cmd_pool[i], 1, &vk.cmd[i]);
+      vkDestroyCommandPool(device, vk.cmd_pool[i], NULL);
+   }
 
    memset(&vk, 0, sizeof(vk));
 }

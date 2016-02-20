@@ -143,25 +143,8 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
    (void)version;
 
    if (string_is_equal(interface, "wl_compositor"))
-   {
-      unsigned num = 1;
-      switch (wl_api)
-      {
-         case GFX_CTX_OPENGL_API:
-         case GFX_CTX_OPENGL_ES_API:
-         case GFX_CTX_OPENVG_API:
-            break;
-         case GFX_CTX_VULKAN_API:
-            num = 3;
-            break;
-         case GFX_CTX_NONE:
-         default:
-            break;
-      }
-
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
-            id, &wl_compositor_interface, num);
-   }
+            id, &wl_compositor_interface, 3);
    else if (string_is_equal(interface, "wl_shell"))
       wl->shell = (struct wl_shell*)
          wl_registry_bind(reg, id, &wl_shell_interface, 1);

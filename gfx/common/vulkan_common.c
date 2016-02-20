@@ -817,6 +817,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VkDeviceCreateInfo device_info     = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
    uint32_t gpu_count                 = 1;
    bool found_queue                   = false;
+   VkPhysicalDevice *gpus             = NULL;
    static const float one             = 1.0f;
    static const char *device_extensions[] = {
       "VK_KHR_swapchain",
@@ -869,14 +870,26 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
 
    if (vkEnumeratePhysicalDevices(vk->context.instance,
-            &gpu_count, &vk->context.gpu) != VK_SUCCESS)
+            &gpu_count, NULL) != VK_SUCCESS)
       return false;
 
-   if (gpu_count != 1)
+   gpus = (VkPhysicalDevice*)calloc(gpu_count, sizeof(*gpus));
+   if (!gpus)
+      return false;
+
+   if (vkEnumeratePhysicalDevices(vk->context.instance,
+            &gpu_count, gpus) != VK_SUCCESS)
+      return false;
+
+   if (gpu_count < 1)
    {
       RARCH_ERR("[Vulkan]: Failed to enumerate Vulkan physical device.\n");
+      free(gpus);
       return false;
    }
+
+   vk->context.gpu = gpus[0];
+   free(gpus);
 
    vkGetPhysicalDeviceProperties(vk->context.gpu,
          &vk->context.gpu_properties);
@@ -1075,8 +1088,8 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 
             surf_info.sType  = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
             surf_info.flags  = 0;
-            surf_info.dpy    = display;
-            surf_info.window = surface;
+            surf_info.dpy    = (Display*)display;
+            surf_info.window = *(const Window*)surface;
 
             if (vk->fpCreateXlibSurfaceKHR(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 
@@ -1094,8 +1107,8 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 
             surf_info.sType      = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
             surf_info.flags      = 0;
-            surf_info.connection = XGetXCBConnection(display);
-            surf_info.window     = surface;
+            surf_info.connection = XGetXCBConnection((Display*)display);
+            surf_info.window     = *(const xcb_window_t*)surface;
 
             if (vk->fpCreateXcbSurfaceKHR(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 
@@ -1168,7 +1181,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       vk->fpDestroySwapchainKHR(vk->context.device,
             vk->swapchain, NULL);
 
-   if (destroy_surface)
+   if (destroy_surface && vk->vk_surface != VK_NULL_HANDLE)
       vk->fpDestroySurfaceKHR(vk->context.instance,
             vk->vk_surface, NULL);
 
@@ -1249,6 +1262,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkExtent2D swapchain_size;
    VkSwapchainKHR old_swapchain;
    VkSurfaceTransformFlagBitsKHR pre_transform;
+
+   /* TODO: Properly query these. */
    VkPresentModeKHR swapchain_present_mode = swap_interval 
       ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
    VkSwapchainCreateInfoKHR info = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
