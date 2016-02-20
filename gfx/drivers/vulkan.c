@@ -847,10 +847,6 @@ static void *vulkan_init(const video_info_t *video, const input_driver_t **input
       vk->full_y = temp_height;
    }
 
-   /* Set the viewport to fix recording, since it needs to know
-    * the viewport sizes before we start running. */
-   vulkan_set_viewport(vk, temp_width, temp_height, false, true);
-
    gfx_ctx_ctl(GFX_CTL_GET_CONTEXT_DATA, &vk->context);
 
    vk->vsync = video->vsync;
@@ -858,6 +854,10 @@ static void *vulkan_init(const video_info_t *video, const input_driver_t **input
    vk->tex_w = vk->tex_h = RARCH_SCALE_BASE * video->input_scale;
    vk->tex_fmt = video->rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
    vk->keep_aspect = video->force_aspect;
+
+   /* Set the viewport to fix recording, since it needs to know
+    * the viewport sizes before we start running. */
+   vulkan_set_viewport(vk, temp_width, temp_height, false, true);
 
    vulkan_init_hw_render(vk);
    vulkan_init_static_resources(vk);
