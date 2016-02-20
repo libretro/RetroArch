@@ -276,9 +276,11 @@ static bool find_video_driver(void)
 
    if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
    {
+      current_video                        = NULL;
       struct retro_hw_render_callback *hwr =
          video_driver_callback();
-      current_video = NULL;
+
+      (void)hwr;
 
 #if defined(HAVE_VULKAN)
       if (hwr && hw_render_context_is_vulkan(hwr->context_type))
