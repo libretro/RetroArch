@@ -310,6 +310,7 @@ bool core_ctl(enum core_ctl_state state, void *data)
          break;
       case CORE_CTL_RETRO_UNLOAD_GAME:
          video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT_HW_CONTEXT, NULL);
+         audio_driver_ctl(RARCH_AUDIO_CTL_STOP, NULL);
          core.retro_unload_game();
          break;
       case CORE_CTL_RETRO_RUN:
