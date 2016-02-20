@@ -915,7 +915,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    for (i = 0; i < queue_count; i++)
    {
-      if (queue_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+      VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+      if ((queue_properties[i].queueFlags & required) == required)
       {
          vk->context.graphics_queue_index = i;
          RARCH_LOG("[Vulkan]: Device supports %u sub-queues.\n",
