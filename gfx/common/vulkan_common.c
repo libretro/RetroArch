@@ -191,12 +191,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    }
    else
    {
-      VkMemoryPropertyFlags cached = type == VULKAN_TEXTURE_READBACK ?
-         VK_MEMORY_PROPERTY_HOST_CACHED_BIT : 0;
-
       alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
             mem_reqs.memoryTypeBits,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | cached,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
    }
 
@@ -915,7 +912,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    for (i = 0; i < queue_count; i++)
    {
-      if (queue_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+      VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+      if ((queue_properties[i].queueFlags & required) == required)
       {
          vk->context.graphics_queue_index = i;
          RARCH_LOG("[Vulkan]: Device supports %u sub-queues.\n",
@@ -1312,6 +1310,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       swapchain_size           = surface_properties.currentExtent;
 
    desired_swapchain_images    = surface_properties.minImageCount + 1;
+
+   /* Limit latency. */
+   if (desired_swapchain_images > 3)
+      desired_swapchain_images = 3;
+
    if ((surface_properties.maxImageCount > 0) 
          && (desired_swapchain_images > surface_properties.maxImageCount))
       desired_swapchain_images = surface_properties.maxImageCount;
@@ -1379,6 +1382,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          &vk->context.num_swapchain_images, NULL);
    vk->fpGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, vk->context.swapchain_images);
+
+   RARCH_LOG("[Vulkan]: Got %u swapchain images.\n", vk->context.num_swapchain_images);
 
    for (i = 0; i < vk->context.num_swapchain_images; i++)
    {
