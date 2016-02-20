@@ -56,6 +56,7 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
 static void vulkan_overlay_free(vk_t *vk);
 static void vulkan_render_overlay(vk_t *vk);
 #endif
+static void vulkan_viewport_info(void *data, struct video_viewport *vp);
 
 static const gfx_ctx_driver_t *vulkan_get_context(vk_t *vk)
 {
@@ -1170,15 +1171,18 @@ static void vulkan_readback(vk_t *vk)
 {
    VkImageCopy region;
    struct vk_texture *staging;
+   struct video_viewport vp;
 
+   vulkan_viewport_info(vk, &vp);
    memset(&region, 0, sizeof(region));
    region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    region.srcSubresource.layerCount = 1;
    region.dstSubresource = region.srcSubresource;
-   region.srcOffset.x = vk->vp.x;
-   region.srcOffset.y = vk->vp.y;
-   region.extent.width = vk->vp.width;
-   region.extent.height = vk->vp.height;
+
+   region.srcOffset.x = vp.x;
+   region.srcOffset.y = vp.y;
+   region.extent.width = vp.width;
+   region.extent.height = vp.height;
    region.extent.depth = 1;
 
    /* FIXME: We won't actually get format conversion with vkCmdCopyImage, so have to check
@@ -1718,6 +1722,10 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
    unsigned width, height;
 
    video_driver_get_size(&width, &height);
+
+   /* Make sure we get the correct viewport. */
+   vulkan_set_viewport(vk, width, height, false, true);
+
    *vp = vk->vp;
    vp->full_width = width;
    vp->full_height = height;
