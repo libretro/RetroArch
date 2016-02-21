@@ -213,8 +213,10 @@ static void zarch_zui_font(void)
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
-   fill_pathname_join(mediapath, settings->assets_directory, "zarch", sizeof(mediapath));
-   fill_pathname_join(fontpath, mediapath, "Roboto-Condensed.ttf", sizeof(fontpath));
+   fill_pathname_join(mediapath,
+         settings->assets_directory, "zarch", sizeof(mediapath));
+   fill_pathname_join(fontpath,
+         mediapath, "Roboto-Condensed.ttf", sizeof(fontpath));
 
    font_info.path = fontpath;
    font_info.size = font_size;
@@ -250,7 +252,8 @@ static int16_t zarch_zui_input_state(zui_t *zui, enum zarch_zui_input_state stat
         case MENU_POINTER_ZARCH_Y:
             return menu_input_pointer_state(MENU_POINTER_Y_AXIS);
         case MENU_ZARCH_PRESSED:
-            if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON) || menu_input_pointer_state(MENU_POINTER_PRESSED))
+            if (     menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON) 
+                  || menu_input_pointer_state(MENU_POINTER_PRESSED))
                 return 1;
             if (zui->action == MENU_ACTION_OK)
                return 1;
@@ -260,7 +263,8 @@ static int16_t zarch_zui_input_state(zui_t *zui, enum zarch_zui_input_state stat
     return 0;
 }
 
-static bool zarch_zui_check_button_down(zui_t *zui, unsigned id, int x1, int y1, int x2, int y2)
+static bool zarch_zui_check_button_down(zui_t *zui,
+      unsigned id, int x1, int y1, int x2, int y2)
 {
    bool result = false;
    bool inside = menu_input_mouse_check_hitbox(x1, y1, x2, y2);
@@ -268,7 +272,8 @@ static bool zarch_zui_check_button_down(zui_t *zui, unsigned id, int x1, int y1,
    if (inside)
       zui->item.hot = id;
 
-   if (zui->item.hot == id && zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
+   if (     zui->item.hot == id 
+         && zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
    {
       result = true;
       zui->item.active = id;
@@ -277,7 +282,8 @@ static bool zarch_zui_check_button_down(zui_t *zui, unsigned id, int x1, int y1,
    return result;
 }
 
-static bool zarch_zui_check_button_up(zui_t *zui, unsigned id, int x1, int y1, int x2, int y2)
+static bool zarch_zui_check_button_up(zui_t *zui,
+      unsigned id, int x1, int y1, int x2, int y2)
 {
    bool result = false;
    bool inside = menu_input_mouse_check_hitbox(x1, y1, x2, y2);
@@ -285,7 +291,8 @@ static bool zarch_zui_check_button_up(zui_t *zui, unsigned id, int x1, int y1, i
    if (inside)
       zui->item.hot = id;
 
-   if (zui->item.active == id && !zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
+   if (     zui->item.active == id 
+         && !zarch_zui_input_state(zui, MENU_ZARCH_PRESSED))
    {
       if (zui->item.hot == id)
          result = true;
@@ -314,7 +321,8 @@ static unsigned zarch_zui_hash(zui_t *zui, const char *s)
    return zui->hash = hval;
 }
 
-static void zarch_zui_draw_text(zui_t *zui, uint32_t color, int x, int y, const char *text)
+static void zarch_zui_draw_text(zui_t *zui,
+      uint32_t color, int x, int y, const char *text)
 {
    struct font_params params;
 
@@ -375,19 +383,21 @@ static float zarch_zui_randf(float min, float max)
    return (rand() * ((max - min) / RAND_MAX)) + min;
 }
 
-static float zarch_zui_scalef(float val, float oldmin, float oldmax, float newmin, float newmax)
+static float zarch_zui_scalef(float val,
+      float oldmin, float oldmax, float newmin, float newmax)
 {
    return (((val - oldmin) * (newmax - newmin)) / (oldmax - oldmin)) + newmin;
 }
 
 #define NPARTICLES 100
 
-static void zarch_zui_snow(zui_t *zui, gfx_coord_array_t *ca, int width, int height)
+static void zarch_zui_snow(zui_t *zui, gfx_coord_array_t *ca,
+      int width, int height)
 {
    static part_t particles[NPARTICLES];
    static bool initialized = false;
    static int timeout      = 0;
-   unsigned i, max_gen  = 2;
+   unsigned i, max_gen     = 2;
 
    if (!initialized)
    {
@@ -404,11 +414,11 @@ static void zarch_zui_snow(zui_t *zui, gfx_coord_array_t *ca, int width, int hei
          int16_t mouse_x  = zarch_zui_input_state(zui, MENU_ZARCH_MOUSE_X);
 
          p->y            += p->yspeed;
-         p->x            += zarch_zui_scalef(mouse_x, 0, width, -0.3, 0.3) + p->xspeed;
+         p->x            += zarch_zui_scalef(mouse_x, 0, width, -0.3, 0.3);
+         p->x            += p->xspeed;
 
-         p->alive         = p->y >= 0 && p->y < height && p->x >= 0 && p->x < width;
-
-
+         p->alive         = p->y >= 0 && p->y < height 
+            && p->x >= 0 && p->x < width;
       }
       else if (max_gen > 0 && timeout <= 0)
       {
@@ -447,13 +457,15 @@ static void zarch_zui_snow(zui_t *zui, gfx_coord_array_t *ca, int width, int hei
             colors[j] = alpha;
       }
 
-      zarch_zui_push_quad(width, height, colors, ca, p->x-2, p->y-2, p->x+2, p->y+2);
+      zarch_zui_push_quad(width, height,
+            colors, ca, p->x-2, p->y-2, p->x+2, p->y+2);
 
       j++;
    }
 }
 
-static bool zarch_zui_button_full(zui_t *zui, int x1, int y1, int x2, int y2, const char *label)
+static bool zarch_zui_button_full(zui_t *zui,
+      int x1, int y1, int x2, int y2, const char *label)
 {
    unsigned       id = zarch_zui_hash(zui, label);
    bool       active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
@@ -470,7 +482,8 @@ static bool zarch_zui_button_full(zui_t *zui, int x1, int y1, int x2, int y2, co
 
 static bool zarch_zui_button(zui_t *zui, int x1, int y1, const char *label)
 {
-   return zarch_zui_button_full(zui, x1, y1, x1 + zarch_zui_strwidth(zui->fb_buf, label, 1.0) + 24, y1 + 64, label);
+   return zarch_zui_button_full(zui, x1, y1, x1 
+         + zarch_zui_strwidth(zui->fb_buf, label, 1.0) + 24, y1 + 64, label);
 }
 
 static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
@@ -506,7 +519,8 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
    }
    else
    {
-      if (zui->active_id != item_id && zui->pending_selection == item_id)
+      if (     zui->active_id != item_id 
+            && zui->pending_selection == item_id)
          set_active_id = true;
    }
 
@@ -542,7 +556,8 @@ static void zarch_zui_tabbed_begin(zui_t *zui, zui_tabbed_t *tab, int x, int y)
    tab->tabline_size = 60 + 4;
 }
 
-static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab, const char *label, unsigned tab_id)
+static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab,
+      const char *label, unsigned tab_id)
 {
    bool active;
    int x1, y1, x2, y2;
@@ -656,7 +671,8 @@ static void zarch_zui_render_lay_root_load_free(zui_t *zui)
    zui->load_dlist = NULL;
 }
 
-static void zarch_zui_render_lay_root_load_set_new_path(zui_t *zui, const char *newpath)
+static void zarch_zui_render_lay_root_load_set_new_path(zui_t *zui,
+      const char *newpath)
 {
    if (!zui)
       return;
@@ -685,23 +701,29 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
          core_info_t *core_info = NULL;
          core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, &core_info);
 
-         zui->load_dlist = dir_list_new(zui->load_cwd, core_info->supported_extensions, true, true);
+         zui->load_dlist = dir_list_new(zui->load_cwd,
+               core_info->supported_extensions, true, true);
          dir_list_sort(zui->load_dlist, true);
          zui->load_dlist_first  = 0;
       }
 
       cwd_offset = min(strlen(zui->load_cwd), 60);
 
-      zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 15, tabbed->tabline_size + 5 + 41, &zui->load_cwd[strlen(zui->load_cwd) - cwd_offset]);
+      zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 15,
+            tabbed->tabline_size + 5 + 41,
+            &zui->load_cwd[strlen(zui->load_cwd) - cwd_offset]);
 
-      if (zarch_zui_button(zui, zui->width - 290 - 129, tabbed->tabline_size + 5, "Home"))
+      if (zarch_zui_button(zui, zui->width - 290 - 129,
+               tabbed->tabline_size + 5, "Home"))
          zarch_zui_render_lay_root_load_free(zui);
 
       if (zui->load_dlist)
       {
-         fill_pathname_parent_dir(parent_dir, zui->load_cwd, sizeof(parent_dir));
+         fill_pathname_parent_dir(parent_dir,
+               zui->load_cwd, sizeof(parent_dir));
          if (!string_is_empty(parent_dir) &&
-               zarch_zui_list_item(zui, tabbed, 0, tabbed->tabline_size + 73, " ..", 0, NULL /* TODO/FIXME */))
+               zarch_zui_list_item(zui, tabbed, 0,
+                  tabbed->tabline_size + 73, " ..", 0, NULL /* TODO/FIXME */))
          {
             zarch_zui_render_lay_root_load_set_new_path(zui, parent_dir);
          }
@@ -713,7 +735,8 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 
             for (i = 0; i < size; ++i)
             {
-               const char *basename = path_basename(zui->load_dlist->elems[i].data);
+               const char *basename = 
+                  path_basename(zui->load_dlist->elems[i].data);
                if (basename[0] != '.')
                   break;
                skip++;
@@ -726,7 +749,8 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
             else if (zui->load_dlist_first > (int)size - 5)
                zui->load_dlist_first = size - 5;
 
-            zui->load_dlist_first = min(max(zui->load_dlist_first, 0), size - 5 - skip);
+            zui->load_dlist_first = min(max(zui->load_dlist_first, 0),
+                  size - 5 - skip);
 
             for (i = skip + zui->load_dlist_first; i < size; ++i)
             {
@@ -747,7 +771,8 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
                if (path_is_directory(path))
                   strncat(label, "/", sizeof(label)-1);
 
-               if (zarch_zui_list_item(zui, tabbed, 0, tabbed->tabline_size + 73 + j * 54,
+               if (zarch_zui_list_item(zui, tabbed, 0,
+                        tabbed->tabline_size + 73 + j * 54,
                         label, i, NULL))
                {
                   if (path_is_directory(path))
@@ -758,7 +783,8 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 
                   zui->pick_cores     = NULL;
                   zui->pick_supported = 0;
-                  strncpy(zui->pick_content, path, sizeof(zui->pick_content)-1);
+                  strncpy(zui->pick_content,
+                        path, sizeof(zui->pick_content)-1);
 
                   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 
@@ -781,7 +807,8 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
    return 0;
 }
 
-static int zarch_zui_render_lay_root_collections(zui_t *zui, zui_tabbed_t *tabbed)
+static int zarch_zui_render_lay_root_collections(
+      zui_t *zui, zui_tabbed_t *tabbed)
 {
    if (zarch_zui_tab(zui, tabbed, "Collections", 2))
    {
@@ -791,7 +818,8 @@ static int zarch_zui_render_lay_root_collections(zui_t *zui, zui_tabbed_t *tabbe
    return 0;
 }
 
-static int zarch_zui_render_lay_root_downloads(zui_t *zui, zui_tabbed_t *tabbed)
+static int zarch_zui_render_lay_root_downloads(
+      zui_t *zui, zui_tabbed_t *tabbed)
 {
    if (zarch_zui_tab(zui, tabbed, "Download", 3))
    {
@@ -855,7 +883,8 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    else
       zui->pending_selection = -1;
 
-   zarch_zui_push_quad(zui->width, zui->height, ZUI_BG_HILITE, &zui->ca, 0, 60, zui->width - 290 - 40, 60+4);
+   zarch_zui_push_quad(zui->width, zui->height,
+         ZUI_BG_HILITE, &zui->ca, 0, 60, zui->width - 290 - 40, 60+4);
 
    return 0;
 }
@@ -923,7 +952,8 @@ static int zarch_zui_render_pick_core(zui_t *zui)
 
    if (!zui->pick_supported)
    {
-      zarch_zui_list_item(zui, &tabbed, 0, 54, "Content unsupported", 0, NULL /* TODO/FIXME */);
+      zarch_zui_list_item(zui, &tabbed, 0, 54,
+            "Content unsupported", 0, NULL /* TODO/FIXME */);
       zui->active_id = 0;
       return 1;
    }
@@ -999,7 +1029,8 @@ static void zarch_frame(void *data)
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BIND_BLOCK, &zui->tmp_block);
 
-   zarch_zui_push_quad(zui->width, zui->height, ZUI_BG_SCREEN, &zui->ca, 0, 0, zui->width, zui->height);
+   zarch_zui_push_quad(zui->width, zui->height, ZUI_BG_SCREEN,
+         &zui->ca, 0, 0, zui->width, zui->height);
    zarch_zui_snow(zui, &zui->ca, zui->width, zui->height);
 
    switch (layout)
@@ -1078,7 +1109,8 @@ static void *zarch_init(void **userdata)
    int unused;
    zui_t *zui                              = NULL;
    settings_t *settings                    = config_get_ptr();
-   menu_handle_t *menu                     = (menu_handle_t*)calloc(1, sizeof(*menu));
+   menu_handle_t *menu                     = (menu_handle_t*)
+      calloc(1, sizeof(*menu));
 
    if (!menu)
       goto error;
@@ -1112,7 +1144,8 @@ static void *zarch_init(void **userdata)
 
    if (!string_is_empty(settings->menu.wallpaper))
       rarch_task_push_image_load(settings->menu.wallpaper,
-            "cb_menu_wallpaper", menu_display_handle_wallpaper_upload, NULL);
+            "cb_menu_wallpaper",
+            menu_display_handle_wallpaper_upload, NULL);
 
    zui->ca.allocated     =  0;
 
@@ -1276,18 +1309,22 @@ static bool zarch_menu_init_list(void *data)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
 
-   strlcpy(info.label, menu_hash_to_str(MENU_VALUE_HISTORY_TAB), sizeof(info.label));
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_VALUE_HISTORY_TAB), sizeof(info.label));
 
-   menu_entries_push(menu_stack, info.path, info.label, info.type, info.flags, 0);
+   menu_entries_push(menu_stack,
+         info.path, info.label, info.type, info.flags, 0);
 
 #if 0
    menu_entries_increment_menu_stack();
 
-   strlcpy(info.label, menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
 
    menu_stack = menu_entries_get_menu_stack_ptr(1);
 
-   menu_entries_push(menu_stack, info.path, info.label, info.type, info.flags, 0);
+   menu_entries_push(menu_stack,
+         info.path, info.label, info.type, info.flags, 0);
 #endif
 
    event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
