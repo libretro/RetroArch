@@ -357,6 +357,7 @@ typedef struct vk
    struct
    {
       VkPipeline alpha_blend;
+      VkPipeline font;
       VkDescriptorSetLayout set_layout;
       VkPipelineLayout layout;
       VkPipelineCache cache;
