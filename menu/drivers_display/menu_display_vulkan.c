@@ -182,14 +182,30 @@ static void menu_display_vk_draw_bg(void *data)
 
 static void menu_display_vk_restore_clear_color(void)
 {
-   //glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
 }
 
 static void menu_display_vk_clear_color(void *data)
 {
-   (void)data;
-   /* FIXME: This makes little sense in Vulkan.
-    * We shouldn't be clearing mid-screen nilly willy. */
+   VkClearRect rect;
+   VkClearAttachment attachment = { VK_IMAGE_ASPECT_COLOR_BIT };
+   menu_display_ctx_clearcolor_t *clearcolor =
+      (menu_display_ctx_clearcolor_t*)data;
+
+   vk_t *vk = vk_get_ptr();
+   if (!vk || !clearcolor)
+      return;
+
+   attachment.clearValue.color.float32[0] = clearcolor->r;
+   attachment.clearValue.color.float32[1] = clearcolor->g;
+   attachment.clearValue.color.float32[2] = clearcolor->b;
+   attachment.clearValue.color.float32[3] = clearcolor->a;
+
+   memset(&rect, 0, sizeof(rect));
+   rect.rect.extent.width = vk->context->swapchain_width;
+   rect.rect.extent.height = vk->context->swapchain_height;
+   rect.layerCount = 1;
+
+   vkCmdClearAttachments(vk->cmd, 1, &attachment, 1, &rect);
 }
 
 static const float *menu_display_vk_get_tex_coords(void)
