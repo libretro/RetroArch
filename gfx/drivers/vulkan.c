@@ -461,6 +461,13 @@ static void vulkan_init_textures(vk_t *vk)
                NULL, NULL, VULKAN_TEXTURE_STREAMED);
          vulkan_map_persistent_texture(vk->context->device,
                &vk->swapchain[i].texture);
+
+         if (vk->swapchain[i].texture.type == VULKAN_TEXTURE_STAGING)
+         {
+            vk->swapchain[i].texture_optimal = vulkan_create_texture(vk, NULL,
+                  vk->tex_w, vk->tex_h, vk->tex_fmt,
+                  NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
+         }
       }
    }
 }
@@ -471,9 +478,12 @@ static void vulkan_deinit_textures(vk_t *vk)
 
    unsigned i;
    for (i = 0; i < vk->num_swapchain_images; i++)
+   {
       if (vk->swapchain[i].texture.memory != VK_NULL_HANDLE)
-         vulkan_destroy_texture(vk->context->device,
-               &vk->swapchain[i].texture);
+         vulkan_destroy_texture(vk->context->device, &vk->swapchain[i].texture);
+      if (vk->swapchain[i].texture_optimal.memory != VK_NULL_HANDLE)
+         vulkan_destroy_texture(vk->context->device, &vk->swapchain[i].texture_optimal);
+   }
 }
 
 static void vulkan_deinit_command_buffers(vk_t *vk)
@@ -671,9 +681,12 @@ static void vulkan_deinit_menu(vk_t *vk)
 {
    unsigned i;
    for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
+   {
       if (vk->menu.textures[i].memory)
-         vulkan_destroy_texture(vk->context->device,
-               &vk->menu.textures[i]);
+         vulkan_destroy_texture(vk->context->device, &vk->menu.textures[i]);
+      if (vk->menu.textures_optimal[i].memory)
+         vulkan_destroy_texture(vk->context->device, &vk->menu.textures_optimal[i]);
+   }
 }
 
 static void vulkan_free(void *data)
@@ -1323,6 +1336,13 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_buffer_chain_discard(&chain->vbo);
    vulkan_buffer_chain_discard(&chain->ubo);
 
+   /* Start recording the command buffer. */
+   vk->cmd = chain->cmd;
+   begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   vkResetCommandBuffer(vk->cmd, 0);
+   vkBeginCommandBuffer(vk->cmd, &begin_info);
+   memset(&vk->tracker, 0, sizeof(vk->tracker));
+
    /* Upload texture */
    retro_perf_start(&copy_frame);
    if (frame && !vk->hw.enable)
@@ -1336,9 +1356,16 @@ static bool vulkan_frame(void *data, const void *frame,
             || chain->texture.height != frame_height)
       {
          chain->texture = vulkan_create_texture(vk, &chain->texture,
-               frame_width, frame_height, chain->texture.format,
-               NULL, NULL, VULKAN_TEXTURE_STREAMED);
+               frame_width, frame_height, chain->texture.format, NULL, NULL,
+               chain->texture_optimal.memory ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
          vulkan_map_persistent_texture(vk->context->device, &chain->texture);
+
+         if (chain->texture.type == VULKAN_TEXTURE_STAGING)
+         {
+            chain->texture_optimal = vulkan_create_texture(vk, &chain->texture_optimal,
+                  frame_width, frame_height, chain->texture_optimal.format,
+                  NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
+         }
       }
 
       if (frame != chain->texture.mapped)
@@ -1352,16 +1379,16 @@ static bool vulkan_frame(void *data, const void *frame,
                memcpy(dst, src, frame_width * bpp);
       }
 
+      /* If we have an optimal texture, copy to that now. */
+      if (chain->texture_optimal.memory != VK_NULL_HANDLE)
+      {
+         vulkan_copy_staging_to_dynamic(vk, vk->cmd,
+               &chain->texture_optimal, &chain->texture);
+      }
+
       vk->last_valid_index = frame_index;
    }
    retro_perf_stop(&copy_frame);
-
-   /* Start recording the command buffer. */
-   vk->cmd = chain->cmd;
-   begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-   vkResetCommandBuffer(vk->cmd, 0);
-   vkBeginCommandBuffer(vk->cmd, &begin_info);
-   memset(&vk->tracker, 0, sizeof(vk->tracker));
 
    /* Notify filter chain about the new sync index. */
    vulkan_filter_chain_notify_sync_index(vk->filter_chain, frame_index);
@@ -1399,9 +1426,11 @@ static bool vulkan_frame(void *data, const void *frame,
       }
       else
       {
-         struct vk_texture *tex = &
-            vk->swapchain[vk->last_valid_index].texture;
-         vulkan_transition_texture(vk, tex);
+         struct vk_texture *tex = &vk->swapchain[vk->last_valid_index].texture;
+         if (vk->swapchain[vk->last_valid_index].texture_optimal.memory != VK_NULL_HANDLE)
+            tex = &vk->swapchain[vk->last_valid_index].texture_optimal;
+         else
+            vulkan_transition_texture(vk, tex);
 
          input.view   = tex->view;
          input.layout = tex->layout;
@@ -1450,16 +1479,30 @@ static bool vulkan_frame(void *data, const void *frame,
       if (vk->menu.textures[vk->menu.last_index].image != VK_NULL_HANDLE)
       {
          struct vk_draw_quad quad;
+         struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
          vulkan_set_viewport(vk, width, height, vk->menu.full_screen, false);
 
          quad.pipeline = vk->pipelines.alpha_blend;
-         quad.texture  = &vk->menu.textures[vk->menu.last_index];
-         quad.sampler  = vk->samplers.linear;
-         quad.mvp      = &vk->mvp_no_rot;
-         quad.color.r  = 1.0f;
-         quad.color.g  = 1.0f;
-         quad.color.b  = 1.0f;
-         quad.color.a  = vk->menu.alpha;
+         quad.texture = &vk->menu.textures[vk->menu.last_index];
+
+         if (optimal->memory != VK_NULL_HANDLE)
+         {
+            if (vk->menu.dirty[vk->menu.last_index])
+            {
+               vulkan_copy_staging_to_dynamic(vk, vk->cmd,
+                     optimal,
+                     quad.texture);
+               vk->menu.dirty[vk->menu.last_index] = false;
+            }
+            quad.texture = optimal;
+         }
+
+         quad.sampler = vk->samplers.linear;
+         quad.mvp = &vk->mvp_no_rot;
+         quad.color.r = 1.0f;
+         quad.color.g = 1.0f;
+         quad.color.b = 1.0f;
+         quad.color.a = vk->menu.alpha;
          vulkan_draw_quad(vk, &quad);
       }
    }
@@ -1657,6 +1700,13 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
             framebuffer->width, framebuffer->height, chain->texture.format,
             NULL, NULL, VULKAN_TEXTURE_STREAMED);
       vulkan_map_persistent_texture(vk->context->device, &chain->texture);
+
+      if (chain->texture.type == VULKAN_TEXTURE_STAGING)
+      {
+         chain->texture_optimal = vulkan_create_texture(vk, &chain->texture_optimal,
+               framebuffer->width, framebuffer->height, chain->texture_optimal.format,
+               NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
+      }
    }
 
    framebuffer->data   = chain->texture.mapped;
@@ -1690,9 +1740,10 @@ static void vulkan_set_texture_frame(void *data,
 {
    uint8_t *ptr;
    unsigned x, y;
-   vk_t *vk                   = (vk_t*)data;
-   unsigned index             = vk->context->current_swapchain_index;
-   struct vk_texture *texture = &vk->menu.textures[index];
+   vk_t *vk                           = (vk_t*)data;
+   unsigned index                     = vk->context->current_swapchain_index;
+   struct vk_texture *texture         = &vk->menu.textures[index];
+   struct vk_texture *texture_optimal = &vk->menu.textures_optimal[index];
    const VkComponentMapping br_swizzle = {
       VK_COMPONENT_SWIZZLE_B,
       VK_COMPONENT_SWIZZLE_G,
@@ -1709,7 +1760,8 @@ static void vulkan_set_texture_frame(void *data,
          texture->memory ? texture : NULL,
          width, height,
          rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-         NULL, rgb32 ? NULL : &br_swizzle, VULKAN_TEXTURE_STREAMED);
+         NULL, rgb32 ? NULL : &br_swizzle,
+         texture_optimal->memory ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
 
    vkMapMemory(vk->context->device, texture->memory,
          texture->offset, texture->size, 0, (void**)&ptr);
@@ -1723,6 +1775,18 @@ static void vulkan_set_texture_frame(void *data,
    vkUnmapMemory(vk->context->device, texture->memory);
    vk->menu.alpha      = alpha;
    vk->menu.last_index = index;
+
+   if (texture->type == VULKAN_TEXTURE_STAGING)
+   {
+      *texture_optimal = vulkan_create_texture(vk,
+            texture_optimal->memory ? texture_optimal : NULL,
+            width, height,
+            rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_B4G4R4A4_UNORM_PACK16,
+            NULL, rgb32 ? NULL : &br_swizzle,
+            VULKAN_TEXTURE_DYNAMIC);
+   }
+
+   vk->menu.dirty[index] = true;
 }
 
 static void vulkan_set_texture_enable(void *data, bool state, bool full_screen)
