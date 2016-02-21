@@ -764,6 +764,8 @@ void event_save_current_config(void)
 {
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
+   bool ret;
+   char msg[128];
 
    if (settings->config_save_on_exit && *global->path.config)
    {
@@ -771,15 +773,30 @@ void event_save_current_config(void)
        * needed on consoles for core switching and reusing last good
        * config for new cores.
        */
-      config_save_file(global->path.config);
 
       /* Flush out the core specific config. */
       if (*global->path.core_specific_config &&
             settings->core_specific_config)
-         config_save_file(global->path.core_specific_config);
+         ret = config_save_file(global->path.core_specific_config);
+      else
+         ret = config_save_file(global->path.config);
    }
 
-   event_cmd_ctl(EVENT_CMD_AUTOSAVE_STATE, NULL);
+   if (ret)
+   {
+      snprintf(msg, sizeof(msg), "Saved new config to \"%s\".",
+            global->path.config);
+      RARCH_LOG("%s\n", msg);
+   }
+   else
+   {
+      snprintf(msg, sizeof(msg), "Failed saving config to \"%s\".",
+            global->path.config);
+      RARCH_ERR("%s\n", msg);
+   }
+
+   runloop_msg_queue_push(msg, 1, 180, true);
+
 }
 
 /**
