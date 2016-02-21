@@ -684,7 +684,6 @@ static bool event_save_core_config(void)
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
       return false;
    }
-
    /* Infer file name based on libretro core. */
    if (*settings->libretro && path_file_exists(settings->libretro))
    {
@@ -700,14 +699,12 @@ static bool event_save_core_config(void)
          path_remove_extension(config_name);
          fill_pathname_join(config_path, config_dir, config_name,
                sizeof(config_path));
-
          if (i)
             snprintf(tmp, sizeof(tmp), "-%u.cfg", i);
          else
             strlcpy(tmp, ".cfg", sizeof(tmp));
 
-         fill_string_join(config_path, tmp, sizeof(config_path));
-
+         snprintf(config_path, sizeof(config_path), "%s%s", config_path, tmp);
          if (!path_file_exists(config_path))
          {
             found_path = true;
