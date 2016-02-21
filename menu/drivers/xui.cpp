@@ -243,13 +243,13 @@ HRESULT XuiTextureLoader(IXuiDevice *pDevice, LPCWSTR szFileName,
 
    if(hr != D3DXERR_INVALIDDATA )
    {
-      pImageInfo->Depth = pSrc.Depth;
-      pImageInfo->Format = pSrc.Format;
-      pImageInfo->Height = pSrc.Height;
+      pImageInfo->Depth           = pSrc.Depth;
+      pImageInfo->Format          = pSrc.Format;
+      pImageInfo->Height          = pSrc.Height;
       pImageInfo->ImageFileFormat = pSrc.ImageFileFormat;
-      pImageInfo->MipLevels = pSrc.MipLevels;
-      pImageInfo->ResourceType = pSrc.ResourceType;
-      pImageInfo->Width = pSrc.Width;
+      pImageInfo->MipLevels       = pSrc.MipLevels;
+      pImageInfo->ResourceType    = pSrc.ResourceType;
+      pImageInfo->Width           = pSrc.Width;
    }
    else
       RARCH_ERR("D3DXERR_INVALIDDATA Encountered\n");
@@ -293,7 +293,8 @@ static void* xui_init(void **userdata)
 
    d3d_make_d3dpp(d3d, &video_info, &d3dpp);
    
-   hr = app.InitShared(d3d->dev, &d3dpp, (PFN_XUITEXTURELOADER)XuiTextureLoader);
+   hr = app.InitShared(d3d->dev, &d3dpp,
+         (PFN_XUITEXTURELOADER)XuiTextureLoader);
 
    if (FAILED(hr))
    {
@@ -387,8 +388,8 @@ static void xui_render_message(const char *msg)
       float msg_height = 120;
       float msg_offset = 32;
 
-      font_parms.x = msg_width;
-      font_parms.y = msg_height + (msg_offset * j);
+      font_parms.x     = msg_width;
+      font_parms.y     = msg_height + (msg_offset * j);
       font_parms.scale = 21;
 
       video_driver_set_osd_msg(msg, &font_parms, NULL);
@@ -404,7 +405,7 @@ static void xui_frame(void *data)
    XUIMessageRender msgRender;
    D3DXMATRIX matOrigView;
    LPDIRECT3DDEVICE d3dr;
-   const char *message;
+   const char *message   = NULL;
    D3DVIEWPORT vp_full   = {0};
    d3d_video_t *d3d      = (d3d_video_t*)video_driver_get_ptr(false);
    
@@ -424,7 +425,8 @@ static void xui_frame(void *data)
 
    XuiRenderGetViewTransform( app.GetDC(), &matOrigView );
 
-   XuiMessageRender( &msg, &msgRender, app.GetDC(), 0xffffffff, XUI_BLEND_NORMAL );
+   XuiMessageRender( &msg, &msgRender,
+         app.GetDC(), 0xffffffff, XUI_BLEND_NORMAL );
    XuiSendMessage( app.GetRootObj(), &msg );
 
    XuiRenderSetViewTransform( app.GetDC(), &matOrigView );
@@ -452,9 +454,7 @@ static void blit_line(int x, int y, const char *message, bool green)
 
 static void xui_render_background(void)
 {
-   bool libretro_running           = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
-
-	if (libretro_running)
+   if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
 		XuiElementSetShow(m_background, FALSE);
 	else
 		XuiElementSetShow(m_background, TRUE);
@@ -666,13 +666,15 @@ static void xui_list_free(file_list_t *list, size_t idx,
 
 static void xui_list_clear(file_list_t *list)
 {
-   XuiListDeleteItems(m_menulist, 0, XuiListGetItemCount(m_menulist));
+   XuiListDeleteItems(m_menulist,
+         0, XuiListGetItemCount(m_menulist));
 }
 
 static void xui_list_set_selection(void *data, file_list_t *list)
 {
    if (list)
-      XuiListSetCurSel(m_menulist, file_list_get_directory_ptr(list));
+      XuiListSetCurSel(m_menulist,
+            file_list_get_directory_ptr(list));
 }
 
 static int xui_environ(menu_environ_cb_t type, void *data)

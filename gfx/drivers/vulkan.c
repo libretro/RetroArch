@@ -60,8 +60,8 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp);
 
 static const gfx_ctx_driver_t *vulkan_get_context(vk_t *vk)
 {
-   unsigned major = 1;
-   unsigned minor = 0;
+   unsigned major       = 1;
+   unsigned minor       = 0;
    settings_t *settings = config_get_ptr();
    enum gfx_ctx_api api = GFX_CTX_VULKAN_API;
 
@@ -72,39 +72,43 @@ static const gfx_ctx_driver_t *vulkan_get_context(vk_t *vk)
 static void vulkan_init_render_pass(vk_t *vk)
 {
    VkAttachmentDescription attachment = {0};
-   VkRenderPassCreateInfo rp_info = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
-   VkAttachmentReference color_ref = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-   VkSubpassDescription subpass = {0};
+   VkRenderPassCreateInfo rp_info     = { 
+      VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+   VkAttachmentReference color_ref    = { 0, 
+      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+   VkSubpassDescription subpass       = {0};
 
    /* Backbuffer format. */
-   attachment.format = vk->context->swapchain_format;
+   attachment.format            = vk->context->swapchain_format;
    /* Not multisampled. */
-   attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+   attachment.samples           = VK_SAMPLE_COUNT_1_BIT;
    /* When starting the frame, we want tiles to be cleared. */
-   attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+   attachment.loadOp            = VK_ATTACHMENT_LOAD_OP_CLEAR;
    /* When end the frame, we want tiles to be written out. */
-   attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+   attachment.storeOp           = VK_ATTACHMENT_STORE_OP_STORE;
    /* Don't care about stencil since we're not using it. */
-   attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-   attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+   attachment.stencilLoadOp     = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+   attachment.stencilStoreOp    = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
-   /* The image layout will be attachment_optimal when we're executing the renderpass. */
-   attachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-   attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   /* The image layout will be attachment_optimal 
+    * when we're executing the renderpass. */
+   attachment.initialLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   attachment.finalLayout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
    /* We have one subpass.
     * This subpass has 1 color attachment. */
-   subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+   subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
    subpass.colorAttachmentCount = 1;
-   subpass.pColorAttachments = &color_ref;
+   subpass.pColorAttachments    = &color_ref;
 
    /* Finally, create the renderpass. */
-   rp_info.attachmentCount = 1;
-   rp_info.pAttachments = &attachment;
-   rp_info.subpassCount = 1;
-   rp_info.pSubpasses = &subpass;
+   rp_info.attachmentCount      = 1;
+   rp_info.pAttachments         = &attachment;
+   rp_info.subpassCount         = 1;
+   rp_info.pSubpasses           = &subpass;
 
-   vkCreateRenderPass(vk->context->device, &rp_info, NULL, &vk->render_pass);
+   vkCreateRenderPass(vk->context->device,
+         &rp_info, NULL, &vk->render_pass);
 }
 
 static void vulkan_init_framebuffers(vk_t *vk)
@@ -114,35 +118,37 @@ static void vulkan_init_framebuffers(vk_t *vk)
 
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
-      VkImageViewCreateInfo view = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-      VkFramebufferCreateInfo info = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+      VkImageViewCreateInfo view           = { 
+         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+      VkFramebufferCreateInfo info         = { 
+         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
 
-      vk->swapchain[i].backbuffer.image = vk->context->swapchain_images[i];
+      vk->swapchain[i].backbuffer.image    = vk->context->swapchain_images[i];
 
       /* Create an image view which we can render into. */
-      view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-      view.format = vk->context->swapchain_format;
-      view.image = vk->swapchain[i].backbuffer.image;
-      view.subresourceRange.baseMipLevel = 0;
+      view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
+      view.format                          = vk->context->swapchain_format;
+      view.image                           = vk->swapchain[i].backbuffer.image;
+      view.subresourceRange.baseMipLevel   = 0;
       view.subresourceRange.baseArrayLayer = 0;
-      view.subresourceRange.levelCount = 1;
-      view.subresourceRange.layerCount = 1;
-      view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-      view.components.r = VK_COMPONENT_SWIZZLE_R;
-      view.components.g = VK_COMPONENT_SWIZZLE_G;
-      view.components.b = VK_COMPONENT_SWIZZLE_B;
-      view.components.a = VK_COMPONENT_SWIZZLE_A;
+      view.subresourceRange.levelCount     = 1;
+      view.subresourceRange.layerCount     = 1;
+      view.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+      view.components.r                    = VK_COMPONENT_SWIZZLE_R;
+      view.components.g                    = VK_COMPONENT_SWIZZLE_G;
+      view.components.b                    = VK_COMPONENT_SWIZZLE_B;
+      view.components.a                    = VK_COMPONENT_SWIZZLE_A;
 
       vkCreateImageView(vk->context->device,
             &view, NULL, &vk->swapchain[i].backbuffer.view);
 
       /* Create the framebuffer */
-      info.renderPass = vk->render_pass;
+      info.renderPass      = vk->render_pass;
       info.attachmentCount = 1;
-      info.pAttachments = &vk->swapchain[i].backbuffer.view;
-      info.width = vk->context->swapchain_width;
-      info.height = vk->context->swapchain_height;
-      info.layers = 1;
+      info.pAttachments    = &vk->swapchain[i].backbuffer.view;
+      info.width           = vk->context->swapchain_width;
+      info.height          = vk->context->swapchain_height;
+      info.layers          = 1;
 
       vkCreateFramebuffer(vk->context->device,
             &info, NULL, &vk->swapchain[i].backbuffer.framebuffer);
@@ -151,55 +157,69 @@ static void vulkan_init_framebuffers(vk_t *vk)
 
 static void vulkan_init_pipeline_layout(vk_t *vk)
 {
-   VkDescriptorSetLayoutCreateInfo set_layout_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
-   VkPipelineLayoutCreateInfo layout_info = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-   VkDescriptorSetLayoutBinding bindings[2] = {{0}};
+   VkDescriptorSetLayoutCreateInfo set_layout_info = { 
+      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+   VkPipelineLayoutCreateInfo layout_info          = { 
+      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
+   VkDescriptorSetLayoutBinding bindings[2]        = {{0}};
 
-   bindings[0].binding = 0;
-   bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-   bindings[0].descriptorCount = 1;
-   bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+   bindings[0].binding            = 0;
+   bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   bindings[0].descriptorCount    = 1;
+   bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
    bindings[0].pImmutableSamplers = NULL;
 
-   bindings[1].binding = 1;
-   bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-   bindings[1].descriptorCount = 1;
-   bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+   bindings[1].binding            = 1;
+   bindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+   bindings[1].descriptorCount    = 1;
+   bindings[1].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
    bindings[1].pImmutableSamplers = NULL;
 
-   set_layout_info.bindingCount = 2;
-   set_layout_info.pBindings = bindings;
+   set_layout_info.bindingCount   = 2;
+   set_layout_info.pBindings      = bindings;
 
-   vkCreateDescriptorSetLayout(vk->context->device, &set_layout_info, NULL, &vk->pipelines.set_layout);
+   vkCreateDescriptorSetLayout(vk->context->device,
+         &set_layout_info, NULL, &vk->pipelines.set_layout);
 
-   layout_info.setLayoutCount = 1;
-   layout_info.pSetLayouts = &vk->pipelines.set_layout;
+   layout_info.setLayoutCount     = 1;
+   layout_info.pSetLayouts        = &vk->pipelines.set_layout;
 
-   vkCreatePipelineLayout(vk->context->device, &layout_info, NULL, &vk->pipelines.layout);
+   vkCreatePipelineLayout(vk->context->device,
+         &layout_info, NULL, &vk->pipelines.layout);
 }
 
 static void vulkan_init_pipelines(vk_t *vk)
 {
    unsigned i;
-   VkPipelineInputAssemblyStateCreateInfo input_assembly = { VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-   VkPipelineVertexInputStateCreateInfo vertex_input = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-   VkPipelineRasterizationStateCreateInfo raster = { VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-   VkPipelineColorBlendAttachmentState blend_attachment = {0};
-   VkPipelineColorBlendStateCreateInfo blend = { VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
-   VkPipelineViewportStateCreateInfo viewport = { VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
-   VkPipelineDepthStencilStateCreateInfo depth_stencil = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-   VkPipelineMultisampleStateCreateInfo multisample = { VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
-   VkPipelineDynamicStateCreateInfo dynamic = { VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
+   VkPipelineInputAssemblyStateCreateInfo input_assembly = { 
+      VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
+   VkPipelineVertexInputStateCreateInfo vertex_input     = { 
+      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
+   VkPipelineRasterizationStateCreateInfo raster         = { 
+      VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
+   VkPipelineColorBlendAttachmentState blend_attachment  = {0};
+   VkPipelineColorBlendStateCreateInfo blend             = { 
+      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
+   VkPipelineViewportStateCreateInfo viewport            = { 
+      VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
+   VkPipelineDepthStencilStateCreateInfo depth_stencil   = { 
+      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
+   VkPipelineMultisampleStateCreateInfo multisample      = { 
+      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
+   VkPipelineDynamicStateCreateInfo dynamic              = { 
+      VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
 
-   VkPipelineShaderStageCreateInfo shader_stages[2] = {
+   VkPipelineShaderStageCreateInfo shader_stages[2]      = {
       { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
       { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
    };
 
-   VkGraphicsPipelineCreateInfo pipe = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
-   VkShaderModuleCreateInfo module_info = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
-   VkVertexInputAttributeDescription attributes[3] = {{0}};
-   VkVertexInputBindingDescription binding = {0};
+   VkGraphicsPipelineCreateInfo pipe                     = { 
+      VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+   VkShaderModuleCreateInfo module_info                  = { 
+      VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+   VkVertexInputAttributeDescription attributes[3]       = {{0}};
+   VkVertexInputBindingDescription binding               = {0};
 
    static const VkDynamicState dynamics[] = {
       VK_DYNAMIC_STATE_VIEWPORT,
@@ -212,95 +232,98 @@ static void vulkan_init_pipelines(vk_t *vk)
    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
    /* VAO state */
-   attributes[0].location = 0;
-   attributes[0].binding = 0;
-   attributes[0].format = VK_FORMAT_R32G32_SFLOAT;
-   attributes[0].offset = 0;
-   attributes[1].location = 1;
-   attributes[1].binding = 0;
-   attributes[1].format = VK_FORMAT_R32G32_SFLOAT;
-   attributes[1].offset = 2 * sizeof(float);
-   attributes[2].location = 2;
-   attributes[2].binding = 0;
-   attributes[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-   attributes[2].offset = 4 * sizeof(float);
+   attributes[0].location  = 0;
+   attributes[0].binding   = 0;
+   attributes[0].format    = VK_FORMAT_R32G32_SFLOAT;
+   attributes[0].offset    = 0;
+   attributes[1].location  = 1;
+   attributes[1].binding   = 0;
+   attributes[1].format    = VK_FORMAT_R32G32_SFLOAT;
+   attributes[1].offset    = 2 * sizeof(float);
+   attributes[2].location  = 2;
+   attributes[2].binding   = 0;
+   attributes[2].format    = VK_FORMAT_R32G32B32A32_SFLOAT;
+   attributes[2].offset    = 4 * sizeof(float);
 
-   binding.binding = 0;
-   binding.stride = sizeof(struct vk_vertex);
-   binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+   binding.binding         = 0;
+   binding.stride          = sizeof(struct vk_vertex);
+   binding.inputRate       = VK_VERTEX_INPUT_RATE_VERTEX;
 
-   vertex_input.vertexBindingDescriptionCount = 1;
-   vertex_input.pVertexBindingDescriptions = &binding;
+   vertex_input.vertexBindingDescriptionCount   = 1;
+   vertex_input.pVertexBindingDescriptions      = &binding;
    vertex_input.vertexAttributeDescriptionCount = 3;
-   vertex_input.pVertexAttributeDescriptions = attributes;
+   vertex_input.pVertexAttributeDescriptions    = attributes;
 
    /* Raster state */
-   raster.polygonMode = VK_POLYGON_MODE_FILL;
-   raster.cullMode = VK_CULL_MODE_NONE;
-   raster.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-   raster.depthClampEnable = false;
+   raster.polygonMode             = VK_POLYGON_MODE_FILL;
+   raster.cullMode                = VK_CULL_MODE_NONE;
+   raster.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+   raster.depthClampEnable        = false;
    raster.rasterizerDiscardEnable = false;
-   raster.depthBiasEnable = false;
-   raster.lineWidth = 1.0f;
+   raster.depthBiasEnable         = false;
+   raster.lineWidth               = 1.0f;
 
    /* Blend state */
-   blend_attachment.blendEnable = false;
+   blend_attachment.blendEnable    = false;
    blend_attachment.colorWriteMask = 0xf;
-   blend.attachmentCount = 1;
-   blend.pAttachments = &blend_attachment;
+   blend.attachmentCount           = 1;
+   blend.pAttachments              = &blend_attachment;
 
    /* Viewport state */
-   viewport.viewportCount = 1;
-   viewport.scissorCount = 1;
+   viewport.viewportCount          = 1;
+   viewport.scissorCount           = 1;
 
    /* Depth-stencil state */
-   depth_stencil.depthTestEnable = false;
-   depth_stencil.depthWriteEnable = false;
+   depth_stencil.depthTestEnable       = false;
+   depth_stencil.depthWriteEnable      = false;
    depth_stencil.depthBoundsTestEnable = false;
-   depth_stencil.stencilTestEnable = false;
-   depth_stencil.minDepthBounds = 0.0f;
-   depth_stencil.maxDepthBounds = 1.0f;
+   depth_stencil.stencilTestEnable     = false;
+   depth_stencil.minDepthBounds        = 0.0f;
+   depth_stencil.maxDepthBounds        = 1.0f;
 
    /* Multisample state */
-   multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+   multisample.rasterizationSamples    = VK_SAMPLE_COUNT_1_BIT;
 
    /* Dynamic state */
-   dynamic.pDynamicStates = dynamics;
-   dynamic.dynamicStateCount = ARRAY_SIZE(dynamics);
+   dynamic.pDynamicStates              = dynamics;
+   dynamic.dynamicStateCount           = ARRAY_SIZE(dynamics);
 
-   pipe.stageCount = 2;
-   pipe.pStages = shader_stages;
-   pipe.pVertexInputState = &vertex_input;
-   pipe.pInputAssemblyState = &input_assembly;
-   pipe.pRasterizationState = &raster;
-   pipe.pColorBlendState = &blend;
-   pipe.pMultisampleState = &multisample;
-   pipe.pViewportState = &viewport;
-   pipe.pDepthStencilState = &depth_stencil;
-   pipe.pDynamicState = &dynamic;
-   pipe.renderPass = vk->render_pass;
-   pipe.layout = vk->pipelines.layout;
+   pipe.stageCount                     = 2;
+   pipe.pStages                        = shader_stages;
+   pipe.pVertexInputState              = &vertex_input;
+   pipe.pInputAssemblyState            = &input_assembly;
+   pipe.pRasterizationState            = &raster;
+   pipe.pColorBlendState               = &blend;
+   pipe.pMultisampleState              = &multisample;
+   pipe.pViewportState                 = &viewport;
+   pipe.pDepthStencilState             = &depth_stencil;
+   pipe.pDynamicState                  = &dynamic;
+   pipe.renderPass                     = vk->render_pass;
+   pipe.layout                         = vk->pipelines.layout;
 
    /* Alpha-blended pipeline. */
-   module_info.codeSize = alpha_blend_vert_spv_len;
-   module_info.pCode = (const uint32_t*)alpha_blend_vert_spv;
+   module_info.codeSize   = alpha_blend_vert_spv_len;
+   module_info.pCode      = (const uint32_t*)alpha_blend_vert_spv;
    shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
    shader_stages[0].pName = "main";
-   vkCreateShaderModule(vk->context->device, &module_info, NULL, &shader_stages[0].module);
-   module_info.codeSize = alpha_blend_frag_spv_len;
-   module_info.pCode = (const uint32_t*)alpha_blend_frag_spv;
+   vkCreateShaderModule(vk->context->device,
+         &module_info, NULL, &shader_stages[0].module);
+
+   module_info.codeSize   = alpha_blend_frag_spv_len;
+   module_info.pCode      = (const uint32_t*)alpha_blend_frag_spv;
    shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName = "main";
-   vkCreateShaderModule(vk->context->device, &module_info, NULL, &shader_stages[1].module);
+   vkCreateShaderModule(vk->context->device,
+         &module_info, NULL, &shader_stages[1].module);
 
-   blend_attachment.blendEnable = true;
-   blend_attachment.colorWriteMask = 0xf;
+   blend_attachment.blendEnable         = true;
+   blend_attachment.colorWriteMask      = 0xf;
    blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
    blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-   blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+   blend_attachment.colorBlendOp        = VK_BLEND_OP_ADD;
    blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
    blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-   blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+   blend_attachment.colorBlendOp        = VK_BLEND_OP_ADD;
 
    vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
          1, &pipe, NULL, &vk->pipelines.alpha_blend);
@@ -326,40 +349,45 @@ static void vulkan_init_command_buffers(vk_t *vk)
    unsigned i;
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
-      VkCommandPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
-      VkCommandBufferAllocateInfo info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+      VkCommandPoolCreateInfo pool_info = { 
+         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
+      VkCommandBufferAllocateInfo info  = { 
+         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 
       pool_info.queueFamilyIndex = vk->context->graphics_queue_index;
-      pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-      vkCreateCommandPool(vk->context->device, &pool_info, NULL, &vk->swapchain[i].cmd_pool);
+      pool_info.flags            = 
+         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+      vkCreateCommandPool(vk->context->device,
+            &pool_info, NULL, &vk->swapchain[i].cmd_pool);
 
-      info.commandPool = vk->swapchain[i].cmd_pool;
-      info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+      info.commandPool        = vk->swapchain[i].cmd_pool;
+      info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
       info.commandBufferCount = 1;
-      vkAllocateCommandBuffers(vk->context->device, &info, &vk->swapchain[i].cmd);
+      vkAllocateCommandBuffers(vk->context->device,
+            &info, &vk->swapchain[i].cmd);
    }
 }
 
 static void vulkan_init_samplers(vk_t *vk)
 {
-   VkSamplerCreateInfo info = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
-   info.magFilter = VK_FILTER_NEAREST;
-   info.minFilter = VK_FILTER_NEAREST;
-   info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-   info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-   info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-   info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-   info.mipLodBias = 0.0f;
-   info.maxAnisotropy = 1.0f;
-   info.compareEnable = false;
-   info.minLod = 0.0f;
-   info.maxLod = 0.0f;
+   VkSamplerCreateInfo info     = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+   info.magFilter               = VK_FILTER_NEAREST;
+   info.minFilter               = VK_FILTER_NEAREST;
+   info.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+   info.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+   info.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+   info.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+   info.mipLodBias              = 0.0f;
+   info.maxAnisotropy           = 1.0f;
+   info.compareEnable           = false;
+   info.minLod                  = 0.0f;
+   info.maxLod                  = 0.0f;
    info.unnormalizedCoordinates = false;
-   info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-
+   info.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
    vkCreateSampler(vk->context->device, &info, NULL, &vk->samplers.nearest);
-   info.magFilter = VK_FILTER_LINEAR;
-   info.minFilter = VK_FILTER_LINEAR;
+
+   info.magFilter               = VK_FILTER_LINEAR;
+   info.minFilter               = VK_FILTER_LINEAR;
    vkCreateSampler(vk->context->device, &info, NULL, &vk->samplers.linear);
 }
 
@@ -396,7 +424,8 @@ static void vulkan_deinit_buffers(vk_t *vk)
 static void vulkan_init_descriptor_pool(vk_t *vk)
 {
    unsigned i;
-   VkDescriptorPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+   VkDescriptorPoolCreateInfo pool_info            = { 
+      VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
    static const VkDescriptorPoolSize pool_sizes[2] = {
       { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
       { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
@@ -404,7 +433,8 @@ static void vulkan_init_descriptor_pool(vk_t *vk)
 
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
-      vk->swapchain[i].descriptor_manager = vulkan_create_descriptor_manager(vk->context->device,
+      vk->swapchain[i].descriptor_manager = 
+         vulkan_create_descriptor_manager(vk->context->device,
             pool_sizes, 2, vk->pipelines.set_layout);
    }
 }
@@ -413,7 +443,8 @@ static void vulkan_deinit_descriptor_pool(vk_t *vk)
 {
    unsigned i;
    for (i = 0; i < vk->num_swapchain_images; i++)
-      vulkan_destroy_descriptor_manager(vk->context->device, &vk->swapchain[i].descriptor_manager);
+      vulkan_destroy_descriptor_manager(vk->context->device,
+            &vk->swapchain[i].descriptor_manager);
 }
 
 static void vulkan_init_textures(vk_t *vk)
@@ -426,7 +457,8 @@ static void vulkan_init_textures(vk_t *vk)
       for (i = 0; i < vk->num_swapchain_images; i++)
       {
          vk->swapchain[i].texture = vulkan_create_texture(vk, NULL,
-               vk->tex_w, vk->tex_h, vk->tex_fmt, NULL, NULL, VULKAN_TEXTURE_STREAMED);
+               vk->tex_w, vk->tex_h, vk->tex_fmt,
+               NULL, NULL, VULKAN_TEXTURE_STREAMED);
          vulkan_map_persistent_texture(vk->context->device,
                &vk->swapchain[i].texture);
 
@@ -463,14 +495,17 @@ static void vulkan_deinit_command_buffers(vk_t *vk)
          vkFreeCommandBuffers(vk->context->device,
                vk->swapchain[i].cmd_pool, 1, &vk->swapchain[i].cmd);
 
-      vkDestroyCommandPool(vk->context->device, vk->swapchain[i].cmd_pool, NULL);
+      vkDestroyCommandPool(vk->context->device,
+            vk->swapchain[i].cmd_pool, NULL);
    }
 }
 
 static void vulkan_deinit_pipeline_layout(vk_t *vk)
 {
-   vkDestroyPipelineLayout(vk->context->device, vk->pipelines.layout, NULL);
-   vkDestroyDescriptorSetLayout(vk->context->device, vk->pipelines.set_layout, NULL);
+   vkDestroyPipelineLayout(vk->context->device,
+         vk->pipelines.layout, NULL);
+   vkDestroyDescriptorSetLayout(vk->context->device,
+         vk->pipelines.set_layout, NULL);
 }
 
 static void vulkan_deinit_pipelines(vk_t *vk)
@@ -501,17 +536,20 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    struct vulkan_filter_chain_create_info info;
 
    memset(&info, 0, sizeof(info));
-   info.device = vk->context->device;
-   info.memory_properties = &vk->context->memory_properties;
-   info.pipeline_cache = vk->pipelines.cache;
-   info.max_input_size.width = vk->tex_w;
+   info.device                = vk->context->device;
+   info.memory_properties     = &vk->context->memory_properties;
+   info.pipeline_cache        = vk->pipelines.cache;
+   info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
-   info.swapchain.viewport = vk->vk_vp;
-   info.swapchain.format = vk->context->swapchain_format;
+   info.swapchain.viewport    = vk->vk_vp;
+   info.swapchain.format      = vk->context->swapchain_format;
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
 
-   vk->filter_chain = vulkan_filter_chain_create_default(&info, vk->video.smooth ? VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST);
+   vk->filter_chain = vulkan_filter_chain_create_default(&info,
+         vk->video.smooth ? 
+         VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST);
+
    if (!vk->filter_chain)
    {
       RARCH_ERR("Failed to create filter chain.\n");
@@ -589,36 +627,44 @@ static void vulkan_init_resources(vk_t *vk)
 
 static void vulkan_init_static_resources(vk_t *vk)
 {
-   VkCommandPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
    unsigned i;
    uint32_t blank[4 * 4];
-
+   VkCommandPoolCreateInfo pool_info = { 
+      VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
    /* Create the pipeline cache. */
-   VkPipelineCacheCreateInfo cache = { VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
-   vkCreatePipelineCache(vk->context->device, &cache, NULL, &vk->pipelines.cache);
+   VkPipelineCacheCreateInfo cache = { 
+      VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
+
+   vkCreatePipelineCache(vk->context->device,
+         &cache, NULL, &vk->pipelines.cache);
 
    pool_info.queueFamilyIndex = vk->context->graphics_queue_index;
-   vkCreateCommandPool(vk->context->device, &pool_info, NULL, &vk->staging_pool);
+   vkCreateCommandPool(vk->context->device,
+         &pool_info, NULL, &vk->staging_pool);
 
    for (i = 0; i < 4 * 4; i++)
       blank[i] = -1u;
 
    vk->display.blank_texture = vulkan_create_texture(vk, NULL,
-         4, 4, VK_FORMAT_B8G8R8A8_UNORM, blank, NULL, VULKAN_TEXTURE_STATIC);
+         4, 4, VK_FORMAT_B8G8R8A8_UNORM,
+         blank, NULL, VULKAN_TEXTURE_STATIC);
 }
 
 static void vulkan_deinit_static_resources(vk_t *vk)
 {
    unsigned i;
-   vkDestroyPipelineCache(vk->context->device, vk->pipelines.cache, NULL);
-   vulkan_destroy_texture(vk->context->device, &vk->display.blank_texture);
+   vkDestroyPipelineCache(vk->context->device,
+         vk->pipelines.cache, NULL);
+   vulkan_destroy_texture(vk->context->device,
+         &vk->display.blank_texture);
    vkDestroyCommandPool(vk->context->device, vk->staging_pool, NULL);
    free(vk->hw.cmd);
    free(vk->hw.wait_dst_stages);
 
    for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
       if (vk->readback.staging[i].memory != VK_NULL_HANDLE)
-         vulkan_destroy_texture(vk->context->device, &vk->readback.staging[i]);
+         vulkan_destroy_texture(vk->context->device,
+               &vk->readback.staging[i]);
 }
 
 static void vulkan_deinit_resources(vk_t *vk)
@@ -688,18 +734,21 @@ static void vulkan_set_image(void *handle,
       uint32_t num_semaphores,
       const VkSemaphore *semaphores)
 {
-   vk_t *vk = (vk_t*)handle;
    unsigned i;
+   vk_t *vk              = (vk_t*)handle;
 
-   vk->hw.image = image;
+   vk->hw.image          = image;
    vk->hw.num_semaphores = num_semaphores;
-   vk->hw.semaphores = semaphores;
+   vk->hw.semaphores     = semaphores;
 
    if (num_semaphores > 0)
    {
-      vk->hw.wait_dst_stages = (VkPipelineStageFlags*)realloc(vk->hw.wait_dst_stages,
+      vk->hw.wait_dst_stages = (VkPipelineStageFlags*)
+         realloc(vk->hw.wait_dst_stages,
             sizeof(VkPipelineStageFlags) * vk->hw.num_semaphores);
-      retro_assert(vk->hw.wait_dst_stages); /* If this fails, we're screwed anyways. */
+
+      /* If this fails, we're screwed anyways. */
+      retro_assert(vk->hw.wait_dst_stages);
 
       for (i = 0; i < vk->hw.num_semaphores; i++)
          vk->hw.wait_dst_stages[i] = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -716,13 +765,15 @@ static void vulkan_wait_sync_index(void *handle)
 static void vulkan_set_command_buffers(void *handle, uint32_t num_cmd,
       const VkCommandBuffer *cmd)
 {
-   vk_t *vk = (vk_t*)handle;
+   vk_t *vk                   = (vk_t*)handle;
    unsigned required_capacity = num_cmd + 1;
    if (required_capacity > vk->hw.capacity_cmd)
    {
       vk->hw.cmd = (VkCommandBuffer*)realloc(vk->hw.cmd,
             sizeof(VkCommandBuffer) * required_capacity);
-      retro_assert(vk->hw.cmd); /* If this fails, we're just screwed. */
+
+      /* If this fails, we're just screwed. */
+      retro_assert(vk->hw.cmd);
       vk->hw.capacity_cmd = required_capacity;
    }
 
@@ -746,31 +797,31 @@ static void vulkan_init_hw_render(vk_t *vk)
 {
    const struct retro_hw_render_callback *hw_render =
       video_driver_callback();
-   struct retro_hw_render_interface_vulkan *iface =
+   struct retro_hw_render_interface_vulkan *iface   =
       &vk->hw.iface;
 
    if (hw_render->context_type != RETRO_HW_CONTEXT_VULKAN)
       return;
 
-   vk->hw.enable = true;
+   vk->hw.enable              = true;
 
-   iface->interface_type = RETRO_HW_RENDER_INTERFACE_VULKAN;
-   iface->interface_version = RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION;
-   iface->instance = vk->context->instance;
-   iface->gpu = vk->context->gpu;
-   iface->device = vk->context->device;
+   iface->interface_type      = RETRO_HW_RENDER_INTERFACE_VULKAN;
+   iface->interface_version   = RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION;
+   iface->instance            = vk->context->instance;
+   iface->gpu                 = vk->context->gpu;
+   iface->device              = vk->context->device;
 
-   iface->queue = vk->context->queue;
-   iface->queue_index = vk->context->graphics_queue_index;
+   iface->queue               = vk->context->queue;
+   iface->queue_index         = vk->context->graphics_queue_index;
 
-   iface->handle = vk;
-   iface->set_image = vulkan_set_image;
-   iface->get_sync_index = vulkan_get_sync_index;
+   iface->handle              = vk;
+   iface->set_image           = vulkan_set_image;
+   iface->get_sync_index      = vulkan_get_sync_index;
    iface->get_sync_index_mask = vulkan_get_sync_index_mask;
-   iface->wait_sync_index = vulkan_wait_sync_index;
+   iface->wait_sync_index     = vulkan_wait_sync_index;
    iface->set_command_buffers = vulkan_set_command_buffers;
-   iface->lock_queue = vulkan_lock_queue;
-   iface->unlock_queue = vulkan_unlock_queue;
+   iface->lock_queue          = vulkan_lock_queue;
+   iface->unlock_queue        = vulkan_unlock_queue;
 }
 
 static void vulkan_init_readback(vk_t *vk)
@@ -780,19 +831,19 @@ static void vulkan_init_readback(vk_t *vk)
     * driver.recording_data, because recording is 
     * not initialized yet.
     */
-   settings_t *settings = config_get_ptr();
+   settings_t *settings    = config_get_ptr();
    bool *recording_enabled = recording_is_enabled();
-   vk->readback.streamed = settings->video.gpu_record && *recording_enabled;
+   vk->readback.streamed   = settings->video.gpu_record && *recording_enabled;
 
    if (!vk->readback.streamed)
       return;
 
-   vk->readback.scaler.in_width = vk->vp.width;
-   vk->readback.scaler.in_height = vk->vp.height;
-   vk->readback.scaler.out_width = vk->vp.width;
-   vk->readback.scaler.out_height = vk->vp.height;
-   vk->readback.scaler.in_fmt = SCALER_FMT_ARGB8888;
-   vk->readback.scaler.out_fmt = SCALER_FMT_BGR24;
+   vk->readback.scaler.in_width    = vk->vp.width;
+   vk->readback.scaler.in_height   = vk->vp.height;
+   vk->readback.scaler.out_width   = vk->vp.width;
+   vk->readback.scaler.out_height  = vk->vp.height;
+   vk->readback.scaler.in_fmt      = SCALER_FMT_ARGB8888;
+   vk->readback.scaler.out_fmt     = SCALER_FMT_BGR24;
    vk->readback.scaler.scaler_type = SCALER_TYPE_POINT;
 
    if (!scaler_ctx_gen_filter(&vk->readback.scaler))
@@ -805,14 +856,16 @@ static void vulkan_init_readback(vk_t *vk)
 static void *vulkan_init(const video_info_t *video, const input_driver_t **input,
       void **input_data)
 {
-   unsigned win_width, win_height, temp_width = 0, temp_height = 0;
-   const gfx_ctx_driver_t *ctx_driver = NULL;
-   settings_t *settings               = config_get_ptr();
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned interval;
-
-   vk_t *vk = (vk_t*)calloc(1, sizeof(*vk));
+   unsigned win_width;
+   unsigned win_height;
+   unsigned temp_width                = 0;
+   unsigned temp_height               = 0;
+   const gfx_ctx_driver_t *ctx_driver = NULL;
+   settings_t *settings               = config_get_ptr();
+   vk_t *vk                           = (vk_t*)calloc(1, sizeof(*vk));
    if (!vk)
       return NULL;
 
@@ -865,11 +918,13 @@ static void *vulkan_init(const video_info_t *video, const input_driver_t **input
 
    gfx_ctx_ctl(GFX_CTL_GET_CONTEXT_DATA, &vk->context);
 
-   vk->vsync = video->vsync;
-   vk->fullscreen = video->fullscreen;
-   vk->tex_w = vk->tex_h = RARCH_SCALE_BASE * video->input_scale;
-   vk->tex_fmt = video->rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
-   vk->keep_aspect = video->force_aspect;
+   vk->vsync             = video->vsync;
+   vk->fullscreen        = video->fullscreen;
+   vk->tex_w             = RARCH_SCALE_BASE * video->input_scale;
+   vk->tex_h             = RARCH_SCALE_BASE * video->input_scale;
+   vk->tex_fmt           = video->rgb32 
+      ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
+   vk->keep_aspect       = video->force_aspect;
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */
@@ -882,7 +937,7 @@ static void *vulkan_init(const video_info_t *video, const input_driver_t **input
    if (!vulkan_init_filter_chain(vk))
       goto error;
 
-   inp.input = input;
+   inp.input      = input;
    inp.input_data = input_data;
    gfx_ctx_ctl(GFX_CTL_INPUT_DRIVER, &inp);
 
@@ -931,9 +986,9 @@ static void vulkan_check_swapchain(vk_t *vk)
 
 static void vulkan_set_nonblock_state(void *data, bool state)
 {
-   vk_t *vk = (vk_t*)data;
-   settings_t *settings = config_get_ptr();
    unsigned interval;
+   vk_t *vk             = (vk_t*)data;
+   settings_t *settings = config_get_ptr();
 
    if (!vk)
       return;
@@ -951,22 +1006,24 @@ static void vulkan_set_nonblock_state(void *data, bool state)
 static bool vulkan_alive(void *data)
 {
    gfx_ctx_size_t size_data;
-   unsigned temp_width = 0, temp_height = 0;
-   bool ret = false;
-   bool quit = false, resize = false;
-   vk_t *vk = (vk_t*)data;
+   unsigned temp_width  = 0;
+   unsigned temp_height = 0;
+   bool ret             = false;
+   bool quit            = false;
+   bool resize          = false;
+   vk_t *vk             = (vk_t*)data;
 
    video_driver_get_size(&temp_width, &temp_height);
 
-   size_data.quit = &quit;
-   size_data.resize = &resize;
-   size_data.width = &temp_width;
-   size_data.height = &temp_height;
+   size_data.quit       = &quit;
+   size_data.resize     = &resize;
+   size_data.width      = &temp_width;
+   size_data.height     = &temp_height;
 
    if (gfx_ctx_ctl(GFX_CTL_CHECK_WINDOW, &size_data))
    {
       if (quit)
-         vk->quitting = true;
+         vk->quitting      = true;
       else if (resize)
          vk->should_resize = true;
 
@@ -998,7 +1055,8 @@ static bool vulkan_has_windowed(void *data)
    return gfx_ctx_ctl(GFX_CTL_HAS_WINDOWED, NULL);
 }
 
-static bool vulkan_set_shader(void *data, enum rarch_shader_type type, const char *path)
+static bool vulkan_set_shader(void *data,
+      enum rarch_shader_type type, const char *path)
 {
    vk_t *vk = (vk_t*)data;
    if (!vk)
@@ -1030,7 +1088,8 @@ static bool vulkan_set_shader(void *data, enum rarch_shader_type type, const cha
    return true;
 }
 
-static void vulkan_set_projection(vk_t *vk, struct gfx_ortho *ortho, bool allow_rotate)
+static void vulkan_set_projection(vk_t *vk,
+      struct gfx_ortho *ortho, bool allow_rotate)
 {
    math_matrix_4x4 rot;
 
@@ -1050,7 +1109,7 @@ static void vulkan_set_projection(vk_t *vk, struct gfx_ortho *ortho, bool allow_
 
 static void vulkan_set_rotation(void *data, unsigned rotation)
 {
-   vk_t *vk = (vk_t*)data;
+   vk_t *vk               = (vk_t*)data;
    struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!vk)
@@ -1060,7 +1119,8 @@ static void vulkan_set_rotation(void *data, unsigned rotation)
    vulkan_set_projection(vk, &ortho, true);
 }
 
-static void vulkan_set_video_mode(void *data, unsigned width, unsigned height,
+static void vulkan_set_video_mode(void *data,
+      unsigned width, unsigned height,
       bool fullscreen)
 {
    (void)data;
@@ -1078,17 +1138,18 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
 {
    gfx_ctx_aspect_t aspect_data;
    unsigned width, height;
-   int x = 0, y = 0;
-   float device_aspect = (float)viewport_width / viewport_height;
+   int x                  = 0;
+   int y                  = 0;
+   float device_aspect    = (float)viewport_width / viewport_height;
    struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
-   settings_t *settings  = config_get_ptr();
-   vk_t *vk = (vk_t*)data;
+   settings_t *settings   = config_get_ptr();
+   vk_t *vk               = (vk_t*)data;
 
    video_driver_get_size(&width, &height);
 
-   aspect_data.aspect = &device_aspect;
-   aspect_data.width = viewport_width;
-   aspect_data.height = viewport_height;
+   aspect_data.aspect     = &device_aspect;
+   aspect_data.width      = viewport_width;
+   aspect_data.height     = viewport_height;
 
    gfx_ctx_ctl(GFX_CTL_TRANSLATE_ASPECT, &aspect_data);
 
@@ -1129,14 +1190,16 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
          }
          else if (device_aspect > desired_aspect)
          {
-            delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-            x     = (int)roundf(viewport_width * (0.5f - delta));
+            delta          = (desired_aspect / device_aspect - 1.0f) 
+               / 2.0f + 0.5f;
+            x              = (int)roundf(viewport_width * (0.5f - delta));
             viewport_width = (unsigned)roundf(2.0f * viewport_width * delta);
          }
          else
          {
-            delta  = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-            y      = (int)roundf(viewport_height * (0.5f - delta));
+            delta           = (device_aspect / desired_aspect - 1.0f) 
+               / 2.0f + 0.5f;
+            y               = (int)roundf(viewport_height * (0.5f - delta));
             viewport_height = (unsigned)roundf(2.0f * viewport_height * delta);
          }
       }
@@ -1148,7 +1211,8 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
    }
    else
    {
-      vk->vp.x      = vk->vp.y = 0;
+      vk->vp.x      = 0;
+      vk->vp.y      = 0;
       vk->vp.width  = viewport_width;
       vk->vp.height = viewport_height;
    }
@@ -1168,12 +1232,12 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
       vk->vp_out_height = viewport_height;
    }
 
-   vk->vk_vp.x = (float)vk->vp.x;
-   vk->vk_vp.y = (float)vk->vp.y;
-   vk->vk_vp.width = (float)vk->vp.width;
-   vk->vk_vp.height = (float)vk->vp.height;
-   vk->vk_vp.minDepth = 0.0f;
-   vk->vk_vp.maxDepth = 1.0f;
+   vk->vk_vp.x          = (float)vk->vp.x;
+   vk->vk_vp.y          = (float)vk->vp.y;
+   vk->vk_vp.width      = (float)vk->vp.width;
+   vk->vk_vp.height     = (float)vk->vp.height;
+   vk->vk_vp.minDepth   = 0.0f;
+   vk->vk_vp.maxDepth   = 1.0f;
 
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 
@@ -1192,20 +1256,20 @@ static void vulkan_readback(vk_t *vk)
    memset(&region, 0, sizeof(region));
    region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    region.srcSubresource.layerCount = 1;
-   region.dstSubresource = region.srcSubresource;
+   region.dstSubresource            = region.srcSubresource;
 
-   region.srcOffset.x = vp.x;
-   region.srcOffset.y = vp.y;
-   region.extent.width = vp.width;
-   region.extent.height = vp.height;
-   region.extent.depth = 1;
+   region.srcOffset.x               = vp.x;
+   region.srcOffset.y               = vp.y;
+   region.extent.width              = vp.width;
+   region.extent.height             = vp.height;
+   region.extent.depth              = 1;
 
    /* FIXME: We won't actually get format conversion with vkCmdCopyImage, so have to check
     * properly for this. BGRA seems to be the default for all swapchains. */
    if (vk->context->swapchain_format != VK_FORMAT_B8G8R8A8_UNORM)
       RARCH_WARN("[Vulkan]: Backbuffer is not BGRA8888, readbacks might not work properly.\n");
 
-   staging = &vk->readback.staging[vk->context->current_swapchain_index];
+   staging  = &vk->readback.staging[vk->context->current_swapchain_index];
    *staging = vulkan_create_texture(vk,
          staging->memory != VK_NULL_HANDLE ? staging : NULL,
          vk->vp.width, vk->vp.height,
@@ -1238,19 +1302,23 @@ static bool vulkan_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg)
 {
-   vk_t *vk = (vk_t*)data;
-   settings_t *settings = config_get_ptr();
-   static struct retro_perf_counter frame_run = {0};
-   static struct retro_perf_counter copy_frame = {0};
-   static struct retro_perf_counter swapbuffers = {0};
-   static struct retro_perf_counter queue_submit = {0};
    struct vk_per_frame *chain;
    unsigned width, height;
    VkClearValue clear_value;
-   VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-   VkRenderPassBeginInfo rp_info = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
-   VkSubmitInfo submit_info = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-   unsigned frame_index = vk->context->current_swapchain_index;
+   vk_t *vk                                      = (vk_t*)data;
+   settings_t *settings                          = config_get_ptr();
+   static struct retro_perf_counter frame_run    = {0};
+   static struct retro_perf_counter copy_frame   = {0};
+   static struct retro_perf_counter swapbuffers  = {0};
+   static struct retro_perf_counter queue_submit = {0};
+   VkCommandBufferBeginInfo begin_info           = { 
+      VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+   VkRenderPassBeginInfo rp_info                 = { 
+      VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+   VkSubmitInfo submit_info                      = { 
+      VK_STRUCTURE_TYPE_SUBMIT_INFO };
+   unsigned frame_index                          = 
+      vk->context->current_swapchain_index;
 
    rarch_perf_init(&frame_run, "frame_run");
    rarch_perf_init(&copy_frame, "copy_frame");
@@ -1261,7 +1329,7 @@ static bool vulkan_frame(void *data, const void *frame,
    video_driver_get_size(&width, &height);
 
    /* Bookkeeping on start of frame. */
-   chain = &vk->swapchain[frame_index];
+   chain     = &vk->swapchain[frame_index];
    vk->chain = chain;
 
    vulkan_descriptor_manager_restart(&chain->descriptor_manager);
@@ -1280,11 +1348,12 @@ static bool vulkan_frame(void *data, const void *frame,
    if (frame && !vk->hw.enable)
    {
       unsigned y;
-      uint8_t *dst = NULL;
-      const uint8_t *src = (const uint8_t*)frame;
-      unsigned bpp = vk->video.rgb32 ? 4 : 2;
+      uint8_t *dst        = NULL;
+      const uint8_t *src  = (const uint8_t*)frame;
+      unsigned bpp        = vk->video.rgb32 ? 4 : 2;
 
-      if (chain->texture.width != frame_width || chain->texture.height != frame_height)
+      if (     chain->texture.width != frame_width 
+            || chain->texture.height != frame_height)
       {
          chain->texture = vulkan_create_texture(vk, &chain->texture,
                frame_width, frame_height, chain->texture.format, NULL, NULL,
@@ -1305,7 +1374,8 @@ static bool vulkan_frame(void *data, const void *frame,
          if (chain->texture.stride == pitch && pitch == frame_width * bpp)
             memcpy(dst, src, frame_width * frame_height * bpp);
          else
-            for (y = 0; y < frame_height; y++, dst += chain->texture.stride, src += pitch)
+            for (y = 0; y < frame_height; y++, 
+                  dst += chain->texture.stride, src += pitch)
                memcpy(dst, src, frame_width * bpp);
       }
 
@@ -1337,21 +1407,21 @@ static bool vulkan_frame(void *data, const void *frame,
             return false;
          }
 
-         input.view = vk->hw.image->image_view;
+         input.view   = vk->hw.image->image_view;
          input.layout = vk->hw.image->image_layout;
 
          if (frame)
          {
-            input.width = frame_width;
+            input.width  = frame_width;
             input.height = frame_height;
          }
          else
          {
-            input.width = vk->hw.last_width;
+            input.width  = vk->hw.last_width;
             input.height = vk->hw.last_height;
          }
 
-         vk->hw.last_width = input.width;
+         vk->hw.last_width  = input.width;
          vk->hw.last_height = input.height;
       }
       else
@@ -1362,9 +1432,9 @@ static bool vulkan_frame(void *data, const void *frame,
          else
             vulkan_transition_texture(vk, tex);
 
-         input.view = tex->view;
+         input.view   = tex->view;
          input.layout = tex->layout;
-         input.width = tex->width;
+         input.width  = tex->width;
          input.height = tex->height;
       }
 
@@ -1373,19 +1443,20 @@ static bool vulkan_frame(void *data, const void *frame,
 
    vulkan_set_viewport(vk, width, height, false, true);
 
-   vulkan_filter_chain_build_offscreen_passes(vk->filter_chain, vk->cmd, &vk->vk_vp);
+   vulkan_filter_chain_build_offscreen_passes(
+         vk->filter_chain, vk->cmd, &vk->vk_vp);
 
    /* Render to backbuffer. */
-   clear_value.color.float32[0] = 0.0f;
-   clear_value.color.float32[1] = 0.0f;
-   clear_value.color.float32[2] = 0.0f;
-   clear_value.color.float32[3] = 1.0f;
-   rp_info.renderPass = vk->render_pass;
-   rp_info.framebuffer = chain->backbuffer.framebuffer;
-   rp_info.renderArea.extent.width = vk->context->swapchain_width;
+   clear_value.color.float32[0]     = 0.0f;
+   clear_value.color.float32[1]     = 0.0f;
+   clear_value.color.float32[2]     = 0.0f;
+   clear_value.color.float32[3]     = 1.0f;
+   rp_info.renderPass               = vk->render_pass;
+   rp_info.framebuffer              = chain->backbuffer.framebuffer;
+   rp_info.renderArea.extent.width  = vk->context->swapchain_width;
    rp_info.renderArea.extent.height = vk->context->swapchain_height;
-   rp_info.clearValueCount = 1;
-   rp_info.pClearValues = &clear_value;
+   rp_info.clearValueCount          = 1;
+   rp_info.pClearValues             = &clear_value;
 
    /* Prepare backbuffer for rendering */
    vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
@@ -1450,32 +1521,46 @@ static bool vulkan_frame(void *data, const void *frame,
 
    if (vk->readback.pending || vk->readback.streamed)
    {
-      /* We cannot safely read back from an image which has already been presented
-       * as we need to maintain the PRESENT_SRC_KHR layout.
+      /* We cannot safely read back from an image which 
+       * has already been presented as we need to 
+       * maintain the PRESENT_SRC_KHR layout.
+       *
        * If we're reading back, perform the readback before presenting.
        */
-      vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+      vulkan_image_layout_transition(vk,
+            vk->cmd, chain->backbuffer.image,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_ACCESS_TRANSFER_READ_BIT,
+            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT);
 
       vulkan_readback(vk);
 
       /* Prepare for presentation after transfers are complete. */
-      vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_MEMORY_READ_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+      vulkan_image_layout_transition(vk, vk->cmd,
+            chain->backbuffer.image,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            VK_ACCESS_TRANSFER_READ_BIT,
+            VK_ACCESS_MEMORY_READ_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
       vk->readback.pending = false;
    }
    else
    {
       /* Prepare backbuffer for presentation. */
-      vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT,
-            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+      vulkan_image_layout_transition(vk, vk->cmd,
+            chain->backbuffer.image,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_ACCESS_MEMORY_READ_BIT,
+            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
    }
 
    vkEndCommandBuffer(vk->cmd);
@@ -1485,34 +1570,38 @@ static bool vulkan_frame(void *data, const void *frame,
    if (vk->hw.num_cmd)
    {
       /* vk->hw.cmd has already been allocated for this. */
-      vk->hw.cmd[vk->hw.num_cmd] = vk->cmd;
+      vk->hw.cmd[vk->hw.num_cmd]     = vk->cmd;
 
       submit_info.commandBufferCount = vk->hw.num_cmd + 1;
-      submit_info.pCommandBuffers = vk->hw.cmd;
+      submit_info.pCommandBuffers    = vk->hw.cmd;
 
-      vk->hw.num_cmd = 0;
+      vk->hw.num_cmd                 = 0;
    }
    else
    {
       submit_info.commandBufferCount = 1;
-      submit_info.pCommandBuffers = &vk->cmd;
+      submit_info.pCommandBuffers    = &vk->cmd;
    }
 
    if (vk->hw.enable && frame && !vk->hw.num_cmd)
    {
       submit_info.waitSemaphoreCount = vk->hw.num_semaphores;
-      submit_info.pWaitSemaphores = vk->hw.semaphores;
-      submit_info.pWaitDstStageMask = vk->hw.wait_dst_stages;
+      submit_info.pWaitSemaphores    = vk->hw.semaphores;
+      submit_info.pWaitDstStageMask  = vk->hw.wait_dst_stages;
    }
 
-   submit_info.signalSemaphoreCount = vk->context->swapchain_semaphores[frame_index] != VK_NULL_HANDLE ? 1 : 0;
-   submit_info.pSignalSemaphores = &vk->context->swapchain_semaphores[frame_index];
+   submit_info.signalSemaphoreCount  = 
+      vk->context->swapchain_semaphores[frame_index] != VK_NULL_HANDLE ? 1 : 0;
+   submit_info.pSignalSemaphores     = 
+      &vk->context->swapchain_semaphores[frame_index];
+
    retro_perf_stop(&frame_run);
 
    retro_perf_start(&queue_submit);
 
    slock_lock(vk->context->queue_lock);
-   vkQueueSubmit(vk->context->queue, 1, &submit_info, vk->context->swapchain_fences[frame_index]);
+   vkQueueSubmit(vk->context->queue, 1,
+         &submit_info, vk->context->swapchain_fences[frame_index]);
    slock_unlock(vk->context->queue_lock);
    retro_perf_stop(&queue_submit);
 
@@ -1564,7 +1653,8 @@ static void vulkan_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    if (cmd != RARCH_DISPLAY_CTL_NONE)
       video_driver_ctl(cmd, NULL);
 
-   video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
+   video_driver_set_aspect_ratio_value(
+         aspectratio_lut[aspect_ratio_idx].value);
 
    if (!vk)
       return;
@@ -1595,17 +1685,18 @@ static struct video_shader *vulkan_get_current_shader(void *data)
    return vulkan_filter_chain_get_preset(vk->filter_chain);
 }
 
-static bool vulkan_get_current_sw_framebuffer(void *data, struct retro_framebuffer *framebuffer)
+static bool vulkan_get_current_sw_framebuffer(void *data,
+      struct retro_framebuffer *framebuffer)
 {
-   vk_t *vk = (vk_t*)data;
    struct vk_per_frame *chain;
+   vk_t *vk  = (vk_t*)data;
    vk->chain = &vk->swapchain[vk->context->current_swapchain_index];
-   chain = vk->chain;
+   chain     = vk->chain;
 
    if (chain->texture.width != framebuffer->width ||
          chain->texture.height != framebuffer->height)
    {
-      chain->texture = vulkan_create_texture(vk, &chain->texture,
+      chain->texture   = vulkan_create_texture(vk, &chain->texture,
             framebuffer->width, framebuffer->height, chain->texture.format,
             NULL, NULL, VULKAN_TEXTURE_STREAMED);
       vulkan_map_persistent_texture(vk->context->device, &chain->texture);
@@ -1618,12 +1709,14 @@ static bool vulkan_get_current_sw_framebuffer(void *data, struct retro_framebuff
       }
    }
 
-   framebuffer->data = chain->texture.mapped;
-   framebuffer->pitch = chain->texture.stride;
-   framebuffer->format = vk->video.rgb32 ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   framebuffer->data   = chain->texture.mapped;
+   framebuffer->pitch  = chain->texture.stride;
+   framebuffer->format = vk->video.rgb32 
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
 
    framebuffer->memory_flags = 0;
-   if (vk->context->memory_properties.memoryTypes[chain->texture.memory_type].propertyFlags &
+   if (vk->context->memory_properties.memoryTypes[
+         chain->texture.memory_type].propertyFlags &
          VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
    {
       framebuffer->memory_flags |= RETRO_MEMORY_TYPE_CACHED;
@@ -1632,10 +1725,11 @@ static bool vulkan_get_current_sw_framebuffer(void *data, struct retro_framebuff
    return true;
 }
 
-static bool vulkan_get_hw_render_interface(void *data, const struct retro_hw_render_interface **iface)
+static bool vulkan_get_hw_render_interface(void *data,
+      const struct retro_hw_render_interface **iface)
 {
    vk_t *vk = (vk_t*)data;
-   *iface = (const struct retro_hw_render_interface*)&vk->hw.iface;
+   *iface   = (const struct retro_hw_render_interface*)&vk->hw.iface;
    return vk->hw.enable;
 }
 
@@ -1644,13 +1738,12 @@ static void vulkan_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   vk_t *vk = (vk_t*)data;
-   unsigned index = vk->context->current_swapchain_index;
-   struct vk_texture *texture = &vk->menu.textures[index];
-   struct vk_texture *texture_optimal = &vk->menu.textures_optimal[index];
-
    uint8_t *ptr;
    unsigned x, y;
+   vk_t *vk                           = (vk_t*)data;
+   unsigned index                     = vk->context->current_swapchain_index;
+   struct vk_texture *texture         = &vk->menu.textures[index];
+   struct vk_texture *texture_optimal = &vk->menu.textures_optimal[index];
    const VkComponentMapping br_swizzle = {
       VK_COMPONENT_SWIZZLE_B,
       VK_COMPONENT_SWIZZLE_G,
@@ -1673,14 +1766,14 @@ static void vulkan_set_texture_frame(void *data,
    vkMapMemory(vk->context->device, texture->memory,
          texture->offset, texture->size, 0, (void**)&ptr);
 
-   uint8_t *dst = ptr;
+   uint8_t *dst       = ptr;
    const uint8_t *src = (const uint8_t*)frame;
-   unsigned stride = (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)) * width;
+   unsigned stride    = (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)) * width;
    for (y = 0; y < height; y++, dst += texture->stride, src += stride)
       memcpy(dst, src, stride);
 
    vkUnmapMemory(vk->context->device, texture->memory);
-   vk->menu.alpha = alpha;
+   vk->menu.alpha      = alpha;
    vk->menu.last_index = index;
 
    if (texture->type == VULKAN_TEXTURE_STAGING)
@@ -1717,10 +1810,8 @@ static void vulkan_set_osd_msg(void *data, const char *msg,
 static uintptr_t vulkan_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
-   vk_t *vk = (vk_t*)video_data;
+   vk_t *vk                    = (vk_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
-   (void)threaded; /* Pfft. */
-
    struct vk_texture *texture = (struct vk_texture*)calloc(1, sizeof(*texture));
    if (!texture)
       return 0;
@@ -1739,7 +1830,7 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
 
 static void vulkan_unload_texture(void *data, uintptr_t handle)
 {
-   vk_t *vk = (vk_t*)data;
+   vk_t *vk                   = (vk_t*)data;
    struct vk_texture *texture = (struct vk_texture*)handle;
    if (!texture)
       return;
@@ -1787,16 +1878,16 @@ static void vulkan_get_poke_interface(void *data,
 
 static void vulkan_viewport_info(void *data, struct video_viewport *vp)
 {
-   vk_t *vk = (vk_t*)data;
    unsigned width, height;
+   vk_t *vk = (vk_t*)data;
 
    video_driver_get_size(&width, &height);
 
    /* Make sure we get the correct viewport. */
    vulkan_set_viewport(vk, width, height, false, true);
 
-   *vp = vk->vp;
-   vp->full_width = width;
+   *vp             = vk->vp;
+   vp->full_width  = width;
    vp->full_height = height;
 }
 
@@ -1826,7 +1917,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
       vkMapMemory(vk->context->device, staging->memory,
             staging->offset, staging->size, 0, (void**)&src);
 
-      vk->readback.scaler.in_stride = staging->stride;
+      vk->readback.scaler.in_stride  = staging->stride;
       vk->readback.scaler.out_stride = -(int)vk->vp.width * 3;
       scaler_ctx_scale(&vk->readback.scaler, buffer, src);
 
@@ -1850,8 +1941,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
 
       {
          unsigned x, y;
-         const uint8_t *src = (const uint8_t*)staging->mapped;
-         buffer += 3 * (vk->vp.height - 1) * vk->vp.width;
+         const uint8_t *src  = (const uint8_t*)staging->mapped;
+         buffer             += 3 * (vk->vp.height - 1) 
+            * vk->vp.width;
 
          for (y = 0; y < vk->vp.height; y++,
                src += staging->stride, buffer -= 3 * vk->vp.width)
@@ -1899,16 +1991,18 @@ static void vulkan_overlay_free(vk_t *vk)
    free(vk->overlay.vertex);
    for (i = 0; i < vk->overlay.count; i++)
       if (vk->overlay.images[i].memory != VK_NULL_HANDLE)
-         vulkan_destroy_texture(vk->context->device, &vk->overlay.images[i]);
+         vulkan_destroy_texture(vk->context->device,
+               &vk->overlay.images[i]);
 
    memset(&vk->overlay, 0, sizeof(vk->overlay));
 }
 
-static void vulkan_overlay_set_alpha(void *data, unsigned image, float mod)
+static void vulkan_overlay_set_alpha(void *data,
+      unsigned image, float mod)
 {
-   vk_t *vk = (vk_t*)data;
-   struct vk_vertex *pv;
    unsigned i;
+   struct vk_vertex *pv;
+   vk_t *vk = (vk_t*)data;
 
    if (!vk)
       return;
@@ -1944,14 +2038,15 @@ static void vulkan_render_overlay(vk_t *vk)
                4 * sizeof(struct vk_vertex), &range))
          break;
 
-      memcpy(range.data, &vk->overlay.vertex[i * 4], 4 * sizeof(struct vk_vertex));
+      memcpy(range.data, &vk->overlay.vertex[i * 4],
+            4 * sizeof(struct vk_vertex));
 
       memset(&call, 0, sizeof(call));
       call.pipeline = vk->display.pipelines[3]; /* Strip with blend */
-      call.texture = &vk->overlay.images[i];
-      call.sampler = vk->samplers.linear;
-      call.mvp = &vk->mvp;
-      call.vbo = &range;
+      call.texture  = &vk->overlay.images[i];
+      call.sampler  = vk->samplers.linear;
+      call.mvp      = &vk->mvp;
+      call.vbo      = &range;
       call.vertices = 4;
       vulkan_draw_triangles(vk, &call);
    }
@@ -1964,11 +2059,13 @@ static void vulkan_overlay_vertex_geom(void *data, unsigned image,
       float x, float y,
       float w, float h)
 {
-   vk_t *vk = (vk_t*)data;
+   struct vk_vertex *pv = NULL;
+   vk_t             *vk = (vk_t*)data;
    if (!vk)
       return;
 
-   struct vk_vertex *pv = &vk->overlay.vertex[4 * image];
+   pv      = &vk->overlay.vertex[4 * image];
+
    pv[0].x = x;
    pv[0].y = y;
    pv[1].x = x;
@@ -1983,11 +2080,13 @@ static void vulkan_overlay_tex_geom(void *data, unsigned image,
       float x, float y,
       float w, float h)
 {
-   vk_t *vk = (vk_t*)data;
+   struct vk_vertex *pv = NULL;
+   vk_t *vk             = (vk_t*)data;
    if (!vk)
       return;
 
-   struct vk_vertex *pv = &vk->overlay.vertex[4 * image];
+   pv          = &vk->overlay.vertex[4 * image];
+
    pv[0].tex_x = x;
    pv[0].tex_y = y;
    pv[1].tex_x = x;
@@ -2001,9 +2100,10 @@ static void vulkan_overlay_tex_geom(void *data, unsigned image,
 static bool vulkan_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
-   const struct texture_image *images = (const struct texture_image*)image_data;
-   vk_t *vk = (vk_t*)data;
    unsigned i, j;
+   const struct texture_image *images = 
+      (const struct texture_image*)image_data;
+   vk_t *vk                           = (vk_t*)data;
    static const struct vk_color white = {
       1.0f, 1.0f, 1.0f, 1.0f,
    };
@@ -2016,12 +2116,15 @@ static bool vulkan_overlay_load(void *data,
    slock_unlock(vk->context->queue_lock);
    vulkan_overlay_free(vk);
 
-   vk->overlay.images = (struct vk_texture*)calloc(num_images, sizeof(*vk->overlay.images));
+   vk->overlay.images = (struct vk_texture*)
+      calloc(num_images, sizeof(*vk->overlay.images));
+
    if (!vk->overlay.images)
       goto error;
-   vk->overlay.count = num_images;
+   vk->overlay.count  = num_images;
 
-   vk->overlay.vertex = (struct vk_vertex*)calloc(4 * num_images, sizeof(*vk->overlay.vertex));
+   vk->overlay.vertex = (struct vk_vertex*)
+      calloc(4 * num_images, sizeof(*vk->overlay.vertex));
    if (!vk->overlay.vertex)
       goto error;
 

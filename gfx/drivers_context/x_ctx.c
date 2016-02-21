@@ -801,33 +801,48 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
 
    g_major = major;
    g_minor = minor;
-   g_api = api;
 
-#ifdef HAVE_VULKAN
-   if (api == GFX_CTX_VULKAN_API)
+   switch (api)
    {
-       g_api = api;
-       return true;
-   }
-#endif
-
-#ifdef HAVE_OPENGLES2
-   Display *dpy = XOpenDisplay(NULL);
-   const char *exts = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
-   bool ret = api == GFX_CTX_OPENGL_ES_API &&
-      exts && strstr(exts, "GLX_EXT_create_context_es2_profile");
-   XCloseDisplay(dpy);
-   if (ret && g_major < 3)
-   {
-      g_major = 2; /* ES 2.0. */
-      g_minor = 0;
-   }
-   g_api = GFX_CTX_OPENGL_ES_API;
-   return ret;
+      case GFX_CTX_OPENGL_API:
+#ifdef HAVE_OPENGL
+         g_api = GFX_CTX_OPENGL_API;
+         return true;
 #else
-   g_api = GFX_CTX_OPENGL_API;
-   return api == GFX_CTX_OPENGL_API;
+         break;
 #endif
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGLES2
+         {
+            Display *dpy = XOpenDisplay(NULL);
+            const char *exts = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
+            bool ret         = exts && strstr(exts,
+                  "GLX_EXT_create_context_es2_profile");
+            XCloseDisplay(dpy);
+            if (ret && g_major < 3)
+            {
+               g_major = 2; /* ES 2.0. */
+               g_minor = 0;
+            }
+            g_api = GFX_CTX_OPENGL_ES_API;
+            return ret;
+         }
+#else
+         break;
+#endif
+      case GFX_CTX_VULKAN_API:
+#ifdef HAVE_VULKAN
+         g_api = api;
+         return true;
+#else
+         break;
+#endif
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
+   return false;
 }
 
 static void gfx_ctx_x_show_mouse(void *data, bool state)

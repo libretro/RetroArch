@@ -30,7 +30,7 @@ typedef struct vulkan_filter_chain vulkan_filter_chain_t;
 
 enum vulkan_filter_chain_filter
 {
-   VULKAN_FILTER_CHAIN_LINEAR = 0,
+   VULKAN_FILTER_CHAIN_LINEAR  = 0,
    VULKAN_FILTER_CHAIN_NEAREST = 1
 };
 
@@ -52,7 +52,8 @@ enum vulkan_filter_chain_scale
 
 struct vulkan_filter_chain_pass_info
 {
-   /* For the last pass, make sure VIEWPORT scale with scale factors of 1 are used. */
+   /* For the last pass, make sure VIEWPORT scale 
+    * with scale factors of 1 are used. */
    enum vulkan_filter_chain_scale scale_type_x;
    enum vulkan_filter_chain_scale scale_type_y;
    float scale_x;
@@ -117,13 +118,16 @@ void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *chain,
 void vulkan_filter_chain_build_viewport_pass(vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp, const float *mvp);
 
-vulkan_filter_chain_t *vulkan_filter_chain_create_default(const struct vulkan_filter_chain_create_info *info,
+vulkan_filter_chain_t *vulkan_filter_chain_create_default(
+      const struct vulkan_filter_chain_create_info *info,
       enum vulkan_filter_chain_filter filter);
 
-vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(const struct vulkan_filter_chain_create_info *info,
+vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
+      const struct vulkan_filter_chain_create_info *info,
       const char *path, enum vulkan_filter_chain_filter filter);
 
-struct video_shader *vulkan_filter_chain_get_preset(vulkan_filter_chain_t *chain);
+struct video_shader *vulkan_filter_chain_get_preset(
+      vulkan_filter_chain_t *chain);
 
 #ifdef __cplusplus
 }
