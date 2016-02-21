@@ -126,11 +126,12 @@ static void menu_display_d3d_draw(void *data)
       draw->height = 1;
 
    if (!mat)
-      mat = (math_matrix_4x4*)menu_display_d3d_get_default_mvp();
+      mat                         = (math_matrix_4x4*)
+         menu_display_d3d_get_default_mvp();
    if (!draw->coords->vertex)
-      draw->coords->vertex = &d3d_vertexes[0];
+      draw->coords->vertex        = &d3d_vertexes[0];
    if (!draw->coords->tex_coord)
-      draw->coords->tex_coord = &d3d_tex_coords[0];
+      draw->coords->tex_coord     = &d3d_tex_coords[0];
    if (!draw->coords->lut_tex_coord)
       draw->coords->lut_tex_coord = &d3d_tex_coords[0];
 
