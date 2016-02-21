@@ -2165,7 +2165,6 @@ bool config_load_remap(void)
    else
    {
       RARCH_LOG("Remaps: no game-specific remap found at %s\n", game_path);
-      *settings->input.remapping_path= '\0';
       input_remapping_set_defaults();
    }
 
@@ -2185,7 +2184,6 @@ bool config_load_remap(void)
    else
    {
       RARCH_LOG("Remaps: no core-specific remap found at %s\n", core_path);
-      *settings->input.remapping_path= '\0';
       input_remapping_set_defaults();
    }
 

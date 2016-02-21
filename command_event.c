@@ -638,18 +638,6 @@ static bool event_save_auto_state(void)
    return true;
 }
 
-static void event_init_remapping(void)
-{
-   settings_t *settings = config_get_ptr();
-   const char   *path   = settings->input.remapping_path;
-   config_file_t *conf  = config_file_new(path);
-
-   if (!settings->input.remap_binds_enable || !conf)
-      return;
-
-   input_remapping_load_file(conf, path);
-}
-
 /**
  * event_save_core_config:
  *
@@ -1145,12 +1133,6 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_CHEATS_APPLY:
          cheat_manager_apply_cheats();
-         break;
-      case EVENT_CMD_REMAPPING_DEINIT:
-         break;
-      case EVENT_CMD_REMAPPING_INIT:
-         event_cmd_ctl(EVENT_CMD_REMAPPING_DEINIT, NULL);
-         event_init_remapping();
          break;
       case EVENT_CMD_REWIND_DEINIT:
 #ifdef HAVE_NETPLAY

@@ -42,12 +42,12 @@
 
 static int action_start_remap_file_load(unsigned type, const char *label)
 {
-   settings_t *settings = config_get_ptr();
+   global_t *global = global_get_ptr();
 
-   if (!settings)
+   if (!global)
       return -1;
 
-   settings->input.remapping_path[0] = '\0';
+   global->name.remapfile[0] = '\0';
    input_remapping_set_defaults();
    return 0;
 }

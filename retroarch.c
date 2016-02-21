@@ -1262,7 +1262,6 @@ static int rarch_main_init(int argc, char *argv[])
    event_cmd_ctl(EVENT_CMD_CONTROLLERS_INIT, NULL);
    event_cmd_ctl(EVENT_CMD_RECORD_INIT, NULL);
    event_cmd_ctl(EVENT_CMD_CHEATS_INIT, NULL);
-   event_cmd_ctl(EVENT_CMD_REMAPPING_INIT, NULL);
    event_cmd_ctl(EVENT_CMD_SAVEFILES_INIT, NULL);
    event_cmd_ctl(EVENT_CMD_SET_PER_GAME_RESOLUTION, NULL);
 

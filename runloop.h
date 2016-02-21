@@ -206,6 +206,7 @@ typedef struct global
       char ups[PATH_MAX_LENGTH];
       char bps[PATH_MAX_LENGTH];
       char ips[PATH_MAX_LENGTH];
+      char remapfile[PATH_MAX_LENGTH];
    } name;
 
    /* A list of save types and associated paths for all content. */
