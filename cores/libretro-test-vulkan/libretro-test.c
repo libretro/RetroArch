@@ -548,6 +548,7 @@ static void init_swapchain(void)
       vkAllocateMemory(device, &alloc, NULL, &vk.image_memory[i]);
       vkBindImageMemory(device, vk.images[i].create_info.image, vk.image_memory[i], 0);
 
+      vk.images[i].create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
       vk.images[i].create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
       vk.images[i].create_info.format = VK_FORMAT_R8G8B8A8_UNORM;
       vk.images[i].create_info.subresourceRange.baseMipLevel = 0;
