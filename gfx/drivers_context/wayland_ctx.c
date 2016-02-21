@@ -117,7 +117,7 @@ static void shell_surface_handle_configure(void *data,
    wl->width  = wl->buffer_scale * width;
    wl->height = wl->buffer_scale * height;
 
-   RARCH_LOG("[Wayland/EGL]: Surface configure: %u x %u.\n",
+   RARCH_LOG("[Wayland]: Surface configure: %u x %u.\n",
          wl->width, wl->height);
 }
 
@@ -134,17 +134,88 @@ static const struct wl_shell_surface_listener shell_surface_listener = {
    shell_surface_handle_popup_done,
 };
 
+static void display_handle_geometry(void *data,
+      struct wl_output *output,
+      int x, int y,
+      int physical_width, int physical_height,
+      int subpixel,
+      const char *make,
+      const char *model,
+      int transform)
+{
+   (void)data;
+   (void)output;
+   (void)x;
+   (void)y;
+   (void)physical_width;
+   (void)physical_height;
+   (void)subpixel;
+   (void)make;
+   (void)model;
+   (void)transform;
+}
+
+static void display_handle_mode(void *data,
+      struct wl_output *output,
+      uint32_t flags,
+      int width,
+      int height,
+      int refresh)
+{
+   (void)output;
+   (void)flags;
+
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl->width = width;
+   wl->height = height;
+
+   RARCH_LOG("[Wayland]: Video mode: %d x %d @ %d Hz.\n",
+         width, height, refresh);
+}
+
+static void display_handle_done(void *data,
+      struct wl_output *output)
+{
+   (void)data;
+   (void)output;
+}
+
+static void display_handle_scale(void *data,
+      struct wl_output *output,
+      int32_t factor)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   RARCH_LOG("[Wayland]: Setting buffer scale factor to %d.\n", factor);
+   wl->buffer_scale = factor;
+}
+
+static const struct wl_output_listener output_listener = {
+   display_handle_geometry,
+   display_handle_mode,
+   display_handle_done,
+   display_handle_scale,
+};
+
 /* Registry callbacks. */
 static void registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   struct wl_output *output;
 
    (void)version;
 
    if (string_is_equal(interface, "wl_compositor"))
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
             id, &wl_compositor_interface, 3);
+   else if (string_is_equal(interface, "wl_output"))
+   {
+      output = (struct wl_output*)wl_registry_bind(reg,
+            id, &wl_output_interface, 2);
+      wl_output_add_listener(output, &output_listener, wl);
+      wl_display_roundtrip(wl->dpy);
+   }
    else if (string_is_equal(interface, "wl_shell"))
       wl->shell = (struct wl_shell*)
          wl_registry_bind(reg, id, &wl_shell_interface, 1);
@@ -368,7 +439,6 @@ static void gfx_ctx_wl_get_video_size(void *data,
 
 static void *gfx_ctx_wl_init(void *video_driver)
 {
-
 #ifdef HAVE_OPENGL
    static const EGLint egl_attribs_gl[] = {
       WL_EGL_ATTRIBS_BASE,
@@ -451,6 +521,8 @@ static void *gfx_ctx_wl_init(void *video_driver)
    g_quit = 0;
 
    wl->dpy = wl_display_connect(NULL);
+   wl->buffer_scale = 1;
+
    if (!wl->dpy)
    {
       RARCH_ERR("Failed to connect to Wayland server.\n");
@@ -461,21 +533,6 @@ static void *gfx_ctx_wl_init(void *video_driver)
 
    wl->registry = wl_display_get_registry(wl->dpy);
    wl_registry_add_listener(wl->registry, &registry_listener, wl);
-
-   switch (wl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
-#ifdef HAVE_EGL
-         wl_display_dispatch(wl->dpy);
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
    wl_display_roundtrip(wl->dpy);
 
    if (!wl->compositor)
@@ -668,10 +725,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    wl->width        = width  ? width  : DEFAULT_WINDOWED_WIDTH;
    wl->height       = height ? height : DEFAULT_WINDOWED_HEIGHT;
 
-   /* TODO: Use wl_output::scale to obtain correct value. */
-   wl->buffer_scale = 1;
-
    wl->surface    = wl_compositor_create_surface(wl->compositor);
+   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
    switch (wl_api)
    {
