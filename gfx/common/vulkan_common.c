@@ -86,6 +86,48 @@ void vulkan_map_persistent_texture(VkDevice device, struct vk_texture *texture)
    vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
 }
 
+void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
+      struct vk_texture *dynamic,
+      struct vk_texture *staging)
+{
+   VkImageCopy region;
+   retro_assert(dynamic->type == VULKAN_TEXTURE_DYNAMIC);
+   retro_assert(staging->type == VULKAN_TEXTURE_STAGING);
+
+   vulkan_transition_texture(vk, staging);
+
+   /* We don't have to sync against previous TRANSFER, since we observed the completion
+    * by fences. If we have a single texture_optimal, we would need to sync against
+    * previous transfers to avoid races.
+    *
+    * We would also need to optionally maintain extra textures due to changes in resolution,
+    * so this seems like the sanest and simplest solution. */
+   vulkan_image_layout_transition(vk, vk->cmd, dynamic->image,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+
+   memset(&region, 0, sizeof(region));
+   region.extent.width = dynamic->width;
+   region.extent.height = dynamic->height;
+   region.extent.depth = 1;
+   region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.srcSubresource.layerCount = 1;
+   region.dstSubresource = region.srcSubresource;
+
+   vkCmdCopyImage(vk->cmd,
+         staging->image, VK_IMAGE_LAYOUT_GENERAL,
+         dynamic->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         1, &region);
+
+   vulkan_image_layout_transition(vk, vk->cmd, dynamic->image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+}
+
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
 static VkImage vk_images[4 * 1024];
 static unsigned vk_count;
@@ -131,13 +173,6 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       VkFormat format,
       const void *initial, const VkComponentMapping *swizzle, enum vk_texture_type type)
 {
-   /* TODO: Evaluate how we should do texture uploads on discrete cards optimally.
-    * For integrated GPUs, using linear texture is highly desirable to avoid extra copies, but
-    * we might need to take a DMA transfer with block interleave on desktop GPUs.
-    *
-    * Also, Vulkan drivers are not required to support sampling from linear textures
-    * (only TRANSFER), but seems to work fine on GPUs I've tested so far. */
-
    VkDevice device = vk->context->device;
    struct vk_texture tex;
    VkImageCreateInfo info = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
@@ -147,9 +182,6 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    VkImageSubresource subresource = { VK_IMAGE_ASPECT_COLOR_BIT };
    VkMemoryRequirements mem_reqs;
    VkSubresourceLayout layout;
-
-   if (type == VULKAN_TEXTURE_STATIC && !initial)
-      retro_assert(0 && "Static textures must have initial data.\n");
 
    memset(&tex, 0, sizeof(tex));
 
@@ -161,40 +193,104 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    info.mipLevels = 1;
    info.arrayLayers = 1;
    info.samples = VK_SAMPLE_COUNT_1_BIT;
-   info.tiling = type != VULKAN_TEXTURE_STATIC ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
-   info.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
-   if (type == VULKAN_TEXTURE_STATIC)
-      info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-   if (type == VULKAN_TEXTURE_READBACK)
-      info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-   info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-   /* We'll transition this on first use for streamed textures. */
-   info.initialLayout = type == VULKAN_TEXTURE_STREAMED ?
-      VK_IMAGE_LAYOUT_PREINITIALIZED :
-      VK_IMAGE_LAYOUT_UNDEFINED;
+   if (type == VULKAN_TEXTURE_STREAMED)
+   {
+      VkFormatProperties format_properties;
+      VkFormatFeatureFlags required = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
+         VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+      vkGetPhysicalDeviceFormatProperties(vk->context->gpu, format, &format_properties);
+
+      if ((format_properties.linearTilingFeatures & required) != required)
+      {
+         RARCH_LOG("[Vulkan]: GPU does not support using linear images as textures. Falling back to copy path.\n");
+         type = VULKAN_TEXTURE_STAGING;
+      }
+   }
+
+   switch (type)
+   {
+      case VULKAN_TEXTURE_STATIC:
+         retro_assert(initial && "Static textures must have initial data.\n");
+         info.tiling = VK_IMAGE_TILING_OPTIMAL;
+         info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+         info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+         break;
+
+      case VULKAN_TEXTURE_DYNAMIC:
+         retro_assert(!initial && "Dynamic textures must not have initial data.\n");
+         info.tiling = VK_IMAGE_TILING_OPTIMAL;
+         info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+         info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+         break;
+
+      case VULKAN_TEXTURE_STREAMED:
+         info.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+         info.tiling = VK_IMAGE_TILING_LINEAR;
+         info.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+         break;
+
+      case VULKAN_TEXTURE_STAGING:
+         info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+         info.tiling = VK_IMAGE_TILING_LINEAR;
+         info.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+         break;
+
+      case VULKAN_TEXTURE_READBACK:
+         info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+         info.tiling = VK_IMAGE_TILING_LINEAR;
+         info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+         break;
+   }
 
    vkCreateImage(device, &info, NULL, &tex.image);
 #if 0
    vulkan_track_alloc(tex.image);
 #endif
-
    vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
-
    alloc.allocationSize = mem_reqs.size;
 
-   if (type == VULKAN_TEXTURE_STATIC)
+   switch (type)
    {
-      alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
-            mem_reqs.memoryTypeBits,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
+      case VULKAN_TEXTURE_STATIC:
+      case VULKAN_TEXTURE_DYNAMIC:
+         alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
+               mem_reqs.memoryTypeBits,
+               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
+         break;
+
+      default:
+         alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
+               mem_reqs.memoryTypeBits,
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+               VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+         break;
    }
-   else
+
+   /* If the texture is STREAMED and it's not DEVICE_LOCAL, we expect to hit a slower path,
+    * so fallback to copy path. */
+   if (type == VULKAN_TEXTURE_STREAMED && 
+         (vk->context->memory_properties.memoryTypes[alloc.memoryTypeIndex].propertyFlags &
+          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
    {
+      /* Recreate texture but for STAGING this time ... */
+      RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
+      type = VULKAN_TEXTURE_STAGING;
+      vkDestroyImage(device, tex.image, NULL);
+      info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+      vkCreateImage(device, &info, NULL, &tex.image);
+      vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
+      alloc.allocationSize = mem_reqs.size;
       alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
             mem_reqs.memoryTypeBits,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+            VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
    }
 
    /* We're not reusing the objects themselves. */
@@ -264,6 +360,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    tex.width = width;
    tex.height = height;
    tex.format = format;
+   tex.type = type;
 
    if (initial && type == VULKAN_TEXTURE_STREAMED)
    {
@@ -293,7 +390,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       VkCommandBuffer staging;
       unsigned bpp = vulkan_format_to_bpp(tex.format);
       struct vk_texture tmp = vulkan_create_texture(vk, NULL,
-            width, height, format, initial, NULL, VULKAN_TEXTURE_STREAMED);
+            width, height, format, initial, NULL, VULKAN_TEXTURE_STAGING);
 
       info.commandPool = vk->staging_pool;
       info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;

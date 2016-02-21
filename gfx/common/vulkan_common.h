@@ -71,8 +71,22 @@
 
 enum vk_texture_type
 {
+   /* We will use the texture as a sampled linear texture. */
    VULKAN_TEXTURE_STREAMED = 0,
+
+   /* We will use the texture as a linear texture, but only
+    * for copying to a DYNAMIC texture. */
+   VULKAN_TEXTURE_STAGING,
+
+   /* We will use the texture as an optimally tiled texture,
+    * and we will update the texture by copying from STAGING
+    * textures. */
+   VULKAN_TEXTURE_DYNAMIC,
+
+   /* We will upload content once. */
    VULKAN_TEXTURE_STATIC,
+
+   /* We will use the texture for reading back transfers from GPU. */
    VULKAN_TEXTURE_READBACK
 };
 
@@ -188,6 +202,7 @@ struct vk_texture
    uint32_t memory_type;
 
    VkImageLayout layout;
+   enum vk_texture_type type;
    bool default_smooth;
 };
 
@@ -259,6 +274,7 @@ struct vk_per_frame
 {
    struct vk_image backbuffer;
    struct vk_texture texture;
+   struct vk_texture texture_optimal;
    struct vk_buffer_chain vbo;
    struct vk_buffer_chain ubo;
    struct vk_descriptor_manager descriptor_manager;
@@ -351,6 +367,9 @@ typedef struct vk
    struct
    {
       struct vk_texture textures[VULKAN_MAX_SWAPCHAIN_IMAGES];
+      struct vk_texture textures_optimal[VULKAN_MAX_SWAPCHAIN_IMAGES];
+      bool dirty[VULKAN_MAX_SWAPCHAIN_IMAGES];
+
       float alpha;
       unsigned last_index;
       bool enable;
@@ -419,6 +438,10 @@ void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture);
 
 void vulkan_map_persistent_texture(VkDevice device, struct vk_texture *tex);
 void vulkan_destroy_texture(VkDevice device, struct vk_texture *tex);
+
+void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
+      struct vk_texture *dynamic,
+      struct vk_texture *staging);
 
 /* VBO will be written to here. */
 void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad);
