@@ -138,39 +138,40 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
     * Also, Vulkan drivers are not required to support sampling from linear textures
     * (only TRANSFER), but seems to work fine on GPUs I've tested so far. */
 
-   VkDevice device = vk->context->device;
    struct vk_texture tex;
-   VkImageCreateInfo info = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-
-   VkImageViewCreateInfo view = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-   VkMemoryAllocateInfo alloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
-   VkImageSubresource subresource = { VK_IMAGE_ASPECT_COLOR_BIT };
    VkMemoryRequirements mem_reqs;
    VkSubresourceLayout layout;
+   VkDevice device                = vk->context->device;
+   VkImageCreateInfo info         = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+
+   VkImageViewCreateInfo view     = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+   VkMemoryAllocateInfo alloc     = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+   VkImageSubresource subresource = { VK_IMAGE_ASPECT_COLOR_BIT };
 
    if (type == VULKAN_TEXTURE_STATIC && !initial)
       retro_assert(0 && "Static textures must have initial data.\n");
 
    memset(&tex, 0, sizeof(tex));
 
-   info.imageType = VK_IMAGE_TYPE_2D;
-   info.format = format;
-   info.extent.width = width;
+   info.imageType     = VK_IMAGE_TYPE_2D;
+   info.format        = format;
+   info.extent.width  = width;
    info.extent.height = height;
-   info.extent.depth = 1;
-   info.mipLevels = 1;
-   info.arrayLayers = 1;
-   info.samples = VK_SAMPLE_COUNT_1_BIT;
-   info.tiling = type != VULKAN_TEXTURE_STATIC ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
-   info.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+   info.extent.depth  = 1;
+   info.mipLevels     = 1;
+   info.arrayLayers   = 1;
+   info.samples       = VK_SAMPLE_COUNT_1_BIT;
+   info.tiling        = type != VULKAN_TEXTURE_STATIC 
+      ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL;
+   info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT;
    if (type == VULKAN_TEXTURE_STATIC)
-      info.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+      info.usage     |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
    if (type == VULKAN_TEXTURE_READBACK)
-      info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-   info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      info.usage      = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+   info.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
    /* We'll transition this on first use for streamed textures. */
-   info.initialLayout = type == VULKAN_TEXTURE_STREAMED ?
+   info.initialLayout = (type == VULKAN_TEXTURE_STREAMED) ?
       VK_IMAGE_LAYOUT_PREINITIALIZED :
       VK_IMAGE_LAYOUT_UNDEFINED;
 
@@ -185,16 +186,21 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
    if (type == VULKAN_TEXTURE_STATIC)
    {
-      alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
+      alloc.memoryTypeIndex = 
+         vulkan_find_memory_type_fallback(&vk->context->memory_properties,
             mem_reqs.memoryTypeBits,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
    }
    else
    {
-      alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
+      alloc.memoryTypeIndex = 
+         vulkan_find_memory_type_fallback(&vk->context->memory_properties,
             mem_reqs.memoryTypeBits,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | 
+            VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
    }
 
    /* We're not reusing the objects themselves. */
@@ -237,17 +243,17 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
    vkBindImageMemory(device, tex.image, tex.memory, 0);
 
-   view.image = tex.image;
-   view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-   view.format = format;
+   view.image                       = tex.image;
+   view.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
+   view.format                      = format;
    if (swizzle)
-      view.components = *swizzle;
+      view.components               = *swizzle;
    else
    {
-      view.components.r = VK_COMPONENT_SWIZZLE_R;
-      view.components.g = VK_COMPONENT_SWIZZLE_G;
-      view.components.b = VK_COMPONENT_SWIZZLE_B;
-      view.components.a = VK_COMPONENT_SWIZZLE_A;
+      view.components.r             = VK_COMPONENT_SWIZZLE_R;
+      view.components.g             = VK_COMPONENT_SWIZZLE_G;
+      view.components.b             = VK_COMPONENT_SWIZZLE_B;
+      view.components.a             = VK_COMPONENT_SWIZZLE_A;
    }
    view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    view.subresourceRange.levelCount = 1;
@@ -258,26 +264,26 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    vkGetImageSubresourceLayout(device, tex.image, &subresource, &layout);
    tex.stride = layout.rowPitch;
    tex.offset = layout.offset;
-   tex.size = layout.size;
+   tex.size   = layout.size;
    tex.layout = info.initialLayout;
 
-   tex.width = width;
+   tex.width  = width;
    tex.height = height;
    tex.format = format;
 
    if (initial && type == VULKAN_TEXTURE_STREAMED)
    {
-      unsigned bpp = vulkan_format_to_bpp(tex.format);
-      unsigned stride = tex.width * bpp;
       unsigned x, y;
-      uint8_t *dst;
-      const uint8_t *src;
-      void *ptr;
+      uint8_t *dst       = NULL;
+      const uint8_t *src = NULL;
+      void *ptr          = NULL;
+      unsigned bpp       = vulkan_format_to_bpp(tex.format);
+      unsigned stride    = tex.width * bpp;
 
       vkMapMemory(device, tex.memory, tex.offset, tex.size, 0, &ptr);
 
-      dst = (uint8_t*)ptr;
-      src = (const uint8_t*)initial;
+      dst                = (uint8_t*)ptr;
+      src                = (const uint8_t*)initial;
       for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
          memcpy(dst, src, width * bpp);
 
@@ -285,18 +291,19 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    }
    else if (initial && type == VULKAN_TEXTURE_STATIC)
    {
-      VkCommandBufferAllocateInfo info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-      VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-      VkSubmitInfo submit_info = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
       VkImageCopy region;
-
       VkCommandBuffer staging;
-      unsigned bpp = vulkan_format_to_bpp(tex.format);
+      VkCommandBufferAllocateInfo info    = { 
+         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+      VkCommandBufferBeginInfo begin_info = { 
+         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+      VkSubmitInfo submit_info            = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+      unsigned bpp          = vulkan_format_to_bpp(tex.format);
       struct vk_texture tmp = vulkan_create_texture(vk, NULL,
             width, height, format, initial, NULL, VULKAN_TEXTURE_STREAMED);
 
-      info.commandPool = vk->staging_pool;
-      info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+      info.commandPool        = vk->staging_pool;
+      info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
       info.commandBufferCount = 1;
       vkAllocateCommandBuffers(vk->context->device, &info, &staging);
 
@@ -316,12 +323,12 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
       memset(&region, 0, sizeof(region));
-      region.extent.width = width;
-      region.extent.height = height;
-      region.extent.depth = 1;
+      region.extent.width              = width;
+      region.extent.height             = height;
+      region.extent.depth              = 1;
       region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
       region.srcSubresource.layerCount = 1;
-      region.dstSubresource = region.srcSubresource;
+      region.dstSubresource            = region.srcSubresource;
 
       vkCmdCopyImage(staging,
             tmp.image, VK_IMAGE_LAYOUT_GENERAL,
@@ -329,19 +336,23 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
             1, &region);
 
       vulkan_image_layout_transition(vk, staging, tex.image,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_ACCESS_SHADER_READ_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
       vkEndCommandBuffer(staging);
       submit_info.commandBufferCount = 1;
-      submit_info.pCommandBuffers = &staging;
+      submit_info.pCommandBuffers    = &staging;
 
       slock_lock(vk->context->queue_lock);
       vkQueueSubmit(vk->context->queue, 1, &submit_info, VK_NULL_HANDLE);
-      /* TODO: Very crude, but texture uploads only happen during init,
-       * so waiting for GPU to complete transfer and blocking isn't a big deal. */
+
+      /* TODO: Very crude, but texture uploads only happen 
+       * during init, so waiting for GPU to complete transfer 
+       * and blocking isn't a big deal. */
       vkQueueWaitIdle(vk->context->queue);
       slock_unlock(vk->context->queue_lock);
 
@@ -377,33 +388,34 @@ static void vulkan_write_quad_descriptors(VkDevice device,
    VkDescriptorImageInfo image_info;
    VkDescriptorBufferInfo buffer_info;
 
-   image_info.sampler = sampler;
-   image_info.imageView = texture->view;
+   image_info.sampler     = sampler;
+   image_info.imageView   = texture->view;
    image_info.imageLayout = texture->layout;
 
-   buffer_info.buffer = buffer;
-   buffer_info.offset = offset;
-   buffer_info.range = range;
+   buffer_info.buffer     = buffer;
+   buffer_info.offset     = offset;
+   buffer_info.range      = range;
 
-   write.dstSet = set;
-   write.dstBinding = 0;
-   write.descriptorCount = 1;
-   write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-   write.pBufferInfo = &buffer_info;
+   write.dstSet           = set;
+   write.dstBinding       = 0;
+   write.descriptorCount  = 1;
+   write.descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   write.pBufferInfo      = &buffer_info;
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
 
-   write.dstSet = set;
-   write.dstBinding = 1;
-   write.descriptorCount = 1;
-   write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-   write.pImageInfo = &image_info;
+   write.dstSet           = set;
+   write.dstBinding       = 1;
+   write.descriptorCount  = 1;
+   write.descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+   write.pImageInfo       = &image_info;
    vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
 }
 
 void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
 {
    /* Transition to GENERAL layout for linear streamed textures.
-    * We're using linear textures here, so only GENERAL layout is supported.
+    * We're using linear textures here, so only 
+    * GENERAL layout is supported.
     */
    if (texture->layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
    {
@@ -420,7 +432,9 @@ static void vulkan_check_dynamic_state(vk_t *vk)
 {
    if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
    {
-      const VkRect2D sci = {{ vk->vp.x, vk->vp.y }, { vk->vp.width, vk->vp.height }};
+      const VkRect2D sci = {
+         { vk->vp.x, vk->vp.y },
+         { vk->vp.width, vk->vp.height }};
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
       vkCmdSetScissor(vk->cmd, 0, 1, &sci);
 
@@ -434,7 +448,8 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
    if (call->pipeline != vk->tracker.pipeline)
    {
-      vkCmdBindPipeline(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, call->pipeline);
+      vkCmdBindPipeline(vk->cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS, call->pipeline);
       vk->tracker.pipeline = call->pipeline;
 
       /* Changing pipeline invalidates dynamic state. */
@@ -447,9 +462,9 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
    {
       VkDescriptorSet set;
 
-      if (memcmp(call->mvp, &vk->tracker.mvp, sizeof(*call->mvp)) ||
-            call->texture->view != vk->tracker.view ||
-            call->sampler != vk->tracker.sampler)
+      if (memcmp(call->mvp, &vk->tracker.mvp, sizeof(*call->mvp)) 
+            || (call->texture->view != vk->tracker.view)
+            || (call->sampler != vk->tracker.sampler))
       {
          /* Upload UBO */
          struct vk_buffer_range range;
@@ -458,7 +473,8 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
             return;
          memcpy(range.data, call->mvp, sizeof(*call->mvp));
 
-         set = vulkan_descriptor_manager_alloc(vk->context->device, &vk->chain->descriptor_manager);
+         set = vulkan_descriptor_manager_alloc(
+               vk->context->device, &vk->chain->descriptor_manager);
          vulkan_write_quad_descriptors(vk->context->device,
                set,
                range.buffer,
@@ -491,11 +507,12 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 
    if (quad->pipeline != vk->tracker.pipeline)
    {
-      vkCmdBindPipeline(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, quad->pipeline);
+      vkCmdBindPipeline(vk->cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS, quad->pipeline);
       vk->tracker.pipeline = quad->pipeline;
 
       /* Changing pipeline invalidates dynamic state. */
-      vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+      vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
    }
 
    vulkan_check_dynamic_state(vk);
@@ -508,9 +525,9 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
                sizeof(*quad->mvp), &range))
          return;
 
-      if (memcmp(quad->mvp, &vk->tracker.mvp, sizeof(*quad->mvp)) ||
-            quad->texture->view != vk->tracker.view ||
-            quad->sampler != vk->tracker.sampler)
+      if (memcmp(quad->mvp, &vk->tracker.mvp, sizeof(*quad->mvp)) 
+            || quad->texture->view != vk->tracker.view
+            || quad->sampler != vk->tracker.sampler)
       {
          /* Upload UBO */
          struct vk_buffer_range range;
@@ -519,7 +536,9 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
             return;
          memcpy(range.data, quad->mvp, sizeof(*quad->mvp));
 
-         set = vulkan_descriptor_manager_alloc(vk->context->device, &vk->chain->descriptor_manager);
+         set = vulkan_descriptor_manager_alloc(vk->context->device,
+               &vk->chain->descriptor_manager);
+
          vulkan_write_quad_descriptors(vk->context->device,
                set,
                range.buffer,
@@ -532,9 +551,9 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
                vk->pipelines.layout, 0,
                1, &set, 0, NULL);
 
-         vk->tracker.view = quad->texture->view;
+         vk->tracker.view    = quad->texture->view;
          vk->tracker.sampler = quad->sampler;
-         vk->tracker.mvp = *quad->mvp;
+         vk->tracker.mvp     = *quad->mvp;
       }
    }
 
@@ -558,20 +577,25 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
    vkCmdDraw(vk->cmd, 6, 1, 0, 0);
 }
 
-void vulkan_image_layout_transition(vk_t *vk, VkCommandBuffer cmd, VkImage image,
-      VkImageLayout old_layout, VkImageLayout new_layout,
-      VkAccessFlags srcAccess, VkAccessFlags dstAccess,
-      VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages)
+void vulkan_image_layout_transition(
+      vk_t *vk,
+      VkCommandBuffer cmd, VkImage image,
+      VkImageLayout old_layout,
+      VkImageLayout new_layout,
+      VkAccessFlags srcAccess,
+      VkAccessFlags dstAccess,
+      VkPipelineStageFlags srcStages,
+      VkPipelineStageFlags dstStages)
 {
    VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 
-   barrier.srcAccessMask = srcAccess;
-   barrier.dstAccessMask = dstAccess;
-   barrier.oldLayout = old_layout;
-   barrier.newLayout = new_layout;
-   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-   barrier.image = image;
+   barrier.srcAccessMask               = srcAccess;
+   barrier.dstAccessMask               = dstAccess;
+   barrier.oldLayout                   = old_layout;
+   barrier.newLayout                   = new_layout;
+   barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.image                       = image;
    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    barrier.subresourceRange.levelCount = 1;
    barrier.subresourceRange.layerCount = 1;
@@ -591,25 +615,28 @@ struct vk_buffer vulkan_create_buffer(const struct vulkan_context *context,
    struct vk_buffer buffer;
    VkMemoryRequirements mem_reqs;
    VkMemoryAllocateInfo alloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
-   VkBufferCreateInfo info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+   VkBufferCreateInfo info    = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 
-   info.size = size;
-   info.usage = usage;
+   info.size        = size;
+   info.usage       = usage;
    info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
    vkCreateBuffer(context->device, &info, NULL, &buffer.buffer);
 
    vkGetBufferMemoryRequirements(context->device, buffer.buffer, &mem_reqs);
 
-   alloc.allocationSize = mem_reqs.size;
-   alloc.memoryTypeIndex = vulkan_find_memory_type(&context->memory_properties,
+   alloc.allocationSize  = mem_reqs.size;
+   alloc.memoryTypeIndex = vulkan_find_memory_type(
+         &context->memory_properties,
          mem_reqs.memoryTypeBits,
-         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
+         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
    vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
    vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
 
    buffer.size = alloc.allocationSize;
 
-   vkMapMemory(context->device, buffer.memory, 0, buffer.size, 0, &buffer.mapped);
+   vkMapMemory(context->device,
+         buffer.memory, 0, buffer.size, 0, &buffer.mapped);
    return buffer;
 }
 
@@ -621,14 +648,18 @@ void vulkan_destroy_buffer(VkDevice device, struct vk_buffer *buffer)
    memset(buffer, 0, sizeof(*buffer));
 }
 
-static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(VkDevice device,
+static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
+      VkDevice device,
       const struct vk_descriptor_manager *manager)
 {
    unsigned i;
-   VkDescriptorPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-   VkDescriptorSetAllocateInfo alloc_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+   VkDescriptorPoolCreateInfo pool_info   = { 
+      VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+   VkDescriptorSetAllocateInfo alloc_info = { 
+      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 
-   struct vk_descriptor_pool *pool = (struct vk_descriptor_pool*)calloc(1, sizeof(*pool));
+   struct vk_descriptor_pool *pool        = 
+      (struct vk_descriptor_pool*)calloc(1, sizeof(*pool));
    if (!pool)
       return NULL;
 
@@ -648,7 +679,8 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(VkDevice device,
    return pool;
 }
 
-VkDescriptorSet vulkan_descriptor_manager_alloc(VkDevice device, struct vk_descriptor_manager *manager)
+VkDescriptorSet vulkan_descriptor_manager_alloc(
+      VkDevice device, struct vk_descriptor_manager *manager)
 {
    if (manager->count < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
       return manager->current->sets[manager->count++];
@@ -656,7 +688,7 @@ VkDescriptorSet vulkan_descriptor_manager_alloc(VkDevice device, struct vk_descr
    while (manager->current->next)
    {
       manager->current = manager->current->next;
-      manager->count = 0;
+      manager->count   = 0;
       return manager->current->sets[manager->count++];
    }
 
@@ -664,7 +696,7 @@ VkDescriptorSet vulkan_descriptor_manager_alloc(VkDevice device, struct vk_descr
    retro_assert(manager->current->next);
 
    manager->current = manager->current->next;
-   manager->count = 0;
+   manager->count   = 0;
    return manager->current->sets[manager->count++];
 }
 
@@ -674,22 +706,26 @@ void vulkan_descriptor_manager_restart(struct vk_descriptor_manager *manager)
    manager->count = 0;
 }
 
-struct vk_descriptor_manager vulkan_create_descriptor_manager(VkDevice device,
-      const VkDescriptorPoolSize *sizes, unsigned num_sizes, VkDescriptorSetLayout set_layout)
+struct vk_descriptor_manager vulkan_create_descriptor_manager(
+      VkDevice device,
+      const VkDescriptorPoolSize *sizes,
+      unsigned num_sizes,
+      VkDescriptorSetLayout set_layout)
 {
    struct vk_descriptor_manager manager;
    memset(&manager, 0, sizeof(manager));
    retro_assert(num_sizes <= VULKAN_MAX_DESCRIPTOR_POOL_SIZES);
    memcpy(manager.sizes, sizes, num_sizes * sizeof(*sizes));
-   manager.num_sizes = num_sizes;
+   manager.num_sizes  = num_sizes;
    manager.set_layout = set_layout;
 
-   manager.head = vulkan_alloc_descriptor_pool(device, &manager);
+   manager.head       = vulkan_alloc_descriptor_pool(device, &manager);
    retro_assert(manager.head);
    return manager;
 }
 
-void vulkan_destroy_descriptor_manager(VkDevice device, struct vk_descriptor_manager *manager)
+void vulkan_destroy_descriptor_manager(VkDevice device,
+      struct vk_descriptor_manager *manager)
 {
    struct vk_descriptor_pool *node = manager->head;
 
@@ -697,7 +733,8 @@ void vulkan_destroy_descriptor_manager(VkDevice device, struct vk_descriptor_man
    {
       struct vk_descriptor_pool *next = node->next;
 
-      vkFreeDescriptorSets(device, node->pool, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS, node->sets);
+      vkFreeDescriptorSets(device, node->pool,
+            VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS, node->sets);
       vkDestroyDescriptorPool(device, node->pool, NULL);
 
       free(node);
@@ -713,26 +750,30 @@ static void vulkan_buffer_chain_step(struct vk_buffer_chain *chain)
    chain->offset = 0;
 }
 
-static bool vulkan_buffer_chain_suballoc(struct vk_buffer_chain *chain, size_t size, struct vk_buffer_range *range)
+static bool vulkan_buffer_chain_suballoc(struct vk_buffer_chain *chain,
+      size_t size, struct vk_buffer_range *range)
 {
    VkDeviceSize next_offset = chain->offset + size;
    if (next_offset <= chain->current->buffer.size)
    {
-      range->data = (uint8_t*)chain->current->buffer.mapped + chain->offset;
+      range->data   = (uint8_t*)chain->current->buffer.mapped + chain->offset;
       range->buffer = chain->current->buffer.buffer;
       range->offset = chain->offset;
-      chain->offset = (next_offset + chain->alignment - 1) & ~(chain->alignment - 1);
+      chain->offset = (next_offset + chain->alignment - 1) 
+         & ~(chain->alignment - 1);
+
       return true;
    }
-   else
-      return false;
+   
+   return false;
 }
 
 static struct vk_buffer_node *vulkan_buffer_chain_alloc_node(
       const struct vulkan_context *context,
       size_t size, VkBufferUsageFlags usage)
 {
-   struct vk_buffer_node *node = (struct vk_buffer_node*)calloc(1, sizeof(*node));
+   struct vk_buffer_node *node = (struct vk_buffer_node*)
+      calloc(1, sizeof(*node));
    if (!node)
       return NULL;
 
@@ -744,7 +785,8 @@ struct vk_buffer_chain vulkan_buffer_chain_init(VkDeviceSize block_size,
       VkDeviceSize alignment,
       VkBufferUsageFlags usage)
 {
-   struct vk_buffer_chain chain = { block_size, alignment, 0, usage, NULL, NULL };
+   struct vk_buffer_chain chain = { 
+      block_size, alignment, 0, usage, NULL, NULL };
    return chain;
 }
 
@@ -755,7 +797,8 @@ void vulkan_buffer_chain_discard(struct vk_buffer_chain *chain)
 }
 
 bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
-      struct vk_buffer_chain *chain, size_t size, struct vk_buffer_range *range)
+      struct vk_buffer_chain *chain,
+      size_t size, struct vk_buffer_range *range)
 {
    if (!chain->head)
    {
@@ -781,7 +824,8 @@ bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
    }
 
    /* We have to allocate a new node, might allocate larger
-    * buffer here than block_size in case we have a very large allocation. */
+    * buffer here than block_size in case we have 
+    * a very large allocation. */
    if (size < chain->block_size)
       size = chain->block_size;
 
@@ -1224,7 +1268,7 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    VkFence *next_fence;
    VkSemaphoreCreateInfo sem_info = 
    { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-   VkFenceCreateInfo info = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+   VkFenceCreateInfo info         = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
 
    vkCreateFence(vk->context.device, &info, NULL, &fence);
 
@@ -1287,7 +1331,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    if (format_count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
    {
-      format = formats[0];
+      format        = formats[0];
       format.format = VK_FORMAT_B8G8R8A8_UNORM;
    }
    else
