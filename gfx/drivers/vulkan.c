@@ -16,6 +16,7 @@
 #include "../common/vulkan_common.h"
 #include "vulkan_shaders/alpha_blend.vert.inc"
 #include "vulkan_shaders/alpha_blend.frag.inc"
+#include "vulkan_shaders/font.frag.inc"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -301,20 +302,12 @@ static void vulkan_init_pipelines(vk_t *vk)
    pipe.renderPass                     = vk->render_pass;
    pipe.layout                         = vk->pipelines.layout;
 
-   /* Alpha-blended pipeline. */
    module_info.codeSize   = alpha_blend_vert_spv_len;
    module_info.pCode      = (const uint32_t*)alpha_blend_vert_spv;
    shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
    shader_stages[0].pName = "main";
    vkCreateShaderModule(vk->context->device,
          &module_info, NULL, &shader_stages[0].module);
-
-   module_info.codeSize   = alpha_blend_frag_spv_len;
-   module_info.pCode      = (const uint32_t*)alpha_blend_frag_spv;
-   shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-   shader_stages[1].pName = "main";
-   vkCreateShaderModule(vk->context->device,
-         &module_info, NULL, &shader_stages[1].module);
 
    blend_attachment.blendEnable         = true;
    blend_attachment.colorWriteMask      = 0xf;
@@ -324,6 +317,26 @@ static void vulkan_init_pipelines(vk_t *vk)
    blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
    blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
    blend_attachment.alphaBlendOp        = VK_BLEND_OP_ADD;
+
+   /* Glyph pipeline */
+   module_info.codeSize   = font_frag_spv_len;
+   module_info.pCode      = (const uint32_t*)font_frag_spv;
+   shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+   shader_stages[1].pName = "main";
+   vkCreateShaderModule(vk->context->device,
+         &module_info, NULL, &shader_stages[1].module);
+
+   vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+         1, &pipe, NULL, &vk->pipelines.font);
+   vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
+
+   /* Alpha-blended pipeline. */
+   module_info.codeSize   = alpha_blend_frag_spv_len;
+   module_info.pCode      = (const uint32_t*)alpha_blend_frag_spv;
+   shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+   shader_stages[1].pName = "main";
+   vkCreateShaderModule(vk->context->device,
+         &module_info, NULL, &shader_stages[1].module);
 
    vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
          1, &pipe, NULL, &vk->pipelines.alpha_blend);
@@ -513,6 +526,7 @@ static void vulkan_deinit_pipelines(vk_t *vk)
    unsigned i;
    vulkan_deinit_pipeline_layout(vk);
    vkDestroyPipeline(vk->context->device, vk->pipelines.alpha_blend, NULL);
+   vkDestroyPipeline(vk->context->device, vk->pipelines.font, NULL);
    for (i = 0; i < 4; i++)
       vkDestroyPipeline(vk->context->device, vk->display.pipelines[i], NULL);
 }
