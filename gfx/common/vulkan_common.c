@@ -364,7 +364,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    tex.format = format;
    tex.type = type;
 
-   if (initial && type == VULKAN_TEXTURE_STREAMED)
+   if (initial && (type == VULKAN_TEXTURE_STREAMED || type == VULKAN_TEXTURE_STAGING))
    {
       unsigned x, y;
       uint8_t *dst       = NULL;
