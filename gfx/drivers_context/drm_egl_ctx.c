@@ -59,7 +59,9 @@ static bool waiting_for_flip;
 
 typedef struct gfx_ctx_drm_egl_data
 {
+#ifdef HAVE_EGL
    egl_ctx_data_t egl;
+#endif
    RFILE *g_drm;
    unsigned g_fb_width;
    unsigned g_fb_height;
@@ -117,7 +119,8 @@ error:
 static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
 {
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
-   drm->egl.interval = interval;
+   drm->egl.interval           = interval;
+
    if (interval > 1)
       RARCH_WARN("[KMS/EGL]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 }
@@ -207,6 +210,7 @@ static bool queue_flip(void)
 static void gfx_ctx_drm_egl_swap_buffers(void *data)
 {
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
+
    egl_swap_buffers(data);
 
    /* I guess we have to wait for flip to have taken 
@@ -292,7 +296,9 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    /* Make sure we acknowledge all page-flips. */
    wait_flip(true);
 
+#ifdef HAVE_EGL
    egl_destroy(drm);
+#endif
 
    /* Restore original CRTC. */
    drm_restore_crtc();
@@ -302,11 +308,11 @@ static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
    g_crtc_id           = 0;
    g_connector_id      = 0;
 
-   drm->g_fb_width  = 0;
-   drm->g_fb_height = 0;
+   drm->g_fb_width     = 0;
+   drm->g_fb_height    = 0;
 
-   g_bo             = NULL;
-   g_next_bo        = NULL;
+   g_bo                = NULL;
+   g_next_bo           = NULL;
 }
 
 static void *gfx_ctx_drm_egl_init(void *video_driver)
@@ -399,6 +405,7 @@ static EGLint *egl_fill_attribs(gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
       {
+#ifdef HAVE_OPENGL
          unsigned version = drm->egl.major * 1000 + drm->egl.minor;
          bool core        = version >= 3001;
 #ifdef GL_DEBUG
@@ -431,12 +438,13 @@ static EGLint *egl_fill_attribs(gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
             *attr++ = EGL_CONTEXT_FLAGS_KHR;
             *attr++ = EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
          }
-
          break;
+#endif
       }
 #endif
 
       case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGLES
          *attr++ = EGL_CONTEXT_CLIENT_VERSION;
          *attr++ = drm->egl.major ? (EGLint)drm->egl.major : 2;
 #ifdef EGL_KHR_create_context
@@ -445,6 +453,7 @@ static EGLint *egl_fill_attribs(gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
             *attr++ = EGL_CONTEXT_MINOR_VERSION_KHR;
             *attr++ = drm->egl.minor;
          }
+#endif
 #endif
          break;
 
@@ -456,6 +465,7 @@ static EGLint *egl_fill_attribs(gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
    return attr;
 }
 
+#ifdef HAVE_EGL
 #define DRM_EGL_ATTRIBS_BASE \
    EGL_SURFACE_TYPE,    EGL_WINDOW_BIT, \
    EGL_RED_SIZE,        1, \
@@ -463,11 +473,13 @@ static EGLint *egl_fill_attribs(gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
    EGL_BLUE_SIZE,       1, \
    EGL_ALPHA_SIZE,      0, \
    EGL_DEPTH_SIZE,      0
+#endif
 
 static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+#ifdef HAVE_EGL
    static const EGLint egl_attribs_gl[] = {
       DRM_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
@@ -493,9 +505,14 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
       EGL_NONE,
    };
-   EGLint *egl_attribs_ptr = NULL;
-   const EGLint *attrib_ptr;
-   EGLint major, minor, n, egl_attribs[16], *attr;
+   EGLint major;
+   EGLint minor;
+   EGLint n;
+   EGLint egl_attribs[16];
+   EGLint *egl_attribs_ptr     = NULL;
+   const EGLint *attrib_ptr    = NULL;;
+   EGLint *attr                = NULL;
+#endif
    float refresh_mod;
    int i, ret                  = 0;
    struct drm_fb *fb           = NULL;
@@ -510,6 +527,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    switch (g_egl_api)
    {
       case GFX_CTX_OPENGL_API:
+#ifdef HAVE_OPENGL
          attrib_ptr = egl_attribs_gl;
          break;
       case GFX_CTX_OPENGL_ES_API:
@@ -519,12 +537,15 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
          else
 #endif
          attrib_ptr = egl_attribs_gles;
+#endif
          break;
       case GFX_CTX_OPENVG_API:
+#ifdef HAVE_VG
          attrib_ptr = egl_attribs_vg;
+#endif
          break;
       default:
-         attrib_ptr = NULL;
+         break;
    }
 
    /* If we use black frame insertion, 
@@ -612,9 +633,9 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    egl_swap_buffers(drm);
 
    g_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
-   fb = drm_fb_get_from_bo(g_bo);
+   fb   = drm_fb_get_from_bo(g_bo);
 
-   ret = drmModeSetCrtc(g_drm_fd,
+   ret  = drmModeSetCrtc(g_drm_fd,
          g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
    if (ret < 0)
       goto error;
