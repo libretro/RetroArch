@@ -762,10 +762,10 @@ static bool event_save_core_config(void)
  **/
 void event_save_current_config(void)
 {
+   char msg[128];
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
-   bool ret;
-   char msg[128];
+   bool ret             = false;
 
    if (settings->config_save_on_exit && *global->path.config)
    {
@@ -796,7 +796,6 @@ void event_save_current_config(void)
    }
 
    runloop_msg_queue_push(msg, 1, 180, true);
-
 }
 
 /**
