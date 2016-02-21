@@ -55,6 +55,8 @@ typedef struct gfx_ctx_wayland_data
    int fd;
    unsigned width;
    unsigned height;
+   unsigned physical_width;
+   unsigned physical_height;
    struct wl_display *dpy;
    struct wl_registry *registry;
    struct wl_compositor *compositor;
@@ -147,12 +149,16 @@ static void display_handle_geometry(void *data,
    (void)output;
    (void)x;
    (void)y;
-   (void)physical_width;
-   (void)physical_height;
    (void)subpixel;
    (void)make;
    (void)model;
    (void)transform;
+
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl->physical_width = physical_width;
+   wl->physical_height = physical_height;
+   RARCH_LOG("[Wayland]: Physical width: %d mm x %d mm.\n",
+         physical_width, physical_height);
 }
 
 static void display_handle_mode(void *data,
@@ -422,6 +428,35 @@ static void gfx_ctx_wl_get_video_size(void *data,
 
    *width  = wl->width;
    *height = wl->height;
+}
+
+static bool gfx_ctx_wl_get_metrics(void *data,
+      enum display_metric_types type, float *value)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (wl->physical_width == 0 || wl->physical_height == 0)
+      return false;
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_MM_WIDTH:
+         *value = (float)wl->physical_width;
+         break;
+
+      case DISPLAY_METRIC_MM_HEIGHT:
+         *value = (float)wl->physical_height;
+         break;
+
+      case DISPLAY_METRIC_DPI:
+         *value = (float)wl->width * 25.4f / (float)wl->physical_width;
+         break;
+
+      default:
+         *value = 0.0f;
+         return false;
+   }
+
+   return true;
 }
 
 #define DEFAULT_WINDOWED_WIDTH 640
@@ -1111,7 +1146,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   NULL, /* get_metrics */
+   gfx_ctx_wl_get_metrics,
    NULL,
    gfx_ctx_wl_update_window_title,
    gfx_ctx_wl_check_window,
