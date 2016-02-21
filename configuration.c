@@ -1528,10 +1528,8 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_array(conf, "input_joypad_driver", settings->input.joypad_driver, sizeof(settings->input.joypad_driver));
    config_get_array(conf, "input_keyboard_layout", settings->input.keyboard_layout, sizeof(settings->input.keyboard_layout));
 
-#ifdef RARCH_CONSOLE
    if (!global->has_set.libretro)
       config_get_path(conf, "libretro_path", settings->libretro, sizeof(settings->libretro));
-#endif
    if (!global->has_set.libretro_directory)
       config_get_path(conf, "libretro_directory", settings->libretro_directory, sizeof(settings->libretro_directory));
 
@@ -1566,8 +1564,8 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
-   /*config_get_path(conf, "input_remapping_path", settings->input.remapping_path,
-         sizeof(settings->input.remapping_path));*/
+   config_get_path(conf, "input_remapping_path", settings->input.remapping_path,
+         sizeof(settings->input.remapping_path));
    config_get_path(conf, "resampler_directory", settings->resampler_directory,
          sizeof(settings->resampler_directory));
    config_get_path(conf, "cache_directory", settings->cache_directory,
@@ -2554,9 +2552,7 @@ bool config_save_file(const char *path)
          settings->multimedia.builtin_imageviewer_enable);
    config_set_bool(conf,  "fps_show", settings->fps_show);
    config_set_bool(conf,  "ui_menubar_enable", settings->ui.menubar_enable);
-#ifdef RARCH_CONSOLE
    config_set_path(conf,  "libretro_path", settings->libretro);
-#endif
    config_set_path(conf,  "core_options_path", settings->core_options_path);
 
    config_set_path(conf,  "recording_output_directory", global->record.output_dir);
@@ -2699,8 +2695,8 @@ bool config_save_file(const char *path)
          settings->cache_directory);
    config_set_path(conf, "input_remapping_directory",
          settings->input_remapping_directory);
-   /*config_set_path(conf, "input_remapping_path",
-        settings->input.remapping_path);*/
+   config_set_path(conf, "input_remapping_path",
+        settings->input.remapping_path);
    config_set_path(conf, "resampler_directory",
          settings->resampler_directory);
    config_set_string(conf, "audio_resampler", settings->audio.resampler);
