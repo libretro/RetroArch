@@ -1380,7 +1380,7 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 
       /* If we have an optimal texture, copy to that now. */
-      if (chain->texture_optimal.image)
+      if (chain->texture_optimal.memory != VK_NULL_HANDLE)
       {
          vulkan_copy_staging_to_dynamic(vk, vk->cmd,
                &chain->texture_optimal, &chain->texture);
