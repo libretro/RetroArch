@@ -52,11 +52,14 @@
 
 #include <vulkan/vulkan.h>
 
-#include <gfx/math/matrix_4x4.h>
-#include <formats/image.h>
+#include <boolean.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
-#include "boolean.h"
+#include <gfx/math/matrix_4x4.h>
+#include <gfx/scaler/scaler.h>
+#include <rthreads/rthreads.h>
+#include <formats/image.h>
+
 #include "../../driver.h"
 #include "../../performance.h"
 #include "../../libretro.h"
@@ -66,8 +69,6 @@
 #include "../video_context_driver.h"
 #include "libretro_vulkan.h"
 #include "../drivers_shader/shader_vulkan.h"
-#include <rthreads/rthreads.h>
-#include <gfx/scaler/scaler.h>
 
 enum vk_texture_type
 {
@@ -118,10 +119,14 @@ typedef struct gfx_ctx_vulkan_data
 {
    vulkan_context_t context;
 
-   PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
-   PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
-   PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fpGetPhysicalDeviceSurfaceFormatsKHR;
-   PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fpGetPhysicalDeviceSurfacePresentModesKHR;
+   PFN_vkGetPhysicalDeviceSurfaceSupportKHR 
+      fpGetPhysicalDeviceSurfaceSupportKHR;
+   PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR 
+      fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
+   PFN_vkGetPhysicalDeviceSurfaceFormatsKHR 
+      fpGetPhysicalDeviceSurfaceFormatsKHR;
+   PFN_vkGetPhysicalDeviceSurfacePresentModesKHR 
+      fpGetPhysicalDeviceSurfacePresentModesKHR;
    PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
    PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
    PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
@@ -428,7 +433,8 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad);
  */
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call);
 
-void vulkan_image_layout_transition(vk_t *vk, VkCommandBuffer cmd, VkImage image,
+void vulkan_image_layout_transition(vk_t *vk,
+      VkCommandBuffer cmd, VkImage image,
       VkImageLayout old_layout, VkImageLayout new_layout,
       VkAccessFlags srcAccess, VkAccessFlags dstAccess,
       VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages);
@@ -470,8 +476,8 @@ static INLINE void vulkan_write_quad_vbo(struct vk_vertex *pv,
 
    for (i = 0; i < 6; i++)
    {
-      pv[i].x = x + strip[2 * i + 0] * width;
-      pv[i].y = y + strip[2 * i + 1] * height;
+      pv[i].x     = x + strip[2 * i + 0] * width;
+      pv[i].y     = y + strip[2 * i + 1] * height;
       pv[i].tex_x = tex_x + strip[2 * i + 0] * tex_width;
       pv[i].tex_y = tex_y + strip[2 * i + 1] * tex_height;
       pv[i].color = *color;
