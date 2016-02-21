@@ -219,7 +219,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          old->memory_size >= mem_reqs.size &&
          old->memory_type == alloc.memoryTypeIndex)
    {
-      tex.memory = old->memory;
+      tex.memory      = old->memory;
       tex.memory_size = old->memory_size;
       tex.memory_type = old->memory_type;
 
@@ -298,8 +298,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       VkCommandBufferBeginInfo begin_info = { 
          VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
       VkSubmitInfo submit_info            = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-      unsigned bpp          = vulkan_format_to_bpp(tex.format);
-      struct vk_texture tmp = vulkan_create_texture(vk, NULL,
+      unsigned bpp            = vulkan_format_to_bpp(tex.format);
+      struct vk_texture tmp   = vulkan_create_texture(vk, NULL,
             width, height, format, initial, NULL, VULKAN_TEXTURE_STREAMED);
 
       info.commandPool        = vk->staging_pool;
@@ -307,7 +307,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       info.commandBufferCount = 1;
       vkAllocateCommandBuffers(vk->context->device, &info, &staging);
 
-      begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+      begin_info.flags        = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
       vkBeginCommandBuffer(staging, &begin_info);
 
       vulkan_image_layout_transition(vk, staging, tmp.image,
