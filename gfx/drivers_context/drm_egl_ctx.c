@@ -431,10 +431,10 @@ nextgpu:
    dir_list_free(gpu_descriptors);
 
    /* Setup the flip handler. */
-   g_drm_fds.fd                         = fd;
-   g_drm_fds.events                     = POLLIN;
-   g_drm_evctx.version                  = DRM_EVENT_CONTEXT_VERSION;
-   g_drm_evctx.page_flip_handler        = drm_flip_handler;
+   g_drm_fds.fd                   = fd;
+   g_drm_fds.events               = POLLIN;
+   g_drm_evctx.version            = DRM_EVENT_CONTEXT_VERSION;
+   g_drm_evctx.page_flip_handler  = drm_flip_handler;
 
    g_drm_fd = fd;
 
@@ -499,7 +499,8 @@ static EGLint *egl_fill_attribs(gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_OPENGLES
          *attr++ = EGL_CONTEXT_CLIENT_VERSION;
-         *attr++ = drm->egl.major ? (EGLint)drm->egl.major : 2;
+         *attr++ = drm->egl.major 
+            ? (EGLint)drm->egl.major : 2;
 #ifdef EGL_KHR_create_context
          if (drm->egl.minor > 0)
          {
@@ -526,13 +527,11 @@ static EGLint *egl_fill_attribs(gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
    EGL_BLUE_SIZE,       1, \
    EGL_ALPHA_SIZE,      0, \
    EGL_DEPTH_SIZE,      0
-#endif
 
-static bool gfx_ctx_drm_egl_set_video_mode(void *data,
-      unsigned width, unsigned height,
-      bool fullscreen)
+static bool gfx_ctx_drm_egl_set_video_mode(
+      gfx_ctx_drm_egl_data_t *drm)
 {
-#ifdef HAVE_EGL
+   const EGLint *attrib_ptr    = NULL;
    static const EGLint egl_attribs_gl[] = {
       DRM_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
@@ -565,19 +564,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    EGLint n;
    EGLint egl_attribs[16];
    EGLint *egl_attribs_ptr     = NULL;
-   const EGLint *attrib_ptr    = NULL;
    EGLint *attr                = NULL;
-#endif
-   float refresh_mod;
-   int i, ret                  = 0;
-   struct drm_fb *fb           = NULL;
-   settings_t *settings        = config_get_ptr();
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
-
-   if (!drm)
-      return false;
-
-   drm_install_sighandler();
 
    switch (drm_api)
    {
@@ -604,9 +591,51 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
          break;
    }
 
+   if (!egl_init_context(drm, (EGLNativeDisplayType)g_gbm_dev, &major,
+            &minor, &n, attrib_ptr))
+      goto error;
+
+   attr            = egl_fill_attribs(drm, egl_attribs);
+   egl_attribs_ptr = &egl_attribs[0];
+
+   if (!egl_create_context(drm, (attr != egl_attribs_ptr) 
+            ? egl_attribs_ptr : NULL))
+      goto error;
+
+   if (!egl_create_surface(drm, (EGLNativeWindowType)g_gbm_surface))
+      return false;
+
+   glClear(GL_COLOR_BUFFER_BIT);
+   egl_swap_buffers(drm);
+
+   return true;
+
+error:
+   egl_report_error();
+   return false;
+}
+#endif
+
+static bool gfx_ctx_drm_set_video_mode(void *data,
+      unsigned width, unsigned height,
+      bool fullscreen)
+{
+   float refresh_mod;
+   int i, ret                  = 0;
+   struct drm_fb *fb           = NULL;
+   settings_t *settings        = config_get_ptr();
+   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
+
+   if (!drm)
+      return false;
+
+   drm_install_sighandler();
+
    /* If we use black frame insertion, 
-    * we fake a 60 Hz monitor for 120 Hz one, etc, so try to match that. */
-   refresh_mod = settings->video.black_frame_insertion ? 0.5f : 1.0f;
+    * we fake a 60 Hz monitor for 120 Hz one, 
+    * etc, so try to match that. */
+   refresh_mod = settings->video.black_frame_insertion 
+      ? 0.5f : 1.0f;
 
    /* Find desired video mode, and use that.
     * If not fullscreen, we get desired windowed size, 
@@ -615,7 +644,9 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       g_drm_mode = &g_drm_connector->modes[0];
    else
    {
-      /* Try to match settings->video.refresh_rate as closely as possible.
+      /* Try to match settings->video.refresh_rate 
+       * as closely as possible.
+       *
        * Lower resolutions tend to have multiple supported 
        * refresh rates as well.
        */
@@ -665,28 +696,20 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    }
 
 
-   if (!egl_init_context(drm, (EGLNativeDisplayType)g_gbm_dev, &major,
-            &minor, &n, attrib_ptr))
+   switch (drm_api)
    {
-      egl_report_error();
-      goto error;
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+      case GFX_CTX_OPENVG_API:
+#ifdef HAVE_EGL
+         if (!gfx_ctx_drm_egl_set_video_mode(drm))
+            goto error;
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
    }
-
-   attr            = egl_fill_attribs(drm, egl_attribs);
-   egl_attribs_ptr = &egl_attribs[0];
-
-   if (!egl_create_context(drm, (attr != egl_attribs_ptr) 
-            ? egl_attribs_ptr : NULL))
-   {
-      egl_report_error();
-      goto error;
-   }
-
-   if (!egl_create_surface(drm, (EGLNativeWindowType)g_gbm_surface))
-      goto error;
-
-   glClear(GL_COLOR_BUFFER_BIT);
-   egl_swap_buffers(drm);
 
    g_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
    fb   = drm_fb_get_from_bo(g_bo);
@@ -798,7 +821,7 @@ const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    gfx_ctx_drm_destroy,
    gfx_ctx_drm_bind_api,
    gfx_ctx_drm_swap_interval,
-   gfx_ctx_drm_egl_set_video_mode,
+   gfx_ctx_drm_set_video_mode,
    gfx_ctx_drm_get_video_size,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
