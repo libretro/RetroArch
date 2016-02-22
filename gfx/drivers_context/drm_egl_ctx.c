@@ -368,7 +368,7 @@ static void gfx_ctx_drm_destroy_resources(
    g_next_bo           = NULL;
 }
 
-static void *gfx_ctx_drm_egl_init(void *video_driver)
+static void *gfx_ctx_drm_init(void *video_driver)
 {
    int fd, i;
    unsigned monitor_index;
@@ -436,7 +436,7 @@ nextgpu:
    g_drm_evctx.version            = DRM_EVENT_CONTEXT_VERSION;
    g_drm_evctx.page_flip_handler  = drm_flip_handler;
 
-   g_drm_fd = fd;
+   g_drm_fd                       = fd;
 
    return drm;
 
@@ -451,7 +451,8 @@ error:
    return NULL;
 }
 
-static EGLint *egl_fill_attribs(gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
+static EGLint *gfx_ctx_drm_egl_fill_attribs(
+      gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
 {
    switch (drm_api)
    {
@@ -595,7 +596,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(
             &minor, &n, attrib_ptr))
       goto error;
 
-   attr            = egl_fill_attribs(drm, egl_attribs);
+   attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
    egl_attribs_ptr = &egl_attribs[0];
 
    if (!egl_create_context(drm, (attr != egl_attribs_ptr) 
@@ -815,9 +816,45 @@ static bool gfx_ctx_drm_bind_api(void *video_driver,
    return false;
 }
 
+static gfx_ctx_proc_t gfx_ctx_drm_get_proc_address(const char *symbol)
+{
+   switch (drm_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+      case GFX_CTX_OPENVG_API:
+#ifdef HAVE_EGL
+         return egl_get_proc_address(symbol);
+#else
+         break;
+#endif
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
+   return NULL;
+}
+
+static void gfx_ctx_drm_bind_hw_render(void *data, bool enable)
+{
+   switch (drm_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+      case GFX_CTX_OPENVG_API:
+#ifdef HAVE_EGL
+         egl_bind_hw_render(data, enable);
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+}
 
 const gfx_ctx_driver_t gfx_ctx_drm_egl = {
-   gfx_ctx_drm_egl_init,
+   gfx_ctx_drm_init,
    gfx_ctx_drm_destroy,
    gfx_ctx_drm_bind_api,
    gfx_ctx_drm_swap_interval,
@@ -836,10 +873,10 @@ const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    gfx_ctx_drm_has_windowed,
    gfx_ctx_drm_swap_buffers,
    gfx_ctx_drm_input_driver,
-   egl_get_proc_address,
+   gfx_ctx_drm_get_proc_address,
    NULL,
    NULL,
    NULL,
    "kms-egl",
-   egl_bind_hw_render,
+   gfx_ctx_drm_bind_hw_render,
 };
