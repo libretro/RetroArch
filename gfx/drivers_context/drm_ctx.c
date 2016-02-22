@@ -35,7 +35,7 @@
 #include <file/dir_list.h>
 #include <retro_file.h>
 
-
+#include "../../verbosity.h"
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../common/drm_common.h"
@@ -132,7 +132,7 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
    stride = gbm_bo_get_stride(bo);
    handle = gbm_bo_get_handle(bo).u32;
 
-   RARCH_LOG("[KMS/EGL]: New FB: %ux%u (stride: %u).\n",
+   RARCH_LOG("[KMS]: New FB: %ux%u (stride: %u).\n",
          width, height, stride);
 
    ret = drmModeAddFB(g_drm_fd, width, height, 24, 32,
@@ -144,7 +144,7 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
    return fb;
 
 error:
-   RARCH_ERR("[KMS/EGL]: Failed to create FB: %s\n", strerror(errno));
+   RARCH_ERR("[KMS]: Failed to create FB: %s\n", strerror(errno));
    free(fb);
    return NULL;
 }
@@ -604,7 +604,19 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
    if (!egl_create_surface(drm, (EGLNativeWindowType)g_gbm_surface))
       return false;
 
-   glClear(GL_COLOR_BUFFER_BIT);
+   switch (drm_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+         glClear(GL_COLOR_BUFFER_BIT);
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
    egl_swap_buffers(drm);
 
    return true;
