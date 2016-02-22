@@ -874,7 +874,6 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
 #ifdef HAVE_EGL
    g_egl_major = major;
    g_egl_minor = minor;
-   g_egl_api   = api;
 #endif
 
    switch (api)
