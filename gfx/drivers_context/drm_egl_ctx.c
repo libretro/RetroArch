@@ -149,16 +149,16 @@ error:
    return NULL;
 }
 
-static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
+static void gfx_ctx_drm_swap_interval(void *data, unsigned interval)
 {
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
    drm->interval               = interval;
 
    if (interval > 1)
-      RARCH_WARN("[KMS/EGL]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
+      RARCH_WARN("[KMS]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
 }
 
-static void gfx_ctx_drm_egl_check_window(void *data, bool *quit,
+static void gfx_ctx_drm_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    (void)data;
@@ -267,7 +267,7 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
    wait_flip(true);  
 }
 
-static bool gfx_ctx_drm_egl_set_resize(void *data,
+static bool gfx_ctx_drm_set_resize(void *data,
       unsigned width, unsigned height)
 {
    (void)data;
@@ -277,10 +277,10 @@ static bool gfx_ctx_drm_egl_set_resize(void *data,
    return false;
 }
 
-static void gfx_ctx_drm_egl_update_window_title(void *data)
+static void gfx_ctx_drm_update_window_title(void *data)
 {
-   char buf[128]        = {0};
-   char buf_fps[128]    = {0};
+   char buf[128];
+   char buf_fps[128];
    settings_t *settings = config_get_ptr();
 
    video_monitor_get_fps(buf, sizeof(buf),
@@ -289,7 +289,7 @@ static void gfx_ctx_drm_egl_update_window_title(void *data)
       runloop_msg_queue_push( buf_fps, 1, 1, false);
 }
 
-static void gfx_ctx_drm_egl_get_video_size(void *data,
+static void gfx_ctx_drm_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
@@ -297,7 +297,6 @@ static void gfx_ctx_drm_egl_get_video_size(void *data,
    if (!drm)
       return;
 
-   (void)data;
    *width  = drm->fb_width;
    *height = drm->fb_height;
 }
@@ -323,7 +322,7 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
    g_drm_fd           = -1;
 }
 
-static void gfx_ctx_drm_egl_destroy_resources(
+static void gfx_ctx_drm_destroy_resources(
       gfx_ctx_drm_egl_data_t *drm)
 {
    if (!drm)
@@ -426,7 +425,7 @@ nextgpu:
 error:
    dir_list_free(gpu_descriptors);
 
-   gfx_ctx_drm_egl_destroy_resources(drm);
+   gfx_ctx_drm_destroy_resources(drm);
 
    if (drm)
       free(drm);
@@ -681,7 +680,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    return true;
 
 error:
-   gfx_ctx_drm_egl_destroy_resources(drm);
+   gfx_ctx_drm_destroy_resources(drm);
 
    if (drm)
       free(drm);
@@ -690,18 +689,18 @@ error:
 }
 
 
-static void gfx_ctx_drm_egl_destroy(void *data)
+static void gfx_ctx_drm_destroy(void *data)
 {
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
 
    if (!drm)
       return;
 
-   gfx_ctx_drm_egl_destroy_resources(drm);
+   gfx_ctx_drm_destroy_resources(drm);
    free(drm);
 }
 
-static void gfx_ctx_drm_egl_input_driver(void *data,
+static void gfx_ctx_drm_input_driver(void *data,
       const input_driver_t **input, void **input_data)
 {
    (void)data;
@@ -709,25 +708,25 @@ static void gfx_ctx_drm_egl_input_driver(void *data,
    *input_data = NULL;
 }
 
-static bool gfx_ctx_drm_egl_has_focus(void *data)
+static bool gfx_ctx_drm_has_focus(void *data)
 {
    return true;
 }
 
-static bool gfx_ctx_drm_egl_suppress_screensaver(void *data, bool enable)
+static bool gfx_ctx_drm_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    (void)enable;
    return false;
 }
 
-static bool gfx_ctx_drm_egl_has_windowed(void *data)
+static bool gfx_ctx_drm_has_windowed(void *data)
 {
    (void)data;
    return false;
 }
 
-static bool gfx_ctx_drm_egl_bind_api(void *video_driver,
+static bool gfx_ctx_drm_bind_api(void *video_driver,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
    (void)video_driver;
@@ -776,24 +775,24 @@ static bool gfx_ctx_drm_egl_bind_api(void *video_driver,
 
 const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    gfx_ctx_drm_egl_init,
-   gfx_ctx_drm_egl_destroy,
-   gfx_ctx_drm_egl_bind_api,
-   gfx_ctx_drm_egl_swap_interval,
+   gfx_ctx_drm_destroy,
+   gfx_ctx_drm_bind_api,
+   gfx_ctx_drm_swap_interval,
    gfx_ctx_drm_egl_set_video_mode,
-   gfx_ctx_drm_egl_get_video_size,
+   gfx_ctx_drm_get_video_size,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
-   gfx_ctx_drm_egl_update_window_title,
-   gfx_ctx_drm_egl_check_window,
-   gfx_ctx_drm_egl_set_resize,
-   gfx_ctx_drm_egl_has_focus,
-   gfx_ctx_drm_egl_suppress_screensaver,
-   gfx_ctx_drm_egl_has_windowed,
+   gfx_ctx_drm_update_window_title,
+   gfx_ctx_drm_check_window,
+   gfx_ctx_drm_set_resize,
+   gfx_ctx_drm_has_focus,
+   gfx_ctx_drm_suppress_screensaver,
+   gfx_ctx_drm_has_windowed,
    gfx_ctx_drm_egl_swap_buffers,
-   gfx_ctx_drm_egl_input_driver,
+   gfx_ctx_drm_input_driver,
    egl_get_proc_address,
    NULL,
    NULL,
