@@ -61,7 +61,7 @@ typedef struct gfx_ctx_x_data
 
 static unsigned g_major;
 static unsigned g_minor;
-static enum gfx_ctx_api g_api;
+static enum gfx_ctx_api x_api;
 
 #ifdef HAVE_OPENGL
 static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
@@ -83,7 +83,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 
    if (g_x11_dpy)
    {
-      switch (g_api)
+      switch (x_api)
       {
          case GFX_CTX_OPENGL_API:
          case GFX_CTX_OPENGL_ES_API:
@@ -164,7 +164,7 @@ static void gfx_ctx_x_destroy(void *data)
    
    gfx_ctx_x_destroy_resources(x);
 
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
@@ -184,7 +184,7 @@ static void gfx_ctx_x_swap_interval(void *data, unsigned interval)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
@@ -232,7 +232,7 @@ static void gfx_ctx_x_swap_buffers(void *data)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
@@ -264,7 +264,7 @@ static void gfx_ctx_x_check_window(void *data, bool *quit,
 
    x11_check_window(data, quit, resize, width, height, frame_count);
 
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
@@ -289,7 +289,7 @@ static bool gfx_ctx_x_set_resize(void *data,
    (void)width;
    (void)height;
 
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
@@ -346,7 +346,7 @@ static void *gfx_ctx_x_init(void *data)
       goto error;
 
 
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
@@ -440,7 +440,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    windowed_full = settings->video.windowed_fullscreen;
    true_full = false;
 
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
@@ -516,7 +516,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
@@ -568,7 +568,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    x11_event_queue_check(&event);
 
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
@@ -678,7 +678,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
 
    x11_install_quit_atom();
 
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
@@ -777,7 +777,7 @@ static bool gfx_ctx_x_has_windowed(void *data)
 
 static gfx_ctx_proc_t gfx_ctx_x_get_proc_address(const char *symbol)
 {
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
@@ -806,7 +806,7 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
    {
       case GFX_CTX_OPENGL_API:
 #ifdef HAVE_OPENGL
-         g_api = GFX_CTX_OPENGL_API;
+         x_api = GFX_CTX_OPENGL_API;
          return true;
 #else
          break;
@@ -824,7 +824,7 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
                g_major = 2; /* ES 2.0. */
                g_minor = 0;
             }
-            g_api = GFX_CTX_OPENGL_ES_API;
+            x_api = GFX_CTX_OPENGL_ES_API;
             return ret;
          }
 #else
@@ -832,7 +832,7 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
 #endif
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
-         g_api = api;
+         x_api = api;
          return true;
 #else
          break;
@@ -857,7 +857,7 @@ static void gfx_ctx_x_bind_hw_render(void *data, bool enable)
    if (!x)
       return;
 
-   switch (g_api)
+   switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
