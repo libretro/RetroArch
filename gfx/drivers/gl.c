@@ -2804,11 +2804,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    }
 
    {
+      unsigned minimum;
       video_shader_ctx_texture_t texture_info;
 
       video_shader_driver_ctl(SHADER_CTL_GET_PREV_TEXTURES, &texture_info);
 
-      unsigned minimum = texture_info.id;
+      minimum          = texture_info.id;
       gl->textures     = max(minimum + 1, gl->textures);
    }
 

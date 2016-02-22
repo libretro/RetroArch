@@ -548,7 +548,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    EGLint n;
    EGLint egl_attribs[16];
    EGLint *egl_attribs_ptr     = NULL;
-   const EGLint *attrib_ptr    = NULL;;
+   const EGLint *attrib_ptr    = NULL;
    EGLint *attr                = NULL;
 #endif
    float refresh_mod;

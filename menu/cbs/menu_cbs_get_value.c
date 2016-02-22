@@ -379,13 +379,17 @@ static void menu_action_setting_disp_set_label_input_desc(
       const char *path,
       char *s2, size_t len2)
 {
-   settings_t *settings = config_get_ptr();
-   unsigned inp_desc_index_offset = type - MENU_SETTINGS_INPUT_DESC_BEGIN;
-   unsigned inp_desc_user         = inp_desc_index_offset /
+   char descriptor[PATH_MAX_LENGTH];
+   const struct retro_keybind *auto_bind = NULL;
+   const struct retro_keybind *keybind   = NULL;
+   settings_t *settings                  = config_get_ptr();
+   unsigned inp_desc_index_offset        = 
+      type - MENU_SETTINGS_INPUT_DESC_BEGIN;
+   unsigned inp_desc_user                = inp_desc_index_offset /
       (RARCH_FIRST_CUSTOM_BIND + 4);
    unsigned inp_desc_button_index_offset = inp_desc_index_offset -
       (inp_desc_user * (RARCH_FIRST_CUSTOM_BIND + 4));
-   unsigned remap_id = 0;
+   unsigned remap_id                     = 0;
 
    if (!settings)
       return;
@@ -393,14 +397,11 @@ static void menu_action_setting_disp_set_label_input_desc(
    remap_id = settings->input.remap_ids
       [inp_desc_user][inp_desc_button_index_offset];
 
-   const struct retro_keybind *keybind = 
-      (const struct retro_keybind*)
+   keybind = (const struct retro_keybind*)
       &settings->input.binds[inp_desc_user][remap_id];
-   const struct retro_keybind *auto_bind = 
-      (const struct retro_keybind*)
+   auto_bind = (const struct retro_keybind*)
       input_get_auto_bind(inp_desc_user, remap_id);
 
-   char descriptor[PATH_MAX_LENGTH];
    input_config_get_bind_string(descriptor,
       keybind, auto_bind, sizeof(descriptor));
 
