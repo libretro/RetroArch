@@ -102,7 +102,6 @@ void egl_destroy(void *data)
    egl->dpy     = EGL_NO_DISPLAY;
    egl->config  = 0;
    g_egl_quit    = 0;
-   egl->api     = GFX_CTX_NONE;
    g_egl_inited  = false;
 }
 
@@ -209,7 +208,6 @@ bool egl_init_context(void *data, NativeDisplayType display,
    if (!eglChooseConfig(egl->dpy, attrib_ptr, &egl->config, 1, n) || *n != 1)
       return false;
 
-   egl->api   = g_egl_api;
    egl->major = g_egl_major;
    egl->minor = g_egl_minor;
 

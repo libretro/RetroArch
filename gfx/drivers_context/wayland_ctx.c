@@ -523,7 +523,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
    (void)video_driver;
 
 #ifdef HAVE_EGL
-   switch (wl->egl.api)
+   switch (wl_api)
    {
       case GFX_CTX_OPENGL_API:
 #ifdef HAVE_OPENGL
@@ -626,7 +626,7 @@ error:
 #ifdef HAVE_EGL
 static EGLint *egl_fill_attribs(gfx_ctx_wayland_data_t *wl, EGLint *attr)
 {
-   switch (wl->egl.api)
+   switch (wl_api)
    {
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:

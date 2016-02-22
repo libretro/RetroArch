@@ -53,7 +53,6 @@ typedef struct
 
    unsigned major;
    unsigned minor;
-   enum gfx_ctx_api api;
 
    /* egl "private" */
    bool use_hw_ctx;

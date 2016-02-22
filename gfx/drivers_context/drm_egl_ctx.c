@@ -434,7 +434,7 @@ error:
 
 static EGLint *egl_fill_attribs(gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
 {
-   switch (drm->egl.api)
+   switch (drm_api)
    {
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
