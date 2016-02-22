@@ -63,7 +63,6 @@ extern bool g_egl_inited;
 
 /* bind_api is called before init so we need these, please
  * try no to use them outside of bind_api() and init() */
-extern enum gfx_ctx_api g_egl_api;
 extern unsigned g_egl_major;
 extern unsigned g_egl_minor;
 

@@ -25,7 +25,6 @@
 volatile sig_atomic_t g_egl_quit;
 bool g_egl_inited;
 
-enum gfx_ctx_api g_egl_api;
 unsigned g_egl_major = 0;
 unsigned g_egl_minor = 0;
 
