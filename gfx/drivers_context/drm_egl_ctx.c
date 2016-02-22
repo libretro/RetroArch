@@ -244,7 +244,9 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
 {
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
 
+#ifdef HAVE_EGL
    egl_swap_buffers(data);
+#endif
 
    /* I guess we have to wait for flip to have taken 
     * place before another flip can be queued up.
@@ -730,8 +732,10 @@ static bool gfx_ctx_drm_egl_bind_api(void *video_driver,
 {
    (void)video_driver;
 
+#ifdef HAVE_EGL
    g_egl_major = major;
    g_egl_minor = minor;
+#endif
    drm_api     = api;
 
    switch (api)
