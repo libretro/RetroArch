@@ -39,15 +39,25 @@
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../common/drm_common.h"
+
+#ifdef HAVE_EGL
 #include "../common/egl_common.h"
+#endif
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../common/gl_common.h"
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_OPENGLES
+
 #ifndef EGL_OPENGL_ES3_BIT_KHR
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
+#endif
+
 #endif
 
 static struct gbm_bo *g_bo;
@@ -288,7 +298,8 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
    g_drm_fd           = -1;
 }
 
-static void gfx_ctx_drm_egl_destroy_resources(gfx_ctx_drm_egl_data_t *drm)
+static void gfx_ctx_drm_egl_destroy_resources(
+      gfx_ctx_drm_egl_data_t *drm)
 {
    if (!drm)
       return;
@@ -500,11 +511,13 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    };
 #endif
 
+#ifdef HAVE_VG
    static const EGLint egl_attribs_vg[] = {
       DRM_EGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
       EGL_NONE,
    };
+#endif
    EGLint major;
    EGLint minor;
    EGLint n;
@@ -701,19 +714,31 @@ static bool gfx_ctx_drm_egl_bind_api(void *video_driver,
    switch (api)
    {
       case GFX_CTX_OPENGL_API:
+#if defined(HAVE_EGL) && defined(HAVE_OPENGL)
+
 #ifndef EGL_KHR_create_context
          if ((major * 1000 + minor) >= 3001)
             return false;
 #endif
          return eglBindAPI(EGL_OPENGL_API);
+#else
+         break;
+#endif
       case GFX_CTX_OPENGL_ES_API:
+#if defined(HAVE_EGL) && defined(HAVE_OPENGLES)
+
 #ifndef EGL_KHR_create_context
          if (major >= 3)
             return false;
 #endif
          return eglBindAPI(EGL_OPENGL_ES_API);
+#else
+         break;
+#endif
       case GFX_CTX_OPENVG_API:
+#if defined(HAVE_EGL) && defined(HAVE_VG)
          return eglBindAPI(EGL_OPENVG_API);
+#endif
       default:
          break;
    }
