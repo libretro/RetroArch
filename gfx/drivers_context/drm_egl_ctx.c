@@ -73,8 +73,9 @@ typedef struct gfx_ctx_drm_egl_data
    egl_ctx_data_t egl;
 #endif
    RFILE *g_drm;
-   unsigned g_fb_width;
-   unsigned g_fb_height;
+   unsigned interval;
+   unsigned fb_width;
+   unsigned fb_height;
 } gfx_ctx_drm_egl_data_t;
 
 struct drm_fb
@@ -129,7 +130,7 @@ error:
 static void gfx_ctx_drm_egl_swap_interval(void *data, unsigned interval)
 {
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
-   drm->egl.interval           = interval;
+   drm->interval               = interval;
 
    if (interval > 1)
       RARCH_WARN("[KMS/EGL]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
@@ -228,7 +229,7 @@ static void gfx_ctx_drm_egl_swap_buffers(void *data)
     *
     * If true, we are still waiting for a flip
     * (nonblocking mode, so just drop the frame). */
-   if (wait_flip(drm->egl.interval))
+   if (wait_flip(drm->interval))
       return;
 
    waiting_for_flip = queue_flip();
@@ -273,8 +274,8 @@ static void gfx_ctx_drm_egl_get_video_size(void *data,
       return;
 
    (void)data;
-   *width  = drm->g_fb_width;
-   *height = drm->g_fb_height;
+   *width  = drm->fb_width;
+   *height = drm->fb_height;
 }
 
 static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
@@ -319,8 +320,8 @@ static void gfx_ctx_drm_egl_destroy_resources(
    g_crtc_id           = 0;
    g_connector_id      = 0;
 
-   drm->g_fb_width     = 0;
-   drm->g_fb_height    = 0;
+   drm->fb_width       = 0;
+   drm->fb_height      = 0;
 
    g_bo                = NULL;
    g_next_bo           = NULL;
@@ -375,8 +376,8 @@ nextgpu:
 
    /* First mode is assumed to be the "optimal" 
     * one for get_video_size() purposes. */
-   drm->g_fb_width  = g_drm_connector->modes[0].hdisplay;
-   drm->g_fb_height = g_drm_connector->modes[0].vdisplay;
+   drm->fb_width    = g_drm_connector->modes[0].hdisplay;
+   drm->fb_height   = g_drm_connector->modes[0].vdisplay;
 
    g_gbm_dev        = gbm_create_device(fd);
 
@@ -604,14 +605,14 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
       goto error;
    }
 
-   drm->g_fb_width  = g_drm_mode->hdisplay;
-   drm->g_fb_height = g_drm_mode->vdisplay;
+   drm->fb_width    = g_drm_mode->hdisplay;
+   drm->fb_height   = g_drm_mode->vdisplay;
 
    /* Create GBM surface. */
    g_gbm_surface = gbm_surface_create(
          g_gbm_dev,
-         drm->g_fb_width,
-         drm->g_fb_height,
+         drm->fb_width,
+         drm->fb_height,
          GBM_FORMAT_XRGB8888,
          GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 
