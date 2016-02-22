@@ -71,7 +71,7 @@ static struct gbm_device *g_gbm_dev;
 
 static bool waiting_for_flip;
 
-typedef struct gfx_ctx_drm_egl_data
+typedef struct gfx_ctx_drm_data
 {
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
@@ -80,7 +80,7 @@ typedef struct gfx_ctx_drm_egl_data
    unsigned interval;
    unsigned fb_width;
    unsigned fb_height;
-} gfx_ctx_drm_egl_data_t;
+} gfx_ctx_drm_data_t;
 
 struct drm_fb
 {
@@ -151,8 +151,8 @@ error:
 
 static void gfx_ctx_drm_swap_interval(void *data, unsigned interval)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
-   drm->interval               = interval;
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
+   drm->interval           = interval;
 
    if (interval > 1)
       RARCH_WARN("[KMS]: Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
@@ -241,7 +241,7 @@ static bool gfx_ctx_drm_queue_flip(void)
 
 static void gfx_ctx_drm_swap_buffers(void *data)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
 
    switch (drm_api)
    {
@@ -300,7 +300,7 @@ static void gfx_ctx_drm_update_window_title(void *data)
 static void gfx_ctx_drm_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
 
    if (!drm)
       return;
@@ -309,7 +309,7 @@ static void gfx_ctx_drm_get_video_size(void *data,
    *height = drm->fb_height;
 }
 
-static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
+static void free_drm_resources(gfx_ctx_drm_data_t *drm)
 {
    if (!drm)
       return;
@@ -330,8 +330,7 @@ static void free_drm_resources(gfx_ctx_drm_egl_data_t *drm)
    g_drm_fd           = -1;
 }
 
-static void gfx_ctx_drm_destroy_resources(
-      gfx_ctx_drm_egl_data_t *drm)
+static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
 {
    if (!drm)
       return;
@@ -375,8 +374,8 @@ static void *gfx_ctx_drm_init(void *video_driver)
    unsigned gpu_index                   = 0;
    const char *gpu                      = NULL;
    struct string_list *gpu_descriptors  = NULL;
-   gfx_ctx_drm_egl_data_t *drm          = (gfx_ctx_drm_egl_data_t*)
-      calloc(1, sizeof(gfx_ctx_drm_egl_data_t));
+   gfx_ctx_drm_data_t *drm          = (gfx_ctx_drm_data_t*)
+      calloc(1, sizeof(gfx_ctx_drm_data_t));
 
    if (!drm)
       return NULL;
@@ -452,7 +451,7 @@ error:
 }
 
 static EGLint *gfx_ctx_drm_egl_fill_attribs(
-      gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
+      gfx_ctx_drm_data_t *drm, EGLint *attr)
 {
    switch (drm_api)
    {
@@ -529,8 +528,7 @@ static EGLint *gfx_ctx_drm_egl_fill_attribs(
    EGL_ALPHA_SIZE,      0, \
    EGL_DEPTH_SIZE,      0
 
-static bool gfx_ctx_drm_egl_set_video_mode(
-      gfx_ctx_drm_egl_data_t *drm)
+static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
 {
    const EGLint *attrib_ptr    = NULL;
    static const EGLint egl_attribs_gl[] = {
@@ -625,7 +623,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    int i, ret                  = 0;
    struct drm_fb *fb           = NULL;
    settings_t *settings        = config_get_ptr();
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
+   gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
 
    if (!drm)
       return false;
@@ -734,7 +732,7 @@ error:
 
 static void gfx_ctx_drm_destroy(void *data)
 {
-   gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
+   gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
 
    if (!drm)
       return;
@@ -853,7 +851,7 @@ static void gfx_ctx_drm_bind_hw_render(void *data, bool enable)
    }
 }
 
-const gfx_ctx_driver_t gfx_ctx_drm_egl = {
+const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_init,
    gfx_ctx_drm_destroy,
    gfx_ctx_drm_bind_api,
@@ -877,6 +875,6 @@ const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    NULL,
    NULL,
    NULL,
-   "kms-egl",
+   "kms",
    gfx_ctx_drm_bind_hw_render,
 };

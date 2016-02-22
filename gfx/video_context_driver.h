@@ -252,7 +252,7 @@ extern const gfx_ctx_driver_t gfx_ctx_x_egl;
 extern const gfx_ctx_driver_t gfx_ctx_wayland;
 extern const gfx_ctx_driver_t gfx_ctx_x;
 extern const gfx_ctx_driver_t gfx_ctx_d3d;
-extern const gfx_ctx_driver_t gfx_ctx_drm_egl;
+extern const gfx_ctx_driver_t gfx_ctx_drm;
 extern const gfx_ctx_driver_t gfx_ctx_mali_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_vivante_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_android;
