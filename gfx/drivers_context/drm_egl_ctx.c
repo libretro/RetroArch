@@ -60,6 +60,8 @@
 
 #endif
 
+static volatile sig_atomic_t drm_quit = 0;
+
 static struct gbm_bo *g_bo;
 static struct gbm_bo *g_next_bo;
 static struct gbm_surface *g_gbm_surface;
@@ -83,6 +85,24 @@ struct drm_fb
    struct gbm_bo *bo;
    uint32_t fb_id;
 };
+
+static void drm_sighandler(int sig)
+{
+   (void)sig;
+   drm_quit = 1;
+}
+
+static void drm_install_sighandler(void)
+{
+   struct sigaction sa;
+
+   sa.sa_sigaction = NULL;
+   sa.sa_handler   = drm_sighandler;
+   sa.sa_flags     = SA_RESTART;
+   sigemptyset(&sa.sa_mask);
+   sigaction(SIGINT, &sa, NULL);
+   sigaction(SIGTERM, &sa, NULL);
+}
 
 static void drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
 {
@@ -145,7 +165,7 @@ static void gfx_ctx_drm_egl_check_window(void *data, bool *quit,
    (void)height;
 
    *resize = false;
-   *quit   = g_egl_quit;
+   *quit   = drm_quit;
 }
 
 
@@ -536,7 +556,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
    if (!drm)
       return false;
 
-   egl_install_sighandlers();
+   drm_install_sighandler();
 
    switch (g_egl_api)
    {

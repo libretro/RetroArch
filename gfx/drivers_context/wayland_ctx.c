@@ -43,7 +43,7 @@
 #include "../common/gl_common.h"
 #endif
 
-static volatile sig_atomic_t g_quit = 0;
+static volatile sig_atomic_t wl_quit = 0;
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -80,18 +80,18 @@ static enum gfx_ctx_api wl_api;
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
-static void sighandler(int sig)
+static void wl_sighandler(int sig)
 {
    (void)sig;
-   g_quit = 1;
+   wl_quit = 1;
 }
 
-static void install_sighandlers(void)
+static void wl_install_sighandler(void)
 {
    struct sigaction sa;
 
    sa.sa_sigaction = NULL;
-   sa.sa_handler   = sighandler;
+   sa.sa_handler   = wl_sighandler;
    sa.sa_flags     = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
@@ -319,7 +319,7 @@ static void flush_wayland_fd(gfx_ctx_wayland_data_t *wl)
       if (fd.revents & (POLLERR | POLLHUP))
       {
          close(wl->fd);
-         g_quit = true;
+         wl_quit = true;
       }
 
       if (fd.revents & POLLIN)
@@ -366,7 +366,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
       *height = new_height;
    }
 
-   *quit = g_quit;
+   *quit = wl_quit;
 }
 
 static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
@@ -553,7 +553,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
    }
 #endif
 
-   g_quit = 0;
+   wl_quit = 0;
 
    wl->dpy = wl_display_connect(NULL);
    wl->buffer_scale = 1;
@@ -564,7 +564,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
       goto error;
    }
 
-   install_sighandlers();
+   wl_install_sighandler();
 
    wl->registry = wl_display_get_registry(wl->dpy);
    wl_registry_add_listener(wl->registry, &registry_listener, wl);
