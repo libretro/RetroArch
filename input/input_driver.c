@@ -101,6 +101,10 @@ static rarch_remote_t *input_driver_remote = NULL;
 static const input_driver_t *current_input = NULL;
 static void *current_input_data = NULL;
 
+/* number of frames required to trigger the hotkey */
+#define HOTKEY_DELAY 5 
+static unsigned hotkey_counter = 0;
+
 /**
  * input_driver_find_handle:
  * @idx                : index of driver to get handle to.
@@ -548,9 +552,17 @@ static bool check_input_driver_block_hotkey(bool enable_hotkey)
    else
       input_driver_ctl(RARCH_INPUT_CTL_UNSET_HOTKEY_BLOCK, NULL);
 
-   /* If we hold ENABLE_HOTKEY button, block all libretro input to allow
-    * hotkeys to be bound to same keys as RetroPad. */
-   return (use_hotkey_enable && enable_hotkey);
+   if (use_hotkey_enable && enable_hotkey)
+   {
+      if (hotkey_counter < HOTKEY_DELAY)
+         hotkey_counter++;
+   }
+   else
+      hotkey_counter = 0;
+
+   /* If we hold ENABLE_HOTKEY button for HOTKEY_DELAY frames, block all
+    * libretro input to allow hotkeys to be bound to same keys as RetroPad. */
+   return (hotkey_counter == HOTKEY_DELAY);
 }
 
 /**
