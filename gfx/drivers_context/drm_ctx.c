@@ -76,7 +76,7 @@ typedef struct gfx_ctx_drm_data
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
-   RFILE *g_drm;
+   RFILE *drm;
    unsigned interval;
    unsigned fb_width;
    unsigned fb_height;
@@ -323,7 +323,7 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
    drm_free();
 
    if (g_drm_fd >= 0)
-      retro_fclose(drm->g_drm);
+      retro_fclose(drm->drm);
 
    g_gbm_surface      = NULL;
    g_gbm_dev          = NULL;
@@ -394,14 +394,14 @@ nextgpu:
    }
    gpu = gpu_descriptors->elems[gpu_index++].data;
 
-   drm->g_drm    = retro_fopen(gpu, RFILE_MODE_READ_WRITE, -1);
-   if (!drm->g_drm)
+   drm->drm    = retro_fopen(gpu, RFILE_MODE_READ_WRITE, -1);
+   if (!drm->drm)
    {
       RARCH_WARN("[KMS]: Couldn't open DRM device.\n");
       goto nextgpu;
    }
 
-   fd = retro_get_fd(drm->g_drm);
+   fd = retro_get_fd(drm->drm);
 
    if (!drm_get_resources(fd))
       goto nextgpu;
