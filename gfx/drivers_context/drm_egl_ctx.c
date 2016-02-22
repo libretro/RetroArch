@@ -171,7 +171,7 @@ static void gfx_ctx_drm_check_window(void *data, bool *quit,
 }
 
 
-static void drm_egl_flip_handler(int fd, unsigned frame,
+static void drm_flip_handler(int fd, unsigned frame,
       unsigned sec, unsigned usec, void *data)
 {
    static unsigned first_page_flip;
@@ -188,7 +188,7 @@ static void drm_egl_flip_handler(int fd, unsigned frame,
    {
       unsigned missed = frame - last_page_flip - 1;
       if (missed)
-         RARCH_LOG("[KMS/EGL]: Missed %u VBlank(s) (Frame: %u, DRM frame: %u).\n",
+         RARCH_LOG("[KMS]: Missed %u VBlank(s) (Frame: %u, DRM frame: %u).\n",
                missed, frame - first_page_flip, frame);
    }
 
@@ -196,7 +196,7 @@ static void drm_egl_flip_handler(int fd, unsigned frame,
    *(bool*)data = false;
 }
 
-static bool wait_flip(bool block)
+static bool gfx_ctx_drm_wait_flip(bool block)
 {
    int timeout = 0;
 
@@ -225,12 +225,11 @@ static bool wait_flip(bool block)
    return false;
 }
 
-static bool queue_flip(void)
+static bool gfx_ctx_drm_queue_flip(void)
 {
    struct drm_fb *fb = NULL;
-
-   g_next_bo = gbm_surface_lock_front_buffer(g_gbm_surface);
-   fb        = (struct drm_fb*)drm_fb_get_from_bo(g_next_bo);
+   g_next_bo         = gbm_surface_lock_front_buffer(g_gbm_surface);
+   fb                = (struct drm_fb*)drm_fb_get_from_bo(g_next_bo);
 
    if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
          DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip) == 0)
@@ -240,31 +239,40 @@ static bool queue_flip(void)
    return false;
 }
 
-static void gfx_ctx_drm_egl_swap_buffers(void *data)
+static void gfx_ctx_drm_swap_buffers(void *data)
 {
    gfx_ctx_drm_egl_data_t *drm = (gfx_ctx_drm_egl_data_t*)data;
 
+   switch (drm_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-   egl_swap_buffers(data);
+         egl_swap_buffers(drm);
 #endif
+         break;
+      default:
+         break;
+   }
 
    /* I guess we have to wait for flip to have taken 
     * place before another flip can be queued up.
     *
     * If true, we are still waiting for a flip
     * (nonblocking mode, so just drop the frame). */
-   if (wait_flip(drm->interval))
+   if (gfx_ctx_drm_wait_flip(drm->interval))
       return;
 
-   waiting_for_flip = queue_flip();
+   waiting_for_flip = gfx_ctx_drm_queue_flip();
 
    if (gbm_surface_has_free_buffers(g_gbm_surface))
       return;
 
    /* We have to wait for this flip to finish. 
     * This shouldn't happen as we have triple buffered page-flips. */
-   RARCH_WARN("[KMS/EGL]: Triple buffering is not working correctly ...\n");
-   wait_flip(true);  
+   RARCH_WARN("[KMS]: Triple buffering is not working correctly ...\n");
+   gfx_ctx_drm_wait_flip(true);  
 }
 
 static bool gfx_ctx_drm_set_resize(void *data,
@@ -329,11 +337,21 @@ static void gfx_ctx_drm_destroy_resources(
       return;
 
    /* Make sure we acknowledge all page-flips. */
-   wait_flip(true);
+   gfx_ctx_drm_wait_flip(true);
 
+   switch (drm_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+      case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-   egl_destroy(drm);
+         egl_destroy(drm);
 #endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
 
    /* Restore original CRTC. */
    drm_restore_crtc();
@@ -372,7 +390,7 @@ nextgpu:
 
    if (!gpu_descriptors || gpu_index == gpu_descriptors->size)
    {
-      RARCH_ERR("[KMS/EGL]: Couldn't find a suitable DRM device.\n");
+      RARCH_ERR("[KMS]: Couldn't find a suitable DRM device.\n");
       goto error;
    }
    gpu = gpu_descriptors->elems[gpu_index++].data;
@@ -380,7 +398,7 @@ nextgpu:
    drm->g_drm    = retro_fopen(gpu, RFILE_MODE_READ_WRITE, -1);
    if (!drm->g_drm)
    {
-      RARCH_WARN("[KMS/EGL]: Couldn't open DRM device.\n");
+      RARCH_WARN("[KMS]: Couldn't open DRM device.\n");
       goto nextgpu;
    }
 
@@ -406,7 +424,7 @@ nextgpu:
 
    if (!g_gbm_dev)
    {
-      RARCH_WARN("[KMS/EGL]: Couldn't create GBM device.\n");
+      RARCH_WARN("[KMS]: Couldn't create GBM device.\n");
       goto nextgpu;
    }
 
@@ -416,7 +434,7 @@ nextgpu:
    g_drm_fds.fd                         = fd;
    g_drm_fds.events                     = POLLIN;
    g_drm_evctx.version                  = DRM_EVENT_CONTEXT_VERSION;
-   g_drm_evctx.page_flip_handler        = drm_egl_flip_handler;
+   g_drm_evctx.page_flip_handler        = drm_flip_handler;
 
    g_drm_fd = fd;
 
@@ -491,7 +509,7 @@ static EGLint *egl_fill_attribs(gfx_ctx_drm_egl_data_t *drm, EGLint *attr)
 #endif
 #endif
          break;
-
+      case GFX_CTX_NONE:
       default:
          break;
    }
@@ -581,6 +599,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
          attrib_ptr = egl_attribs_vg;
 #endif
          break;
+      case GFX_CTX_NONE:
       default:
          break;
    }
@@ -765,6 +784,7 @@ static bool gfx_ctx_drm_bind_api(void *video_driver,
 #if defined(HAVE_EGL) && defined(HAVE_VG)
          return eglBindAPI(EGL_OPENVG_API);
 #endif
+      case GFX_CTX_NONE:
       default:
          break;
    }
@@ -791,7 +811,7 @@ const gfx_ctx_driver_t gfx_ctx_drm_egl = {
    gfx_ctx_drm_has_focus,
    gfx_ctx_drm_suppress_screensaver,
    gfx_ctx_drm_has_windowed,
-   gfx_ctx_drm_egl_swap_buffers,
+   gfx_ctx_drm_swap_buffers,
    gfx_ctx_drm_input_driver,
    egl_get_proc_address,
    NULL,
