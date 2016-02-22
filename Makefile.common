@@ -361,8 +361,19 @@ ifeq ($(HAVE_NEON),1)
    OBJ += audio/audio_utils_neon.o
 endif
 
+HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)
+
+ifeq ($(HW_CONTEXT_MENU_DRIVERS),0)
+ifeq ($(HAVE_GL_CONTEXT),1)
+	HW_CONTEXT_MENU_DRIVERS=1
+endif
+ifeq ($(HAVE_VULKAN),1)
+	HW_CONTEXT_MENU_DRIVERS=1
+endif
+endif
+
 # XMB and MaterialUI are always enabled if supported and not explicitly disabled
-ifeq ($(HAVE_RGUI)$(HAVE_GL_CONTEXT), 11)
+ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
    ifeq ($(HAVE_ZARCH),)
       HAVE_ZARCH = 1
    endif
