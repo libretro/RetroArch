@@ -9,10 +9,6 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 
-#ifdef HAVE_THREADS
-#include <rthreads/async_job.h>
-#endif
-
 #define STB_IMAGE_IMPLEMENTATION
 
 #ifdef RARCH_INTERNAL
@@ -49,17 +45,6 @@ static int       image_height;
 static bool      image_uploaded;
 static bool      slideshow_enable;
 struct string_list *file_list;
-
-#ifdef HAVE_THREADS
-static async_job_t *imageviewer_jobs;
-
-#if 0
-static int imageviewer_async_job_add(async_task_t task, void *payload)
-{
-   return async_job_add(imageviewer_jobs, task, payload);
-}
-#endif
-#endif
 
 #if 0
 #define DUPE_TEST
@@ -104,9 +89,6 @@ void IMAGE_CORE_PREFIX(retro_init)(void)
    image_width  = 0;
    image_height = 0;
 
-#ifdef HAVE_THREADS
-   imageviewer_jobs = async_job_new();
-#endif
 }
 
 void IMAGE_CORE_PREFIX(retro_deinit)(void)
@@ -116,11 +98,6 @@ void IMAGE_CORE_PREFIX(retro_deinit)(void)
    image_buffer = NULL;
    image_width  = 0;
    image_height = 0;
-
-#ifdef HAVE_THREADS
-   async_job_free(imageviewer_jobs);
-   imageviewer_jobs = NULL;
-#endif
 }
 
 void IMAGE_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
