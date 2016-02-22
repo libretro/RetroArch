@@ -62,6 +62,8 @@
 
 static volatile sig_atomic_t drm_quit = 0;
 
+static enum gfx_ctx_api drm_api;
+
 static struct gbm_bo *g_bo;
 static struct gbm_bo *g_next_bo;
 static struct gbm_surface *g_gbm_surface;
@@ -558,7 +560,7 @@ static bool gfx_ctx_drm_egl_set_video_mode(void *data,
 
    drm_install_sighandler();
 
-   switch (g_egl_api)
+   switch (drm_api)
    {
       case GFX_CTX_OPENGL_API:
 #ifdef HAVE_OPENGL
@@ -730,7 +732,7 @@ static bool gfx_ctx_drm_egl_bind_api(void *video_driver,
 
    g_egl_major = major;
    g_egl_minor = minor;
-   g_egl_api   = api;
+   drm_api     = api;
 
    switch (api)
    {
