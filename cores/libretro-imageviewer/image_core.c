@@ -42,6 +42,7 @@ static retro_input_state_t IMAGE_CORE_PREFIX(input_state_cb);
 static retro_audio_sample_batch_t IMAGE_CORE_PREFIX(audio_batch_cb);
 static retro_environment_t IMAGE_CORE_PREFIX(environ_cb);
 
+static bool      process_new_image;
 static uint32_t* image_buffer;
 static int       image_width;
 static int       image_height;
@@ -193,12 +194,11 @@ void IMAGE_CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char * c)
 {
 }
 
-static bool imageviewer_load(const char *path, uint32_t *buf, int image_index)
+static bool imageviewer_load(const char *path, int image_index)
 {
    int comp;
-   struct retro_system_av_info info;
-   uint32_t *end          = NULL;
-   if (image_buffer) free(image_buffer);
+   if (image_buffer)
+      free(image_buffer);
    
    image_buffer           = (uint32_t*)stbi_load(
          path,
@@ -207,30 +207,17 @@ static bool imageviewer_load(const char *path, uint32_t *buf, int image_index)
          &comp,
          4);
 
-   /* RGBA > XRGB8888 */
-   buf = &image_buffer[0];
-
-   if (!buf)
+   if (!image_buffer)
       return false;
-   end = buf + (image_width*image_height*sizeof(uint32_t))/4;
 
-   while(buf < end)
-   {
-      uint32_t pixel = *buf;
-      *buf = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
-      buf++;
-   }
+   process_new_image = true;
 
-   IMAGE_CORE_PREFIX(retro_get_system_av_info)(&info);
-
-   IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_GEOMETRY, &info.geometry);
 
    return true;
 }
 
 bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
-   uint32_t *buf               = NULL;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    char *dir                   = strdup(info->path);
 
@@ -251,7 +238,7 @@ bool IMAGE_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       return false;
    }
 
-   if (!imageviewer_load(info->path, buf, 0))
+   if (!imageviewer_load(info->path, 0))
       return false;
 
    return true;
@@ -289,7 +276,6 @@ size_t IMAGE_CORE_PREFIX(retro_get_memory_size)(unsigned id)
 
 void IMAGE_CORE_PREFIX(retro_run)(void)
 {
-   uint32_t *buf          = NULL;
    bool first_image       = false;
    bool last_image        = false;
    bool backwards_image   = false;
@@ -387,10 +373,31 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
 
    if (load_image)
    {
-      if (!imageviewer_load(file_list->elems[image_index].data, buf, image_index))
+      if (!imageviewer_load(file_list->elems[image_index].data, image_index))
       {
          IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
       }
+   }
+
+   if (process_new_image)
+   {
+      /* RGBA > XRGB8888 */
+      struct retro_system_av_info info;
+      uint32_t *buf = &image_buffer[0];
+      uint32_t *end = buf + (image_width*image_height*sizeof(uint32_t))/4;
+
+      while(buf < end)
+      {
+         uint32_t pixel = *buf;
+         *buf = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
+         buf++;
+      }
+
+      IMAGE_CORE_PREFIX(retro_get_system_av_info)(&info);
+
+      IMAGE_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_GEOMETRY, &info.geometry);
+
+      process_new_image = false;
    }
 
 #ifdef DUPE_TEST
