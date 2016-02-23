@@ -83,6 +83,7 @@ static enum gfx_ctx_api wl_api;
 static void wl_sighandler(int sig)
 {
    (void)sig;
+   if (wl_quit) exit(1);
    wl_quit = 1;
 }
 

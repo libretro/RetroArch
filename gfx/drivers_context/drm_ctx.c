@@ -91,6 +91,7 @@ struct drm_fb
 static void drm_sighandler(int sig)
 {
    (void)sig;
+   if (drm_quit) exit(1);
    drm_quit = 1;
 }
 

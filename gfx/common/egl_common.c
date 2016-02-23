@@ -172,6 +172,7 @@ void egl_get_video_size(void *data, unsigned *width, unsigned *height)
 static void egl_sighandler(int sig)
 {
    (void)sig;
+   if (g_egl_quit) exit(1);
    g_egl_quit = 1;
 }
 

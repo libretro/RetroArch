@@ -504,6 +504,7 @@ bool x11_has_focus(void *data)
 static void x11_sighandler(int sig)
 {
    (void)sig;
+   if (g_x11_quit) exit(1);
    g_x11_quit = 1;
 }
 
