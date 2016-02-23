@@ -43,7 +43,7 @@
 #include "../common/gl_common.h"
 #endif
 
-static volatile sig_atomic_t g_quit = 0;
+static volatile sig_atomic_t wl_quit = 0;
 
 typedef struct gfx_ctx_wayland_data
 {
@@ -55,6 +55,8 @@ typedef struct gfx_ctx_wayland_data
    int fd;
    unsigned width;
    unsigned height;
+   unsigned physical_width;
+   unsigned physical_height;
    struct wl_display *dpy;
    struct wl_registry *registry;
    struct wl_compositor *compositor;
@@ -78,18 +80,18 @@ static enum gfx_ctx_api wl_api;
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
-static void sighandler(int sig)
+static void wl_sighandler(int sig)
 {
    (void)sig;
-   g_quit = 1;
+   wl_quit = 1;
 }
 
-static void install_sighandlers(void)
+static void wl_install_sighandler(void)
 {
    struct sigaction sa;
 
    sa.sa_sigaction = NULL;
-   sa.sa_handler   = sighandler;
+   sa.sa_handler   = wl_sighandler;
    sa.sa_flags     = SA_RESTART;
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
@@ -117,7 +119,7 @@ static void shell_surface_handle_configure(void *data,
    wl->width  = wl->buffer_scale * width;
    wl->height = wl->buffer_scale * height;
 
-   RARCH_LOG("[Wayland/EGL]: Surface configure: %u x %u.\n",
+   RARCH_LOG("[Wayland]: Surface configure: %u x %u.\n",
          wl->width, wl->height);
 }
 
@@ -134,17 +136,92 @@ static const struct wl_shell_surface_listener shell_surface_listener = {
    shell_surface_handle_popup_done,
 };
 
+static void display_handle_geometry(void *data,
+      struct wl_output *output,
+      int x, int y,
+      int physical_width, int physical_height,
+      int subpixel,
+      const char *make,
+      const char *model,
+      int transform)
+{
+   (void)data;
+   (void)output;
+   (void)x;
+   (void)y;
+   (void)subpixel;
+   (void)make;
+   (void)model;
+   (void)transform;
+
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl->physical_width = physical_width;
+   wl->physical_height = physical_height;
+   RARCH_LOG("[Wayland]: Physical width: %d mm x %d mm.\n",
+         physical_width, physical_height);
+}
+
+static void display_handle_mode(void *data,
+      struct wl_output *output,
+      uint32_t flags,
+      int width,
+      int height,
+      int refresh)
+{
+   (void)output;
+   (void)flags;
+
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl->width = width;
+   wl->height = height;
+
+   RARCH_LOG("[Wayland]: Video mode: %d x %d @ %d Hz.\n",
+         width, height, refresh);
+}
+
+static void display_handle_done(void *data,
+      struct wl_output *output)
+{
+   (void)data;
+   (void)output;
+}
+
+static void display_handle_scale(void *data,
+      struct wl_output *output,
+      int32_t factor)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   RARCH_LOG("[Wayland]: Setting buffer scale factor to %d.\n", factor);
+   wl->buffer_scale = factor;
+}
+
+static const struct wl_output_listener output_listener = {
+   display_handle_geometry,
+   display_handle_mode,
+   display_handle_done,
+   display_handle_scale,
+};
+
 /* Registry callbacks. */
 static void registry_handle_global(void *data, struct wl_registry *reg,
       uint32_t id, const char *interface, uint32_t version)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   struct wl_output *output;
 
    (void)version;
 
    if (string_is_equal(interface, "wl_compositor"))
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
             id, &wl_compositor_interface, 3);
+   else if (string_is_equal(interface, "wl_output"))
+   {
+      output = (struct wl_output*)wl_registry_bind(reg,
+            id, &wl_output_interface, 2);
+      wl_output_add_listener(output, &output_listener, wl);
+      wl_display_roundtrip(wl->dpy);
+   }
    else if (string_is_equal(interface, "wl_shell"))
       wl->shell = (struct wl_shell*)
          wl_registry_bind(reg, id, &wl_shell_interface, 1);
@@ -242,7 +319,7 @@ static void flush_wayland_fd(gfx_ctx_wayland_data_t *wl)
       if (fd.revents & (POLLERR | POLLHUP))
       {
          close(wl->fd);
-         g_quit = true;
+         wl_quit = true;
       }
 
       if (fd.revents & POLLIN)
@@ -289,7 +366,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
       *height = new_height;
    }
 
-   *quit = g_quit;
+   *quit = wl_quit;
 }
 
 static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
@@ -353,6 +430,35 @@ static void gfx_ctx_wl_get_video_size(void *data,
    *height = wl->height;
 }
 
+static bool gfx_ctx_wl_get_metrics(void *data,
+      enum display_metric_types type, float *value)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (wl->physical_width == 0 || wl->physical_height == 0)
+      return false;
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_MM_WIDTH:
+         *value = (float)wl->physical_width;
+         break;
+
+      case DISPLAY_METRIC_MM_HEIGHT:
+         *value = (float)wl->physical_height;
+         break;
+
+      case DISPLAY_METRIC_DPI:
+         *value = (float)wl->width * 25.4f / (float)wl->physical_width;
+         break;
+
+      default:
+         *value = 0.0f;
+         return false;
+   }
+
+   return true;
+}
+
 #define DEFAULT_WINDOWED_WIDTH 640
 #define DEFAULT_WINDOWED_HEIGHT 480
 
@@ -368,7 +474,6 @@ static void gfx_ctx_wl_get_video_size(void *data,
 
 static void *gfx_ctx_wl_init(void *video_driver)
 {
-
 #ifdef HAVE_OPENGL
    static const EGLint egl_attribs_gl[] = {
       WL_EGL_ATTRIBS_BASE,
@@ -418,7 +523,7 @@ static void *gfx_ctx_wl_init(void *video_driver)
    (void)video_driver;
 
 #ifdef HAVE_EGL
-   switch (wl->egl.api)
+   switch (wl_api)
    {
       case GFX_CTX_OPENGL_API:
 #ifdef HAVE_OPENGL
@@ -448,34 +553,21 @@ static void *gfx_ctx_wl_init(void *video_driver)
    }
 #endif
 
-   g_quit = 0;
+   wl_quit = 0;
 
    wl->dpy = wl_display_connect(NULL);
+   wl->buffer_scale = 1;
+
    if (!wl->dpy)
    {
       RARCH_ERR("Failed to connect to Wayland server.\n");
       goto error;
    }
 
-   install_sighandlers();
+   wl_install_sighandler();
 
    wl->registry = wl_display_get_registry(wl->dpy);
    wl_registry_add_listener(wl->registry, &registry_listener, wl);
-
-   switch (wl_api)
-   {
-      case GFX_CTX_OPENGL_API:
-      case GFX_CTX_OPENGL_ES_API:
-      case GFX_CTX_OPENVG_API:
-#ifdef HAVE_EGL
-         wl_display_dispatch(wl->dpy);
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
-
    wl_display_roundtrip(wl->dpy);
 
    if (!wl->compositor)
@@ -534,7 +626,7 @@ error:
 #ifdef HAVE_EGL
 static EGLint *egl_fill_attribs(gfx_ctx_wayland_data_t *wl, EGLint *attr)
 {
-   switch (wl->egl.api)
+   switch (wl_api)
    {
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
@@ -668,10 +760,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    wl->width        = width  ? width  : DEFAULT_WINDOWED_WIDTH;
    wl->height       = height ? height : DEFAULT_WINDOWED_HEIGHT;
 
-   /* TODO: Use wl_output::scale to obtain correct value. */
-   wl->buffer_scale = 1;
-
    wl->surface    = wl_compositor_create_surface(wl->compositor);
+   wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
    switch (wl_api)
    {
@@ -784,7 +874,6 @@ static bool gfx_ctx_wl_bind_api(void *video_driver,
 #ifdef HAVE_EGL
    g_egl_major = major;
    g_egl_minor = minor;
-   g_egl_api   = api;
 #endif
 
    switch (api)
@@ -1056,7 +1145,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   NULL, /* get_metrics */
+   gfx_ctx_wl_get_metrics,
    NULL,
    gfx_ctx_wl_update_window_title,
    gfx_ctx_wl_check_window,

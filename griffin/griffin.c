@@ -141,19 +141,17 @@ VIDEO CONTEXT
 #include "../gfx/common/vulkan_common.c"
 #endif
 
-#if defined(HAVE_OPENGL)
-
 #if defined(HAVE_KMS)
-#include "../gfx/drivers_context/drm_egl_ctx.c"
-#endif
-#if defined(HAVE_VIDEOCORE)
-#include "../gfx/drivers_context/vc_egl_ctx.c"
-#endif
-
+#include "../gfx/drivers_context/drm_ctx.c"
 #endif
 
 #if defined(HAVE_EGL)
 #include "../gfx/common/egl_common.c"
+
+#if defined(HAVE_VIDEOCORE)
+#include "../gfx/drivers_context/vc_egl_ctx.c"
+#endif
+
 #endif
 
 #if defined(HAVE_X11)

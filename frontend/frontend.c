@@ -104,7 +104,9 @@ int rarch_main(int argc, char *argv[], void *data)
    char *fullpath                  = NULL;
    rarch_system_info_t *system     = NULL;
    void *args                      = (void*)data;
+#ifndef HAVE_MAIN
    int ret                         = 0;
+#endif
 
    rarch_ctl(RARCH_CTL_PREINIT, NULL);
 

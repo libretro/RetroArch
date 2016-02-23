@@ -638,18 +638,6 @@ static bool event_save_auto_state(void)
    return true;
 }
 
-static void event_init_remapping(void)
-{
-   settings_t *settings = config_get_ptr();
-   const char   *path   = settings->input.remapping_path;
-   config_file_t *conf  = config_file_new(path);
-
-   if (!settings->input.remap_binds_enable || !conf)
-      return;
-
-   input_remapping_load_file(conf, path);
-}
-
 /**
  * event_save_core_config:
  *
@@ -684,7 +672,6 @@ static bool event_save_core_config(void)
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_CONFIG_DIRECTORY_NOT_SET));
       return false;
    }
-
    /* Infer file name based on libretro core. */
    if (*settings->libretro && path_file_exists(settings->libretro))
    {
@@ -700,14 +687,12 @@ static bool event_save_core_config(void)
          path_remove_extension(config_name);
          fill_pathname_join(config_path, config_dir, config_name,
                sizeof(config_path));
-
          if (i)
             snprintf(tmp, sizeof(tmp), "-%u.cfg", i);
          else
             strlcpy(tmp, ".cfg", sizeof(tmp));
 
-         fill_string_join(config_path, tmp, sizeof(config_path));
-
+         snprintf(config_path, sizeof(config_path), "%s%s", config_path, tmp);
          if (!path_file_exists(config_path))
          {
             found_path = true;
@@ -765,8 +750,10 @@ static bool event_save_core_config(void)
  **/
 void event_save_current_config(void)
 {
+   char msg[128];
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
+   bool ret             = false;
 
    if (settings->config_save_on_exit && *global->path.config)
    {
@@ -774,15 +761,29 @@ void event_save_current_config(void)
        * needed on consoles for core switching and reusing last good
        * config for new cores.
        */
-      config_save_file(global->path.config);
 
       /* Flush out the core specific config. */
       if (*global->path.core_specific_config &&
             settings->core_specific_config)
-         config_save_file(global->path.core_specific_config);
+         ret = config_save_file(global->path.core_specific_config);
+      else
+         ret = config_save_file(global->path.config);
    }
 
-   event_cmd_ctl(EVENT_CMD_AUTOSAVE_STATE, NULL);
+   if (ret)
+   {
+      snprintf(msg, sizeof(msg), "Saved new config to \"%s\".",
+            global->path.config);
+      RARCH_LOG("%s\n", msg);
+   }
+   else
+   {
+      snprintf(msg, sizeof(msg), "Failed saving config to \"%s\".",
+            global->path.config);
+      RARCH_ERR("%s\n", msg);
+   }
+
+   runloop_msg_queue_push(msg, 1, 180, true);
 }
 
 /**
@@ -1132,12 +1133,6 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_CHEATS_APPLY:
          cheat_manager_apply_cheats();
-         break;
-      case EVENT_CMD_REMAPPING_DEINIT:
-         break;
-      case EVENT_CMD_REMAPPING_INIT:
-         event_cmd_ctl(EVENT_CMD_REMAPPING_DEINIT, NULL);
-         event_init_remapping();
          break;
       case EVENT_CMD_REWIND_DEINIT:
 #ifdef HAVE_NETPLAY

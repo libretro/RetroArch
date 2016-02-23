@@ -1446,11 +1446,11 @@ int runloop_iterate(unsigned *sleep_ms)
    unlock_autosave();
 #endif
 
+   if (!settings->fastforward_ratio)
+      return 0;
 #ifdef HAVE_MENU
 end:
 #endif
-   if (!settings->fastforward_ratio)
-      return 0;
 
    current                        = retro_get_time_usec();
    target                         = frame_limit_last_time + 

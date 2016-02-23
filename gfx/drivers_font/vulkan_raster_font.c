@@ -36,12 +36,14 @@ static void *vulkan_raster_font_init_font(void *data,
    const struct font_atlas *atlas = NULL;
    vulkan_raster_t *font = (vulkan_raster_t*)calloc(1, sizeof(*font));
 
+#if 0
    VkComponentMapping swizzle = {
       VK_COMPONENT_SWIZZLE_ONE,
       VK_COMPONENT_SWIZZLE_ONE,
       VK_COMPONENT_SWIZZLE_ONE,
       VK_COMPONENT_SWIZZLE_R,
    };
+#endif
 
    if (!font)
       return NULL;
@@ -58,7 +60,8 @@ static void *vulkan_raster_font_init_font(void *data,
 
    atlas = font->font_driver->get_atlas(font->font_data);
    font->texture = vulkan_create_texture(font->vk, NULL,
-         atlas->width, atlas->height, VK_FORMAT_R8_UNORM, atlas->buffer, &swizzle, VULKAN_TEXTURE_STATIC);
+         atlas->width, atlas->height, VK_FORMAT_R8_UNORM, atlas->buffer,
+         NULL /*&swizzle*/, VULKAN_TEXTURE_STATIC);
 
    return font;
 }
@@ -224,7 +227,7 @@ static void vulkan_raster_font_setup_viewport(vulkan_raster_t *font, bool full_s
 static void vulkan_raster_font_flush(vulkan_raster_t *font)
 {
    const struct vk_draw_triangles call = {
-      font->vk->pipelines.alpha_blend,
+      font->vk->pipelines.font,
       &font->texture,
       font->vk->samplers.nearest,
       &font->vk->mvp,

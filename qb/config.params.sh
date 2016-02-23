@@ -71,3 +71,4 @@ HAVE_QT=no              # QT companion support
 HAVE_XSHM=no            # XShm video driver support (disabled because it's just a dummied out stub)
 HAVE_CHEEVOS=yes        # Disable Retro Achievements
 HAVE_VULKAN=auto        # Enable Vulkan support
+C89_VULKAN=no

@@ -33,7 +33,9 @@ typedef struct {
    bool should_reset_mode;
 } xegl_ctx_data_t;
 
-static int egl_nul_handler(Display *dpy, XErrorEvent *event)
+static enum gfx_ctx_api x_api;
+
+static int x_nul_handler(Display *dpy, XErrorEvent *event)
 {
    (void)dpy;
    (void)event;
@@ -130,7 +132,7 @@ static void *gfx_ctx_xegl_init(void *video_driver)
    if (!xegl)
       return NULL;
 
-   switch (xegl->egl.api)
+   switch (x_api)
    {
       case GFX_CTX_OPENGL_API:
          attrib_ptr = egl_attribs_gl;
@@ -172,7 +174,7 @@ error:
 
 static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 {
-   switch (xegl->egl.api)
+   switch (x_api)
    {
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
@@ -378,7 +380,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    /* This can blow up on some drivers. It's not fatal, 
     * so override errors for this call.
     */
-   old_handler = XSetErrorHandler(egl_nul_handler);
+   old_handler = XSetErrorHandler(x_nul_handler);
    XSetInputFocus(g_x11_dpy, g_x11_win, RevertToNone, CurrentTime);
    XSync(g_x11_dpy, False);
    XSetErrorHandler(old_handler);
@@ -445,7 +447,7 @@ static bool gfx_ctx_xegl_bind_api(void *video_driver,
 {
    g_egl_major  = major;
    g_egl_minor  = minor;
-   g_egl_api    = api;
+   x_api        = api;
 
    switch (api)
    {

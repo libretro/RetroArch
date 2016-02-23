@@ -58,7 +58,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    &gfx_ctx_x_egl,
 #endif
 #if defined(HAVE_KMS)
-   &gfx_ctx_drm_egl,
+   &gfx_ctx_drm,
 #endif
 #if defined(ANDROID)
    &gfx_ctx_android,

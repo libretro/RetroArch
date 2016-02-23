@@ -52,11 +52,39 @@
 
 #include <vulkan/vulkan.h>
 
-#include <gfx/math/matrix_4x4.h>
-#include <formats/image.h>
+#ifndef VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL
+#define VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL 1024
+#endif
+
+typedef struct VkDmaBufImageCreateInfo_
+{
+    VkStructureType                             sType; /* Must be VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL */
+    const void*                                 pNext; /* Pointer to next structure. */
+    int                                         fd;
+    VkFormat                                    format;
+    VkExtent3D                                  extent;         /* Depth must be 1 */
+    uint32_t                                    strideInBytes;
+} VkDmaBufImageCreateInfo;
+
+typedef VkResult (VKAPI_PTR *PFN_vkCreateDmaBufImageINTEL)(VkDevice device,
+      const VkDmaBufImageCreateInfo* pCreateInfo,
+      const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMem, VkImage* pImage);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateDmaBufImageINTEL(
+    VkDevice                                    _device,
+    const VkDmaBufImageCreateInfo*              pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkDeviceMemory*                             pMem,
+    VkImage*                                    pImage);
+
+#include <boolean.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
-#include "boolean.h"
+#include <gfx/math/matrix_4x4.h>
+#include <gfx/scaler/scaler.h>
+#include <rthreads/rthreads.h>
+#include <formats/image.h>
+
 #include "../../driver.h"
 #include "../../performance.h"
 #include "../../libretro.h"
@@ -66,13 +94,25 @@
 #include "../video_context_driver.h"
 #include "libretro_vulkan.h"
 #include "../drivers_shader/shader_vulkan.h"
-#include <rthreads/rthreads.h>
-#include <gfx/scaler/scaler.h>
 
 enum vk_texture_type
 {
+   /* We will use the texture as a sampled linear texture. */
    VULKAN_TEXTURE_STREAMED = 0,
+
+   /* We will use the texture as a linear texture, but only
+    * for copying to a DYNAMIC texture. */
+   VULKAN_TEXTURE_STAGING,
+
+   /* We will use the texture as an optimally tiled texture,
+    * and we will update the texture by copying from STAGING
+    * textures. */
+   VULKAN_TEXTURE_DYNAMIC,
+
+   /* We will upload content once. */
    VULKAN_TEXTURE_STATIC,
+
+   /* We will use the texture for reading back transfers from GPU. */
    VULKAN_TEXTURE_READBACK
 };
 
@@ -118,10 +158,14 @@ typedef struct gfx_ctx_vulkan_data
 {
    vulkan_context_t context;
 
-   PFN_vkGetPhysicalDeviceSurfaceSupportKHR fpGetPhysicalDeviceSurfaceSupportKHR;
-   PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
-   PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fpGetPhysicalDeviceSurfaceFormatsKHR;
-   PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fpGetPhysicalDeviceSurfacePresentModesKHR;
+   PFN_vkGetPhysicalDeviceSurfaceSupportKHR 
+      fpGetPhysicalDeviceSurfaceSupportKHR;
+   PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR 
+      fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
+   PFN_vkGetPhysicalDeviceSurfaceFormatsKHR 
+      fpGetPhysicalDeviceSurfaceFormatsKHR;
+   PFN_vkGetPhysicalDeviceSurfacePresentModesKHR 
+      fpGetPhysicalDeviceSurfacePresentModesKHR;
    PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
    PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
    PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
@@ -188,6 +232,7 @@ struct vk_texture
    uint32_t memory_type;
 
    VkImageLayout layout;
+   enum vk_texture_type type;
    bool default_smooth;
 };
 
@@ -259,6 +304,7 @@ struct vk_per_frame
 {
    struct vk_image backbuffer;
    struct vk_texture texture;
+   struct vk_texture texture_optimal;
    struct vk_buffer_chain vbo;
    struct vk_buffer_chain ubo;
    struct vk_descriptor_manager descriptor_manager;
@@ -336,6 +382,7 @@ typedef struct vk
    struct
    {
       VkPipeline alpha_blend;
+      VkPipeline font;
       VkDescriptorSetLayout set_layout;
       VkPipelineLayout layout;
       VkPipelineCache cache;
@@ -351,6 +398,9 @@ typedef struct vk
    struct
    {
       struct vk_texture textures[VULKAN_MAX_SWAPCHAIN_IMAGES];
+      struct vk_texture textures_optimal[VULKAN_MAX_SWAPCHAIN_IMAGES];
+      bool dirty[VULKAN_MAX_SWAPCHAIN_IMAGES];
+
       float alpha;
       unsigned last_index;
       bool enable;
@@ -420,6 +470,10 @@ void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture);
 void vulkan_map_persistent_texture(VkDevice device, struct vk_texture *tex);
 void vulkan_destroy_texture(VkDevice device, struct vk_texture *tex);
 
+void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
+      struct vk_texture *dynamic,
+      struct vk_texture *staging);
+
 /* VBO will be written to here. */
 void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad);
 
@@ -428,7 +482,8 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad);
  */
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call);
 
-void vulkan_image_layout_transition(vk_t *vk, VkCommandBuffer cmd, VkImage image,
+void vulkan_image_layout_transition(vk_t *vk,
+      VkCommandBuffer cmd, VkImage image,
       VkImageLayout old_layout, VkImageLayout new_layout,
       VkAccessFlags srcAccess, VkAccessFlags dstAccess,
       VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages);
@@ -470,8 +525,8 @@ static INLINE void vulkan_write_quad_vbo(struct vk_vertex *pv,
 
    for (i = 0; i < 6; i++)
    {
-      pv[i].x = x + strip[2 * i + 0] * width;
-      pv[i].y = y + strip[2 * i + 1] * height;
+      pv[i].x     = x + strip[2 * i + 0] * width;
+      pv[i].y     = y + strip[2 * i + 1] * height;
       pv[i].tex_x = tex_x + strip[2 * i + 0] * tex_width;
       pv[i].tex_y = tex_y + strip[2 * i + 1] * tex_height;
       pv[i].color = *color;

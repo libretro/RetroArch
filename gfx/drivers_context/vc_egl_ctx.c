@@ -51,6 +51,7 @@ typedef struct {
    unsigned res;
 } vc_ctx_data_t;
 
+static enum gfx_ctx_api vc_api;
 static PFNEGLCREATEIMAGEKHRPROC peglCreateImageKHR;
 static PFNEGLDESTROYIMAGEKHRPROC peglDestroyImageKHR;
 
@@ -186,7 +187,7 @@ static void *gfx_ctx_vc_init(void *video_driver)
       goto error;
    }
 
-   if (!egl_create_context(vc, (g_egl_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL))
+   if (!egl_create_context(vc, (vc_api == GFX_CTX_OPENGL_ES_API) ? context_attributes : NULL))
    {
       egl_report_error();
       goto error;
@@ -303,7 +304,7 @@ static bool gfx_ctx_vc_bind_api(void *data,
    (void)major;
    (void)minor;
 
-   g_egl_api = api;
+   vc_api = api;
 
    switch (api)
    {
@@ -354,7 +355,7 @@ static void gfx_ctx_vc_destroy(void *data)
 
       if (vc->egl.ctx)
       {
-         gfx_ctx_vc_bind_api(data, vc->egl.api, 0, 0);
+         gfx_ctx_vc_bind_api(data, vc_api, 0, 0);
          eglMakeCurrent(vc->egl.dpy,
                EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
          eglDestroyContext(vc->egl.dpy, vc->egl.ctx);
@@ -373,7 +374,7 @@ static void gfx_ctx_vc_destroy(void *data)
 
       if (vc->egl.surf)
       {
-         gfx_ctx_vc_bind_api(data, g_egl_api, 0, 0);
+         gfx_ctx_vc_bind_api(data, vc_api, 0, 0);
          eglDestroySurface(vc->egl.dpy, vc->egl.surf);
       }
 
@@ -386,7 +387,7 @@ static void gfx_ctx_vc_destroy(void *data)
       eglBindAPI(EGL_OPENVG_API);
       eglMakeCurrent(vc->egl.dpy,
             EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-      gfx_ctx_vc_bind_api(data, vc->egl.api, 0, 0);
+      gfx_ctx_vc_bind_api(data, vc_api, 0, 0);
       eglMakeCurrent(vc->egl.dpy,
             EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
       eglTerminate(vc->egl.dpy);
@@ -459,7 +460,7 @@ static bool gfx_ctx_vc_image_buffer_init(void *data,
    };
 
    /* Don't bother, we just use VGImages for our EGLImage anyway. */
-   if (vc->egl.api == GFX_CTX_OPENVG_API)
+   if (vc_api == GFX_CTX_OPENVG_API)
       return false;
 
    peglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)
@@ -496,7 +497,7 @@ static bool gfx_ctx_vc_image_buffer_init(void *data,
       goto fail;
    }
 
-   gfx_ctx_vc_bind_api(NULL, vc->egl.api, 0, 0);
+   gfx_ctx_vc_bind_api(NULL, vc_api, 0, 0);
    eglMakeCurrent(vc->egl.dpy, vc->egl.surf, vc->egl.surf, vc->egl.ctx);
 
    vc->smooth = video->smooth;
@@ -515,7 +516,7 @@ fail:
       vc->pbuff_surf = EGL_NO_CONTEXT;
    }
 
-   gfx_ctx_vc_bind_api(NULL, g_egl_api, 0, 0);
+   gfx_ctx_vc_bind_api(NULL, vc_api, 0, 0);
    eglMakeCurrent(vc->egl.dpy, vc->egl.surf, vc->egl.surf, vc->egl.ctx);
 
    return false;
@@ -559,7 +560,7 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigne
          height);
    *image_handle = vc->eglBuffer[index];
 
-   gfx_ctx_vc_bind_api(NULL, vc->egl.api, 0, 0);
+   gfx_ctx_vc_bind_api(NULL, vc_api, 0, 0);
    eglMakeCurrent(vc->egl.dpy, vc->egl.surf, vc->egl.surf, vc->egl.ctx);
 
    return ret;

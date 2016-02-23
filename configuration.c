@@ -1564,8 +1564,6 @@ static bool config_load_file(const char *path, bool set_defaults)
       }
    }
 
-   config_get_path(conf, "input_remapping_path", settings->input.remapping_path,
-         sizeof(settings->input.remapping_path));
    config_get_path(conf, "resampler_directory", settings->resampler_directory,
          sizeof(settings->resampler_directory));
    config_get_path(conf, "cache_directory", settings->cache_directory,
@@ -2167,7 +2165,6 @@ bool config_load_remap(void)
    else
    {
       RARCH_LOG("Remaps: no game-specific remap found at %s\n", game_path);
-      *settings->input.remapping_path= '\0';
       input_remapping_set_defaults();
    }
 
@@ -2187,7 +2184,6 @@ bool config_load_remap(void)
    else
    {
       RARCH_LOG("Remaps: no core-specific remap found at %s\n", core_path);
-      *settings->input.remapping_path= '\0';
       input_remapping_set_defaults();
    }
 
@@ -2695,8 +2691,6 @@ bool config_save_file(const char *path)
          settings->cache_directory);
    config_set_path(conf, "input_remapping_directory",
          settings->input_remapping_directory);
-   config_set_path(conf, "input_remapping_path",
-        settings->input.remapping_path);
    config_set_path(conf, "resampler_directory",
          settings->resampler_directory);
    config_set_string(conf, "audio_resampler", settings->audio.resampler);

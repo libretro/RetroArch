@@ -628,7 +628,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       if (gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
-               menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH), val);
+               menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT), val);
          menu_entries_push(info->list, tmp, "",
                MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
       }

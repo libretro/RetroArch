@@ -315,8 +315,6 @@ static bool gfx_ctx_qnx_bind_api(void *data,
    (void)major;
    (void)minor;
 
-   g_egl_api = api;
-
    return api == GFX_CTX_OPENGL_ES_API;
 }
 

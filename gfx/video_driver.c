@@ -242,14 +242,11 @@ const char* config_get_video_driver_options(void)
    return char_list_new_special(STRING_LIST_VIDEO_DRIVERS, NULL);
 }
 
-#ifdef HAVE_VULKAN
 static bool hw_render_context_is_vulkan(enum retro_hw_context_type type)
 {
    return type == RETRO_HW_CONTEXT_VULKAN;
 }
-#endif
 
-#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
 static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 {
    switch (type)
@@ -266,7 +263,6 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
 
    return false;
 }
-#endif
 
 static bool find_video_driver(void)
 {
@@ -276,27 +272,27 @@ static bool find_video_driver(void)
 
    if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
    {
-      current_video                        = NULL;
       struct retro_hw_render_callback *hwr =
          video_driver_callback();
+      current_video                        = NULL;
 
       (void)hwr;
 
-#if defined(HAVE_VULKAN)
       if (hwr && hw_render_context_is_vulkan(hwr->context_type))
       {
+#if defined(HAVE_VULKAN)
          RARCH_LOG("Using HW render, Vulkan driver forced.\n");
          current_video = &video_vulkan;
-      }
 #endif
+      }
 
-#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
       if (hwr && hw_render_context_is_gl(hwr->context_type))
       {
+#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
          RARCH_LOG("Using HW render, OpenGL driver forced.\n");
          current_video = &video_gl;
-      }
 #endif
+      }
 
       if (current_video)
          return true;

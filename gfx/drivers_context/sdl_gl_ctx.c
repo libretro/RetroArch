@@ -20,7 +20,7 @@
 #include "../../runloop.h"
 #include "../common/gl_common.h"
 
-static enum gfx_ctx_api g_api = GFX_CTX_OPENGL_API;
+static enum gfx_ctx_api sdl_api = GFX_CTX_OPENGL_API;
 static unsigned       g_major = 2;
 static unsigned       g_minor = 1;
 
@@ -132,7 +132,7 @@ static bool sdl_ctx_bind_api(void *data, enum gfx_ctx_api api, unsigned major,
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major);
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
 #endif
-   g_api   = api;
+   sdl_api = api;
    g_major = major;
    g_minor = minor;
 

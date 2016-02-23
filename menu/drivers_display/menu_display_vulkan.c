@@ -53,22 +53,24 @@ static void *menu_display_vk_get_default_mvp(void)
    return &vk->mvp_no_rot;
 }
 
-static unsigned to_display_pipeline(enum menu_display_prim_type prim_type, bool blend)
+static unsigned to_display_pipeline(
+      enum menu_display_prim_type prim_type, bool blend)
 {
    return ((prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | (blend << 0);
 }
 
 static void menu_display_vk_draw(void *data)
 {
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   struct vk_texture *texture;
-   const float *vertex, *tex_coord, *color;
-   math_matrix_4x4 *mat;
-   struct vk_buffer_range range;
-   struct vk_vertex *pv;
    unsigned i;
-
-   vk_t *vk = vk_get_ptr();
+   struct vk_buffer_range range;
+   struct vk_texture *texture    = NULL;
+   const float *vertex           = NULL;
+   const float *tex_coord        = NULL;
+   const float *color            = NULL;
+   math_matrix_4x4 *mat          = NULL;
+   struct vk_vertex *pv          = NULL;
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   vk_t *vk                      = vk_get_ptr();
    if (!vk)
       return;
 
@@ -120,7 +122,8 @@ static void menu_display_vk_draw(void *data)
 
    {
       const struct vk_draw_triangles call = {
-         vk->display.pipelines[to_display_pipeline(draw->prim_type, vk->display.blend)],
+         vk->display.pipelines[
+            to_display_pipeline(draw->prim_type, vk->display.blend)],
          texture,
          texture->default_smooth ? vk->samplers.linear : vk->samplers.nearest,
          mat,
@@ -179,14 +182,30 @@ static void menu_display_vk_draw_bg(void *data)
 
 static void menu_display_vk_restore_clear_color(void)
 {
-   //glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
 }
 
 static void menu_display_vk_clear_color(void *data)
 {
-   (void)data;
-   /* FIXME: This makes little sense in Vulkan.
-    * We shouldn't be clearing mid-screen nilly willy. */
+   VkClearRect rect;
+   VkClearAttachment attachment = { VK_IMAGE_ASPECT_COLOR_BIT };
+   menu_display_ctx_clearcolor_t *clearcolor =
+      (menu_display_ctx_clearcolor_t*)data;
+
+   vk_t *vk = vk_get_ptr();
+   if (!vk || !clearcolor)
+      return;
+
+   attachment.clearValue.color.float32[0] = clearcolor->r;
+   attachment.clearValue.color.float32[1] = clearcolor->g;
+   attachment.clearValue.color.float32[2] = clearcolor->b;
+   attachment.clearValue.color.float32[3] = clearcolor->a;
+
+   memset(&rect, 0, sizeof(rect));
+   rect.rect.extent.width = vk->context->swapchain_width;
+   rect.rect.extent.height = vk->context->swapchain_height;
+   rect.layerCount = 1;
+
+   vkCmdClearAttachments(vk->cmd, 1, &attachment, 1, &rect);
 }
 
 static const float *menu_display_vk_get_tex_coords(void)

@@ -39,8 +39,8 @@ bool input_remapping_load_file(void *data, const char *path)
    if (!conf ||  string_is_empty(path))
       return false;
 
-   strlcpy(settings->input.remapping_path, path,
-         sizeof(settings->input.remapping_path));
+   strlcpy(global->name.remapfile, path,
+         sizeof(global->name.remapfile));
 
    for (i = 0; i < MAX_USERS; i++)
    {

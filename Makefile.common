@@ -361,8 +361,19 @@ ifeq ($(HAVE_NEON),1)
    OBJ += audio/audio_utils_neon.o
 endif
 
+HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)
+
+ifeq ($(HW_CONTEXT_MENU_DRIVERS),0)
+ifeq ($(HAVE_GL_CONTEXT),1)
+	HW_CONTEXT_MENU_DRIVERS=1
+endif
+ifeq ($(HAVE_VULKAN),1)
+	HW_CONTEXT_MENU_DRIVERS=1
+endif
+endif
+
 # XMB and MaterialUI are always enabled if supported and not explicitly disabled
-ifeq ($(HAVE_RGUI)$(HAVE_GL_CONTEXT), 11)
+ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
    ifeq ($(HAVE_ZARCH),)
       HAVE_ZARCH = 1
    endif
@@ -586,6 +597,13 @@ OBJ += gfx/video_context_driver.o \
        libretro-common/gfx/math/matrix_4x4.o \
        libretro-common/gfx/math/matrix_3x3.o
 
+ifeq ($(HAVE_KMS), 1)
+	HAVE_AND_WILL_USE_DRM = 1
+	OBJ += gfx/drivers_context/drm_ctx.o
+	DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
+	LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
+endif
+
 ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
@@ -595,13 +613,6 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_gl.o
-   endif
-
-   ifeq ($(HAVE_KMS), 1)
-      HAVE_AND_WILL_USE_DRM = 1
-      OBJ += gfx/drivers_context/drm_egl_ctx.o
-      DEFINES += $(GBM_CFLAGS) $(DRM_CFLAGS) $(EGL_CFLAGS)
-      LIBS += $(GBM_LIBS) $(DRM_LIBS) $(EGL_LIBS)
    endif
 
    ifeq ($(HAVE_VIDEOCORE), 1)

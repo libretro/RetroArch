@@ -178,10 +178,10 @@ static void vulkan_test_render(void)
    update_ubo();
 
    VkCommandBuffer cmd = vk.cmd[vk.index];
-   vkResetCommandPool(vulkan->device, vk.cmd_pool[vk.index], 0);
 
    VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   vkResetCommandBuffer(cmd, 0);
    vkBeginCommandBuffer(cmd, &begin_info);
 
    VkImageMemoryBarrier prepare_rendering = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
@@ -548,6 +548,7 @@ static void init_swapchain(void)
       vkAllocateMemory(device, &alloc, NULL, &vk.image_memory[i]);
       vkBindImageMemory(device, vk.images[i].create_info.image, vk.image_memory[i], 0);
 
+      vk.images[i].create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
       vk.images[i].create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
       vk.images[i].create_info.format = VK_FORMAT_R8G8B8A8_UNORM;
       vk.images[i].create_info.subresourceRange.baseMipLevel = 0;
@@ -582,6 +583,7 @@ static void init_command(void)
    VkCommandBufferAllocateInfo info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 
    pool_info.queueFamilyIndex = vulkan->queue_index;
+   pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
    for (unsigned i = 0; i < vk.num_swapchain_images; i++)
    {
