@@ -392,6 +392,12 @@ check_lib STRCASESTR "$CLIB" strcasestr
 check_lib MMAP "$CLIB" mmap
 check_lib VULKAN -lvulkan vkCreateInstance
 
+if [ "$HAVE_VULKAN" != 'no' ] && [ ! -e deps/glslang/glslang/README.md ]; then
+	echo "Warning: glslang submodule not loaded, can't use Vulkan."
+	echo "To fix, use:  git submodule init && git submodule update"
+	HAVE_VULKAN=no
+fi
+
 check_pkgconf PYTHON python3
 
 if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" != 'no' ]; then
