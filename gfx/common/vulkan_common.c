@@ -986,6 +986,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          break;
       case VULKAN_WSI_NONE:
       default:
+         instance_extensions[1] = NULL;
          break;
    }
 
