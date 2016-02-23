@@ -1170,7 +1170,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkWaylandSurfaceCreateInfoKHR surf_info; 
 
-            memset(&surf_info, 0, sizeof(VkWaylandSurfaceCreateInfoKHR));
+            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType   = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
             surf_info.pNext   = NULL;
@@ -1189,7 +1189,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkAndroidSurfaceCreateInfoKHR surf_info;
 
-            memset(&surf_info, 0, sizeof(VkAndroidSurfaceCreateInfoKHR));
+            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType  = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
             surf_info.flags  = 0;
@@ -1206,7 +1206,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkWin32SurfaceCreateInfoKHR surf_info;
 
-            memset(&surf_info, 0, sizeof(VkWin32SurfaceCreateInfoKHR));
+            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
             surf_info.flags     = 0;
@@ -1224,7 +1224,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkXlibSurfaceCreateInfoKHR surf_info;
 
-            memset(&surf_info, 0, sizeof(VkXlibSurfaceCreateInfoKHR));
+            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType  = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
             surf_info.flags  = 0;
@@ -1243,7 +1243,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkXcbSurfaceCreateInfoKHR surf_info;
 
-            memset(&surf_info, 0, sizeof(VkXcbSurfaceCreateInfoKHR));
+            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType      = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
             surf_info.flags      = 0;
@@ -1262,7 +1262,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          {
             VkMirSurfaceCreateInfoKHR surf_info;
 
-            memset(&surf_info, 0, sizeof(VkMirSurfaceCreateInfoKHR));
+            memset(&surf_info, 0, sizeof(surf_info));
 
             surf_info.sType      = VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR;
             surf_info.connection = display;
