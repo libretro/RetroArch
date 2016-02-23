@@ -454,16 +454,17 @@ static bool gfx_ctx_x_set_video_mode(void *data,
       case GFX_CTX_NONE:
       default:
       {
+         XVisualInfo vi_template;
          /* For default case, just try to obtain a visual from template. */
-         XVisualInfo template;
          int nvisuals = 0;
-         memset(&template, 0, sizeof(template));
-         template.screen = DefaultScreen(g_x11_dpy);
-         vi = XGetVisualInfo(g_x11_dpy, VisualScreenMask, &template, &nvisuals);
+
+         memset(&vi_template, 0, sizeof(vi_template));
+         vi_template.screen = DefaultScreen(g_x11_dpy);
+         vi = XGetVisualInfo(g_x11_dpy, VisualScreenMask, &vi_template, &nvisuals);
          if (!vi || nvisuals < 1)
             goto error;
-         break;
       }
+      break;
    }
 
    swa.colormap = g_x11_cmap = XCreateColormap(g_x11_dpy,
