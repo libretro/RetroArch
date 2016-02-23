@@ -590,26 +590,28 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
          break;
    }
 
-   if (!egl_init_context(drm, (EGLNativeDisplayType)g_gbm_dev, &major,
-            &minor, &n, attrib_ptr))
-      goto error;
-
-   attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
-   egl_attribs_ptr = &egl_attribs[0];
-
-   if (!egl_create_context(drm, (attr != egl_attribs_ptr) 
-            ? egl_attribs_ptr : NULL))
-      goto error;
-
-   if (!egl_create_surface(drm, (EGLNativeWindowType)g_gbm_surface))
-      return false;
-
    switch (drm_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
+      case GFX_CTX_OPENVG_API:
+#ifdef HAVE_EGL
+         if (!egl_init_context(drm, (EGLNativeDisplayType)g_gbm_dev, &major,
+                  &minor, &n, attrib_ptr))
+            goto error;
+
+         attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
+         egl_attribs_ptr = &egl_attribs[0];
+
+         if (!egl_create_context(drm, (attr != egl_attribs_ptr) 
+                  ? egl_attribs_ptr : NULL))
+            goto error;
+
+         if (!egl_create_surface(drm, (EGLNativeWindowType)g_gbm_surface))
+            return false;
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
          glClear(GL_COLOR_BUFFER_BIT);
+#endif
 #endif
          break;
       case GFX_CTX_NONE:
