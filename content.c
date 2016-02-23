@@ -1745,8 +1745,10 @@ bool content_ctl(enum content_ctl_state state, void *data)
          temporary_content = NULL;
          break;
       case CONTENT_CTL_STREAM_INIT:
+#ifdef HAVE_ZLIB
          if (!stream_backend)
             stream_backend = file_archive_get_default_file_backend();
+#endif
          break;
       case CONTENT_CTL_STREAM_CRC_CALCULATE:
          {
