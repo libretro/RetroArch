@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_MENU_THROTTLE_FRAMERATE                                     0x9a8681c5U
+#define MENU_LABEL_VALUE_MENU_THROTTLE_FRAMERATE                               0x285bb667U
+
 #define MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR                                    0x8360107bU
 #define MENU_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR                              0xaa23fc1eU
 

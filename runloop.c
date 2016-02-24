@@ -1378,6 +1378,11 @@ int runloop_iterate(unsigned *sleep_ms)
          return 1;
       }
 
+      if (!settings->menu.throttle_framerate)
+      {
+         if (!settings->fastforward_ratio)
+            return 0;
+      }
       goto end;
    }
 #endif

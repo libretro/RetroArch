@@ -167,6 +167,7 @@ typedef struct settings
       unsigned xmb_scale_factor;
       unsigned xmb_alpha_factor;
       char xmb_font[PATH_MAX_LENGTH];
+      bool throttle_framerate;
    } menu;
 #endif
 

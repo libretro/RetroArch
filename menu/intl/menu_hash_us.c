@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_MENU_THROTTLE_FRAMERATE:
+         return "menu_throttle_framerate";
       case MENU_LABEL_START_CORE:
          return "start_core";
       case MENU_LABEL_CHEEVOS_TEST_UNOFFICIAL:
@@ -728,6 +730,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_MENU_THROTTLE_FRAMERATE:
+         return "Throttle Menu Framerate";
       case MENU_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
          return "Test unofficial";
       case MENU_LABEL_VALUE_CHEEVOS_SETTINGS:

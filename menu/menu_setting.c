@@ -4120,6 +4120,20 @@ static bool setting_append_list_frame_throttling_options(
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 1, 10, 1.0, true, true);
 
+   CONFIG_BOOL(
+         list, list_info,
+         &settings->menu.throttle_framerate,
+         menu_hash_to_str(MENU_LABEL_MENU_THROTTLE_FRAMERATE),
+         menu_hash_to_str(MENU_LABEL_VALUE_MENU_THROTTLE_FRAMERATE),
+         true,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         &group_info,
+         &subgroup_info,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
 
