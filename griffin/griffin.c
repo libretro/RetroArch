@@ -727,7 +727,9 @@ RETROARCH
 #include "../intl/msg_hash_pt.c"
 #include "../intl/msg_hash_pl.c"
 #include "../intl/msg_hash_us.c"
-
+#ifdef HAVE_UTF8
+#include "../intl/msg_hash_ru.c"
+#endif
 
 /*============================================================
 RECORDING
@@ -833,6 +835,9 @@ MENU
 #include "../menu/intl/menu_hash_pl.c"
 #include "../menu/intl/menu_hash_pt.c"
 #include "../menu/intl/menu_hash_us.c"
+#ifdef HAVE_UTF8
+#include "../menu/intl/menu_hash_ru.c"
+#endif
 
 #include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"

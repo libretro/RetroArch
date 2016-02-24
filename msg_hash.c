@@ -56,6 +56,11 @@ const char *msg_hash_to_str(uint32_t hash)
       case RETRO_LANGUAGE_POLISH:
          ret = msg_hash_to_str_pl(hash);
          break;
+      case RETRO_LANGUAGE_RUSSIAN:
+#ifdef HAVE_UTF8
+         ret = msg_hash_to_str_ru(hash);
+#endif
+         break;
       default:
          break;
    }

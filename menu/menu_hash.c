@@ -57,6 +57,11 @@ const char *menu_hash_to_str(uint32_t hash)
       case RETRO_LANGUAGE_POLISH:
          ret = menu_hash_to_str_pl(hash);
          break;
+      case RETRO_LANGUAGE_RUSSIAN:
+#ifdef HAVE_UTF8
+         ret = menu_hash_to_str_ru(hash);
+#endif
+         break;
       default:
          break;
    }
@@ -100,6 +105,11 @@ int menu_hash_get_help(uint32_t hash, char *s, size_t len)
          break;
       case RETRO_LANGUAGE_POLISH:
          ret = menu_hash_get_help_pl(hash, s, len);
+         break;
+      case RETRO_LANGUAGE_RUSSIAN:
+#ifdef HAVE_UTF8
+         ret = menu_hash_get_help_ru(hash, s, len);
+#endif
          break;
       default:
          break;

@@ -159,6 +159,10 @@ const char *msg_hash_to_str(uint32_t hash);
 
 const char *msg_hash_to_str_fr(uint32_t hash);
 
+#ifdef HAVE_UTF8
+const char *msg_hash_to_str_ru(uint32_t hash);
+#endif
+
 const char *msg_hash_to_str_de(uint32_t hash);
 
 const char *msg_hash_to_str_es(uint32_t hash);
