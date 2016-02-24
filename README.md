@@ -55,6 +55,7 @@ RetroArch has been ported to the following platforms outside PC:
    - Xbox 360 (Libxenon/XeXDK)
    - Xbox 1
    - Wii, Gamecube (Libogc)
+   - Nintendo 3DS
    - Raspberry Pi
    - Android
    - iOS
@@ -62,9 +63,14 @@ RetroArch has been ported to the following platforms outside PC:
 
 ## Dependencies (PC)
 
-On Windows, RetroArch can run with only Win32 as dependency. On Linux, you need:
+There are no true hard dependencies per se.
 
-   - GL headers
+On Windows, RetroArch can run with only Win32 as dependency.
+
+On Linux, there are no true dependencies. For optimal usage, the
+following dependencies come as recommended:
+
+   - GL headers / Vulkan headers
    - X11 headers and libs, or EGL/KMS/GBM
 
 OSX port of RetroArch requires latest versions of XCode to build.
