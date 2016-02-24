@@ -615,8 +615,20 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
 	
 	return d - o_d;
 }
+
+size_t utf8skip(const char * str, size_t chars)
+{
+	const char * start = str;
+	do {
+		str++;
+		while ((*str&0xC0)==0x80) str++;
+		chars--;
+	} while(chars);
+	return str-start;
+}
 #else
 #define utf8len strlen
+#define utf8skip(str, chars) (chars)
 #endif
 
 /**
@@ -635,6 +647,7 @@ void test(int a, const char*b, int c)
 char hurr[64];
 memset(hurr, 0xFF, 64);
 utf8cpy(hurr, a,b,c);
+printf("%i", (int)utf8skip(b,3));
 printf("(%i)\"%s\"\n", strlen(hurr),hurr);
 }
 void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
