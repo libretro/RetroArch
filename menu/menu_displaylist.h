@@ -115,7 +115,8 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_ARCHIVE_ACTION,
    DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE,
    DISPLAYLIST_CORE_CONTENT,
-   DISPLAYLIST_PROCESS
+   DISPLAYLIST_PROCESS,
+   DISPLAYLIST_PUSH_ONTO_STACK
 };
 
 typedef struct menu_displaylist_info
@@ -137,9 +138,13 @@ typedef struct menu_displaylist_info
    rarch_setting_t *setting;
 } menu_displaylist_info_t;
 
-bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info);
+typedef struct menu_displaylist_ctx_entry
+{
+   file_list_t *stack;
+   file_list_t *list;
+} menu_displaylist_ctx_entry_t;
 
-int menu_displaylist_push(file_list_t *list, file_list_t *menu_list);
+bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
 
 int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 
       const char *info_label, unsigned parse_type, bool add_empty_entry);

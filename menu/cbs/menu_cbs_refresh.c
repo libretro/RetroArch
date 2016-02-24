@@ -25,9 +25,16 @@
 
 int action_refresh_default(file_list_t *list, file_list_t *menu_list)
 {
+   menu_displaylist_ctx_entry_t entry;
    if (!menu_list)
       return -1;
-   return menu_displaylist_push(list, menu_list);
+
+   entry.list  = list;
+   entry.stack = menu_list;
+
+   if (!menu_displaylist_ctl(DISPLAYLIST_PUSH_ONTO_STACK, &entry))
+      return -1;
+   return 0;
 }
 
 int menu_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
