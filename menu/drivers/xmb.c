@@ -1079,7 +1079,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
    strlcpy(info.exts, "lpl", sizeof(info.exts));
 
-   if (menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL) == 0)
+   if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info) == 0)
       menu_displaylist_push_list_process(&info);
 }
 
@@ -2688,8 +2688,8 @@ static void xmb_toggle(void *userdata, bool menu_on)
 
 static int deferred_push_content_actions(menu_displaylist_info_t *info)
 {
-   int ret = menu_displaylist_push_list(info, 
-         DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS);
+   int ret = menu_displaylist_ctl( 
+         DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS, info);
    if (ret != 0)
       return ret;
    menu_displaylist_push_list_process(info);
@@ -2802,7 +2802,7 @@ static bool xmb_menu_init_list(void *data)
          info.label, info.type, info.flags, 0);
 
    info.list  = selection_buf;
-   menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
+   menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info);
 
    info.need_push = true;
 

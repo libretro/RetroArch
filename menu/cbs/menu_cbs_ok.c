@@ -432,7 +432,7 @@ int generic_action_ok_displaylist_push(const char *path,
    if (info_path)
       strlcpy(info.path, info_path, sizeof(info.path));
 
-   ret = menu_displaylist_push_list(&info, dl_type);
+   ret = menu_displaylist_ctl(dl_type, &info);
    if (ret != 0)
       return menu_cbs_exit();
 

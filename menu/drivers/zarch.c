@@ -1330,7 +1330,7 @@ static bool zarch_menu_init_list(void *data)
    event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
 
    info.list  = selection_buf;
-   menu_displaylist_push_list(&info, DISPLAYLIST_HISTORY);
+   menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info);
 
    info.need_push = true;
 

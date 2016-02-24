@@ -47,7 +47,7 @@ enum
    PARSE_SUB_GROUP      = (1 << 10)
 };
 
-enum
+enum menu_displaylist_ctl_state
 {
    DISPLAYLIST_NONE = 0,
    DISPLAYLIST_INFO,
@@ -136,7 +136,7 @@ typedef struct menu_displaylist_info
    rarch_setting_t *setting;
 } menu_displaylist_info_t;
 
-int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type);
+int menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info);
 
 void menu_displaylist_push_list_process(menu_displaylist_info_t *info);
 

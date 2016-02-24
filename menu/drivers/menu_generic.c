@@ -361,7 +361,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
                   menu_hash_to_str(MENU_LABEL_HELP),
                   sizeof(info.label));
 
-            menu_displaylist_push_list(&info, DISPLAYLIST_HELP);
+            menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
          }
          break;
    }
@@ -397,7 +397,7 @@ bool generic_menu_init_list(void *data)
          info.label, info.type, info.flags, 0);
 
    info.list  = selection_buf;
-   menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU);
+   menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info);
 
    menu_displaylist_push_list_process(&info);
 

@@ -2571,7 +2571,7 @@ static void menu_displaylist_parse_playlist_associations(menu_displaylist_info_t
    string_list_free(stcores);
 }
 
-int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
+int menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info)
 {
    size_t i;
    menu_ctx_displaylist_t disp_list;
@@ -2662,6 +2662,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_ARCHIVE_ACTION:
       case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         break;
+      default:
          break;
    }
 
@@ -3108,7 +3110,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_PLAYLIST_COLLECTION:
          if (string_is_equal(info->path, "content_history.lpl"))
          {
-            if (menu_displaylist_push_list(info, DISPLAYLIST_HISTORY) == 0)
+            if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info) == 0)
                menu_displaylist_push_list_process(info);
             return 0;
          }
@@ -3385,6 +3387,8 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
          info->type_default = MENU_FILE_REMAP;
          strlcpy(info->exts, "rmp", sizeof(info->exts));
          break;
+      default:
+         break;
    }
 
    switch (type)
@@ -3418,8 +3422,9 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
             }
          }
          break;
+      default:
+         break;
    }
-
 
    return ret;
 }
@@ -3469,22 +3474,22 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
    switch (hash_label)
    {
       case MENU_VALUE_MAIN_MENU:
-         if (menu_displaylist_push_list(&info, DISPLAYLIST_MAIN_MENU) != 0)
+         if (menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info) != 0)
             return -1;
          menu_displaylist_push_list_process(&info);
          return 0;
       case MENU_VALUE_SETTINGS_TAB:
-         if (menu_displaylist_push_list(&info, DISPLAYLIST_SETTINGS_ALL) != 0)
+         if (menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, &info) != 0)
             return -1;
          menu_displaylist_push_list_process(&info);
          return 0;
       case MENU_VALUE_HISTORY_TAB:
-         if (menu_displaylist_push_list(&info, DISPLAYLIST_HISTORY) != 0)
+         if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info) != 0)
             return -1;
          menu_displaylist_push_list_process(&info);
          return 0;
       case MENU_VALUE_ADD_TAB:
-         if (menu_displaylist_push_list(&info, DISPLAYLIST_SCAN_DIRECTORY_LIST) != 0)
+         if (menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, &info) != 0)
             return -1;
          menu_displaylist_push_list_process(&info);
          return 0;
@@ -3508,13 +3513,13 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
          {
             strlcpy(info.path, settings->playlist_directory,
                   sizeof(info.path));
-            if (menu_displaylist_push_list(&info, DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL) != 0)
+            if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info) != 0)
                return -1;
          }
          menu_displaylist_push_list_process(&info);
          return 0;
       case MENU_VALUE_HORIZONTAL_MENU:
-         if (menu_displaylist_push_list(&info, DISPLAYLIST_HORIZONTAL) != 0)
+         if (menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, &info) != 0)
             return -1;
          menu_displaylist_push_list_process(&info);
          return 0;
