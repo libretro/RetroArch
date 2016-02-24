@@ -616,19 +616,18 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
 	return d - o_d;
 }
 
-size_t utf8skip(const char * str, size_t chars)
+const char *utf8skip(const char * str, size_t chars)
 {
-	const char * start = str;
 	do {
 		str++;
 		while ((*str&0xC0)==0x80) str++;
 		chars--;
 	} while(chars);
-	return str-start;
+	return str;
 }
 #else
 #define utf8len strlen
-#define utf8skip(str, chars) (chars)
+#define utf8skip(str, chars) ((str)+(chars))
 #endif
 
 /**
@@ -642,47 +641,29 @@ size_t utf8skip(const char * str, size_t chars)
  * Take the contents of @str and apply a ticker effect to it,
  * and write the results in @s.
  **/
-void test(int a, const char*b, int c)
-{
-char hurr[64];
-memset(hurr, 0xFF, 64);
-utf8cpy(hurr, a,b,c);
-printf("%i", (int)utf8skip(b,3));
-printf("(%i)\"%s\"\n", strlen(hurr),hurr);
-}
 void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
       const char *str, bool selected)
 {
-test(16, "abcd", 3);
-test(16, "øøøø", 3);
-test(7, "øøøø", 3);
-test(6, "øøøø", 3);
-test(7, "øøøø", 9);
-test(9, "øøøø", 9);
-test(6, "bøvs", 4);
-printf("'%c'\n", 0xC2);
-exit(0);
-
    menu_animation_t *anim = menu_animation_get_ptr();
    size_t           str_len = utf8len(str);
    size_t           offset = 0;
 
    if ((size_t)str_len <= len)
    {
-      strlcpy(s, str, len + 1);
+      utf8cpy(s, PATH_MAX, str, len);
       return;
    }
 
    if (!selected)
    {
-      strlcpy(s, str, len + 1 - 3);
-      strlcat(s, "...", len + 1);
+      utf8cpy(s, PATH_MAX, str, len+1-3);
+      strlcat(s, "...", PATH_MAX);
       return;
    }
 
    menu_animation_ticker_generic(idx, len, &offset, &str_len);
 
-   strlcpy(s, str + offset, str_len + 1);
+   utf8cpy(s, PATH_MAX, utf8skip(str, offset), str_len);
 
    anim->is_active = true;
 }
