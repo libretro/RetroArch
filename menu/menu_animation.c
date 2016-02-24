@@ -346,11 +346,11 @@ static void menu_animation_ticker_generic(uint64_t idx,
    if (phase < phase_left_stop)
       *offset = 0;
    else if (phase < phase_left_moving)
-      *offset = -left_offset;
+      *offset = left_offset;
    else if (phase < phase_right_stop)
-      *offset = -(*width - max_width);
+      *offset = *width - max_width;
    else
-      *offset = -right_offset;
+      *offset = right_offset;
 
    *width = max_width;
 }
@@ -620,7 +620,7 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
 
    menu_animation_ticker_generic(idx, len, &offset, &str_len);
 
-   strlcpy(s, str - offset, str_len + 1);
+   strlcpy(s, str + offset, str_len + 1);
 
    anim->is_active = true;
 }
