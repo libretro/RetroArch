@@ -193,7 +193,7 @@ static uint32_t string_walk(const char **string)
    return ret | (first&7)<<6;
 }
 
-static size_t utf8len(const char *string)
+size_t utf8len(const char *string)
 {
    size_t ret = 0;
    while (*string)

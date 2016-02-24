@@ -587,6 +587,38 @@ bool menu_animation_push(float duration, float target_value, float* subject,
    return true;
 }
 
+#ifdef HAVE_UTF8
+size_t utf8len(const char *string); /* rgui.c */
+
+/* Acts mostly like strlcpy. Copies the given number of UTF-8 characters, but at most d_len bytes.
+ * Always NUL terminates. Does not copy half a character. Returns number of bytes. 's' is assumed valid UTF-8. */
+size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
+{
+	char *o_d = d;
+	bool incomplete = false;
+	
+	if (chars!=SIZE_MAX) chars++; /* avoid hairy shenanigans with the >0 */
+	while (d_len > 0 /* NUL */ && chars > 0 && *s)
+	{
+		uint8_t c = *s;
+		*d++ = *s++;
+		d_len--;
+		if ((c&0xC0)!=0x80) { chars--; incomplete=false; }
+		if ((c&0xC0) == 0xC0) incomplete=true;
+	}
+	if (!*s) incomplete = false;
+	if (incomplete)
+	{
+		while ((*--d & 0xC0) != 0xC0) {}
+	}
+	*d = '\0';
+	
+	return d - o_d;
+}
+#else
+#define utf8len strlen
+#endif
+
 /**
  * menu_animation_ticker_str:
  * @s                        : buffer to write new message line to.
@@ -598,11 +630,28 @@ bool menu_animation_push(float duration, float target_value, float* subject,
  * Take the contents of @str and apply a ticker effect to it,
  * and write the results in @s.
  **/
+void test(int a, const char*b, int c)
+{
+char hurr[64];
+memset(hurr, 0xFF, 64);
+utf8cpy(hurr, a,b,c);
+printf("(%i)\"%s\"\n", strlen(hurr),hurr);
+}
 void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
       const char *str, bool selected)
 {
+test(16, "abcd", 3);
+test(16, "øøøø", 3);
+test(7, "øøøø", 3);
+test(6, "øøøø", 3);
+test(7, "øøøø", 9);
+test(9, "øøøø", 9);
+test(6, "bøvs", 4);
+printf("'%c'\n", 0xC2);
+exit(0);
+
    menu_animation_t *anim = menu_animation_get_ptr();
-   size_t           str_len = strlen(str);
+   size_t           str_len = utf8len(str);
    size_t           offset = 0;
 
    if ((size_t)str_len <= len)
