@@ -636,7 +636,6 @@ static void rgui_render(void *data)
             entry_spacing,
             type_str_buf);
 
-printf("(%s)%s\n",entry_title_buf,message);
       blit_line(x, y, message,
             entry_selected ? hover_color : normal_color);
    }
