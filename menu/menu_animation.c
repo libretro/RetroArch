@@ -594,31 +594,37 @@ size_t utf8len(const char *string); /* rgui.c */
  * Always NUL terminates. Does not copy half a character. Returns number of bytes. 's' is assumed valid UTF-8. */
 size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
 {
-	char *o_d = d;
-	bool incomplete = false;
+	char *d_org = d;
+	char *d_end = d+d_len;
+	const uint8_t *sb = (const uint8_t*)s;
+	const uint8_t *sb_org = sb;
 	
-	if (chars!=SIZE_MAX) chars++; /* avoid hairy shenanigans with the >0 */
-	while (d_len > 0 /* NUL */ && chars > 0 && *s)
+	while (*sb && chars-- > 0)
 	{
-		uint8_t c = *s;
-		*d++ = *s++;
-		d_len--;
-		if ((c&0xC0)!=0x80) { chars--; incomplete=false; }
-		if ((c&0xC0) == 0xC0) incomplete=true;
+		sb++;
+		while ((*sb&0xC0) == 0x80) sb++;
 	}
-	if (!*s) incomplete = false;
-	if (incomplete)
-	{
-		while ((*--d & 0xC0) != 0xC0) {}
-	}
-	*d = '\0';
 	
-	return d - o_d;
+	if (sb - sb_org > d_len-1 /* NUL */)
+	{
+		sb = sb_org + d_len-1;
+		//if ((*sb&0xC0) == 0x80)
+		{
+			while ((*sb&0xC0) == 0x80) sb--;
+			//sb--;
+		}
+	}
+	
+	memcpy(d, sb_org, sb-sb_org);
+	d[sb-sb_org] = '\0';
+	
+	return sb-sb_org;
 }
 
 const char *utf8skip(const char *str, size_t chars)
 {
 	const uint8_t *strb = (const uint8_t*)str;
+	if (!chars) return str;
 	do {
 		strb++;
 		while ((*strb&0xC0)==0x80) strb++;
@@ -642,9 +648,29 @@ const char *utf8skip(const char *str, size_t chars)
  * Take the contents of @str and apply a ticker effect to it,
  * and write the results in @s.
  **/
+void test(int a, const char*b, int c)
+{
+char hurr[64];
+memset(hurr, 0xFF, 64);
+utf8cpy(hurr, a,b,c);
+printf("%i", (int)utf8skip(b,3));
+printf("(%i)\"%s\"\n", strlen(hurr),hurr);
+}
 void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
       const char *str, bool selected)
 {
+test(16, "abcd", 3); // 3
+test(16, "øøøø", 3); // 3
+test(7, "øøøø", 3);  // 3
+test(6, "øøøø", 3);  // 2
+test(7, "øøøø", 9);  // 3
+test(6, "øøøø", 9);  // 2
+test(9, "øøøø", 9);  // 4
+test(6, "bøvs", 4);  // 4
+test(5, "bøvs", 4);  // 3
+test(64, "sit", 2);  // 2
+printf("'%c'\n", 0xC2);
+exit(0);
    menu_animation_t *anim = menu_animation_get_ptr();
    size_t           str_len = utf8len(str);
    size_t           offset = 0;
@@ -657,8 +683,9 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
 
    if (!selected)
    {
-      utf8cpy(s, PATH_MAX, str, len+1-3);
+      utf8cpy(s, PATH_MAX, str, len-3);
       strlcat(s, "...", PATH_MAX);
+printf("(%i)(%s)\n",(int)len,s);
       return;
    }
 
