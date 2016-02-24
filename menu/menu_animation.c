@@ -655,20 +655,20 @@ void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
 
    if ((size_t)str_len <= len)
    {
-      utf8cpy(s, PATH_MAX, str, len);
+      utf8cpy(s, PATH_MAX_LENGTH, str, len);
       return;
    }
 
    if (!selected)
    {
-      utf8cpy(s, PATH_MAX, str, len-3);
-      strlcat(s, "...", PATH_MAX);
+      utf8cpy(s, PATH_MAX_LENGTH, str, len-3);
+      strlcat(s, "...", PATH_MAX_LENGTH);
       return;
    }
 
    menu_animation_ticker_generic(idx, len, &offset, &str_len);
 
-   utf8cpy(s, PATH_MAX, utf8skip(str, offset), str_len);
+   utf8cpy(s, PATH_MAX_LENGTH, utf8skip(str, offset), str_len);
 
    anim->is_active = true;
 }
