@@ -1368,7 +1368,7 @@ static int mui_list_push(void *data, void *userdata,
    switch (type)
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
-         menu_entries_clear(info->list);
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
                menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
@@ -1393,7 +1393,7 @@ static int mui_list_push(void *data, void *userdata,
          ret = 0;
          break;
       case DISPLAYLIST_MAIN_MENU:
-         menu_entries_clear(info->list);
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
          if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          {

@@ -233,9 +233,11 @@ static void menu_list_flush_stack(menu_list_t *list,
    }
 }
 
-void menu_entries_clear(file_list_t *list)
+static bool menu_entries_clear(file_list_t *list)
 {
    unsigned i;
+   if (!list)
+      return false;
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_CLEAR, list);
 
@@ -244,6 +246,8 @@ void menu_entries_clear(file_list_t *list)
 
    if (list)
       file_list_clear(list);
+
+   return true;
 }
 
 void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
@@ -723,6 +727,8 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          break;
       case MENU_ENTRIES_CTL_REFRESH:
          return menu_entries_refresh(data);
+      case MENU_ENTRIES_CTL_CLEAR:
+         return menu_entries_clear((file_list_t*)data);
       case MENU_ENTRIES_CTL_INIT:
          return menu_entries_init();
       case MENU_ENTRIES_CTL_SHOW_BACK:

@@ -2731,7 +2731,7 @@ static int xmb_list_push(void *data, void *userdata,
    switch (type)
    {
       case DISPLAYLIST_MAIN_MENU:
-         menu_entries_clear(info->list);
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
          if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          {

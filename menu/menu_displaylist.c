@@ -2661,7 +2661,7 @@ int menu_displaylist_push_list(menu_displaylist_info_t *info, unsigned type)
       case DISPLAYLIST_CONTENT_HISTORY:
       case DISPLAYLIST_ARCHIVE_ACTION:
       case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
-         menu_entries_clear(info->list);
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          break;
    }
 
@@ -3496,7 +3496,7 @@ int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)
 
          if (string_is_empty(settings->playlist_directory))
          {
-            menu_entries_clear(info.list);
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info.list);
             menu_entries_push(info.list,
                   menu_hash_to_str(MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
                   menu_hash_to_str(MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
