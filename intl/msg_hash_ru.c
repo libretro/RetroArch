@@ -59,7 +59,7 @@ const char *msg_hash_to_str_ru(uint32_t hash)
       case MSG_FAILED_TO_START_RECORDING:
          return "Невозможно начать запись.";
       case MSG_RECORDING_TERMINATED_DUE_TO_RESIZE:
-         return Размеры окна были изменены. Запись остановлена.";
+         return "Размеры окна были изменены. Запись остановлена.";
       case MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED:
          return "Используется фиктивное ядро. Запись не производится.";
       case MSG_UNKNOWN:
