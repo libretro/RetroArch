@@ -17,6 +17,7 @@
 #include <math.h>
 #include <string.h>
 #include <compat/strl.h>
+#include <encodings/utf.h>
 #include <retro_miscellaneous.h>
 
 #include "menu_animation.h"
@@ -586,54 +587,6 @@ bool menu_animation_push(float duration, float target_value, float* subject,
 
    return true;
 }
-
-#ifdef HAVE_UTF8
-size_t utf8len(const char *string); /* rgui.c */
-
-/* Acts mostly like strlcpy. Copies the given number of UTF-8 characters, but at most d_len bytes.
- * Always NUL terminates. Does not copy half a character. Returns number of bytes. 's' is assumed valid UTF-8.
- * Use only if 'chars' is considerably less than 'd_len'. */
-size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
-{
-	char *d_org = d;
-	char *d_end = d+d_len;
-	const uint8_t *sb = (const uint8_t*)s;
-	const uint8_t *sb_org = sb;
-	
-	while (*sb && chars-- > 0)
-	{
-		sb++;
-		while ((*sb&0xC0) == 0x80) sb++;
-	}
-	
-	if (sb - sb_org > d_len-1 /* NUL */)
-	{
-		sb = sb_org + d_len-1;
-		while ((*sb&0xC0) == 0x80) sb--;
-	}
-	
-	memcpy(d, sb_org, sb-sb_org);
-	d[sb-sb_org] = '\0';
-	
-	return sb-sb_org;
-}
-
-const char *utf8skip(const char *str, size_t chars)
-{
-	const uint8_t *strb = (const uint8_t*)str;
-	if (!chars) return str;
-	do {
-		strb++;
-		while ((*strb&0xC0)==0x80) strb++;
-		chars--;
-	} while(chars);
-	return (const char*)strb;
-}
-#else
-#define utf8len strlen
-#define utf8cpy(d,dl,s,sl) strlcpy((d),(s),(sl)+1)
-#define utf8skip(str, chars) ((str)+(chars))
-#endif
 
 /**
  * menu_animation_ticker_str:

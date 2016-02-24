@@ -22,8 +22,10 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 
 #include <boolean.h>
+#include <compat/strl.h>
 #include <retro_inline.h>
 
 static INLINE unsigned leading_ones(uint8_t c)
@@ -132,4 +134,77 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
 
    *out_chars = out_pos;
    return false;
+}
+
+/* Acts mostly like strlcpy. 
+ *
+ * Copies the given number of UTF-8 characters, 
+ * but at most d_len bytes.
+ *
+ * Always NULL terminates. 
+ * Does not copy half a character. 
+ *
+ * Returns number of bytes. 's' is assumed valid UTF-8.
+ * Use only if 'chars' is considerably less than 'd_len'. */
+size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
+{
+#ifdef HAVE_UTF8
+   char *d_org           = d;
+   char *d_end           = d+d_len;
+   const uint8_t *sb     = (const uint8_t*)s;
+   const uint8_t *sb_org = sb;
+
+   while (*sb && chars-- > 0)
+   {
+      sb++;
+      while ((*sb&0xC0) == 0x80) sb++;
+   }
+
+   if (sb - sb_org > d_len-1 /* NUL */)
+   {
+      sb = sb_org + d_len-1;
+      while ((*sb&0xC0) == 0x80) sb--;
+   }
+
+   memcpy(d, sb_org, sb-sb_org);
+   d[sb-sb_org] = '\0';
+
+   return sb-sb_org;
+#else
+   return strlcpy(d, s, chars + 1);
+#endif
+}
+
+const char *utf8skip(const char *str, size_t chars)
+{
+#ifdef HAVE_UTF8
+   const uint8_t *strb = (const uint8_t*)str;
+   if (!chars)
+      return str;
+   do
+   {
+      strb++;
+      while ((*strb&0xC0)==0x80) strb++;
+      chars--;
+   } while(chars);
+   return (const char*)strb;
+#else
+   return str + chars;
+#endif
+}
+
+size_t utf8len(const char *string)
+{
+#ifdef HAVE_UTF8
+   size_t ret = 0;
+   while (*string)
+   {
+      if ((*string & 0xC0) != 0x80)
+         ret++;
+      string++;
+   }
+   return ret;
+#else
+   return strlen(string);
+#endif
 }

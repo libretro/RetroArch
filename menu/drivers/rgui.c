@@ -24,6 +24,7 @@
 #include <string/stdstring.h>
 #include <string/string_list.h>
 #include <compat/posix_string.h>
+#include <encodings/utf.h>
 #include <file/file_path.h>
 #include <retro_inline.h>
 #include <string/stdstring.h>
@@ -193,19 +194,8 @@ static uint32_t string_walk(const char **string)
    return ret | (first&7)<<6;
 }
 
-size_t utf8len(const char *string)
-{
-   size_t ret = 0;
-   while (*string)
-   {
-      if ((*string & 0xC0) != 0x80) ret++;
-      string++;
-   }
-   return ret;
-}
 #else
 #define string_walk string_walkbyte
-#define utf8len strlen
 #endif
 
 static void blit_line(int x, int y,
