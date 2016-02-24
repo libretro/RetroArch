@@ -28,7 +28,6 @@
 
 static int action_info_default(unsigned type, const char *label)
 {
-   int ret;
    size_t selection             = 0;
    menu_displaylist_info_t info = {0};
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
@@ -42,15 +41,13 @@ static int action_info_default(unsigned type, const char *label)
          menu_hash_to_str(MENU_LABEL_INFO_SCREEN),
         sizeof(info.label));
 
-   ret = menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
-
-   if (ret == 0)
+   if (menu_displaylist_ctl(DISPLAYLIST_HELP, &info))
    {
       menu_displaylist_push_list_process(&info);
       return 0;
    }
 
-   return ret;
+   return -1;
 }
 
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,

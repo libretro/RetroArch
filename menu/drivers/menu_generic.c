@@ -397,9 +397,9 @@ bool generic_menu_init_list(void *data)
          info.label, info.type, info.flags, 0);
 
    info.list  = selection_buf;
-   menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info);
 
-   menu_displaylist_push_list_process(&info);
+   if (menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info))
+      menu_displaylist_push_list_process(&info);
 
    return true;
 }

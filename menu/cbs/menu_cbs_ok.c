@@ -111,10 +111,9 @@ int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
-   int ret;
    char tmp[PATH_MAX_LENGTH];
    char action_path[PATH_MAX_LENGTH];
-   unsigned dl_type                  = DISPLAYLIST_GENERIC;
+   enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_GENERIC;
    menu_displaylist_info_t      info = {0};
    const char           *menu_label  = NULL;
    const char            *menu_path  = NULL;
@@ -432,8 +431,7 @@ int generic_action_ok_displaylist_push(const char *path,
    if (info_path)
       strlcpy(info.path, info_path, sizeof(info.path));
 
-   ret = menu_displaylist_ctl(dl_type, &info);
-   if (ret != 0)
+   if (!menu_displaylist_ctl(dl_type, &info))
       return menu_cbs_exit();
 
    menu_displaylist_push_list_process(&info);

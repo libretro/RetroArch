@@ -136,7 +136,7 @@ typedef struct menu_displaylist_info
    rarch_setting_t *setting;
 } menu_displaylist_info_t;
 
-int menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info);
+bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info);
 
 void menu_displaylist_push_list_process(menu_displaylist_info_t *info);
 
