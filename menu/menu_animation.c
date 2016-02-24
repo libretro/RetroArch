@@ -631,7 +631,7 @@ const char *utf8skip(const char *str, size_t chars)
 }
 #else
 #define utf8len strlen
-#define utf8cpy(d,dl,s,sl) strlcpy(d,s,sl)
+#define utf8cpy(d,dl,s,sl) strlcpy((d),(s),(sl)+1)
 #define utf8skip(str, chars) ((str)+(chars))
 #endif
 
