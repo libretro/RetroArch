@@ -1,6 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  *  Copyright (C) 2014-2015 - Jean-André Santoni
+ *  Copyright (C) 2016      - Andrés Suárez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -74,6 +75,14 @@
 
 static int z =0 ;
 
+bool zr_checkbox_bool(struct zr_context* cx, const char* text, bool *active)
+{
+   int x = *active;
+   bool ret = zr_checkbox(cx, text, &x);
+   *active = x;
+   return ret;
+}
+
 /* zahnrad code */
 enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK};
 
@@ -86,13 +95,12 @@ struct wimp {
 
 static void wimp_main(struct zr_context *ctx, int width, int height)
 {
+   settings_t *settings = config_get_ptr();
+
     struct zr_panel layout;
-    settings_t *settings     = config_get_ptr();
-    
-    int show_fps = settings->fps_show ? 0 : 1;
-    
-    if (zr_begin(ctx, &layout, "Show", zr_rect(width/2, 0, width/2, height),
-        ZR_WINDOW_BORDER))
+    if (zr_begin(ctx, &layout, "Demo Window", zr_rect(width/4,height/4,width/2,height/2),
+    ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
+    ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
       enum {EASY, HARD};
       static int op = HARD;
@@ -104,10 +112,7 @@ static void wimp_main(struct zr_context *ctx, int width, int height)
             printf("pressed\n");
       }
       zr_layout_row_dynamic(ctx, 30, 2);
-      if (zr_checkbox(ctx, "Show fps", &show_fps))
-      {
-         settings->fps_show = !settings->fps_show;
-      }
+      zr_checkbox_bool(ctx, "Show fps", &(settings->fps_show));
    }
    zr_end(ctx);
 }
