@@ -119,7 +119,7 @@ static void wimp_main(struct zr_context *ctx, int width, int height)
       zr_checkbox_bool(ctx, "Show FPS", &(settings->fps_show));
       zr_checkbox_bool(ctx, "Show FPS", &(settings->fps_show));
       zr_layout_row_dynamic(ctx, 30, 1);
-      zr_slider_float(ctx, 0, &settings->audio.volume, 100, 5);
+      zr_slider_float(ctx, -80, &settings->audio.volume, 12, 0.5);
       
    }
    zr_end(ctx);
