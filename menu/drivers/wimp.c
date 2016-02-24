@@ -97,22 +97,30 @@ static void wimp_main(struct zr_context *ctx, int width, int height)
 {
    settings_t *settings = config_get_ptr();
 
-    struct zr_panel layout;
-    if (zr_begin(ctx, &layout, "Demo Window", zr_rect(width/4,height/4,width/2,height/2),
-    ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
-    ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
+   struct zr_panel layout;
+   if (zr_begin(ctx, &layout, "Demo Window", zr_rect(10, 10, width/2, 400),
+         ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
+         ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
-      enum {EASY, HARD};
-      static int op = HARD;
-      static int property = 20;
-
-      zr_layout_row_static(ctx, 30, 80, 1);
-      if (zr_button_text(ctx, "button", ZR_BUTTON_DEFAULT)) {
-            /* event handling */
-            printf("pressed\n");
-      }
       zr_layout_row_dynamic(ctx, 30, 2);
-      zr_checkbox_bool(ctx, "Show fps", &(settings->fps_show));
+      if (zr_button_text(ctx, "Quit", ZR_BUTTON_DEFAULT)) {
+            /* event handling */
+            printf("Pressed Event\n");
+            rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+      }
+      if (zr_button_text(ctx, "Quit", ZR_BUTTON_DEFAULT)) {
+            /* event handling */
+            printf("Pressed Event\n");
+            rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+      }
+      zr_layout_row_dynamic(ctx, 30, 4);
+      zr_checkbox_bool(ctx, "Show FPS", &(settings->fps_show));
+      zr_checkbox_bool(ctx, "Show FPS", &(settings->fps_show));
+      zr_checkbox_bool(ctx, "Show FPS", &(settings->fps_show));
+      zr_checkbox_bool(ctx, "Show FPS", &(settings->fps_show));
+      zr_layout_row_dynamic(ctx, 30, 1);
+      zr_slider_float(ctx, 0, &settings->audio.volume, 100, 5);
+      
    }
    zr_end(ctx);
 }
@@ -1402,8 +1410,6 @@ static void wimp_frame(void *data)
       wimp->box_message[0] = '\0';
    }
 
-
-
    /* zahnrad code */
    zr_input_begin(&gui.ctx);
    wimp_input_motion(&gui.ctx);
@@ -1414,18 +1420,7 @@ static void wimp_frame(void *data)
    glViewport(0, 0, width, height);
    device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);   
 
-
-
-   
    /* zahnrad code */
-
-   if (settings->menu.mouse.enable && (settings->video.fullscreen 
-            || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
-   {
-      int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-      int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-      wimp_draw_cursor(wimp, &white_bg[0], mouse_x, mouse_y, width, height);
-   }
 
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
