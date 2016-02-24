@@ -431,11 +431,11 @@ int generic_action_ok_displaylist_push(const char *path,
    if (info_path)
       strlcpy(info.path, info_path, sizeof(info.path));
 
-   if (!menu_displaylist_ctl(dl_type, &info))
-      return menu_cbs_exit();
+   if (menu_displaylist_ctl(dl_type, &info))
+      if (menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info))
+         return 0;
 
-   menu_displaylist_push_list_process(&info);
-   return 0;
+   return menu_cbs_exit();
 }
 
 static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,

@@ -114,7 +114,8 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_SCAN_DIRECTORY_LIST,
    DISPLAYLIST_ARCHIVE_ACTION,
    DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE,
-   DISPLAYLIST_CORE_CONTENT
+   DISPLAYLIST_CORE_CONTENT,
+   DISPLAYLIST_PROCESS
 };
 
 typedef struct menu_displaylist_info
@@ -137,8 +138,6 @@ typedef struct menu_displaylist_info
 } menu_displaylist_info_t;
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info);
-
-void menu_displaylist_push_list_process(menu_displaylist_info_t *info);
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list);
 

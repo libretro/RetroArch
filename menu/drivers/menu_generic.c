@@ -399,7 +399,7 @@ bool generic_menu_init_list(void *data)
    info.list  = selection_buf;
 
    if (menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info))
-      menu_displaylist_push_list_process(&info);
+      menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
 
    return true;
 }

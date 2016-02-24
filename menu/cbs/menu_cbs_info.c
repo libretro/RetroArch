@@ -41,13 +41,13 @@ static int action_info_default(unsigned type, const char *label)
          menu_hash_to_str(MENU_LABEL_INFO_SCREEN),
         sizeof(info.label));
 
-   if (menu_displaylist_ctl(DISPLAYLIST_HELP, &info))
-   {
-      menu_displaylist_push_list_process(&info);
-      return 0;
-   }
+   if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info))
+      return -1;
 
-   return -1;
+   if (!menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info))
+      return -1;
+
+   return 0;
 }
 
 int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,

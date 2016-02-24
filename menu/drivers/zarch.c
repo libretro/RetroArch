@@ -1330,15 +1330,14 @@ static bool zarch_menu_init_list(void *data)
    event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
 
    info.list  = selection_buf;
-   menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info);
 
-   info.need_push = true;
+   if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info))
+   {
+      info.need_push = true;
+      return menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+   }
 
-   (void)ret;
-
-   menu_displaylist_push_list_process(&info);
-
-   return true;
+   return false;
 }
 
 menu_ctx_driver_t menu_ctx_zarch = {

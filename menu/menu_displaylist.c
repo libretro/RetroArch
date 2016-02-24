@@ -2571,6 +2571,26 @@ static void menu_displaylist_parse_playlist_associations(menu_displaylist_info_t
    string_list_free(stcores);
 }
 
+static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
+{
+   if (!info)
+      return false;
+
+   if (info->need_sort)
+      file_list_sort_on_alt(info->list);
+
+   if (info->need_refresh)
+      menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
+
+   if (info->need_push)
+   {
+      menu_driver_ctl(RARCH_MENU_CTL_POPULATE_ENTRIES, info);
+      ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
+   }
+
+   return true;
+}
+
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist_info_t *info)
 {
    size_t i;
@@ -2583,6 +2603,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
    core_info_list_t *list      = NULL;
    menu_handle_t       *menu   = NULL;
    settings_t      *settings   = NULL;
+
+   if (type == DISPLAYLIST_PROCESS)
+      return menu_displaylist_push_list_process(info);
    
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return false;
@@ -3111,8 +3134,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
          if (string_is_equal(info->path, "content_history.lpl"))
          {
             if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
-               menu_displaylist_push_list_process(info);
-            return true;
+               return menu_displaylist_push_list_process(info);
+            return false;
          }
          else
          {
@@ -3432,23 +3455,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, menu_displaylist
    return true;
 }
 
-void menu_displaylist_push_list_process(menu_displaylist_info_t *info)
-{
-   if (!info)
-      return;
-
-   if (info->need_sort)
-      file_list_sort_on_alt(info->list);
-
-   if (info->need_refresh)
-      menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
-
-   if (info->need_push)
-   {
-      menu_driver_ctl(RARCH_MENU_CTL_POPULATE_ENTRIES, info);
-      ui_companion_driver_notify_list_loaded(info->list, info->menu_list);
-   }
-}
 
 
 int menu_displaylist_push(file_list_t *list, file_list_t *menu_list)

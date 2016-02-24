@@ -49,7 +49,7 @@ static int deferred_push_dlist(menu_displaylist_info_t *info, unsigned val)
 {
    if (!menu_displaylist_ctl(val, info))
       return menu_cbs_exit();
-   menu_displaylist_push_list_process(info);
+   menu_displaylist_ctl(DISPLAYLIST_PROCESS, info);
    return 0;
 }
 
