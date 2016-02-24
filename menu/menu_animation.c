@@ -591,7 +591,8 @@ bool menu_animation_push(float duration, float target_value, float* subject,
 size_t utf8len(const char *string); /* rgui.c */
 
 /* Acts mostly like strlcpy. Copies the given number of UTF-8 characters, but at most d_len bytes.
- * Always NUL terminates. Does not copy half a character. Returns number of bytes. 's' is assumed valid UTF-8. */
+ * Always NUL terminates. Does not copy half a character. Returns number of bytes. 's' is assumed valid UTF-8.
+ * Use only if 'chars' is considerably less than 'd_len'. */
 size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
 {
 	char *d_org = d;
@@ -630,6 +631,7 @@ const char *utf8skip(const char *str, size_t chars)
 }
 #else
 #define utf8len strlen
+#define utf8cpy(d,dl,s,sl) strlcpy(d,s,sl)
 #define utf8skip(str, chars) ((str)+(chars))
 #endif
 
