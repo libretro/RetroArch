@@ -1149,11 +1149,6 @@ int menu_hash_get_help_nl(uint32_t hash, char *s, size_t len);
 const char *menu_hash_to_str_pl(uint32_t hash);
 int menu_hash_get_help_pl(uint32_t hash, char *s, size_t len);
 
-#ifdef HAVE_UTF8
-const char *menu_hash_to_str_ru(uint32_t hash);
-int menu_hash_get_help_ru(uint32_t hash, char *s, size_t len);
-#endif
-
 const char *menu_hash_to_str_pt(uint32_t hash);
 int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len);
 
