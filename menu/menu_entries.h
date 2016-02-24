@@ -172,8 +172,6 @@ void menu_entries_clear(file_list_t *list);
 void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt);
 
-bool menu_entries_increment_selection_buf(void);
-
 bool menu_entries_increment_menu_stack(void);
 
 void menu_entries_push_selection_buf(file_list_t *list,

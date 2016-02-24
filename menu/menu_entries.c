@@ -532,36 +532,6 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
-bool menu_entries_increment_selection_buf(void)
-{
-   file_list_t **selection_buf    = NULL;
-   menu_list_t *menu_list         = NULL;
-   menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
-
-   if (!menu_list)
-      return false;
-
-   selection_buf = (file_list_t**)
-      realloc(selection_buf,
-            (menu_list->selection_buf_size + 1) 
-            * sizeof(*menu_list->selection_buf));
-
-   if (!selection_buf)
-      goto error;
-
-   menu_list->selection_buf = selection_buf;
-   menu_list->selection_buf[menu_list->selection_buf_size] = (file_list_t*)
-      calloc(1, sizeof(*menu_list->selection_buf[menu_list->selection_buf_size]));
-   menu_list->selection_buf_size = menu_list->selection_buf_size + 1;
-
-   return true;
-
-error:
-   if (selection_buf)
-      free(selection_buf);
-   return false;
-}
-
 bool menu_entries_increment_menu_stack(void)
 {
    file_list_t **menu_stack       = NULL;
