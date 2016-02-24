@@ -901,17 +901,6 @@ static void wimp_render(void *data)
       menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_WRITE, &new_accel_val);
    }
 
-   if (settings->menu.mouse.enable)
-   {
-      int16_t mouse_y          = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-
-      unsigned new_pointer_val = 
-         (mouse_y - wimp->line_height + wimp->scroll_y - 16)
-         / wimp->line_height;
-
-      menu_input_ctl(MENU_INPUT_CTL_MOUSE_PTR, &new_pointer_val);
-   }
-
    if (wimp->scroll_y < 0)
       wimp->scroll_y = 0;
 
