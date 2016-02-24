@@ -616,14 +616,15 @@ size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars)
 	return d - o_d;
 }
 
-const char *utf8skip(const char * str, size_t chars)
+const char *utf8skip(const char *str, size_t chars)
 {
+	const uint8_t *strb = (const uint8_t*)str;
 	do {
-		str++;
-		while ((*str&0xC0)==0x80) str++;
+		strb++;
+		while ((*strb&0xC0)==0x80) strb++;
 		chars--;
 	} while(chars);
-	return str;
+	return (const char*)strb;
 }
 #else
 #define utf8len strlen
