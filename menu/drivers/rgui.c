@@ -192,8 +192,20 @@ static uint32_t string_walk(const char **string)
       return ret | (first&15)<<12;
    return ret | (first&7)<<6;
 }
+
+static size_t utf8len(const char *string)
+{
+   size_t ret = 0;
+   while (*string)
+   {
+      if ((*string & 0xC0) != 0x80) ret++;
+      string++;
+   }
+   return ret;
+}
 #else
 #define string_walk string_walkbyte
+#define utf8len strlen
 #endif
 
 static void blit_line(int x, int y,
@@ -618,12 +630,13 @@ static void rgui_render(void *data)
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             entry_selected ? '>' : ' ',
-            RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2),
-            RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2),
+            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + strlen(entry_title_buf)),
+            (int)(RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2) - utf8len(entry_title_buf) + strlen(entry_title_buf)),
             entry_title_buf,
             entry_spacing,
             type_str_buf);
 
+printf("(%s)%s\n",entry_title_buf,message);
       blit_line(x, y, message,
             entry_selected ? hover_color : normal_color);
    }
