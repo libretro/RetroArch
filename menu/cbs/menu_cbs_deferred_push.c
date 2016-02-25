@@ -45,9 +45,9 @@ enum
    PUSH_DETECT_CORE_LIST
 };
 
-static int deferred_push_dlist(menu_displaylist_info_t *info, unsigned val)
+static int deferred_push_dlist(menu_displaylist_info_t *info, enum menu_displaylist_ctl_state state)
 {
-   if (!menu_displaylist_ctl(val, info))
+   if (!menu_displaylist_ctl(state, info))
       return menu_cbs_exit();
    menu_displaylist_ctl(DISPLAYLIST_PROCESS, info);
    return 0;
@@ -319,10 +319,8 @@ static int deferred_archive_action(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_ARCHIVE_ACTION);
 }
 
-
-
 static int general_push(menu_displaylist_info_t *info,
-      unsigned id, unsigned type)
+      unsigned id, enum menu_displaylist_ctl_state state)
 {
    struct retro_system_info *system_menu = NULL;
    settings_t        *settings = config_get_ptr();
@@ -426,7 +424,7 @@ static int general_push(menu_displaylist_info_t *info,
 #endif
    }
 
-   return deferred_push_dlist(info, type);
+   return deferred_push_dlist(info, state);
 }
 
 static int deferred_push_detect_core_list(menu_displaylist_info_t *info)

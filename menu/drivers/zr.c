@@ -749,7 +749,7 @@ static struct zr_user_font font_bake_and_upload(
 
       /* upload baked font image */
       struct texture_image ti;
-      ti.pixels = img;
+      ti.pixels = (uint32_t*)img;
       ti.width  = (GLsizei)img_width;
       ti.height = (GLsizei)img_height;
 
