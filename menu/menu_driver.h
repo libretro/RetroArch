@@ -331,11 +331,11 @@ typedef struct menu_ctx_driver
          file_list_t *list, const char *, const char *, size_t);
    void  (*list_free)(file_list_t *list, size_t, size_t);
    void  (*list_clear)(file_list_t *list);
-   void  (*list_cache)(void *data, menu_list_type_t, unsigned);
+   void  (*list_cache)(void *data, enum menu_list_type, unsigned);
    int   (*list_push)(void *data, void *userdata, menu_displaylist_info_t*, unsigned);
    size_t(*list_get_selection)(void *data);
-   size_t(*list_get_size)(void *data, menu_list_type_t type);
-   void *(*list_get_entry)(void *data, menu_list_type_t type, unsigned i);
+   size_t(*list_get_size)(void *data, enum menu_list_type type);
+   void *(*list_get_entry)(void *data, enum menu_list_type type, unsigned i);
    void  (*list_set_selection)(void *data, file_list_t *list);
    int   (*bind_init)(menu_file_list_cbs_t *cbs,
          const char *path, const char *label, unsigned type, size_t idx,
@@ -362,7 +362,7 @@ typedef struct menu_ctx_list
    const char *path;
    const char *label;
    size_t idx;
-   menu_list_type_t type;
+   enum menu_list_type type;
    unsigned action;
    size_t selection;
    size_t size;

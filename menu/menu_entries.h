@@ -29,12 +29,35 @@
 extern "C" {
 #endif
 
-typedef enum
+enum menu_list_type
 {
    MENU_LIST_PLAIN = 0,
    MENU_LIST_HORIZONTAL,
    MENU_LIST_TABS
-} menu_list_type_t;
+};
+
+enum menu_entries_ctl_state
+{
+   MENU_ENTRIES_CTL_NONE = 0,
+   MENU_ENTRIES_CTL_DEINIT,
+   MENU_ENTRIES_CTL_INIT,
+   MENU_ENTRIES_CTL_LIST_GET,
+   MENU_ENTRIES_CTL_LIST_DEINIT,
+   MENU_ENTRIES_CTL_LIST_INIT,
+   MENU_ENTRIES_CTL_SETTINGS_GET,
+   MENU_ENTRIES_CTL_SETTINGS_DEINIT,
+   MENU_ENTRIES_CTL_SETTINGS_INIT,
+   MENU_ENTRIES_CTL_SET_REFRESH,
+   MENU_ENTRIES_CTL_UNSET_REFRESH,
+   MENU_ENTRIES_CTL_NEEDS_REFRESH,
+   /* Sets the starting index of the menu entry list. */
+   MENU_ENTRIES_CTL_SET_START,
+   /* Returns the starting index of the menu entry list. */
+   MENU_ENTRIES_CTL_START_GET,
+   MENU_ENTRIES_CTL_REFRESH,
+   MENU_ENTRIES_CTL_CLEAR,
+   MENU_ENTRIES_CTL_SHOW_BACK
+};
 
 typedef struct menu_file_list_cbs
 {
@@ -101,28 +124,6 @@ typedef struct menu_file_list_cbs
 
 } menu_file_list_cbs_t;
 
-enum menu_entries_ctl_state
-{
-   MENU_ENTRIES_CTL_NONE = 0,
-   MENU_ENTRIES_CTL_DEINIT,
-   MENU_ENTRIES_CTL_INIT,
-   MENU_ENTRIES_CTL_LIST_GET,
-   MENU_ENTRIES_CTL_LIST_DEINIT,
-   MENU_ENTRIES_CTL_LIST_INIT,
-   MENU_ENTRIES_CTL_SETTINGS_GET,
-   MENU_ENTRIES_CTL_SETTINGS_DEINIT,
-   MENU_ENTRIES_CTL_SETTINGS_INIT,
-   MENU_ENTRIES_CTL_SET_REFRESH,
-   MENU_ENTRIES_CTL_UNSET_REFRESH,
-   MENU_ENTRIES_CTL_NEEDS_REFRESH,
-   /* Sets the starting index of the menu entry list. */
-   MENU_ENTRIES_CTL_SET_START,
-   /* Returns the starting index of the menu entry list. */
-   MENU_ENTRIES_CTL_START_GET,
-   MENU_ENTRIES_CTL_REFRESH,
-   MENU_ENTRIES_CTL_CLEAR,
-   MENU_ENTRIES_CTL_SHOW_BACK
-};
 
 typedef struct menu_list menu_list_t;
 

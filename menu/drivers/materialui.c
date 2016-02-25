@@ -686,7 +686,7 @@ static void mui_draw_cursor(mui_handle_t *mui,
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
-static size_t mui_list_get_size(void *data, menu_list_type_t type)
+static size_t mui_list_get_size(void *data, enum menu_list_type type)
 {
    size_t list_size = 0;
    (void)data;
@@ -1345,7 +1345,8 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
    }
 }
 
-static void mui_list_cache(void *data, menu_list_type_t type, unsigned action)
+static void mui_list_cache(void *data,
+      enum menu_list_type type, unsigned action)
 {
    size_t list_size;
    mui_handle_t *mui   = (mui_handle_t*)data;

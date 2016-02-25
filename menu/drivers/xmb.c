@@ -267,7 +267,7 @@ static size_t xmb_list_get_selection(void *data)
    return xmb->categories.selection_ptr;
 }
 
-static size_t xmb_list_get_size(void *data, menu_list_type_t type)
+static size_t xmb_list_get_size(void *data, enum menu_list_type type)
 {
    size_t list_size        = 0;
    xmb_handle_t *xmb       = (xmb_handle_t*)data;
@@ -288,8 +288,7 @@ static size_t xmb_list_get_size(void *data, menu_list_type_t type)
    return list_size;
 }
 
-static void *xmb_list_get_entry(void *data,
-      menu_list_type_t type, unsigned i)
+static void *xmb_list_get_entry(void *data, enum menu_list_type type, unsigned i)
 {
    void *ptr               = NULL;
    size_t list_size        = 0;
@@ -2657,7 +2656,7 @@ static void xmb_list_deep_copy(const file_list_t *src, file_list_t *dst)
    }
 }
 
-static void xmb_list_cache(void *data, menu_list_type_t type, unsigned action)
+static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action)
 {
    size_t stack_size, list_size, selection;
    xmb_handle_t      *xmb     = (xmb_handle_t*)data;
