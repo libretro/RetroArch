@@ -701,8 +701,7 @@ static int menu_input_key_bind_set_mode_common(
    return 0;
 }
 
-int menu_input_key_bind_set_mode(void *data,
-      enum menu_input_bind_mode type)
+bool menu_input_key_bind_set_mode(enum menu_input_bind_mode type, void *data)
 {
    unsigned index_offset;
    menu_handle_t       *menu = NULL;
@@ -711,11 +710,11 @@ int menu_input_key_bind_set_mode(void *data,
    settings_t *settings      = config_get_ptr();
 
    if (!setting)
-      return -1;
+      return false;
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return -1;
+      return false;
    if (menu_input_key_bind_set_mode_common(setting, type) == -1)
-      return -1;
+      return false;
 
    index_offset = menu_setting_get_index_offset(setting);
    bind_port    = settings->input.joypad_map[index_offset];
@@ -730,7 +729,7 @@ int menu_input_key_bind_set_mode(void *data,
 
    input_keyboard_wait_keys(menu,
          menu_input_key_bind_custom_bind_keyboard_cb);
-   return 0;
+   return true;
 }
 
 void menu_input_key_bind_set_min_max(unsigned min, unsigned max)
@@ -744,7 +743,7 @@ void menu_input_key_bind_set_min_max(unsigned min, unsigned max)
    menu_input->binds.last  = max;
 }
 
-int menu_input_key_bind_iterate(char *s, size_t len)
+bool menu_input_key_bind_iterate(char *s, size_t len)
 {
    struct menu_bind_state binds;
    bool               timed_out = false;
@@ -780,7 +779,7 @@ int menu_input_key_bind_iterate(char *s, size_t len)
       if (timed_out)
          input_keyboard_wait_keys_cancel();
 
-      return 1;
+      return true;
    }
 
    binds = menu_input->binds;
@@ -799,7 +798,7 @@ int menu_input_key_bind_iterate(char *s, size_t len)
       binds.begin++;
 
       if (binds.begin > binds.last)
-         return 1;
+         return true;
 
       binds.target++;
       binds.timeout_end = retro_get_time_usec() +
@@ -807,7 +806,7 @@ int menu_input_key_bind_iterate(char *s, size_t len)
    }
    menu_input->binds = binds;
 
-   return 0;
+   return false;
 }
 
 static int menu_input_mouse(unsigned *action)

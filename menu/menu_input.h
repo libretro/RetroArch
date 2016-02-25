@@ -107,6 +107,12 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
+typedef struct menu_input_ctx_bind
+{
+   char *s;
+   size_t len;
+} menu_input_ctx_bind_t;
+
 /* Keyboard input callbacks */
 void menu_input_st_uint_cb  (void *userdata, const char *str);
 void menu_input_st_hex_cb   (void *userdata, const char *str);
@@ -117,9 +123,10 @@ void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb);
 
-int menu_input_key_bind_iterate(char *s, size_t len);
+bool menu_input_key_bind_iterate(char *s, size_t len);
 
-int menu_input_key_bind_set_mode(void *data, enum menu_input_bind_mode type);
+bool menu_input_key_bind_set_mode(enum menu_input_bind_mode type,
+      void *data);
 
 void menu_input_key_bind_set_min_max(unsigned min, unsigned max);
 

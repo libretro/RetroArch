@@ -2548,7 +2548,7 @@ static int setting_action_ok_bind_all(void *data, bool wraparound)
    if (!global)
       return -1;
 
-   menu_input_key_bind_set_mode(data, MENU_INPUT_BIND_ALL);
+   menu_input_key_bind_set_mode(MENU_INPUT_BIND_ALL, data);
 
    return 0;
 }
@@ -2687,7 +2687,7 @@ static int setting_bind_action_ok(void *data, bool wraparound)
 {
    (void)wraparound;
 
-   menu_input_key_bind_set_mode(data, MENU_INPUT_BIND_SINGLE);
+   menu_input_key_bind_set_mode(MENU_INPUT_BIND_SINGLE, data);
 
    return 0;
 }
