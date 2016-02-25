@@ -241,7 +241,7 @@ enum menu_file_type
    MENU_FILE_TYPE_T_LAST
 };
 
-typedef enum
+enum menu_settings_type
 {
    MENU_SETTINGS_NONE       = MENU_FILE_TYPE_T_LAST + 1,
    MENU_SETTINGS_SHADER_PARAMETER_0,
@@ -276,7 +276,7 @@ typedef enum
    MENU_SETTINGS_INPUT_DESC_BEGIN,
    MENU_SETTINGS_INPUT_DESC_END = MENU_SETTINGS_INPUT_DESC_BEGIN + (MAX_USERS * (RARCH_FIRST_CUSTOM_BIND + 4)),
    MENU_SETTINGS_LAST
-} menu_settings_t;
+};
 
 typedef struct
 {
