@@ -52,6 +52,9 @@ struct menu_animation
    retro_time_t old_time;
 };
 
+typedef float (*easing_cb) (float, float, float, float);
+typedef void  (*tween_cb)  (void);
+
 typedef struct menu_animation menu_animation_t;
 
 static menu_animation_t *menu_animation_get_ptr(void)
@@ -425,28 +428,6 @@ void menu_animation_kill_by_subject(size_t count, const void *subjects)
    }
 }
 
-void menu_animation_kill_by_tag(int tag)
-{
-   unsigned i;
-   menu_animation_t *anim = menu_animation_get_ptr();
-
-   if (tag == -1)
-      return;
-
-   for (i = 0; i < anim->size; ++i)
-   {
-      if (anim->list[i].tag == tag)
-      {
-         anim->list[i].alive   = false;
-         anim->list[i].subject = NULL;
-
-         if (i < anim->first_dead)
-            anim->first_dead = i;
-      }
-   }
-}
-
-
 bool menu_animation_push(float duration, float target_value, float* subject,
       enum menu_animation_easing_type easing_enum, int tag, tween_cb cb)
 {
@@ -696,6 +677,27 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             }
 
             anim->is_active = true;
+         }
+         break;
+      case MENU_ANIMATION_CTL_KILL_BY_TAG:
+         {
+            unsigned i;
+            menu_animation_ctx_tag_t *tag = (menu_animation_ctx_tag_t*)data;
+
+            if (!tag || tag->id == -1)
+               return false;
+
+            for (i = 0; i < anim->size; ++i)
+            {
+               if (anim->list[i].tag != tag->id)
+                  continue;
+
+               anim->list[i].alive   = false;
+               anim->list[i].subject = NULL;
+
+               if (i < anim->first_dead)
+                  anim->first_dead = i;
+            }
          }
          break;
       default:

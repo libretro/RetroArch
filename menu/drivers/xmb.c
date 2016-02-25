@@ -592,7 +592,8 @@ static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
    size_t skip;
-   unsigned i, end, tag, height, depth;
+   unsigned i, end, height, depth;
+   menu_animation_ctx_tag_t tag;
    size_t selection, num      = 0;
    int threshold              = 0;
    menu_list_t     *menu_list = NULL;
@@ -607,12 +608,13 @@ static void xmb_selection_pointer_changed(
       return;
 
    end       = menu_entries_get_end();
-   tag       = (uintptr_t)menu_list;
    threshold = xmb->icon.size*10;
 
    video_driver_get_size(NULL, &height);
 
-   menu_animation_kill_by_tag(tag);
+   tag.id    = (uintptr_t)menu_list;
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &num);
    skip = 0;
 
@@ -657,13 +659,13 @@ static void xmb_selection_pointer_changed(
       else
       {
          menu_animation_push(XMB_DELAY, ia, &node->alpha,
-               EASING_IN_OUT_QUAD, tag, NULL);
+               EASING_IN_OUT_QUAD, tag.id, NULL);
          menu_animation_push(XMB_DELAY, ia, &node->label_alpha,
-               EASING_IN_OUT_QUAD, tag, NULL);
+               EASING_IN_OUT_QUAD, tag.id, NULL);
          menu_animation_push(XMB_DELAY, iz, &node->zoom,
-               EASING_IN_OUT_QUAD, tag, NULL);
+               EASING_IN_OUT_QUAD, tag.id, NULL);
          menu_animation_push(XMB_DELAY, iy, &node->y,
-               EASING_IN_OUT_QUAD, tag, NULL);
+               EASING_IN_OUT_QUAD, tag.id, NULL);
       }
    }
 
