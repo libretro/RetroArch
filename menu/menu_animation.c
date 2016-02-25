@@ -44,12 +44,6 @@ struct menu_animation
    size_t capacity;
    size_t size;
    size_t first_dead;
-   bool is_active;
-
-   /* Delta timing */
-   float delta_time;
-   retro_time_t cur_time;
-   retro_time_t old_time;
 };
 
 typedef float (*easing_cb) (float, float, float, float);
@@ -524,7 +518,11 @@ bool menu_animation_push(float duration, float target_value, float* subject,
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
-   menu_animation_t *anim   = menu_animation_get_ptr();
+   static retro_time_t cur_time    = 0;
+   static retro_time_t old_time    = 0;
+   static float delta_time         = 0.0f;
+   static bool animation_is_active = false;
+   menu_animation_t *anim          = menu_animation_get_ptr();
 
    if (!anim)
       return false;
@@ -547,21 +545,24 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 
             memset(anim, 0, sizeof(menu_animation_t));
          }
+         cur_time                  = 0;
+         old_time                  = 0;
+         delta_time                = 0.0f;
          break;
       case MENU_ANIMATION_CTL_IS_ACTIVE:
-         return anim->is_active;
+         return animation_is_active;
       case MENU_ANIMATION_CTL_CLEAR_ACTIVE:
-         anim->is_active           = false;
+         animation_is_active       = false;
          break;
       case MENU_ANIMATION_CTL_SET_ACTIVE:
-         anim->is_active           = true;
+         animation_is_active       = true;
          break;
       case MENU_ANIMATION_CTL_DELTA_TIME:
          {
             float *ptr = (float*)data;
             if (!ptr)
                return false;
-            *ptr = anim->delta_time;
+            *ptr = delta_time;
          }
          break;
       case MENU_ANIMATION_CTL_UPDATE_TIME:
@@ -569,20 +570,20 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             static retro_time_t last_clock_update = 0;
             settings_t *settings     = config_get_ptr();
 
-            anim->cur_time           = retro_get_time_usec();
-            anim->delta_time         = anim->cur_time - anim->old_time;
+            cur_time                 = retro_get_time_usec();
+            delta_time               = cur_time - old_time;
 
-            if (anim->delta_time >= IDEAL_DT * 4)
-               anim->delta_time = IDEAL_DT * 4;
-            if (anim->delta_time <= IDEAL_DT / 4)
-               anim->delta_time = IDEAL_DT / 4;
-            anim->old_time      = anim->cur_time;
+            if (delta_time >= IDEAL_DT * 4)
+               delta_time = IDEAL_DT * 4;
+            if (delta_time <= IDEAL_DT / 4)
+               delta_time = IDEAL_DT / 4;
+            old_time      = cur_time;
 
-            if (((anim->cur_time - last_clock_update) > 1000000) 
+            if (((cur_time - last_clock_update) > 1000000) 
                   && settings->menu.timedate_enable)
             {
-               anim->is_active           = true;
-               last_clock_update = anim->cur_time;
+               animation_is_active   = true;
+               last_clock_update     = cur_time;
             }
          }
          break;
@@ -608,7 +609,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                return false;
             }
 
-            anim->is_active = true;
+            animation_is_active = true;
          }
          break;
       case MENU_ANIMATION_CTL_KILL_BY_TAG:
@@ -696,7 +697,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                   utf8skip(ticker->str, offset),
                   str_len);
 
-            anim->is_active = true;
+            animation_is_active = true;
          }
          break;
       case MENU_ANIMATION_CTL_NONE:
