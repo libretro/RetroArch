@@ -41,6 +41,22 @@ enum bps_mode
    TARGET_COPY
 };
 
+enum patch_error
+{
+   PATCH_UNKNOWN = 0,
+   PATCH_SUCCESS,
+   PATCH_PATCH_TOO_SMALL,
+   PATCH_PATCH_INVALID_HEADER,
+   PATCH_PATCH_INVALID,
+   PATCH_SOURCE_TOO_SMALL,
+   PATCH_TARGET_TOO_SMALL,
+   PATCH_SOURCE_INVALID,
+   PATCH_TARGET_INVALID,
+   PATCH_SOURCE_CHECKSUM_INVALID,
+   PATCH_TARGET_CHECKSUM_INVALID,
+   PATCH_PATCH_CHECKSUM_INVALID
+};
+
 struct bps_data
 {
    const uint8_t *modify_data, *source_data; 
@@ -52,7 +68,7 @@ struct bps_data
    size_t source_relative_offset, target_relative_offset, output_offset;
 };
 
-typedef patch_error_t (*patch_func_t)(const uint8_t*, size_t,
+typedef enum patch_error (*patch_func_t)(const uint8_t*, size_t,
       const uint8_t*, size_t, uint8_t*, size_t*);
 
 static uint8_t bps_read(struct bps_data *bps)
@@ -99,7 +115,7 @@ static void bps_write(struct bps_data *bps, uint8_t data)
 #endif
 }
 
-static patch_error_t bps_apply_patch(
+static enum patch_error bps_apply_patch(
       const uint8_t *modify_data, size_t modify_length,
       const uint8_t *source_data, size_t source_length,
       uint8_t *target_data, size_t *target_length)
@@ -304,7 +320,7 @@ static uint64_t ups_decode(struct ups_data *data)
    return offset;
 }
 
-static patch_error_t ups_apply_patch(
+static enum patch_error ups_apply_patch(
       const uint8_t *patchdata, size_t patchlength,
       const uint8_t *sourcedata, size_t sourcelength,
       uint8_t *targetdata, size_t *targetlength)
@@ -403,7 +419,7 @@ static patch_error_t ups_apply_patch(
    return PATCH_SOURCE_INVALID;
 }
 
-static patch_error_t ips_apply_patch(
+static enum patch_error ips_apply_patch(
       const uint8_t *patchdata, size_t patchlen,
       const uint8_t *sourcedata, size_t sourcelength,
       uint8_t *targetdata, size_t *targetlength)
@@ -493,7 +509,7 @@ static bool apply_patch_content(uint8_t **buf,
    size_t target_size;
    ssize_t patch_size;
    void *patch_data         = NULL;
-   patch_error_t err        = PATCH_UNKNOWN;
+   enum patch_error err     = PATCH_UNKNOWN;
    bool success             = false;
    uint8_t *patched_content = NULL;
    ssize_t ret_size         = *size;

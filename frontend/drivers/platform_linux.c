@@ -64,7 +64,7 @@ typedef struct
 } CpuList;
 
 static bool                cpu_inited_once;
-static  cpu_family         g_cpuFamily;
+static enum cpu_family     g_cpuFamily;
 static  uint64_t           g_cpuFeatures;
 static  int                g_cpuCount;
 
@@ -425,7 +425,7 @@ static void linux_cpu_init(void)
    buf = NULL;
 }
 
-cpu_family linux_get_cpu_platform(void)
+enum cpu_family linux_get_cpu_platform(void)
 {
     return g_cpuFamily;
 }

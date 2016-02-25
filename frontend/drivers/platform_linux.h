@@ -23,7 +23,7 @@
 
 #include <boolean.h>
 
-typedef enum
+enum cpu_family
 {
    CPU_FAMILY_UNKNOWN = 0,
    CPU_FAMILY_ARM,
@@ -31,7 +31,7 @@ typedef enum
    CPU_FAMILY_MIPS,
 
    CPU_FAMILY_MAX  /* do not remove */
-} cpu_family;
+};
 
 enum
 {
@@ -56,7 +56,7 @@ enum
 #define MAX_AXIS 10
 #endif
 
-cpu_family   linux_get_cpu_family(void);
+enum cpu_family   linux_get_cpu_family(void);
 
 uint64_t    linux_get_cpu_features(void);
 
