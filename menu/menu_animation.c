@@ -381,34 +381,6 @@ static void menu_animation_push_internal(menu_animation_t *anim,
    *target = *t;
 }
 
-void menu_animation_kill_by_subject(size_t count, const void *subjects)
-{
-   unsigned i, j,  killed = 0;
-   float            **sub = (float**)subjects;
-   menu_animation_t *anim = menu_animation_get_ptr();
-
-   for (i = 0; i < anim->size; ++i)
-   {
-      if (!anim->list[i].alive)
-         continue;
-
-      for (j = 0; j < count; ++j)
-      {
-         if (anim->list[i].subject != sub[j])
-            continue;
-
-         anim->list[i].alive   = false;
-         anim->list[i].subject = NULL;
-
-         if (i < anim->first_dead)
-            anim->first_dead = i;
-
-         killed++;
-         break;
-      }
-   }
-}
-
 bool menu_animation_push(float duration, float target_value, float* subject,
       enum menu_animation_easing_type easing_enum, int tag, tween_cb cb)
 {
@@ -698,8 +670,37 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             }
          }
          break;
-      default:
+      case MENU_ANIMATION_CTL_KILL_BY_SUBJECT:
+         {
+            unsigned i, j,  killed = 0;
+            menu_animation_ctx_subject_t *subject = 
+               (menu_animation_ctx_subject_t*)data;
+            float            **sub = (float**)subject->data;
+
+            for (i = 0; i < anim->size; ++i)
+            {
+               if (!anim->list[i].alive)
+                  continue;
+
+               for (j = 0; j < subject->count; ++j)
+               {
+                  if (anim->list[i].subject != sub[j])
+                     continue;
+
+                  anim->list[i].alive   = false;
+                  anim->list[i].subject = NULL;
+
+                  if (i < anim->first_dead)
+                     anim->first_dead = i;
+
+                  killed++;
+                  break;
+               }
+            }
+         }
+         break;
       case MENU_ANIMATION_CTL_NONE:
+      default:
          break;
    }
 

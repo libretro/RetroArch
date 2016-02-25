@@ -42,7 +42,8 @@ enum menu_animation_ctl_state
    MENU_ANIMATION_CTL_DELTA_TIME,
    MENU_ANIMATION_CTL_UPDATE_TIME,
    MENU_ANIMATION_CTL_UPDATE,
-   MENU_ANIMATION_CTL_KILL_BY_TAG
+   MENU_ANIMATION_CTL_KILL_BY_TAG,
+   MENU_ANIMATION_CTL_KILL_BY_SUBJECT
 };
 
 enum menu_animation_easing_type
@@ -96,7 +97,11 @@ typedef struct menu_animation_ctx_tag
    int id;
 } menu_animation_ctx_tag_t;
 
-void menu_animation_kill_by_subject(size_t count, const void *subjects);
+typedef struct menu_animation_ctx_subject
+{
+   size_t count;
+   const void *data;
+} menu_animation_ctx_subject_t;
 
 /* Use -1 for untagged */
 bool menu_animation_push(float duration, float target_value, float* subject,
