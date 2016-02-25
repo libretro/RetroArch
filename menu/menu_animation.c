@@ -381,29 +381,10 @@ static void menu_animation_push_internal(menu_animation_t *anim,
    *target = *t;
 }
 
-static void menu_animation_free(void)
-{
-   size_t i;
-   menu_animation_t *anim = menu_animation_get_ptr();
-
-   if (!anim)
-      return;
-
-   for (i = 0; i < anim->size; i++)
-   {
-      if (anim->list[i].subject)
-         anim->list[i].subject = NULL;
-   }
-
-   free(anim->list);
-
-   memset(anim, 0, sizeof(menu_animation_t));
-}
-
 void menu_animation_kill_by_subject(size_t count, const void *subjects)
 {
-   unsigned i, j, killed = 0;
-   float **sub = (float**)subjects;
+   unsigned i, j,  killed = 0;
+   float            **sub = (float**)subjects;
    menu_animation_t *anim = menu_animation_get_ptr();
 
    for (i = 0; i < anim->size; ++i)
@@ -413,17 +394,17 @@ void menu_animation_kill_by_subject(size_t count, const void *subjects)
 
       for (j = 0; j < count; ++j)
       {
-         if (anim->list[i].subject == sub[j])
-         {
-            anim->list[i].alive   = false;
-            anim->list[i].subject = NULL;
+         if (anim->list[i].subject != sub[j])
+            continue;
 
-            if (i < anim->first_dead)
-               anim->first_dead = i;
+         anim->list[i].alive   = false;
+         anim->list[i].subject = NULL;
 
-            killed++;
-            break;
-         }
+         if (i < anim->first_dead)
+            anim->first_dead = i;
+
+         killed++;
+         break;
       }
    }
 }
@@ -617,7 +598,21 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
    switch (state)
    {
       case MENU_ANIMATION_CTL_DEINIT:
-         menu_animation_free();
+         {
+            size_t i;
+            if (!anim)
+               return false;
+
+            for (i = 0; i < anim->size; i++)
+            {
+               if (anim->list[i].subject)
+                  anim->list[i].subject = NULL;
+            }
+
+            free(anim->list);
+
+            memset(anim, 0, sizeof(menu_animation_t));
+         }
          break;
       case MENU_ANIMATION_CTL_IS_ACTIVE:
          return anim->is_active;
