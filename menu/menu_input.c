@@ -785,6 +785,25 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
             return menu_input_key_bind_iterate(bind->s, bind->len);
          }
          break;
+      case MENU_INPUT_CTL_START_LINE:
+         {
+            bool keyboard_display       = true;
+            menu_handle_t    *menu      = NULL;
+            menu_input_ctx_line_t *line = (menu_input_ctx_line_t*)data;
+            if (!menu_input || !line)
+               return false;
+            if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+               return false;
+
+            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,       &keyboard_display);
+            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL,         &line->label);
+            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING, &line->label_setting);
+
+            menu_input->keyboard.type          = line->type;
+            menu_input->keyboard.idx           = line->idx;
+            menu_input->keyboard.buffer        = input_keyboard_start_line(menu, line->cb);
+         }
+         break;
       default:
       case MENU_INPUT_CTL_NONE:
          break;
@@ -792,31 +811,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
    return true;
 }
-
-void menu_input_key_start_line(const char *label,
-      const char *label_setting, unsigned type, unsigned idx,
-      input_keyboard_line_complete_t cb)
-{
-   bool keyboard_display    = true;
-   menu_handle_t    *menu   = NULL;
-   menu_input_t *menu_input = menu_input_get_ptr();
-   if (!menu_input)
-      return;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return;
-
-   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,       &keyboard_display);
-   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL,         &label);
-   menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING, &label_setting);
-
-   menu_input->keyboard.type          = type;
-   menu_input->keyboard.idx           = idx;
-   menu_input->keyboard.buffer        = input_keyboard_start_line(menu, cb);
-}
-
-
-
-
 
 void menu_input_key_bind_set_min_max(unsigned min, unsigned max)
 {
@@ -828,7 +822,6 @@ void menu_input_key_bind_set_min_max(unsigned min, unsigned max)
    menu_input->binds.begin = min;
    menu_input->binds.last  = max;
 }
-
 
 static int menu_input_mouse(unsigned *action)
 {

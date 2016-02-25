@@ -937,24 +937,48 @@ static int action_ok_cheevos(const char *path,
 static int action_ok_cheat(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_input_key_start_line("Input Cheat",
-         label, type, idx, menu_input_st_cheat_cb);
+   menu_input_ctx_line_t line;
+
+   line.label         = "Input Cheat";
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = idx;
+   line.cb            = menu_input_st_cheat_cb;
+
+   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+      return -1;
    return 0;
 }
 
 static int action_ok_shader_preset_save_as(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_input_key_start_line("Preset Filename",
-         label, type, idx, menu_input_st_string_cb);
+   menu_input_ctx_line_t line;
+
+   line.label         = "Preset Filename";
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = idx;
+   line.cb            = menu_input_st_string_cb;
+
+   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+      return -1;
    return 0;
 }
 
 static int action_ok_cheat_file_save_as(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_input_key_start_line("Cheat Filename",
-         label, type, idx, menu_input_st_string_cb);
+   menu_input_ctx_line_t line;
+
+   line.label         = "Cheat Filename";
+   line.label_setting = label;
+   line.type          = type;
+   line.idx           = idx;
+   line.cb            = menu_input_st_string_cb;
+
+   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+      return -1;
    return 0;
 }
 

@@ -2632,6 +2632,7 @@ static int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound
 
 static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
 {
+   menu_input_ctx_line_t line;
    input_keyboard_line_complete_t cb = NULL;
    rarch_setting_t      *setting = (rarch_setting_t*)data;
    const char *short_description = menu_setting_get_short_description(setting);
@@ -2657,8 +2658,14 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
          break;
    }
 
-   menu_input_key_start_line(short_description,
-         setting->name, 0, 0, cb);
+   line.label         = short_description;
+   line.label_setting = setting->name;
+   line.type          = 0;
+   line.idx           = 0;
+   line.cb            = cb;
+
+   if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
+      return -1;
 
    return 0;
 }

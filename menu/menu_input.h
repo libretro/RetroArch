@@ -93,7 +93,8 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_BIND_NONE,
    MENU_INPUT_CTL_BIND_SINGLE,
    MENU_INPUT_CTL_BIND_ALL,
-   MENU_INPUT_CTL_BIND_ITERATE
+   MENU_INPUT_CTL_BIND_ITERATE,
+   MENU_INPUT_CTL_START_LINE
 };
 
 typedef struct menu_input_ctx_hitbox
@@ -110,15 +111,20 @@ typedef struct menu_input_ctx_bind
    size_t len;
 } menu_input_ctx_bind_t;
 
+typedef struct menu_input_ctx_line
+{
+   const char *label;
+   const char *label_setting;
+   unsigned type;
+   unsigned idx;
+   input_keyboard_line_complete_t cb;
+} menu_input_ctx_line_t;
+
 /* Keyboard input callbacks */
 void menu_input_st_uint_cb  (void *userdata, const char *str);
 void menu_input_st_hex_cb   (void *userdata, const char *str);
 void menu_input_st_string_cb(void *userdata, const char *str);
 void menu_input_st_cheat_cb (void *userdata, const char *str);
-
-void menu_input_key_start_line(const char *label,
-      const char *label_setting, unsigned type, unsigned idx,
-      input_keyboard_line_complete_t cb);
 
 void menu_input_key_bind_set_min_max(unsigned min, unsigned max);
 
