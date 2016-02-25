@@ -928,7 +928,7 @@ static void wimp_context_reset_textures(wimp_handle_t *wimp,
 
       video_texture_image_load(&ti, path);
       video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR, (unsigned*)&wimp->textures.list[i].id);
+            TEXTURE_FILTER_MIPMAP_LINEAR, &wimp->textures.list[i].id);
 
       video_texture_image_free(&ti);
    }
@@ -1188,7 +1188,8 @@ end:
 static void wimp_render(void *data)
 {
    size_t i             = 0;
-   float delta_time, dt;
+   float delta_time;
+   menu_animation_ctx_delta_t delta;
    unsigned bottom, width, height, header_height;
    wimp_handle_t *wimp    = (wimp_handle_t*)data;
    settings_t *settings = config_get_ptr();
@@ -1199,8 +1200,11 @@ static void wimp_render(void *data)
    video_driver_get_size(&width, &height);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
-   dt = delta_time / IDEAL_DT;
-   menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE, &dt);
+
+   delta.current = delta_time;
+
+   if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
+      menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE, &delta.ideal);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &width);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
@@ -1248,6 +1252,7 @@ static void wimp_render_label_value(wimp_handle_t *wimp,
       uint64_t index, uint32_t color, bool selected, const char *label,
       const char *value, float *pure_white)
 {
+   menu_animation_ctx_ticker_t ticker;
    char label_str[PATH_MAX_LENGTH];
    char value_str[PATH_MAX_LENGTH];
    int value_len            = strlen(value);
@@ -1264,8 +1269,19 @@ static void wimp_render_label_value(wimp_handle_t *wimp,
 
    ticker_limit = (usable_width / wimp->glyph_width) - (value_len + 2);
 
-   menu_animation_ticker_str(label_str, ticker_limit, index, label, selected);
-   menu_animation_ticker_str(value_str, value_len,    index, value, selected);
+   ticker.s        = label_str;
+   ticker.len      = ticker_limit;
+   ticker.idx      = index;
+   ticker.str      = label;
+   ticker.selected = selected;
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+
+   ticker.s        = value_str;
+   ticker.len      = value_len;
+   ticker.str      = value;
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
    wimp_blit_line(wimp->margin, y + wimp->line_height / 2,
          width, height, label_str, color, TEXT_ALIGN_LEFT);
@@ -1386,6 +1402,7 @@ static void wimp_render_menu_list(wimp_handle_t *wimp,
    }
 }
 
+#if 0
 static void wimp_draw_cursor(wimp_handle_t *wimp,
       float *color,
       float x, float y, unsigned width, unsigned height)
@@ -1414,8 +1431,9 @@ static void wimp_draw_cursor(wimp_handle_t *wimp,
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
+#endif
 
-static size_t wimp_list_get_size(void *data, menu_list_type_t type)
+static size_t wimp_list_get_size(void *data, enum menu_list_type type)
 {
    size_t list_size = 0;
    (void)data;
@@ -1529,6 +1547,7 @@ static void wimp_frame(void *data)
       0, 0, 0, 0.2,
       0, 0, 0, 0.2,
    };
+   menu_animation_ctx_ticker_t ticker;
    unsigned width, height, ticker_limit, i;
    char msg[256];
    char title[256];
@@ -1676,8 +1695,14 @@ static void wimp_frame(void *data)
    }
 
    ticker_limit = (width - wimp->margin*2) / wimp->glyph_width;
-   menu_animation_ticker_str(title_buf, ticker_limit,
-         *frame_count / 100, title, true);
+
+   ticker.s        = title_buf;
+   ticker.len      = ticker_limit;
+   ticker.idx      = *frame_count / 100;
+   ticker.str      = title;
+   ticker.selected = true;
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
    /* Title */
    if (wimp_get_core_title(title_msg, sizeof(title_msg)) == 0)
@@ -1692,8 +1717,13 @@ static void wimp_frame(void *data)
       value_len = strlen(title_buf);
       ticker_limit = (usable_width / wimp->glyph_width) - (value_len + 2);
 
-      menu_animation_ticker_str(title_buf_msg_tmp,
-            ticker_limit, *frame_count / 20, title_buf_msg, true);
+      ticker.s        = title_buf_msg_tmp;
+      ticker.len      = ticker_limit;
+      ticker.idx      = *frame_count / 20;
+      ticker.str      = title_buf_msg;
+      ticker.selected = true;
+
+      menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
       strlcpy(title_buf, title_buf_msg_tmp, sizeof(title_buf));
    }
@@ -1751,7 +1781,7 @@ static void wimp_allocate_white_texture(wimp_handle_t *wimp)
    ti.pixels = (uint32_t*)&white_data;
 
    video_driver_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST, (unsigned*)&wimp->textures.white);
+         TEXTURE_FILTER_NEAREST, &wimp->textures.white);
 }
 
 static void wimp_font(void)
@@ -1918,7 +1948,7 @@ static void wimp_context_destroy(void *data)
 }
 
 static bool wimp_load_image(void *userdata, void *data,
-      menu_image_type_t type)
+      enum menu_image_type type)
 {
    wimp_handle_t *wimp = (wimp_handle_t*)userdata;
 
@@ -1929,7 +1959,7 @@ static bool wimp_load_image(void *userdata, void *data,
       case MENU_IMAGE_WALLPAPER:
          wimp_context_bg_destroy(wimp);
          video_driver_texture_load(data,
-               TEXTURE_FILTER_MIPMAP_LINEAR, (unsigned*)&wimp->textures.bg.id);
+               TEXTURE_FILTER_MIPMAP_LINEAR, &wimp->textures.bg.id);
          wimp_allocate_white_texture(wimp);
          break;
       case MENU_IMAGE_BOXART:
@@ -1962,14 +1992,21 @@ static float wimp_get_scroll(wimp_handle_t *wimp)
 
 static void wimp_navigation_set(void *data, bool scroll)
 {
+   menu_animation_ctx_entry_t entry;
    wimp_handle_t *wimp    = (wimp_handle_t*)data;
-   float     scroll_pos = wimp ? wimp_get_scroll(wimp) : 0.0f;
+   float     scroll_pos   = wimp ? wimp_get_scroll(wimp) : 0.0f;
 
    if (!wimp || !scroll)
       return;
 
-   menu_animation_push(10, scroll_pos,
-         &wimp->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
+   entry.duration         = 10;
+   entry.target_value     = scroll_pos;
+   entry.subject          = &wimp->scroll_y;
+   entry.easing_enum      = EASING_IN_OUT_QUAD;
+   entry.tag              = -1;
+   entry.cb               = NULL;
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_PUSH, &entry);
 }
 
 static void  wimp_list_set_selection(void *data, file_list_t *list)
@@ -2031,7 +2068,7 @@ static void wimp_context_reset(void *data)
          menu_display_handle_wallpaper_upload, NULL);
 }
 
-static int wimp_environ(menu_environ_cb_t type, void *data, void *userdata)
+static int wimp_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
    switch (type)
    {
@@ -2084,7 +2121,7 @@ static void wimp_preswitch_tabs(wimp_handle_t *wimp, unsigned action)
    }
 }
 
-static void wimp_list_cache(void *data, menu_list_type_t type, unsigned action)
+static void wimp_list_cache(void *data, enum menu_list_type type, unsigned action)
 {
    size_t list_size;
    wimp_handle_t *wimp   = (wimp_handle_t*)data;
@@ -2142,7 +2179,8 @@ static int wimp_list_push(void *data, void *userdata,
    switch (type)
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
-         menu_entries_clear(info->list);
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
                menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
@@ -2167,7 +2205,7 @@ static int wimp_list_push(void *data, void *userdata,
          ret = 0;
          break;
       case DISPLAYLIST_MAIN_MENU:
-         menu_entries_clear(info->list);
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
 
          if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          {
