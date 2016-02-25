@@ -1284,7 +1284,7 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
    xmb_context_reset_horizontal_list(xmb, themepath);
 }
 
-static int xmb_environ(menu_environ_cb_t type, void *data, void *userdata)
+static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
    switch (type)
    {
@@ -2272,7 +2272,7 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
    video_driver_texture_unload(&xmb->textures.bg.id);
 }
 
-static bool xmb_load_image(void *userdata, void *data, menu_image_type_t type)
+static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)userdata;
 

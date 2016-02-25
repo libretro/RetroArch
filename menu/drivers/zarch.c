@@ -1202,7 +1202,7 @@ static void zarch_context_destroy(void *data)
 }
 
 static bool zarch_load_image(void *userdata, 
-      void *data, menu_image_type_t type)
+      void *data, enum menu_image_type type)
 {
    zui_t        *zui = (zui_t*)userdata;
 

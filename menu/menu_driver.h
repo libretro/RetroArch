@@ -58,19 +58,19 @@ extern "C" {
 
 #define MENU_KEYBOARD_BIND_TIMEOUT_SECONDS 5
 
-typedef enum
+enum menu_image_type
 {
    MENU_IMAGE_NONE = 0,
    MENU_IMAGE_WALLPAPER,
    MENU_IMAGE_BOXART
-} menu_image_type_t;
+};
 
-typedef enum
+enum menu_environ_cb
 {
    MENU_ENVIRON_NONE = 0,
    MENU_ENVIRON_RESET_HORIZONTAL_LIST,
    MENU_ENVIRON_LAST
-} menu_environ_cb_t;
+};
 
 typedef enum
 {
@@ -341,9 +341,9 @@ typedef struct menu_ctx_driver
          const char *path, const char *label, unsigned type, size_t idx,
          const char *elem0, const char *elem1,
          uint32_t label_hash, uint32_t menu_label_hash);
-   bool  (*load_image)(void *userdata, void *data, menu_image_type_t type);
+   bool  (*load_image)(void *userdata, void *data, enum menu_image_type type);
    const char *ident;
-   int (*environ_cb)(menu_environ_cb_t type, void *data, void *userdata);
+   int (*environ_cb)(enum menu_environ_cb type, void *data, void *userdata);
    int (*pointer_tap)(void *data, unsigned x, unsigned y, unsigned ptr,
          menu_file_list_cbs_t *cbs,
          menu_entry_t *entry, unsigned action);
@@ -352,7 +352,7 @@ typedef struct menu_ctx_driver
 typedef struct menu_ctx_load_image
 {
    void *data;
-   menu_image_type_t type;
+   enum menu_image_type type;
 } menu_ctx_load_image_t;
 
 typedef struct menu_ctx_list
@@ -382,7 +382,7 @@ typedef struct menu_ctx_iterate
 
 typedef struct menu_ctx_environment
 {
-   menu_environ_cb_t type;
+   enum menu_environ_cb type;
    void *data;
 } menu_ctx_environment_t;
 

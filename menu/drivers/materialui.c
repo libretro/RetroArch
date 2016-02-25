@@ -1171,8 +1171,7 @@ static void mui_context_destroy(void *data)
    mui_context_bg_destroy(mui);
 }
 
-static bool mui_load_image(void *userdata, void *data,
-      menu_image_type_t type)
+static bool mui_load_image(void *userdata, void *data, enum menu_image_type type)
 {
    mui_handle_t *mui = (mui_handle_t*)userdata;
 
@@ -1292,7 +1291,7 @@ static void mui_context_reset(void *data)
          menu_display_handle_wallpaper_upload, NULL);
 }
 
-static int mui_environ(menu_environ_cb_t type, void *data, void *userdata)
+static int mui_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
    switch (type)
    {
