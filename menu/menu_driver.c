@@ -45,7 +45,7 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_MATERIALUI)
    &menu_ctx_mui,
 #endif
-#if defined(HAVE_ZAHRAND)
+#if defined(HAVE_ZAHNRAD)
    &menu_ctx_zr,
 #endif
 #if defined(HAVE_XMB)
