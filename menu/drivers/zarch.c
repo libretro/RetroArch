@@ -266,10 +266,15 @@ static int16_t zarch_zui_input_state(zui_t *zui, enum zarch_zui_input_state stat
 static bool zarch_zui_check_button_down(zui_t *zui,
       unsigned id, int x1, int y1, int x2, int y2)
 {
+   menu_input_ctx_hitbox_t hitbox;
    bool result = false;
-   bool inside = menu_input_mouse_check_hitbox(x1, y1, x2, y2);
 
-   if (inside)
+   hitbox.x1   = x1;
+   hitbox.x2   = x2;
+   hitbox.y1   = y1;
+   hitbox.y2   = y2;
+
+   if (menu_input_ctl(MENU_INPUT_CTL_CHECK_INSIDE_HITBOX, &hitbox))
       zui->item.hot = id;
 
    if (     zui->item.hot == id 
@@ -285,10 +290,15 @@ static bool zarch_zui_check_button_down(zui_t *zui,
 static bool zarch_zui_check_button_up(zui_t *zui,
       unsigned id, int x1, int y1, int x2, int y2)
 {
+   menu_input_ctx_hitbox_t hitbox;
    bool result = false;
-   bool inside = menu_input_mouse_check_hitbox(x1, y1, x2, y2);
 
-   if (inside)
+   hitbox.x1   = x1;
+   hitbox.x2   = x2;
+   hitbox.y1   = y1;
+   hitbox.y2   = y2;
+
+   if (menu_input_ctl(MENU_INPUT_CTL_CHECK_INSIDE_HITBOX, &hitbox))
       zui->item.hot = id;
 
    if (     zui->item.active == id 

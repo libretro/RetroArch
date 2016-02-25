@@ -196,6 +196,22 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
    switch (state)
    {
+      case MENU_INPUT_CTL_CHECK_INSIDE_HITBOX:
+         {
+            menu_input_ctx_hitbox_t *hitbox = (menu_input_ctx_hitbox_t*)data;
+            int16_t  mouse_x       = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+            int16_t  mouse_y       = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+            bool     inside_hitbox = 
+                  (mouse_x    >= hitbox->x1) 
+                  && (mouse_x <= hitbox->x2) 
+                  && (mouse_y >= hitbox->y1) 
+                  && (mouse_y <= hitbox->y2)
+                  ;
+
+            if (!inside_hitbox)
+               return false;
+         }
+         break;
       case MENU_INPUT_CTL_DEINIT:
          memset(menu_input, 0, sizeof(menu_input_t));
          break;
@@ -1021,19 +1037,6 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
    }
 
    return 0;
-}
-
-bool menu_input_mouse_check_hitbox(int x1, int y1, int x2, int y2)
-{
-   int16_t  mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-   int16_t  mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-
-   return (
-            (mouse_x >= x1) 
-         && (mouse_x <= x2) 
-         && (mouse_y >= y1) 
-         && (mouse_y <= y2)
-         );
 }
 
 int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
