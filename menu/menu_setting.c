@@ -2572,17 +2572,17 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
 static int setting_action_ok_bind_defaults(void *data, bool wraparound)
 {
    unsigned i;
-   struct retro_keybind *target = NULL;
+   struct retro_keybind *target          = NULL;
    const struct retro_keybind *def_binds = NULL;
-   rarch_setting_t *setting  = (rarch_setting_t*)data;
-   settings_t    *settings   = config_get_ptr();
+   rarch_setting_t *setting              = (rarch_setting_t*)data;
+   settings_t    *settings               = config_get_ptr();
 
    (void)wraparound;
 
    if (!setting)
       return -1;
 
-   target = (struct retro_keybind*)
+   target    = (struct retro_keybind*)
       &settings->input.binds[setting->index_offset][0];
    def_binds =  (setting->index_offset) ? 
       retro_keybinds_rest : retro_keybinds_1;
@@ -2596,8 +2596,8 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    for (i = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
    {
-      target->key = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
-      target->joykey = NO_BTN;
+      target->key     = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+      target->joykey  = NO_BTN;
       target->joyaxis = AXIS_NONE;
    }
 
