@@ -408,10 +408,12 @@ static void menu_input_key_bind_poll_bind_state_internal(
     /* poll only the relevant port */
     /* for (i = 0; i < settings->input.max_users; i++) */
     for (b = 0; b < MENU_MAX_BUTTONS; b++)
-        state->state[port].buttons[b] = input_joypad_button_raw(joypad, port, b);
+        state->state[port].buttons[b] = 
+           input_joypad_button_raw(joypad, port, b);
     
     for (a = 0; a < MENU_MAX_AXES; a++)
-        state->state[port].axes[a] = input_joypad_axis_raw(joypad, port, a);
+        state->state[port].axes[a] = 
+           input_joypad_axis_raw(joypad, port, a);
     
     for (h = 0; h < MENU_MAX_HATS; h++)
     {
@@ -431,7 +433,8 @@ static void menu_input_key_bind_poll_bind_state(
       unsigned port,
       bool timed_out)
 {
-   const input_device_driver_t *joypad = input_driver_get_joypad_driver();
+   const input_device_driver_t *joypad     = 
+      input_driver_get_joypad_driver();
    const input_device_driver_t *sec_joypad = 
       input_driver_get_sec_joypad_driver();
 
@@ -442,7 +445,8 @@ static void menu_input_key_bind_poll_bind_state(
    state->skip = timed_out || input_driver_state(NULL, 0,
          RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
     
-   menu_input_key_bind_poll_bind_state_internal(joypad, state, port, timed_out);
+   menu_input_key_bind_poll_bind_state_internal(
+         joypad, state, port, timed_out);
     
    if (sec_joypad)
       menu_input_key_bind_poll_bind_state_internal(
@@ -518,12 +522,14 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
       {
          /* Take care of case where axis rests on +/- 0x7fff
           * (e.g. 360 controller on Linux) */
-         state->target->joyaxis = n->axes[a] > 0 ? AXIS_POS(a) : AXIS_NEG(a);
+         state->target->joyaxis = n->axes[a] > 0 
+            ? AXIS_POS(a) : AXIS_NEG(a);
          state->target->joykey = NO_BTN;
 
          /* Lock the current axis */
-         new_state->axis_state[p].locked_axes[a] = n->axes[a] > 0 
-            ? 0x7fff : -0x7fff;
+         new_state->axis_state[p].locked_axes[a] = 
+            n->axes[a] > 0 ? 
+            0x7fff : -0x7fff;
          return true;
       }
 
@@ -568,7 +574,8 @@ static bool menu_input_key_bind_poll_find_trigger(
 
    for (i = 0; i < settings->input.max_users; i++)
    {
-      if (!menu_input_key_bind_poll_find_trigger_pad(state, new_state, i))
+      if (!menu_input_key_bind_poll_find_trigger_pad(
+               state, new_state, i))
          continue;
 
       /* Update the joypad mapping automatically.
@@ -588,7 +595,8 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
    bool               timed_out = false;
    menu_input_t *menu_input     = menu_input_get_ptr();
    int64_t current              = retro_get_time_usec();
-   int timeout                  = (menu_input->binds.timeout_end - current) / 1000000;
+   int timeout                  = 
+      (menu_input->binds.timeout_end - current) / 1000000;
 
    if (timeout <= 0)
    {
@@ -660,7 +668,8 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
    {
       case MENU_INPUT_CTL_BIND_SET_MIN_MAX:
          {
-            menu_input_ctx_bind_limits_t *lim = (menu_input_ctx_bind_limits_t*)data;
+            menu_input_ctx_bind_limits_t *lim = 
+               (menu_input_ctx_bind_limits_t*)data;
             if (!lim || !menu_input)
                return false;
 
@@ -688,7 +697,8 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          memset(menu_input, 0, sizeof(menu_input_t));
          break;
       case MENU_INPUT_CTL_SEARCH_START:
-         if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+         if (!menu_driver_ctl(
+                  RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
             return false;
 
          menu_input->keyboard.display = true;
@@ -809,13 +819,17 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
             if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
                return false;
 
-            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,       &keyboard_display);
-            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL,         &line->label);
-            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING, &line->label_setting);
+            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_DISPLAY,
+                  &keyboard_display);
+            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL,
+                  &line->label);
+            menu_input_ctl(MENU_INPUT_CTL_SET_KEYBOARD_LABEL_SETTING,
+                  &line->label_setting);
 
-            menu_input->keyboard.type          = line->type;
-            menu_input->keyboard.idx           = line->idx;
-            menu_input->keyboard.buffer        = input_keyboard_start_line(menu, line->cb);
+            menu_input->keyboard.type   = line->type;
+            menu_input->keyboard.idx    = line->idx;
+            menu_input->keyboard.buffer = 
+               input_keyboard_start_line(menu, line->cb);
          }
          break;
       default:
@@ -853,21 +867,29 @@ static int menu_input_mouse(unsigned *action)
       return 0;
    }
 
-   menu_input->mouse.left       = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+   menu_input->mouse.left       = input_driver_state(
+         binds, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_LEFT);
-   menu_input->mouse.right      = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+   menu_input->mouse.right      = input_driver_state(
+         binds, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_RIGHT);
-   menu_input->mouse.wheelup    = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+   menu_input->mouse.wheelup    = input_driver_state(
+         binds, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
-   menu_input->mouse.wheeldown  = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+   menu_input->mouse.wheeldown  = input_driver_state(
+         binds, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
-   menu_input->mouse.hwheelup   = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+   menu_input->mouse.hwheelup   = input_driver_state(
+         binds, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
-   menu_input->mouse.hwheeldown = input_driver_state(binds, 0, RETRO_DEVICE_MOUSE,
+   menu_input->mouse.hwheeldown = input_driver_state(
+         binds, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
-   menu_input->mouse.x   = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
+   menu_input->mouse.x          = input_driver_state(
+         binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
          0, RETRO_DEVICE_ID_MOUSE_X);
-   menu_input->mouse.y   = input_driver_state(binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
+   menu_input->mouse.y          = input_driver_state(
+         binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
          0, RETRO_DEVICE_ID_MOUSE_Y);
 
    return 0;
@@ -1083,7 +1105,8 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
    return 0;
 }
 
-static int menu_input_pointer_post_iterate(menu_file_list_cbs_t *cbs,
+static int menu_input_pointer_post_iterate(
+      menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
    unsigned header_height;
