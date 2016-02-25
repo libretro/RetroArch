@@ -48,9 +48,6 @@ struct menu_animation
    size_t first_dead;
 };
 
-typedef float (*easing_cb) (float, float, float, float);
-typedef void  (*tween_cb)  (void);
-
 typedef struct menu_animation menu_animation_t;
 
 /* from https://github.com/kikito/tween.lua/blob/master/tween.lua */

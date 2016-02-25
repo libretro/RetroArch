@@ -101,7 +101,7 @@ enum
    ZR_SYSTEM_TAB_SETTINGS
 };
 
-enum theme
+enum zr_theme
 {
    THEME_BLACK = 0,
    THEME_WHITE,
@@ -114,7 +114,7 @@ struct wimp
 {
    void *memory;
    struct zr_context ctx;
-   enum theme theme;
+   enum zr_theme theme;
    struct zr_memory_status status;
 };
 
@@ -217,7 +217,7 @@ static void zr_labelf(struct zr_context *ctx,
 
 /* zahnrad code */
 
-static void set_style(struct zr_context *ctx, enum theme theme)
+static void set_style(struct zr_context *ctx, enum zr_theme theme)
 {
    switch (theme)
    {
@@ -460,7 +460,7 @@ static int wimp_control(struct zr_context *ctx,
       if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Color", ZR_MINIMIZED))
       {
          struct zr_panel tab, combo;
-         enum theme old = gui->theme;
+         enum zr_theme old           = gui->theme;
          static const char *themes[] = {"Black", "White", "Red", "Blue", "Dark", "Grey"};
 
          zr_layout_row_dynamic(ctx,  25, 2);
@@ -516,6 +516,10 @@ static void wimp_main(struct zr_context *ctx, int width, int height, struct wimp
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
          ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
+      struct zr_panel combo;
+      static const char *themes[] = {"Black", "White", "Red", "Blue", "Dark", "Grey"};
+      enum   zr_theme old         = gui->theme;
+
       zr_layout_row_dynamic(ctx, 30, 2);
 
       if (zr_button_text(ctx, "Quit", ZR_BUTTON_DEFAULT))
@@ -542,9 +546,6 @@ static void wimp_main(struct zr_context *ctx, int width, int height, struct wimp
       zr_layout_row_dynamic(ctx, 30, 1);
       zr_property_int(ctx, "Max Users:", 1, (int*)&(settings->input.max_users), MAX_USERS, 1, 1);
 
-      struct zr_panel combo;
-      static const char *themes[] = {"Black", "White", "Red", "Blue", "Dark", "Grey"};
-      enum theme old              = gui->theme;
       if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 300))
       {
          zr_layout_row_dynamic(ctx, 25, 1);
@@ -700,6 +701,7 @@ static struct zr_user_font font_bake_and_upload(
    memset(&custom, 0, sizeof(custom));
 
    {
+      struct texture_image ti;
       /* bake and upload font texture */
       struct zr_font_config config;
       void *img, *tmp;
@@ -748,7 +750,6 @@ static struct zr_user_font font_bake_and_upload(
       }
 
       /* upload baked font image */
-      struct texture_image ti;
       ti.pixels = (uint32_t*)img;
       ti.width  = (GLsizei)img_width;
       ti.height = (GLsizei)img_height;
