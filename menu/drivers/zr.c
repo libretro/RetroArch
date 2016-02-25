@@ -743,15 +743,14 @@ static struct zr_user_font font_bake_and_upload(
          img = img_rgba;
       }
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       /* upload baked font image */
-      glGenTextures(1, &dev->font_tex);
-      glBindTexture(GL_TEXTURE_2D, dev->font_tex);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)img_width, (GLsizei)img_height, 0,
-            GL_RGBA, GL_UNSIGNED_BYTE, img);
-#endif
+      struct texture_image ti;
+      ti.pixels = img;
+      ti.width  = (GLsizei)img_width;
+      ti.height = (GLsizei)img_height;
+
+      video_driver_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_LINEAR, (uintptr_t*)&dev->font_tex);
 
       free(ttf_blob);
       free(tmp);
