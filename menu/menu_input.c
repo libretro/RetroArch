@@ -654,6 +654,16 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
    switch (state)
    {
+      case MENU_INPUT_CTL_BIND_SET_MIN_MAX:
+         {
+            menu_input_ctx_bind_limits_t *lim = (menu_input_ctx_bind_limits_t*)data;
+            if (!lim || !menu_input)
+               return false;
+
+            menu_input->binds.begin = lim->min;
+            menu_input->binds.last  = lim->max;
+         }
+         break;
       case MENU_INPUT_CTL_CHECK_INSIDE_HITBOX:
          {
             menu_input_ctx_hitbox_t *hitbox = (menu_input_ctx_hitbox_t*)data;
@@ -814,13 +824,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
 void menu_input_key_bind_set_min_max(unsigned min, unsigned max)
 {
-   menu_input_t *menu_input  = menu_input_get_ptr();
-
-   if (!menu_input)
-      return;
-
-   menu_input->binds.begin = min;
-   menu_input->binds.last  = max;
 }
 
 static int menu_input_mouse(unsigned *action)

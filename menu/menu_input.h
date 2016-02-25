@@ -94,6 +94,7 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_BIND_SINGLE,
    MENU_INPUT_CTL_BIND_ALL,
    MENU_INPUT_CTL_BIND_ITERATE,
+   MENU_INPUT_CTL_BIND_SET_MIN_MAX,
    MENU_INPUT_CTL_START_LINE
 };
 
@@ -120,13 +121,17 @@ typedef struct menu_input_ctx_line
    input_keyboard_line_complete_t cb;
 } menu_input_ctx_line_t;
 
+typedef struct menu_input_ctx_bind_limits
+{
+   unsigned min;
+   unsigned max;
+} menu_input_ctx_bind_limits_t;
+
 /* Keyboard input callbacks */
 void menu_input_st_uint_cb  (void *userdata, const char *str);
 void menu_input_st_hex_cb   (void *userdata, const char *str);
 void menu_input_st_string_cb(void *userdata, const char *str);
 void menu_input_st_cheat_cb (void *userdata, const char *str);
-
-void menu_input_key_bind_set_min_max(unsigned min, unsigned max);
 
 unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_state);
 

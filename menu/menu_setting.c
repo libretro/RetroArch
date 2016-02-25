@@ -2572,6 +2572,7 @@ static int setting_action_ok_bind_all_save_autoconfig(void *data, bool wraparoun
 static int setting_action_ok_bind_defaults(void *data, bool wraparound)
 {
    unsigned i;
+   menu_input_ctx_bind_limits_t lim;
    struct retro_keybind *target          = NULL;
    const struct retro_keybind *def_binds = NULL;
    rarch_setting_t *setting              = (rarch_setting_t*)data;
@@ -2590,8 +2591,10 @@ static int setting_action_ok_bind_defaults(void *data, bool wraparound)
    if (!target)
       return -1;
 
-   menu_input_key_bind_set_min_max(
-         MENU_SETTINGS_BIND_BEGIN, MENU_SETTINGS_BIND_LAST);
+   lim.min = MENU_SETTINGS_BIND_BEGIN;
+   lim.max = MENU_SETTINGS_BIND_LAST;
+
+   menu_input_ctl(MENU_INPUT_CTL_BIND_SET_MIN_MAX, &lim);
 
    for (i = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
