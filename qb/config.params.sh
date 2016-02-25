@@ -3,6 +3,7 @@ HAVE_RGUI=yes           # Disable RGUI menu
 HAVE_MATERIALUI=auto    # Enable MaterialUI menu 
 HAVE_CHEEVOS=no         # Enable Cheevos (achievements)
 HAVE_XMB=auto           # Enable XMB menu
+HAVE_ZAHRAND=no         # Enable Zahrand menu
 HAVE_DYNAMIC=yes        # Disable dynamic loading of libretro library
 HAVE_SDL=auto           # SDL support
 HAVE_SDL2=auto          # SDL2 support (disables SDL 1.x)

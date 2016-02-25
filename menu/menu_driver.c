@@ -45,8 +45,8 @@ static const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_MATERIALUI)
    &menu_ctx_mui,
 #endif
-#if defined(HAVE_WIMP)
-   &menu_ctx_wimp,
+#if defined(HAVE_ZAHRAND)
+   &menu_ctx_zr,
 #endif
 #if defined(HAVE_XMB)
    &menu_ctx_xmb,

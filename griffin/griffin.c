@@ -869,9 +869,9 @@ MENU
 #include "../menu/drivers/materialui.c"
 #endif
 
-#ifdef HAVE_WIMP
+#ifdef HAVE_ZAHRAND
 #include "../deps/zahnrad/zahnrad.c"
-#include "../menu/drivers/wimp.c"
+#include "../menu/drivers/zr.c"
 #endif
 
 #ifdef HAVE_ZARCH
