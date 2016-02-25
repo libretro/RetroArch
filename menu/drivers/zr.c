@@ -117,24 +117,24 @@ struct device
 
 enum
 {
-   wimp_TEXTURE_POINTER = 0,
-   wimp_TEXTURE_BACK,
-   wimp_TEXTURE_SWITCH_ON,
-   wimp_TEXTURE_SWITCH_OFF,
-   wimp_TEXTURE_TAB_MAIN_ACTIVE,
-   wimp_TEXTURE_TAB_PLAYLISTS_ACTIVE,
-   wimp_TEXTURE_TAB_SETTINGS_ACTIVE,
-   wimp_TEXTURE_TAB_MAIN_PASSIVE,
-   wimp_TEXTURE_TAB_PLAYLISTS_PASSIVE,
-   wimp_TEXTURE_TAB_SETTINGS_PASSIVE,
-   wimp_TEXTURE_LAST
+   ZR_TEXTURE_POINTER = 0,
+   ZR_TEXTURE_BACK,
+   ZR_TEXTURE_SWITCH_ON,
+   ZR_TEXTURE_SWITCH_OFF,
+   ZR_TEXTURE_TAB_MAIN_ACTIVE,
+   ZR_TEXTURE_TAB_PLAYLISTS_ACTIVE,
+   ZR_TEXTURE_TAB_SETTINGS_ACTIVE,
+   ZR_TEXTURE_TAB_MAIN_PASSIVE,
+   ZR_TEXTURE_TAB_PLAYLISTS_PASSIVE,
+   ZR_TEXTURE_TAB_SETTINGS_PASSIVE,
+   ZR_TEXTURE_LAST
 };
 
 enum
 {
-   wimp_SYSTEM_TAB_MAIN = 0,
-   wimp_SYSTEM_TAB_PLAYLISTS,
-   wimp_SYSTEM_TAB_SETTINGS
+   ZR_SYSTEM_TAB_MAIN = 0,
+   ZR_SYSTEM_TAB_PLAYLISTS,
+   ZR_SYSTEM_TAB_SETTINGS
 };
 
 static int z =0 ;
@@ -147,7 +147,8 @@ bool zr_checkbox_bool(struct zr_context* cx, const char* text, bool *active)
    return ret;
 }
 
-static void zr_labelf(struct zr_context *ctx, enum zr_text_align align, const char *fmt, ...)
+static void zr_labelf(struct zr_context *ctx,
+      enum zr_text_align align, const char *fmt, ...)
 {
     char buffer[1024];
     va_list args;
@@ -356,7 +357,8 @@ static void set_style(struct zr_context *ctx, enum theme theme)
 }
 
 
-static int wimp_control(struct zr_context *ctx, int width, int height, struct wimp *gui)
+static int wimp_control(struct zr_context *ctx,
+      int width, int height, struct wimp *gui)
 {
    int i;
    struct zr_panel layout;
@@ -429,10 +431,14 @@ static int wimp_control(struct zr_context *ctx, int width, int height, struct wi
                if (zr_combo_begin_color(ctx, &combo, ctx->style.colors[i], 200))
                {
                   zr_layout_row_dynamic(ctx, 25, 1);
-                  ctx->style.colors[i].r = (zr_byte)zr_propertyi(ctx, "#R:", 0, ctx->style.colors[i].r, 255, 1,1);
-                  ctx->style.colors[i].g = (zr_byte)zr_propertyi(ctx, "#G:", 0, ctx->style.colors[i].g, 255, 1,1);
-                  ctx->style.colors[i].b = (zr_byte)zr_propertyi(ctx, "#B:", 0, ctx->style.colors[i].b, 255, 1,1);
-                  ctx->style.colors[i].a = (zr_byte)zr_propertyi(ctx, "#A:", 0, ctx->style.colors[i].a, 255, 1,1);
+                  ctx->style.colors[i].r = 
+                     (zr_byte)zr_propertyi(ctx, "#R:", 0, ctx->style.colors[i].r, 255, 1,1);
+                  ctx->style.colors[i].g = 
+                     (zr_byte)zr_propertyi(ctx, "#G:", 0, ctx->style.colors[i].g, 255, 1,1);
+                  ctx->style.colors[i].b = 
+                     (zr_byte)zr_propertyi(ctx, "#B:", 0, ctx->style.colors[i].b, 255, 1,1);
+                  ctx->style.colors[i].a = 
+                     (zr_byte)zr_propertyi(ctx, "#A:", 0, ctx->style.colors[i].a, 255, 1,1);
                   zr_combo_end(ctx);
                }
             }
@@ -856,7 +862,7 @@ static void wimp_input_button(struct zr_context *ctx)
 /* zahnrad code */
 
 
-#define wimp_SYSTEM_TAB_END wimp_SYSTEM_TAB_SETTINGS
+#define ZR_SYSTEM_TAB_END ZR_SYSTEM_TAB_SETTINGS
 
 struct wimp_texture_item
 {
@@ -882,7 +888,7 @@ typedef struct wimp_handle
       } arrow;
 
       struct wimp_texture_item bg;
-      struct wimp_texture_item list[wimp_TEXTURE_LAST];
+      struct wimp_texture_item list[ZR_TEXTURE_LAST];
       uintptr_t white;
    } textures;
 
@@ -908,50 +914,50 @@ static void wimp_context_reset_textures(wimp_handle_t *wimp,
 {
    unsigned i;
 
-   for (i = 0; i < wimp_TEXTURE_LAST; i++)
+   for (i = 0; i < ZR_TEXTURE_LAST; i++)
    {
       struct texture_image ti     = {0};
       char path[PATH_MAX_LENGTH]  = {0};
 
       switch(i)
       {
-         case wimp_TEXTURE_POINTER:
+         case ZR_TEXTURE_POINTER:
             fill_pathname_join(path, iconpath,
                   "pointer.png", sizeof(path));
             break;
-         case wimp_TEXTURE_BACK:
+         case ZR_TEXTURE_BACK:
             fill_pathname_join(path, iconpath,
                   "back.png", sizeof(path));
             break;
-         case wimp_TEXTURE_SWITCH_ON:
+         case ZR_TEXTURE_SWITCH_ON:
             fill_pathname_join(path, iconpath,
                   "on.png", sizeof(path));
             break;
-         case wimp_TEXTURE_SWITCH_OFF:
+         case ZR_TEXTURE_SWITCH_OFF:
             fill_pathname_join(path, iconpath,
                   "off.png", sizeof(path));
             break;
-         case wimp_TEXTURE_TAB_MAIN_ACTIVE:
+         case ZR_TEXTURE_TAB_MAIN_ACTIVE:
             fill_pathname_join(path, iconpath,
                   "main_tab_active.png", sizeof(path));
             break;
-         case wimp_TEXTURE_TAB_PLAYLISTS_ACTIVE:
+         case ZR_TEXTURE_TAB_PLAYLISTS_ACTIVE:
             fill_pathname_join(path, iconpath,
                   "playlists_tab_active.png", sizeof(path));
             break;
-         case wimp_TEXTURE_TAB_SETTINGS_ACTIVE:
+         case ZR_TEXTURE_TAB_SETTINGS_ACTIVE:
             fill_pathname_join(path, iconpath,
                   "settings_tab_active.png", sizeof(path));
             break;
-         case wimp_TEXTURE_TAB_MAIN_PASSIVE:
+         case ZR_TEXTURE_TAB_MAIN_PASSIVE:
             fill_pathname_join(path, iconpath,
                   "main_tab_passive.png", sizeof(path));
             break;
-         case wimp_TEXTURE_TAB_PLAYLISTS_PASSIVE:
+         case ZR_TEXTURE_TAB_PLAYLISTS_PASSIVE:
             fill_pathname_join(path, iconpath,
                   "playlists_tab_passive.png", sizeof(path));
             break;
-         case wimp_TEXTURE_TAB_SETTINGS_PASSIVE:
+         case ZR_TEXTURE_TAB_SETTINGS_PASSIVE:
             fill_pathname_join(path, iconpath,
                   "settings_tab_passive.png", sizeof(path));
             break;
@@ -1020,25 +1026,25 @@ static void wimp_draw_tab(wimp_handle_t *wimp,
    unsigned tab_icon;
    switch (i)
    {
-      case wimp_SYSTEM_TAB_MAIN:
+      case ZR_SYSTEM_TAB_MAIN:
          tab_icon = (i == wimp->categories.selection_ptr)
-            ? wimp_TEXTURE_TAB_MAIN_ACTIVE
-            : wimp_TEXTURE_TAB_MAIN_PASSIVE;
+            ? ZR_TEXTURE_TAB_MAIN_ACTIVE
+            : ZR_TEXTURE_TAB_MAIN_PASSIVE;
          break;
-      case wimp_SYSTEM_TAB_PLAYLISTS:
+      case ZR_SYSTEM_TAB_PLAYLISTS:
          tab_icon = (i == wimp->categories.selection_ptr)
-            ? wimp_TEXTURE_TAB_PLAYLISTS_ACTIVE
-            : wimp_TEXTURE_TAB_PLAYLISTS_PASSIVE;
+            ? ZR_TEXTURE_TAB_PLAYLISTS_ACTIVE
+            : ZR_TEXTURE_TAB_PLAYLISTS_PASSIVE;
          break;
-      case wimp_SYSTEM_TAB_SETTINGS:
+      case ZR_SYSTEM_TAB_SETTINGS:
          tab_icon = (i == wimp->categories.selection_ptr)
-            ? wimp_TEXTURE_TAB_SETTINGS_ACTIVE
-            : wimp_TEXTURE_TAB_SETTINGS_PASSIVE;
+            ? ZR_TEXTURE_TAB_SETTINGS_ACTIVE
+            : ZR_TEXTURE_TAB_SETTINGS_PASSIVE;
          break;
    }
 
    wimp_draw_icon(wimp, wimp->textures.list[tab_icon].id,
-         width / (wimp_SYSTEM_TAB_END+1) * (i+0.5) - wimp->icon_size/2,
+         width / (ZR_SYSTEM_TAB_END+1) * (i+0.5) - wimp->icon_size/2,
          height - wimp->tabs_height,
          width, height, 0, 1, &pure_white[0]);
 }
@@ -1125,7 +1131,7 @@ static void wimp_draw_tab_end(wimp_handle_t *wimp,
       float *blue_bg)
 {
    /* active tab marker */
-   unsigned tab_width = width / (wimp_SYSTEM_TAB_END+1);
+   unsigned tab_width = width / (ZR_SYSTEM_TAB_END+1);
 
    wimp_render_quad(wimp, wimp->categories.selection_ptr * tab_width,
          height - (header_height/16),
@@ -1324,15 +1330,15 @@ static void wimp_render_label_value(wimp_handle_t *wimp,
 
    if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
    {
-      if (wimp->textures.list[wimp_TEXTURE_SWITCH_OFF].id)
-         texture_switch = wimp->textures.list[wimp_TEXTURE_SWITCH_OFF].id;
+      if (wimp->textures.list[ZR_TEXTURE_SWITCH_OFF].id)
+         texture_switch = wimp->textures.list[ZR_TEXTURE_SWITCH_OFF].id;
       else
          do_draw_text = true;
    }
    else if (string_is_equal(value, "enabled") || string_is_equal(value, "on"))
    {
-      if (wimp->textures.list[wimp_TEXTURE_SWITCH_ON].id)
-         texture_switch = wimp->textures.list[wimp_TEXTURE_SWITCH_ON].id;
+      if (wimp->textures.list[ZR_TEXTURE_SWITCH_ON].id)
+         texture_switch = wimp->textures.list[ZR_TEXTURE_SWITCH_ON].id;
       else
          do_draw_text = true;
    }
@@ -1361,14 +1367,14 @@ static void wimp_render_label_value(wimp_handle_t *wimp,
          case MENU_VALUE_MOVIE:
             break;
          case MENU_VALUE_ON:
-            if (wimp->textures.list[wimp_TEXTURE_SWITCH_ON].id)
-               texture_switch = wimp->textures.list[wimp_TEXTURE_SWITCH_ON].id;
+            if (wimp->textures.list[ZR_TEXTURE_SWITCH_ON].id)
+               texture_switch = wimp->textures.list[ZR_TEXTURE_SWITCH_ON].id;
             else
                do_draw_text = true;
             break;
          case MENU_VALUE_OFF:
-            if (wimp->textures.list[wimp_TEXTURE_SWITCH_OFF].id)
-               texture_switch = wimp->textures.list[wimp_TEXTURE_SWITCH_OFF].id;
+            if (wimp->textures.list[ZR_TEXTURE_SWITCH_OFF].id)
+               texture_switch = wimp->textures.list[ZR_TEXTURE_SWITCH_OFF].id;
             else
                do_draw_text = true;
             break;
@@ -1458,7 +1464,7 @@ static void wimp_draw_cursor(wimp_handle_t *wimp,
    draw.height      = 64;
    draw.coords      = &coords;
    draw.matrix_data = NULL;
-   draw.texture     = wimp->textures.list[wimp_TEXTURE_POINTER].id;
+   draw.texture     = wimp->textures.list[ZR_TEXTURE_POINTER].id;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
@@ -1478,7 +1484,7 @@ static size_t wimp_list_get_size(void *data, enum menu_list_type type)
          list_size  = menu_entries_get_stack_size(0);
          break;
       case MENU_LIST_TABS:
-         list_size = wimp_SYSTEM_TAB_END;
+         list_size = ZR_SYSTEM_TAB_END;
          break;
       default:
          break;
@@ -1708,7 +1714,7 @@ static void wimp_frame(void *data)
    {
       wimp_draw_tab_begin(wimp, width, height, &white_bg[0], &grey_bg[0]);
 
-      for (i = 0; i <= wimp_SYSTEM_TAB_END; i++)
+      for (i = 0; i <= ZR_SYSTEM_TAB_END; i++)
          wimp_draw_tab(wimp, i, width, height, &pure_white[0]);
 
       wimp_draw_tab_end(wimp, width, height, header_height, &blue_bg[0]);
@@ -1724,7 +1730,7 @@ static void wimp_frame(void *data)
    if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
    {
       title_margin = wimp->icon_size;
-      wimp_draw_icon(wimp, wimp->textures.list[wimp_TEXTURE_BACK].id,
+      wimp_draw_icon(wimp, wimp->textures.list[ZR_TEXTURE_BACK].id,
          0, 0, width, height, 0, 1, &pure_white[0]);
    }
 
@@ -1973,7 +1979,7 @@ static void wimp_context_destroy(void *data)
    if (!wimp)
       return;
 
-   for (i = 0; i < wimp_TEXTURE_LAST; i++)
+   for (i = 0; i < ZR_TEXTURE_LAST; i++)
       video_driver_texture_unload((uintptr_t*)&wimp->textures.list[i].id);
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
@@ -2134,19 +2140,19 @@ static void wimp_preswitch_tabs(wimp_handle_t *wimp, unsigned action)
 
    switch (wimp->categories.selection_ptr)
    {
-      case wimp_SYSTEM_TAB_MAIN:
+      case ZR_SYSTEM_TAB_MAIN:
          menu_stack->list[stack_size - 1].label = 
             strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
          menu_stack->list[stack_size - 1].type = 
             MENU_SETTINGS;
          break;
-      case wimp_SYSTEM_TAB_PLAYLISTS:
+      case ZR_SYSTEM_TAB_PLAYLISTS:
          menu_stack->list[stack_size - 1].label = 
             strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
          menu_stack->list[stack_size - 1].type = 
             MENU_PLAYLISTS_TAB;
          break;
-      case wimp_SYSTEM_TAB_SETTINGS:
+      case ZR_SYSTEM_TAB_SETTINGS:
          menu_stack->list[stack_size - 1].label = 
             strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
          menu_stack->list[stack_size - 1].type = 
@@ -2163,7 +2169,7 @@ static void wimp_list_cache(void *data, enum menu_list_type type, unsigned actio
    if (!wimp)
       return;
 
-   list_size = wimp_SYSTEM_TAB_END;
+   list_size = ZR_SYSTEM_TAB_END;
 
    switch (type)
    {
@@ -2335,10 +2341,10 @@ static int wimp_pointer_tap(void *userdata,
    }
    else if (y > height - wimp->tabs_height)
    {
-      for (i = 0; i <= wimp_SYSTEM_TAB_END; i++)
+      for (i = 0; i <= ZR_SYSTEM_TAB_END; i++)
       {
-         unsigned tab_width = width / (wimp_SYSTEM_TAB_END + 1);
-         unsigned start = tab_width * i;
+         unsigned tab_width = width / (ZR_SYSTEM_TAB_END + 1);
+         unsigned start     = tab_width * i;
 
          if ((x >= start) && (x < (start + tab_width)))
          {
