@@ -2542,14 +2542,9 @@ static int setting_action_right_bind_device(void *data, bool wraparound)
 
 static int setting_action_ok_bind_all(void *data, bool wraparound)
 {
-   global_t      *global     = global_get_ptr();
    (void)wraparound;
-
-   if (!global)
+   if (!menu_input_ctl(MENU_INPUT_CTL_BIND_ALL, data))
       return -1;
-
-   menu_input_key_bind_set_mode(MENU_INPUT_BIND_ALL, data);
-
    return 0;
 }
 
@@ -2686,12 +2681,10 @@ static int setting_action_action_ok(void *data, bool wraparound)
 static int setting_bind_action_ok(void *data, bool wraparound)
 {
    (void)wraparound;
-
-   menu_input_key_bind_set_mode(MENU_INPUT_BIND_SINGLE, data);
-
+   if (!menu_input_ctl(MENU_INPUT_CTL_BIND_SINGLE, data))
+      return -1;
    return 0;
 }
-
 
 static void get_string_representation_bind_device(void * data, char *s,
       size_t len)

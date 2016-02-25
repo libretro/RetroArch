@@ -292,6 +292,191 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    return (menu_input->binds.begin <= menu_input->binds.last);
 }
 
+static int menu_input_key_bind_set_mode_common(
+      enum menu_input_ctl_state state,
+      rarch_setting_t  *setting)
+{
+   size_t selection;
+   unsigned index_offset, bind_type;
+   menu_displaylist_info_t info  = {0};
+   struct retro_keybind *keybind = NULL;
+   file_list_t *menu_stack       = NULL;
+   settings_t     *settings      = config_get_ptr();
+   menu_input_t      *menu_input = menu_input_get_ptr();
+
+   if (!setting)
+      return -1;
+
+   index_offset = menu_setting_get_index_offset(setting);
+   menu_stack   = menu_entries_get_menu_stack_ptr(0);
+
+   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
+
+   switch (state)
+   {
+      case MENU_INPUT_CTL_BIND_NONE:
+         return -1;
+      case MENU_INPUT_CTL_BIND_SINGLE:
+         keybind    = (struct retro_keybind*)setting_get_ptr(setting);
+
+         if (!keybind)
+            return -1;
+
+         bind_type                = menu_setting_get_bind_type(setting);
+
+         menu_input->binds.begin  = bind_type;
+         menu_input->binds.last   = bind_type;
+         menu_input->binds.target = keybind;
+         menu_input->binds.user   = index_offset;
+
+         info.list                = menu_stack;
+         info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
+         info.directory_ptr       = selection;
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_CUSTOM_BIND), sizeof(info.label));
+
+         if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
+            menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+         break;
+      case MENU_INPUT_CTL_BIND_ALL:
+         menu_input->binds.target = &settings->input.binds
+            [index_offset][0];
+         menu_input->binds.begin  = MENU_SETTINGS_BIND_BEGIN;
+         menu_input->binds.last   = MENU_SETTINGS_BIND_LAST;
+
+         info.list                = menu_stack;
+         info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
+         info.directory_ptr       = selection;
+         strlcpy(info.label,
+               menu_hash_to_str(MENU_LABEL_CUSTOM_BIND_ALL),
+               sizeof(info.label));
+
+         if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
+            menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+         break;
+      default:
+      case MENU_INPUT_CTL_NONE:
+         break;
+   }
+
+   return 0;
+}
+
+static void menu_input_key_bind_poll_bind_get_rested_axes(
+      struct menu_bind_state *state, unsigned port)
+{
+   unsigned a;
+   const input_device_driver_t     *joypad = 
+      input_driver_get_joypad_driver();
+   const input_device_driver_t *sec_joypad = 
+      input_driver_get_sec_joypad_driver();
+
+   if (!state || !joypad)
+      return;
+
+   /* poll only the relevant port */
+   for (a = 0; a < MENU_MAX_AXES; a++)
+      state->axis_state[port].rested_axes[a] = 
+         input_joypad_axis_raw(joypad, port, a);
+    
+   if (sec_joypad)
+   {
+        /* poll only the relevant port */
+        for (a = 0; a < MENU_MAX_AXES; a++)
+            state->axis_state[port].rested_axes[a] = 
+               input_joypad_axis_raw(sec_joypad, port, a);
+   }
+}
+
+static void menu_input_key_bind_poll_bind_state_internal(
+      const input_device_driver_t *joypad,
+      struct menu_bind_state *state,
+      unsigned port,
+      bool timed_out)
+{
+   unsigned b, a, h;
+    if (!joypad)
+        return;
+    
+    if (joypad->poll)
+        joypad->poll();
+    
+    /* poll only the relevant port */
+    /* for (i = 0; i < settings->input.max_users; i++) */
+    for (b = 0; b < MENU_MAX_BUTTONS; b++)
+        state->state[port].buttons[b] = input_joypad_button_raw(joypad, port, b);
+    
+    for (a = 0; a < MENU_MAX_AXES; a++)
+        state->state[port].axes[a] = input_joypad_axis_raw(joypad, port, a);
+    
+    for (h = 0; h < MENU_MAX_HATS; h++)
+    {
+        if (input_joypad_hat_raw(joypad, port, HAT_UP_MASK, h))
+            state->state[port].hats[h] |= HAT_UP_MASK;
+        if (input_joypad_hat_raw(joypad, port, HAT_DOWN_MASK, h))
+            state->state[port].hats[h] |= HAT_DOWN_MASK;
+        if (input_joypad_hat_raw(joypad, port, HAT_LEFT_MASK, h))
+            state->state[port].hats[h] |= HAT_LEFT_MASK;
+        if (input_joypad_hat_raw(joypad, port, HAT_RIGHT_MASK, h))
+            state->state[port].hats[h] |= HAT_RIGHT_MASK;
+    }
+}
+
+static void menu_input_key_bind_poll_bind_state(
+      struct menu_bind_state *state,
+      unsigned port,
+      bool timed_out)
+{
+   const input_device_driver_t *joypad = input_driver_get_joypad_driver();
+   const input_device_driver_t *sec_joypad = 
+      input_driver_get_sec_joypad_driver();
+
+   if (!state)
+      return;
+
+   memset(state->state, 0, sizeof(state->state));
+   state->skip = timed_out || input_driver_state(NULL, 0,
+         RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
+    
+   menu_input_key_bind_poll_bind_state_internal(joypad, state, port, timed_out);
+    
+   if (sec_joypad)
+      menu_input_key_bind_poll_bind_state_internal(
+            sec_joypad, state, port, timed_out);
+}
+
+static bool menu_input_key_bind_set_mode(
+      enum menu_input_ctl_state state, void *data)
+{
+   unsigned index_offset;
+   menu_handle_t       *menu = NULL;
+   menu_input_t  *menu_input = menu_input_get_ptr();
+   rarch_setting_t  *setting = (rarch_setting_t*)data;
+   settings_t *settings      = config_get_ptr();
+
+   if (!setting)
+      return false;
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return false;
+   if (menu_input_key_bind_set_mode_common(state, setting) == -1)
+      return false;
+
+   index_offset = menu_setting_get_index_offset(setting);
+   bind_port    = settings->input.joypad_map[index_offset];
+
+   menu_input_key_bind_poll_bind_get_rested_axes(
+         &menu_input->binds, bind_port);
+   menu_input_key_bind_poll_bind_state(
+         &menu_input->binds, bind_port, false);
+
+   menu_input->binds.timeout_end   = retro_get_time_usec() +
+      MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+
+   input_keyboard_wait_keys(menu,
+         menu_input_key_bind_custom_bind_keyboard_cb);
+   return true;
+}
+
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
    menu_input_t *menu_input = menu_input_get_ptr();
@@ -421,6 +606,10 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
       case MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING:
          menu_input->keyboard.label_setting[0] = '\0';
          break;
+      case MENU_INPUT_CTL_BIND_NONE:
+      case MENU_INPUT_CTL_BIND_SINGLE:
+      case MENU_INPUT_CTL_BIND_ALL:
+         return menu_input_key_bind_set_mode(state, data);
       default:
       case MENU_INPUT_CTL_NONE:
          break;
@@ -451,87 +640,8 @@ void menu_input_key_start_line(const char *label,
 }
 
 
-static void menu_input_key_bind_poll_bind_state_internal(
-      const input_device_driver_t *joypad,
-      struct menu_bind_state *state,
-      unsigned port,
-      bool timed_out)
-{
-   unsigned b, a, h;
-    if (!joypad)
-        return;
-    
-    if (joypad->poll)
-        joypad->poll();
-    
-    /* poll only the relevant port */
-    /* for (i = 0; i < settings->input.max_users; i++) */
-    for (b = 0; b < MENU_MAX_BUTTONS; b++)
-        state->state[port].buttons[b] = input_joypad_button_raw(joypad, port, b);
-    
-    for (a = 0; a < MENU_MAX_AXES; a++)
-        state->state[port].axes[a] = input_joypad_axis_raw(joypad, port, a);
-    
-    for (h = 0; h < MENU_MAX_HATS; h++)
-    {
-        if (input_joypad_hat_raw(joypad, port, HAT_UP_MASK, h))
-            state->state[port].hats[h] |= HAT_UP_MASK;
-        if (input_joypad_hat_raw(joypad, port, HAT_DOWN_MASK, h))
-            state->state[port].hats[h] |= HAT_DOWN_MASK;
-        if (input_joypad_hat_raw(joypad, port, HAT_LEFT_MASK, h))
-            state->state[port].hats[h] |= HAT_LEFT_MASK;
-        if (input_joypad_hat_raw(joypad, port, HAT_RIGHT_MASK, h))
-            state->state[port].hats[h] |= HAT_RIGHT_MASK;
-    }
-}
 
-static void menu_input_key_bind_poll_bind_state(
-      struct menu_bind_state *state,
-      unsigned port,
-      bool timed_out)
-{
-   const input_device_driver_t *joypad = input_driver_get_joypad_driver();
-   const input_device_driver_t *sec_joypad = 
-      input_driver_get_sec_joypad_driver();
 
-   if (!state)
-      return;
-
-   memset(state->state, 0, sizeof(state->state));
-   state->skip = timed_out || input_driver_state(NULL, 0,
-         RETRO_DEVICE_KEYBOARD, 0, RETROK_RETURN);
-    
-   menu_input_key_bind_poll_bind_state_internal(joypad, state, port, timed_out);
-    
-   if (sec_joypad)
-      menu_input_key_bind_poll_bind_state_internal(
-            sec_joypad, state, port, timed_out);
-}
-
-static void menu_input_key_bind_poll_bind_get_rested_axes(
-      struct menu_bind_state *state, unsigned port)
-{
-   unsigned a;
-   const input_device_driver_t     *joypad = input_driver_get_joypad_driver();
-   const input_device_driver_t *sec_joypad = 
-      input_driver_get_sec_joypad_driver();
-
-   if (!state || !joypad)
-      return;
-
-   /* poll only the relevant port */
-   for (a = 0; a < MENU_MAX_AXES; a++)
-      state->axis_state[port].rested_axes[a] = 
-         input_joypad_axis_raw(joypad, port, a);
-    
-   if (sec_joypad)
-   {
-        /* poll only the relevant port */
-        for (a = 0; a < MENU_MAX_AXES; a++)
-            state->axis_state[port].rested_axes[a] = 
-               input_joypad_axis_raw(sec_joypad, port, a);
-   }
-}
 
 static bool menu_input_key_bind_poll_find_trigger_pad(
       struct menu_bind_state *state,
@@ -634,103 +744,6 @@ static bool menu_input_key_bind_poll_find_trigger(
 }
 
 
-static int menu_input_key_bind_set_mode_common(
-      rarch_setting_t  *setting,
-      enum menu_input_bind_mode type)
-{
-   size_t selection;
-   unsigned index_offset, bind_type;
-   menu_displaylist_info_t info  = {0};
-   struct retro_keybind *keybind = NULL;
-   file_list_t *menu_stack       = NULL;
-   settings_t     *settings      = config_get_ptr();
-   menu_input_t      *menu_input = menu_input_get_ptr();
-
-   if (!setting)
-      return -1;
-
-   index_offset = menu_setting_get_index_offset(setting);
-   menu_stack   = menu_entries_get_menu_stack_ptr(0);
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-
-   switch (type)
-   {
-      case MENU_INPUT_BIND_NONE:
-         return -1;
-      case MENU_INPUT_BIND_SINGLE:
-         keybind    = (struct retro_keybind*)setting_get_ptr(setting);
-
-         if (!keybind)
-            return -1;
-
-         bind_type                = menu_setting_get_bind_type(setting);
-
-         menu_input->binds.begin  = bind_type;
-         menu_input->binds.last   = bind_type;
-         menu_input->binds.target = keybind;
-         menu_input->binds.user   = index_offset;
-
-         info.list                = menu_stack;
-         info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
-         info.directory_ptr       = selection;
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_CUSTOM_BIND), sizeof(info.label));
-
-         if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
-            menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
-         break;
-      case MENU_INPUT_BIND_ALL:
-         menu_input->binds.target = &settings->input.binds
-            [index_offset][0];
-         menu_input->binds.begin  = MENU_SETTINGS_BIND_BEGIN;
-         menu_input->binds.last   = MENU_SETTINGS_BIND_LAST;
-
-         info.list                = menu_stack;
-         info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
-         info.directory_ptr       = selection;
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_CUSTOM_BIND_ALL),
-               sizeof(info.label));
-
-         if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info))
-            menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
-         break;
-   }
-
-   return 0;
-}
-
-bool menu_input_key_bind_set_mode(enum menu_input_bind_mode type, void *data)
-{
-   unsigned index_offset;
-   menu_handle_t       *menu = NULL;
-   menu_input_t  *menu_input = menu_input_get_ptr();
-   rarch_setting_t  *setting = (rarch_setting_t*)data;
-   settings_t *settings      = config_get_ptr();
-
-   if (!setting)
-      return false;
-   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-      return false;
-   if (menu_input_key_bind_set_mode_common(setting, type) == -1)
-      return false;
-
-   index_offset = menu_setting_get_index_offset(setting);
-   bind_port    = settings->input.joypad_map[index_offset];
-
-   menu_input_key_bind_poll_bind_get_rested_axes(
-         &menu_input->binds, bind_port);
-   menu_input_key_bind_poll_bind_state(
-         &menu_input->binds, bind_port, false);
-
-   menu_input->binds.timeout_end   = retro_get_time_usec() +
-      MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-
-   input_keyboard_wait_keys(menu,
-         menu_input_key_bind_custom_bind_keyboard_cb);
-   return true;
-}
 
 void menu_input_key_bind_set_min_max(unsigned min, unsigned max)
 {
