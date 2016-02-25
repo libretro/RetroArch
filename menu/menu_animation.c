@@ -375,25 +375,26 @@ static void menu_animation_push_internal(menu_animation_t *anim,
    *target = *t;
 }
 
-bool menu_animation_push(float duration, float target_value, float* subject,
-      enum menu_animation_easing_type easing_enum, int tag, tween_cb cb)
+static bool menu_animation_push(menu_animation_t *anim, void *data)
 {
    struct tween t;
-   menu_animation_t *anim = menu_animation_get_ptr();
+   menu_animation_ctx_entry_t *entry = 
+      (menu_animation_ctx_entry_t*)data;
 
-   if (!subject)
+   if (!entry || !entry->subject)
       return false;
 
    t.alive         = true;
-   t.duration      = duration;
+   t.duration      = entry->duration;
    t.running_since = 0;
-   t.initial_value = *subject;
-   t.target_value  = target_value;
-   t.subject       = subject;
-   t.tag           = tag;
-   t.cb            = cb;
+   t.initial_value = *entry->subject;
+   t.target_value  = entry->target_value;
+   t.subject       = entry->subject;
+   t.tag           = entry->tag;
+   t.cb            = entry->cb;
+   t.easing        = NULL;
 
-   switch (easing_enum)
+   switch (entry->easing_enum)
    {
       case EASING_LINEAR:
          t.easing        = &easing_linear;
@@ -503,7 +504,6 @@ bool menu_animation_push(float duration, float target_value, float* subject,
          t.easing        = &easing_out_in_bounce;
          break;
       default:
-         t.easing        = NULL;
          break;
    }
 
@@ -700,6 +700,8 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             animation_is_active = true;
          }
          break;
+      case MENU_ANIMATION_CTL_PUSH:
+         return menu_animation_push(anim, data);
       case MENU_ANIMATION_CTL_NONE:
       default:
          break;

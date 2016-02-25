@@ -1212,14 +1212,21 @@ static float mui_get_scroll(mui_handle_t *mui)
 
 static void mui_navigation_set(void *data, bool scroll)
 {
+   menu_animation_ctx_entry_t entry;
    mui_handle_t *mui    = (mui_handle_t*)data;
    float     scroll_pos = mui ? mui_get_scroll(mui) : 0.0f;
 
    if (!mui || !scroll)
       return;
 
-   menu_animation_push(10, scroll_pos,
-         &mui->scroll_y, EASING_IN_OUT_QUAD, -1, NULL);
+   entry.duration     = 10;
+   entry.target_value = scroll_pos;
+   entry.subject      = &mui->scroll_y;
+   entry.easing_enum  = EASING_IN_OUT_QUAD;
+   entry.tag          = -1;
+   entry.cb           = NULL;
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_PUSH, &entry);
 }
 
 static void  mui_list_set_selection(void *data, file_list_t *list)

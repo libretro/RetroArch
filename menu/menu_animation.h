@@ -44,7 +44,8 @@ enum menu_animation_ctl_state
    MENU_ANIMATION_CTL_UPDATE,
    MENU_ANIMATION_CTL_KILL_BY_TAG,
    MENU_ANIMATION_CTL_KILL_BY_SUBJECT,
-   MENU_ANIMATION_CTL_TICKER
+   MENU_ANIMATION_CTL_TICKER,
+   MENU_ANIMATION_CTL_PUSH
 };
 
 enum menu_animation_easing_type
@@ -104,6 +105,16 @@ typedef struct menu_animation_ctx_subject
    const void *data;
 } menu_animation_ctx_subject_t;
 
+typedef struct menu_animation_ctx_entry
+{
+   float duration;
+   float target_value;
+   float *subject;
+   enum menu_animation_easing_type easing_enum;
+   int tag;
+   tween_cb cb;
+} menu_animation_ctx_entry_t;
+
 typedef struct menu_animation_ctx_ticker
 {
    char *s;
@@ -112,10 +123,6 @@ typedef struct menu_animation_ctx_ticker
    const char *str;
    bool selected;
 } menu_animation_ctx_ticker_t;
-
-/* Use -1 for untagged */
-bool menu_animation_push(float duration, float target_value, float* subject,
-      enum menu_animation_easing_type easing_enum, int tag, tween_cb cb);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 
