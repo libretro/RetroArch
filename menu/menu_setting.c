@@ -2649,14 +2649,14 @@ static int setting_generic_action_ok_linefeed(void *data, bool wraparound)
    switch (menu_setting_get_type(setting))
    {
       case ST_UINT:
-         cb = menu_input_st_uint_callback;
+         cb = menu_input_st_uint_cb;
          break;
       case ST_HEX:
-         cb = menu_input_st_hex_callback;
+         cb = menu_input_st_hex_cb;
          break;
       case ST_STRING:
       case ST_STRING_OPTIONS:
-         cb = menu_input_st_string_callback;
+         cb = menu_input_st_string_cb;
          break;
       default:
          break;

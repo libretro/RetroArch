@@ -107,6 +107,12 @@ typedef struct menu_input_ctx_hitbox
    int32_t y2;
 } menu_input_ctx_hitbox_t;
 
+/* Keyboard input callbacks */
+void menu_input_st_uint_cb  (void *userdata, const char *str);
+void menu_input_st_hex_cb   (void *userdata, const char *str);
+void menu_input_st_string_cb(void *userdata, const char *str);
+void menu_input_st_cheat_cb (void *userdata, const char *str);
+
 void menu_input_key_start_line(const char *label,
       const char *label_setting, unsigned type, unsigned idx,
       input_keyboard_line_complete_t cb);
@@ -116,13 +122,6 @@ int menu_input_key_bind_iterate(char *s, size_t len);
 int menu_input_key_bind_set_mode(void *data, enum menu_input_bind_mode type);
 
 void menu_input_key_bind_set_min_max(unsigned min, unsigned max);
-
-void menu_input_st_uint_callback(void *userdata, const char *str);
-void menu_input_st_hex_callback(void *userdata, const char *str);
-
-void menu_input_st_string_callback(void *userdata, const char *str);
-
-void menu_input_st_cheat_callback(void *userdata, const char *str);
 
 unsigned menu_input_frame_retropad(retro_input_t input, retro_input_t trigger_state);
 

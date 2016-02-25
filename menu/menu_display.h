@@ -169,7 +169,6 @@ typedef struct menu_display_ctx_font
    float size;
 } menu_display_ctx_font_t;
 
-
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 
 void menu_display_handle_wallpaper_upload(void *task_data,

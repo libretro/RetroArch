@@ -152,10 +152,6 @@ static menu_input_t *menu_input_get_ptr(void)
    return &menu_input_state;
 }
 
-void menu_input_free(void)
-{
-}
-
 static void menu_input_key_end_line(void)
 {
    bool keyboard_display    = false;
@@ -168,7 +164,7 @@ static void menu_input_key_end_line(void)
    input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
 }
 
-static void menu_input_search_callback(void *userdata, const char *str)
+static void menu_input_search_cb(void *userdata, const char *str)
 {
    size_t idx = 0;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -184,6 +180,116 @@ static void menu_input_search_callback(void *userdata, const char *str)
    }
 
    menu_input_key_end_line();
+}
+
+void menu_input_st_uint_cb(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      rarch_setting_t         *setting = NULL;
+      const char                *label = NULL;
+
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
+
+      setting = menu_setting_find(label);
+      menu_setting_set_with_string_representation(setting, str);
+   }
+
+   menu_input_key_end_line();
+}
+
+void menu_input_st_hex_cb(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      rarch_setting_t         *setting = NULL;
+      const char                *label = NULL;
+
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
+
+      setting = menu_setting_find(label);
+
+      if (setting)
+      {
+         unsigned *ptr = (unsigned*)setting_get_ptr(setting);
+         if (str[0] == '#')
+            str++;
+         *ptr = strtoul(str, NULL, 16);
+      }
+   }
+
+   menu_input_key_end_line();
+}
+
+
+void menu_input_st_string_cb(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      rarch_setting_t         *setting = NULL;
+      const char                *label = NULL;
+
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
+
+      setting = menu_setting_find(label);
+
+      if (setting)
+      {
+         menu_setting_set_with_string_representation(setting, str);
+         menu_setting_generic(setting, false);
+      }
+      else
+      {
+         uint32_t hash_label = menu_hash_calculate(label);
+
+         switch (hash_label)
+         {
+            case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
+               menu_shader_manager_save_preset(str, false);
+               break;
+            case MENU_LABEL_CHEAT_FILE_SAVE_AS:
+               cheat_manager_save(str);
+               break;
+         }
+      }
+   }
+
+   menu_input_key_end_line();
+}
+
+void menu_input_st_cheat_cb(void *userdata, const char *str)
+{
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   (void)userdata;
+
+   if (!menu_input)
+      return;
+
+   if (str && *str)
+   {
+      unsigned cheat_index = menu_input->keyboard.type - MENU_SETTINGS_CHEAT_BEGIN;
+      cheat_manager_set_code(cheat_index, str);
+   }
+
+   menu_input_key_end_line();
+}
+
+static bool menu_input_key_bind_custom_bind_keyboard_cb(
+      void *data, unsigned code)
+{
+   menu_input_t *menu_input = menu_input_get_ptr();
+
+   if (!menu_input)
+      return false;
+
+   menu_input->binds.target->key = (enum retro_key)code;
+   menu_input->binds.begin++;
+   menu_input->binds.target++;
+   menu_input->binds.timeout_end = retro_get_time_usec() +
+      MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
+
+   return (menu_input->binds.begin <= menu_input->binds.last);
 }
 
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
@@ -222,7 +328,7 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          menu_input->keyboard.display = true;
          menu_input->keyboard.label   = menu_hash_to_str(MENU_VALUE_SEARCH);
          menu_input->keyboard.buffer  =
-            input_keyboard_start_line(menu, menu_input_search_callback);
+            input_keyboard_start_line(menu, menu_input_search_cb);
          break;
       case MENU_INPUT_CTL_MOUSE_SCROLL_DOWN:
          {
@@ -344,98 +450,6 @@ void menu_input_key_start_line(const char *label,
    menu_input->keyboard.buffer        = input_keyboard_start_line(menu, cb);
 }
 
-void menu_input_st_uint_callback(void *userdata, const char *str)
-{
-   if (str && *str)
-   {
-      rarch_setting_t         *setting = NULL;
-      const char                *label = NULL;
-
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
-
-      setting = menu_setting_find(label);
-      menu_setting_set_with_string_representation(setting, str);
-   }
-
-   menu_input_key_end_line();
-}
-
-void menu_input_st_hex_callback(void *userdata, const char *str)
-{
-   if (str && *str)
-   {
-      rarch_setting_t         *setting = NULL;
-      const char                *label = NULL;
-
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
-
-      setting = menu_setting_find(label);
-
-      if (setting)
-      {
-         unsigned *ptr = (unsigned*)setting_get_ptr(setting);
-         if (str[0] == '#')
-            str++;
-         *ptr = strtoul(str, NULL, 16);
-      }
-   }
-
-   menu_input_key_end_line();
-}
-
-
-void menu_input_st_string_callback(void *userdata, const char *str)
-{
-   if (str && *str)
-   {
-      rarch_setting_t         *setting = NULL;
-      const char                *label = NULL;
-
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
-
-      setting = menu_setting_find(label);
-
-      if (setting)
-      {
-         menu_setting_set_with_string_representation(setting, str);
-         menu_setting_generic(setting, false);
-      }
-      else
-      {
-         uint32_t hash_label = menu_hash_calculate(label);
-
-         switch (hash_label)
-         {
-            case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-               menu_shader_manager_save_preset(str, false);
-               break;
-            case MENU_LABEL_CHEAT_FILE_SAVE_AS:
-               cheat_manager_save(str);
-               break;
-         }
-      }
-   }
-
-   menu_input_key_end_line();
-}
-
-void menu_input_st_cheat_callback(void *userdata, const char *str)
-{
-   menu_input_t *menu_input = menu_input_get_ptr();
-
-   (void)userdata;
-
-   if (!menu_input)
-      return;
-
-   if (str && *str)
-   {
-      unsigned cheat_index = menu_input->keyboard.type - MENU_SETTINGS_CHEAT_BEGIN;
-      cheat_manager_set_code(cheat_index, str);
-   }
-
-   menu_input_key_end_line();
-}
 
 static void menu_input_key_bind_poll_bind_state_internal(
       const input_device_driver_t *joypad,
@@ -619,22 +633,6 @@ static bool menu_input_key_bind_poll_find_trigger(
    return false;
 }
 
-static bool menu_input_key_bind_custom_bind_keyboard_cb(
-      void *data, unsigned code)
-{
-   menu_input_t *menu_input = menu_input_get_ptr();
-
-   if (!menu_input)
-      return false;
-
-   menu_input->binds.target->key = (enum retro_key)code;
-   menu_input->binds.begin++;
-   menu_input->binds.target++;
-   menu_input->binds.timeout_end = retro_get_time_usec() +
-      MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
-
-   return (menu_input->binds.begin <= menu_input->binds.last);
-}
 
 static int menu_input_key_bind_set_mode_common(
       rarch_setting_t  *setting,
