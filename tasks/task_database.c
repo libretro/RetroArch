@@ -99,11 +99,18 @@ static int database_info_iterate_start(database_info_handle_t *db,
          db->list->size,
          msg_hash_to_str(MSG_SCANNING),
          name);
-#else
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
    snprintf(msg, sizeof(msg),
          "%zu/%zu: %s %s...\n",
          db->list_ptr,
          db->list->size,
+         msg_hash_to_str(MSG_SCANNING),
+         name);
+#else
+   snprintf(msg, sizeof(msg),
+         "%lu/%lu: %s %s...\n",
+         (unsigned long)db->list_ptr,
+         (unsigned long)db->list->size,
          msg_hash_to_str(MSG_SCANNING),
          name);
 #endif
