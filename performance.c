@@ -446,6 +446,7 @@ unsigned retro_get_cpu_cores(void)
  **/
 uint64_t retro_get_cpu_features(void)
 {
+   size_t len;
    int flags[4];
    int vendor_shuffle[3];
    char vendor[13]     = {0};
@@ -461,6 +462,7 @@ uint64_t retro_get_cpu_features(void)
 
    memset(buf, 0, sizeof(buf));
 
+   (void)len;
    (void)cpu_flags;
    (void)flags;
    (void)max_flag;
@@ -468,7 +470,7 @@ uint64_t retro_get_cpu_features(void)
    (void)vendor_shuffle;
 
 #if defined(__MACH__)
-   size_t len     = sizeof(size_t);
+   len     = sizeof(size_t);
    if (sysctlbyname("hw.optional.mmx", NULL, &len, NULL, 0) == 0)
    {
       cpu |= RETRO_SIMD_MMX;
