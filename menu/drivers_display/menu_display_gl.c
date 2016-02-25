@@ -57,9 +57,9 @@ static void *menu_display_gl_get_default_mvp(void)
 }
 
 static GLenum menu_display_prim_to_gl_enum(
-      enum menu_display_prim_type prim_type)
+      enum menu_display_prim_type type)
 {
-   switch (prim_type)
+   switch (type)
    {
       case MENU_DISPLAY_PRIM_TRIANGLESTRIP:
          return GL_TRIANGLE_STRIP;

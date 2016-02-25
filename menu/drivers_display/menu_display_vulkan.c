@@ -54,9 +54,9 @@ static void *menu_display_vk_get_default_mvp(void)
 }
 
 static unsigned to_display_pipeline(
-      enum menu_display_prim_type prim_type, bool blend)
+      enum menu_display_prim_type type, bool blend)
 {
-   return ((prim_type == MENU_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | (blend << 0);
+   return ((type == MENU_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | (blend << 0);
 }
 
 static void menu_display_vk_draw(void *data)
