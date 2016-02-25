@@ -77,6 +77,30 @@
 #define WINDOW_WIDTH          1200
 #define WINDOW_HEIGHT         800
 
+#define ZR_SYSTEM_TAB_END     ZR_SYSTEM_TAB_SETTINGS
+
+enum
+{
+   ZR_TEXTURE_POINTER = 0,
+   ZR_TEXTURE_BACK,
+   ZR_TEXTURE_SWITCH_ON,
+   ZR_TEXTURE_SWITCH_OFF,
+   ZR_TEXTURE_TAB_MAIN_ACTIVE,
+   ZR_TEXTURE_TAB_PLAYLISTS_ACTIVE,
+   ZR_TEXTURE_TAB_SETTINGS_ACTIVE,
+   ZR_TEXTURE_TAB_MAIN_PASSIVE,
+   ZR_TEXTURE_TAB_PLAYLISTS_PASSIVE,
+   ZR_TEXTURE_TAB_SETTINGS_PASSIVE,
+   ZR_TEXTURE_LAST
+};
+
+enum
+{
+   ZR_SYSTEM_TAB_MAIN = 0,
+   ZR_SYSTEM_TAB_PLAYLISTS,
+   ZR_SYSTEM_TAB_SETTINGS
+};
+
 enum theme
 {
    THEME_BLACK = 0,
@@ -115,29 +139,61 @@ struct device
 #endif
 };
 
-enum
+struct wimp_texture_item
 {
-   ZR_TEXTURE_POINTER = 0,
-   ZR_TEXTURE_BACK,
-   ZR_TEXTURE_SWITCH_ON,
-   ZR_TEXTURE_SWITCH_OFF,
-   ZR_TEXTURE_TAB_MAIN_ACTIVE,
-   ZR_TEXTURE_TAB_PLAYLISTS_ACTIVE,
-   ZR_TEXTURE_TAB_SETTINGS_ACTIVE,
-   ZR_TEXTURE_TAB_MAIN_PASSIVE,
-   ZR_TEXTURE_TAB_PLAYLISTS_PASSIVE,
-   ZR_TEXTURE_TAB_SETTINGS_PASSIVE,
-   ZR_TEXTURE_LAST
+   uintptr_t id;
 };
 
-enum
+typedef struct wimp_handle
 {
-   ZR_SYSTEM_TAB_MAIN = 0,
-   ZR_SYSTEM_TAB_PLAYLISTS,
-   ZR_SYSTEM_TAB_SETTINGS
-};
+   unsigned tabs_height;
+   unsigned line_height;
+   unsigned shadow_height;
+   unsigned scrollbar_width;
+   unsigned icon_size;
+   unsigned margin;
+   unsigned glyph_width;
+   char box_message[PATH_MAX_LENGTH];
+
+   struct 
+   {
+      struct
+      {
+         float alpha;
+      } arrow;
+
+      struct wimp_texture_item bg;
+      struct wimp_texture_item list[ZR_TEXTURE_LAST];
+      uintptr_t white;
+   } textures;
+
+   struct
+   {
+      struct
+      {
+         unsigned idx;
+         unsigned idx_old;
+      } active;
+
+      float x_pos;
+      size_t selection_ptr_old;
+      size_t selection_ptr;
+   } categories;
+
+   gfx_font_raster_block_t list_block;
+   float scroll_y;
+} wimp_handle_t;
+
 
 static int z =0 ;
+
+static struct device device;
+static struct zr_font font;
+static char font_path[PATH_MAX_LENGTH];
+static int width = 0, height = 0;
+
+static struct zr_user_font usrfnt;
+static struct zr_allocator alloc;
 
 bool zr_checkbox_bool(struct zr_context* cx, const char* text, bool *active)
 {
@@ -584,11 +640,11 @@ static void device_init(struct device *dev)
    glGetProgramiv(dev->prog, GL_LINK_STATUS, &status);
    assert(status == GL_TRUE);
 
-   dev->uniform_tex = glGetUniformLocation(dev->prog, "Texture");
+   dev->uniform_tex  = glGetUniformLocation(dev->prog, "Texture");
    dev->uniform_proj = glGetUniformLocation(dev->prog, "ProjMtx");
-   dev->attrib_pos = glGetAttribLocation(dev->prog, "Position");
-   dev->attrib_uv = glGetAttribLocation(dev->prog, "TexCoord");
-   dev->attrib_col = glGetAttribLocation(dev->prog, "Color");
+   dev->attrib_pos   = glGetAttribLocation(dev->prog, "Position");
+   dev->attrib_uv    = glGetAttribLocation(dev->prog, "TexCoord");
+   dev->attrib_col   = glGetAttribLocation(dev->prog, "Color");
 
    {
       /* buffer setup */
@@ -621,8 +677,12 @@ static void device_init(struct device *dev)
 #endif
 }
 
-static struct zr_user_font font_bake_and_upload(struct device *dev, struct zr_font *font,
-    const char *path, unsigned int font_height, const zr_rune *range)
+static struct zr_user_font font_bake_and_upload(
+      struct device *dev,
+      struct zr_font *font,
+      const char *path,
+      unsigned int font_height,
+      const zr_rune *range)
 {
    int glyph_count;
    int img_width, img_height;
@@ -637,38 +697,44 @@ static struct zr_user_font font_bake_and_upload(struct device *dev, struct zr_fo
 
    {
       /* bake and upload font texture */
+      struct zr_font_config config;
       void *img, *tmp;
       size_t ttf_size;
       size_t tmp_size, img_size;
       const char *custom_data = "....";
-      struct zr_font_config config;
       char *ttf_blob = file_load(path, &ttf_size);
        /* setup font configuration */
       memset(&config, 0, sizeof(config));
-      config.ttf_blob = ttf_blob;
-      config.ttf_size = ttf_size;
-      config.font = &baked_font;
-      config.coord_type = ZR_COORD_UV;
-      config.range = range;
-      config.pixel_snap = zr_false;
-      config.size = (float)font_height;
-      config.spacing = zr_vec2(0,0);
+
+      config.ttf_blob     = ttf_blob;
+      config.ttf_size     = ttf_size;
+      config.font         = &baked_font;
+      config.coord_type   = ZR_COORD_UV;
+      config.range        = range;
+      config.pixel_snap   = zr_false;
+      config.size         = (float)font_height;
+      config.spacing      = zr_vec2(0,0);
       config.oversample_h = 1;
       config.oversample_v = 1;
 
       /* query needed amount of memory for the font baking process */
       zr_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
-      glyphes = (struct zr_font_glyph*)calloc(sizeof(struct zr_font_glyph), (size_t)glyph_count);
+      glyphes = (struct zr_font_glyph*)
+         calloc(sizeof(struct zr_font_glyph), (size_t)glyph_count);
       tmp = calloc(1, tmp_size);
 
       /* pack all glyphes and return needed image width, height and memory size*/
       custom.w = 2; custom.h = 2;
-      zr_font_bake_pack(&img_size, &img_width,&img_height,&custom,tmp,tmp_size,&config, 1);
+      zr_font_bake_pack(&img_size,
+            &img_width,&img_height,&custom,tmp,tmp_size,&config, 1); 
 
       /* bake all glyphes and custom white pixel into image */
       img = calloc(1, img_size);
-      zr_font_bake(img, img_width, img_height, tmp, tmp_size, glyphes, glyph_count, &config, 1);
-      zr_font_bake_custom_data(img, img_width, img_height, custom, custom_data, 2, 2, '.', 'X');
+      zr_font_bake(img, img_width,
+            img_height, tmp, tmp_size, glyphes, glyph_count, &config, 1);
+      zr_font_bake_custom_data(img,
+            img_width, img_height, custom, custom_data, 2, 2, '.', 'X');
+
       {
          /* convert alpha8 image into rgba8 image */
          void *img_rgba = calloc(4, (size_t)(img_height * img_width));
@@ -701,7 +767,9 @@ static struct zr_user_font font_bake_and_upload(struct device *dev, struct zr_fo
       this was done to have the possibility to have multible fonts with one
       total glyph array. Not quite sure if it is a good thing since the
       glyphes have to be freed as well. */
-   zr_font_init(font, (float)font_height, '?', glyphes, &baked_font, dev->null.texture);
+   zr_font_init(font,
+         (float)font_height, '?', glyphes,
+         &baked_font, dev->null.texture);
    user_font = zr_font_ref(font);
    return user_font;
 }
@@ -804,7 +872,8 @@ static void device_draw(struct device *dev,
          glScissor((GLint)cmd->clip_rect.x,
             height - (GLint)(cmd->clip_rect.y + cmd->clip_rect.h),
             (GLint)cmd->clip_rect.w, (GLint)cmd->clip_rect.h);
-         glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count, GL_UNSIGNED_SHORT, offset);
+         glDrawElements(GL_TRIANGLES, (GLsizei)cmd->elem_count,
+               GL_UNSIGNED_SHORT, offset);
          offset += cmd->elem_count;
        }
        zr_clear(ctx);
@@ -832,14 +901,6 @@ static void mem_free(zr_handle unused, void *ptr)
    free(ptr);
 }
 
-struct device device;
-struct zr_font font;
-char font_path[PATH_MAX_LENGTH];
-int width = 0, height = 0;
-
-struct zr_user_font usrfnt;
-struct zr_allocator alloc;
-
 static void wimp_input_motion(struct zr_context *ctx)
 {
    int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
@@ -861,55 +922,7 @@ static void wimp_input_button(struct zr_context *ctx)
 
 /* zahnrad code */
 
-
-#define ZR_SYSTEM_TAB_END ZR_SYSTEM_TAB_SETTINGS
-
-struct wimp_texture_item
-{
-   uintptr_t id;
-};
-
-typedef struct wimp_handle
-{
-   unsigned tabs_height;
-   unsigned line_height;
-   unsigned shadow_height;
-   unsigned scrollbar_width;
-   unsigned icon_size;
-   unsigned margin;
-   unsigned glyph_width;
-   char box_message[PATH_MAX_LENGTH];
-
-   struct 
-   {
-      struct
-      {
-         float alpha;
-      } arrow;
-
-      struct wimp_texture_item bg;
-      struct wimp_texture_item list[ZR_TEXTURE_LAST];
-      uintptr_t white;
-   } textures;
-
-   struct
-   {
-      struct
-      {
-         unsigned idx;
-         unsigned idx_old;
-      } active;
-
-      float x_pos;
-      size_t selection_ptr_old;
-      size_t selection_ptr;
-   } categories;
-
-   gfx_font_raster_block_t list_block;
-   float scroll_y;
-} wimp_handle_t;
-
-static void wimp_context_reset_textures(wimp_handle_t *wimp,
+static void zr_context_reset_textures(wimp_handle_t *wimp,
       const char *iconpath)
 {
    unsigned i;
@@ -2086,7 +2099,7 @@ static void wimp_populate_entries(
    wimp->scroll_y = wimp_get_scroll(wimp);
 }
 
-static void wimp_context_reset(void *data)
+static void zr_context_reset(void *data)
 {
    char iconpath[PATH_MAX_LENGTH] = {0};
    wimp_handle_t *wimp              = (wimp_handle_t*)data;
@@ -2102,7 +2115,7 @@ static void wimp_context_reset(void *data)
    wimp_layout(wimp);
    wimp_context_bg_destroy(wimp);
    wimp_allocate_white_texture(wimp);
-   wimp_context_reset_textures(wimp, iconpath);
+   zr_context_reset_textures(wimp, iconpath);
 
    rarch_task_push_image_load(settings->menu.wallpaper, "cb_menu_wallpaper",
          menu_display_handle_wallpaper_upload, NULL);
@@ -2380,7 +2393,7 @@ menu_ctx_driver_t menu_ctx_zr = {
    wimp_frame,
    wimp_init,
    wimp_free,
-   wimp_context_reset,
+   zr_context_reset,
    wimp_context_destroy,
    wimp_populate_entries,
    NULL,
