@@ -24,10 +24,6 @@
 extern "C" {
 #endif
 
-#define MENU_MAX_BUTTONS 219
-#define MENU_MAX_AXES    32
-#define MENU_MAX_HATS    4
-
 enum menu_action
 {
    MENU_ACTION_NOOP = 0,

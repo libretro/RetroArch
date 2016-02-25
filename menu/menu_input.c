@@ -18,6 +18,10 @@
 #include "../../config.h"
 #endif
 
+#define MENU_MAX_BUTTONS 219
+#define MENU_MAX_AXES    32
+#define MENU_MAX_HATS    4
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
