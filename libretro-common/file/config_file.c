@@ -803,8 +803,10 @@ void config_set_double(config_file_t *conf, const char *key, double val)
    char buf[128] = {0};
 #ifdef __cplusplus
    snprintf(buf, sizeof(buf), "%f", (float)val);
-#else
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
    snprintf(buf, sizeof(buf), "%lf", val);
+#else
+   snprintf(buf, sizeof(buf), "%f", (float)val);
 #endif
    config_set_string(conf, key, buf);
 }
