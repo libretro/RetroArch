@@ -43,7 +43,8 @@ enum menu_animation_ctl_state
    MENU_ANIMATION_CTL_UPDATE_TIME,
    MENU_ANIMATION_CTL_UPDATE,
    MENU_ANIMATION_CTL_KILL_BY_TAG,
-   MENU_ANIMATION_CTL_KILL_BY_SUBJECT
+   MENU_ANIMATION_CTL_KILL_BY_SUBJECT,
+   MENU_ANIMATION_CTL_TICKER
 };
 
 enum menu_animation_easing_type
@@ -103,23 +104,18 @@ typedef struct menu_animation_ctx_subject
    const void *data;
 } menu_animation_ctx_subject_t;
 
+typedef struct menu_animation_ctx_ticker
+{
+   char *s;
+   size_t len;
+   uint64_t idx;
+   const char *str;
+   bool selected;
+} menu_animation_ctx_ticker_t;
+
 /* Use -1 for untagged */
 bool menu_animation_push(float duration, float target_value, float* subject,
       enum menu_animation_easing_type easing_enum, int tag, tween_cb cb);
-
-/**
- * menu_animation_ticker_str:
- * @s                        : buffer to write new message line to.
- * @len                      : length of buffer @input.
- * @idx                      : Index. Will be used for ticker logic.
- * @str                      : Input string.
- * @selected                 : Is the item currently selected in the menu?
- *
- * Take the contents of @str and apply a ticker effect to it,
- * and write the results in @s.
- **/
-void menu_animation_ticker_str(char *s, size_t len, uint64_t tick,
-      const char *str, bool selected);
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 

@@ -489,9 +489,10 @@ static bool zarch_zui_button(zui_t *zui, int x1, int y1, const char *label)
 static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
       const char *label, unsigned item_id, const char *entry)
 {
-   uint64_t *frame_count;
+   menu_animation_ctx_ticker_t ticker;
    char title_buf[PATH_MAX_LENGTH];
    unsigned ticker_size;
+   uint64_t *frame_count = NULL;
    bool set_active_id    = false;
    unsigned           id = zarch_zui_hash(zui, label);
    int                x2 = x1 + zui->width - 290 - 40;
@@ -534,11 +535,13 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
 
    ticker_size = x2 / 14;
 
-   menu_animation_ticker_str(title_buf,
-         ticker_size,
-         *frame_count / 50,
-         label,
-         (bg == ZUI_BG_HILITE || bg == ZUI_BG_PAD_HILITE));
+   ticker.s        = title_buf;
+   ticker.len      = ticker_size;
+   ticker.idx      = *frame_count / 50;
+   ticker.str      = label;
+   ticker.selected = (bg == ZUI_BG_HILITE || bg == ZUI_BG_PAD_HILITE);
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
    zarch_zui_push_quad(zui->width, zui->height, bg, &zui->ca, x1, y1, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 12, y1 + 35, title_buf);

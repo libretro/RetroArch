@@ -413,6 +413,7 @@ static void rgui_blit_cursor(void)
 
 static void rgui_render(void *data)
 {
+   menu_animation_ctx_ticker_t ticker;
    unsigned x, y;
    bool display_kb, msg_force;
    uint16_t hover_color, normal_color;
@@ -534,8 +535,13 @@ static void rgui_render(void *data)
 
    menu_entries_get_title(title, sizeof(title));
 
-   menu_animation_ticker_str(title_buf, RGUI_TERM_WIDTH(fb_width) - 10,
-         *frame_count / RGUI_TERM_START_X(fb_width), title, true);
+   ticker.s        = title_buf;
+   ticker.len      = RGUI_TERM_WIDTH(fb_width) - 10;
+   ticker.idx      = *frame_count / RGUI_TERM_START_X(fb_width);
+   ticker.str      = title;
+   ticker.selected = true;
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
    hover_color  = HOVER_COLOR(settings);
    normal_color = NORMAL_COLOR(settings);
@@ -585,6 +591,7 @@ static void rgui_render(void *data)
 
    for (; i < end; i++, y += FONT_HEIGHT_STRIDE)
    {
+      menu_animation_ctx_ticker_t ticker;
       size_t selection;
       char entry_path[PATH_MAX_LENGTH];
       char entry_value[PATH_MAX_LENGTH];
@@ -609,14 +616,19 @@ static void rgui_render(void *data)
       menu_entry_get_value(i, entry_value, sizeof(entry_value));
       menu_entry_get_path(i, entry_path, sizeof(entry_path));
 
-      menu_animation_ticker_str(entry_title_buf,
-            RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2),
-            *frame_count / RGUI_TERM_START_X(fb_width),
-            entry_path,
-            entry_selected);
-      menu_animation_ticker_str(type_str_buf, entry_spacing,
-            *frame_count / RGUI_TERM_START_X(fb_width),
-            entry_value, entry_selected);
+      ticker.s        = entry_title_buf;
+      ticker.len      = RGUI_TERM_WIDTH(fb_width) - (entry_spacing + 1 + 2);
+      ticker.idx      = *frame_count / RGUI_TERM_START_X(fb_width);
+      ticker.str      = entry_path;
+      ticker.selected = entry_selected;
+
+      menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+
+      ticker.s        = type_str_buf;
+      ticker.len      = entry_spacing;
+      ticker.str      = entry_value;
+
+      menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
       snprintf(message, sizeof(message), "%c %-*.*s %-*s",
             entry_selected ? '>' : ' ',

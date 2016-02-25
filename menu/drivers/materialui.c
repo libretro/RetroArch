@@ -503,6 +503,7 @@ static void mui_render_label_value(mui_handle_t *mui,
       uint64_t index, uint32_t color, bool selected, const char *label,
       const char *value, float *pure_white)
 {
+   menu_animation_ctx_ticker_t ticker;
    char label_str[PATH_MAX_LENGTH];
    char value_str[PATH_MAX_LENGTH];
    int value_len            = strlen(value);
@@ -519,8 +520,19 @@ static void mui_render_label_value(mui_handle_t *mui,
 
    ticker_limit = (usable_width / mui->glyph_width) - (value_len + 2);
 
-   menu_animation_ticker_str(label_str, ticker_limit, index, label, selected);
-   menu_animation_ticker_str(value_str, value_len,    index, value, selected);
+   ticker.s        = label_str;
+   ticker.len      = ticker_limit;
+   ticker.idx      = index;
+   ticker.str      = label;
+   ticker.selected = selected;
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
+
+   ticker.s        = value_str;
+   ticker.len      = value_len;
+   ticker.str      = value;
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
    mui_blit_line(mui->margin, y + mui->line_height / 2,
          width, height, label_str, color, TEXT_ALIGN_LEFT);
@@ -784,6 +796,7 @@ static void mui_frame(void *data)
       0, 0, 0, 0.2,
       0, 0, 0, 0.2,
    };
+   menu_animation_ctx_ticker_t ticker;
    unsigned width, height, ticker_limit, i;
    char msg[256];
    char title[256];
@@ -931,8 +944,14 @@ static void mui_frame(void *data)
    }
 
    ticker_limit = (width - mui->margin*2) / mui->glyph_width;
-   menu_animation_ticker_str(title_buf, ticker_limit,
-         *frame_count / 100, title, true);
+
+   ticker.s        = title_buf;
+   ticker.len      = ticker_limit;
+   ticker.idx      = *frame_count / 100;
+   ticker.str      = title;
+   ticker.selected = true;
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
    /* Title */
    if (mui_get_core_title(title_msg, sizeof(title_msg)) == 0)
@@ -947,8 +966,13 @@ static void mui_frame(void *data)
       value_len = strlen(title_buf);
       ticker_limit = (usable_width / mui->glyph_width) - (value_len + 2);
 
-      menu_animation_ticker_str(title_buf_msg_tmp,
-            ticker_limit, *frame_count / 20, title_buf_msg, true);
+      ticker.s        = title_buf_msg_tmp;
+      ticker.len      = ticker_limit;
+      ticker.idx      = *frame_count / 20;
+      ticker.str      = title_buf_msg;
+      ticker.selected = true;
+
+      menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
       strlcpy(title_buf, title_buf_msg_tmp, sizeof(title_buf));
    }

@@ -522,44 +522,6 @@ bool menu_animation_push(float duration, float target_value, float* subject,
    return true;
 }
 
-/**
- * menu_animation_ticker_str:
- * @s                        : buffer to write new message line to.
- * @len                      : length of buffer @input.
- * @idx                      : Index. Will be used for ticker logic.
- * @str                      : Input string.
- * @selected                 : Is the item currently selected in the menu?
- *
- * Take the contents of @str and apply a ticker effect to it,
- * and write the results in @s.
- **/
-void menu_animation_ticker_str(char *s, size_t len, uint64_t idx,
-      const char *str, bool selected)
-{
-   menu_animation_t *anim = menu_animation_get_ptr();
-   size_t           str_len = utf8len(str);
-   size_t           offset = 0;
-
-   if ((size_t)str_len <= len)
-   {
-      utf8cpy(s, PATH_MAX_LENGTH, str, len);
-      return;
-   }
-
-   if (!selected)
-   {
-      utf8cpy(s, PATH_MAX_LENGTH, str, len-3);
-      strlcat(s, "...", PATH_MAX_LENGTH);
-      return;
-   }
-
-   menu_animation_ticker_generic(idx, len, &offset, &str_len);
-
-   utf8cpy(s, PATH_MAX_LENGTH, utf8skip(str, offset), str_len);
-
-   anim->is_active = true;
-}
-
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
    menu_animation_t *anim   = menu_animation_get_ptr();
@@ -697,6 +659,44 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                   break;
                }
             }
+         }
+         break;
+      case MENU_ANIMATION_CTL_TICKER:
+         {
+            menu_animation_ctx_ticker_t *ticker = (menu_animation_ctx_ticker_t*)
+               data;
+            size_t           str_len = utf8len(ticker->str);
+            size_t           offset  = 0;
+
+            if ((size_t)str_len <= ticker->len)
+            {
+               utf8cpy(ticker->s,
+                     PATH_MAX_LENGTH,
+                     ticker->str,
+                     ticker->len);
+               return true;
+            }
+
+            if (!ticker->selected)
+            {
+               utf8cpy(ticker->s, PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
+               strlcat(ticker->s, "...", PATH_MAX_LENGTH);
+               return true;
+            }
+
+            menu_animation_ticker_generic(
+                  ticker->idx,
+                  ticker->len,
+                  &offset,
+                  &str_len);
+
+            utf8cpy(
+                  ticker->s,
+                  PATH_MAX_LENGTH,
+                  utf8skip(ticker->str, offset),
+                  str_len);
+
+            anim->is_active = true;
          }
          break;
       case MENU_ANIMATION_CTL_NONE:
