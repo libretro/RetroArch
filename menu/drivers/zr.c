@@ -1795,7 +1795,8 @@ static void wimp_frame(void *data)
    zr_input_end(&gui.ctx);
    
    wimp_start(&gui, width, height);
-   glViewport(0, 0, width, height);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+
    device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);   
 
    /* zahnrad code */
