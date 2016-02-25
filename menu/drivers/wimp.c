@@ -83,6 +83,17 @@ bool zr_checkbox_bool(struct zr_context* cx, const char* text, bool *active)
    return ret;
 }
 
+static void zr_labelf(struct zr_context *ctx, enum zr_text_align align, const char *fmt, ...)
+{
+    char buffer[1024];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    buffer[1023] = 0;
+    zr_label(ctx, buffer, align);
+    va_end(args);
+}
+
 /* zahnrad code */
 enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK};
 
@@ -284,6 +295,95 @@ struct wimp {
    struct zr_memory_status status;
 };
 
+static int wimp_control(struct zr_context *ctx, int width, int height, struct wimp *gui)
+{
+   int i;
+   struct zr_panel layout;
+   if (zr_begin(ctx, &layout, "Control", zr_rect(900, 10, 350, 520),
+      ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
+      ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
+   {
+      /* Style */
+      if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Metrics", ZR_MINIMIZED)) 
+      {
+         zr_layout_row_dynamic(ctx, 20, 2);
+         zr_label(ctx,"Total:", ZR_TEXT_LEFT);
+         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", gui->status.size);
+         zr_label(ctx,"Used:", ZR_TEXT_LEFT);
+         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", gui->status.allocated);
+         zr_label(ctx,"Required:", ZR_TEXT_LEFT);
+         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", gui->status.needed);
+         zr_label(ctx,"Calls:", ZR_TEXT_LEFT);
+         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", gui->status.calls);
+         zr_layout_pop(ctx);
+      }
+      if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Properties", ZR_MINIMIZED))
+      {
+         zr_layout_row_dynamic(ctx, 22, 3);
+         for (i = 0; i <= ZR_PROPERTY_SCROLLBAR_SIZE; ++i) 
+         {
+            zr_label(ctx, zr_get_property_name((enum zr_style_properties)i), ZR_TEXT_LEFT);
+            zr_property_float(ctx, "#X:", 0, &ctx->style.properties[i].x, 20, 1, 1);
+            zr_property_float(ctx, "#Y:", 0, &ctx->style.properties[i].y, 20, 1, 1);
+         }
+         zr_layout_pop(ctx);
+      }
+      if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Rounding", ZR_MINIMIZED)) 
+      {
+         zr_layout_row_dynamic(ctx, 22, 2);
+         for (i = 0; i < ZR_ROUNDING_MAX; ++i) 
+         {
+            zr_label(ctx, zr_get_rounding_name((enum zr_style_rounding)i), ZR_TEXT_LEFT);
+            zr_property_float(ctx, "#R:", 0, &ctx->style.rounding[i], 20, 1, 1);
+         }
+         zr_layout_pop(ctx);
+      }
+      if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Color", ZR_MINIMIZED))
+      {
+         struct zr_panel tab, combo;
+         enum theme old = gui->theme;
+         static const char *themes[] = {"Black", "White", "Red", "Blue", "Dark", "Grey"};
+
+         zr_layout_row_dynamic(ctx,  25, 2);
+         zr_label(ctx, "THEME:", ZR_TEXT_LEFT);
+         if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 300)) 
+         {
+            zr_layout_row_dynamic(ctx, 25, 1);
+            gui->theme = zr_combo_item(ctx, themes[THEME_BLACK], ZR_TEXT_CENTERED) ? THEME_BLACK : gui->theme;
+            gui->theme = zr_combo_item(ctx, themes[THEME_WHITE], ZR_TEXT_CENTERED) ? THEME_WHITE : gui->theme;
+            gui->theme = zr_combo_item(ctx, themes[THEME_RED], ZR_TEXT_CENTERED) ? THEME_RED : gui->theme;
+            gui->theme = zr_combo_item(ctx, themes[THEME_BLUE], ZR_TEXT_CENTERED) ? THEME_BLUE : gui->theme;
+            gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED) ? THEME_DARK : gui->theme;
+            if (old != gui->theme) set_style(ctx, gui->theme);
+               zr_combo_end(ctx);
+         }
+
+         zr_layout_row_dynamic(ctx, 300, 1);
+         if (zr_group_begin(ctx, &tab, "Colors", 0))
+         {
+            for (i = 0; i < ZR_COLOR_COUNT; ++i) 
+            {
+               zr_layout_row_dynamic(ctx, 25, 2);
+               zr_label(ctx, zr_get_color_name((enum zr_style_colors)i), ZR_TEXT_LEFT);
+               if (zr_combo_begin_color(ctx, &combo, ctx->style.colors[i], 200))
+               {
+                  zr_layout_row_dynamic(ctx, 25, 1);
+                  ctx->style.colors[i].r = (zr_byte)zr_propertyi(ctx, "#R:", 0, ctx->style.colors[i].r, 255, 1,1);
+                  ctx->style.colors[i].g = (zr_byte)zr_propertyi(ctx, "#G:", 0, ctx->style.colors[i].g, 255, 1,1);
+                  ctx->style.colors[i].b = (zr_byte)zr_propertyi(ctx, "#B:", 0, ctx->style.colors[i].b, 255, 1,1);
+                  ctx->style.colors[i].a = (zr_byte)zr_propertyi(ctx, "#A:", 0, ctx->style.colors[i].a, 255, 1,1);
+                  zr_combo_end(ctx);
+               }
+            }
+            zr_group_end(ctx);
+         }
+         zr_layout_pop(ctx);
+      }
+   }
+   zr_end(ctx);
+   return !zr_window_is_closed(ctx, "Control");
+}
+
 static void wimp_main(struct zr_context *ctx, int width, int height, struct wimp *gui)
 {
    settings_t *settings = config_get_ptr();
@@ -344,7 +444,9 @@ static int wimp_start(struct wimp *gui, int width, int height)
      init = 1;
    }
 
+
    wimp_main(ctx, width, height, gui);
+   wimp_control(ctx, width, height, gui);
    zr_buffer_info(&gui->status, &gui->ctx.memory);
    return ret;
 }
