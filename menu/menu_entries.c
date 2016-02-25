@@ -644,8 +644,8 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_DEINIT, NULL);
          menu_entries_ctl(MENU_ENTRIES_CTL_LIST_DEINIT, NULL);
 
-         menu_entries_need_refresh        = NULL;
-         menu_entries_nonblocking_refresh = NULL;
+         menu_entries_need_refresh        = false;
+         menu_entries_nonblocking_refresh = false;
          menu_entries_begin               = 0;
          break;
       case MENU_ENTRIES_CTL_NEEDS_REFRESH:
