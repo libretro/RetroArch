@@ -21,10 +21,6 @@
 #include <stdlib.h>
 #include <boolean.h>
 
-#ifndef IDEAL_DT
-#define IDEAL_DT (1.0 / 60.0 * 1000000.0)
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -45,7 +41,8 @@ enum menu_animation_ctl_state
    MENU_ANIMATION_CTL_KILL_BY_TAG,
    MENU_ANIMATION_CTL_KILL_BY_SUBJECT,
    MENU_ANIMATION_CTL_TICKER,
-   MENU_ANIMATION_CTL_PUSH
+   MENU_ANIMATION_CTL_PUSH,
+   MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET
 };
 
 enum menu_animation_easing_type
@@ -93,6 +90,12 @@ enum menu_animation_easing_type
    EASING_IN_OUT_BOUNCE,
    EASING_OUT_IN_BOUNCE
 };
+
+typedef struct menu_animation_ctx_delta
+{
+   float current;
+   float ideal;
+} menu_animation_ctx_delta_t;
 
 typedef struct menu_animation_ctx_tag
 {

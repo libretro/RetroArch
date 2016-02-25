@@ -24,6 +24,8 @@
 #include "../configuration.h"
 #include "../performance.h"
 
+#define IDEAL_DT (1.0 / 60.0 * 1000000.0)
+
 struct tween
 {
    bool        alive;
@@ -510,6 +512,7 @@ static bool menu_animation_push(menu_animation_t *anim, void *data)
    return true;
 }
 
+
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
 {
    static menu_animation_t anim;
@@ -684,6 +687,15 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                   str_len);
 
             animation_is_active = true;
+         }
+         break;
+      case MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET:
+         {
+            menu_animation_ctx_delta_t *delta = 
+               (menu_animation_ctx_delta_t*)data;
+            if (!delta)
+               return false;
+            delta->ideal = delta->current / IDEAL_DT;
          }
          break;
       case MENU_ANIMATION_CTL_PUSH:

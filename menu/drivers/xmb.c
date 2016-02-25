@@ -1743,9 +1743,10 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
 
 static void xmb_render(void *data)
 {
-   float delta_time, dt;
+   float delta_time;
    size_t i, selection;
-   unsigned end, height  = 0;
+   menu_animation_ctx_delta_t delta;
+   unsigned end, height     = 0;
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
 
@@ -1753,8 +1754,11 @@ static void xmb_render(void *data)
       return;
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
-   dt = delta_time / IDEAL_DT;
-   menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE, &dt);
+
+   delta.current = delta_time;
+
+   if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
+      menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE, &delta.ideal);
 
    video_driver_get_size(NULL, &height);
 

@@ -1267,6 +1267,7 @@ static unsigned menu_input_frame_build(retro_input_t trigger_input)
 unsigned menu_input_frame_retropad(retro_input_t input,
       retro_input_t trigger_input)
 {
+   menu_animation_ctx_delta_t delta;
    float delta_time;
    static bool initial_held                = true;
    static bool first_held                  = false;
@@ -1328,7 +1329,10 @@ unsigned menu_input_frame_retropad(retro_input_t input,
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
-   menu_input->delay.count += delta_time / IDEAL_DT;
+   delta.current = delta_time;
+
+   if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
+      menu_input->delay.count += delta.ideal;
 
    if (menu_input->keyboard.display)
    {

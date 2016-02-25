@@ -432,7 +432,8 @@ end:
 static void mui_render(void *data)
 {
    size_t i             = 0;
-   float delta_time, dt;
+   menu_animation_ctx_delta_t delta;
+   float delta_time;
    unsigned bottom, width, height, header_height;
    mui_handle_t *mui    = (mui_handle_t*)data;
    settings_t *settings = config_get_ptr();
@@ -443,8 +444,11 @@ static void mui_render(void *data)
    video_driver_get_size(&width, &height);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
-   dt = delta_time / IDEAL_DT;
-   menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE, &dt);
+
+   delta.current = delta_time;
+
+   if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
+      menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE, &delta.ideal);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &width);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
