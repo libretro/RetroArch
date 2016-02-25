@@ -517,12 +517,16 @@ static void wimp_main(struct zr_context *ctx, int width, int height, struct wimp
          ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
       zr_layout_row_dynamic(ctx, 30, 2);
-      if (zr_button_text(ctx, "Quit", ZR_BUTTON_DEFAULT)) {
+
+      if (zr_button_text(ctx, "Quit", ZR_BUTTON_DEFAULT))
+      {
             /* event handling */
             printf("Pressed Event\n");
             rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
       }
-      if (zr_button_text(ctx, "Quit", ZR_BUTTON_DEFAULT)) {
+
+      if (zr_button_text(ctx, "Quit", ZR_BUTTON_DEFAULT))
+      {
             /* event handling */
             printf("Pressed Event\n");
             rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
@@ -540,16 +544,17 @@ static void wimp_main(struct zr_context *ctx, int width, int height, struct wimp
 
       struct zr_panel combo;
       static const char *themes[] = {"Black", "White", "Red", "Blue", "Dark", "Grey"};
-      enum theme old = gui->theme;
-      if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 300)) {
-          zr_layout_row_dynamic(ctx, 25, 1);
-          gui->theme = zr_combo_item(ctx, themes[THEME_BLACK], ZR_TEXT_CENTERED) ? THEME_BLACK : gui->theme;
-          gui->theme = zr_combo_item(ctx, themes[THEME_WHITE], ZR_TEXT_CENTERED) ? THEME_WHITE : gui->theme;
-          gui->theme = zr_combo_item(ctx, themes[THEME_RED], ZR_TEXT_CENTERED) ? THEME_RED : gui->theme;
-          gui->theme = zr_combo_item(ctx, themes[THEME_BLUE], ZR_TEXT_CENTERED) ? THEME_BLUE : gui->theme;
-          gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED) ? THEME_DARK : gui->theme;
-          if (old != gui->theme) set_style(ctx, gui->theme);
-          zr_combo_end(ctx);
+      enum theme old              = gui->theme;
+      if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 300))
+      {
+         zr_layout_row_dynamic(ctx, 25, 1);
+         gui->theme = zr_combo_item(ctx, themes[THEME_BLACK], ZR_TEXT_CENTERED) ? THEME_BLACK : gui->theme;
+         gui->theme = zr_combo_item(ctx, themes[THEME_WHITE], ZR_TEXT_CENTERED) ? THEME_WHITE : gui->theme;
+         gui->theme = zr_combo_item(ctx, themes[THEME_RED], ZR_TEXT_CENTERED) ? THEME_RED : gui->theme;
+         gui->theme = zr_combo_item(ctx, themes[THEME_BLUE], ZR_TEXT_CENTERED) ? THEME_BLUE : gui->theme;
+         gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED) ? THEME_DARK : gui->theme;
+         if (old != gui->theme) set_style(ctx, gui->theme);
+         zr_combo_end(ctx);
       }
 
       
@@ -559,19 +564,18 @@ static void wimp_main(struct zr_context *ctx, int width, int height, struct wimp
 
 static int wimp_start(struct wimp *gui, int width, int height)
 {
+   unsigned i;
    int ret = 1;
    static int init = 0;
    struct zr_context *ctx = &gui->ctx;
 
-   if (!init) {
-     init = 1;
-   }
+   if (!init)
+      init = 1;
 
    /* set rounding to zero on all elements */
-   for (int i = 0; i < ZR_ROUNDING_MAX; ++i)
-   {
+   for (i = 0; i < ZR_ROUNDING_MAX; ++i)
       ctx->style.rounding[i] = 0;
-   }
+
    wimp_main(ctx, width, height, gui);
    wimp_control(ctx, width, height, gui);
    zr_buffer_info(&gui->status, &gui->ctx.memory);
