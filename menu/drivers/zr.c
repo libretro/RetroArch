@@ -53,14 +53,8 @@
 
 #include "../../deps/zahnrad/zahnrad.h"
 
-#define MAX_VERTEX_MEMORY     512 * 1024
-#define MAX_ELEMENT_MEMORY    128 * 1024
-
-#define MAX_BUFFER            64
-#define MAX_MEMORY            (32 * 1024)
-#define MAX_COMMAND_MEMORY    (16 * 1024)
-#define WINDOW_WIDTH          1200
-#define WINDOW_HEIGHT         800
+#define MAX_VERTEX_MEMORY     (512 * 1024)
+#define MAX_ELEMENT_MEMORY    (128 * 1024)
 
 #define ZR_SYSTEM_TAB_END     ZR_SYSTEM_TAB_SETTINGS
 
