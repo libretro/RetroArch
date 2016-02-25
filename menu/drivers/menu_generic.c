@@ -305,14 +305,21 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
          break;
       case ITERATE_TYPE_BIND:
-         if (menu_input_key_bind_iterate(
-                  menu->menu_state.msg, sizeof(menu->menu_state.msg)))
          {
-            menu_entries_pop_stack(&selection, 0);
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+            menu_input_ctx_bind_t bind;
+
+            bind.s   = menu->menu_state.msg;
+            bind.len = sizeof(menu->menu_state.msg);
+
+            if (menu_input_ctl(MENU_INPUT_CTL_BIND_ITERATE, &bind))
+            {
+               menu_entries_pop_stack(&selection, 0);
+               menu_navigation_ctl(
+                     MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
+            }
+            else
+               BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          }
-         else
-            BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          break;
       case ITERATE_TYPE_INFO:
          {
