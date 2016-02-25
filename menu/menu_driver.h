@@ -448,6 +448,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 extern menu_ctx_driver_t menu_ctx_xui;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
+extern menu_ctx_driver_t menu_ctx_wimp;
 extern menu_ctx_driver_t menu_ctx_xmb;
 extern menu_ctx_driver_t menu_ctx_zarch;
 extern menu_ctx_driver_t menu_ctx_null;

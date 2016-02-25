@@ -382,12 +382,17 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
       HAVE_MATERIALUI = 1
    endif
 
+   ifeq ($(HAVE_WIMP),)
+      HAVE_WIMP = 1
+   endif
+
    ifeq ($(HAVE_XMB),)
       HAVE_XMB = 1
    endif
 else
    HAVE_ZARCH = 0
    HAVE_MATERIALUI  = 0
+   HAVE_WIMP = 0
    HAVE_XMB   = 0
 endif
 
@@ -398,6 +403,11 @@ ifeq ($(HAVE_RGUI), 1)
 ifeq ($(HAVE_MATERIALUI), 1)
    OBJ += menu/drivers/materialui.o
    DEFINES += -DHAVE_MATERIALUI
+endif
+ifeq ($(HAVE_WIMP), 1)
+   OBJ += deps/zahnrad/zahnrad.o
+   OBJ += menu/drivers/wimp.o
+   DEFINES += -DHAVE_WIMP
 endif
 ifeq ($(HAVE_ZARCH), 1)
    OBJ += menu/drivers/zarch.o
