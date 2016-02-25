@@ -56,21 +56,6 @@
 #define MAX_VERTEX_MEMORY     512 * 1024
 #define MAX_ELEMENT_MEMORY    128 * 1024
 
-#ifndef MIN
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
-#endif
-
-#ifndef MAX
-#define MAX(a,b)              ((a) < (b) ? (b) : (a))
-#endif
-
-#ifndef CLAMP
-#define CLAMP(i,v,x)          (MAX(MIN(v,x), i))
-#endif
-
-#define LEN(a)                (sizeof(a)/sizeof(a)[0])
-#define UNUSED(a)             ((void)(a))
-
 #define MAX_BUFFER            64
 #define MAX_MEMORY            (32 * 1024)
 #define MAX_COMMAND_MEMORY    (16 * 1024)
@@ -892,13 +877,13 @@ static void device_draw(struct device *dev,
 
 static void* mem_alloc(zr_handle unused, size_t size)
 {
-   UNUSED(unused);
+   (void)unused;
    return calloc(1, size);
 }
 
 static void mem_free(zr_handle unused, void *ptr)
 {
-   UNUSED(unused);
+   (void)unused;
    free(ptr);
 }
 
