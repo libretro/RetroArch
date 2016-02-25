@@ -294,7 +294,7 @@ static float easing_out_in_bounce(float t, float b, float c, float d)
 static int menu_animation_iterate(menu_animation_t *anim,
       unsigned idx, float dt, unsigned *active_tweens)
 {
-   struct tween    *tween = anim ? &anim->list[idx] : NULL;
+   struct tween *tween = &anim->list[idx];
 
    if (!tween || !tween->alive)
       return -1;
@@ -661,8 +661,11 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             if (!dt)
                return false;
 
-            for(i = 0; i < anim->size; i++)
-               menu_animation_iterate(anim, i, *dt, &active_tweens);
+            if (anim)
+            {
+               for(i = 0; i < anim->size; i++)
+                  menu_animation_iterate(anim, i, *dt, &active_tweens);
+            }
 
             if (!active_tweens)
             {
