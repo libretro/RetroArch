@@ -24,7 +24,7 @@
 #include "../configuration.h"
 #include "../performance.h"
 
-#define IDEAL_DT (1.0 / 60.0 * 1000000.0)
+#define IDEAL_DELTA_TIME (1.0 / 60.0 * 1000000.0)
 
 struct tween
 {
@@ -565,10 +565,10 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             cur_time                 = retro_get_time_usec();
             delta_time               = cur_time - old_time;
 
-            if (delta_time >= IDEAL_DT * 4)
-               delta_time = IDEAL_DT * 4;
-            if (delta_time <= IDEAL_DT / 4)
-               delta_time = IDEAL_DT / 4;
+            if (delta_time >= IDEAL_DELTA_TIME* 4)
+               delta_time = IDEAL_DELTA_TIME * 4;
+            if (delta_time <= IDEAL_DELTA_TIME / 4)
+               delta_time = IDEAL_DELTA_TIME / 4;
             old_time      = cur_time;
 
             if (((cur_time - last_clock_update) > 1000000) 
@@ -695,7 +695,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
                (menu_animation_ctx_delta_t*)data;
             if (!delta)
                return false;
-            delta->ideal = delta->current / IDEAL_DT;
+            delta->ideal = delta->current / IDEAL_DELTA_TIME;
          }
          break;
       case MENU_ANIMATION_CTL_PUSH:
