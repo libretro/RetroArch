@@ -444,7 +444,11 @@ static int wimp_start(struct wimp *gui, int width, int height)
      init = 1;
    }
 
-
+   /* set rounding to zero on all elements */
+   for (int i = 0; i < ZR_ROUNDING_MAX; ++i)
+   {
+      ctx->style.rounding[i] = 0;
+   }
    wimp_main(ctx, width, height, gui);
    wimp_control(ctx, width, height, gui);
    zr_buffer_info(&gui->status, &gui->ctx.memory);
