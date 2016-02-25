@@ -28,10 +28,6 @@
 
 #include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
       const char *in, size_t in_size);
 
@@ -43,9 +39,5 @@ size_t utf8len(const char *string);
 size_t utf8cpy(char *d, size_t d_len, const char *s, size_t chars);
 
 const char *utf8skip(const char *str, size_t chars);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
