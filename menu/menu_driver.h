@@ -72,7 +72,7 @@ enum menu_environ_cb
    MENU_ENVIRON_LAST
 };
 
-typedef enum
+enum menu_help_type
 {
    MENU_HELP_NONE       = 0,
    MENU_HELP_WELCOME,
@@ -85,7 +85,7 @@ typedef enum
    MENU_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
    MENU_HELP_SCANNING_CONTENT,
    MENU_HELP_LAST
-} menu_help_type_t;
+};
 
 enum menu_state_changes
 {
@@ -174,7 +174,7 @@ enum rarch_menu_ctl_state
    RARCH_MENU_CTL_BIND_INIT
 };
 
-typedef enum
+enum menu_file_type
 {
    MENU_FILE_NONE = 0,
    MENU_FILE_PLAIN,
@@ -239,7 +239,7 @@ typedef enum
    MENU_SETTING_HORIZONTAL_MENU,
    MENU_INFO_MESSAGE,
    MENU_FILE_TYPE_T_LAST
-} menu_file_type_t;
+};
 
 typedef enum
 {
@@ -281,8 +281,8 @@ typedef enum
 typedef struct
 {
    bool push_help_screen;
-   unsigned         help_screen_id;
-   menu_help_type_t help_screen_type;
+   unsigned            help_screen_id;
+   enum menu_help_type help_screen_type;
 
    bool defer_core;
    char deferred_path[PATH_MAX_LENGTH];

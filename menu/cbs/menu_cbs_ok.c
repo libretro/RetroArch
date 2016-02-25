@@ -909,7 +909,7 @@ static int action_ok_shader_pass_load(const char *path,
 
 static int  generic_action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      unsigned id, menu_help_type_t id2)
+      unsigned id, enum menu_help_type id2)
 {
    const char               *lbl  = menu_hash_to_str(id);
    menu_handle_t            *menu = NULL;

@@ -2320,9 +2320,9 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
    for (i = 0; i < list_size; i++)
    {
       bool is_dir;
-      const char *path            = NULL;
-      char label[PATH_MAX_LENGTH] = {0};
-      menu_file_type_t file_type  = MENU_FILE_NONE;
+      char label[PATH_MAX_LENGTH];
+      const char *path              = NULL;
+      enum menu_file_type file_type = MENU_FILE_NONE;
 
       switch (str_list->elems[i].attr.i)
       {
@@ -2349,7 +2349,7 @@ static int menu_displaylist_parse_generic(menu_displaylist_info_t *info, bool ho
                   break;
                }
             }
-            file_type = (menu_file_type_t)info->type_default;
+            file_type = (enum menu_file_type)info->type_default;
             break;
       }
 
