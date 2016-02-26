@@ -90,7 +90,6 @@ typedef struct menu_input_mouse
    bool    hwheelup;
    bool    hwheeldown;
    unsigned ptr;
-   uint64_t state;
 } menu_input_mouse_t;
 
 typedef struct menu_input
@@ -1195,6 +1194,7 @@ static int menu_input_pointer_post_iterate(
 void menu_input_post_iterate(int *ret, unsigned action)
 {
    size_t selection;
+   uint64_t mouse_state       = 0;
    menu_file_list_cbs_t *cbs  = NULL;
    menu_entry_t entry         = {{0}};
    menu_input_t *menu_input   = menu_input_get_ptr();
@@ -1212,10 +1212,10 @@ void menu_input_post_iterate(int *ret, unsigned action)
    if (settings->menu.mouse.enable)
    {
       *ret  = menu_input_mouse_post_iterate
-         (&menu_input->mouse.state, cbs, action);
+         (&mouse_state, cbs, action);
    }
 
-   *ret = menu_input_mouse_frame(cbs, &entry, menu_input->mouse.state, action);
+   *ret = menu_input_mouse_frame(cbs, &entry, mouse_state, action);
 
    if (settings->menu.pointer.enable)
       *ret |= menu_input_pointer_post_iterate(cbs, &entry, action);
