@@ -119,7 +119,6 @@ struct zr_device
    GLint attrib_uv;
    GLint attrib_col;
 
-   GLint uniform_tex;
    GLint uniform_proj;
    GLuint font_tex;
 #endif
@@ -563,7 +562,6 @@ static void zr_device_init(struct zr_device *dev)
    glGetProgramiv(dev->prog, GL_LINK_STATUS, &status);
    assert(status == GL_TRUE);
 
-   dev->uniform_tex  = glGetUniformLocation(dev->prog, "Texture");
    dev->uniform_proj = glGetUniformLocation(dev->prog, "ProjMtx");
    dev->attrib_pos   = glGetAttribLocation(dev->prog, "Position");
    dev->attrib_uv    = glGetAttribLocation(dev->prog, "TexCoord");
@@ -741,7 +739,6 @@ static void zr_device_draw(struct zr_device *dev,
 
    /* setup program */
    glUseProgram(dev->prog);
-   glUniform1i(dev->uniform_tex, 0);
    glUniformMatrix4fv(dev->uniform_proj, 1, GL_FALSE, &ortho[0][0]);
 
    {
