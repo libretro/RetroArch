@@ -113,7 +113,6 @@ typedef struct menu_input
       float accel0;
       float accel1;
       bool pressed[2];
-      bool oldpressed[2];
       bool dragging;
       bool back;
       unsigned ptr;
@@ -1097,6 +1096,7 @@ static int menu_input_pointer_post_iterate(
 {
    unsigned header_height;
    size_t selection;
+   static bool pointer_oldpressed[2];
    static bool pointer_oldback  = false;
    static int16_t pointer_old_x = 0;
    static int16_t pointer_old_y = 0;
@@ -1134,7 +1134,7 @@ static int menu_input_pointer_post_iterate(
 
       gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics);
 
-      if (!menu_input->pointer.oldpressed[0])
+      if (!pointer_oldpressed[0])
       {
          menu_input->pointer.accel         = 0;
          menu_input->pointer.accel0        = 0;
@@ -1143,7 +1143,7 @@ static int menu_input_pointer_post_iterate(
          menu_input->pointer.start_y       = pointer_y;
          pointer_old_x                     = pointer_x;
          pointer_old_y                     = pointer_y;
-         menu_input->pointer.oldpressed[0] = true;
+         pointer_oldpressed[0]             = true;
       }
       else if (abs(pointer_x - menu_input->pointer.start_x) > (dpi / 10)
             || abs(pointer_y - menu_input->pointer.start_y) > (dpi / 10))
@@ -1166,7 +1166,7 @@ static int menu_input_pointer_post_iterate(
    }
    else
    {
-      if (menu_input->pointer.oldpressed[0])
+      if (pointer_oldpressed[0])
       {
          if (!menu_input->pointer.dragging)
          {
@@ -1184,7 +1184,7 @@ static int menu_input_pointer_post_iterate(
             ret = point.retcode;
          }
 
-         menu_input->pointer.oldpressed[0] = false;
+         pointer_oldpressed[0]             = false;
          menu_input->pointer.start_x       = 0;
          menu_input->pointer.start_y       = 0;
          pointer_old_x                     = 0;
