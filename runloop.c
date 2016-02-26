@@ -1228,8 +1228,8 @@ int runloop_iterate(unsigned *sleep_ms)
 {
    unsigned i;
    event_cmd_state_t    cmd;
-   event_cmd_state_t   *cmd_ptr                 = &cmd;
    retro_time_t current, target, to_sleep_ms;
+   event_cmd_state_t   *cmd_ptr                 = &cmd;
    static retro_usec_t frame_time_last          = 0;
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;

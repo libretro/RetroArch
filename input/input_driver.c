@@ -397,7 +397,7 @@ bool input_translate_coord_viewport(int mouse_x, int mouse_y,
    return true;
 }
 
-static const struct retro_keybind *libretro_input_binds[MAX_USERS];
+const struct retro_keybind *libretro_input_binds[MAX_USERS];
 
 /**
  * input_poll:

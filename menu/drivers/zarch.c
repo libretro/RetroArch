@@ -241,6 +241,8 @@ enum zarch_zui_input_state
 
 static int16_t zarch_zui_input_state(zui_t *zui, enum zarch_zui_input_state state)
 {
+   static bool old_b_pressed = false;
+
     switch (state)
     {
         case MENU_ZARCH_MOUSE_X:
@@ -255,8 +257,17 @@ static int16_t zarch_zui_input_state(zui_t *zui, enum zarch_zui_input_state stat
             if (     menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON) 
                   || menu_input_pointer_state(MENU_POINTER_PRESSED))
                 return 1;
-            if (zui->action == MENU_ACTION_OK)
-               return 1;
+            if (input_driver_state(libretro_input_binds,
+                     0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B))
+            {
+               if (!old_b_pressed)
+               {
+                  old_b_pressed = true;
+                  return 1;
+               }
+            }
+            else
+               old_b_pressed = false;
             break;
     }
     

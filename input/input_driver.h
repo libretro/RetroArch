@@ -291,6 +291,8 @@ const input_driver_t **input_get_double_ptr(void);
 
 void **input_driver_get_data_ptr(void);
 
+const struct retro_keybind *libretro_input_binds[MAX_USERS];
+
 #ifdef __cplusplus
 }
 #endif
