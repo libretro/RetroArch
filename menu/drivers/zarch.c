@@ -57,7 +57,6 @@
 #endif
 
 #define ZUI_FG_NORMAL         (~0)
-#define ZUI_MAX_MAINMENU_TABS 4
 
 static const float zui_bg_panel[] = {
    0, 0, 0, 0.25,
