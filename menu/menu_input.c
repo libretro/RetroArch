@@ -107,8 +107,6 @@ typedef struct menu_input
       int16_t y;
       int16_t dx;
       int16_t dy;
-      int16_t old_x;
-      int16_t old_y;
       int16_t start_x;
       int16_t start_y;
       float accel;
@@ -118,7 +116,6 @@ typedef struct menu_input
       bool oldpressed[2];
       bool dragging;
       bool back;
-      bool oldback;
       unsigned ptr;
    } pointer;
 
@@ -1104,13 +1101,16 @@ static int menu_input_pointer_post_iterate(
 {
    unsigned header_height;
    size_t selection;
-   int ret                  = 0;
-   menu_input_t *menu_input = menu_input_get_ptr();
-   settings_t *settings     = config_get_ptr();
-   bool check_overlay       = false;
+   static bool pointer_oldback  = false;
+   static int16_t pointer_old_x = 0;
+   static int16_t pointer_old_y = 0;
+   int ret                      = 0;
+   menu_input_t *menu_input     = menu_input_get_ptr();
+   settings_t *settings         = config_get_ptr();
+   bool check_overlay           = false;
    
    if (settings)
-      check_overlay         = !settings->menu.pointer.enable;
+      check_overlay             = !settings->menu.pointer.enable;
 
    if (!menu_input)
       return -1;
@@ -1145,8 +1145,8 @@ static int menu_input_pointer_post_iterate(
          menu_input->pointer.accel1        = 0;
          menu_input->pointer.start_x       = pointer_x;
          menu_input->pointer.start_y       = pointer_y;
-         menu_input->pointer.old_x         = pointer_x;
-         menu_input->pointer.old_y         = pointer_y;
+         pointer_old_x                     = pointer_x;
+         pointer_old_y                     = pointer_y;
          menu_input->pointer.oldpressed[0] = true;
       }
       else if (abs(pointer_x - menu_input->pointer.start_x) > (dpi / 10)
@@ -1154,10 +1154,10 @@ static int menu_input_pointer_post_iterate(
       {
          float s, delta_time;
          menu_input->pointer.dragging      = true;
-         menu_input->pointer.dx            = pointer_x - menu_input->pointer.old_x;
-         menu_input->pointer.dy            = pointer_y - menu_input->pointer.old_y;
-         menu_input->pointer.old_x         = pointer_x;
-         menu_input->pointer.old_y         = pointer_y;
+         menu_input->pointer.dx            = pointer_x - pointer_old_x;
+         menu_input->pointer.dy            = pointer_y - pointer_old_y;
+         pointer_old_x                     = pointer_x;
+         pointer_old_y                     = pointer_y;
 
          menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
 
@@ -1191,8 +1191,8 @@ static int menu_input_pointer_post_iterate(
          menu_input->pointer.oldpressed[0] = false;
          menu_input->pointer.start_x       = 0;
          menu_input->pointer.start_y       = 0;
-         menu_input->pointer.old_x         = 0;
-         menu_input->pointer.old_y         = 0;
+         pointer_old_x                     = 0;
+         pointer_old_y                     = 0;
          menu_input->pointer.dx            = 0;
          menu_input->pointer.dy            = 0;
          menu_input->pointer.dragging      = false;
@@ -1201,14 +1201,15 @@ static int menu_input_pointer_post_iterate(
 
    if (menu_input->pointer.back)
    {
-      if (!menu_input->pointer.oldback)
+      if (!pointer_oldback)
       {
-         menu_input->pointer.oldback = true;
+         pointer_oldback = true;
          menu_entries_pop_stack(&selection, 0);
          menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
       }
    }
-   menu_input->pointer.oldback = menu_input->pointer.back;
+
+   pointer_oldback = menu_input->pointer.back;
 
    return ret;
 }
