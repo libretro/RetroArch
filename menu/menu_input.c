@@ -1197,7 +1197,6 @@ void menu_input_post_iterate(int *ret, unsigned action)
    uint64_t mouse_state       = 0;
    menu_file_list_cbs_t *cbs  = NULL;
    menu_entry_t entry         = {{0}};
-   menu_input_t *menu_input   = menu_input_get_ptr();
    settings_t *settings       = config_get_ptr();
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
@@ -1210,10 +1209,7 @@ void menu_input_post_iterate(int *ret, unsigned action)
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    if (settings->menu.mouse.enable)
-   {
-      *ret  = menu_input_mouse_post_iterate
-         (&mouse_state, cbs, action);
-   }
+      *ret  = menu_input_mouse_post_iterate(&mouse_state, cbs, action);
 
    *ret = menu_input_mouse_frame(cbs, &entry, mouse_state, action);
 
