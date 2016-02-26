@@ -101,7 +101,7 @@ static INLINE void xv_calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v,
    *v     = v_ < 0 ? 0 : (v_ > 255 ? 255 : v_);
 }
 
-static void init_yuv_tables(xv_t *xv)
+static void xv_init_yuv_tables(xv_t *xv)
 {
    unsigned i;
    xv->ytable = (uint8_t*)malloc(0x10000);
@@ -583,7 +583,7 @@ static void *xv_init(const video_info_t *video,
          *input = NULL;
    }
 
-   init_yuv_tables(xv);
+   xv_init_yuv_tables(xv);
    xv_init_font(xv, settings->video.font_path, settings->video.font_size);
 
    if (!x11_input_ctx_new(true))
