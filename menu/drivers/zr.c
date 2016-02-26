@@ -2395,7 +2395,7 @@ menu_ctx_driver_t menu_ctx_zr = {
    wimp_list_set_selection,
    NULL,
    wimp_load_image,
-   "zahrand",
+   "zahnrad",
    wimp_environ,
    wimp_pointer_tap,
 };
