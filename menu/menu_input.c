@@ -272,7 +272,8 @@ void menu_input_st_cheat_cb(void *userdata, const char *str)
 
    if (str && *str)
    {
-      unsigned cheat_index = menu_input->keyboard.type - MENU_SETTINGS_CHEAT_BEGIN;
+      unsigned cheat_index = 
+         menu_input->keyboard.type - MENU_SETTINGS_CHEAT_BEGIN;
       cheat_manager_set_code(cheat_index, str);
    }
 
@@ -840,10 +841,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
    return true;
 }
 
-void menu_input_key_bind_set_min_max(unsigned min, unsigned max)
-{
-}
-
 static int menu_input_mouse(unsigned *action)
 {
    video_viewport_t vp;
@@ -1222,7 +1219,6 @@ static int menu_input_pointer_post_iterate(
 
    return ret;
 }
-
 
 void menu_input_post_iterate(int *ret, unsigned action)
 {
