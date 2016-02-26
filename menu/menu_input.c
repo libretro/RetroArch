@@ -47,13 +47,15 @@
 
 enum menu_mouse_action
 {
-   MOUSE_ACTION_NONE = 0,
-   MOUSE_ACTION_BUTTON_L,
-   MOUSE_ACTION_BUTTON_L_TOGGLE,
-   MOUSE_ACTION_BUTTON_L_SET_NAVIGATION,
-   MOUSE_ACTION_BUTTON_R,
-   MOUSE_ACTION_WHEEL_UP,
-   MOUSE_ACTION_WHEEL_DOWN
+   MENU_MOUSE_ACTION_NONE = 0,
+   MENU_MOUSE_ACTION_BUTTON_L,
+   MENU_MOUSE_ACTION_BUTTON_L_TOGGLE,
+   MENU_MOUSE_ACTION_BUTTON_L_SET_NAVIGATION,
+   MENU_MOUSE_ACTION_BUTTON_R,
+   MENU_MOUSE_ACTION_WHEEL_UP,
+   MENU_MOUSE_ACTION_WHEEL_DOWN,
+   MENU_MOUSE_ACTION_HORIZ_WHEEL_UP,
+   MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN
 };
 
 struct menu_bind_state_port
@@ -85,18 +87,14 @@ struct menu_bind_state
    bool skip;
 };
 
-typedef struct menu_input_mouse
-{
-   bool    hwheelup;
-   bool    hwheeldown;
-   unsigned ptr;
-} menu_input_mouse_t;
-
 typedef struct menu_input
 {
    struct menu_bind_state binds;
 
-   menu_input_mouse_t mouse;
+   struct
+   {
+      unsigned ptr;
+   } mouse;
 
    struct
    {
@@ -821,34 +819,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
    return true;
 }
 
-static int menu_input_mouse(unsigned *action)
-{
-   menu_input_t *menu_input  = menu_input_get_ptr();
-
-   if (menu_input->mouse.hwheeldown)
-   {
-      *action = MENU_ACTION_LEFT;
-      menu_input->mouse.hwheeldown = false;
-      return 0;
-   }
-
-   if (menu_input->mouse.hwheelup)
-   {
-      *action = MENU_ACTION_RIGHT;
-      menu_input->mouse.hwheelup = false;
-      return 0;
-   }
-
-   menu_input->mouse.hwheelup   = input_driver_state(
-         NULL, 0, RETRO_DEVICE_MOUSE,
-         0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
-   menu_input->mouse.hwheeldown = input_driver_state(
-         NULL, 0, RETRO_DEVICE_MOUSE,
-         0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
-
-   return 0;
-}
-
 static int menu_input_pointer(unsigned *action)
 {
    unsigned fb_width, fb_height;
@@ -892,7 +862,8 @@ static int menu_input_mouse_frame(
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
 
-   if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_L))
+
+   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_BUTTON_L))
    {
       menu_ctx_pointer_t point;
 
@@ -908,22 +879,32 @@ static int menu_input_mouse_frame(
       ret = point.retcode;
    }
 
-   if (BIT64_GET(input_mouse, MOUSE_ACTION_BUTTON_R))
+   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_BUTTON_R))
    {
       menu_entries_pop_stack(&selection, 0);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
    }
 
-   if (BIT64_GET(input_mouse, MOUSE_ACTION_WHEEL_DOWN))
+   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_WHEEL_DOWN))
    {
       unsigned increment_by = 1;
       menu_navigation_ctl(MENU_NAVIGATION_CTL_INCREMENT, &increment_by);
    }
 
-   if (BIT64_GET(input_mouse, MOUSE_ACTION_WHEEL_UP))
+   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_WHEEL_UP))
    {
       unsigned decrement_by = 1;
       menu_navigation_ctl(MENU_NAVIGATION_CTL_DECREMENT, &decrement_by);
+   }
+
+   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_HORIZ_WHEEL_UP))
+   {
+      /* stub */
+   }
+
+   if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN))
+   {
+      /* stub */
    }
 
    return ret;
@@ -936,7 +917,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    static bool mouse_oldleft  = false;
    static bool mouse_oldright = false;
 
-   *input_mouse = MOUSE_ACTION_NONE;
+   *input_mouse = MENU_MOUSE_ACTION_NONE;
+
 
    if (
          !settings->menu.mouse.enable 
@@ -961,7 +943,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
          menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
          menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
-         BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L);
+         BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L);
 
          mouse_oldleft = true;
 
@@ -974,11 +956,11 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
          }
          if ((menu_input->mouse.ptr == selection) && cbs && cbs->action_select)
          {
-            BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_TOGGLE);
+            BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L_TOGGLE);
          }
          else if (menu_input->mouse.ptr <= (menu_entries_get_size() - 1))
          {
-            BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L_SET_NAVIGATION);
+            BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L_SET_NAVIGATION);
          }
       }
    }
@@ -990,7 +972,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       if (!mouse_oldright)
       {
          mouse_oldright = true;
-         BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_R);
+         BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_R);
       }
    }
    else
@@ -998,12 +980,22 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 
    if (menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN))
    {
-      BIT64_SET(*input_mouse, MOUSE_ACTION_WHEEL_DOWN);
+      BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_WHEEL_DOWN);
    }
 
    if (menu_input_mouse_state(MENU_MOUSE_WHEEL_UP))
    {
-      BIT64_SET(*input_mouse, MOUSE_ACTION_WHEEL_UP);
+      BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_WHEEL_UP);
+   }
+
+   if (menu_input_mouse_state(MENU_MOUSE_HORIZ_WHEEL_DOWN))
+   {
+      BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_HORIZ_WHEEL_DOWN);
+   }
+
+   if (menu_input_mouse_state(MENU_MOUSE_HORIZ_WHEEL_UP))
+   {
+      BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_HORIZ_WHEEL_UP);
    }
 
    return 0;
@@ -1063,6 +1055,12 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
          break;
       case MENU_MOUSE_WHEEL_DOWN:
          type = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
+         break;
+      case MENU_MOUSE_HORIZ_WHEEL_UP:
+         type = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
+         break;
+      case MENU_MOUSE_HORIZ_WHEEL_DOWN:
+         type = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
          break;
       default:
          return 0;
@@ -1229,10 +1227,8 @@ static unsigned menu_input_frame_pointer(unsigned *data)
             && input_overlay_is_alive());
 #endif
     
-   if (mouse_enabled)
-      menu_input_mouse(&ret);
-   else
-      memset(&menu_input->mouse, 0, sizeof(menu_input->mouse));
+   if (!mouse_enabled)
+      menu_input->mouse.ptr = 0;
 
    if (settings->menu.pointer.enable)
       menu_input_pointer(&ret);
