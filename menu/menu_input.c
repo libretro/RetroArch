@@ -89,12 +89,8 @@ typedef struct menu_input_mouse
 {
    int16_t x;
    int16_t y;
-   bool    left;
-   bool    right;
    bool    oldleft;
    bool    oldright;
-   bool    wheelup;
-   bool    wheeldown;
    bool    hwheelup;
    bool    hwheeldown;
    bool    scrollup;
@@ -870,18 +866,6 @@ static int menu_input_mouse(unsigned *action)
       return 0;
    }
 
-   menu_input->mouse.left       = input_driver_state(
-         NULL, 0, RETRO_DEVICE_MOUSE,
-         0, RETRO_DEVICE_ID_MOUSE_LEFT);
-   menu_input->mouse.right      = input_driver_state(
-         NULL, 0, RETRO_DEVICE_MOUSE,
-         0, RETRO_DEVICE_ID_MOUSE_RIGHT);
-   menu_input->mouse.wheelup    = input_driver_state(
-         NULL, 0, RETRO_DEVICE_MOUSE,
-         0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
-   menu_input->mouse.wheeldown  = input_driver_state(
-         NULL, 0, RETRO_DEVICE_MOUSE,
-         0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
    menu_input->mouse.hwheelup   = input_driver_state(
          NULL, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
@@ -1001,8 +985,6 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 
    if (check_overlay)
    {
-      menu_input->mouse.wheeldown = false;
-      menu_input->mouse.wheelup   = false;
       menu_input->mouse.oldleft   = false;
       menu_input->mouse.oldright  = false;
       return 0;
@@ -1048,12 +1030,12 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    else
       menu_input->mouse.oldright = false;
 
-   if (menu_input->mouse.wheeldown)
+   if (menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN))
    {
       BIT64_SET(*input_mouse, MOUSE_ACTION_WHEEL_DOWN);
    }
 
-   if (menu_input->mouse.wheelup)
+   if (menu_input_mouse_state(MENU_MOUSE_WHEEL_UP))
    {
       BIT64_SET(*input_mouse, MOUSE_ACTION_WHEEL_UP);
    }
@@ -1088,6 +1070,7 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
 int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
 {
    menu_input_t *menu = menu_input_get_ptr();
+   unsigned type = 0;
 
    if (!menu)
       return 0;
@@ -1099,16 +1082,22 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
       case MENU_MOUSE_Y_AXIS:
          return menu->mouse.y;
       case MENU_MOUSE_LEFT_BUTTON:
-         return menu->mouse.left;
+         type = RETRO_DEVICE_ID_MOUSE_LEFT;
+         break;
       case MENU_MOUSE_RIGHT_BUTTON:
-         return menu->mouse.right;
+         type = RETRO_DEVICE_ID_MOUSE_RIGHT;
+         break;
       case MENU_MOUSE_WHEEL_UP:
-         return menu->mouse.wheelup;
+         type = RETRO_DEVICE_ID_MOUSE_WHEELUP;
+         break;
       case MENU_MOUSE_WHEEL_DOWN:
-         return menu->mouse.wheeldown;
+         type = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
+         break;
+      default:
+         return 0;
    }
 
-   return 0;
+   return input_driver_state(NULL, 0, RETRO_DEVICE_MOUSE, 0, type);
 }
 
 static int menu_input_pointer_post_iterate(
