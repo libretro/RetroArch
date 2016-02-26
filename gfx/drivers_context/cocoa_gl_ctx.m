@@ -90,7 +90,7 @@ static NSOpenGLPixelFormat* g_format;
 static unsigned g_minor = 0;
 static unsigned g_major = 0;
 
-GLContextClass *glcontext_get_ptr(void)
+void *glcontext_get_ptr(void)
 {
    return g_context;
 }
