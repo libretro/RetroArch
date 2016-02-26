@@ -92,10 +92,20 @@ static bool font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handl
 
    CTFontGetGlyphsForCharacters(face, characters, glyphs, CT_ATLAS_SIZE);
 
-   CTFontGetBoundingRectsForGlyphs(face, kCTFontDefaultOrientation, 
-         glyphs, bounds, CT_ATLAS_SIZE);
+   CTFontGetBoundingRectsForGlyphs(face,
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1080
+   kCTFontOrientationDefault,
+#else
+   kCTFontDefaultOrientation,
+#endif
+    glyphs, bounds, CT_ATLAS_SIZE);
 
-   CTFontGetAdvancesForGlyphs(face, kCTFontDefaultOrientation, 
+   CTFontGetAdvancesForGlyphs(face,
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1080
+         kCTFontOrientationDefault,
+#else
+         kCTFontDefaultOrientation, 
+#endif
          glyphs, advances, CT_ATLAS_SIZE);
 
    ascent = CTFontGetAscent(face);
