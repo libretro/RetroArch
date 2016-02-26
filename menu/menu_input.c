@@ -982,7 +982,10 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    unsigned header_height;
    settings_t *settings     = config_get_ptr();
    menu_input_t *menu_input = menu_input_get_ptr();
-   bool check_overlay       = settings ? !settings->menu.mouse.enable: false;
+   bool check_overlay       = false;
+   
+   if (settings)
+      check_overlay         = !settings->menu.mouse.enable;
 
    *input_mouse = MOUSE_ACTION_NONE;
 
