@@ -59,11 +59,13 @@ typedef struct
 } apple_frontend_settings_t;
 extern apple_frontend_settings_t apple_frontend_settings;
 
-@interface CocoaView : UIViewController<CLLocationManagerDelegate, AVCaptureAudioDataOutputSampleBufferDelegate>
+@interface CocoaView : UIViewController<CLLocationManagerDelegate,
+AVCaptureAudioDataOutputSampleBufferDelegate>
 + (CocoaView*)get;
 @end
 
-@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate, UINavigationControllerDelegate>
+@interface RetroArch_iOS : UINavigationController<UIApplicationDelegate,
+UINavigationControllerDelegate>
 
 @property (nonatomic) UIWindow* window;
 @property (nonatomic) NSString* documentsDirectory;
