@@ -89,8 +89,6 @@ typedef struct menu_input_mouse
 {
    bool    hwheelup;
    bool    hwheeldown;
-   bool    scrollup;
-   bool    scrolldown;
    unsigned ptr;
    uint64_t state;
 } menu_input_mouse_t;
@@ -701,18 +699,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          menu_input->keyboard.label   = menu_hash_to_str(MENU_VALUE_SEARCH);
          menu_input->keyboard.buffer  =
             input_keyboard_start_line(menu, menu_input_search_cb);
-         break;
-      case MENU_INPUT_CTL_MOUSE_SCROLL_DOWN:
-         {
-            bool *ptr = (bool*)data;
-            *ptr = menu_input->mouse.scrolldown;
-         }
-         break;
-      case MENU_INPUT_CTL_MOUSE_SCROLL_UP:
-         {
-            bool *ptr = (bool*)data;
-            *ptr = menu_input->mouse.scrollup;
-         }
          break;
       case MENU_INPUT_CTL_MOUSE_PTR:
          {
