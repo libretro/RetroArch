@@ -83,7 +83,8 @@ static INLINE bool vg_query_extension(const char *ext)
    return ret;
 }
 
-static void *vg_init(const video_info_t *video, const input_driver_t **input, void **input_data)
+static void *vg_init(const video_info_t *video,
+      const input_driver_t **input, void **input_data)
 {
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
@@ -93,7 +94,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
    VGfloat clearColor[4] = {0, 0, 0, 1};
    settings_t        *settings = config_get_ptr();
    vg_t                    *vg = (vg_t*)calloc(1, sizeof(vg_t));
-   const gfx_ctx_driver_t *ctx = gfx_ctx_init_first(vg, settings->video.context_driver,
+   const gfx_ctx_driver_t *ctx = gfx_ctx_init_first(
+         vg, settings->video.context_driver,
          GFX_CTX_OPENVG_API, 0, 0, false);
 
    if (!vg || !ctx)
@@ -193,8 +195,16 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
          vg->mFontHeight   = settings->video.font_size;
          vg->mPaintFg      = vgCreatePaint();
          vg->mPaintBg      = vgCreatePaint();
-         VGfloat paintFg[] = { settings->video.msg_color_r, settings->video.msg_color_g, settings->video.msg_color_b, 1.0f };
-         VGfloat paintBg[] = { settings->video.msg_color_r / 2.0f, settings->video.msg_color_g / 2.0f, settings->video.msg_color_b / 2.0f, 0.5f };
+         VGfloat paintFg[] = { 
+            settings->video.msg_color_r,
+            settings->video.msg_color_g,
+            settings->video.msg_color_b,
+            1.0f };
+         VGfloat paintBg[] = { 
+            settings->video.msg_color_r / 2.0f,
+            settings->video.msg_color_g / 2.0f,
+            settings->video.msg_color_b / 2.0f,
+            0.5f };
 
          vgSetParameteri(vg->mPaintFg, VG_PAINT_TYPE, VG_PAINT_TYPE_COLOR);
          vgSetParameterfv(vg->mPaintFg, VG_PAINT_COLOR, 4, paintFg);
@@ -204,7 +214,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
       }
    }
 
-   if (vg_query_extension("KHR_EGL_image") && gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_INIT, video))
+   if (vg_query_extension("KHR_EGL_image") 
+         && gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_INIT, video))
    {
       gfx_ctx_proc_address_t proc_address;
 
@@ -212,7 +223,8 @@ static void *vg_init(const video_info_t *video, const input_driver_t **input, vo
 
       gfx_ctx_ctl(GFX_CTL_PROC_ADDRESS_GET, &proc_address);
 
-      pvgCreateEGLImageTargetKHR = (PFNVGCREATEEGLIMAGETARGETKHRPROC)proc_address.addr;
+      pvgCreateEGLImageTargetKHR = 
+         (PFNVGCREATEEGLIMAGETARGETKHRPROC)proc_address.addr;
 
       if (pvgCreateEGLImageTargetKHR)
       {
@@ -340,7 +352,9 @@ static void vg_copy_frame(void *data, const void *frame,
          vg->mImage = pvgCreateEGLImageTargetKHR((VGeglImageKHR) img);
          if (!vg->mImage)
          {
-            RARCH_ERR("[VG:EGLImage] Error creating image: %08x\n", vgGetError());
+            RARCH_ERR(
+                  "[VG:EGLImage] Error creating image: %08x\n",
+                  vgGetError());
             exit(2);
          }
          vg->last_egl_image = img;
@@ -364,7 +378,9 @@ static bool vg_frame(void *data, const void *frame,
 
    video_driver_get_size(&width, &height);
 
-   if (frame_width != vg->mRenderWidth || frame_height != vg->mRenderHeight || vg->should_resize)
+   if (     frame_width != vg->mRenderWidth 
+         || frame_height != vg->mRenderHeight 
+         || vg->should_resize)
    {
       vg->mRenderWidth  = frame_width;
       vg->mRenderHeight = frame_height;
