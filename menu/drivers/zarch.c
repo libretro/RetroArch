@@ -58,6 +58,22 @@
 
 #define ZUI_FG_NORMAL         (~0)
 
+enum zarch_zui_input_state
+{
+    MENU_ZARCH_MOUSE_X = 0,
+    MENU_ZARCH_MOUSE_Y,
+    MENU_POINTER_ZARCH_X,
+    MENU_POINTER_ZARCH_Y,
+    MENU_ZARCH_PRESSED
+};
+
+enum zarch_layout_type
+{
+   LAY_HOME = 0,
+   LAY_PICK_CORE,
+   LAY_SETTINGS
+};
+
 static const float zui_bg_panel[] = {
    0, 0, 0, 0.25,
    0, 0, 0, 0.25,
@@ -173,12 +189,7 @@ typedef struct
    bool alive;
 } part_t;
 
-static enum
-{
-   LAY_HOME,
-   LAY_PICK_CORE,
-   LAY_SETTINGS
-} layout = LAY_HOME;
+static enum zarch_layout_type zarch_layout;
 
 static void zarch_zui_font(void)
 {
@@ -206,14 +217,6 @@ static float zarch_zui_strwidth(void *fb_buf, const char *text, float scale)
    return font_driver_get_message_width(fb_buf, text, strlen(text), scale);
 }
 
-enum zarch_zui_input_state
-{
-    MENU_ZARCH_MOUSE_X = 0,
-    MENU_ZARCH_MOUSE_Y,
-    MENU_POINTER_ZARCH_X,
-    MENU_POINTER_ZARCH_Y,
-    MENU_ZARCH_PRESSED
-};
 
 static int16_t zarch_zui_input_state(zui_t *zui, enum zarch_zui_input_state state)
 {
@@ -620,7 +623,7 @@ static void zarch_zui_render_lay_settings(zui_t *zui)
    y1                        += 64;
 
    if (zarch_zui_button_full(zui, x1, y1, x1 + width, y1 + 64, "Back"))
-      layout = LAY_HOME;
+      zarch_layout = LAY_HOME;
 }
 
 static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
@@ -790,7 +793,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 
                   core_info_list_get_supported_cores(list, path,
                         &zui->pick_cores, &zui->pick_supported);
-                  layout = LAY_PICK_CORE;
+                  zarch_layout = LAY_PICK_CORE;
                   break;
                }
                j++;
@@ -903,7 +906,7 @@ static int zarch_zui_render_sidebar(zui_t *zui)
    y1    = 20;
 
    if (zarch_zui_button_full(zui, x1, y1, x1 + width, y1 + 64, "Settings"))
-      layout = LAY_SETTINGS;
+      zarch_layout = LAY_SETTINGS;
 
    y1 += 64;
 
@@ -921,7 +924,7 @@ static int zarch_zui_load_content(zui_t *zui, unsigned i)
    rarch_task_push_content_load_default(zui->pick_cores[i].path,
          zui->pick_content, false, CORE_TYPE_PLAIN, NULL, NULL);
 
-   layout = LAY_HOME;
+   zarch_layout = LAY_HOME;
 
    return 0;
 }
@@ -940,7 +943,7 @@ static int zarch_zui_render_pick_core(zui_t *zui)
 
       (void)ret;
 
-      layout = LAY_HOME;
+      zarch_layout = LAY_HOME;
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT, NULL);
       return 1;
    }
@@ -948,7 +951,7 @@ static int zarch_zui_render_pick_core(zui_t *zui)
    zarch_zui_draw_text(zui, ~0, 8, 18, "Select a core: ");
 
    if (zarch_zui_button(zui, 0, 18 + zui->font_size, "<- Back"))
-      layout = LAY_HOME;
+      zarch_layout = LAY_HOME;
 
    if (!zui->pick_supported)
    {
@@ -974,7 +977,7 @@ static int zarch_zui_render_pick_core(zui_t *zui)
 
          (void)ret;
 
-         layout = LAY_HOME;
+         zarch_layout = LAY_HOME;
 
          menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT, NULL);
          break;
@@ -1033,7 +1036,7 @@ static void zarch_frame(void *data)
          &zui->ca, 0, 0, zui->width, zui->height);
    zarch_zui_snow(zui, &zui->ca, zui->width, zui->height);
 
-   switch (layout)
+   switch (zarch_layout)
    {
       case LAY_HOME:
          if (zarch_zui_render_sidebar(zui))
