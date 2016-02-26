@@ -131,7 +131,6 @@ typedef struct menu_input
    } delay;
 } menu_input_t;
 
-static menu_ctx_iterate_t menu_input_frame;
 static unsigned           bind_port;
 
 static menu_input_t *menu_input_get_ptr(void)
@@ -652,10 +651,11 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
    switch (state)
    {
       case MENU_INPUT_CTL_SET_FRAME_INPUT:
-         if (!data)
-            return false;
-         memcpy(&menu_input_frame,
-               data, sizeof(menu_ctx_iterate_t));
+         {
+            menu_ctx_iterate_t *iter = (menu_ctx_iterate_t*)data;
+            if (!iter)
+               return false;
+         }
          break;
       case MENU_INPUT_CTL_BIND_SET_MIN_MAX:
          {
