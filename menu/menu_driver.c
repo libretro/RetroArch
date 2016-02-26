@@ -875,7 +875,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                 iterate->action = pending_iter.action;
                 pending_iter.action = MENU_ACTION_NOOP;
             }
-            menu_input_ctl(MENU_INPUT_CTL_SET_FRAME_INPUT, iterate);
             if (menu_driver_ctx->iterate(menu_driver_data,
                      menu_userdata, iterate->action) == -1)
                return false;

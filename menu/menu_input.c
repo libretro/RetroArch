@@ -650,13 +650,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
    switch (state)
    {
-      case MENU_INPUT_CTL_SET_FRAME_INPUT:
-         {
-            menu_ctx_iterate_t *iter = (menu_ctx_iterate_t*)data;
-            if (!iter)
-               return false;
-         }
-         break;
       case MENU_INPUT_CTL_BIND_SET_MIN_MAX:
          {
             menu_input_ctx_bind_limits_t *lim = 
