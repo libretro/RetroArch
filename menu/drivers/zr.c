@@ -58,6 +58,13 @@
 
 #define ZR_SYSTEM_TAB_END     ZR_SYSTEM_TAB_SETTINGS
 
+static struct zr_device device;
+static struct zr_font font;
+static char zr_font_path[PATH_MAX_LENGTH];
+
+static struct zr_user_font usrfnt;
+static struct zr_allocator alloc;
+
 enum
 {
    ZR_TEXTURE_POINTER = 0,
@@ -89,7 +96,7 @@ enum zr_theme
    THEME_DARK
 };
 
-struct wimp 
+struct zrmenu
 {
    void *memory;
    struct zr_context ctx;
@@ -97,7 +104,7 @@ struct wimp
    struct zr_memory_status status;
 };
 
-struct device
+struct zr_device
 {
    struct zr_buffer cmds;
    struct zr_draw_null_texture null;
@@ -117,62 +124,6 @@ struct device
    GLuint font_tex;
 #endif
 };
-
-struct wimp_texture_item
-{
-   uintptr_t id;
-};
-
-typedef struct wimp_handle
-{
-   unsigned tabs_height;
-   unsigned line_height;
-   unsigned shadow_height;
-   unsigned scrollbar_width;
-   unsigned icon_size;
-   unsigned margin;
-   unsigned glyph_width;
-   char box_message[PATH_MAX_LENGTH];
-
-   struct 
-   {
-      struct
-      {
-         float alpha;
-      } arrow;
-
-      struct wimp_texture_item bg;
-      struct wimp_texture_item list[ZR_TEXTURE_LAST];
-      uintptr_t white;
-   } textures;
-
-   struct
-   {
-      struct
-      {
-         unsigned idx;
-         unsigned idx_old;
-      } active;
-
-      float x_pos;
-      size_t selection_ptr_old;
-      size_t selection_ptr;
-   } categories;
-
-   gfx_font_raster_block_t list_block;
-   float scroll_y;
-} wimp_handle_t;
-
-
-static int z =0 ;
-
-static struct device device;
-static struct zr_font font;
-static char font_path[PATH_MAX_LENGTH];
-static int width = 0, height = 0;
-
-static struct zr_user_font usrfnt;
-static struct zr_allocator alloc;
 
 bool zr_checkbox_bool(struct zr_context* cx, const char* text, bool *active)
 {
@@ -194,9 +145,7 @@ static void zr_labelf(struct zr_context *ctx,
     va_end(args);
 }
 
-/* zahnrad code */
-
-static void set_style(struct zr_context *ctx, enum zr_theme theme)
+static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
 {
    switch (theme)
    {
@@ -392,8 +341,8 @@ static void set_style(struct zr_context *ctx, enum zr_theme theme)
 }
 
 
-static int wimp_control(struct zr_context *ctx,
-      int width, int height, struct wimp *gui)
+static int zrmenu_wnd_control(struct zr_context *ctx,
+      int width, int height, struct zrmenu *gui)
 {
    int i;
    struct zr_panel layout;
@@ -452,7 +401,7 @@ static int wimp_control(struct zr_context *ctx,
             gui->theme = zr_combo_item(ctx, themes[THEME_RED], ZR_TEXT_CENTERED) ? THEME_RED : gui->theme;
             gui->theme = zr_combo_item(ctx, themes[THEME_BLUE], ZR_TEXT_CENTERED) ? THEME_BLUE : gui->theme;
             gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED) ? THEME_DARK : gui->theme;
-            if (old != gui->theme) set_style(ctx, gui->theme);
+            if (old != gui->theme) zrmenu_set_style(ctx, gui->theme);
                zr_combo_end(ctx);
          }
 
@@ -486,7 +435,7 @@ static int wimp_control(struct zr_context *ctx,
    return !zr_window_is_closed(ctx, "Control");
 }
 
-static void wimp_main(struct zr_context *ctx, int width, int height, struct wimp *gui)
+static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struct zrmenu *gui)
 {
    settings_t *settings = config_get_ptr();
 
@@ -533,38 +482,28 @@ static void wimp_main(struct zr_context *ctx, int width, int height, struct wimp
          gui->theme = zr_combo_item(ctx, themes[THEME_RED], ZR_TEXT_CENTERED) ? THEME_RED : gui->theme;
          gui->theme = zr_combo_item(ctx, themes[THEME_BLUE], ZR_TEXT_CENTERED) ? THEME_BLUE : gui->theme;
          gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED) ? THEME_DARK : gui->theme;
-         if (old != gui->theme) set_style(ctx, gui->theme);
+         if (old != gui->theme) zrmenu_set_style(ctx, gui->theme);
          zr_combo_end(ctx);
       }
-
-      
    }
    zr_end(ctx);
 }
 
-static int wimp_start(struct wimp *gui, int width, int height)
+static int zrmenu_draw(struct zrmenu *gui, int width, int height)
 {
    unsigned i;
    int ret = 1;
-   static int init = 0;
    struct zr_context *ctx = &gui->ctx;
 
-   if (!init)
-      init = 1;
-
-   /* set rounding to zero on all elements */
-   for (i = 0; i < ZR_ROUNDING_MAX; ++i)
-      ctx->style.rounding[i] = 0;
-
-   wimp_main(ctx, width, height, gui);
-   wimp_control(ctx, width, height, gui);
+   zrmenu_wnd_demo(ctx, width, height, gui);
+   zrmenu_wnd_control(ctx, width, height, gui);
    zr_buffer_info(&gui->status, &gui->ctx.memory);
    return ret;
 }
 
-static struct wimp gui;
+static struct zrmenu gui;
 
-static char* file_load(const char* path, size_t* siz)
+static char* zrmenu_file_load(const char* path, size_t* siz)
 {
    char *buf;
    FILE *fd = fopen(path, "rb");
@@ -579,7 +518,7 @@ static char* file_load(const char* path, size_t* siz)
 }
 
 
-static void device_init(struct device *dev)
+static void zr_device_init(struct zr_device *dev)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    GLint status;
@@ -662,7 +601,7 @@ static void device_init(struct device *dev)
 }
 
 static struct zr_user_font font_bake_and_upload(
-      struct device *dev,
+      struct zr_device *dev,
       struct zr_font *font,
       const char *path,
       unsigned int font_height,
@@ -687,7 +626,7 @@ static struct zr_user_font font_bake_and_upload(
       size_t ttf_size;
       size_t tmp_size, img_size;
       const char *custom_data = "....";
-      char *ttf_blob = file_load(path, &ttf_size);
+      char *ttf_blob = zrmenu_file_load(path, &ttf_size);
        /* setup font configuration */
       memset(&config, 0, sizeof(config));
 
@@ -757,7 +696,7 @@ static struct zr_user_font font_bake_and_upload(
    return user_font;
 }
 
-static void device_shutdown(struct device *dev)
+static void zr_device_shutdown(struct zr_device *dev)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glDetachShader(dev->prog, dev->vert_shdr);
@@ -771,7 +710,7 @@ static void device_shutdown(struct device *dev)
 #endif
 }
 
-static void device_draw(struct device *dev,
+static void zr_device_draw(struct zr_device *dev,
       struct zr_context *ctx, int width, int height,
       enum zr_anti_aliasing AA)
 {
@@ -869,19 +808,19 @@ static void device_draw(struct device *dev,
 #endif
 }
 
-static void* mem_alloc(zr_handle unused, size_t size)
+static void* zrmenu_mem_alloc(zr_handle unused, size_t size)
 {
    (void)unused;
    return calloc(1, size);
 }
 
-static void mem_free(zr_handle unused, void *ptr)
+static void zrmenu_mem_free(zr_handle unused, void *ptr)
 {
    (void)unused;
    free(ptr);
 }
 
-static void wimp_input_motion(struct zr_context *ctx)
+static void zrmenu_input_mouse_movement(struct zr_context *ctx)
 {
    int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
@@ -889,7 +828,7 @@ static void wimp_input_motion(struct zr_context *ctx)
    zr_input_motion(ctx, mouse_x, mouse_y);
 }
 
-static void wimp_input_button(struct zr_context *ctx)
+static void zrmenu_input_mouse_button(struct zr_context *ctx)
 {
    int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
@@ -900,9 +839,87 @@ static void wimp_input_button(struct zr_context *ctx)
          mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON));
 }
 
-/* zahnrad code */
+static void zrmenu_init(int width, int height)
+{
+   settings_t *settings = config_get_ptr();
 
-static void zr_context_reset_textures(wimp_handle_t *wimp,
+   fill_pathname_join(zr_font_path, settings->assets_directory,
+         "wimp", sizeof(zr_font_path));
+   fill_pathname_join(zr_font_path, zr_font_path,
+         "DroidSans.ttf", sizeof(zr_font_path));
+
+   glViewport(0, 0, width, height);
+   alloc.userdata.ptr = NULL;
+   alloc.alloc = zrmenu_mem_alloc;
+   alloc.free = zrmenu_mem_free;
+   zr_buffer_init(&device.cmds, &alloc, 1024);
+   usrfnt = font_bake_and_upload(&device, &font, zr_font_path, 16,
+      zr_font_default_glyph_ranges());
+   zr_init(&gui.ctx, &alloc, &usrfnt);
+   zr_device_init(&device);
+
+   for (int i = 0; i < ZR_ROUNDING_MAX; ++i)
+      (&gui.ctx)->style.rounding[i] = 0;
+   zrmenu_set_style(&gui.ctx, THEME_DARK);
+
+}
+
+static void zrmenu_deinit()
+{
+   free(font.glyphs);
+   zr_free(&gui.ctx);
+   zr_buffer_free(&device.cmds);
+   zr_device_shutdown(&device);
+}
+
+/* normal glui code starts here */
+
+struct wimp_texture_item
+{
+   uintptr_t id;
+};
+
+typedef struct wimp_handle
+{
+   unsigned tabs_height;
+   unsigned line_height;
+   unsigned shadow_height;
+   unsigned scrollbar_width;
+   unsigned icon_size;
+   unsigned margin;
+   unsigned glyph_width;
+   char box_message[PATH_MAX_LENGTH];
+
+   struct
+   {
+      struct
+      {
+         float alpha;
+      } arrow;
+
+      struct wimp_texture_item bg;
+      struct wimp_texture_item list[ZR_TEXTURE_LAST];
+      uintptr_t white;
+   } textures;
+
+   struct
+   {
+      struct
+      {
+         unsigned idx;
+         unsigned idx_old;
+      } active;
+
+      float x_pos;
+      size_t selection_ptr_old;
+      size_t selection_ptr;
+   } categories;
+
+   gfx_font_raster_block_t list_block;
+   float scroll_y;
+} wimp_handle_t;
+
+static void wimp_context_reset_textures(wimp_handle_t *wimp,
       const char *iconpath)
 {
    unsigned i;
@@ -1787,20 +1804,16 @@ static void wimp_frame(void *data)
       wimp_render_messagebox(wimp->box_message);
       wimp->box_message[0] = '\0';
    }
-
-   /* zahnrad code */
-   zr_input_begin(&gui.ctx);
-   wimp_input_motion(&gui.ctx);
-   wimp_input_button(&gui.ctx);
-   zr_input_end(&gui.ctx);
-   
-   wimp_start(&gui, width, height);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);   
+   zr_input_begin(&gui.ctx);
+   zrmenu_input_mouse_movement(&gui.ctx);
+   zrmenu_input_mouse_button(&gui.ctx);
+   zr_input_end(&gui.ctx);
+   zrmenu_draw(&gui, width, height);
+   zr_device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_OFF);
 
    /* zahnrad code */
-
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
@@ -1894,6 +1907,9 @@ static void *wimp_init(void **userdata)
    wimp_handle_t   *wimp = NULL;
    menu_handle_t *menu = (menu_handle_t*)
       calloc(1, sizeof(*menu));
+   unsigned width, height = 0;
+
+   video_driver_get_size(&width, &height);
 
    if (!menu)
       goto error;
@@ -1911,24 +1927,7 @@ static void *wimp_init(void **userdata)
    wimp_layout(wimp);
    wimp_allocate_white_texture(wimp);
 
-   /* zahnrad code
-      just init the font_path variable for the
-      drawing function */
-   fill_pathname_join(font_path, settings->assets_directory,
-         "wimp", sizeof(font_path));
-   fill_pathname_join(font_path, font_path,
-         "Roboto-Regular.ttf", sizeof(font_path));
-         
-   glViewport(0, 0, width, height);
-   alloc.userdata.ptr = NULL;
-   alloc.alloc = mem_alloc;
-   alloc.free = mem_free;
-   zr_buffer_init(&device.cmds, &alloc, 1024);
-   usrfnt = font_bake_and_upload(&device, &font, font_path, 14,
-      zr_font_default_glyph_ranges());
-   zr_init(&gui.ctx, &alloc, &usrfnt);
-   device_init(&device);
-   /* zahnrad code */
+   zrmenu_init(width, height);
 
    return menu;
 error:
@@ -1944,12 +1943,7 @@ static void wimp_free(void *data)
    if (!wimp)
       return;
 
-   /* zahnrad code */
-   free(font.glyphs);
-   zr_free(&gui.ctx);
-   zr_buffer_free(&device.cmds);
-   device_shutdown(&device);
-   /* zahnrad code */
+   zrmenu_deinit();
 
    gfx_coord_array_free(&wimp->list_block.carr);
 
@@ -2085,6 +2079,9 @@ static void zr_context_reset(void *data)
    char iconpath[PATH_MAX_LENGTH] = {0};
    wimp_handle_t *wimp              = (wimp_handle_t*)data;
    settings_t *settings           = config_get_ptr();
+   unsigned width, height = 0;
+
+   video_driver_get_size(&width, &height);
 
    if (!wimp || !settings)
       return;
@@ -2094,9 +2091,10 @@ static void zr_context_reset(void *data)
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    wimp_layout(wimp);
+   zrmenu_init(width, height);
    wimp_context_bg_destroy(wimp);
    wimp_allocate_white_texture(wimp);
-   zr_context_reset_textures(wimp, iconpath);
+   wimp_context_reset_textures(wimp, iconpath);
 
    rarch_task_push_image_load(settings->menu.wallpaper, "cb_menu_wallpaper",
          menu_display_handle_wallpaper_upload, NULL);
