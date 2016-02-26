@@ -2303,64 +2303,6 @@ static size_t wimp_list_get_selection(void *data)
    return wimp->categories.selection_ptr;
 }
 
-static int wimp_pointer_tap(void *userdata,
-      unsigned x, unsigned y, 
-      unsigned ptr, menu_file_list_cbs_t *cbs,
-      menu_entry_t *entry, unsigned action)
-{
-   size_t selection, idx;
-   unsigned header_height, width, height, i;
-   bool scroll                = false;
-   wimp_handle_t *wimp          = (wimp_handle_t*)userdata;
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-
-   if (!wimp)
-      return 0;
-
-   video_driver_get_size(&width, &height);
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
-
-   if (y < header_height)
-   {
-      menu_entries_pop_stack(&selection, 0);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
-   }
-   else if (y > height - wimp->tabs_height)
-   {
-      for (i = 0; i <= ZR_SYSTEM_TAB_END; i++)
-      {
-         unsigned tab_width = width / (ZR_SYSTEM_TAB_END + 1);
-         unsigned start     = tab_width * i;
-
-         if ((x >= start) && (x < (start + tab_width)))
-         {
-            wimp->categories.selection_ptr = i;
-
-            wimp_preswitch_tabs(wimp, action);
-
-            if (cbs && cbs->action_content_list_switch)
-               return cbs->action_content_list_switch(selection_buf, menu_stack,
-                     "", "", 0);
-         }
-      }
-   }
-   else if (ptr <= (menu_entries_get_size() - 1))
-   {
-      if (ptr == selection && cbs && cbs->action_select)
-         return menu_entry_action(entry, selection, MENU_ACTION_SELECT);
-
-      idx  = ptr;
-
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET, &scroll);
-   }
-
-   return 0;
-}
-
 menu_ctx_driver_t menu_ctx_zr = {
    NULL,
    wimp_get_message,
@@ -2394,5 +2336,5 @@ menu_ctx_driver_t menu_ctx_zr = {
    wimp_load_image,
    "zahnrad",
    wimp_environ,
-   wimp_pointer_tap,
+   NULL,
 };
