@@ -87,8 +87,6 @@ struct menu_bind_state
 
 typedef struct menu_input_mouse
 {
-   bool    oldleft;
-   bool    oldright;
    bool    hwheelup;
    bool    hwheeldown;
    bool    scrollup;
@@ -959,9 +957,11 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 {
    size_t selection;
    unsigned header_height;
-   settings_t *settings     = config_get_ptr();
-   menu_input_t *menu_input = menu_input_get_ptr();
-   bool check_overlay       = false;
+   settings_t *settings       = config_get_ptr();
+   menu_input_t *menu_input   = menu_input_get_ptr();
+   bool check_overlay         = false;
+   static bool mouse_oldleft  = false;
+   static bool mouse_oldright = false;
    
    if (settings)
       check_overlay         = !settings->menu.mouse.enable;
@@ -977,20 +977,20 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 
    if (check_overlay)
    {
-      menu_input->mouse.oldleft   = false;
-      menu_input->mouse.oldright  = false;
+      mouse_oldleft   = false;
+      mouse_oldright  = false;
       return 0;
    }
 
    if (menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON))
    {
-      if (!menu_input->mouse.oldleft)
+      if (!mouse_oldleft)
       {
          menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
          BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L);
 
-         menu_input->mouse.oldleft = true;
+         mouse_oldleft = true;
 
          /* Back button */
          if ((unsigned)menu_input_mouse_state(MENU_MOUSE_X_AXIS) < header_height)
@@ -1010,18 +1010,18 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       }
    }
    else
-      menu_input->mouse.oldleft = false;
+      mouse_oldleft = false;
 
    if (menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
    {
-      if (!menu_input->mouse.oldright)
+      if (!mouse_oldright)
       {
-         menu_input->mouse.oldright = true;
+         mouse_oldright = true;
          BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_R);
       }
    }
    else
-      menu_input->mouse.oldright = false;
+      mouse_oldright = false;
 
    if (menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN))
    {
