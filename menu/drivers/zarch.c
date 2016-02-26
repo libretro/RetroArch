@@ -52,11 +52,8 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
-#if 0
-#define ZARCH_DEBUG
-#endif
-
 #define ZUI_FG_NORMAL         (~0)
+#define NPARTICLES            100
 
 enum zarch_zui_input_state
 {
@@ -388,8 +385,6 @@ static float zarch_zui_scalef(float val,
 {
    return (((val - oldmin) * (newmax - newmin)) / (oldmax - oldmin)) + newmin;
 }
-
-#define NPARTICLES 100
 
 static void zarch_zui_snow(zui_t *zui, gfx_coord_array_t *ca,
       int width, int height)
