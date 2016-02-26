@@ -87,8 +87,6 @@ struct menu_bind_state
 
 typedef struct menu_input_mouse
 {
-   int16_t x;
-   int16_t y;
    bool    oldleft;
    bool    oldright;
    bool    hwheelup;
@@ -872,12 +870,6 @@ static int menu_input_mouse(unsigned *action)
    menu_input->mouse.hwheeldown = input_driver_state(
          NULL, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
-   menu_input->mouse.x          = input_driver_state(
-         NULL, 0, RARCH_DEVICE_MOUSE_SCREEN,
-         0, RETRO_DEVICE_ID_MOUSE_X);
-   menu_input->mouse.y          = input_driver_state(
-         NULL, 0, RARCH_DEVICE_MOUSE_SCREEN,
-         0, RETRO_DEVICE_ID_MOUSE_Y);
 
    return 0;
 }
@@ -929,8 +921,8 @@ static int menu_input_mouse_frame(
    {
       menu_ctx_pointer_t point;
 
-      point.x      = menu_input->mouse.x;
-      point.y      = menu_input->mouse.y;
+      point.x      = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+      point.y      = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
       point.ptr    = menu_input->mouse.ptr;
       point.cbs    = cbs;
       point.entry  = entry;
@@ -1000,7 +992,8 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
 
          menu_input->mouse.oldleft = true;
 
-         if ((unsigned)menu_input->mouse.y < header_height)
+         /* Back button */
+         if ((unsigned)menu_input_mouse_state(MENU_MOUSE_X_AXIS) < header_height)
          {
             menu_entries_pop_stack(&selection, 0);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
@@ -1071,6 +1064,7 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
 {
    menu_input_t *menu = menu_input_get_ptr();
    unsigned type = 0;
+   unsigned device = RETRO_DEVICE_MOUSE;
 
    if (!menu)
       return 0;
@@ -1078,9 +1072,13 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
    switch (state)
    {
       case MENU_MOUSE_X_AXIS:
-         return menu->mouse.x;
+         device = RARCH_DEVICE_MOUSE_SCREEN;
+         type = RETRO_DEVICE_ID_MOUSE_X;
+         break;
       case MENU_MOUSE_Y_AXIS:
-         return menu->mouse.y;
+         device = RARCH_DEVICE_MOUSE_SCREEN;
+         type = RETRO_DEVICE_ID_MOUSE_Y;
+         break;
       case MENU_MOUSE_LEFT_BUTTON:
          type = RETRO_DEVICE_ID_MOUSE_LEFT;
          break;
@@ -1097,7 +1095,7 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
          return 0;
    }
 
-   return input_driver_state(NULL, 0, RETRO_DEVICE_MOUSE, 0, type);
+   return input_driver_state(NULL, 0, device, 0, type);
 }
 
 static int menu_input_pointer_post_iterate(
