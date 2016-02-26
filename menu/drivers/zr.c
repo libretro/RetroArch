@@ -63,7 +63,7 @@ static struct zr_font font;
 static char zr_font_path[PATH_MAX_LENGTH];
 
 static struct zr_user_font usrfnt;
-static struct zr_allocator alloc;
+static struct zr_allocator zr_alloc;
 
 enum
 {
@@ -846,13 +846,13 @@ static void zrmenu_init(int width, int height)
          "DroidSans.ttf", sizeof(zr_font_path));
 
    glViewport(0, 0, width, height);
-   alloc.userdata.ptr = NULL;
-   alloc.alloc = zrmenu_mem_alloc;
-   alloc.free = zrmenu_mem_free;
-   zr_buffer_init(&device.cmds, &alloc, 1024);
+   zr_alloc.userdata.ptr = NULL;
+   zr_alloc.alloc = zrmenu_mem_alloc;
+   zr_alloc.free = zrmenu_mem_free;
+   zr_buffer_init(&device.cmds, &zr_alloc, 1024);
    usrfnt = font_bake_and_upload(&device, &font, zr_font_path, 16,
       zr_font_default_glyph_ranges());
-   zr_init(&gui.ctx, &alloc, &usrfnt);
+   zr_init(&gui.ctx, &zr_alloc, &usrfnt);
    zr_device_init(&device);
 
    for (int i = 0; i < ZR_ROUNDING_MAX; ++i)
