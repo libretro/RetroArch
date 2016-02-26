@@ -172,6 +172,8 @@ static void menu_display_d3d_draw_bg(void *data)
    if (!d3d || !draw)
       return;
 
+   (void)coords;
+
    new_vertex    = draw->vertex;
    new_tex_coord = draw->tex_coord;
 
