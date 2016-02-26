@@ -1309,24 +1309,11 @@ static bool zarch_menu_init_list(void *data)
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-
    strlcpy(info.label,
          menu_hash_to_str(MENU_VALUE_HISTORY_TAB), sizeof(info.label));
 
    menu_entries_push(menu_stack,
          info.path, info.label, info.type, info.flags, 0);
-
-#if 0
-   menu_entries_increment_menu_stack();
-
-   strlcpy(info.label,
-         menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
-
-   menu_stack = menu_entries_get_menu_stack_ptr(1);
-
-   menu_entries_push(menu_stack,
-         info.path, info.label, info.type, info.flags, 0);
-#endif
 
    event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
 
