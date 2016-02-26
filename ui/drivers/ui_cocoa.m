@@ -353,7 +353,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 
 - (IBAction)openCore:(id)sender {
 #ifdef HAVE_OPENGL
-   GLContextClass *glc   = (NSOpenGLContext*)glcontext_get_ptr();
+   NSOpenGLContext *glc  = (NSOpenGLContext*)glcontext_get_ptr();
 #endif
     NSOpenPanel* panel   = (NSOpenPanel*)[NSOpenPanel openPanel];
     settings_t *settings = config_get_ptr();
@@ -388,7 +388,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 - (void)openDocument:(id)sender
 {
 #ifdef HAVE_OPENGL
-   GLContextClass *glc   = (NSOpenGLContext*)glcontext_get_ptr();
+   NSOpenGLContext *glc  = (NSOpenGLContext*)glcontext_get_ptr();
 #endif
    NSOpenPanel* panel    = (NSOpenPanel*)[NSOpenPanel openPanel];
    settings_t *settings  = config_get_ptr();
