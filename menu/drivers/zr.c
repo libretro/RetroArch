@@ -1811,7 +1811,7 @@ static void wimp_frame(void *data)
    zrmenu_input_mouse_button(&gui.ctx);
    zr_input_end(&gui.ctx);
    zrmenu_draw(&gui, width, height);
-   zr_device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_OFF);
+   zr_device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
 
    /* zahnrad code */
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
