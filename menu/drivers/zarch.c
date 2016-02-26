@@ -56,59 +56,36 @@
 #define ZARCH_DEBUG
 #endif
 
-const float ZUI_NORMAL[] = {
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-   1, 1, 1, 1,
-};
-const float ZUI_HILITE[] = {
-   1, 0, 0, 1,
-   1, 0, 0, 1,
-   1, 0, 0, 1,
-   1, 0, 0, 1,
-};
-const float ZUI_PRESS[] = {
-   0, 1, 0, 1,
-   0, 1, 0, 1,
-   0, 1, 0, 1,
-   0, 1, 0, 1,
-};
-const float ZUI_BARBG[] = {
-   0, 0, 1, 1,
-   0, 0, 1, 1,
-   0, 0, 1, 1,
-   0, 0, 1, 1,
-};
-
-const uint32_t ZUI_FG_NORMAL = ~0;
-const float ZUI_BG_PANEL[] = {
-   0, 0, 0, 0.25,
-   0, 0, 0, 0.25,
-   0, 0, 0, 0.25,
-   0, 0, 0, 0.25,
-};
-const float ZUI_BG_SCREEN[] = {
-   0.07, 0.19, 0.26, 0.75,
-   0.07, 0.19, 0.26, 0.75,
-   0.15, 0.31, 0.47, 0.75,
-   0.15, 0.31, 0.47, 0.75,
-};
-const float ZUI_BG_HILITE[] = {
-   0.22, 0.60, 0.74, 1,
-   0.22, 0.60, 0.74, 1,
-   0.22, 0.60, 0.74, 1,
-   0.22, 0.60, 0.74, 1,
-};
-
-const float ZUI_BG_PAD_HILITE[] = {
-   0.30, 0.76, 0.93, 1,
-   0.30, 0.76, 0.93, 1,
-   0.30, 0.76, 0.93, 1,
-   0.30, 0.76, 0.93, 1,
-};
-
+#define ZUI_FG_NORMAL         (~0)
 #define ZUI_MAX_MAINMENU_TABS 4
+
+static const float zui_bg_panel[] = {
+   0, 0, 0, 0.25,
+   0, 0, 0, 0.25,
+   0, 0, 0, 0.25,
+   0, 0, 0, 0.25,
+};
+
+static const float zui_bg_screen[] = {
+   0.07, 0.19, 0.26, 0.75,
+   0.07, 0.19, 0.26, 0.75,
+   0.15, 0.31, 0.47, 0.75,
+   0.15, 0.31, 0.47, 0.75,
+};
+
+static const float zui_bg_hilite[] = {
+   0.22, 0.60, 0.74, 1,
+   0.22, 0.60, 0.74, 1,
+   0.22, 0.60, 0.74, 1,
+   0.22, 0.60, 0.74, 1,
+};
+
+static const float zui_bg_pad_hilite[] = {
+   0.30, 0.76, 0.93, 1,
+   0.30, 0.76, 0.93, 1,
+   0.30, 0.76, 0.93, 1,
+   0.30, 0.76, 0.93, 1,
+};
 
 typedef struct zarch_handle
 {
@@ -490,10 +467,10 @@ static bool zarch_zui_button_full(zui_t *zui,
 {
    unsigned       id = zarch_zui_hash(zui, label);
    bool       active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
-   const float *bg = ZUI_BG_PANEL;
+   const float *bg   = zui_bg_panel;
 
    if (zui->item.active == id || zui->item.hot == id)
-      bg = ZUI_BG_HILITE;
+      bg = zui_bg_hilite;
 
    zarch_zui_push_quad(zui->width, zui->height,  bg, &zui->ca,  x1, y1, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, x1+12, y1 + 41, label);
@@ -519,7 +496,7 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
    int                x2 = x1 + zui->width - 290 - 40;
    int                y2 = y1 + 50;
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
-   const float       *bg = ZUI_BG_PANEL;
+   const float       *bg = zui_bg_panel;
 
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
@@ -550,9 +527,9 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
       zui->active_id         = item_id;
 
    if (zui->item.active == id || zui->item.hot == id)
-      bg = ZUI_BG_HILITE;
+      bg = zui_bg_hilite;
    else if (zui->active_id == item_id)
-      bg = ZUI_BG_PAD_HILITE;
+      bg = zui_bg_pad_hilite;
 
    ticker_size = x2 / 14;
 
@@ -560,7 +537,7 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
    ticker.len      = ticker_size;
    ticker.idx      = *frame_count / 50;
    ticker.str      = label;
-   ticker.selected = (bg == ZUI_BG_HILITE || bg == ZUI_BG_PAD_HILITE);
+   ticker.selected = (bg == zui_bg_hilite || bg == zui_bg_pad_hilite);
 
    menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
@@ -587,7 +564,7 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab,
    int x1, y1, x2, y2;
    unsigned       id = zarch_zui_hash(zui, label);
    int         width = tab->tab_width;
-   const float   *bg = ZUI_BG_PANEL;
+   const float   *bg = zui_bg_panel;
    bool selected     = tab->tab_selection == tab_id; /* TODO/FIXME */
 
    if (!width)
@@ -612,9 +589,9 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab,
       tab->inited = true;
 
    if (tab->active_id == id || zui->item.active == id || zui->item.hot == id)
-      bg             = ZUI_BG_HILITE;
+      bg             = zui_bg_hilite;
    else if (selected)
-      bg             = ZUI_BG_PAD_HILITE;
+      bg             = zui_bg_pad_hilite;
 
    zarch_zui_push_quad(zui->width, zui->height,  bg, &zui->ca, x1+0, y1+0, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, x1+12, y1 + 41, label);
@@ -908,7 +885,7 @@ static int zarch_zui_render_lay_root(zui_t *zui)
       zui->pending_selection = -1;
 
    zarch_zui_push_quad(zui->width, zui->height,
-         ZUI_BG_HILITE, &zui->ca, 0, 60, zui->width - 290 - 40, 60+4);
+         zui_bg_hilite, &zui->ca, 0, 60, zui->width - 290 - 40, 60+4);
 
    return 0;
 }
@@ -1053,7 +1030,7 @@ static void zarch_frame(void *data)
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BIND_BLOCK, &zui->tmp_block);
 
-   zarch_zui_push_quad(zui->width, zui->height, ZUI_BG_SCREEN,
+   zarch_zui_push_quad(zui->width, zui->height, zui_bg_screen,
          &zui->ca, 0, 0, zui->width, zui->height);
    zarch_zui_snow(zui, &zui->ca, zui->width, zui->height);
 
