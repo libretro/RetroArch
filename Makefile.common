@@ -799,12 +799,6 @@ ifeq ($(HAVE_XVIDEO), 1)
    DEFINES += $(XVIDEO_CFLAGS)
 endif
 
-ifeq ($(HAVE_XSHM), 1)
-   OBJ += gfx/drivers/xshm.o
-   LIBS += $(XSHM_LIBS)
-   DEFINES += $(XSHM_CFLAGS)
-endif
-
 ifeq ($(HAVE_CG), 1)
    DEFINES += -DHAVE_CG
    OBJ += gfx/drivers_shader/shader_gl_cg.o

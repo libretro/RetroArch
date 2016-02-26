@@ -193,9 +193,6 @@ static const video_driver_t *video_drivers[] = {
 #ifdef HAVE_SUNXI
    &video_sunxi,
 #endif
-#ifdef HAVE_XSHM
-   &video_xshm,
-#endif
    &video_null,
    NULL,
 };
