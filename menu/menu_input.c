@@ -952,27 +952,18 @@ static int menu_input_mouse_frame(
 static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
       menu_file_list_cbs_t *cbs, unsigned action)
 {
-   size_t selection;
-   unsigned header_height;
    settings_t *settings       = config_get_ptr();
-   menu_input_t *menu_input   = menu_input_get_ptr();
-   bool check_overlay         = false;
    static bool mouse_oldleft  = false;
    static bool mouse_oldright = false;
-   
-   if (settings)
-      check_overlay         = !settings->menu.mouse.enable;
 
    *input_mouse = MOUSE_ACTION_NONE;
 
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-
+   if (
+         !settings->menu.mouse.enable 
 #ifdef HAVE_OVERLAY
-   check_overlay = check_overlay || 
-      (settings->input.overlay_enable && input_overlay_is_alive());
+         || (settings->input.overlay_enable && input_overlay_is_alive())
 #endif
-
-   if (check_overlay)
+         )
    {
       mouse_oldleft   = false;
       mouse_oldright  = false;
@@ -983,6 +974,11 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    {
       if (!mouse_oldleft)
       {
+         size_t selection;
+         unsigned header_height;
+         menu_input_t *menu_input = menu_input_get_ptr();
+
+         menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
          menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
          BIT64_SET(*input_mouse, MOUSE_ACTION_BUTTON_L);
@@ -1232,8 +1228,10 @@ void menu_input_post_iterate(int *ret, unsigned action)
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    if (settings->menu.mouse.enable)
+   {
       *ret  = menu_input_mouse_post_iterate
          (&menu_input->mouse.state, cbs, action);
+   }
 
    *ret = menu_input_mouse_frame(cbs, &entry, menu_input->mouse.state, action);
 
