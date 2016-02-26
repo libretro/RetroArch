@@ -1274,7 +1274,6 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
    int action_id, ret = 0;
    menu_entry_t entry;
    bool perform_action  = true;
-   enum menu_action act = (enum menu_action)action;
    menu_handle_t *menu  = (menu_handle_t*)data;
    zui_t *zui           = (zui_t*)userdata;
 
@@ -1299,17 +1298,17 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
       menu_entry_get(&entry, 0, zui->pending_action_ok.idx, NULL, false);
       zui->pending_action_ok.enable = false;
       
-      act               = MENU_ACTION_OK;
+      action        = MENU_ACTION_OK;
       action_id    = zui->pending_action_ok.idx;
       zui->pending_action_ok.idx = 0;
    }
    else
    {
-      zui->action       = act;
+      zui->action       = action;
    }
 
    if (perform_action)
-      ret = menu_entry_action(&entry, action_id, act);
+      ret = menu_entry_action(&entry, action_id, action);
 
    return ret;
 }
