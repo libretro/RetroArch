@@ -851,7 +851,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 static int menu_input_mouse(unsigned *action)
 {
    video_viewport_t vp;
-   const struct retro_keybind *binds[MAX_USERS];
    menu_input_t *menu_input  = menu_input_get_ptr();
 
    if (!video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp))
@@ -872,28 +871,28 @@ static int menu_input_mouse(unsigned *action)
    }
 
    menu_input->mouse.left       = input_driver_state(
-         binds, 0, RETRO_DEVICE_MOUSE,
+         NULL, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_LEFT);
    menu_input->mouse.right      = input_driver_state(
-         binds, 0, RETRO_DEVICE_MOUSE,
+         NULL, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_RIGHT);
    menu_input->mouse.wheelup    = input_driver_state(
-         binds, 0, RETRO_DEVICE_MOUSE,
+         NULL, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_WHEELUP);
    menu_input->mouse.wheeldown  = input_driver_state(
-         binds, 0, RETRO_DEVICE_MOUSE,
+         NULL, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
    menu_input->mouse.hwheelup   = input_driver_state(
-         binds, 0, RETRO_DEVICE_MOUSE,
+         NULL, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
    menu_input->mouse.hwheeldown = input_driver_state(
-         binds, 0, RETRO_DEVICE_MOUSE,
+         NULL, 0, RETRO_DEVICE_MOUSE,
          0, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
    menu_input->mouse.x          = input_driver_state(
-         binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
+         NULL, 0, RARCH_DEVICE_MOUSE_SCREEN,
          0, RETRO_DEVICE_ID_MOUSE_X);
    menu_input->mouse.y          = input_driver_state(
-         binds, 0, RARCH_DEVICE_MOUSE_SCREEN,
+         NULL, 0, RARCH_DEVICE_MOUSE_SCREEN,
          0, RETRO_DEVICE_ID_MOUSE_Y);
 
    return 0;
