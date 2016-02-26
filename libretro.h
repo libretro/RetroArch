@@ -1396,13 +1396,17 @@ struct retro_camera_callback
     */
    uint64_t caps; 
 
-   unsigned width; /* Desired resolution for camera. Is only used as a hint. */
+   /* Desired resolution for camera. Is only used as a hint. */
+   unsigned width;
    unsigned height;
-   retro_camera_start_t start; /* Set by frontend. */
-   retro_camera_stop_t stop; /* Set by frontend. */
+
+   /* Set by frontend. */
+   retro_camera_start_t start;
+   retro_camera_stop_t stop;
 
    /* Set by libretro core if raw framebuffer callbacks will be used. */
    retro_camera_frame_raw_framebuffer_t frame_raw_framebuffer;
+
    /* Set by libretro core if OpenGL texture callbacks will be used. */
    retro_camera_frame_opengl_texture_t frame_opengl_texture; 
 

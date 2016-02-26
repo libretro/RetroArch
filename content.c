@@ -404,7 +404,8 @@ struct decomp_state
    bool found;
 };
 
-static bool content_zip_file_decompressed_handle(file_archive_file_handle_t *handle,
+static bool content_zip_file_decompressed_handle(
+      file_archive_file_handle_t *handle,
       const uint8_t *cdata, uint32_t csize,
       uint32_t size, uint32_t crc32)
 {
