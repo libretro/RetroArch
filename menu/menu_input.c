@@ -824,11 +824,7 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 
 static int menu_input_mouse(unsigned *action)
 {
-   video_viewport_t vp;
    menu_input_t *menu_input  = menu_input_get_ptr();
-
-   if (!video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp))
-      return -1;
 
    if (menu_input->mouse.hwheeldown)
    {
