@@ -85,15 +85,15 @@ static bool g_use_hw_ctx;
 
 #if defined(HAVE_COCOA)
 static NSOpenGLPixelFormat* g_format;
+
+void *glcontext_get_ptr(void)
+{
+    return g_context;
+}
 #endif
 
 static unsigned g_minor = 0;
 static unsigned g_major = 0;
-
-void *glcontext_get_ptr(void)
-{
-   return g_context;
-}
 
 /* forward declaration */
 void *nsview_get_ptr(void);
