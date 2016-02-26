@@ -844,7 +844,7 @@ static void zrmenu_init(int width, int height)
    settings_t *settings = config_get_ptr();
 
    fill_pathname_join(zr_font_path, settings->assets_directory,
-         "wimp", sizeof(zr_font_path));
+         "zahnrad", sizeof(zr_font_path));
    fill_pathname_join(zr_font_path, zr_font_path,
          "DroidSans.ttf", sizeof(zr_font_path));
 
