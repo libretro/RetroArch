@@ -378,6 +378,29 @@ typedef struct menu_ctx_displaylist
 typedef struct menu_ctx_iterate
 {
    enum menu_action action;
+
+   struct
+   {
+      int16_t x;
+      int16_t y;
+      bool touch;
+   } pointer;
+
+   struct
+   {
+      int16_t x;
+      int16_t y;
+      struct
+      {
+         bool left;
+         bool right;
+      } buttons;
+      struct
+      {
+         bool up;
+         bool down;
+      } wheel;
+   } mouse;
 } menu_ctx_iterate_t;
 
 typedef struct menu_ctx_environment
