@@ -77,15 +77,16 @@ typedef struct xv
 
 static void xv_set_nonblock_state(void *data, bool state)
 {
-   xv_t *xv = (xv_t*)data;
+   xv_t *xv  = (xv_t*)data;
    Atom atom = XInternAtom(g_x11_dpy, "XV_SYNC_TO_VBLANK", true);
+
    if (atom != None && xv->port)
       XvSetPortAttribute(g_x11_dpy, xv->port, atom, !state);
    else
       RARCH_WARN("Failed to set SYNC_TO_VBLANK attribute.\n");
 }
 
-static INLINE void calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v,
+static INLINE void xv_calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v,
       unsigned r, unsigned g, unsigned b)
 {
    int y_ = (int)(+((double)r * 0.257) + ((double)g * 0.504) 
@@ -95,9 +96,9 @@ static INLINE void calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v,
    int v_ = (int)(+((double)r * 0.439) - ((double)g * 0.368) 
          - ((double)b * 0.071) + 128.0);
 
-   *y = y_ < 0 ? 0 : (y_ > 255 ? 255 : y_);
-   *u = y_ < 0 ? 0 : (u_ > 255 ? 255 : u_);
-   *v = v_ < 0 ? 0 : (v_ > 255 ? 255 : v_);
+   *y     = y_ < 0 ? 0 : (y_ > 255 ? 255 : y_);
+   *u     = y_ < 0 ? 0 : (u_ > 255 ? 255 : u_);
+   *v     = v_ < 0 ? 0 : (v_ > 255 ? 255 : v_);
 }
 
 static void init_yuv_tables(xv_t *xv)
@@ -110,12 +111,15 @@ static void init_yuv_tables(xv_t *xv)
    for (i = 0; i < 0x10000; i++)
    {
       /* Extract RGB565 color data from i */
-      unsigned r = (i >> 11) & 0x1f, g = (i >> 5) & 0x3f, b = (i >> 0) & 0x1f;
-      r = (r << 3) | (r >> 2);  /* R5->R8 */
-      g = (g << 2) | (g >> 4);  /* G6->G8 */
-      b = (b << 3) | (b >> 2);  /* B5->B8 */
+      unsigned r = (i >> 11) & 0x1f;
+      unsigned g = (i >> 5)  & 0x3f;
+      unsigned b = (i >> 0)  & 0x1f;
+      r          = (r << 3) | (r >> 2);  /* R5->R8 */
+      g          = (g << 2) | (g >> 4);  /* G6->G8 */
+      b          = (b << 3) | (b >> 2);  /* B5->B8 */
 
-      calculate_yuv(&xv->ytable[i], &xv->utable[i], &xv->vtable[i], r, g, b);
+      xv_calculate_yuv(&xv->ytable[i],
+            &xv->utable[i], &xv->vtable[i], r, g, b);
    }
 }
 
@@ -138,7 +142,7 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
       b = settings->video.msg_color_b * 255;
       b = (b < 0 ? 0 : (b > 255 ? 255 : b));
 
-      calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
+      xv_calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
             r, g, b);
    }
    else
@@ -152,21 +156,20 @@ static void render16_yuy2(xv_t *xv, const void *input_,
 {
    unsigned x, y;
    const uint16_t *input = (const uint16_t*)input_;
-   uint8_t *output = (uint8_t*)xv->image->data;
+   uint8_t *output       = (uint8_t*)xv->image->data;
 
    for (y = 0; y < height; y++)
    {
       for (x = 0; x < width; x++)
       {
-         uint16_t p = *input++;
-
-         uint8_t y0 = xv->ytable[p];
-         uint8_t u = xv->utable[p];
-         uint8_t v = xv->vtable[p];
+         uint16_t p         = *input++;
+         uint8_t y0         = xv->ytable[p];
+         uint8_t u          = xv->utable[p];
+         uint8_t v          = xv->vtable[p];
 
          unsigned img_width = xv->width << 1;
 
-         output[0] = output[img_width] = y0;
+         output[0] = output[img_width]     = y0;
          output[1] = output[img_width + 1] = u;
          output[2] = output[img_width + 2] = y0;
          output[3] = output[img_width + 3] = v;
@@ -183,21 +186,19 @@ static void render16_uyvy(xv_t *xv, const void *input_,
 {
    unsigned x, y;
    const uint16_t *input = (const uint16_t*)input_;
-   uint8_t *output = (uint8_t*)xv->image->data;
+   uint8_t       *output = (uint8_t*)xv->image->data;
 
    for (y = 0; y < height; y++)
    {
       for (x = 0; x < width; x++)
       {
-         uint16_t p = *input++;
-
-         uint8_t y0 = xv->ytable[p];
-         uint8_t u = xv->utable[p];
-         uint8_t v = xv->vtable[p];
-
+         uint16_t p         = *input++;
+         uint8_t y0         = xv->ytable[p];
+         uint8_t u          = xv->utable[p];
+         uint8_t v          = xv->vtable[p];
          unsigned img_width = xv->width << 1;
 
-         output[0] = output[img_width] = u;
+         output[0] = output[img_width]     = u;
          output[1] = output[img_width + 1] = y0;
          output[2] = output[img_width + 2] = v;
          output[3] = output[img_width + 3] = y0;
@@ -214,7 +215,7 @@ static void render32_yuy2(xv_t *xv, const void *input_,
 {
    unsigned x, y;
    const uint32_t *input = (const uint32_t*)input_;
-   uint8_t *output = (uint8_t*)xv->image->data;
+   uint8_t *output       = (uint8_t*)xv->image->data;
 
    for (y = 0; y < height; y++)
    {
@@ -226,9 +227,9 @@ static void render32_yuy2(xv_t *xv, const void *input_,
          p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0) 
             | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
 
-         y0 = xv->ytable[p];
-         u = xv->utable[p];
-         v = xv->vtable[p];
+         y0        = xv->ytable[p];
+         u         = xv->utable[p];
+         v         = xv->vtable[p];
 
          img_width = xv->width << 1;
          output[0] = output[img_width] = y0;
@@ -248,7 +249,7 @@ static void render32_uyvy(xv_t *xv, const void *input_,
 {
    unsigned x, y;
    const uint32_t *input = (const uint32_t*)input_;
-   uint16_t *output = (uint16_t*)xv->image->data;
+   uint16_t *output      = (uint16_t*)xv->image->data;
 
    for (y = 0; y < height; y++)
    {
@@ -260,9 +261,9 @@ static void render32_uyvy(xv_t *xv, const void *input_,
          p = ((p >> 8) & 0xf800) 
             | ((p >> 5) & 0x07e0) | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
 
-         y0 = xv->ytable[p];
-         u = xv->utable[p];
-         v = xv->vtable[p];
+         y0        = xv->ytable[p];
+         u         = xv->utable[p];
+         v         = xv->vtable[p];
 
          img_width = xv->width << 1;
          output[0] = output[img_width] = u;
@@ -308,13 +309,14 @@ static const struct format_desc formats[] = {
    },
 };
 
-static bool adaptor_set_format(xv_t *xv, Display *dpy,
+static bool xv_adaptor_set_format(xv_t *xv, Display *dpy,
       XvPortID port, const video_info_t *video)
 {
    int i;
    unsigned j;
    int format_count;
-   XvImageFormatValues *format = XvListImageFormats(g_x11_dpy, port, &format_count);
+   XvImageFormatValues *format = XvListImageFormats(
+         g_x11_dpy, port, &format_count);
 
    if (!format)
       return false;
@@ -351,21 +353,23 @@ static bool adaptor_set_format(xv_t *xv, Display *dpy,
    return false;
 }
 
-static void calc_out_rect(bool keep_aspect, struct video_viewport *vp,
+static void xv_calc_out_rect(bool keep_aspect,
+      struct video_viewport *vp,
       unsigned vp_width, unsigned vp_height)
 {
    settings_t *settings = config_get_ptr();
 
-   vp->full_width  = vp_width;
-   vp->full_height = vp_height;
+   vp->full_width       = vp_width;
+   vp->full_height      = vp_height;
 
    if (settings->video.scale_integer)
       video_viewport_get_scaled_integer(vp, vp_width, vp_height,
             video_driver_get_aspect_ratio(), keep_aspect);
    else if (!keep_aspect)
    {
-      vp->x = 0; vp->y = 0;
-      vp->width = vp_width;
+      vp->x      = 0;
+      vp->y      = 0;
+      vp->width  = vp_width;
       vp->height = vp_height;
    }
    else
@@ -379,25 +383,26 @@ static void calc_out_rect(bool keep_aspect, struct video_viewport *vp,
        */
       if (fabs(device_aspect - desired_aspect) < 0.0001)
       {
-         vp->x = 0; vp->y = 0;
-         vp->width = vp_width;
-         vp->height = vp_height;
+         vp->x       = 0;
+         vp->y       = 0;
+         vp->width   = vp_width;
+         vp->height  = vp_height;
       }
       else if (device_aspect > desired_aspect)
       {
          float delta = (desired_aspect / device_aspect - 1.0) / 2.0 + 0.5;
-         vp->x = vp_width * (0.5 - delta);
-         vp->y = 0;
-         vp->width = 2.0 * vp_width * delta;
-         vp->height = vp_height;
+         vp->x       = vp_width * (0.5 - delta);
+         vp->y       = 0;
+         vp->width   = 2.0 * vp_width * delta;
+         vp->height  = vp_height;
       }
       else
       {
          float delta = (device_aspect / desired_aspect - 1.0) / 2.0 + 0.5;
-         vp->x = 0;
-         vp->y = vp_height * (0.5 - delta);
-         vp->width = vp_width;
-         vp->height = 2.0 * vp_height * delta;
+         vp->x       = 0;
+         vp->y       = vp_height * (0.5 - delta);
+         vp->width   = vp_width;
+         vp->height  = 2.0 * vp_height * delta;
       }
    }
 }
@@ -460,7 +465,8 @@ static void *xv_init(const video_info_t *video,
          continue;
       if (!(adaptor_info[i].type & XvImageMask))
          continue;
-      if (!adaptor_set_format(xv, g_x11_dpy, adaptor_info[i].base_id, video))
+      if (!xv_adaptor_set_format(xv, g_x11_dpy,
+               adaptor_info[i].base_id, video))
          continue;
 
       xv->port     = adaptor_info[i].base_id;
@@ -584,7 +590,7 @@ static void *xv_init(const video_info_t *video,
       goto error;
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
-   calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
+   xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
    xv->vp.full_width = target.width;
    xv->vp.full_height = target.height;
 
@@ -597,7 +603,7 @@ error:
    return NULL;
 }
 
-static bool check_resize(xv_t *xv, unsigned width, unsigned height)
+static bool xv_check_resize(xv_t *xv, unsigned width, unsigned height)
 {
    /* We render @ 2x scale to combat chroma downsampling. */
    if (xv->width != (width << 1) || xv->height != (height << 1))
@@ -774,13 +780,13 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    if (!frame)
       return true;
 
-   if (!check_resize(xv, width, height))
+   if (!xv_check_resize(xv, width, height))
       return false;
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
    xv->render_func(xv, frame, width, height, pitch);
 
-   calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
+   xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
    xv->vp.full_width  = target.width;
    xv->vp.full_height = target.height;
 
