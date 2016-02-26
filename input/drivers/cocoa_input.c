@@ -27,7 +27,7 @@
 #include "../drivers_keyboard/keyboard_event_apple.h"
 
 /* Forward declarations */
-extern float get_backing_scale_factor(void);
+float get_backing_scale_factor(void);
 
 int32_t cocoa_input_find_any_key(void)
 {
