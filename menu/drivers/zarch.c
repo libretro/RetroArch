@@ -1316,7 +1316,6 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 
 static bool zarch_menu_init_list(void *data)
 {
-   int ret;
    menu_displaylist_info_t info = {0};
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
