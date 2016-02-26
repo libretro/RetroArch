@@ -91,7 +91,8 @@ enum menu_input_ctl_state
    MENU_INPUT_CTL_BIND_ALL,
    MENU_INPUT_CTL_BIND_ITERATE,
    MENU_INPUT_CTL_BIND_SET_MIN_MAX,
-   MENU_INPUT_CTL_START_LINE
+   MENU_INPUT_CTL_START_LINE,
+   MENU_INPUT_CTL_SET_FRAME_INPUT
 };
 
 typedef struct menu_input_ctx_hitbox
