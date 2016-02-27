@@ -636,8 +636,8 @@ static struct zr_user_font font_bake_and_upload(
       config.pixel_snap   = zr_false;
       config.size         = (float)font_height;
       config.spacing      = zr_vec2(0,0);
-      config.oversample_h = 1;
-      config.oversample_v = 1;
+      config.oversample_h = 2;
+      config.oversample_v = 2;
 
       /* query needed amount of memory for the font baking process */
       zr_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
@@ -1838,9 +1838,10 @@ static void wimp_font(void)
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
    fill_pathname_join(mediapath, settings->assets_directory,
-         "wimp", sizeof(mediapath));
+         "zahnrad", sizeof(mediapath));
    fill_pathname_join(fontpath, mediapath,
-         "Roboto-Regular.ttf", sizeof(fontpath));
+         "DroidSans.ttf", sizeof(fontpath));
+         printf("**%s**\n", fontpath);
 
    font_info.path = fontpath;
    font_info.size = font_size;
