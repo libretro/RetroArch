@@ -2090,7 +2090,7 @@ static void zr_context_reset(void *data)
       return;
 
    fill_pathname_join(iconpath, settings->assets_directory,
-         "glui", sizeof(iconpath));
+         "zahnrad", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    wimp_layout(wimp);
