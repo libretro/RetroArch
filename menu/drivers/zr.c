@@ -636,8 +636,8 @@ static struct zr_user_font font_bake_and_upload(
       config.pixel_snap   = zr_false;
       config.size         = (float)font_height;
       config.spacing      = zr_vec2(0,0);
-      config.oversample_h = 2;
-      config.oversample_v = 2;
+      config.oversample_h = 1;
+      config.oversample_v = 1;
 
       /* query needed amount of memory for the font baking process */
       zr_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
