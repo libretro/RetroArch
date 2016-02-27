@@ -1448,7 +1448,6 @@ static void wimp_render_menu_list(wimp_handle_t *wimp,
    }
 }
 
-#if 0
 static void wimp_draw_cursor(wimp_handle_t *wimp,
       float *color,
       float x, float y, unsigned width, unsigned height)
@@ -1477,7 +1476,6 @@ static void wimp_draw_cursor(wimp_handle_t *wimp,
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
-#endif
 
 static size_t wimp_list_get_size(void *data, enum menu_list_type type)
 {
@@ -1810,6 +1808,15 @@ static void wimp_frame(void *data)
    zr_device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
 
    /* zahnrad code */
+   if (settings->menu.mouse.enable && (settings->video.fullscreen
+            || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
+   {
+      int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+      int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+
+      wimp_draw_cursor(wimp, &white_bg[0], mouse_x, mouse_y, width, height);
+   }
+
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
