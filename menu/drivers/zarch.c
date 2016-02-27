@@ -53,6 +53,7 @@
 #include "../../tasks/tasks_internal.h"
 
 #define ZUI_FG_NORMAL         (~0)
+#define ZUI_ITEM_SIZE_PX      54
 #define NPARTICLES            100
 
 enum zarch_zui_input_state
@@ -544,6 +545,17 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
          break;
    }
 
+#if 0
+   {
+   unsigned size = menu_entries_get_size();
+   RARCH_LOG("item: %d/%d (ACTIVE: %d/%d)\n", item_id, size, zui->gamepad.active, size);
+   RARCH_LOG("item text: %s\n", label);
+   RARCH_LOG("x: %d, y: %d, x2: %d, y2: %d\n", x1, y1, x2, y2);
+   RARCH_LOG("onscreen %d (%d / %d)\n", (zui->height-ZUI_ITEM_SIZE_PX) > y1, y1, zui->height);
+   }
+#endif
+
+
    if (set_active_id)
       zui->gamepad.active         = item_id;
 
@@ -668,7 +680,7 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
 
          menu_entry_get(&entry, 0, i, NULL, true);
 
-         if (zarch_zui_list_item(zui, tabbed, 0, tabbed->tabline_size + j * 54,
+         if (zarch_zui_list_item(zui, tabbed, 0, tabbed->tabline_size + j * ZUI_ITEM_SIZE_PX,
                   entry.path, i, entry.value))
          {
             zui->pending_action_ok.enable      = true;
@@ -795,7 +807,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
                   strncat(label, "/", sizeof(label)-1);
 
                if (zarch_zui_list_item(zui, tabbed, 0,
-                        tabbed->tabline_size + 73 + j * 54,
+                        tabbed->tabline_size + 73 + j * ZUI_ITEM_SIZE_PX,
                         label, i, NULL))
                {
                   if (path_is_directory(path))
@@ -956,7 +968,7 @@ static int zarch_zui_render_pick_core(zui_t *zui)
 
    if (!zui->pick_supported)
    {
-      zarch_zui_list_item(zui, &tabbed, 0, 54,
+      zarch_zui_list_item(zui, &tabbed, 0, ZUI_ITEM_SIZE_PX,
             "Content unsupported", 0, NULL /* TODO/FIXME */);
       return 1;
    }
@@ -970,7 +982,7 @@ static int zarch_zui_render_pick_core(zui_t *zui)
       if (j > 10)
          break;
 
-      if (zarch_zui_list_item(zui, &tabbed, 0, 54 + j * 54,
+      if (zarch_zui_list_item(zui, &tabbed, 0, ZUI_ITEM_SIZE_PX + j * ZUI_ITEM_SIZE_PX,
                zui->pick_cores[i].display_name, i, NULL))
       {
          int ret = zarch_zui_load_content(zui, i);
