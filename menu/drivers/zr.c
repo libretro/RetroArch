@@ -1841,7 +1841,6 @@ static void wimp_font(void)
          "zahnrad", sizeof(mediapath));
    fill_pathname_join(fontpath, mediapath,
          "DroidSans.ttf", sizeof(fontpath));
-         printf("**%s**\n", fontpath);
 
    font_info.path = fontpath;
    font_info.size = font_size;
