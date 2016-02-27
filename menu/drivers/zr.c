@@ -671,7 +671,7 @@ static struct zr_user_font font_bake_and_upload(
       ti.height = (GLsizei)img_height;
 
       video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR, (uintptr_t*)&dev->font_tex);
+            TEXTURE_FILTER_MIPMAP_NEAREST, (uintptr_t*)&dev->font_tex);
 
       free(ttf_blob);
       free(tmp);
@@ -845,7 +845,6 @@ static void zrmenu_init(int width, int height)
    fill_pathname_join(zr_font_path, zr_font_path,
          "DroidSans.ttf", sizeof(zr_font_path));
 
-   glViewport(0, 0, width, height);
    zr_alloc.userdata.ptr = NULL;
    zr_alloc.alloc = zrmenu_mem_alloc;
    zr_alloc.free = zrmenu_mem_free;
