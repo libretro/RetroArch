@@ -119,6 +119,11 @@ typedef struct zarch_handle
       unsigned hot;
    } item;
 
+   struct
+   {
+      unsigned active;
+   } gamepad;
+
    gfx_coord_array_t ca;
 
    struct
@@ -157,7 +162,6 @@ typedef struct zarch_handle
    int header_height;
    unsigned pending_selection;
    unsigned next_id;
-   unsigned active_id;
    unsigned prev_id;
    bool     next_selection_set;
 } zui_t;
@@ -505,9 +509,9 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
 
    if (zui->pending_selection == ~0U)
    {
-      if (item_id < zui->active_id)
+      if (item_id < zui->gamepad.active)
          zui->prev_id = item_id;
-      if (item_id > zui->active_id && !zui->next_selection_set)
+      if (item_id > zui->gamepad.active && !zui->next_selection_set)
       {
          zui->next_id            = item_id;
          zui->next_selection_set = true;
@@ -515,17 +519,38 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
    }
    else
    {
-      if (     zui->active_id != item_id 
+      if (     zui->gamepad.active != item_id 
             && zui->pending_selection == item_id)
          set_active_id = true;
    }
 
-   if (set_active_id)
-      zui->active_id         = item_id;
+   switch (zui->action)
+   {
+      case MENU_ACTION_UP:
+         if (zui->prev_id != ~0U && zui->prev_id != zui->gamepad.active)
+         {
+            if (zui->prev_id < zui->gamepad.active)
+               zui->pending_selection = zui->prev_id;
+         }
+         break;
+      case MENU_ACTION_DOWN:
+         if (zui->next_id != ~0U && zui->next_id != zui->gamepad.active)
+         {
+            if (zui->next_id > zui->gamepad.active) 
+               zui->pending_selection = zui->next_id;
+         }
+         break;
+      default:
+         break;
+   }
 
+   if (set_active_id)
+      zui->gamepad.active         = item_id;
+
+   /* Set background color */
    if (zui->item.active == id || zui->item.hot == id)
       bg = zui_bg_hilite;
-   else if (zui->active_id == item_id)
+   else if (zui->gamepad.active == item_id)
       bg = zui_bg_pad_hilite;
 
    ticker_size = x2 / 14;
@@ -856,27 +881,8 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 111, item); 
 #endif
 
-   if (zui->pending_selection == ~0U)
+   if (zui->pending_selection != ~0U)
    {
-      switch (zui->action)
-      {
-         case MENU_ACTION_UP:
-            if (zui->prev_id != ~0U && zui->prev_id != zui->active_id)
-            {
-               if (zui->prev_id < zui->active_id)
-                  zui->pending_selection = zui->prev_id;
-            }
-            break;
-         case MENU_ACTION_DOWN:
-            if (zui->next_id != ~0U && zui->next_id != zui->active_id)
-            {
-               if (zui->next_id > zui->active_id) 
-                  zui->pending_selection = zui->next_id;
-            }
-            break;
-         default:
-            break;
-      }
    }
    else
       zui->pending_selection = -1;
@@ -952,7 +958,6 @@ static int zarch_zui_render_pick_core(zui_t *zui)
    {
       zarch_zui_list_item(zui, &tabbed, 0, 54,
             "Content unsupported", 0, NULL /* TODO/FIXME */);
-      zui->active_id = 0;
       return 1;
    }
 
