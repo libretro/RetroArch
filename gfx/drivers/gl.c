@@ -3642,15 +3642,16 @@ static void gl_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
+   enum texture_filter_type menu_filter;
    settings_t *settings            = config_get_ptr();
-   unsigned base_size = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
-   gl_t *gl = (gl_t*)data;
+   unsigned base_size              = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+   gl_t *gl                        = (gl_t*)data;
    if (!gl)
       return;
 
    context_bind_hw_render(gl, false);
 
-   enum texture_filter_type menu_filter = settings->menu.linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
+   menu_filter = settings->menu.linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
 
    if (!gl->menu_texture)
       glGenTextures(1, &gl->menu_texture);
