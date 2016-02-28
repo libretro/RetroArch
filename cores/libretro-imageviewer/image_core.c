@@ -271,7 +271,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
 
    if (slideshow_enable)
    {
-      if ((frames % 120 == 0) && image_index < (file_list->size - 1))
+      if ((frames % 120 == 0) && image_index < (signed)(file_list->size - 1))
          next_image = true;
    }
 
@@ -287,7 +287,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
 
    if (input & (1<<RETRO_DEVICE_ID_JOYPAD_UP))
    {
-      if ((image_index + 5) < (file_list->size - 1))
+      if ((image_index + 5) < (signed)(file_list->size - 1))
          forward_image   = true;
       else
          last_image      = true;
@@ -308,7 +308,7 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
    }
    if (input & (1<<RETRO_DEVICE_ID_JOYPAD_RIGHT))
    {
-      if (image_index < (file_list->size - 1))
+      if (image_index < (signed)(file_list->size - 1))
          next_image = true;
    }
 
