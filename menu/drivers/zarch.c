@@ -120,11 +120,6 @@ typedef struct zarch_handle
       unsigned hot;
    } item;
 
-   struct
-   {
-      unsigned active;
-   } gamepad;
-
    gfx_coord_array_t ca;
 
    struct
