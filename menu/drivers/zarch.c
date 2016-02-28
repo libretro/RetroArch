@@ -609,12 +609,12 @@ static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index, int *list_fi
             *gamepad_index = 0;
          return true;
       case MENU_ACTION_RIGHT:
-         if (*gamepad_index == (size-1))
+         if (*gamepad_index == (signed)(size-1))
             break;
 
          *gamepad_index = *gamepad_index + 5;
 
-         if (*gamepad_index > (size-1))
+         if (*gamepad_index > (signed)(size-1))
             *gamepad_index   = (size -1);
 
          return true;
@@ -623,7 +623,7 @@ static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index, int *list_fi
 
          if (*gamepad_index < 0) /* and wraparound enabled */
             *gamepad_index = size -1;
-         else if (*gamepad_index >= cutoff_point) /* if greater than cutoff point, 
+         else if (*gamepad_index >= (signed)cutoff_point) /* if greater than cutoff point, 
                                                 don't scroll */
             return false;
 
@@ -631,9 +631,9 @@ static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index, int *list_fi
       case MENU_ACTION_DOWN:
          *gamepad_index = *gamepad_index + 1;
 
-         if (*gamepad_index > (size - 1)) /* and wraparound enabled */
+         if (*gamepad_index > (signed)(size - 1)) /* and wraparound enabled */
             *gamepad_index = 0;
-         else if (*gamepad_index >= cutoff_point) /* if greater than cutoff point, 
+         else if (*gamepad_index >= (signed)cutoff_point) /* if greater than cutoff point, 
                                                 don't scroll */
             return false;
          return true;
@@ -673,7 +673,7 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
 
          if (zarch_zui_list_item(zui, tabbed, 0, 
                   tabbed->tabline_size + j * ZUI_ITEM_SIZE_PX,
-                  entry.path, i, entry.value, gamepad_index == i))
+                  entry.path, i, entry.value, gamepad_index == (signed)i))
          {
             if (menu_entry_action(&entry, i, MENU_ACTION_OK))
                return 1;
@@ -795,7 +795,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 
                if (zarch_zui_list_item(zui, tabbed, 0,
                         tabbed->tabline_size + 73 + j * ZUI_ITEM_SIZE_PX,
-                        label, i, NULL, gamepad_index == (i-skip)))
+                        label, i, NULL, gamepad_index == (signed)(i-skip)))
                {
                   if (path_is_directory(path))
                   {
