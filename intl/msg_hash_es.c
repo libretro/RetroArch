@@ -53,7 +53,7 @@ const char *msg_hash_to_str_es(uint32_t hash)
       case MSG_REWIND_INIT_FAILED:
          return "Error al iniciar el búfer de rebobinado. Rebobinado desactivado.";
       case MSG_REWIND_INIT:
-         return "Iniciando búfer de rebobinado, tamaño";
+         return "Iniciando búfer de rebobinado, tamaño:";
       case MSG_CUSTOM_TIMING_GIVEN:
          return "Se ha indicado un ritmo personalizado";
       case MSG_VIEWPORT_SIZE_CALCULATION_FAILED:
@@ -195,9 +195,11 @@ const char *msg_hash_to_str_es(uint32_t hash)
       case MSG_REWIND_REACHED_END:
          return "Se ha llegado al final del búfer de rebobinado.";
       case MSG_TASK_FAILED:
-        return "Fracasado";
+        return "Error";
       case MSG_DOWNLOADING:
         return "Descargando";
+      case MSG_EXTRACTING:
+        return "Extrayendo";
       default:
          break;
    }
