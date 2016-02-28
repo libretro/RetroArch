@@ -610,7 +610,8 @@ static void zarch_zui_render_lay_settings(zui_t *zui)
       zarch_layout = LAY_HOME;
 }
 
-static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index, int *list_first)
+static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index, int *list_first,
+      unsigned skip)
 {
    unsigned size          = menu_entries_get_size();
    unsigned cutoff_point  = size - 5;
@@ -663,7 +664,7 @@ static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index, int *list_fi
             if (*list_first > (int)cutoff_point)
                *list_first = cutoff_point;
 
-            *list_first = min(max(*list_first, 0), cutoff_point);
+            *list_first = min(max(*list_first, 0), cutoff_point - skip);
          }
          return false;
    }
@@ -680,7 +681,7 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
       unsigned i, j = 0;
 
       if (zarch_zui_gamepad_input(zui, &gamepad_index,
-               &zui->recent_dlist_first))
+               &zui->recent_dlist_first, 0))
          zui->recent_dlist_first = gamepad_index;
 
       for (i = zui->recent_dlist_first; i < size; ++i)
@@ -776,6 +777,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
          }
          else
          {
+            static int gamepad_index = 0;
             unsigned size = zui->load_dlist->size;
             unsigned i, j = 1;
             unsigned skip = 0;
@@ -789,15 +791,9 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
                skip++;
             }
 
-            zui->load_dlist_first += zui->mouse.wheel;
-
-            if (zui->load_dlist_first < 0)
-               zui->load_dlist_first = 0;
-            else if (zui->load_dlist_first > (int)size - 5)
-               zui->load_dlist_first = size - 5;
-
-            zui->load_dlist_first = min(max(zui->load_dlist_first, 0),
-                  size - 5 - skip);
+            if (zarch_zui_gamepad_input(zui, &gamepad_index,
+                     &zui->load_dlist_first, skip))
+               zui->load_dlist_first = gamepad_index;
 
             for (i = skip + zui->load_dlist_first; i < size; ++i)
             {
@@ -820,7 +816,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 
                if (zarch_zui_list_item(zui, tabbed, 0,
                         tabbed->tabline_size + 73 + j * ZUI_ITEM_SIZE_PX,
-                        label, i, NULL, false))
+                        label, i, NULL, gamepad_index == i))
                {
                   if (path_is_directory(path))
                   {
