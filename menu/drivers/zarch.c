@@ -610,6 +610,60 @@ static void zarch_zui_render_lay_settings(zui_t *zui)
       zarch_layout = LAY_HOME;
 }
 
+static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index)
+{
+   unsigned size = menu_entries_get_size();
+
+   switch (zui->action)
+   {
+      case MENU_ACTION_LEFT:
+         if (*gamepad_index == 0)
+            break;
+
+         *gamepad_index = *gamepad_index - 5;
+
+         if (*gamepad_index < 0)
+            *gamepad_index = 0;
+         return true;
+      case MENU_ACTION_RIGHT:
+         if (*gamepad_index == (size-1))
+            break;
+
+         *gamepad_index = *gamepad_index + 5;
+
+         if (*gamepad_index > (size-1))
+            *gamepad_index   = (size -1);
+         return true;
+      case MENU_ACTION_UP:
+         *gamepad_index = *gamepad_index - 1;
+
+         if (*gamepad_index < 0) /* and wraparound enabled */
+            *gamepad_index = size -1;
+
+         return true;
+      case MENU_ACTION_DOWN:
+         *gamepad_index = *gamepad_index + 1;
+
+         if (*gamepad_index > (size - 1)) /* and wraparound enabled */
+            *gamepad_index = 0;
+         return true;
+      default:
+         {
+            unsigned end  = size - 5;
+            zui->recent_dlist_first += zui->mouse.wheel;
+            if (zui->recent_dlist_first < 0)
+               zui->recent_dlist_first = 0;
+            if (zui->recent_dlist_first > (int)end)
+               zui->recent_dlist_first = end;
+
+            zui->recent_dlist_first = min(max(zui->recent_dlist_first, 0), end);
+         }
+         return false;
+   }
+
+   return false;
+}
+
 static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
 {
    if (zarch_zui_tab(zui, tabbed, "Recent", 0))
@@ -618,57 +672,8 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
       unsigned size = menu_entries_get_size();
       unsigned i, j = 0;
 
-      switch (zui->action)
-      {
-         case MENU_ACTION_LEFT:
-            if (gamepad_index == 0)
-               break;
-
-            gamepad_index = gamepad_index - 5;
-
-            if (gamepad_index < 0)
-               gamepad_index = 0;
-            zui->recent_dlist_first = gamepad_index;
-            break;
-         case MENU_ACTION_RIGHT:
-            if (gamepad_index == (size-1))
-               break;
-
-            gamepad_index = gamepad_index + 5;
-
-            if (gamepad_index > (size-1))
-               gamepad_index   = (size -1);
-            zui->recent_dlist_first = gamepad_index;
-            break;
-         case MENU_ACTION_UP:
-            gamepad_index = gamepad_index - 1;
-
-            if (gamepad_index < 0) /* and wraparound enabled */
-               gamepad_index = size -1;
-
-            zui->recent_dlist_first = gamepad_index;
-            break;
-         case MENU_ACTION_DOWN:
-            gamepad_index = gamepad_index + 1;
-
-            if (gamepad_index > (size - 1)) /* and wraparound enabled */
-               gamepad_index = 0;
-
-            zui->recent_dlist_first = gamepad_index;
-            break;
-         default:
-            {
-               unsigned end  = size - 5;
-               zui->recent_dlist_first += zui->mouse.wheel;
-               if (zui->recent_dlist_first < 0)
-                  zui->recent_dlist_first = 0;
-               if (zui->recent_dlist_first > (int)end)
-                  zui->recent_dlist_first = end;
-
-               zui->recent_dlist_first = min(max(zui->recent_dlist_first, 0), end);
-            }
-            break;
-      }
+      if (zarch_zui_gamepad_input(zui, &gamepad_index))
+         zui->recent_dlist_first = gamepad_index;
 
       for (i = zui->recent_dlist_first; i < size; ++i)
       {
