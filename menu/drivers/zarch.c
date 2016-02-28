@@ -1254,9 +1254,8 @@ static void zarch_context_reset(void *data)
 
 static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 {
-   int action_id, ret = 0;
+   int action_id;
    menu_entry_t entry;
-   bool perform_action  = true;
    menu_handle_t *menu  = (menu_handle_t*)data;
    zui_t *zui           = (zui_t*)userdata;
 
@@ -1275,10 +1274,7 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 
    zui->action       = action;
 
-   if (perform_action)
-      ret = menu_entry_action(&entry, action_id, action);
-
-   return ret;
+   return menu_entry_action(&entry, action_id, action);
 }
 
 static bool zarch_menu_init_list(void *data)
