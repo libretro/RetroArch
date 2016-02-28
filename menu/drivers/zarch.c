@@ -545,17 +545,6 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
          break;
    }
 
-#if 0
-   {
-   unsigned size = menu_entries_get_size();
-   RARCH_LOG("item: %d/%d (ACTIVE: %d/%d)\n", item_id, size, zui->gamepad.active, size);
-   RARCH_LOG("item text: %s\n", label);
-   RARCH_LOG("x: %d, y: %d, x2: %d, y2: %d\n", x1, y1, x2, y2);
-   RARCH_LOG("onscreen %d (%d / %d)\n", (zui->height-ZUI_ITEM_SIZE_PX) > y1, y1, zui->height);
-   }
-#endif
-
-
    if (set_active_id)
       zui->gamepad.active         = item_id;
 
@@ -665,11 +654,34 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
       unsigned size = menu_entries_get_size();
       unsigned i, j = 0;
 
-      zui->recent_dlist_first += zui->mouse.wheel;
+      switch (zui->action)
+      {
+         case MENU_ACTION_LEFT:
+            zui->recent_dlist_first -= 1;
+            break;
+         case MENU_ACTION_RIGHT:
+            zui->recent_dlist_first += 1;
+            break;
+         case MENU_ACTION_UP:
+            if (zui->recent_dlist_first == 0)
+               zui->recent_dlist_first = size - 5;
+            else
+               zui->recent_dlist_first -= 1;
+            break;
+         case MENU_ACTION_DOWN:
+            if (zui->recent_dlist_first == (size - 5))
+               zui->recent_dlist_first = 0;
+            else
+               zui->recent_dlist_first += 1;
+            break;
+         default:
+            zui->recent_dlist_first += zui->mouse.wheel;
+            if (zui->recent_dlist_first < 0)
+               zui->recent_dlist_first = 0;
+            break;
+      }
 
-      if (zui->recent_dlist_first < 0)
-         zui->recent_dlist_first = 0;
-      else if (zui->recent_dlist_first > (int)size - 5)
+      if (zui->recent_dlist_first > (int)size - 5)
          zui->recent_dlist_first = size - 5;
 
       zui->recent_dlist_first = min(max(zui->recent_dlist_first, 0), size - 5);
@@ -680,7 +692,8 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
 
          menu_entry_get(&entry, 0, i, NULL, true);
 
-         if (zarch_zui_list_item(zui, tabbed, 0, tabbed->tabline_size + j * ZUI_ITEM_SIZE_PX,
+         if (zarch_zui_list_item(zui, tabbed, 0, 
+                  tabbed->tabline_size + j * ZUI_ITEM_SIZE_PX,
                   entry.path, i, entry.value))
          {
             zui->pending_action_ok.enable      = true;
@@ -688,8 +701,10 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
             return 1;
          }
 
+
          j++;
       }
+
    }
 
    return 0;
