@@ -5747,6 +5747,21 @@ static bool setting_append_list_menu_options(
          parent_group,
          general_write_handler,
          general_read_handler);
+
+   CONFIG_BOOL(
+         list, list_info,
+         &settings->menu.linear_filter,
+         menu_hash_to_str(MENU_LABEL_MENU_LINEAR_FILTER),
+         menu_hash_to_str(MENU_LABEL_VALUE_MENU_LINEAR_FILTER),
+         true,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         &group_info,
+         &subgroup_info,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+
 #ifdef RARCH_MOBILE
    /* We don't want mobile users being able to switch this off. */
    (*list)[list_info->index - 1].action_left   = NULL;

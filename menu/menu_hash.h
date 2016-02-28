@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_MENU_LINEAR_FILTER                                          0x5fe9128cU
+#define MENU_LABEL_VALUE_MENU_LINEAR_FILTER                                    0x192de208U
+
 #define MENU_LABEL_MENU_THROTTLE_FRAMERATE                                     0x9a8681c5U
 #define MENU_LABEL_VALUE_MENU_THROTTLE_FRAMERATE                               0x285bb667U
 

@@ -3642,6 +3642,7 @@ static void gl_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
+   settings_t *settings            = config_get_ptr();
    unsigned base_size = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl_t *gl = (gl_t*)data;
    if (!gl)
@@ -3649,12 +3650,14 @@ static void gl_set_texture_frame(void *data,
 
    context_bind_hw_render(gl, false);
 
+   enum texture_filter_type menu_filter = settings->menu.linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
+
    if (!gl->menu_texture)
       glGenTextures(1, &gl->menu_texture);
 
 
    gl_load_texture_data(gl->menu_texture,
-         RARCH_WRAP_EDGE, TEXTURE_FILTER_LINEAR,
+         RARCH_WRAP_EDGE, menu_filter,
          video_pixel_get_alignment(width * base_size),
          width, height, frame,
          base_size);

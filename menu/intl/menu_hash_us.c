@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_MENU_LINEAR_FILTER:
+         return "menu_linear_filter";
       case MENU_LABEL_MENU_THROTTLE_FRAMERATE:
          return "menu_throttle_framerate";
       case MENU_LABEL_START_CORE:
@@ -730,6 +732,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_MENU_LINEAR_FILTER:
+         return "Menu Linear Filter";
       case MENU_LABEL_VALUE_MENU_THROTTLE_FRAMERATE:
          return "Throttle Menu Framerate";
       case MENU_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
