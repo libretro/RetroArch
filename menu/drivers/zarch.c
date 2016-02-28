@@ -610,9 +610,10 @@ static void zarch_zui_render_lay_settings(zui_t *zui)
       zarch_layout = LAY_HOME;
 }
 
-static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index)
+static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index, int *list_first)
 {
-   unsigned size = menu_entries_get_size();
+   unsigned size          = menu_entries_get_size();
+   unsigned cutoff_point  = size - 5;
 
    switch (zui->action)
    {
@@ -633,12 +634,16 @@ static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index)
 
          if (*gamepad_index > (size-1))
             *gamepad_index   = (size -1);
+
          return true;
       case MENU_ACTION_UP:
          *gamepad_index = *gamepad_index - 1;
 
          if (*gamepad_index < 0) /* and wraparound enabled */
             *gamepad_index = size -1;
+         else if (*gamepad_index >= cutoff_point) /* if greater than cutoff point, 
+                                                don't scroll */
+            return false;
 
          return true;
       case MENU_ACTION_DOWN:
@@ -646,17 +651,19 @@ static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index)
 
          if (*gamepad_index > (size - 1)) /* and wraparound enabled */
             *gamepad_index = 0;
+         else if (*gamepad_index >= cutoff_point) /* if greater than cutoff point, 
+                                                don't scroll */
+            return false;
          return true;
       default:
          {
-            unsigned end  = size - 5;
-            zui->recent_dlist_first += zui->mouse.wheel;
-            if (zui->recent_dlist_first < 0)
-               zui->recent_dlist_first = 0;
-            if (zui->recent_dlist_first > (int)end)
-               zui->recent_dlist_first = end;
+            *list_first += zui->mouse.wheel;
+            if (*list_first < 0)
+               *list_first = 0;
+            if (*list_first > (int)cutoff_point)
+               *list_first = cutoff_point;
 
-            zui->recent_dlist_first = min(max(zui->recent_dlist_first, 0), end);
+            *list_first = min(max(*list_first, 0), cutoff_point);
          }
          return false;
    }
@@ -672,7 +679,8 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
       unsigned size = menu_entries_get_size();
       unsigned i, j = 0;
 
-      if (zarch_zui_gamepad_input(zui, &gamepad_index))
+      if (zarch_zui_gamepad_input(zui, &gamepad_index,
+               &zui->recent_dlist_first))
          zui->recent_dlist_first = gamepad_index;
 
       for (i = zui->recent_dlist_first; i < size; ++i)
