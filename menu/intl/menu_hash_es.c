@@ -36,6 +36,22 @@ const char *menu_hash_to_str_es(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_MENU_LINEAR_FILTER:
+         return "Filtro lineal del menú";
+      case MENU_LABEL_VALUE_MENU_THROTTLE_FRAMERATE:
+         return "Velocidad del menú de aceleración";
+      case MENU_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
+         return "Probar versión no oficial";
+      case MENU_LABEL_VALUE_CHEEVOS_SETTINGS:
+         return "Retrologros";
+      case MENU_LABEL_VALUE_INPUT_ICADE_ENABLE:
+         return "Activar asignar mando al teclado";
+      case MENU_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE:
+         return "Tipo de asignación de mando para teclado";
+      case MENU_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE:
+         return "Activar miniteclado";
+      case MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG:
+         return "Guardar configuración actual";
       case MENU_LABEL_VALUE_STATE_SLOT:
          return "Ranura de guardado";
       case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS:
@@ -54,6 +70,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Activar panel de depuración";
       case MENU_LABEL_VALUE_HELP_SCANNING_CONTENT:
          return "Buscar contenido";
+      case MENU_LABEL_VALUE_CHEEVOS_DESCRIPTION:
+         return "Descripción";
       case MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING:
          return "Solucionar problemas de vídeo/sonido";
       case MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD:
@@ -227,6 +245,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Carpeta de guardados rápidos";
       case MENU_LABEL_VALUE_STDIN_CMD_ENABLE:
          return "Comandos stdin";
+      case MENU_LABEL_VALUE_NETWORK_REMOTE_ENABLE:
+         return "Mando en red";
       case MENU_LABEL_VALUE_VIDEO_DRIVER:
          return "Controlador de vídeo";
       case MENU_LABEL_VALUE_RECORD_ENABLE:
@@ -315,6 +335,12 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Activar anulación de PPP";
       case MENU_LABEL_VALUE_DPI_OVERRIDE_VALUE:
          return "Anular PPP";
+      case MENU_LABEL_VALUE_XMB_SCALE_FACTOR:
+         return "Escala del XMB";
+      case MENU_LABEL_VALUE_XMB_ALPHA_FACTOR:
+         return "Transparencia del XMB";
+      case MENU_LABEL_VALUE_XMB_FONT:
+         return "Fuente del XMB";
       case MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
          return "Suspender salvapantallas";
       case MENU_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
@@ -323,6 +349,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Detenerse en segundo plano";
       case MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
          return "Ejecutar al inicio la IU ayudante";
+      case MENU_LABEL_VALUE_UI_COMPANION_ENABLE:
+         return "Activar IU ayudante";
       case MENU_LABEL_VALUE_UI_MENUBAR_ENABLE:
          return "Barra de menús";
       case MENU_LABEL_VALUE_ARCHIVE_MODE:
@@ -351,6 +379,12 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Cantidad de velocidad reducida";
       case MENU_LABEL_VALUE_CORE_SPECIFIC_CONFIG:
          return "Configuración por núcleo";
+      case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS:
+         return "Usar opciones de núcleo para cada juego si existen";
+      case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_CREATE:
+         return "Crear archivo de opciones del juego";
+      case MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS_IN_USE:
+         return "Archivo de opciones del juego";
       case MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE:
          return "Cargar autom. archivos de anulación";
       case MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT:
@@ -555,6 +589,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Abandonar RetroArch";
       case MENU_LABEL_VALUE_SHUTDOWN:
          return "Apagar";
+      case MENU_LABEL_VALUE_REBOOT:
+         return "Reiniciar";
       case MENU_LABEL_VALUE_HELP:
          return "Ayuda";
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
@@ -577,6 +613,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Información del sistema";
       case MENU_LABEL_VALUE_DEBUG_INFORMATION:
          return "Información de depuración";
+      case MENU_LABEL_VALUE_ACHIEVEMENT_LIST:
+         return "Lista de logros";
       case MENU_LABEL_VALUE_ONLINE_UPDATER:
          return "Actualizador en línea";
       case MENU_LABEL_VALUE_CORE_INFORMATION:
@@ -663,6 +701,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "ON";
       case MENU_LABEL_VALUE_UPDATE_ASSETS:
          return "Actualizar recursos";
+      case MENU_LABEL_VALUE_UPDATE_LAKKA:
+         return "Actualizar Lakka";
       case MENU_LABEL_VALUE_UPDATE_CHEATS:
          return "Actualizar trucos";
       case MENU_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES:
@@ -737,6 +777,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Soporte de superposiciones";
       case MENU_LABEL_VALUE_SYSTEM_INFO_COMMAND_IFACE_SUPPORT:
          return "Soporte de interfaz de comandos";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT:
+         return "Soporte de mando en red";
       case MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT:
          return "Soporte de interfaz de comandos en red";
       case MENU_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT:
@@ -747,6 +789,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Soporte de SDL1.2";
       case MENU_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT:
          return "Soporte de SDL2";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_VULKAN_SUPPORT:
+         return "Soporte Vulkan";
       case MENU_LABEL_VALUE_SYSTEM_INFO_OPENGL_SUPPORT:
          return "Soporte de OpenGL";
       case MENU_LABEL_VALUE_SYSTEM_INFO_OPENGLES_SUPPORT:
@@ -805,6 +849,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Soporte de imágenes SDL";
       case MENU_LABEL_VALUE_SYSTEM_INFO_FBO_SUPPORT:
          return "Soporte de render-to-texture OpenGL/Direct3D (shaders multipasos)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_DYNAMIC_SUPPORT:
+         return "Carga dinámica en tiempo real de librería libretro";
       case MENU_LABEL_VALUE_SYSTEM_INFO_FFMPEG_SUPPORT:
          return "Soporte de FFmpeg";
       case MENU_LABEL_VALUE_SYSTEM_INFO_CORETEXT_SUPPORT:
@@ -839,6 +885,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Distribuidora";
       case MENU_LABEL_VALUE_RDB_ENTRY_DESCRIPTION:
          return "Descripción";
+      case MENU_LABEL_VALUE_RDB_ENTRY_GENRE:
+         return "Género";
       case MENU_LABEL_VALUE_RDB_ENTRY_NAME:
          return "Nombre";
       case MENU_LABEL_VALUE_RDB_ENTRY_ORIGIN:
@@ -933,6 +981,12 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Buscar:";
       case MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
          return "Usar visualizador de imágenes integrado";
+      case MENU_LABEL_VALUE_ENABLE:
+         return "Activar";
+      case MENU_LABEL_VALUE_START_CORE:
+         return "Iniciar núcleo";
+      case MENU_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
+         return "Poll Type Behavior";
       default:
          break;
    }
