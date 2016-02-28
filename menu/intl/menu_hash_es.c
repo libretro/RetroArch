@@ -39,7 +39,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_MENU_LINEAR_FILTER:
          return "Filtro lineal del menú";
       case MENU_LABEL_VALUE_MENU_THROTTLE_FRAMERATE:
-         return "Velocidad del menú de aceleración";
+         return "Acelerar velocidad del menú";
       case MENU_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL:
          return "Probar versión no oficial";
       case MENU_LABEL_VALUE_CHEEVOS_SETTINGS:
@@ -986,7 +986,7 @@ const char *menu_hash_to_str_es(uint32_t hash)
       case MENU_LABEL_VALUE_START_CORE:
          return "Iniciar núcleo";
       case MENU_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
-         return "Poll Type Behavior";
+         return "Tipo de retardo";
       default:
          break;
    }
