@@ -111,11 +111,6 @@ typedef struct zarch_handle
    unsigned hash;
 
    struct {
-      bool enable;
-      size_t idx;
-   } pending_action_ok;
-
-   struct {
       unsigned active;
       unsigned hot;
    } item;
@@ -679,12 +674,7 @@ static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
          if (zarch_zui_list_item(zui, tabbed, 0, 
                   tabbed->tabline_size + j * ZUI_ITEM_SIZE_PX,
                   entry.path, i, entry.value, gamepad_index == i))
-         {
-            zui->pending_action_ok.enable      = true;
-            zui->pending_action_ok.idx         = i;
             return 1;
-         }
-
 
          j++;
       }
@@ -1280,19 +1270,7 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 
    menu_entry_get(&entry, 0, action_id, NULL, false);
 
-   if (zui->pending_action_ok.enable)
-   {
-      menu_entry_get(&entry, 0, zui->pending_action_ok.idx, NULL, false);
-      zui->pending_action_ok.enable = false;
-      
-      action        = MENU_ACTION_OK;
-      action_id    = zui->pending_action_ok.idx;
-      zui->pending_action_ok.idx = 0;
-   }
-   else
-   {
-      zui->action       = action;
-   }
+   zui->action       = action;
 
    if (perform_action)
       ret = menu_entry_action(&entry, action_id, action);
