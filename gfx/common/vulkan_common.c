@@ -546,7 +546,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
    if (call->pipeline != vk->tracker.pipeline)
    {
-      vkCmdBindPipeline(vk->cmd,
+      vk->context->fp.vkCmdBindPipeline(vk->cmd,
             VK_PIPELINE_BIND_POINT_GRAPHICS, call->pipeline);
       vk->tracker.pipeline = call->pipeline;
 
@@ -596,7 +596,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
          &call->vbo->buffer, &call->vbo->offset);
 
    /* Draw the quad */
-   vkCmdDraw(vk->cmd, call->vertices, 1, 0, 0);
+   vk->context->fp.vkCmdDraw(vk->cmd, call->vertices, 1, 0, 0);
 }
 
 void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
@@ -605,7 +605,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 
    if (quad->pipeline != vk->tracker.pipeline)
    {
-      vkCmdBindPipeline(vk->cmd,
+      vk->context->fp.vkCmdBindPipeline(vk->cmd,
             VK_PIPELINE_BIND_POINT_GRAPHICS, quad->pipeline);
 
       vk->tracker.pipeline = quad->pipeline;
@@ -675,7 +675,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
    }
 
    /* Draw the quad */
-   vkCmdDraw(vk->cmd, 6, 1, 0, 0);
+   vk->context->fp.vkCmdDraw(vk->cmd, 6, 1, 0, 0);
 }
 
 void vulkan_image_layout_transition(
@@ -1050,9 +1050,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdCopyImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetViewport);
-#if 0
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdDraw);
-#endif
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindPipeline);
 
    if (vk->context.fp.vkEnumeratePhysicalDevices(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)
@@ -1132,6 +1130,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    vk->context.fp.vkGetDeviceQueue(vk->context.device,
          vk->context.graphics_queue_index, 0, &vk->context.queue);
 
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdDraw);
    VK_GET_INSTANCE_PROC_ADDR(vk,
          vk->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
    VK_GET_INSTANCE_PROC_ADDR(vk,

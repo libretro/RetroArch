@@ -147,9 +147,8 @@ typedef struct vulkan_context
       PFN_vkCmdCopyImage                            vkCmdCopyImage;
       PFN_vkCmdSetScissor                           vkCmdSetScissor;
       PFN_vkCmdSetViewport                          vkCmdSetViewport;
-#if 0
+      PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
       PFN_vkCmdDraw                                 vkCmdDraw;
-#endif
       PFN_vkCreateDevice                            vkCreateDevice;
       PFN_vkGetPhysicalDeviceSurfaceSupportKHR      vkGetPhysicalDeviceSurfaceSupportKHR;
       PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
