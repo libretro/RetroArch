@@ -805,8 +805,8 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 
                   zui->pick_cores     = NULL;
                   zui->pick_supported = 0;
-                  strncpy(zui->pick_content,
-                        path, sizeof(zui->pick_content)-1);
+                  strlcpy(zui->pick_content,
+                        path, sizeof(zui->pick_content));
 
                   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
 
