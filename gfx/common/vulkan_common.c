@@ -299,10 +299,12 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    {
       /* Recreate texture but for STAGING this time ... */
       RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
-      type = VULKAN_TEXTURE_STAGING;
-      vkDestroyImage(device, tex.image, NULL);
+      type                  = VULKAN_TEXTURE_STAGING;
+      VKFUNC(vkDestroyImage)(device, tex.image, NULL);
+
       info.usage            = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
       VKFUNC(vkCreateImage)(device, &info, NULL, &tex.image);
+
       vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
 
       alloc.allocationSize  = mem_reqs.size;
@@ -320,7 +322,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       vkDestroyImageView(vk->context->device, old->view, NULL);
    if (old && old->image != VK_NULL_HANDLE)
    {
-      vkDestroyImage(vk->context->device, old->image, NULL);
+      VKFUNC(vkDestroyImage)(vk->context->device, old->image, NULL);
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
       vulkan_track_dealloc(old->image);
 #endif
@@ -1072,6 +1074,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, ResetFences);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, WaitForFences);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImage);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdCopyImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetViewport);
