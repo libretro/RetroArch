@@ -1769,24 +1769,26 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
 
       if (chain->texture.type == VULKAN_TEXTURE_STAGING)
       {
-         chain->texture_optimal = vulkan_create_texture(vk, &chain->texture_optimal,
-               framebuffer->width, framebuffer->height, chain->texture_optimal.format,
+         chain->texture_optimal = vulkan_create_texture(
+               vk,
+               &chain->texture_optimal,
+               framebuffer->width,
+               framebuffer->height,
+               chain->texture_optimal.format,
                NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
       }
    }
 
-   framebuffer->data   = chain->texture.mapped;
-   framebuffer->pitch  = chain->texture.stride;
-   framebuffer->format = vk->video.rgb32 
+   framebuffer->data         = chain->texture.mapped;
+   framebuffer->pitch        = chain->texture.stride;
+   framebuffer->format       = vk->video.rgb32 
       ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
-
    framebuffer->memory_flags = 0;
+
    if (vk->context->memory_properties.memoryTypes[
          chain->texture.memory_type].propertyFlags &
          VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
-   {
       framebuffer->memory_flags |= RETRO_MEMORY_TYPE_CACHED;
-   }
 
    return true;
 }
@@ -1804,8 +1806,10 @@ static void vulkan_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   uint8_t *ptr;
-   unsigned x, y;
+   unsigned x, y, stride;
+   uint8_t *ptr                       = NULL;
+   uint8_t *dst                       = NULL;
+   const uint8_t *src                 = NULL;
    vk_t *vk                           = (vk_t*)data;
    unsigned index                     = vk->context->current_swapchain_index;
    struct vk_texture *texture         = &vk->menu.textures[index];
@@ -1832,13 +1836,15 @@ static void vulkan_set_texture_frame(void *data,
    vkMapMemory(vk->context->device, texture->memory,
          texture->offset, texture->size, 0, (void**)&ptr);
 
-   uint8_t *dst       = ptr;
-   const uint8_t *src = (const uint8_t*)frame;
-   unsigned stride    = (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)) * width;
+   dst       = ptr;
+   src       = (const uint8_t*)frame;
+   stride    = (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)) * width;
+
    for (y = 0; y < height; y++, dst += texture->stride, src += stride)
       memcpy(dst, src, stride);
 
    vkUnmapMemory(vk->context->device, texture->memory);
+
    vk->menu.alpha      = alpha;
    vk->menu.last_index = index;
 
