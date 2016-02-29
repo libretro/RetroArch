@@ -429,6 +429,9 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
 
    gl = font->gl;
 
+   if (!gl)
+      return;
+
    if (params)
    {
       x           = params->x;
