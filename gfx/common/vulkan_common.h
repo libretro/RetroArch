@@ -245,6 +245,9 @@ typedef struct vulkan_context
       /* Pipeline commands */
       PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
 
+      /* Vertex input descriptions */
+      PFN_vkCmdBindVertexBuffers                    vkCmdBindVertexBuffers;
+
       /* Render Pass commands */
       PFN_vkCmdBeginRenderPass                      vkCmdBeginRenderPass;
       PFN_vkCmdEndRenderPass                        vkCmdEndRenderPass;

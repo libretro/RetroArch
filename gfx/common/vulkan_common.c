@@ -641,7 +641,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
    }
 
    /* VBO is already uploaded. */
-   vkCmdBindVertexBuffers(vk->cmd, 0, 1,
+   VKFUNC(vkCmdBindVertexBuffers)(vk->cmd, 0, 1,
          &call->vbo->buffer, &call->vbo->offset);
 
    /* Draw the quad */
@@ -725,7 +725,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
             0.0f, 0.0f, 1.0f, 1.0f,
             &quad->color);
 
-      vkCmdBindVertexBuffers(vk->cmd, 0, 1,
+      VKFUNC(vkCmdBindVertexBuffers)(vk->cmd, 0, 1,
             &range.buffer, &range.offset);
    }
 
@@ -1156,6 +1156,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, BindImageMemory);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetImageSubresourceLayout);
 
+
    /* Image Views */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImageView);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImageView);
@@ -1291,6 +1292,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    /* Image commands */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdCopyImage);
+
+   /* Vertex input descriptions */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindVertexBuffers);
 
    /* Descriptor Set commands */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindDescriptorSets);
