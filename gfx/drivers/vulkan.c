@@ -151,7 +151,7 @@ static void vulkan_init_framebuffers(vk_t *vk)
       info.height          = vk->context->swapchain_height;
       info.layers          = 1;
 
-      vkCreateFramebuffer(vk->context->device,
+      vk->context->fp.vkCreateFramebuffer(vk->context->device,
             &info, NULL, &vk->swapchain[i].backbuffer.framebuffer);
    }
 }
