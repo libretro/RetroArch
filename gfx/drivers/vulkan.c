@@ -537,7 +537,7 @@ static void vulkan_deinit_command_buffers(
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
       if (vk->swapchain[i].cmd)
-         vkFreeCommandBuffers(vk->context->device,
+         VKFUNC(vkFreeCommandBuffers)(vk->context->device,
                vk->swapchain[i].cmd_pool, 1, &vk->swapchain[i].cmd);
 
       VKFUNC(vkDestroyCommandPool)(vk->context->device,

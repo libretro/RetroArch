@@ -487,7 +487,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       VKFUNC(vkQueueWaitIdle)(vk->context->queue);
       slock_unlock(vk->context->queue_lock);
 
-      vkFreeCommandBuffers(vk->context->device, vk->staging_pool, 1, &staging);
+      VKFUNC(vkFreeCommandBuffers)(vk->context->device, vk->staging_pool, 1, &staging);
       vulkan_destroy_texture(&vk->context->fp,
             vk->context->device, &tmp);
       tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -1152,6 +1152,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFramebuffer);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyFramebuffer);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, AllocateCommandBuffers);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, FreeCommandBuffers);
 
    /* Memory allocation */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, MapMemory);

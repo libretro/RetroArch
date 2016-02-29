@@ -179,6 +179,7 @@ typedef struct vulkan_context
       PFN_vkBeginCommandBuffer                      vkBeginCommandBuffer;
       PFN_vkEndCommandBuffer                        vkEndCommandBuffer;
       PFN_vkResetCommandBuffer                      vkResetCommandBuffer;
+      PFN_vkFreeCommandBuffers                      vkFreeCommandBuffers;
       PFN_vkAllocateCommandBuffers                  vkAllocateCommandBuffers;
 
       /* Command Buffer Submission */
