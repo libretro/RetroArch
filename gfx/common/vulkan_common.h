@@ -133,6 +133,10 @@ typedef struct vulkan_context
 {
    struct vulkan_context_fp
    {
+      /* Instance */
+      PFN_vkCreateInstance                          vkCreateInstance;
+      PFN_vkDestroyInstance                         vkDestroyInstance;
+
       /* Fences */
       PFN_vkCreateFence                             vkCreateFence;
       PFN_vkDestroyFence                            vkDestroyFence;
@@ -196,7 +200,6 @@ typedef struct vulkan_context
       /* Fixed-function vertex postprocessing */
       PFN_vkCmdSetViewport                          vkCmdSetViewport;
 
-      PFN_vkCreateInstance                          vkCreateInstance;
       PFN_vkGetPhysicalDeviceFormatProperties       vkGetPhysicalDeviceFormatProperties;
       PFN_vkEnumeratePhysicalDevices                vkEnumeratePhysicalDevices;
       PFN_vkGetPhysicalDeviceProperties             vkGetPhysicalDeviceProperties;

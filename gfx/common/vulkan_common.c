@@ -1083,6 +1083,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    RARCH_LOG("Vulkan dynamic library loaded.\n");
    
    VKSYM(vk, CreateInstance);
+   VKSYM(vk, DestroyInstance);
 
    app.pApplicationName              = "RetroArch";
    app.applicationVersion            = 0;
@@ -1526,7 +1527,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       if (vk->context.device)
          VKFUNC(vkDestroyDevice)(vk->context.device, NULL);
       if (vk->context.instance)
-         vkDestroyInstance(vk->context.instance, NULL);
+         VKFUNC(vkDestroyInstance)(vk->context.instance, NULL);
    }
 
    if (vulkan_library)
