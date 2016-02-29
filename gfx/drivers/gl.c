@@ -150,7 +150,6 @@ static INLINE bool gl_query_extension(gl_t *gl, const char *ext)
 }
 
 #ifdef HAVE_OVERLAY
-static void gl_render_overlay(void *data);
 static void gl_overlay_vertex_geom(void *data,
       unsigned image,
       float x, float y, float w, float h);
@@ -1797,6 +1796,10 @@ static INLINE void gl_draw_texture(gl_t *gl)
 }
 #endif
 
+#ifdef HAVE_OVERLAY
+static void gl_render_overlay(gl_t *gl);
+#endif
+
 static bool gl_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
@@ -1999,7 +2002,7 @@ static bool gl_frame(void *data, const void *frame,
       font_driver_render_msg(NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
-   if (gl->overlay_enable)
+   if (gl && gl->overlay_enable)
       gl_render_overlay(gl);
 #endif
 
@@ -3512,15 +3515,12 @@ static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
    color[12 + 3]  = mod;
 }
 
-static void gl_render_overlay(void *data)
+static void gl_render_overlay(gl_t *gl)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_info_t shader_info;
    unsigned i, width, height;
-   gl_t *gl = (gl_t*)data;
-   if (!gl)
-      return;
 
    video_driver_get_size(&width, &height);
 
@@ -3552,6 +3552,8 @@ static void gl_render_overlay(void *data)
 
    for (i = 0; i < gl->overlays; i++)
    {
+      if (!gl)
+         return;
       glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
       glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
    }

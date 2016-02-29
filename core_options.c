@@ -58,9 +58,17 @@ void core_option_free(core_option_manager_t *opt)
 
    for (i = 0; i < opt->size; i++)
    {
-      free(opt->opts[i].desc);
-      free(opt->opts[i].key);
-      string_list_free(opt->opts[i].vals);
+      if (opt->opts[i].desc)
+         free(opt->opts[i].desc);
+      if (opt->opts[i].key)
+         free(opt->opts[i].key);
+
+      if (opt->opts[i].vals)
+         string_list_free(opt->opts[i].vals);
+
+      opt->opts[i].desc = NULL;
+      opt->opts[i].key  = NULL;
+      opt->opts[i].vals = NULL;
    }
 
    if (opt->conf)
@@ -80,6 +88,9 @@ void core_option_get(core_option_manager_t *opt, struct retro_variable *var)
 
    for (i = 0; i < opt->size; i++)
    {
+      if (string_is_empty(opt->opts[i].key))
+         continue;
+
       if (string_is_equal(opt->opts[i].key, var->key))
       {
          var->value = core_option_get_val(opt, i);
