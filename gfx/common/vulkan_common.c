@@ -783,7 +783,7 @@ struct vk_buffer vulkan_create_buffer(
    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
    VKFUNC(vkCreateBuffer)(context->device, &info, NULL, &buffer.buffer);
 
-   vkGetBufferMemoryRequirements(context->device, buffer.buffer, &mem_reqs);
+   VKFUNC(vkGetBufferMemoryRequirements)(context->device, buffer.buffer, &mem_reqs);
 
    alloc.allocationSize       = mem_reqs.size;
    alloc.memoryTypeIndex      = vulkan_find_memory_type(
@@ -792,7 +792,7 @@ struct vk_buffer vulkan_create_buffer(
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
    VKFUNC(vkAllocateMemory)(context->device, &alloc, NULL, &buffer.memory);
-   vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
+   VKFUNC(vkBindBufferMemory)(context->device, buffer.buffer, buffer.memory, 0);
 
    buffer.size                = alloc.allocationSize;
 
@@ -1154,8 +1154,12 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    /* Images */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImage);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, BindImageMemory);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetImageSubresourceLayout);
+
+   /* Images (Resource Memory Association) */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetBufferMemoryRequirements);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, BindBufferMemory);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, BindImageMemory);
 
    /* Image Views */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImageView);

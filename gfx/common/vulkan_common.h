@@ -170,6 +170,8 @@ typedef struct vulkan_context
       PFN_vkGetImageSubresourceLayout               vkGetImageSubresourceLayout;
 
       /* Images (Resource Memory Association) */
+      PFN_vkGetBufferMemoryRequirements             vkGetBufferMemoryRequirements;
+      PFN_vkBindBufferMemory                        vkBindBufferMemory;
       PFN_vkBindImageMemory                         vkBindImageMemory;
 
       /* Image Views */
