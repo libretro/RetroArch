@@ -178,11 +178,17 @@ typedef struct vulkan_context
       PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
       PFN_vkGetPhysicalDeviceSurfaceFormatsKHR      vkGetPhysicalDeviceSurfaceFormatsKHR;
       PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;
+
+      /* Swapchains */
       PFN_vkCreateSwapchainKHR                      vkCreateSwapchainKHR;
       PFN_vkDestroySwapchainKHR                     vkDestroySwapchainKHR;
       PFN_vkGetSwapchainImagesKHR                   vkGetSwapchainImagesKHR;
+
       PFN_vkAcquireNextImageKHR                     vkAcquireNextImageKHR;
       PFN_vkQueuePresentKHR                         vkQueuePresentKHR;
+      PFN_vkDestroySurfaceKHR                       vkDestroySurfaceKHR;
+
+      /* Platform-specific surface functions */
 #ifdef _WIN32
       PFN_vkCreateWin32SurfaceKHR                   vkCreateWin32SurfaceKHR;
 #endif
@@ -201,7 +207,6 @@ typedef struct vulkan_context
 #ifdef HAVE_MIR
       PFN_vkCreateMirSurfaceKHR                     vkCreateMirSurfaceKHR;
 #endif
-      PFN_vkDestroySurfaceKHR                       vkDestroySurfaceKHR;
    } fp;
 
    VkInstance instance;
