@@ -147,6 +147,7 @@ typedef struct vulkan_context
       PFN_vkCreateRenderPass                        vkCreateRenderPass;
       PFN_vkCreatePipelineLayout                    vkCreatePipelineLayout;
       PFN_vkCreatePipelineCache                     vkCreatePipelineCache;
+      PFN_vkGetPhysicalDeviceFormatProperties       vkGetPhysicalDeviceFormatProperties;
       PFN_vkEnumeratePhysicalDevices                vkEnumeratePhysicalDevices;
       PFN_vkGetPhysicalDeviceProperties             vkGetPhysicalDeviceProperties;
       PFN_vkGetPhysicalDeviceMemoryProperties       vkGetPhysicalDeviceMemoryProperties;

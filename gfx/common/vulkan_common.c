@@ -216,7 +216,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       VkFormatProperties format_properties;
       VkFormatFeatureFlags required = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
          VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
-      vkGetPhysicalDeviceFormatProperties(vk->context->gpu, format, &format_properties);
+
+      VKFUNC(vkGetPhysicalDeviceFormatProperties)(
+            vk->context->gpu, format, &format_properties);
 
       if ((format_properties.linearTilingFeatures & required) != required)
       {
@@ -229,33 +231,33 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    {
       case VULKAN_TEXTURE_STATIC:
          retro_assert(initial && "Static textures must have initial data.\n");
-         info.tiling = VK_IMAGE_TILING_OPTIMAL;
-         info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+         info.tiling        = VK_IMAGE_TILING_OPTIMAL;
+         info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
          info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
          break;
 
       case VULKAN_TEXTURE_DYNAMIC:
          retro_assert(!initial && "Dynamic textures must not have initial data.\n");
-         info.tiling = VK_IMAGE_TILING_OPTIMAL;
-         info.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+         info.tiling        = VK_IMAGE_TILING_OPTIMAL;
+         info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
          info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
          break;
 
       case VULKAN_TEXTURE_STREAMED:
-         info.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
-         info.tiling = VK_IMAGE_TILING_LINEAR;
+         info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT;
+         info.tiling        = VK_IMAGE_TILING_LINEAR;
          info.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
          break;
 
       case VULKAN_TEXTURE_STAGING:
-         info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-         info.tiling = VK_IMAGE_TILING_LINEAR;
+         info.usage         = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+         info.tiling        = VK_IMAGE_TILING_LINEAR;
          info.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
          break;
 
       case VULKAN_TEXTURE_READBACK:
-         info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-         info.tiling = VK_IMAGE_TILING_LINEAR;
+         info.usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+         info.tiling        = VK_IMAGE_TILING_LINEAR;
          info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
          break;
    }
@@ -271,13 +273,15 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    {
       case VULKAN_TEXTURE_STATIC:
       case VULKAN_TEXTURE_DYNAMIC:
-         alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
+         alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+               &vk->context->memory_properties,
                mem_reqs.memoryTypeBits,
                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
          break;
 
       default:
-         alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
+         alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+               &vk->context->memory_properties,
                mem_reqs.memoryTypeBits,
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
@@ -297,10 +301,11 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       RARCH_LOG("[Vulkan]: GPU supports linear images as textures, but not DEVICE_LOCAL. Falling back to copy path.\n");
       type = VULKAN_TEXTURE_STAGING;
       vkDestroyImage(device, tex.image, NULL);
-      info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+      info.usage            = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
       VKFUNC(vkCreateImage)(device, &info, NULL, &tex.image);
       vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
-      alloc.allocationSize = mem_reqs.size;
+
+      alloc.allocationSize  = mem_reqs.size;
       alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
             mem_reqs.memoryTypeBits,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -1050,6 +1055,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    else if (VKFUNC(vkCreateInstance)(&info, NULL, &vk->context.instance) != VK_SUCCESS)
       return false;
 
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceFormatProperties);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, EnumeratePhysicalDevices);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceProperties);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceMemoryProperties);
