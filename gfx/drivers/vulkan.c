@@ -480,7 +480,9 @@ static void vulkan_deinit_descriptor_pool(vk_t *vk)
 {
    unsigned i;
    for (i = 0; i < vk->num_swapchain_images; i++)
-      vulkan_destroy_descriptor_manager(vk->context->device,
+      vulkan_destroy_descriptor_manager(
+            &vk->context->fp,
+            vk->context->device,
             &vk->swapchain[i].descriptor_manager);
 }
 

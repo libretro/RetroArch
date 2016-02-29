@@ -894,7 +894,9 @@ struct vk_descriptor_manager vulkan_create_descriptor_manager(
    return manager;
 }
 
-void vulkan_destroy_descriptor_manager(VkDevice device,
+void vulkan_destroy_descriptor_manager(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
       struct vk_descriptor_manager *manager)
 {
    struct vk_descriptor_pool *node = manager->head;
@@ -903,7 +905,7 @@ void vulkan_destroy_descriptor_manager(VkDevice device,
    {
       struct vk_descriptor_pool *next = node->next;
 
-      vkFreeDescriptorSets(device, node->pool,
+      VKFUNC(vkFreeDescriptorSets)(device, node->pool,
             VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS, node->sets);
       vkDestroyDescriptorPool(device, node->pool, NULL);
 
@@ -917,7 +919,7 @@ void vulkan_destroy_descriptor_manager(VkDevice device,
 static void vulkan_buffer_chain_step(struct vk_buffer_chain *chain)
 {
    chain->current = chain->current->next;
-   chain->offset = 0;
+   chain->offset  = 0;
 }
 
 static bool vulkan_buffer_chain_suballoc(struct vk_buffer_chain *chain,
@@ -953,7 +955,8 @@ static struct vk_buffer_node *vulkan_buffer_chain_alloc_node(
    return node;
 }
 
-struct vk_buffer_chain vulkan_buffer_chain_init(VkDeviceSize block_size,
+struct vk_buffer_chain vulkan_buffer_chain_init(
+      VkDeviceSize block_size,
       VkDeviceSize alignment,
       VkBufferUsageFlags usage)
 {
@@ -1161,6 +1164,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDescriptorPool);
 
    /* Descriptor sets */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, FreeDescriptorSets);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, UpdateDescriptorSets);
 
    /* Descriptor Set Layout */

@@ -198,6 +198,7 @@ typedef struct vulkan_context
       PFN_vkCreateDescriptorPool                    vkCreateDescriptorPool;
 
       /* Descriptor sets */
+      PFN_vkFreeDescriptorSets                      vkFreeDescriptorSets;
       PFN_vkCmdBindDescriptorSets                   vkCmdBindDescriptorSets;
       PFN_vkUpdateDescriptorSets                    vkUpdateDescriptorSets;
 
@@ -691,14 +692,18 @@ VkDescriptorSet vulkan_descriptor_manager_alloc(
       VkDevice device,
       struct vk_descriptor_manager *manager);
 
-void vulkan_descriptor_manager_restart(struct vk_descriptor_manager *manager);
+void vulkan_descriptor_manager_restart(
+      struct vk_descriptor_manager *manager);
 
 struct vk_descriptor_manager vulkan_create_descriptor_manager(
       struct vulkan_context_fp *vkcfp,
       VkDevice device,
       const VkDescriptorPoolSize *sizes, unsigned num_sizes,
       VkDescriptorSetLayout set_layout);
-void vulkan_destroy_descriptor_manager(VkDevice device,
+
+void vulkan_destroy_descriptor_manager(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
       struct vk_descriptor_manager *manager);
 
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
