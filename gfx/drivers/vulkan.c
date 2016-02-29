@@ -388,7 +388,7 @@ static void vulkan_init_command_buffers(struct vulkan_context_fp *vkcfp, vk_t *v
       info.level                 = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
       info.commandBufferCount    = 1;
 
-      vkAllocateCommandBuffers(vk->context->device,
+      VKFUNC(vkAllocateCommandBuffers)(vk->context->device,
             &info, &vk->swapchain[i].cmd);
    }
 }

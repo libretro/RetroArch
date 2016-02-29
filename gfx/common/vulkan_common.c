@@ -1146,6 +1146,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    /* Framebuffers */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFramebuffer);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, AllocateCommandBuffers);
 
    /* Memory allocation */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, MapMemory);
