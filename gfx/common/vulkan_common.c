@@ -554,21 +554,22 @@ void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
     * We're using linear textures here, so only 
     * GENERAL layout is supported.
     */
-   if (texture->layout == VK_IMAGE_LAYOUT_PREINITIALIZED)
-   {
-      vulkan_image_layout_transition(vk, vk->cmd, texture->image,
-            texture->layout, VK_IMAGE_LAYOUT_GENERAL,
-            VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-      texture->layout = VK_IMAGE_LAYOUT_GENERAL;
-   }
+   if (texture->layout != VK_IMAGE_LAYOUT_PREINITIALIZED)
+      return;
+
+   vulkan_image_layout_transition(vk, vk->cmd, texture->image,
+         texture->layout, VK_IMAGE_LAYOUT_GENERAL,
+         VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+   texture->layout = VK_IMAGE_LAYOUT_GENERAL;
 }
 
-static void vulkan_check_dynamic_state(vk_t *vk)
+static void vulkan_check_dynamic_state(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
-   struct vulkan_context_fp *vkcfp = 
-      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
+
    if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
    {
       const VkRect2D sci = {
@@ -599,7 +600,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
       vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
    }
 
-   vulkan_check_dynamic_state(vk);
+   vulkan_check_dynamic_state(&vk->context->fp, vk);
 
    /* Upload descriptors */
    {
@@ -664,7 +665,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
    }
 
-   vulkan_check_dynamic_state(vk);
+   vulkan_check_dynamic_state(&vk->context->fp, vk);
 
    /* Upload descriptors */
    {
