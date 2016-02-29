@@ -337,7 +337,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
    /* We're not reusing the objects themselves. */
    if (old && old->view != VK_NULL_HANDLE)
-      vkDestroyImageView(vk->context->device, old->view, NULL);
+      VKFUNC(vkDestroyImageView)(vk->context->device, old->view, NULL);
    if (old && old->image != VK_NULL_HANDLE)
    {
       VKFUNC(vkDestroyImage)(vk->context->device, old->image, NULL);
@@ -392,7 +392,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    view.subresourceRange.levelCount = 1;
    view.subresourceRange.layerCount = 1;
 
-   vkCreateImageView(device, &view, NULL, &tex.view);
+   VKFUNC(vkCreateImageView)(device, &view, NULL, &tex.view);
 
    vkGetImageSubresourceLayout(device, tex.image, &subresource, &layout);
    tex.stride = layout.rowPitch;
@@ -503,8 +503,8 @@ void vulkan_destroy_texture(
    if (tex->mapped)
       VKFUNC(vkUnmapMemory)(device, tex->memory);
    vkFreeMemory(device, tex->memory, NULL);
-   vkDestroyImageView(device, tex->view, NULL);
-   vkDestroyImage(device, tex->image, NULL);
+   VKFUNC(vkDestroyImageView)(device, tex->view, NULL);
+   VKFUNC(vkDestroyImage)(device, tex->image, NULL);
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
    vulkan_track_dealloc(tex->image);
 #endif
@@ -1137,6 +1137,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdCopyImage);
 
+   /* Image Views */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImageView);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImageView);
+
    /* Descriptor pools */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDescriptorPool);
 
@@ -1146,6 +1150,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    /* Framebuffers */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFramebuffer);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyFramebuffer);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, AllocateCommandBuffers);
 
    /* Memory allocation */

@@ -152,6 +152,10 @@ typedef struct vulkan_context
       PFN_vkDestroyImage                            vkDestroyImage;
       PFN_vkCmdCopyImage                            vkCmdCopyImage;
 
+      /* Image Views */
+      PFN_vkCreateImageView                         vkCreateImageView;
+      PFN_vkDestroyImageView                        vkDestroyImageView;
+
       /* Queues */
       PFN_vkGetDeviceQueue                          vkGetDeviceQueue;
       PFN_vkQueueWaitIdle                           vkQueueWaitIdle;
@@ -182,6 +186,7 @@ typedef struct vulkan_context
 
       /* Framebuffers */
       PFN_vkCreateFramebuffer                       vkCreateFramebuffer;
+      PFN_vkDestroyFramebuffer                      vkDestroyFramebuffer;
 
       /* Memory allocation */
       PFN_vkMapMemory                               vkMapMemory;

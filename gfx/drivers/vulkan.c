@@ -144,7 +144,7 @@ static void vulkan_init_framebuffers(
       view.components.b                    = VK_COMPONENT_SWIZZLE_B;
       view.components.a                    = VK_COMPONENT_SWIZZLE_A;
 
-      vkCreateImageView(vk->context->device,
+      VKFUNC(vkCreateImageView)(vk->context->device,
             &view, NULL, &vk->swapchain[i].backbuffer.view);
 
       /* Create the framebuffer */
@@ -579,9 +579,9 @@ static void vulkan_deinit_framebuffers(
    unsigned i;
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
-      vkDestroyFramebuffer(vk->context->device,
+      VKFUNC(vkDestroyFramebuffer)(vk->context->device,
             vk->swapchain[i].backbuffer.framebuffer, NULL);
-      vkDestroyImageView(vk->context->device,
+      VKFUNC(vkDestroyImageView)(vk->context->device,
             vk->swapchain[i].backbuffer.view, NULL);
    }
 
