@@ -1038,6 +1038,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDevice);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetDeviceQueue);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, QueueWaitIdle);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroySemaphore);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateSemaphore);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyFence);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFence);
 
    if (vk->context.fp.vkEnumeratePhysicalDevices(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)
@@ -1359,10 +1363,10 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
    {
       if (vk->context.swapchain_semaphores[i] != VK_NULL_HANDLE)
-         vkDestroySemaphore(vk->context.device,
+         vk->context.fp.vkDestroySemaphore(vk->context.device,
                vk->context.swapchain_semaphores[i], NULL);
       if (vk->context.swapchain_fences[i] != VK_NULL_HANDLE)
-         vkDestroyFence(vk->context.device,
+         vk->context.fp.vkDestroyFence(vk->context.device,
                vk->context.swapchain_fences[i], NULL);
    }
 
@@ -1394,7 +1398,7 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
    VkFenceCreateInfo info         = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
 
-   vkCreateFence(vk->context.device, &info, NULL, &fence);
+   vk->context.fp.vkCreateFence(vk->context.device, &info, NULL, &fence);
 
    err = vk->context.fp.vkAcquireNextImageKHR(vk->context.device,
          vk->swapchain, UINT64_MAX,
@@ -1402,11 +1406,11 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 
    index = vk->context.current_swapchain_index;
    if (vk->context.swapchain_semaphores[index] == VK_NULL_HANDLE)
-      vkCreateSemaphore(vk->context.device, &sem_info,
+      vk->context.fp.vkCreateSemaphore(vk->context.device, &sem_info,
             NULL, &vk->context.swapchain_semaphores[index]);
 
    vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
-   vkDestroyFence(vk->context.device, fence, NULL);
+   vk->context.fp.vkDestroyFence(vk->context.device, fence, NULL);
 
    next_fence = &vk->context.swapchain_fences[index];
    if (*next_fence != VK_NULL_HANDLE)
@@ -1415,7 +1419,7 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
       vkResetFences(vk->context.device, 1, next_fence);
    }
    else
-      vkCreateFence(vk->context.device, &info, NULL, next_fence);
+      vk->context.fp.vkCreateFence(vk->context.device, &info, NULL, next_fence);
 
    if (err != VK_SUCCESS)
    {
@@ -1559,7 +1563,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    {
       if (vk->context.swapchain_fences[i])
       {
-         vkDestroyFence(vk->context.device,
+         vk->context.fp.vkDestroyFence(vk->context.device,
                vk->context.swapchain_fences[i], NULL);
          vk->context.swapchain_fences[i] = VK_NULL_HANDLE;
       }

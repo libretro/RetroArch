@@ -131,46 +131,46 @@ typedef struct vulkan_context
 {
    struct
    {
-      PFN_vkGetDeviceQueue vkGetDeviceQueue;
-      PFN_vkCreateInstance vkCreateInstance;
-      PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices;
-      PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties;
-      PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties;
-      PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties;
-      PFN_vkQueueWaitIdle vkQueueWaitIdle;
-      PFN_vkCreateDevice vkCreateDevice;
-      PFN_vkGetPhysicalDeviceSurfaceSupportKHR 
-         vkGetPhysicalDeviceSurfaceSupportKHR;
-      PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR 
-         vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
-      PFN_vkGetPhysicalDeviceSurfaceFormatsKHR 
-         vkGetPhysicalDeviceSurfaceFormatsKHR;
-      PFN_vkGetPhysicalDeviceSurfacePresentModesKHR 
-         vkGetPhysicalDeviceSurfacePresentModesKHR;
-      PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR;
-      PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR;
-      PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR;
-      PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR;
-      PFN_vkQueuePresentKHR vkQueuePresentKHR;
+      PFN_vkDestroyFence                            vkDestroyFence;
+      PFN_vkCreateFence                             vkCreateFence;
+      PFN_vkDestroySemaphore                        vkDestroySemaphore;
+      PFN_vkCreateSemaphore                         vkCreateSemaphore;
+      PFN_vkGetDeviceQueue                          vkGetDeviceQueue;
+      PFN_vkCreateInstance                          vkCreateInstance;
+      PFN_vkEnumeratePhysicalDevices                vkEnumeratePhysicalDevices;
+      PFN_vkGetPhysicalDeviceProperties             vkGetPhysicalDeviceProperties;
+      PFN_vkGetPhysicalDeviceMemoryProperties       vkGetPhysicalDeviceMemoryProperties;
+      PFN_vkGetPhysicalDeviceQueueFamilyProperties  vkGetPhysicalDeviceQueueFamilyProperties;
+      PFN_vkQueueWaitIdle                           vkQueueWaitIdle;
+      PFN_vkCreateDevice                            vkCreateDevice;
+      PFN_vkGetPhysicalDeviceSurfaceSupportKHR      vkGetPhysicalDeviceSurfaceSupportKHR;
+      PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
+      PFN_vkGetPhysicalDeviceSurfaceFormatsKHR      vkGetPhysicalDeviceSurfaceFormatsKHR;
+      PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;
+      PFN_vkCreateSwapchainKHR                      vkCreateSwapchainKHR;
+      PFN_vkDestroySwapchainKHR                     vkDestroySwapchainKHR;
+      PFN_vkGetSwapchainImagesKHR                   vkGetSwapchainImagesKHR;
+      PFN_vkAcquireNextImageKHR                     vkAcquireNextImageKHR;
+      PFN_vkQueuePresentKHR                         vkQueuePresentKHR;
 #ifdef _WIN32
-      PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+      PFN_vkCreateWin32SurfaceKHR                   vkCreateWin32SurfaceKHR;
 #endif
 #ifdef HAVE_XCB
-      PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
+      PFN_vkCreateXcbSurfaceKHR                     vkCreateXcbSurfaceKHR;
 #endif
 #ifdef HAVE_XLIB
-      PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR;
+      PFN_vkCreateXlibSurfaceKHR                    vkCreateXlibSurfaceKHR;
 #endif
 #ifdef ANDROID
-      PFN_vkCreateAndroidSurfaceKHR vkCreateAndroidSurfaceKHR;
+      PFN_vkCreateAndroidSurfaceKHR                 vkCreateAndroidSurfaceKHR;
 #endif
 #ifdef HAVE_WAYLAND
-      PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
+      PFN_vkCreateWaylandSurfaceKHR                 vkCreateWaylandSurfaceKHR;
 #endif
 #ifdef HAVE_MIR
-      PFN_vkCreateMirSurfaceKHR vkCreateMirSurfaceKHR;
+      PFN_vkCreateMirSurfaceKHR                     vkCreateMirSurfaceKHR;
 #endif
-      PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
+      PFN_vkDestroySurfaceKHR                       vkDestroySurfaceKHR;
    } fp;
 
    VkInstance instance;
