@@ -1130,6 +1130,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          GetPhysicalDeviceQueueFamilyProperties);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDevice);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyDevice);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DeviceWaitIdle);
 
    /* Queues */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetDeviceQueue);
@@ -1155,7 +1156,6 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, BindImageMemory);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetImageSubresourceLayout);
-
 
    /* Image Views */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImageView);

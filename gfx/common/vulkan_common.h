@@ -140,6 +140,7 @@ typedef struct vulkan_context
       /* Device */
       PFN_vkCreateDevice                            vkCreateDevice;
       PFN_vkDestroyDevice                           vkDestroyDevice;
+      PFN_vkDeviceWaitIdle                          vkDeviceWaitIdle;
 
       /* Device Memory */
       PFN_vkAllocateMemory                          vkAllocateMemory;
