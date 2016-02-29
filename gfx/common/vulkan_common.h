@@ -139,6 +139,7 @@ typedef struct vulkan_context
       PFN_vkCreateSemaphore                         vkCreateSemaphore;
       PFN_vkGetDeviceQueue                          vkGetDeviceQueue;
       PFN_vkCreateInstance                          vkCreateInstance;
+      PFN_vkCreateRenderPass                        vkCreateRenderPass;
       PFN_vkEnumeratePhysicalDevices                vkEnumeratePhysicalDevices;
       PFN_vkGetPhysicalDeviceProperties             vkGetPhysicalDeviceProperties;
       PFN_vkGetPhysicalDeviceMemoryProperties       vkGetPhysicalDeviceMemoryProperties;

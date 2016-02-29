@@ -108,7 +108,7 @@ static void vulkan_init_render_pass(vk_t *vk)
    rp_info.subpassCount         = 1;
    rp_info.pSubpasses           = &subpass;
 
-   vkCreateRenderPass(vk->context->device,
+   vk->context->fp.vkCreateRenderPass(vk->context->device,
          &rp_info, NULL, &vk->render_pass);
 }
 
