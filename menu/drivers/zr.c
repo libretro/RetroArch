@@ -836,6 +836,15 @@ static void zrmenu_input_mouse_button(struct zr_context *ctx)
          mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON));
 }
 
+static void zrmenu_input_keyboard(struct zr_context *ctx)
+{
+   /* placeholder, it just presses 1 on right click 
+      needs to be hooked up correctly
+   */
+   if(menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
+      zr_input_char(ctx, '1');
+}
+
 static void zrmenu_init(int width, int height)
 {
    settings_t *settings = config_get_ptr();
@@ -1803,6 +1812,8 @@ static void wimp_frame(void *data)
    zr_input_begin(&gui.ctx);
    zrmenu_input_mouse_movement(&gui.ctx);
    zrmenu_input_mouse_button(&gui.ctx);
+   zrmenu_input_keyboard(&gui.ctx);
+
    zr_input_end(&gui.ctx);
    zrmenu_draw(&gui, width, height);
    zr_device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
