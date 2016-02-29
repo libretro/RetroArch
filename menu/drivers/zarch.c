@@ -211,8 +211,6 @@ static float zarch_zui_strwidth(void *fb_buf, const char *text, float scale)
 
 static int16_t zarch_zui_input_state(zui_t *zui, enum zarch_zui_input_state state)
 {
-   static bool old_b_pressed = false;
-
     switch (state)
     {
         case MENU_ZARCH_MOUSE_X:
