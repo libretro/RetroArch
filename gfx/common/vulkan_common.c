@@ -189,6 +189,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    struct vk_texture tex;
    VkMemoryRequirements mem_reqs;
    VkSubresourceLayout layout;
+   struct vulkan_context_fp *vkcfp = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
    VkDevice device                      = vk->context->device;
    VkImageCreateInfo info               = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
    VkImageViewCreateInfo view           = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
@@ -258,7 +260,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          break;
    }
 
-   vk->context->fp.vkCreateImage(device, &info, NULL, &tex.image);
+   VKFUNC(vkCreateImage)(device, &info, NULL, &tex.image);
 #if 0
    vulkan_track_alloc(tex.image);
 #endif
@@ -296,7 +298,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       type = VULKAN_TEXTURE_STAGING;
       vkDestroyImage(device, tex.image, NULL);
       info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-      vk->context->fp.vkCreateImage(device, &info, NULL, &tex.image);
+      VKFUNC(vkCreateImage)(device, &info, NULL, &tex.image);
       vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
       alloc.allocationSize = mem_reqs.size;
       alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
@@ -431,7 +433,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       region.srcSubresource.layerCount = 1;
       region.dstSubresource            = region.srcSubresource;
 
-      vk->context->fp.vkCmdCopyImage(staging,
+      VKFUNC(vkCmdCopyImage)(staging,
             tmp.image, VK_IMAGE_LAYOUT_GENERAL,
             tex.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             1, &region);
@@ -449,13 +451,13 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       submit_info.pCommandBuffers    = &staging;
 
       slock_lock(vk->context->queue_lock);
-      vk->context->fp.vkQueueSubmit(vk->context->queue,
+      VKFUNC(vkQueueSubmit)(vk->context->queue,
             1, &submit_info, VK_NULL_HANDLE);
 
       /* TODO: Very crude, but texture uploads only happen 
        * during init, so waiting for GPU to complete transfer 
        * and blocking isn't a big deal. */
-      vk->context->fp.vkQueueWaitIdle(vk->context->queue);
+      VKFUNC(vkQueueWaitIdle)(vk->context->queue);
       slock_unlock(vk->context->queue_lock);
 
       vkFreeCommandBuffers(vk->context->device, vk->staging_pool, 1, &staging);
@@ -532,13 +534,16 @@ void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
 
 static void vulkan_check_dynamic_state(vk_t *vk)
 {
+   struct vulkan_context_fp *vkcfp = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
    if (vk->tracker.dirty & VULKAN_DIRTY_DYNAMIC_BIT)
    {
       const VkRect2D sci = {
          { vk->vp.x, vk->vp.y },
          { vk->vp.width, vk->vp.height }};
-      vk->context->fp.vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
-      vk->context->fp.vkCmdSetScissor(vk->cmd, 0, 1, &sci);
+
+      VKFUNC(vkCmdSetViewport)(vk->cmd, 0, 1, &vk->vk_vp);
+      VKFUNC(vkCmdSetScissor) (vk->cmd, 0, 1, &sci);
 
       vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
    }
@@ -546,11 +551,14 @@ static void vulkan_check_dynamic_state(vk_t *vk)
 
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 {
+   struct vulkan_context_fp *vkcfp = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
+
    vulkan_transition_texture(vk, call->texture);
 
    if (call->pipeline != vk->tracker.pipeline)
    {
-      vk->context->fp.vkCmdBindPipeline(vk->cmd,
+      VKFUNC(vkCmdBindPipeline)(vk->cmd,
             VK_PIPELINE_BIND_POINT_GRAPHICS, call->pipeline);
       vk->tracker.pipeline = call->pipeline;
 
@@ -600,16 +608,19 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
          &call->vbo->buffer, &call->vbo->offset);
 
    /* Draw the quad */
-   vk->context->fp.vkCmdDraw(vk->cmd, call->vertices, 1, 0, 0);
+   VKFUNC(vkCmdDraw)(vk->cmd, call->vertices, 1, 0, 0);
 }
 
 void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 {
+   struct vulkan_context_fp *vkcfp = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
+
    vulkan_transition_texture(vk, quad->texture);
 
    if (quad->pipeline != vk->tracker.pipeline)
    {
-      vk->context->fp.vkCmdBindPipeline(vk->cmd,
+      VKFUNC(vkCmdBindPipeline)(vk->cmd,
             VK_PIPELINE_BIND_POINT_GRAPHICS, quad->pipeline);
 
       vk->tracker.pipeline = quad->pipeline;
@@ -679,7 +690,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
    }
 
    /* Draw the quad */
-   vk->context->fp.vkCmdDraw(vk->cmd, 6, 1, 0, 0);
+   VKFUNC(vkCmdDraw)(vk->cmd, 6, 1, 0, 0);
 }
 
 void vulkan_image_layout_transition(
@@ -974,6 +985,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    bool found_queue                   = false;
    VkPhysicalDevice *gpus             = NULL;
    static const float one             = 1.0f;
+   struct vulkan_context_fp *vkcfp    = (struct vulkan_context_fp*)&vk->context.fp;
    static const char *device_extensions[] = {
       "VK_KHR_swapchain",
    };
@@ -1035,7 +1047,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       vk->context.instance           = cached_instance;
       cached_instance                = NULL;
    }
-   else if (vk->context.fp.vkCreateInstance(&info, NULL, &vk->context.instance) != VK_SUCCESS)
+   else if (VKFUNC(vkCreateInstance)(&info, NULL, &vk->context.instance) != VK_SUCCESS)
       return false;
 
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, EnumeratePhysicalDevices);
@@ -1064,7 +1076,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineCache);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateCommandPool);
 
-   if (vk->context.fp.vkEnumeratePhysicalDevices(vk->context.instance,
+   if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)
       return false;
 
@@ -1072,7 +1084,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    if (!gpus)
       return false;
 
-   if (vk->context.fp.vkEnumeratePhysicalDevices(vk->context.instance,
+   if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
             &gpu_count, gpus) != VK_SUCCESS)
       return false;
 
@@ -1086,17 +1098,17 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    vk->context.gpu = gpus[0];
    free(gpus);
 
-   vk->context.fp.vkGetPhysicalDeviceProperties(vk->context.gpu,
+   VKFUNC(vkGetPhysicalDeviceProperties)(vk->context.gpu,
          &vk->context.gpu_properties);
-   vk->context.fp.vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
+   VKFUNC(vkGetPhysicalDeviceMemoryProperties)(vk->context.gpu,
          &vk->context.memory_properties);
-   vk->context.fp.vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
+   VKFUNC(vkGetPhysicalDeviceQueueFamilyProperties)(vk->context.gpu,
          &queue_count, NULL);
 
    if (queue_count < 1 || queue_count > 32)
       return false;
 
-   vk->context.fp.vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
+   VKFUNC(vkGetPhysicalDeviceQueueFamilyProperties)(vk->context.gpu,
          &queue_count, queue_properties);
 
    for (i = 0; i < queue_count; i++)
@@ -1135,11 +1147,11 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
       RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
    }
-   else if (vk->context.fp.vkCreateDevice(vk->context.gpu, &device_info,
+   else if (VKFUNC(vkCreateDevice)(vk->context.gpu, &device_info,
             NULL, &vk->context.device) != VK_SUCCESS)
       return false;
 
-   vk->context.fp.vkGetDeviceQueue(vk->context.device,
+   VKFUNC(vkGetDeviceQueue)(vk->context.device,
          vk->context.graphics_queue_index, 0, &vk->context.queue);
 
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdDraw);
@@ -1220,6 +1232,9 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       unsigned swap_interval)
 {
+   struct vulkan_context_fp *vkcfp    = 
+      (struct vulkan_context_fp*)&vk->context.fp;
+
    switch (type)
    {
       case VULKAN_WSI_WAYLAND:
@@ -1235,7 +1250,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.display = (struct wl_display*)display;
             surf_info.surface = (struct wl_surface*)surface;
 
-            if (vk->context.fp.vkCreateWaylandSurfaceKHR(vk->context.instance,
+            if (VKFUNC(vkCreateWaylandSurfaceKHR)(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
                return false;
          }
@@ -1252,7 +1267,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.flags  = 0;
             surf_info.window = (ANativeWindow*)surface;
 
-            if (vk->context.fp.vkCreateAndroidSurfaceKHR(vk->context.instance,
+            if (VKFUNC(vkCreateAndroidSurfaceKHR)(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
                return false;
          }
@@ -1270,7 +1285,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.hinstance = display;
             surf_info.hwnd      = surface;
 
-            if (vk->context.fp.vkCreateWin32SurfaceKHR(vk->context.instance,
+            if (VKFUNC(vkCreateWin32SurfaceKHR)(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
                return false;
          }
@@ -1288,7 +1303,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.dpy    = (Display*)display;
             surf_info.window = *(const Window*)surface;
 
-            if (vk->context.fp.vkCreateXlibSurfaceKHR(vk->context.instance,
+            if (VKFUNC(vkCreateXlibSurfaceKHR)(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 
                   != VK_SUCCESS)
                return false;
@@ -1307,7 +1322,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.connection = XGetXCBConnection((Display*)display);
             surf_info.window     = *(const xcb_window_t*)surface;
 
-            if (vk->context.fp.vkCreateXcbSurfaceKHR(vk->context.instance,
+            if (VKFUNC(vkCreateXcbSurfaceKHR)(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 
                   != VK_SUCCESS)
                return false;
@@ -1325,7 +1340,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.connection = display;
             surf_info.mirSurface = surface;
 
-            if (vk->context.fp.vkCreateMirSurfaceKHR(vk->context.instance,
+            if (VKFUNC(vkCreateMirSurfaceKHR)(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) 
                   != VK_SUCCESS)
                return false;
