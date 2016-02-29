@@ -558,10 +558,14 @@ static void vulkan_deinit_pipelines(
    unsigned i;
 
    vulkan_deinit_pipeline_layout(vkcfp, vk);
-   vkDestroyPipeline(vk->context->device, vk->pipelines.alpha_blend, NULL);
-   vkDestroyPipeline(vk->context->device, vk->pipelines.font, NULL);
+   VKFUNC(vkDestroyPipeline)(vk->context->device,
+         vk->pipelines.alpha_blend, NULL);
+   VKFUNC(vkDestroyPipeline)(vk->context->device,
+         vk->pipelines.font, NULL);
+
    for (i = 0; i < 4; i++)
-      vkDestroyPipeline(vk->context->device, vk->display.pipelines[i], NULL);
+      VKFUNC(vkDestroyPipeline)(vk->context->device,
+            vk->display.pipelines[i], NULL);
 }
 
 static void vulkan_deinit_framebuffers(

@@ -157,6 +157,7 @@ typedef struct vulkan_context
       PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
       PFN_vkCreatePipelineLayout                    vkCreatePipelineLayout;
       PFN_vkCreatePipelineCache                     vkCreatePipelineCache;
+      PFN_vkDestroyPipeline                         vkDestroyPipeline;
       
       /* Descriptor pools */
       PFN_vkCreateDescriptorPool                    vkCreateDescriptorPool;
