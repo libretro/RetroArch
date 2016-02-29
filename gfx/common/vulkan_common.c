@@ -1246,6 +1246,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    /* Clear commands */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdClearAttachments);
+
+   /* Drawing commands */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdDraw);
 
    VK_GET_INSTANCE_PROC_ADDR(vk,

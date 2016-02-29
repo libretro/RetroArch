@@ -541,7 +541,9 @@ static void vulkan_deinit_command_buffers(vk_t *vk)
    }
 }
 
-static void vulkan_deinit_pipeline_layout(vk_t *vk)
+static void vulkan_deinit_pipeline_layout(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
    vkDestroyPipelineLayout(vk->context->device,
          vk->pipelines.layout, NULL);
@@ -549,17 +551,22 @@ static void vulkan_deinit_pipeline_layout(vk_t *vk)
          vk->pipelines.set_layout, NULL);
 }
 
-static void vulkan_deinit_pipelines(vk_t *vk)
+static void vulkan_deinit_pipelines(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
    unsigned i;
-   vulkan_deinit_pipeline_layout(vk);
+
+   vulkan_deinit_pipeline_layout(vkcfp, vk);
    vkDestroyPipeline(vk->context->device, vk->pipelines.alpha_blend, NULL);
    vkDestroyPipeline(vk->context->device, vk->pipelines.font, NULL);
    for (i = 0; i < 4; i++)
       vkDestroyPipeline(vk->context->device, vk->display.pipelines[i], NULL);
 }
 
-static void vulkan_deinit_framebuffers(vk_t *vk)
+static void vulkan_deinit_framebuffers(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
    unsigned i;
    for (i = 0; i < vk->num_swapchain_images; i++)
@@ -718,8 +725,8 @@ static void vulkan_deinit_static_resources(vk_t *vk)
 
 static void vulkan_deinit_resources(vk_t *vk)
 {
-   vulkan_deinit_pipelines(vk);
-   vulkan_deinit_framebuffers(vk);
+   vulkan_deinit_pipelines(&vk->context->fp, vk);
+   vulkan_deinit_framebuffers(&vk->context->fp, vk);
    vulkan_deinit_descriptor_pool(vk);
    vulkan_deinit_textures(vk);
    vulkan_deinit_buffers(vk);

@@ -179,20 +179,28 @@ typedef struct vulkan_context
       PFN_vkCreateSampler                           vkCreateSampler;
       PFN_vkDestroySampler                          vkDestroySampler;
 
+      /* Render Passes */
+      PFN_vkCreateRenderPass                        vkCreateRenderPass;
+
       /* Clear commands */
       PFN_vkCmdClearAttachments                     vkCmdClearAttachments;
 
+      /* Drawing commands */
+      PFN_vkCmdDraw                                 vkCmdDraw;
+
+      /* Fragment operations */
+      PFN_vkCmdSetScissor                           vkCmdSetScissor;
+
+      /* Fixed-function vertex postprocessing */
+      PFN_vkCmdSetViewport                          vkCmdSetViewport;
+
       PFN_vkCreateInstance                          vkCreateInstance;
-      PFN_vkCreateRenderPass                        vkCreateRenderPass;
       PFN_vkGetPhysicalDeviceFormatProperties       vkGetPhysicalDeviceFormatProperties;
       PFN_vkEnumeratePhysicalDevices                vkEnumeratePhysicalDevices;
       PFN_vkGetPhysicalDeviceProperties             vkGetPhysicalDeviceProperties;
       PFN_vkGetPhysicalDeviceMemoryProperties       vkGetPhysicalDeviceMemoryProperties;
       PFN_vkGetPhysicalDeviceQueueFamilyProperties  vkGetPhysicalDeviceQueueFamilyProperties;
-      PFN_vkCmdSetScissor                           vkCmdSetScissor;
-      PFN_vkCmdSetViewport                          vkCmdSetViewport;
 
-      PFN_vkCmdDraw                                 vkCmdDraw;
       PFN_vkCreateDevice                            vkCreateDevice;
       PFN_vkDestroyDevice                           vkDestroyDevice;
       PFN_vkGetPhysicalDeviceSurfaceSupportKHR      vkGetPhysicalDeviceSurfaceSupportKHR;
