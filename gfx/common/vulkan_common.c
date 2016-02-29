@@ -446,7 +446,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       submit_info.pCommandBuffers    = &staging;
 
       slock_lock(vk->context->queue_lock);
-      vkQueueSubmit(vk->context->queue, 1, &submit_info, VK_NULL_HANDLE);
+      vk->context->fp.vkQueueSubmit(vk->context->queue,
+            1, &submit_info, VK_NULL_HANDLE);
 
       /* TODO: Very crude, but texture uploads only happen 
        * during init, so waiting for GPU to complete transfer 
@@ -1041,6 +1042,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDevice);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetDeviceQueue);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, QueueWaitIdle);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, QueueSubmit);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroySemaphore);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateSemaphore);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyFence);

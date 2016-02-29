@@ -1298,7 +1298,7 @@ static void vulkan_readback(vk_t *vk)
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
-   vkCmdCopyImage(vk->cmd, vk->chain->backbuffer.image,
+   vk->context->fp.vkCmdCopyImage(vk->cmd, vk->chain->backbuffer.image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
          staging->image,
          VK_IMAGE_LAYOUT_GENERAL,
@@ -1615,7 +1615,7 @@ static bool vulkan_frame(void *data, const void *frame,
    retro_perf_start(&queue_submit);
 
    slock_lock(vk->context->queue_lock);
-   vkQueueSubmit(vk->context->queue, 1,
+   vk->context->fp.vkQueueSubmit(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]);
    slock_unlock(vk->context->queue_lock);
    retro_perf_stop(&queue_submit);

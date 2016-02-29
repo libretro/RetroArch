@@ -144,6 +144,7 @@ typedef struct vulkan_context
       PFN_vkGetPhysicalDeviceMemoryProperties       vkGetPhysicalDeviceMemoryProperties;
       PFN_vkGetPhysicalDeviceQueueFamilyProperties  vkGetPhysicalDeviceQueueFamilyProperties;
       PFN_vkQueueWaitIdle                           vkQueueWaitIdle;
+      PFN_vkQueueSubmit                             vkQueueSubmit;
       PFN_vkCmdCopyImage                            vkCmdCopyImage;
       PFN_vkCmdSetScissor                           vkCmdSetScissor;
       PFN_vkCmdSetViewport                          vkCmdSetViewport;
