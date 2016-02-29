@@ -188,7 +188,7 @@ static void menu_display_vk_restore_clear_color(void)
 static void menu_display_vk_clear_color(void *data)
 {
    VkClearRect rect;
-   VkClearAttachment attachment = { VK_IMAGE_ASPECT_COLOR_BIT };
+   VkClearAttachment attachment;
    menu_display_ctx_clearcolor_t *clearcolor =
       (menu_display_ctx_clearcolor_t*)data;
    struct vulkan_context_fp *vkcfp           = NULL;
@@ -201,6 +201,7 @@ static void menu_display_vk_clear_color(void *data)
    if (!vkcfp)
       return;
 
+   attachment.aspectMask                  = VK_IMAGE_ASPECT_COLOR_BIT;
    attachment.clearValue.color.float32[0] = clearcolor->r;
    attachment.clearValue.color.float32[1] = clearcolor->g;
    attachment.clearValue.color.float32[2] = clearcolor->b;

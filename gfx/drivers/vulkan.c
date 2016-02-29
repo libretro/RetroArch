@@ -70,16 +70,15 @@ static const gfx_ctx_driver_t *vulkan_get_context(vk_t *vk)
          api, major, minor, false);
 }
 
-static void vulkan_init_render_pass(vk_t *vk)
+static void vulkan_init_render_pass(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
+   VkRenderPassCreateInfo rp_info; 
    VkAttachmentDescription attachment = {0};
-   VkRenderPassCreateInfo rp_info     = { 
-      VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+   VkSubpassDescription subpass       = {0};
    VkAttachmentReference color_ref    = { 0, 
       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-   VkSubpassDescription subpass       = {0};
-   struct vulkan_context_fp *vkcfp = 
-      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
 
    /* Backbuffer format. */
    attachment.format            = vk->context->swapchain_format;
@@ -104,6 +103,7 @@ static void vulkan_init_render_pass(vk_t *vk)
    subpass.colorAttachmentCount = 1;
    subpass.pColorAttachments    = &color_ref;
 
+   rp_info.sType                = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
    /* Finally, create the renderpass. */
    rp_info.attachmentCount      = 1;
    rp_info.pAttachments         = &attachment;
@@ -120,7 +120,7 @@ static void vulkan_init_framebuffers(
 {
    unsigned i;
 
-   vulkan_init_render_pass(vk);
+   vulkan_init_render_pass(vkcfp, vk);
 
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
