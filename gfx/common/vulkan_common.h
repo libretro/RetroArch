@@ -162,9 +162,14 @@ typedef struct vulkan_context
 
       /* Pipelines */
       PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
-      PFN_vkCreatePipelineLayout                    vkCreatePipelineLayout;
-      PFN_vkCreatePipelineCache                     vkCreatePipelineCache;
       PFN_vkDestroyPipeline                         vkDestroyPipeline;
+
+      /* Pipeline Layouts */
+      PFN_vkCreatePipelineLayout                    vkCreatePipelineLayout;
+      PFN_vkDestroyPipelineLayout                   vkDestroyPipelineLayout;
+
+      /* Pipeline Cache */
+      PFN_vkCreatePipelineCache                     vkCreatePipelineCache;
       
       /* Descriptor pools */
       PFN_vkCreateDescriptorPool                    vkCreateDescriptorPool;
@@ -172,6 +177,10 @@ typedef struct vulkan_context
       /* Descriptor sets */
       PFN_vkCmdBindDescriptorSets                   vkCmdBindDescriptorSets;
       PFN_vkUpdateDescriptorSets                    vkUpdateDescriptorSets;
+
+      /* Descriptor Set Layout */
+      PFN_vkCreateDescriptorSetLayout               vkCreateDescriptorSetLayout;
+      PFN_vkDestroyDescriptorSetLayout              vkDestroyDescriptorSetLayout;
 
       /* Command Buffers */
       PFN_vkCreateCommandPool                       vkCreateCommandPool;

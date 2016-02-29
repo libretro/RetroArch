@@ -186,7 +186,7 @@ static void vulkan_init_pipeline_layout(
    set_layout_info.bindingCount   = 2;
    set_layout_info.pBindings      = bindings;
 
-   vkCreateDescriptorSetLayout(vk->context->device,
+   VKFUNC(vkCreateDescriptorSetLayout)(vk->context->device,
          &set_layout_info, NULL, &vk->pipelines.set_layout);
 
    layout_info.setLayoutCount     = 1;
@@ -549,9 +549,9 @@ static void vulkan_deinit_pipeline_layout(
       struct vulkan_context_fp *vkcfp,
       vk_t *vk)
 {
-   vkDestroyPipelineLayout(vk->context->device,
+   VKFUNC(vkDestroyPipelineLayout)(vk->context->device,
          vk->pipelines.layout, NULL);
-   vkDestroyDescriptorSetLayout(vk->context->device,
+   VKFUNC(vkDestroyDescriptorSetLayout)(vk->context->device,
          vk->pipelines.set_layout, NULL);
 }
 

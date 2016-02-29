@@ -1148,6 +1148,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindDescriptorSets);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, UpdateDescriptorSets);
 
+   /* Descriptor Set Layout */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDescriptorSetLayout);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyDescriptorSetLayout);
+
    /* Framebuffers */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFramebuffer);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyFramebuffer);
@@ -1170,6 +1174,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    /* Pipelines */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineLayout);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyPipelineLayout);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineCache);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindPipeline);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyPipeline);
