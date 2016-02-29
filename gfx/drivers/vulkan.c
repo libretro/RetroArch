@@ -363,12 +363,10 @@ static void vulkan_init_pipelines(vk_t *vk)
    vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 }
 
-static void vulkan_init_command_buffers(vk_t *vk)
+static void vulkan_init_command_buffers(struct vulkan_context_fp *vkcfp, vk_t *vk)
 {
    /* RESET_COMMAND_BUFFER_BIT allows command buffer to be reset. */
    unsigned i;
-   struct vulkan_context_fp *vkcfp                 = 
-      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
 
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
@@ -393,9 +391,13 @@ static void vulkan_init_command_buffers(vk_t *vk)
    }
 }
 
-static void vulkan_init_samplers(vk_t *vk)
+static void vulkan_init_samplers(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
-   VkSamplerCreateInfo info     = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+   VkSamplerCreateInfo info;
+
+   info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
    info.magFilter               = VK_FILTER_NEAREST;
    info.minFilter               = VK_FILTER_NEAREST;
    info.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_NEAREST;
@@ -409,17 +411,21 @@ static void vulkan_init_samplers(vk_t *vk)
    info.maxLod                  = 0.0f;
    info.unnormalizedCoordinates = false;
    info.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-   vkCreateSampler(vk->context->device, &info, NULL, &vk->samplers.nearest);
+   VKFUNC(vkCreateSampler)(vk->context->device,
+         &info, NULL, &vk->samplers.nearest);
 
    info.magFilter               = VK_FILTER_LINEAR;
    info.minFilter               = VK_FILTER_LINEAR;
-   vkCreateSampler(vk->context->device, &info, NULL, &vk->samplers.linear);
+   VKFUNC(vkCreateSampler)(vk->context->device,
+         &info, NULL, &vk->samplers.linear);
 }
 
-static void vulkan_deinit_samplers(vk_t *vk)
+static void vulkan_deinit_samplers(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
-   vkDestroySampler(vk->context->device, vk->samplers.nearest, NULL);
-   vkDestroySampler(vk->context->device, vk->samplers.linear, NULL);
+   VKFUNC(vkDestroySampler)(vk->context->device, vk->samplers.nearest, NULL);
+   VKFUNC(vkDestroySampler)(vk->context->device, vk->samplers.linear, NULL);
 }
 
 static void vulkan_init_buffers(vk_t *vk)
@@ -479,7 +485,7 @@ static void vulkan_deinit_descriptor_pool(vk_t *vk)
 static void vulkan_init_textures(vk_t *vk)
 {
    unsigned i;
-   vulkan_init_samplers(vk);
+   vulkan_init_samplers(&vk->context->fp, vk);
 
    if (!vk->hw.enable)
    {
@@ -505,9 +511,10 @@ static void vulkan_init_textures(vk_t *vk)
 
 static void vulkan_deinit_textures(vk_t *vk)
 {
-   vulkan_deinit_samplers(vk);
-
    unsigned i;
+
+   vulkan_deinit_samplers(&vk->context->fp, vk);
+
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
       if (vk->swapchain[i].texture.memory != VK_NULL_HANDLE)
@@ -658,7 +665,7 @@ static void vulkan_init_resources(vk_t *vk)
    vulkan_init_descriptor_pool(vk);
    vulkan_init_textures(vk);
    vulkan_init_buffers(vk);
-   vulkan_init_command_buffers(vk);
+   vulkan_init_command_buffers(&vk->context->fp, vk);
 }
 
 static void vulkan_init_static_resources(vk_t *vk)

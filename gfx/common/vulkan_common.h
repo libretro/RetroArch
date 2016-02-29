@@ -165,6 +165,9 @@ typedef struct vulkan_context
       PFN_vkCmdBindDescriptorSets                   vkCmdBindDescriptorSets;
       PFN_vkUpdateDescriptorSets                    vkUpdateDescriptorSets;
 
+      /* Command pools */
+      PFN_vkCreateCommandPool                       vkCreateCommandPool;
+
       /* Framebuffers */
       PFN_vkCreateFramebuffer                       vkCreateFramebuffer;
 
@@ -172,7 +175,9 @@ typedef struct vulkan_context
       PFN_vkMapMemory                               vkMapMemory;
       PFN_vkUnmapMemory                             vkUnmapMemory;
 
-      PFN_vkCreateCommandPool                       vkCreateCommandPool;
+      /* Samplers */
+      PFN_vkCreateSampler                           vkCreateSampler;
+      PFN_vkDestroySampler                          vkDestroySampler;
 
       PFN_vkCreateInstance                          vkCreateInstance;
       PFN_vkCreateRenderPass                        vkCreateRenderPass;

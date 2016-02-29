@@ -1138,6 +1138,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindDescriptorSets);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, UpdateDescriptorSets);
 
+
    /* Memory allocation */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, MapMemory);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, UnmapMemory);
@@ -1234,6 +1235,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    VKFUNC(vkGetDeviceQueue)(vk->context.device,
          vk->context.graphics_queue_index, 0, &vk->context.queue);
+
+   /* Samplers */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateSampler);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroySampler);
 
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdDraw);
    VK_GET_INSTANCE_PROC_ADDR(vk,
