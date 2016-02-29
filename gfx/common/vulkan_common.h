@@ -196,6 +196,7 @@ typedef struct vulkan_context
       
       /* Descriptor pools */
       PFN_vkCreateDescriptorPool                    vkCreateDescriptorPool;
+      PFN_vkDestroyDescriptorPool                   vkDestroyDescriptorPool;
 
       /* Descriptor sets */
       PFN_vkAllocateDescriptorSets                  vkAllocateDescriptorSets;

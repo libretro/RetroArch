@@ -908,7 +908,7 @@ void vulkan_destroy_descriptor_manager(
 
       VKFUNC(vkFreeDescriptorSets)(device, node->pool,
             VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS, node->sets);
-      vkDestroyDescriptorPool(device, node->pool, NULL);
+      VKFUNC(vkDestroyDescriptorPool)(device, node->pool, NULL);
 
       free(node);
       node = next;
@@ -1163,6 +1163,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    /* Descriptor pools */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDescriptorPool);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyDescriptorPool);
 
    /* Descriptor sets */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, AllocateDescriptorSets);
