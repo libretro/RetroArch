@@ -173,6 +173,7 @@ typedef struct vulkan_context
       /* Command buffers */
       PFN_vkCreateCommandPool                       vkCreateCommandPool;
       PFN_vkDestroyCommandPool                      vkDestroyCommandPool;
+      PFN_vkEndCommandBuffer                        vkEndCommandBuffer;
 
       /* Framebuffers */
       PFN_vkCreateFramebuffer                       vkCreateFramebuffer;

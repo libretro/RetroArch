@@ -472,7 +472,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
-      vkEndCommandBuffer(staging);
+      VKFUNC(vkEndCommandBuffer)(staging);
       submit_info.commandBufferCount = 1;
       submit_info.pCommandBuffers    = &staging;
 
@@ -1168,6 +1168,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    /* Command buffers */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateCommandPool);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyCommandPool);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, EndCommandBuffer);
 
    if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)

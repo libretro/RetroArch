@@ -1645,7 +1645,7 @@ static bool vulkan_frame(void *data, const void *frame,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
    }
 
-   vkEndCommandBuffer(vk->cmd);
+   VKFUNC(vkEndCommandBuffer)(vk->cmd);
 
    /* Submit command buffers to GPU. */
 
