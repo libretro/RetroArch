@@ -101,6 +101,9 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
       struct vk_texture *staging)
 {
    VkImageCopy region;
+   struct vulkan_context_fp *vkcfp = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
+
    retro_assert(dynamic->type == VULKAN_TEXTURE_DYNAMIC);
    retro_assert(staging->type == VULKAN_TEXTURE_STAGING);
 
@@ -126,7 +129,7 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
    region.srcSubresource.layerCount = 1;
    region.dstSubresource = region.srcSubresource;
 
-   vk->context->fp.vkCmdCopyImage(vk->cmd,
+   VKFUNC(vkCmdCopyImage)(vk->cmd,
          staging->image, VK_IMAGE_LAYOUT_GENERAL,
          dynamic->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);

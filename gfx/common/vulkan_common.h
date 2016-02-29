@@ -127,9 +127,11 @@ enum vulkan_wsi_type
    VULKAN_WSI_XLIB
 };
 
+#define VKFUNC(sym) (vkcfp->sym)
+
 typedef struct vulkan_context
 {
-   struct
+   struct vulkan_context_fp
    {
       PFN_vkDestroyFence                            vkDestroyFence;
       PFN_vkCreateFence                             vkCreateFence;
