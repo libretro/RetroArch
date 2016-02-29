@@ -256,56 +256,56 @@ static void vulkan_init_pipelines(vk_t *vk)
    vertex_input.pVertexAttributeDescriptions    = attributes;
 
    /* Raster state */
-   raster.polygonMode             = VK_POLYGON_MODE_FILL;
-   raster.cullMode                = VK_CULL_MODE_NONE;
-   raster.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-   raster.depthClampEnable        = false;
-   raster.rasterizerDiscardEnable = false;
-   raster.depthBiasEnable         = false;
-   raster.lineWidth               = 1.0f;
+   raster.polygonMode                   = VK_POLYGON_MODE_FILL;
+   raster.cullMode                      = VK_CULL_MODE_NONE;
+   raster.frontFace                     = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+   raster.depthClampEnable              = false;
+   raster.rasterizerDiscardEnable       = false;
+   raster.depthBiasEnable               = false;
+   raster.lineWidth                     = 1.0f;
 
    /* Blend state */
-   blend_attachment.blendEnable    = false;
-   blend_attachment.colorWriteMask = 0xf;
-   blend.attachmentCount           = 1;
-   blend.pAttachments              = &blend_attachment;
+   blend_attachment.blendEnable         = false;
+   blend_attachment.colorWriteMask      = 0xf;
+   blend.attachmentCount                = 1;
+   blend.pAttachments                   = &blend_attachment;
 
    /* Viewport state */
-   viewport.viewportCount          = 1;
-   viewport.scissorCount           = 1;
+   viewport.viewportCount               = 1;
+   viewport.scissorCount                = 1;
 
    /* Depth-stencil state */
-   depth_stencil.depthTestEnable       = false;
-   depth_stencil.depthWriteEnable      = false;
-   depth_stencil.depthBoundsTestEnable = false;
-   depth_stencil.stencilTestEnable     = false;
-   depth_stencil.minDepthBounds        = 0.0f;
-   depth_stencil.maxDepthBounds        = 1.0f;
+   depth_stencil.depthTestEnable        = false;
+   depth_stencil.depthWriteEnable       = false;
+   depth_stencil.depthBoundsTestEnable  = false;
+   depth_stencil.stencilTestEnable      = false;
+   depth_stencil.minDepthBounds         = 0.0f;
+   depth_stencil.maxDepthBounds         = 1.0f;
 
    /* Multisample state */
-   multisample.rasterizationSamples    = VK_SAMPLE_COUNT_1_BIT;
+   multisample.rasterizationSamples     = VK_SAMPLE_COUNT_1_BIT;
 
    /* Dynamic state */
-   dynamic.pDynamicStates              = dynamics;
-   dynamic.dynamicStateCount           = ARRAY_SIZE(dynamics);
+   dynamic.pDynamicStates               = dynamics;
+   dynamic.dynamicStateCount            = ARRAY_SIZE(dynamics);
 
-   pipe.stageCount                     = 2;
-   pipe.pStages                        = shader_stages;
-   pipe.pVertexInputState              = &vertex_input;
-   pipe.pInputAssemblyState            = &input_assembly;
-   pipe.pRasterizationState            = &raster;
-   pipe.pColorBlendState               = &blend;
-   pipe.pMultisampleState              = &multisample;
-   pipe.pViewportState                 = &viewport;
-   pipe.pDepthStencilState             = &depth_stencil;
-   pipe.pDynamicState                  = &dynamic;
-   pipe.renderPass                     = vk->render_pass;
-   pipe.layout                         = vk->pipelines.layout;
+   pipe.stageCount                      = 2;
+   pipe.pStages                         = shader_stages;
+   pipe.pVertexInputState               = &vertex_input;
+   pipe.pInputAssemblyState             = &input_assembly;
+   pipe.pRasterizationState             = &raster;
+   pipe.pColorBlendState                = &blend;
+   pipe.pMultisampleState               = &multisample;
+   pipe.pViewportState                  = &viewport;
+   pipe.pDepthStencilState              = &depth_stencil;
+   pipe.pDynamicState                   = &dynamic;
+   pipe.renderPass                      = vk->render_pass;
+   pipe.layout                          = vk->pipelines.layout;
 
-   module_info.codeSize   = alpha_blend_vert_spv_len;
-   module_info.pCode      = (const uint32_t*)alpha_blend_vert_spv;
-   shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-   shader_stages[0].pName = "main";
+   module_info.codeSize                 = alpha_blend_vert_spv_len;
+   module_info.pCode                    = (const uint32_t*)alpha_blend_vert_spv;
+   shader_stages[0].stage               = VK_SHADER_STAGE_VERTEX_BIT;
+   shader_stages[0].pName               = "main";
    vkCreateShaderModule(vk->context->device,
          &module_info, NULL, &shader_stages[0].module);
 
@@ -319,10 +319,10 @@ static void vulkan_init_pipelines(vk_t *vk)
    blend_attachment.alphaBlendOp        = VK_BLEND_OP_ADD;
 
    /* Glyph pipeline */
-   module_info.codeSize   = font_frag_spv_len;
-   module_info.pCode      = (const uint32_t*)font_frag_spv;
-   shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-   shader_stages[1].pName = "main";
+   module_info.codeSize                 = font_frag_spv_len;
+   module_info.pCode                    = (const uint32_t*)font_frag_spv;
+   shader_stages[1].stage               = VK_SHADER_STAGE_FRAGMENT_BIT;
+   shader_stages[1].pName               = "main";
    vkCreateShaderModule(vk->context->device,
          &module_info, NULL, &shader_stages[1].module);
 
@@ -579,17 +579,18 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    bool ret = true;
 
    memset(&info, 0, sizeof(info));
-   info.device = vk->context->device;
-   info.memory_properties = &vk->context->memory_properties;
-   info.pipeline_cache = vk->pipelines.cache;
-   info.max_input_size.width = vk->tex_w;
+
+   info.device                = vk->context->device;
+   info.memory_properties     = &vk->context->memory_properties;
+   info.pipeline_cache        = vk->pipelines.cache;
+   info.max_input_size.width  = vk->tex_w;
    info.max_input_size.height = vk->tex_h;
-   info.swapchain.viewport = vk->vk_vp;
-   info.swapchain.format = vk->context->swapchain_format;
+   info.swapchain.viewport    = vk->vk_vp;
+   info.swapchain.format      = vk->context->swapchain_format;
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
 
-   vk->filter_chain = vulkan_filter_chain_create_from_preset(&info, shader_path,
+   vk->filter_chain           = vulkan_filter_chain_create_from_preset(&info, shader_path,
          vk->video.smooth ?
          VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST);
 
@@ -711,7 +712,7 @@ static void vulkan_free(void *data)
 
    if (vk->context && vk->context->device)
    {
-      vkQueueWaitIdle(vk->context->queue);
+      vk->context->fp.vkQueueWaitIdle(vk->context->queue);
       vulkan_deinit_resources(vk);
 
       /* No need to init this since textures are create on-demand. */
@@ -988,7 +989,7 @@ static void vulkan_check_swapchain(vk_t *vk)
 {
    if (vk->context->invalid_swapchain)
    {
-      vkQueueWaitIdle(vk->context->queue);
+      vk->context->fp.vkQueueWaitIdle(vk->context->queue);
 
       vulkan_deinit_resources(vk);
       vulkan_init_resources(vk);
@@ -1421,18 +1422,18 @@ static bool vulkan_frame(void *data, const void *frame,
             return false;
          }
 
-         input.view   = vk->hw.image->image_view;
-         input.layout = vk->hw.image->image_layout;
+         input.view         = vk->hw.image->image_view;
+         input.layout       = vk->hw.image->image_layout;
 
          if (frame)
          {
-            input.width  = frame_width;
-            input.height = frame_height;
+            input.width     = frame_width;
+            input.height    = frame_height;
          }
          else
          {
-            input.width  = vk->hw.last_width;
-            input.height = vk->hw.last_height;
+            input.width     = vk->hw.last_width;
+            input.height    = vk->hw.last_height;
          }
 
          vk->hw.last_width  = input.width;
@@ -1851,7 +1852,7 @@ static void vulkan_unload_texture(void *data, uintptr_t handle)
 
    /* TODO: We really want to defer this deletion instead,
     * but this will do for now. */
-   vkQueueWaitIdle(vk->context->queue);
+   vk->context->fp.vkQueueWaitIdle(vk->context->queue);
    vulkan_destroy_texture(vk->context->device, texture);
    free(texture);
 }
@@ -1948,7 +1949,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
 
       vk->readback.pending = true;
       video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
-      vkQueueWaitIdle(vk->context->queue);
+      vk->context->fp.vkQueueWaitIdle(vk->context->queue);
 
       if (!staging->mapped)
          vulkan_map_persistent_texture(vk->context->device, staging);
@@ -2126,7 +2127,7 @@ static bool vulkan_overlay_load(void *data,
       return false;
 
    slock_lock(vk->context->queue_lock);
-   vkQueueWaitIdle(vk->context->queue);
+   vk->context->fp.vkQueueWaitIdle(vk->context->queue);
    slock_unlock(vk->context->queue_lock);
    vulkan_overlay_free(vk);
 
