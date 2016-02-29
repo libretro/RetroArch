@@ -876,9 +876,11 @@ static void zrmenu_init(int width, int height)
    zr_device_init(&device);
 
    for (int i = 0; i < ZR_ROUNDING_MAX; ++i)
+   {
       (&gui.ctx)->style.rounding[i] = 0;
+   }
    zrmenu_set_style(&gui.ctx, THEME_DARK);
-
+   zr_push_color(&gui.ctx, ZR_COLOR_BORDER, zr_rgba(0,0,0,0));
 }
 
 static void zrmenu_deinit()
