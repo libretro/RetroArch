@@ -133,6 +133,8 @@ typedef struct vulkan_context
    {
       PFN_vkDestroyFence                            vkDestroyFence;
       PFN_vkCreateFence                             vkCreateFence;
+      PFN_vkResetFences                             vkResetFences;
+      PFN_vkWaitForFences                           vkWaitForFences;
       PFN_vkDestroySemaphore                        vkDestroySemaphore;
       PFN_vkCreateSemaphore                         vkCreateSemaphore;
       PFN_vkGetDeviceQueue                          vkGetDeviceQueue;
@@ -142,6 +144,12 @@ typedef struct vulkan_context
       PFN_vkGetPhysicalDeviceMemoryProperties       vkGetPhysicalDeviceMemoryProperties;
       PFN_vkGetPhysicalDeviceQueueFamilyProperties  vkGetPhysicalDeviceQueueFamilyProperties;
       PFN_vkQueueWaitIdle                           vkQueueWaitIdle;
+      PFN_vkCmdCopyImage                            vkCmdCopyImage;
+      PFN_vkCmdSetScissor                           vkCmdSetScissor;
+      PFN_vkCmdSetViewport                          vkCmdSetViewport;
+#if 0
+      PFN_vkCmdDraw                                 vkCmdDraw;
+#endif
       PFN_vkCreateDevice                            vkCreateDevice;
       PFN_vkGetPhysicalDeviceSurfaceSupportKHR      vkGetPhysicalDeviceSurfaceSupportKHR;
       PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;

@@ -126,7 +126,7 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
    region.srcSubresource.layerCount = 1;
    region.dstSubresource = region.srcSubresource;
 
-   vkCmdCopyImage(vk->cmd,
+   vk->context->fp.vkCmdCopyImage(vk->cmd,
          staging->image, VK_IMAGE_LAYOUT_GENERAL,
          dynamic->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);
@@ -428,7 +428,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       region.srcSubresource.layerCount = 1;
       region.dstSubresource            = region.srcSubresource;
 
-      vkCmdCopyImage(staging,
+      vk->context->fp.vkCmdCopyImage(staging,
             tmp.image, VK_IMAGE_LAYOUT_GENERAL,
             tex.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             1, &region);
@@ -533,8 +533,8 @@ static void vulkan_check_dynamic_state(vk_t *vk)
       const VkRect2D sci = {
          { vk->vp.x, vk->vp.y },
          { vk->vp.width, vk->vp.height }};
-      vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
-      vkCmdSetScissor(vk->cmd, 0, 1, &sci);
+      vk->context->fp.vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
+      vk->context->fp.vkCmdSetScissor(vk->cmd, 0, 1, &sci);
 
       vk->tracker.dirty &= ~VULKAN_DIRTY_DYNAMIC_BIT;
    }
@@ -607,8 +607,8 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
    {
       vkCmdBindPipeline(vk->cmd,
             VK_PIPELINE_BIND_POINT_GRAPHICS, quad->pipeline);
-      vk->tracker.pipeline = quad->pipeline;
 
+      vk->tracker.pipeline = quad->pipeline;
       /* Changing pipeline invalidates dynamic state. */
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
    }
@@ -619,6 +619,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
    {
       VkDescriptorSet set;
       struct vk_buffer_range range;
+
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
                sizeof(*quad->mvp), &range))
          return;
@@ -629,9 +630,11 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
       {
          /* Upload UBO */
          struct vk_buffer_range range;
+
          if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
                   sizeof(*quad->mvp), &range))
             return;
+
          memcpy(range.data, quad->mvp, sizeof(*quad->mvp));
 
          set = vulkan_descriptor_manager_alloc(vk->context->device,
@@ -1042,6 +1045,14 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateSemaphore);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyFence);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFence);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, ResetFences);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, WaitForFences);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdCopyImage);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetViewport);
+#if 0
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdDraw);
+#endif
 
    if (vk->context.fp.vkEnumeratePhysicalDevices(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)
@@ -1409,14 +1420,14 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
       vk->context.fp.vkCreateSemaphore(vk->context.device, &sem_info,
             NULL, &vk->context.swapchain_semaphores[index]);
 
-   vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
+   vk->context.fp.vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
    vk->context.fp.vkDestroyFence(vk->context.device, fence, NULL);
 
    next_fence = &vk->context.swapchain_fences[index];
    if (*next_fence != VK_NULL_HANDLE)
    {
-      vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
-      vkResetFences(vk->context.device, 1, next_fence);
+      vk->context.fp.vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
+      vk->context.fp.vkResetFences(vk->context.device, 1, next_fence);
    }
    else
       vk->context.fp.vkCreateFence(vk->context.device, &info, NULL, next_fence);
