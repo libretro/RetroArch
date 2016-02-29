@@ -1057,32 +1057,51 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    else if (VKFUNC(vkCreateInstance)(&info, NULL, &vk->context.instance) != VK_SUCCESS)
       return false;
 
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceFormatProperties);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, EnumeratePhysicalDevices);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceProperties);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceMemoryProperties);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceQueueFamilyProperties);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance,
+         GetPhysicalDeviceFormatProperties);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance,
+         EnumeratePhysicalDevices);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance,
+         GetPhysicalDeviceProperties);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance,
+         GetPhysicalDeviceMemoryProperties);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance,
+         GetPhysicalDeviceQueueFamilyProperties);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDevice);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyDevice);
+
+   /* Queues */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetDeviceQueue);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, QueueWaitIdle);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, QueueSubmit);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroySemaphore);
+
+   /* Semaphores */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateSemaphore);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyFence);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroySemaphore);
+
+   /* Fences */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFence);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyFence);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, ResetFences);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, WaitForFences);
+
+   /* Images */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdCopyImage);
+
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetViewport);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindPipeline);
+
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateRenderPass);
+
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFramebuffer);
+
+   /* Pipelines */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineLayout);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineCache);
+
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateCommandPool);
 
    if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
