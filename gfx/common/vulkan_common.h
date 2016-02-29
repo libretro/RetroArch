@@ -137,6 +137,18 @@ typedef struct vulkan_context
       PFN_vkCreateInstance                          vkCreateInstance;
       PFN_vkDestroyInstance                         vkDestroyInstance;
 
+      /* Device */
+      PFN_vkCreateDevice                            vkCreateDevice;
+      PFN_vkDestroyDevice                           vkDestroyDevice;
+
+      /* Device Memory */
+      PFN_vkAllocateMemory                          vkAllocateMemory;
+      PFN_vkFreeMemory                              vkFreeMemory;
+
+      /* Buffers */
+      PFN_vkCreateBuffer                            vkCreateBuffer;
+      PFN_vkDestroyBuffer                           vkDestroyBuffer;
+
       /* Fences */
       PFN_vkCreateFence                             vkCreateFence;
       PFN_vkDestroyFence                            vkDestroyFence;
@@ -235,8 +247,6 @@ typedef struct vulkan_context
       PFN_vkGetPhysicalDeviceMemoryProperties       vkGetPhysicalDeviceMemoryProperties;
       PFN_vkGetPhysicalDeviceQueueFamilyProperties  vkGetPhysicalDeviceQueueFamilyProperties;
 
-      PFN_vkCreateDevice                            vkCreateDevice;
-      PFN_vkDestroyDevice                           vkDestroyDevice;
       PFN_vkGetPhysicalDeviceSurfaceSupportKHR      vkGetPhysicalDeviceSurfaceSupportKHR;
       PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
       PFN_vkGetPhysicalDeviceSurfaceFormatsKHR      vkGetPhysicalDeviceSurfaceFormatsKHR;

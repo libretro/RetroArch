@@ -362,7 +362,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    }
    else
    {
-      vkAllocateMemory(device, &alloc, NULL, &tex.memory);
+      VKFUNC(vkAllocateMemory)(device, &alloc, NULL, &tex.memory);
       tex.memory_size = alloc.allocationSize;
       tex.memory_type = alloc.memoryTypeIndex;
    }
@@ -370,7 +370,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    if (old)
    {
       if (old->memory != VK_NULL_HANDLE)
-         vkFreeMemory(device, old->memory, NULL);
+         VKFUNC(vkFreeMemory)(device, old->memory, NULL);
       memset(old, 0, sizeof(*old));
    }
 
@@ -502,7 +502,7 @@ void vulkan_destroy_texture(
 {
    if (tex->mapped)
       VKFUNC(vkUnmapMemory)(device, tex->memory);
-   vkFreeMemory(device, tex->memory, NULL);
+   VKFUNC(vkFreeMemory)(device, tex->memory, NULL);
    VKFUNC(vkDestroyImageView)(device, tex->view, NULL);
    VKFUNC(vkDestroyImage)(device, tex->image, NULL);
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
@@ -778,23 +778,23 @@ struct vk_buffer vulkan_create_buffer(
    VkMemoryAllocateInfo alloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
    VkBufferCreateInfo info    = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 
-   info.size        = size;
-   info.usage       = usage;
-   info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-   vkCreateBuffer(context->device, &info, NULL, &buffer.buffer);
+   info.size                  = size;
+   info.usage                 = usage;
+   info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+   VKFUNC(vkCreateBuffer)(context->device, &info, NULL, &buffer.buffer);
 
    vkGetBufferMemoryRequirements(context->device, buffer.buffer, &mem_reqs);
 
-   alloc.allocationSize  = mem_reqs.size;
-   alloc.memoryTypeIndex = vulkan_find_memory_type(
+   alloc.allocationSize       = mem_reqs.size;
+   alloc.memoryTypeIndex      = vulkan_find_memory_type(
          &context->memory_properties,
          mem_reqs.memoryTypeBits,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | 
          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-   vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
+   VKFUNC(vkAllocateMemory)(context->device, &alloc, NULL, &buffer.memory);
    vkBindBufferMemory(context->device, buffer.buffer, buffer.memory, 0);
 
-   buffer.size = alloc.allocationSize;
+   buffer.size                = alloc.allocationSize;
 
    VKFUNC(vkMapMemory)(context->device,
          buffer.memory, 0, buffer.size, 0, &buffer.mapped);
@@ -807,8 +807,10 @@ void vulkan_destroy_buffer(
       struct vk_buffer *buffer)
 {
    VKFUNC(vkUnmapMemory)(device, buffer->memory);
-   vkFreeMemory(device, buffer->memory, NULL);
-   vkDestroyBuffer(device, buffer->buffer, NULL);
+   VKFUNC(vkFreeMemory)(device, buffer->memory, NULL);
+
+   VKFUNC(vkDestroyBuffer)(device, buffer->buffer, NULL);
+
    memset(buffer, 0, sizeof(*buffer));
 }
 
@@ -1089,6 +1091,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    
    VKSYM(vk, CreateInstance);
    VKSYM(vk, DestroyInstance);
+   VKSYM(vk, AllocateMemory);
+   VKSYM(vk, FreeMemory);
 
    app.pApplicationName              = "RetroArch";
    app.applicationVersion            = 0;
@@ -1130,6 +1134,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateSemaphore);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroySemaphore);
 
+   /* Buffers */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateBuffer);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyBuffer);
+
    /* Fences */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFence);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyFence);
@@ -1167,9 +1175,6 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    /* Render Passes */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateRenderPass);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyRenderPass);
-
-
-
 
    /* Pipelines */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineLayout);
