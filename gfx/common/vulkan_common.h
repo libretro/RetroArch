@@ -158,38 +158,44 @@ typedef struct gfx_ctx_vulkan_data
 {
    vulkan_context_t context;
 
-   PFN_vkGetPhysicalDeviceSurfaceSupportKHR 
-      fpGetPhysicalDeviceSurfaceSupportKHR;
-   PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR 
-      fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
-   PFN_vkGetPhysicalDeviceSurfaceFormatsKHR 
-      fpGetPhysicalDeviceSurfaceFormatsKHR;
-   PFN_vkGetPhysicalDeviceSurfacePresentModesKHR 
-      fpGetPhysicalDeviceSurfacePresentModesKHR;
-   PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
-   PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
-   PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
-   PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
-   PFN_vkQueuePresentKHR fpQueuePresentKHR;
+   struct
+   {
+      PFN_vkCreateInstance vkCreateInstance;
+      PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices;
+      PFN_vkGetPhysicalDeviceSurfaceSupportKHR 
+         vkGetPhysicalDeviceSurfaceSupportKHR;
+      PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR 
+         vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
+      PFN_vkGetPhysicalDeviceSurfaceFormatsKHR 
+         vkGetPhysicalDeviceSurfaceFormatsKHR;
+      PFN_vkGetPhysicalDeviceSurfacePresentModesKHR 
+         vkGetPhysicalDeviceSurfacePresentModesKHR;
+      PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR;
+      PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR;
+      PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR;
+      PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR;
+      PFN_vkQueuePresentKHR vkQueuePresentKHR;
 #ifdef _WIN32
-   PFN_vkCreateWin32SurfaceKHR fpCreateWin32SurfaceKHR;
+      PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
 #endif
 #ifdef HAVE_XCB
-   PFN_vkCreateXcbSurfaceKHR fpCreateXcbSurfaceKHR;
+      PFN_vkCreateXcbSurfaceKHR vkCreateXcbSurfaceKHR;
 #endif
 #ifdef HAVE_XLIB
-   PFN_vkCreateXlibSurfaceKHR fpCreateXlibSurfaceKHR;
+      PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR;
 #endif
 #ifdef ANDROID
-   PFN_vkCreateAndroidSurfaceKHR fpCreateAndroidSurfaceKHR;
+      PFN_vkCreateAndroidSurfaceKHR vkCreateAndroidSurfaceKHR;
 #endif
 #ifdef HAVE_WAYLAND
-   PFN_vkCreateWaylandSurfaceKHR fpCreateWaylandSurfaceKHR;
+      PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
 #endif
 #ifdef HAVE_MIR
-   FN_vkCreateMirSurfaceKHR fpCreateMirSurfaceKHR;
+      PFN_vkCreateMirSurfaceKHR vkCreateMirSurfaceKHR;
 #endif
-   PFN_vkDestroySurfaceKHR fpDestroySurfaceKHR;
+      PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
+   } fp;
+
 
    VkSurfaceKHR vk_surface;
    VkSwapchainKHR swapchain;
