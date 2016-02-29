@@ -1833,7 +1833,7 @@ static void vulkan_set_texture_frame(void *data,
          NULL, rgb32 ? NULL : &br_swizzle,
          texture_optimal->memory ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
 
-   vkMapMemory(vk->context->device, texture->memory,
+   VKFUNC(vkMapMemory)(vk->context->device, texture->memory,
          texture->offset, texture->size, 0, (void**)&ptr);
 
    dst       = ptr;
@@ -1843,7 +1843,7 @@ static void vulkan_set_texture_frame(void *data,
    for (y = 0; y < height; y++, dst += texture->stride, src += stride)
       memcpy(dst, src, stride);
 
-   vkUnmapMemory(vk->context->device, texture->memory);
+   VKFUNC(vkUnmapMemory)(vk->context->device, texture->memory);
 
    vk->menu.alpha      = alpha;
    vk->menu.last_index = index;
@@ -1992,14 +1992,14 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
       retro_perf_start(&stream_readback);
 
       buffer += 3 * (vk->vp.height - 1) * vk->vp.width;
-      vkMapMemory(vk->context->device, staging->memory,
+      VKFUNC(vkMapMemory)(vk->context->device, staging->memory,
             staging->offset, staging->size, 0, (void**)&src);
 
       vk->readback.scaler.in_stride  = staging->stride;
       vk->readback.scaler.out_stride = -(int)vk->vp.width * 3;
       scaler_ctx_scale(&vk->readback.scaler, buffer, src);
 
-      vkUnmapMemory(vk->context->device, staging->memory);
+      VKFUNC(vkUnmapMemory)(vk->context->device, staging->memory);
 
       retro_perf_stop(&stream_readback);
    }

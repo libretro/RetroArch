@@ -414,7 +414,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       unsigned bpp       = vulkan_format_to_bpp(tex.format);
       unsigned stride    = tex.width * bpp;
 
-      vkMapMemory(device, tex.memory, tex.offset, tex.size, 0, &ptr);
+      VKFUNC(vkMapMemory)(device, tex.memory, tex.offset, tex.size, 0, &ptr);
 
       dst                = (uint8_t*)ptr;
       src                = (const uint8_t*)initial;
@@ -763,7 +763,9 @@ void vulkan_image_layout_transition(
          1, &barrier);
 }
 
-struct vk_buffer vulkan_create_buffer(const struct vulkan_context *context,
+struct vk_buffer vulkan_create_buffer(
+      struct vulkan_context_fp *vkcfp,
+      const struct vulkan_context *context,
       size_t size, VkBufferUsageFlags usage)
 {
    struct vk_buffer buffer;
@@ -789,7 +791,7 @@ struct vk_buffer vulkan_create_buffer(const struct vulkan_context *context,
 
    buffer.size = alloc.allocationSize;
 
-   vkMapMemory(context->device,
+   VKFUNC(vkMapMemory)(context->device,
          buffer.memory, 0, buffer.size, 0, &buffer.mapped);
    return buffer;
 }
@@ -938,7 +940,9 @@ static struct vk_buffer_node *vulkan_buffer_chain_alloc_node(
    if (!node)
       return NULL;
 
-   node->buffer = vulkan_create_buffer(context, size, usage);
+   node->buffer = vulkan_create_buffer(
+         (struct vulkan_context_fp*)&context->fp,
+         context, size, usage);
    return node;
 }
 

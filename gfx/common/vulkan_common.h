@@ -606,7 +606,9 @@ static INLINE void vulkan_write_quad_vbo(struct vk_vertex *pv,
    }
 }
 
-struct vk_buffer vulkan_create_buffer(const struct vulkan_context *context,
+struct vk_buffer vulkan_create_buffer(
+      struct vulkan_context_fp *vkcfp,
+      const struct vulkan_context *context,
       size_t size, VkBufferUsageFlags usage);
 
 void vulkan_destroy_buffer(
