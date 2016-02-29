@@ -78,6 +78,8 @@ static void vulkan_init_render_pass(vk_t *vk)
    VkAttachmentReference color_ref    = { 0, 
       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
    VkSubpassDescription subpass       = {0};
+   struct vulkan_context_fp *vkcfp = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
 
    /* Backbuffer format. */
    attachment.format            = vk->context->swapchain_format;
@@ -108,13 +110,16 @@ static void vulkan_init_render_pass(vk_t *vk)
    rp_info.subpassCount         = 1;
    rp_info.pSubpasses           = &subpass;
 
-   vk->context->fp.vkCreateRenderPass(vk->context->device,
+   VKFUNC(vkCreateRenderPass)(vk->context->device,
          &rp_info, NULL, &vk->render_pass);
 }
 
 static void vulkan_init_framebuffers(vk_t *vk)
 {
    unsigned i;
+   struct vulkan_context_fp *vkcfp = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
+
    vulkan_init_render_pass(vk);
 
    for (i = 0; i < vk->num_swapchain_images; i++)
@@ -151,7 +156,7 @@ static void vulkan_init_framebuffers(vk_t *vk)
       info.height          = vk->context->swapchain_height;
       info.layers          = 1;
 
-      vk->context->fp.vkCreateFramebuffer(vk->context->device,
+      VKFUNC(vkCreateFramebuffer)(vk->context->device,
             &info, NULL, &vk->swapchain[i].backbuffer.framebuffer);
    }
 }
@@ -163,6 +168,8 @@ static void vulkan_init_pipeline_layout(vk_t *vk)
    VkPipelineLayoutCreateInfo layout_info          = { 
       VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
    VkDescriptorSetLayoutBinding bindings[2]        = {{0}};
+   struct vulkan_context_fp *vkcfp                 = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
 
    bindings[0].binding            = 0;
    bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -185,7 +192,7 @@ static void vulkan_init_pipeline_layout(vk_t *vk)
    layout_info.setLayoutCount     = 1;
    layout_info.pSetLayouts        = &vk->pipelines.set_layout;
 
-   vk->context->fp.vkCreatePipelineLayout(vk->context->device,
+   VKFUNC(vkCreatePipelineLayout)(vk->context->device,
          &layout_info, NULL, &vk->pipelines.layout);
 }
 
@@ -360,6 +367,9 @@ static void vulkan_init_command_buffers(vk_t *vk)
 {
    /* RESET_COMMAND_BUFFER_BIT allows command buffer to be reset. */
    unsigned i;
+   struct vulkan_context_fp *vkcfp                 = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
+
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
       VkCommandPoolCreateInfo pool_info = { 
@@ -371,7 +381,7 @@ static void vulkan_init_command_buffers(vk_t *vk)
       pool_info.flags            = 
          VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-      vk->context->fp.vkCreateCommandPool(vk->context->device,
+      VKFUNC(vkCreateCommandPool)(vk->context->device,
             &pool_info, NULL, &vk->swapchain[i].cmd_pool);
 
       info.commandPool           = vk->swapchain[i].cmd_pool;
@@ -649,14 +659,17 @@ static void vulkan_init_static_resources(vk_t *vk)
    VkCommandPoolCreateInfo pool_info = { 
       VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
    /* Create the pipeline cache. */
-   VkPipelineCacheCreateInfo cache = { 
+   VkPipelineCacheCreateInfo cache   = { 
       VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
+   struct vulkan_context_fp *vkcfp   = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
 
-   vk->context->fp.vkCreatePipelineCache(vk->context->device,
+   VKFUNC(vkCreatePipelineCache)(vk->context->device,
          &cache, NULL, &vk->pipelines.cache);
 
    pool_info.queueFamilyIndex = vk->context->graphics_queue_index;
-   vk->context->fp.vkCreateCommandPool(vk->context->device,
+
+   VKFUNC(vkCreateCommandPool)(vk->context->device,
          &pool_info, NULL, &vk->staging_pool);
 
    for (i = 0; i < 4 * 4; i++)
@@ -709,12 +722,14 @@ static void vulkan_deinit_menu(vk_t *vk)
 static void vulkan_free(void *data)
 {
    vk_t *vk = (vk_t*)data;
+   struct vulkan_context_fp *vkcfp   = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
    if (!vk)
       return;
 
    if (vk->context && vk->context->device)
    {
-      vk->context->fp.vkQueueWaitIdle(vk->context->queue);
+      VKFUNC(vkQueueWaitIdle)(vk->context->queue);
       vulkan_deinit_resources(vk);
 
       /* No need to init this since textures are create on-demand. */
@@ -989,9 +1004,12 @@ static void vulkan_update_filter_chain(vk_t *vk)
 
 static void vulkan_check_swapchain(vk_t *vk)
 {
+   struct vulkan_context_fp *vkcfp   = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
+
    if (vk->context->invalid_swapchain)
    {
-      vk->context->fp.vkQueueWaitIdle(vk->context->queue);
+      VKFUNC(vkQueueWaitIdle)(vk->context->queue);
 
       vulkan_deinit_resources(vk);
       vulkan_init_resources(vk);
@@ -1268,6 +1286,8 @@ static void vulkan_readback(vk_t *vk)
    VkImageCopy region;
    struct vk_texture *staging;
    struct video_viewport vp;
+   struct vulkan_context_fp *vkcfp   = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
 
    vulkan_viewport_info(vk, &vp);
    memset(&region, 0, sizeof(region));
@@ -1300,7 +1320,7 @@ static void vulkan_readback(vk_t *vk)
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
-   vk->context->fp.vkCmdCopyImage(vk->cmd, vk->chain->backbuffer.image,
+   VKFUNC(vkCmdCopyImage)(vk->cmd, vk->chain->backbuffer.image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
          staging->image,
          VK_IMAGE_LAYOUT_GENERAL,
@@ -1336,6 +1356,8 @@ static bool vulkan_frame(void *data, const void *frame,
       VK_STRUCTURE_TYPE_SUBMIT_INFO };
    unsigned frame_index                          = 
       vk->context->current_swapchain_index;
+   struct vulkan_context_fp *vkcfp               = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
 
    rarch_perf_init(&frame_run, "frame_run");
    rarch_perf_init(&copy_frame, "copy_frame");
@@ -1617,7 +1639,7 @@ static bool vulkan_frame(void *data, const void *frame,
    retro_perf_start(&queue_submit);
 
    slock_lock(vk->context->queue_lock);
-   vk->context->fp.vkQueueSubmit(vk->context->queue, 1,
+   VKFUNC(vkQueueSubmit)(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]);
    slock_unlock(vk->context->queue_lock);
    retro_perf_stop(&queue_submit);
@@ -1847,14 +1869,16 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
 
 static void vulkan_unload_texture(void *data, uintptr_t handle)
 {
-   vk_t *vk                   = (vk_t*)data;
-   struct vk_texture *texture = (struct vk_texture*)handle;
+   vk_t *vk                         = (vk_t*)data;
+   struct vk_texture *texture       = (struct vk_texture*)handle;
+   struct vulkan_context_fp *vkcfp  = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
    if (!texture)
       return;
 
    /* TODO: We really want to defer this deletion instead,
     * but this will do for now. */
-   vk->context->fp.vkQueueWaitIdle(vk->context->queue);
+   VKFUNC(vkQueueWaitIdle)(vk->context->queue);
    vulkan_destroy_texture(vk->context->device, texture);
    free(texture);
 }
@@ -1910,8 +1934,10 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
 
 static bool vulkan_read_viewport(void *data, uint8_t *buffer)
 {
-   vk_t *vk = (vk_t*)data;
-   struct vk_texture *staging;
+   struct vk_texture *staging       = NULL;
+   vk_t *vk                         = (vk_t*)data;
+   struct vulkan_context_fp *vkcfp  = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
 
    if (!vk)
       return false;
@@ -1951,7 +1977,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
 
       vk->readback.pending = true;
       video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
-      vk->context->fp.vkQueueWaitIdle(vk->context->queue);
+      VKFUNC(vkQueueWaitIdle)(vk->context->queue);
 
       if (!staging->mapped)
          vulkan_map_persistent_texture(vk->context->device, staging);
@@ -2121,6 +2147,9 @@ static bool vulkan_overlay_load(void *data,
    const struct texture_image *images = 
       (const struct texture_image*)image_data;
    vk_t *vk                           = (vk_t*)data;
+   struct vulkan_context_fp *vkcfp    = 
+      vk->context ? (struct vulkan_context_fp*)&vk->context->fp 
+      : NULL;
    static const struct vk_color white = {
       1.0f, 1.0f, 1.0f, 1.0f,
    };
@@ -2129,7 +2158,7 @@ static bool vulkan_overlay_load(void *data,
       return false;
 
    slock_lock(vk->context->queue_lock);
-   vk->context->fp.vkQueueWaitIdle(vk->context->queue);
+   VKFUNC(vkQueueWaitIdle)(vk->context->queue);
    slock_unlock(vk->context->queue_lock);
    vulkan_overlay_free(vk);
 
