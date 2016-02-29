@@ -1244,7 +1244,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateSampler);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroySampler);
 
+   /* Clear commands */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdClearAttachments);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdDraw);
+
    VK_GET_INSTANCE_PROC_ADDR(vk,
          vk->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
    VK_GET_INSTANCE_PROC_ADDR(vk,

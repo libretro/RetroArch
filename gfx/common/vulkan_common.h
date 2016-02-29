@@ -179,6 +179,9 @@ typedef struct vulkan_context
       PFN_vkCreateSampler                           vkCreateSampler;
       PFN_vkDestroySampler                          vkDestroySampler;
 
+      /* Clear commands */
+      PFN_vkCmdClearAttachments                     vkCmdClearAttachments;
+
       PFN_vkCreateInstance                          vkCreateInstance;
       PFN_vkCreateRenderPass                        vkCreateRenderPass;
       PFN_vkGetPhysicalDeviceFormatProperties       vkGetPhysicalDeviceFormatProperties;

@@ -191,8 +191,14 @@ static void menu_display_vk_clear_color(void *data)
    VkClearAttachment attachment = { VK_IMAGE_ASPECT_COLOR_BIT };
    menu_display_ctx_clearcolor_t *clearcolor =
       (menu_display_ctx_clearcolor_t*)data;
+   struct vulkan_context_fp *vkcfp           = NULL;
    vk_t *vk = vk_get_ptr();
    if (!vk || !clearcolor)
+      return;
+
+   vkcfp = &vk->context->fp;
+
+   if (!vkcfp)
       return;
 
    attachment.clearValue.color.float32[0] = clearcolor->r;
@@ -205,7 +211,7 @@ static void menu_display_vk_clear_color(void *data)
    rect.rect.extent.height = vk->context->swapchain_height;
    rect.layerCount         = 1;
 
-   vkCmdClearAttachments(vk->cmd, 1, &attachment, 1, &rect);
+   VKFUNC(vkCmdClearAttachments)(vk->cmd, 1, &attachment, 1, &rect);
 }
 
 static const float *menu_display_vk_get_tex_coords(void)

@@ -1810,6 +1810,7 @@ static void vulkan_set_texture_frame(void *data,
    uint8_t *ptr                       = NULL;
    uint8_t *dst                       = NULL;
    const uint8_t *src                 = NULL;
+   struct vulkan_context_fp *vkcfp    = NULL;
    vk_t *vk                           = (vk_t*)data;
    unsigned index                     = vk->context->current_swapchain_index;
    struct vk_texture *texture         = &vk->menu.textures[index];
@@ -1822,6 +1823,11 @@ static void vulkan_set_texture_frame(void *data,
    };
 
    if (!vk)
+      return;
+
+   vkcfp = &vk->context->fp;
+
+   if (!vkcfp)
       return;
 
    /* B4G4R4A4 must be supported, but R4G4B4A4 is optional,
