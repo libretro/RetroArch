@@ -170,6 +170,9 @@ typedef struct vulkan_context
 
       /* Pipeline Cache */
       PFN_vkCreatePipelineCache                     vkCreatePipelineCache;
+
+      /* Pipeline Barriers */
+      PFN_vkCmdPipelineBarrier                      vkCmdPipelineBarrier;
       
       /* Descriptor pools */
       PFN_vkCreateDescriptorPool                    vkCreateDescriptorPool;

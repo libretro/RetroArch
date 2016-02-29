@@ -743,7 +743,10 @@ void vulkan_image_layout_transition(
       VkPipelineStageFlags srcStages,
       VkPipelineStageFlags dstStages)
 {
-   VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+   struct vulkan_context_fp *vkcfp     = 
+      (struct vulkan_context_fp*)&vk->context->fp;
+   VkImageMemoryBarrier barrier        = 
+   { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 
    barrier.srcAccessMask               = srcAccess;
    barrier.dstAccessMask               = dstAccess;
@@ -756,7 +759,7 @@ void vulkan_image_layout_transition(
    barrier.subresourceRange.levelCount = 1;
    barrier.subresourceRange.layerCount = 1;
 
-   vkCmdPipelineBarrier(cmd,
+   VKFUNC(vkCmdPipelineBarrier)(cmd,
          srcStages,
          dstStages,
          0,
@@ -1136,7 +1139,6 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    /* Images */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImage);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdCopyImage);
 
    /* Image Views */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImageView);
@@ -1146,7 +1148,6 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDescriptorPool);
 
    /* Descriptor sets */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindDescriptorSets);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, UpdateDescriptorSets);
 
    /* Descriptor Set Layout */
@@ -1168,18 +1169,14 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyRenderPass);
 
 
-   /* Fragment operations */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
 
-   /* Fixed-function vertex postprocessing */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetViewport);
 
    /* Pipelines */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineLayout);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyPipelineLayout);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineCache);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindPipeline);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyPipeline);
+
 
    /* Command buffers */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateCommandPool);
@@ -1264,6 +1261,15 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
             NULL, &vk->context.device) != VK_SUCCESS)
       return false;
 
+   /* Image commands */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdCopyImage);
+
+   /* Descriptor Set commands */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindDescriptorSets);
+
+   /* Fragment operations */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
+
    /* Render Pass commands */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBeginRenderPass);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdEndRenderPass);
@@ -1272,8 +1278,17 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateSampler);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroySampler);
 
+   /* Fixed-function vertex postprocessing */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetViewport);
+
    /* Clear commands */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdClearAttachments);
+
+   /* Pipeline */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindPipeline);
+
+   /* Pipeline Barriers */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdPipelineBarrier);
 
    /* Drawing commands */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdDraw);
