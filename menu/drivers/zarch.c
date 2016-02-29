@@ -1260,11 +1260,7 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
    int ret;
    size_t selection;
    menu_entry_t entry;
-   menu_handle_t *menu  = (menu_handle_t*)data;
    zui_t *zui           = (zui_t*)userdata;
-
-   if (!menu)
-      return 0;
 
    if (!zui)
       return -1;
