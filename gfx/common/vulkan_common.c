@@ -434,7 +434,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       cmd_info.commandPool        = vk->staging_pool;
       cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
       cmd_info.commandBufferCount = 1;
-      vkAllocateCommandBuffers(vk->context->device, &cmd_info, &staging);
+      VKFUNC(vkAllocateCommandBuffers)(vk->context->device, &cmd_info, &staging);
 
       begin_info.flags        = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
@@ -1164,6 +1164,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    /* Render Passes */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateRenderPass);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyRenderPass);
 
 
    /* Fragment operations */

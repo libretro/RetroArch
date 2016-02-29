@@ -585,7 +585,7 @@ static void vulkan_deinit_framebuffers(
             vk->swapchain[i].backbuffer.view, NULL);
    }
 
-   vkDestroyRenderPass(vk->context->device, vk->render_pass, NULL);
+   VKFUNC(vkDestroyRenderPass)(vk->context->device, vk->render_pass, NULL);
 }
 
 static bool vulkan_init_default_filter_chain(vk_t *vk)
@@ -603,7 +603,8 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
 
-   vk->filter_chain = vulkan_filter_chain_create_default(&info,
+   vk->filter_chain           = vulkan_filter_chain_create_default(
+         &info,
          vk->video.smooth ? 
          VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST);
 
@@ -633,7 +634,8 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
 
-   vk->filter_chain           = vulkan_filter_chain_create_from_preset(&info, shader_path,
+   vk->filter_chain           = vulkan_filter_chain_create_from_preset(
+         &info, shader_path,
          vk->video.smooth ?
          VULKAN_FILTER_CHAIN_LINEAR : VULKAN_FILTER_CHAIN_NEAREST);
 
@@ -722,7 +724,8 @@ static void vulkan_deinit_static_resources(
          vk->context->device,
          &vk->display.blank_texture);
 
-   VKFUNC(vkDestroyCommandPool)(vk->context->device, vk->staging_pool, NULL);
+   VKFUNC(vkDestroyCommandPool)(vk->context->device,
+         vk->staging_pool, NULL);
    free(vk->hw.cmd);
    free(vk->hw.wait_dst_stages);
 
@@ -923,7 +926,8 @@ static void vulkan_init_readback(vk_t *vk)
    }
 }
 
-static void *vulkan_init(const video_info_t *video, const input_driver_t **input,
+static void *vulkan_init(const video_info_t *video,
+      const input_driver_t **input,
       void **input_data)
 {
    gfx_ctx_mode_t mode;
@@ -1581,7 +1585,7 @@ static bool vulkan_frame(void *data, const void *frame,
          }
 
          quad.sampler = vk->samplers.linear;
-         quad.mvp = &vk->mvp_no_rot;
+         quad.mvp     = &vk->mvp_no_rot;
          quad.color.r = 1.0f;
          quad.color.g = 1.0f;
          quad.color.b = 1.0f;
