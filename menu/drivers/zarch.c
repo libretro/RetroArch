@@ -861,6 +861,9 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    tabbed.width            = zui->width - 290 - 40;
    zui->next_selection_set = false;
 
+   if (!zui)
+      return 1;
+
    if (zarch_zui_render_lay_root_recent(zui, &tabbed))
       return 0;
    if (zarch_zui_render_lay_root_load  (zui, &tabbed))

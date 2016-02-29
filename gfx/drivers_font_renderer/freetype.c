@@ -233,11 +233,10 @@ static const char *font_renderer_ft_get_default_font(void)
 
 static int font_renderer_ft_get_line_height(void* data)
 {
-    ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
-    if (!handle)
+   ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
+   if (!handle || !handle->face)
       return 0;
-      
-    return handle->face->size->metrics.height/64;
+   return handle->face->size->metrics.height/64;
 }
 
 font_renderer_driver_t freetype_font_renderer = {
