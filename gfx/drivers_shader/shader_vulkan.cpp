@@ -23,8 +23,8 @@
 #include <math.h>
 #include "../drivers/vulkan_shaders/opaque.vert.inc"
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
-
-#include "../../general.h"
+#include "../video_shader_driver.h"
+#include "../../verbosity.h"
 
 using namespace std;
 
