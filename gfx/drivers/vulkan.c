@@ -370,12 +370,14 @@ static void vulkan_init_command_buffers(vk_t *vk)
       pool_info.queueFamilyIndex = vk->context->graphics_queue_index;
       pool_info.flags            = 
          VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-      vkCreateCommandPool(vk->context->device,
+
+      vk->context->fp.vkCreateCommandPool(vk->context->device,
             &pool_info, NULL, &vk->swapchain[i].cmd_pool);
 
-      info.commandPool        = vk->swapchain[i].cmd_pool;
-      info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-      info.commandBufferCount = 1;
+      info.commandPool           = vk->swapchain[i].cmd_pool;
+      info.level                 = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+      info.commandBufferCount    = 1;
+
       vkAllocateCommandBuffers(vk->context->device,
             &info, &vk->swapchain[i].cmd);
    }
@@ -654,7 +656,7 @@ static void vulkan_init_static_resources(vk_t *vk)
          &cache, NULL, &vk->pipelines.cache);
 
    pool_info.queueFamilyIndex = vk->context->graphics_queue_index;
-   vkCreateCommandPool(vk->context->device,
+   vk->context->fp.vkCreateCommandPool(vk->context->device,
          &pool_info, NULL, &vk->staging_pool);
 
    for (i = 0; i < 4 * 4; i++)

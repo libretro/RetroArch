@@ -138,6 +138,7 @@ typedef struct vulkan_context
       PFN_vkDestroySemaphore                        vkDestroySemaphore;
       PFN_vkCreateSemaphore                         vkCreateSemaphore;
       PFN_vkCreateFramebuffer                       vkCreateFramebuffer;
+      PFN_vkCreateCommandPool                       vkCreateCommandPool;
       PFN_vkGetDeviceQueue                          vkGetDeviceQueue;
       PFN_vkCreateInstance                          vkCreateInstance;
       PFN_vkCreateRenderPass                        vkCreateRenderPass;
