@@ -114,11 +114,11 @@ static void vulkan_init_render_pass(vk_t *vk)
          &rp_info, NULL, &vk->render_pass);
 }
 
-static void vulkan_init_framebuffers(vk_t *vk)
+static void vulkan_init_framebuffers(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
    unsigned i;
-   struct vulkan_context_fp *vkcfp = 
-      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
 
    vulkan_init_render_pass(vk);
 
@@ -161,15 +161,15 @@ static void vulkan_init_framebuffers(vk_t *vk)
    }
 }
 
-static void vulkan_init_pipeline_layout(vk_t *vk)
+static void vulkan_init_pipeline_layout(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
    VkDescriptorSetLayoutCreateInfo set_layout_info = { 
       VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
    VkPipelineLayoutCreateInfo layout_info          = { 
       VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
    VkDescriptorSetLayoutBinding bindings[2]        = {{0}};
-   struct vulkan_context_fp *vkcfp                 = 
-      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
 
    bindings[0].binding            = 0;
    bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -234,7 +234,7 @@ static void vulkan_init_pipelines(vk_t *vk)
       VK_DYNAMIC_STATE_SCISSOR,
    };
 
-   vulkan_init_pipeline_layout(vk);
+   vulkan_init_pipeline_layout(&vk->context->fp, vk);
 
    /* Input assembly */
    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -671,7 +671,7 @@ static bool vulkan_init_filter_chain(vk_t *vk)
 static void vulkan_init_resources(vk_t *vk)
 {
    vk->num_swapchain_images = vk->context->num_swapchain_images;
-   vulkan_init_framebuffers(vk);
+   vulkan_init_framebuffers(&vk->context->fp, vk);
    vulkan_init_pipelines(vk);
    vulkan_init_descriptor_pool(vk);
    vulkan_init_textures(vk);
