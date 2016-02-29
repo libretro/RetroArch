@@ -1032,6 +1032,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
 
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, EnumeratePhysicalDevices);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceProperties);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceMemoryProperties);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceQueueFamilyProperties);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDevice);
 
    if (vk->fp.vkEnumeratePhysicalDevices(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)
@@ -1055,17 +1059,17 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    vk->context.gpu = gpus[0];
    free(gpus);
 
-   vkGetPhysicalDeviceProperties(vk->context.gpu,
+   vk->fp.vkGetPhysicalDeviceProperties(vk->context.gpu,
          &vk->context.gpu_properties);
-   vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
+   vk->fp.vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
          &vk->context.memory_properties);
-   vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
+   vk->fp.vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
          &queue_count, NULL);
 
    if (queue_count < 1 || queue_count > 32)
       return false;
 
-   vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
+   vk->fp.vkGetPhysicalDeviceQueueFamilyProperties(vk->context.gpu,
          &queue_count, queue_properties);
 
    for (i = 0; i < queue_count; i++)
@@ -1104,7 +1108,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
       RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
    }
-   else if (vkCreateDevice(vk->context.gpu, &device_info,
+   else if (vk->fp.vkCreateDevice(vk->context.gpu, &device_info,
             NULL, &vk->context.device) != VK_SUCCESS)
       return false;
 
