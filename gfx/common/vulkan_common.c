@@ -1426,11 +1426,12 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 {
+   VkPresentInfoKHR present;
    VkResult result                 = VK_SUCCESS;
    VkResult err                    = VK_SUCCESS;
-   VkPresentInfoKHR present        = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
    struct vulkan_context_fp *vkcfp = (struct vulkan_context_fp*)&vk->context.fp;
 
+   present.sType                   = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
    present.swapchainCount          = 1;
    present.pSwapchains             = &vk->swapchain;
    present.pImageIndices           = &index;
@@ -1501,14 +1502,16 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    unsigned index;
    VkResult err;
    VkFence fence;
-   VkFence *next_fence;
-   VkSemaphoreCreateInfo sem_info = 
-   { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-   VkFenceCreateInfo info         = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+   VkSemaphoreCreateInfo sem_info; 
+   VkFenceCreateInfo fence_info;
+   VkFence *next_fence             = NULL;
    struct vulkan_context_fp *vkcfp = (struct vulkan_context_fp
          *)&vk->context.fp;
 
-   VKFUNC(vkCreateFence)(vk->context.device, &info, NULL, &fence);
+   sem_info.sType   = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+   fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+   VKFUNC(vkCreateFence)(vk->context.device, &fence_info, NULL, &fence);
 
    err = VKFUNC(vkAcquireNextImageKHR)(vk->context.device,
          vk->swapchain, UINT64_MAX,
@@ -1530,7 +1533,7 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
       VKFUNC(vkResetFences)(vk->context.device, 1, next_fence);
    }
    else
-      VKFUNC(vkCreateFence)(vk->context.device, &info, NULL, next_fence);
+      VKFUNC(vkCreateFence)(vk->context.device, &fence_info, NULL, next_fence);
 
    if (err != VK_SUCCESS)
    {
@@ -1546,6 +1549,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    unsigned i;
    uint32_t format_count;
    uint32_t desired_swapchain_images;
+   VkSwapchainCreateInfoKHR info;
    VkSurfaceCapabilitiesKHR surface_properties;
    VkSurfaceFormatKHR formats[256];
    VkSurfaceFormatKHR format;
@@ -1558,7 +1562,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    /* TODO: Properly query these. */
    VkPresentModeKHR swapchain_present_mode = swap_interval 
       ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
-   VkSwapchainCreateInfoKHR info = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
 
    RARCH_LOG("[Vulkan]: Creating swapchain with present mode: %u\n",
          (unsigned)swapchain_present_mode);
@@ -1615,6 +1618,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    old_swapchain               = vk->swapchain;
 
+   info.sType                  = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
    info.surface                = vk->vk_surface;
    info.minImageCount          = desired_swapchain_images;
    info.imageFormat            = format.format;
@@ -1622,16 +1626,17 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.imageExtent.width      = swapchain_size.width;
    info.imageExtent.height     = swapchain_size.height;
    info.imageArrayLayers       = 1;
-   info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
-      | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
    info.imageSharingMode       = VK_SHARING_MODE_EXCLUSIVE;
    info.preTransform           = pre_transform;
    info.compositeAlpha         = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
    info.presentMode            = swapchain_present_mode;
    info.clipped                = true;
    info.oldSwapchain           = old_swapchain;
+   info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
+      | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
    VKFUNC(vkCreateSwapchainKHR)(vk->context.device, &info, NULL, &vk->swapchain);
+
    if (old_swapchain != VK_NULL_HANDLE)
       VKFUNC(vkDestroySwapchainKHR)(vk->context.device, old_swapchain, NULL);
 
