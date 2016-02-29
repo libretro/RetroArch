@@ -1046,7 +1046,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    if (!gpus)
       return false;
 
-   if (vkEnumeratePhysicalDevices(vk->context.instance,
+   if (vk->fp.vkEnumeratePhysicalDevices(vk->context.instance,
             &gpu_count, gpus) != VK_SUCCESS)
       return false;
 
