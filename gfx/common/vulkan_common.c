@@ -1092,7 +1092,6 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetViewport);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindPipeline);
 
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateRenderPass);
 
@@ -1101,6 +1100,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    /* Pipelines */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineLayout);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineCache);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindPipeline);
 
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateCommandPool);
 

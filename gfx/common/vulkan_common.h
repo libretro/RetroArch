@@ -133,32 +133,44 @@ typedef struct vulkan_context
 {
    struct vulkan_context_fp
    {
-      PFN_vkDestroyFence                            vkDestroyFence;
+      /* Fences */
       PFN_vkCreateFence                             vkCreateFence;
+      PFN_vkDestroyFence                            vkDestroyFence;
       PFN_vkResetFences                             vkResetFences;
       PFN_vkWaitForFences                           vkWaitForFences;
-      PFN_vkDestroySemaphore                        vkDestroySemaphore;
+
+      /* Semaphores */
       PFN_vkCreateSemaphore                         vkCreateSemaphore;
-      PFN_vkCreateFramebuffer                       vkCreateFramebuffer;
-      PFN_vkCreateCommandPool                       vkCreateCommandPool;
-      PFN_vkGetDeviceQueue                          vkGetDeviceQueue;
+      PFN_vkDestroySemaphore                        vkDestroySemaphore;
+
+      /* Images */
       PFN_vkCreateImage                             vkCreateImage;
       PFN_vkDestroyImage                            vkDestroyImage;
-      PFN_vkCreateInstance                          vkCreateInstance;
-      PFN_vkCreateRenderPass                        vkCreateRenderPass;
+      PFN_vkCmdCopyImage                            vkCmdCopyImage;
+
+      /* Queues */
+      PFN_vkGetDeviceQueue                          vkGetDeviceQueue;
+      PFN_vkQueueWaitIdle                           vkQueueWaitIdle;
+      PFN_vkQueueSubmit                             vkQueueSubmit;
+
+      /* Pipelines */
+      PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
       PFN_vkCreatePipelineLayout                    vkCreatePipelineLayout;
       PFN_vkCreatePipelineCache                     vkCreatePipelineCache;
+
+      PFN_vkCreateFramebuffer                       vkCreateFramebuffer;
+      PFN_vkCreateCommandPool                       vkCreateCommandPool;
+
+      PFN_vkCreateInstance                          vkCreateInstance;
+      PFN_vkCreateRenderPass                        vkCreateRenderPass;
       PFN_vkGetPhysicalDeviceFormatProperties       vkGetPhysicalDeviceFormatProperties;
       PFN_vkEnumeratePhysicalDevices                vkEnumeratePhysicalDevices;
       PFN_vkGetPhysicalDeviceProperties             vkGetPhysicalDeviceProperties;
       PFN_vkGetPhysicalDeviceMemoryProperties       vkGetPhysicalDeviceMemoryProperties;
       PFN_vkGetPhysicalDeviceQueueFamilyProperties  vkGetPhysicalDeviceQueueFamilyProperties;
-      PFN_vkQueueWaitIdle                           vkQueueWaitIdle;
-      PFN_vkQueueSubmit                             vkQueueSubmit;
-      PFN_vkCmdCopyImage                            vkCmdCopyImage;
       PFN_vkCmdSetScissor                           vkCmdSetScissor;
       PFN_vkCmdSetViewport                          vkCmdSetViewport;
-      PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
+
       PFN_vkCmdDraw                                 vkCmdDraw;
       PFN_vkCreateDevice                            vkCreateDevice;
       PFN_vkDestroyDevice                           vkDestroyDevice;
