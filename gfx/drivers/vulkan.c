@@ -459,8 +459,10 @@ static void vulkan_init_descriptor_pool(vk_t *vk)
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
       vk->swapchain[i].descriptor_manager = 
-         vulkan_create_descriptor_manager(vk->context->device,
-            pool_sizes, 2, vk->pipelines.set_layout);
+         vulkan_create_descriptor_manager(
+               &vk->context->fp,
+               vk->context->device,
+               pool_sizes, 2, vk->pipelines.set_layout);
    }
 }
 

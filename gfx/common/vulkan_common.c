@@ -504,7 +504,9 @@ void vulkan_destroy_texture(VkDevice device, struct vk_texture *tex)
    memset(tex, 0, sizeof(*tex));
 }
 
-static void vulkan_write_quad_descriptors(VkDevice device,
+static void vulkan_write_quad_descriptors(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
       VkDescriptorSet set,
       VkBuffer buffer,
       VkDeviceSize offset,
@@ -512,31 +514,31 @@ static void vulkan_write_quad_descriptors(VkDevice device,
       const struct vk_texture *texture,
       VkSampler sampler)
 {
-   VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
    VkDescriptorImageInfo image_info;
    VkDescriptorBufferInfo buffer_info;
+   VkWriteDescriptorSet write      = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 
-   image_info.sampler     = sampler;
-   image_info.imageView   = texture->view;
-   image_info.imageLayout = texture->layout;
+   image_info.sampler              = sampler;
+   image_info.imageView            = texture->view;
+   image_info.imageLayout          = texture->layout;
 
-   buffer_info.buffer     = buffer;
-   buffer_info.offset     = offset;
-   buffer_info.range      = range;
+   buffer_info.buffer              = buffer;
+   buffer_info.offset              = offset;
+   buffer_info.range               = range;
 
-   write.dstSet           = set;
-   write.dstBinding       = 0;
-   write.descriptorCount  = 1;
-   write.descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-   write.pBufferInfo      = &buffer_info;
-   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+   write.dstSet                    = set;
+   write.dstBinding                = 0;
+   write.descriptorCount           = 1;
+   write.descriptorType            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+   write.pBufferInfo               = &buffer_info;
+   VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
 
-   write.dstSet           = set;
-   write.dstBinding       = 1;
-   write.descriptorCount  = 1;
-   write.descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-   write.pImageInfo       = &image_info;
-   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+   write.dstSet                    = set;
+   write.dstBinding                = 1;
+   write.descriptorCount           = 1;
+   write.descriptorType            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+   write.pImageInfo                = &image_info;
+   VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
 }
 
 void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
@@ -608,8 +610,11 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
          memcpy(range.data, call->mvp, sizeof(*call->mvp));
 
          set = vulkan_descriptor_manager_alloc(
-               vk->context->device, &vk->chain->descriptor_manager);
-         vulkan_write_quad_descriptors(vk->context->device,
+               &vk->context->fp,
+               vk->context->device,
+               &vk->chain->descriptor_manager);
+         vulkan_write_quad_descriptors(&vk->context->fp,
+               vk->context->device,
                set,
                range.buffer,
                range.offset,
@@ -617,7 +622,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
                call->texture,
                call->sampler);
 
-         vkCmdBindDescriptorSets(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+         VKFUNC(vkCmdBindDescriptorSets)(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
                vk->pipelines.layout, 0,
                1, &set, 0, NULL);
 
@@ -676,10 +681,13 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 
          memcpy(range.data, quad->mvp, sizeof(*quad->mvp));
 
-         set = vulkan_descriptor_manager_alloc(vk->context->device,
+         set = vulkan_descriptor_manager_alloc(&vk->context->fp,
+               vk->context->device,
                &vk->chain->descriptor_manager);
 
-         vulkan_write_quad_descriptors(vk->context->device,
+         vulkan_write_quad_descriptors(
+               &vk->context->fp,
+               vk->context->device,
                set,
                range.buffer,
                range.offset,
@@ -687,7 +695,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
                quad->texture,
                quad->sampler);
 
-         vkCmdBindDescriptorSets(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+         VKFUNC(vkCmdBindDescriptorSets)(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
                vk->pipelines.layout, 0,
                1, &set, 0, NULL);
 
@@ -789,6 +797,7 @@ void vulkan_destroy_buffer(VkDevice device, struct vk_buffer *buffer)
 }
 
 static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
+      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       const struct vk_descriptor_manager *manager)
 {
@@ -807,7 +816,8 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
    pool_info.poolSizeCount = manager->num_sizes;
    pool_info.pPoolSizes = manager->sizes;
    pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-   vkCreateDescriptorPool(device, &pool_info, NULL, &pool->pool);
+
+   VKFUNC(vkCreateDescriptorPool)(device, &pool_info, NULL, &pool->pool);
 
    /* Just allocate all descriptor sets up front. */
    alloc_info.descriptorPool = pool->pool;
@@ -820,6 +830,7 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
 }
 
 VkDescriptorSet vulkan_descriptor_manager_alloc(
+      struct vulkan_context_fp *vkcfp,
       VkDevice device, struct vk_descriptor_manager *manager)
 {
    if (manager->count < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
@@ -832,7 +843,7 @@ VkDescriptorSet vulkan_descriptor_manager_alloc(
       return manager->current->sets[manager->count++];
    }
 
-   manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
+   manager->current->next = vulkan_alloc_descriptor_pool(vkcfp, device, manager);
    retro_assert(manager->current->next);
 
    manager->current = manager->current->next;
@@ -847,6 +858,7 @@ void vulkan_descriptor_manager_restart(struct vk_descriptor_manager *manager)
 }
 
 struct vk_descriptor_manager vulkan_create_descriptor_manager(
+      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       const VkDescriptorPoolSize *sizes,
       unsigned num_sizes,
@@ -859,7 +871,7 @@ struct vk_descriptor_manager vulkan_create_descriptor_manager(
    manager.num_sizes  = num_sizes;
    manager.set_layout = set_layout;
 
-   manager.head       = vulkan_alloc_descriptor_pool(device, &manager);
+   manager.head       = vulkan_alloc_descriptor_pool(vkcfp, device, &manager);
    retro_assert(manager.head);
    return manager;
 }
@@ -1106,6 +1118,13 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdCopyImage);
+
+   /* Descriptor pools */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDescriptorPool);
+
+   /* Descriptor sets */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindDescriptorSets);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, UpdateDescriptorSets);
 
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetViewport);

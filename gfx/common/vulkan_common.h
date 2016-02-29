@@ -157,6 +157,13 @@ typedef struct vulkan_context
       PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
       PFN_vkCreatePipelineLayout                    vkCreatePipelineLayout;
       PFN_vkCreatePipelineCache                     vkCreatePipelineCache;
+      
+      /* Descriptor pools */
+      PFN_vkCreateDescriptorPool                    vkCreateDescriptorPool;
+
+      /* Descriptor sets */
+      PFN_vkCmdBindDescriptorSets                   vkCmdBindDescriptorSets;
+      PFN_vkUpdateDescriptorSets                    vkUpdateDescriptorSets;
 
       PFN_vkCreateFramebuffer                       vkCreateFramebuffer;
       PFN_vkCreateCommandPool                       vkCreateCommandPool;
@@ -583,12 +590,16 @@ struct vk_buffer vulkan_create_buffer(const struct vulkan_context *context,
       size_t size, VkBufferUsageFlags usage);
 void vulkan_destroy_buffer(VkDevice device, struct vk_buffer *buffer);
 
-VkDescriptorSet vulkan_descriptor_manager_alloc(VkDevice device,
+VkDescriptorSet vulkan_descriptor_manager_alloc(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
       struct vk_descriptor_manager *manager);
 
 void vulkan_descriptor_manager_restart(struct vk_descriptor_manager *manager);
 
-struct vk_descriptor_manager vulkan_create_descriptor_manager(VkDevice device,
+struct vk_descriptor_manager vulkan_create_descriptor_manager(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
       const VkDescriptorPoolSize *sizes, unsigned num_sizes,
       VkDescriptorSetLayout set_layout);
 void vulkan_destroy_descriptor_manager(VkDevice device,
