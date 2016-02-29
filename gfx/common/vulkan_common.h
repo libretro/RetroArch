@@ -193,6 +193,10 @@ typedef struct vulkan_context
       /* Render Passes */
       PFN_vkCreateRenderPass                        vkCreateRenderPass;
 
+      /* Render Pass commands */
+      PFN_vkCmdBeginRenderPass                      vkCmdBeginRenderPass;
+      PFN_vkCmdEndRenderPass                        vkCmdEndRenderPass;
+
       /* Clear commands */
       PFN_vkCmdClearAttachments                     vkCmdClearAttachments;
 

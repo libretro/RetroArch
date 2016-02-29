@@ -1154,6 +1154,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    /* Render Passes */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateRenderPass);
 
+
    /* Fragment operations */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
 
@@ -1249,8 +1250,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
             NULL, &vk->context.device) != VK_SUCCESS)
       return false;
 
-   VKFUNC(vkGetDeviceQueue)(vk->context.device,
-         vk->context.graphics_queue_index, 0, &vk->context.queue);
+   /* Render Pass commands */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBeginRenderPass);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdEndRenderPass);
 
    /* Samplers */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateSampler);
@@ -1282,6 +1284,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          vk->context.device, AcquireNextImageKHR);
    VK_GET_DEVICE_PROC_ADDR(vk,
          vk->context.device, QueuePresentKHR);
+
+   VKFUNC(vkGetDeviceQueue)(vk->context.device,
+         vk->context.graphics_queue_index, 0, &vk->context.queue);
 
    switch (type)
    {

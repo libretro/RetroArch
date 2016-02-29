@@ -1549,7 +1549,7 @@ static bool vulkan_frame(void *data, const void *frame,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
    /* Begin render pass and set up viewport */
-   vkCmdBeginRenderPass(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+   VKFUNC(vkCmdBeginRenderPass)(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
 
    vulkan_filter_chain_build_viewport_pass(vk->filter_chain, vk->cmd,
          &vk->vk_vp, vk->mvp.data);
@@ -1600,7 +1600,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
    /* End the render pass. We're done rendering to backbuffer now. */
-   vkCmdEndRenderPass(vk->cmd);
+   VKFUNC(vkCmdEndRenderPass)(vk->cmd);
 
    if (vk->readback.pending || vk->readback.streamed)
    {
