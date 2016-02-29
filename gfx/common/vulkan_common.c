@@ -1361,9 +1361,11 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 {
-   VkResult result            = VK_SUCCESS;
-   VkResult err               = VK_SUCCESS;
-   VkPresentInfoKHR present   = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+   VkResult result                 = VK_SUCCESS;
+   VkResult err                    = VK_SUCCESS;
+   VkPresentInfoKHR present        = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+   struct vulkan_context_fp *vkcfp = (struct vulkan_context_fp*)&vk->context.fp;
+
    present.swapchainCount     = 1;
    present.pSwapchains        = &vk->swapchain;
    present.pImageIndices      = &index;
@@ -1373,7 +1375,7 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 
    /* Better hope QueuePresent doesn't block D: */
    slock_lock(vk->context.queue_lock);
-   err = vk->context.fp.vkQueuePresentKHR(vk->context.queue, &present);
+   err = VKFUNC(vkQueuePresentKHR)(vk->context.queue, &present);
 
    if (err != VK_SUCCESS || result != VK_SUCCESS)
    {
@@ -1387,23 +1389,26 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       bool destroy_surface)
 {
    unsigned i;
+   struct vulkan_context_fp *vkcfp = (struct vulkan_context_fp
+         *)&vk->context.fp;
+
    if (vk->context.queue)
-      vk->context.fp.vkQueueWaitIdle(vk->context.queue);
+      VKFUNC(vkQueueWaitIdle)(vk->context.queue);
    if (vk->swapchain)
-      vk->context.fp.vkDestroySwapchainKHR(vk->context.device,
+      VKFUNC(vkDestroySwapchainKHR)(vk->context.device,
             vk->swapchain, NULL);
 
    if (destroy_surface && vk->vk_surface != VK_NULL_HANDLE)
-      vk->context.fp.vkDestroySurfaceKHR(vk->context.instance,
+      VKFUNC(vkDestroySurfaceKHR)(vk->context.instance,
             vk->vk_surface, NULL);
 
    for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
    {
       if (vk->context.swapchain_semaphores[i] != VK_NULL_HANDLE)
-         vk->context.fp.vkDestroySemaphore(vk->context.device,
+         VKFUNC(vkDestroySemaphore)(vk->context.device,
                vk->context.swapchain_semaphores[i], NULL);
       if (vk->context.swapchain_fences[i] != VK_NULL_HANDLE)
-         vk->context.fp.vkDestroyFence(vk->context.device,
+         VKFUNC(vkDestroyFence)(vk->context.device,
                vk->context.swapchain_fences[i], NULL);
    }
 
@@ -1415,7 +1420,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    else
    {
       if (vk->context.device)
-         vk->context.fp.vkDestroyDevice(vk->context.device, NULL);
+         VKFUNC(vkDestroyDevice)(vk->context.device, NULL);
       if (vk->context.instance)
          vkDestroyInstance(vk->context.instance, NULL);
    }
@@ -1434,29 +1439,31 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    VkSemaphoreCreateInfo sem_info = 
    { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
    VkFenceCreateInfo info         = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+   struct vulkan_context_fp *vkcfp = (struct vulkan_context_fp
+         *)&vk->context.fp;
 
-   vk->context.fp.vkCreateFence(vk->context.device, &info, NULL, &fence);
+   VKFUNC(vkCreateFence)(vk->context.device, &info, NULL, &fence);
 
-   err = vk->context.fp.vkAcquireNextImageKHR(vk->context.device,
+   err = VKFUNC(vkAcquireNextImageKHR)(vk->context.device,
          vk->swapchain, UINT64_MAX,
          VK_NULL_HANDLE, fence, &vk->context.current_swapchain_index);
 
    index = vk->context.current_swapchain_index;
    if (vk->context.swapchain_semaphores[index] == VK_NULL_HANDLE)
-      vk->context.fp.vkCreateSemaphore(vk->context.device, &sem_info,
+      VKFUNC(vkCreateSemaphore)(vk->context.device, &sem_info,
             NULL, &vk->context.swapchain_semaphores[index]);
 
-   vk->context.fp.vkWaitForFences(vk->context.device, 1, &fence, true, UINT64_MAX);
-   vk->context.fp.vkDestroyFence(vk->context.device, fence, NULL);
+   VKFUNC(vkWaitForFences)(vk->context.device, 1, &fence, true, UINT64_MAX);
+   VKFUNC(vkDestroyFence)(vk->context.device, fence, NULL);
 
    next_fence = &vk->context.swapchain_fences[index];
    if (*next_fence != VK_NULL_HANDLE)
    {
-      vk->context.fp.vkWaitForFences(vk->context.device, 1, next_fence, true, UINT64_MAX);
-      vk->context.fp.vkResetFences(vk->context.device, 1, next_fence);
+      VKFUNC(vkWaitForFences)(vk->context.device, 1, next_fence, true, UINT64_MAX);
+      VKFUNC(vkResetFences)(vk->context.device, 1, next_fence);
    }
    else
-      vk->context.fp.vkCreateFence(vk->context.device, &info, NULL, next_fence);
+      VKFUNC(vkCreateFence)(vk->context.device, &info, NULL, next_fence);
 
    if (err != VK_SUCCESS)
    {
@@ -1478,6 +1485,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkExtent2D swapchain_size;
    VkSwapchainKHR old_swapchain;
    VkSurfaceTransformFlagBitsKHR pre_transform;
+   struct vulkan_context_fp *vkcfp = (struct vulkan_context_fp
+         *)&vk->context.fp;
 
    /* TODO: Properly query these. */
    VkPresentModeKHR swapchain_present_mode = swap_interval 
@@ -1487,11 +1496,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    RARCH_LOG("[Vulkan]: Creating swapchain with present mode: %u\n",
          (unsigned)swapchain_present_mode);
 
-   vk->context.fp.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->context.gpu,
+   VKFUNC(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)(vk->context.gpu,
          vk->vk_surface, &surface_properties);
-   vk->context.fp.vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
+   VKFUNC(vkGetPhysicalDeviceSurfaceFormatsKHR)(vk->context.gpu,
          vk->vk_surface, &format_count, NULL);
-   vk->context.fp.vkGetPhysicalDeviceSurfaceFormatsKHR(vk->context.gpu,
+   VKFUNC(vkGetPhysicalDeviceSurfaceFormatsKHR)(vk->context.gpu,
          vk->vk_surface, &format_count, formats);
 
    if (format_count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
@@ -1554,9 +1563,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.clipped                = true;
    info.oldSwapchain           = old_swapchain;
 
-   vk->context.fp.vkCreateSwapchainKHR(vk->context.device, &info, NULL, &vk->swapchain);
+   VKFUNC(vkCreateSwapchainKHR)(vk->context.device, &info, NULL, &vk->swapchain);
    if (old_swapchain != VK_NULL_HANDLE)
-      vk->context.fp.vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+      VKFUNC(vkDestroySwapchainKHR)(vk->context.device, old_swapchain, NULL);
 
    vk->context.swapchain_width  = swapchain_size.width;
    vk->context.swapchain_height = swapchain_size.height;
@@ -1589,9 +1598,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          break;
    }
 
-   vk->context.fp.vkGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
+   VKFUNC(vkGetSwapchainImagesKHR)(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, NULL);
-   vk->context.fp.vkGetSwapchainImagesKHR(vk->context.device, vk->swapchain,
+   VKFUNC(vkGetSwapchainImagesKHR)(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, vk->context.swapchain_images);
 
    RARCH_LOG("[Vulkan]: Got %u swapchain images.\n", vk->context.num_swapchain_images);
@@ -1600,7 +1609,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    {
       if (vk->context.swapchain_fences[i])
       {
-         vk->context.fp.vkDestroyFence(vk->context.device,
+         VKFUNC(vkDestroyFence)(vk->context.device,
                vk->context.swapchain_fences[i], NULL);
          vk->context.swapchain_fences[i] = VK_NULL_HANDLE;
       }
