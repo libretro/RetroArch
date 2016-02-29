@@ -129,35 +129,6 @@ enum vulkan_wsi_type
 
 typedef struct vulkan_context
 {
-   VkInstance instance;
-   VkPhysicalDevice gpu;
-   VkDevice device;
-   VkQueue queue;
-   uint32_t graphics_queue_index;
-
-   VkPhysicalDeviceProperties gpu_properties;
-   VkPhysicalDeviceMemoryProperties memory_properties;
-
-   bool invalid_swapchain;
-   VkImage swapchain_images[VULKAN_MAX_SWAPCHAIN_IMAGES];
-   VkFence swapchain_fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
-   VkSemaphore swapchain_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
-   uint32_t num_swapchain_images;
-   uint32_t current_swapchain_index;
-   unsigned swapchain_width;
-   unsigned swapchain_height;
-   VkFormat swapchain_format;
-
-   slock_t *queue_lock;
-
-   /* Used by screenshot to get blits with correct colorspace. */
-   bool swapchain_is_srgb;
-} vulkan_context_t;
-
-typedef struct gfx_ctx_vulkan_data
-{
-   vulkan_context_t context;
-
    struct
    {
       PFN_vkGetDeviceQueue vkGetDeviceQueue;
@@ -166,6 +137,7 @@ typedef struct gfx_ctx_vulkan_data
       PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties;
       PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties;
       PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties;
+      PFN_vkQueueWaitIdle vkQueueWaitIdle;
       PFN_vkCreateDevice vkCreateDevice;
       PFN_vkGetPhysicalDeviceSurfaceSupportKHR 
          vkGetPhysicalDeviceSurfaceSupportKHR;
@@ -201,7 +173,34 @@ typedef struct gfx_ctx_vulkan_data
       PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR;
    } fp;
 
+   VkInstance instance;
+   VkPhysicalDevice gpu;
+   VkDevice device;
+   VkQueue queue;
+   uint32_t graphics_queue_index;
 
+   VkPhysicalDeviceProperties gpu_properties;
+   VkPhysicalDeviceMemoryProperties memory_properties;
+
+   bool invalid_swapchain;
+   VkImage swapchain_images[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   VkFence swapchain_fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   VkSemaphore swapchain_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   uint32_t num_swapchain_images;
+   uint32_t current_swapchain_index;
+   unsigned swapchain_width;
+   unsigned swapchain_height;
+   VkFormat swapchain_format;
+
+   slock_t *queue_lock;
+
+   /* Used by screenshot to get blits with correct colorspace. */
+   bool swapchain_is_srgb;
+} vulkan_context_t;
+
+typedef struct gfx_ctx_vulkan_data
+{
+   vulkan_context_t context;
    VkSurfaceKHR vk_surface;
    VkSwapchainKHR swapchain;
    bool need_new_swapchain;
