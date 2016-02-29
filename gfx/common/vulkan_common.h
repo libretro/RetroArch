@@ -160,6 +160,7 @@ typedef struct gfx_ctx_vulkan_data
 
    struct
    {
+      PFN_vkGetDeviceQueue vkGetDeviceQueue;
       PFN_vkCreateInstance vkCreateInstance;
       PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices;
       PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties;

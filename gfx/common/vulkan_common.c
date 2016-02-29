@@ -1036,6 +1036,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceMemoryProperties);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceQueueFamilyProperties);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDevice);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetDeviceQueue);
 
    if (vk->fp.vkEnumeratePhysicalDevices(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)
@@ -1112,7 +1113,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
             NULL, &vk->context.device) != VK_SUCCESS)
       return false;
 
-   vkGetDeviceQueue(vk->context.device,
+   vk->fp.vkGetDeviceQueue(vk->context.device,
          vk->context.graphics_queue_index, 0, &vk->context.queue);
 
    VK_GET_INSTANCE_PROC_ADDR(vk,
