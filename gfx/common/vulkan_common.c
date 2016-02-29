@@ -41,7 +41,7 @@ static VkDevice cached_device;
 } while(0)
 
 #define VK_GET_INSTANCE_PROC_ADDR(vk, inst, entrypoint) do {                               \
-   vk->context.fp.vk##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
+   vk->context.fp.vk##entrypoint = (PFN_vk##entrypoint) vk->context.fp.vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
    if (vk->context.fp.vk##entrypoint == NULL) {                                                    \
       RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);               \
       return false;                                                                        \
@@ -49,7 +49,7 @@ static VkDevice cached_device;
 } while(0)
 
 #define VK_GET_DEVICE_PROC_ADDR(vk, dev, entrypoint) do {                                \
-   vk->context.fp.vk##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
+   vk->context.fp.vk##entrypoint = (PFN_vk##entrypoint) vk->context.fp.vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
    if (vk->context.fp.vk##entrypoint == NULL) {                                                  \
       RARCH_ERR("vkGetDeviceProcAddr failed to find vk%s\n", #entrypoint);               \
       return false;                                                                      \
@@ -284,7 +284,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 #if 0
    vulkan_track_alloc(tex.image);
 #endif
-   vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
+   VKFUNC(vkGetImageMemoryRequirements)(device, tex.image, &mem_reqs);
    alloc.allocationSize = mem_reqs.size;
 
    switch (type)
@@ -323,7 +323,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       info.usage            = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
       VKFUNC(vkCreateImage)(device, &info, NULL, &tex.image);
 
-      vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
+      VKFUNC(vkGetImageMemoryRequirements)(device, tex.image, &mem_reqs);
 
       alloc.allocationSize  = mem_reqs.size;
       alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
@@ -1093,6 +1093,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VKSYM(vk, DestroyInstance);
    VKSYM(vk, AllocateMemory);
    VKSYM(vk, FreeMemory);
+   VKSYM(vk, GetInstanceProcAddr);
+   VKSYM(vk, GetDeviceProcAddr);
 
    app.pApplicationName              = "RetroArch";
    app.applicationVersion            = 0;
@@ -1151,6 +1153,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    /* Image Views */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImageView);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImageView);
+
+   /* Resource Memory Associations */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetImageMemoryRequirements);
 
    /* Descriptor pools */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDescriptorPool);

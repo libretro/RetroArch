@@ -145,6 +145,10 @@ typedef struct vulkan_context
       PFN_vkAllocateMemory                          vkAllocateMemory;
       PFN_vkFreeMemory                              vkFreeMemory;
 
+      /* Command Function Pointers */
+      PFN_vkGetInstanceProcAddr                     vkGetInstanceProcAddr;
+      PFN_vkGetDeviceProcAddr                       vkGetDeviceProcAddr;
+
       /* Buffers */
       PFN_vkCreateBuffer                            vkCreateBuffer;
       PFN_vkDestroyBuffer                           vkDestroyBuffer;
@@ -167,6 +171,9 @@ typedef struct vulkan_context
       /* Image Views */
       PFN_vkCreateImageView                         vkCreateImageView;
       PFN_vkDestroyImageView                        vkDestroyImageView;
+
+      /* Resource Memory Association */
+      PFN_vkGetImageMemoryRequirements              vkGetImageMemoryRequirements;
 
       /* Queues */
       PFN_vkGetDeviceQueue                          vkGetDeviceQueue;

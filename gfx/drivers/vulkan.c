@@ -502,11 +502,9 @@ static void vulkan_init_textures(vk_t *vk)
                &vk->swapchain[i].texture);
 
          if (vk->swapchain[i].texture.type == VULKAN_TEXTURE_STAGING)
-         {
             vk->swapchain[i].texture_optimal = vulkan_create_texture(vk, NULL,
                   vk->tex_w, vk->tex_h, vk->tex_fmt,
                   NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
-         }
       }
    }
 }
