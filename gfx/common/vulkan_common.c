@@ -437,7 +437,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       vkAllocateCommandBuffers(vk->context->device, &cmd_info, &staging);
 
       begin_info.flags        = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-      vkBeginCommandBuffer(staging, &begin_info);
+
+      VKFUNC(vkBeginCommandBuffer)(staging, &begin_info);
 
       vulkan_image_layout_transition(vk, staging, tmp.image,
             VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_GENERAL,
@@ -1168,6 +1169,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    /* Command buffers */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateCommandPool);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyCommandPool);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, BeginCommandBuffer);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, ResetCommandBuffer);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, EndCommandBuffer);
 
    if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,

@@ -1414,10 +1414,11 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_buffer_chain_discard(&chain->ubo);
 
    /* Start recording the command buffer. */
-   vk->cmd = chain->cmd;
+   vk->cmd          = chain->cmd;
    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-   vkResetCommandBuffer(vk->cmd, 0);
-   vkBeginCommandBuffer(vk->cmd, &begin_info);
+   VKFUNC(vkResetCommandBuffer)(vk->cmd, 0);
+
+   VKFUNC(vkBeginCommandBuffer)(vk->cmd, &begin_info);
    memset(&vk->tracker, 0, sizeof(vk->tracker));
 
    /* Upload texture */

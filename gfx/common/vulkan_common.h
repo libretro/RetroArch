@@ -155,7 +155,6 @@ typedef struct vulkan_context
       /* Queues */
       PFN_vkGetDeviceQueue                          vkGetDeviceQueue;
       PFN_vkQueueWaitIdle                           vkQueueWaitIdle;
-      PFN_vkQueueSubmit                             vkQueueSubmit;
 
       /* Pipelines */
       PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
@@ -170,10 +169,15 @@ typedef struct vulkan_context
       PFN_vkCmdBindDescriptorSets                   vkCmdBindDescriptorSets;
       PFN_vkUpdateDescriptorSets                    vkUpdateDescriptorSets;
 
-      /* Command buffers */
+      /* Command Buffers */
       PFN_vkCreateCommandPool                       vkCreateCommandPool;
       PFN_vkDestroyCommandPool                      vkDestroyCommandPool;
+      PFN_vkBeginCommandBuffer                      vkBeginCommandBuffer;
       PFN_vkEndCommandBuffer                        vkEndCommandBuffer;
+      PFN_vkResetCommandBuffer                      vkResetCommandBuffer;
+
+      /* Command Buffer Submission */
+      PFN_vkQueueSubmit                             vkQueueSubmit;
 
       /* Framebuffers */
       PFN_vkCreateFramebuffer                       vkCreateFramebuffer;
