@@ -529,7 +529,9 @@ static void vulkan_deinit_textures(vk_t *vk)
    }
 }
 
-static void vulkan_deinit_command_buffers(vk_t *vk)
+static void vulkan_deinit_command_buffers(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
    unsigned i;
    for (i = 0; i < vk->num_swapchain_images; i++)
@@ -538,7 +540,7 @@ static void vulkan_deinit_command_buffers(vk_t *vk)
          vkFreeCommandBuffers(vk->context->device,
                vk->swapchain[i].cmd_pool, 1, &vk->swapchain[i].cmd);
 
-      vkDestroyCommandPool(vk->context->device,
+      VKFUNC(vkDestroyCommandPool)(vk->context->device,
             vk->swapchain[i].cmd_pool, NULL);
    }
 }
@@ -709,7 +711,9 @@ static void vulkan_init_static_resources(vk_t *vk)
          blank, NULL, VULKAN_TEXTURE_STATIC);
 }
 
-static void vulkan_deinit_static_resources(vk_t *vk)
+static void vulkan_deinit_static_resources(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
    unsigned i;
    vkDestroyPipelineCache(vk->context->device,
@@ -718,7 +722,7 @@ static void vulkan_deinit_static_resources(vk_t *vk)
          vk->context->device,
          &vk->display.blank_texture);
 
-   vkDestroyCommandPool(vk->context->device, vk->staging_pool, NULL);
+   VKFUNC(vkDestroyCommandPool)(vk->context->device, vk->staging_pool, NULL);
    free(vk->hw.cmd);
    free(vk->hw.wait_dst_stages);
 
@@ -736,7 +740,7 @@ static void vulkan_deinit_resources(vk_t *vk)
    vulkan_deinit_descriptor_pool(vk);
    vulkan_deinit_textures(vk);
    vulkan_deinit_buffers(vk);
-   vulkan_deinit_command_buffers(vk);
+   vulkan_deinit_command_buffers(&vk->context->fp, vk);
 }
 
 static void vulkan_deinit_menu(vk_t *vk)
@@ -770,7 +774,7 @@ static void vulkan_free(void *data)
       vulkan_deinit_menu(vk);
       font_driver_free(NULL);
 
-      vulkan_deinit_static_resources(vk);
+      vulkan_deinit_static_resources(&vk->context->fp, vk);
       vulkan_overlay_free(vk);
 
       if (vk->filter_chain)
