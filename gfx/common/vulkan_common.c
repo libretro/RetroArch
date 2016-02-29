@@ -96,10 +96,11 @@ uint32_t vulkan_find_memory_type_fallback(
 }
 
 void vulkan_map_persistent_texture(
+      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_texture *texture)
 {
-   vkMapMemory(device, texture->memory, texture->offset,
+   VKFUNC(vkMapMemory)(device, texture->memory, texture->offset,
          texture->size, 0, &texture->mapped);
 }
 
@@ -355,8 +356,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       tex.memory_type = old->memory_type;
 
       if (old->mapped)
-         vkUnmapMemory(device, old->memory);
-      old->memory = VK_NULL_HANDLE;
+         VKFUNC(vkUnmapMemory)(device, old->memory);
+
+      old->memory     = VK_NULL_HANDLE;
    }
    else
    {
@@ -419,7 +421,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
          memcpy(dst, src, width * bpp);
 
-      vkUnmapMemory(device, tex.memory);
+      VKFUNC(vkUnmapMemory)(device, tex.memory);
    }
    else if (initial && type == VULKAN_TEXTURE_STATIC)
    {
@@ -485,16 +487,20 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       slock_unlock(vk->context->queue_lock);
 
       vkFreeCommandBuffers(vk->context->device, vk->staging_pool, 1, &staging);
-      vulkan_destroy_texture(vk->context->device, &tmp);
+      vulkan_destroy_texture(&vk->context->fp,
+            vk->context->device, &tmp);
       tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
    }
    return tex;
 }
 
-void vulkan_destroy_texture(VkDevice device, struct vk_texture *tex)
+void vulkan_destroy_texture(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
+      struct vk_texture *tex)
 {
    if (tex->mapped)
-      vkUnmapMemory(device, tex->memory);
+      VKFUNC(vkUnmapMemory)(device, tex->memory);
    vkFreeMemory(device, tex->memory, NULL);
    vkDestroyImageView(device, tex->view, NULL);
    vkDestroyImage(device, tex->image, NULL);
@@ -788,9 +794,12 @@ struct vk_buffer vulkan_create_buffer(const struct vulkan_context *context,
    return buffer;
 }
 
-void vulkan_destroy_buffer(VkDevice device, struct vk_buffer *buffer)
+void vulkan_destroy_buffer(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
+      struct vk_buffer *buffer)
 {
-   vkUnmapMemory(device, buffer->memory);
+   VKFUNC(vkUnmapMemory)(device, buffer->memory);
    vkFreeMemory(device, buffer->memory, NULL);
    vkDestroyBuffer(device, buffer->buffer, NULL);
    memset(buffer, 0, sizeof(*buffer));
@@ -992,13 +1001,16 @@ bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
    return true;
 }
 
-void vulkan_buffer_chain_free(VkDevice device, struct vk_buffer_chain *chain)
+void vulkan_buffer_chain_free(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
+      struct vk_buffer_chain *chain)
 {
    struct vk_buffer_node *node = chain->head;
    while (node)
    {
       struct vk_buffer_node *next = node->next;
-      vulkan_destroy_buffer(device, &node->buffer);
+      vulkan_destroy_buffer(vkcfp, device, &node->buffer);
 
       free(node);
       node = next;
@@ -1125,6 +1137,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    /* Descriptor sets */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindDescriptorSets);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, UpdateDescriptorSets);
+
+   /* Memory allocation */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, MapMemory);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, UnmapMemory);
 
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetViewport);

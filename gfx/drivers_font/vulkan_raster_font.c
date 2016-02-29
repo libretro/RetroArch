@@ -79,7 +79,8 @@ static void vulkan_raster_font_free_font(void *data)
       font->font_driver->free(font->font_data);
 
    VKFUNC(vkQueueWaitIdle)(font->vk->context->queue);
-   vulkan_destroy_texture(font->vk->context->device, &font->texture);
+   vulkan_destroy_texture(vkcfp, 
+         font->vk->context->device, &font->texture);
 
    free(font);
 }

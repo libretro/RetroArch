@@ -165,7 +165,13 @@ typedef struct vulkan_context
       PFN_vkCmdBindDescriptorSets                   vkCmdBindDescriptorSets;
       PFN_vkUpdateDescriptorSets                    vkUpdateDescriptorSets;
 
+      /* Framebuffers */
       PFN_vkCreateFramebuffer                       vkCreateFramebuffer;
+
+      /* Memory allocation */
+      PFN_vkMapMemory                               vkMapMemory;
+      PFN_vkUnmapMemory                             vkUnmapMemory;
+
       PFN_vkCreateCommandPool                       vkCreateCommandPool;
 
       PFN_vkCreateInstance                          vkCreateInstance;
@@ -331,7 +337,9 @@ bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
       struct vk_buffer_chain *chain, size_t size,
       struct vk_buffer_range *range);
 
-void vulkan_buffer_chain_free(VkDevice device,
+void vulkan_buffer_chain_free(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
       struct vk_buffer_chain *chain);
 
 
@@ -520,8 +528,15 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
 void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture);
 
-void vulkan_map_persistent_texture(VkDevice device, struct vk_texture *tex);
-void vulkan_destroy_texture(VkDevice device, struct vk_texture *tex);
+void vulkan_map_persistent_texture(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
+      struct vk_texture *texture);
+
+void vulkan_destroy_texture(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
+      struct vk_texture *tex);
 
 void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
       struct vk_texture *dynamic,
@@ -588,7 +603,11 @@ static INLINE void vulkan_write_quad_vbo(struct vk_vertex *pv,
 
 struct vk_buffer vulkan_create_buffer(const struct vulkan_context *context,
       size_t size, VkBufferUsageFlags usage);
-void vulkan_destroy_buffer(VkDevice device, struct vk_buffer *buffer);
+
+void vulkan_destroy_buffer(
+      struct vulkan_context_fp *vkcfp,
+      VkDevice device,
+      struct vk_buffer *buffer);
 
 VkDescriptorSet vulkan_descriptor_manager_alloc(
       struct vulkan_context_fp *vkcfp,

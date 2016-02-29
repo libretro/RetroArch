@@ -441,8 +441,10 @@ static void vulkan_deinit_buffers(vk_t *vk)
    unsigned i;
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
-      vulkan_buffer_chain_free(vk->context->device, &vk->swapchain[i].vbo);
-      vulkan_buffer_chain_free(vk->context->device, &vk->swapchain[i].ubo);
+      vulkan_buffer_chain_free(&vk->context->fp,
+            vk->context->device, &vk->swapchain[i].vbo);
+      vulkan_buffer_chain_free(&vk->context->fp,
+            vk->context->device, &vk->swapchain[i].ubo);
    }
 }
 
@@ -486,7 +488,9 @@ static void vulkan_init_textures(vk_t *vk)
          vk->swapchain[i].texture = vulkan_create_texture(vk, NULL,
                vk->tex_w, vk->tex_h, vk->tex_fmt,
                NULL, NULL, VULKAN_TEXTURE_STREAMED);
-         vulkan_map_persistent_texture(vk->context->device,
+
+         vulkan_map_persistent_texture(&vk->context->fp,
+               vk->context->device,
                &vk->swapchain[i].texture);
 
          if (vk->swapchain[i].texture.type == VULKAN_TEXTURE_STAGING)
@@ -507,9 +511,12 @@ static void vulkan_deinit_textures(vk_t *vk)
    for (i = 0; i < vk->num_swapchain_images; i++)
    {
       if (vk->swapchain[i].texture.memory != VK_NULL_HANDLE)
-         vulkan_destroy_texture(vk->context->device, &vk->swapchain[i].texture);
+         vulkan_destroy_texture(&vk->context->fp,
+               vk->context->device, &vk->swapchain[i].texture);
+
       if (vk->swapchain[i].texture_optimal.memory != VK_NULL_HANDLE)
-         vulkan_destroy_texture(vk->context->device, &vk->swapchain[i].texture_optimal);
+         vulkan_destroy_texture(&vk->context->fp,
+               vk->context->device, &vk->swapchain[i].texture_optimal);
    }
 }
 
@@ -687,15 +694,18 @@ static void vulkan_deinit_static_resources(vk_t *vk)
    unsigned i;
    vkDestroyPipelineCache(vk->context->device,
          vk->pipelines.cache, NULL);
-   vulkan_destroy_texture(vk->context->device,
+   vulkan_destroy_texture(&vk->context->fp,
+         vk->context->device,
          &vk->display.blank_texture);
+
    vkDestroyCommandPool(vk->context->device, vk->staging_pool, NULL);
    free(vk->hw.cmd);
    free(vk->hw.wait_dst_stages);
 
    for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
       if (vk->readback.staging[i].memory != VK_NULL_HANDLE)
-         vulkan_destroy_texture(vk->context->device,
+         vulkan_destroy_texture(&vk->context->fp,
+               vk->context->device,
                &vk->readback.staging[i]);
 }
 
@@ -715,9 +725,11 @@ static void vulkan_deinit_menu(vk_t *vk)
    for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
    {
       if (vk->menu.textures[i].memory)
-         vulkan_destroy_texture(vk->context->device, &vk->menu.textures[i]);
+         vulkan_destroy_texture(&vk->context->fp,
+               vk->context->device, &vk->menu.textures[i]);
       if (vk->menu.textures_optimal[i].memory)
-         vulkan_destroy_texture(vk->context->device, &vk->menu.textures_optimal[i]);
+         vulkan_destroy_texture(&vk->context->fp,
+               vk->context->device, &vk->menu.textures_optimal[i]);
    }
 }
 
@@ -1398,12 +1410,17 @@ static bool vulkan_frame(void *data, const void *frame,
       {
          chain->texture = vulkan_create_texture(vk, &chain->texture,
                frame_width, frame_height, chain->texture.format, NULL, NULL,
-               chain->texture_optimal.memory ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
-         vulkan_map_persistent_texture(vk->context->device, &chain->texture);
+               chain->texture_optimal.memory 
+               ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
+
+         vulkan_map_persistent_texture(&vk->context->fp,
+               vk->context->device, &chain->texture);
 
          if (chain->texture.type == VULKAN_TEXTURE_STAGING)
          {
-            chain->texture_optimal = vulkan_create_texture(vk, &chain->texture_optimal,
+            chain->texture_optimal = vulkan_create_texture(
+                  vk,
+                  &chain->texture_optimal,
                   frame_width, frame_height, chain->texture_optimal.format,
                   NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
          }
@@ -1740,7 +1757,8 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
       chain->texture   = vulkan_create_texture(vk, &chain->texture,
             framebuffer->width, framebuffer->height, chain->texture.format,
             NULL, NULL, VULKAN_TEXTURE_STREAMED);
-      vulkan_map_persistent_texture(vk->context->device, &chain->texture);
+      vulkan_map_persistent_texture(&vk->context->fp,
+            vk->context->device, &chain->texture);
 
       if (chain->texture.type == VULKAN_TEXTURE_STAGING)
       {
@@ -1881,7 +1899,9 @@ static void vulkan_unload_texture(void *data, uintptr_t handle)
    /* TODO: We really want to defer this deletion instead,
     * but this will do for now. */
    VKFUNC(vkQueueWaitIdle)(vk->context->queue);
-   vulkan_destroy_texture(vk->context->device, texture);
+   vulkan_destroy_texture(
+         &vk->context->fp,
+         vk->context->device, texture);
    free(texture);
 }
 
@@ -1982,7 +2002,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
       VKFUNC(vkQueueWaitIdle)(vk->context->queue);
 
       if (!staging->mapped)
-         vulkan_map_persistent_texture(vk->context->device, staging);
+         vulkan_map_persistent_texture(
+               &vk->context->fp,
+               vk->context->device, staging);
 
       {
          unsigned x, y;
@@ -2001,7 +2023,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
             }
          }
       }
-      vulkan_destroy_texture(vk->context->device, staging);
+      vulkan_destroy_texture(
+            &vk->context->fp,
+            vk->context->device, staging);
    }
    return true;
 }
@@ -2036,7 +2060,9 @@ static void vulkan_overlay_free(vk_t *vk)
    free(vk->overlay.vertex);
    for (i = 0; i < vk->overlay.count; i++)
       if (vk->overlay.images[i].memory != VK_NULL_HANDLE)
-         vulkan_destroy_texture(vk->context->device,
+         vulkan_destroy_texture(
+               &vk->context->fp,
+               vk->context->device,
                &vk->overlay.images[i]);
 
    memset(&vk->overlay, 0, sizeof(vk->overlay));
