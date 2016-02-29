@@ -1808,7 +1808,6 @@ static bool gl_frame(void *data, const void *frame,
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
-   bool is_slowmotion;
    unsigned width, height;
    struct gfx_tex_info feedback_info;
    video_shader_ctx_info_t shader_info;
@@ -2047,14 +2046,13 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 #endif
 #endif
-   runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, &is_slowmotion);
 
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
          settings->video.black_frame_insertion
          && !input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)
-         && !is_slowmotion 
+         && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
          && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
    {
       gfx_ctx_ctl(GFX_CTL_SWAP_BUFFERS, NULL);

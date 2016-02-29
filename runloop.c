@@ -873,13 +873,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_IS_SLOWMOTION:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            *ptr = runloop_slowmotion;
-         }
-         break;
+         return runloop_slowmotion;
       case RUNLOOP_CTL_SET_SLOWMOTION:
          {
             bool *ptr = (bool*)data;
@@ -1284,19 +1278,17 @@ int runloop_iterate(unsigned *sleep_ms)
       /* Updates frame timing if frame timing callback is in use by the core.
        * Limits frame time if fast forward ratio throttle is enabled. */
 
-      bool is_slowmotion;
       retro_time_t current     = retro_get_time_usec();
       retro_time_t delta       = current - frame_time_last;
       bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
             input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
          !!recording_driver_get_data_ptr();
 
-      runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, &is_slowmotion);
 
       if (!frame_time_last || is_locked_fps)
          delta = system->frame_time.reference;
 
-      if (!is_locked_fps && is_slowmotion)
+      if (!is_locked_fps && runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
          delta /= settings->slowmotion_ratio;
 
       frame_time_last = current;

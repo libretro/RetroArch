@@ -483,7 +483,6 @@ void audio_driver_set_nonblocking_state(bool enable)
  **/
 static bool audio_driver_flush(const int16_t *data, size_t samples)
 {
-   bool is_slowmotion;
    static struct retro_perf_counter audio_convert_s16 = {0};
    static struct retro_perf_counter audio_convert_float = {0};
    static struct retro_perf_counter audio_dsp         = {0};
@@ -536,9 +535,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    src_data.ratio = audio_driver_data.src_ratio;
 
-   runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, &is_slowmotion);
-
-   if (is_slowmotion)
+   if (runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
       src_data.ratio *= settings->slowmotion_ratio;
 
    audio_driver_ctl(RARCH_AUDIO_CTL_RESAMPLER_PROCESS, &src_data);
