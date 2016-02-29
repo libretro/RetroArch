@@ -166,13 +166,16 @@ typedef struct vulkan_context
       /* Images */
       PFN_vkCreateImage                             vkCreateImage;
       PFN_vkDestroyImage                            vkDestroyImage;
-      PFN_vkCmdCopyImage                            vkCmdCopyImage;
+      PFN_vkGetImageSubresourceLayout               vkGetImageSubresourceLayout;
+
+      /* Images (Resource Memory Association) */
+      PFN_vkBindImageMemory                         vkBindImageMemory;
 
       /* Image Views */
       PFN_vkCreateImageView                         vkCreateImageView;
       PFN_vkDestroyImageView                        vkDestroyImageView;
 
-      /* Resource Memory Association */
+      /* Image Views (Resource Memory Association) */
       PFN_vkGetImageMemoryRequirements              vkGetImageMemoryRequirements;
 
       /* Queues */
@@ -235,6 +238,9 @@ typedef struct vulkan_context
       /* Render Passes */
       PFN_vkCreateRenderPass                        vkCreateRenderPass;
       PFN_vkDestroyRenderPass                       vkDestroyRenderPass;
+
+      /* Image commands */
+      PFN_vkCmdCopyImage                            vkCmdCopyImage;
 
       /* Pipeline commands */
       PFN_vkCmdBindPipeline                         vkCmdBindPipeline;

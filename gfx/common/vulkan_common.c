@@ -374,7 +374,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       memset(old, 0, sizeof(*old));
    }
 
-   vkBindImageMemory(device, tex.image, tex.memory, 0);
+   VKFUNC(vkBindImageMemory)(device, tex.image, tex.memory, 0);
 
    view.image                       = tex.image;
    view.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
@@ -394,7 +394,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
    VKFUNC(vkCreateImageView)(device, &view, NULL, &tex.view);
 
-   vkGetImageSubresourceLayout(device, tex.image, &subresource, &layout);
+   VKFUNC(vkGetImageSubresourceLayout)(device, tex.image, &subresource, &layout);
    tex.stride = layout.rowPitch;
    tex.offset = layout.offset;
    tex.size   = layout.size;
@@ -1153,6 +1153,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    /* Images */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImage);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, BindImageMemory);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetImageSubresourceLayout);
 
    /* Image Views */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImageView);
