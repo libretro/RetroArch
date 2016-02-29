@@ -743,7 +743,8 @@ ifeq ($(HAVE_VULKAN), 1)
 			  -Ideps/glslang/glslang/SPIRV \
 			  -Ideps/glslang
 
-	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized
+	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -I./gfx/include/vulkan
+   CFLAGS  += -I./gfx/include/vulkan
 
 	GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
 
