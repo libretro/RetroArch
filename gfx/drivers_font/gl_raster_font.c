@@ -200,7 +200,7 @@ static int gl_get_message_width(void *data, const char *msg,
    unsigned msg_len = min(msg_len_full, MAX_MSG_LEN_CHUNK);
    int      delta_x = 0;
 
-   if (!font || !font->font_driver)
+   if (!font || !font->font_driver || !font->font_data)
       return 0;
 
    while (msg_len_full)
