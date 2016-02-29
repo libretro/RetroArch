@@ -258,7 +258,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
          break;
    }
 
-   vkCreateImage(device, &info, NULL, &tex.image);
+   vk->context->fp.vkCreateImage(device, &info, NULL, &tex.image);
 #if 0
    vulkan_track_alloc(tex.image);
 #endif
@@ -296,7 +296,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       type = VULKAN_TEXTURE_STAGING;
       vkDestroyImage(device, tex.image, NULL);
       info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-      vkCreateImage(device, &info, NULL, &tex.image);
+      vk->context->fp.vkCreateImage(device, &info, NULL, &tex.image);
       vkGetImageMemoryRequirements(device, tex.image, &mem_reqs);
       alloc.allocationSize = mem_reqs.size;
       alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(&vk->context->memory_properties,
@@ -1053,6 +1053,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFence);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, ResetFences);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, WaitForFences);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdCopyImage);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetViewport);

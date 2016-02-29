@@ -142,6 +142,7 @@ typedef struct vulkan_context
       PFN_vkCreateFramebuffer                       vkCreateFramebuffer;
       PFN_vkCreateCommandPool                       vkCreateCommandPool;
       PFN_vkGetDeviceQueue                          vkGetDeviceQueue;
+      PFN_vkCreateImage                             vkCreateImage;
       PFN_vkCreateInstance                          vkCreateInstance;
       PFN_vkCreateRenderPass                        vkCreateRenderPass;
       PFN_vkCreatePipelineLayout                    vkCreatePipelineLayout;
