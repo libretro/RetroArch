@@ -1254,7 +1254,8 @@ static void zarch_context_reset(void *data)
 
 static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 {
-   int action_id;
+   int ret;
+   size_t selection;
    menu_entry_t entry;
    menu_handle_t *menu  = (menu_handle_t*)data;
    zui_t *zui           = (zui_t*)userdata;
@@ -1264,17 +1265,20 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
 
    if (!zui)
       return -1;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &action_id))
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
    BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    BIT64_SET(menu->state, MENU_STATE_BLIT);
 
-   menu_entry_get(&entry, 0, action_id, NULL, false);
+   menu_entry_get(&entry, 0, selection, NULL, false);
 
    zui->action       = action;
 
-   return menu_entry_action(&entry, action_id, action);
+   ret = menu_entry_action(&entry, selection, action);
+   if (ret)
+      return -1;
+   return 0;
 }
 
 static bool zarch_menu_init_list(void *data)

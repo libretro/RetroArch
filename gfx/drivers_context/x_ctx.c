@@ -97,8 +97,10 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
                {
                   if (x->g_hw_ctx)
                      glXDestroyContext(g_x11_dpy, x->g_hw_ctx);
-                  glXDestroyContext(g_x11_dpy, x->g_ctx);
-                  x->g_ctx = NULL;
+                  if (x->g_ctx)
+                     glXDestroyContext(g_x11_dpy, x->g_ctx);
+
+                  x->g_ctx    = NULL;
                   x->g_hw_ctx = NULL;
                }
             }
