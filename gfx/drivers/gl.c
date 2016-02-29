@@ -2001,8 +2001,7 @@ static bool gl_frame(void *data, const void *frame,
       font_driver_render_msg(NULL, msg, NULL);
 
 #ifdef HAVE_OVERLAY
-   if (gl && gl->overlay_enable)
-      gl_render_overlay(gl);
+   gl_render_overlay(gl);
 #endif
 
    gfx_ctx_ctl(GFX_CTL_UPDATE_WINDOW_TITLE, NULL);
@@ -3519,6 +3518,9 @@ static void gl_render_overlay(gl_t *gl)
    video_shader_ctx_coords_t coords;
    video_shader_ctx_info_t shader_info;
    unsigned i, width, height;
+
+   if (!gl || !gl->overlay_enable)
+      return;
 
    video_driver_get_size(&width, &height);
 
