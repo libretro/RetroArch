@@ -1178,6 +1178,11 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    /* Pipelines */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyPipeline);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateGraphicsPipelines);
+
+   /* Shaders */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateShaderModule);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyShaderModule);
 
    /* Pipeline Layouts */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineLayout);
@@ -1186,7 +1191,6 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    /* Pipeline Cache */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineCache);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyPipelineCache);
-
 
    /* Command buffers */
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateCommandPool);

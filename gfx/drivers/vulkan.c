@@ -315,7 +315,7 @@ static void vulkan_init_pipelines(
    module_info.pCode                    = (const uint32_t*)alpha_blend_vert_spv;
    shader_stages[0].stage               = VK_SHADER_STAGE_VERTEX_BIT;
    shader_stages[0].pName               = "main";
-   vkCreateShaderModule(vk->context->device,
+   VKFUNC(vkCreateShaderModule)(vk->context->device,
          &module_info, NULL, &shader_stages[0].module);
 
    blend_attachment.blendEnable         = true;
@@ -332,22 +332,22 @@ static void vulkan_init_pipelines(
    module_info.pCode                    = (const uint32_t*)font_frag_spv;
    shader_stages[1].stage               = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName               = "main";
-   vkCreateShaderModule(vk->context->device,
+   VKFUNC(vkCreateShaderModule)(vk->context->device,
          &module_info, NULL, &shader_stages[1].module);
 
-   vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+   VKFUNC(vkCreateGraphicsPipelines)(vk->context->device, vk->pipelines.cache,
          1, &pipe, NULL, &vk->pipelines.font);
-   vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
+   VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[1].module, NULL);
 
    /* Alpha-blended pipeline. */
    module_info.codeSize   = alpha_blend_frag_spv_len;
    module_info.pCode      = (const uint32_t*)alpha_blend_frag_spv;
    shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName = "main";
-   vkCreateShaderModule(vk->context->device,
+   VKFUNC(vkCreateShaderModule)(vk->context->device,
          &module_info, NULL, &shader_stages[1].module);
 
-   vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+   VKFUNC(vkCreateGraphicsPipelines)(vk->context->device, vk->pipelines.cache,
          1, &pipe, NULL, &vk->pipelines.alpha_blend);
 
    /* Build display pipelines. */
@@ -357,12 +357,12 @@ static void vulkan_init_pipelines(
          VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP :
          VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
       blend_attachment.blendEnable = i & 1;
-      vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+      VKFUNC(vkCreateGraphicsPipelines)(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->display.pipelines[i]);
    }
 
-   vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
-   vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
+   VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[0].module, NULL);
+   VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[1].module, NULL);
 }
 
 static void vulkan_init_command_buffers(struct vulkan_context_fp *vkcfp, vk_t *vk)
@@ -1775,10 +1775,11 @@ static struct video_shader *vulkan_get_current_shader(void *data)
 static bool vulkan_get_current_sw_framebuffer(void *data,
       struct retro_framebuffer *framebuffer)
 {
-   struct vk_per_frame *chain;
-   vk_t *vk  = (vk_t*)data;
-   vk->chain = &vk->swapchain[vk->context->current_swapchain_index];
-   chain     = vk->chain;
+   struct vk_per_frame *chain = NULL;
+   vk_t *vk                   = (vk_t*)data;
+   vk->chain                  = 
+      &vk->swapchain[vk->context->current_swapchain_index];
+   chain                      = vk->chain;
 
    if (chain->texture.width != framebuffer->width ||
          chain->texture.height != framebuffer->height)

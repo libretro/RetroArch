@@ -173,8 +173,8 @@ typedef struct vulkan_context
       PFN_vkQueueWaitIdle                           vkQueueWaitIdle;
 
       /* Pipelines */
-      PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
       PFN_vkDestroyPipeline                         vkDestroyPipeline;
+      PFN_vkCreateGraphicsPipelines                 vkCreateGraphicsPipelines;
 
       /* Pipeline Layouts */
       PFN_vkCreatePipelineLayout                    vkCreatePipelineLayout;
@@ -226,6 +226,9 @@ typedef struct vulkan_context
       PFN_vkCreateRenderPass                        vkCreateRenderPass;
       PFN_vkDestroyRenderPass                       vkDestroyRenderPass;
 
+      /* Pipeline commands */
+      PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
+
       /* Render Pass commands */
       PFN_vkCmdBeginRenderPass                      vkCmdBeginRenderPass;
       PFN_vkCmdEndRenderPass                        vkCmdEndRenderPass;
@@ -241,6 +244,10 @@ typedef struct vulkan_context
 
       /* Fixed-function vertex postprocessing */
       PFN_vkCmdSetViewport                          vkCmdSetViewport;
+
+      /* Shaders */
+      PFN_vkCreateShaderModule                      vkCreateShaderModule;
+      PFN_vkDestroyShaderModule                     vkDestroyShaderModule;
 
       PFN_vkGetPhysicalDeviceFormatProperties       vkGetPhysicalDeviceFormatProperties;
       PFN_vkEnumeratePhysicalDevices                vkEnumeratePhysicalDevices;
