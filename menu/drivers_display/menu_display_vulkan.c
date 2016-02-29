@@ -74,29 +74,29 @@ static void menu_display_vk_draw(void *data)
    if (!vk)
       return;
 
-   texture   = (struct vk_texture*)draw->texture;
-   mat       = (math_matrix_4x4*)draw->matrix_data;
-   vertex    = draw->coords->vertex;
-   tex_coord = draw->coords->tex_coord;
-   color     = draw->coords->color;
+   texture            = (struct vk_texture*)draw->texture;
+   mat                = (math_matrix_4x4*)draw->matrix_data;
+   vertex             = draw->coords->vertex;
+   tex_coord          = draw->coords->tex_coord;
+   color              = draw->coords->color;
 
    /* TODO - edge case */
    if (draw->height <= 0)
-      draw->height = 1;
+      draw->height    = 1;
 
    if (!mat)
-      mat = (math_matrix_4x4*)menu_display_vk_get_default_mvp();
+      mat             = (math_matrix_4x4*)menu_display_vk_get_default_mvp();
    if (!vertex)
-      vertex = &vk_vertexes[0];
+      vertex          = &vk_vertexes[0];
    if (!tex_coord)
-      tex_coord = &vk_tex_coords[0];
+      tex_coord       = &vk_tex_coords[0];
    if (!texture)
-      texture = &vk->display.blank_texture;
+      texture         = &vk->display.blank_texture;
 
-   vk->vk_vp.x = draw->x;
-   vk->vk_vp.y = vk->context->swapchain_height - draw->y - draw->height;
-   vk->vk_vp.width = draw->width;
-   vk->vk_vp.height = draw->height;
+   vk->vk_vp.x        = draw->x;
+   vk->vk_vp.y        = vk->context->swapchain_height - draw->y - draw->height;
+   vk->vk_vp.width    = draw->width;
+   vk->vk_vp.height   = draw->height;
    vk->vk_vp.minDepth = 0.0f;
    vk->vk_vp.maxDepth = 1.0f;
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
@@ -110,10 +110,10 @@ static void menu_display_vk_draw(void *data)
    pv = (struct vk_vertex*)range.data;
    for (i = 0; i < draw->coords->vertices; i++, pv++)
    {
-      pv->x = *vertex++;
-      pv->y = *vertex++;
-      pv->tex_x = *tex_coord++;
-      pv->tex_y = *tex_coord++;
+      pv->x       = *vertex++;
+      pv->y       = *vertex++;
+      pv->tex_x   = *tex_coord++;
+      pv->tex_y   = *tex_coord++;
       pv->color.r = *color++;
       pv->color.g = *color++;
       pv->color.b = *color++;
@@ -125,7 +125,8 @@ static void menu_display_vk_draw(void *data)
          vk->display.pipelines[
             to_display_pipeline(draw->prim_type, vk->display.blend)],
          texture,
-         texture->default_smooth ? vk->samplers.linear : vk->samplers.nearest,
+         texture->default_smooth 
+            ? vk->samplers.linear : vk->samplers.nearest,
          mat,
          &range,
          draw->coords->vertices,
@@ -190,7 +191,6 @@ static void menu_display_vk_clear_color(void *data)
    VkClearAttachment attachment = { VK_IMAGE_ASPECT_COLOR_BIT };
    menu_display_ctx_clearcolor_t *clearcolor =
       (menu_display_ctx_clearcolor_t*)data;
-
    vk_t *vk = vk_get_ptr();
    if (!vk || !clearcolor)
       return;
@@ -201,9 +201,9 @@ static void menu_display_vk_clear_color(void *data)
    attachment.clearValue.color.float32[3] = clearcolor->a;
 
    memset(&rect, 0, sizeof(rect));
-   rect.rect.extent.width = vk->context->swapchain_width;
+   rect.rect.extent.width  = vk->context->swapchain_width;
    rect.rect.extent.height = vk->context->swapchain_height;
-   rect.layerCount = 1;
+   rect.layerCount         = 1;
 
    vkCmdClearAttachments(vk->cmd, 1, &attachment, 1, &rect);
 }
