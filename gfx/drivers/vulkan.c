@@ -185,7 +185,7 @@ static void vulkan_init_pipeline_layout(vk_t *vk)
    layout_info.setLayoutCount     = 1;
    layout_info.pSetLayouts        = &vk->pipelines.set_layout;
 
-   vkCreatePipelineLayout(vk->context->device,
+   vk->context->fp.vkCreatePipelineLayout(vk->context->device,
          &layout_info, NULL, &vk->pipelines.layout);
 }
 
@@ -650,7 +650,7 @@ static void vulkan_init_static_resources(vk_t *vk)
    VkPipelineCacheCreateInfo cache = { 
       VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
 
-   vkCreatePipelineCache(vk->context->device,
+   vk->context->fp.vkCreatePipelineCache(vk->context->device,
          &cache, NULL, &vk->pipelines.cache);
 
    pool_info.queueFamilyIndex = vk->context->graphics_queue_index;
