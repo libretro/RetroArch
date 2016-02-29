@@ -56,7 +56,8 @@ static VkDevice cached_device;
    }                                                                                     \
 } while(0)
 
-uint32_t vulkan_find_memory_type(const VkPhysicalDeviceMemoryProperties *mem_props,
+uint32_t vulkan_find_memory_type(
+      const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs)
 {
    uint32_t i;
@@ -71,8 +72,10 @@ uint32_t vulkan_find_memory_type(const VkPhysicalDeviceMemoryProperties *mem_pro
    abort();
 }
 
-uint32_t vulkan_find_memory_type_fallback(const VkPhysicalDeviceMemoryProperties *mem_props,
-      uint32_t device_reqs, uint32_t host_reqs_first, uint32_t host_reqs_second)
+uint32_t vulkan_find_memory_type_fallback(
+      const VkPhysicalDeviceMemoryProperties *mem_props,
+      uint32_t device_reqs, uint32_t host_reqs_first,
+      uint32_t host_reqs_second)
 {
    uint32_t i;
    for (i = 0; i < VK_MAX_MEMORY_TYPES; i++)
@@ -88,12 +91,16 @@ uint32_t vulkan_find_memory_type_fallback(const VkPhysicalDeviceMemoryProperties
       abort();
    }
 
-   return vulkan_find_memory_type_fallback(mem_props, device_reqs, host_reqs_second, 0);
+   return vulkan_find_memory_type_fallback(mem_props,
+         device_reqs, host_reqs_second, 0);
 }
 
-void vulkan_map_persistent_texture(VkDevice device, struct vk_texture *texture)
+void vulkan_map_persistent_texture(
+      VkDevice device,
+      struct vk_texture *texture)
 {
-   vkMapMemory(device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
+   vkMapMemory(device, texture->memory, texture->offset,
+         texture->size, 0, &texture->mapped);
 }
 
 void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
@@ -109,12 +116,15 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
 
    vulkan_transition_texture(vk, staging);
 
-   /* We don't have to sync against previous TRANSFER, since we observed the completion
-    * by fences. If we have a single texture_optimal, we would need to sync against
+   /* We don't have to sync against previous TRANSFER, 
+    * since we observed the completion by fences. 
+    *
+    * If we have a single texture_optimal, we would need to sync against
     * previous transfers to avoid races.
     *
-    * We would also need to optionally maintain extra textures due to changes in resolution,
-    * so this seems like the sanest and simplest solution. */
+    * We would also need to optionally maintain extra textures due to 
+    * changes in resolution, so this seems like the sanest and 
+    * simplest solution. */
    vulkan_image_layout_transition(vk, vk->cmd, dynamic->image,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -134,9 +144,12 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
          dynamic->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          1, &region);
 
-   vulkan_image_layout_transition(vk, vk->cmd, dynamic->image,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+   vulkan_image_layout_transition(vk, vk->cmd,
+         dynamic->image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 }
@@ -160,7 +173,8 @@ static unsigned track_seq;
 static void vulkan_track_alloc(VkImage image)
 {
    vk_images[vk_count++] = image;
-   RARCH_LOG("[Vulkan]: Alloc %llu (%u).\n", (unsigned long long)image, track_seq);
+   RARCH_LOG("[Vulkan]: Alloc %llu (%u).\n",
+         (unsigned long long)image, track_seq);
    track_seq++;
 }
 
@@ -172,7 +186,8 @@ static void vulkan_track_dealloc(VkImage image)
       if (image == vk_images[i])
       {
          vk_count--;
-         memmove(vk_images + i, vk_images + 1 + i, sizeof(VkImage) * (vk_count - i));
+         memmove(vk_images + i, vk_images + 1 + i,
+               sizeof(VkImage) * (vk_count - i));
          return;
       }
    }
@@ -184,7 +199,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       struct vk_texture *old,
       unsigned width, unsigned height,
       VkFormat format,
-      const void *initial, const VkComponentMapping *swizzle, enum vk_texture_type type)
+      const void *initial,
+      const VkComponentMapping *swizzle,
+      enum vk_texture_type type)
 {
    struct vk_texture tex;
    VkMemoryRequirements mem_reqs;
@@ -1171,7 +1188,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    if (cached_device)
    {
       vk->context.device = cached_device;
-      cached_device = NULL;
+      cached_device      = NULL;
+
       video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
       RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
    }
@@ -1394,12 +1412,12 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    VkPresentInfoKHR present        = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
    struct vulkan_context_fp *vkcfp = (struct vulkan_context_fp*)&vk->context.fp;
 
-   present.swapchainCount     = 1;
-   present.pSwapchains        = &vk->swapchain;
-   present.pImageIndices      = &index;
-   present.pResults           = &result;
-   present.waitSemaphoreCount = 1;
-   present.pWaitSemaphores    = &vk->context.swapchain_semaphores[index];
+   present.swapchainCount          = 1;
+   present.pSwapchains             = &vk->swapchain;
+   present.pImageIndices           = &index;
+   present.pResults                = &result;
+   present.waitSemaphoreCount      = 1;
+   present.pWaitSemaphores         = &vk->context.swapchain_semaphores[index];
 
    /* Better hope QueuePresent doesn't block D: */
    slock_lock(vk->context.queue_lock);
@@ -1410,6 +1428,7 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
       RARCH_LOG("[Vulkan]: QueuePresent failed, invalidating swapchain.\n");
       vk->context.invalid_swapchain = true;
    }
+
    slock_unlock(vk->context.queue_lock);
 }
 
@@ -1485,6 +1504,7 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    VKFUNC(vkDestroyFence)(vk->context.device, fence, NULL);
 
    next_fence = &vk->context.swapchain_fences[index];
+
    if (*next_fence != VK_NULL_HANDLE)
    {
       VKFUNC(vkWaitForFences)(vk->context.device, 1, next_fence, true, UINT64_MAX);
@@ -1560,6 +1580,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    /* Limit latency. */
    if (desired_swapchain_images > 3)
       desired_swapchain_images = 3;
+
    if (desired_swapchain_images < surface_properties.minImageCount)
       desired_swapchain_images = surface_properties.minImageCount;
 
@@ -1631,7 +1652,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VKFUNC(vkGetSwapchainImagesKHR)(vk->context.device, vk->swapchain,
          &vk->context.num_swapchain_images, vk->context.swapchain_images);
 
-   RARCH_LOG("[Vulkan]: Got %u swapchain images.\n", vk->context.num_swapchain_images);
+   RARCH_LOG("[Vulkan]: Got %u swapchain images.\n",
+         vk->context.num_swapchain_images);
 
    for (i = 0; i < vk->context.num_swapchain_images; i++)
    {
