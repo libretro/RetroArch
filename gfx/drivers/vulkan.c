@@ -718,7 +718,7 @@ static void vulkan_deinit_static_resources(
       vk_t *vk)
 {
    unsigned i;
-   vkDestroyPipelineCache(vk->context->device,
+   VKFUNC(vkDestroyPipelineCache)(vk->context->device,
          vk->pipelines.cache, NULL);
    vulkan_destroy_texture(&vk->context->fp,
          vk->context->device,

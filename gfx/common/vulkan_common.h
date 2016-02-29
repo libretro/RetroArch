@@ -182,6 +182,7 @@ typedef struct vulkan_context
 
       /* Pipeline Cache */
       PFN_vkCreatePipelineCache                     vkCreatePipelineCache;
+      PFN_vkDestroyPipelineCache                    vkDestroyPipelineCache;
 
       /* Pipeline Barriers */
       PFN_vkCmdPipelineBarrier                      vkCmdPipelineBarrier;
