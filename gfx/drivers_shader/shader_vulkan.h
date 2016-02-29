@@ -20,7 +20,7 @@
 #include <stddef.h>
 #include <vulkan/vulkan.h>
 
-#include "libretro-common/include/boolean.h"
+#include <boolean.h>
 
 #ifdef __cplusplus
 extern "C" {
