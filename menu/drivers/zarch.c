@@ -156,7 +156,7 @@ typedef struct zarch_handle
    bool     next_selection_set;
 } zui_t;
 
-typedef struct
+struct zui_tabbed
 {
    unsigned prev_id;
    unsigned active_id;
@@ -170,15 +170,15 @@ typedef struct
    int tab_width;
    unsigned tab_selection;
    bool inited;
-} zui_tabbed_t;
+};
 
-typedef struct
+struct zui_part
 {
    float x, y;
    float xspeed, yspeed;
    float alpha;
    bool alive;
-} part_t;
+};
 
 static enum zarch_layout_type zarch_layout;
 
@@ -372,7 +372,7 @@ static float zarch_zui_scalef(float val,
 static void zarch_zui_snow(zui_t *zui, gfx_coord_array_t *ca,
       int width, int height)
 {
-   static part_t particles[NPARTICLES];
+   static struct zui_part particles[NPARTICLES];
    static bool initialized = false;
    static int timeout      = 0;
    unsigned i, max_gen     = 2;
@@ -385,7 +385,10 @@ static void zarch_zui_snow(zui_t *zui, gfx_coord_array_t *ca,
 
    for (i = 0; i < NPARTICLES; ++i)
    {
-      part_t *p = (part_t*)&particles[i];
+      struct zui_part *p = (struct zui_part*)&particles[i];
+
+      if (!p)
+         return;
 
       if (p->alive)
       {
@@ -421,7 +424,10 @@ static void zarch_zui_snow(zui_t *zui, gfx_coord_array_t *ca,
       unsigned j;
       float alpha;
       float colors[16];
-      part_t *p = &particles[i];
+      struct zui_part *p = &particles[i];
+
+      if (!p)
+         return;
 
       if (!p->alive)
          continue;
@@ -464,7 +470,7 @@ static bool zarch_zui_button(zui_t *zui, int x1, int y1, const char *label)
          + zarch_zui_strwidth(zui->fb_buf, label, 1.0) + 24, y1 + 64, label);
 }
 
-static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
+static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int y1,
       const char *label, unsigned item_id, const char *entry, bool selected)
 {
    menu_animation_ctx_ticker_t ticker;
@@ -515,14 +521,14 @@ static bool zarch_zui_list_item(zui_t *zui, zui_tabbed_t *tab, int x1, int y1,
    return active;
 }
 
-static void zarch_zui_tabbed_begin(zui_t *zui, zui_tabbed_t *tab, int x, int y)
+static void zarch_zui_tabbed_begin(zui_t *zui, struct zui_tabbed *tab, int x, int y)
 {
    tab->x            = x;
    tab->y            = y;
    tab->tabline_size = 60 + 4;
 }
 
-static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab,
+static bool zarch_zui_tab(zui_t *zui, struct zui_tabbed *tab,
       const char *label, unsigned tab_id)
 {
    bool active;
@@ -573,7 +579,7 @@ static bool zarch_zui_tab(zui_t *zui, zui_tabbed_t *tab,
 static void zarch_zui_render_lay_settings(zui_t *zui)
 {
    int width, x1, y1;
-   static zui_tabbed_t tabbed = {~0U};
+   static struct zui_tabbed tabbed = {~0U};
 
    tabbed.vertical            = true;
    tabbed.tab_width           = 100;
@@ -651,7 +657,7 @@ static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index, int *list_fi
    return false;
 }
 
-static int zarch_zui_render_lay_root_recent(zui_t *zui, zui_tabbed_t *tabbed)
+static int zarch_zui_render_lay_root_recent(zui_t *zui, struct zui_tabbed *tabbed)
 {
    if (zarch_zui_tab(zui, tabbed, "Recent", 0))
    {
@@ -708,7 +714,8 @@ static void zarch_zui_render_lay_root_load_set_new_path(zui_t *zui,
    zui->load_dlist = NULL;
 }
 
-static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
+static int zarch_zui_render_lay_root_load(zui_t *zui,
+      struct zui_tabbed *tabbed)
 {
    char parent_dir[PATH_MAX_LENGTH];
    settings_t *settings   = config_get_ptr();
@@ -828,7 +835,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui, zui_tabbed_t *tabbed)
 }
 
 static int zarch_zui_render_lay_root_collections(
-      zui_t *zui, zui_tabbed_t *tabbed)
+      zui_t *zui, struct zui_tabbed *tabbed)
 {
    if (zarch_zui_tab(zui, tabbed, "Collections", 2))
    {
@@ -839,7 +846,7 @@ static int zarch_zui_render_lay_root_collections(
 }
 
 static int zarch_zui_render_lay_root_downloads(
-      zui_t *zui, zui_tabbed_t *tabbed)
+      zui_t *zui, struct zui_tabbed *tabbed)
 {
    if (zarch_zui_tab(zui, tabbed, "Download", 3))
    {
@@ -852,7 +859,7 @@ static int zarch_zui_render_lay_root_downloads(
 static int zarch_zui_render_lay_root(zui_t *zui)
 {
    char item[PATH_MAX_LENGTH];
-   static zui_tabbed_t tabbed = {~0U};
+   static struct zui_tabbed tabbed = {~0U};
 
    zarch_zui_tabbed_begin(zui, &tabbed, 0, 0);
 
@@ -890,7 +897,7 @@ static int zarch_zui_render_lay_root(zui_t *zui)
 static int zarch_zui_render_sidebar(zui_t *zui)
 {
    int width, x1, y1;
-   static zui_tabbed_t tabbed = {~0U};
+   static struct zui_tabbed tabbed = {~0U};
    tabbed.vertical = true;
    tabbed.tab_width = 100;
 
@@ -930,7 +937,7 @@ static void zarch_zui_draw_cursor(float x, float y)
 
 static int zarch_zui_render_pick_core(zui_t *zui)
 {
-   static zui_tabbed_t tabbed = {~0U};
+   static struct zui_tabbed tabbed = {~0U};
    unsigned i, j = 0;
    if (zui->pick_supported == 1)
    {
