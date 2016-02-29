@@ -1040,6 +1040,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceMemoryProperties);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetPhysicalDeviceQueueFamilyProperties);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDevice);
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyDevice);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetDeviceQueue);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, QueueWaitIdle);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, QueueSubmit);
@@ -1390,7 +1391,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    else
    {
       if (vk->context.device)
-         vkDestroyDevice(vk->context.device, NULL);
+         vk->context.fp.vkDestroyDevice(vk->context.device, NULL);
       if (vk->context.instance)
          vkDestroyInstance(vk->context.instance, NULL);
    }

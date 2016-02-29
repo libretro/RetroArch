@@ -151,6 +151,7 @@ typedef struct vulkan_context
       PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
       PFN_vkCmdDraw                                 vkCmdDraw;
       PFN_vkCreateDevice                            vkCreateDevice;
+      PFN_vkDestroyDevice                           vkDestroyDevice;
       PFN_vkGetPhysicalDeviceSurfaceSupportKHR      vkGetPhysicalDeviceSurfaceSupportKHR;
       PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
       PFN_vkGetPhysicalDeviceSurfaceFormatsKHR      vkGetPhysicalDeviceSurfaceFormatsKHR;
