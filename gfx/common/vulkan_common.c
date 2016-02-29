@@ -830,19 +830,20 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
    if (!pool)
       return NULL;
 
-   pool_info.maxSets = VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS;
+   pool_info.maxSets       = VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS;
    pool_info.poolSizeCount = manager->num_sizes;
-   pool_info.pPoolSizes = manager->sizes;
-   pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+   pool_info.pPoolSizes    = manager->sizes;
+   pool_info.flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
    VKFUNC(vkCreateDescriptorPool)(device, &pool_info, NULL, &pool->pool);
 
    /* Just allocate all descriptor sets up front. */
-   alloc_info.descriptorPool = pool->pool;
+   alloc_info.descriptorPool     = pool->pool;
    alloc_info.descriptorSetCount = 1;
-   alloc_info.pSetLayouts = &manager->set_layout;
+   alloc_info.pSetLayouts        = &manager->set_layout;
+
    for (i = 0; i < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS; i++)
-      vkAllocateDescriptorSets(device, &alloc_info, &pool->sets[i]);
+      VKFUNC(vkAllocateDescriptorSets)(device, &alloc_info, &pool->sets[i]);
 
    return pool;
 }
@@ -1164,6 +1165,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDescriptorPool);
 
    /* Descriptor sets */
+   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, AllocateDescriptorSets);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, FreeDescriptorSets);
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, UpdateDescriptorSets);
 
