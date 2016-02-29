@@ -260,12 +260,12 @@ static void vulkan_raster_font_render_msg(void *data, const char *msg,
    float color[4], color_dark[4];
    int drop_x, drop_y;
    bool full_screen;
-   enum text_alignment text_align;
-   vk_t *vk = NULL;
-   vulkan_raster_t *font = (vulkan_raster_t*)data;
-   settings_t *settings = config_get_ptr();
-   const struct font_params *params = (const struct font_params*)userdata;
    unsigned max_glyphs;
+   enum text_alignment text_align;
+   vk_t *vk                         = NULL;
+   vulkan_raster_t *font            = (vulkan_raster_t*)data;
+   settings_t *settings             = config_get_ptr();
+   const struct font_params *params = (const struct font_params*)userdata;
 
    if (!font || !msg || !*msg)
       return;
