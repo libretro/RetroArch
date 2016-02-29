@@ -595,7 +595,8 @@ static void zarch_zui_render_lay_settings(zui_t *zui)
       zarch_layout = LAY_HOME;
 }
 
-static bool zarch_zui_gamepad_input(zui_t *zui, int *gamepad_index, int *list_first,
+static bool zarch_zui_gamepad_input(zui_t *zui,
+      int *gamepad_index, int *list_first,
       unsigned skip)
 {
    unsigned size          = menu_entries_get_size();
