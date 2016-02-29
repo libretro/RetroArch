@@ -166,7 +166,7 @@ typedef struct vulkan_context
       PFN_vkCmdBindDescriptorSets                   vkCmdBindDescriptorSets;
       PFN_vkUpdateDescriptorSets                    vkUpdateDescriptorSets;
 
-      /* Command pools */
+      /* Command buffers */
       PFN_vkCreateCommandPool                       vkCreateCommandPool;
       PFN_vkDestroyCommandPool                      vkDestroyCommandPool;
 
