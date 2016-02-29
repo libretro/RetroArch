@@ -1271,9 +1271,6 @@ static int zarch_iterate(void *data, void *userdata, enum menu_action action)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
-   BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
-   BIT64_SET(menu->state, MENU_STATE_BLIT);
-
    menu_entry_get(&entry, 0, selection, NULL, false);
 
    zui->action       = action;
