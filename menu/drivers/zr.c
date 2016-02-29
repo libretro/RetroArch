@@ -484,6 +484,18 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
          if (old != gui->theme) zrmenu_set_style(ctx, gui->theme);
          zr_combo_end(ctx);
       }
+      
+      struct zr_panel node, menu;
+
+      /* context menu */
+      if (zr_contextual_begin(ctx, &menu, 0, zr_vec2(100, 220), zr_window_get_bounds(ctx))) {
+          zr_layout_row_dynamic(ctx, 25, 1);
+          if (zr_contextual_item(ctx, "Test 1", ZR_TEXT_CENTERED))
+             printf("test \n");
+          if (zr_contextual_item(ctx, "Test 2",ZR_TEXT_CENTERED))
+             printf("test \n");
+          zr_contextual_end(ctx);
+      }
    }
    zr_end(ctx);
 }
