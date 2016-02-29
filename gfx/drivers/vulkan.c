@@ -196,7 +196,9 @@ static void vulkan_init_pipeline_layout(
          &layout_info, NULL, &vk->pipelines.layout);
 }
 
-static void vulkan_init_pipelines(vk_t *vk)
+static void vulkan_init_pipelines(
+      struct vulkan_context_fp *vkcfp,
+      vk_t *vk)
 {
    unsigned i;
    VkPipelineInputAssemblyStateCreateInfo input_assembly = { 
@@ -234,7 +236,7 @@ static void vulkan_init_pipelines(vk_t *vk)
       VK_DYNAMIC_STATE_SCISSOR,
    };
 
-   vulkan_init_pipeline_layout(&vk->context->fp, vk);
+   vulkan_init_pipeline_layout(vkcfp, vk);
 
    /* Input assembly */
    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -672,7 +674,7 @@ static void vulkan_init_resources(vk_t *vk)
 {
    vk->num_swapchain_images = vk->context->num_swapchain_images;
    vulkan_init_framebuffers(&vk->context->fp, vk);
-   vulkan_init_pipelines(vk);
+   vulkan_init_pipelines(&vk->context->fp, vk);
    vulkan_init_descriptor_pool(vk);
    vulkan_init_textures(vk);
    vulkan_init_buffers(vk);
