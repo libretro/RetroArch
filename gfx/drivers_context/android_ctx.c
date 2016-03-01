@@ -232,10 +232,14 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
 
    *quit = false;
 
-   android_gfx_ctx_get_video_size(data, &new_width, &new_height);
-
    switch (android_api)
    {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_EGL
+         egl_get_video_size(&and->egl, &new_width, &new_height);
+#endif
+         break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
          /* Swapchains are recreated in set_resize as a 
