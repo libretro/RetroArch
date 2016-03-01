@@ -64,6 +64,7 @@ static char zr_font_path[PATH_MAX_LENGTH];
 
 static struct zr_user_font usrfnt;
 static struct zr_allocator zr_alloc;
+static struct zrmenu gui;
 
 enum
 {
@@ -89,11 +90,8 @@ enum
 
 enum zr_theme
 {
-   THEME_BLACK = 0,
-   THEME_WHITE,
-   THEME_RED,
-   THEME_BLUE,
-   THEME_DARK
+   THEME_DARK = 0,
+   THEME_LIGHT
 };
 
 struct zrmenu
@@ -146,101 +144,13 @@ static void zr_labelf(struct zr_context *ctx,
 
 static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
 {
+   for (int i = 0; i < ZR_ROUNDING_MAX; ++i)
+   {
+      (&gui.ctx)->style.rounding[i] = 0;
+   }
    switch (theme)
    {
-      case THEME_WHITE:
-         ctx->style.colors[ZR_COLOR_TEXT] = zr_rgba(70, 70, 70, 255);
-         ctx->style.colors[ZR_COLOR_TEXT_HOVERING] = zr_rgba(10, 10, 10, 255);
-         ctx->style.colors[ZR_COLOR_TEXT_ACTIVE] = zr_rgba(20, 20, 20, 255);
-         ctx->style.colors[ZR_COLOR_WINDOW] = zr_rgba(175, 175, 175, 255);
-         ctx->style.colors[ZR_COLOR_HEADER] = zr_rgba(175, 175, 175, 255);
-         ctx->style.colors[ZR_COLOR_BORDER] = zr_rgba(0, 0, 0, 255);
-         ctx->style.colors[ZR_COLOR_BUTTON] = zr_rgba(185, 185, 185, 255);
-         ctx->style.colors[ZR_COLOR_BUTTON_HOVER] = zr_rgba(170, 170, 170, 255);
-         ctx->style.colors[ZR_COLOR_BUTTON_ACTIVE] = zr_rgba(160, 160, 160, 255);
-         ctx->style.colors[ZR_COLOR_TOGGLE] = zr_rgba(150, 150, 150, 255);
-         ctx->style.colors[ZR_COLOR_TOGGLE_HOVER] = zr_rgba(120, 120, 120, 255);
-         ctx->style.colors[ZR_COLOR_TOGGLE_CURSOR] = zr_rgba(175, 175, 175, 255);
-         ctx->style.colors[ZR_COLOR_SELECTABLE] = zr_rgba(190, 190, 190, 255);
-         ctx->style.colors[ZR_COLOR_SELECTABLE_HOVER] = zr_rgba(150, 150, 150, 255);
-         ctx->style.colors[ZR_COLOR_SELECTABLE_TEXT] = zr_rgba(70, 70, 70, 255);
-         ctx->style.colors[ZR_COLOR_SLIDER] = zr_rgba(190, 190, 190, 255);
-         ctx->style.colors[ZR_COLOR_SLIDER_CURSOR] = zr_rgba(80, 80, 80, 255);
-         ctx->style.colors[ZR_COLOR_SLIDER_CURSOR_HOVER] = zr_rgba(70, 70, 70, 255);
-         ctx->style.colors[ZR_COLOR_SLIDER_CURSOR_ACTIVE] = zr_rgba(60, 60, 60, 255);
-         ctx->style.colors[ZR_COLOR_PROGRESS] = zr_rgba(190, 190, 190, 255);
-         ctx->style.colors[ZR_COLOR_PROGRESS_CURSOR] = zr_rgba(80, 80, 80, 255);
-         ctx->style.colors[ZR_COLOR_PROGRESS_CURSOR_HOVER] = zr_rgba(70, 70, 70, 255);
-         ctx->style.colors[ZR_COLOR_PROGRESS_CURSOR_ACTIVE] = zr_rgba(60, 60, 60, 255);
-         ctx->style.colors[ZR_COLOR_PROPERTY] = zr_rgba(175, 175, 175, 255);
-         ctx->style.colors[ZR_COLOR_PROPERTY_HOVER] = zr_rgba(160, 160, 160, 255);
-         ctx->style.colors[ZR_COLOR_PROPERTY_ACTIVE] = zr_rgba(165, 165, 165, 255);
-         ctx->style.colors[ZR_COLOR_INPUT] = zr_rgba(150, 150, 150, 255);
-         ctx->style.colors[ZR_COLOR_INPUT_CURSOR] = zr_rgba(0, 0, 0, 255);
-         ctx->style.colors[ZR_COLOR_INPUT_TEXT] = zr_rgba(0, 0, 0, 255);
-         ctx->style.colors[ZR_COLOR_COMBO] = zr_rgba(175, 175, 175, 255);
-         ctx->style.colors[ZR_COLOR_HISTO] = zr_rgba(160, 160, 160, 255);
-         ctx->style.colors[ZR_COLOR_HISTO_BARS] = zr_rgba(45, 45, 45, 255);
-         ctx->style.colors[ZR_COLOR_HISTO_HIGHLIGHT] = zr_rgba( 255, 0, 0, 255);
-         ctx->style.colors[ZR_COLOR_PLOT] = zr_rgba(160, 160, 160, 255);
-         ctx->style.colors[ZR_COLOR_PLOT_LINES] = zr_rgba(45, 45, 45, 255);
-         ctx->style.colors[ZR_COLOR_PLOT_HIGHLIGHT] = zr_rgba(255, 0, 0, 255);
-         ctx->style.colors[ZR_COLOR_SCROLLBAR] = zr_rgba(180, 180, 180, 255);
-         ctx->style.colors[ZR_COLOR_SCROLLBAR_CURSOR] = zr_rgba(140, 140, 140, 255);
-         ctx->style.colors[ZR_COLOR_SCROLLBAR_CURSOR_HOVER] = zr_rgba(150, 150, 150, 255);
-         ctx->style.colors[ZR_COLOR_SCROLLBAR_CURSOR_ACTIVE] = zr_rgba(160, 160, 160, 255);
-         ctx->style.colors[ZR_COLOR_TABLE_LINES] = zr_rgba(100, 100, 100, 255);
-         ctx->style.colors[ZR_COLOR_TAB_HEADER] = zr_rgba(180, 180, 180, 255);
-         ctx->style.colors[ZR_COLOR_SCALER] = zr_rgba(100, 100, 100, 255);
-         break;
-      case THEME_RED:
-         ctx->style.rounding[ZR_ROUNDING_SCROLLBAR] = 0;
-         ctx->style.properties[ZR_PROPERTY_SCROLLBAR_SIZE] = zr_vec2(10,10);
-         ctx->style.colors[ZR_COLOR_TEXT] = zr_rgba(190, 190, 190, 255);
-         ctx->style.colors[ZR_COLOR_TEXT_HOVERING] = zr_rgba(195, 195, 195, 255);
-         ctx->style.colors[ZR_COLOR_TEXT_ACTIVE] = zr_rgba(200, 200, 200, 255);
-         ctx->style.colors[ZR_COLOR_WINDOW] = zr_rgba(30, 33, 40, 215);
-         ctx->style.colors[ZR_COLOR_HEADER] = zr_rgba(181, 45, 69, 220);
-         ctx->style.colors[ZR_COLOR_BORDER] = zr_rgba(51, 55, 67, 255);
-         ctx->style.colors[ZR_COLOR_BUTTON] = zr_rgba(181, 45, 69, 255);
-         ctx->style.colors[ZR_COLOR_BUTTON_HOVER] = zr_rgba(190, 50, 70, 255);
-         ctx->style.colors[ZR_COLOR_BUTTON_ACTIVE] = zr_rgba(195, 55, 75, 255);
-         ctx->style.colors[ZR_COLOR_TOGGLE] = zr_rgba(51, 55, 67, 255);
-         ctx->style.colors[ZR_COLOR_TOGGLE_HOVER] = zr_rgba(45, 60, 60, 255);
-         ctx->style.colors[ZR_COLOR_TOGGLE_CURSOR] = zr_rgba(181, 45, 69, 255);
-         ctx->style.colors[ZR_COLOR_SELECTABLE] = zr_rgba(181, 45, 69, 255);
-         ctx->style.colors[ZR_COLOR_SELECTABLE_HOVER] = zr_rgba(181, 45, 69, 255);
-         ctx->style.colors[ZR_COLOR_SELECTABLE_TEXT] = zr_rgba(190, 190, 190, 255);
-         ctx->style.colors[ZR_COLOR_SLIDER] = zr_rgba(51, 55, 67, 255);
-         ctx->style.colors[ZR_COLOR_SLIDER_CURSOR] = zr_rgba(181, 45, 69, 255);
-         ctx->style.colors[ZR_COLOR_SLIDER_CURSOR_HOVER] = zr_rgba(186, 50, 74, 255);
-         ctx->style.colors[ZR_COLOR_SLIDER_CURSOR_ACTIVE] = zr_rgba(191, 55, 79, 255);
-         ctx->style.colors[ZR_COLOR_PROGRESS] = zr_rgba(51, 55, 67, 255);
-         ctx->style.colors[ZR_COLOR_PROGRESS_CURSOR] = zr_rgba(181, 45, 69, 255);
-         ctx->style.colors[ZR_COLOR_PROGRESS_CURSOR_HOVER] = zr_rgba(186, 50, 74, 255);
-         ctx->style.colors[ZR_COLOR_PROGRESS_CURSOR_ACTIVE] = zr_rgba(191, 55, 79, 255);
-         ctx->style.colors[ZR_COLOR_PROPERTY] = zr_rgba(51, 55, 67, 255);
-         ctx->style.colors[ZR_COLOR_PROPERTY_HOVER] = zr_rgba(55, 60, 72, 255);
-         ctx->style.colors[ZR_COLOR_PROPERTY_ACTIVE] = zr_rgba(60, 65, 77, 255);
-         ctx->style.colors[ZR_COLOR_INPUT] = zr_rgba(51, 55, 67, 225);
-         ctx->style.colors[ZR_COLOR_INPUT_CURSOR] = zr_rgba(190, 190, 190, 255);
-         ctx->style.colors[ZR_COLOR_INPUT_TEXT] = zr_rgba(190, 190, 190, 255);
-         ctx->style.colors[ZR_COLOR_COMBO] = zr_rgba(51, 55, 67, 255);
-         ctx->style.colors[ZR_COLOR_HISTO] = zr_rgba(51, 55, 67, 255);
-         ctx->style.colors[ZR_COLOR_HISTO_BARS] = zr_rgba(170, 40, 60, 255);
-         ctx->style.colors[ZR_COLOR_HISTO_HIGHLIGHT] = zr_rgba( 255, 0, 0, 255);
-         ctx->style.colors[ZR_COLOR_PLOT] = zr_rgba(51, 55, 67, 255);
-         ctx->style.colors[ZR_COLOR_PLOT_LINES] = zr_rgba(170, 40, 60, 255);
-         ctx->style.colors[ZR_COLOR_PLOT_HIGHLIGHT] = zr_rgba(255, 0, 0, 255);
-         ctx->style.colors[ZR_COLOR_SCROLLBAR] = zr_rgba(30, 33, 40, 255);
-         ctx->style.colors[ZR_COLOR_SCROLLBAR_CURSOR] = zr_rgba(64, 84, 95, 255);
-         ctx->style.colors[ZR_COLOR_SCROLLBAR_CURSOR_HOVER] = zr_rgba(70, 90, 100, 255);
-         ctx->style.colors[ZR_COLOR_SCROLLBAR_CURSOR_ACTIVE] = zr_rgba(75, 95, 105, 255);
-         ctx->style.colors[ZR_COLOR_TABLE_LINES] = zr_rgba(100, 100, 100, 255);
-         ctx->style.colors[ZR_COLOR_TAB_HEADER] = zr_rgba(181, 45, 69, 220);
-         ctx->style.colors[ZR_COLOR_SCALER] = zr_rgba(100, 100, 100, 255);
-         break;
-      case THEME_BLUE:
+      case THEME_LIGHT:
          ctx->style.rounding[ZR_ROUNDING_SCROLLBAR] = 0;
          ctx->style.properties[ZR_PROPERTY_SCROLLBAR_SIZE] = zr_vec2(10,10);
          ctx->style.colors[ZR_COLOR_TEXT] = zr_rgba(20, 20, 20, 255);
@@ -388,18 +298,15 @@ static int zrmenu_wnd_control(struct zr_context *ctx,
       {
          struct zr_panel tab, combo;
          enum zr_theme old           = gui->theme;
-         static const char *themes[] = {"Black", "White", "Red", "Blue", "Dark", "Grey"};
+         static const char *themes[] = {"Dark", "Light"};
 
          zr_layout_row_dynamic(ctx,  25, 2);
          zr_label(ctx, "THEME:", ZR_TEXT_LEFT);
          if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 300)) 
          {
             zr_layout_row_dynamic(ctx, 25, 1);
-            gui->theme = zr_combo_item(ctx, themes[THEME_BLACK], ZR_TEXT_CENTERED) ? THEME_BLACK : gui->theme;
-            gui->theme = zr_combo_item(ctx, themes[THEME_WHITE], ZR_TEXT_CENTERED) ? THEME_WHITE : gui->theme;
-            gui->theme = zr_combo_item(ctx, themes[THEME_RED], ZR_TEXT_CENTERED) ? THEME_RED : gui->theme;
-            gui->theme = zr_combo_item(ctx, themes[THEME_BLUE], ZR_TEXT_CENTERED) ? THEME_BLUE : gui->theme;
             gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED) ? THEME_DARK : gui->theme;
+            gui->theme = zr_combo_item(ctx, themes[THEME_LIGHT], ZR_TEXT_CENTERED) ? THEME_LIGHT : gui->theme;
             if (old != gui->theme) zrmenu_set_style(ctx, gui->theme);
                zr_combo_end(ctx);
          }
@@ -444,7 +351,7 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
          ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
       struct zr_panel combo;
-      static const char *themes[] = {"Black", "White", "Red", "Blue", "Dark", "Grey"};
+      static const char *themes[] = {"Dark", "Light"};
       enum   zr_theme old         = gui->theme;
 
       zr_layout_row_dynamic(ctx, 30, 2);
@@ -476,11 +383,8 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
       if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 300))
       {
          zr_layout_row_dynamic(ctx, 25, 1);
-         gui->theme = zr_combo_item(ctx, themes[THEME_BLACK], ZR_TEXT_CENTERED) ? THEME_BLACK : gui->theme;
-         gui->theme = zr_combo_item(ctx, themes[THEME_WHITE], ZR_TEXT_CENTERED) ? THEME_WHITE : gui->theme;
-         gui->theme = zr_combo_item(ctx, themes[THEME_RED], ZR_TEXT_CENTERED) ? THEME_RED : gui->theme;
-         gui->theme = zr_combo_item(ctx, themes[THEME_BLUE], ZR_TEXT_CENTERED) ? THEME_BLUE : gui->theme;
          gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED) ? THEME_DARK : gui->theme;
+         gui->theme = zr_combo_item(ctx, themes[THEME_LIGHT], ZR_TEXT_CENTERED) ? THEME_LIGHT : gui->theme;
          if (old != gui->theme) zrmenu_set_style(ctx, gui->theme);
          zr_combo_end(ctx);
       }
@@ -500,19 +404,14 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
    zr_end(ctx);
 }
 
-static int zrmenu_draw(struct zrmenu *gui, int width, int height)
+static void zrmenu_frame(struct zrmenu *gui, int width, int height)
 {
-   unsigned i;
-   int ret = 1;
    struct zr_context *ctx = &gui->ctx;
 
    zrmenu_wnd_demo(ctx, width, height, gui);
    zrmenu_wnd_control(ctx, width, height, gui);
    zr_buffer_info(&gui->status, &gui->ctx.memory);
-   return ret;
 }
-
-static struct zrmenu gui;
 
 static char* zrmenu_file_load(const char* path, size_t* siz)
 {
@@ -874,13 +773,7 @@ static void zrmenu_init(int width, int height)
       zr_font_default_glyph_ranges());
    zr_init(&gui.ctx, &zr_alloc, &usrfnt);
    zr_device_init(&device);
-
-   for (int i = 0; i < ZR_ROUNDING_MAX; ++i)
-   {
-      (&gui.ctx)->style.rounding[i] = 0;
-   }
    zrmenu_set_style(&gui.ctx, THEME_DARK);
-   zr_push_color(&gui.ctx, ZR_COLOR_BORDER, zr_rgba(0,0,0,0));
 }
 
 static void zrmenu_deinit()
@@ -1829,7 +1722,7 @@ static void wimp_frame(void *data)
    zrmenu_input_keyboard(&gui.ctx);
 
    zr_input_end(&gui.ctx);
-   zrmenu_draw(&gui, width, height);
+   zrmenu_frame(&gui, width, height);
    zr_device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
 
    /* zahnrad code */
