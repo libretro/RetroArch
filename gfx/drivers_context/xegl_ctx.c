@@ -116,14 +116,14 @@ static void *gfx_ctx_xegl_init(void *video_driver)
       EGL_NONE,
    };
 #endif
-
+#ifdef HAVE_VG
    static const EGLint egl_attribs_vg[] = {
       XEGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENVG_BIT,
       EGL_NONE,
    };
-
-   const EGLint *attrib_ptr;
+#endif
+   const EGLint *attrib_ptr = NULL;
    EGLint major, minor;
    EGLint n;
 #endif
@@ -152,10 +152,12 @@ static void *gfx_ctx_xegl_init(void *video_driver)
             attrib_ptr = egl_attribs_gles;
          break;
       case GFX_CTX_OPENVG_API:
+#ifdef HAVE_VG
          attrib_ptr = egl_attribs_vg;
+#endif
          break;
       default:
-         attrib_ptr = NULL;
+         break;
    }
 
    if (!x11_connect())
@@ -479,7 +481,9 @@ static bool gfx_ctx_xegl_bind_api(void *video_driver,
 #endif
          return eglBindAPI(EGL_OPENGL_ES_API);
       case GFX_CTX_OPENVG_API:
+#ifdef HAVE_VG
          return eglBindAPI(EGL_OPENVG_API);
+#endif
       default:
          break;
    }
