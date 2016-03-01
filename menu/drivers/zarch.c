@@ -306,6 +306,9 @@ static void zarch_zui_draw_text(zui_t *zui,
 {
    struct font_params params;
 
+   if (!zui || !zui->fb_buf || string_is_empty(text))
+      return;
+
    /* need to use height-y because the font renderer 
     * uses a different model-view-projection (MVP). */
    params.x           = x / (float)zui->width;
@@ -466,6 +469,8 @@ static bool zarch_zui_button_full(zui_t *zui,
 
 static bool zarch_zui_button(zui_t *zui, int x1, int y1, const char *label)
 {
+   if (!zui || !zui->fb_buf)
+      return false;
    return zarch_zui_button_full(zui, x1, y1, x1 
          + zarch_zui_strwidth(zui->fb_buf, label, 1.0) + 24, y1 + 64, label);
 }
@@ -538,8 +543,15 @@ static bool zarch_zui_tab(zui_t *zui, struct zui_tabbed *tab,
    const float   *bg = zui_bg_panel;
    bool selected     = tab->tab_selection == tab_id; /* TODO/FIXME */
 
+   if (!zui || !tab )
+      return false;
+
    if (!width)
+   {
+      if (!zui->fb_buf)
+         return false;
       width          = zarch_zui_strwidth(zui->fb_buf, label, 1.0) + 24;
+   }
 
    x1                = tab->x;
    y1                = tab->y;
