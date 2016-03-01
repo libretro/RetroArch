@@ -172,7 +172,7 @@ static void *android_gfx_ctx_init(void *video_driver)
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
          if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
-                  and->dpy, android_app->window, 
+                  NULL, android_app->window, 
                   and->width, and->height, and->swap_interval))
             goto error;
 #endif
