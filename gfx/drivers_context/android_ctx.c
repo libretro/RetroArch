@@ -404,6 +404,22 @@ static gfx_ctx_proc_t android_gfx_ctx_get_proc_address(const char *symbol)
    return NULL;
 }
 
+static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
+{
+   switch (android_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_EGL
+         egl_bind_hw_render(data, enable);
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+}
+
 const gfx_ctx_driver_t gfx_ctx_android = {
    android_gfx_ctx_init,
    android_gfx_ctx_destroy,
@@ -429,5 +445,5 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL,
    NULL,
    "android",
-   egl_bind_hw_render,
+   android_gfx_ctx_bind_hw_render,
 };
