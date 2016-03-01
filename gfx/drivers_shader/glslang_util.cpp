@@ -21,8 +21,8 @@
 #include "glslang.hpp"
 
 #include "../../general.h"
-#include "libretro-common/include/retro_file.h"
-#include "libretro-common/include/string/string_list.h"
+#include <retro_file.h>
+#include <string/string_list.h>
 
 using namespace std;
 

@@ -74,7 +74,10 @@ ifeq ($(HAVE_VULKAN),1)
 INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
 						  
 LOCAL_C_INCLUDES += $(INCFLAGS)
-LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/Public
+LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang \
+						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/glslang/Public \
+						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent \
+						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/SPIRV
 endif
 
 LOCAL_LDLIBS += -lOpenSLES -lz
