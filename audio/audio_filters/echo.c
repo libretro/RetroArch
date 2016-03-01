@@ -107,7 +107,7 @@ static void *echo_init(const struct dspfilter_info *info,
    config->get_float_array(userdata, "feedback", &feedback, &num_feedback, default_feedback, 1);
    config->get_float(userdata, "amp", &echo->amp, 0.2f);
 
-   channels       = num_feedback = num_delay = min(num_delay, num_feedback);
+   channels       = num_feedback = num_delay = MIN(num_delay, num_feedback);
 
    echo->channels = (struct echo_channel*)calloc(channels, sizeof(*echo->channels));
    if (!echo->channels)

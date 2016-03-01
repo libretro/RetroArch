@@ -276,7 +276,7 @@ static void *eq_init(const struct dspfilter_info *info,
       filter_path = NULL;
    }
 
-   num_gain = num_freq = min(num_gain, num_freq);
+   num_gain = num_freq = MIN(num_gain, num_freq);
 
    gains = (struct eq_gain*)calloc(num_gain, sizeof(*gains));
    if (!gains)
