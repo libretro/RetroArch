@@ -255,7 +255,7 @@ static ssize_t sl_write(void *data, const void *buf_, size_t size)
          slock_unlock(sl->lock);
       }
 
-      avail_write = min(sl->buf_size - sl->buffer_ptr, size);
+      avail_write = MIN(sl->buf_size - sl->buffer_ptr, size);
 
       if (avail_write)
       {
