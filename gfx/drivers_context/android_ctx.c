@@ -344,6 +344,13 @@ static bool android_gfx_ctx_bind_api(void *data,
          }
 #endif
          break;
+      case GFX_CTX_VULKAN_API:
+#ifdef HAVE_VULKAN
+         android_api = api;
+         return true;
+#else
+         break;
+#endif
       default:
          break;
    }
