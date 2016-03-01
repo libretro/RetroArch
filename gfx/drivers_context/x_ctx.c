@@ -76,9 +76,6 @@ static int x_nul_handler(Display *dpy, XErrorEvent *event)
 
 static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 {
-   if (!x)
-      return;
-
    x11_input_ctx_destroy();
 
    if (g_x11_dpy)
