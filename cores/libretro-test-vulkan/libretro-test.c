@@ -341,8 +341,8 @@ static void init_descriptor(void)
    binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
    binding.pImmutableSamplers = NULL;
 
-   static const VkDescriptorPoolSize pool_sizes[1] = {
-      { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+   const VkDescriptorPoolSize pool_sizes[1] = {
+      { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk.num_swapchain_images },
    };
 
    VkDescriptorSetLayoutCreateInfo set_layout_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
