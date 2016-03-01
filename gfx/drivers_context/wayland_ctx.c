@@ -242,7 +242,13 @@ static const struct wl_registry_listener registry_listener = {
 };
 
 static void gfx_ctx_wl_get_video_size(void *data,
-      unsigned *width, unsigned *height);
+      unsigned *width, unsigned *height)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   *width  = wl->width;
+   *height = wl->height;
+}
 
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
@@ -422,14 +428,6 @@ static void gfx_ctx_wl_update_window_title(void *data)
       runloop_msg_queue_push(buf_fps, 1, 1, false);
 }
 
-static void gfx_ctx_wl_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-
-   *width  = wl->width;
-   *height = wl->height;
-}
 
 static bool gfx_ctx_wl_get_metrics(void *data,
       enum display_metric_types type, float *value)
