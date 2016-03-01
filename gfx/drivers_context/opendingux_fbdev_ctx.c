@@ -190,7 +190,9 @@ static bool gfx_ctx_opendingux_set_video_mode(void *data,
    return true;
 
 error:
+#ifdef HAVE_EGL
    RARCH_ERR("[opendingux fbdev]: EGL error: %d.\n", eglGetError());
+#endif
    gfx_ctx_opendingux_destroy(data);
    return false;
 }
