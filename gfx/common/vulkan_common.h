@@ -80,11 +80,8 @@ enum vulkan_wsi_type
    VULKAN_WSI_XLIB
 };
 
-
 typedef struct vulkan_context
 {
-   vulkan_context_fp_t fp;
-
    VkInstance instance;
    VkPhysicalDevice gpu;
    VkDevice device;
@@ -201,7 +198,6 @@ bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
       struct vk_buffer_range *range);
 
 void vulkan_buffer_chain_free(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_buffer_chain *chain);
 
@@ -392,12 +388,10 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture);
 
 void vulkan_map_persistent_texture(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_texture *texture);
 
 void vulkan_destroy_texture(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_texture *tex);
 
@@ -465,17 +459,14 @@ static INLINE void vulkan_write_quad_vbo(struct vk_vertex *pv,
 }
 
 struct vk_buffer vulkan_create_buffer(
-      struct vulkan_context_fp *vkcfp,
       const struct vulkan_context *context,
       size_t size, VkBufferUsageFlags usage);
 
 void vulkan_destroy_buffer(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_buffer *buffer);
 
 VkDescriptorSet vulkan_descriptor_manager_alloc(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_descriptor_manager *manager);
 
@@ -483,13 +474,11 @@ void vulkan_descriptor_manager_restart(
       struct vk_descriptor_manager *manager);
 
 struct vk_descriptor_manager vulkan_create_descriptor_manager(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       const VkDescriptorPoolSize *sizes, unsigned num_sizes,
       VkDescriptorSetLayout set_layout);
 
 void vulkan_destroy_descriptor_manager(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_descriptor_manager *manager);
 

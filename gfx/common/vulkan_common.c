@@ -26,31 +26,31 @@
 
 #include "vulkan_common.h"
 
-#ifdef HAVE_VULKAN
+vulkan_context_fp_t vkcfp;
+
 static dylib_t vulkan_library;
 static VkInstance cached_instance;
 static VkDevice cached_device;
-#endif
 
 #define VKSYM(vk, entrypoint) do {                                                         \
-   vk->context.fp.vk##entrypoint = (PFN_vk##entrypoint) dylib_proc(vulkan_library, "vk"#entrypoint);\
-   if (vk->context.fp.vk##entrypoint == NULL) {                                                    \
+   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) dylib_proc(vulkan_library, "vk"#entrypoint);\
+   if (vkcfp.vk##entrypoint == NULL) {                                                    \
       RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);               \
       return false;                                                                        \
    }                                                                                       \
 } while(0)
 
 #define VK_GET_INSTANCE_PROC_ADDR(vk, inst, entrypoint) do {                               \
-   vk->context.fp.vk##entrypoint = (PFN_vk##entrypoint) vk->context.fp.vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
-   if (vk->context.fp.vk##entrypoint == NULL) {                                                    \
+   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) vkcfp.vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
+   if (vkcfp.vk##entrypoint == NULL) {                                                    \
       RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);               \
       return false;                                                                        \
    }                                                                                       \
 } while(0)
 
 #define VK_GET_DEVICE_PROC_ADDR(vk, dev, entrypoint) do {                                \
-   vk->context.fp.vk##entrypoint = (PFN_vk##entrypoint) vk->context.fp.vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
-   if (vk->context.fp.vk##entrypoint == NULL) {                                                  \
+   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) vkcfp.vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
+   if (vkcfp.vk##entrypoint == NULL) {                                                  \
       RARCH_ERR("vkGetDeviceProcAddr failed to find vk%s\n", #entrypoint);               \
       return false;                                                                      \
    }                                                                                     \
@@ -96,7 +96,6 @@ uint32_t vulkan_find_memory_type_fallback(
 }
 
 void vulkan_map_persistent_texture(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_texture *texture)
 {
@@ -109,8 +108,6 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
       struct vk_texture *staging)
 {
    VkImageCopy region;
-   struct vulkan_context_fp *vkcfp = 
-      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
 
    retro_assert(dynamic->type == VULKAN_TEXTURE_DYNAMIC);
    retro_assert(staging->type == VULKAN_TEXTURE_STAGING);
@@ -207,8 +204,6 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    struct vk_texture tex;
    VkMemoryRequirements mem_reqs;
    VkSubresourceLayout layout;
-   struct vulkan_context_fp *vkcfp = 
-      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
    VkDevice device                      = vk->context->device;
    VkImageCreateInfo info               = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
    VkImageViewCreateInfo view           = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
@@ -488,7 +483,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       slock_unlock(vk->context->queue_lock);
 
       VKFUNC(vkFreeCommandBuffers)(vk->context->device, vk->staging_pool, 1, &staging);
-      vulkan_destroy_texture(&vk->context->fp,
+      vulkan_destroy_texture(
             vk->context->device, &tmp);
       tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
    }
@@ -496,7 +491,6 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 }
 
 void vulkan_destroy_texture(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_texture *tex)
 {
@@ -512,7 +506,6 @@ void vulkan_destroy_texture(
 }
 
 static void vulkan_write_quad_descriptors(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       VkDescriptorSet set,
       VkBuffer buffer,
@@ -566,7 +559,6 @@ void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
 }
 
 static void vulkan_check_dynamic_state(
-      struct vulkan_context_fp *vkcfp,
       vk_t *vk)
 {
 
@@ -585,9 +577,6 @@ static void vulkan_check_dynamic_state(
 
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 {
-   struct vulkan_context_fp *vkcfp = 
-      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
-
    vulkan_transition_texture(vk, call->texture);
 
    if (call->pipeline != vk->tracker.pipeline)
@@ -600,7 +589,7 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
       vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
    }
 
-   vulkan_check_dynamic_state(&vk->context->fp, vk);
+   vulkan_check_dynamic_state(vk);
 
    /* Upload descriptors */
    {
@@ -618,10 +607,9 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
          memcpy(range.data, call->mvp, sizeof(*call->mvp));
 
          set = vulkan_descriptor_manager_alloc(
-               &vk->context->fp,
                vk->context->device,
                &vk->chain->descriptor_manager);
-         vulkan_write_quad_descriptors(&vk->context->fp,
+         vulkan_write_quad_descriptors(
                vk->context->device,
                set,
                range.buffer,
@@ -650,9 +638,6 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 
 void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 {
-   struct vulkan_context_fp *vkcfp = 
-      vk->context ? (struct vulkan_context_fp*)&vk->context->fp : NULL;
-
    vulkan_transition_texture(vk, quad->texture);
 
    if (quad->pipeline != vk->tracker.pipeline)
@@ -665,7 +650,7 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
    }
 
-   vulkan_check_dynamic_state(&vk->context->fp, vk);
+   vulkan_check_dynamic_state(vk);
 
    /* Upload descriptors */
    {
@@ -689,12 +674,11 @@ void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 
          memcpy(range.data, quad->mvp, sizeof(*quad->mvp));
 
-         set = vulkan_descriptor_manager_alloc(&vk->context->fp,
+         set = vulkan_descriptor_manager_alloc(
                vk->context->device,
                &vk->chain->descriptor_manager);
 
          vulkan_write_quad_descriptors(
-               &vk->context->fp,
                vk->context->device,
                set,
                range.buffer,
@@ -743,8 +727,6 @@ void vulkan_image_layout_transition(
       VkPipelineStageFlags srcStages,
       VkPipelineStageFlags dstStages)
 {
-   struct vulkan_context_fp *vkcfp     = 
-      (struct vulkan_context_fp*)&vk->context->fp;
    VkImageMemoryBarrier barrier        = 
    { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 
@@ -769,7 +751,6 @@ void vulkan_image_layout_transition(
 }
 
 struct vk_buffer vulkan_create_buffer(
-      struct vulkan_context_fp *vkcfp,
       const struct vulkan_context *context,
       size_t size, VkBufferUsageFlags usage)
 {
@@ -802,7 +783,6 @@ struct vk_buffer vulkan_create_buffer(
 }
 
 void vulkan_destroy_buffer(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_buffer *buffer)
 {
@@ -815,7 +795,6 @@ void vulkan_destroy_buffer(
 }
 
 static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       const struct vk_descriptor_manager *manager)
 {
@@ -849,7 +828,6 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
 }
 
 VkDescriptorSet vulkan_descriptor_manager_alloc(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device, struct vk_descriptor_manager *manager)
 {
    if (manager->count < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
@@ -862,7 +840,7 @@ VkDescriptorSet vulkan_descriptor_manager_alloc(
       return manager->current->sets[manager->count++];
    }
 
-   manager->current->next = vulkan_alloc_descriptor_pool(vkcfp, device, manager);
+   manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
    retro_assert(manager->current->next);
 
    manager->current = manager->current->next;
@@ -877,7 +855,6 @@ void vulkan_descriptor_manager_restart(struct vk_descriptor_manager *manager)
 }
 
 struct vk_descriptor_manager vulkan_create_descriptor_manager(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       const VkDescriptorPoolSize *sizes,
       unsigned num_sizes,
@@ -890,13 +867,12 @@ struct vk_descriptor_manager vulkan_create_descriptor_manager(
    manager.num_sizes  = num_sizes;
    manager.set_layout = set_layout;
 
-   manager.head       = vulkan_alloc_descriptor_pool(vkcfp, device, &manager);
+   manager.head       = vulkan_alloc_descriptor_pool(device, &manager);
    retro_assert(manager.head);
    return manager;
 }
 
 void vulkan_destroy_descriptor_manager(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_descriptor_manager *manager)
 {
@@ -951,7 +927,6 @@ static struct vk_buffer_node *vulkan_buffer_chain_alloc_node(
       return NULL;
 
    node->buffer = vulkan_create_buffer(
-         (struct vulkan_context_fp*)&context->fp,
          context, size, usage);
    return node;
 }
@@ -1017,7 +992,6 @@ bool vulkan_buffer_chain_alloc(const struct vulkan_context *context,
 }
 
 void vulkan_buffer_chain_free(
-      struct vulkan_context_fp *vkcfp,
       VkDevice device,
       struct vk_buffer_chain *chain)
 {
@@ -1025,7 +999,7 @@ void vulkan_buffer_chain_free(
    while (node)
    {
       struct vk_buffer_node *next = node->next;
-      vulkan_destroy_buffer(vkcfp, device, &node->buffer);
+      vulkan_destroy_buffer(device, &node->buffer);
 
       free(node);
       node = next;
@@ -1048,7 +1022,6 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    bool found_queue                   = false;
    VkPhysicalDevice *gpus             = NULL;
    static const float one             = 1.0f;
-   struct vulkan_context_fp *vkcfp    = (struct vulkan_context_fp*)&vk->context.fp;
    static const char *device_extensions[] = {
       "VK_KHR_swapchain",
    };
@@ -1409,9 +1382,6 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       unsigned swap_interval)
 {
-   struct vulkan_context_fp *vkcfp    = 
-      (struct vulkan_context_fp*)&vk->context.fp;
-
    switch (type)
    {
       case VULKAN_WSI_WAYLAND:
@@ -1541,7 +1511,6 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    VkPresentInfoKHR present;
    VkResult result                 = VK_SUCCESS;
    VkResult err                    = VK_SUCCESS;
-   struct vulkan_context_fp *vkcfp = (struct vulkan_context_fp*)&vk->context.fp;
 
    present.sType                   = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
    present.swapchainCount          = 1;
@@ -1568,8 +1537,6 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       bool destroy_surface)
 {
    unsigned i;
-   struct vulkan_context_fp *vkcfp = (struct vulkan_context_fp
-         *)&vk->context.fp;
 
    if (vk->context.queue)
       VKFUNC(vkQueueWaitIdle)(vk->context.queue);
@@ -1617,8 +1584,6 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    VkSemaphoreCreateInfo sem_info; 
    VkFenceCreateInfo fence_info;
    VkFence *next_fence             = NULL;
-   struct vulkan_context_fp *vkcfp = (struct vulkan_context_fp
-         *)&vk->context.fp;
 
    sem_info.sType   = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -1668,8 +1633,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VkExtent2D swapchain_size;
    VkSwapchainKHR old_swapchain;
    VkSurfaceTransformFlagBitsKHR pre_transform;
-   struct vulkan_context_fp *vkcfp = (struct vulkan_context_fp
-         *)&vk->context.fp;
 
    /* TODO: Properly query these. */
    VkPresentModeKHR swapchain_present_mode = swap_interval 

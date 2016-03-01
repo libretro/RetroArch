@@ -27,7 +27,7 @@
 #define VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL 1024
 #endif
 
-#define VKFUNC(sym) (vkcfp->sym)
+#define VKFUNC(sym) (vkcfp.sym)
 
 #define VK_PROTOTYPES
 
@@ -254,5 +254,7 @@ typedef struct vulkan_context_fp
    PFN_vkCreateMirSurfaceKHR                     vkCreateMirSurfaceKHR;
 #endif
 } vulkan_context_fp_t;
+
+extern vulkan_context_fp_t vkcfp;
 
 #endif

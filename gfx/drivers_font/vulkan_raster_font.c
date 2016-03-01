@@ -69,9 +69,6 @@ static void *vulkan_raster_font_init_font(void *data,
 static void vulkan_raster_font_free_font(void *data)
 {
    vulkan_raster_t *font = (vulkan_raster_t*)data;
-   struct vulkan_context_fp *vkcfp = 
-      font->vk->context ? (struct vulkan_context_fp*)&font->vk->context->fp 
-      : NULL;
    if (!font)
       return;
 
@@ -79,7 +76,7 @@ static void vulkan_raster_font_free_font(void *data)
       font->font_driver->free(font->font_data);
 
    VKFUNC(vkQueueWaitIdle)(font->vk->context->queue);
-   vulkan_destroy_texture(vkcfp, 
+   vulkan_destroy_texture( 
          font->vk->context->device, &font->texture);
 
    free(font);

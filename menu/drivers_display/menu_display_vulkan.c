@@ -191,14 +191,8 @@ static void menu_display_vk_clear_color(void *data)
    VkClearAttachment attachment;
    menu_display_ctx_clearcolor_t *clearcolor =
       (menu_display_ctx_clearcolor_t*)data;
-   struct vulkan_context_fp *vkcfp           = NULL;
    vk_t *vk = vk_get_ptr();
    if (!vk || !clearcolor)
-      return;
-
-   vkcfp = &vk->context->fp;
-
-   if (!vkcfp)
       return;
 
    attachment.aspectMask                  = VK_IMAGE_ASPECT_COLOR_BIT;
