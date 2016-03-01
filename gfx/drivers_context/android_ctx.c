@@ -224,9 +224,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    unsigned new_width, new_height;
-#ifdef HAVE_VULKAN
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
-#endif
 
    (void)frame_count;
 
