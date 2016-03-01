@@ -194,13 +194,18 @@ static void gl_raster_font_free_font(void *data)
 static int gl_get_message_width(void *data, const char *msg,
       unsigned msg_len_full, float scale)
 {
-   gl_raster_t *font = (gl_raster_t*)data;
-      
    unsigned i;
-   unsigned msg_len = min(msg_len_full, MAX_MSG_LEN_CHUNK);
-   int      delta_x = 0;
+   int delta_x       = 0;
+   unsigned msg_len  = min(msg_len_full, MAX_MSG_LEN_CHUNK);
+   gl_raster_t *font = (gl_raster_t*)data;
 
-   if (!font || !font->font_driver || !font->font_data)
+   if (!font)
+      return 0;
+
+   if (
+            !font->font_driver 
+         || !font->font_driver->get_glyph
+         || !font->font_data )
       return 0;
 
    while (msg_len_full)
@@ -345,6 +350,7 @@ static void gl_raster_font_render_message(
          || !*msg 
          || !font->gl 
          || !font 
+         || !font->font_data
          || !font->font_driver)
       return;
 
@@ -475,7 +481,7 @@ static void gl_raster_font_render_msg(void *data, const char *msg,
       drop_mod = 0.3f;
    }
 
-   if (font->block)
+   if (font && font->block)
       font->block->fullscreen = full_screen;
    else
       gl_raster_font_setup_viewport(font, full_screen);
