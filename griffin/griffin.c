@@ -120,7 +120,7 @@ VIDEO CONTEXT
 #if defined(__CELLOS_LV2__)
 #include "../gfx/drivers_context/ps3_ctx.c"
 #elif defined(ANDROID)
-#include "../gfx/drivers_context/androidegl_ctx.c"
+#include "../gfx/drivers_context/android_ctx.c"
 #elif defined(__QNX__)
 #include "../gfx/drivers_context/bbqnx_ctx.c"
 #elif defined(EMSCRIPTEN)
