@@ -171,6 +171,8 @@ static void *android_gfx_ctx_init(void *video_driver)
          break;
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
+         and->width  = ANativeWindow_getWidth(android_app->window);
+         and->height = ANativeWindow_getHeight(android_app->window);
          if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
                   NULL, android_app->window, 
                   and->width, and->height, and->swap_interval))
@@ -360,8 +362,8 @@ static bool android_gfx_ctx_bind_api(void *data,
 
 static bool android_gfx_ctx_has_focus(void *data)
 {
-   struct android_app *android_app = (struct android_app*)g_android;
    bool focused;
+   struct android_app *android_app = (struct android_app*)g_android;
    if (!android_app)
       return true;
 
