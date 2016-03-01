@@ -25,6 +25,7 @@
 #include <compat/posix_string.h>
 #endif
 
+#ifdef WANT_GLSLANG
 #ifdef HAVE_VULKAN
 #include "../deps/glslang/glslang.cpp"
 #include "../deps/glslang/glslang_tab.cpp"
@@ -68,6 +69,7 @@
 
 #if defined(__linux__) && !defined(ANDROID)
 #include "../deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp"
+#endif
 #endif
 #endif
 

@@ -5,7 +5,7 @@ RARCH_DIR := ../../../..
 
 HAVE_NEON   := 1
 HAVE_LOGGER := 0
-HAVE_VULKAN := 0
+HAVE_VULKAN := 1
 
 INCFLAGS    :=
 DEFINES     :=
@@ -62,7 +62,7 @@ DEFINES += -DHAVE_CHEEVOS
 DEFINES += -DHAVE_SL
 
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
-LOCAL_CPPFLAGS := -std=gnu++11 $(DEFINES)
+LOCAL_CPPFLAGS := -fno-exceptions -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
 
 # Let ndk-build set the optimization flags but remove -O3 like in cf3c3
 LOCAL_CFLAGS := $(subst -O3,-O2,$(LOCAL_CFLAGS))
@@ -78,6 +78,42 @@ LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/glslang/Public \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/SPIRV
+LOCAL_SRC_FILES += $(RARCH_DIR)/deps/glslang/glslang.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang_tab.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/SpvBuilder.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/SPVRemapper.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/InReadableOrder.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/doc.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/GlslangToSpv.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/disassemble.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/OGLCompilersDLL/InitializeDll.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/GenericCodeGen/Link.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/GenericCodeGen/CodeGen.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/Intermediate.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/Versions.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/RemoveTree.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/limits.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/intermOut.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/Initialize.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/SymbolTable.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/parseConst.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/ParseHelper.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/ShaderLang.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/IntermTraverse.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/InfoSink.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/Constant.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/Scan.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/reflection.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/linkValidate.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/PoolAlloc.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpAtom.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpContext.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpMemory.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpTokens.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpScanner.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/preprocessor/PpSymbols.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/preprocessor/Pp.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/OSDependent/Unix/ossource.cpp
 endif
 
 LOCAL_LDLIBS += -lOpenSLES -lz
