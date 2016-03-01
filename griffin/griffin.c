@@ -129,6 +129,14 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/cgl_ctx.c"
 #endif
 
+#if defined(HAVE_VIVANTE_FBDEV)
+#include "../gfx/drivers_context/vivante_fbdev_ctx.c"
+#endif
+
+#if defined(HAVE_OPENDINGUX_FBDEV)
+#include "../gfx/drivers_context/opendingux_fbdev_ctx.c"
+#endif
+
 #ifdef HAVE_WAYLAND
 #include "../gfx/drivers_context/wayland_ctx.c"
 #endif
