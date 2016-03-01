@@ -65,7 +65,7 @@ bool drm_get_connector(int fd)
    unsigned i;
    unsigned monitor_index = 0;
    settings_t *settings   = config_get_ptr();
-   unsigned monitor       = max(settings->video.monitor_index, 1);
+   unsigned monitor       = MAX(settings->video.monitor_index, 1);
 
    /* Enumerate all connectors. */
 

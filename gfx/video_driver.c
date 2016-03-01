@@ -453,7 +453,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
 
    pow2_x                              = next_pow2(width);
    pow2_y                              = next_pow2(height);
-   maxsize                             = max(pow2_x, pow2_y);
+   maxsize                             = MAX(pow2_x, pow2_y);
    video_driver_state.filter.scale     = maxsize / RARCH_SCALE_BASE;
    video_driver_state.filter.out_rgb32 = rarch_softfilter_get_output_format(
          video_driver_state.filter.filter) == RETRO_PIXEL_FORMAT_XRGB8888;
@@ -673,9 +673,9 @@ static bool init_video(void)
       goto error;
    }
 
-   max_dim   = max(geom->max_width, geom->max_height);
+   max_dim   = MAX(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
-   scale     = max(scale, 1);
+   scale     = MAX(scale, 1);
 
    if (video_driver_state.filter.filter)
       scale = video_driver_state.filter.scale;
@@ -994,10 +994,8 @@ bool video_monitor_fps_statistics(double *refresh_rate,
 {
    unsigned i;
    retro_time_t accum   = 0, avg, accum_var = 0;
-   unsigned samples     = 0;
    settings_t *settings = config_get_ptr();
-
-   samples = min(MEASURE_FRAME_TIME_SAMPLES_COUNT,
+   unsigned samples      = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
          video_driver_state.frame_time_samples_count);
 
    if (settings->video.threaded || (samples < 2))
@@ -1347,7 +1345,7 @@ static void video_viewport_set_square_pixel(unsigned width, unsigned height)
    if (width == 0 || height == 0)
       return;
 
-   len      = min(width, height);
+   len      = MIN(width, height);
    highest  = 1;
 
    for (i = 1; i < len; i++)
@@ -1853,10 +1851,10 @@ void video_viewport_get_scaled_integer(struct video_viewport *vp,
          if (keep_aspect)
          {
             /* X/Y scale must be same. */
-            unsigned max_scale = min(width / base_width,
+            unsigned max_scale = MIN(width / base_width,
                   height / base_height);
-            padding_x = width - base_width * max_scale;
-            padding_y = height - base_height * max_scale;
+            padding_x          = width - base_width * max_scale;
+            padding_y          = height - base_height * max_scale;
          }
          else
          {

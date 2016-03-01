@@ -37,7 +37,7 @@
 #define UV_LEFT 2
 #define UV_RIGHT 3
 
-// pixel shader
+/* pixel shader */
 const unsigned int g_xps_PS[] =
 {
    0x102a1100, 0x000000b4, 0x0000003c, 0x00000000, 0x00000024, 0x00000000,
@@ -52,7 +52,7 @@ const unsigned int g_xps_PS[] =
    0xc80f8000, 0x00000000, 0xe2010100, 0x00000000, 0x00000000, 0x00000000
 };
 
-// vertex shader
+/* vertex shader */
 const unsigned int g_xvs_VS[] =
 {
    0x102a1101, 0x0000009c, 0x00000078, 0x00000000, 0x00000024, 0x00000000,

@@ -1313,7 +1313,7 @@ unsigned menu_input_frame_retropad(retro_input_t input,
          menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL,
                &new_scroll_accel);
 
-         new_scroll_accel = min(new_scroll_accel + 1, 64);
+         new_scroll_accel = MIN(new_scroll_accel + 1, 64);
       }
 
       initial_held  = false;

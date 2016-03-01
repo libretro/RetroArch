@@ -44,7 +44,7 @@ static int generic_shader_action_parameter_left(
    if (shader)
    {
       param->current -= param->step;
-      param->current = min(max(param->minimum, param->current), param->maximum);
+      param->current  = MIN(MAX(param->minimum, param->current), param->maximum);
    }
    return 0;
 }
@@ -110,8 +110,8 @@ static int action_left_scroll(unsigned type, const char *label,
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
       return false;
 
-   scroll_speed      = (max(scroll_accel, 2) - 2) / 4 + 1;
-   fast_scroll_speed = 4 + 4 * scroll_speed;
+   scroll_speed          = (MAX(scroll_accel, 2) - 2) / 4 + 1;
+   fast_scroll_speed     = 4 + 4 * scroll_speed;
 
    if (selection > fast_scroll_speed)
    {

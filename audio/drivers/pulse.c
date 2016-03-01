@@ -238,9 +238,7 @@ static ssize_t pulse_write(void *data, const void *buf_, size_t size)
    pa_threaded_mainloop_lock(pa->mainloop);
    while (size)
    {
-      size_t writable = pa_stream_writable_size(pa->stream);
-
-      writable = min(size, writable);
+      size_t writable = MIN(size, pa_stream_writable_size(pa->stream));
 
       if (writable)
       {

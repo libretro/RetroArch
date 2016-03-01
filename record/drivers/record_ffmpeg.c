@@ -1162,7 +1162,7 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
       if (!handle->audio.resample_out)
          return;
 
-      handle->audio.fixed_conv_frames = max(handle->audio.resample_out_frames,
+      handle->audio.fixed_conv_frames = MAX(handle->audio.resample_out_frames,
             handle->audio.float_conv_frames);
       handle->audio.fixed_conv = (int16_t*)av_realloc(handle->audio.fixed_conv,
             handle->audio.fixed_conv_frames * handle->params.channels * sizeof(int16_t));

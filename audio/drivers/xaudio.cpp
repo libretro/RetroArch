@@ -194,7 +194,7 @@ static size_t xaudio2_write(xaudio2_t *handle, const void *buf, size_t bytes_)
 
    while (bytes)
    {
-      unsigned need   = min(bytes, handle->bufsize - handle->bufptr);
+      unsigned need   = MIN(bytes, handle->bufsize - handle->bufptr);
 
       memcpy(handle->buf + handle->write_buffer * handle->bufsize + handle->bufptr,
             buffer, need);

@@ -1383,7 +1383,7 @@ static unsigned gl_glsl_get_prev_textures(void *data)
    for (i = 1; i <= glsl->shader->passes; i++)
       for (j = 0; j < PREV_TEXTURES; j++)
          if (glsl->gl_uniforms[i].prev[j].texture >= 0)
-            max_prev = max(j + 1, max_prev);
+            max_prev = MAX(j + 1, max_prev);
 
    return max_prev;
 }

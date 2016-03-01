@@ -111,8 +111,8 @@ static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
          /* Limit growth to 2048x2048 unless we already reached that */
          if (width < 2048 || height < 2048)
          {
-            new_width  = min(new_width,  2048);
-            new_height = min(new_height, 2048);
+            new_width  = MIN(new_width,  2048);
+            new_height = MIN(new_height, 2048);
          }
 
          return font_renderer_stb_create_atlas(self, font_data, font_size,

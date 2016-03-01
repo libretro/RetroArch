@@ -286,10 +286,10 @@ unsigned x11_get_xinerama_monitor(Display *dpy, int x, int y,
    for (i = 0; i < num_screens; i++)
    {
       int area;
-      int max_lx = max(x, info[i].x_org);
-      int min_rx = min(x + w, info[i].x_org + info[i].width);
-      int max_ty = max(y, info[i].y_org);
-      int min_by = min(y + h, info[i].y_org + info[i].height);
+      int max_lx = MAX(x, info[i].x_org);
+      int min_rx = MIN(x + w, info[i].x_org + info[i].width);
+      int max_ty = MAX(y, info[i].y_org);
+      int min_by = MIN(y + h, info[i].y_org + info[i].height);
 
       int len_x = min_rx - max_lx;
       int len_y = min_by - max_ty;

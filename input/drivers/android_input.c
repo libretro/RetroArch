@@ -529,7 +529,7 @@ static INLINE int android_input_poll_event_type_motion(
    else
    {
       float x, y;
-      int pointer_max = min(AMotionEvent_getPointerCount(event), MAX_TOUCH);
+      int pointer_max = MIN(AMotionEvent_getPointerCount(event), MAX_TOUCH);
 
       for (motion_ptr = 0; motion_ptr < pointer_max; motion_ptr++)
       {
@@ -542,7 +542,7 @@ static INLINE int android_input_poll_event_type_motion(
                &android_data->pointer[motion_ptr].full_x,
                &android_data->pointer[motion_ptr].full_y);
 
-         android_data->pointer_count = max(
+         android_data->pointer_count = MAX(
                android_data->pointer_count,
                motion_ptr + 1);
       }

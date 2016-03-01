@@ -321,9 +321,9 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    if (fbWidth > max_width)
       fbWidth = max_width;
 
-   gx_mode.viTVMode = VI_TVMODE(tvmode, modetype);
-   gx_mode.fbWidth = fbWidth;
-   gx_mode.efbHeight = min(lines, 480);
+   gx_mode.viTVMode     = VI_TVMODE(tvmode, modetype);
+   gx_mode.fbWidth      = fbWidth;
+   gx_mode.efbHeight    = MIN(lines, 480);
 
    if (modetype == VI_NON_INTERLACE && lines > max_height / 2)
       gx_mode.xfbHeight = max_height / 2;
@@ -332,8 +332,8 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
    else
       gx_mode.xfbHeight = lines;
 
-   gx_mode.viWidth = viWidth;
-   gx_mode.viHeight = gx_mode.xfbHeight * viHeightMultiplier;
+   gx_mode.viWidth      = viWidth;
+   gx_mode.viHeight     = gx_mode.xfbHeight * viHeightMultiplier;
 
    gx_used_system_xOrigin = gx_system_xOrigin;
    if(gx_used_system_xOrigin > 0)
@@ -1459,8 +1459,8 @@ static bool gx_frame(void *data, const void *frame,
    while (((g_vsync || gx->menu_texture_enable)) && !g_draw_done)
       OSSleepThread(g_video_cond);
 
-   width = min(g_tex.width, width);
-   height = min(g_tex.height, height);
+   width  = MIN(g_tex.width, width);
+   height = MIN(g_tex.height, height);
 
    if (width != gx_old_width || height != gx_old_height)
    {

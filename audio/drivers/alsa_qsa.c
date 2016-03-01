@@ -227,7 +227,8 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t size)
 
    while (size)
    {
-      size_t avail_write = min(alsa->buf_size - alsa->buffer_ptr, size);
+      size_t avail_write = MIN(alsa->buf_size - alsa->buffer_ptr, size);
+
       if (avail_write)
       {
          memcpy(alsa->buffer[alsa->buffer_index] + 

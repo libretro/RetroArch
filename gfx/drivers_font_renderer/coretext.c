@@ -122,26 +122,26 @@ static bool font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handl
       if (!glyph)
          continue;
 
-      origin_x = ceil(bounds[i].origin.x);
-      origin_y = ceil(bounds[i].origin.y);
+      origin_x             = ceil(bounds[i].origin.x);
+      origin_y             = ceil(bounds[i].origin.y);
 
       glyph->draw_offset_x = 0;
       glyph->draw_offset_y = -ascent;
-      glyph->width = ceil(bounds[i].size.width);
-      glyph->height = ceil(bounds[i].size.height);
-      glyph->advance_x = ceil(advances[i].width);
-      glyph->advance_y = ceil(advances[i].height);
+      glyph->width         = ceil(bounds[i].size.width);
+      glyph->height        = ceil(bounds[i].size.height);
+      glyph->advance_x     = ceil(advances[i].width);
+      glyph->advance_y     = ceil(advances[i].height);
 
-      max_width = max(max_width, (origin_x + glyph->width));
-      max_height = max(max_height, (origin_y + glyph->height));
+      max_width            = MAX(max_width, (origin_x + glyph->width));
+      max_height           = MAX(max_height, (origin_y + glyph->height));
    }
 
-   max_height = max(max_height, ceil(ascent+descent));
+   max_height              = MAX(max_height, ceil(ascent+descent));
 
-   handle->atlas.width = max_width * CT_ATLAS_COLS;
-   handle->atlas.height = max_height * CT_ATLAS_ROWS;
+   handle->atlas.width     = max_width * CT_ATLAS_COLS;
+   handle->atlas.height    = max_height * CT_ATLAS_ROWS;
 
-   handle->atlas.buffer = (uint8_t*)
+   handle->atlas.buffer    = (uint8_t*)
       calloc(handle->atlas.width * handle->atlas.height, 1);
 
    if (!handle->atlas.buffer)

@@ -146,9 +146,12 @@ static void compute_audio_buffer_statistics(void)
 {
    unsigned i, low_water_size, high_water_size, avg, stddev;
    float avg_filled, deviation;
-   uint64_t accum = 0, accum_var = 0;
-   unsigned low_water_count = 0, high_water_count = 0;
-   unsigned samples = min(audio_driver_data.buffer_free_samples_count,
+   uint64_t accum                = 0;
+   uint64_t accum_var            = 0;
+   unsigned low_water_count      = 0;
+   unsigned high_water_count     = 0;
+   unsigned samples              = MIN(
+         audio_driver_data.buffer_free_samples_count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
 
    if (samples < 3)

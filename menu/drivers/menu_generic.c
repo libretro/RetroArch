@@ -348,7 +348,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
           *
           * We need to fix this entire mess, mouse controls 
           * should not rely on a hack like this in order to work. */
-         selection = max(min(selection, (menu_entries_get_size() - 1)), 0);
+         selection = MAX(MIN(selection, (menu_entries_get_size() - 1)), 0);
 
          menu_entry_get(&entry, 0, selection, NULL, false);
          ret = menu_entry_action(&entry, selection, (enum menu_action)action);

@@ -54,7 +54,7 @@ bool gl_load_luts(const struct video_shader *shader,
       GLuint *textures_lut)
 {
    unsigned i;
-   unsigned num_luts = min(shader->luts, GFX_MAX_TEXTURES);
+   unsigned num_luts = MIN(shader->luts, GFX_MAX_TEXTURES);
 
    if (!shader->luts)
       return true;

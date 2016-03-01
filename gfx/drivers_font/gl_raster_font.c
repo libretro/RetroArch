@@ -196,7 +196,7 @@ static int gl_get_message_width(void *data, const char *msg,
 {
    unsigned i;
    int delta_x       = 0;
-   unsigned msg_len  = min(msg_len_full, MAX_MSG_LEN_CHUNK);
+   unsigned msg_len  = MIN(msg_len_full, MAX_MSG_LEN_CHUNK);
    gl_raster_t *font = (gl_raster_t*)data;
 
    if (!font)
@@ -225,7 +225,7 @@ static int gl_get_message_width(void *data, const char *msg,
 
       msg_len_full -= msg_len;
       msg          += msg_len;
-      msg_len       = min(msg_len_full, MAX_MSG_LEN_CHUNK);
+      msg_len       = MIN(msg_len_full, MAX_MSG_LEN_CHUNK);
    }
 
    return delta_x * scale;
@@ -267,7 +267,7 @@ static void gl_raster_font_render_line(
    if (!gl)
       return;
 
-   msg_len        = min(msg_len_full, MAX_MSG_LEN_CHUNK);
+   msg_len        = MIN(msg_len_full, MAX_MSG_LEN_CHUNK);
 
    x              = roundf(pos_x * gl->vp.width);
    y              = roundf(pos_y * gl->vp.height);
@@ -334,7 +334,7 @@ static void gl_raster_font_render_line(
 
       msg_len_full -= msg_len;
       msg          += msg_len;
-      msg_len       = min(msg_len_full, MAX_MSG_LEN_CHUNK);
+      msg_len       = MIN(msg_len_full, MAX_MSG_LEN_CHUNK);
    }
 }
 

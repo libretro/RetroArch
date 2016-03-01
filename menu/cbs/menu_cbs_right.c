@@ -47,7 +47,7 @@ static int generic_shader_action_parameter_right(
       return menu_cbs_exit();
 
    param->current += param->step;
-   param->current  = min(max(param->minimum, param->current), param->maximum);
+   param->current  = MIN(MAX(param->minimum, param->current), param->maximum);
 
    if (ui_companion_is_on_foreground())
       ui_companion_driver_notify_refresh();
@@ -130,7 +130,7 @@ static int action_right_scroll(unsigned type, const char *label,
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
       return false;
 
-   scroll_speed      = (max(scroll_accel, 2) - 2) / 4 + 1;
+   scroll_speed      = (MAX(scroll_accel, 2) - 2) / 4 + 1;
    fast_scroll_speed = 4 + 4 * scroll_speed;
 
    if (selection  + fast_scroll_speed < (menu_entries_get_size()))

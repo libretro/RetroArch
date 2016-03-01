@@ -125,7 +125,7 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
    param          = &shader_info.data->parameters
       [type - MENU_SETTINGS_SHADER_PARAMETER_0];
    param->current = param->initial;
-   param->current = min(max(param->minimum, param->current), param->maximum);
+   param->current = MIN(MAX(param->minimum, param->current), param->maximum);
 
 #endif
 
@@ -146,7 +146,7 @@ static int action_start_shader_action_preset_parameter(unsigned type, const char
 
    param = &shader->parameters[type - MENU_SETTINGS_SHADER_PRESET_PARAMETER_0];
    param->current = param->initial;
-   param->current = min(max(param->minimum, param->current), param->maximum);
+   param->current = MIN(MAX(param->minimum, param->current), param->maximum);
 #endif
 
    return 0;

@@ -1050,7 +1050,7 @@ static unsigned gl_cg_get_prev_textures(void *data)
    for (i = 1; i <= cg_data->shader->passes; i++)
       for (j = 0; j < PREV_TEXTURES; j++)
          if (cg_data->prg[i].prev[j].tex)
-            max_prev = max(j + 1, max_prev);
+            max_prev = MAX(j + 1, max_prev);
 
    return max_prev;
 }

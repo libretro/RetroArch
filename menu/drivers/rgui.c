@@ -363,8 +363,8 @@ static void rgui_render_messagebox(const char *message)
       }
 
       line_width   = msglen * FONT_WIDTH_STRIDE - 1 + 6 + 10;
-      width        = max(width, line_width);
-      glyphs_width = max(glyphs_width, msglen);
+      width        = MAX(width, line_width);
+      glyphs_width = MAX(glyphs_width, msglen);
    }
 
    height = FONT_HEIGHT_STRIDE * list->size + 6 + 10;

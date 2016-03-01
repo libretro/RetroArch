@@ -309,8 +309,8 @@ static void event_set_volume(float gain)
    settings_t *settings      = config_get_ptr();
 
    settings->audio.volume += gain;
-   settings->audio.volume  = max(settings->audio.volume, -80.0f);
-   settings->audio.volume  = min(settings->audio.volume, 12.0f);
+   settings->audio.volume  = MAX(settings->audio.volume, -80.0f);
+   settings->audio.volume  = MIN(settings->audio.volume, 12.0f);
 
    snprintf(msg, sizeof(msg), "Volume: %.1f dB", settings->audio.volume);
    runloop_msg_queue_push(msg, 1, 180, true);

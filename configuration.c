@@ -1368,8 +1368,8 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    CONFIG_GET_BOOL_BASE(conf, settings, video.black_frame_insertion, "video_black_frame_insertion");
    CONFIG_GET_INT_BASE(conf, settings, video.swap_interval, "video_swap_interval");
-   settings->video.swap_interval = max(settings->video.swap_interval, 1);
-   settings->video.swap_interval = min(settings->video.swap_interval, 4);
+   settings->video.swap_interval = MAX(settings->video.swap_interval, 1);
+   settings->video.swap_interval = MIN(settings->video.swap_interval, 4);
    CONFIG_GET_BOOL_BASE(conf, settings, video.threaded, "video_threaded");
    CONFIG_GET_BOOL_BASE(conf, settings, video.shared_context, "video_shared_context");
 #ifdef GEKKO

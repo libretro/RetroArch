@@ -28,15 +28,18 @@ using namespace std;
 
 bool read_file(const char *path, vector<string> *output)
 {
-   char *buf = nullptr;
-   ssize_t len = 0;
+   char              *buf   = nullptr;
+   ssize_t              len = 0;
+   struct string_list *list = NULL;
+
    if (retro_read_file(path, (void**)&buf, &len) < 0)
    {
       RARCH_ERR("Failed to open shader file: \"%s\".\n", path);
       return false;
    }
 
-   struct string_list *list = string_split(buf, "\n");
+   list = string_split(buf, "\n");
+
    if (!list)
    {
       free(buf);
@@ -61,11 +64,11 @@ bool read_file(const char *path, vector<string> *output)
 string build_stage_source(const vector<string> &lines, const char *stage)
 {
    ostringstream str;
+   bool active = true;
 
    // Version header.
    str << lines.front();
    str << '\n';
-   bool active = true;
 
    for (auto itr = begin(lines) + 1; itr != end(lines); ++itr)
    {
@@ -92,8 +95,9 @@ string build_stage_source(const vector<string> &lines, const char *stage)
 
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
-   RARCH_LOG("Compiling shader \"%s\".\n", shader_path);
    vector<string> lines;
+
+   RARCH_LOG("Compiling shader \"%s\".\n", shader_path);
    if (!read_file(shader_path, &lines))
       return false;
 

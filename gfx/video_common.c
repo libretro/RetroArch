@@ -40,9 +40,9 @@ bool gfx_coord_array_add(gfx_coord_array_t *ca,
       const gfx_coords_t *coords, unsigned count)
 {
    size_t base_size, offset;
-   bool success = false;
+   bool success   = false;
 
-   count = min(count, coords->vertices);
+   count          = MIN(count, coords->vertices);
 
    if (ca->coords.vertices + count >= ca->allocated)
    {

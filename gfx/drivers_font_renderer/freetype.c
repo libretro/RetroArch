@@ -115,8 +115,8 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle)
       if (buffer[i])
          memcpy(buffer[i], slot->bitmap.buffer,
                slot->bitmap.rows * pitches[i]);
-      max_width = max(max_width, (unsigned)slot->bitmap.width);
-      max_height = max(max_height, (unsigned)slot->bitmap.rows);
+      max_width  = MAX(max_width, (unsigned)slot->bitmap.width);
+      max_height = MAX(max_height, (unsigned)slot->bitmap.rows);
    }
 
    handle->atlas.width = max_width * FT_ATLAS_COLS;

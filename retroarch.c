@@ -1038,7 +1038,7 @@ static void rarch_init_savefile_paths(void)
                global->subsystem);
 
       /* We'll handle this error gracefully later. */
-      unsigned num_content = min(info ? info->num_roms : 0,
+      unsigned num_content = MIN(info ? info->num_roms : 0,
             global->subsystem_fullpaths ?
             global->subsystem_fullpaths->size : 0);
 

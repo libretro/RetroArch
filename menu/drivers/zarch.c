@@ -662,7 +662,7 @@ static bool zarch_zui_gamepad_input(zui_t *zui,
             if (*list_first > (int)cutoff_point)
                *list_first = cutoff_point;
 
-            *list_first = min(max(*list_first, 0), cutoff_point - skip);
+            *list_first = MIN(MAX(*list_first, 0), cutoff_point - skip);
          }
          return false;
    }
@@ -752,7 +752,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui,
          zui->load_dlist_first  = 0;
       }
 
-      cwd_offset = min(strlen(zui->load_cwd), 60);
+      cwd_offset = MIN(strlen(zui->load_cwd), 60);
 
       zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 15,
             tabbed->tabline_size + 5 + 41,
@@ -977,7 +977,7 @@ static int zarch_zui_render_pick_core(zui_t *zui)
 
    zui->pick_first += zui->mouse.wheel;
 
-   zui->pick_first = min(max(zui->pick_first, 0), zui->pick_supported - 5);
+   zui->pick_first = MIN(MAX(zui->pick_first, 0), zui->pick_supported - 5);
 
    for (i = zui->pick_first; i < zui->pick_supported; ++i)
    {

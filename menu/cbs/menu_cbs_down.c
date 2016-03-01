@@ -30,7 +30,7 @@ static int action_bind_down_generic(unsigned type, const char *label)
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SCROLL_ACCEL, &scroll_accel))
       return -1;
 
-   scroll_speed = (max(scroll_accel, 2) - 2) / 4 + 1;
+   scroll_speed = (MAX(scroll_accel, 2) - 2) / 4 + 1;
 
    if (menu_entries_get_size() <= 0)
       return 0;

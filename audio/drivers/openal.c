@@ -162,7 +162,7 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
 
 static size_t al_fill_internal_buf(al_t *al, const void *buf, size_t size)
 {
-   size_t read_size = min(BUFSIZE - al->tmpbuf_ptr, size);
+   size_t read_size = MIN(BUFSIZE - al->tmpbuf_ptr, size);
    memcpy(al->tmpbuf + al->tmpbuf_ptr, buf, read_size);
    al->tmpbuf_ptr += read_size;
    return read_size;

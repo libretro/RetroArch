@@ -210,9 +210,9 @@ static bool init_device(void *data)
    }
 
    /* VIDIOC_S_FMT may change width, height and pitch. */
-   v4l->width = fmt.fmt.pix.width;
+   v4l->width  = fmt.fmt.pix.width;
    v4l->height = fmt.fmt.pix.height;
-   v4l->pitch = max(fmt.fmt.pix.bytesperline, v4l->width * 2);
+   v4l->pitch  = MAX(fmt.fmt.pix.bytesperline, v4l->width * 2);
 
    /* Sanity check to see if our assumptions are met.
     * It is possible to support whatever the device gives us,

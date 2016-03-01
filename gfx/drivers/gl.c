@@ -2810,7 +2810,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       video_shader_driver_ctl(SHADER_CTL_GET_PREV_TEXTURES, &texture_info);
 
       minimum          = texture_info.id;
-      gl->textures     = max(minimum + 1, gl->textures);
+      gl->textures     = MAX(minimum + 1, gl->textures);
    }
 
    if (!video_shader_driver_ctl(SHADER_CTL_INFO, &shader_info))
