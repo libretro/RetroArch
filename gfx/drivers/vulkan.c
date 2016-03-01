@@ -454,8 +454,8 @@ static void vulkan_init_descriptor_pool(vk_t *vk)
    VkDescriptorPoolCreateInfo pool_info            = { 
       VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
    static const VkDescriptorPoolSize pool_sizes[2] = {
-      { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-      { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
+      { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+      { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
    };
 
    for (i = 0; i < vk->num_swapchain_images; i++)

@@ -693,9 +693,9 @@ bool Pass::init_pipeline_layout()
          VK_SHADER_STAGE_FRAGMENT_BIT,
          nullptr });
 
-   desc_counts.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 });
-   desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 });
-   desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 });
+   desc_counts.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, num_sync_indices });
+   desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_sync_indices });
+   desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_sync_indices });
 
    VkDescriptorSetLayoutCreateInfo set_layout_info = { 
       VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
