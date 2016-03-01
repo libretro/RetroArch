@@ -43,6 +43,10 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 
+#ifdef ANDROID
+#define VK_USE_PLATFORM_ANDROID_KHR
+#endif
+
 #ifdef HAVE_XCB
 #define VK_USE_PLATFORM_XCB_KHR
 #endif
