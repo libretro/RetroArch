@@ -54,6 +54,7 @@ static void gfx_ctx_opendingux_destroy(void *data)
 
 static void *gfx_ctx_opendingux_init(void *video_driver)
 {
+#ifdef HAVE_EGL
    EGLint n;
    EGLint major, minor;
    EGLint format;
@@ -69,13 +70,14 @@ static void *gfx_ctx_opendingux_init(void *video_driver)
       EGL_SAMPLES,    0,
       EGL_NONE
    };
+#endif
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)
       calloc(1, sizeof(*viv));
 
    if (!viv)
       return NULL;
    
-      (void)video_driver;
+   (void)video_driver;
 
 #ifdef HAVE_EGL
    egl_install_sighandlers();
@@ -92,7 +94,9 @@ static void *gfx_ctx_opendingux_init(void *video_driver)
    return viv;
 
 error:
+#ifdef HAVE_EGL
    RARCH_ERR("[opendingux fbdev]: EGL error: %d.\n", eglGetError());
+#endif
    gfx_ctx_opendingux_destroy(viv);
    return NULL;
 }
@@ -153,11 +157,13 @@ static bool gfx_ctx_opendingux_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+#ifdef HAVE_EGL
    EGLNativeWindowType window;
    static const EGLint attribs[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
    };
+#endif
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
 
    /* Pick some arbitrary default. */
