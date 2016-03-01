@@ -34,6 +34,8 @@
 
 #include "../../frontend/drivers/platform_linux.h"
 
+static enum gfx_ctx_api android_api;
+
 /* forward declaration */
 int system_property_get(const char *cmd, const char *args, char *value);
 
@@ -213,7 +215,12 @@ static bool android_gfx_ctx_bind_api(void *data,
             g_es3 = false;
          else if (version == 300)
             g_es3 = true;
-         return api == GFX_CTX_OPENGL_ES_API;
+
+         if (api == GFX_CTX_OPENGL_ES_API)
+         {
+            android_api = api;
+            return true;
+         }
 #endif
       default:
          break;
