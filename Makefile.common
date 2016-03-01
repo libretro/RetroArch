@@ -757,7 +757,7 @@ ifeq ($(HAVE_VULKAN), 1)
 	ifeq ($(HAVE_MENU_COMMON), 1)
 		OBJ += menu/drivers_display/menu_display_vulkan.o
 	endif
-	LIBS += -lvulkan -lstdc++
+	LIBS += -lstdc++
 endif
 
 ifeq ($(HAVE_OMAP), 1)

@@ -18,7 +18,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <vulkan/vulkan.h>
+
+#include "../common/vulkan_common.h"
 
 #include <boolean.h>
 

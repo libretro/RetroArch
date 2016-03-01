@@ -441,7 +441,7 @@ void vulkan_filter_chain::execute_deferred()
 
 void vulkan_filter_chain::flush()
 {
-   vkDeviceWaitIdle(device);
+   VKFUNC(vkDeviceWaitIdle)(device);
    execute_deferred();
 }
 
@@ -514,14 +514,14 @@ Buffer::Buffer(VkDevice device,
       size_t size, VkBufferUsageFlags usage) :
    device(device), size(size)
 {
-   VkBufferCreateInfo info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-   info.size        = size;
-   info.usage       = usage;
-   info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-   vkCreateBuffer(device, &info, nullptr, &buffer);
-
    VkMemoryRequirements mem_reqs;
-   vkGetBufferMemoryRequirements(device, buffer, &mem_reqs);
+   VkBufferCreateInfo info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+   info.size               = size;
+   info.usage              = usage;
+   info.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
+   VKFUNC(vkCreateBuffer)(device, &info, nullptr, &buffer);
+
+   VKFUNC(vkGetBufferMemoryRequirements)(device, buffer, &mem_reqs);
 
    VkMemoryAllocateInfo alloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
    alloc.allocationSize       = mem_reqs.size;
@@ -531,30 +531,29 @@ Buffer::Buffer(VkDevice device,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-   vkAllocateMemory(device, &alloc, NULL, &memory);
-   vkBindBufferMemory(device, buffer, memory, 0);
+   VKFUNC(vkAllocateMemory)(device, &alloc, NULL, &memory);
+   VKFUNC(vkBindBufferMemory)(device, buffer, memory, 0);
 }
 
 void *Buffer::map()
 {
    void *ptr = nullptr;
-   if (vkMapMemory(device, memory, 0, size, 0, &ptr) == VK_SUCCESS)
+   if (VKFUNC(vkMapMemory)(device, memory, 0, size, 0, &ptr) == VK_SUCCESS)
       return ptr;
-   else
-      return nullptr;
+   return nullptr;
 }
 
 void Buffer::unmap()
 {
-   vkUnmapMemory(device, memory);
+   VKFUNC(vkUnmapMemory)(device, memory);
 }
 
 Buffer::~Buffer()
 {
    if (memory != VK_NULL_HANDLE)
-      vkFreeMemory(device, memory, nullptr);
+      VKFUNC(vkFreeMemory)(device, memory, nullptr);
    if (buffer != VK_NULL_HANDLE)
-      vkDestroyBuffer(device, buffer, nullptr);
+      VKFUNC(vkDestroyBuffer)(device, buffer, nullptr);
 }
 
 Pass::~Pass()
@@ -653,18 +652,18 @@ Size2D Pass::set_pass_info(
 void Pass::clear_vk()
 {
    if (pool != VK_NULL_HANDLE)
-      vkDestroyDescriptorPool(device, pool, nullptr);
+      VKFUNC(vkDestroyDescriptorPool)(device, pool, nullptr);
    if (pipeline != VK_NULL_HANDLE)
-      vkDestroyPipeline(device, pipeline, nullptr);
+      VKFUNC(vkDestroyPipeline)(device, pipeline, nullptr);
    if (set_layout != VK_NULL_HANDLE)
-      vkDestroyDescriptorSetLayout(device, set_layout, nullptr);
+      VKFUNC(vkDestroyDescriptorSetLayout)(device, set_layout, nullptr);
    if (pipeline_layout != VK_NULL_HANDLE)
-      vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
+      VKFUNC(vkDestroyPipelineLayout)(device, pipeline_layout, nullptr);
 
    for (auto &samp : samplers)
    {
       if (samp != VK_NULL_HANDLE)
-         vkDestroySampler(device, samp, nullptr);
+         VKFUNC(vkDestroySampler)(device, samp, nullptr);
       samp = VK_NULL_HANDLE;
    }
 
@@ -677,6 +676,7 @@ void Pass::clear_vk()
 
 bool Pass::init_pipeline_layout()
 {
+   unsigned i;
    vector<VkDescriptorSetLayoutBinding> bindings;
    vector<VkDescriptorPoolSize> desc_counts;
 
@@ -700,38 +700,39 @@ bool Pass::init_pipeline_layout()
    VkDescriptorSetLayoutCreateInfo set_layout_info = { 
       VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
    set_layout_info.bindingCount = bindings.size();
-   set_layout_info.pBindings = bindings.data();
+   set_layout_info.pBindings    = bindings.data();
 
-   if (vkCreateDescriptorSetLayout(device,
+   if (VKFUNC(vkCreateDescriptorSetLayout)(device,
             &set_layout_info, NULL, &set_layout) != VK_SUCCESS)
       return false;
 
    VkPipelineLayoutCreateInfo layout_info = { 
       VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-   layout_info.setLayoutCount = 1;
-   layout_info.pSetLayouts = &set_layout;
+   layout_info.setLayoutCount             = 1;
+   layout_info.pSetLayouts                = &set_layout;
 
-   if (vkCreatePipelineLayout(device,
+   if (VKFUNC(vkCreatePipelineLayout)(device,
             &layout_info, NULL, &pipeline_layout) != VK_SUCCESS)
       return false;
 
    VkDescriptorPoolCreateInfo pool_info = { 
       VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-   pool_info.maxSets = num_sync_indices;
-   pool_info.poolSizeCount = desc_counts.size();
-   pool_info.pPoolSizes = desc_counts.data();
-   if (vkCreateDescriptorPool(device, &pool_info, nullptr, &pool) != VK_SUCCESS)
+   pool_info.maxSets                    = num_sync_indices;
+   pool_info.poolSizeCount              = desc_counts.size();
+   pool_info.pPoolSizes                 = desc_counts.data();
+   if (VKFUNC(vkCreateDescriptorPool)(device, &pool_info, nullptr, &pool) != VK_SUCCESS)
       return false;
 
    VkDescriptorSetAllocateInfo alloc_info = { 
       VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
-   alloc_info.descriptorPool = pool;
+   alloc_info.descriptorPool     = pool;
    alloc_info.descriptorSetCount = 1;
-   alloc_info.pSetLayouts = &set_layout;
+   alloc_info.pSetLayouts        = &set_layout;
 
    sets.resize(num_sync_indices);
-   for (unsigned i = 0; i < num_sync_indices; i++)
-      vkAllocateDescriptorSets(device, &alloc_info, &sets[i]);
+
+   for (i = 0; i < num_sync_indices; i++)
+      VKFUNC(vkAllocateDescriptorSets)(device, &alloc_info, &sets[i]);
 
    return true;
 }
@@ -831,13 +832,13 @@ bool Pass::init_pipeline()
    module_info.pCode        = vertex_shader.data();
    shader_stages[0].stage   = VK_SHADER_STAGE_VERTEX_BIT;
    shader_stages[0].pName   = "main";
-   vkCreateShaderModule(device, &module_info, NULL, &shader_stages[0].module);
+   VKFUNC(vkCreateShaderModule)(device, &module_info, NULL, &shader_stages[0].module);
 
    module_info.codeSize     = fragment_shader.size() * sizeof(uint32_t);
    module_info.pCode        = fragment_shader.data();
    shader_stages[1].stage   = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName   = "main";
-   vkCreateShaderModule(device, &module_info, NULL, &shader_stages[1].module);
+   VKFUNC(vkCreateShaderModule)(device, &module_info, NULL, &shader_stages[1].module);
 
    VkGraphicsPipelineCreateInfo pipe = { 
       VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
@@ -855,16 +856,16 @@ bool Pass::init_pipeline()
       framebuffer->get_render_pass();
    pipe.layout              = pipeline_layout;
 
-   if (vkCreateGraphicsPipelines(device,
+   if (VKFUNC(vkCreateGraphicsPipelines)(device,
             cache, 1, &pipe, NULL, &pipeline) != VK_SUCCESS)
    {
-      vkDestroyShaderModule(device, shader_stages[0].module, NULL);
-      vkDestroyShaderModule(device, shader_stages[1].module, NULL);
+      VKFUNC(vkDestroyShaderModule)(device, shader_stages[0].module, NULL);
+      VKFUNC(vkDestroyShaderModule)(device, shader_stages[1].module, NULL);
       return false;
    }
 
-   vkDestroyShaderModule(device, shader_stages[0].module, NULL);
-   vkDestroyShaderModule(device, shader_stages[1].module, NULL);
+   VKFUNC(vkDestroyShaderModule)(device, shader_stages[0].module, NULL);
+   VKFUNC(vkDestroyShaderModule)(device, shader_stages[1].module, NULL);
    return true;
 }
 
@@ -885,14 +886,14 @@ bool Pass::init_samplers()
    info.unnormalizedCoordinates = false;
    info.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-   if (vkCreateSampler(device,
+   if (VKFUNC(vkCreateSampler)(device,
             &info, NULL, &samplers[VULKAN_FILTER_CHAIN_NEAREST]) != VK_SUCCESS)
       return false;
 
    info.magFilter = VK_FILTER_LINEAR;
    info.minFilter = VK_FILTER_LINEAR;
 
-   if (vkCreateSampler(device,
+   if (VKFUNC(vkCreateSampler)(device,
             &info, NULL, &samplers[VULKAN_FILTER_CHAIN_LINEAR]) != VK_SUCCESS)
       return false;
 
@@ -967,7 +968,7 @@ void Pass::image_layout_transition(VkDevice device,
    barrier.subresourceRange.levelCount = 1;
    barrier.subresourceRange.layerCount = 1;
 
-   vkCmdPipelineBarrier(cmd,
+   VKFUNC(vkCmdPipelineBarrier)(cmd,
          srcStages,
          dstStages,
          0,
@@ -993,25 +994,25 @@ void Pass::set_uniform_buffer(VkDescriptorSet set, unsigned binding,
    write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
    write.pBufferInfo = &buffer_info;
 
-   vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+   VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
 }
 
 void Pass::set_texture(VkDescriptorSet set, unsigned binding,
       const Texture &texture)
 {
    VkDescriptorImageInfo image_info;
-   image_info.sampler = samplers[texture.filter];
-   image_info.imageView = texture.texture.view;
-   image_info.imageLayout = texture.texture.layout;
+   image_info.sampler         = samplers[texture.filter];
+   image_info.imageView       = texture.texture.view;
+   image_info.imageLayout     = texture.texture.layout;
 
    VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-   write.dstSet = set;
-   write.dstBinding = binding;
-   write.descriptorCount = 1;
-   write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-   write.pImageInfo = &image_info;
+   write.dstSet               = set;
+   write.dstBinding           = binding;
+   write.descriptorCount      = 1;
+   write.descriptorType       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+   write.pImageInfo           = &image_info;
 
-   vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
+   VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, nullptr);
 }
 
 void Pass::update_descriptor_set(
@@ -1091,15 +1092,16 @@ void Pass::build_commands(
       rp_info.renderArea.extent.height = current_framebuffer_size.height;
       rp_info.clearValueCount          = 1;
       rp_info.pClearValues             = &clear_value;
-      vkCmdBeginRenderPass(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+
+      VKFUNC(vkCmdBeginRenderPass)(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
    }
 
-   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
+   VKFUNC(vkCmdBindPipeline)(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+   VKFUNC(vkCmdBindDescriptorSets)(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
          0, 1, &sets[sync_index], 0, nullptr);
 
    VkDeviceSize offset = 0;
-   vkCmdBindVertexBuffers(cmd, 0, 1, &vbo->get_buffer(), &offset);
+   VKFUNC(vkCmdBindVertexBuffers)(cmd, 0, 1, &vbo->get_buffer(), &offset);
 
    if (final_pass)
    {
@@ -1113,8 +1115,8 @@ void Pass::build_commands(
             uint32_t(current_viewport.height)
          },
       };
-      vkCmdSetViewport(cmd, 0, 1, &current_viewport);
-      vkCmdSetScissor(cmd, 0, 1, &sci);
+      VKFUNC(vkCmdSetViewport)(cmd, 0, 1, &current_viewport);
+      VKFUNC(vkCmdSetScissor)(cmd, 0, 1, &sci);
    }
    else
    {
@@ -1132,15 +1134,15 @@ void Pass::build_commands(
          },
       };
 
-      vkCmdSetViewport(cmd, 0, 1, &vp);
-      vkCmdSetScissor(cmd, 0, 1, &sci);
+      VKFUNC(vkCmdSetViewport)(cmd, 0, 1, &vp);
+      VKFUNC(vkCmdSetScissor)(cmd, 0, 1, &sci);
    }
 
-   vkCmdDraw(cmd, 4, 1, 0, 0);
+   VKFUNC(vkCmdDraw)(cmd, 4, 1, 0, 0);
 
    if (!final_pass)
    {
-      vkCmdEndRenderPass(cmd);
+      VKFUNC(vkCmdEndRenderPass)(cmd);
 
       // Barrier to sync with next pass.
       image_layout_transition(
@@ -1188,9 +1190,10 @@ void Framebuffer::init(DeferredDisposer *disposer)
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
    info.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
    info.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
-   vkCreateImage(device, &info, nullptr, &image);
 
-   vkGetImageMemoryRequirements(device, image, &mem_reqs);
+   VKFUNC(vkCreateImage)(device, &info, nullptr, &image);
+
+   VKFUNC(vkGetImageMemoryRequirements)(device, image, &mem_reqs);
 
    VkMemoryAllocateInfo alloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
    alloc.allocationSize   = mem_reqs.size;
@@ -1207,17 +1210,18 @@ void Framebuffer::init(DeferredDisposer *disposer)
       {
          auto d = device;
          auto m = memory.memory;
-         disposer->defer([=] { vkFreeMemory(d, m, nullptr); });
+         disposer->defer([=] { VKFUNC(vkFreeMemory)(d, m, nullptr); });
       }
 
       memory.type = alloc.memoryTypeIndex;
       memory.size = mem_reqs.size;
-      vkAllocateMemory(device, &alloc, nullptr, &memory.memory);
+
+      VKFUNC(vkAllocateMemory)(device, &alloc, nullptr, &memory.memory);
    }
 
-   vkBindImageMemory(device, image, memory.memory, 0);
+   VKFUNC(vkBindImageMemory)(device, image, memory.memory, 0);
 
-   VkImageViewCreateInfo view_info = { 
+   VkImageViewCreateInfo view_info           = { 
       VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
    view_info.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
    view_info.format                          = format;
@@ -1231,7 +1235,8 @@ void Framebuffer::init(DeferredDisposer *disposer)
    view_info.components.g                    = VK_COMPONENT_SWIZZLE_G;
    view_info.components.b                    = VK_COMPONENT_SWIZZLE_B;
    view_info.components.a                    = VK_COMPONENT_SWIZZLE_A;
-   vkCreateImageView(device, &view_info, nullptr, &view);
+
+   VKFUNC(vkCreateImageView)(device, &view_info, nullptr, &view);
 
    init_framebuffer();
 }
@@ -1264,9 +1269,9 @@ void Framebuffer::init_render_pass()
    rp_info.attachmentCount      = 1;
    rp_info.pAttachments         = &attachment;
    rp_info.subpassCount         = 1;
-   rp_info.pSubpasses = &subpass;
+   rp_info.pSubpasses           = &subpass;
 
-   vkCreateRenderPass(device, &rp_info, nullptr, &render_pass);
+   VKFUNC(vkCreateRenderPass)(device, &rp_info, nullptr, &render_pass);
 }
 
 void Framebuffer::init_framebuffer()
@@ -1280,7 +1285,7 @@ void Framebuffer::init_framebuffer()
    info.height          = size.height;
    info.layers          = 1;
 
-   vkCreateFramebuffer(device, &info, nullptr, &framebuffer);
+   VKFUNC(vkCreateFramebuffer)(device, &info, nullptr, &framebuffer);
 }
 
 void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size)
@@ -1305,11 +1310,11 @@ void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size)
       disposer.defer([=]
       {
          if (fb != VK_NULL_HANDLE)
-            vkDestroyFramebuffer(d, fb, nullptr);
+            VKFUNC(vkDestroyFramebuffer)(d, fb, nullptr);
          if (v != VK_NULL_HANDLE)
-            vkDestroyImageView(d, v, nullptr);
+            VKFUNC(vkDestroyImageView)(d, v, nullptr);
          if (i != VK_NULL_HANDLE)
-            vkDestroyImage(d, i, nullptr);
+            VKFUNC(vkDestroyImage)(d, i, nullptr);
       });
    }
 
@@ -1319,15 +1324,15 @@ void Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size)
 Framebuffer::~Framebuffer()
 {
    if (framebuffer != VK_NULL_HANDLE)
-      vkDestroyFramebuffer(device, framebuffer, nullptr);
+      VKFUNC(vkDestroyFramebuffer)(device, framebuffer, nullptr);
    if (render_pass != VK_NULL_HANDLE)
-      vkDestroyRenderPass(device, render_pass, nullptr);
+      VKFUNC(vkDestroyRenderPass)(device, render_pass, nullptr);
    if (view != VK_NULL_HANDLE)
-      vkDestroyImageView(device, view, nullptr);
+      VKFUNC(vkDestroyImageView)(device, view, nullptr);
    if (image != VK_NULL_HANDLE)
-      vkDestroyImage(device, image, nullptr);
+      VKFUNC(vkDestroyImage)(device, image, nullptr);
    if (memory.memory != VK_NULL_HANDLE)
-      vkFreeMemory(device, memory.memory, nullptr);
+      VKFUNC(vkFreeMemory)(device, memory.memory, nullptr);
 }
 
 // C glue

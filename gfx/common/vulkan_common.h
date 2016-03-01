@@ -48,6 +48,8 @@
 #include "libretro_vulkan.h"
 #include "../drivers_shader/shader_vulkan.h"
 
+typedef struct vulkan_filter_chain vulkan_filter_chain_t;
+
 enum vk_texture_type
 {
    /* We will use the texture as a sampled linear texture. */
