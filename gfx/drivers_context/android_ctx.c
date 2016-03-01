@@ -262,6 +262,7 @@ static bool android_gfx_ctx_bind_api(void *data,
             return true;
          }
 #endif
+         break;
       default:
          break;
    }
