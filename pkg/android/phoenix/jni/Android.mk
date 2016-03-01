@@ -7,6 +7,7 @@ HAVE_NEON   := 1
 HAVE_LOGGER := 0
 HAVE_VULKAN := 0
 
+INCFLAGS    :=
 DEFINES     :=
 
 include $(CLEAR_VARS)
@@ -70,7 +71,10 @@ LOCAL_LDLIBS	:= -L$(SYSROOT)/usr/lib -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include/
 
 ifeq ($(HAVE_VULKAN),1)
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
+INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
+						  
+LOCAL_C_INCLUDES += $(INCFLAGS)
+LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/Public
 endif
 
 LOCAL_LDLIBS += -lOpenSLES -lz
