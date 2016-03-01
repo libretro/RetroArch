@@ -263,6 +263,7 @@ extern const gfx_ctx_driver_t gfx_ctx_bbqnx;
 extern const gfx_ctx_driver_t gfx_ctx_cgl;
 extern const gfx_ctx_driver_t gfx_ctx_cocoagl;
 extern const gfx_ctx_driver_t gfx_ctx_emscripten;
+extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
 /**

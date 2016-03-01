@@ -525,6 +525,12 @@ ifeq ($(HAVE_XINPUT), 1)
           input/autoconf/builtin_win.o
 endif
 
+ifeq ($(HAVE_OPENDINGUX_FBDEV), 1)
+	OBJ += gfx/drivers_context/opendingux_fbdev_ctx.o
+	DEFINES += $(EGL_CFLAGS)
+	LIBS += $(EGL_LIBS)
+endif
+
 ifeq ($(HAVE_X11), 1)
    OBJ += input/common/input_x11_common.o \
           input/drivers/x11_input.o \
