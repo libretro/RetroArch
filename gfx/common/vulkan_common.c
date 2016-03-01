@@ -402,7 +402,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
    if (initial && (type == VULKAN_TEXTURE_STREAMED || type == VULKAN_TEXTURE_STAGING))
    {
-      unsigned x, y;
+      unsigned y;
       uint8_t *dst       = NULL;
       const uint8_t *src = NULL;
       void *ptr          = NULL;
@@ -422,7 +422,6 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
    {
       VkImageCopy region;
       VkCommandBuffer staging;
-      unsigned bpp = vulkan_format_to_bpp(tex.format);
       struct vk_texture tmp = vulkan_create_texture(vk, NULL,
             width, height, format, initial, NULL, VULKAN_TEXTURE_STAGING);
 

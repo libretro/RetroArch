@@ -451,8 +451,6 @@ static void vulkan_deinit_buffers(vk_t *vk)
 static void vulkan_init_descriptor_pool(vk_t *vk)
 {
    unsigned i;
-   VkDescriptorPoolCreateInfo pool_info            = { 
-      VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
    static const VkDescriptorPoolSize pool_sizes[2] = {
       { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
       { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
@@ -603,7 +601,6 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 {
    struct vulkan_filter_chain_create_info info;
-   bool ret = true;
 
    memset(&info, 0, sizeof(info));
 
@@ -1357,7 +1354,6 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned width, height;
    VkClearValue clear_value;
    vk_t *vk                                      = (vk_t*)data;
-   settings_t *settings                          = config_get_ptr();
    static struct retro_perf_counter frame_run    = {0};
    static struct retro_perf_counter copy_frame   = {0};
    static struct retro_perf_counter swapbuffers  = {0};
@@ -1799,7 +1795,7 @@ static void vulkan_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   unsigned x, y, stride;
+   unsigned y, stride;
    uint8_t *ptr                       = NULL;
    uint8_t *dst                       = NULL;
    const uint8_t *src                 = NULL;
@@ -1969,13 +1965,12 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
 
    if (vk->readback.streamed)
    {
+      const uint8_t *src;
+      static struct retro_perf_counter stream_readback = {0};
+
       if (staging->memory == VK_NULL_HANDLE)
          return false;
 
-      const uint8_t *src;
-      unsigned x, y;
-
-      static struct retro_perf_counter stream_readback = {0};
       rarch_perf_init(&stream_readback, "stream_readback");
       retro_perf_start(&stream_readback);
 

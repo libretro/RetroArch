@@ -141,7 +141,6 @@ static void menu_display_vk_draw_bg(void *data)
    const float *new_vertex       = NULL;
    const float *new_tex_coord    = NULL;
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   global_t     *global          = global_get_ptr();
    settings_t *settings          = config_get_ptr();
    vk_t             *vk          = vk_get_ptr();
 

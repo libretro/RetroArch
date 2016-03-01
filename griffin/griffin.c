@@ -236,7 +236,6 @@ VIDEO DRIVER
 
 #ifdef HAVE_VULKAN
 #include "../gfx/drivers/vulkan.c"
-#include "../gfx/common/vulkan_common.c"
 #endif
 
 #ifdef HAVE_OPENGL
