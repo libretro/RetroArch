@@ -255,7 +255,7 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_destroy(wl);
+         egl_destroy(&wl->egl);
 
          if (wl->win)
             wl_egl_window_destroy(wl->win);
@@ -591,14 +591,15 @@ static void *gfx_ctx_wl_init(void *video_driver)
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         if (!egl_init_context(wl, (EGLNativeDisplayType)wl->dpy,
+         if (!egl_init_context(&wl->egl,
+                  (EGLNativeDisplayType)wl->dpy,
                   &major, &minor, &n, attrib_ptr))
          {
             egl_report_error();
             goto error;
          }
 
-         if (n == 0 || !egl_has_config(wl))
+         if (n == 0 || !egl_has_config(&wl->egl))
             goto error;
 #endif
          break;
@@ -728,7 +729,7 @@ static void gfx_ctx_wl_set_swap_interval(void *data, unsigned swap_interval)
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_set_swap_interval(data, swap_interval);
+         egl_set_swap_interval(&wl->egl, swap_interval);
 #endif
          break;
       case GFX_CTX_VULKAN_API:
@@ -791,15 +792,15 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
 
-         if (!egl_create_context(wl, (attr != egl_attribs) ? egl_attribs : NULL))
+         if (!egl_create_context(&wl->egl, (attr != egl_attribs) ? egl_attribs : NULL))
          {
             egl_report_error();
             goto error;
          }
 
-         if (!egl_create_surface(wl, (EGLNativeWindowType)wl->win))
+         if (!egl_create_surface(&wl->egl, (EGLNativeWindowType)wl->win))
             goto error;
-         egl_set_swap_interval(wl, wl->egl.interval);
+         egl_set_swap_interval(&wl->egl, wl->egl.interval);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -1083,7 +1084,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_swap_buffers(data);
+         egl_swap_buffers(&wl->egl);
 #endif
          break;
       case GFX_CTX_VULKAN_API:
@@ -1121,13 +1122,15 @@ static gfx_ctx_proc_t gfx_ctx_wl_get_proc_address(const char *symbol)
 
 static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 {
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
    switch (wl_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_bind_hw_render(data, enable);
+         egl_bind_hw_render(&wl->egl, enable);
 #endif
          break;
       case GFX_CTX_NONE:

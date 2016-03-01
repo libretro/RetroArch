@@ -68,31 +68,34 @@ extern unsigned g_egl_minor;
 
 void egl_report_error(void);
 
-void egl_destroy(void *data);
+void egl_destroy(egl_ctx_data_t *egl);
 
 gfx_ctx_proc_t egl_get_proc_address(const char *symbol);
 
-void egl_bind_hw_render(void *data, bool enable);
+void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable);
 
 void egl_swap_buffers(void *data);
 
-void egl_set_swap_interval(void *data, unsigned interval);
+void egl_set_swap_interval(egl_ctx_data_t *egl, unsigned interval);
 
-void egl_get_video_size(void *data, unsigned *width, unsigned *height);
+void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height);
 
 void egl_install_sighandlers(void);
 
-bool egl_init_context(void *data, NativeDisplayType display,
-      EGLint *major, EGLint *minor,
-     EGLint *n, const EGLint *attrib_ptr);
+bool egl_init_context(egl_ctx_data_t *egl,
+      NativeDisplayType display,
+      EGLint *major,
+      EGLint *minor,
+      EGLint *n,
+      const EGLint *attrib_ptr);
 
-bool egl_create_context(void *data, const EGLint *egl_attribs);
+bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs);
 
-bool egl_create_surface(void *data, NativeWindowType native_window);
+bool egl_create_surface(egl_ctx_data_t *egl, NativeWindowType native_window);
 
-bool egl_get_native_visual_id(void *data, EGLint *value);
+bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value);
 
-bool egl_has_config(void *data);
+bool egl_has_config(egl_ctx_data_t *egl);
 
 #ifdef __cplusplus
 }

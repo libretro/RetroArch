@@ -250,7 +250,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_swap_buffers(drm);
+         egl_swap_buffers(&drm->egl);
 #endif
          break;
       default:
@@ -345,7 +345,7 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_destroy(drm);
+         egl_destroy(&drm->egl);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -597,18 +597,18 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         if (!egl_init_context(drm, (EGLNativeDisplayType)g_gbm_dev, &major,
+         if (!egl_init_context(&drm->egl, (EGLNativeDisplayType)g_gbm_dev, &major,
                   &minor, &n, attrib_ptr))
             goto error;
 
          attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
          egl_attribs_ptr = &egl_attribs[0];
 
-         if (!egl_create_context(drm, (attr != egl_attribs_ptr) 
+         if (!egl_create_context(&drm->egl, (attr != egl_attribs_ptr) 
                   ? egl_attribs_ptr : NULL))
             goto error;
 
-         if (!egl_create_surface(drm, (EGLNativeWindowType)g_gbm_surface))
+         if (!egl_create_surface(&drm->egl, (EGLNativeWindowType)g_gbm_surface))
             return false;
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
          glClear(GL_COLOR_BUFFER_BIT);
@@ -851,13 +851,15 @@ static gfx_ctx_proc_t gfx_ctx_drm_get_proc_address(const char *symbol)
 
 static void gfx_ctx_drm_bind_hw_render(void *data, bool enable)
 {
+   gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
+
    switch (drm_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_bind_hw_render(data, enable);
+         egl_bind_hw_render(&drm->egl, enable);
 #endif
          break;
       case GFX_CTX_NONE:

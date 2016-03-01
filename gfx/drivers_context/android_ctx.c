@@ -43,9 +43,15 @@ int system_property_get(const char *cmd, const char *args, char *value);
 static bool g_es3;
 #endif
 
-#ifdef HAVE_ANDROID
-static unsigned vk_swap_interval;
+typedef struct
+{
+#ifdef HAVE_EGL
+   egl_ctx_data_t egl;
 #endif
+#ifdef HAVE_VULKAN
+   unsigned swap_interval;
+#endif
+} android_ctx_data_t;
 
 static void *android_gfx_ctx_init(void *video_driver)
 {
@@ -65,11 +71,11 @@ static void *android_gfx_ctx_init(void *video_driver)
       EGL_ALPHA_SIZE, 8,
       EGL_NONE
    };
-   egl_ctx_data_t *egl             = NULL;
 #endif
    struct android_app *android_app = (struct android_app*)g_android;
+   android_ctx_data_t *and  = (android_ctx_data_t*)calloc(1, sizeof(*and));
 
-   if (!android_app)
+   if (!android_app || !and)
       return false;
 
    switch (android_api)
@@ -77,18 +83,16 @@ static void *android_gfx_ctx_init(void *video_driver)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_EGL
-         egl = (egl_ctx_data_t*)calloc(1, sizeof(*egl));
-
          RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
 
-         if (!egl_init_context(egl, EGL_DEFAULT_DISPLAY,
+         if (!egl_init_context(&and->egl, EGL_DEFAULT_DISPLAY,
                   &major, &minor, &n, attribs))
          {
             egl_report_error();
             goto error;
          }
 
-         if (!egl_get_native_visual_id(egl, &format))
+         if (!egl_get_native_visual_id(&and->egl, &format))
             goto error;
 #endif
          break;
@@ -108,13 +112,13 @@ static void *android_gfx_ctx_init(void *video_driver)
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_EGL
-         if (!egl_create_context(egl, context_attributes))
+         if (!egl_create_context(&and->egl, context_attributes))
          {
             egl_report_error();
             goto unlock_error;
          }
 
-         if (!egl_create_surface(egl, android_app->window))
+         if (!egl_create_surface(&and->egl, android_app->window))
             goto unlock_error;
 #endif
          break;
@@ -124,7 +128,7 @@ static void *android_gfx_ctx_init(void *video_driver)
    }
 
    slock_unlock(android_app->mutex);
-   return egl;
+   return and;
 
 unlock_error:
    slock_unlock(android_app->mutex);
@@ -134,11 +138,7 @@ error:
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_EGL
-         if (egl)
-         {
-            egl_destroy(egl);
-            free(egl);
-         }
+         egl_destroy(&and->egl);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -151,19 +151,23 @@ error:
 
 static void android_gfx_ctx_destroy(void *data)
 {
-   if (data)
-   {
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
+
+   if (!and)
+      return;
+
 #ifdef HAVE_OPENGLES
-      egl_destroy(data);
+   egl_destroy(&and->egl);
 #endif
-      free(data);
-   }
+
+   free(data);
 }
 
 static void android_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    unsigned new_width, new_height;
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
 
    (void)frame_count;
 
@@ -174,7 +178,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_OPENGLES
-         egl_get_video_size(data, &new_width, &new_height);
+         egl_get_video_size(&and->egl, &new_width, &new_height);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -338,13 +342,15 @@ static bool android_gfx_ctx_get_metrics(void *data,
 
 static void android_gfx_ctx_swap_buffers(void *data)
 {
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
+
    switch (android_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
-         egl_swap_buffers(data);
+         egl_swap_buffers(&and->egl);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -355,12 +361,14 @@ static void android_gfx_ctx_swap_buffers(void *data)
 
 static void android_gfx_ctx_set_swap_interval(void *data, unsigned swap_interval)
 {
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
+
    switch (android_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_EGL
-         egl_set_swap_interval(data, swap_interval);
+         egl_set_swap_interval(&and->egl, swap_interval);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -372,12 +380,14 @@ static void android_gfx_ctx_set_swap_interval(void *data, unsigned swap_interval
 static void android_gfx_ctx_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
+
    switch (android_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_EGL
-         egl_get_video_size(data, width, height);
+         egl_get_video_size(&and->egl, width, height);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -407,12 +417,14 @@ static gfx_ctx_proc_t android_gfx_ctx_get_proc_address(const char *symbol)
 
 static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
 {
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
+
    switch (android_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
 #ifdef HAVE_EGL
-         egl_bind_hw_render(data, enable);
+         egl_bind_hw_render(&and->egl, enable);
 #endif
          break;
       case GFX_CTX_NONE:

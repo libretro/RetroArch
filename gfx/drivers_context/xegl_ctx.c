@@ -27,8 +27,11 @@
 #define EGL_OPENGL_ES3_BIT_KHR 0x0040
 #endif
 
-typedef struct {
+typedef struct
+{
+#ifdef HAVE_EGL
    egl_ctx_data_t egl;
+#endif
    XF86VidModeModeInfo desktop_mode;
    bool should_reset_mode;
 } xegl_ctx_data_t;
@@ -47,7 +50,9 @@ static void gfx_ctx_xegl_destroy(void *data)
    xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
 
    x11_input_ctx_destroy();
-   egl_destroy(data);
+#ifdef HAVE_EGL
+   egl_destroy(&xegl->egl);
+#endif
 
    if (g_x11_win)
    {
@@ -91,6 +96,7 @@ EGL_DEPTH_SIZE,      0
 
 static void *gfx_ctx_xegl_init(void *video_driver)
 {
+#ifdef HAVE_EGL
    static const EGLint egl_attribs_gl[] = {
       XEGL_ATTRIBS_BASE,
       EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
@@ -120,8 +126,8 @@ static void *gfx_ctx_xegl_init(void *video_driver)
    const EGLint *attrib_ptr;
    EGLint major, minor;
    EGLint n;
+#endif
    xegl_ctx_data_t *xegl;
-
 
    if (g_egl_inited)
       return NULL;
@@ -155,15 +161,17 @@ static void *gfx_ctx_xegl_init(void *video_driver)
    if (!x11_connect())
       goto error;
 
-   if (!egl_init_context(xegl, (EGLNativeDisplayType)g_x11_dpy,
+#ifdef HAVE_EGL
+   if (!egl_init_context(&xegl->egl, (EGLNativeDisplayType)g_x11_dpy,
             &major, &minor, &n, attrib_ptr))
    {
       egl_report_error();
       goto error;
    }
 
-   if (n == 0 || !egl_has_config(xegl))
+   if (n == 0 || !egl_has_config(&xegl->egl))
       goto error;
+#endif
 
    return xegl;
 
@@ -238,6 +246,9 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
    return attr;
 }
 
+/* forward declaration */
+static void gfx_ctx_xegl_set_swap_interval(void *data, unsigned swap_interval);
+
 static bool gfx_ctx_xegl_set_video_mode(void *data,
    unsigned width, unsigned height,
    bool fullscreen)
@@ -265,8 +276,10 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    attr = egl_attribs;
    attr = xegl_fill_attribs(xegl, attr);
 
-   if (!egl_get_native_visual_id(xegl, &vid))
+#ifdef HAVE_EGL
+   if (!egl_get_native_visual_id(&xegl->egl, &vid))
       goto error;
+#endif
 
    temp.visualid = vid;
 
@@ -325,13 +338,13 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          (true_full ? CWOverrideRedirect : 0), &swa);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
 
-   if (!egl_create_context(xegl, (attr != egl_attribs) ? egl_attribs : NULL))
+   if (!egl_create_context(&xegl->egl, (attr != egl_attribs) ? egl_attribs : NULL))
    {
       egl_report_error();
       goto error;
    }
 
-   if (!egl_create_surface(xegl, (EGLNativeWindowType)g_x11_win))
+   if (!egl_create_surface(&xegl->egl, (EGLNativeWindowType)g_x11_win))
       goto error;
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
@@ -375,7 +388,9 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    x11_event_queue_check(&event);
    x11_install_quit_atom();
 
-   egl_set_swap_interval(xegl, xegl->egl.interval);
+#ifdef HAVE_EGL
+   gfx_ctx_xegl_set_swap_interval(&xegl->egl, xegl->egl.interval);
+#endif
 
    /* This can blow up on some drivers. It's not fatal, 
     * so override errors for this call.
@@ -478,12 +493,87 @@ static void gfx_ctx_xegl_show_mouse(void *data, bool state)
    x11_show_mouse(g_x11_dpy, g_x11_win, state);
 }
 
+static void gfx_ctx_xegl_swap_buffers(void *data)
+{
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+
+   switch (x_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_EGL
+         egl_swap_buffers(&xegl->egl);
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+}
+
+static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
+{
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+
+   switch (x_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+      case GFX_CTX_OPENVG_API:
+#ifdef HAVE_EGL
+         egl_bind_hw_render(&xegl->egl, enable);
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+}
+
+static void gfx_ctx_xegl_set_swap_interval(void *data, unsigned swap_interval)
+{
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+
+   switch (x_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_EGL
+         egl_set_swap_interval(&xegl->egl, swap_interval);
+#endif
+         break;
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+}
+
+static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
+{
+   switch (x_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+      case GFX_CTX_OPENVG_API:
+#ifdef HAVE_EGL
+         return egl_get_proc_address(symbol);
+#else
+         break;
+#endif
+      case GFX_CTX_NONE:
+      default:
+         break;
+   }
+
+   return NULL;
+}
+
 const gfx_ctx_driver_t gfx_ctx_x_egl =
 {
    gfx_ctx_xegl_init,
    gfx_ctx_xegl_destroy,
    gfx_ctx_xegl_bind_api,
-   egl_set_swap_interval,
+   gfx_ctx_xegl_set_swap_interval, 
    gfx_ctx_xegl_set_video_mode,
    x11_get_video_size,
    NULL, /* get_video_output_size */
@@ -497,12 +587,12 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    gfx_ctx_xegl_has_focus,
    gfx_ctx_xegl_suppress_screensaver,
    gfx_ctx_xegl_has_windowed,
-   egl_swap_buffers,
+   gfx_ctx_xegl_swap_buffers,
    gfx_ctx_xegl_input_driver,
-   egl_get_proc_address,
+   gfx_ctx_xegl_get_proc_address,
    NULL,
    NULL,
    gfx_ctx_xegl_show_mouse,
    "x-egl",
-   egl_bind_hw_render,
+   gfx_ctx_xegl_bind_hw_render,
 };

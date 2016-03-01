@@ -63,9 +63,8 @@ gfx_ctx_proc_t egl_get_proc_address(const char *symbol)
    return eglGetProcAddress(symbol);
 }
 
-void egl_destroy(void *data)
+void egl_destroy(egl_ctx_data_t *egl)
 {
-   egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
    if (egl->dpy)
    {
 #if defined HAVE_OPENGL
@@ -104,9 +103,8 @@ void egl_destroy(void *data)
    g_egl_inited  = false;
 }
 
-void egl_bind_hw_render(void *data, bool enable)
+void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable)
 {
-   egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
    egl->use_hw_ctx = enable;
 
    if (egl->dpy  == EGL_NO_DISPLAY)
@@ -122,6 +120,7 @@ void egl_bind_hw_render(void *data, bool enable)
 void egl_swap_buffers(void *data)
 {
    egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
+
    if (egl->dpy  == EGL_NO_DISPLAY)
       return;
    if (egl->surf == EGL_NO_SURFACE)
@@ -129,9 +128,8 @@ void egl_swap_buffers(void *data)
    eglSwapBuffers(egl->dpy, egl->surf);
 }
 
-void egl_set_swap_interval(void *data, unsigned interval)
+void egl_set_swap_interval(egl_ctx_data_t *egl, unsigned interval)
 {
-   egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
    /* Can be called before initialization.
     * Some contexts require that swap interval 
     * is known at startup time.
@@ -151,10 +149,8 @@ void egl_set_swap_interval(void *data, unsigned interval)
    }
 }
 
-void egl_get_video_size(void *data, unsigned *width, unsigned *height)
+void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height)
 {
-   egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
-
    *width  = 0;
    *height = 0;
 
@@ -188,11 +184,11 @@ void egl_install_sighandlers(void)
    sigaction(SIGTERM, &sa, NULL);
 }
 
-bool egl_init_context(void *data, NativeDisplayType display,
+bool egl_init_context(egl_ctx_data_t *egl,
+      NativeDisplayType display,
       EGLint *major, EGLint *minor,
      EGLint *n, const EGLint *attrib_ptr)
 {
-   egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
    egl->dpy = eglGetDisplay(display);
    if (!egl->dpy)
    {
@@ -214,9 +210,8 @@ bool egl_init_context(void *data, NativeDisplayType display,
    return true;
 }
 
-bool egl_create_context(void *data, const EGLint *egl_attribs)
+bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
 {
-   egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
    egl->ctx    = eglCreateContext(egl->dpy, egl->config, EGL_NO_CONTEXT,
          egl_attribs);
    egl->hw_ctx = NULL;
@@ -237,9 +232,8 @@ bool egl_create_context(void *data, const EGLint *egl_attribs)
    return true;
 }
 
-bool egl_create_surface(void *data, NativeWindowType native_window)
+bool egl_create_surface(egl_ctx_data_t *egl, NativeWindowType native_window)
 {
-   egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
    egl->surf = eglCreateWindowSurface(egl->dpy, egl->config, native_window, NULL);
 
    if (egl->surf == EGL_NO_SURFACE)
@@ -254,9 +248,8 @@ bool egl_create_surface(void *data, NativeWindowType native_window)
    return true;
 }
 
-bool egl_get_native_visual_id(void *data, EGLint *value)
+bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value)
 {
-   egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
    if (!eglGetConfigAttrib(egl->dpy, egl->config,
          EGL_NATIVE_VISUAL_ID, value))
    {
@@ -267,9 +260,8 @@ bool egl_get_native_visual_id(void *data, EGLint *value)
    return true;
 }
 
-bool egl_has_config(void *data)
+bool egl_has_config(egl_ctx_data_t *egl)
 {
-   egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
    if (!egl->config)
    {
       RARCH_ERR("[EGL]: No EGL configurations available.\n");

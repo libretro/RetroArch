@@ -19,11 +19,20 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
-#include "../common/egl_common.h"
-#include "../common/gl_common.h"
 
-typedef struct {
+#ifdef HAVE_EGL
+#include "../common/egl_common.h"
+#endif
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+#include "../common/gl_common.h"
+#endif
+
+typedef struct
+{
+#ifdef HAVE_EGL
    egl_ctx_data_t egl;
+#endif
    bool resize;
    unsigned width, height;
 } vivante_ctx_data_t;
@@ -31,7 +40,10 @@ typedef struct {
 static void gfx_ctx_vivante_destroy(void *data)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
-   egl_destroy(data);
+
+#ifdef HAVE_EGL
+   egl_destroy(&viv->egl);
+#endif
 
    viv->resize       = false;
    free(viv);
@@ -39,6 +51,7 @@ static void gfx_ctx_vivante_destroy(void *data)
 
 static void *gfx_ctx_vivante_init(void *video_driver)
 {
+#ifdef HAVE_EGL
    EGLint n;
    EGLint major, minor;
    EGLint format;
@@ -54,6 +67,7 @@ static void *gfx_ctx_vivante_init(void *video_driver)
       EGL_SAMPLES,            0,
       EGL_NONE
    };
+#endif
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)calloc(1, sizeof(*viv));
 
    if (!viv)
@@ -61,14 +75,16 @@ static void *gfx_ctx_vivante_init(void *video_driver)
 
    (void)video_driver;
 
+#ifdef HAVE_EGL
    egl_install_sighandlers();
 
-   if (!egl_init_context(viv, EGL_DEFAULT_DISPLAY, &major, &minor,
+   if (!egl_init_context(&viv->egl, EGL_DEFAULT_DISPLAY, &major, &minor,
             &n, attribs))
    {
       egl_report_error();
       goto error;
    }
+#endif
 
    return viv;
 
@@ -82,8 +98,11 @@ static void gfx_ctx_vivante_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    unsigned new_width, new_height;
+   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 
-   egl_get_video_size(data, &new_width, &new_height);
+#ifdef HAVE_EGL
+   gfx_ctx_vivante_get_video_size(&viv->egl, &new_width, &new_height);
+#endif
 
    if (new_width != *width || new_height != *height)
    {
@@ -122,11 +141,13 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
 {
+#ifdef HAVE_EGL
    EGLNativeWindowType window;
    static const EGLint attribs[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
       EGL_NONE
    };
+#endif
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 
    /* Pick some arbitrary default. */
@@ -138,16 +159,20 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
    viv->width    = width;
    viv->height   = height;
 
-   if (!egl_create_context(viv, attribs))
+#ifdef HAVE_EGL
+   if (!egl_create_context(&viv->egl, attribs))
    {
       egl_report_error();
       goto error;
    }
+#endif
 
    window     = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
 
-   if (!egl_create_surface(viv, window))
+#ifdef HAVE_EGL
+   if (!egl_create_surface(&viv->egl, window))
       goto error;
+#endif
 
    return true;
 
@@ -191,13 +216,58 @@ static bool gfx_ctx_vivante_has_windowed(void *data)
    return false;
 }
 
+static void gfx_ctx_vivante_set_swap_interval(void *data, unsigned swap_interval)
+{
+   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
+#ifdef HAVE_EGL
+   egl_set_swap_interval(&viv->egl, swap_interval);
+#endif
+}
+
+static gfx_ctx_proc_t gfx_ctx_vivante_get_proc_address(const char *symbol)
+{
+#ifdef HAVE_EGL
+   return egl_get_proc_address(symbol);
+#else
+   return NULL;
+#endif
+}
+
+static void gfx_ctx_vivante_bind_hw_render(void *data, bool enable)
+{
+   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
+
+#ifdef HAVE_EGL
+   egl_bind_hw_render(&viv->egl, enable);
+#endif
+}
+
+static void gfx_ctx_vivante_swap_buffers(void *data)
+{
+   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
+
+#ifdef HAVE_EGL
+   egl_swap_buffers(&viv->egl);
+#endif
+}
+
+static void gfx_ctx_vivante_get_video_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
+
+#ifdef HAVE_EGL
+   egl_get_video_size(&viv->egl, width, height);
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_vivante_init,
    gfx_ctx_vivante_destroy,
    gfx_ctx_vivante_bind_api,
-   egl_set_swap_interval,
+   gfx_ctx_vivante_set_swap_interval,
    gfx_ctx_vivante_set_video_mode,
-   egl_get_video_size,
+   gfx_ctx_vivante_get_video_size,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
@@ -209,12 +279,12 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_vivante_has_focus,
    gfx_ctx_vivante_suppress_screensaver,
    gfx_ctx_vivante_has_windowed,
-   egl_swap_buffers,
+   gfx_ctx_vivante_swap_buffers,
    gfx_ctx_vivante_input_driver,
-   egl_get_proc_address,
+   gfx_ctx_vivante_get_proc_address,
    NULL,
    NULL,
    NULL,
    "vivante-fbdev",
-   egl_bind_hw_render,
+   gfx_ctx_vivante_bind_hw_render,
 };

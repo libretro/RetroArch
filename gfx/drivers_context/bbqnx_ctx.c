@@ -27,8 +27,14 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
+
+#ifdef HAVE_EGL
 #include "../common/egl_common.h"
+#endif
+
+#ifdef HAVE_OPENGLES
 #include "../common/gl_common.h"
+#endif
 
 #include "../image/image.h"
 
@@ -38,7 +44,9 @@ screen_context_t screen_ctx;
 
 typedef struct
 {
+#ifdef HAVE_EGL
    egl_ctx_data_t egl;
+#endif
    screen_window_t screen_win;
    screen_display_t screen_disp;
    bool resize;
@@ -47,7 +55,10 @@ typedef struct
 static void gfx_ctx_qnx_destroy(void *data)
 {
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
-   egl_destroy(data);
+
+#ifdef HAVE_EGL
+   egl_destroy(&qnx->egl);
+#endif
 
    qnx->resize      = false;
    free(data);
@@ -105,24 +116,26 @@ static void *gfx_ctx_qnx_init(void *video_driver)
 
    usage = SCREEN_USAGE_OPENGL_ES2 | SCREEN_USAGE_ROTATION;
 
+#ifdef HAVE_EGL
    if (!eglBindAPI(EGL_OPENGL_ES_API))
    {
       RARCH_ERR("eglBindAPI failed.\n");
       goto error;
    }
 
-   if (!egl_init_context(qnx, EGL_DEFAULT_DISPLAY, &major, &minor,
+   if (!egl_init_context(&qnx->egl, EGL_DEFAULT_DISPLAY, &major, &minor,
             &n, attribs))
    {
       egl_report_error();
       goto error;
    }
 
-   if (!egl_create_context(qnx, context_attributes))
+   if (!egl_create_context(&qnx->egl, context_attributes))
    {
       egl_report_error();
       goto error;
    }
+#endif
 
    if(!qnx->screen_win)
    {
@@ -246,13 +259,17 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
    unsigned new_width, new_height;
+   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
 
    (void)data;
    (void)frame_count;
 
    *quit = false;
 
-   egl_get_video_size(data, &new_width, &new_height);
+#ifdef HAVE_EGL
+   egl_get_video_size(&qnx->egl, &new_width, &new_height);
+#endif
+
    if (new_width != *width || new_height != *height)
    {
       *width  = new_width;
@@ -337,13 +354,57 @@ static bool gfx_ctx_qnx_has_windowed(void *data)
    return false;
 }
 
+static void gfx_ctx_qnx_set_swap_interval(void *data, unsigned swap_interval)
+{
+   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
+
+#ifdef HAVE_EGL
+   egl_set_swap_interval(&qnx->egl, swap_interval);
+#endif
+}
+
+static void gfx_ctx_qnx_swap_buffers(void *data)
+{
+   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
+
+#ifdef HAVE_EGL
+   egl_swap_buffers(&qnx->egl);
+#endif
+}
+
+static void gfx_ctx_qnx_bind_hw_render(void *data, bool enable)
+{
+   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
+
+#ifdef HAVE_EGL
+   egl_bind_hw_render(&qnx->egl, enable);
+#endif
+}
+
+static gfx_ctx_proc_t gfx_ctx_qnx_get_proc_address(const char *symbol)
+{
+#ifdef HAVE_EGL
+   return egl_get_proc_address(symbol);
+#endif
+}
+
+static void gfx_ctx_qnx_get_video_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
+
+#ifdef HAVE_EGL
+   egl_get_video_size(&qnx->egl, width, height);
+#endif
+}
+
 const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_init,
    gfx_ctx_qnx_destroy,
    gfx_ctx_qnx_bind_api,
-   egl_set_swap_interval,
+   gfx_ctx_qnx_set_swap_interval,
    gfx_ctx_qnx_set_video_mode,
-   egl_get_video_size,
+   gfx_ctx_qnx_get_video_size,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
@@ -355,12 +416,12 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_has_focus,
    gfx_ctx_qnx_suppress_screensaver,
    gfx_ctx_qnx_has_windowed,
-   egl_swap_buffers,
+   gfx_ctx_qnx_swap_buffers,
    gfx_ctx_qnx_input_driver,
-   egl_get_proc_address,
+   gfx_ctx_qnx_get_proc_address,
    NULL,
    NULL,
    NULL,
    "blackberry_qnx",
-   egl_bind_hw_render,
+   gfx_ctx_qnx_bind_hw_render,
 };
