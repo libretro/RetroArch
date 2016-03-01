@@ -23,7 +23,9 @@
 #include "../../config.h"
 #endif
 
-#include <vulkan/vulkan.h>
+#ifndef VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL
+#define VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL 1024
+#endif
 
 #define VKFUNC(sym) (vkcfp->sym)
 
@@ -50,6 +52,27 @@
 #endif
 
 #include <vulkan/vulkan.h>
+
+typedef struct VkDmaBufImageCreateInfo_
+{
+    VkStructureType                             sType; /* Must be VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL */
+    const void*                                 pNext; /* Pointer to next structure. */
+    int                                         fd;
+    VkFormat                                    format;
+    VkExtent3D                                  extent;         /* Depth must be 1 */
+    uint32_t                                    strideInBytes;
+} VkDmaBufImageCreateInfo;
+
+typedef VkResult (VKAPI_PTR *PFN_vkCreateDmaBufImageINTEL)(VkDevice device,
+      const VkDmaBufImageCreateInfo* pCreateInfo,
+      const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMem, VkImage* pImage);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateDmaBufImageINTEL(
+    VkDevice                                    _device,
+    const VkDmaBufImageCreateInfo*              pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkDeviceMemory*                             pMem,
+    VkImage*                                    pImage);
 
 typedef struct vulkan_context_fp
 {

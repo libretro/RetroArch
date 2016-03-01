@@ -593,6 +593,8 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    struct vulkan_filter_chain_create_info info;
 
    memset(&info, 0, sizeof(info));
+
+   info.fp                    = (void*)&vk->context->fp;
    info.device                = vk->context->device;
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
@@ -624,6 +626,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 
    memset(&info, 0, sizeof(info));
 
+   info.fp                    = (void*)&vk->context->fp;
    info.device                = vk->context->device;
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;

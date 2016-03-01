@@ -28,54 +28,7 @@
 
 #define VULKAN_DIRTY_DYNAMIC_BIT                0x0001
 
-#define VK_PROTOTYPES
-
-#ifdef HAVE_WAYLAND
-#define VK_USE_PLATFORM_WAYLAND_KHR
-#endif
-
-#ifdef HAVE_MIR
-#define VK_USE_PLATFORM_MIR_KHR
-#endif
-
-#ifdef _WIN32
-#define VK_USE_PLATFORM_WIN32_KHR
-#endif
-
-#ifdef HAVE_XCB
-#define VK_USE_PLATFORM_XCB_KHR
-#endif
-
-#ifdef HAVE_XLIB
-#define VK_USE_PLATFORM_XLIB_KHR
-#endif
-
-#include <vulkan/vulkan.h>
-
-#ifndef VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL
-#define VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL 1024
-#endif
-
-typedef struct VkDmaBufImageCreateInfo_
-{
-    VkStructureType                             sType; /* Must be VK_STRUCTURE_TYPE_DMA_BUF_IMAGE_CREATE_INFO_INTEL */
-    const void*                                 pNext; /* Pointer to next structure. */
-    int                                         fd;
-    VkFormat                                    format;
-    VkExtent3D                                  extent;         /* Depth must be 1 */
-    uint32_t                                    strideInBytes;
-} VkDmaBufImageCreateInfo;
-
-typedef VkResult (VKAPI_PTR *PFN_vkCreateDmaBufImageINTEL)(VkDevice device,
-      const VkDmaBufImageCreateInfo* pCreateInfo,
-      const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMem, VkImage* pImage);
-
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateDmaBufImageINTEL(
-    VkDevice                                    _device,
-    const VkDmaBufImageCreateInfo*              pCreateInfo,
-    const VkAllocationCallbacks*                pAllocator,
-    VkDeviceMemory*                             pMem,
-    VkImage*                                    pImage);
+#include "vksym.h"
 
 #include <boolean.h>
 #include <retro_inline.h>
@@ -127,7 +80,6 @@ enum vulkan_wsi_type
    VULKAN_WSI_XLIB
 };
 
-#include "vksym.h"
 
 typedef struct vulkan_context
 {
