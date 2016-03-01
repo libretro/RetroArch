@@ -23,8 +23,14 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../runloop.h"
+
+#ifdef HAVE_EGL
 #include "../common/egl_common.h"
+#endif
+
+#ifdef HAVE_OPENGLES
 #include "../common/gl_common.h"
+#endif
 
 #include "../../frontend/drivers/platform_linux.h"
 
