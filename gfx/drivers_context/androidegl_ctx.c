@@ -31,10 +31,13 @@
 /* forward declaration */
 int system_property_get(const char *cmd, const char *args, char *value);
 
+#ifdef HAVE_OPENGLES
 static bool g_es3;
+#endif
 
 static void *android_gfx_ctx_init(void *video_driver)
 {
+#ifdef HAVE_OPENGLES
    EGLint n, major, minor;
    EGLint format;
    EGLint context_attributes[] = {
@@ -50,12 +53,14 @@ static void *android_gfx_ctx_init(void *video_driver)
       EGL_ALPHA_SIZE, 8,
       EGL_NONE
    };
-   struct android_app *android_app = (struct android_app*)g_android;
    egl_ctx_data_t *egl;
+#endif
+   struct android_app *android_app = (struct android_app*)g_android;
 
    if (!android_app)
       return false;
 
+#ifdef HAVE_OPENGLES
    egl = (egl_ctx_data_t*)calloc(1, sizeof(*egl));
 
    RARCH_LOG("Android EGL: GLES version = %d.\n", g_es3 ? 3 : 2);
@@ -69,6 +74,7 @@ static void *android_gfx_ctx_init(void *video_driver)
 
    if (!egl_get_native_visual_id(egl, &format))
       goto error;
+#endif
 
    slock_lock(android_app->mutex);
    if (!android_app->window)
@@ -76,6 +82,7 @@ static void *android_gfx_ctx_init(void *video_driver)
 
    ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
 
+#ifdef HAVE_OPENGLES
    if (!egl_create_context(egl, context_attributes))
    {
       egl_report_error();
@@ -84,6 +91,7 @@ static void *android_gfx_ctx_init(void *video_driver)
 
    if (!egl_create_surface(egl, android_app->window))
       goto unlock_error;
+#endif
 
    slock_unlock(android_app->mutex);
    return egl;
@@ -91,11 +99,13 @@ static void *android_gfx_ctx_init(void *video_driver)
 unlock_error:
    slock_unlock(android_app->mutex);
 error:
+#ifdef HAVE_OPENGLES
    if (egl)
    {
       egl_destroy(egl);
       free(egl);
    }
+#endif
 
    return NULL;
 }
@@ -104,7 +114,9 @@ static void android_gfx_ctx_destroy(void *data)
 {
    if (data)
    {
+#ifdef HAVE_OPENGLES
       egl_destroy(data);
+#endif
       free(data);
    }
 }
@@ -118,7 +130,9 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
 
    *quit = false;
 
+#ifdef HAVE_OPENGLES
    egl_get_video_size(data, &new_width, &new_height);
+#endif
 
    if (new_width != *width || new_height != *height)
    {
@@ -179,17 +193,27 @@ static void android_gfx_ctx_input_driver(void *data,
 static bool android_gfx_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-   unsigned version = major * 100 + minor;
+   unsigned version;
+   
+   switch (api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+#ifdef HAVE_OPENGLES
+         version = major * 100 + minor;
+         if (version > 300)
+            return false;
+         if (version < 300)
+            g_es3 = false;
+         else if (version == 300)
+            g_es3 = true;
+         return api == GFX_CTX_OPENGL_ES_API;
+#endif
+      default:
+         break;
+   }
 
-   (void)data;
-
-   if (version > 300)
-      return false;
-   if (version < 300)
-      g_es3 = false;
-   else if (version == 300)
-      g_es3 = true;
-   return api == GFX_CTX_OPENGL_ES_API;
+   return false;
 }
 
 static bool android_gfx_ctx_has_focus(void *data)
