@@ -8044,6 +8044,22 @@ zr_window_is_active(struct zr_context *ctx, const char *name)
 }
 
 void
+zr_window_close(struct zr_context *ctx, const char *name)
+{
+    int title_len;
+    zr_hash title_hash;
+    struct zr_window *win;
+    ZR_ASSERT(ctx);
+    if (!ctx) return;
+
+    title_len = (int)zr_strsiz(name);
+    title_hash = zr_murmur_hash(name, (int)title_len, ZR_WINDOW_TITLE);
+    win = zr_find_window(ctx, title_hash);
+    if (!win) return;
+    win->flags |= ZR_WINDOW_HIDDEN;
+}
+
+void
 zr_window_set_bounds(struct zr_context *ctx, struct zr_rect bounds)
 {
     ZR_ASSERT(ctx); ZR_ASSERT(ctx->current);
@@ -8136,7 +8152,7 @@ zr_window_set_focus(struct zr_context *ctx, const char *name)
     title_len = (int)zr_strsiz(name);
     title_hash = zr_murmur_hash(name, (int)title_len, ZR_WINDOW_TITLE);
     win = zr_find_window(ctx, title_hash);
-    if (ctx->end != win) {
+    if (win && ctx->end != win) {
         zr_remove_window(ctx, win);
         zr_insert_window(ctx, win);
     }
@@ -13393,6 +13409,62 @@ zr_chart_end(struct zr_context *ctx)
     p.h.next = zr_op_table[p.h.op].argc;
     zr_event_queue_init_fixed(&queue, 0, &evt, 1);
     zr_op_handle(ctx, &p, &queue);
+}
+
+void
+zr_plot(struct zr_context *ctx, enum zr_chart_type type, const float *values,
+    int count, int offset)
+{
+    int i;
+    float min_value;
+    float max_value;
+
+    ZR_ASSERT(ctx);
+    ZR_ASSERT(values);
+    ZR_ASSERT(offset < count);
+    if (!ctx || !values || !count) return;
+
+    /* first pass: find out min and max values */
+    min_value = values[offset];
+    max_value = values[offset];
+    for (i = offset+1; i < count; ++i) {
+        min_value = (values[i] < min_value) ? values[i]: min_value;
+        max_value = (values[i] > max_value) ? values[i]: max_value;
+    }
+
+    /* second pass: draw graph out to window */
+    zr_chart_begin(ctx, type, count, min_value, max_value);
+    for (i = offset; i < count; ++i)
+        zr_chart_push(ctx, values[i]);
+    zr_chart_end(ctx);
+}
+
+void
+zr_plot_function(struct zr_context *ctx, enum zr_chart_type type, void *userdata,
+    float(*value_getter)(void* user, int index), int count, int offset)
+{
+    int i;
+    float min_value;
+    float max_value;
+
+    ZR_ASSERT(ctx);
+    ZR_ASSERT(value_getter);
+    ZR_ASSERT(offset < count);
+    if (!ctx || !value_getter || !count) return;
+
+    /* first pass: find out min and max values */
+    min_value = max_value = value_getter(userdata, offset);
+    for (i = offset+1; i < count; ++i) {
+        float value = value_getter(userdata, i);
+        min_value = (value <= min_value) ? value: min_value;
+        max_value = (value >= max_value) ? value: max_value;
+    }
+
+    /* second pass: draw graph out to window */
+    zr_chart_begin(ctx, type, count, min_value, max_value);
+    for (i = offset; i < count; ++i)
+        zr_chart_push(ctx, value_getter(userdata, i));
+    zr_chart_end(ctx);
 }
 
 /* ==============================================================
