@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (net_http_test.c).
+ * The following license statement only applies to this file (compat_fnmatch.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -21,38 +21,29 @@
  */
 
 #include <stdio.h>
-#include <net/net_http.h>
-#include <net/net_compat.h>
+#include <stdlib.h>
+#include <string.h>
 
-#ifdef _WIN32
-#include <winsock2.h>
-#endif
+#include <net_ifinfo.h>
 
-int main(void)
+int main(int argc, const char *argv[])
 {
-   char   *data;
-   struct http_t *http1, *http3;
-   size_t len, pos = 0, tot = 0;
+   unsigned k              = 0;
+   net_ifinfo_t *list = 
+      (net_ifinfo_t*)calloc(1, sizeof(*list));
 
-   if (!network_init())
+   if (!list)
       return -1;
 
-   http1 = net_http_new("http://buildbot.libretro.com/nightly/win-x86/latest/mednafen_psx_libretro.dll.zip");
+   if (!net_ifinfo_new(list))
+      return -1;
 
-   while (!net_http_update(http1, &pos, &tot))
-      printf("%.9lu / %.9lu        \r",pos,tot);
-	
-   http3 = net_http_new("http://www.wikipedia.org/");
-   while (!net_http_update(http3, NULL, NULL)) {}
-	
-   data  = (char*)net_http_data(http3, &len, false);
+   for (k = 0; k < list->size; k++)
+   {
+      printf("%s:%s\n", list->entries[k].name, list->entries[k].host);
+   }
 
-   printf("%.*s\n", (int)256, data);
-
-   net_http_delete(http1);
-   net_http_delete(http3);
-   
-   network_deinit();
+   net_ifinfo_free(list);
 
    return 0;
 }

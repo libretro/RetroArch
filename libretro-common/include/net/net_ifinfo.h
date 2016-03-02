@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (net_http_test.c).
+ * The following license statement only applies to this file (net_ifinfo.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,39 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
-#include <net/net_http.h>
-#include <net/net_compat.h>
+#ifndef _LIBRETRO_NET_IFINFO_H
+#define _LIBRETRO_NET_IFINFO_H
 
-#ifdef _WIN32
-#include <winsock2.h>
-#endif
+#include <stdint.h>
+#include <stddef.h>
 
-int main(void)
+#include <boolean.h>
+
+struct net_ifinfo_entry
 {
-   char   *data;
-   struct http_t *http1, *http3;
-   size_t len, pos = 0, tot = 0;
+   char *name;
+   char *host;
+};
 
-   if (!network_init())
-      return -1;
+struct net_ifinfo
+{
+   struct net_ifinfo_entry *entries;
+   size_t size;
+}; 
 
-   http1 = net_http_new("http://buildbot.libretro.com/nightly/win-x86/latest/mednafen_psx_libretro.dll.zip");
+typedef struct net_ifinfo net_ifinfo_t;
 
-   while (!net_http_update(http1, &pos, &tot))
-      printf("%.9lu / %.9lu        \r",pos,tot);
-	
-   http3 = net_http_new("http://www.wikipedia.org/");
-   while (!net_http_update(http3, NULL, NULL)) {}
-	
-   data  = (char*)net_http_data(http3, &len, false);
+void net_ifinfo_free(net_ifinfo_t *list);
 
-   printf("%.*s\n", (int)256, data);
+bool net_ifinfo_new(net_ifinfo_t *list);
 
-   net_http_delete(http1);
-   net_http_delete(http3);
-   
-   network_deinit();
-
-   return 0;
-}
+#endif
