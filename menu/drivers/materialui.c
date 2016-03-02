@@ -68,10 +68,7 @@ enum
 
 #define MUI_SYSTEM_TAB_END MUI_SYSTEM_TAB_SETTINGS
 
-struct mui_texture_item
-{
-   uintptr_t id;
-};
+typedef uintptr_t mui_texture_item;
 
 typedef struct mui_handle
 {
@@ -91,8 +88,8 @@ typedef struct mui_handle
          float alpha;
       } arrow;
 
-      struct mui_texture_item bg;
-      struct mui_texture_item list[MUI_TEXTURE_LAST];
+      mui_texture_item bg;
+      mui_texture_item list[MUI_TEXTURE_LAST];
       uintptr_t white;
    } textures;
 
@@ -172,7 +169,7 @@ static void mui_context_reset_textures(mui_handle_t *mui,
 
       video_texture_image_load(&ti, path);
       video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.list[i].id);
+            TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.list[i]);
 
       video_texture_image_free(&ti);
    }
@@ -247,7 +244,7 @@ static void mui_draw_tab(mui_handle_t *mui,
          break;
    }
 
-   mui_draw_icon(mui, mui->textures.list[tab_icon].id,
+   mui_draw_icon(mui, mui->textures.list[tab_icon],
          width / (MUI_SYSTEM_TAB_END+1) * (i+0.5) - mui->icon_size/2,
          height - mui->tabs_height,
          width, height, 0, 1, &pure_white[0]);
@@ -545,15 +542,15 @@ static void mui_render_label_value(mui_handle_t *mui,
 
    if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
    {
-      if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id)
-         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id;
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
       else
          do_draw_text = true;
    }
    else if (string_is_equal(value, "enabled") || string_is_equal(value, "on"))
    {
-      if (mui->textures.list[MUI_TEXTURE_SWITCH_ON].id)
-         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON].id;
+      if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+         texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
       else
          do_draw_text = true;
    }
@@ -582,14 +579,14 @@ static void mui_render_label_value(mui_handle_t *mui,
          case MENU_VALUE_MOVIE:
             break;
          case MENU_VALUE_ON:
-            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON].id)
-               texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON].id;
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+               texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
             else
                do_draw_text = true;
             break;
          case MENU_VALUE_OFF:
-            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id)
-               texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF].id;
+            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+               texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
             else
                do_draw_text = true;
             break;
@@ -678,7 +675,7 @@ static void mui_draw_cursor(mui_handle_t *mui,
    draw.height      = 64;
    draw.coords      = &coords;
    draw.matrix_data = NULL;
-   draw.texture     = mui->textures.list[MUI_TEXTURE_POINTER].id;
+   draw.texture     = mui->textures.list[MUI_TEXTURE_POINTER];
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
@@ -863,7 +860,7 @@ static void mui_frame(void *data)
 
       menu_display_ctl(MENU_DISPLAY_CTL_CLEAR_COLOR, &clearcolor);
 
-      if (mui->textures.bg.id)
+      if (mui->textures.bg)
       {
          background_rendered = true;
 
@@ -874,7 +871,7 @@ static void mui_frame(void *data)
 
          draw.width              = width;
          draw.height             = height;
-         draw.texture            = mui->textures.bg.id;
+         draw.texture            = mui->textures.bg;
          draw.handle_alpha       = 0.75f;
          draw.force_transparency = true;
          draw.color              = &white_transp_bg[0];
@@ -943,7 +940,7 @@ static void mui_frame(void *data)
    if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
    {
       title_margin = mui->icon_size;
-      mui_draw_icon(mui, mui->textures.list[MUI_TEXTURE_BACK].id,
+      mui_draw_icon(mui, mui->textures.list[MUI_TEXTURE_BACK],
          0, 0, width, height, 0, 1, &pure_white[0]);
    }
 
@@ -1151,7 +1148,7 @@ static void mui_context_bg_destroy(mui_handle_t *mui)
    if (!mui)
       return;
 
-   video_driver_texture_unload(&mui->textures.bg.id);
+   video_driver_texture_unload(&mui->textures.bg);
    video_driver_texture_unload(&mui->textures.white);
 }
 
@@ -1164,7 +1161,7 @@ static void mui_context_destroy(void *data)
       return;
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
-      video_driver_texture_unload(&mui->textures.list[i].id);
+      video_driver_texture_unload(&mui->textures.list[i]);
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
 
@@ -1182,7 +1179,7 @@ static bool mui_load_image(void *userdata, void *data, enum menu_image_type type
       case MENU_IMAGE_WALLPAPER:
          mui_context_bg_destroy(mui);
          video_driver_texture_load(data,
-               TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.bg.id);
+               TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.bg);
          mui_allocate_white_texture(mui);
          break;
       case MENU_IMAGE_BOXART:
