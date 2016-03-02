@@ -454,7 +454,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
 
     switch (UI_USER_INTERFACE_IDIOM())
     {
-       case UIUserInterfaceIdiomUnspecified:
+       case -1: /* UIUserInterfaceIdiomUnspecified */
           /* TODO */
           break;
        case UIUserInterfaceIdiomPad:
