@@ -135,6 +135,15 @@ bool zr_checkbox_bool(struct zr_context* cx, const char* text, bool *active)
    return ret;
 }
 
+float zr_checkbox_float(struct zr_context* cx, const char* text, float *active)
+{
+
+   int x = *active;
+   float ret = zr_checkbox(cx, text, &x);
+   *active = x;
+   return ret;
+}
+
 static void zr_labelf(struct zr_context *ctx,
       enum zr_text_align align, const char *fmt, ...)
 {
@@ -276,11 +285,19 @@ static void zrmenu_wnd_shader_parameters(struct zr_context *ctx,
       for (i = 0; i < GFX_MAX_PARAMETERS; i++)
       {
          if (!string_is_empty(shader_info.data->parameters[i].desc))
-         zr_property_float(ctx, shader_info.data->parameters[i].desc,
-            shader_info.data->parameters[i].minimum,
-            &(shader_info.data->parameters[i].current),
-            shader_info.data->parameters[i].maximum,
-            shader_info.data->parameters[i].step, 1);
+         {
+            if(shader_info.data->parameters[i].minimum == 0 &&
+               shader_info.data->parameters[i].maximum == 1 &&
+               shader_info.data->parameters[i].step == 1)
+               zr_checkbox_float(ctx, shader_info.data->parameters[i].desc,
+                  &(shader_info.data->parameters[i].current));
+            else
+               zr_property_float(ctx, shader_info.data->parameters[i].desc,
+                  shader_info.data->parameters[i].minimum,
+                  &(shader_info.data->parameters[i].current),
+                  shader_info.data->parameters[i].maximum,
+                  shader_info.data->parameters[i].step, 1);
+         }
       }
    }
    zr_end(ctx);
