@@ -295,7 +295,7 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
 {
     switch (result)
     {
-        case NSOKButton:
+        case 1: /* NSOKButton/NSModalResponseOK */
             if (panel.URL)
             {
                 settings_t *settings = config_get_ptr();
@@ -318,7 +318,7 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
                 }
             }
             break;
-        case NSCancelButton:
+        case 0: /* NSCancelButton/NSModalResponseCancel */
             break;
     }
 }
@@ -327,7 +327,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 {
     switch (result)
     {
-        case NSOKButton:
+        case 1: /* NSOKButton/NSModalResponseOK */
             if (panel.URL)
             {
                 struct retro_system_info *system = NULL;
@@ -346,7 +346,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
                     ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
             }
             break;
-        case NSCancelButton:
+        case 0: /* NSCancelButton/NSModalResponseCancel */
             break;
     }
 }
