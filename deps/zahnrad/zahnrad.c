@@ -11036,6 +11036,47 @@ zr_menu_text_begin(struct zr_context *ctx, struct zr_panel *layout,
 }
 
 int
+zr_menu_text_begin_align(struct zr_context *ctx, struct zr_panel *layout,
+    const char *title, float width, int horizontal_alignment, int vertical_alignment)
+{
+    struct zr_window *win;
+    const struct zr_input *in;
+    struct zr_rect header;
+    int is_clicked = zr_false;
+    enum zr_widget_status state;
+
+    ZR_ASSERT(ctx);
+    ZR_ASSERT(ctx->current);
+    ZR_ASSERT(ctx->current->layout);
+    if (!ctx || !ctx->current || !ctx->current->layout)
+        return 0;
+
+    {
+        /* execute menu text button for open/closing the popup */
+        struct zr_button_text button;
+        zr_zero(&button, sizeof(button));
+        if (!zr_button(&button.base, &header, ctx, ZR_BUTTON_NORMAL))
+            return 0;
+
+        win = ctx->current;
+        button.base.rounding = 0;
+        button.base.border_width = 0;
+        button.base.border = ctx->style.colors[ZR_COLOR_WINDOW];
+        button.base.normal = ctx->style.colors[ZR_COLOR_WINDOW];
+        button.base.active = ctx->style.colors[ZR_COLOR_WINDOW];
+        button.alignment = horizontal_alignment|vertical_alignment;
+        button.normal = ctx->style.colors[ZR_COLOR_TEXT];
+        button.active = ctx->style.colors[ZR_COLOR_TEXT];
+        button.hover = ctx->style.colors[ZR_COLOR_TEXT];
+        in = (win->layout->flags & ZR_WINDOW_ROM) ? 0: &ctx->input;
+        if (zr_do_button_text(&state, &win->buffer, header,
+            title, ZR_BUTTON_DEFAULT, &button, in, &ctx->style.font))
+            is_clicked = zr_true;
+    }
+    return zr_menu_begin(layout, ctx, win, title, is_clicked, header, width);
+}
+
+int
 zr_menu_icon_begin(struct zr_context *ctx, struct zr_panel *layout,
     const char *id, struct zr_image img, float width)
 {

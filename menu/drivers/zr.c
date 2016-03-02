@@ -158,7 +158,7 @@ static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
          ctx->style.colors[ZR_COLOR_TEXT_ACTIVE] = zr_rgba(200, 200, 200, 255);
          ctx->style.colors[ZR_COLOR_WINDOW] = zr_rgba(202, 212, 214, 215);
          ctx->style.colors[ZR_COLOR_HEADER] = zr_rgba(137, 182, 224, 220);
-         ctx->style.colors[ZR_COLOR_BORDER] = zr_rgba(140, 159, 173, 255);
+         ctx->style.colors[ZR_COLOR_BORDER] = zr_rgba(140, 159, 173, 0);
          ctx->style.colors[ZR_COLOR_BUTTON] = zr_rgba(137, 182, 224, 255);
          ctx->style.colors[ZR_COLOR_BUTTON_HOVER] = zr_rgba(142, 187, 229, 255);
          ctx->style.colors[ZR_COLOR_BUTTON_ACTIVE] = zr_rgba(147, 192, 234, 255);
@@ -204,8 +204,8 @@ static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
          ctx->style.colors[ZR_COLOR_TEXT_HOVERING] = zr_rgba(195, 195, 195, 255);
          ctx->style.colors[ZR_COLOR_TEXT_ACTIVE] = zr_rgba(200, 200, 200, 255);
          ctx->style.colors[ZR_COLOR_WINDOW] = zr_rgba(45, 53, 56, 215);
-         ctx->style.colors[ZR_COLOR_HEADER] = zr_rgba(46, 46, 46, 220);
-         ctx->style.colors[ZR_COLOR_BORDER] = zr_rgba(46, 46, 46, 255);
+         ctx->style.colors[ZR_COLOR_HEADER] = zr_rgba(46, 46, 46, 255);
+         ctx->style.colors[ZR_COLOR_BORDER] = zr_rgba(46, 46, 46, 0);
          ctx->style.colors[ZR_COLOR_BUTTON] = zr_rgba(48, 83, 111, 255);
          ctx->style.colors[ZR_COLOR_BUTTON_HOVER] = zr_rgba(53, 88, 116, 255);
          ctx->style.colors[ZR_COLOR_BUTTON_ACTIVE] = zr_rgba(58, 93, 121, 255);
@@ -249,13 +249,67 @@ static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
    }
 }
 
+static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struct zrmenu *gui)
+{
+   settings_t *settings = config_get_ptr();
+   struct zr_panel layout;
+
+   if (zr_begin(ctx, &layout, "", zr_rect(-1, -1, width + 1, height + 1),
+         ZR_WINDOW_NO_SCROLLBAR))
+   {
+      /* context menu */
+      struct zr_panel node, context_menu;
+
+      if (zr_contextual_begin(ctx, &context_menu, 0, zr_vec2(100, 220), zr_window_get_bounds(ctx))) {
+          zr_layout_row_dynamic(ctx, 25, 1);
+          if (zr_contextual_item(ctx, "Test 1", ZR_TEXT_CENTERED))
+             printf("test \n");
+          if (zr_contextual_item(ctx, "Test 2",ZR_TEXT_CENTERED))
+             printf("test \n");
+          zr_contextual_end(ctx);
+      }
+
+      /* main menu */
+      struct zr_panel menu;
+
+      zr_menubar_begin(ctx);
+      zr_layout_row_begin(ctx, ZR_STATIC, 25, 4);
+      zr_layout_row_push(ctx, 100);
+
+      if (zr_menu_text_begin_align(ctx, &menu, "Menu", 120, ZR_TEXT_LEFT, ZR_TEXT_MIDDLE))
+      {
+          zr_layout_row_dynamic(ctx, 25, 1);
+
+          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Test"))
+              printf("test \n");
+          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "About"))
+              printf("test \n");
+         if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Exit"))
+               printf("test \n");
+          zr_menu_end(ctx);
+      }
+      if (zr_menu_text_begin_align(ctx, &menu, "Window", 120, ZR_TEXT_LEFT, ZR_TEXT_MIDDLE))
+      {
+          zr_layout_row_dynamic(ctx, 25, 1);
+
+          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Test"))
+              printf("test \n");
+
+          zr_menu_end(ctx);
+      }
+      zr_layout_row_push(ctx, 60);
+      zr_menubar_end(ctx);
+
+   }
+   zr_end(ctx);
+}
 
 static int zrmenu_wnd_control(struct zr_context *ctx,
       int width, int height, struct zrmenu *gui)
 {
    int i;
    struct zr_panel layout;
-   if (zr_begin(ctx, &layout, "Control", zr_rect(900, 10, 350, 520),
+   if (zr_begin(ctx, &layout, "Control", zr_rect(900, 60, 350, 520),
       ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
       ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
@@ -346,7 +400,7 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
    settings_t *settings = config_get_ptr();
 
    struct zr_panel layout;
-   if (zr_begin(ctx, &layout, "Demo Window", zr_rect(10, 10, width/2, 400),
+   if (zr_begin(ctx, &layout, "Demo Window", zr_rect(10, 90, 500, 400),
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
          ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
@@ -387,28 +441,6 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
          gui->theme = zr_combo_item(ctx, themes[THEME_LIGHT], ZR_TEXT_CENTERED) ? THEME_LIGHT : gui->theme;
          if (old != gui->theme) zrmenu_set_style(ctx, gui->theme);
          zr_combo_end(ctx);
-      }
-   }
-   zr_end(ctx);
-}
-
-static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struct zrmenu *gui)
-{
-   settings_t *settings = config_get_ptr();
-
-   struct zr_panel layout;
-   if (zr_begin(ctx, &layout, "", zr_rect(0, 0, width, height),
-         ZR_WINDOW_MINIMIZABLE))
-   {
-      struct zr_panel node, menu;
-      /* context menu */
-      if (zr_contextual_begin(ctx, &menu, 0, zr_vec2(100, 220), zr_window_get_bounds(ctx))) {
-          zr_layout_row_dynamic(ctx, 25, 1);
-          if (zr_contextual_item(ctx, "Test 1", ZR_TEXT_CENTERED))
-             printf("test \n");
-          if (zr_contextual_item(ctx, "Test 2",ZR_TEXT_CENTERED))
-             printf("test \n");
-          zr_contextual_end(ctx);
       }
    }
    zr_end(ctx);

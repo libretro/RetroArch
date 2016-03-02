@@ -1611,6 +1611,9 @@ void zr_menubar_end(struct zr_context*);
 
 int zr_menu_text_begin(struct zr_context*, struct zr_panel*,
                         const char *title, float width);
+int zr_menu_text_begin_align(struct zr_context*, struct zr_panel*,
+                        const char *title, float width, 
+                        int horizontal_alignment, int vertical_alignment);
 int zr_menu_icon_begin(struct zr_context*, struct zr_panel*, const char *id,
                         struct zr_image, float width);
 int zr_menu_symbol_begin(struct zr_context*, struct zr_panel*, const char *id,
