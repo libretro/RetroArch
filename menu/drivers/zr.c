@@ -359,7 +359,7 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
    settings_t *settings = config_get_ptr();
 
    struct zr_panel layout;
-   if (zr_begin(ctx, &layout, "Demo Window", zr_rect(10, 90, 500, 400),
+   if (zr_begin(ctx, &layout, "Control", zr_rect(10, 90, 500, 400),
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
          ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
