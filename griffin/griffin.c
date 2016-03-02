@@ -774,6 +774,9 @@ NETPLAY
 #include "../netplay/netplay.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_http.c"
+#ifndef HAVE_SOCKET_LEGACY
+#include "../libretro-common/net/net_ifinfo.c"
+#endif
 #include "../tasks/task_http.c"
 #endif
 

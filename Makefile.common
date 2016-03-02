@@ -937,6 +937,10 @@ ifeq ($(HAVE_NETWORKING), 1)
           net_http_special.o \
           tasks/task_http.o
 
+   ifneq ($(HAVE_SOCKET_LEGACY),1)
+	OBJ += libretro-common/net/net_ifinfo.o
+	endif
+
    ifneq ($(findstring Win32,$(OS)),)
       LIBS += -lws2_32
    endif

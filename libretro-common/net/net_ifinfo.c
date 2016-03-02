@@ -29,7 +29,7 @@
 #include <netdb.h>
 #include <ifaddrs.h>
 
-#include <net_ifinfo.h>
+#include <net/net_ifinfo.h>
 
 void net_ifinfo_free(net_ifinfo_t *list)
 {
