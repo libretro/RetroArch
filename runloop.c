@@ -467,7 +467,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                runloop_system.info.valid_extensions ?
                runloop_system.info.valid_extensions : DEFAULT_EXT,
                sizeof(runloop_system.valid_extensions));
-         runloop_system.block_extract = runloop_system.info.block_extract;
          break;
       case RUNLOOP_CTL_GET_CORE_OPTION_SIZE:
          {

@@ -39,7 +39,6 @@ typedef struct rarch_system_info
    unsigned rotation;
    unsigned performance_level;
 
-   bool block_extract;
    bool force_nonblock;
    bool no_content;
 
