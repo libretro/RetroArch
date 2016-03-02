@@ -73,7 +73,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
    {
       char host[NI_MAXHOST];
-      int s = 0;
+      struct net_ifinfo_entry *ptr = NULL;
 
       if (!ifa->ifa_addr)
          continue;
@@ -81,26 +81,23 @@ bool net_ifinfo_new(net_ifinfo_t *list)
       if (ifa->ifa_addr->sa_family != AF_INET)
          continue;
 
-      s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
-            host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-
-      if (s != 0)
+      if (getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
+            host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) != 0)
          goto error;
 
-      {
-         struct net_ifinfo_entry *ptr = (struct net_ifinfo_entry*)
-            realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
+      ptr = (struct net_ifinfo_entry*)
+         realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
 
-         if (!ptr)
-            goto error;
+      if (!ptr)
+         goto error;
 
-         list->entries = ptr;
-      }
+      list->entries          = ptr;
 
       list->entries[k].name  = strdup(ifa->ifa_name);
       list->entries[k].host  = strdup(host);
+      list->size             = k + 1;
+
       k++;
-      list->size = k;
    }
 
    freeifaddrs(ifaddr);
