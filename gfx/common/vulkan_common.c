@@ -1088,7 +1088,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       cached_instance                = NULL;
    }
    else if (VKFUNC(vkCreateInstance)(&info, NULL, &vk->context.instance) != VK_SUCCESS)
+   {
+      RARCH_ERR("Failed to create Vulkan instance.\n");
       return false;
+   }
 
    VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance,
          GetPhysicalDeviceFormatProperties);
