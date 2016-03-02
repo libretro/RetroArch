@@ -158,10 +158,11 @@ static void zr_labelf(struct zr_context *ctx,
 
 static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
 {
-   for (int i = 0; i < ZR_ROUNDING_MAX; ++i)
-   {
+   unsigned i;
+
+   for (i = 0; i < ZR_ROUNDING_MAX; ++i)
       (&gui.ctx)->style.rounding[i] = 0;
-   }
+
    switch (theme)
    {
       case THEME_LIGHT:
