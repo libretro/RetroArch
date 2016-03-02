@@ -636,9 +636,9 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
    static char menu_input_keyboard_label_setting[256];
-   menu_input_t *menu_input = menu_input_get_ptr();
    static const char *menu_input_keyboard_label = NULL;
    static const char **menu_input_keyboard_buffer;
+   menu_input_t *menu_input = menu_input_get_ptr();
 
    if (!menu_input)
       return false;
