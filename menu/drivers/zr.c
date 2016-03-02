@@ -415,7 +415,7 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struc
    settings_t *settings = config_get_ptr();
    struct zr_panel layout;
 
-   if (zr_begin(ctx, &layout, "Main", zr_rect(-1, -1, width + 1, height + 1),
+   if (zr_begin(ctx, &layout, "Main", zr_rect(-1, -1, 120, height + 1),
          ZR_WINDOW_NO_SCROLLBAR))
    {
       /* context menu */
@@ -434,7 +434,7 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struc
       struct zr_panel menu;
 
       zr_menubar_begin(ctx);
-      zr_layout_row_begin(ctx, ZR_STATIC, 25, 4);
+      zr_layout_row_begin(ctx, ZR_STATIC, 25, 1);
       zr_layout_row_push(ctx, 100);
 
       if (zr_menu_text_begin(ctx, &menu, "Menu", ZR_TEXT_LEFT|ZR_TEXT_MIDDLE, 120))
