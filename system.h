@@ -40,7 +40,6 @@ typedef struct rarch_system_info
    unsigned performance_level;
 
    bool force_nonblock;
-   bool no_content;
 
    const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
    char valid_extensions[PATH_MAX_LENGTH];

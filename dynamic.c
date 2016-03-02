@@ -40,6 +40,7 @@
 
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
+#include "content.h"
 #include "retroarch.h"
 #include "configuration.h"
 #include "general.h"
@@ -953,7 +954,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          bool state = *(const bool*)data;
          RARCH_LOG("Environ SET_SUPPORT_NO_GAME: %s.\n", state ? "yes" : "no");
-         system->no_content = state;
+
+         if (state)
+            content_ctl(CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT, NULL);
+         else
+            content_ctl(CONTENT_CTL_UNSET_DOES_NOT_NEED_CONTENT, NULL);
          break;
       }
 

@@ -133,7 +133,7 @@ int rarch_main(int argc, char *argv[], void *data)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET,  &system);
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-   if (content_ctl(CONTENT_CTL_IS_INITED, NULL) || system->no_content)
+   if (content_ctl(CONTENT_CTL_IS_INITED, NULL) || content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
    {
       char tmp[PATH_MAX_LENGTH];
       struct retro_system_info *info = system ? &system->info : NULL;
@@ -149,7 +149,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
       if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) || !info)
          content_push_to_history_playlist(
-               system->no_content || *tmp,
+               content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL) || *tmp,
                *tmp ? tmp : NULL,
                info);
    }

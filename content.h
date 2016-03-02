@@ -40,6 +40,8 @@ enum content_ctl_state
 
    CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT,
 
+   CONTENT_CTL_UNSET_DOES_NOT_NEED_CONTENT,
+
    /* Initializes and loads a content file for the currently
     * selected libretro core. */
    CONTENT_CTL_INIT,

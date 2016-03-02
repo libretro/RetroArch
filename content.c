@@ -1578,7 +1578,7 @@ static bool init_content_file_set_attribs(
 
       attr.i               = system->info.block_extract;
       attr.i              |= system->info.need_fullpath << 1;
-      attr.i              |= (!system->no_content)      << 2;
+      attr.i              |= (!content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))  << 2;
 
       if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL)
             && settings->set_supports_no_game_enable)
@@ -1683,6 +1683,9 @@ bool content_ctl(enum content_ctl_state state, void *data)
          return core_does_not_need_content;
       case CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT:
          core_does_not_need_content = true;
+         break;
+      case CONTENT_CTL_UNSET_DOES_NOT_NEED_CONTENT:
+         core_does_not_need_content = false;
          break;
       case CONTENT_CTL_GET_CRC:
          {
