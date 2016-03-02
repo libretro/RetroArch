@@ -267,9 +267,14 @@ static int zrmenu_wnd_control(struct zr_context *ctx,
       {
          wnd_control_toggle = false;
          if (wnd_control)
+         {
             zr_window_set_position(ctx, zr_vec2(zr_window_get_position(ctx).x - width - 10, zr_window_get_position(ctx).y));
+            zr_window_set_focus(ctx, "Control");
+         }
          else
-            zr_window_set_position(ctx, zr_vec2(zr_window_get_position(ctx).x + width + 10, zr_window_get_position(ctx).y));         
+         {
+            zr_window_set_position(ctx, zr_vec2(zr_window_get_position(ctx).x + width + 10, zr_window_get_position(ctx).y));
+         }
       }
 
       /* Style */
