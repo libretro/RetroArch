@@ -1018,12 +1018,8 @@ int16_t menu_input_pointer_state(enum menu_input_pointer_state state)
 
 int16_t menu_input_mouse_state(enum menu_input_mouse_state state)
 {
-   menu_input_t *menu = menu_input_get_ptr();
-   unsigned type = 0;
+   unsigned type   = 0;
    unsigned device = RETRO_DEVICE_MOUSE;
-
-   if (!menu)
-      return 0;
 
    switch (state)
    {
