@@ -101,7 +101,7 @@ static void *vg_init(const video_info_t *video,
    if (!vg || !ctx)
       goto error;
 
-   gfx_ctx_ctl(GFX_CTL_SET, ctx);
+   gfx_ctx_ctl(GFX_CTL_SET, (void*)ctx);
 
    gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
 
@@ -184,7 +184,8 @@ static void *vg_init(const video_info_t *video,
 
    gfx_ctx_ctl(GFX_CTL_INPUT_DRIVER, &inp);
 
-   if (settings->video.font_enable && font_renderer_create_default(&vg->font_driver, &vg->mFontRenderer,
+   if (     settings->video.font_enable 
+         && font_renderer_create_default((const void**)&vg->font_driver, &vg->mFontRenderer,
             *settings->video.font_path ? settings->video.font_path : NULL, settings->video.font_size))
    {
       vg->mFont            = vgCreateFont(0);
@@ -215,7 +216,7 @@ static void *vg_init(const video_info_t *video,
    }
 
    if (vg_query_extension("KHR_EGL_image") 
-         && gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_INIT, video))
+         && gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_INIT, (void*)video))
    {
       gfx_ctx_proc_address_t proc_address;
 
