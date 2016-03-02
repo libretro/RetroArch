@@ -66,6 +66,8 @@ static struct zr_user_font usrfnt;
 static struct zr_allocator zr_alloc;
 static struct zrmenu gui;
 
+bool wnd_control_visible = false;
+
 enum
 {
    ZR_TEXTURE_POINTER = 0,
@@ -249,61 +251,6 @@ static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
    }
 }
 
-static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struct zrmenu *gui)
-{
-   settings_t *settings = config_get_ptr();
-   struct zr_panel layout;
-
-   if (zr_begin(ctx, &layout, "", zr_rect(-1, -1, width + 1, height + 1),
-         ZR_WINDOW_NO_SCROLLBAR))
-   {
-      /* context menu */
-      struct zr_panel node, context_menu;
-
-      if (zr_contextual_begin(ctx, &context_menu, 0, zr_vec2(100, 220), zr_window_get_bounds(ctx))) {
-          zr_layout_row_dynamic(ctx, 25, 1);
-          if (zr_contextual_item(ctx, "Test 1", ZR_TEXT_CENTERED))
-             printf("test \n");
-          if (zr_contextual_item(ctx, "Test 2",ZR_TEXT_CENTERED))
-             printf("test \n");
-          zr_contextual_end(ctx);
-      }
-
-      /* main menu */
-      struct zr_panel menu;
-
-      zr_menubar_begin(ctx);
-      zr_layout_row_begin(ctx, ZR_STATIC, 25, 4);
-      zr_layout_row_push(ctx, 100);
-
-      if (zr_menu_text_begin_align(ctx, &menu, "Menu", 120, ZR_TEXT_LEFT, ZR_TEXT_MIDDLE))
-      {
-          zr_layout_row_dynamic(ctx, 25, 1);
-
-          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Test"))
-              printf("test \n");
-          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "About"))
-              printf("test \n");
-         if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Exit"))
-               printf("test \n");
-          zr_menu_end(ctx);
-      }
-      if (zr_menu_text_begin_align(ctx, &menu, "Window", 120, ZR_TEXT_LEFT, ZR_TEXT_MIDDLE))
-      {
-          zr_layout_row_dynamic(ctx, 25, 1);
-
-          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Test"))
-              printf("test \n");
-
-          zr_menu_end(ctx);
-      }
-      zr_layout_row_push(ctx, 60);
-      zr_menubar_end(ctx);
-
-   }
-   zr_end(ctx);
-}
-
 static int zrmenu_wnd_control(struct zr_context *ctx,
       int width, int height, struct zrmenu *gui)
 {
@@ -446,13 +393,72 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
    zr_end(ctx);
 }
 
+static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struct zrmenu *gui)
+{
+   settings_t *settings = config_get_ptr();
+   struct zr_panel layout;
+
+   if (zr_begin(ctx, &layout, "", zr_rect(-1, -1, width + 1, height + 1),
+         ZR_WINDOW_NO_SCROLLBAR))
+   {
+      /* context menu */
+      struct zr_panel node, context_menu;
+
+      if (zr_contextual_begin(ctx, &context_menu, 0, zr_vec2(100, 220), zr_window_get_bounds(ctx))) {
+          zr_layout_row_dynamic(ctx, 25, 1);
+          if (zr_contextual_item(ctx, "Test 1", ZR_TEXT_CENTERED))
+             printf("test \n");
+          if (zr_contextual_item(ctx, "Test 2",ZR_TEXT_CENTERED))
+             printf("test \n");
+          zr_contextual_end(ctx);
+      }
+
+      /* main menu */
+      struct zr_panel menu;
+
+      zr_menubar_begin(ctx);
+      zr_layout_row_begin(ctx, ZR_STATIC, 25, 4);
+      zr_layout_row_push(ctx, 100);
+
+      if (zr_menu_text_begin_align(ctx, &menu, "Menu", 120, ZR_TEXT_LEFT, ZR_TEXT_MIDDLE))
+      {
+          zr_layout_row_dynamic(ctx, 25, 1);
+
+          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Test"))
+              printf("test \n");
+          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "About"))
+              printf("test \n");
+         if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Exit"))
+               printf("test \n");
+          zr_menu_end(ctx);
+      }
+      if (zr_menu_text_begin_align(ctx, &menu, "Window", 120, ZR_TEXT_LEFT, ZR_TEXT_MIDDLE))
+      {
+          zr_layout_row_dynamic(ctx, 25, 1);
+
+          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Control"))              
+            wnd_control_visible = !wnd_control_visible;
+            
+          zr_menu_end(ctx);
+      }
+      zr_layout_row_push(ctx, 60);
+      zr_menubar_end(ctx);
+
+   }
+   zr_end(ctx);
+}
+
 static void zrmenu_frame(struct zrmenu *gui, int width, int height)
 {
    struct zr_context *ctx = &gui->ctx;
 
    zrmenu_wnd_main(ctx, width, height, gui);
    zrmenu_wnd_demo(ctx, width, height, gui);
-   zrmenu_wnd_control(ctx, width, height, gui);
+   
+   if (wnd_control_visible)
+      zrmenu_wnd_control(ctx, width, height, gui);
+   
+   
    zr_buffer_info(&gui->status, &gui->ctx.memory);
 }
 
