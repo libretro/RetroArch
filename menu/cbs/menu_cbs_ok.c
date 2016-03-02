@@ -1547,7 +1547,6 @@ static int action_ok_option_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char game_path[PATH_MAX_LENGTH];
-   rarch_system_info_t *system            = NULL;
    config_file_t *conf                    = NULL;
 
    if (!rarch_game_options_validate(game_path, sizeof(game_path), true))
@@ -1566,13 +1565,15 @@ static int action_ok_option_create(const char *path,
          return false;
    }
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
    if(config_file_write(conf, game_path))
    {
+      global_t                 *global  = global_get_ptr();
+
       runloop_msg_queue_push("Core options file created successfully",
             1, 100, true);
-      strlcpy(system->game_options_path, game_path, sizeof(system->game_options_path));
+
+      strlcpy(global->path.core_options_path,
+            game_path, sizeof(global->path.core_options_path));
    }
    config_file_free(conf);
 

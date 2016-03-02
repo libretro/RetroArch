@@ -33,7 +33,6 @@ extern "C" {
 typedef struct rarch_system_info
 {
    char title_buf[64];
-   char game_options_path[PATH_MAX_LENGTH];
 
    struct retro_system_info info;
 
