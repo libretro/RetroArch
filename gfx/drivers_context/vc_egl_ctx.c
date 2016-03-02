@@ -298,6 +298,15 @@ error:
    return NULL;
 }
 
+static void gfx_ctx_vc_set_swap_interval(void *data, unsigned swap_interval)
+{
+   vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
+   
+#ifdef HAVE_EGL
+   egl_set_swap_interval(&vc->egl, swap_interval);
+#endif
+}
+
 static bool gfx_ctx_vc_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen)
@@ -586,15 +595,6 @@ static bool gfx_ctx_vc_image_buffer_write(void *data, const void *frame, unsigne
 error:
    *image_handle = NULL;
    return false;
-}
-
-static void gfx_ctx_vc_set_swap_interval(void *data, unsigned swap_interval)
-{
-   vc_ctx_data_t *vc = (vc_ctx_data_t*)data;
-
-#ifdef HAVE_EGL
-   egl_set_swap_interval(&vc->egl, swap_interval);
-#endif
 }
 
 static void gfx_ctx_vc_swap_buffers(void *data)
