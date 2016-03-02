@@ -30,6 +30,8 @@
 #include <gfx/math/matrix_4x4.h>
 #include <string/stdstring.h>
 #include <string/string_list.h>
+#include "../../gfx/video_context_driver.h"
+#include "../../gfx/video_shader_driver.h"
 
 #include "menu_generic.h"
 
@@ -252,11 +254,42 @@ static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
    }
 }
 
+static void zrmenu_wnd_shader_parameters(struct zr_context *ctx,
+      int width, int height, struct zrmenu *gui)
+{
+   int i = 0;
+   settings_t *settings = config_get_ptr();
+   video_shader_ctx_t shader_info;
+
+   struct zr_panel layout;
+   if (zr_begin(ctx, &layout, "Shader Parameters", zr_rect(240, 10, 300, 400),
+         ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
+         ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
+   {
+      struct zr_panel combo;
+      static const char *themes[] = {"Dark", "Light"};
+      enum   zr_theme old         = gui->theme;
+
+      zr_layout_row_dynamic(ctx, 30, 1);
+
+      video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+      for (i = 0; i < GFX_MAX_PARAMETERS; i++)
+      {
+         if (!string_is_empty(shader_info.data->parameters[i].desc))
+         zr_property_float(ctx, shader_info.data->parameters[i].desc,
+            shader_info.data->parameters[i].minimum,
+            &(shader_info.data->parameters[i].current),
+            shader_info.data->parameters[i].maximum,
+            shader_info.data->parameters[i].step, 1);
+      }
+   }
+   zr_end(ctx);
+}
 
 static int zrmenu_wnd_control(struct zr_context *ctx,
       int width, int height, struct zrmenu *gui)
 {
-   
+
    int i;
    struct zr_panel layout;
    if (zr_begin(ctx, &layout, "Control", zr_rect(900, 60, 350, 520),
@@ -278,7 +311,7 @@ static int zrmenu_wnd_control(struct zr_context *ctx,
       }
 
       /* Style */
-      if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Metrics", ZR_MINIMIZED)) 
+      if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Metrics", ZR_MINIMIZED))
       {
          zr_layout_row_dynamic(ctx, 20, 2);
          zr_label(ctx,"Total:", ZR_TEXT_LEFT);
@@ -294,7 +327,7 @@ static int zrmenu_wnd_control(struct zr_context *ctx,
       if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Properties", ZR_MINIMIZED))
       {
          zr_layout_row_dynamic(ctx, 22, 3);
-         for (i = 0; i <= ZR_PROPERTY_SCROLLBAR_SIZE; ++i) 
+         for (i = 0; i <= ZR_PROPERTY_SCROLLBAR_SIZE; ++i)
          {
             zr_label(ctx, zr_get_property_name((enum zr_style_properties)i), ZR_TEXT_LEFT);
             zr_property_float(ctx, "#X:", 0, &ctx->style.properties[i].x, 20, 1, 1);
@@ -302,10 +335,10 @@ static int zrmenu_wnd_control(struct zr_context *ctx,
          }
          zr_layout_pop(ctx);
       }
-      if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Rounding", ZR_MINIMIZED)) 
+      if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Rounding", ZR_MINIMIZED))
       {
          zr_layout_row_dynamic(ctx, 22, 2);
-         for (i = 0; i < ZR_ROUNDING_MAX; ++i) 
+         for (i = 0; i < ZR_ROUNDING_MAX; ++i)
          {
             zr_label(ctx, zr_get_rounding_name((enum zr_style_rounding)i), ZR_TEXT_LEFT);
             zr_property_float(ctx, "#R:", 0, &ctx->style.rounding[i], 20, 1, 1);
@@ -320,7 +353,7 @@ static int zrmenu_wnd_control(struct zr_context *ctx,
 
          zr_layout_row_dynamic(ctx,  25, 2);
          zr_label(ctx, "THEME:", ZR_TEXT_LEFT);
-         if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 300)) 
+         if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 300))
          {
             zr_layout_row_dynamic(ctx, 25, 1);
             gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED) ? THEME_DARK : gui->theme;
@@ -332,20 +365,20 @@ static int zrmenu_wnd_control(struct zr_context *ctx,
          zr_layout_row_dynamic(ctx, 300, 1);
          if (zr_group_begin(ctx, &tab, "Colors", 0))
          {
-            for (i = 0; i < ZR_COLOR_COUNT; ++i) 
+            for (i = 0; i < ZR_COLOR_COUNT; ++i)
             {
                zr_layout_row_dynamic(ctx, 25, 2);
                zr_label(ctx, zr_get_color_name((enum zr_style_colors)i), ZR_TEXT_LEFT);
                if (zr_combo_begin_color(ctx, &combo, ctx->style.colors[i], 200))
                {
                   zr_layout_row_dynamic(ctx, 25, 1);
-                  ctx->style.colors[i].r = 
+                  ctx->style.colors[i].r =
                      (zr_byte)zr_propertyi(ctx, "#R:", 0, ctx->style.colors[i].r, 255, 1,1);
-                  ctx->style.colors[i].g = 
+                  ctx->style.colors[i].g =
                      (zr_byte)zr_propertyi(ctx, "#G:", 0, ctx->style.colors[i].g, 255, 1,1);
-                  ctx->style.colors[i].b = 
+                  ctx->style.colors[i].b =
                      (zr_byte)zr_propertyi(ctx, "#B:", 0, ctx->style.colors[i].b, 255, 1,1);
-                  ctx->style.colors[i].a = 
+                  ctx->style.colors[i].a =
                      (zr_byte)zr_propertyi(ctx, "#A:", 0, ctx->style.colors[i].a, 255, 1,1);
                   zr_combo_end(ctx);
                }
@@ -459,7 +492,7 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struc
             wnd_control = !wnd_control;
             wnd_control_toggle = true;
          }
-            
+
           zr_menu_end(ctx);
       }
       zr_layout_row_push(ctx, 60);
@@ -473,11 +506,12 @@ static void zrmenu_frame(struct zrmenu *gui, int width, int height)
 {
    struct zr_context *ctx = &gui->ctx;
 
-   zrmenu_wnd_control(ctx, width, height, gui);   
+   zrmenu_wnd_control(ctx, width, height, gui);
    zrmenu_wnd_main(ctx, width, height, gui);
    zrmenu_wnd_demo(ctx, width, height, gui);
-   
-   
+   zrmenu_wnd_shader_parameters(ctx, width, height, gui);
+
+
    zr_buffer_info(&gui->status, &gui->ctx.memory);
 }
 
@@ -627,7 +661,7 @@ static struct zr_user_font font_bake_and_upload(
       /* pack all glyphes and return needed image width, height and memory size*/
       custom.w = 2; custom.h = 2;
       zr_font_bake_pack(&img_size,
-            &img_width,&img_height,&custom,tmp,tmp_size,&config, 1); 
+            &img_width,&img_height,&custom,tmp,tmp_size,&config, 1);
 
       /* bake all glyphes and custom white pixel into image */
       img = calloc(1, img_size);
@@ -759,7 +793,7 @@ static void zr_device_draw(struct zr_device *dev,
       glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
       /* iterate over and execute each draw command */
-      zr_draw_foreach(cmd, ctx, &dev->cmds) 
+      zr_draw_foreach(cmd, ctx, &dev->cmds)
       {
          if (!cmd->elem_count)
             continue;
@@ -800,7 +834,7 @@ static void zrmenu_input_mouse_movement(struct zr_context *ctx)
 {
    int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-   
+
    zr_input_motion(ctx, mouse_x, mouse_y);
 }
 
@@ -817,7 +851,7 @@ static void zrmenu_input_mouse_button(struct zr_context *ctx)
 
 static void zrmenu_input_keyboard(struct zr_context *ctx)
 {
-   /* placeholder, it just presses 1 on right click 
+   /* placeholder, it just presses 1 on right click
       needs to be hooked up correctly
    */
    if(menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
@@ -1131,7 +1165,7 @@ static void wimp_draw_tab_end(wimp_handle_t *wimp,
          &blue_bg[0]);
 }
 
-static void wimp_draw_scrollbar(wimp_handle_t *wimp, 
+static void wimp_draw_scrollbar(wimp_handle_t *wimp,
       unsigned width, unsigned height, float *coord_color)
 {
    unsigned header_height;
@@ -1244,7 +1278,7 @@ static void wimp_render(void *data)
    {
       int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
       float    old_accel_val, new_accel_val;
-      unsigned new_pointer_val = 
+      unsigned new_pointer_val =
          (pointer_y - wimp->line_height + wimp->scroll_y - 16)
          / wimp->line_height;
 
@@ -1499,14 +1533,14 @@ static int wimp_get_core_title(char *s, size_t len)
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
          &system);
-   
+
    core_name    = system->library_name;
    core_version = system->library_version;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (!settings->menu.core_enable)
-      return -1; 
+      return -1;
 
    if (string_is_empty(core_name))
       core_name = info->info.library_name;
@@ -1524,7 +1558,7 @@ static int wimp_get_core_title(char *s, size_t len)
 }
 
 static void wimp_frame(void *data)
-{   
+{
    unsigned header_height;
    bool display_kb;
    float black_bg[16] = {
@@ -1739,7 +1773,7 @@ static void wimp_frame(void *data)
       char title_buf_msg[256];
       size_t usable_width = width - (wimp->margin * 2);
       int ticker_limit, value_len;
-      
+
       snprintf(title_buf_msg, sizeof(title_buf), "%s (%s)",
             title_buf, title_msg);
       value_len = strlen(title_buf);
@@ -1850,8 +1884,8 @@ static void wimp_layout(wimp_handle_t *wimp)
 
    video_driver_get_size(&width, &height);
 
-   /* Mobiles platforms may have very small display metrics 
-    * coupled to a high resolution, so we should be DPI aware 
+   /* Mobiles platforms may have very small display metrics
+    * coupled to a high resolution, so we should be DPI aware
     * to ensure the entries hitboxes are big enough.
     *
     * On desktops, we just care about readability, with every widget
@@ -1882,7 +1916,7 @@ static void wimp_layout(wimp_handle_t *wimp)
 
    if (fb_buf) /* calculate a more realistic ticker_limit */
    {
-      unsigned m_width = 
+      unsigned m_width =
          font_driver_get_message_width(fb_buf, "a", 1, 1);
 
       if (m_width)
@@ -2122,21 +2156,21 @@ static void wimp_preswitch_tabs(wimp_handle_t *wimp, unsigned action)
    switch (wimp->categories.selection_ptr)
    {
       case ZR_SYSTEM_TAB_MAIN:
-         menu_stack->list[stack_size - 1].label = 
+         menu_stack->list[stack_size - 1].label =
             strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
-         menu_stack->list[stack_size - 1].type = 
+         menu_stack->list[stack_size - 1].type =
             MENU_SETTINGS;
          break;
       case ZR_SYSTEM_TAB_PLAYLISTS:
-         menu_stack->list[stack_size - 1].label = 
+         menu_stack->list[stack_size - 1].label =
             strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
-         menu_stack->list[stack_size - 1].type = 
+         menu_stack->list[stack_size - 1].type =
             MENU_PLAYLISTS_TAB;
          break;
       case ZR_SYSTEM_TAB_SETTINGS:
-         menu_stack->list[stack_size - 1].label = 
+         menu_stack->list[stack_size - 1].label =
             strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
-         menu_stack->list[stack_size - 1].type = 
+         menu_stack->list[stack_size - 1].type =
             MENU_SETTINGS;
          break;
    }
