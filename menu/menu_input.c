@@ -641,7 +641,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
    static char menu_input_keyboard_label_setting[256];
    menu_input_t *menu_input = menu_input_get_ptr();
-   menu_handle_t      *menu = NULL;
    static const char *menu_input_keyboard_label = NULL;
    static const char **menu_input_keyboard_buffer;
 
@@ -681,14 +680,17 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          memset(menu_input, 0, sizeof(menu_input_t));
          break;
       case MENU_INPUT_CTL_SEARCH_START:
-         if (!menu_driver_ctl(
-                  RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
-            return false;
+         {
+            menu_handle_t      *menu = NULL;
+            if (!menu_driver_ctl(
+                     RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+               return false;
 
-         menu_input->keyboard.display = true;
-         menu_input_keyboard_label    = menu_hash_to_str(MENU_VALUE_SEARCH);
-         menu_input_keyboard_buffer   =
-            input_keyboard_start_line(menu, menu_input_search_cb);
+            menu_input->keyboard.display = true;
+            menu_input_keyboard_label    = menu_hash_to_str(MENU_VALUE_SEARCH);
+            menu_input_keyboard_buffer   =
+               input_keyboard_start_line(menu, menu_input_search_cb);
+         }
          break;
       case MENU_INPUT_CTL_MOUSE_PTR:
          {
@@ -849,8 +851,8 @@ static int menu_input_mouse_frame(
       menu_file_list_cbs_t *cbs, menu_entry_t *entry,
       uint64_t input_mouse, unsigned action)
 {
-   int ret = 0;
    size_t selection;
+   int ret                  = 0;
    menu_input_t *menu_input = menu_input_get_ptr();
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
