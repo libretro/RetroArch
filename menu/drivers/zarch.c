@@ -56,6 +56,8 @@
 #define ZUI_ITEM_SIZE_PX      54
 #define NPARTICLES            100
 
+typedef uintptr_t zarch_texture_item;
+
 enum zarch_zui_input_state
 {
     MENU_ZARCH_MOUSE_X = 0,
@@ -131,11 +133,11 @@ typedef struct zarch_handle
    {
       struct
       {
-         uintptr_t id;
+         zarch_texture_item id;
          char path[PATH_MAX_LENGTH];
       } bg;
 
-      uintptr_t white;
+      zarch_texture_item white;
    } textures;
 
    /* LAY_ROOT's "Recent" */
