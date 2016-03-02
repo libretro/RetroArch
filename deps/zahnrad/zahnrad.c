@@ -7743,7 +7743,8 @@ zr_op_begin(struct zr_context *ctx, union zr_param *p, struct zr_event_queue *qu
              * For now I activate the window on the next frame to prevent wrong
              * behavior. If not wanted just replace line with:
              * win->flags &= ~(zr_flags)ZR_WINDOW_ROM; */
-            win->flags |= ZR_WINDOW_REMOVE_ROM;
+             win->flags &= ~(zr_flags)ZR_WINDOW_ROM;win->flags &= ~(zr_flags)ZR_WINDOW_ROM;
+
             ctx->active = win;
         }
         if (ctx->end != win)

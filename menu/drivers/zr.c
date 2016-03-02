@@ -364,7 +364,7 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
    settings_t *settings = config_get_ptr();
 
    struct zr_panel layout;
-   if (zr_begin(ctx, &layout, "Demo Window", zr_rect(10, 90, 500, 400),
+   if (zr_begin(ctx, &layout, "Demo Window", zr_rect(140, 90, 500, 400),
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
          ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
@@ -442,12 +442,13 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struc
           zr_layout_row_dynamic(ctx, 25, 1);
 
           if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Test"))
-              printf("test \n");
+            printf("test \n");
           if (zr_menu_item(ctx, ZR_TEXT_LEFT, "About"))
-              printf("test \n");
+             printf("test \n");
          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Exit"))
-               printf("test \n");
-          zr_menu_end(ctx);
+            rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+
+         zr_menu_end(ctx);
       }
       if (zr_menu_text_begin(ctx, &menu, "Window", ZR_TEXT_LEFT|ZR_TEXT_MIDDLE, 120))
       {
