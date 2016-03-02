@@ -388,9 +388,19 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
          if (old != gui->theme) zrmenu_set_style(ctx, gui->theme);
          zr_combo_end(ctx);
       }
-      
-      struct zr_panel node, menu;
+   }
+   zr_end(ctx);
+}
 
+static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struct zrmenu *gui)
+{
+   settings_t *settings = config_get_ptr();
+
+   struct zr_panel layout;
+   if (zr_begin(ctx, &layout, "", zr_rect(0, 0, width, height),
+         ZR_WINDOW_MINIMIZABLE))
+   {
+      struct zr_panel node, menu;
       /* context menu */
       if (zr_contextual_begin(ctx, &menu, 0, zr_vec2(100, 220), zr_window_get_bounds(ctx))) {
           zr_layout_row_dynamic(ctx, 25, 1);
@@ -408,6 +418,7 @@ static void zrmenu_frame(struct zrmenu *gui, int width, int height)
 {
    struct zr_context *ctx = &gui->ctx;
 
+   zrmenu_wnd_main(ctx, width, height, gui);
    zrmenu_wnd_demo(ctx, width, height, gui);
    zrmenu_wnd_control(ctx, width, height, gui);
    zr_buffer_info(&gui->status, &gui->ctx.memory);
