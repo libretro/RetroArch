@@ -66,7 +66,8 @@ static struct zr_user_font usrfnt;
 static struct zr_allocator zr_alloc;
 static struct zrmenu gui;
 
-bool wnd_control_visible = false;
+static bool wnd_control = false;
+static bool wnd_control_toggle = true;
 
 enum
 {
@@ -251,21 +252,26 @@ static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
    }
 }
 
+
 static int zrmenu_wnd_control(struct zr_context *ctx,
-      int width, int height, struct zrmenu *gui, bool visible)
+      int width, int height, struct zrmenu *gui)
 {
-
-
+   
    int i;
    struct zr_panel layout;
    if (zr_begin(ctx, &layout, "Control", zr_rect(900, 60, 350, 520),
       ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
       ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
-      if (visible)
-         zr_window_set_position(ctx, zr_vec2(900, 60));
-      else
-         zr_window_set_position(ctx, zr_vec2(width + 10 , height + 10));
+      if (wnd_control_toggle)
+      {
+         wnd_control_toggle = false;
+         if (wnd_control)
+            zr_window_set_position(ctx, zr_vec2(zr_window_get_position(ctx).x - width - 10, zr_window_get_position(ctx).y));
+         else
+            zr_window_set_position(ctx, zr_vec2(zr_window_get_position(ctx).x + width + 10, zr_window_get_position(ctx).y));         
+      }
+
       /* Style */
       if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Metrics", ZR_MINIMIZED)) 
       {
@@ -404,7 +410,7 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struc
    settings_t *settings = config_get_ptr();
    struct zr_panel layout;
 
-   if (zr_begin(ctx, &layout, "", zr_rect(-1, -1, width + 1, height + 1),
+   if (zr_begin(ctx, &layout, "Main", zr_rect(-1, -1, width + 1, 100),
          ZR_WINDOW_NO_SCROLLBAR))
    {
       /* context menu */
@@ -442,8 +448,11 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struc
       {
           zr_layout_row_dynamic(ctx, 25, 1);
 
-          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Control"))              
-             wnd_control_visible = !wnd_control_visible;
+         if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Demo Window"))
+         {
+            wnd_control = !wnd_control;
+            wnd_control_toggle = true;
+         }
             
           zr_menu_end(ctx);
       }
@@ -458,9 +467,10 @@ static void zrmenu_frame(struct zrmenu *gui, int width, int height)
 {
    struct zr_context *ctx = &gui->ctx;
 
+   zrmenu_wnd_control(ctx, width, height, gui);   
    zrmenu_wnd_main(ctx, width, height, gui);
    zrmenu_wnd_demo(ctx, width, height, gui);
-   zrmenu_wnd_control(ctx, width, height, gui, wnd_control_visible);
+   
    
    zr_buffer_info(&gui->status, &gui->ctx.memory);
 }
