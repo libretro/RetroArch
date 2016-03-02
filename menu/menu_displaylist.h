@@ -30,7 +30,7 @@ extern "C" {
 #define COLLECTION_SIZE 99999
 #endif
 
-enum 
+enum menu_displaylist_parse_type
 {
    PARSE_NONE           = (1 << 0),
    PARSE_GROUP          = (1 << 1),
@@ -41,8 +41,7 @@ enum
    PARSE_ONLY_FLOAT     = (1 << 6),
    PARSE_ONLY_BIND      = (1 << 7),
    PARSE_ONLY_GROUP     = (1 << 8),
-   PARSE_ONLY_SUB_GROUP = (1 << 9),
-   PARSE_SUB_GROUP      = (1 << 10)
+   PARSE_SUB_GROUP      = (1 << 9) 
 };
 
 enum menu_displaylist_ctl_state
@@ -145,7 +144,7 @@ typedef struct menu_displaylist_ctx_entry
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
 
 int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 
-      const char *info_label, unsigned parse_type, bool add_empty_entry);
+      const char *info_label, enum menu_displaylist_parse_type parse_type, bool add_empty_entry);
 
 #ifdef __cplusplus
 }
