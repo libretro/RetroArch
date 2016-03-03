@@ -74,6 +74,10 @@ COMPATIBILITY
 #include "../compat/compat_posix_string.c"
 #endif
 
+#if defined(WANT_IFADDRS)
+#include "../compat/compat_ifaddrs.c"
+#endif
+
 #include "../libretro-common/compat/compat_fnmatch.c"
 #include "../libretro-common/memmap/memalign.c"
 

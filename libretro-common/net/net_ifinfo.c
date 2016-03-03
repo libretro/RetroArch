@@ -28,7 +28,12 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netdb.h>
+
+#ifdef WANT_IFADDRS
+#include <compat/ifaddrs.h>
+#else
 #include <ifaddrs.h>
+#endif
 
 #include <net/net_ifinfo.h>
 #endif
