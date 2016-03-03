@@ -231,6 +231,10 @@ OBJ += ui/drivers/ui_qt.o
 LIBS += -lQt5Quick -lQt5Widgets -lQt5Gui -lQt5Qml -lQt5Network -lQt5Core -lglu32 -lopengl32 -L./ui/drivers/qt/wrapper/build/release -lwrapper
 endif
 
+ifeq ($(HAVE_SSA),1)
+LIBS += -lass
+endif
+
 # LibretroDB
 
 ifeq ($(HAVE_LIBRETRODB), 1)

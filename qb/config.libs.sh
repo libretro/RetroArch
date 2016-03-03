@@ -105,6 +105,10 @@ if [ "$HAVE_EGL" != "no" ]; then
    fi
 fi
 
+if [ "HAVE_SSA" != "no" ]; then
+   check_lib SSA -lass ass_library_init
+fi
+
 if [ "$HAVE_EXYNOS" != "no" ]; then
    check_pkgconf EXYNOS libdrm_exynos
    check_pkgconf DRM libdrm

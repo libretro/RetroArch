@@ -18,6 +18,7 @@ HAVE_GLES_CFLAGS=          # C-flags for custom GLES library
 HAVE_THREADS=auto          # Threading support
 HAVE_FFMPEG=auto           # Enable FFmpeg recording support
 C89_FFMPEG=no
+HAVE_SSA=auto              # Enable SSA/ASS for FFmpeg subtitle support
 HAVE_DYLIB=auto            # Enable dynamic loading support
 HAVE_NETWORKING=auto       # Enable networking features (recommended)
 HAVE_NETPLAY=auto          # Enable netplay support (requires networking)
