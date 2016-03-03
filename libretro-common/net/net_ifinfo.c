@@ -78,10 +78,8 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 	DWORD size;
 	PIP_ADAPTER_ADDRESSES adapter_addresses, aa;
 	PIP_ADAPTER_UNICAST_ADDRESS ua;
-	DWORD rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
 
-	if (rv != ERROR_SUCCESS)
-       goto error;
+	DWORD rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
 
 	adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
 
@@ -92,12 +90,16 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 
 	for (aa = adapter_addresses; aa != NULL; aa = aa->Next)
 	{
-      struct net_ifinfo_entry *ptr = NULL;
+      char name[PATH_MAX_LENGTH];
+      memset(name, 0, sizeof(name));
+
+      WideCharToMultiByte(CP_ACP, 0, aa->FriendlyName, wcslen(aa->FriendlyName),
+			name, PATH_MAX_LENGTH, NULL, NULL);
 
 	  for (ua = aa->FirstUnicastAddress; ua != NULL; ua = ua->Next)
 	  {
-	    char host[PATH_MAX_LENGTH], name[PATH_MAX_LENGTH];
-		ptr = (struct net_ifinfo_entry*)
+	    char host[PATH_MAX_LENGTH];
+		struct net_ifinfo_entry *ptr = (struct net_ifinfo_entry*)
 			realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
 
 		if (!ptr)
@@ -105,12 +107,10 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 
 		list->entries          = ptr;
 
-		memset(host, 0, PATH_MAX_LENGTH);
-		memset(name, 0, PATH_MAX_LENGTH);
+		memset(host, 0, sizeof(host));
+
 		getnameinfo(ua->Address.lpSockaddr, ua->Address.iSockaddrLength,
-			host, sizeof(host), NULL, 0, NI_NUMERICHOST);
-		WideCharToMultiByte(CP_ACP, 0, aa->FriendlyName, wcslen(aa->FriendlyName),
-			name, PATH_MAX_LENGTH, NULL, NULL);
+			host, sizeof(host), NULL, NI_MAXSERV, NI_NUMERICHOST);
 
 		list->entries[k].name  = strdup(name);
 		list->entries[k].host  = strdup(host);
