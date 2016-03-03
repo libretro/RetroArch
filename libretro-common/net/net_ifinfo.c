@@ -24,8 +24,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <boolean.h>
-
 #ifndef _WIN32
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -36,9 +34,9 @@
 #else
 #include <ifaddrs.h>
 #endif
+#endif
 
 #include <net/net_ifinfo.h>
-#endif
 
 void net_ifinfo_free(net_ifinfo_t *list)
 {
