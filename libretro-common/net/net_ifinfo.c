@@ -73,54 +73,54 @@ void net_ifinfo_free(net_ifinfo_t *list)
 
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
-    unsigned k              = 0;
+   unsigned k              = 0;
 #if defined(_WIN32) && !defined(_XBOX)
-	DWORD size;
-	PIP_ADAPTER_ADDRESSES adapter_addresses, aa;
-	PIP_ADAPTER_UNICAST_ADDRESS ua;
+   DWORD size;
+   PIP_ADAPTER_ADDRESSES adapter_addresses, aa;
+   PIP_ADAPTER_UNICAST_ADDRESS ua;
 
-	DWORD rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
+   DWORD rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
 
-	adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
+   adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
 
-	rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
+   rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
 
-	if (rv != ERROR_SUCCESS)
-		goto error;
+   if (rv != ERROR_SUCCESS)
+      goto error;
 
-	for (aa = adapter_addresses; aa != NULL; aa = aa->Next)
-	{
+   for (aa = adapter_addresses; aa != NULL; aa = aa->Next)
+   {
       char name[PATH_MAX_LENGTH];
       memset(name, 0, sizeof(name));
 
       WideCharToMultiByte(CP_ACP, 0, aa->FriendlyName, wcslen(aa->FriendlyName),
-			name, PATH_MAX_LENGTH, NULL, NULL);
+            name, PATH_MAX_LENGTH, NULL, NULL);
 
-	  for (ua = aa->FirstUnicastAddress; ua != NULL; ua = ua->Next)
-	  {
-	    char host[PATH_MAX_LENGTH];
-		struct net_ifinfo_entry *ptr = (struct net_ifinfo_entry*)
-			realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
+      for (ua = aa->FirstUnicastAddress; ua != NULL; ua = ua->Next)
+      {
+         char host[PATH_MAX_LENGTH];
+         struct net_ifinfo_entry *ptr = (struct net_ifinfo_entry*)
+            realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
 
-		if (!ptr)
-			goto error;
+         if (!ptr)
+            goto error;
 
-		list->entries          = ptr;
+         list->entries          = ptr;
 
-		memset(host, 0, sizeof(host));
+         memset(host, 0, sizeof(host));
 
-		getnameinfo(ua->Address.lpSockaddr, ua->Address.iSockaddrLength,
-			host, sizeof(host), NULL, NI_MAXSERV, NI_NUMERICHOST);
+         getnameinfo(ua->Address.lpSockaddr, ua->Address.iSockaddrLength,
+               host, sizeof(host), NULL, NI_MAXSERV, NI_NUMERICHOST);
 
-		list->entries[k].name  = strdup(name);
-		list->entries[k].host  = strdup(host);
-		list->size             = k + 1;
+         list->entries[k].name  = strdup(name);
+         list->entries[k].host  = strdup(host);
+         list->size             = k + 1;
 
-		k++;
-	  }
-	}
+         k++;
+      }
+   }
 
-	free(adapter_addresses);
+   free(adapter_addresses);
 #else
    struct ifaddrs *ifa     = NULL;
    struct ifaddrs *ifaddr  = NULL;
@@ -143,7 +143,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
          continue;
 
       if (getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
-            host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) != 0)
+               host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) != 0)
          goto error;
 
       ptr = (struct net_ifinfo_entry*)
