@@ -266,23 +266,21 @@ static size_t xmb_list_get_selection(void *data)
 
 static size_t xmb_list_get_size(void *data, enum menu_list_type type)
 {
-   size_t list_size        = 0;
    xmb_handle_t *xmb       = (xmb_handle_t*)data;
 
    switch (type)
    {
       case MENU_LIST_PLAIN:
-         list_size  = menu_entries_get_stack_size(0);
-         break;
+         return menu_entries_get_stack_size(0);
       case MENU_LIST_HORIZONTAL:
          if (xmb && xmb->horizontal_list)
-            list_size = file_list_get_size(xmb->horizontal_list);
+            return file_list_get_size(xmb->horizontal_list);
          break;
       case MENU_LIST_TABS:
-         list_size = XMB_SYSTEM_TAB_END;
+         return XMB_SYSTEM_TAB_END;
    }
 
-   return list_size;
+   return 0;
 }
 
 static void *xmb_list_get_entry(void *data, enum menu_list_type type, unsigned i)

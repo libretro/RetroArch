@@ -685,22 +685,17 @@ static void mui_draw_cursor(mui_handle_t *mui,
 
 static size_t mui_list_get_size(void *data, enum menu_list_type type)
 {
-   size_t list_size = 0;
-   (void)data;
-
    switch (type)
    {
       case MENU_LIST_PLAIN:
-         list_size  = menu_entries_get_stack_size(0);
-         break;
+         return menu_entries_get_stack_size(0);
       case MENU_LIST_TABS:
-         list_size = MUI_SYSTEM_TAB_END;
-         break;
+         return MUI_SYSTEM_TAB_END;
       default:
          break;
    }
 
-   return list_size;
+   return 0;
 }
 
 static void bgcolor_setalpha(float *bg, float alpha)
