@@ -759,6 +759,8 @@ extern "C" {
 #define MENU_LABEL_CORE_COUNTERS                                               0x64cc83e0U
 #define MENU_LABEL_LOAD_CONTENT_HISTORY                                        0xfe1d79e5U
 #define MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY                                  0x5b362286U
+#define MENU_LABEL_NETWORK_INFORMATION                                         0x73ae3cb4U
+#define MENU_LABEL_VALUE_NETWORK_INFORMATION                                   0xa0e6d195U
 #define MENU_LABEL_SYSTEM_INFORMATION                                          0x206ebf0fU
 #define MENU_LABEL_DEBUG_INFORMATION                                           0xeb0d82b1U
 #define MENU_LABEL_ACHIEVEMENT_LIST                                            0x7b90fc49U

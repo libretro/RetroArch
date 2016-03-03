@@ -442,6 +442,37 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    return 0;
 }
 
+#ifdef HAVE_NETPLAY
+#ifndef HAVE_SOCKET_LEGACY
+#include <net/net_ifinfo.h>
+
+static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
+{
+   unsigned k              = 0;
+   net_ifinfo_t *list = 
+      (net_ifinfo_t*)calloc(1, sizeof(*list));
+
+   if (!list)
+      return -1;
+
+   if (!net_ifinfo_new(list))
+      return -1;
+
+   for (k = 0; k < list->size; k++)
+   {
+      char tmp[PATH_MAX_LENGTH];
+      snprintf(tmp, sizeof(tmp), "Interface (%s) : %s\n",
+            list->entries[k].name, list->entries[k].host);
+      menu_entries_push(info->list, tmp, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   }
+
+   net_ifinfo_free(list);
+   return 0;
+}
+#endif
+#endif
+
 static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 {
    int controller;
@@ -2142,6 +2173,15 @@ static int menu_displaylist_parse_information_list(
          menu_hash_to_str(MENU_LABEL_CORE_INFORMATION),
          MENU_SETTING_ACTION, 0, 0);
 
+#ifdef HAVE_NETPLAY
+#ifndef HAVE_SOCKET_LEGACY
+   menu_entries_push(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_NETWORK_INFORMATION),
+         menu_hash_to_str(MENU_LABEL_NETWORK_INFORMATION),
+         MENU_SETTING_ACTION, 0, 0);
+#endif
+#endif
+
    menu_entries_push(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFORMATION),
          menu_hash_to_str(MENU_LABEL_SYSTEM_INFORMATION),
@@ -2954,6 +2994,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_PLAYLIST_COLLECTION:
       case DISPLAYLIST_HISTORY:
       case DISPLAYLIST_OPTIONS_DISK:
+      case DISPLAYLIST_NETWORK_INFO:
       case DISPLAYLIST_SYSTEM_INFO:
       case DISPLAYLIST_DEBUG_INFO:
       case DISPLAYLIST_ACHIEVEMENT_LIST:
@@ -3552,6 +3593,15 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0, 0);
 
          info->need_push    = true;
+         break;
+      case DISPLAYLIST_NETWORK_INFO:
+#ifdef HAVE_NETPLAY
+#ifndef HAVE_SOCKET_LEGACY
+         menu_displaylist_parse_network_info(info);
+#endif
+#endif
+         info->need_push    = true;
+         info->need_refresh = true;
          break;
       case DISPLAYLIST_SYSTEM_INFO:
          menu_displaylist_parse_system_info(info);

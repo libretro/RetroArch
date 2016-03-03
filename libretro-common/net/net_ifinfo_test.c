@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <net_ifinfo.h>
+#include <net/net_ifinfo.h>
 
 int main(int argc, const char *argv[])
 {

@@ -620,6 +620,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "achievement_list";
       case MENU_LABEL_SYSTEM_INFORMATION:
          return "system_information";
+      case MENU_LABEL_NETWORK_INFORMATION:
+         return "network_information";
       case MENU_LABEL_ONLINE_UPDATER:
          return "online_updater";
       case MENU_LABEL_CORE_INFORMATION:
@@ -1304,6 +1306,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Automatically extract downloaded archive";
       case MENU_LABEL_VALUE_SYSTEM_INFORMATION:
          return "System Information";
+      case MENU_LABEL_VALUE_NETWORK_INFORMATION:
+         return "Network Information";
       case MENU_LABEL_VALUE_DEBUG_INFORMATION:
          return "Debug Information";
       case MENU_LABEL_VALUE_ACHIEVEMENT_LIST:
