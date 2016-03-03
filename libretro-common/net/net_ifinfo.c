@@ -40,7 +40,6 @@
 
 void net_ifinfo_free(net_ifinfo_t *list)
 {
-#ifndef _WIN32
    unsigned k;
 
    if (!list)
@@ -64,12 +63,13 @@ void net_ifinfo_free(net_ifinfo_t *list)
    }
    free(list->entries);
    free(list);
-#endif
 }
 
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
-#ifndef _WIN32
+#ifdef _WIN32
+	return false;
+#else
    unsigned k              = 0;
    struct ifaddrs *ifa     = NULL;
    struct ifaddrs *ifaddr  = NULL;
