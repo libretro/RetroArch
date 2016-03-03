@@ -49,6 +49,8 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
+#include "playlist.h"
+
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../../gfx/common/gl_common.h"
 #endif
@@ -415,7 +417,7 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
    settings_t *settings = config_get_ptr();
 
    struct zr_panel layout;
-   if (zr_begin(ctx, &layout, "Demo Window", zr_rect(140, 90, 500, 400),
+   if (zr_begin(ctx, &layout, "Demo Window", zr_rect(140, 90, 500, 600),
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
          ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
@@ -449,12 +451,27 @@ static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struc
       zr_layout_row_dynamic(ctx, 30, 1);
       zr_property_int(ctx, "Max Users:", 1, (int*)&(settings->input.max_users), MAX_USERS, 1, 1);
 
-      if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 300))
+      if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 200))
       {
          zr_layout_row_dynamic(ctx, 25, 1);
          gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED) ? THEME_DARK : gui->theme;
          gui->theme = zr_combo_item(ctx, themes[THEME_LIGHT], ZR_TEXT_CENTERED) ? THEME_LIGHT : gui->theme;
          if (old != gui->theme) zrmenu_set_style(ctx, gui->theme);
+         zr_combo_end(ctx);
+      }
+
+      zr_label(ctx, "History:", ZR_TEXT_LEFT);
+      unsigned size = menu_entries_get_size();
+      menu_entry_t entry;
+      if (zr_combo_begin_text(ctx, &combo, "", 180))
+      {
+
+         for (int i=0; i < size; i++)
+         {
+            menu_entry_get(&entry, 0, i, NULL, true);
+            zr_layout_row_dynamic(ctx, 25, 1);
+            zr_combo_item(ctx, entry.path, ZR_TEXT_LEFT);
+         }
          zr_combo_end(ctx);
       }
    }
@@ -1667,6 +1684,31 @@ static size_t wimp_list_get_selection(void *data)
    return wimp->categories.selection_ptr;
 }
 
+static bool wimp_menu_init_list(void *data)
+{
+   menu_displaylist_info_t info = {0};
+   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_VALUE_HISTORY_TAB), sizeof(info.label));
+
+   menu_entries_push(menu_stack,
+         info.path, info.label, info.type, info.flags, 0);
+
+   event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
+
+   info.list  = selection_buf;
+
+   if (menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info))
+   {
+      info.need_push = true;
+      return menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+   }
+
+   return false;
+}
+
 menu_ctx_driver_t menu_ctx_zr = {
    NULL,
    wimp_get_message,
@@ -1686,7 +1728,7 @@ menu_ctx_driver_t menu_ctx_zr = {
    wimp_navigation_set_last,
    wimp_navigation_alphabet,
    wimp_navigation_alphabet,
-   generic_menu_init_list,
+   wimp_menu_init_list,
    NULL,
    NULL,
    NULL,
