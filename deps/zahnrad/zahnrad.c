@@ -255,7 +255,7 @@ enum zr_param_types {
     ZR_OP(layout_space_push,    ZR_STACK_NOP,               ZR_FMT("of"))\
     ZR_OP(layout_space_end,     ZR_STACK_NOP,               ZR_FMT("o"))\
     ZR_OP(layout_push,          ZR_STACK_INC|ZR_STACK_GEN,  ZR_FMT("ohici"))\
-    ZR_OP(layout_pop,           ZR_STACK_DEC|ZR_STACK_TXT,  ZR_FMT("oc"))\
+    ZR_OP(layout_pop,           ZR_STACK_DEC|ZR_STACK_TXT,  ZR_FMT("o"))\
     ZR_OP(text,                 ZR_STACK_NOP|ZR_STACK_TXT,  ZR_FMT("ocugl"))\
     ZR_OP(text_wrap,            ZR_STACK_NOP|ZR_STACK_TXT,  ZR_FMT("ocul"))\
     ZR_OP(image,                ZR_STACK_GEN,               ZR_FMT("ohmffffff"))\
@@ -270,7 +270,7 @@ enum zr_param_types {
     ZR_OP(select,               ZR_STACK_GEN,               ZR_FMT("ohcfi"))\
     ZR_OP(slider,               ZR_STACK_GEN,               ZR_FMT("ohffff"))\
     ZR_OP(progress,             ZR_STACK_GEN,               ZR_FMT("ohiii"))\
-    ZR_OP(property,             ZR_STACK_GEN|ZR_STACK_TXT,  ZR_FMT("ohcfffffp"))\
+    ZR_OP(property,             ZR_STACK_GEN|ZR_STACK_TXT,  ZR_FMT("ohcfffffi"))\
     ZR_OP(group_begin,          ZR_STACK_PUSH|ZR_STACK_TXT, ZR_FMT("ohpcg"))\
     ZR_OP(group_end,            ZR_STACK_POP,               ZR_FMT("o"))\
     ZR_OP(chart_begin,          ZR_STACK_NOP,               ZR_FMT("ohiiff"))\
@@ -4681,7 +4681,7 @@ zr_do_button_text_symbol(enum zr_widget_status *state,
     /* calculate symbol bounds */
     tri.y = r.y + (r.h/2) - f->height/2;
     tri.w = f->height; tri.h = f->height;
-    if (align == ZR_TEXT_LEFT) {
+    if (align & ZR_TEXT_LEFT) {
         tri.x = (r.x + r.w) - (2 * b->base.padding.x + tri.w);
         tri.x = ZR_MAX(tri.x, 0);
     } else tri.x = r.x + 2 * b->base.padding.x;
@@ -4711,7 +4711,7 @@ zr_do_button_text_image(enum zr_widget_status *state,
     pressed = zr_do_button_text(state, out, r, text, behavior, b, i, f);
     icon.y = r.y + b->base.padding.y;
     icon.w = icon.h = r.h - 2 * b->base.padding.y;
-    if (align == ZR_TEXT_LEFT) {
+    if (align & ZR_TEXT_LEFT) {
         icon.x = (r.x + r.w) - (2 * b->base.padding.x + icon.w);
         icon.x = ZR_MAX(icon.x, 0);
     } else icon.x = r.x + 2 * b->base.padding.x;
@@ -5839,6 +5839,7 @@ zr_widget_edit_box(struct zr_command_buffer *out, struct zr_rect r,
                 /* 4.) selection beginning and ending in current row */
                 zr_size l = 0;
                 zr_size cur_text_width;
+                zr_size cur_len;
                 zr_size sel_begin, sel_end, sel_len;
                 zr_rune unicode;
                 float label_x = label.x;
@@ -5879,8 +5880,9 @@ zr_widget_edit_box(struct zr_command_buffer *out, struct zr_rect r,
 
                 text.background = field->text;
                 text.text = field->background;
-                label.w = font->width(font->userdata, font->height,
+                cur_len = font->width(font->userdata, font->height,
                                             &buffer[offset+sel_begin], sel_len);
+                label.w = (float)cur_len;
                 zr_draw_rect(out, label, 0, field->text);
                 zr_widget_text(out, label, &buffer[offset+sel_begin], sel_len,
                     &text, ZR_TEXT_LEFT|ZR_TEXT_MIDDLE, font);
@@ -6014,6 +6016,11 @@ zr_widget_edit(struct zr_command_buffer *out, struct zr_rect r,
  *                          PROPERTY
  *
  * ===============================================================*/
+enum zr_property_filter {
+    ZR_FILTER_INT,
+    ZR_FILTER_FLOAT
+};
+
 struct zr_property {
     float border_size;
     struct zr_vec2 padding;
@@ -6110,9 +6117,14 @@ zr_do_property(enum zr_widget_status *ws,
     struct zr_command_buffer *out, struct zr_rect property,
     const char *name, float min, float val, float max,
     float step, float inc_per_pixel, char *buffer, zr_size *len,
-    int *state, zr_size *cursor, struct zr_property *p, zr_filter filter,
-    const struct zr_input *in, const struct zr_user_font *f)
+    int *state, zr_size *cursor, struct zr_property *p,
+    enum zr_property_filter filter, const struct zr_input *in,
+    const struct zr_user_font *f)
 {
+    const zr_filter filters[] = {
+        zr_filter_decimal,
+        zr_filter_float
+    };
     int active, old;
     zr_size num_len, name_len;
     char string[ZR_MAX_NUMBER_BUFFER];
@@ -6210,7 +6222,7 @@ zr_do_property(enum zr_widget_status *ws,
     }
 
     *length = zr_widget_edit(out, edit, dst, *length,
-        ZR_MAX_NUMBER_BUFFER, &active, cursor, &field, filter,
+        ZR_MAX_NUMBER_BUFFER, &active, cursor, &field, filters[filter],
         (*state == ZR_PROPERTY_EDIT) ? in: 0, f);
     if (active && zr_input_is_key_pressed(in, ZR_KEY_ENTER))
         active = !active;
@@ -6955,6 +6967,7 @@ zr_pool_alloc(struct zr_pool *pool)
  *                          CONTEXT
  *
  * ===============================================================*/
+static void zr_remove_window(struct zr_context*, struct zr_window*);
 static void* zr_create_window(struct zr_context *ctx);
 static void zr_free_window(struct zr_context *ctx, struct zr_window *win);
 static void zr_free_table(struct zr_context *ctx, struct zr_table *tbl);
@@ -7108,10 +7121,10 @@ zr_clear(struct zr_context *ctx)
         }}
 
         /* window itself is not used anymore so free */
-        if (iter->seq != ctx->seq) {
+        if (iter->seq != ctx->seq || iter->flags & ZR_WINDOW_HIDDEN) {
             next = iter->next;
+            zr_remove_window(ctx, iter);
             zr_free_window(ctx, iter);
-            ctx->count--;
             iter = next;
         } else iter = iter->next;
     }
@@ -7222,15 +7235,18 @@ zr_build(struct zr_context *ctx)
     buffer = (zr_byte*)ctx->memory.memory.ptr;
     while (iter != 0) {
         next = iter->next;
-        if (iter->buffer.last != iter->buffer.begin) {
-            cmd = zr_ptr_add(struct zr_command, buffer, iter->buffer.last);
-            while (next && next->buffer.last == next->buffer.begin)
-                next = next->next; /* skip empty command buffers */
-
-            if (next) {
-                cmd->next = next->buffer.begin;
-            } else cmd->next = ctx->memory.allocated;
+        if (iter->buffer.last == iter->buffer.begin || (iter->flags & ZR_WINDOW_HIDDEN)) {
+            iter = next;
+            continue;
         }
+        cmd = zr_ptr_add(struct zr_command, buffer, iter->buffer.last);
+        while (next && ((next->buffer.last == next->buffer.begin) ||
+            (next->flags & ZR_WINDOW_HIDDEN)))
+            next = next->next; /* skip empty command buffers */
+
+        if (next) {
+            cmd->next = next->buffer.begin;
+        } else cmd->next = ctx->memory.allocated;
         iter = next;
     }
 }
@@ -7252,7 +7268,7 @@ zr__begin(struct zr_context *ctx)
     }
 
     iter = ctx->begin;
-    while (iter && iter->buffer.begin == iter->buffer.end)
+    while (iter && ((iter->buffer.begin == iter->buffer.end) || (iter->flags & ZR_WINDOW_HIDDEN)))
         iter = iter->next;
     if (!iter) return 0;
     return zr_ptr_add_const(struct zr_command, buffer, iter->buffer.begin);
@@ -7278,7 +7294,11 @@ zr__next(struct zr_context *ctx, const struct zr_command *cmd)
  * ---------------------------------------------------------------*/
 static struct zr_table*
 zr_create_table(struct zr_context *ctx)
-{void *tbl = (void*)zr_create_window(ctx); return (struct zr_table*)tbl;}
+{
+    void *tbl = (void*)zr_create_window(ctx);
+    zr_zero(tbl, sizeof(struct zr_table));
+    return (struct zr_table*)tbl;
+}
 
 static void
 zr_free_table(struct zr_context *ctx, struct zr_table *tbl)
@@ -7368,20 +7388,25 @@ zr_event_mask_begin(struct zr_event_mask *mask)
 
 void
 zr_event_mask_add(struct zr_event_mask *mask,
-    enum zr_event_type type, zr_flags flags)
+    enum zr_event_type type, zr_flags f)
 {
+    unsigned short flags;
     ZR_ASSERT(mask);
     if (!mask) return;
-    mask->flags[type] |= flags;
+    flags = (unsigned short)f;
+    mask->flags[type] |= (unsigned short)flags;
 }
 
 void
 zr_event_mask_remove(struct zr_event_mask *mask,
-    enum zr_event_type type, zr_flags flags)
+    enum zr_event_type type, zr_flags f)
 {
+    unsigned short flags;
     ZR_ASSERT(mask);
     if (!mask) return;
-    mask->flags[type] &= (zr_flags)~flags;
+    flags = (unsigned short)f;
+    flags = (unsigned short)~flags;
+    mask->flags[type] &= flags;
 }
 
 int
@@ -7487,7 +7512,9 @@ zr_create_window(struct zr_context *ctx)
         ZR_ASSERT(win);
         if (!win) return 0;
     }
-    zr_zero(win, sizeof(union zr_page_data));
+    zr_zero(win, sizeof(*win));
+    win->next = 0;
+    win->prev = 0;
     win->seq = ctx->seq;
     return win;
 }
@@ -7497,21 +7524,6 @@ zr_free_window(struct zr_context *ctx, struct zr_window *win)
 {
     /* unlink windows from list */
     struct zr_table *n, *it = win->tables;
-
-    if (win == ctx->begin) {
-        ctx->begin = win->next;
-        if (win->next)
-            ctx->begin->prev = 0;
-    } else if (win == ctx->end) {
-        ctx->end = win->prev;
-        if (win->prev)
-            ctx->end->next = 0;
-    } else {
-        if (win->next)
-            win->next->prev = win->next;
-        if (win->prev)
-            win->prev->next = win->prev;
-    }
     if (win->popup.win) {
         zr_free_window(ctx, win->popup.win);
         win->popup.win = 0;
@@ -7547,6 +7559,7 @@ zr_find_window(struct zr_context *ctx, zr_hash hash)
     struct zr_window *iter;
     iter = ctx->begin;
     while (iter) {
+        ZR_ASSERT(iter != iter->next);
         if (iter->name == hash)
             return iter;
         iter = iter->next;
@@ -7565,6 +7578,8 @@ zr_insert_window(struct zr_context *ctx, struct zr_window *win)
 
     iter = ctx->begin;
     while (iter) {
+        ZR_ASSERT(iter != iter->next);
+        ZR_ASSERT(iter != win);
         if (iter == win) return;
         iter = iter->next;
     }
@@ -7579,25 +7594,42 @@ zr_insert_window(struct zr_context *ctx, struct zr_window *win)
     }
 
     end = ctx->end;
+    end->flags |= ZR_WINDOW_ROM;
     end->next = win;
     win->prev = ctx->end;
     win->next = 0;
     ctx->end = win;
     ctx->count++;
+
+    ctx->active = ctx->end;
+    ctx->end->flags &= ~(zr_flags)ZR_WINDOW_ROM;
 }
 
 static void
 zr_remove_window(struct zr_context *ctx, struct zr_window *win)
 {
-    if (win->prev)
-        win->prev->next = win->next;
-    if (win->next)
-        win->next->prev = win->prev;
-    if (ctx->begin == win)
-        ctx->begin = win->next;
-    if (ctx->end == win)
-        ctx->end = win->prev;
-
+    if (win == ctx->begin || win == ctx->end) {
+        if (win == ctx->begin) {
+            ctx->begin = win->next;
+            if (win->next)
+                win->next->prev = 0;
+        }
+        if (win == ctx->end) {
+            ctx->end = win->prev;
+            if (win->prev)
+                win->prev->next = 0;
+        }
+    } else {
+        if (win->next)
+            win->next->prev = win->prev;
+        if (win->prev)
+            win->prev->next = win->next;
+    }
+    if (win == ctx->active || !ctx->active) {
+        ctx->active = ctx->end;
+        if (ctx->end)
+            ctx->end->flags &= ~(zr_flags)ZR_WINDOW_ROM;
+    }
     win->next = 0;
     win->prev = 0;
     ctx->count--;
@@ -7737,14 +7769,7 @@ zr_op_begin(struct zr_context *ctx, union zr_param *p, struct zr_event_queue *qu
             evt.win.data[1] = (int)win->bounds.y;
             ret += zr_event_queue_push(queue, win->name, ZR_EVENT_WINDOW, &evt);}
 
-            /* NOTE: I am not really sure if activating a window should directly
-             * happen on that frame or the following frame. Directly would simplify
-             * clicking window closing/minimizing but could cause wrong behavior.
-             * For now I activate the window on the next frame to prevent wrong
-             * behavior. If not wanted just replace line with:
-             * win->flags &= ~(zr_flags)ZR_WINDOW_ROM; */
-             win->flags &= ~(zr_flags)ZR_WINDOW_ROM;win->flags &= ~(zr_flags)ZR_WINDOW_ROM;
-
+            win->flags &= ~(zr_flags)ZR_WINDOW_ROM;
             ctx->active = win;
         }
         if (ctx->end != win)
@@ -8019,13 +8044,13 @@ zr_window_is_closed(struct zr_context *ctx, const char *name)
     zr_hash title_hash;
     struct zr_window *win;
     ZR_ASSERT(ctx);
-    if (!ctx) return 0;
+    if (!ctx) return 1;
 
     title_len = (int)zr_strsiz(name);
     title_hash = zr_murmur_hash(name, (int)title_len, ZR_WINDOW_TITLE);
     win = zr_find_window(ctx, title_hash);
-    if (!win) return 0;
-    return win->flags & ZR_WINDOW_HIDDEN;
+    if (!win) return 1;
+    return (win->flags & ZR_WINDOW_HIDDEN);
 }
 
 int
@@ -8057,6 +8082,8 @@ zr_window_close(struct zr_context *ctx, const char *name)
     title_hash = zr_murmur_hash(name, (int)title_len, ZR_WINDOW_TITLE);
     win = zr_find_window(ctx, title_hash);
     if (!win) return;
+    ZR_ASSERT(ctx->current != win && "You cannot close a current window");
+    if (ctx->current == win) return;
     win->flags |= ZR_WINDOW_HIDDEN;
 }
 
@@ -10769,7 +10796,7 @@ zr_op_property(struct zr_context *ctx, union zr_param *p,
     const float max = p[4].f;
     const float step = p[5].f;
     const float inc_per_pixel = p[6].f;
-    const zr_filter filter = (zr_filter)p[7].ptr;
+    const enum zr_property_filter filter = (enum zr_property_filter)p[7].i;
 
     int ret = 0;
     float new_val;
@@ -10867,7 +10894,7 @@ zr_op_property(struct zr_context *ctx, union zr_param *p,
         ret += zr_event_queue_push(queue, id, ZR_EVENT_PROPERTY, &evt);
         p[3].f = new_val;
     }
-    if (*state != old_state) {
+    if (*state != (int)old_state) {
         union zr_event evt;
         evt.property.evt = ZR_EVENT_PROPERTY_STATE_CHANGED;
         evt.property.value = new_val;
@@ -13273,7 +13300,7 @@ zr_progress(struct zr_context *ctx, zr_size *cur, zr_size max, int modifyable)
 static float
 zr_property(struct zr_context *ctx, const char *name,
     float min, float val, float max, float step,
-    float inc_per_pixel, zr_filter filter)
+    float inc_per_pixel, enum zr_property_filter filter)
 {
     int evt_count;
     union zr_event evt;
@@ -13293,7 +13320,7 @@ zr_property(struct zr_context *ctx, const char *name,
     p[ZR_PROPERTY_MAX].f = max;
     p[ZR_PROPERTY_STEP].f = step;
     p[ZR_PROPERTY_INC].f = inc_per_pixel;
-    p[ZR_PROPERTY_FILTER].ptr = (void*)filter;
+    p[ZR_PROPERTY_FILTER].i = (int)filter;
 
     zr_event_mask_begin(&mask);
     zr_event_mask_add(&mask, ZR_EVENT_PROPERTY, ZR_EVENT_PROPERTY_CHANGED);
@@ -13309,7 +13336,7 @@ void
 zr_property_float(struct zr_context *ctx, const char *name,
     float min, float *val, float max, float step, float inc_per_pixel)
 {
-    *val = zr_property(ctx, name, min, *val, max, step, inc_per_pixel, zr_filter_float);
+    *val = zr_property(ctx, name, min, *val, max, step, inc_per_pixel, ZR_FILTER_FLOAT);
 }
 
 void
@@ -13318,7 +13345,7 @@ zr_property_int(struct zr_context *ctx, const char *name,
 {
     float value = (float)*val;
     value = zr_property(ctx, name, (float)min, value, (float)max, (float)step,
-        (float)inc_per_pixel, zr_filter_decimal);
+        (float)inc_per_pixel, ZR_FILTER_INT);
     *val = (int)value;
 }
 
@@ -13489,6 +13516,7 @@ zr_recording_end(struct zr_context *ctx)
     union zr_param p[2];
     union zr_event evt;
     struct zr_event_queue queue;
+    zr_size size;
 
     ZR_ASSERT(ctx);
     ZR_ASSERT(ctx->op_buffer);
@@ -13499,8 +13527,10 @@ zr_recording_end(struct zr_context *ctx)
     zr_event_queue_init_fixed(&queue, 0, &evt, 1);
     zr_op_handle(ctx, p, &queue);
 
+    size = ctx->memory.size;
     ctx->op_buffer = 0;
     ctx->memory = ctx->op_memory;
+    ctx->memory.size = size;
     ctx->next_id = 0;
 }
 
@@ -13539,7 +13569,7 @@ zr_store_op(struct zr_buffer *buffer, union zr_param *p, int count)
         ZR_ASSERT(mem);
         if (!mem) return;
 
-        p[0].h.next += (unsigned short)dyn_count;
+        p[0].h.next = (unsigned short)(p[0].h.next + dyn_count);
         zr_memcopy(mem, p, fixed_size);
         zr_memcopy(mem+count, p[i].cheat, text_len+1);
         p[i].cheat = (const char*)(mem+count);

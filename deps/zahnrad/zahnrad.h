@@ -1724,7 +1724,7 @@ int zr_window_is_collapsed(struct zr_context*, const char*);
 int zr_window_is_closed(struct zr_context*, const char*);
 int zr_window_is_active(struct zr_context*, const char*);
 
-void zr_window_close(struct zr_context*, const char *name);
+void zr_window_close(struct zr_context *ctx, const char *name);
 void zr_window_set_bounds(struct zr_context*, struct zr_rect);
 void zr_window_set_position(struct zr_context*, struct zr_vec2);
 void zr_window_set_size(struct zr_context*, struct zr_vec2);
