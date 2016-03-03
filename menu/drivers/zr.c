@@ -310,30 +310,20 @@ static void zrmenu_wnd_shader_parameters(struct zr_context *ctx,
    zr_end(ctx);
 }
 
-static int zrmenu_wnd_control(struct zr_context *ctx,
+bool zrmenu_wnd_control(struct zr_context *ctx,
       int width, int height, struct zrmenu *gui)
 {
-
+   static int wnd_x = 900;
+   static int wnd_y = 60;
    int i;
    struct zr_panel layout;
-   if (zr_begin(ctx, &layout, "Control", zr_rect(900, 60, 350, 520),
-      ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
-      ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
-   {
-      if (wnd_control_toggle)
-      {
-         wnd_control_toggle = false;
-         if (wnd_control)
-         {
-            zr_window_set_position(ctx, zr_vec2(zr_window_get_position(ctx).x - width - 10, zr_window_get_position(ctx).y));
-            zr_window_set_focus(ctx, "Control");
-         }
-         else
-         {
-            zr_window_set_position(ctx, zr_vec2(zr_window_get_position(ctx).x + width + 10, zr_window_get_position(ctx).y));
-         }
-      }
 
+   bool ret = (zr_begin(ctx, &layout, "Control", zr_rect(wnd_x, wnd_y, 350, 520),
+      ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
+      ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER) && wnd_control);
+
+   if (ret)
+   {
       /* Style */
       if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Metrics", ZR_MINIMIZED))
       {
@@ -411,9 +401,29 @@ static int zrmenu_wnd_control(struct zr_context *ctx,
          }
          zr_layout_pop(ctx);
       }
+
+      if (wnd_control_toggle)
+      {
+         zr_window_set_position(ctx, zr_vec2(wnd_x, wnd_y));
+         wnd_control_toggle = false;
+      }
+
+   }
+   else
+   {
+      if (wnd_control_toggle)
+      {
+         wnd_x = zr_window_get_position(ctx).x;
+         wnd_y = zr_window_get_position(ctx).y;
+         zr_window_set_position(ctx, zr_vec2(width + 10, zr_window_get_position(ctx).y));
+         wnd_control_toggle = false;
+      }
+
    }
    zr_end(ctx);
-   return !zr_window_is_closed(ctx, "Control");
+
+
+   return ret;
 }
 
 static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struct zrmenu *gui)
@@ -545,11 +555,11 @@ static void zrmenu_frame(struct zrmenu *gui, int width, int height)
 {
    struct zr_context *ctx = &gui->ctx;
 
-   zrmenu_wnd_control(ctx, width, height, gui);
+
    zrmenu_wnd_main(ctx, width, height, gui);
    zrmenu_wnd_demo(ctx, width, height, gui);
    zrmenu_wnd_shader_parameters(ctx, width, height, gui);
-
+   zrmenu_wnd_control(ctx, width, height, gui);
 
    zr_buffer_info(&gui->status, &gui->ctx.memory);
 }
