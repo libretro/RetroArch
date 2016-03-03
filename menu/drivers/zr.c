@@ -71,7 +71,8 @@ static struct zr_allocator zr_alloc;
 static struct zrmenu gui;
 
 static bool wnd_control = false;
-static bool wnd_control_toggle = true;
+static bool wnd_shader_parameters = false;
+static bool wnd_demo = false;
 
 enum
 {
@@ -320,7 +321,7 @@ bool zrmenu_wnd_control(struct zr_context *ctx,
 
    bool ret = (zr_begin(ctx, &layout, "Control", zr_rect(wnd_x, wnd_y, 350, 520),
       ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
-      ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER) && wnd_control);
+      ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER));
 
    if (ret)
    {
@@ -401,24 +402,6 @@ bool zrmenu_wnd_control(struct zr_context *ctx,
          }
          zr_layout_pop(ctx);
       }
-
-      if (wnd_control_toggle)
-      {
-         zr_window_set_position(ctx, zr_vec2(wnd_x, wnd_y));
-         wnd_control_toggle = false;
-      }
-
-   }
-   else
-   {
-      if (wnd_control_toggle)
-      {
-         wnd_x = zr_window_get_position(ctx).x;
-         wnd_y = zr_window_get_position(ctx).y;
-         zr_window_set_position(ctx, zr_vec2(width + 10, zr_window_get_position(ctx).y));
-         wnd_control_toggle = false;
-      }
-
    }
    zr_end(ctx);
 
@@ -538,8 +521,14 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struc
 
          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Control"))
          {
+            zr_window_close(ctx, "Control");
             wnd_control = !wnd_control;
-            wnd_control_toggle = true;
+         }
+
+         if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Shader Parameters"))
+         {
+            zr_window_close(ctx, "Shader Parameters");
+            wnd_shader_parameters = !wnd_shader_parameters;
          }
 
           zr_menu_end(ctx);
@@ -558,8 +547,13 @@ static void zrmenu_frame(struct zrmenu *gui, int width, int height)
 
    zrmenu_wnd_main(ctx, width, height, gui);
    zrmenu_wnd_demo(ctx, width, height, gui);
-   zrmenu_wnd_shader_parameters(ctx, width, height, gui);
-   zrmenu_wnd_control(ctx, width, height, gui);
+   if (wnd_shader_parameters)
+      zrmenu_wnd_shader_parameters(ctx, width, height, gui);
+   if (wnd_control)
+      zrmenu_wnd_control(ctx, width, height, gui);
+
+   wnd_control = !zr_window_is_closed(ctx, "Control");
+   wnd_shader_parameters = !zr_window_is_closed(ctx, "Shader Parameters");
 
    zr_buffer_info(&gui->status, &gui->ctx.memory);
 }
