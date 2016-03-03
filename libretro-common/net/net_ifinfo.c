@@ -24,15 +24,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef _WIN32
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <ifaddrs.h>
 
 #include <net/net_ifinfo.h>
+#endif
 
 void net_ifinfo_free(net_ifinfo_t *list)
 {
+#ifndef _WIN32
    unsigned k;
 
    if (!list)
@@ -56,10 +59,12 @@ void net_ifinfo_free(net_ifinfo_t *list)
    }
    free(list->entries);
    free(list);
+#endif
 }
 
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
+#ifndef _WIN32
    unsigned k              = 0;
    struct ifaddrs *ifa     = NULL;
    struct ifaddrs *ifaddr  = NULL;
@@ -107,6 +112,7 @@ bool net_ifinfo_new(net_ifinfo_t *list)
 error:
    freeifaddrs(ifaddr);
    net_ifinfo_free(list);
+#endif
 
    return false;
 }
