@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <boolean.h>
+
 #ifndef _WIN32
 #include <arpa/inet.h>
 #include <sys/socket.h>
