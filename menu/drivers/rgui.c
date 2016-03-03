@@ -471,7 +471,6 @@ static void rgui_render(void *data)
 
    if (settings->menu.pointer.enable)
    {
-      bool pointer_dragged = false;
       unsigned new_val;
 
       menu_entries_ctl(MENU_ENTRIES_CTL_START_GET, &old_start);
@@ -480,9 +479,8 @@ static void rgui_render(void *data)
          / 11 - 2 + old_start;
 
       menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &new_val);
-      menu_input_ctl(MENU_INPUT_CTL_POINTER_DRAGGING, &pointer_dragged);
 
-      if (pointer_dragged)
+      if (menu_input_ctl(MENU_INPUT_CTL_IS_POINTER_DRAGGED, NULL))
       {
          size_t start;
          int16_t delta_y = menu_input_pointer_state(MENU_POINTER_DELTA_Y_AXIS);

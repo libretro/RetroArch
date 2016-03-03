@@ -104,7 +104,6 @@ typedef struct menu_input
       int16_t dy;
       float accel;
       bool pressed[2];
-      bool dragging;
       bool back;
       unsigned ptr;
    } pointer;
@@ -636,9 +635,10 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
 {
    static char menu_input_keyboard_label_setting[256];
-   static const char *menu_input_keyboard_label = NULL;
    static const char **menu_input_keyboard_buffer;
-   menu_input_t *menu_input = menu_input_get_ptr();
+   static const char *menu_input_keyboard_label = NULL;
+   static bool pointer_dragging                 = false;
+   menu_input_t *menu_input                     = menu_input_get_ptr();
 
    if (!menu_input)
       return false;
@@ -674,6 +674,7 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
          break;
       case MENU_INPUT_CTL_DEINIT:
          memset(menu_input, 0, sizeof(menu_input_t));
+         pointer_dragging      = false;
          break;
       case MENU_INPUT_CTL_SEARCH_START:
          {
@@ -712,11 +713,13 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
             menu_input->pointer.accel = *ptr;
          }
          break;
-      case MENU_INPUT_CTL_POINTER_DRAGGING:
-         {
-            bool *ptr = (bool*)data;
-            *ptr = menu_input->pointer.dragging;
-         }
+      case MENU_INPUT_CTL_IS_POINTER_DRAGGED:
+         return pointer_dragging;
+      case MENU_INPUT_CTL_SET_POINTER_DRAGGED:
+         pointer_dragging = true;
+         break;
+      case MENU_INPUT_CTL_UNSET_POINTER_DRAGGED:
+         pointer_dragging = false;
          break;
       case MENU_INPUT_CTL_KEYBOARD_DISPLAY:
          {
@@ -1119,7 +1122,8 @@ static int menu_input_pointer_post_iterate(
             || abs(pointer_y - start_y) > (dpi / 10))
       {
          float s, delta_time;
-         menu_input->pointer.dragging      = true;
+
+         menu_input_ctl(MENU_INPUT_CTL_SET_POINTER_DRAGGED, NULL);
          menu_input->pointer.dx            = pointer_x - pointer_old_x;
          menu_input->pointer.dy            = pointer_y - pointer_old_y;
          pointer_old_x                     = pointer_x;
@@ -1138,7 +1142,7 @@ static int menu_input_pointer_post_iterate(
    {
       if (pointer_oldpressed[0])
       {
-         if (!menu_input->pointer.dragging)
+         if (!menu_input_ctl(MENU_INPUT_CTL_IS_POINTER_DRAGGED, NULL))
          {
             menu_ctx_pointer_t point;
 
@@ -1161,7 +1165,8 @@ static int menu_input_pointer_post_iterate(
          pointer_old_y                     = 0;
          menu_input->pointer.dx            = 0;
          menu_input->pointer.dy            = 0;
-         menu_input->pointer.dragging      = false;
+
+         menu_input_ctl(MENU_INPUT_CTL_UNSET_POINTER_DRAGGED, NULL);
       }
    }
 
