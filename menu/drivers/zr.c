@@ -269,11 +269,11 @@ static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
 static void zrmenu_wnd_shader_parameters(struct zr_context *ctx,
       int width, int height, struct zrmenu *gui)
 {
+   video_shader_ctx_t shader_info;
+   struct zr_panel layout;
    int i = 0;
    settings_t *settings = config_get_ptr();
-   video_shader_ctx_t shader_info;
 
-   struct zr_panel layout;
    if (zr_begin(ctx, &layout, "Shader Parameters", zr_rect(240, 10, 300, 400),
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
          ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
@@ -285,21 +285,25 @@ static void zrmenu_wnd_shader_parameters(struct zr_context *ctx,
       zr_layout_row_dynamic(ctx, 30, 1);
 
       video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
-      for (i = 0; i < GFX_MAX_PARAMETERS; i++)
+
+      if (shader_info.data)
       {
-         if (!string_is_empty(shader_info.data->parameters[i].desc))
+         for (i = 0; i < GFX_MAX_PARAMETERS; i++)
          {
-            if(shader_info.data->parameters[i].minimum == 0 &&
-               shader_info.data->parameters[i].maximum == 1 &&
-               shader_info.data->parameters[i].step == 1)
-               zr_checkbox_float(ctx, shader_info.data->parameters[i].desc,
-                  &(shader_info.data->parameters[i].current));
-            else
-               zr_property_float(ctx, shader_info.data->parameters[i].desc,
-                  shader_info.data->parameters[i].minimum,
-                  &(shader_info.data->parameters[i].current),
-                  shader_info.data->parameters[i].maximum,
-                  shader_info.data->parameters[i].step, 1);
+            if (!string_is_empty(shader_info.data->parameters[i].desc))
+            {
+               if(shader_info.data->parameters[i].minimum == 0 &&
+                     shader_info.data->parameters[i].maximum == 1 &&
+                     shader_info.data->parameters[i].step == 1)
+                  zr_checkbox_float(ctx, shader_info.data->parameters[i].desc,
+                        &(shader_info.data->parameters[i].current));
+               else
+                  zr_property_float(ctx, shader_info.data->parameters[i].desc,
+                        shader_info.data->parameters[i].minimum,
+                        &(shader_info.data->parameters[i].current),
+                        shader_info.data->parameters[i].maximum,
+                        shader_info.data->parameters[i].step, 1);
+            }
          }
       }
    }
