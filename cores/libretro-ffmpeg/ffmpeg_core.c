@@ -5,8 +5,10 @@
 #include <assert.h>
 #include <stdarg.h>
 
+#ifdef RARCH_INTERNAL
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 #endif
 
 #ifdef __cplusplus
