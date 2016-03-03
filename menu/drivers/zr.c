@@ -70,9 +70,9 @@ static struct zr_user_font usrfnt;
 static struct zr_allocator zr_alloc;
 static struct zrmenu gui;
 
+static bool wnd_test = false;
 static bool wnd_control = false;
 static bool wnd_shader_parameters = false;
-static bool wnd_demo = false;
 
 enum
 {
@@ -409,12 +409,12 @@ bool zrmenu_wnd_control(struct zr_context *ctx,
    return ret;
 }
 
-static void zrmenu_wnd_demo(struct zr_context *ctx, int width, int height, struct zrmenu *gui)
+static void zrmenu_wnd_test(struct zr_context *ctx, int width, int height, struct zrmenu *gui)
 {
    settings_t *settings = config_get_ptr();
 
    struct zr_panel layout;
-   if (zr_begin(ctx, &layout, "Demo Window", zr_rect(140, 90, 500, 600),
+   if (zr_begin(ctx, &layout, "Test", zr_rect(140, 90, 500, 600),
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
          ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
@@ -531,6 +531,12 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struc
             wnd_shader_parameters = !wnd_shader_parameters;
          }
 
+         if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Test"))
+         {
+            zr_window_close(ctx, "Test");
+            wnd_test = !wnd_test;
+         }
+
           zr_menu_end(ctx);
       }
       zr_layout_row_push(ctx, 60);
@@ -544,15 +550,17 @@ static void zrmenu_frame(struct zrmenu *gui, int width, int height)
 {
    struct zr_context *ctx = &gui->ctx;
 
-
    zrmenu_wnd_main(ctx, width, height, gui);
-   zrmenu_wnd_demo(ctx, width, height, gui);
-   if (wnd_shader_parameters)
-      zrmenu_wnd_shader_parameters(ctx, width, height, gui);
+
+   if (wnd_test)
+      zrmenu_wnd_test(ctx, width, height, gui);
    if (wnd_control)
       zrmenu_wnd_control(ctx, width, height, gui);
+   if (wnd_shader_parameters)
+      zrmenu_wnd_shader_parameters(ctx, width, height, gui);
 
    wnd_control = !zr_window_is_closed(ctx, "Control");
+   wnd_test = !zr_window_is_closed(ctx, "Test");
    wnd_shader_parameters = !zr_window_is_closed(ctx, "Shader Parameters");
 
    zr_buffer_info(&gui->status, &gui->ctx.memory);
