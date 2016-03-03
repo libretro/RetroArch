@@ -171,8 +171,8 @@ error:
       free(adapter_addresses);
 #else
    freeifaddrs(ifaddr);
-   net_ifinfo_free(list);
 #endif
+   net_ifinfo_free(list);
 
    return false;
 }
