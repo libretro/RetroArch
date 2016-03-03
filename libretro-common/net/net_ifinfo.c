@@ -24,7 +24,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef _WIN32
+#include <retro_miscellaneous.h>
+
+#if defined(_WIN32) && !defined(_XBOX)
+#include <winsock2.h>
+#include <IPHlpApi.h>
+#include <WS2tcpip.h>
+#else
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -67,10 +73,55 @@ void net_ifinfo_free(net_ifinfo_t *list)
 
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
-#ifdef _WIN32
-	return false;
+    unsigned k              = 0;
+#if defined(_WIN32) && !defined(_XBOX)
+	DWORD size;
+	PIP_ADAPTER_ADDRESSES adapter_addresses, aa;
+	PIP_ADAPTER_UNICAST_ADDRESS ua;
+	DWORD rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
+
+	if (rv != ERROR_SUCCESS)
+       goto error;
+
+	adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
+
+	rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
+
+	if (rv != ERROR_SUCCESS)
+		goto error;
+
+	for (aa = adapter_addresses; aa != NULL; aa = aa->Next)
+	{
+      struct net_ifinfo_entry *ptr = NULL;
+
+	  for (ua = aa->FirstUnicastAddress; ua != NULL; ua = ua->Next)
+	  {
+	    char host[PATH_MAX_LENGTH], name[PATH_MAX_LENGTH];
+		ptr = (struct net_ifinfo_entry*)
+			realloc(list->entries, (k+1) * sizeof(struct net_ifinfo_entry));
+
+		if (!ptr)
+			goto error;
+
+		list->entries          = ptr;
+
+		memset(host, 0, PATH_MAX_LENGTH);
+		memset(name, 0, PATH_MAX_LENGTH);
+		getnameinfo(ua->Address.lpSockaddr, ua->Address.iSockaddrLength,
+			host, sizeof(host), NULL, 0, NI_NUMERICHOST);
+		WideCharToMultiByte(CP_ACP, 0, aa->FriendlyName, wcslen(aa->FriendlyName),
+			name, PATH_MAX_LENGTH, NULL, NULL);
+
+		list->entries[k].name  = strdup(name);
+		list->entries[k].host  = strdup(host);
+		list->size             = k + 1;
+
+		k++;
+	  }
+	}
+
+	free(adapter_addresses);
 #else
-   unsigned k              = 0;
    struct ifaddrs *ifa     = NULL;
    struct ifaddrs *ifaddr  = NULL;
 
@@ -111,10 +162,14 @@ bool net_ifinfo_new(net_ifinfo_t *list)
    }
 
    freeifaddrs(ifaddr);
-
+#endif
    return true;
 
 error:
+#ifdef _WIN32
+   if (adapter_addresses)
+      free(adapter_addresses);
+#else
    freeifaddrs(ifaddr);
    net_ifinfo_free(list);
 #endif
