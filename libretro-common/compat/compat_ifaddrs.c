@@ -25,8 +25,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <compat/ifaddrs.h>
 #include <retro_miscellaneous.h>
 
-#include <string.h>
+#include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 
 #ifndef _WIN32
@@ -35,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <net/if_arp.h>
 #include <netinet/in.h>
 #include <linux/netlink.h>
+#include <linux/if_packet.h>
 #include <linux/rtnetlink.h>
 #endif
 

@@ -941,6 +941,11 @@ ifeq ($(HAVE_NETWORKING), 1)
 	OBJ += libretro-common/net/net_ifinfo.o
 	endif
 
+   ifeq ($(WANT_IFADDRS), 1)
+	DEFINES += -DWANT_IFADDRS
+	OBJ += libretro-common/compat/compat_ifaddrs.o
+	endif
+
    ifneq ($(findstring Win32,$(OS)),)
       LIBS += -lws2_32
    endif
