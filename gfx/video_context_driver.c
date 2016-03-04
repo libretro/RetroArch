@@ -421,7 +421,6 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
                   video_context_data, mode_info->width,
                   mode_info->height, mode_info->fullscreen);
          }
-         break;
       case GFX_CTL_SET_RESIZE:
          {
             gfx_ctx_mode_t *mode_info = (gfx_ctx_mode_t*)data;

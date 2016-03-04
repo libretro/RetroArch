@@ -3143,9 +3143,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      entry->add_empty_entry) == -1)
                return false;
 
-            return true;
          }
-         break;
+         return true;
       case DISPLAYLIST_SETTINGS:
          ret = menu_displaylist_parse_settings(menu, info,
                info->label, PARSE_NONE, true);

@@ -160,7 +160,6 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
             unsigned *index = (unsigned*)data;
             return current_shader->mipmap_input(shader_data, *index);
          }
-         break;
       case SHADER_CTL_SET_COORDS:
          {
             video_shader_ctx_coords_t *coords = (video_shader_ctx_coords_t*)

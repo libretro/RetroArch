@@ -781,7 +781,6 @@ bool menu_input_ctl(enum menu_input_ctl_state state, void *data)
                return false;
             return menu_input_key_bind_iterate(bind->s, bind->len);
          }
-         break;
       case MENU_INPUT_CTL_START_LINE:
          {
             bool keyboard_display       = true;

@@ -446,10 +446,10 @@ unsigned retro_get_cpu_cores(void)
  **/
 uint64_t retro_get_cpu_features(void)
 {
-   size_t len;
    int flags[4];
    int vendor_shuffle[3];
    char vendor[13]     = {0};
+   size_t len          = 0;
    uint64_t cpu_flags  = 0;
    uint64_t cpu        = 0;
    unsigned max_flag   = 0;

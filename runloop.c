@@ -1426,7 +1426,7 @@ int runloop_iterate(unsigned *sleep_ms)
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_START, NULL);
 
-   runloop_ctl(RARCH_CAMERA_CTL_POLL, NULL);
+   camera_driver_ctl(RARCH_CAMERA_CTL_POLL, NULL);
 
    /* Update binds for analog dpad modes. */
    for (i = 0; i < settings->input.max_users; i++)

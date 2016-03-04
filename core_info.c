@@ -704,7 +704,6 @@ bool core_info_ctl(enum core_info_state state, void *data)
             return core_info_list_update_missing_firmware(core_info_curr_list,
                   info->path, info->system_directory);
          }
-         break;
       case CORE_INFO_CTL_FIND:
          {
             core_info_ctx_find_t *info = (core_info_ctx_find_t*)data;
