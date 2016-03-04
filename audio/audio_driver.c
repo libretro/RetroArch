@@ -52,9 +52,12 @@ typedef struct audio_driver_input_data
    float *outsamples;
    int16_t *conv_outsamples;
 
-   int16_t *rewind_buf;
-   size_t rewind_ptr;
-   size_t rewind_size;
+   struct
+   {
+      int16_t *buf;
+      size_t ptr;
+      size_t size;
+   } rewind;
 
    rarch_dsp_filter_t *dsp;
 
@@ -252,9 +255,10 @@ static bool uninit_audio(void)
    audio_driver_data.conv_outsamples = NULL;
    audio_driver_data.data_ptr        = 0;
 
-   if (audio_driver_data.rewind_buf)
-      free(audio_driver_data.rewind_buf);
-   audio_driver_data.rewind_buf = NULL;
+   if (audio_driver_data.rewind.buf)
+      free(audio_driver_data.rewind.buf);
+   audio_driver_data.rewind.buf   = NULL;
+   audio_driver_data.rewind.size  = 0;
 
    if (!settings->audio.enable)
    {
@@ -303,13 +307,13 @@ static bool init_audio(void)
 
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
-   retro_assert(audio_driver_data.rewind_buf = (int16_t*)
+   retro_assert(audio_driver_data.rewind.buf = (int16_t*)
          malloc(max_bufsamples * sizeof(int16_t)));
 
-   if (!audio_driver_data.rewind_buf)
+   if (!audio_driver_data.rewind.buf)
       goto error;
 
-   audio_driver_data.rewind_size             = max_bufsamples;
+   audio_driver_data.rewind.size             = max_bufsamples;
 
    if (!settings->audio.enable)
    {
@@ -623,8 +627,8 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
  **/
 void audio_driver_sample_rewind(int16_t left, int16_t right)
 {
-   audio_driver_data.rewind_buf[--audio_driver_data.rewind_ptr] = right;
-   audio_driver_data.rewind_buf[--audio_driver_data.rewind_ptr] = left;
+   audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] = right;
+   audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] = left;
 }
 
 /**
@@ -646,7 +650,7 @@ size_t audio_driver_sample_batch_rewind(const int16_t *data, size_t frames)
    size_t samples   = frames << 1;
 
    for (i = 0; i < samples; i++)
-      audio_driver_data.rewind_buf[--audio_driver_data.rewind_ptr] = data[i];
+      audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] = data[i];
 
    return frames;
 }
@@ -729,14 +733,14 @@ static void audio_driver_setup_rewind(void)
    unsigned i;
 
    /* Push audio ready to be played. */
-   audio_driver_data.rewind_ptr = audio_driver_data.rewind_size;
+   audio_driver_data.rewind.ptr = audio_driver_data.rewind.size;
 
    for (i = 0; i < audio_driver_data.data_ptr; i += 2)
    {
-      audio_driver_data.rewind_buf[--audio_driver_data.rewind_ptr] =
+      audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] =
          audio_driver_data.conv_outsamples[i + 1];
 
-      audio_driver_data.rewind_buf[--audio_driver_data.rewind_ptr] =
+      audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] =
          audio_driver_data.conv_outsamples[i + 0];
    }
 
@@ -896,8 +900,8 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
       case RARCH_AUDIO_CTL_FRAME_IS_REVERSE:
          /* We just rewound. Flush rewind audio buffer. */
          audio_driver_flush(
-               audio_driver_data.rewind_buf + audio_driver_data.rewind_ptr,
-               audio_driver_data.rewind_size - audio_driver_data.rewind_ptr);
+               audio_driver_data.rewind.buf + audio_driver_data.rewind.ptr,
+               audio_driver_data.rewind.size - audio_driver_data.rewind.ptr);
          return true;
       case RARCH_AUDIO_CTL_NONE:
       default:
