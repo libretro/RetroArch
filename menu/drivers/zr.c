@@ -946,13 +946,6 @@ struct wimp_texture_item
 
 typedef struct wimp_handle
 {
-   unsigned tabs_height;
-   unsigned line_height;
-   unsigned shadow_height;
-   unsigned scrollbar_width;
-   unsigned icon_size;
-   unsigned margin;
-   unsigned glyph_width;
    char box_message[PATH_MAX_LENGTH];
 
    struct
@@ -964,21 +957,7 @@ typedef struct wimp_handle
 
       struct wimp_texture_item bg;
       struct wimp_texture_item list[ZR_TEXTURE_LAST];
-      uintptr_t white;
    } textures;
-
-   struct
-   {
-      struct
-      {
-         unsigned idx;
-         unsigned idx_old;
-      } active;
-
-      float x_pos;
-      size_t selection_ptr_old;
-      size_t selection_ptr;
-   } categories;
 
    gfx_font_raster_block_t list_block;
    float scroll_y;
@@ -999,42 +978,6 @@ static void wimp_context_reset_textures(wimp_handle_t *wimp,
          case ZR_TEXTURE_POINTER:
             fill_pathname_join(path, iconpath,
                   "pointer.png", sizeof(path));
-            break;
-         case ZR_TEXTURE_BACK:
-            fill_pathname_join(path, iconpath,
-                  "back.png", sizeof(path));
-            break;
-         case ZR_TEXTURE_SWITCH_ON:
-            fill_pathname_join(path, iconpath,
-                  "on.png", sizeof(path));
-            break;
-         case ZR_TEXTURE_SWITCH_OFF:
-            fill_pathname_join(path, iconpath,
-                  "off.png", sizeof(path));
-            break;
-         case ZR_TEXTURE_TAB_MAIN_ACTIVE:
-            fill_pathname_join(path, iconpath,
-                  "main_tab_active.png", sizeof(path));
-            break;
-         case ZR_TEXTURE_TAB_PLAYLISTS_ACTIVE:
-            fill_pathname_join(path, iconpath,
-                  "playlists_tab_active.png", sizeof(path));
-            break;
-         case ZR_TEXTURE_TAB_SETTINGS_ACTIVE:
-            fill_pathname_join(path, iconpath,
-                  "settings_tab_active.png", sizeof(path));
-            break;
-         case ZR_TEXTURE_TAB_MAIN_PASSIVE:
-            fill_pathname_join(path, iconpath,
-                  "main_tab_passive.png", sizeof(path));
-            break;
-         case ZR_TEXTURE_TAB_PLAYLISTS_PASSIVE:
-            fill_pathname_join(path, iconpath,
-                  "playlists_tab_passive.png", sizeof(path));
-            break;
-         case ZR_TEXTURE_TAB_SETTINGS_PASSIVE:
-            fill_pathname_join(path, iconpath,
-                  "settings_tab_passive.png", sizeof(path));
             break;
       }
 
@@ -1059,69 +1002,7 @@ static void wimp_get_message(void *data, const char *message)
    strlcpy(wimp->box_message, message, sizeof(wimp->box_message));
 }
 
-static void wimp_render(void *data)
-{
-   size_t i             = 0;
-   float delta_time;
-   menu_animation_ctx_delta_t delta;
-   unsigned bottom, width, height, header_height;
-   wimp_handle_t *wimp    = (wimp_handle_t*)data;
-   settings_t *settings = config_get_ptr();
-
-   if (!wimp)
-      return;
-
-   video_driver_get_size(&width, &height);
-
-   menu_animation_ctl(MENU_ANIMATION_CTL_DELTA_TIME, &delta_time);
-
-   delta.current = delta_time;
-
-   if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
-      menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE, &delta.ideal);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &width);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
-   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
-
-   if (settings->menu.pointer.enable)
-   {
-      int16_t pointer_y = menu_input_pointer_state(MENU_POINTER_Y_AXIS);
-      float    old_accel_val, new_accel_val;
-      unsigned new_pointer_val =
-         (pointer_y - wimp->line_height + wimp->scroll_y - 16)
-         / wimp->line_height;
-
-      menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_READ, &old_accel_val);
-      menu_input_ctl(MENU_INPUT_CTL_POINTER_PTR, &new_pointer_val);
-
-      wimp->scroll_y            -= old_accel_val / 60.0;
-
-      new_accel_val = old_accel_val * 0.96;
-
-      menu_input_ctl(MENU_INPUT_CTL_POINTER_ACCEL_WRITE, &new_accel_val);
-   }
-
-   if (wimp->scroll_y < 0)
-      wimp->scroll_y = 0;
-
-   bottom = menu_entries_get_end() * wimp->line_height
-      - height + header_height + wimp->tabs_height;
-   if (wimp->scroll_y > bottom)
-      wimp->scroll_y = bottom;
-
-   if (menu_entries_get_end() * wimp->line_height
-         < height - header_height - wimp->tabs_height)
-      wimp->scroll_y = 0;
-
-   if (menu_entries_get_end() < height / wimp->line_height) { }
-   else
-      i = wimp->scroll_y / wimp->line_height;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
-}
-
-static void wimp_draw_cursor(wimp_handle_t *wimp,
+static void zrmenu_draw_cursor(wimp_handle_t *wimp,
       float *color,
       float x, float y, unsigned width, unsigned height)
 {
@@ -1148,26 +1029,6 @@ static void wimp_draw_cursor(wimp_handle_t *wimp,
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
-}
-
-static size_t wimp_list_get_size(void *data, enum menu_list_type type)
-{
-   size_t list_size = 0;
-   (void)data;
-
-   switch (type)
-   {
-      case MENU_LIST_PLAIN:
-         list_size  = menu_entries_get_stack_size(0);
-         break;
-      case MENU_LIST_TABS:
-         list_size = ZR_SYSTEM_TAB_END;
-         break;
-      default:
-         break;
-   }
-
-   return list_size;
 }
 
 static void wimp_frame(void *data)
@@ -1205,45 +1066,11 @@ static void wimp_frame(void *data)
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      wimp_draw_cursor(wimp, &white_bg[0], mouse_x, mouse_y, width, height);
+      zrmenu_draw_cursor(wimp, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
-}
-
-static void wimp_allocate_white_texture(wimp_handle_t *wimp)
-{
-   struct texture_image ti;
-   static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
-
-   ti.width  = 1;
-   ti.height = 1;
-   ti.pixels = (uint32_t*)&white_data;
-
-   video_driver_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST, &wimp->textures.white);
-}
-
-static void wimp_font(void)
-{
-   int font_size;
-   char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
-   menu_display_ctx_font_t font_info;
-   settings_t *settings = config_get_ptr();
-
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
-
-   fill_pathname_join(mediapath, settings->assets_directory,
-         "zahnrad", sizeof(mediapath));
-   fill_pathname_join(fontpath, mediapath,
-         "DroidSans.ttf", sizeof(fontpath));
-
-   font_info.path = fontpath;
-   font_info.size = font_size;
-
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_INIT, &font_info))
-      RARCH_WARN("Failed to load font.");
 }
 
 static void wimp_layout(wimp_handle_t *wimp)
@@ -1255,33 +1082,13 @@ static void wimp_layout(wimp_handle_t *wimp)
 
    video_driver_get_size(&width, &height);
 
-   /* Mobiles platforms may have very small display metrics
-    * coupled to a high resolution, so we should be DPI aware
-    * to ensure the entries hitboxes are big enough.
-    *
-    * On desktops, we just care about readability, with every widget
-    * size proportional to the display width. */
    menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
 
-   new_header_height    = scale_factor / 3;
-   new_font_size        = scale_factor / 9;
-
-   wimp->shadow_height   = scale_factor / 36;
-   wimp->scrollbar_width = scale_factor / 36;
-   wimp->tabs_height     = scale_factor / 3;
-   wimp->line_height     = scale_factor / 3;
-   wimp->margin          = scale_factor / 9;
-   wimp->icon_size       = scale_factor / 3;
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT,
          &new_header_height);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,
          &new_font_size);
-
-   /* we assume the average glyph aspect ratio is close to 3:4 */
-   wimp->glyph_width = new_font_size * 3/4;
-
-   wimp_font();
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
 
@@ -1290,8 +1097,7 @@ static void wimp_layout(wimp_handle_t *wimp)
       unsigned m_width =
          font_driver_get_message_width(fb_buf, "a", 1, 1);
 
-      if (m_width)
-         wimp->glyph_width = m_width;
+
    }
 }
 
@@ -1317,9 +1123,6 @@ static void *wimp_init(void **userdata)
       goto error;
 
    *userdata = wimp;
-
-   wimp_layout(wimp);
-   wimp_allocate_white_texture(wimp);
 
    zrmenu_init(width, height);
 
@@ -1349,11 +1152,9 @@ static void wimp_context_bg_destroy(wimp_handle_t *wimp)
    if (!wimp)
       return;
 
-   video_driver_texture_unload((uintptr_t*)&wimp->textures.bg.id);
-   video_driver_texture_unload((uintptr_t*)&wimp->textures.white);
 }
 
-static void wimp_context_destroy(void *data)
+static void zrmenu_context_destroy(void *data)
 {
    unsigned i;
    wimp_handle_t *wimp   = (wimp_handle_t*)data;
@@ -1369,106 +1170,7 @@ static void wimp_context_destroy(void *data)
    wimp_context_bg_destroy(wimp);
 }
 
-static bool wimp_load_image(void *userdata, void *data,
-      enum menu_image_type type)
-{
-   wimp_handle_t *wimp = (wimp_handle_t*)userdata;
-
-   switch (type)
-   {
-      case MENU_IMAGE_NONE:
-         break;
-      case MENU_IMAGE_WALLPAPER:
-         wimp_context_bg_destroy(wimp);
-         video_driver_texture_load(data,
-               TEXTURE_FILTER_MIPMAP_LINEAR, &wimp->textures.bg.id);
-         wimp_allocate_white_texture(wimp);
-         break;
-      case MENU_IMAGE_BOXART:
-         break;
-   }
-
-   return true;
-}
-
-static float wimp_get_scroll(wimp_handle_t *wimp)
-{
-   size_t selection;
-   unsigned width, height, half = 0;
-
-   if (!wimp)
-      return 0;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return 0;
-
-   video_driver_get_size(&width, &height);
-
-   if (wimp->line_height)
-      half = (height / wimp->line_height) / 2;
-
-   if (selection < half)
-      return 0;
-
-   return ((selection + 2 - half) * wimp->line_height);
-}
-
-static void wimp_navigation_set(void *data, bool scroll)
-{
-   menu_animation_ctx_entry_t entry;
-   wimp_handle_t *wimp    = (wimp_handle_t*)data;
-   float     scroll_pos   = wimp ? wimp_get_scroll(wimp) : 0.0f;
-
-   if (!wimp || !scroll)
-      return;
-
-   entry.duration         = 10;
-   entry.target_value     = scroll_pos;
-   entry.subject          = &wimp->scroll_y;
-   entry.easing_enum      = EASING_IN_OUT_QUAD;
-   entry.tag              = -1;
-   entry.cb               = NULL;
-
-   menu_animation_ctl(MENU_ANIMATION_CTL_PUSH, &entry);
-}
-
-static void  wimp_list_set_selection(void *data, file_list_t *list)
-{
-   wimp_navigation_set(data, true);
-}
-
-static void wimp_navigation_clear(void *data, bool pending_push)
-{
-   size_t i             = 0;
-   wimp_handle_t *wimp    = (wimp_handle_t*)data;
-   if (!wimp)
-      return;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &i);
-   wimp->scroll_y = 0;
-}
-
-static void wimp_navigation_set_last(void *data)
-{
-   wimp_navigation_set(data, true);
-}
-
-static void wimp_navigation_alphabet(void *data, size_t *unused)
-{
-   wimp_navigation_set(data, true);
-}
-
-static void wimp_populate_entries(
-      void *data, const char *path,
-      const char *label, unsigned i)
-{
-   wimp_handle_t *wimp    = (wimp_handle_t*)data;
-   if (!wimp)
-      return;
-
-   wimp->scroll_y = wimp_get_scroll(wimp);
-}
-
-static void zr_context_reset(void *data)
+static void zrmenu_context_reset(void *data)
 {
    char iconpath[PATH_MAX_LENGTH] = {0};
    wimp_handle_t *wimp              = (wimp_handle_t*)data;
@@ -1487,7 +1189,6 @@ static void zr_context_reset(void *data)
    wimp_layout(wimp);
    zrmenu_init(width, height);
    wimp_context_bg_destroy(wimp);
-   wimp_allocate_white_texture(wimp);
    wimp_context_reset_textures(wimp, iconpath);
 
    rarch_task_push_image_load(settings->menu.wallpaper, "cb_menu_wallpaper",
@@ -1506,201 +1207,7 @@ static int wimp_environ(enum menu_environ_cb type, void *data, void *userdata)
    return -1;
 }
 
-static void wimp_preswitch_tabs(wimp_handle_t *wimp, unsigned action)
-{
-   size_t idx              = 0;
-   size_t stack_size       = 0;
-   file_list_t *menu_stack = NULL;
-
-   if (!wimp)
-      return;
-
-   menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
-
-   menu_stack = menu_entries_get_menu_stack_ptr(0);
-   stack_size = menu_stack->size;
-
-   if (menu_stack->list[stack_size - 1].label)
-      free(menu_stack->list[stack_size - 1].label);
-   menu_stack->list[stack_size - 1].label = NULL;
-
-   switch (wimp->categories.selection_ptr)
-   {
-      case ZR_SYSTEM_TAB_MAIN:
-         menu_stack->list[stack_size - 1].label =
-            strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
-         menu_stack->list[stack_size - 1].type =
-            MENU_SETTINGS;
-         break;
-      case ZR_SYSTEM_TAB_PLAYLISTS:
-         menu_stack->list[stack_size - 1].label =
-            strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
-         menu_stack->list[stack_size - 1].type =
-            MENU_PLAYLISTS_TAB;
-         break;
-      case ZR_SYSTEM_TAB_SETTINGS:
-         menu_stack->list[stack_size - 1].label =
-            strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
-         menu_stack->list[stack_size - 1].type =
-            MENU_SETTINGS;
-         break;
-   }
-}
-
-static void wimp_list_cache(void *data, enum menu_list_type type, unsigned action)
-{
-   size_t list_size;
-   wimp_handle_t *wimp   = (wimp_handle_t*)data;
-
-   if (!wimp)
-      return;
-
-   list_size = ZR_SYSTEM_TAB_END;
-
-   switch (type)
-   {
-      case MENU_LIST_PLAIN:
-         break;
-      case MENU_LIST_HORIZONTAL:
-         wimp->categories.selection_ptr_old = wimp->categories.selection_ptr;
-
-         switch (action)
-         {
-            case MENU_ACTION_LEFT:
-               if (wimp->categories.selection_ptr == 0)
-               {
-                  wimp->categories.selection_ptr = list_size;
-                  wimp->categories.active.idx = list_size - 1;
-               }
-               else
-                  wimp->categories.selection_ptr--;
-               break;
-            default:
-               if (wimp->categories.selection_ptr == list_size)
-               {
-                  wimp->categories.selection_ptr = 0;
-                  wimp->categories.active.idx = 1;
-               }
-               else
-                  wimp->categories.selection_ptr++;
-               break;
-         }
-
-         wimp_preswitch_tabs(wimp, action);
-         break;
-      default:
-         break;
-   }
-}
-
-static int wimp_list_push(void *data, void *userdata,
-      menu_displaylist_info_t *info, unsigned type)
-{
-   int ret                = -1;
-   core_info_list_t *list = NULL;
-   menu_handle_t *menu    = (menu_handle_t*)data;
-
-   (void)userdata;
-
-   switch (type)
-   {
-      case DISPLAYLIST_LOAD_CONTENT_LIST:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         menu_entries_push(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
-               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
-               MENU_SETTING_ACTION, 0, 0);
-
-         core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
-         if (core_info_list_num_info_files(list))
-         {
-            menu_entries_push(info->list,
-                  menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
-                  menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
-                  MENU_SETTING_ACTION, 0, 0);
-
-            menu_entries_push(info->list,
-                  menu_hash_to_str(MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                  menu_hash_to_str(MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                  MENU_SETTING_ACTION, 0, 0);
-         }
-
-         info->need_push    = true;
-         info->need_refresh = true;
-         ret = 0;
-         break;
-      case DISPLAYLIST_MAIN_MENU:
-         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-
-         if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-         {
-            menu_displaylist_parse_settings(menu, info,
-                  menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS), PARSE_ACTION, false);
-         }
-
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_START_CORE), PARSE_ACTION, false);
-
-#ifndef HAVE_DYNAMIC
-         if (frontend_driver_has_fork())
-#endif
-         {
-            menu_displaylist_parse_settings(menu, info,
-                  menu_hash_to_str(MENU_LABEL_CORE_LIST), PARSE_ACTION, false);
-         }
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST), PARSE_ACTION, false);
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY), PARSE_ACTION, false);
-#if defined(HAVE_NETWORKING)
-#if defined(HAVE_LIBRETRODB)
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_ADD_CONTENT_LIST), PARSE_ACTION, false);
-#endif
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER), PARSE_ACTION, false);
-#endif
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_INFORMATION_LIST), PARSE_ACTION, false);
-#ifndef HAVE_DYNAMIC
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH), PARSE_ACTION, false);
-#endif
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_CONFIGURATIONS), PARSE_ACTION, false);
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_SAVE_CURRENT_CONFIG), PARSE_ACTION, false);
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG), PARSE_ACTION, false);
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_HELP_LIST), PARSE_ACTION, false);
-#if !defined(IOS)
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH), PARSE_ACTION, false);
-#endif
-#if defined(HAVE_LAKKA)
-         menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str(MENU_LABEL_SHUTDOWN), PARSE_ACTION, false);
-#endif
-         info->need_push    = true;
-         ret = 0;
-         break;
-   }
-   return ret;
-}
-
-static size_t wimp_list_get_selection(void *data)
-{
-   wimp_handle_t *wimp   = (wimp_handle_t*)data;
-
-   if (!wimp)
-      return 0;
-
-   return wimp->categories.selection_ptr;
-}
-
-static bool wimp_menu_init_list(void *data)
+static bool zrmenu_init_list(void *data)
 {
    menu_displaylist_info_t info = {0};
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
@@ -1729,33 +1236,33 @@ menu_ctx_driver_t menu_ctx_zr = {
    NULL,
    wimp_get_message,
    generic_menu_iterate,
-   wimp_render,
+   NULL,
    wimp_frame,
    wimp_init,
    wimp_free,
-   zr_context_reset,
-   wimp_context_destroy,
-   wimp_populate_entries,
-   NULL,
-   wimp_navigation_clear,
-   NULL,
-   NULL,
-   wimp_navigation_set,
-   wimp_navigation_set_last,
-   wimp_navigation_alphabet,
-   wimp_navigation_alphabet,
-   wimp_menu_init_list,
+   zrmenu_context_reset,
+   zrmenu_context_destroy,
    NULL,
    NULL,
    NULL,
-   wimp_list_cache,
-   wimp_list_push,
-   wimp_list_get_selection,
-   wimp_list_get_size,
    NULL,
-   wimp_list_set_selection,
    NULL,
-   wimp_load_image,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   zrmenu_init_list,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
+   NULL,
    "zahnrad",
    wimp_environ,
    NULL,
