@@ -62,18 +62,6 @@
 
 #define ZR_SYSTEM_TAB_END     ZR_SYSTEM_TAB_SETTINGS
 
-static struct zr_device device;
-static struct zr_font font;
-static char zr_font_path[PATH_MAX_LENGTH];
-
-static struct zr_user_font usrfnt;
-static struct zr_allocator zr_alloc;
-static struct zrmenu gui;
-
-static bool wnd_test = false;
-static bool wnd_control = false;
-static bool wnd_shader_parameters = false;
-
 enum
 {
    ZR_TEXTURE_POINTER = 0,
@@ -130,20 +118,33 @@ struct zr_device
 #endif
 };
 
+static struct zr_device device;
+static struct zr_font font;
+static char zr_font_path[PATH_MAX_LENGTH];
+
+static struct zr_user_font usrfnt;
+static struct zr_allocator zr_alloc;
+static struct zrmenu gui;
+
+static bool wnd_test              = false;
+static bool wnd_control           = false;
+static bool wnd_shader_parameters = false;
+
 bool zr_checkbox_bool(struct zr_context* cx, const char* text, bool *active)
 {
-   int x = *active;
+   int    x = *active;
    bool ret = zr_checkbox(cx, text, &x);
-   *active = x;
+   *active  = x;
+
    return ret;
 }
 
 float zr_checkbox_float(struct zr_context* cx, const char* text, float *active)
 {
-
-   int x = *active;
+   int x     = *active;
    float ret = zr_checkbox(cx, text, &x);
-   *active = x;
+   *active   = x;
+
    return ret;
 }
 
@@ -270,9 +271,9 @@ static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
 static void zrmenu_wnd_shader_parameters(struct zr_context *ctx,
       int width, int height, struct zrmenu *gui)
 {
+   unsigned i;
    video_shader_ctx_t shader_info;
    struct zr_panel layout;
-   int i = 0;
    settings_t *settings = config_get_ptr();
 
    if (zr_begin(ctx, &layout, "Shader Parameters", zr_rect(240, 10, 300, 400),
@@ -316,7 +317,6 @@ bool zrmenu_wnd_control(struct zr_context *ctx,
 {
    static int wnd_x = 900;
    static int wnd_y = 60;
-   int i;
    struct zr_panel layout;
 
    bool ret = (zr_begin(ctx, &layout, "Control", zr_rect(wnd_x, wnd_y, 350, 520),
@@ -325,6 +325,8 @@ bool zrmenu_wnd_control(struct zr_context *ctx,
 
    if (ret)
    {
+      unsigned i;
+
       /* Style */
       if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Metrics", ZR_MINIMIZED))
       {

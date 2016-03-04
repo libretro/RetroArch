@@ -857,7 +857,7 @@ static bool open_codecs(void)
 
                if (size)
                {
-                  ass_extra_data[subtitle_streams_num] = av_malloc(size);
+                  ass_extra_data[subtitle_streams_num] = (uint8_t*)av_malloc(size);
                   memcpy(ass_extra_data[subtitle_streams_num], (*s)->extradata, size);
                }
 
