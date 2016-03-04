@@ -40,8 +40,8 @@ typedef struct rarch_system_info
    const char *input_desc_btn[MAX_USERS][RARCH_FIRST_META_KEY];
    char valid_extensions[PATH_MAX_LENGTH];
 
-   struct retro_disk_control_callback disk_control; 
-   struct retro_location_callback location_callback;
+   struct retro_disk_control_callback  disk_control_cb; 
+   struct retro_location_callback      location_cb;
 
    core_option_manager_t *core_options;
 

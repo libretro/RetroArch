@@ -2088,7 +2088,7 @@ static int menu_displaylist_parse_load_content_settings(
             menu_hash_to_str(MENU_LABEL_CORE_CHEAT_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
       if (     (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-            && system && system->disk_control.get_num_images)
+            && system && system->disk_control_cb.get_num_images)
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_OPTIONS),
                menu_hash_to_str(MENU_LABEL_DISK_OPTIONS),

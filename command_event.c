@@ -83,7 +83,7 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (info)
-      control = (const struct retro_disk_control_callback*)&info->disk_control;
+      control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
 
    if (!control || !control->get_num_images)
       return;
@@ -131,7 +131,7 @@ static void event_disk_control_set_index(unsigned idx)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (info)
-      control = (const struct retro_disk_control_callback*)&info->disk_control;
+      control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
 
    if (!control || !control->get_num_images)
       return;
@@ -189,7 +189,7 @@ static bool event_disk_control_append_image(const char *path)
 
    if (sysinfo)
       control = (const struct retro_disk_control_callback*)
-         &sysinfo->disk_control;
+         &sysinfo->disk_control_cb;
 
    if (!control)
       return false;
@@ -1559,11 +1559,11 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             return event_disk_control_append_image(path);
          }
       case EVENT_CMD_DISK_EJECT_TOGGLE:
-         if (info && info->disk_control.get_num_images)
+         if (info && info->disk_control_cb.get_num_images)
          {
             const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
-               &info->disk_control;
+               &info->disk_control_cb;
 
             if (control)
             {
@@ -1577,11 +1577,11 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
                   1, 120, true);
          break;
       case EVENT_CMD_DISK_NEXT:
-         if (info && info->disk_control.get_num_images)
+         if (info && info->disk_control_cb.get_num_images)
          {
             const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
-               &info->disk_control;
+               &info->disk_control_cb;
 
             if (!control)
                return false;
@@ -1597,11 +1597,11 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
                   1, 120, true);
          break;
       case EVENT_CMD_DISK_PREV:
-         if (info && info->disk_control.get_num_images)
+         if (info && info->disk_control_cb.get_num_images)
          {
             const struct retro_disk_control_callback *control =
                (const struct retro_disk_control_callback*)
-               &info->disk_control;
+               &info->disk_control_cb;
 
             if (!control)
                return false;

@@ -217,8 +217,8 @@ void init_location(void)
       location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
    }
 
-   if (system->location_callback.initialized)
-      system->location_callback.initialized();
+   if (system->location_cb.initialized)
+      system->location_cb.initialized();
 }
 
 static void uninit_location(void)
@@ -229,8 +229,8 @@ static void uninit_location(void)
 
    if (location_data && location_driver)
    {
-      if (system->location_callback.deinitialized)
-         system->location_callback.deinitialized();
+      if (system->location_cb.deinitialized)
+         system->location_cb.deinitialized();
 
       if (location_driver->free)
          location_driver->free(location_data);

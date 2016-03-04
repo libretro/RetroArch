@@ -632,7 +632,7 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
    if (!system)
       return;
 
-   control = &system->disk_control;
+   control = &system->disk_control_cb;
 
    if (!control)
       return;

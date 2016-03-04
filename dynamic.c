@@ -860,7 +860,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE:
          RARCH_LOG("Environ SET_DISK_CONTROL_INTERFACE.\n");
-         system->disk_control =
+         system->disk_control_cb =
             *(const struct retro_disk_control_callback*)data;
          break;
 
@@ -1062,7 +1062,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->stop                  = driver_location_stop;
          cb->get_position          = driver_location_get_position;
          cb->set_interval          = driver_location_set_interval;
-         system->location_callback = *cb;
+         system->location_cb       = *cb;
 
          location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
          break;
