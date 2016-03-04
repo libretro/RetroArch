@@ -499,12 +499,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_system.core_options   = NULL;
 
          /* No longer valid. */
-         if (runloop_system.special)
-            free(runloop_system.special);
-         runloop_system.special        = NULL;
-         if (runloop_system.ports)
-            free(runloop_system.ports);
-         runloop_system.ports          = NULL;
+         if (runloop_system.subsystem.data)
+            free(runloop_system.subsystem.data);
+         runloop_system.subsystem.data        = NULL;
+         if (runloop_system.ports.data)
+            free(runloop_system.ports.data);
+         runloop_system.subsystem.size = 0;
+         runloop_system.ports.data     = NULL;
+         runloop_system.ports.size     = 0;
          runloop_key_event             = NULL;
          runloop_frontend_key_event    = NULL;
 

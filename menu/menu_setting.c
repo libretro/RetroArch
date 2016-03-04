@@ -1003,9 +1003,9 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
 
    index_offset = menu_setting_get_index_offset(setting);
 
-   if (index_offset < system->num_ports)
+   if (index_offset < system->ports.size)
       desc = libretro_find_controller_description(
-            &system->ports[index_offset],
+            &system->ports.data[index_offset],
             settings->input.libretro_device
             [index_offset]);
 
@@ -2235,11 +2235,11 @@ static int setting_action_start_libretro_device_type(void *data)
 
    /* Only push RETRO_DEVICE_ANALOG as default if we use an 
     * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!system->num_ports)
+   if (!system->ports.size)
       devices[types++] = RETRO_DEVICE_ANALOG;
 
-   desc = port < system->num_ports ?
-      &system->ports[port] : NULL;
+   desc = port < system->ports.size ?
+      &system->ports.data[port] : NULL;
 
    if (desc)
    {
@@ -2385,11 +2385,11 @@ static int setting_action_left_libretro_device_type(
 
    /* Only push RETRO_DEVICE_ANALOG as default if we use an 
     * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!system->num_ports)
+   if (!system->ports.size)
       devices[types++] = RETRO_DEVICE_ANALOG;
 
-   if (port < system->num_ports)
-      desc = &system->ports[port];
+   if (port < system->ports.size)
+      desc = &system->ports.data[port];
 
    if (desc)
    {
@@ -2450,11 +2450,11 @@ static int setting_action_right_libretro_device_type(
 
    /* Only push RETRO_DEVICE_ANALOG as default if we use an 
     * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!system->num_ports)
+   if (!system->ports.size)
       devices[types++] = RETRO_DEVICE_ANALOG;
 
-   if (port < system->num_ports)
-      desc = &system->ports[port];
+   if (port < system->ports.size)
+      desc = &system->ports.data[port];
 
    if (desc)
    {

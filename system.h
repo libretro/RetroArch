@@ -47,11 +47,17 @@ typedef struct rarch_system_info
 
    core_option_manager_t *core_options;
 
-   struct retro_subsystem_info *special;
-   unsigned num_special;
+   struct
+   {
+      struct retro_subsystem_info *data;
+      unsigned size;
+   } subsystem;
 
-   struct retro_controller_info *ports;
-   unsigned num_ports;
+   struct
+   {
+      struct retro_controller_info *data;
+      unsigned size;
+   } ports;
 } rarch_system_info_t;
 
 #ifdef __cplusplus

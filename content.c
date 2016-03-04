@@ -1444,8 +1444,8 @@ static const struct retro_subsystem_info *init_content_file_subsystem(
 {
    global_t *global = global_get_ptr();
    const struct retro_subsystem_info *special = 
-      libretro_find_subsystem_info(system->special,
-         system->num_special, global->subsystem);
+      libretro_find_subsystem_info(system->subsystem.data,
+         system->subsystem.size, global->subsystem);
 
    if (!special)
    {

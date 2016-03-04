@@ -1033,8 +1033,8 @@ static void rarch_init_savefile_paths(void)
       unsigned i, j;
       const struct retro_subsystem_info *info =
          libretro_find_subsystem_info(
-               system->special,
-               system->num_special,
+               system->subsystem.data,
+               system->subsystem.size,
                global->subsystem);
 
       /* We'll handle this error gracefully later. */

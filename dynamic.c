@@ -1133,16 +1133,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
          }
 
-         free(system->special);
-         system->special = (struct retro_subsystem_info*)
-            calloc(i, sizeof(*system->special));
+         free(system->subsystem.data);
+         system->subsystem.data = (struct retro_subsystem_info*)
+            calloc(i, sizeof(*system->subsystem.data));
 
-         if (!system->special)
+         if (!system->subsystem.data)
             return false;
 
-         memcpy(system->special, info,
-               i * sizeof(*system->special));
-         system->num_special = i;
+         memcpy(system->subsystem.data, info,
+               i * sizeof(*system->subsystem.data));
+         system->subsystem.size = i;
          break;
       }
 
@@ -1162,15 +1162,15 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                      info[i].types[j].id);
          }
 
-         free(system->ports);
-         system->ports = (struct retro_controller_info*)
-            calloc(i, sizeof(*system->ports));
-         if (!system->ports)
+         free(system->ports.data);
+         system->ports.data = (struct retro_controller_info*)
+            calloc(i, sizeof(*system->ports.data));
+         if (!system->ports.data)
             return false;
 
-         memcpy(system->ports, info,
-               i * sizeof(*system->ports));
-         system->num_ports = i;
+         memcpy(system->ports.data, info,
+               i * sizeof(*system->ports.data));
+         system->ports.size = i;
          break;
       }
 
