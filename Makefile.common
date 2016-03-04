@@ -335,6 +335,7 @@ ifeq ($(HAVE_RSOUND), 1)
 endif
 
 ifeq ($(HAVE_DSOUND), 1)
+   HAVE_DIRECTX=1
    OBJ += audio/drivers/dsound.o
    DEFINES += -DHAVE_DSOUND
    LIBS += -ldxguid -ldsound
@@ -518,6 +519,7 @@ endif
 
 ifeq ($(HAVE_DINPUT), 1)
    LIBS += -ldinput8 -ldxguid -lole32
+   HAVE_DIRECTX=1
    DEFINES += -DHAVE_DINPUT
    OBJ += input/drivers/dinput.o \
           input/drivers_joypad/dinput_joypad.o
@@ -823,6 +825,7 @@ ifeq ($(HAVE_D3D9), 1)
           gfx/common/d3d_common.o \
           gfx/drivers_font/d3d_w32_font.o \
           gfx/drivers_context/d3d_ctx.o
+   HAVE_DIRECTX=1
    DEFINES += -DHAVE_D3D -DHAVE_D3D9
    LIBS += -ld3d9 -ld3dx9 -ldxguid
 
@@ -1003,6 +1006,10 @@ endif
 
 ifeq ($(HAVE_COMPRESSION), 1)
    DEFINES += -DHAVE_COMPRESSION
+endif
+
+ifeq ($(HAVE_DIRECTX), 1)
+   DEFINES += -I"$(DXSDK_DIR)/Include"
 endif
 
 ifeq ($(HAVE_COCOA),1)
