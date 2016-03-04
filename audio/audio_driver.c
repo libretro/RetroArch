@@ -295,7 +295,7 @@ static bool uninit_audio(void)
    return true;
 }
 
-static bool init_audio(retro_audio_callback_t *audio_cb)
+static bool init_audio(bool audio_cb_inited)
 {
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings = config_get_ptr();
@@ -335,7 +335,7 @@ static bool init_audio(retro_audio_callback_t *audio_cb)
 
    audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
 #ifdef HAVE_THREADS
-   if (audio_cb)
+   if (audio_cb_inited)
    {
       RARCH_LOG("Starting threaded audio driver ...\n");
       if (!rarch_threaded_audio_init(
@@ -412,7 +412,7 @@ static bool init_audio(retro_audio_callback_t *audio_cb)
 
    audio_driver_data.audio_rate.control = false;
    if (
-         !audio_cb
+         !audio_cb_inited
          && audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL) 
          && settings->audio.rate_control
          )
@@ -437,7 +437,7 @@ static bool init_audio(retro_audio_callback_t *audio_cb)
    if (
          audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL)
          && !settings->audio.mute_enable
-         && audio_cb
+         && audio_cb_inited
          )
       audio_driver_ctl(RARCH_AUDIO_CTL_START, NULL);
 
@@ -804,7 +804,7 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          retro_perf_stop(&resampler_proc);
          break;
       case RARCH_AUDIO_CTL_INIT:
-         return init_audio(&audio_callback.callback);
+         return init_audio(audio_callback.callback != NULL);
       case RARCH_AUDIO_CTL_DESTROY:
          audio_driver_active   = false;
          audio_driver_data_own = false;
