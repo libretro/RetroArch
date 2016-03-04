@@ -328,17 +328,6 @@ static void parse_msg(rarch_cmd_t *handle, char *buf)
    }
 }
 
-void rarch_cmd_set(rarch_cmd_t *handle, unsigned id)
-{
-   if (id < RARCH_BIND_LIST_END)
-      handle->state[id] = true;
-}
-
-bool rarch_cmd_get(rarch_cmd_t *handle, unsigned id)
-{
-   return id < RARCH_BIND_LIST_END && handle->state[id];
-}
-
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static void network_cmd_poll(rarch_cmd_t *handle)
 {
@@ -597,7 +586,7 @@ static bool verify_command(const char *cmd)
    return false;
 }
 
-bool network_cmd_send(const char *cmd_)
+static bool network_cmd_send(const char *cmd_)
 {
    bool ret;
    char *command       = NULL;
@@ -646,6 +635,11 @@ bool rarch_cmd_ctl(enum rarch_cmd_ctl_state state, void *data)
 {
    switch (state)
    {
+      case RARCH_CMD_CTL_NETWORK_SEND:
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+         network_cmd_send((const char*)data);
+#endif
+         break;
       case RARCH_CMD_CTL_POLL:
          {
             rarch_cmd_t *handle = (rarch_cmd_t*)data;
@@ -660,6 +654,23 @@ bool rarch_cmd_ctl(enum rarch_cmd_ctl_state state, void *data)
 #endif
          }
          break;
+      case RARCH_CMD_CTL_SET:
+         {
+            rarch_cmd_handle_t *handle = (rarch_cmd_handle_t*)data;
+            if (!handle || !handle->handle)
+               return false;
+            if (handle->id < RARCH_BIND_LIST_END)
+               handle->handle->state[handle->id] = true;
+         }
+         break;
+      case RARCH_CMD_CTL_GET:
+         {
+            rarch_cmd_handle_t *handle = (rarch_cmd_handle_t*)data;
+            if (!handle || !handle->handle)
+               return false;
+            return handle->id < RARCH_BIND_LIST_END 
+               && handle->handle->state[handle->id];
+         }
       case RARCH_CMD_CTL_FREE:
          {
             rarch_cmd_t *handle = (rarch_cmd_t*)data;

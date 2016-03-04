@@ -265,7 +265,14 @@ static retro_input_t input_driver_keys_pressed(void)
 
 #ifdef HAVE_COMMAND
       if (input_driver_command)
-         state |= rarch_cmd_get(input_driver_command, key);
+      {
+         rarch_cmd_handle_t handle;
+
+         handle.handle = input_driver_command;
+         handle.id     = key;
+
+         state |= rarch_cmd_ctl(RARCH_CMD_CTL_GET, &handle);
+      }
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
