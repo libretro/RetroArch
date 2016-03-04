@@ -1806,7 +1806,7 @@ static int deferred_push_video_shader_parameters_common(
 }
 #endif
 
-bool menu_displaylist_parse_settings(void *data,
+int menu_displaylist_parse_settings(void *data,
       menu_displaylist_info_t *info,
       const char *info_label,
       enum menu_displaylist_parse_type parse_type,
@@ -1819,7 +1819,7 @@ bool menu_displaylist_parse_settings(void *data,
    uint64_t flags            = menu_setting_get_flags(setting);
 
    if (!setting)
-      return false;
+      return -1;
 
    switch (parse_type)
    {
@@ -1946,7 +1946,7 @@ loop:
             menu_hash_to_str(MENU_LABEL_NO_SETTINGS_FOUND),
             0, 0, 0);
 
-   return true;
+   return 0;
 }
 
 static int menu_displaylist_sort_playlist(const content_playlist_entry_t *a,

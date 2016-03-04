@@ -142,22 +142,10 @@ typedef struct menu_displaylist_ctx_entry
    file_list_t *list;
 } menu_displaylist_ctx_entry_t;
 
-typedef struct menu_displaylist_ctx_parse_entry
-{
-   void *data;
-   menu_displaylist_info_t *info;
-   const char *info_label;
-   enum menu_displaylist_parse_type parse_type;
-   bool add_empty_entry;
-} menu_displaylist_ctx_parse_entry_t;
-
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
 
-bool menu_displaylist_parse_settings(void *data,
-      menu_displaylist_info_t *info, 
-      const char *info_label,
-      enum menu_displaylist_parse_type parse_type,
-      bool add_empty_entry);
+int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 
+      const char *info_label, enum menu_displaylist_parse_type parse_type, bool add_empty_entry);
 
 #ifdef __cplusplus
 }
