@@ -47,11 +47,19 @@ typedef struct audio_driver_input_data
       size_t block_size;
    } chunk;
 
-   double src_ratio;
-   float in_rate;
+
+   struct
+   {
+      float input;
+      bool  control; 
+      struct
+      {
+         double original;
+         double current;
+      } source_ratio;
+   } audio_rate;
 
    bool use_float;
-
 
    struct
    {
@@ -62,8 +70,6 @@ typedef struct audio_driver_input_data
 
    rarch_dsp_filter_t *dsp;
 
-   bool rate_control; 
-   double orig_src_ratio;
    size_t driver_buffer_size;
 
    float volume_gain;
@@ -369,16 +375,17 @@ static bool init_audio(retro_audio_callback_t *audio_cb)
       audio_driver_data.chunk.size = audio_driver_data.chunk.nonblock_size;
    }
 
-   if (audio_driver_data.in_rate <= 0.0f)
+   if (audio_driver_data.audio_rate.input <= 0.0f)
    {
       /* Should never happen. */
       RARCH_WARN("Input rate is invalid (%.3f Hz). Using output rate (%u Hz).\n",
-            audio_driver_data.in_rate, settings->audio.out_rate);
-      audio_driver_data.in_rate = settings->audio.out_rate;
+            audio_driver_data.audio_rate.input, settings->audio.out_rate);
+      audio_driver_data.audio_rate.input = settings->audio.out_rate;
    }
 
-   audio_driver_data.orig_src_ratio = audio_driver_data.src_ratio =
-      (double)settings->audio.out_rate / audio_driver_data.in_rate;
+   audio_driver_data.audio_rate.source_ratio.original   = 
+      audio_driver_data.audio_rate.source_ratio.current =
+      (double)settings->audio.out_rate / audio_driver_data.audio_rate.input;
 
    if (!audio_driver_ctl(RARCH_AUDIO_CTL_RESAMPLER_INIT, NULL))
    {
@@ -396,14 +403,14 @@ static bool init_audio(retro_audio_callback_t *audio_cb)
    audio_driver_data.data_ptr = 0;
 
    retro_assert(settings->audio.out_rate <
-         audio_driver_data.in_rate * AUDIO_MAX_RATIO);
+         audio_driver_data.audio_rate.input * AUDIO_MAX_RATIO);
    retro_assert(audio_driver_data.output_samples.buf = (float*)
          malloc(outsamples_max * sizeof(float)));
 
    if (!audio_driver_data.output_samples.buf)
       goto error;
 
-   audio_driver_data.rate_control = false;
+   audio_driver_data.audio_rate.control = false;
    if (
          !audio_cb
          && audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL) 
@@ -416,7 +423,7 @@ static bool init_audio(retro_audio_callback_t *audio_cb)
       {
          audio_driver_data.driver_buffer_size = 
             current_audio->buffer_size(audio_driver_context_audio_data);
-         audio_driver_data.rate_control = true;
+         audio_driver_data.audio_rate.control = true;
       }
       else
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
@@ -463,11 +470,13 @@ static void audio_driver_readjust_input_rate(void)
 #endif
 
    audio_driver_data.free_samples.buf[write_idx] = avail;
-   audio_driver_data.src_ratio = audio_driver_data.orig_src_ratio * adjust;
+   audio_driver_data.audio_rate.source_ratio.current = 
+      audio_driver_data.audio_rate.source_ratio.original * adjust;
 
 #if 0
    RARCH_LOG_OUTPUT("New rate: %lf, Orig rate: %lf\n",
-         audio_driver_data.src_ratio, audio_driver_data.orig_src_ratio);
+         audio_driver_data.audio_rate.source_ratio.current,
+         audio_driver_data.audio_rate.source_ratio.original);
 #endif
 }
 
@@ -546,10 +555,10 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    src_data.data_out = audio_driver_data.output_samples.buf;
 
-   if (audio_driver_data.rate_control)
+   if (audio_driver_data.audio_rate.control)
       audio_driver_readjust_input_rate();
 
-   src_data.ratio = audio_driver_data.src_ratio;
+   src_data.ratio = audio_driver_data.audio_rate.source_ratio.current;
 
    if (runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
       src_data.ratio *= settings->slowmotion_ratio;
@@ -676,7 +685,7 @@ void audio_driver_dsp_filter_free(void)
 void audio_driver_dsp_filter_init(const char *device)
 {
    audio_driver_data.dsp = rarch_dsp_filter_new(
-         device, audio_driver_data.in_rate);
+         device, audio_driver_data.audio_rate.input);
 
    if (!audio_driver_data.dsp)
       RARCH_ERR("[DSP]: Failed to initialize DSP filter \"%s\".\n", device);
@@ -702,13 +711,13 @@ static void audio_monitor_adjust_system_rates(void)
       return;
 
    timing_skew        = fabs(1.0f - info->fps / settings->video.refresh_rate);
-   audio_driver_data.in_rate = info->sample_rate;
+   audio_driver_data.audio_rate.input = info->sample_rate;
 
    if (timing_skew <= settings->audio.max_timing_skew)
-      audio_driver_data.in_rate *= (settings->video.refresh_rate / info->fps);
+      audio_driver_data.audio_rate.input *= (settings->video.refresh_rate / info->fps);
 
    RARCH_LOG("Set audio input rate to: %.2f Hz.\n",
-         audio_driver_data.in_rate);
+         audio_driver_data.audio_rate.input);
 }
 
 static void audio_driver_setup_rewind(void)
@@ -785,7 +794,7 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
                &audio_driver_resampler_data,
                &audio_driver_resampler,
                settings->audio.resampler,
-               audio_driver_data.orig_src_ratio);
+               audio_driver_data.audio_rate.source_ratio.original);
       case RARCH_AUDIO_CTL_RESAMPLER_PROCESS:
          rarch_perf_init(&resampler_proc, "resampler_proc");
          retro_perf_start(&resampler_proc);
@@ -862,10 +871,10 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
       case RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE:
          {
             double new_src_ratio = (double)settings->audio.out_rate / 
-               audio_driver_data.in_rate;
+               audio_driver_data.audio_rate.input;
 
-            audio_driver_data.orig_src_ratio = new_src_ratio;
-            audio_driver_data.src_ratio      = new_src_ratio;
+            audio_driver_data.audio_rate.source_ratio.original = new_src_ratio;
+            audio_driver_data.audio_rate.source_ratio.current  = new_src_ratio;
          }
          break;
       case RARCH_AUDIO_CTL_MUTE_TOGGLE:
