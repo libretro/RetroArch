@@ -65,26 +65,18 @@
 enum
 {
    ZR_TEXTURE_POINTER = 0,
-   ZR_TEXTURE_BACK,
-   ZR_TEXTURE_SWITCH_ON,
-   ZR_TEXTURE_SWITCH_OFF,
-   ZR_TEXTURE_TAB_MAIN_ACTIVE,
-   ZR_TEXTURE_TAB_PLAYLISTS_ACTIVE,
-   ZR_TEXTURE_TAB_SETTINGS_ACTIVE,
-   ZR_TEXTURE_TAB_MAIN_PASSIVE,
-   ZR_TEXTURE_TAB_PLAYLISTS_PASSIVE,
-   ZR_TEXTURE_TAB_SETTINGS_PASSIVE,
    ZR_TEXTURE_LAST
 };
 
 enum
 {
-   ZR_SYSTEM_TAB_MAIN = 0,
-   ZR_SYSTEM_TAB_PLAYLISTS,
-   ZR_SYSTEM_TAB_SETTINGS
+   ZRMENU_WND_MAIN = 0,
+   ZRMENU_WND_CONTROL,
+   ZRMENU_WND_SHADER_PARAMETERS,
+   ZRMENU_WND_TEST
 };
 
-enum zr_theme
+enum zrmenu_theme
 {
    THEME_DARK = 0,
    THEME_LIGHT
@@ -94,9 +86,39 @@ struct zrmenu
 {
    void *memory;
    struct zr_context ctx;
-   enum zr_theme theme;
    struct zr_memory_status status;
+
+   enum zrmenu_theme theme;
 };
+
+static struct zrmenu gui;
+static bool zrmenu_state[3];
+
+struct zrmenu_texture_item
+{
+   uintptr_t id;
+};
+
+typedef struct zrmenu_handle
+{
+   char box_message[PATH_MAX_LENGTH];
+
+
+
+   struct
+   {
+      struct
+      {
+         float alpha;
+      } arrow;
+
+      struct zrmenu_texture_item bg;
+      struct zrmenu_texture_item list[ZR_TEXTURE_LAST];
+   } textures;
+
+   gfx_font_raster_block_t list_block;
+   float scroll_y;
+} zrmenu_handle_t;
 
 struct zr_device
 {
@@ -124,11 +146,7 @@ static char zr_font_path[PATH_MAX_LENGTH];
 
 static struct zr_user_font usrfnt;
 static struct zr_allocator zr_alloc;
-static struct zrmenu gui;
 
-static bool wnd_test              = false;
-static bool wnd_control           = false;
-static bool wnd_shader_parameters = false;
 
 bool zr_checkbox_bool(struct zr_context* cx, const char* text, bool *active)
 {
@@ -160,7 +178,7 @@ static void zr_labelf(struct zr_context *ctx,
     va_end(args);
 }
 
-static void zrmenu_set_style(struct zr_context *ctx, enum zr_theme theme)
+static void zrmenu_set_style(struct zr_context *ctx, enum zrmenu_theme theme)
 {
    unsigned i;
 
@@ -282,7 +300,7 @@ static void zrmenu_wnd_shader_parameters(struct zr_context *ctx,
    {
       struct zr_panel combo;
       static const char *themes[] = {"Dark", "Light"};
-      enum   zr_theme old         = gui->theme;
+      enum   zrmenu_theme old         = gui->theme;
 
       zr_layout_row_dynamic(ctx, 30, 1);
 
@@ -319,7 +337,8 @@ bool zrmenu_wnd_control(struct zr_context *ctx,
    static int wnd_y = 60;
    struct zr_panel layout;
 
-   bool ret = (zr_begin(ctx, &layout, "Control", zr_rect(wnd_x, wnd_y, 350, 520),
+   bool ret = (zr_begin(ctx, &layout, "Control",
+      zr_rect(wnd_x, wnd_y, 350, 520),
       ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
       ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER));
 
@@ -362,48 +381,6 @@ bool zrmenu_wnd_control(struct zr_context *ctx,
          }
          zr_layout_pop(ctx);
       }
-      if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Color", ZR_MINIMIZED))
-      {
-         struct zr_panel tab, combo;
-         enum zr_theme old           = gui->theme;
-         static const char *themes[] = {"Dark", "Light"};
-
-         zr_layout_row_dynamic(ctx,  25, 2);
-         zr_label(ctx, "THEME:", ZR_TEXT_LEFT);
-         if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 300))
-         {
-            zr_layout_row_dynamic(ctx, 25, 1);
-            gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED) ? THEME_DARK : gui->theme;
-            gui->theme = zr_combo_item(ctx, themes[THEME_LIGHT], ZR_TEXT_CENTERED) ? THEME_LIGHT : gui->theme;
-            if (old != gui->theme) zrmenu_set_style(ctx, gui->theme);
-               zr_combo_end(ctx);
-         }
-
-         zr_layout_row_dynamic(ctx, 300, 1);
-         if (zr_group_begin(ctx, &tab, "Colors", 0))
-         {
-            for (i = 0; i < ZR_COLOR_COUNT; ++i)
-            {
-               zr_layout_row_dynamic(ctx, 25, 2);
-               zr_label(ctx, zr_get_color_name((enum zr_style_colors)i), ZR_TEXT_LEFT);
-               if (zr_combo_begin_color(ctx, &combo, ctx->style.colors[i], 200))
-               {
-                  zr_layout_row_dynamic(ctx, 25, 1);
-                  ctx->style.colors[i].r =
-                     (zr_byte)zr_propertyi(ctx, "#R:", 0, ctx->style.colors[i].r, 255, 1,1);
-                  ctx->style.colors[i].g =
-                     (zr_byte)zr_propertyi(ctx, "#G:", 0, ctx->style.colors[i].g, 255, 1,1);
-                  ctx->style.colors[i].b =
-                     (zr_byte)zr_propertyi(ctx, "#B:", 0, ctx->style.colors[i].b, 255, 1,1);
-                  ctx->style.colors[i].a =
-                     (zr_byte)zr_propertyi(ctx, "#A:", 0, ctx->style.colors[i].a, 255, 1,1);
-                  zr_combo_end(ctx);
-               }
-            }
-            zr_group_end(ctx);
-         }
-         zr_layout_pop(ctx);
-      }
    }
    zr_end(ctx);
 
@@ -424,7 +401,7 @@ static void zrmenu_wnd_test(struct zr_context *ctx, int width, int height, struc
       struct zr_panel combo;
       menu_entry_t entry;
       static const char *themes[] = {"Dark", "Light"};
-      enum   zr_theme old         = gui->theme;
+      enum   zrmenu_theme old         = gui->theme;
 
       zr_layout_row_dynamic(ctx, 30, 2);
 
@@ -450,13 +427,16 @@ static void zrmenu_wnd_test(struct zr_context *ctx, int width, int height, struc
       zr_label(ctx, "Volume:", ZR_TEXT_LEFT);
       zr_slider_float(ctx, -80, &settings->audio.volume, 12, 0.5);
       zr_layout_row_dynamic(ctx, 30, 1);
-      zr_property_int(ctx, "Max Users:", 1, (int*)&(settings->input.max_users), MAX_USERS, 1, 1);
+      zr_property_int(ctx, "Max Users:", 1, (int*)&(settings->input.max_users),
+         MAX_USERS, 1, 1);
 
       if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 200))
       {
          zr_layout_row_dynamic(ctx, 25, 1);
-         gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED) ? THEME_DARK : gui->theme;
-         gui->theme = zr_combo_item(ctx, themes[THEME_LIGHT], ZR_TEXT_CENTERED) ? THEME_LIGHT : gui->theme;
+         gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED)
+            ? THEME_DARK : gui->theme;
+         gui->theme = zr_combo_item(ctx, themes[THEME_LIGHT], ZR_TEXT_CENTERED)
+            ? THEME_LIGHT : gui->theme;
          if (old != gui->theme) zrmenu_set_style(ctx, gui->theme);
          zr_combo_end(ctx);
       }
@@ -480,7 +460,8 @@ static void zrmenu_wnd_test(struct zr_context *ctx, int width, int height, struc
    zr_end(ctx);
 }
 
-static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struct zrmenu *gui)
+static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height,
+   struct zrmenu *gui)
 {
    settings_t *settings = config_get_ptr();
    struct zr_panel layout;
@@ -527,19 +508,20 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struc
          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Control"))
          {
             zr_window_close(ctx, "Control");
-            wnd_control = !wnd_control;
+            zrmenu_state[ZRMENU_WND_CONTROL] = !zrmenu_state[ZRMENU_WND_CONTROL];
          }
 
          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Shader Parameters"))
          {
             zr_window_close(ctx, "Shader Parameters");
-            wnd_shader_parameters = !wnd_shader_parameters;
+            zrmenu_state[ZRMENU_WND_SHADER_PARAMETERS] =
+               !zrmenu_state[ZRMENU_WND_SHADER_PARAMETERS];
          }
 
          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Test"))
          {
             zr_window_close(ctx, "Test");
-            wnd_test = !wnd_test;
+            zrmenu_state[ZRMENU_WND_TEST] = !zrmenu_state[ZRMENU_WND_TEST];
          }
 
           zr_menu_end(ctx);
@@ -557,16 +539,16 @@ static void zrmenu_frame(struct zrmenu *gui, int width, int height)
 
    zrmenu_wnd_main(ctx, width, height, gui);
 
-   if (wnd_test)
+   if (zrmenu_state[ZRMENU_WND_TEST])
       zrmenu_wnd_test(ctx, width, height, gui);
-   if (wnd_control)
+   if (zrmenu_state[ZRMENU_WND_CONTROL])
       zrmenu_wnd_control(ctx, width, height, gui);
-   if (wnd_shader_parameters)
+   if (zrmenu_state[ZRMENU_WND_SHADER_PARAMETERS])
       zrmenu_wnd_shader_parameters(ctx, width, height, gui);
 
-   wnd_control = !zr_window_is_closed(ctx, "Control");
-   wnd_test = !zr_window_is_closed(ctx, "Test");
-   wnd_shader_parameters = !zr_window_is_closed(ctx, "Shader Parameters");
+   zrmenu_state[ZRMENU_WND_CONTROL] = !zr_window_is_closed(ctx, "Control");
+   zrmenu_state[ZRMENU_WND_TEST] = !zr_window_is_closed(ctx, "Test");
+   zrmenu_state[ZRMENU_WND_SHADER_PARAMETERS] = !zr_window_is_closed(ctx, "Shader Parameters");
 
    zr_buffer_info(&gui->status, &gui->ctx.memory);
 }
@@ -914,61 +896,7 @@ static void zrmenu_input_keyboard(struct zr_context *ctx)
       zr_input_char(ctx, '1');
 }
 
-static void zrmenu_init(int width, int height)
-{
-   settings_t *settings = config_get_ptr();
-
-   fill_pathname_join(zr_font_path, settings->assets_directory,
-         "zahnrad", sizeof(zr_font_path));
-   fill_pathname_join(zr_font_path, zr_font_path,
-         "DroidSans.ttf", sizeof(zr_font_path));
-
-   zr_alloc.userdata.ptr = NULL;
-   zr_alloc.alloc = zrmenu_mem_alloc;
-   zr_alloc.free = zrmenu_mem_free;
-   zr_buffer_init(&device.cmds, &zr_alloc, 1024);
-   usrfnt = font_bake_and_upload(&device, &font, zr_font_path, 16,
-      zr_font_default_glyph_ranges());
-   zr_init(&gui.ctx, &zr_alloc, &usrfnt);
-   zr_device_init(&device);
-   zrmenu_set_style(&gui.ctx, THEME_DARK);
-}
-
-static void zrmenu_deinit()
-{
-   free(font.glyphs);
-   zr_free(&gui.ctx);
-   zr_buffer_free(&device.cmds);
-   zr_device_shutdown(&device);
-}
-
-/* normal glui code starts here */
-
-struct wimp_texture_item
-{
-   uintptr_t id;
-};
-
-typedef struct wimp_handle
-{
-   char box_message[PATH_MAX_LENGTH];
-
-   struct
-   {
-      struct
-      {
-         float alpha;
-      } arrow;
-
-      struct wimp_texture_item bg;
-      struct wimp_texture_item list[ZR_TEXTURE_LAST];
-   } textures;
-
-   gfx_font_raster_block_t list_block;
-   float scroll_y;
-} wimp_handle_t;
-
-static void wimp_context_reset_textures(wimp_handle_t *wimp,
+static void wimp_context_reset_textures(zrmenu_handle_t *wimp,
       const char *iconpath)
 {
    unsigned i;
@@ -997,9 +925,9 @@ static void wimp_context_reset_textures(wimp_handle_t *wimp,
    }
 }
 
-static void wimp_get_message(void *data, const char *message)
+static void zrmenu_get_message(void *data, const char *message)
 {
-   wimp_handle_t *wimp   = (wimp_handle_t*)data;
+   zrmenu_handle_t *wimp   = (zrmenu_handle_t*)data;
 
    if (!wimp || !message || !*message)
       return;
@@ -1007,7 +935,7 @@ static void wimp_get_message(void *data, const char *message)
    strlcpy(wimp->box_message, message, sizeof(wimp->box_message));
 }
 
-static void zrmenu_draw_cursor(wimp_handle_t *wimp,
+static void zrmenu_draw_cursor(zrmenu_handle_t *wimp,
       float *color,
       float x, float y, unsigned width, unsigned height)
 {
@@ -1046,7 +974,7 @@ static void wimp_frame(void *data)
    };
 
    unsigned width, height, ticker_limit, i;
-   wimp_handle_t *wimp               = (wimp_handle_t*)data;
+   zrmenu_handle_t *wimp               = (zrmenu_handle_t*)data;
    settings_t *settings            = config_get_ptr();
 
    if (!wimp)
@@ -1078,38 +1006,25 @@ static void wimp_frame(void *data)
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
-static void wimp_layout(wimp_handle_t *wimp)
+static void zrmenu_layout(zrmenu_handle_t *wimp)
 {
    void *fb_buf;
    float scale_factor;
-   int new_font_size;
    unsigned width, height, new_header_height;
 
    video_driver_get_size(&width, &height);
 
    menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
-
-
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT,
          &new_header_height);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,
-         &new_font_size);
-
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
 
-   if (fb_buf) /* calculate a more realistic ticker_limit */
-   {
-      unsigned m_width =
-         font_driver_get_message_width(fb_buf, "a", 1, 1);
-
-
-   }
 }
 
-static void *wimp_init(void **userdata)
+static void *zrmenu_init(void **userdata)
 {
    settings_t *settings = config_get_ptr();
-   wimp_handle_t   *wimp = NULL;
+   zrmenu_handle_t   *wimp = NULL;
    menu_handle_t *menu = (menu_handle_t*)
       calloc(1, sizeof(*menu));
    unsigned width, height = 0;
@@ -1122,14 +1037,27 @@ static void *wimp_init(void **userdata)
    if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT_FIRST_DRIVER, NULL))
       goto error;
 
-   wimp = (wimp_handle_t*)calloc(1, sizeof(wimp_handle_t));
+   wimp = (zrmenu_handle_t*)calloc(1, sizeof(zrmenu_handle_t));
 
    if (!wimp)
       goto error;
 
    *userdata = wimp;
 
-   zrmenu_init(width, height);
+   fill_pathname_join(zr_font_path, settings->assets_directory,
+         "zahnrad", sizeof(zr_font_path));
+   fill_pathname_join(zr_font_path, zr_font_path,
+         "DroidSans.ttf", sizeof(zr_font_path));
+
+   zr_alloc.userdata.ptr = NULL;
+   zr_alloc.alloc = zrmenu_mem_alloc;
+   zr_alloc.free = zrmenu_mem_free;
+   zr_buffer_init(&device.cmds, &zr_alloc, 1024);
+   usrfnt = font_bake_and_upload(&device, &font, zr_font_path, 16,
+      zr_font_default_glyph_ranges());
+   zr_init(&gui.ctx, &zr_alloc, &usrfnt);
+   zr_device_init(&device);
+   zrmenu_set_style(&gui.ctx, THEME_DARK);
 
    return menu;
 error:
@@ -1138,21 +1066,23 @@ error:
    return NULL;
 }
 
-static void wimp_free(void *data)
+static void zrmenu_free(void *data)
 {
-   wimp_handle_t *wimp   = (wimp_handle_t*)data;
+   zrmenu_handle_t *wimp   = (zrmenu_handle_t*)data;
 
    if (!wimp)
       return;
 
-   zrmenu_deinit();
+   free(font.glyphs);
+   zr_free(&gui.ctx);
+   zr_buffer_free(&device.cmds);
+   zr_device_shutdown(&device);
 
    gfx_coord_array_free(&wimp->list_block.carr);
-
    font_driver_bind_block(NULL, NULL);
 }
 
-static void wimp_context_bg_destroy(wimp_handle_t *wimp)
+static void wimp_context_bg_destroy(zrmenu_handle_t *wimp)
 {
    if (!wimp)
       return;
@@ -1162,7 +1092,7 @@ static void wimp_context_bg_destroy(wimp_handle_t *wimp)
 static void zrmenu_context_destroy(void *data)
 {
    unsigned i;
-   wimp_handle_t *wimp   = (wimp_handle_t*)data;
+   zrmenu_handle_t *wimp   = (zrmenu_handle_t*)data;
 
    if (!wimp)
       return;
@@ -1178,7 +1108,7 @@ static void zrmenu_context_destroy(void *data)
 static void zrmenu_context_reset(void *data)
 {
    char iconpath[PATH_MAX_LENGTH] = {0};
-   wimp_handle_t *wimp              = (wimp_handle_t*)data;
+   zrmenu_handle_t *wimp              = (zrmenu_handle_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned width, height = 0;
 
@@ -1191,8 +1121,8 @@ static void zrmenu_context_reset(void *data)
          "zahnrad", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
-   wimp_layout(wimp);
-   zrmenu_init(width, height);
+   zrmenu_layout(wimp);
+   //zrmenu_init(width, height);
    wimp_context_bg_destroy(wimp);
    wimp_context_reset_textures(wimp, iconpath);
 
@@ -1239,12 +1169,12 @@ static bool zrmenu_init_list(void *data)
 
 menu_ctx_driver_t menu_ctx_zr = {
    NULL,
-   wimp_get_message,
+   zrmenu_get_message,
    generic_menu_iterate,
    NULL,
    wimp_frame,
-   wimp_init,
-   wimp_free,
+   zrmenu_init,
+   zrmenu_free,
    zrmenu_context_reset,
    zrmenu_context_destroy,
    NULL,
