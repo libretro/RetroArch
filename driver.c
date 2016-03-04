@@ -351,7 +351,7 @@ static void init_drivers(int flags)
 
    /* Only initialize camera driver if we're ever going to use it. */
    if ((flags & DRIVER_CAMERA) && camera_driver_ctl(RARCH_CAMERA_CTL_IS_ACTIVE, NULL))
-      init_camera();
+      camera_driver_ctl(RARCH_CAMERA_CTL_INIT, NULL);
 
    /* Only initialize location driver if we're ever going to use it. */
    if ((flags & DRIVER_LOCATION) && location_driver_ctl(RARCH_LOCATION_CTL_IS_ACTIVE, NULL))
@@ -464,7 +464,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
          video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
          input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
-         find_camera_driver();
+         camera_driver_ctl(RARCH_CAMERA_CTL_FIND_DRIVER, NULL);
          find_location_driver();
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_FIND_DRIVER, NULL);

@@ -35,7 +35,13 @@ enum rarch_camera_ctl_state
    RARCH_CAMERA_CTL_OWNS_DRIVER,
    RARCH_CAMERA_CTL_SET_ACTIVE,
    RARCH_CAMERA_CTL_UNSET_ACTIVE,
-   RARCH_CAMERA_CTL_IS_ACTIVE
+   RARCH_CAMERA_CTL_IS_ACTIVE,
+   RARCH_CAMERA_CTL_FIND_DRIVER,
+   RARCH_CAMERA_CTL_POLL,
+   RARCH_CAMERA_CTL_SET_CB,
+   RARCH_CAMERA_CTL_STOP,
+   RARCH_CAMERA_CTL_START,
+   RARCH_CAMERA_CTL_INIT
 };
 
 typedef struct camera_driver
@@ -67,36 +73,6 @@ extern camera_driver_t camera_avfoundation;
 extern camera_driver_t camera_null;
 
 /**
- * driver_camera_start:
- *
- * Starts camera driver.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool driver_camera_start(void);
-
-/**
- * driver_camera_stop:
- *
- * Stops camera driver.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_camera_stop(void);
-
-/**
- * driver_camera_poll:
- *
- * Call camera driver's poll function.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_camera_poll(void);
-
-/**
  * config_get_camera_driver_options:
  *
  * Get an enumerated list of all camera driver names,
@@ -125,9 +101,9 @@ const void *camera_driver_find_handle(int index);
  **/
 const char *camera_driver_find_ident(int index);
 
-void find_camera_driver(void);
+void driver_camera_stop(void);
 
-void init_camera(void);
+bool driver_camera_start(void);
 
 bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data);
 

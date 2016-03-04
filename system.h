@@ -45,7 +45,6 @@ typedef struct rarch_system_info
    char valid_extensions[PATH_MAX_LENGTH];
 
    struct retro_disk_control_callback disk_control; 
-   struct retro_camera_callback camera_callback;
    struct retro_location_callback location_callback;
 
    core_option_manager_t *core_options;

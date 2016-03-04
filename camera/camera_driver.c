@@ -20,7 +20,6 @@
 
 #include "../general.h"
 #include "../string_list_special.h"
-#include "../system.h"
 #include "../verbosity.h"
 
 static const camera_driver_t *camera_drivers[] = {
@@ -89,146 +88,20 @@ const char* config_get_camera_driver_options(void)
    return char_list_new_special(STRING_LIST_CAMERA_DRIVERS, NULL);
 }
 
-void find_camera_driver(void)
-{
-   int i;
-   driver_ctx_info_t drv;
-   settings_t *settings = config_get_ptr();
-
-   drv.label = "camera_driver";
-   drv.s     = settings->camera.driver;
-
-   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
-
-   i = drv.len;
-
-   if (i >= 0)
-      camera_driver = (const camera_driver_t*)camera_driver_find_handle(i);
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
-            settings->camera.driver);
-      RARCH_LOG_OUTPUT("Available camera drivers are:\n");
-      for (d = 0; camera_driver_find_handle(d); d++)
-         RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
-       
-      RARCH_WARN("Going to default to first camera driver...\n");
-       
-      camera_driver = (const camera_driver_t*)camera_driver_find_handle(0);
-       
-      if (!camera_driver)
-         retro_fail(1, "find_camera_driver()");
-   }
-}
-
-/**
- * driver_camera_start:
- *
- * Starts camera driver interface.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-bool driver_camera_start(void)
-{
-   settings_t *settings = config_get_ptr();
-
-   if (camera_driver && camera_data && camera_driver->start)
-   {
-      if (settings->camera.allow)
-         return camera_driver->start(camera_data);
-
-      runloop_msg_queue_push(
-            "Camera is explicitly disabled.\n", 1, 180, false);
-   }
-   return false;
-}
-
-/**
- * driver_camera_stop:
- *
- * Stops camera driver.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
 void driver_camera_stop(void)
 {
-   if (camera_driver && camera_driver->stop && camera_data)
-      camera_driver->stop(camera_data);
+   camera_driver_ctl(RARCH_CAMERA_CTL_START, NULL);
 }
 
-/**
- * driver_camera_poll:
- *
- * Call camera driver's poll function.
- * Used by RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-void driver_camera_poll(void)
+bool driver_camera_start(void)
 {
-   rarch_system_info_t *system = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   if (camera_driver && camera_driver->poll && camera_data)
-      camera_driver->poll(camera_data,
-            system->camera_callback.frame_raw_framebuffer,
-            system->camera_callback.frame_opengl_texture);
-}
-
-void init_camera(void)
-{
-   settings_t        *settings = config_get_ptr();
-   rarch_system_info_t *system = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   /* Resource leaks will follow if camera is initialized twice. */
-   if (camera_data)
-      return;
-
-   find_camera_driver();
-
-   camera_data = camera_driver->init(
-         *settings->camera.device ? settings->camera.device : NULL,
-         system->camera_callback.caps,
-         settings->camera.width ?
-         settings->camera.width : system->camera_callback.width,
-         settings->camera.height ?
-         settings->camera.height : system->camera_callback.height);
-
-   if (!camera_data)
-   {
-      RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
-      camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
-   }
-
-   if (system->camera_callback.initialized)
-      system->camera_callback.initialized();
-}
-
-static void uninit_camera(void)
-{
-   rarch_system_info_t *system = NULL;
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   if (camera_data && camera_driver)
-   {
-      if (system->camera_callback.deinitialized)
-         system->camera_callback.deinitialized();
-
-      if (camera_driver->free)
-         camera_driver->free(camera_data);
-   }
-
-   camera_data = NULL;
+   return camera_driver_ctl(RARCH_CAMERA_CTL_START, NULL);
 }
 
 bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
 {
+   settings_t        *settings = config_get_ptr();
+   static struct retro_camera_callback camera_cb;
    static bool camera_driver_active              = false;
    static bool camera_driver_data_own            = false;
 
@@ -250,13 +123,110 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
       case RARCH_CAMERA_CTL_SET_ACTIVE:
          camera_driver_active = true; 
          break;
+      case RARCH_CAMERA_CTL_FIND_DRIVER:
+         {
+            int i;
+            driver_ctx_info_t drv;
+
+            drv.label = "camera_driver";
+            drv.s     = settings->camera.driver;
+
+            driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+            i = drv.len;
+
+            if (i >= 0)
+               camera_driver = (const camera_driver_t*)camera_driver_find_handle(i);
+            else
+            {
+               unsigned d;
+               RARCH_ERR("Couldn't find any camera driver named \"%s\"\n",
+                     settings->camera.driver);
+               RARCH_LOG_OUTPUT("Available camera drivers are:\n");
+               for (d = 0; camera_driver_find_handle(d); d++)
+                  RARCH_LOG_OUTPUT("\t%s\n", camera_driver_find_ident(d));
+
+               RARCH_WARN("Going to default to first camera driver...\n");
+
+               camera_driver = (const camera_driver_t*)camera_driver_find_handle(0);
+
+               if (!camera_driver)
+                  retro_fail(1, "find_camera_driver()");
+            }
+         }
+         break;
       case RARCH_CAMERA_CTL_UNSET_ACTIVE:
          camera_driver_active = false; 
          break;
       case RARCH_CAMERA_CTL_IS_ACTIVE:
         return camera_driver_active; 
       case RARCH_CAMERA_CTL_DEINIT:
-        uninit_camera();
+        if (camera_data && camera_driver)
+        {
+           if (camera_cb.deinitialized)
+              camera_cb.deinitialized();
+
+           if (camera_driver->free)
+              camera_driver->free(camera_data);
+        }
+
+        camera_data = NULL;
+        break;
+      case RARCH_CAMERA_CTL_STOP:
+        if (     camera_driver 
+              && camera_driver->stop 
+              && camera_data)
+           camera_driver->stop(camera_data);
+        break;
+      case RARCH_CAMERA_CTL_START:
+        if (camera_driver && camera_data && camera_driver->start)
+        {
+           if (settings->camera.allow)
+              return camera_driver->start(camera_data);
+
+           runloop_msg_queue_push(
+                 "Camera is explicitly disabled.\n", 1, 180, false);
+        }
+        return false;
+      case RARCH_CAMERA_CTL_POLL:
+        if (!camera_cb.caps)
+           return false;
+        if (!camera_driver || !camera_driver->poll || !camera_data)
+           return false;
+        camera_driver->poll(camera_data,
+              camera_cb.frame_raw_framebuffer,
+              camera_cb.frame_opengl_texture);
+        break;
+      case RARCH_CAMERA_CTL_SET_CB:
+        {
+           struct retro_camera_callback *cb =
+              (struct retro_camera_callback*)data;
+           camera_cb          = *cb;
+        }
+        break;
+      case RARCH_CAMERA_CTL_INIT:
+        /* Resource leaks will follow if camera is initialized twice. */
+        if (camera_data)
+           return false;
+
+        camera_driver_ctl(RARCH_CAMERA_CTL_FIND_DRIVER, NULL);
+
+        camera_data = camera_driver->init(
+              *settings->camera.device ? settings->camera.device : NULL,
+              camera_cb.caps,
+              settings->camera.width ?
+              settings->camera.width : camera_cb.width,
+              settings->camera.height ?
+              settings->camera.height : camera_cb.height);
+
+        if (!camera_data)
+        {
+           RARCH_ERR("Failed to initialize camera driver. Will continue without camera.\n");
+           camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
+        }
+
+        if (camera_cb.initialized)
+           camera_cb.initialized();
         break;
       default:
          break;

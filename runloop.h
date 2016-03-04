@@ -79,6 +79,9 @@ enum runloop_ctl_state
    RUNLOOP_CTL_KEY_EVENT_GET,
    RUNLOOP_CTL_DATA_DEINIT,
 
+   RUNLOOP_CTL_POLL_CAMERA,
+   RUNLOOP_CTL_SET_CAMERA_CBS,
+
    /* Checks for state changes in this frame. */
    RUNLOOP_CTL_CHECK_STATE,
 

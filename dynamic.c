@@ -1034,16 +1034,17 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          iface->get_sensor_input = input_sensor_get_input;
          break;
       }
-
       case RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE:
       {
          struct retro_camera_callback *cb =
             (struct retro_camera_callback*)data;
 
          RARCH_LOG("Environ GET_CAMERA_INTERFACE.\n");
-         cb->start                         = driver_camera_start;
-         cb->stop                          = driver_camera_stop;
-         system->camera_callback           = *cb;
+         cb->start                        = driver_camera_start;
+         cb->stop                         = driver_camera_stop;
+
+         camera_driver_ctl(RARCH_CAMERA_CTL_SET_CB, cb);
+
          if (cb->caps != 0)
             camera_driver_ctl(RARCH_CAMERA_CTL_SET_ACTIVE, NULL);
          else

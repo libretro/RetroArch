@@ -1258,7 +1258,6 @@ int runloop_iterate(unsigned *sleep_ms)
    static retro_time_t frame_limit_last_time    = 0.0;
    static retro_input_t last_input              = 0;
    settings_t *settings                         = config_get_ptr();
-   rarch_system_info_t *system                  = NULL;
 
    cmd.state[1]                                 = last_input;
    cmd.state[0]                                 = input_keys_pressed();
@@ -1428,10 +1427,7 @@ int runloop_iterate(unsigned *sleep_ms)
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       bsv_movie_ctl(BSV_MOVIE_CTL_SET_FRAME_START, NULL);
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   if (system->camera_callback.caps)
-      driver_camera_poll();
+   runloop_ctl(RARCH_CAMERA_CTL_POLL, NULL);
 
    /* Update binds for analog dpad modes. */
    for (i = 0; i < settings->input.max_users; i++)
