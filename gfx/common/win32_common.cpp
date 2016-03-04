@@ -15,6 +15,7 @@
 
 #include <retro_miscellaneous.h>
 
+#include "../../frontend/frontend_driver.h"
 #include "../../general.h"
 #include "../../verbosity.h"
 #include "win32_common.h"
@@ -393,6 +394,10 @@ bool win32_suppress_screensaver(void *data, bool enable)
    {
       int major, minor;
       char tmp[PATH_MAX_LENGTH];
+      const frontend_ctx_driver_t *frontend = frontend_get_ptr();
+
+      if (!frontend)
+         return false;
 
       frontend->get_os(tmp, sizeof(tmp), &major, &minor);
 

@@ -1008,9 +1008,9 @@ ifeq ($(HAVE_COMPRESSION), 1)
    DEFINES += -DHAVE_COMPRESSION
 endif
 
-ifeq ($(HAVE_DIRECTX), 1)
-   DEFINES += -I"$(DXSDK_DIR)/Include"
-endif
+#ifeq ($(HAVE_DIRECTX), 1)
+   #$DEFINES += -I"$(DXSDK_DIR)/Include"
+#endif
 
 ifeq ($(HAVE_COCOA),1)
    DEFINES += -DHAVE_MAIN
