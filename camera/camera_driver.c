@@ -41,8 +41,6 @@ static const camera_driver_t *camera_drivers[] = {
    NULL,
 };
 
-static const camera_driver_t *camera_driver;
-static void *camera_data;
 
 /**
  * camera_driver_find_handle:
@@ -102,6 +100,8 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
 {
    settings_t        *settings = config_get_ptr();
    static struct retro_camera_callback camera_cb;
+   static const camera_driver_t *camera_driver   = NULL;
+   static void *camera_data                      = NULL;
    static bool camera_driver_active              = false;
    static bool camera_driver_data_own            = false;
 
@@ -111,6 +111,7 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
          camera_driver_active   = false;
          camera_driver_data_own = false;
          camera_driver          = NULL;
+         camera_data            = NULL;
          break;
       case RARCH_CAMERA_CTL_SET_OWN_DRIVER:
          camera_driver_data_own = true;
