@@ -65,8 +65,11 @@ typedef struct audio_driver_input_data
    float volume_gain;
    struct retro_audio_callback audio_callback;
 
-   unsigned buffer_free_samples[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
-   uint64_t buffer_free_samples_count;
+   struct
+   {
+      unsigned buf[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
+      uint64_t count;
+   } free_samples;
 } audio_driver_input_data_t;
 
 static const audio_driver_t *audio_drivers[] = {
@@ -151,20 +154,20 @@ static void compute_audio_buffer_statistics(void)
    unsigned low_water_count      = 0;
    unsigned high_water_count     = 0;
    unsigned samples              = MIN(
-         audio_driver_data.buffer_free_samples_count,
+         audio_driver_data.free_samples.count,
          AUDIO_BUFFER_FREE_SAMPLES_COUNT);
 
    if (samples < 3)
       return;
 
    for (i = 1; i < samples; i++)
-      accum += audio_driver_data.buffer_free_samples[i];
+      accum += audio_driver_data.free_samples.buf[i];
 
    avg = accum / (samples - 1);
 
    for (i = 1; i < samples; i++)
    {
-      int diff = avg - audio_driver_data.buffer_free_samples[i];
+      int diff = avg - audio_driver_data.free_samples.buf[i];
       accum_var += diff * diff;
    }
 
@@ -177,9 +180,9 @@ static void compute_audio_buffer_statistics(void)
 
    for (i = 1; i < samples; i++)
    {
-      if (audio_driver_data.buffer_free_samples[i] >= low_water_size)
+      if (audio_driver_data.free_samples.buf[i] >= low_water_size)
          low_water_count++;
-      else if (audio_driver_data.buffer_free_samples[i] <= high_water_size)
+      else if (audio_driver_data.free_samples.buf[i] <= high_water_size)
          high_water_count++;
    }
 
@@ -411,7 +414,7 @@ static bool init_audio(void)
 
    event_cmd_ctl(EVENT_CMD_DSP_FILTER_INIT, NULL);
 
-   audio_driver_data.buffer_free_samples_count = 0;
+   audio_driver_data.free_samples.count = 0;
 
    /* Threaded driver is initially stopped. */
    if (
@@ -435,7 +438,7 @@ error:
 static void audio_driver_readjust_input_rate(void)
 {
    settings_t *settings = config_get_ptr();
-   unsigned write_idx   = audio_driver_data.buffer_free_samples_count++ &
+   unsigned write_idx   = audio_driver_data.free_samples.count++ &
       (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
    int      half_size   = audio_driver_data.driver_buffer_size / 2;
    int      avail       = 
@@ -449,7 +452,7 @@ static void audio_driver_readjust_input_rate(void)
          (unsigned)(100 - (avail * 100) / audio_driver_data.driver_buffer_size));
 #endif
 
-   audio_driver_data.buffer_free_samples[write_idx] = avail;
+   audio_driver_data.free_samples.buf[write_idx] = avail;
    audio_driver_data.src_ratio = audio_driver_data.orig_src_ratio * adjust;
 
 #if 0
