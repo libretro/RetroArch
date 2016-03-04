@@ -332,8 +332,8 @@ static void *gfx_ctx_x_init(void *data)
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)
       calloc(1, sizeof(gfx_ctx_x_data_t));
 #ifndef GL_DEBUG
-   const struct retro_hw_render_callback *hw_render =
-      (const struct retro_hw_render_callback*)video_driver_callback();
+   struct retro_hw_render_callback *hwr = NULL;
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 #endif
 
    if (!x)
@@ -362,7 +362,7 @@ static void *gfx_ctx_x_init(void *data)
 #ifdef GL_DEBUG
          x->g_debug = true;
 #else
-         x->g_debug = hw_render->debug_context;
+         x->g_debug = hwr->debug_context;
 #endif
 
          /* Have to use ContextAttribs */

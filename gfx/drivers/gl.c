@@ -782,8 +782,8 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    unsigned i;
    bool depth = false, stencil = false;
    GLint max_fbo_size = 0, max_renderbuffer_size = 0;
-   const struct retro_hw_render_callback *hw_render =
-      (const struct retro_hw_render_callback*)video_driver_callback();
+   struct retro_hw_render_callback *hwr = NULL;
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 
    /* We can only share texture objects through contexts.
     * FBOs are "abstract" objects and are not shared. */
@@ -801,8 +801,8 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    glBindTexture(GL_TEXTURE_2D, 0);
    glGenFramebuffers(gl->textures, gl->hw_render_fbo);
 
-   depth   = hw_render->depth;
-   stencil = hw_render->stencil;
+   depth   = hwr->depth;
+   stencil = hwr->stencil;
 
 #ifdef HAVE_OPENGLES2
    if (stencil && !gl_query_extension(gl, "OES_packed_depth_stencil"))
@@ -2217,8 +2217,8 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    const char *vendor   = (const char*)glGetString(GL_VENDOR);
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    const char *version  = (const char*)glGetString(GL_VERSION);
-   const struct retro_hw_render_callback *hw_render =
-      (const struct retro_hw_render_callback*)video_driver_callback();
+   struct retro_hw_render_callback *hwr = NULL;
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 #if defined(HAVE_GL_SYNC) || defined(HAVE_FBO)
    settings_t *settings = config_get_ptr();
 #endif
@@ -2227,10 +2227,10 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    (void)vendor;
    (void)renderer;
    (void)version;
-   (void)hw_render;
+   (void)hwr;
 #ifndef HAVE_OPENGLES
    gl->core_context     = 
-      (hw_render->context_type == RETRO_HW_CONTEXT_OPENGL_CORE);
+      (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE);
    
    if (gl->core_context)
    {
@@ -2477,22 +2477,22 @@ static void gl_init_pbo_readback(gl_t *gl)
 
 static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 {
-   const struct retro_hw_render_callback *cb = 
-      (const struct retro_hw_render_callback*)video_driver_callback();
-   unsigned major = cb->version_major;
-   unsigned minor = cb->version_minor;
+   struct retro_hw_render_callback *hwr = NULL;
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   unsigned major       = hwr->version_major;
+   unsigned minor       = hwr->version_minor;
    settings_t *settings = config_get_ptr();
 #ifdef HAVE_OPENGLES
    enum gfx_ctx_api api = GFX_CTX_OPENGL_ES_API;
    const char *api_name = "OpenGL ES 2.0";
 #ifdef HAVE_OPENGLES3
-   if (cb->context_type == RETRO_HW_CONTEXT_OPENGLES3)
+   if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
    {
       major = 3;
       minor = 0;
       api_name = "OpenGL ES 3.0";
    }
-   else if (cb->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
+   else if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
       api_name = "OpenGL ES 3.1+";
 #endif
 #else
@@ -2503,7 +2503,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    (void)api_name;
 
    gl->shared_context_use = settings->video.shared_context
-      && cb->context_type != RETRO_HW_CONTEXT_NONE;
+      && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
    return gfx_ctx_init_first(gl, settings->video.context_driver,
          api, major, minor, gl->shared_context_use);
@@ -2655,15 +2655,18 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    video_shader_ctx_filter_t shader_filter;
    video_shader_ctx_info_t shader_info;
    video_shader_ctx_ident_t ident_info;
-   unsigned win_width, win_height, temp_width = 0, temp_height = 0;
-   bool force_smooth                  = false;
-   const char *vendor                 = NULL;
-   const char *renderer               = NULL;
-   const char *version                = NULL;
-   struct retro_hw_render_callback *hw_render = NULL;
-   settings_t *settings               = config_get_ptr();
-   gl_t *gl                           = (gl_t*)calloc(1, sizeof(gl_t));
-   const gfx_ctx_driver_t *ctx_driver = gl_get_context(gl);
+   unsigned win_width                   = 0;
+   unsigned win_height                  = 0;
+   unsigned temp_width                  = 0;
+   unsigned temp_height                 = 0;
+   bool force_smooth                    = false;
+   const char *vendor                   = NULL;
+   const char *renderer                 = NULL;
+   const char *version                  = NULL;
+   struct retro_hw_render_callback *hwr = NULL;
+   settings_t *settings                 = config_get_ptr();
+   gl_t *gl                             = (gl_t*)calloc(1, sizeof(gl_t));
+   const gfx_ctx_driver_t *ctx_driver   = gl_get_context(gl);
    if (!gl || !ctx_driver)
       goto error;
 
@@ -2758,8 +2761,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       gl->full_y = temp_height;
    }
 
-   hw_render         = video_driver_callback();
-   gl->vertex_ptr    = hw_render->bottom_left_origin 
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+
+   gl->vertex_ptr    = hwr->bottom_left_origin 
       ? vertexes : vertexes_flipped;
 
    /* Better pipelining with GPU due to synchronous glSubTexImage.
@@ -2768,7 +2772,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
     */
    gl->textures      = 4;
 #ifdef HAVE_FBO
-   gl->hw_render_use = hw_render->context_type != RETRO_HW_CONTEXT_NONE;
+   gl->hw_render_use = hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
    if (gl->hw_render_use)
    {
@@ -2787,7 +2791,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 #ifdef HAVE_GLSL
    gl_glsl_set_get_proc_address(ctx_driver->get_proc_address);
    gl_glsl_set_context_type(gl->core_context,
-         hw_render->version_major, hw_render->version_minor);
+         hwr->version_major, hwr->version_minor);
 #endif
 
    if (!video_shader_driver_ctl(SHADER_CTL_INIT_FIRST, NULL))

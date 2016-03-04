@@ -54,17 +54,19 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
       unsigned width, unsigned height)
 {
    unsigned i, j;
-   GLint  gl_internal = GL_LUMINANCE_ALPHA;
-   GLenum gl_format   = GL_LUMINANCE_ALPHA;
-   size_t ncomponents = 2;
-   uint8_t       *tmp = NULL;
-   struct retro_hw_render_callback *cb = video_driver_callback();
-   bool ancient = false; /* add a check here if needed */
-   bool modern = font->gl->core_context ||
-         (cb->context_type == RETRO_HW_CONTEXT_OPENGL &&
-          cb->version_major >= 3);
-	
-   (void)modern;
+   GLint  gl_internal                   = GL_LUMINANCE_ALPHA;
+   GLenum gl_format                     = GL_LUMINANCE_ALPHA;
+   size_t ncomponents                   = 2;
+   uint8_t       *tmp                   = NULL;
+   struct retro_hw_render_callback *hwr = NULL;
+   bool ancient                         = false; /* add a check here if needed */
+   bool modern                          = font->gl->core_context;
+   
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+
+   modern = modern ||
+         (hwr->context_type == RETRO_HW_CONTEXT_OPENGL &&
+          hwr->version_major >= 3);
 
    if (ancient)
    {

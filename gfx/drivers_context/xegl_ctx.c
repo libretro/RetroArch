@@ -189,14 +189,16 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
          {
-            const struct retro_hw_render_callback *hw_render =
-               (const struct retro_hw_render_callback*)video_driver_callback();
+            bool debug       = false;
             unsigned version = xegl->egl.major * 1000 + xegl->egl.minor;
             bool core        = version >= 3001;
+            struct retro_hw_render_callback *hwr = NULL;
+
+            video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 #ifdef GL_DEBUG
-            bool debug = true;
+            debug = true;
 #else
-            bool debug       = hw_render->debug_context;
+            debug = hwr->debug_context;
 #endif
 
             if (core)

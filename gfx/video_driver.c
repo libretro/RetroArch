@@ -532,7 +532,8 @@ static bool uninit_video_input(void)
 
 static bool init_video_pixel_converter(unsigned size)
 {
-   struct retro_hw_render_callback *hwr = video_driver_callback();
+   struct retro_hw_render_callback *hwr = NULL;
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 
    /* If pixel format is not 0RGB1555, we don't need to do
     * any internal pixel conversion. */
@@ -1026,13 +1027,6 @@ void video_driver_set_aspect_ratio_value(float value)
    video_driver_state.aspect_ratio = value;
 }
 
-struct retro_hw_render_callback *video_driver_callback(void)
-{
-   struct retro_hw_render_callback *hwr = NULL;
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
-   return hwr;
-}
-
 static bool video_driver_frame_filter(const void *data,
       unsigned width, unsigned height,
       size_t pitch,
@@ -1483,10 +1477,10 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 
             if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
             {
-               struct retro_hw_render_callback *hwr =
-                  video_driver_callback();
+               struct retro_hw_render_callback *hwr = NULL;
                current_video                        = NULL;
 
+               video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
                (void)hwr;
 
                if (hwr && hw_render_context_is_vulkan(hwr->context_type))

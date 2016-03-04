@@ -98,15 +98,16 @@ static void setup_pixel_format(HDC hdc)
 void create_gl_context(HWND hwnd, bool *quit)
 {
    bool core_context;
-   const struct retro_hw_render_callback *hw_render =
-      (const struct retro_hw_render_callback*)video_driver_callback();
-   bool debug       = hw_render->debug_context;
+   struct retro_hw_render_callback *hwr = NULL;
+   bool debug                           = false;
 
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+
+   debug            = hwr->debug_context;
 #ifdef _WIN32
-   dll_handle = dylib_load("OpenGL32.dll");
+   dll_handle       = dylib_load("OpenGL32.dll");
 #endif
-
-   g_hdc = GetDC(hwnd);
+   g_hdc            = GetDC(hwnd);
    setup_pixel_format(g_hdc);
 
 #ifdef GL_DEBUG

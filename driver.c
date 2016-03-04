@@ -327,15 +327,15 @@ static void init_drivers(int flags)
 
    if (flags & DRIVER_VIDEO)
    {
-      const struct retro_hw_render_callback *hw_render = 
-         (const struct retro_hw_render_callback*)video_driver_callback();
+      struct retro_hw_render_callback *hwr = NULL;
+      video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 
       video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_RESET, NULL);
       video_driver_ctl(RARCH_DISPLAY_CTL_INIT, NULL);
 
       if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT_ACK, NULL)
-            && hw_render->context_reset)
-         hw_render->context_reset();
+            && hwr->context_reset)
+         hwr->context_reset();
       video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT_ACK, NULL);
 
       runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);

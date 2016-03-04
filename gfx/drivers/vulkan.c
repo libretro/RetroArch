@@ -842,12 +842,12 @@ static void vulkan_unlock_queue(void *handle)
 
 static void vulkan_init_hw_render(vk_t *vk)
 {
-   const struct retro_hw_render_callback *hw_render =
-      video_driver_callback();
    struct retro_hw_render_interface_vulkan *iface   =
       &vk->hw.iface;
+   struct retro_hw_render_callback *hwr = NULL;
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 
-   if (hw_render->context_type != RETRO_HW_CONTEXT_VULKAN)
+   if (hwr->context_type != RETRO_HW_CONTEXT_VULKAN)
       return;
 
    vk->hw.enable              = true;
