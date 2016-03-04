@@ -200,16 +200,13 @@ bool driver_find_next(const char *label, char *s, size_t len)
 
 static void driver_adjust_system_rates(void)
 {
-   rarch_system_info_t *system = NULL;
-   
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    audio_driver_ctl(RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,   NULL);
    video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_ADJUST_SYSTEM_RATES, NULL);
 
    if (!video_driver_get_ptr(false))
       return;
 
-   if (system->force_nonblock)
+   if (runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL))
       event_cmd_ctl(EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE, NULL);
    else
       driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
@@ -225,12 +222,9 @@ static void driver_adjust_system_rates(void)
  **/
 static void driver_set_nonblock_state(void)
 {
-   rarch_system_info_t *system = NULL;
    settings_t        *settings = config_get_ptr();
    bool                 enable = input_driver_ctl(
          RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL);
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    /* Only apply non-block-state for video if we're using vsync. */
    if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ACTIVE, NULL) 
@@ -238,7 +232,8 @@ static void driver_set_nonblock_state(void)
    {
       bool video_nonblock = enable;
 
-      if (!settings->video.vsync || system->force_nonblock)
+      if (     !settings->video.vsync 
+            || runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL))
          video_nonblock = true;
       video_driver_ctl(RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE, &video_nonblock);
    }

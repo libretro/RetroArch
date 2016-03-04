@@ -416,6 +416,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static retro_keyboard_event_t runloop_key_event          = NULL;
    static retro_keyboard_event_t runloop_frontend_key_event = NULL;
    static unsigned runloop_max_frames               = false;
+   static bool runloop_force_nonblock               = false;
    static bool runloop_frame_time_last              = false;
    static bool runloop_set_frame_limit              = false;
    static bool runloop_paused                       = false;
@@ -564,6 +565,14 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_PERFCNT_ENABLE:
          return runloop_perfcnt_enable;
+      case RUNLOOP_CTL_SET_NONBLOCK_FORCED:
+         runloop_force_nonblock = true;
+         break;
+      case RUNLOOP_CTL_UNSET_NONBLOCK_FORCED:
+         runloop_force_nonblock = false;
+         break;
+      case RUNLOOP_CTL_IS_NONBLOCK_FORCED:
+         return runloop_force_nonblock;
       case RUNLOOP_CTL_SET_FRAME_TIME:
          {
             const struct retro_frame_time_callback *info =

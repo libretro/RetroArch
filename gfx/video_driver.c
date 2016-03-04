@@ -665,7 +665,7 @@ static bool init_video(void)
    video.width        = width;
    video.height       = height;
    video.fullscreen   = settings->video.fullscreen;
-   video.vsync        = settings->video.vsync && !system->force_nonblock;
+   video.vsync        = settings->video.vsync && !runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL);
    video.force_aspect = settings->video.force_aspect;
 #ifdef GEKKO
    video.viwidth      = settings->video.viwidth;
@@ -1119,14 +1119,8 @@ static void video_monitor_adjust_system_rates(void)
    struct retro_system_av_info *av_info   =
       video_viewport_get_system_av_info();
    settings_t *settings                   = config_get_ptr();
-   rarch_system_info_t *system            = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   if (!system)
-      return;
-
-   system->force_nonblock = false;
+   runloop_ctl(RUNLOOP_CTL_UNSET_NONBLOCK_FORCED, NULL);
 
    if  (av_info)
       info = (const struct retro_system_timing*)&av_info->timing;
@@ -1149,7 +1143,7 @@ static void video_monitor_adjust_system_rates(void)
       return;
 
    /* We won't be able to do VSync reliably when game FPS > monitor FPS. */
-   system->force_nonblock = true;
+   runloop_ctl(RUNLOOP_CTL_SET_NONBLOCK_FORCED, NULL);
    RARCH_LOG("Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 }
 
