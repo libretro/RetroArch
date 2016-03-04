@@ -805,25 +805,25 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          audio_driver_context_audio_data = NULL;
          break;
       case RARCH_AUDIO_CTL_DEINIT:
-         if (uninit_audio())
-            return true;
+         if (!uninit_audio())
+            return false;
          break;
       case RARCH_AUDIO_CTL_SETUP_REWIND:
          audio_driver_setup_rewind();
-         return true;
+         break;
       case RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE:
          if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
             return false; 
          if (audio_callback.set_state)
             audio_callback.set_state(true);
-         return true;
+         break;
       case RARCH_AUDIO_CTL_SET_CALLBACK_DISABLE:
          if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
             return false;
 
          if (audio_callback.set_state)
             audio_callback.set_state(false);
-         return true;
+         break;
       case RARCH_AUDIO_CTL_HAS_CALLBACK:
          return audio_callback.callback;
       case RARCH_AUDIO_CTL_CALLBACK:
@@ -832,11 +832,11 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 
          if (audio_callback.callback)
             audio_callback.callback();
-         return true;
+         break;
       case RARCH_AUDIO_CTL_UNSET_CALLBACK:
          audio_callback.callback  = NULL;
          audio_callback.set_state = NULL;
-         return true;
+         break;
       case RARCH_AUDIO_CTL_SET_CALLBACK:
          {
             const struct retro_audio_callback *cb = 
@@ -855,10 +855,10 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
             if (cb)
                audio_callback = *cb;
          }
-         return true;
+         break;
       case RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES:
          audio_monitor_adjust_system_rates();
-         return true;
+         break;
       case RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE:
          {
             double new_src_ratio = (double)settings->audio.out_rate / 
@@ -867,7 +867,7 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
             audio_driver_data.orig_src_ratio = new_src_ratio;
             audio_driver_data.src_ratio      = new_src_ratio;
          }
-         return true;
+         break;
       case RARCH_AUDIO_CTL_MUTE_TOGGLE:
          if (!audio_driver_context_audio_data)
             return false;
@@ -883,7 +883,7 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
             audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
             return false;
          }
-         return true;
+         break;
       case RARCH_AUDIO_CTL_ALIVE:
          if (!current_audio || !current_audio->alive 
                || !audio_driver_context_audio_data)
@@ -922,11 +922,11 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          audio_driver_flush(
                audio_driver_data.rewind.buf + audio_driver_data.rewind.ptr,
                audio_driver_data.rewind.size - audio_driver_data.rewind.ptr);
-         return true;
+         break;
       case RARCH_AUDIO_CTL_NONE:
       default:
          break;
    }
 
-   return false;
+   return true;
 }
