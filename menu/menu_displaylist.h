@@ -154,9 +154,6 @@ typedef struct menu_displaylist_ctx_entry
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
 
-int menu_displaylist_parse_settings(void *data, menu_displaylist_info_t *info, 
-      const char *info_label, enum menu_displaylist_parse_type parse_type, bool add_empty_entry);
-
 #ifdef __cplusplus
 }
 #endif

@@ -1806,7 +1806,7 @@ static int deferred_push_video_shader_parameters_common(
 }
 #endif
 
-int menu_displaylist_parse_settings(void *data,
+static int menu_displaylist_parse_settings(void *data,
       menu_displaylist_info_t *info,
       const char *info_label,
       enum menu_displaylist_parse_type parse_type,
