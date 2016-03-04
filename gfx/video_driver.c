@@ -33,6 +33,7 @@
 #include "../libretro_version_1.h"
 #include "../system.h"
 #include "../command_event.h"
+#include "../msg_hash.h"
 
 #ifdef HAVE_MENU
 #include "../menu/menu_hash.h"
@@ -95,6 +96,7 @@ typedef struct video_pixel_scaler
 static uintptr_t video_driver_display;
 static uintptr_t video_driver_window;
 static enum rarch_display_type video_driver_display_type;
+static char video_driver_title_buf[64];
 
 static uint64_t video_driver_frame_count;
 
@@ -971,9 +973,6 @@ bool video_monitor_get_fps(char *buf, size_t size,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    retro_time_t        new_time  = retro_get_time_usec();
-   rarch_system_info_t *system   = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    *buf = '\0';
 
@@ -993,7 +992,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
          curr_time = new_time;
 
          snprintf(buf, size, "%s || FPS: %6.1f || Frames: " U64_SIGN,
-               system->title_buf, last_fps,
+               video_driver_title_buf, last_fps,
                (unsigned long long)video_driver_frame_count);
          ret = true;
       }
@@ -1006,7 +1005,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
    }
 
    curr_time = fps_time = new_time;
-   strlcpy(buf, system->title_buf, size);
+   strlcpy(buf, video_driver_title_buf, size);
    if (buf_fps)
       strlcpy(buf_fps, "N/A", size_fps);
 
@@ -1743,6 +1742,25 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          if (!current_video || !current_video->viewport_info)
             return false;
          current_video->viewport_info(video_driver_data, (struct video_viewport*)data);
+         break;
+      case RARCH_DISPLAY_CTL_SET_TITLE_BUF:
+         {
+            struct retro_system_info info;
+            core_ctl(CORE_CTL_RETRO_GET_SYSTEM_INFO, &info);
+            strlcpy(video_driver_title_buf, 
+                  msg_hash_to_str(MSG_PROGRAM),
+                  sizeof(video_driver_title_buf));
+            strlcat(video_driver_title_buf,
+                  " ", sizeof(video_driver_title_buf));
+            strlcat(video_driver_title_buf, 
+                  info.library_name,
+                  sizeof(video_driver_title_buf));
+            strlcat(video_driver_title_buf,
+                  " ", sizeof(video_driver_title_buf));
+            strlcat(video_driver_title_buf,
+                  info.library_version,
+                  sizeof(video_driver_title_buf));
+         }
          break;
       case RARCH_DISPLAY_CTL_NONE:
       default:

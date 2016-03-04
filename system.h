@@ -32,8 +32,6 @@ extern "C" {
 
 typedef struct rarch_system_info
 {
-   char title_buf[64];
-
    struct retro_system_info info;
 
    unsigned rotation;
