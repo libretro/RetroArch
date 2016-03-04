@@ -56,8 +56,12 @@
 
 typedef struct video_driver_state
 {
-   retro_time_t frame_time_samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
-   uint64_t frame_time_samples_count;
+   struct
+   {
+      retro_time_t samples[MEASURE_FRAME_TIME_SAMPLES_COUNT];
+      uint64_t count;
+   } frame_time;
+
    enum retro_pixel_format pix_fmt;
 
    unsigned video_width;
@@ -461,7 +465,7 @@ static void video_monitor_compute_fps_statistics(void)
       return;
    }
 
-   if (video_driver_state.frame_time_samples_count < 
+   if (video_driver_state.frame_time.count < 
          (2 * MEASURE_FRAME_TIME_SAMPLES_COUNT))
    {
       RARCH_LOG(
@@ -922,19 +926,19 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    retro_time_t accum   = 0, avg, accum_var = 0;
    settings_t *settings = config_get_ptr();
    unsigned samples      = MIN(MEASURE_FRAME_TIME_SAMPLES_COUNT,
-         video_driver_state.frame_time_samples_count);
+         video_driver_state.frame_time.count);
 
    if (settings->video.threaded || (samples < 2))
       return false;
 
    /* Measure statistics on frame time (microsecs), *not* FPS. */
    for (i = 0; i < samples; i++)
-      accum += video_driver_state.frame_time_samples[i];
+      accum += video_driver_state.frame_time.samples[i];
 
 #if 0
    for (i = 0; i < samples; i++)
       RARCH_LOG("Interval #%u: %d usec / frame.\n",
-            i, (int)video_driver_state.frame_time_samples[i]);
+            i, (int)video_driver_state.frame_time.samples[i]);
 #endif
 
    avg = accum / samples;
@@ -942,7 +946,7 @@ bool video_monitor_fps_statistics(double *refresh_rate,
    /* Drop first measurement. It is likely to be bad. */
    for (i = 0; i < samples; i++)
    {
-      retro_time_t diff = video_driver_state.frame_time_samples[i] - avg;
+      retro_time_t diff = video_driver_state.frame_time.samples[i] - avg;
       accum_var += diff * diff;
    }
 
@@ -980,10 +984,10 @@ bool video_monitor_get_fps(char *buf, size_t size,
    {
       static float last_fps;
       bool ret             = false;
-      unsigned write_index = video_driver_state.frame_time_samples_count++ &
+      unsigned write_index = video_driver_state.frame_time.count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
 
-      video_driver_state.frame_time_samples[write_index] = new_time - fps_time;
+      video_driver_state.frame_time.samples[write_index] = new_time - fps_time;
       fps_time = new_time;
 
       if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
@@ -1439,7 +1443,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          video_driver_data = NULL;
          break;
       case RARCH_DISPLAY_CTL_MONITOR_RESET:
-         video_driver_state.frame_time_samples_count = 0;
+         video_driver_state.frame_time.count = 0;
          break;
       case RARCH_DISPLAY_CTL_MONITOR_ADJUST_SYSTEM_RATES:
          video_monitor_adjust_system_rates();
