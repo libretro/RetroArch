@@ -40,9 +40,12 @@ typedef struct audio_driver_input_data
    float *data;
 
    size_t data_ptr;
-   size_t chunk_size;
-   size_t nonblock_chunk_size;
-   size_t block_chunk_size;
+   struct
+   {
+      size_t size;
+      size_t nonblock_size;
+      size_t block_size;
+   } chunk;
 
    double src_ratio;
    float in_rate;
@@ -300,9 +303,9 @@ static bool init_audio(retro_audio_callback_t *audio_cb)
    if (!audio_driver_data.conv_outsamples)
       goto error;
 
-   audio_driver_data.block_chunk_size    = AUDIO_CHUNK_SIZE_BLOCKING;
-   audio_driver_data.nonblock_chunk_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
-   audio_driver_data.chunk_size          = audio_driver_data.block_chunk_size;
+   audio_driver_data.chunk.block_size    = AUDIO_CHUNK_SIZE_BLOCKING;
+   audio_driver_data.chunk.nonblock_size = AUDIO_CHUNK_SIZE_NONBLOCKING;
+   audio_driver_data.chunk.size          = audio_driver_data.chunk.block_size;
 
    /* Needs to be able to hold full content of a full max_bufsamples
     * in addition to its own. */
@@ -359,7 +362,7 @@ static bool init_audio(retro_audio_callback_t *audio_cb)
    if (!settings->audio.sync && audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL))
    {
       event_cmd_ctl(EVENT_CMD_AUDIO_SET_NONBLOCKING_STATE, NULL);
-      audio_driver_data.chunk_size = audio_driver_data.nonblock_chunk_size;
+      audio_driver_data.chunk.size = audio_driver_data.chunk.nonblock_size;
    }
 
    if (audio_driver_data.in_rate <= 0.0f)
@@ -474,9 +477,9 @@ void audio_driver_set_nonblocking_state(bool enable)
       current_audio->set_nonblock_state(audio_driver_context_audio_data,
             settings->audio.sync ? enable : true);
 
-   audio_driver_data.chunk_size = enable ? 
-      audio_driver_data.nonblock_chunk_size : 
-      audio_driver_data.block_chunk_size;
+   audio_driver_data.chunk.size = enable ? 
+      audio_driver_data.chunk.nonblock_size : 
+      audio_driver_data.chunk.block_size;
 }
 
 /**
@@ -586,7 +589,7 @@ void audio_driver_sample(int16_t left, int16_t right)
    audio_driver_data.conv_outsamples[audio_driver_data.data_ptr++] = left;
    audio_driver_data.conv_outsamples[audio_driver_data.data_ptr++] = right;
 
-   if (audio_driver_data.data_ptr < audio_driver_data.chunk_size)
+   if (audio_driver_data.data_ptr < audio_driver_data.chunk.size)
       return;
 
    audio_driver_flush(audio_driver_data.conv_outsamples, 
