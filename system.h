@@ -48,8 +48,6 @@ typedef struct rarch_system_info
    struct retro_camera_callback camera_callback;
    struct retro_location_callback location_callback;
 
-   struct retro_frame_time_callback frame_time;
-
    core_option_manager_t *core_options;
 
    struct retro_subsystem_info *special;

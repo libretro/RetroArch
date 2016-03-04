@@ -997,19 +997,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
       {
-         const struct retro_frame_time_callback *info =
-            (const struct retro_frame_time_callback*)data;
-
          RARCH_LOG("Environ SET_FRAME_TIME_CALLBACK.\n");
-
-#ifdef HAVE_NETPLAY
-         /* retro_run() will be called in very strange and
-          * mysterious ways, have to disable it. */
-         if (global->netplay.enable)
-            return false;
-#endif
-
-         system->frame_time = *info;
+         runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME, data);
          break;
       }
 
