@@ -681,21 +681,6 @@ void audio_driver_set_buffer_size(size_t bufsize)
    audio_driver_data.driver_buffer_size = bufsize;
 }
 
-void audio_driver_unset_callback(void)
-{
-   audio_driver_data.audio_callback.callback  = NULL;
-   audio_driver_data.audio_callback.set_state = NULL;
-}
-
-void audio_driver_set_callback(const void *data)
-{
-   const struct retro_audio_callback *cb = 
-      (const struct retro_audio_callback*)data;
-
-   if (cb)
-      audio_driver_data.audio_callback = *cb;
-}
-
 void audio_driver_callback_set_state(bool state)
 {
    if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
@@ -835,6 +820,29 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 
          if (audio_driver_data.audio_callback.callback)
             audio_driver_data.audio_callback.callback();
+         return true;
+      case RARCH_AUDIO_CTL_UNSET_CALLBACK:
+         audio_driver_data.audio_callback.callback  = NULL;
+         audio_driver_data.audio_callback.set_state = NULL;
+         return true;
+      case RARCH_AUDIO_CTL_SET_CALLBACK:
+         {
+            const struct retro_audio_callback *cb = 
+               (const struct retro_audio_callback*)data;
+#ifdef HAVE_NETPLAY
+            global_t *global = global_get_ptr();
+#endif
+
+            if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
+               return false;
+
+#ifdef HAVE_NETPLAY
+            if (global->netplay.enable)
+               return false;
+#endif
+            if (cb)
+               audio_driver_data.audio_callback = *cb;
+         }
          return true;
       case RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES:
          audio_monitor_adjust_system_rates();

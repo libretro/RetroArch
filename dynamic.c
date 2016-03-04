@@ -980,19 +980,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 #if defined(HAVE_THREADS) && !defined(__CELLOS_LV2__)
       case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
       {
-         const struct retro_audio_callback *info =
-            (const struct retro_audio_callback*)data;
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
-
-         if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
-            return false;
-
-#ifdef HAVE_NETPLAY
-         if (global->netplay.enable)
-            return false;
-#endif
-
-         audio_driver_set_callback(info);
+         audio_driver_ctl(RARCH_AUDIO_CTL_SET_CALLBACK, data);
          break;
       }
 #endif
