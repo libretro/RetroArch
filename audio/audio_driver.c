@@ -66,7 +66,6 @@ typedef struct audio_driver_input_data
    size_t driver_buffer_size;
 
    float volume_gain;
-   struct retro_audio_callback audio_callback;
 
    struct
    {
@@ -283,7 +282,7 @@ static bool uninit_audio(void)
    return true;
 }
 
-static bool init_audio(void)
+static bool init_audio(retro_audio_callback_t *audio_cb)
 {
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings = config_get_ptr();
@@ -323,7 +322,7 @@ static bool init_audio(void)
 
    audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
 #ifdef HAVE_THREADS
-   if (audio_driver_data.audio_callback.callback)
+   if (audio_cb)
    {
       RARCH_LOG("Starting threaded audio driver ...\n");
       if (!rarch_threaded_audio_init(
@@ -399,7 +398,7 @@ static bool init_audio(void)
 
    audio_driver_data.rate_control = false;
    if (
-         !audio_driver_data.audio_callback.callback 
+         !audio_cb
          && audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL) 
          && settings->audio.rate_control
          )
@@ -424,7 +423,7 @@ static bool init_audio(void)
    if (
          audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL)
          && !settings->audio.mute_enable
-         && audio_driver_data.audio_callback.callback
+         && audio_cb
          )
       audio_driver_ctl(RARCH_AUDIO_CTL_START, NULL);
 
@@ -760,6 +759,7 @@ static bool find_audio_driver(void)
 
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
+   static struct retro_audio_callback audio_callback;
    static struct retro_perf_counter resampler_proc        = {0};
    static const rarch_resampler_t *audio_driver_resampler = NULL;
    static void *audio_driver_resampler_data               = NULL;
@@ -788,7 +788,7 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          retro_perf_stop(&resampler_proc);
          break;
       case RARCH_AUDIO_CTL_INIT:
-         return init_audio();
+         return init_audio(&audio_callback.callback);
       case RARCH_AUDIO_CTL_DESTROY:
          audio_driver_active   = false;
          audio_driver_data_own = false;
@@ -806,30 +806,29 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          return true;
       case RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE:
          if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
-            return false;
-
-         if (audio_driver_data.audio_callback.set_state)
-            audio_driver_data.audio_callback.set_state(true);
+            return false; 
+         if (audio_callback.set_state)
+            audio_callback.set_state(true);
          return true;
       case RARCH_AUDIO_CTL_SET_CALLBACK_DISABLE:
          if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
             return false;
 
-         if (audio_driver_data.audio_callback.set_state)
-            audio_driver_data.audio_callback.set_state(false);
+         if (audio_callback.set_state)
+            audio_callback.set_state(false);
          return true;
       case RARCH_AUDIO_CTL_HAS_CALLBACK:
-         return audio_driver_data.audio_callback.callback;
+         return audio_callback.callback;
       case RARCH_AUDIO_CTL_CALLBACK:
          if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
             return false;
 
-         if (audio_driver_data.audio_callback.callback)
-            audio_driver_data.audio_callback.callback();
+         if (audio_callback.callback)
+            audio_callback.callback();
          return true;
       case RARCH_AUDIO_CTL_UNSET_CALLBACK:
-         audio_driver_data.audio_callback.callback  = NULL;
-         audio_driver_data.audio_callback.set_state = NULL;
+         audio_callback.callback  = NULL;
+         audio_callback.set_state = NULL;
          return true;
       case RARCH_AUDIO_CTL_SET_CALLBACK:
          {
@@ -847,7 +846,7 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
                return false;
 #endif
             if (cb)
-               audio_driver_data.audio_callback = *cb;
+               audio_callback = *cb;
          }
          return true;
       case RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES:
