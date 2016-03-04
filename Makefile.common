@@ -611,6 +611,10 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
 OBJ += ui/drivers/ui_win32.o
+
+if [ -d "$(ProgramFiles)/Microsoft SDKs/Windows/v7.0A/Include" ]; then
+DEFINES += -I"$(ProgramFiles)/Microsoft SDKs/Windows/v7.0A/Include"
+fi
 endif
 
 # Video
