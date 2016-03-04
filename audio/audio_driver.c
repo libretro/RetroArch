@@ -681,14 +681,6 @@ void audio_driver_set_buffer_size(size_t bufsize)
    audio_driver_data.driver_buffer_size = bufsize;
 }
 
-void audio_driver_callback_set_state(bool state)
-{
-   if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
-      return;
-
-   if (audio_driver_data.audio_callback.set_state)
-      audio_driver_data.audio_callback.set_state(state);
-}
 
 static void audio_monitor_adjust_system_rates(void)
 {
@@ -811,6 +803,20 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          break;
       case RARCH_AUDIO_CTL_SETUP_REWIND:
          audio_driver_setup_rewind();
+         return true;
+      case RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE:
+         if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
+            return false;
+
+         if (audio_driver_data.audio_callback.set_state)
+            audio_driver_data.audio_callback.set_state(true);
+         return true;
+      case RARCH_AUDIO_CTL_SET_CALLBACK_DISABLE:
+         if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
+            return false;
+
+         if (audio_driver_data.audio_callback.set_state)
+            audio_driver_data.audio_callback.set_state(false);
          return true;
       case RARCH_AUDIO_CTL_HAS_CALLBACK:
          return audio_driver_data.audio_callback.callback;

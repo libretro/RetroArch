@@ -42,6 +42,8 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE,
    RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,
    RARCH_AUDIO_CTL_MUTE_TOGGLE,
+   RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE,
+   RARCH_AUDIO_CTL_SET_CALLBACK_DISABLE,
    RARCH_AUDIO_CTL_SET_CALLBACK,
    RARCH_AUDIO_CTL_UNSET_CALLBACK,
    RARCH_AUDIO_CTL_CALLBACK,
@@ -151,9 +153,6 @@ void audio_driver_dsp_filter_free(void);
 void audio_driver_dsp_filter_init(const char *device);
 
 void audio_driver_set_buffer_size(size_t bufsize);
-
-void audio_driver_callback_set_state(bool state);
-
 
 extern audio_driver_t audio_rsound;
 extern audio_driver_t audio_oss;

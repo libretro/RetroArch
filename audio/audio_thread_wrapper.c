@@ -189,7 +189,8 @@ static bool audio_thread_stop(void *data)
 
    audio_thread_block(thr);
    thr->is_paused = true;
-   audio_driver_callback_set_state(false);
+
+   audio_driver_ctl(RARCH_AUDIO_CTL_SET_CALLBACK_DISABLE, NULL);
 
    return true;
 }
@@ -201,7 +202,8 @@ static bool audio_thread_start(void *data)
    if (!thr)
       return false;
 
-   audio_driver_callback_set_state(true);
+   audio_driver_ctl(RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE, NULL);
+
    thr->is_paused = false;
    audio_thread_unblock(thr);
 
