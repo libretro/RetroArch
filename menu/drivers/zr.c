@@ -420,7 +420,9 @@ static void zrmenu_wnd_test(struct zr_context *ctx, int width, int height, struc
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
          ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
    {
+      unsigned size;
       struct zr_panel combo;
+      menu_entry_t entry;
       static const char *themes[] = {"Dark", "Light"};
       enum   zr_theme old         = gui->theme;
 
@@ -460,12 +462,13 @@ static void zrmenu_wnd_test(struct zr_context *ctx, int width, int height, struc
       }
 
       zr_label(ctx, "History:", ZR_TEXT_LEFT);
-      unsigned size = menu_entries_get_size();
-      menu_entry_t entry;
+
+      size = menu_entries_get_size();
       if (zr_combo_begin_text(ctx, &combo, "", 180))
       {
+         unsigned i;
 
-         for (int i=0; i < size; i++)
+         for (i = 0; i < size; i++)
          {
             menu_entry_get(&entry, 0, i, NULL, true);
             zr_layout_row_dynamic(ctx, 25, 1);
@@ -485,10 +488,12 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struc
    if (zr_begin(ctx, &layout, "Main", zr_rect(-1, -1, 120, height + 1),
          ZR_WINDOW_NO_SCROLLBAR))
    {
-      /* context menu */
+      struct zr_panel menu;
       struct zr_panel node, context_menu;
 
-      if (zr_contextual_begin(ctx, &context_menu, 0, zr_vec2(100, 220), zr_window_get_bounds(ctx))) {
+      /* context menu */
+      if (zr_contextual_begin(ctx, &context_menu, 0, zr_vec2(100, 220), zr_window_get_bounds(ctx)))
+      {
           zr_layout_row_dynamic(ctx, 25, 1);
           if (zr_contextual_item(ctx, "Test 1", ZR_TEXT_CENTERED))
              printf("test \n");
@@ -498,8 +503,6 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height, struc
       }
 
       /* main menu */
-      struct zr_panel menu;
-
       zr_menubar_begin(ctx);
       zr_layout_row_begin(ctx, ZR_STATIC, 25, 1);
       zr_layout_row_push(ctx, 100);
