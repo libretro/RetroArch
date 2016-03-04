@@ -136,6 +136,15 @@ typedef struct menu_displaylist_info
    rarch_setting_t *setting;
 } menu_displaylist_info_t;
 
+typedef struct menu_displaylist_ctx_parse_entry
+{
+   void *data;
+   menu_displaylist_info_t *info;
+   const char *info_label;
+   enum menu_displaylist_parse_type parse_type;
+   bool add_empty_entry;
+} menu_displaylist_ctx_parse_entry_t;
+
 typedef struct menu_displaylist_ctx_entry
 {
    file_list_t *stack;
