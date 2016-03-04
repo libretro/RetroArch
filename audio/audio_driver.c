@@ -52,8 +52,6 @@ typedef struct audio_driver_input_data
 
    bool use_float;
 
-   float *outsamples;
-   int16_t *conv_outsamples;
 
    struct
    {
@@ -69,6 +67,12 @@ typedef struct audio_driver_input_data
    size_t driver_buffer_size;
 
    float volume_gain;
+
+   struct
+   {
+      float *buf;
+      int16_t *conv_buf;
+   } output_samples;
 
    struct
    {
@@ -252,10 +256,10 @@ static bool uninit_audio(void)
       audio_driver_context_audio_data = NULL;
    }
 
-   if (audio_driver_data.conv_outsamples)
-      free(audio_driver_data.conv_outsamples);
-   audio_driver_data.conv_outsamples = NULL;
-   audio_driver_data.data_ptr        = 0;
+   if (audio_driver_data.output_samples.conv_buf)
+      free(audio_driver_data.output_samples.conv_buf);
+   audio_driver_data.output_samples.conv_buf = NULL;
+   audio_driver_data.data_ptr                = 0;
 
    if (audio_driver_data.rewind.buf)
       free(audio_driver_data.rewind.buf);
@@ -274,9 +278,9 @@ static bool uninit_audio(void)
       free(audio_driver_data.data);
    audio_driver_data.data = NULL;
 
-   if (audio_driver_data.outsamples)
-      free(audio_driver_data.outsamples);
-   audio_driver_data.outsamples = NULL;
+   if (audio_driver_data.output_samples.buf)
+      free(audio_driver_data.output_samples.buf);
+   audio_driver_data.output_samples.buf = NULL;
 
    event_cmd_ctl(EVENT_CMD_DSP_FILTER_DEINIT, NULL);
 
@@ -297,10 +301,10 @@ static bool init_audio(retro_audio_callback_t *audio_cb)
       settings->slowmotion_ratio;
 
    /* Used for recording even if audio isn't enabled. */
-   retro_assert(audio_driver_data.conv_outsamples =
+   retro_assert(audio_driver_data.output_samples.conv_buf =
          (int16_t*)malloc(outsamples_max * sizeof(int16_t)));
 
-   if (!audio_driver_data.conv_outsamples)
+   if (!audio_driver_data.output_samples.conv_buf)
       goto error;
 
    audio_driver_data.chunk.block_size    = AUDIO_CHUNK_SIZE_BLOCKING;
@@ -393,10 +397,10 @@ static bool init_audio(retro_audio_callback_t *audio_cb)
 
    retro_assert(settings->audio.out_rate <
          audio_driver_data.in_rate * AUDIO_MAX_RATIO);
-   retro_assert(audio_driver_data.outsamples = (float*)
+   retro_assert(audio_driver_data.output_samples.buf = (float*)
          malloc(outsamples_max * sizeof(float)));
 
-   if (!audio_driver_data.outsamples)
+   if (!audio_driver_data.output_samples.buf)
       goto error;
 
    audio_driver_data.rate_control = false;
@@ -540,7 +544,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       }
    }
 
-   src_data.data_out = audio_driver_data.outsamples;
+   src_data.data_out = audio_driver_data.output_samples.buf;
 
    if (audio_driver_data.rate_control)
       audio_driver_readjust_input_rate();
@@ -552,18 +556,18 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    audio_driver_ctl(RARCH_AUDIO_CTL_RESAMPLER_PROCESS, &src_data);
 
-   output_data   = audio_driver_data.outsamples;
+   output_data   = audio_driver_data.output_samples.buf;
    output_frames = src_data.output_frames;
 
    if (!audio_driver_data.use_float)
    {
       rarch_perf_init(&audio_convert_float, "audio_convert_float");
       retro_perf_start(&audio_convert_float);
-      audio_convert_float_to_s16(audio_driver_data.conv_outsamples,
+      audio_convert_float_to_s16(audio_driver_data.output_samples.conv_buf,
             (const float*)output_data, output_frames * 2);
       retro_perf_stop(&audio_convert_float);
 
-      output_data = audio_driver_data.conv_outsamples;
+      output_data = audio_driver_data.output_samples.conv_buf;
       output_size = sizeof(int16_t);
    }
 
@@ -586,13 +590,13 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
  **/
 void audio_driver_sample(int16_t left, int16_t right)
 {
-   audio_driver_data.conv_outsamples[audio_driver_data.data_ptr++] = left;
-   audio_driver_data.conv_outsamples[audio_driver_data.data_ptr++] = right;
+   audio_driver_data.output_samples.conv_buf[audio_driver_data.data_ptr++] = left;
+   audio_driver_data.output_samples.conv_buf[audio_driver_data.data_ptr++] = right;
 
    if (audio_driver_data.data_ptr < audio_driver_data.chunk.size)
       return;
 
-   audio_driver_flush(audio_driver_data.conv_outsamples, 
+   audio_driver_flush(audio_driver_data.output_samples.conv_buf, 
          audio_driver_data.data_ptr);
 
    audio_driver_data.data_ptr = 0;
@@ -717,10 +721,10 @@ static void audio_driver_setup_rewind(void)
    for (i = 0; i < audio_driver_data.data_ptr; i += 2)
    {
       audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] =
-         audio_driver_data.conv_outsamples[i + 1];
+         audio_driver_data.output_samples.conv_buf[i + 1];
 
       audio_driver_data.rewind.buf[--audio_driver_data.rewind.ptr] =
-         audio_driver_data.conv_outsamples[i + 0];
+         audio_driver_data.output_samples.conv_buf[i + 0];
    }
 
    audio_driver_data.data_ptr = 0;
