@@ -261,77 +261,6 @@ static bool hw_render_context_is_gl(enum retro_hw_context_type type)
    return false;
 }
 
-static bool find_video_driver(void)
-{
-   int i;
-   driver_ctx_info_t drv;
-   settings_t *settings = config_get_ptr();
-
-   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
-   {
-      struct retro_hw_render_callback *hwr =
-         video_driver_callback();
-      current_video                        = NULL;
-
-      (void)hwr;
-
-      if (hwr && hw_render_context_is_vulkan(hwr->context_type))
-      {
-#if defined(HAVE_VULKAN)
-         RARCH_LOG("Using HW render, Vulkan driver forced.\n");
-         current_video = &video_vulkan;
-#endif
-      }
-
-      if (hwr && hw_render_context_is_gl(hwr->context_type))
-      {
-#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
-         RARCH_LOG("Using HW render, OpenGL driver forced.\n");
-         current_video = &video_gl;
-#endif
-      }
-
-      if (current_video)
-         return true;
-   }
-
-   if (frontend_driver_has_get_video_driver_func())
-   {
-      current_video = (video_driver_t*)frontend_driver_get_video_driver();
-
-      if (current_video)
-         return true;
-      RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
-   }
-
-   drv.label = "video_driver";
-   drv.s     = settings->video.driver;
-
-   driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
-
-   i = drv.len;
-
-   if (i >= 0)
-      current_video = (video_driver_t*)video_driver_find_handle(i);
-   else
-   {
-      unsigned d;
-      RARCH_ERR("Couldn't find any video driver named \"%s\"\n",
-            settings->video.driver);
-      RARCH_LOG_OUTPUT("Available video drivers are:\n");
-      for (d = 0; video_driver_find_handle(d); d++)
-         RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));
-      RARCH_WARN("Going to default to first video driver...\n");
-
-      current_video = (video_driver_t*)video_driver_find_handle(0);
-
-      if (!current_video)
-         retro_fail(1, "find_video_driver()");
-   }
-
-   return true;
-}
-
 /**
  * video_driver_get_ptr:
  *
@@ -587,7 +516,6 @@ static bool uninit_video_input(void)
       current_video->free(video_driver_data);
 
    deinit_pixel_converter();
-
    deinit_video_filter();
 
    event_cmd_ctl(EVENT_CMD_SHADER_DIR_DEINIT, NULL);
@@ -642,6 +570,7 @@ static bool init_video_pixel_converter(unsigned size)
 
 error:
    deinit_pixel_converter();
+   deinit_video_filter();
 
    return false;
 }
@@ -817,8 +746,6 @@ error:
    return false;
 }
 
-
-
 bool video_driver_set_viewport(unsigned width, unsigned height,
       bool force_fullscreen, bool allow_rotate)
 {
@@ -888,8 +815,6 @@ void video_driver_set_texture_frame(const void *frame, bool rgb32,
             frame, rgb32, width, height, alpha);
 #endif
 }
-
-
 
 #ifdef HAVE_OVERLAY
 bool video_driver_overlay_interface(const video_overlay_interface_t **iface)
@@ -972,7 +897,6 @@ void video_monitor_set_refresh_rate(float hz)
 
    settings->video.refresh_rate = hz;
 }
-
 
 /**
  * video_monitor_fps_statistics
@@ -1332,78 +1256,6 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 #endif
 }
 
-/**
- * video_viewport_set_square_pixel:
- * @width         : Width.
- * @height        : Height.
- *
- * Sets viewport to square pixel aspect ratio based on @width and @height. 
- **/
-static void video_viewport_set_square_pixel(unsigned width, unsigned height)
-{
-   unsigned len, highest, i, aspect_x, aspect_y;
-   if (width == 0 || height == 0)
-      return;
-
-   len      = MIN(width, height);
-   highest  = 1;
-
-   for (i = 1; i < len; i++)
-   {
-      if ((width % i) == 0 && (height % i) == 0)
-         highest = i;
-   }
-
-   aspect_x = width / highest;
-   aspect_y = height / highest;
-
-   snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
-         sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
-         "%u:%u (1:1 PAR)", aspect_x, aspect_y);
-
-   aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
-}
-
-/**
- * video_viewport_set_config:
- *
- * Sets viewport to config aspect ratio.
- **/
-static bool video_viewport_set_config(void)
-{
-   settings_t *settings                 = config_get_ptr();
-   struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
-
-   if (settings->video.aspect_ratio < 0.0f)
-   {
-      struct retro_game_geometry *geom = &av_info->geometry;
-
-      if (!geom)
-         return false;
-
-      if (geom->aspect_ratio > 0.0f && settings->video.aspect_ratio_auto)
-         aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
-      else
-      {
-         unsigned base_width  = geom->base_width;
-         unsigned base_height = geom->base_height;
-
-         /* Get around division by zero errors */
-         if (base_width == 0)
-            base_width = 1;
-         if (base_height == 0)
-            base_height = 1;
-         aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
-            (float)base_width / base_height; /* 1:1 PAR. */
-      }
-   }
-   else
-      aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
-         settings->video.aspect_ratio;
-
-   return true;
-}
-
 bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 {
    /* Graphics driver requires RGBA byte order data (ABGR on little-endian)
@@ -1461,21 +1313,74 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_SUPPORTS_READ_FRAME_RAW:
          return current_video->read_frame_raw;
       case RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG:
-         return video_viewport_set_config();
+         {
+            struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
+
+            if (settings->video.aspect_ratio < 0.0f)
+            {
+               struct retro_game_geometry *geom = &av_info->geometry;
+
+               if (!geom)
+                  return false;
+
+               if (geom->aspect_ratio > 0.0f && settings->video.aspect_ratio_auto)
+                  aspectratio_lut[ASPECT_RATIO_CONFIG].value = geom->aspect_ratio;
+               else
+               {
+                  unsigned base_width  = geom->base_width;
+                  unsigned base_height = geom->base_height;
+
+                  /* Get around division by zero errors */
+                  if (base_width == 0)
+                     base_width = 1;
+                  if (base_height == 0)
+                     base_height = 1;
+                  aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
+                     (float)base_width / base_height; /* 1:1 PAR. */
+               }
+            }
+            else
+               aspectratio_lut[ASPECT_RATIO_CONFIG].value = 
+                  settings->video.aspect_ratio;
+         }
+         break;
       case RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL:
          {
+            unsigned len, highest, i, aspect_x, aspect_y;
+            unsigned width, height;
             struct retro_game_geometry *geom     = NULL;
             struct retro_system_av_info *av_info = 
                video_viewport_get_system_av_info();
-            
+
             if (av_info)
                geom = &av_info->geometry;
 
             if (!geom)
                return false;
 
-            video_viewport_set_square_pixel(
-                  geom->base_width, geom->base_height);
+            width  = geom->base_width;
+            height = geom->base_height;
+
+            if (width == 0 || height == 0)
+               return false;
+
+            len      = MIN(width, height);
+            highest  = 1;
+
+            for (i = 1; i < len; i++)
+            {
+               if ((width % i) == 0 && (height % i) == 0)
+                  highest = i;
+            }
+
+            aspect_x = width / highest;
+            aspect_y = height / highest;
+
+            snprintf(aspectratio_lut[ASPECT_RATIO_SQUARE].name,
+                  sizeof(aspectratio_lut[ASPECT_RATIO_SQUARE].name),
+                  "%u:%u (1:1 PAR)", aspect_x, aspect_y);
+
+            aspectratio_lut[ASPECT_RATIO_SQUARE].value = (float)aspect_x / aspect_y;
          }
          break;
       case RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE:
@@ -1575,7 +1480,73 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          }
          break;
       case RARCH_DISPLAY_CTL_FIND_DRIVER:
-         return find_video_driver();
+         {
+            int i;
+            driver_ctx_info_t drv;
+
+            if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
+            {
+               struct retro_hw_render_callback *hwr =
+                  video_driver_callback();
+               current_video                        = NULL;
+
+               (void)hwr;
+
+               if (hwr && hw_render_context_is_vulkan(hwr->context_type))
+               {
+#if defined(HAVE_VULKAN)
+                  RARCH_LOG("Using HW render, Vulkan driver forced.\n");
+                  current_video = &video_vulkan;
+#endif
+               }
+
+               if (hwr && hw_render_context_is_gl(hwr->context_type))
+               {
+#if defined(HAVE_OPENGL) && defined(HAVE_FBO)
+                  RARCH_LOG("Using HW render, OpenGL driver forced.\n");
+                  current_video = &video_gl;
+#endif
+               }
+
+               if (current_video)
+                  return true;
+            }
+
+            if (frontend_driver_has_get_video_driver_func())
+            {
+               current_video = (video_driver_t*)frontend_driver_get_video_driver();
+
+               if (current_video)
+                  return true;
+               RARCH_WARN("Frontend supports get_video_driver() but did not specify one.\n");
+            }
+
+            drv.label = "video_driver";
+            drv.s     = settings->video.driver;
+
+            driver_ctl(RARCH_DRIVER_CTL_FIND_INDEX, &drv);
+
+            i = drv.len;
+
+            if (i >= 0)
+               current_video = (video_driver_t*)video_driver_find_handle(i);
+            else
+            {
+               unsigned d;
+               RARCH_ERR("Couldn't find any video driver named \"%s\"\n",
+                     settings->video.driver);
+               RARCH_LOG_OUTPUT("Available video drivers are:\n");
+               for (d = 0; video_driver_find_handle(d); d++)
+                  RARCH_LOG_OUTPUT("\t%s\n", video_driver_find_ident(d));
+               RARCH_WARN("Going to default to first video driver...\n");
+
+               current_video = (video_driver_t*)video_driver_find_handle(0);
+
+               if (!current_video)
+                  retro_fail(1, "find_video_driver()");
+            }
+         }
+         break;
       case RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES:
          if (!video_driver_poke)
             return false;

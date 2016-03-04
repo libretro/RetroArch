@@ -41,7 +41,6 @@ static const camera_driver_t *camera_drivers[] = {
    NULL,
 };
 
-
 /**
  * camera_driver_find_handle:
  * @idx                : index of driver to get handle to.
