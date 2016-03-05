@@ -134,8 +134,6 @@ enum
 #define XMB_SYSTEM_TAB_END XMB_SYSTEM_TAB_HISTORY
 #endif
 
-typedef uintptr_t xmb_texture_item;
-
 typedef struct xmb_handle
 {
    file_list_t *menu_stack_old;
@@ -190,8 +188,8 @@ typedef struct xmb_handle
          float alpha;
       } arrow;
 
-      xmb_texture_item bg;
-      xmb_texture_item list[XMB_TEXTURE_LAST];
+      menu_texture_item bg;
+      menu_texture_item list[XMB_TEXTURE_LAST];
    } textures;
 
    struct

@@ -68,8 +68,6 @@ enum
 
 #define MUI_SYSTEM_TAB_END MUI_SYSTEM_TAB_SETTINGS
 
-typedef uintptr_t mui_texture_item;
-
 typedef struct mui_handle
 {
    unsigned tabs_height;
@@ -88,8 +86,8 @@ typedef struct mui_handle
          float alpha;
       } arrow;
 
-      mui_texture_item bg;
-      mui_texture_item list[MUI_TEXTURE_LAST];
+      menu_texture_item bg;
+      menu_texture_item list[MUI_TEXTURE_LAST];
       uintptr_t white;
    } textures;
 
