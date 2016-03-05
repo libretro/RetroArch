@@ -101,10 +101,6 @@ struct zrmenu
 };
 
 static struct zrmenu gui;
-struct zrmenu_texture_item
-{
-   uintptr_t id;
-};
 
 typedef struct zrmenu_handle
 {
@@ -121,8 +117,8 @@ typedef struct zrmenu_handle
          float alpha;
       } arrow;
 
-      struct zrmenu_texture_item bg;
-      struct zrmenu_texture_item list[ZR_TEXTURE_LAST];
+      menu_texture_item bg;
+      menu_texture_item list[ZR_TEXTURE_LAST];
    } textures;
 
    gfx_font_raster_block_t list_block;
@@ -937,7 +933,7 @@ static void zrmenu_context_reset_textures(zrmenu_handle_t *zr,
 
       video_texture_image_load(&ti, path);
       video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR, &zr->textures.list[i].id);
+            TEXTURE_FILTER_MIPMAP_LINEAR, &zr->textures.list[i]);
 
       video_texture_image_free(&ti);
    }
@@ -974,7 +970,7 @@ static void zrmenu_draw_cursor(zrmenu_handle_t *zr,
    draw.height      = 64;
    draw.coords      = &coords;
    draw.matrix_data = NULL;
-   draw.texture     = zr->textures.list[ZR_TEXTURE_POINTER].id;
+   draw.texture     = zr->textures.list[ZR_TEXTURE_POINTER];
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
@@ -1126,7 +1122,7 @@ static void zrmenu_context_destroy(void *data)
       return;
 
    for (i = 0; i < ZR_TEXTURE_LAST; i++)
-      video_driver_texture_unload((uintptr_t*)&zr->textures.list[i].id);
+      video_driver_texture_unload((uintptr_t*)&zr->textures.list[i]);
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
 
