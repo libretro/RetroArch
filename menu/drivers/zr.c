@@ -889,6 +889,9 @@ static void zrmenu_input_mouse_movement(struct zr_context *ctx)
    int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
    zr_input_motion(ctx, mouse_x, mouse_y);
+   zr_input_scroll(ctx, menu_input_mouse_state(MENU_MOUSE_WHEEL_UP) -
+      menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN));
+
 }
 
 static void zrmenu_input_mouse_button(struct zr_context *ctx)
