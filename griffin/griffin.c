@@ -565,7 +565,7 @@ AUDIO
 DRIVERS
 ============================================================ */
 #include "../gfx/video_driver.c"
-#include "../gfx/video_common.c"
+#include "../gfx/video_coord_array.c"
 #include "../input/input_driver.c"
 #include "../audio/audio_driver.c"
 #include "../camera/camera_driver.c"

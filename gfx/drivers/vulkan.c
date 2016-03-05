@@ -48,7 +48,7 @@
 
 #include "../font_driver.h"
 #include "../video_context_driver.h"
-#include "../video_common.h"
+#include "../video_coord_array.h"
 
 static void vulkan_set_viewport(void *data, unsigned viewport_width,
       unsigned viewport_height, bool force_full, bool allow_rotate);

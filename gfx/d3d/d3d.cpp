@@ -27,7 +27,7 @@
 #include <string/stdstring.h>
 
 #include "d3d.h"
-#include "../video_common.h"
+#include "../video_coord_array.h"
 #include "../../dynamic.h"
 #include "render_chain_driver.h"
 

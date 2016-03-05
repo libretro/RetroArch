@@ -24,7 +24,7 @@
 
 #include "../gfx/video_context_driver.h"
 #include "../gfx/font_driver.h"
-#include "../gfx/video_common.h"
+#include "../gfx/video_coord_array.h"
 #include "../libretro_version_1.h"
 
 #ifdef __cplusplus

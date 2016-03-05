@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __VIDEO_COMMON_H
-#define __VIDEO_COMMON_H
+#ifndef __VIDEO_COORD_ARRAY_H
+#define __VIDEO_COORD_ARRAY_H
 
 #include <stdint.h>
 #include <string.h>

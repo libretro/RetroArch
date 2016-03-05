@@ -33,7 +33,7 @@
 #include "../../general.h"
 #include "../../verbosity.h"
 #include "../font_driver.h"
-#include "../video_common.h"
+#include "../video_coord_array.h"
 #include "../video_context_driver.h"
 
 #if (!defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3))

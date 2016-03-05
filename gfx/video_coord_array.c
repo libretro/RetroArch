@@ -19,7 +19,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 
-#include "video_common.h"
+#include "video_coord_array.h"
 
 static INLINE bool realloc_checked(void **ptr, size_t size)
 {
@@ -99,18 +99,20 @@ void gfx_coord_array_free(gfx_coord_array_t *ca)
 
    if (ca->coords.vertex)
       free(ca->coords.vertex);
+   ca->coords.vertex        = NULL;
+
    if (ca->coords.color)
       free(ca->coords.color);
+   ca->coords.color         = NULL;
+
    if (ca->coords.tex_coord)
       free(ca->coords.tex_coord);
+   ca->coords.tex_coord     = NULL;
+
    if (ca->coords.lut_tex_coord)
       free(ca->coords.lut_tex_coord);
-
-   ca->coords.vertex        = NULL;
-   ca->coords.color         = NULL;
-   ca->coords.tex_coord     = NULL;
    ca->coords.lut_tex_coord = NULL;
 
-   ca->coords.vertices = 0;
-   ca->allocated       = 0;
+   ca->coords.vertices      = 0;
+   ca->allocated            = 0;
 }
