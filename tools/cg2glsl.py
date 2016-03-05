@@ -405,6 +405,8 @@ def fix_samplers(log_prefix, ref_index, source):
         source.insert(ref_index, sampler)
     if struct_texunit0:
         source.insert(ref_index, 'uniform sampler2D Texture;')
+    for uniform in uniforms:
+        source.insert(ref_index, 'uniform COMPAT_PRECISION vec2 ' + uniform + ';')
     for index, line in enumerate(source):
         for orig, new in translations:
             log(log_prefix, 'Translation:', orig, '->', new)
