@@ -172,8 +172,6 @@ void menu_entries_get_last(const file_list_t *list,
 void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
       const char *alt);
 
-bool menu_entries_increment_menu_stack(void);
-
 rarch_setting_t *menu_entries_get_setting(uint32_t i);
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
