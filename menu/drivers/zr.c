@@ -529,7 +529,7 @@ static void zrmenu_wnd_main(struct zr_context *ctx, struct zrmenu *gui,
                !zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS];
          }
 
-         if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Shader Parameters"))
+         if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Test Window"))
          {
             zr_window_close(ctx, "Test");
             zr->window_enabled[ZRMENU_WND_TEST] =
