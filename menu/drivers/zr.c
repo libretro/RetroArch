@@ -65,6 +65,15 @@
 enum
 {
    ZR_TEXTURE_POINTER = 0,
+   ZR_TEXTURE_BACK,
+   ZR_TEXTURE_SWITCH_ON,
+   ZR_TEXTURE_SWITCH_OFF,
+   ZR_TEXTURE_TAB_MAIN_ACTIVE,
+   ZR_TEXTURE_TAB_PLAYLISTS_ACTIVE,
+   ZR_TEXTURE_TAB_SETTINGS_ACTIVE,
+   ZR_TEXTURE_TAB_MAIN_PASSIVE,
+   ZR_TEXTURE_TAB_PLAYLISTS_PASSIVE,
+   ZR_TEXTURE_TAB_SETTINGS_PASSIVE,
    ZR_TEXTURE_LAST
 };
 
@@ -92,8 +101,6 @@ struct zrmenu
 };
 
 static struct zrmenu gui;
-static bool zrmenu_state[3];
-
 struct zrmenu_texture_item
 {
    uintptr_t id;
@@ -102,8 +109,10 @@ struct zrmenu_texture_item
 typedef struct zrmenu_handle
 {
    char box_message[PATH_MAX_LENGTH];
-
-
+   bool window_enabled[4];
+   bool resize;
+   unsigned width;
+   unsigned height;
 
    struct
    {
@@ -117,7 +126,6 @@ typedef struct zrmenu_handle
    } textures;
 
    gfx_font_raster_block_t list_block;
-   float scroll_y;
 } zrmenu_handle_t;
 
 struct zr_device
@@ -286,8 +294,8 @@ static void zrmenu_set_style(struct zr_context *ctx, enum zrmenu_theme theme)
    }
 }
 
-static void zrmenu_wnd_shader_parameters(struct zr_context *ctx,
-      int width, int height, struct zrmenu *gui)
+static void zrmenu_wnd_shader_parameters(struct zr_context *ctx, struct zrmenu *gui,
+   zrmenu_handle_t *zr)
 {
    unsigned i;
    video_shader_ctx_t shader_info;
@@ -330,8 +338,8 @@ static void zrmenu_wnd_shader_parameters(struct zr_context *ctx,
    zr_end(ctx);
 }
 
-bool zrmenu_wnd_control(struct zr_context *ctx,
-      int width, int height, struct zrmenu *gui)
+bool zrmenu_wnd_control(struct zr_context *ctx, struct zrmenu *gui,
+   zrmenu_handle_t *zr)
 {
    static int wnd_x = 900;
    static int wnd_y = 60;
@@ -388,7 +396,8 @@ bool zrmenu_wnd_control(struct zr_context *ctx,
    return ret;
 }
 
-static void zrmenu_wnd_test(struct zr_context *ctx, int width, int height, struct zrmenu *gui)
+static void zrmenu_wnd_test(struct zr_context *ctx, struct zrmenu *gui,
+   zrmenu_handle_t *zr)
 {
    settings_t *settings = config_get_ptr();
 
@@ -460,20 +469,21 @@ static void zrmenu_wnd_test(struct zr_context *ctx, int width, int height, struc
    zr_end(ctx);
 }
 
-static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height,
-   struct zrmenu *gui)
+static void zrmenu_wnd_main(struct zr_context *ctx, struct zrmenu *gui,
+   zrmenu_handle_t *zr)
 {
    settings_t *settings = config_get_ptr();
    struct zr_panel layout;
 
-   if (zr_begin(ctx, &layout, "Main", zr_rect(-1, -1, 120, height + 1),
+   if (zr_begin(ctx, &layout, "Main", zr_rect(-1, -1, 120, zr->height + 1),
          ZR_WINDOW_NO_SCROLLBAR))
    {
       struct zr_panel menu;
       struct zr_panel node, context_menu;
 
       /* context menu */
-      if (zr_contextual_begin(ctx, &context_menu, 0, zr_vec2(100, 220), zr_window_get_bounds(ctx)))
+      if (zr_contextual_begin(ctx, &context_menu, 0, zr_vec2(100, 220),
+         zr_window_get_bounds(ctx)))
       {
           zr_layout_row_dynamic(ctx, 25, 1);
           if (zr_contextual_item(ctx, "Test 1", ZR_TEXT_CENTERED))
@@ -508,61 +518,66 @@ static void zrmenu_wnd_main(struct zr_context *ctx, int width, int height,
          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Control"))
          {
             zr_window_close(ctx, "Control");
-            zrmenu_state[ZRMENU_WND_CONTROL] = !zrmenu_state[ZRMENU_WND_CONTROL];
+            zr->window_enabled[ZRMENU_WND_CONTROL] =
+               !zr->window_enabled[ZRMENU_WND_CONTROL];
          }
 
          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Shader Parameters"))
          {
             zr_window_close(ctx, "Shader Parameters");
-            zrmenu_state[ZRMENU_WND_SHADER_PARAMETERS] =
-               !zrmenu_state[ZRMENU_WND_SHADER_PARAMETERS];
+            zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS] =
+               !zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS];
          }
 
-         if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Test"))
+         if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Shader Parameters"))
          {
             zr_window_close(ctx, "Test");
-            zrmenu_state[ZRMENU_WND_TEST] = !zrmenu_state[ZRMENU_WND_TEST];
+            zr->window_enabled[ZRMENU_WND_TEST] =
+               !zr->window_enabled[ZRMENU_WND_TEST];
          }
 
-          zr_menu_end(ctx);
+         zr_menu_end(ctx);
       }
       zr_layout_row_push(ctx, 60);
       zr_menubar_end(ctx);
 
    }
+
+   if (zr->resize)
+      zr_window_set_size(ctx, zr_vec2(zr_window_get_size(ctx).x, zr->height));
+
    zr_end(ctx);
 }
 
-static void zrmenu_frame(struct zrmenu *gui, int width, int height)
+static void zrmenu_main(struct zrmenu *gui, zrmenu_handle_t *zr)
 {
    struct zr_context *ctx = &gui->ctx;
 
-   zrmenu_wnd_main(ctx, width, height, gui);
+   zrmenu_wnd_main(ctx, gui, zr);
 
-   if (zrmenu_state[ZRMENU_WND_TEST])
-      zrmenu_wnd_test(ctx, width, height, gui);
-   if (zrmenu_state[ZRMENU_WND_CONTROL])
-      zrmenu_wnd_control(ctx, width, height, gui);
-   if (zrmenu_state[ZRMENU_WND_SHADER_PARAMETERS])
-      zrmenu_wnd_shader_parameters(ctx, width, height, gui);
+   if (zr->window_enabled[ZRMENU_WND_CONTROL])
+      zrmenu_wnd_control(ctx, gui, zr);
+   if (zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS])
+      zrmenu_wnd_shader_parameters(ctx, gui, zr);
+   if (zr->window_enabled[ZRMENU_WND_TEST])
+      zrmenu_wnd_test(ctx, gui, zr);
 
-   zrmenu_state[ZRMENU_WND_CONTROL] = !zr_window_is_closed(ctx, "Control");
-   zrmenu_state[ZRMENU_WND_TEST] = !zr_window_is_closed(ctx, "Test");
-   zrmenu_state[ZRMENU_WND_SHADER_PARAMETERS] = !zr_window_is_closed(ctx, "Shader Parameters");
-
+   zr->window_enabled[ZRMENU_WND_CONTROL] = !zr_window_is_closed(ctx, "Control");
+   zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS] = !zr_window_is_closed(ctx, "Shader Parameters");
+   zr->window_enabled[ZRMENU_WND_TEST] = !zr_window_is_closed(ctx, "Test");
    zr_buffer_info(&gui->status, &gui->ctx.memory);
 }
 
-static char* zrmenu_file_load(const char* path, size_t* siz)
+static char* zrmenu_file_load(const char* path, size_t* size)
 {
    char *buf;
    FILE *fd = fopen(path, "rb");
 
    fseek(fd, 0, SEEK_END);
-   *siz = (size_t)ftell(fd);
+   *size = (size_t)ftell(fd);
    fseek(fd, 0, SEEK_SET);
-   buf = (char*)calloc(*siz, 1);
-   fread(buf, *siz, 1, fd);
+   buf = (char*)calloc(*size, 1);
+   fread(buf, *size, 1, fd);
    fclose(fd);
    return buf;
 }
@@ -896,7 +911,7 @@ static void zrmenu_input_keyboard(struct zr_context *ctx)
       zr_input_char(ctx, '1');
 }
 
-static void wimp_context_reset_textures(zrmenu_handle_t *wimp,
+static void zrmenu_context_reset_textures(zrmenu_handle_t *zr,
       const char *iconpath)
 {
    unsigned i;
@@ -919,7 +934,7 @@ static void wimp_context_reset_textures(zrmenu_handle_t *wimp,
 
       video_texture_image_load(&ti, path);
       video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR, &wimp->textures.list[i].id);
+            TEXTURE_FILTER_MIPMAP_LINEAR, &zr->textures.list[i].id);
 
       video_texture_image_free(&ti);
    }
@@ -927,15 +942,15 @@ static void wimp_context_reset_textures(zrmenu_handle_t *wimp,
 
 static void zrmenu_get_message(void *data, const char *message)
 {
-   zrmenu_handle_t *wimp   = (zrmenu_handle_t*)data;
+   zrmenu_handle_t *zr   = (zrmenu_handle_t*)data;
 
-   if (!wimp || !message || !*message)
+   if (!zr || !message || !*message)
       return;
 
-   strlcpy(wimp->box_message, message, sizeof(wimp->box_message));
+   strlcpy(zr->box_message, message, sizeof(zr->box_message));
 }
 
-static void zrmenu_draw_cursor(zrmenu_handle_t *wimp,
+static void zrmenu_draw_cursor(zrmenu_handle_t *zr,
       float *color,
       float x, float y, unsigned width, unsigned height)
 {
@@ -956,7 +971,7 @@ static void zrmenu_draw_cursor(zrmenu_handle_t *wimp,
    draw.height      = 64;
    draw.coords      = &coords;
    draw.matrix_data = NULL;
-   draw.texture     = wimp->textures.list[ZR_TEXTURE_POINTER].id;
+   draw.texture     = zr->textures.list[ZR_TEXTURE_POINTER].id;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
@@ -964,7 +979,7 @@ static void zrmenu_draw_cursor(zrmenu_handle_t *wimp,
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
-static void wimp_frame(void *data)
+static void zrmenu_frame(void *data)
 {
    float white_bg[16]=  {
       0.98, 0.98, 0.98, 1,
@@ -974,10 +989,10 @@ static void wimp_frame(void *data)
    };
 
    unsigned width, height, ticker_limit, i;
-   zrmenu_handle_t *wimp               = (zrmenu_handle_t*)data;
-   settings_t *settings            = config_get_ptr();
+   zrmenu_handle_t *zr = (zrmenu_handle_t*)data;
+   settings_t *settings  = config_get_ptr();
 
-   if (!wimp)
+   if (!zr)
       return;
 
    video_driver_get_size(&width, &height);
@@ -989,8 +1004,15 @@ static void wimp_frame(void *data)
    zrmenu_input_mouse_button(&gui.ctx);
    zrmenu_input_keyboard(&gui.ctx);
 
+   if (width != zr->width || height != zr->height)
+   {
+      zr->width = width;
+      zr->height = height;
+      zr->resize = true;
+   }
+
    zr_input_end(&gui.ctx);
-   zrmenu_frame(&gui, width, height);
+   zrmenu_main(&gui, zr);
    zr_device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
 
    if (settings->menu.mouse.enable && (settings->video.fullscreen
@@ -999,14 +1021,14 @@ static void wimp_frame(void *data)
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      zrmenu_draw_cursor(wimp, &white_bg[0], mouse_x, mouse_y, width, height);
+      zrmenu_draw_cursor(zr, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
-static void zrmenu_layout(zrmenu_handle_t *wimp)
+static void zrmenu_layout(zrmenu_handle_t *zr)
 {
    void *fb_buf;
    float scale_factor;
@@ -1017,14 +1039,26 @@ static void zrmenu_layout(zrmenu_handle_t *wimp)
    menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT,
          &new_header_height);
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
 
+}
+
+static void zrmenu_init_device(int width, int height)
+{
+   zr_alloc.userdata.ptr = NULL;
+   zr_alloc.alloc = zrmenu_mem_alloc;
+   zr_alloc.free = zrmenu_mem_free;
+   zr_buffer_init(&device.cmds, &zr_alloc, 1024);
+   usrfnt = font_bake_and_upload(&device, &font, zr_font_path, 16,
+      zr_font_default_glyph_ranges());
+   zr_init(&gui.ctx, &zr_alloc, &usrfnt);
+   zr_device_init(&device);
+   zrmenu_set_style(&gui.ctx, THEME_DARK);
 }
 
 static void *zrmenu_init(void **userdata)
 {
    settings_t *settings = config_get_ptr();
-   zrmenu_handle_t   *wimp = NULL;
+   zrmenu_handle_t   *zr = NULL;
    menu_handle_t *menu = (menu_handle_t*)
       calloc(1, sizeof(*menu));
    unsigned width, height = 0;
@@ -1037,27 +1071,18 @@ static void *zrmenu_init(void **userdata)
    if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT_FIRST_DRIVER, NULL))
       goto error;
 
-   wimp = (zrmenu_handle_t*)calloc(1, sizeof(zrmenu_handle_t));
+   zr = (zrmenu_handle_t*)calloc(1, sizeof(zrmenu_handle_t));
 
-   if (!wimp)
+   if (!zr)
       goto error;
 
-   *userdata = wimp;
+   *userdata = zr;
 
    fill_pathname_join(zr_font_path, settings->assets_directory,
          "zahnrad", sizeof(zr_font_path));
    fill_pathname_join(zr_font_path, zr_font_path,
          "DroidSans.ttf", sizeof(zr_font_path));
-
-   zr_alloc.userdata.ptr = NULL;
-   zr_alloc.alloc = zrmenu_mem_alloc;
-   zr_alloc.free = zrmenu_mem_free;
-   zr_buffer_init(&device.cmds, &zr_alloc, 1024);
-   usrfnt = font_bake_and_upload(&device, &font, zr_font_path, 16,
-      zr_font_default_glyph_ranges());
-   zr_init(&gui.ctx, &zr_alloc, &usrfnt);
-   zr_device_init(&device);
-   zrmenu_set_style(&gui.ctx, THEME_DARK);
+   zrmenu_init_device(width, height);
 
    return menu;
 error:
@@ -1068,9 +1093,9 @@ error:
 
 static void zrmenu_free(void *data)
 {
-   zrmenu_handle_t *wimp   = (zrmenu_handle_t*)data;
+   zrmenu_handle_t *zr   = (zrmenu_handle_t*)data;
 
-   if (!wimp)
+   if (!zr)
       return;
 
    free(font.glyphs);
@@ -1078,13 +1103,13 @@ static void zrmenu_free(void *data)
    zr_buffer_free(&device.cmds);
    zr_device_shutdown(&device);
 
-   gfx_coord_array_free(&wimp->list_block.carr);
+   gfx_coord_array_free(&zr->list_block.carr);
    font_driver_bind_block(NULL, NULL);
 }
 
-static void wimp_context_bg_destroy(zrmenu_handle_t *wimp)
+static void wimp_context_bg_destroy(zrmenu_handle_t *zr)
 {
-   if (!wimp)
+   if (!zr)
       return;
 
 }
@@ -1092,39 +1117,40 @@ static void wimp_context_bg_destroy(zrmenu_handle_t *wimp)
 static void zrmenu_context_destroy(void *data)
 {
    unsigned i;
-   zrmenu_handle_t *wimp   = (zrmenu_handle_t*)data;
+   zrmenu_handle_t *zr   = (zrmenu_handle_t*)data;
 
-   if (!wimp)
+   if (!zr)
       return;
 
    for (i = 0; i < ZR_TEXTURE_LAST; i++)
-      video_driver_texture_unload((uintptr_t*)&wimp->textures.list[i].id);
+      video_driver_texture_unload((uintptr_t*)&zr->textures.list[i].id);
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
 
-   wimp_context_bg_destroy(wimp);
+   wimp_context_bg_destroy(zr);
 }
 
 static void zrmenu_context_reset(void *data)
 {
    char iconpath[PATH_MAX_LENGTH] = {0};
-   zrmenu_handle_t *wimp              = (zrmenu_handle_t*)data;
+   zrmenu_handle_t *zr              = (zrmenu_handle_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned width, height = 0;
 
    video_driver_get_size(&width, &height);
 
-   if (!wimp || !settings)
+   if (!zr || !settings)
       return;
 
    fill_pathname_join(iconpath, settings->assets_directory,
          "zahnrad", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
-   zrmenu_layout(wimp);
-   //zrmenu_init(width, height);
-   wimp_context_bg_destroy(wimp);
-   wimp_context_reset_textures(wimp, iconpath);
+   zrmenu_layout(zr);
+   zrmenu_init_device(width, height);
+
+   wimp_context_bg_destroy(zr);
+   zrmenu_context_reset_textures(zr, iconpath);
 
    rarch_task_push_image_load(settings->menu.wallpaper, "cb_menu_wallpaper",
          menu_display_handle_wallpaper_upload, NULL);
@@ -1172,7 +1198,7 @@ menu_ctx_driver_t menu_ctx_zr = {
    zrmenu_get_message,
    generic_menu_iterate,
    NULL,
-   wimp_frame,
+   zrmenu_frame,
    zrmenu_init,
    zrmenu_free,
    zrmenu_context_reset,
