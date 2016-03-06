@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 
 #include <file/file_path.h>
