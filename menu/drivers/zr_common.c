@@ -14,6 +14,7 @@
 #include "../menu_driver.h"
 #include "../menu_hash.h"
 
+#include "../../gfx/common/gl_common.h"
 #include "../../core_info.h"
 #include "../../configuration.h"
 
@@ -414,6 +415,7 @@ void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr)
 {
    static int width = 600;
    static int height = 500;
+   char buf[PATH_MAX_LENGTH];
 
    settings_t *settings = config_get_ptr();
    struct zr_panel layout;
@@ -423,7 +425,9 @@ void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr)
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
          ZR_WINDOW_BORDER))
    {
-
+      zr_layout_row_dynamic(ctx, 50, 2);
+      zr_button_text_image(ctx, zr->icons.folder,
+          "Images", ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
 
    }
 

@@ -22,9 +22,14 @@ enum zrmenu_theme
    THEME_LIGHT
 };
 
+struct icons {
+    struct zr_image folder;
+};
+
 typedef struct zrmenu_handle
 {
    char box_message[PATH_MAX_LENGTH];
+   char assets_directory[PATH_MAX_LENGTH];
    bool window_enabled[5];
    bool resize;
    unsigned width;
@@ -33,6 +38,9 @@ typedef struct zrmenu_handle
    struct zr_context ctx;
    struct zr_memory_status status;
    enum zrmenu_theme theme;
+
+   struct icons icons;
+
 
    struct
    {

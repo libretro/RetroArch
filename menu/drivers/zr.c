@@ -47,6 +47,7 @@
 #include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../deps/stb/stb_image.h"
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../../gfx/common/gl_common.h"
@@ -79,7 +80,6 @@ struct zr_device
 
 static struct zr_device device;
 static struct zr_font font;
-static char zr_font_path[PATH_MAX_LENGTH];
 
 static struct zr_user_font usrfnt;
 static struct zr_allocator zr_alloc;
@@ -124,6 +124,24 @@ static char* zrmenu_file_load(const char* path, size_t* size)
    return buf;
 }
 
+static struct zr_image zr_icon_load(const char *filename)
+{
+    int x,y,n;
+    GLuint tex;
+    unsigned char *data = stbi_load(filename, &x, &y, &n, 0);
+    if (!data) printf("[SDL]: failed to load image: %s", filename);
+
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+    return zr_image_id((int)tex);
+}
 
 static void zr_device_init(struct zr_device *dev)
 {
@@ -589,14 +607,22 @@ static void zrmenu_layout(zrmenu_handle_t *zr)
 
 static void zrmenu_init_device(zrmenu_handle_t *zr)
 {
+   char buf[PATH_MAX_LENGTH];
+   fill_pathname_join(buf, zr->assets_directory,
+         "DroidSans.ttf", sizeof(buf));
+
    zr_alloc.userdata.ptr = NULL;
    zr_alloc.alloc = zrmenu_mem_alloc;
    zr_alloc.free = zrmenu_mem_free;
    zr_buffer_init(&device.cmds, &zr_alloc, 1024);
-   usrfnt = font_bake_and_upload(&device, &font, zr_font_path, 16,
+   usrfnt = font_bake_and_upload(&device, &font, buf, 16,
       zr_font_default_glyph_ranges());
    zr_init(&zr->ctx, &zr_alloc, &usrfnt);
    zr_device_init(&device);
+
+   fill_pathname_join(buf, zr->assets_directory, "folder.png", sizeof(buf));
+   zr->icons.folder = zr_icon_load(buf);
+
    zrmenu_set_style(&zr->ctx, THEME_DARK);
 }
 
@@ -623,10 +649,8 @@ static void *zrmenu_init(void **userdata)
 
    *userdata = zr;
 
-   fill_pathname_join(zr_font_path, settings->assets_directory,
-         "zahnrad", sizeof(zr_font_path));
-   fill_pathname_join(zr_font_path, zr_font_path,
-         "DroidSans.ttf", sizeof(zr_font_path));
+   fill_pathname_join(zr->assets_directory, settings->assets_directory,
+         "zahnrad", sizeof(zr->assets_directory));
    zrmenu_init_device(zr);
 
    zr->window_enabled[ZRMENU_WND_WIZARD] = true;
