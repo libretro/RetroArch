@@ -1234,7 +1234,6 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    RARCH_LOG("Vulkan dynamic library loaded.\n");
    
-   VKSYM(vk, CreateInstance);
    VKSYM(vk, GetInstanceProcAddr);
 
    app.pApplicationName              = "RetroArch";
@@ -1254,7 +1253,12 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       res                            = VK_SUCCESS;
    }
    else
+   {
+      /* This will be called with a NULL instance, which
+       * is what we want. */
+      VK_GET_INSTANCE_PROC_ADDR(CreateInstance);
       res = VKFUNC(vkCreateInstance)(&info, NULL, &vk->context.instance);
+   }
 
    /* Try different API versions if driver has compatible
     * but slightly different VK_API_VERSION. */

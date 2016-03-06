@@ -73,7 +73,8 @@ static const gfx_ctx_driver_t *vulkan_get_context(vk_t *vk)
 static void vulkan_init_render_pass(
       vk_t *vk)
 {
-   VkRenderPassCreateInfo rp_info; 
+   VkRenderPassCreateInfo rp_info = {
+      VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
    VkAttachmentDescription attachment = {0};
    VkSubpassDescription subpass       = {0};
    VkAttachmentReference color_ref    = { 0, 
