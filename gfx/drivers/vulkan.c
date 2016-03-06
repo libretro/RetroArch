@@ -73,7 +73,8 @@ static const gfx_ctx_driver_t *vulkan_get_context(vk_t *vk)
 static void vulkan_init_render_pass(
       vk_t *vk)
 {
-   VkRenderPassCreateInfo rp_info; 
+   VkRenderPassCreateInfo rp_info = {
+      VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
    VkAttachmentDescription attachment = {0};
    VkSubpassDescription subpass       = {0};
    VkAttachmentReference color_ref    = { 0, 
@@ -928,6 +929,8 @@ static void *vulkan_init(const video_info_t *video,
    gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
    vk->full_x = mode.width;
    vk->full_y = mode.height;
+   mode.width  = 0;
+   mode.height = 0;
 
    RARCH_LOG("Detecting screen resolution %ux%u.\n", vk->full_x, vk->full_y);
    interval = video->vsync ? settings->video.swap_interval : 0;
@@ -942,6 +945,8 @@ static void *vulkan_init(const video_info_t *video,
       win_height = vk->full_y;
    }
 
+   mode.width      = win_width;
+   mode.height     = win_height;
    mode.fullscreen = video->fullscreen;
    if (!gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode))
       goto error;
@@ -1355,9 +1360,13 @@ static bool vulkan_frame(void *data, const void *frame,
    VkClearValue clear_value;
    vk_t *vk                                      = (vk_t*)data;
    static struct retro_perf_counter frame_run    = {0};
+   static struct retro_perf_counter begin_cmd    = {0};
+   static struct retro_perf_counter build_cmd    = {0};
+   static struct retro_perf_counter end_cmd      = {0};
    static struct retro_perf_counter copy_frame   = {0};
    static struct retro_perf_counter swapbuffers  = {0};
    static struct retro_perf_counter queue_submit = {0};
+
    VkCommandBufferBeginInfo begin_info           = { 
       VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
    VkRenderPassBeginInfo rp_info                 = { 
@@ -1371,6 +1380,9 @@ static bool vulkan_frame(void *data, const void *frame,
    rarch_perf_init(&copy_frame, "copy_frame");
    rarch_perf_init(&swapbuffers, "swapbuffers");
    rarch_perf_init(&queue_submit, "queue_submit");
+   rarch_perf_init(&begin_cmd, "begin_command");
+   rarch_perf_init(&build_cmd, "build_command");
+   rarch_perf_init(&end_cmd, "end_command");
    retro_perf_start(&frame_run);
 
    video_driver_get_size(&width, &height);
@@ -1383,12 +1395,15 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_buffer_chain_discard(&chain->vbo);
    vulkan_buffer_chain_discard(&chain->ubo);
 
+   retro_perf_start(&begin_cmd);
    /* Start recording the command buffer. */
    vk->cmd          = chain->cmd;
    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
    VKFUNC(vkResetCommandBuffer)(vk->cmd, 0);
 
    VKFUNC(vkBeginCommandBuffer)(vk->cmd, &begin_info);
+   retro_perf_stop(&begin_cmd);
+
    memset(&vk->tracker, 0, sizeof(vk->tracker));
 
    /* Upload texture */
@@ -1446,6 +1461,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Notify filter chain about the new sync index. */
    vulkan_filter_chain_notify_sync_index(vk->filter_chain, frame_index);
 
+   retro_perf_start(&build_cmd);
    /* Render offscreen filter chain passes. */
    {
       /* Set the source texture in the filter chain */
@@ -1498,7 +1514,6 @@ static bool vulkan_frame(void *data, const void *frame,
 
    vulkan_filter_chain_build_offscreen_passes(
          vk->filter_chain, vk->cmd, &vk->vk_vp);
-
    /* Render to backbuffer. */
    clear_value.color.float32[0]     = 0.0f;
    clear_value.color.float32[1]     = 0.0f;
@@ -1568,6 +1583,7 @@ static bool vulkan_frame(void *data, const void *frame,
    if (vk->overlay.enable)
       vulkan_render_overlay(vk);
 #endif
+   retro_perf_stop(&build_cmd);
 
    /* End the render pass. We're done rendering to backbuffer now. */
    VKFUNC(vkCmdEndRenderPass)(vk->cmd);
@@ -1616,7 +1632,9 @@ static bool vulkan_frame(void *data, const void *frame,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
    }
 
+   retro_perf_start(&end_cmd);
    VKFUNC(vkEndCommandBuffer)(vk->cmd);
+   retro_perf_stop(&end_cmd);
 
    /* Submit command buffers to GPU. */
 
