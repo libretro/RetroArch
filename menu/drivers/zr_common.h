@@ -4,15 +4,6 @@
 enum
 {
    ZR_TEXTURE_POINTER = 0,
-   ZR_TEXTURE_BACK,
-   ZR_TEXTURE_SWITCH_ON,
-   ZR_TEXTURE_SWITCH_OFF,
-   ZR_TEXTURE_TAB_MAIN_ACTIVE,
-   ZR_TEXTURE_TAB_PLAYLISTS_ACTIVE,
-   ZR_TEXTURE_TAB_SETTINGS_ACTIVE,
-   ZR_TEXTURE_TAB_MAIN_PASSIVE,
-   ZR_TEXTURE_TAB_PLAYLISTS_PASSIVE,
-   ZR_TEXTURE_TAB_SETTINGS_PASSIVE,
    ZR_TEXTURE_LAST
 };
 
@@ -21,7 +12,8 @@ enum
    ZRMENU_WND_MAIN = 0,
    ZRMENU_WND_CONTROL,
    ZRMENU_WND_SHADER_PARAMETERS,
-   ZRMENU_WND_TEST
+   ZRMENU_WND_TEST,
+   ZRMENU_WND_WIZARD
 };
 
 enum zrmenu_theme
@@ -33,7 +25,7 @@ enum zrmenu_theme
 typedef struct zrmenu_handle
 {
    char box_message[PATH_MAX_LENGTH];
-   bool window_enabled[4];
+   bool window_enabled[5];
    bool resize;
    unsigned width;
    unsigned height;
@@ -52,6 +44,9 @@ typedef struct zrmenu_handle
 } zrmenu_handle_t;
 
 void zrmenu_set_style(struct zr_context *ctx, enum zrmenu_theme theme);
+
+
+void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr);
 void zrmenu_wnd_shader_parameters(struct zr_context *ctx, zrmenu_handle_t *zr);
 void zrmenu_wnd_control(struct zr_context *ctx, zrmenu_handle_t *zr);
 void zrmenu_wnd_test(struct zr_context *ctx, zrmenu_handle_t *zr);

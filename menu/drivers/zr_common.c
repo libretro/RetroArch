@@ -390,6 +390,13 @@ void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr)
                !zr->window_enabled[ZRMENU_WND_TEST];
          }
 
+         if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Wizard"))
+         {
+            zr_window_close(ctx, "Test");
+            zr->window_enabled[ZRMENU_WND_WIZARD] =
+               !zr->window_enabled[ZRMENU_WND_WIZARD];
+         }
+
          zr_menu_end(ctx);
       }
       zr_layout_row_push(ctx, 60);
@@ -399,6 +406,26 @@ void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr)
 
    if (zr->resize)
       zr_window_set_size(ctx, zr_vec2(zr_window_get_size(ctx).x, zr->height));
+
+   zr_end(ctx);
+}
+
+void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr)
+{
+   static int width = 600;
+   static int height = 500;
+
+   settings_t *settings = config_get_ptr();
+   struct zr_panel layout;
+
+   if (zr_begin(ctx, &layout, "Setup Wizard", zr_rect(zr->width/2 -width/2,
+      zr->height/2 - height/2, width, height),
+         ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
+         ZR_WINDOW_BORDER))
+   {
+
+
+   }
 
    zr_end(ctx);
 }

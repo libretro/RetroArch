@@ -88,18 +88,25 @@ static void zrmenu_main(zrmenu_handle_t *zr)
 {
    struct zr_context *ctx = &zr->ctx;
 
-   zrmenu_wnd_main(ctx, zr);
-
+   if (zr->window_enabled[ZRMENU_WND_MAIN])
+      zrmenu_wnd_main(ctx, zr);
    if (zr->window_enabled[ZRMENU_WND_CONTROL])
       zrmenu_wnd_control(ctx, zr);
    if (zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS])
       zrmenu_wnd_shader_parameters(ctx, zr);
    if (zr->window_enabled[ZRMENU_WND_TEST])
       zrmenu_wnd_test(ctx, zr);
+   if (zr->window_enabled[ZRMENU_WND_WIZARD])
+      zrmenu_wnd_wizard(ctx, zr);
 
    zr->window_enabled[ZRMENU_WND_CONTROL] = !zr_window_is_closed(ctx, "Control");
    zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS] = !zr_window_is_closed(ctx, "Shader Parameters");
    zr->window_enabled[ZRMENU_WND_TEST] = !zr_window_is_closed(ctx, "Test");
+   zr->window_enabled[ZRMENU_WND_WIZARD] = !zr_window_is_closed(ctx, "Setup Wizard");
+
+   if(zr_window_is_closed(ctx, "Setup Wizard"))
+      zr->window_enabled[ZRMENU_WND_MAIN] = true;
+
    zr_buffer_info(&zr->status, &zr->ctx.memory);
 }
 
@@ -621,6 +628,8 @@ static void *zrmenu_init(void **userdata)
    fill_pathname_join(zr_font_path, zr_font_path,
          "DroidSans.ttf", sizeof(zr_font_path));
    zrmenu_init_device(zr);
+
+   zr->window_enabled[ZRMENU_WND_WIZARD] = true;
 
    return menu;
 error:
