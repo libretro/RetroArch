@@ -411,6 +411,7 @@ ifeq ($(HAVE_MATERIALUI), 1)
 endif
 ifeq ($(HAVE_ZAHNRAD), 1)
    OBJ += deps/zahnrad/zahnrad.o
+   OBJ += menu/drivers/zr_common.o
    OBJ += menu/drivers/zr.o
    DEFINES += -DHAVE_ZAHNRAD
 endif
@@ -965,7 +966,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    # Retro Achievements (also depends on threads)
-   
+
    ifeq ($(HAVE_CHEEVOS), 1)
       ifeq ($(HAVE_THREADS), 1)
          DEFINES += -DHAVE_CHEEVOS
