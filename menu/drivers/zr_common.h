@@ -47,20 +47,31 @@ struct icons {
     struct zr_image speaker;
 };
 
+struct window {
+   bool open;
+   struct zr_vec2 position;
+   struct zr_vec2 size;
+};
+
 typedef struct zrmenu_handle
 {
-   char box_message[PATH_MAX_LENGTH];
-   char assets_directory[PATH_MAX_LENGTH];
-   bool window_enabled[5];
-   bool resize;
-   unsigned width;
-   unsigned height;
+   /* zahnrad mandatory */
    void *memory;
    struct zr_context ctx;
    struct zr_memory_status status;
-   enum zrmenu_theme theme;
 
+   /* window control variables */
+   struct zr_vec2 size;
+   bool size_changed;
+   struct window window[5];
+
+   /* menu driver variables */
+   char box_message[PATH_MAX_LENGTH];
+
+   /* image & theme related variables */
+   char assets_directory[PATH_MAX_LENGTH];
    struct icons icons;
+   enum zrmenu_theme theme;
 
 
    struct
@@ -73,7 +84,6 @@ typedef struct zrmenu_handle
 } zrmenu_handle_t;
 
 void zrmenu_set_style(struct zr_context *ctx, enum zrmenu_theme theme);
-
 
 void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr);
 void zrmenu_wnd_shader_parameters(struct zr_context *ctx, zrmenu_handle_t *zr);

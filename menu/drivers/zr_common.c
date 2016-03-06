@@ -347,7 +347,7 @@ void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr)
    settings_t *settings = config_get_ptr();
    struct zr_panel layout;
 
-   if (zr_begin(ctx, &layout, "Main", zr_rect(-1, -1, 120, zr->height + 1),
+   if (zr_begin(ctx, &layout, "Main", zr_rect(-1, -1, 120, zr->size.x + 1),
          ZR_WINDOW_NO_SCROLLBAR))
    {
       struct zr_panel menu;
@@ -390,29 +390,29 @@ void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr)
          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Control"))
          {
             zr_window_close(ctx, "Control");
-            zr->window_enabled[ZRMENU_WND_CONTROL] =
-               !zr->window_enabled[ZRMENU_WND_CONTROL];
+            zr->window[ZRMENU_WND_CONTROL].open =
+               !zr->window[ZRMENU_WND_CONTROL].open;
          }
 
          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Shader Parameters"))
          {
             zr_window_close(ctx, "Shader Parameters");
-            zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS] =
-               !zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS];
+            zr->window[ZRMENU_WND_SHADER_PARAMETERS].open =
+               !zr->window[ZRMENU_WND_SHADER_PARAMETERS].open;
          }
 
          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Test Window"))
          {
             zr_window_close(ctx, "Test");
-            zr->window_enabled[ZRMENU_WND_TEST] =
-               !zr->window_enabled[ZRMENU_WND_TEST];
+            zr->window[ZRMENU_WND_TEST].open =
+               !zr->window[ZRMENU_WND_TEST].open;
          }
 
          if (zr_menu_item(ctx, ZR_TEXT_LEFT, "Wizard"))
          {
             zr_window_close(ctx, "Test");
-            zr->window_enabled[ZRMENU_WND_WIZARD] =
-               !zr->window_enabled[ZRMENU_WND_WIZARD];
+            zr->window[ZRMENU_WND_WIZARD].open =
+               !zr->window[ZRMENU_WND_WIZARD].open;
          }
 
          zr_menu_end(ctx);
@@ -422,8 +422,8 @@ void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr)
 
    }
 
-   if (zr->resize)
-      zr_window_set_size(ctx, zr_vec2(zr_window_get_size(ctx).x, zr->height));
+   if (zr->size_changed)
+      zr_window_set_size(ctx, zr_vec2(zr_window_get_size(ctx).x, zr->size.y));
 
    zr_end(ctx);
 }
@@ -437,8 +437,8 @@ void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr)
    settings_t *settings = config_get_ptr();
    struct zr_panel layout;
 
-   if (zr_begin(ctx, &layout, "Setup Wizard", zr_rect(zr->width/2 -width/2,
-      zr->height/2 - height/2, width, height),
+   if (zr_begin(ctx, &layout, "Setup Wizard", zr_rect(zr->size.x/2 -width/2,
+      zr->size.y/2 - height/2, width, height),
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
          ZR_WINDOW_BORDER))
    {

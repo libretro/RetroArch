@@ -88,24 +88,24 @@ static void zrmenu_main(zrmenu_handle_t *zr)
 {
    struct zr_context *ctx = &zr->ctx;
 
-   if (zr->window_enabled[ZRMENU_WND_MAIN])
+   if (zr->window[ZRMENU_WND_MAIN].open)
       zrmenu_wnd_main(ctx, zr);
-   if (zr->window_enabled[ZRMENU_WND_CONTROL])
+   if (zr->window[ZRMENU_WND_CONTROL].open)
       zrmenu_wnd_control(ctx, zr);
-   if (zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS])
+   if (zr->window[ZRMENU_WND_SHADER_PARAMETERS].open)
       zrmenu_wnd_shader_parameters(ctx, zr);
-   if (zr->window_enabled[ZRMENU_WND_TEST])
+   if (zr->window[ZRMENU_WND_TEST].open)
       zrmenu_wnd_test(ctx, zr);
-   if (zr->window_enabled[ZRMENU_WND_WIZARD])
+   if (zr->window[ZRMENU_WND_WIZARD].open)
       zrmenu_wnd_wizard(ctx, zr);
 
-   zr->window_enabled[ZRMENU_WND_CONTROL] = !zr_window_is_closed(ctx, "Control");
-   zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS] = !zr_window_is_closed(ctx, "Shader Parameters");
-   zr->window_enabled[ZRMENU_WND_TEST] = !zr_window_is_closed(ctx, "Test");
-   zr->window_enabled[ZRMENU_WND_WIZARD] = !zr_window_is_closed(ctx, "Setup Wizard");
+   zr->window[ZRMENU_WND_CONTROL].open = !zr_window_is_closed(ctx, "Control");
+   zr->window[ZRMENU_WND_SHADER_PARAMETERS].open = !zr_window_is_closed(ctx, "Shader Parameters");
+   zr->window[ZRMENU_WND_TEST].open = !zr_window_is_closed(ctx, "Test");
+   zr->window[ZRMENU_WND_WIZARD].open = !zr_window_is_closed(ctx, "Setup Wizard");
 
    if(zr_window_is_closed(ctx, "Setup Wizard"))
-      zr->window_enabled[ZRMENU_WND_MAIN] = true;
+      zr->window[ZRMENU_WND_MAIN].open = true;
 
    zr_buffer_info(&zr->status, &zr->ctx.memory);
 }
@@ -567,11 +567,11 @@ static void zrmenu_frame(void *data)
    zrmenu_input_mouse_button(&zr->ctx);
    zrmenu_input_keyboard(&zr->ctx);
 
-   if (width != zr->width || height != zr->height)
+   if (width != zr->size.x || height != zr->size.y)
    {
-      zr->width = width;
-      zr->height = height;
-      zr->resize = true;
+      zr->size.x = width;
+      zr->size.y = height;
+      zr->size_changed = true;
    }
 
    zr_input_end(&zr->ctx);
@@ -655,7 +655,7 @@ static void *zrmenu_init(void **userdata)
          "zahnrad", sizeof(zr->assets_directory));
    zrmenu_init_device(zr);
 
-   zr->window_enabled[ZRMENU_WND_WIZARD] = true;
+   zr->window[ZRMENU_WND_WIZARD].open = true;
 
    return menu;
 error:
