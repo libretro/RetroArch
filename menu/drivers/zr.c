@@ -694,7 +694,7 @@ static void zrmenu_context_reset(void *data)
          menu_display_handle_wallpaper_upload, NULL);
 }
 
-static int wimp_environ(enum menu_environ_cb type, void *data, void *userdata)
+static int zrmenu_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
    switch (type)
    {
@@ -763,6 +763,6 @@ menu_ctx_driver_t menu_ctx_zr = {
    NULL,
    NULL,
    "zahnrad",
-   wimp_environ,
+   zrmenu_environ,
    NULL,
 };
