@@ -446,7 +446,7 @@ void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr)
       zr_button_text_image(ctx, zr->icons.folder,
           "Test", ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
 
-      zr_button_text_image(ctx, zr->icons.display,
+      zr_button_text_image(ctx, zr->icons.speaker,
            "Test", ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
 
    }
