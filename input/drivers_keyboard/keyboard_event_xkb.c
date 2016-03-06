@@ -124,7 +124,7 @@ error:
 
 /* FIXME: Don't handle composed and dead-keys properly. 
  * Waiting for support in libxkbcommon ... */
-void handle_xkb(int code, int value)
+int handle_xkb(int code, int value)
 {
    unsigned i;
    const xkb_keysym_t *syms = NULL;
@@ -134,7 +134,7 @@ void handle_xkb(int code, int value)
    int xk_code              = code + 8;
 
    if (!xkb_state)
-      return;
+      return -1;
 
    if (value == 2) /* Repeat, release first explicitly. */
       xkb_state_update_key(xkb_state, xk_code, XKB_KEY_UP);
@@ -143,7 +143,7 @@ void handle_xkb(int code, int value)
       num_syms = xkb_state_key_get_syms(xkb_state, xk_code, &syms);
 
    if (!syms)
-      return;
+      return -1;
 
    xkb_state_update_key(xkb_state, xk_code, value ? XKB_KEY_DOWN : XKB_KEY_UP);
 
@@ -165,4 +165,6 @@ void handle_xkb(int code, int value)
    for (i = 1; i < num_syms; i++)
       input_keyboard_event(value, RETROK_UNKNOWN,
             xkb_keysym_to_utf32(syms[i]), mod, RETRO_DEVICE_KEYBOARD);
+
+   return 0;
 }
