@@ -928,6 +928,8 @@ static void *vulkan_init(const video_info_t *video,
    gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
    vk->full_x = mode.width;
    vk->full_y = mode.height;
+   mode.width  = 0;
+   mode.height = 0;
 
    RARCH_LOG("Detecting screen resolution %ux%u.\n", vk->full_x, vk->full_y);
    interval = video->vsync ? settings->video.swap_interval : 0;
@@ -942,6 +944,8 @@ static void *vulkan_init(const video_info_t *video,
       win_height = vk->full_y;
    }
 
+   mode.width      = win_width;
+   mode.height     = win_height;
    mode.fullscreen = video->fullscreen;
    if (!gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode))
       goto error;
