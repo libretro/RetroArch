@@ -100,8 +100,6 @@ struct zrmenu
    enum zrmenu_theme theme;
 };
 
-static struct zrmenu gui;
-
 typedef struct zrmenu_handle
 {
    char box_message[PATH_MAX_LENGTH];
@@ -109,6 +107,7 @@ typedef struct zrmenu_handle
    bool resize;
    unsigned width;
    unsigned height;
+   struct zrmenu gui;
 
    struct
    {
@@ -187,7 +186,7 @@ static void zrmenu_set_style(struct zr_context *ctx, enum zrmenu_theme theme)
    unsigned i;
 
    for (i = 0; i < ZR_ROUNDING_MAX; ++i)
-      (&gui.ctx)->style.rounding[i] = 0;
+      (ctx)->style.rounding[i] = 0;
 
    switch (theme)
    {
@@ -290,8 +289,7 @@ static void zrmenu_set_style(struct zr_context *ctx, enum zrmenu_theme theme)
    }
 }
 
-static void zrmenu_wnd_shader_parameters(struct zr_context *ctx, struct zrmenu *gui,
-   zrmenu_handle_t *zr)
+static void zrmenu_wnd_shader_parameters(struct zr_context *ctx, zrmenu_handle_t *zr)
 {
    unsigned i;
    video_shader_ctx_t shader_info;
@@ -304,7 +302,7 @@ static void zrmenu_wnd_shader_parameters(struct zr_context *ctx, struct zrmenu *
    {
       struct zr_panel combo;
       static const char *themes[] = {"Dark", "Light"};
-      enum   zrmenu_theme old         = gui->theme;
+      enum   zrmenu_theme old         = zr->gui.theme;
 
       zr_layout_row_dynamic(ctx, 30, 1);
 
@@ -334,8 +332,7 @@ static void zrmenu_wnd_shader_parameters(struct zr_context *ctx, struct zrmenu *
    zr_end(ctx);
 }
 
-bool zrmenu_wnd_control(struct zr_context *ctx, struct zrmenu *gui,
-   zrmenu_handle_t *zr)
+bool zrmenu_wnd_control(struct zr_context *ctx, zrmenu_handle_t *zr)
 {
    static int wnd_x = 900;
    static int wnd_y = 60;
@@ -355,13 +352,13 @@ bool zrmenu_wnd_control(struct zr_context *ctx, struct zrmenu *gui,
       {
          zr_layout_row_dynamic(ctx, 20, 2);
          zr_label(ctx,"Total:", ZR_TEXT_LEFT);
-         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", gui->status.size);
+         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", zr->gui.status.size);
          zr_label(ctx,"Used:", ZR_TEXT_LEFT);
-         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", gui->status.allocated);
+         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", zr->gui.status.allocated);
          zr_label(ctx,"Required:", ZR_TEXT_LEFT);
-         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", gui->status.needed);
+         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", zr->gui.status.needed);
          zr_label(ctx,"Calls:", ZR_TEXT_LEFT);
-         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", gui->status.calls);
+         zr_labelf(ctx, ZR_TEXT_LEFT, "%lu", zr->gui.status.calls);
          zr_layout_pop(ctx);
       }
       if (zr_layout_push(ctx, ZR_LAYOUT_TAB, "Properties", ZR_MINIMIZED))
@@ -392,8 +389,7 @@ bool zrmenu_wnd_control(struct zr_context *ctx, struct zrmenu *gui,
    return ret;
 }
 
-static void zrmenu_wnd_test(struct zr_context *ctx, struct zrmenu *gui,
-   zrmenu_handle_t *zr)
+static void zrmenu_wnd_test(struct zr_context *ctx, zrmenu_handle_t *zr)
 {
    settings_t *settings = config_get_ptr();
 
@@ -406,7 +402,7 @@ static void zrmenu_wnd_test(struct zr_context *ctx, struct zrmenu *gui,
       struct zr_panel combo;
       menu_entry_t entry;
       static const char *themes[] = {"Dark", "Light"};
-      enum   zrmenu_theme old         = gui->theme;
+      enum   zrmenu_theme old         = zr->gui.theme;
 
       zr_layout_row_dynamic(ctx, 30, 2);
 
@@ -435,14 +431,14 @@ static void zrmenu_wnd_test(struct zr_context *ctx, struct zrmenu *gui,
       zr_property_int(ctx, "Max Users:", 1, (int*)&(settings->input.max_users),
          MAX_USERS, 1, 1);
 
-      if (zr_combo_begin_text(ctx, &combo, themes[gui->theme], 200))
+      if (zr_combo_begin_text(ctx, &combo, themes[zr->gui.theme], 200))
       {
          zr_layout_row_dynamic(ctx, 25, 1);
-         gui->theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED)
-            ? THEME_DARK : gui->theme;
-         gui->theme = zr_combo_item(ctx, themes[THEME_LIGHT], ZR_TEXT_CENTERED)
-            ? THEME_LIGHT : gui->theme;
-         if (old != gui->theme) zrmenu_set_style(ctx, gui->theme);
+         zr->gui.theme = zr_combo_item(ctx, themes[THEME_DARK], ZR_TEXT_CENTERED)
+            ? THEME_DARK : zr->gui.theme;
+         zr->gui.theme = zr_combo_item(ctx, themes[THEME_LIGHT], ZR_TEXT_CENTERED)
+            ? THEME_LIGHT : zr->gui.theme;
+         if (old != zr->gui.theme) zrmenu_set_style(ctx, zr->gui.theme);
          zr_combo_end(ctx);
       }
 
@@ -465,8 +461,7 @@ static void zrmenu_wnd_test(struct zr_context *ctx, struct zrmenu *gui,
    zr_end(ctx);
 }
 
-static void zrmenu_wnd_main(struct zr_context *ctx, struct zrmenu *gui,
-   zrmenu_handle_t *zr)
+static void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr)
 {
    settings_t *settings = config_get_ptr();
    struct zr_panel layout;
@@ -545,23 +540,23 @@ static void zrmenu_wnd_main(struct zr_context *ctx, struct zrmenu *gui,
    zr_end(ctx);
 }
 
-static void zrmenu_main(struct zrmenu *gui, zrmenu_handle_t *zr)
+static void zrmenu_main(zrmenu_handle_t *zr)
 {
-   struct zr_context *ctx = &gui->ctx;
+   struct zr_context *ctx = &zr->gui.ctx;
 
-   zrmenu_wnd_main(ctx, gui, zr);
+   zrmenu_wnd_main(ctx, zr);
 
    if (zr->window_enabled[ZRMENU_WND_CONTROL])
-      zrmenu_wnd_control(ctx, gui, zr);
+      zrmenu_wnd_control(ctx, zr);
    if (zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS])
-      zrmenu_wnd_shader_parameters(ctx, gui, zr);
+      zrmenu_wnd_shader_parameters(ctx, zr);
    if (zr->window_enabled[ZRMENU_WND_TEST])
-      zrmenu_wnd_test(ctx, gui, zr);
+      zrmenu_wnd_test(ctx, zr);
 
    zr->window_enabled[ZRMENU_WND_CONTROL] = !zr_window_is_closed(ctx, "Control");
    zr->window_enabled[ZRMENU_WND_SHADER_PARAMETERS] = !zr_window_is_closed(ctx, "Shader Parameters");
    zr->window_enabled[ZRMENU_WND_TEST] = !zr_window_is_closed(ctx, "Test");
-   zr_buffer_info(&gui->status, &gui->ctx.memory);
+   zr_buffer_info(&zr->gui.status, &zr->gui.ctx.memory);
 }
 
 static char* zrmenu_file_load(const char* path, size_t* size)
@@ -998,10 +993,10 @@ static void zrmenu_frame(void *data)
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   zr_input_begin(&gui.ctx);
-   zrmenu_input_mouse_movement(&gui.ctx);
-   zrmenu_input_mouse_button(&gui.ctx);
-   zrmenu_input_keyboard(&gui.ctx);
+   zr_input_begin(&zr->gui.ctx);
+   zrmenu_input_mouse_movement(&zr->gui.ctx);
+   zrmenu_input_mouse_button(&zr->gui.ctx);
+   zrmenu_input_keyboard(&zr->gui.ctx);
 
    if (width != zr->width || height != zr->height)
    {
@@ -1010,9 +1005,9 @@ static void zrmenu_frame(void *data)
       zr->resize = true;
    }
 
-   zr_input_end(&gui.ctx);
-   zrmenu_main(&gui, zr);
-   zr_device_draw(&device, &gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
+   zr_input_end(&zr->gui.ctx);
+   zrmenu_main(zr);
+   zr_device_draw(&device, &zr->gui.ctx, width, height, ZR_ANTI_ALIASING_ON);
 
    if (settings->menu.mouse.enable && (settings->video.fullscreen
             || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
@@ -1041,7 +1036,7 @@ static void zrmenu_layout(zrmenu_handle_t *zr)
 
 }
 
-static void zrmenu_init_device(int width, int height)
+static void zrmenu_init_device(zrmenu_handle_t *zr)
 {
    zr_alloc.userdata.ptr = NULL;
    zr_alloc.alloc = zrmenu_mem_alloc;
@@ -1049,9 +1044,9 @@ static void zrmenu_init_device(int width, int height)
    zr_buffer_init(&device.cmds, &zr_alloc, 1024);
    usrfnt = font_bake_and_upload(&device, &font, zr_font_path, 16,
       zr_font_default_glyph_ranges());
-   zr_init(&gui.ctx, &zr_alloc, &usrfnt);
+   zr_init(&zr->gui.ctx, &zr_alloc, &usrfnt);
    zr_device_init(&device);
-   zrmenu_set_style(&gui.ctx, THEME_DARK);
+   zrmenu_set_style(&zr->gui.ctx, THEME_DARK);
 }
 
 static void *zrmenu_init(void **userdata)
@@ -1081,7 +1076,7 @@ static void *zrmenu_init(void **userdata)
          "zahnrad", sizeof(zr_font_path));
    fill_pathname_join(zr_font_path, zr_font_path,
          "DroidSans.ttf", sizeof(zr_font_path));
-   zrmenu_init_device(width, height);
+   zrmenu_init_device(zr);
 
    return menu;
 error:
@@ -1098,7 +1093,7 @@ static void zrmenu_free(void *data)
       return;
 
    free(font.glyphs);
-   zr_free(&gui.ctx);
+   zr_free(&zr->gui.ctx);
    zr_buffer_free(&device.cmds);
    zr_device_shutdown(&device);
 
@@ -1146,7 +1141,7 @@ static void zrmenu_context_reset(void *data)
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    zrmenu_layout(zr);
-   zrmenu_init_device(width, height);
+   zrmenu_init_device(zr);
 
    wimp_context_bg_destroy(zr);
    zrmenu_context_reset_textures(zr, iconpath);
