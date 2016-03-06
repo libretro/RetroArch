@@ -622,6 +622,8 @@ static void zrmenu_init_device(zrmenu_handle_t *zr)
 
    fill_pathname_join(buf, zr->assets_directory, "folder.png", sizeof(buf));
    zr->icons.folder = zr_icon_load(buf);
+   fill_pathname_join(buf, zr->assets_directory, "speaker.png", sizeof(buf));
+   zr->icons.folder = zr_icon_load(buf);
 
    zrmenu_set_style(&zr->ctx, THEME_DARK);
 }
