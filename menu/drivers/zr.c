@@ -129,7 +129,7 @@ static struct zr_image zr_icon_load(const char *filename)
     int x,y,n;
     GLuint tex;
     unsigned char *data = stbi_load(filename, &x, &y, &n, 0);
-    if (!data) printf("[SDL]: failed to load image: %s", filename);
+    if (!data) printf("Failed to load image: %s\n", filename);
 
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
