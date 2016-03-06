@@ -32,28 +32,34 @@ static dylib_t vulkan_library;
 static VkInstance cached_instance;
 static VkDevice cached_device;
 
-#define VKSYM(vk, entrypoint) do {                                                         \
-   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) dylib_proc(vulkan_library, "vk"#entrypoint);\
-   if (vkcfp.vk##entrypoint == NULL) {                                                    \
-      RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);               \
-      return false;                                                                        \
-   }                                                                                       \
+#define VKSYM(vk, entrypoint) do {                                                          \
+   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) dylib_proc(vulkan_library, "vk"#entrypoint); \
+   if (vkcfp.vk##entrypoint == NULL) {                                                      \
+      RARCH_ERR("dylib_proc failed to find vk%s\n", #entrypoint);                           \
+      return false;                                                                         \
+   }                                                                                        \
 } while(0)
 
-#define VK_GET_INSTANCE_PROC_ADDR(vk, inst, entrypoint) do {                               \
-   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) vkcfp.vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
-   if (vkcfp.vk##entrypoint == NULL) {                                                    \
-      RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);               \
-      return false;                                                                        \
-   }                                                                                       \
+#define VK_GET_INSTANCE_PROC_ADDR(entrypoint) do {                                                \
+   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) vkcfp.vkGetInstanceProcAddr(vk->context.instance,  \
+         "vk"#entrypoint);                                                                        \
+   if (vkcfp.vk##entrypoint == NULL)                                                              \
+      vkcfp.vk##entrypoint = (PFN_vk##entrypoint) dylib_proc(vulkan_library, "vk"#entrypoint);    \
+   if (vkcfp.vk##entrypoint == NULL) {                                                            \
+      RARCH_ERR("vkGetInstanceProcAddr failed to find vk%s\n", #entrypoint);                      \
+      return false;                                                                               \
+   }                                                                                              \
 } while(0)
 
-#define VK_GET_DEVICE_PROC_ADDR(vk, dev, entrypoint) do {                                \
-   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) vkcfp.vkGetDeviceProcAddr(dev, "vk" #entrypoint); \
-   if (vkcfp.vk##entrypoint == NULL) {                                                  \
-      RARCH_ERR("vkGetDeviceProcAddr failed to find vk%s\n", #entrypoint);               \
-      return false;                                                                      \
-   }                                                                                     \
+#define VK_GET_DEVICE_PROC_ADDR(entrypoint) do {                                                 \
+   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) vkcfp.vkGetDeviceProcAddr(vk->context.device,     \
+         "vk" #entrypoint);                                                                      \
+   if (vkcfp.vk##entrypoint == NULL)                                                             \
+      vkcfp.vk##entrypoint = (PFN_vk##entrypoint) dylib_proc(vulkan_library, "vk"#entrypoint);   \
+   if (vkcfp.vk##entrypoint == NULL) {                                                           \
+      RARCH_ERR("vkGetDeviceProcAddr failed to find vk%s\n", #entrypoint);                       \
+      return false;                                                                              \
+   }                                                                                             \
 } while(0)
 
 uint32_t vulkan_find_memory_type(
@@ -1006,11 +1012,174 @@ void vulkan_buffer_chain_free(
    memset(chain, 0, sizeof(*chain));
 }
 
+static bool vulkan_load_instance_symbols(gfx_ctx_vulkan_data_t *vk)
+{
+   VK_GET_INSTANCE_PROC_ADDR(GetDeviceProcAddr);
+   VK_GET_INSTANCE_PROC_ADDR(DestroyInstance);
+   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceFormatProperties);
+   VK_GET_INSTANCE_PROC_ADDR(EnumeratePhysicalDevices);
+   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceProperties);
+   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceMemoryProperties);
+   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceQueueFamilyProperties);
+   VK_GET_INSTANCE_PROC_ADDR(CreateDevice);
+
+   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfaceSupportKHR);
+   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfaceCapabilitiesKHR);
+   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfaceFormatsKHR);
+   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfacePresentModesKHR);
+   VK_GET_INSTANCE_PROC_ADDR(DestroySurfaceKHR);
+   return true;
+}
+
+static bool vulkan_load_device_symbols(gfx_ctx_vulkan_data_t *vk)
+{
+   /* Memory */
+   VK_GET_DEVICE_PROC_ADDR(AllocateMemory);
+   VK_GET_DEVICE_PROC_ADDR(FreeMemory);
+
+   /* Device destruction */
+   VK_GET_DEVICE_PROC_ADDR(DestroyDevice);
+
+   /* Waiting */
+   VK_GET_DEVICE_PROC_ADDR(DeviceWaitIdle);
+
+   /* Queues */
+   VK_GET_DEVICE_PROC_ADDR(GetDeviceQueue);
+   VK_GET_DEVICE_PROC_ADDR(QueueWaitIdle);
+   VK_GET_DEVICE_PROC_ADDR(QueueSubmit);
+
+   /* Semaphores */
+   VK_GET_DEVICE_PROC_ADDR(CreateSemaphore);
+   VK_GET_DEVICE_PROC_ADDR(DestroySemaphore);
+
+   /* Buffers */
+   VK_GET_DEVICE_PROC_ADDR(CreateBuffer);
+   VK_GET_DEVICE_PROC_ADDR(DestroyBuffer);
+
+   /* Fences */
+   VK_GET_DEVICE_PROC_ADDR(CreateFence);
+   VK_GET_DEVICE_PROC_ADDR(DestroyFence);
+   VK_GET_DEVICE_PROC_ADDR(ResetFences);
+   VK_GET_DEVICE_PROC_ADDR(WaitForFences);
+
+   /* Images */
+   VK_GET_DEVICE_PROC_ADDR(CreateImage);
+   VK_GET_DEVICE_PROC_ADDR(DestroyImage);
+   VK_GET_DEVICE_PROC_ADDR(GetImageSubresourceLayout);
+
+   /* Images (Resource Memory Association) */
+   VK_GET_DEVICE_PROC_ADDR(GetBufferMemoryRequirements);
+   VK_GET_DEVICE_PROC_ADDR(BindBufferMemory);
+   VK_GET_DEVICE_PROC_ADDR(BindImageMemory);
+
+   /* Image Views */
+   VK_GET_DEVICE_PROC_ADDR(CreateImageView);
+   VK_GET_DEVICE_PROC_ADDR(DestroyImageView);
+
+   /* Resource Memory Associations */
+   VK_GET_DEVICE_PROC_ADDR(GetImageMemoryRequirements);
+
+   /* Descriptor pools */
+   VK_GET_DEVICE_PROC_ADDR(CreateDescriptorPool);
+   VK_GET_DEVICE_PROC_ADDR(DestroyDescriptorPool);
+
+   /* Descriptor sets */
+   VK_GET_DEVICE_PROC_ADDR(AllocateDescriptorSets);
+   VK_GET_DEVICE_PROC_ADDR(FreeDescriptorSets);
+   VK_GET_DEVICE_PROC_ADDR(UpdateDescriptorSets);
+
+   /* Descriptor Set Layout */
+   VK_GET_DEVICE_PROC_ADDR(CreateDescriptorSetLayout);
+   VK_GET_DEVICE_PROC_ADDR(DestroyDescriptorSetLayout);
+
+   /* Framebuffers */
+   VK_GET_DEVICE_PROC_ADDR(CreateFramebuffer);
+   VK_GET_DEVICE_PROC_ADDR(DestroyFramebuffer);
+   VK_GET_DEVICE_PROC_ADDR(AllocateCommandBuffers);
+   VK_GET_DEVICE_PROC_ADDR(FreeCommandBuffers);
+
+   /* Memory allocation */
+   VK_GET_DEVICE_PROC_ADDR(MapMemory);
+   VK_GET_DEVICE_PROC_ADDR(UnmapMemory);
+
+   /* Render Passes */
+   VK_GET_DEVICE_PROC_ADDR(CreateRenderPass);
+   VK_GET_DEVICE_PROC_ADDR(DestroyRenderPass);
+
+   /* Pipelines */
+   VK_GET_DEVICE_PROC_ADDR(DestroyPipeline);
+   VK_GET_DEVICE_PROC_ADDR(CreateGraphicsPipelines);
+
+   /* Shaders */
+   VK_GET_DEVICE_PROC_ADDR(CreateShaderModule);
+   VK_GET_DEVICE_PROC_ADDR(DestroyShaderModule);
+
+   /* Pipeline Layouts */
+   VK_GET_DEVICE_PROC_ADDR(CreatePipelineLayout);
+   VK_GET_DEVICE_PROC_ADDR(DestroyPipelineLayout);
+
+   /* Pipeline Cache */
+   VK_GET_DEVICE_PROC_ADDR(CreatePipelineCache);
+   VK_GET_DEVICE_PROC_ADDR(DestroyPipelineCache);
+
+   /* Command buffers */
+   VK_GET_DEVICE_PROC_ADDR(CreateCommandPool);
+   VK_GET_DEVICE_PROC_ADDR(DestroyCommandPool);
+   VK_GET_DEVICE_PROC_ADDR(BeginCommandBuffer);
+   VK_GET_DEVICE_PROC_ADDR(ResetCommandBuffer);
+   VK_GET_DEVICE_PROC_ADDR(EndCommandBuffer);
+
+   /* Image commands */
+   VK_GET_DEVICE_PROC_ADDR(CmdCopyImage);
+
+   /* Vertex input descriptions */
+   VK_GET_DEVICE_PROC_ADDR(CmdBindVertexBuffers);
+
+   /* Descriptor Set commands */
+   VK_GET_DEVICE_PROC_ADDR(CmdBindDescriptorSets);
+
+   /* Fragment operations */
+   VK_GET_DEVICE_PROC_ADDR(CmdSetScissor);
+
+   /* Render Pass commands */
+   VK_GET_DEVICE_PROC_ADDR(CmdBeginRenderPass);
+   VK_GET_DEVICE_PROC_ADDR(CmdEndRenderPass);
+
+   /* Samplers */
+   VK_GET_DEVICE_PROC_ADDR(CreateSampler);
+   VK_GET_DEVICE_PROC_ADDR(DestroySampler);
+
+   /* Fixed-function vertex postprocessing */
+   VK_GET_DEVICE_PROC_ADDR(CmdSetViewport);
+
+   /* Clear commands */
+   VK_GET_DEVICE_PROC_ADDR(CmdClearAttachments);
+
+   /* Pipeline */
+   VK_GET_DEVICE_PROC_ADDR(CmdBindPipeline);
+
+   /* Pipeline Barriers */
+   VK_GET_DEVICE_PROC_ADDR(CmdPipelineBarrier);
+
+   /* Drawing commands */
+   VK_GET_DEVICE_PROC_ADDR(CmdDraw);
+
+   /* Swapchain */
+   VK_GET_DEVICE_PROC_ADDR(CreateSwapchainKHR);
+   VK_GET_DEVICE_PROC_ADDR(DestroySwapchainKHR);
+   VK_GET_DEVICE_PROC_ADDR(GetSwapchainImagesKHR);
+   VK_GET_DEVICE_PROC_ADDR(AcquireNextImageKHR);
+   VK_GET_DEVICE_PROC_ADDR(QueuePresentKHR);
+
+   return true;
+}
+
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type)
 {
    unsigned i;
    uint32_t queue_count;
+   VkResult res;
    VkQueueFamilyProperties queue_properties[32];
    VkInstanceCreateInfo info          = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
    VkApplicationInfo app              = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
@@ -1066,11 +1235,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    RARCH_LOG("Vulkan dynamic library loaded.\n");
    
    VKSYM(vk, CreateInstance);
-   VKSYM(vk, DestroyInstance);
-   VKSYM(vk, AllocateMemory);
-   VKSYM(vk, FreeMemory);
    VKSYM(vk, GetInstanceProcAddr);
-   VKSYM(vk, GetDeviceProcAddr);
 
    app.pApplicationName              = "RetroArch";
    app.applicationVersion            = 0;
@@ -1086,112 +1251,27 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    {
       vk->context.instance           = cached_instance;
       cached_instance                = NULL;
+      res                            = VK_SUCCESS;
    }
-   else if (VKFUNC(vkCreateInstance)(&info, NULL, &vk->context.instance) != VK_SUCCESS)
+   else
+      res = VKFUNC(vkCreateInstance)(&info, NULL, &vk->context.instance);
+
+   /* Try different API versions if driver has compatible
+    * but slightly different VK_API_VERSION. */
+   for (i = 1; i < 4 && res == VK_ERROR_INCOMPATIBLE_DRIVER; i++)
+   {
+      app.apiVersion = VK_MAKE_VERSION(1, 0, i);
+      res = VKFUNC(vkCreateInstance)(&info, NULL, &vk->context.instance);
+   }
+
+   if (res == VK_ERROR_INCOMPATIBLE_DRIVER)
    {
       RARCH_ERR("Failed to create Vulkan instance.\n");
       return false;
    }
 
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance,
-         GetPhysicalDeviceFormatProperties);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance,
-         EnumeratePhysicalDevices);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance,
-         GetPhysicalDeviceProperties);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance,
-         GetPhysicalDeviceMemoryProperties);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance,
-         GetPhysicalDeviceQueueFamilyProperties);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDevice);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyDevice);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DeviceWaitIdle);
-
-   /* Queues */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetDeviceQueue);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, QueueWaitIdle);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, QueueSubmit);
-
-   /* Semaphores */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateSemaphore);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroySemaphore);
-
-   /* Buffers */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateBuffer);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyBuffer);
-
-   /* Fences */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFence);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyFence);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, ResetFences);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, WaitForFences);
-
-   /* Images */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImage);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImage);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetImageSubresourceLayout);
-
-   /* Images (Resource Memory Association) */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetBufferMemoryRequirements);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, BindBufferMemory);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, BindImageMemory);
-
-   /* Image Views */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateImageView);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyImageView);
-
-   /* Resource Memory Associations */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, GetImageMemoryRequirements);
-
-   /* Descriptor pools */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDescriptorPool);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyDescriptorPool);
-
-   /* Descriptor sets */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, AllocateDescriptorSets);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, FreeDescriptorSets);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, UpdateDescriptorSets);
-
-   /* Descriptor Set Layout */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateDescriptorSetLayout);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyDescriptorSetLayout);
-
-   /* Framebuffers */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateFramebuffer);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyFramebuffer);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, AllocateCommandBuffers);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, FreeCommandBuffers);
-
-   /* Memory allocation */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, MapMemory);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, UnmapMemory);
-
-   /* Render Passes */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateRenderPass);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyRenderPass);
-
-   /* Pipelines */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyPipeline);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateGraphicsPipelines);
-
-   /* Shaders */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateShaderModule);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyShaderModule);
-
-   /* Pipeline Layouts */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineLayout);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyPipelineLayout);
-
-   /* Pipeline Cache */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreatePipelineCache);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyPipelineCache);
-
-   /* Command buffers */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateCommandPool);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroyCommandPool);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, BeginCommandBuffer);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, ResetCommandBuffer);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, EndCommandBuffer);
+   if (!vulkan_load_instance_symbols(vk))
+      return false;
 
    if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)
@@ -1269,61 +1349,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
             NULL, &vk->context.device) != VK_SUCCESS)
       return false;
 
-   /* Image commands */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdCopyImage);
-
-   /* Vertex input descriptions */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindVertexBuffers);
-
-   /* Descriptor Set commands */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindDescriptorSets);
-
-   /* Fragment operations */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetScissor);
-
-   /* Render Pass commands */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBeginRenderPass);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdEndRenderPass);
-
-   /* Samplers */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CreateSampler);
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, DestroySampler);
-
-   /* Fixed-function vertex postprocessing */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdSetViewport);
-
-   /* Clear commands */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdClearAttachments);
-
-   /* Pipeline */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdBindPipeline);
-
-   /* Pipeline Barriers */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdPipelineBarrier);
-
-   /* Drawing commands */
-   VK_GET_INSTANCE_PROC_ADDR(vk, vk->context.instance, CmdDraw);
-
-   VK_GET_INSTANCE_PROC_ADDR(vk,
-         vk->context.instance, GetPhysicalDeviceSurfaceSupportKHR);
-   VK_GET_INSTANCE_PROC_ADDR(vk,
-         vk->context.instance, GetPhysicalDeviceSurfaceCapabilitiesKHR);
-   VK_GET_INSTANCE_PROC_ADDR(vk,
-         vk->context.instance, GetPhysicalDeviceSurfaceFormatsKHR);
-   VK_GET_INSTANCE_PROC_ADDR(vk,
-         vk->context.instance, GetPhysicalDeviceSurfacePresentModesKHR);
-   VK_GET_INSTANCE_PROC_ADDR(vk,
-         vk->context.instance, DestroySurfaceKHR);
-   VK_GET_DEVICE_PROC_ADDR(vk,
-         vk->context.device, CreateSwapchainKHR);
-   VK_GET_DEVICE_PROC_ADDR(vk,
-         vk->context.device, DestroySwapchainKHR);
-   VK_GET_DEVICE_PROC_ADDR(vk,
-         vk->context.device, GetSwapchainImagesKHR);
-   VK_GET_DEVICE_PROC_ADDR(vk,
-         vk->context.device, AcquireNextImageKHR);
-   VK_GET_DEVICE_PROC_ADDR(vk,
-         vk->context.device, QueuePresentKHR);
+   if (!vulkan_load_device_symbols(vk))
+      return false;
 
    VKFUNC(vkGetDeviceQueue)(vk->context.device,
          vk->context.graphics_queue_index, 0, &vk->context.queue);
@@ -1332,38 +1359,32 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    {
       case VULKAN_WSI_WAYLAND:
 #ifdef HAVE_WAYLAND
-         VK_GET_INSTANCE_PROC_ADDR(vk,
-               vk->context.instance, CreateWaylandSurfaceKHR);
+         VK_GET_INSTANCE_PROC_ADDR(CreateWaylandSurfaceKHR);
 #endif
          break;
       case VULKAN_WSI_ANDROID:
 #ifdef ANDROID
-         VK_GET_INSTANCE_PROC_ADDR(vk,
-               vk->context.instance, CreateAndroidSurfaceKHR);
+         VK_GET_INSTANCE_PROC_ADDR(CreateAndroidSurfaceKHR);
 #endif
          break;
       case VULKAN_WSI_WIN32:
 #ifdef _WIN32
-         VK_GET_INSTANCE_PROC_ADDR(vk,
-               vk->context.instance, CreateWin32SurfaceKHR);
+         VK_GET_INSTANCE_PROC_ADDR(CreateWin32SurfaceKHR);
 #endif
          break;
       case VULKAN_WSI_XLIB:
 #ifdef HAVE_XLIB
-         VK_GET_INSTANCE_PROC_ADDR(vk,
-               vk->context.instance, CreateXlibSurfaceKHR);
+         VK_GET_INSTANCE_PROC_ADDR(CreateXlibSurfaceKHR);
 #endif
          break;
       case VULKAN_WSI_XCB:
 #ifdef HAVE_XCB
-         VK_GET_INSTANCE_PROC_ADDR(vk,
-               vk->context.instance, CreateXcbSurfaceKHR);
+         VK_GET_INSTANCE_PROC_ADDR(CreateXcbSurfaceKHR);
 #endif
          break;
       case VULKAN_WSI_MIR:
 #ifdef HAVE_MIR
-         VK_GET_INSTANCE_PROC_ADDR(vk,
-               vk->context.instance, CreateMirSurfaceKHR);
+         VK_GET_INSTANCE_PROC_ADDR(CreateMirSurfaceKHR);
 #endif
          break;
       case VULKAN_WSI_NONE:
