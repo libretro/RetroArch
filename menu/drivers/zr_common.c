@@ -173,12 +173,29 @@ void zrmenu_set_style(struct zr_context *ctx, enum zrmenu_theme theme)
    }
 }
 
+void zrmenu_set_state(zrmenu_handle_t *zr, const int id,
+   struct zr_vec2 pos, struct zr_vec2 size)
+{
+   zr->window[id].position = pos;
+   zr->window[id].size = size;
+}
+
+void zrmenu_get_state(zrmenu_handle_t *zr, const int id,
+   struct zr_vec2 *pos, struct zr_vec2 *size)
+{
+   *pos = zr->window[id].position;
+   *size = zr->window[id].size;
+}
+
 void zrmenu_wnd_shader_parameters(struct zr_context *ctx, zrmenu_handle_t *zr)
 {
-   unsigned i;
-   video_shader_ctx_t shader_info;
-   struct zr_panel layout;
+   const int id = ZRMENU_WND_SHADER_PARAMETERS;
    settings_t *settings = config_get_ptr();
+
+   video_shader_ctx_t shader_info;
+   unsigned i;
+
+   struct zr_panel layout;
 
    if (zr_begin(ctx, &layout, "Shader Parameters", zr_rect(240, 10, 300, 400),
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
@@ -213,11 +230,14 @@ void zrmenu_wnd_shader_parameters(struct zr_context *ctx, zrmenu_handle_t *zr)
          }
       }
    }
+   /* save position and size to restore after context reset */
+   zrmenu_set_state(zr, id, zr_window_get_position(ctx), zr_window_get_size(ctx));
    zr_end(ctx);
 }
 
 void zrmenu_wnd_control(struct zr_context *ctx, zrmenu_handle_t *zr)
 {
+   const int id = ZRMENU_WND_CONTROL;
    static int wnd_x = 900;
    static int wnd_y = 60;
    struct zr_panel layout;
@@ -267,11 +287,14 @@ void zrmenu_wnd_control(struct zr_context *ctx, zrmenu_handle_t *zr)
          zr_layout_pop(ctx);
       }
    }
+   /* save position and size to restore after context reset */
+   zrmenu_set_state(zr, id, zr_window_get_position(ctx), zr_window_get_size(ctx));
    zr_end(ctx);
 }
 
 void zrmenu_wnd_test(struct zr_context *ctx, zrmenu_handle_t *zr)
 {
+   const int id = ZRMENU_WND_TEST;
    settings_t *settings = config_get_ptr();
 
    struct zr_panel layout;
@@ -339,11 +362,15 @@ void zrmenu_wnd_test(struct zr_context *ctx, zrmenu_handle_t *zr)
          zr_combo_end(ctx);
       }
    }
+   /* save position and size to restore after context reset */
+   zrmenu_set_state(zr, id, zr_window_get_position(ctx), zr_window_get_size(ctx));
    zr_end(ctx);
 }
 
 void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr)
 {
+   const int id = ZRMENU_WND_MAIN;
+
    settings_t *settings = config_get_ptr();
    struct zr_panel layout;
 
@@ -422,6 +449,9 @@ void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr)
 
    }
 
+
+   /* save position and size to restore after context reset */
+   zrmenu_set_state(zr, id, zr_window_get_position(ctx), zr_window_get_size(ctx));
    if (zr->size_changed)
       zr_window_set_size(ctx, zr_vec2(zr_window_get_size(ctx).x, zr->size.y));
 
@@ -430,9 +460,12 @@ void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr)
 
 void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr)
 {
+   const int id = ZRMENU_WND_WIZARD;
+
    static int width = 600;
    static int height = 500;
-   char buf[PATH_MAX_LENGTH];
+   static int panel = 0;
+
 
    settings_t *settings = config_get_ptr();
    struct zr_panel layout;
@@ -451,5 +484,7 @@ void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr)
 
    }
 
+   /* save position and size to restore after context reset */
+   zrmenu_set_state(zr, id, zr_window_get_position(ctx), zr_window_get_size(ctx));
    zr_end(ctx);
 }

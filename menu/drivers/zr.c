@@ -626,6 +626,7 @@ static void zrmenu_init_device(zrmenu_handle_t *zr)
    zr->icons.speaker = zr_icon_load(buf);
 
    zrmenu_set_style(&zr->ctx, THEME_DARK);
+   zr->size_changed = true;
 }
 
 static void *zrmenu_init(void **userdata)
