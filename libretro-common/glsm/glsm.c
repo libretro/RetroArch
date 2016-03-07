@@ -749,7 +749,7 @@ static void glsm_state_bind(void)
          glDisableVertexAttribArray(i);
    }
 
-   rglBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl_state.framebuf);
+   glBindFramebuffer(RARCH_GL_FRAMEBUFFER, hw_render.get_current_framebuffer());
 
    if (gl_state.blendfunc.used)
       glBlendFunc(
