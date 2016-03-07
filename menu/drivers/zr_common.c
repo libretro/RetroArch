@@ -477,72 +477,126 @@ void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr)
       /* uncomment this to hide the panel backgrounds
       zr_push_color(ctx, ZR_COLOR_WINDOW, zr_rgba(0,0,0,0)); */
       struct zr_panel sub;
-      if (panel == 0)
+      switch (panel)
       {
+         case 0:
+            zr_layout_row_begin(ctx, ZR_DYNAMIC, height * 0.80f, 2);
+            zr_layout_row_push(ctx, 0.15f);
+            if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER|ZR_WINDOW_NO_SCROLLBAR))
+            {
 
-         zr_layout_row_begin(ctx, ZR_DYNAMIC, height * 0.80f, 2);
-         zr_layout_row_push(ctx, 0.15f);
-         if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER|ZR_WINDOW_NO_SCROLLBAR)) {
+               zr_layout_space_begin(ctx, ZR_STATIC, width * 0.15f, 1);
+               zr_layout_space_push(ctx, zr_rect(0, 0, width * 0.15f, width * 0.15f));
+               zr_image(ctx, zr->icons.invader);
+               zr_layout_space_end(ctx);
+               zr_group_end(ctx);
+            }
+            zr_layout_row_push(ctx, 0.85f);
 
-            zr_layout_space_begin(ctx, ZR_STATIC, width * 0.15f, 1);
-            zr_layout_space_push(ctx, zr_rect(0, 0, width * 0.15f, width * 0.15f));
-            zr_image(ctx, zr->icons.invader);
-            zr_layout_space_end(ctx);
-            zr_group_end(ctx);
-         }
-         zr_layout_row_push(ctx, 0.85f);
-         if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER|ZR_WINDOW_NO_SCROLLBAR)) {
-            zr_layout_row_dynamic(ctx, 20, 1);
-            zr_label(ctx, "Label aligned left", ZR_TEXT_LEFT);
-            zr_label(ctx, "Label aligned centered", ZR_TEXT_CENTERED);
-            zr_label(ctx, "Label aligned right", ZR_TEXT_RIGHT);
-            zr_label_colored(ctx, "Blue text", ZR_TEXT_LEFT, zr_rgb(0,0,255));
-            zr_label_colored(ctx, "Yellow text", ZR_TEXT_LEFT, zr_rgb(255,255,0));
-            zr_text(ctx, "Text without /0", 15, ZR_TEXT_RIGHT);
-            zr_layout_row_dynamic(ctx, 100, 1);
-            zr_label_wrap(ctx, "This is a very long line to hopefully get this text to be wrapped into multiple lines to show line wrapping, someone should write some text welcoming users to retroarch or something like that in this window,  I'm not really good at this");
-            zr_group_end(ctx);
-         }
-         zr_layout_row_end(ctx);
-         zr_layout_row_dynamic(ctx, 30, 4);
-         zr_label(ctx,"", ZR_TEXT_RIGHT);
-         zr_label(ctx,"", ZR_TEXT_RIGHT);
-         zr_label(ctx,"", ZR_TEXT_RIGHT);
-         if (zr_button_text(ctx, "Next", ZR_BUTTON_DEFAULT))
-            panel++;
-      }
-      if (panel == 1)
-      {
+            if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER|ZR_WINDOW_NO_SCROLLBAR))
+            {
 
-         zr_layout_row_begin(ctx, ZR_DYNAMIC, height * 0.80f, 2);
-         zr_layout_row_push(ctx, 0.15f);
-         if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER)) {
+               zr_layout_row_dynamic(ctx, 14, 15);
+               zr_image(ctx, zr->icons.page_on);
+               zr_image(ctx, zr->icons.page_off);
+               zr_image(ctx, zr->icons.page_off);
+               zr_image(ctx, zr->icons.page_off);
+               zr_image(ctx, zr->icons.page_off);
 
-            zr_layout_space_begin(ctx, ZR_STATIC, width * 0.15f, 1);
-            zr_layout_space_push(ctx, zr_rect(0, 0, width * 0.15f, width * 0.15f));
-            zr_layout_space_end(ctx);
-            zr_group_end(ctx);
-         }
-         zr_layout_row_push(ctx, 0.85f);
-         if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER|ZR_WINDOW_NO_SCROLLBAR)) {
-            zr_layout_row_dynamic(ctx, 40, 1);
-            zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
-            zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
-            zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
-            zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
-            zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
-            zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
-            zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
-            zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
-            zr_group_end(ctx);
-         }
-         zr_layout_row_end(ctx);
-         zr_layout_row_dynamic(ctx, 30, 4);
-         zr_label(ctx,"", ZR_TEXT_RIGHT);
-         zr_label(ctx,"", ZR_TEXT_RIGHT);
-         zr_label(ctx,"", ZR_TEXT_RIGHT);
-         if (zr_button_text(ctx, "Next", ZR_BUTTON_DEFAULT))
-            panel++;
+               zr_layout_row_dynamic(ctx, 20, 1);
+               zr_label(ctx, "Label aligned left", ZR_TEXT_LEFT);
+               zr_label(ctx, "Label aligned centered", ZR_TEXT_CENTERED);
+               zr_label(ctx, "Label aligned right", ZR_TEXT_RIGHT);
+               zr_label_colored(ctx, "Blue text", ZR_TEXT_LEFT, zr_rgb(0,0,255));
+               zr_label_colored(ctx, "Yellow text", ZR_TEXT_LEFT, zr_rgb(255,255,0));
+               zr_text(ctx, "Text without /0", 15, ZR_TEXT_RIGHT);
+               zr_layout_row_dynamic(ctx, 100, 1);
+               zr_label_wrap(ctx, "This is a very long line to hopefully get this text to be wrapped into multiple lines to show line wrapping, someone should write some text welcoming users to retroarch or something like that in this window,  I'm not really good at this");
+               zr_group_end(ctx);
+            }
+            zr_layout_row_end(ctx);
+            zr_layout_row_dynamic(ctx, 30, 4);
+            zr_label(ctx,"", ZR_TEXT_RIGHT);
+            zr_label(ctx,"", ZR_TEXT_RIGHT);
+            zr_label(ctx,"", ZR_TEXT_RIGHT);
+            if (zr_button_text(ctx, "Next", ZR_BUTTON_DEFAULT))
+               panel++;
+            break;
+         case 1:
+            zr_layout_row_begin(ctx, ZR_DYNAMIC, height * 0.80f, 2);
+            zr_layout_row_push(ctx, 0.15f);
+            if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER))
+            {
+               zr_layout_space_begin(ctx, ZR_STATIC, width * 0.15f, 1);
+               zr_layout_space_push(ctx, zr_rect(0, 0, width * 0.15f, width * 0.15f));
+               zr_layout_space_end(ctx);
+               zr_group_end(ctx);
+            }
+            zr_layout_row_push(ctx, 0.85f);
+
+            if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER|ZR_WINDOW_NO_SCROLLBAR))
+            {
+
+               zr_layout_row_dynamic(ctx, 14, 15);
+               zr_image(ctx, zr->icons.page_on);
+               zr_image(ctx, zr->icons.page_on);
+               zr_image(ctx, zr->icons.page_off);
+               zr_image(ctx, zr->icons.page_off);
+               zr_image(ctx, zr->icons.page_off);
+
+               zr_layout_row_dynamic(ctx, 40, 1);
+               zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
+               zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
+               zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
+               zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
+               zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
+               zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
+               zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
+               zr_button_text_image(ctx, zr->icons.folder, settings->libretro, ZR_TEXT_CENTERED, ZR_BUTTON_DEFAULT);
+               zr_group_end(ctx);
+            }
+            zr_layout_row_end(ctx);
+            zr_layout_row_dynamic(ctx, 30, 4);
+            zr_label(ctx,"", ZR_TEXT_RIGHT);
+            zr_label(ctx,"", ZR_TEXT_RIGHT);
+            if (zr_button_text(ctx, "Previous", ZR_BUTTON_DEFAULT))
+               panel--;
+            if (zr_button_text(ctx, "Next", ZR_BUTTON_DEFAULT))
+               panel++;
+            break;
+         default:
+            zr_layout_row_begin(ctx, ZR_DYNAMIC, height * 0.80f, 2);
+            zr_layout_row_push(ctx, 0.15f);
+            if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER))
+            {
+               zr_layout_space_begin(ctx, ZR_STATIC, width * 0.15f, 1);
+               zr_layout_space_push(ctx, zr_rect(0, 0, width * 0.15f, width * 0.15f));
+               zr_layout_space_end(ctx);
+               zr_group_end(ctx);
+            }
+            zr_layout_row_push(ctx, 0.85f);
+
+            if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER|ZR_WINDOW_NO_SCROLLBAR))
+            {
+               zr_layout_row_dynamic(ctx, 14, 15);
+               zr_image(ctx, zr->icons.page_on);
+               zr_image(ctx, zr->icons.page_on);
+               zr_image(ctx, zr->icons.page_on);
+               zr_image(ctx, zr->icons.page_off);
+               zr_image(ctx, zr->icons.page_off);
+
+               zr_layout_row_dynamic(ctx, 40, 1);
+               zr_group_end(ctx);
+            }
+            zr_layout_row_end(ctx);
+            zr_layout_row_dynamic(ctx, 30, 4);
+            zr_label(ctx,"", ZR_TEXT_RIGHT);
+            zr_label(ctx,"", ZR_TEXT_RIGHT);
+            if (zr_button_text(ctx, "Previous", ZR_BUTTON_DEFAULT))
+               panel--;
+            if (zr_button_text(ctx, "Next", ZR_BUTTON_DEFAULT))
+               panel++;
+            break;
       }
 
       zr_reset_colors(ctx);

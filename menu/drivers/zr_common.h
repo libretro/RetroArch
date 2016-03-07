@@ -46,6 +46,8 @@ struct icons {
     struct zr_image settings;
     struct zr_image speaker;
     struct zr_image invader;
+    struct zr_image page_on;
+    struct zr_image page_off;
 };
 
 struct window {

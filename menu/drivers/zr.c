@@ -635,6 +635,10 @@ static void zrmenu_init_device(zrmenu_handle_t *zr)
    zr->icons.settings = zr_icon_load(buf);
    fill_pathname_join(buf, zr->assets_directory, "invader.png", sizeof(buf));
    zr->icons.invader = zr_icon_load(buf);
+   fill_pathname_join(buf, zr->assets_directory, "page_on.png", sizeof(buf));
+   zr->icons.page_on = zr_icon_load(buf);
+   fill_pathname_join(buf, zr->assets_directory, "page_off.png", sizeof(buf));
+   zr->icons.page_off = zr_icon_load(buf);
 
    zrmenu_set_style(&zr->ctx, THEME_DARK);
    zr->size_changed = true;
