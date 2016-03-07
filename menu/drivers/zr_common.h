@@ -45,6 +45,7 @@ struct icons {
     struct zr_image gamepad;
     struct zr_image settings;
     struct zr_image speaker;
+    struct zr_image invader;
 };
 
 struct window {

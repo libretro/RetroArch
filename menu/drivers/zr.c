@@ -555,6 +555,9 @@ static void zrmenu_frame(void *data)
    zrmenu_handle_t *zr = (zrmenu_handle_t*)data;
    settings_t *settings  = config_get_ptr();
 
+   bool libretro_running = menu_display_ctl(
+         MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
+
    if (!zr)
       return;
 
@@ -624,6 +627,14 @@ static void zrmenu_init_device(zrmenu_handle_t *zr)
    zr->icons.folder = zr_icon_load(buf);
    fill_pathname_join(buf, zr->assets_directory, "speaker.png", sizeof(buf));
    zr->icons.speaker = zr_icon_load(buf);
+   fill_pathname_join(buf, zr->assets_directory, "gamepad.png", sizeof(buf));
+   zr->icons.gamepad = zr_icon_load(buf);
+   fill_pathname_join(buf, zr->assets_directory, "monitor.png", sizeof(buf));
+   zr->icons.monitor = zr_icon_load(buf);
+   fill_pathname_join(buf, zr->assets_directory, "settings.png", sizeof(buf));
+   zr->icons.settings = zr_icon_load(buf);
+   fill_pathname_join(buf, zr->assets_directory, "invader.png", sizeof(buf));
+   zr->icons.invader = zr_icon_load(buf);
 
    zrmenu_set_style(&zr->ctx, THEME_DARK);
    zr->size_changed = true;
