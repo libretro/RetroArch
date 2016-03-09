@@ -581,7 +581,7 @@ void rglGetProgramInfoLog(GLuint shader, GLsizei maxLength,
 
 GLboolean rglIsProgram(GLuint program)
 {
-   glIsProgram(program);
+   return glIsProgram(program);
 }
 
 void rglEnableVertexAttribArray(GLuint index)
