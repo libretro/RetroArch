@@ -17,8 +17,10 @@
 #include "../../config.h"
 #endif
 
+#ifdef HAVE_X11
 #ifdef HAVE_XCB
 #include <X11/Xlib-xcb.h>
+#endif
 #endif
 
 #include <retro_assert.h>
@@ -1485,6 +1487,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 #endif
          break;
       case VULKAN_WSI_XCB:
+#ifdef HAVE_X11
 #ifdef HAVE_XCB
          {
             VkXcbSurfaceCreateInfoKHR surf_info;
@@ -1501,6 +1504,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
                   != VK_SUCCESS)
                return false;
          }
+#endif
 #endif
          break;
       case VULKAN_WSI_MIR:
