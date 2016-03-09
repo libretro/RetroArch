@@ -31,7 +31,9 @@ struct gl_cached_state
       GLuint ids[MAX_TEXTURE];
    } bind_textures;
 
+#ifndef HAVE_OPENGLES
    GLenum colorlogicop;
+#endif
 
    struct
    {
@@ -724,7 +726,10 @@ static void glsm_state_setup(void)
    gl_state.cap_translate[SGL_ALPHA_TEST]           = GL_ALPHA_TEST;
    gl_state.cap_translate[SGL_SCISSOR_TEST]         = GL_SCISSOR_TEST;
    gl_state.cap_translate[SGL_STENCIL_TEST]         = GL_STENCIL_TEST;
+
+#ifndef HAVE_OPENGLES
    gl_state.cap_translate[SGL_COLOR_LOGIC_OP]       = GL_COLOR_LOGIC_OP;
+#endif
 
    for (i = 0; i < MAX_ATTRIB; i++)
       gl_state.vertex_attrib_pointer.enabled[i] = 0;
@@ -751,7 +756,9 @@ static void glsm_state_setup(void)
 
    gl_state.depthfunc.func              = GL_LESS;
 
+#ifndef HAVE_OPENGLES
    gl_state.colorlogicop                = GL_COPY;
+#endif
 
 #ifdef CORE
    glGenVertexArrays(1, &gl_state.vao);

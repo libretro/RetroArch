@@ -61,6 +61,7 @@ extern "C" {
 #define glGetProgramiv              rglGetProgramiv
 #define glGetShaderiv               rglGetShaderiv
 #define glAttachShader              rglAttachShader
+#define glDetachShader              rglDetachShader
 #define glShaderSource              rglShaderSource
 #define glCompileShader             rglCompileShader
 #define glCreateProgram             rglCreateProgram
@@ -109,6 +110,8 @@ extern "C" {
 #define glPolygonOffset             rglPolygonOffset
 #define glPixelStorei               rglPixelStorei
 #define glReadBuffer                rglReadBuffer
+#define glUniformMatrix4fv          rglUniformMatrix4fv
+#define glGetAttribLocation         rglGetAttribLocation
 
 void rglReadBuffer(GLenum mode);
 void rglPixelStorei(GLenum pname, GLint param);
@@ -207,7 +210,10 @@ void rglBlitFramebuffer(
       GLint dstX0, GLint dstY0,
       GLint dstX1, GLint dstY1,
       GLbitfield mask, GLenum filter);
-
+void rglDetachShader(GLuint program, GLuint shader);
+void rglUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
+      const GLfloat *value);
+GLint rglGetAttribLocation(GLuint program, const GLchar *name);
 
 #ifdef __cplusplus
 }
