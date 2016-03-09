@@ -3211,6 +3211,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH),
                PARSE_ACTION, false);
 #endif
+#if defined(HAVE_LAKKA)
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_SHUTDOWN),
+               PARSE_ACTION, false);
+         menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_REBOOT),
+               PARSE_ACTION, false);
+#endif
          info->need_push    = true;
          break;
       case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
