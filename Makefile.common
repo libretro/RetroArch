@@ -412,6 +412,7 @@ endif
 ifeq ($(HAVE_ZAHNRAD), 1)
    OBJ += deps/zahnrad/zahnrad.o
    OBJ += menu/drivers/zr_common.o
+   OBJ += menu/drivers/zr_menu.o
    OBJ += menu/drivers/zr.o
    DEFINES += -DHAVE_ZAHNRAD
 endif

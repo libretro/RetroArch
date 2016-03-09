@@ -15,81 +15,62 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../deps/zahnrad/zahnrad.h"
-#include "../menu_display.h"
 
-enum
-{
-   ZR_TEXTURE_POINTER = 0,
-   ZR_TEXTURE_LAST
-};
+ #include "../../deps/zahnrad/zahnrad.h"
+ #include "../../deps/stb/stb_image.h"
 
-enum
-{
-   ZRMENU_WND_MAIN = 0,
-   ZRMENU_WND_CONTROL,
-   ZRMENU_WND_SHADER_PARAMETERS,
-   ZRMENU_WND_TEST,
-   ZRMENU_WND_WIZARD
-};
+ #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+ #include "../../gfx/common/gl_common.h"
+ #endif
 
-enum zrmenu_theme
-{
-   THEME_DARK = 0,
-   THEME_LIGHT
-};
+ #define MAX_VERTEX_MEMORY     (512 * 1024)
+ #define MAX_ELEMENT_MEMORY    (128 * 1024)
 
-struct icons {
-    struct zr_image folder;
-    struct zr_image monitor;
-    struct zr_image gamepad;
-    struct zr_image settings;
-    struct zr_image speaker;
-    struct zr_image invader;
-    struct zr_image page_on;
-    struct zr_image page_off;
-};
+ #define ZR_SYSTEM_TAB_END     ZR_SYSTEM_TAB_SETTINGS
 
-struct window {
-   bool open;
-   struct zr_vec2 position;
-   struct zr_vec2 size;
-};
+ struct zr_device
+ {
+    struct zr_buffer cmds;
+    struct zr_draw_null_texture null;
+ #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+    GLuint vbo, vao, ebo;
 
-typedef struct zrmenu_handle
-{
-   /* zahnrad mandatory */
-   void *memory;
-   struct zr_context ctx;
-   struct zr_memory_status status;
+    GLuint prog;
+    GLuint vert_shdr;
+    GLuint frag_shdr;
 
-   /* window control variables */
-   struct zr_vec2 size;
-   bool size_changed;
-   struct window window[5];
+    GLint attrib_pos;
+    GLint attrib_uv;
+    GLint attrib_col;
 
-   /* menu driver variables */
-   char box_message[PATH_MAX_LENGTH];
+    GLint uniform_proj;
+    GLuint font_tex;
+ #endif
+ };
 
-   /* image & theme related variables */
-   char assets_directory[PATH_MAX_LENGTH];
-   struct icons icons;
-   enum zrmenu_theme theme;
+struct zr_font font;
+struct zr_user_font usrfnt;
+struct zr_allocator zr_alloc;
+struct zr_device device;
 
+struct zr_image zr_common_image_load(const char *filename);
 
-   struct
-   {
-      menu_texture_item bg;
-      menu_texture_item list[ZR_TEXTURE_LAST];
-   } textures;
+char* zr_common_file_load(const char* path, size_t* size);
 
-   gfx_font_raster_block_t list_block;
-} zrmenu_handle_t;
+void zr_common_device_init(struct zr_device *dev);
+struct zr_user_font zr_common_font(
+   struct zr_device *dev,
+   struct zr_font *font,
+   const char *path,
+   unsigned int font_height,
+   const zr_rune *range);
 
-void zrmenu_set_style(struct zr_context *ctx, enum zrmenu_theme theme);
+void zr_common_device_shutdown(struct zr_device *dev);
 
-void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr);
-void zrmenu_wnd_shader_parameters(struct zr_context *ctx, zrmenu_handle_t *zr);
-void zrmenu_wnd_control(struct zr_context *ctx, zrmenu_handle_t *zr);
-void zrmenu_wnd_test(struct zr_context *ctx, zrmenu_handle_t *zr);
-void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr);
+void zr_common_device_draw(struct zr_device *dev,
+   struct zr_context *ctx, int width, int height,
+   enum zr_anti_aliasing AA);
+
+void* zr_common_mem_alloc(zr_handle unused, size_t size);
+
+void zr_common_mem_free(zr_handle unused, void *ptr);
