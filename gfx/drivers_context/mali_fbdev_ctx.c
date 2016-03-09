@@ -278,7 +278,7 @@ static gfx_ctx_proc_t gfx_ctx_mali_fbdev_get_proc_address(const char *symbol)
 {
 #ifdef HAVE_EGL
    return egl_get_proc_address(symbol);
-#else
+#endif
 }
 
 static void gfx_ctx_mali_fbdev_bind_hw_render(void *data, bool enable)

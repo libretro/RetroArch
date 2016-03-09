@@ -31,6 +31,10 @@ struct gl_cached_state
       GLuint ids[MAX_TEXTURE];
    } bind_textures;
 
+#ifndef HAVE_OPENGLES
+   GLenum colorlogicop;
+#endif
+
    struct
    {
       bool enabled[MAX_ATTRIB];
@@ -516,6 +520,17 @@ void rglGetProgramiv(GLuint shader, GLenum pname, GLint *params)
    glGetProgramiv(shader, pname, params);
 }
 
+void rglUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
+      const GLfloat *value)
+{
+   glUniformMatrix4fv(location, count, transpose, value);
+}
+
+void rglDetachShader(GLuint program, GLuint shader)
+{
+   glDetachShader(program, shader);
+}
+
 void rglGetShaderiv(GLuint shader, GLenum pname, GLint *params)
 {
    glGetShaderiv(shader, pname, params);
@@ -524,6 +539,11 @@ void rglGetShaderiv(GLuint shader, GLenum pname, GLint *params)
 void rglAttachShader(GLuint program, GLuint shader)
 {
    glAttachShader(program, shader);
+}
+
+GLint rglGetAttribLocation(GLuint program, const GLchar *name)
+{
+   return glGetAttribLocation(program, name);
 }
 
 void rglShaderSource(GLuint shader, GLsizei count,
@@ -561,7 +581,7 @@ void rglGetProgramInfoLog(GLuint shader, GLsizei maxLength,
 
 GLboolean rglIsProgram(GLuint program)
 {
-   glIsProgram(program);
+   return glIsProgram(program);
 }
 
 void rglEnableVertexAttribArray(GLuint index)
@@ -707,6 +727,10 @@ static void glsm_state_setup(void)
    gl_state.cap_translate[SGL_SCISSOR_TEST]         = GL_SCISSOR_TEST;
    gl_state.cap_translate[SGL_STENCIL_TEST]         = GL_STENCIL_TEST;
 
+#ifndef HAVE_OPENGLES
+   gl_state.cap_translate[SGL_COLOR_LOGIC_OP]       = GL_COLOR_LOGIC_OP;
+#endif
+
    for (i = 0; i < MAX_ATTRIB; i++)
       gl_state.vertex_attrib_pointer.enabled[i] = 0;
 
@@ -731,6 +755,10 @@ static void glsm_state_setup(void)
    gl_state.polygonoffset.used          = false;
 
    gl_state.depthfunc.func              = GL_LESS;
+
+#ifndef HAVE_OPENGLES
+   gl_state.colorlogicop                = GL_COPY;
+#endif
 
 #ifdef CORE
    glGenVertexArrays(1, &gl_state.vao);
@@ -812,8 +840,6 @@ static void glsm_state_bind(void)
    {
       if (gl_state.cap_state[i])
          glEnable(gl_state.cap_translate[i]);
-      else
-         glDisable(gl_state.cap_translate[i]);
    }
 
    if (gl_state.frontface.used)
@@ -851,7 +877,10 @@ static void glsm_state_unbind(void)
    glBindVertexArray(0);
 #endif
    for (i = 0; i < SGL_CAP_MAX; i ++)
-      glDisable(gl_state.cap_translate[i]);
+   {
+      if (gl_state.cap_state[i])
+         glDisable(gl_state.cap_translate[i]);
+   }
 
    glBlendFunc(GL_ONE, GL_ZERO);
 
