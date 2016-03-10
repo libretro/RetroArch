@@ -53,15 +53,15 @@ static void zrmenu_main(zrmenu_handle_t *zr)
    struct zr_context *ctx = &zr->ctx;
 
    if (zr->window[ZRMENU_WND_MAIN].open)
-      zrmenu_wnd_main(ctx, zr);
+      zrmenu_wnd_main(zr);
    if (zr->window[ZRMENU_WND_CONTROL].open)
-      zrmenu_wnd_control(ctx, zr);
+      zrmenu_wnd_control(zr);
    if (zr->window[ZRMENU_WND_SHADER_PARAMETERS].open)
-      zrmenu_wnd_shader_parameters(ctx, zr);
+      zrmenu_wnd_shader_parameters(zr);
    if (zr->window[ZRMENU_WND_TEST].open)
-      zrmenu_wnd_test(ctx, zr);
+      zrmenu_wnd_test(zr);
    if (zr->window[ZRMENU_WND_WIZARD].open)
-      zrmenu_wnd_wizard(ctx, zr);
+      zrmenu_wnd_wizard(zr);
 
    zr->window[ZRMENU_WND_CONTROL].open = !zr_window_is_closed(ctx, "Control");
    zr->window[ZRMENU_WND_SHADER_PARAMETERS].open = !zr_window_is_closed(ctx, "Shader Parameters");

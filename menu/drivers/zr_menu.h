@@ -88,8 +88,8 @@ typedef struct zrmenu_handle
 
 void zrmenu_set_style(struct zr_context *ctx, enum zrmenu_theme theme);
 
-void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr);
-void zrmenu_wnd_shader_parameters(struct zr_context *ctx, zrmenu_handle_t *zr);
-void zrmenu_wnd_control(struct zr_context *ctx, zrmenu_handle_t *zr);
-void zrmenu_wnd_test(struct zr_context *ctx, zrmenu_handle_t *zr);
-void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr);
+void zrmenu_wnd_wizard(zrmenu_handle_t *zr);
+void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr);
+void zrmenu_wnd_control(zrmenu_handle_t *zr);
+void zrmenu_wnd_test(zrmenu_handle_t *zr);
+void zrmenu_wnd_main(zrmenu_handle_t *zr);

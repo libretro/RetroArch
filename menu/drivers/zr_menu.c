@@ -187,8 +187,9 @@ void zrmenu_get_state(zrmenu_handle_t *zr, const int id,
    *size = zr->window[id].size;
 }
 
-void zrmenu_wnd_shader_parameters(struct zr_context *ctx, zrmenu_handle_t *zr)
+void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr)
 {
+   struct zr_context *ctx = &zr->ctx;
    const int id = ZRMENU_WND_SHADER_PARAMETERS;
    settings_t *settings = config_get_ptr();
 
@@ -235,8 +236,9 @@ void zrmenu_wnd_shader_parameters(struct zr_context *ctx, zrmenu_handle_t *zr)
    zr_end(ctx);
 }
 
-void zrmenu_wnd_control(struct zr_context *ctx, zrmenu_handle_t *zr)
+void zrmenu_wnd_control(zrmenu_handle_t *zr)
 {
+   struct zr_context *ctx = &zr->ctx;
    const int id = ZRMENU_WND_CONTROL;
    static int wnd_x = 900;
    static int wnd_y = 60;
@@ -292,8 +294,9 @@ void zrmenu_wnd_control(struct zr_context *ctx, zrmenu_handle_t *zr)
    zr_end(ctx);
 }
 
-void zrmenu_wnd_test(struct zr_context *ctx, zrmenu_handle_t *zr)
+void zrmenu_wnd_test(zrmenu_handle_t *zr)
 {
+   struct zr_context *ctx = &zr->ctx;
    const int id = ZRMENU_WND_TEST;
    settings_t *settings = config_get_ptr();
 
@@ -367,8 +370,9 @@ void zrmenu_wnd_test(struct zr_context *ctx, zrmenu_handle_t *zr)
    zr_end(ctx);
 }
 
-void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr)
+void zrmenu_wnd_main(zrmenu_handle_t *zr)
 {
+   struct zr_context *ctx = &zr->ctx;
    const int id = ZRMENU_WND_MAIN;
 
    settings_t *settings = config_get_ptr();
@@ -458,8 +462,9 @@ void zrmenu_wnd_main(struct zr_context *ctx, zrmenu_handle_t *zr)
    zr_end(ctx);
 }
 
-void zrmenu_wnd_wizard(struct zr_context *ctx, zrmenu_handle_t *zr)
+void zrmenu_wnd_wizard(zrmenu_handle_t *zr)
 {
+   struct zr_context *ctx = &zr->ctx;
    const int id = ZRMENU_WND_WIZARD;
 
    static int width = 640;
