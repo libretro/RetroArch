@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -54,6 +54,8 @@
 static bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
+   settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
    bool ret;
    char filename[PATH_MAX_LENGTH];
    char shotname[256];
@@ -62,8 +64,16 @@ static bool screenshot_dump(const char *folder, const void *frame,
    struct scaler_ctx scaler       = {0};
 #endif
 
-   fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
-   fill_pathname_join(filename, folder, shotname, sizeof(filename));
+   if (settings->auto_screenshot_filename)
+   {
+      fill_dated_filename(shotname, IMG_EXT, sizeof(shotname));
+      fill_pathname_join(filename, folder, shotname, sizeof(filename));
+   }
+   else
+   {
+      snprintf(shotname, sizeof(shotname),"%s.png", path_basename(global->name.base));
+      fill_pathname_join(filename, folder, shotname, sizeof(filename));
+   }
 
 #ifdef _XBOX1
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(true);
@@ -172,7 +182,7 @@ static bool take_screenshot_raw(void)
    settings_t *settings                  = config_get_ptr();
 
    video_driver_cached_frame_get(&data, &width, &height, &pitch);
-   
+
    screenshot_dir = settings->screenshot_directory;
 
    if (!*settings->screenshot_directory)

@@ -581,6 +581,9 @@ static const bool post_filter_record = false;
 /* Screenshots post-shaded GPU output if available. */
 static const bool gpu_screenshot = true;
 
+/* Screenshots named automatically. */
+static const bool auto_screenshot_filename = true;
+
 /* Record post-shaded GPU output instead of raw game footage if available. */
 static const bool gpu_record = false;
 

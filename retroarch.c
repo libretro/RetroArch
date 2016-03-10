@@ -386,11 +386,18 @@ static void set_special_paths(char **argv, unsigned num_content)
 
 const char *rarch_get_current_savefile_dir(void)
 {
+   global_t *global = global_get_ptr();
+
+   char* ret = strdup(global->name.base);
+   if (!string_is_empty(current_savefile_dir))
+      ret = current_savefile_dir;
+   else
+      path_basedir(ret);
+
    RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n",
-         current_savefile_dir);
-   if (*current_savefile_dir)
-      return current_savefile_dir;
-   return NULL;
+         ret);
+
+   return ret;
 }
 
 static void set_paths_redirect(const char *path)
@@ -401,7 +408,7 @@ static void set_paths_redirect(const char *path)
    global_t                *global     = global_get_ptr();
    settings_t              *settings   = config_get_ptr();
    rarch_system_info_t      *info      = NULL;
-   
+
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
    if (!global)
    {
@@ -410,10 +417,10 @@ static void set_paths_redirect(const char *path)
    }
    if (info->info.library_name &&
             !string_is_empty(info->info.library_name))
-         global_library_name_hash = 
+         global_library_name_hash =
             msg_hash_calculate(info->info.library_name);
 
-   /* Initialize current save directories 
+   /* Initialize current save directories
     * with the values from the config. */
    strlcpy(current_savefile_dir,
          global->dir.savefile,
@@ -431,7 +438,7 @@ static void set_paths_redirect(const char *path)
    if (check_global_library_name_hash)
    {
       /* per-core saves: append the library_name to the save location */
-      if (settings->sort_savefiles_enable 
+      if (settings->sort_savefiles_enable
             && !string_is_empty(global->dir.savefile))
       {
          fill_pathname_join(
@@ -442,7 +449,7 @@ static void set_paths_redirect(const char *path)
 
          /* If path doesn't exist, try to create it,
           * if everything fails revert to the original path. */
-         if(!path_is_directory(current_savefile_dir) 
+         if(!path_is_directory(current_savefile_dir)
                && !string_is_empty(current_savefile_dir))
          {
             path_mkdir(current_savefile_dir);
@@ -459,7 +466,7 @@ static void set_paths_redirect(const char *path)
       }
 
       /* per-core states: append the library_name to the save location */
-      if (settings->sort_savestates_enable 
+      if (settings->sort_savestates_enable
             && !string_is_empty(global->dir.savestate))
       {
          fill_pathname_join(
@@ -470,7 +477,7 @@ static void set_paths_redirect(const char *path)
 
          /* If path doesn't exist, try to create it.
           * If everything fails, revert to the original path. */
-         if(!path_is_directory(current_savestate_dir) && 
+         if(!path_is_directory(current_savestate_dir) &&
                !string_is_empty(current_savestate_dir))
          {
             path_mkdir(current_savestate_dir);
@@ -682,7 +689,7 @@ static void parse_input(int argc, char *argv[])
 
    /* Make sure we can call parse_input several times ... */
    optind    = 0;
-   optstring = "hs:fvS:A:c:U:DN:d:" 
+   optstring = "hs:fvS:A:c:U:DN:d:"
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
 
    for (;;)
@@ -1018,7 +1025,7 @@ static void rarch_init_savefile_paths(void)
 {
    global_t            *global = global_get_ptr();
    rarch_system_info_t *system = NULL;
-   
+
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    event_cmd_ctl(EVENT_CMD_SAVEFILES_DEINIT, NULL);
@@ -1418,7 +1425,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_SET_SRAM_ENABLE:
-         global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL) 
+         global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
             && !content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL);
          break;
       case RARCH_CTL_SET_ERROR_ON_INIT:
@@ -1635,7 +1642,7 @@ int rarch_info_get_capabilities(enum rarch_capabilities type,
 void retro_fail(int error_code, const char *error)
 {
    /* We cannot longjmp unless we're in rarch_main_init().
-    * If not, something went very wrong, and we should 
+    * If not, something went very wrong, and we should
     * just exit right away. */
    retro_assert(rarch_ctl(RARCH_CTL_IS_ERROR_ON_INIT, NULL));
 
