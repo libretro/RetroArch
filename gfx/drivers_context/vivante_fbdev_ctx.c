@@ -94,6 +94,16 @@ error:
    return NULL;
 }
 
+static void gfx_ctx_vivante_get_video_size(void *data,
+      unsigned *width, unsigned *height)
+{
+   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
+
+#ifdef HAVE_EGL
+   egl_get_video_size(&viv->egl, width, height);
+#endif
+}
+
 static void gfx_ctx_vivante_check_window(void *data, bool *quit,
       bool *resize, unsigned *width, unsigned *height, unsigned frame_count)
 {
@@ -248,16 +258,6 @@ static void gfx_ctx_vivante_swap_buffers(void *data)
 
 #ifdef HAVE_EGL
    egl_swap_buffers(&viv->egl);
-#endif
-}
-
-static void gfx_ctx_vivante_get_video_size(void *data,
-      unsigned *width, unsigned *height)
-{
-   vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
-
-#ifdef HAVE_EGL
-   egl_get_video_size(&viv->egl, width, height);
 #endif
 }
 
