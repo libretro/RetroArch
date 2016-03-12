@@ -433,7 +433,8 @@ static bool android_gfx_ctx_get_metrics(void *data,
 dpi_fallback:
    /* add a fallback in case the device doesn't report DPI.
     * Hopefully fixes issues with the moto G2. */
-   dpi = 90;
+   dpi    = 90;
+   *value = (float)dpi;
    return true;
 }
 
