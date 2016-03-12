@@ -1020,6 +1020,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_PREPARE_DUMMY:
+         memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
 #endif
