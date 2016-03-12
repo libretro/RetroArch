@@ -67,7 +67,7 @@ else ifeq ($(LIBRETRO), catsfc)
 	APP_PRODUCT_CODE    = RARCH-CATSFC
 	APP_UNIQUE_ID       = 0xBAC07
 	APP_ICON            = ctr/assets/catsfc.png
-        APP_BANNER          = ctr/assets/catsfc_banner.png
+	APP_BANNER          = ctr/assets/catsfc_banner.png
 	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), mednafen_wswan)
@@ -117,7 +117,7 @@ else ifeq ($(LIBRETRO), picodrive)
 	APP_PRODUCT_CODE    = RARCH-PICODRIVE
 	APP_UNIQUE_ID       = 0xBAC0C
 	APP_ICON            = ctr/assets/picodrive.png
-        APP_BANNER          = ctr/assets/picodrive_banner.png
+	APP_BANNER          = ctr/assets/picodrive_banner.png
 	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), snes9x_next)
@@ -256,23 +256,23 @@ else ifeq ($(LIBRETRO), mame2000)
 	APP_BIG_TEXT_SECTION = 1
 
 else ifeq ($(LIBRETRO), pocketsnes)
-        APP_TITLE           = Pocket Snes
-        #APP_DESCRIPTION     = Retroarch 3DS
-        APP_AUTHOR          = various
-        APP_PRODUCT_CODE    = RARCH-POCKETSNES
-        APP_UNIQUE_ID       = 0xBAC1A
-        APP_ICON            = ctr/assets/pocketsnes.png
-        APP_BANNER          = ctr/assets/pocketsnes_banner.png
-        #APP_AUDIO           = ctr/assets/silent.wav
+	APP_TITLE           = Pocket Snes
+	#APP_DESCRIPTION     = Retroarch 3DS
+	APP_AUTHOR          = various
+	APP_PRODUCT_CODE    = RARCH-POCKETSNES
+	APP_UNIQUE_ID       = 0xBAC1A
+	APP_ICON            = ctr/assets/pocketsnes.png
+	APP_BANNER          = ctr/assets/pocketsnes_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 else ifeq ($(LIBRETRO), dosbox)
-        APP_TITLE           = DosBox
-        #APP_DESCRIPTION     = Retroarch 3DS
-        APP_AUTHOR          = various
-        APP_PRODUCT_CODE    = RARCH-DOSBOX
-        APP_UNIQUE_ID       = 0xBAC1B
-        APP_ICON            = ctr/assets/dosbox.png
-        #APP_BANNER          = ctr/assets/libretro_banner.png
-        #APP_AUDIO           = ctr/assets/silent.wav
+	APP_TITLE           = DosBox
+	#APP_DESCRIPTION     = Retroarch 3DS
+	APP_AUTHOR          = various
+	APP_PRODUCT_CODE    = RARCH-DOSBOX
+	APP_UNIQUE_ID       = 0xBAC1B
+	APP_ICON            = ctr/assets/dosbox.png
+	#APP_BANNER          = ctr/assets/libretro_banner.png
+	#APP_AUDIO           = ctr/assets/silent.wav
 
 endif
