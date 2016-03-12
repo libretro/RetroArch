@@ -1106,12 +1106,6 @@ static int menu_input_pointer_post_iterate(
 
       gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics);
 
-      /* add a fallback in case the menu driver doesn't report dpi
-       * hopefully fixes issues with the moto G2
-       */
-      if (dpi <= 0)
-         dpi = 90;
-
       if (!pointer_oldpressed[0])
       {
          menu_input->pointer.accel         = 0;
