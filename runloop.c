@@ -415,9 +415,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static struct retro_frame_time_callback runloop_frame_time;
    static retro_keyboard_event_t runloop_key_event          = NULL;
    static retro_keyboard_event_t runloop_frontend_key_event = NULL;
+   static retro_usec_t runloop_frame_time_last      = 0;
    static unsigned runloop_max_frames               = false;
    static bool runloop_force_nonblock               = false;
-   static bool runloop_frame_time_last              = false;
+   static bool runloop_frame_time_last_enable       = false;
    static bool runloop_set_frame_limit              = false;
    static bool runloop_paused                       = false;
    static bool runloop_idle                         = false;
@@ -508,10 +509,13 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             return runloop_max_frames && (*frame_count >= runloop_max_frames);
          }
       case RUNLOOP_CTL_SET_FRAME_TIME_LAST:
-         runloop_frame_time_last = true;
+         runloop_frame_time_last_enable = true;
          break;
       case RUNLOOP_CTL_UNSET_FRAME_TIME_LAST:
-         runloop_frame_time_last = false;
+         if (!runloop_ctl(RUNLOOP_CTL_IS_FRAME_TIME_LAST, NULL))
+            return false;
+         runloop_frame_time_last        = 0;
+         runloop_frame_time_last_enable = false;
          break;
       case RUNLOOP_CTL_SET_OVERRIDES_ACTIVE:
          runloop_overrides_active = true;
@@ -530,7 +534,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE:
          return runloop_game_options_active;
       case RUNLOOP_CTL_IS_FRAME_TIME_LAST:
-         return runloop_frame_time_last;
+         return runloop_frame_time_last_enable;
       case RUNLOOP_CTL_SET_FRAME_LIMIT:
          runloop_set_frame_limit = true;
          break;
@@ -578,13 +582,33 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_frame_time = *info;
          }
          break;
-      case RUNLOOP_CTL_GET_FRAME_TIME:
+      case RUNLOOP_CTL_FRAME_TIME:
+         if (!runloop_frame_time.callback)
+            return false;
+
          {
-            struct retro_frame_time_callback **frame_time = 
-               (struct retro_frame_time_callback**)data;
-            if (!frame_time)
-               return false;
-            *frame_time = (struct retro_frame_time_callback*)&runloop_frame_time;
+            /* Updates frame timing if frame timing callback is in use by the core.
+             * Limits frame time if fast forward ratio throttle is enabled. */
+
+            retro_time_t current     = retro_get_time_usec();
+            retro_time_t delta       = current - runloop_frame_time_last;
+            bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
+                  input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
+               !!recording_driver_get_data_ptr();
+
+
+            if (!runloop_frame_time_last || is_locked_fps)
+               delta = runloop_frame_time.reference;
+
+            if (!is_locked_fps && runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
+               delta /= settings->slowmotion_ratio;
+
+            runloop_frame_time_last = current;
+
+            if (is_locked_fps)
+               runloop_frame_time_last = 0;
+
+            runloop_frame_time.callback(delta);
          }
          break;
       case RUNLOOP_CTL_GET_WINDOWED_SCALE:
@@ -848,14 +872,15 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
          break;
       case RUNLOOP_CTL_STATE_FREE:
-         runloop_perfcnt_enable     = false;
-         runloop_idle               = false;
-         runloop_paused             = false;
-         runloop_slowmotion         = false;
-         runloop_frame_time_last    = false;
-         runloop_set_frame_limit    = false;
-         runloop_overrides_active   = false;
-         runloop_max_frames         = 0;
+         runloop_perfcnt_enable            = false;
+         runloop_idle                      = false;
+         runloop_paused                    = false;
+         runloop_slowmotion                = false;
+         runloop_frame_time_last_enable    = false;
+         runloop_set_frame_limit           = false;
+         runloop_overrides_active          = false;
+         runloop_frame_time_last           = 0;
+         runloop_max_frames                = 0;
          break;
       case RUNLOOP_CTL_GLOBAL_FREE:
          {
@@ -995,6 +1020,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_PREPARE_DUMMY:
+         memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
 #endif
@@ -1250,9 +1276,7 @@ int runloop_iterate(unsigned *sleep_ms)
    unsigned i;
    event_cmd_state_t    cmd;
    retro_time_t current, target, to_sleep_ms;
-   struct retro_frame_time_callback *frame_time = NULL;
    event_cmd_state_t   *cmd_ptr                 = &cmd;
-   static retro_usec_t frame_time_last          = 0;
    static retro_time_t frame_limit_minimum_time = 0.0;
    static retro_time_t frame_limit_last_time    = 0.0;
    static retro_input_t last_input              = 0;
@@ -1262,12 +1286,7 @@ int runloop_iterate(unsigned *sleep_ms)
    cmd.state[0]                                 = input_keys_pressed();
    last_input                                   = cmd.state[0];
 
-
-   if (runloop_ctl(RUNLOOP_CTL_IS_FRAME_TIME_LAST, NULL))
-   {
-      frame_time_last = 0;
-      runloop_ctl(RUNLOOP_CTL_UNSET_FRAME_TIME_LAST, NULL);
-   }
+   runloop_ctl(RUNLOOP_CTL_UNSET_FRAME_TIME_LAST, NULL);
 
    if (runloop_ctl(RUNLOOP_CTL_SHOULD_SET_FRAME_LIMIT, NULL))
    {
@@ -1299,33 +1318,7 @@ int runloop_iterate(unsigned *sleep_ms)
       }
    }
    
-   runloop_ctl(RUNLOOP_CTL_GET_FRAME_TIME, &frame_time);
-
-   if (frame_time->callback)
-   {
-      /* Updates frame timing if frame timing callback is in use by the core.
-       * Limits frame time if fast forward ratio throttle is enabled. */
-
-      retro_time_t current     = retro_get_time_usec();
-      retro_time_t delta       = current - frame_time_last;
-      bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
-            input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
-         !!recording_driver_get_data_ptr();
-
-
-      if (!frame_time_last || is_locked_fps)
-         delta = frame_time->reference;
-
-      if (!is_locked_fps && runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
-         delta /= settings->slowmotion_ratio;
-
-      frame_time_last = current;
-
-      if (is_locked_fps)
-         frame_time_last = 0;
-
-      frame_time->callback(delta);
-   }
+   runloop_ctl(RUNLOOP_CTL_FRAME_TIME, NULL);
 
    cmd.state[2]      = cmd.state[0] & ~cmd.state[1];  /* trigger  */
 

@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
+ *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
  *  ation, either version 3 of the License, or (at your option) any later version.
@@ -335,6 +335,8 @@ typedef struct settings
    char resampler_directory[PATH_MAX_LENGTH];
    char screenshot_directory[PATH_MAX_LENGTH];
    char system_directory[PATH_MAX_LENGTH];
+
+   bool auto_screenshot_filename;
 
    char cache_directory[PATH_MAX_LENGTH];
    char playlist_directory[PATH_MAX_LENGTH];

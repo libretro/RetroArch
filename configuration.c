@@ -553,6 +553,7 @@ static void config_set_defaults(void)
    settings->video.post_filter_record          = post_filter_record;
    settings->video.gpu_record                  = gpu_record;
    settings->video.gpu_screenshot              = gpu_screenshot;
+   settings->auto_screenshot_filename          = auto_screenshot_filename;
    settings->video.rotation                    = ORIENTATION_NORMAL;
 
    settings->audio.enable                      = audio_enable;
@@ -905,7 +906,7 @@ static void config_set_defaults(void)
       rarch_ctl(RARCH_CTL_SET_BLOCK_CONFIG_READ, NULL);
    else
       rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
-   
+
    first_initialized = false;
 }
 
@@ -1569,6 +1570,7 @@ static bool config_load_file(const char *path, bool set_defaults)
          *settings->screenshot_directory = '\0';
       }
    }
+   CONFIG_GET_BOOL_BASE(conf, settings, auto_screenshot_filename, "auto_screenshot_filename");
 
    config_get_path(conf, "resampler_directory", settings->resampler_directory,
          sizeof(settings->resampler_directory));
@@ -1722,7 +1724,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       config_get_bool(conf, tmp, &settings->network_remote_enable_user[i]);
    }
    CONFIG_GET_INT_BASE(conf, settings, network_remote_base_port, "network_remote_base_port");
-   
+
 #endif
 
    CONFIG_GET_BOOL_BASE(conf, settings, debug_panel_enable, "debug_panel_enable");
@@ -1944,7 +1946,7 @@ bool config_load_override(void)
    global_t *global                       = global_get_ptr();
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = NULL;
-   
+
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
@@ -2121,7 +2123,7 @@ bool config_load_remap(void)
    global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
    rarch_system_info_t *system             = NULL;
-   
+
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (system)
@@ -2648,6 +2650,8 @@ bool config_save_file(const char *path)
    config_set_path(conf, "screenshot_directory",
          *settings->screenshot_directory ?
          settings->screenshot_directory : "default");
+   config_set_bool(conf, "auto_screenshot_filename",
+         settings->auto_screenshot_filename);
    config_set_int(conf, "aspect_ratio_index", settings->video.aspect_ratio_idx);
    config_set_string(conf, "audio_device", settings->audio.device);
    config_set_string(conf, "video_filter", settings->video.softfilter_plugin);

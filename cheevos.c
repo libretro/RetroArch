@@ -1845,9 +1845,9 @@ static unsigned cheevos_find_game_id_nes(
       return 0;
    
    if (header.rom_size)
-      rom_size = cheevos_next_power_of_2(header.rom_size) * 16384;
+      rom_size = cheevos_next_power_of_2(header.rom_size);
    else
-      rom_size = 4194304;
+      rom_size = 256;
    
    if (info->data)
    {
@@ -1862,33 +1862,51 @@ static unsigned cheevos_find_game_id_nes(
    else
    {
       RFILE *file = retro_fopen(info->path, RFILE_MODE_READ, 0);
+      uint8_t * data = (uint8_t *) malloc(rom_size << 14);
       
-      if (!file)
+      if (!file || !data)
          return 0;
+
+      /* from fceu core - need it for a correctly md5 sum */
+      memset(data, 0xFF, rom_size << 14);
+
+      /* from fceu core - compute size using the cart mapper */
+      int MapperNo = (header.rom_type >> 4);
+	   MapperNo |= (header.rom_type2 & 0xF0);
+      
+      int not_power2[] =
+      {
+         53, 198, 228
+      };
+
+      bool round = true;
+      for (int i = 0; i != sizeof(not_power2) / sizeof(not_power2[0]); ++i) {
+         //for games not to the power of 2, so we just read enough
+         //prg rom from it, but we have to keep ROM_size to the power of 2
+         //since PRGCartMapping wants ROM_size to be to the power of 2
+         //so instead if not to power of 2, we just use head.ROM_size when
+         //we use FCEU_read
+         if (not_power2[i] == MapperNo) {
+            round = false;
+            break;
+         }
+      }
       
       MD5_Init(&ctx);
       retro_fseek(file, sizeof(header), SEEK_SET);
-      
-      for (;;)
-      {
-         uint8_t buffer[4096];
-         ssize_t num_read = retro_fread(file,
-               (void*)buffer, sizeof(buffer));
-         
-         if (num_read <= 0)
-            break;
-         
-         if (num_read >= (ssize_t)rom_size)
-         {
-            MD5_Update(&ctx, (void*)buffer, rom_size);
-            break;
-         }
-         
-         MD5_Update(&ctx, (void*)buffer, num_read);
-         rom_size -= num_read;
-      }
-      
+      /* from fceu core - check if Trainer included in ROM data */
+      if (header.rom_type & 4)
+         retro_fseek(file, sizeof(header), SEEK_CUR);
+
+      unsigned bytes = (round) ? rom_size : header.rom_size;
+      ssize_t num_read = retro_fread(file, (void*) data, 0x4000 * bytes );
       retro_fclose(file);
+
+      if (num_read <= 0)
+            return 0;
+
+      MD5_Update(&ctx, (void*) data, rom_size << 14);
+      MD5_Final(hash, &ctx);
    }
    
    to = timeout;

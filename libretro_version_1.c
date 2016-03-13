@@ -323,7 +323,8 @@ bool core_ctl(enum core_ctl_state state, void *data)
                core_input_polled = false;
                break;
          }
-         core.retro_run();
+         if (core.retro_run)
+            core.retro_run();
          if (core_poll_type == POLL_TYPE_LATE && !core_input_polled)
          {
             input_poll();
