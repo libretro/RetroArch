@@ -25,6 +25,7 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../frontend_driver.h"
+#include "../../command_event.h"
 
 static void emscripten_mainloop(void)
 {
