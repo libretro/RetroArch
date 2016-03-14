@@ -2779,8 +2779,14 @@ void general_read_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_DEBUG_PANEL_ENABLE:
+         *setting->value.boolean = settings->debug_panel_enable;
+         break;
+      case MENU_LABEL_LIBRETRO_LOG_LEVEL:
+         *setting->value.unsigned_integer = settings->libretro_log_level;
+         break;
       case MENU_LABEL_STATE_SLOT: 
-         *setting->value.unsigned_integer = settings->state_slot;
+         *setting->value.integer = settings->state_slot;
          break;
       case MENU_LABEL_FPS_SHOW:
          *setting->value.boolean = settings->fps_show;
@@ -2856,8 +2862,14 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_DEBUG_PANEL_ENABLE:
+         settings->debug_panel_enable = *setting->value.boolean;
+         break;
+      case MENU_LABEL_LIBRETRO_LOG_LEVEL:
+         settings->libretro_log_level = *setting->value.unsigned_integer;
+         break;
       case MENU_LABEL_STATE_SLOT: 
-         settings->state_slot = *setting->value.unsigned_integer;
+         settings->state_slot = *setting->value.integer;
          break;
       case MENU_LABEL_FPS_SHOW:
          settings->fps_show = *setting->value.boolean;
@@ -4054,7 +4066,7 @@ static bool setting_append_list_logging_options(
 
    CONFIG_UINT(
          list, list_info,
-         &settings->libretro_log_level,
+         &menu_setting_vars.libretro_log_level,
          menu_hash_to_str(MENU_LABEL_LIBRETRO_LOG_LEVEL),
          menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_LOG_LEVEL),
          libretro_log_level,
@@ -4070,7 +4082,7 @@ static bool setting_append_list_logging_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &settings->debug_panel_enable,
+         &menu_setting_vars.debug_panel_enable,
          menu_hash_to_str(MENU_LABEL_DEBUG_PANEL_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_DEBUG_PANEL_ENABLE),
          false,
