@@ -158,7 +158,9 @@ struct rarch_setting
 };
 
 /* static local variables */
-static bool setting_netplay_enable;
+static bool menu_setting_netplay_enable;
+
+static settings_t menu_setting_vars;
 
 /* forward decls */
 static void setting_get_string_representation_default(void *data,
@@ -2777,6 +2779,12 @@ void general_read_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_FPS_SHOW:
+         *setting->value.boolean = settings->fps_show;
+         break;
+      case MENU_LABEL_MENU_THROTTLE_FRAMERATE:
+         *setting->value.boolean = settings->menu.throttle_framerate;
+         break;
       case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
          *setting->value.fraction = settings->audio.rate_control_delta;
          if (*setting->value.fraction < 0.0005)
@@ -2845,6 +2853,12 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_FPS_SHOW:
+         settings->fps_show = *setting->value.boolean;
+         break;
+      case MENU_LABEL_MENU_THROTTLE_FRAMERATE:
+         settings->menu.throttle_framerate = *setting->value.boolean;
+         break;
       case MENU_LABEL_NETPLAY_ENABLE:
 #ifdef HAVE_NETPLAY
          if (*setting->value.boolean)
@@ -4139,7 +4153,7 @@ static bool setting_append_list_frame_throttling_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &settings->menu.throttle_framerate,
+         &menu_setting_vars.menu.throttle_framerate,
          menu_hash_to_str(MENU_LABEL_MENU_THROTTLE_FRAMERATE),
          menu_hash_to_str(MENU_LABEL_VALUE_MENU_THROTTLE_FRAMERATE),
          true,
@@ -4363,7 +4377,7 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &settings->fps_show,
+         &menu_setting_vars.fps_show,
          menu_hash_to_str(MENU_LABEL_FPS_SHOW),
          menu_hash_to_str(MENU_LABEL_VALUE_FPS_SHOW),
          fps_show,
@@ -6367,7 +6381,7 @@ static bool setting_append_list_netplay_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &setting_netplay_enable,
+         &menu_setting_netplay_enable,
          menu_hash_to_str(MENU_LABEL_NETPLAY_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_ENABLE),
          false,
