@@ -1670,22 +1670,21 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             grab_mouse_state = !grab_mouse_state;
 
             if (grab_mouse_state)
-            {
                ret = input_driver_ctl(RARCH_INPUT_CTL_GRAB_MOUSE, NULL);
-               video_driver_ctl(RARCH_DISPLAY_CTL_SHOW_MOUSE, NULL);
-            }
             else
-            {
                ret = input_driver_ctl(RARCH_INPUT_CTL_UNGRAB_MOUSE, NULL);
-               video_driver_ctl(RARCH_DISPLAY_CTL_HIDE_MOUSE, NULL);
-            }
+
+            if (!ret)
+               return false;
 
             RARCH_LOG("%s: %s.\n",
                   msg_hash_to_str(MSG_GRAB_MOUSE_STATE),
                   grab_mouse_state ? "yes" : "no");
 
-            if (!ret)
-               return false;
+            if (grab_mouse_state)
+               video_driver_ctl(RARCH_DISPLAY_CTL_HIDE_MOUSE, NULL);
+            else
+               video_driver_ctl(RARCH_DISPLAY_CTL_SHOW_MOUSE, NULL);
          }
          break;
       case EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG:
