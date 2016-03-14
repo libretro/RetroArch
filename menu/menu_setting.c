@@ -2779,6 +2779,51 @@ void general_read_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_LIBRETRO_INFO_PATH:
+         strlcpy(setting->value.string,
+               settings->libretro_info_path,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_LIBRETRO_DIR_PATH:
+         strlcpy(setting->value.string,
+               settings->libretro_directory,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->menu_config_directory,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->menu_content_directory,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_BOXARTS_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->boxarts_directory,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->dynamic_wallpapers_directory,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_ASSETS_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->assets_directory,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_CORE_ASSETS_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->core_assets_directory,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_SYSTEM_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->system_directory,
+               PATH_MAX_LENGTH);
+         break;
       case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
          *setting->value.boolean = settings->config_save_on_exit;
          break;
@@ -2883,6 +2928,51 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_LIBRETRO_INFO_PATH:
+         strlcpy(settings->libretro_info_path,
+               setting->value.string,
+               sizeof(settings->libretro_info_path));
+         break;
+      case MENU_LABEL_LIBRETRO_DIR_PATH:
+         strlcpy(settings->libretro_directory,
+               setting->value.string,
+               sizeof(settings->libretro_directory));
+         break;
+      case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
+         strlcpy(settings->menu_config_directory,
+               setting->value.string,
+               sizeof(settings->menu_config_directory));
+         break;
+      case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
+         strlcpy(settings->menu_content_directory,
+               setting->value.string,
+               sizeof(settings->menu_content_directory));
+         break;
+      case MENU_LABEL_BOXARTS_DIRECTORY:
+         strlcpy(settings->boxarts_directory,
+               setting->value.string,
+               sizeof(settings->boxarts_directory));
+         break;
+      case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
+         strlcpy(settings->dynamic_wallpapers_directory,
+               setting->value.string,
+               sizeof(settings->dynamic_wallpapers_directory));
+         break;
+      case MENU_LABEL_ASSETS_DIRECTORY:
+         strlcpy(settings->assets_directory,
+               setting->value.string,
+               sizeof(settings->assets_directory));
+         break;
+      case MENU_LABEL_CORE_ASSETS_DIRECTORY:
+         strlcpy(settings->core_assets_directory,
+               setting->value.string,
+               sizeof(settings->core_assets_directory));
+         break;
+      case MENU_LABEL_SYSTEM_DIRECTORY:
+         strlcpy(settings->system_directory,
+               setting->value.string,
+               sizeof(settings->system_directory));
+         break;
       case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
          settings->config_save_on_exit = *setting->value.boolean;
          break;
@@ -6879,8 +6969,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->system_directory,
-         sizeof(settings->system_directory),
+         menu_setting_vars.system_directory,
+         sizeof(menu_setting_vars.system_directory),
          menu_hash_to_str(MENU_LABEL_SYSTEM_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_DIRECTORY),
          "",
@@ -6897,8 +6987,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->core_assets_directory,
-         sizeof(settings->core_assets_directory),
+         menu_setting_vars.core_assets_directory,
+         sizeof(menu_setting_vars.core_assets_directory),
          menu_hash_to_str(MENU_LABEL_CORE_ASSETS_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY),
          "",
@@ -6915,8 +7005,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->assets_directory,
-         sizeof(settings->assets_directory),
+         menu_setting_vars.assets_directory,
+         sizeof(menu_setting_vars.assets_directory),
          menu_hash_to_str(MENU_LABEL_ASSETS_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_ASSETS_DIRECTORY),
          "",
@@ -6933,8 +7023,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->dynamic_wallpapers_directory,
-         sizeof(settings->dynamic_wallpapers_directory),
+         menu_setting_vars.dynamic_wallpapers_directory,
+         sizeof(menu_setting_vars.dynamic_wallpapers_directory),
          menu_hash_to_str(MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY),
          "",
@@ -6951,8 +7041,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->boxarts_directory,
-         sizeof(settings->boxarts_directory),
+         menu_setting_vars.boxarts_directory,
+         sizeof(menu_setting_vars.boxarts_directory),
          menu_hash_to_str(MENU_LABEL_BOXARTS_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_BOXARTS_DIRECTORY),
          "",
@@ -6969,8 +7059,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->menu_content_directory,
-         sizeof(settings->menu_content_directory),
+         menu_setting_vars.menu_content_directory,
+         sizeof(menu_setting_vars.menu_content_directory),
          menu_hash_to_str(MENU_LABEL_RGUI_BROWSER_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY),
          "",
@@ -6988,8 +7078,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->menu_config_directory,
-         sizeof(settings->menu_config_directory),
+         menu_setting_vars.menu_config_directory,
+         sizeof(menu_setting_vars.menu_config_directory),
          menu_hash_to_str(MENU_LABEL_RGUI_CONFIG_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY),
          "",
@@ -7007,8 +7097,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->libretro_directory,
-         sizeof(settings->libretro_directory),
+         menu_setting_vars.libretro_directory,
+         sizeof(menu_setting_vars.libretro_directory),
          menu_hash_to_str(MENU_LABEL_LIBRETRO_DIR_PATH),
          menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH),
          g_defaults.dir.core,
@@ -7026,8 +7116,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->libretro_info_path,
-         sizeof(settings->libretro_info_path),
+         menu_setting_vars.libretro_info_path,
+         sizeof(menu_setting_vars.libretro_info_path),
          menu_hash_to_str(MENU_LABEL_LIBRETRO_INFO_PATH),
          menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_INFO_PATH),
          g_defaults.dir.core_info,
