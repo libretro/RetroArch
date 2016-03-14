@@ -181,6 +181,8 @@ const char *msg_hash_to_str_us(uint32_t hash)
          return "Rewinding.";
       case MSG_REWIND_REACHED_END:
          return "Reached end of rewind buffer.";
+      case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
+         return "Hardcore Mode Enabled: savestate & rewind were disabled.";
       case MSG_TASK_FAILED:
          return "Failed";
       case MSG_DOWNLOADING:

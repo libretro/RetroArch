@@ -630,6 +630,7 @@ static void config_set_defaults(void)
 #ifdef HAVE_CHEEVOS
    settings->cheevos.enable                         = false;
    settings->cheevos.test_unofficial                = false;
+   settings->cheevos.hardcore_mode_enable           = false;
    *settings->cheevos.username                      = '\0';
    *settings->cheevos.password                      = '\0';
 #endif
@@ -1512,6 +1513,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 #ifdef HAVE_CHEEVOS
    CONFIG_GET_BOOL_BASE(conf, settings, cheevos.enable, "cheevos_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, cheevos.test_unofficial, "cheevos_test_unofficial");
+   CONFIG_GET_BOOL_BASE(conf, settings, cheevos.hardcore_mode_enable, "cheevos_hardcore_mode_enable");
    config_get_array(conf, "cheevos_username", settings->cheevos.username, sizeof(settings->cheevos.username));
    config_get_array(conf, "cheevos_password", settings->cheevos.password, sizeof(settings->cheevos.password));
 #endif
@@ -2668,6 +2670,7 @@ bool config_save_file(const char *path)
 #ifdef HAVE_CHEEVOS
    config_set_bool(conf, "cheevos_enable", settings->cheevos.enable);
    config_set_bool(conf, "cheevos_test_unofficial", settings->cheevos.test_unofficial);
+   config_set_bool(conf, "cheevos_hardcore_mode_enable", settings->cheevos.hardcore_mode_enable);
    config_set_string(conf, "cheevos_username", settings->cheevos.username);
    config_set_string(conf, "cheevos_password", settings->cheevos.password);
 #endif

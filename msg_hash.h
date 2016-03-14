@@ -86,6 +86,8 @@
 #define MSG_REWIND_REACHED_END                        0x4f1aab8fU
 #define MSG_FAILED_TO_START_MOVIE_RECORD              0x61221776U
 
+#define MSG_CHEEVOS_HARDCORE_MODE_ENABLE              0x0d212ca9U
+
 #define MSG_STATE_SLOT                                0x27b67f67U
 #define MSG_STARTING_MOVIE_RECORD_TO                  0x6a7e0d50U
 #define MSG_FAILED_TO_START_MOVIE_RECORD              0x61221776U

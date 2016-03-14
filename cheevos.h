@@ -30,6 +30,9 @@ enum cheevos_ctl_state
    /* Unload the achievements from memory. */
    CHEEVOS_CTL_UNLOAD,
 
+   /* Toggle Hardcore Mode */
+   CHEEVOS_CTL_TOGGLE_HARDCORE_MODE,
+
    /* Load the achievements into memory if 
     * the game has content. */
    CHEEVOS_CTL_SET_CHEATS,

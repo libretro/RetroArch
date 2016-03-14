@@ -52,6 +52,8 @@ enum event_command
    EVENT_CMD_QUIT,
    /* Reinitialize all drivers. */
    EVENT_CMD_REINIT,
+   /* Toggles cheevos hardcore mode. */
+   EVENT_CMD_CHEEVOS_HARDCORE_MODE_TOGGLE,
    /* Deinitialize rewind. */
    EVENT_CMD_REWIND_DEINIT,
    /* Initializes rewind. */

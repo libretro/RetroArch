@@ -27,6 +27,7 @@
 #include "net_http_special.h"
 #include "configuration.h"
 #include "performance.h"
+#include "msg_hash.h"
 #include "runloop.h"
 #include "libretro_version_1.h"
 
@@ -238,7 +239,6 @@ static cheevos_locals_t cheevos_locals =
    {NULL, 0},
    {0},
 };
-
 
 /* forward declaration */
 
@@ -1369,7 +1369,7 @@ static void cheevos_unlocker(void *payload)
       snprintf(
          request, sizeof(request),
          "http://retroachievements.org/dorequest.php?r=awardachievement&u=%s&t=%s&a=%u&h=%d",
-         settings->cheevos.username, cheevos_locals.token, cheevo_id, 0
+         settings->cheevos.username, cheevos_locals.token, cheevo_id, settings->cheevos.hardcore_mode_enable
       );
 
       request[sizeof(request) - 1] = 0;
@@ -2197,6 +2197,7 @@ bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
       case CHEEVOS_CTL_LOAD:
          if (!cheevos_load((const void*)data))
             return false;
+
          break;
       case CHEEVOS_CTL_UNLOAD:
          if (!cheevos_locals.loaded)
@@ -2206,6 +2207,24 @@ bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
          cheevos_free_cheevo_set(&cheevos_locals.unofficial);
 
          cheevos_locals.loaded = 0;
+         break;
+      case CHEEVOS_CTL_TOGGLE_HARDCORE_MODE:
+         /* reset and deinit rewind to avoid cheat the score */
+         if (settings->cheevos.hardcore_mode_enable)
+         {
+            /* send reset core cmd to avoid any user savestate previusly loaded */
+            event_cmd_ctl(EVENT_CMD_RESET, NULL);
+            if (settings->rewind_enable)
+               event_cmd_ctl(EVENT_CMD_REWIND_DEINIT, NULL);
+
+            RARCH_LOG("%s\n", msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE));
+            runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE), 0, 3 * 60, true);
+         }
+         else
+         {
+            if (settings->rewind_enable)
+               event_cmd_ctl(EVENT_CMD_REWIND_INIT, NULL);
+         }
          break;
       case CHEEVOS_CTL_TEST:
          if (!cheevos_locals.loaded)

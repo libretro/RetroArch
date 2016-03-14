@@ -465,6 +465,11 @@ static void event_load_auto_state(void)
       return;
 #endif
 
+#ifdef HAVE_CHEEVOS
+   if (settings->cheevos.hardcore_mode_enable)
+      return;
+#endif
+
    if (!settings->savestate_auto_load)
       return;
 
@@ -627,6 +632,11 @@ static bool event_save_auto_state(void)
       return false;
    if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
       return false;
+
+#ifdef HAVE_CHEEVOS
+   if (settings->cheevos.hardcore_mode_enable)
+      return false;
+#endif
 
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
          ".auto", sizeof(savestate_name_auto));
@@ -1029,6 +1039,12 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
             return false;
 #endif
+
+#ifdef HAVE_CHEEVOS
+         if (settings->cheevos.hardcore_mode_enable)
+            return false;
+#endif
+
          event_main_state(cmd);
          break;
       case EVENT_CMD_RESIZE_WINDOWED_SCALE:
@@ -1070,6 +1086,11 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          core_ctl(CORE_CTL_RETRO_RESET, NULL);
          break;
       case EVENT_CMD_SAVE_STATE:
+#ifdef HAVE_CHEEVOS
+         if (settings->cheevos.hardcore_mode_enable)
+            return false;
+#endif
+
          if (settings->savestate_auto_index)
             settings->state_slot++;
 
@@ -1093,6 +1114,11 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_QUIT:
          rarch_ctl(RARCH_CTL_QUIT, NULL);
+         break;
+      case EVENT_CMD_CHEEVOS_HARDCORE_MODE_TOGGLE:
+#ifdef HAVE_CHEEVOS
+         cheevos_ctl(CHEEVOS_CTL_TOGGLE_HARDCORE_MODE, NULL);
+#endif
          break;
       case EVENT_CMD_REINIT:
          {
@@ -1139,9 +1165,18 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
             return false;
 #endif
+#ifdef HAVE_CHEEVOS
+         if (settings->cheevos.hardcore_mode_enable)
+            return false;
+#endif
+
          state_manager_event_deinit();
          break;
       case EVENT_CMD_REWIND_INIT:
+#ifdef HAVE_CHEEVOS
+         if (settings->cheevos.hardcore_mode_enable)
+            return false;
+#endif
 #ifdef HAVE_NETPLAY
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
 #endif

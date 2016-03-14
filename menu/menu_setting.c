@@ -6243,6 +6243,21 @@ static bool setting_append_list_cheevos_options(
          general_write_handler,
          general_read_handler);
 
+   CONFIG_BOOL(
+         list, list_info,
+         &settings->cheevos.hardcore_mode_enable,
+         menu_hash_to_str(MENU_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE),
+         menu_hash_to_str(MENU_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE),
+         false,
+         menu_hash_to_str(MENU_VALUE_OFF),
+         menu_hash_to_str(MENU_VALUE_ON),
+         &group_info,
+         &subgroup_info,
+         parent_group,
+         general_write_handler,
+         general_read_handler);
+   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_CHEEVOS_HARDCORE_MODE_TOGGLE);
+
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);
 #endif
