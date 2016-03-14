@@ -2779,6 +2779,16 @@ void general_read_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_SCREENSHOT_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->screenshot_directory,
+               PATH_MAX_LENGTH);
+         break;      
+      case MENU_LABEL_CACHE_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->cache_directory,
+               PATH_MAX_LENGTH);
+         break;
       case MENU_LABEL_OVERLAY_DIRECTORY:
          strlcpy(setting->value.string,
                settings->overlay_directory,
@@ -2970,6 +2980,16 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_SCREENSHOT_DIRECTORY:
+         strlcpy(settings->screenshot_directory,
+               setting->value.string,
+               sizeof(settings->screenshot_directory));
+         break;      
+      case MENU_LABEL_CACHE_DIRECTORY:
+         strlcpy(settings->cache_directory,
+               setting->value.string,
+               sizeof(settings->cache_directory));
+         break;
       case MENU_LABEL_OVERLAY_DIRECTORY:
          strlcpy(settings->overlay_directory,
                setting->value.string,
@@ -7406,8 +7426,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->screenshot_directory,
-         sizeof(settings->screenshot_directory),
+         menu_setting_vars.screenshot_directory,
+         sizeof(menu_setting_vars.screenshot_directory),
          menu_hash_to_str(MENU_LABEL_SCREENSHOT_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_SCREENSHOT_DIRECTORY),
          "",
@@ -7514,8 +7534,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->cache_directory,
-         sizeof(settings->cache_directory),
+         menu_setting_vars.cache_directory,
+         sizeof(menu_setting_vars.cache_directory),
          menu_hash_to_str(MENU_LABEL_CACHE_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_CACHE_DIRECTORY),
          "",
