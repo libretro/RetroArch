@@ -2779,6 +2779,9 @@ void general_read_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_STATE_SLOT: 
+         *setting->value.unsigned_integer = settings->state_slot;
+         break;
       case MENU_LABEL_FPS_SHOW:
          *setting->value.boolean = settings->fps_show;
          break;
@@ -2853,6 +2856,9 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_STATE_SLOT: 
+         settings->state_slot = *setting->value.unsigned_integer;
+         break;
       case MENU_LABEL_FPS_SHOW:
          settings->fps_show = *setting->value.boolean;
          break;
@@ -3341,7 +3347,7 @@ static bool setting_append_list_main_menu_options(
 
    CONFIG_INT(
          list, list_info,
-         &settings->state_slot,
+         &menu_setting_vars.state_slot,
          menu_hash_to_str(MENU_LABEL_STATE_SLOT),
          menu_hash_to_str(MENU_LABEL_VALUE_STATE_SLOT),
          0,
