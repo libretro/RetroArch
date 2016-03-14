@@ -2779,6 +2779,15 @@ void general_read_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE:
+         *setting->value.boolean = settings->ui.suspend_screensaver_enable;
+         break;
+      case MENU_LABEL_REWIND_GRANULARITY:
+         *setting->value.unsigned_integer = settings->rewind_granularity;
+         break;
+      case MENU_LABEL_REWIND_ENABLE:
+         *setting->value.boolean = settings->rewind_enable;
+         break;
       case MENU_LABEL_DEBUG_PANEL_ENABLE:
          *setting->value.boolean = settings->debug_panel_enable;
          break;
@@ -2862,6 +2871,15 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE:
+         settings->ui.suspend_screensaver_enable = *setting->value.boolean;
+         break;
+      case MENU_LABEL_REWIND_GRANULARITY:
+         settings->rewind_granularity = *setting->value.unsigned_integer;
+         break;
+      case MENU_LABEL_REWIND_ENABLE:
+         settings->rewind_enable = *setting->value.boolean;
+         break;
       case MENU_LABEL_DEBUG_PANEL_ENABLE:
          settings->debug_panel_enable = *setting->value.boolean;
          break;
@@ -4206,7 +4224,7 @@ static bool setting_append_list_rewind_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &settings->rewind_enable,
+         &menu_setting_vars.rewind_enable,
          menu_hash_to_str(MENU_LABEL_REWIND_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_REWIND_ENABLE),
          rewind_enable,
@@ -4234,7 +4252,7 @@ static bool setting_append_list_rewind_options(
 #endif
       CONFIG_UINT(
             list, list_info,
-            &settings->rewind_granularity,
+            &menu_setting_vars.rewind_granularity,
             menu_hash_to_str(MENU_LABEL_REWIND_GRANULARITY),
             menu_hash_to_str(MENU_LABEL_VALUE_REWIND_GRANULARITY),
             rewind_granularity,
@@ -4381,7 +4399,7 @@ static bool setting_append_list_video_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &settings->ui.suspend_screensaver_enable,
+         &menu_setting_vars.ui.suspend_screensaver_enable,
          menu_hash_to_str(MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE),
          true,
