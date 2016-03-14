@@ -1664,21 +1664,28 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_GRAB_MOUSE_TOGGLE:
          {
+            bool ret = false;
             static bool grab_mouse_state  = false;
-            bool grab_mouse_state_tmp;
 
             grab_mouse_state = !grab_mouse_state;
 
-            if (!input_driver_ctl(RARCH_INPUT_CTL_GRAB_MOUSE, &grab_mouse_state))
-               return false;
+            if (grab_mouse_state)
+            {
+               ret = input_driver_ctl(RARCH_INPUT_CTL_GRAB_MOUSE, NULL);
+               video_driver_ctl(RARCH_DISPLAY_CTL_SHOW_MOUSE, NULL);
+            }
+            else
+            {
+               ret = input_driver_ctl(RARCH_INPUT_CTL_UNGRAB_MOUSE, NULL);
+               video_driver_ctl(RARCH_DISPLAY_CTL_HIDE_MOUSE, NULL);
+            }
 
             RARCH_LOG("%s: %s.\n",
                   msg_hash_to_str(MSG_GRAB_MOUSE_STATE),
                   grab_mouse_state ? "yes" : "no");
 
-            grab_mouse_state_tmp = !grab_mouse_state;
-            video_driver_ctl(RARCH_DISPLAY_CTL_SHOW_MOUSE,
-                  &grab_mouse_state_tmp);
+            if (!ret)
+               return false;
          }
          break;
       case EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG:

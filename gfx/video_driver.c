@@ -1451,13 +1451,14 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_SHOW_MOUSE:
          if (!video_driver_poke)
             return false;
-
-         {
-            bool *toggle                  = (bool*)data;
-
-            if (video_driver_poke->show_mouse)
-               video_driver_poke->show_mouse(video_driver_data, *toggle);
-         }
+         if (video_driver_poke->show_mouse)
+            video_driver_poke->show_mouse(video_driver_data, true);
+         break;
+      case RARCH_DISPLAY_CTL_HIDE_MOUSE:
+         if (!video_driver_poke)
+            return false;
+         if (video_driver_poke->show_mouse)
+            video_driver_poke->show_mouse(video_driver_data, false);
          break;
       case RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE:
          {

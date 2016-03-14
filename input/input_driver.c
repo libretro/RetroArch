@@ -836,13 +836,16 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
 #endif
          break;
       case RARCH_INPUT_CTL_GRAB_MOUSE:
-         {
-            bool *bool_data = (bool*)data;
-            if (!current_input || !current_input->grab_mouse)
-               return false;
+         if (!current_input || !current_input->grab_mouse)
+            return false;
 
-            current_input->grab_mouse(current_input_data, *bool_data);
-         }
+         current_input->grab_mouse(current_input_data, true);
+         break;
+      case RARCH_INPUT_CTL_UNGRAB_MOUSE:
+         if (!current_input || !current_input->grab_mouse)
+            return false;
+
+         current_input->grab_mouse(current_input_data, false);
          break;
       case RARCH_INPUT_CTL_IS_DATA_PTR_SAME:
          return (current_input_data == data);
