@@ -186,8 +186,8 @@ OBJ += frontend/frontend.o \
        gfx/video_filter.o \
        audio/audio_resampler_driver.o \
        audio/audio_dsp_filter.o \
-       audio/drivers_resampler/sinc.o \
-       audio/drivers_resampler/nearest.o \
+       audio/drivers_resampler/sinc_resampler.o \
+       audio/drivers_resampler/nearest_resampler.o \
        audio/drivers_resampler/null_resampler.o \
        audio/drivers_resampler/cc_resampler.o \
        location/drivers/nulllocation.o \
