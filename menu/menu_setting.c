@@ -6256,6 +6256,7 @@ static bool setting_append_list_cheevos_options(
          parent_group,
          general_write_handler,
          general_read_handler);
+   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_CHEEVOS_HARDCORE_MODE_TOGGLE);
 
    END_SUB_GROUP(list, list_info, parent_group);
    END_GROUP(list, list_info, parent_group);

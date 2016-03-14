@@ -240,8 +240,6 @@ static cheevos_locals_t cheevos_locals =
    {0},
 };
 
-static bool last_hardcore_mode_value = false;
-
 /* forward declaration */
 
 int rarch_main_async_job_add(async_task_t task, void *payload);
@@ -2200,7 +2198,6 @@ bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
          if (!cheevos_load((const void*)data))
             return false;
 
-         last_hardcore_mode_value = settings->cheevos.hardcore_mode_enable;
          break;
       case CHEEVOS_CTL_UNLOAD:
          if (!cheevos_locals.loaded)
@@ -2211,6 +2208,24 @@ bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
 
          cheevos_locals.loaded = 0;
          break;
+      case CHEEVOS_CTL_TOGGLE_HARDCORE_MODE:
+         /* reset and deinit rewind to avoid cheat the score */
+         if (settings->cheevos.hardcore_mode_enable)
+         {
+            /* send reset core cmd to avoid any user savestate previusly loaded */
+            event_cmd_ctl(EVENT_CMD_RESET, NULL);
+            if (settings->rewind_enable)
+               event_cmd_ctl(EVENT_CMD_REWIND_DEINIT, NULL);
+
+            RARCH_LOG("%s\n", msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE));
+            runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE), 0, 3 * 60, true);
+         }
+         else
+         {
+            if (settings->rewind_enable)
+               event_cmd_ctl(EVENT_CMD_REWIND_INIT, NULL);
+         }
+         break;
       case CHEEVOS_CTL_TEST:
          if (!cheevos_locals.loaded)
             return false;
@@ -2219,18 +2234,6 @@ bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
          {
             if (!settings->cheevos.enable)
                return false;
-
-            /* just a quick check on hardcore last value to avoid cheat the score */
-            if (last_hardcore_mode_value == false
-                && last_hardcore_mode_value != settings->cheevos.hardcore_mode_enable)
-            {
-               last_hardcore_mode_value = settings->cheevos.hardcore_mode_enable;
-               /* send reset core cmd to avoid any user savestate previusly loaded */
-               event_cmd_ctl(EVENT_CMD_RESET, NULL);
-
-               RARCH_LOG("%s\n", msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE));
-               runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE), 0, 3 * 60, true);
-            }
 
             cheevos_test_cheevo_set(&cheevos_locals.core);
 

@@ -1115,6 +1115,11 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
       case EVENT_CMD_QUIT:
          rarch_ctl(RARCH_CTL_QUIT, NULL);
          break;
+      case EVENT_CMD_CHEEVOS_HARDCORE_MODE_TOGGLE:
+#ifdef HAVE_CHEEVOS
+         cheevos_ctl(CHEEVOS_CTL_TOGGLE_HARDCORE_MODE, NULL);
+#endif
+         break;
       case EVENT_CMD_REINIT:
          {
             struct retro_hw_render_callback *hwr = NULL;

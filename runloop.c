@@ -725,7 +725,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             else if (runloop_cmd_triggered(cmd, RARCH_LOAD_STATE_KEY))
                event_cmd_ctl(EVENT_CMD_LOAD_STATE, NULL);
 
-            state_manager_check_rewind(runloop_cmd_press(cmd, RARCH_REWIND));
+#ifdef HAVE_CHEEVOS
+            if(!settings->cheevos.hardcore_mode_enable)
+#endif
+               state_manager_check_rewind(runloop_cmd_press(cmd, RARCH_REWIND));
 
             tmp = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
 
