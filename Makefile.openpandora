@@ -10,7 +10,7 @@ TARGET := retroarch-pandora
 LDDIRS = -L. -L$(PNDSDK)/usr/lib
 INCDIRS = -I. -I$(PNDSDK)/usr/include
 
-OBJ = griffin/griffin.o audio/resamplers/sinc_neon.o audio/audio_utils_neon.o
+OBJ = griffin/griffin.o audio/resamplers/sinc_resampler_neon.o audio/audio_utils_neon.o
 LDFLAGS = -L$(PNDSDK)/usr/lib -Wl,-rpath,$(PNDSDK)/usr/lib
 
 LIBS = -lGLESv2 -lEGL -ldl -lm -lpthread -lrt -lasound

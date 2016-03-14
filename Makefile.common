@@ -351,7 +351,7 @@ endif
 # Audio Resamplers
 
 ifeq ($(HAVE_NEON),1)
-   OBJ += audio/drivers_resampler/sinc_neon.o \
+   OBJ += audio/drivers_resampler/sinc_resampler_neon.o \
           audio/drivers_resampler/cc_resampler_neon.o
    # When compiled without this, tries to attempt to compile sinc lerp,
    # which will error out

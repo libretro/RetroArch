@@ -10,7 +10,7 @@
 		0FDA2A721BE1AFA800F2B5DA /* cc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */; };
 		0FDA2A731BE1AFA800F2B5DA /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		0FDA2A741BE1AFA800F2B5DA /* audio_utils_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CD192E5FE30063A359 /* audio_utils_neon.S */; };
-		0FDA2A751BE1AFA800F2B5DA /* sinc_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_neon.S */; };
+		0FDA2A751BE1AFA800F2B5DA /* sinc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */; };
 		0FDA2A761BE1AFA800F2B5DA /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		0FDA2A781BE1AFA800F2B5DA /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
 		0FDA2A791BE1AFA800F2B5DA /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
@@ -34,14 +34,14 @@
 		0FDA2A8C1BE1AFA800F2B5DA /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
 		0FDA2A8D1BE1AFA800F2B5DA /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BB1A87E068003AF12F /* assets */; };
 		501232CA192E5FC40063A359 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
-		501232CC192E5FDC0063A359 /* sinc_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_neon.S */; };
+		501232CC192E5FDC0063A359 /* sinc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */; };
 		501232CE192E5FE30063A359 /* audio_utils_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CD192E5FE30063A359 /* audio_utils_neon.S */; };
 		501881EC184BAD6D006F665D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881EB184BAD6D006F665D /* AVFoundation.framework */; };
 		501881EE184BB54C006F665D /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 501881ED184BB54C006F665D /* CoreMedia.framework */; };
 		503700881ACA18E400A51A37 /* cc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 50D00E8D19D117C400EBA71E /* cc_resampler_neon.S */; };
 		503700891ACA18E400A51A37 /* griffin_objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 50521A431AA23BF500185CC9 /* griffin_objc.m */; };
 		5037008A1ACA18E400A51A37 /* audio_utils_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CD192E5FE30063A359 /* audio_utils_neon.S */; };
-		5037008B1ACA18E400A51A37 /* sinc_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_neon.S */; };
+		5037008B1ACA18E400A51A37 /* sinc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */; };
 		5037008C1ACA18E400A51A37 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		5037008E1ACA18E400A51A37 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C3B1AD1AB1107100F478D3 /* QuartzCore.framework */; };
 		503700901ACA18E400A51A37 /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 696012F119F3389A006A1088 /* CoreText.framework */; };
@@ -90,7 +90,7 @@
 		0FDA2A911BE1AFA800F2B5DA /* RetroArch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RetroArch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FDA2A921BE1AFA800F2B5DA /* RetroArch_iOS9-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RetroArch_iOS9-Info.plist"; path = "/Users/buildbot/buildbot/ios/retroarch/pkg/apple/RetroArch_iOS9-Info.plist"; sourceTree = "<absolute>"; };
 		501232C9192E5FC40063A359 /* griffin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = griffin.c; path = ../../griffin/griffin.c; sourceTree = SOURCE_ROOT; };
-		501232CB192E5FDC0063A359 /* sinc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_neon.S; path = ../../audio/drivers_resampler/sinc_neon.S; sourceTree = SOURCE_ROOT; };
+		501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = sinc_resampler_neon.S; path = ../../audio/drivers_resampler/sinc_resampler_neon.S; sourceTree = SOURCE_ROOT; };
 		501232CD192E5FE30063A359 /* audio_utils_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = audio_utils_neon.S; path = ../../audio/audio_utils_neon.S; sourceTree = SOURCE_ROOT; };
 		501881EB184BAD6D006F665D /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		501881ED184BB54C006F665D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -449,7 +449,7 @@
 				0FDA2A721BE1AFA800F2B5DA /* cc_resampler_neon.S in Sources */,
 				0FDA2A731BE1AFA800F2B5DA /* griffin_objc.m in Sources */,
 				0FDA2A741BE1AFA800F2B5DA /* audio_utils_neon.S in Sources */,
-				0FDA2A751BE1AFA800F2B5DA /* sinc_neon.S in Sources */,
+				0FDA2A751BE1AFA800F2B5DA /* sinc_resampler_neon.S in Sources */,
 				0FDA2A761BE1AFA800F2B5DA /* griffin.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -461,7 +461,7 @@
 				503700881ACA18E400A51A37 /* cc_resampler_neon.S in Sources */,
 				503700891ACA18E400A51A37 /* griffin_objc.m in Sources */,
 				5037008A1ACA18E400A51A37 /* audio_utils_neon.S in Sources */,
-				5037008B1ACA18E400A51A37 /* sinc_neon.S in Sources */,
+				5037008B1ACA18E400A51A37 /* sinc_resampler_neon.S in Sources */,
 				5037008C1ACA18E400A51A37 /* griffin.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -473,7 +473,7 @@
 				50D00E8E19D117C400EBA71E /* cc_resampler_neon.S in Sources */,
 				50521A441AA23BF500185CC9 /* griffin_objc.m in Sources */,
 				501232CE192E5FE30063A359 /* audio_utils_neon.S in Sources */,
-				501232CC192E5FDC0063A359 /* sinc_neon.S in Sources */,
+				501232CC192E5FDC0063A359 /* sinc_resampler_neon.S in Sources */,
 				501232CA192E5FC40063A359 /* griffin.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
