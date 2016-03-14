@@ -2779,6 +2779,23 @@ void general_read_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_CURSOR_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->cursor_directory,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_CONTENT_DATABASE_DIRECTORY:
+#ifdef HAVE_LIBRETRODB
+         strlcpy(setting->value.string,
+               settings->content_database,
+               PATH_MAX_LENGTH);
+#endif
+         break;
+      case MENU_LABEL_MENU_WALLPAPER:
+         strlcpy(setting->value.string,
+               settings->menu.wallpaper,
+               PATH_MAX_LENGTH);
+         break;
       case MENU_LABEL_LIBRETRO_INFO_PATH:
          strlcpy(setting->value.string,
                settings->libretro_info_path,
@@ -2928,6 +2945,23 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_CURSOR_DIRECTORY:
+         strlcpy(settings->cursor_directory,
+               setting->value.string,
+               sizeof(settings->cursor_directory));
+         break;
+      case MENU_LABEL_CONTENT_DATABASE_DIRECTORY:
+#ifdef HAVE_LIBRETRODB
+         strlcpy(settings->content_database,
+               setting->value.string,
+               sizeof(settings->content_database));
+#endif
+         break;
+      case MENU_LABEL_MENU_WALLPAPER:
+         strlcpy(settings->menu.wallpaper,
+               setting->value.string,
+               sizeof(settings->menu.wallpaper));
+         break;
       case MENU_LABEL_LIBRETRO_INFO_PATH:
          strlcpy(settings->libretro_info_path,
                setting->value.string,
@@ -5851,8 +5885,8 @@ static bool setting_append_list_menu_options(
 
    CONFIG_PATH(
          list, list_info,
-         settings->menu.wallpaper,
-         sizeof(settings->menu.wallpaper),
+         menu_setting_vars.menu.wallpaper,
+         sizeof(menu_setting_vars.menu.wallpaper),
          menu_hash_to_str(MENU_LABEL_MENU_WALLPAPER),
          menu_hash_to_str(MENU_LABEL_VALUE_MENU_WALLPAPER),
          "",
@@ -7136,8 +7170,8 @@ static bool setting_append_list_directory_options(
 #ifdef HAVE_LIBRETRODB
    CONFIG_DIR(
          list, list_info,
-         settings->content_database,
-         sizeof(settings->content_database),
+         menu_setting_vars.content_database,
+         sizeof(menu_setting_vars.content_database),
          menu_hash_to_str(MENU_LABEL_CONTENT_DATABASE_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY),
          "",
@@ -7154,8 +7188,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->cursor_directory,
-         sizeof(settings->cursor_directory),
+         menu_setting_vars.cursor_directory,
+         sizeof(menu_setting_vars.cursor_directory),
          menu_hash_to_str(MENU_LABEL_CURSOR_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_CURSOR_DIRECTORY),
          "",
