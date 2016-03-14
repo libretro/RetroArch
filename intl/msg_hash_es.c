@@ -194,6 +194,8 @@ const char *msg_hash_to_str_es(uint32_t hash)
          return "Rebobinando.";
       case MSG_REWIND_REACHED_END:
          return "Se ha llegado al final del búfer de rebobinado.";
+      case MSG_CHEEVOS_HARDCORE_MODE_ENABLE:
+         return "Modo Extremo Activado: guardar estado y reboninar se han desactivado.";
       case MSG_TASK_FAILED:
         return "Error";
       case MSG_DOWNLOADING:

@@ -302,6 +302,7 @@ typedef struct settings
    {
       bool enable;
       bool test_unofficial;
+      bool hardcore_mode_enable;
       char username[32];
       char password[32];
    } cheevos;

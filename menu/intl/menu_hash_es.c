@@ -54,6 +54,8 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Guardar configuración actual";
       case MENU_LABEL_VALUE_STATE_SLOT:
          return "Ranura de guardado";
+      case MENU_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE:
+         return "Modo Extremo";
       case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS:
          return "Cuenta Cheevos";
       case MENU_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME:
