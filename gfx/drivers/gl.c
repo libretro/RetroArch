@@ -3841,6 +3841,7 @@ static uintptr_t gl_load_texture(void *video_data, void *data,
 {
    uintptr_t id = 0;
 
+#ifdef HAVE_THREADS
    if (threaded)
    {
       custom_command_method_t func = video_texture_load_wrap_gl;
@@ -3856,6 +3857,7 @@ static uintptr_t gl_load_texture(void *video_data, void *data,
       }
       return rarch_threaded_video_texture_load(data, func);
    }
+#endif
 
    video_texture_load_gl((struct texture_image*)data, filter_type, &id);
    return id;

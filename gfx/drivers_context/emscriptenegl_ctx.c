@@ -125,7 +125,7 @@ static void gfx_ctx_emscripten_destroy(void *data)
 static void *gfx_ctx_emscripten_init(void *video_driver)
 {
 #ifdef HAVE_EGL
-   EGLint width, height;
+   unsigned width, height;
    EGLint major, minor;
    EGLint n;
    static const EGLint attribute_list[] =
@@ -173,14 +173,13 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
 
    if (!egl_create_surface(&emscripten->egl, 0))
       goto error;
-#endif
 
-   eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_WIDTH, &width);
-   eglQuerySurface(g_egl_dpy, g_egl_surf, EGL_HEIGHT, &height);
+   egl_get_video_size(&emscripten->egl, &width, &height);
 
    emscripten->fb_width  = width;
    emscripten->fb_height = height;
    RARCH_LOG("[EMSCRIPTEN/EGL]: Dimensions: %ux%u\n", width, height);
+#endif
 
    return emscripten;
 

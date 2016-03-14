@@ -1760,8 +1760,10 @@ bool content_ctl(enum content_ctl_state state, void *data)
             content_ctl(CONTENT_CTL_STREAM_INIT, NULL);
 
             stream = (content_stream_t*)data;
+#ifdef HAVE_ZLIB
             stream->crc = stream_backend->stream_crc_calculate(
                   stream->a, stream->b, stream->c);
+#endif
          }
          break;
       case CONTENT_CTL_LOAD:
