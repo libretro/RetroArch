@@ -2779,6 +2779,21 @@ void general_read_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_PLAYLIST_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->playlist_directory,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_INPUT_REMAPPING_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->input_remapping_directory,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
+         strlcpy(setting->value.string,
+               settings->input.autoconfig_dir,
+               PATH_MAX_LENGTH);
+         break;
       case MENU_LABEL_SCREENSHOT_DIRECTORY:
          strlcpy(setting->value.string,
                settings->screenshot_directory,
@@ -2980,6 +2995,21 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_PLAYLIST_DIRECTORY:
+         strlcpy(settings->playlist_directory,
+               setting->value.string,
+               sizeof(settings->playlist_directory));
+         break;
+      case MENU_LABEL_INPUT_REMAPPING_DIRECTORY:
+         strlcpy(settings->input_remapping_directory,
+               setting->value.string,
+               sizeof(settings->input_remapping_directory));
+         break;
+      case MENU_LABEL_JOYPAD_AUTOCONFIG_DIR:
+         strlcpy(settings->input.autoconfig_dir,
+               setting->value.string,
+               sizeof(settings->input.autoconfig_dir));
+         break;
       case MENU_LABEL_SCREENSHOT_DIRECTORY:
          strlcpy(settings->screenshot_directory,
                setting->value.string,
@@ -7444,8 +7474,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->input.autoconfig_dir,
-         sizeof(settings->input.autoconfig_dir),
+         menu_setting_vars.input.autoconfig_dir,
+         sizeof(menu_setting_vars.input.autoconfig_dir),
          menu_hash_to_str(MENU_LABEL_JOYPAD_AUTOCONFIG_DIR),
          menu_hash_to_str(MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR),
          "",
@@ -7462,8 +7492,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->input_remapping_directory,
-         sizeof(settings->input_remapping_directory),
+         menu_setting_vars.input_remapping_directory,
+         sizeof(menu_setting_vars.input_remapping_directory),
          menu_hash_to_str(MENU_LABEL_INPUT_REMAPPING_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY),
          "",
@@ -7480,8 +7510,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->playlist_directory,
-         sizeof(settings->playlist_directory),
+         menu_setting_vars.playlist_directory,
+         sizeof(menu_setting_vars.playlist_directory),
          menu_hash_to_str(MENU_LABEL_PLAYLIST_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_DIRECTORY),
          "",
