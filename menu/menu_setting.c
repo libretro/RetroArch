@@ -2779,6 +2779,31 @@ void general_read_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_OVERLAY_DIRECTORY:
+         strlcpy(setting->value.string,
+               settings->overlay_directory,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_VIDEO_SHADER_DIR:
+         strlcpy(setting->value.string,
+               settings->video.shader_dir,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_AUDIO_FILTER_DIR:
+         strlcpy(setting->value.string,
+               settings->audio.filter_dir,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_VIDEO_FILTER_DIR:
+         strlcpy(setting->value.string,
+               settings->video.filter_dir,
+               PATH_MAX_LENGTH);
+         break;
+      case MENU_LABEL_CHEAT_DATABASE_PATH:
+         strlcpy(setting->value.string,
+               settings->cheat_database,
+               PATH_MAX_LENGTH);
+         break;
       case MENU_LABEL_CURSOR_DIRECTORY:
          strlcpy(setting->value.string,
                settings->cursor_directory,
@@ -2945,6 +2970,32 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_OVERLAY_DIRECTORY:
+         strlcpy(settings->overlay_directory,
+               setting->value.string,
+               sizeof(settings->overlay_directory));
+         break;
+      case MENU_LABEL_VIDEO_SHADER_DIR:
+         strlcpy(settings->video.shader_dir,
+               setting->value.string,
+               sizeof(settings->video.shader_dir));
+         break;
+      case MENU_LABEL_AUDIO_FILTER_DIR:
+         strlcpy(
+               settings->audio.filter_dir,
+               setting->value.string,
+               sizeof(settings->audio.filter_dir));
+         break;
+      case MENU_LABEL_VIDEO_FILTER_DIR:
+         strlcpy(settings->video.filter_dir,
+               setting->value.string,
+               sizeof(settings->video.filter_dir));
+         break;
+      case MENU_LABEL_CHEAT_DATABASE_PATH:
+         strlcpy(settings->cheat_database,
+            setting->value.string,
+            sizeof(settings->cheat_database));
+         break;
       case MENU_LABEL_CURSOR_DIRECTORY:
          strlcpy(settings->cursor_directory,
                setting->value.string,
@@ -7207,8 +7258,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->cheat_database,
-         sizeof(settings->cheat_database),
+         menu_setting_vars.cheat_database,
+         sizeof(menu_setting_vars.cheat_database),
          menu_hash_to_str(MENU_LABEL_CHEAT_DATABASE_PATH),
          menu_hash_to_str(MENU_LABEL_VALUE_CHEAT_DATABASE_PATH),
          "",
@@ -7225,8 +7276,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->video.filter_dir,
-         sizeof(settings->video.filter_dir),
+         menu_setting_vars.video.filter_dir,
+         sizeof(menu_setting_vars.video.filter_dir),
          menu_hash_to_str(MENU_LABEL_VIDEO_FILTER_DIR),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER_DIR),
          "",
@@ -7243,8 +7294,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->audio.filter_dir,
-         sizeof(settings->audio.filter_dir),
+         menu_setting_vars.audio.filter_dir,
+         sizeof(menu_setting_vars.audio.filter_dir),
          menu_hash_to_str(MENU_LABEL_AUDIO_FILTER_DIR),
          menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_FILTER_DIR),
          "",
@@ -7261,8 +7312,8 @@ static bool setting_append_list_directory_options(
 
    CONFIG_DIR(
          list, list_info,
-         settings->video.shader_dir,
-         sizeof(settings->video.shader_dir),
+         menu_setting_vars.video.shader_dir,
+         sizeof(menu_setting_vars.video.shader_dir),
          menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_DIR),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHADER_DIR),
          g_defaults.dir.shader,
@@ -7318,8 +7369,8 @@ static bool setting_append_list_directory_options(
 #ifdef HAVE_OVERLAY
    CONFIG_DIR(
          list, list_info,
-         settings->overlay_directory,
-         sizeof(settings->overlay_directory),
+         menu_setting_vars.overlay_directory,
+         sizeof(menu_setting_vars.overlay_directory),
          menu_hash_to_str(MENU_LABEL_OVERLAY_DIRECTORY),
          menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_DIRECTORY),
          g_defaults.dir.overlay,
