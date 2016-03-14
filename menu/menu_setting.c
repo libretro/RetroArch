@@ -2779,6 +2779,18 @@ void general_read_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
+         *setting->value.boolean = settings->config_save_on_exit;
+         break;
+      case MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+         *setting->value.boolean = settings->set_supports_no_game_enable;
+         break;
+      case MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN:
+         *setting->value.boolean = settings->load_dummy_on_core_shutdown;
+         break;
+      case MENU_LABEL_VIDEO_SHARED_CONTEXT:
+         *setting->value.boolean = settings->video.shared_context;
+         break;
       case MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE:
          *setting->value.boolean = settings->ui.suspend_screensaver_enable;
          break;
@@ -2871,6 +2883,18 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
+      case MENU_LABEL_CONFIG_SAVE_ON_EXIT:
+         settings->config_save_on_exit = *setting->value.boolean;
+         break;
+      case MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE:
+         settings->set_supports_no_game_enable = *setting->value.boolean;
+         break;
+      case MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN:
+         settings->load_dummy_on_core_shutdown = *setting->value.boolean;
+         break;
+      case MENU_LABEL_VIDEO_SHARED_CONTEXT:
+         settings->video.shared_context = *setting->value.boolean;
+         break;
       case MENU_LABEL_SUSPEND_SCREENSAVER_ENABLE:
          settings->ui.suspend_screensaver_enable = *setting->value.boolean;
          break;
@@ -3780,7 +3804,7 @@ static bool setting_append_list_core_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &settings->video.shared_context,
+         &menu_setting_vars.video.shared_context,
          menu_hash_to_str(MENU_LABEL_VIDEO_SHARED_CONTEXT),
          menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT),
          false,
@@ -3795,7 +3819,7 @@ static bool setting_append_list_core_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &settings->load_dummy_on_core_shutdown,
+         &menu_setting_vars.load_dummy_on_core_shutdown,
          menu_hash_to_str(MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN),
          menu_hash_to_str(MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN),
          load_dummy_on_core_shutdown,
@@ -3810,7 +3834,7 @@ static bool setting_append_list_core_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &settings->set_supports_no_game_enable,
+         &menu_setting_vars.set_supports_no_game_enable,
          menu_hash_to_str(MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
          true,
@@ -3848,7 +3872,7 @@ static bool setting_append_list_configuration_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &settings->config_save_on_exit,
+         &menu_setting_vars.config_save_on_exit,
          menu_hash_to_str(MENU_LABEL_CONFIG_SAVE_ON_EXIT),
          menu_hash_to_str(MENU_LABEL_VALUE_CONFIG_SAVE_ON_EXIT),
          config_save_on_exit,
