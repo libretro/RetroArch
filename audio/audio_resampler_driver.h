@@ -140,6 +140,7 @@ typedef struct audio_frame_float
 extern rarch_resampler_t sinc_resampler;
 extern rarch_resampler_t CC_resampler;
 extern rarch_resampler_t nearest_resampler;
+extern rarch_resampler_t null_resampler;
 
 #ifndef DONT_HAVE_STRING_LIST
 /**
