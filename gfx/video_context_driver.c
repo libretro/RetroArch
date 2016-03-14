@@ -444,6 +444,14 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             *(void**)data = current_video_context->get_context_data(video_context_data);
          }
          break;
+      case GFX_CTL_SHOW_MOUSE:
+         {
+            bool *bool_data = (bool*)data;
+            if (!current_video_context || !current_video_context->show_mouse)
+               return false;
+            current_video_context->show_mouse(video_context_data, *bool_data);
+         }
+         break;
       case GFX_CTL_SET_VIDEO_CONTEXT_DATA:
          video_context_data = data;
          break;
