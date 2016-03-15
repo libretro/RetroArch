@@ -330,7 +330,7 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
    {
       char msg[PATH_MAX_LENGTH];
 
-      RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)",
+      RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)\n",
             params->name, params->vid, params->pid);
       snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured",
             params->name, (long)params->vid, (long)params->pid);
