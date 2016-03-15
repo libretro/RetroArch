@@ -30,7 +30,7 @@
 #endif
 
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.3.1"
+#define PACKAGE_VERSION "1.3.2"
 #endif
 
 #ifdef __cplusplus
