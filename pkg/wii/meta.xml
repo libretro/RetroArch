@@ -2,8 +2,8 @@
 <app version="1">
   <name>RetroArch</name>
   <coder>Libretro</coder>
-  <version>1.3.0</version>
-  <release_date>2012-2015</release_date>
+  <version>1.3.2</version>
+  <release_date>2012-2016</release_date>
   <short_description>The cross-platform entertainment system</short_description> 
   <long_description>A port of RetroArch to the GameCube/Wii.</long_description> 
   <no_ios_reload/>
