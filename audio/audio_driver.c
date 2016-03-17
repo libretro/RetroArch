@@ -31,10 +31,6 @@
 #include "../verbosity.h"
 #include "../string_list_special.h"
 
-#ifdef HAVE_NETPLAY
-#include "../netplay/netplay.h"
-#endif
-
 #ifndef AUDIO_BUFFER_FREE_SAMPLES_COUNT
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 #endif
@@ -854,12 +850,15 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          {
             const struct retro_audio_callback *cb = 
                (const struct retro_audio_callback*)data;
+#ifdef HAVE_NETPLAY
+            global_t *global = global_get_ptr();
+#endif
 
             if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
                return false;
 
 #ifdef HAVE_NETPLAY
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+            if (global->netplay.enable)
                return false;
 #endif
             if (cb)

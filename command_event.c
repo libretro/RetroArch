@@ -461,8 +461,7 @@ static void event_load_auto_state(void)
    global_t   *global   = global_get_ptr();
 
 #ifdef HAVE_NETPLAY
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
-         && !global->netplay.is_spectate)
+   if (global->netplay.enable && !global->netplay.is_spectate)
       return;
 #endif
 

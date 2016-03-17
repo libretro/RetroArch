@@ -242,6 +242,7 @@ typedef struct global
    struct
    {
       char server[PATH_MAX_LENGTH];
+      bool enable;
       bool is_client;
       bool is_spectate;
       unsigned sync_frames;

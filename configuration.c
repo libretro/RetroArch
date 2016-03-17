@@ -36,10 +36,6 @@
 #include "system.h"
 #include "verbosity.h"
 
-#ifdef HAVE_NETPLAY
-#include "netplay/netplay.h"
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -2042,7 +2038,7 @@ bool config_load_override(void)
    }
 
 #ifdef HAVE_NETPLAY
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+   if (global->netplay.enable)
    {
       RARCH_WARN("Overrides: can't use overrides in conjunction with netplay, disabling overrides\n");
       return false;

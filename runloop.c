@@ -572,9 +572,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             const struct retro_frame_time_callback *info =
                (const struct retro_frame_time_callback*)data;
 #ifdef HAVE_NETPLAY
+            global_t *global = global_get_ptr();
+
             /* retro_run() will be called in very strange and
              * mysterious ways, have to disable it. */
-            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+            if (global->netplay.enable)
                return false;
 #endif
             runloop_frame_time = *info;

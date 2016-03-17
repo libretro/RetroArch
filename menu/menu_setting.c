@@ -55,9 +55,6 @@
 
 #include "../tasks/tasks_internal.h"
 
-#ifdef HAVE_NETPLAY
-#include "../netplay/netplay.h"
-#endif
 
 struct rarch_setting_info
 {
@@ -156,9 +153,6 @@ struct rarch_setting
    bool              enforce_minrange;
    bool              enforce_maxrange;
 };
-
-/* static local variables */
-static bool setting_netplay_enable;
 
 /* forward decls */
 static void setting_get_string_representation_default(void *data,
@@ -2845,14 +2839,6 @@ void general_write_handler(void *data)
 
    switch (hash)
    {
-      case MENU_LABEL_NETPLAY_ENABLE:
-#ifdef HAVE_NETPLAY
-         if (*setting->value.boolean)
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_ENABLE, NULL);
-         else
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_UNSET_ENABLE, NULL);
-#endif
-         break;
       case MENU_LABEL_VIDEO_THREADED:
          {
             if (*setting->value.boolean)
@@ -6367,7 +6353,7 @@ static bool setting_append_list_netplay_options(
 
    CONFIG_BOOL(
          list, list_info,
-         &setting_netplay_enable,
+         &global->netplay.enable,
          menu_hash_to_str(MENU_LABEL_NETPLAY_ENABLE),
          menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_ENABLE),
          false,

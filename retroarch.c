@@ -68,10 +68,6 @@
 #include "command.h"
 #endif
 
-#ifdef HAVE_NETPLAY
-#include "netplay/netplay.h"
-#endif
-
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
 #include "menu/menu_content.h"
@@ -856,13 +852,13 @@ static void parse_input(int argc, char *argv[])
 #ifdef HAVE_NETPLAY
          case 'H':
             global->has_set.netplay_ip_address = true;
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_ENABLE, NULL);
+            global->netplay.enable = true;
             *global->netplay.server = '\0';
             break;
 
          case 'C':
             global->has_set.netplay_ip_address = true;
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_SET_ENABLE, NULL);
+            global->netplay.enable = true;
             strlcpy(global->netplay.server, optarg,
                   sizeof(global->netplay.server));
             break;

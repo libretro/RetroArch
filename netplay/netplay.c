@@ -1102,9 +1102,6 @@ void netplay_post_frame(netplay_t *netplay)
 void deinit_netplay(void)
 {
    netplay_t *netplay = (netplay_t*)netplay_data;
-
-   netplay_driver_ctl(RARCH_NETPLAY_CTL_DEINIT, NULL);
-
    if (netplay)
       netplay_free(netplay);
    netplay_data = NULL;
@@ -1126,7 +1123,7 @@ bool init_netplay(void)
    settings_t *settings = config_get_ptr();
    global_t *global     = global_get_ptr();
 
-   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+   if (!global->netplay.enable)
       return false;
 
    if (bsv_movie_ctl(BSV_MOVIE_CTL_START_PLAYBACK, NULL))
@@ -1166,23 +1163,11 @@ bool init_netplay(void)
 
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
 {
-   static bool netplay_is_enabled = false;
    if (!netplay_data)
       return false;
 
    switch (state)
    {
-      case RARCH_NETPLAY_CTL_DEINIT:
-         netplay_is_enabled = false;
-         break;
-      case RARCH_NETPLAY_CTL_IS_ENABLED:
-         return netplay_is_enabled;
-      case RARCH_NETPLAY_CTL_SET_ENABLE:
-         netplay_is_enabled = true;
-         break;
-      case RARCH_NETPLAY_CTL_UNSET_ENABLE:
-         netplay_is_enabled = false;
-         break;
       case RARCH_NETPLAY_CTL_IS_DATA_INITED:
          return true;
       case RARCH_NETPLAY_CTL_POST_FRAME:
