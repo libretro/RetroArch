@@ -7347,16 +7347,6 @@ static bool setting_append_list_privacy_options(
    return true;
 }
 
-
-bool menu_setting_action_right(rarch_setting_t *setting, bool wraparound)
-{
-   if (!setting || !setting->action_right)
-      return false;
-
-   setting->action_right(setting, wraparound);
-   return true;
-}
-
 static bool menu_setting_free(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
@@ -7578,6 +7568,16 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
             if (!setting)
                return false;
             *setting = menu_setting_new();
+         }
+         break;
+      case MENU_SETTING_CTL_ACTION_RIGHT:
+         {
+            bool wraparound = false;
+            rarch_setting_t *setting = (rarch_setting_t*)data;
+            if (!setting || !setting->action_right)
+               return false;
+
+            setting->action_right(setting, wraparound);
          }
          break;
       case MENU_SETTING_CTL_NONE:

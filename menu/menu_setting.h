@@ -68,7 +68,8 @@ enum menu_setting_ctl_state
    MENU_SETTING_CTL_NONE = 0,
    MENU_SETTING_CTL_FREE,
    MENU_SETTING_CTL_NEW,
-   MENU_SETTING_CTL_IS_OF_PATH_TYPE
+   MENU_SETTING_CTL_IS_OF_PATH_TYPE,
+   MENU_SETTING_CTL_ACTION_RIGHT
 };
 
 enum setting_list_flags
@@ -347,8 +348,6 @@ uint32_t menu_setting_get_index(rarch_setting_t *setting);
 unsigned menu_setting_get_index_offset(rarch_setting_t *setting);
 
 void *setting_get_ptr(rarch_setting_t *setting);
-
-bool menu_setting_action_right(rarch_setting_t *setting, bool wraparound);
 
 void menu_settings_list_increment(rarch_setting_t **list);
 
