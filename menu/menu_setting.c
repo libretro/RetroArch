@@ -7572,12 +7572,12 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
          break;
       case MENU_SETTING_CTL_ACTION_RIGHT:
          {
-            bool wraparound = false;
             rarch_setting_t *setting = (rarch_setting_t*)data;
-            if (!setting || !setting->action_right)
+            if (!setting)
                return false;
 
-            setting->action_right(setting, wraparound);
+            if (setting_handler(setting, MENU_ACTION_RIGHT) == -1)
+               return false;
          }
          break;
       case MENU_SETTING_CTL_NONE:
