@@ -898,7 +898,7 @@ static bool device_is_game_console(const char *name)
          strstr(name, "XD\n") ||
          strstr(name, "ARCHOS GAMEPAD") ||
          strstr(name, "SHIELD Android TV")
-         strstr(name, "SHIELD\n") ||
+         strstr(name, "SHIELD\n")
       )
       return true;
 
@@ -1961,7 +1961,6 @@ static void frontend_linux_get_env(int *argc,
 
    if (device_is_game_console(device_model))
    {
-      g_defaults.settings.input_overlay_enable = false;
       snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
    }
 
