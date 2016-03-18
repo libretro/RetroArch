@@ -7547,3 +7547,16 @@ error:
 
    return NULL;
 }
+
+bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
+{
+
+   switch (state)
+   {
+      case MENU_SETTING_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}

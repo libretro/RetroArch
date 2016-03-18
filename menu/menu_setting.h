@@ -63,6 +63,11 @@ enum setting_flags
    SD_FLAG_ADVANCED       = (1 << 9)
 };
 
+enum menu_setting_ctl_state
+{
+   MENU_SETTING_CTL_NONE = 0
+};
+
 enum setting_list_flags
 {
    SL_FLAG_MAIN_MENU                                =  (1 << 0),
@@ -378,6 +383,8 @@ void settings_data_list_current_add_flags(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       unsigned values);
+
+bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }
