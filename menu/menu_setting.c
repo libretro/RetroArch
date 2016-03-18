@@ -115,6 +115,16 @@ struct rarch_setting
    {
       union
       {
+         bool                 boolean;
+         int                  integer;
+         unsigned int         unsigned_integer;
+         float                fraction;
+         char                 string;
+         struct retro_keybind keybind;
+      } source;
+
+      union
+      {
          bool                 *boolean;
          int                  *integer;
          unsigned int         *unsigned_integer;
