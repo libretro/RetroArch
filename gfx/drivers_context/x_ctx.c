@@ -410,10 +410,10 @@ static void *gfx_ctx_x_init(void *data)
 
 error:
    if (x)
+   {
       gfx_ctx_x_destroy_resources(x);
-
-   if (x)
       free(x);
+   }
    g_x11_screen = 0;
 
    return NULL;
