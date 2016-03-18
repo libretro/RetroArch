@@ -7357,12 +7357,12 @@ bool menu_setting_action_right(rarch_setting_t *setting, bool wraparound)
    return true;
 }
 
-void menu_setting_free(rarch_setting_t *list)
+static bool menu_setting_free(void *data)
 {
-   rarch_setting_t *setting = list;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
 
-   if (!list)
-      return;
+   if (!data)
+      return false;
 
    for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
    {
@@ -7386,7 +7386,9 @@ void menu_setting_free(rarch_setting_t *list)
       }
    }
 
-   free(list);
+   free(data);
+
+   return true;
 }
 
 /**
@@ -7568,6 +7570,8 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
                return false;
          }
          return true;
+      case MENU_SETTING_CTL_FREE:
+         return menu_setting_free(data);
       case MENU_SETTING_CTL_NONE:
       default:
          break;

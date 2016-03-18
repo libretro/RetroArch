@@ -66,6 +66,7 @@ enum setting_flags
 enum menu_setting_ctl_state
 {
    MENU_SETTING_CTL_NONE = 0,
+   MENU_SETTING_CTL_FREE,
    MENU_SETTING_CTL_IS_OF_PATH_TYPE
 };
 
@@ -316,8 +317,6 @@ void menu_setting_get_string_representation(void *data, char *s, size_t len);
 void menu_setting_get_label(void *data, char *s,
       size_t len, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx);
-
-void menu_setting_free(rarch_setting_t *list);
 
 /**
  * setting_new:

@@ -653,7 +653,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          break;
       case MENU_ENTRIES_CTL_SETTINGS_DEINIT:
          if (menu_entries_list_settings)
-            menu_setting_free(menu_entries_list_settings);
+            menu_setting_ctl(MENU_SETTING_CTL_FREE, menu_entries_list_settings);
          menu_entries_list_settings = NULL;
          break;
       case MENU_ENTRIES_CTL_SETTINGS_INIT:
