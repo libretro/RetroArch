@@ -32,7 +32,6 @@
 		0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
 		0FDA2A8B1BE1AFA800F2B5DA /* iOS/Resources/PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */; };
 		0FDA2A8C1BE1AFA800F2B5DA /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
-		0FDA2A8D1BE1AFA800F2B5DA /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BB1A87E068003AF12F /* assets */; };
 		501232CA192E5FC40063A359 /* griffin.c in Sources */ = {isa = PBXBuildFile; fileRef = 501232C9192E5FC40063A359 /* griffin.c */; };
 		501232CC192E5FDC0063A359 /* sinc_resampler_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CB192E5FDC0063A359 /* sinc_resampler_neon.S */; };
 		501232CE192E5FE30063A359 /* audio_utils_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 501232CD192E5FE30063A359 /* audio_utils_neon.S */; };
@@ -61,7 +60,6 @@
 		503700A11ACA18E400A51A37 /* iOS/Resources/Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */; };
 		503700A21ACA18E400A51A37 /* iOS/Resources/PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */; };
 		503700A31ACA18E400A51A37 /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
-		503700A41ACA18E400A51A37 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BB1A87E068003AF12F /* assets */; };
 		5040F0501AE47ED4006F6972 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
 		5040F0511AE47EE2006F6972 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5040F04F1AE47ED4006F6972 /* libz.dylib */; };
 		5041BAF41A9D40D000A77A33 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 963C3C33186E3DED00A6EB1E /* GameController.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
@@ -75,7 +73,6 @@
 		83D632E219ECFCC4009E3161 /* iOS/Resources/ic_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */; };
 		83D632E519ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */; };
 		83EB676019EEAF050096F441 /* iOS/modules in Resources */ = {isa = PBXBuildFile; fileRef = 83EB675F19EEAF050096F441 /* iOS/modules */; };
-		84F9A9BC1A87E068003AF12F /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 84F9A9BB1A87E068003AF12F /* assets */; };
 		96366C5516C9AC3300D64A22 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5416C9AC3300D64A22 /* CoreAudio.framework */; };
 		96366C5916C9ACF500D64A22 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96366C5816C9ACF500D64A22 /* AudioToolbox.framework */; };
 		967894631788EBD800D6CA69 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 967894611788EBD800D6CA69 /* InfoPlist.strings */; };
@@ -107,7 +104,6 @@
 		83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = iOS/Resources/ic_pause.png; sourceTree = SOURCE_ROOT; };
 		83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = iOS/Resources/PauseIndicatorView.xib; sourceTree = SOURCE_ROOT; };
 		83EB675F19EEAF050096F441 /* iOS/modules */ = {isa = PBXFileReference; lastKnownFileType = folder; path = iOS/modules; sourceTree = SOURCE_ROOT; };
-		84F9A9BB1A87E068003AF12F /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../media/assets; sourceTree = SOURCE_ROOT; };
 		96366C5416C9AC3300D64A22 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		96366C5816C9ACF500D64A22 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		963C3C33186E3DED00A6EB1E /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
@@ -196,7 +192,6 @@
 			isa = PBXGroup;
 			children = (
 				83EB675F19EEAF050096F441 /* iOS/modules */,
-				84F9A9BB1A87E068003AF12F /* assets */,
 				83D632DB19ECFCC4009E3161 /* iOS/Resources/ic_pause.png */,
 				83D632DE19ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib */,
 				69D31DE31A547EC800EF4C92 /* iOS/Resources/Media.xcassets */,
@@ -409,7 +404,6 @@
 				0FDA2A8A1BE1AFA800F2B5DA /* iOS/Resources/Media.xcassets in Resources */,
 				0FDA2A8B1BE1AFA800F2B5DA /* iOS/Resources/PauseIndicatorView.xib in Resources */,
 				0FDA2A8C1BE1AFA800F2B5DA /* iOS/modules in Resources */,
-				0FDA2A8D1BE1AFA800F2B5DA /* assets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -422,7 +416,6 @@
 				503700A11ACA18E400A51A37 /* iOS/Resources/Media.xcassets in Resources */,
 				503700A21ACA18E400A51A37 /* iOS/Resources/PauseIndicatorView.xib in Resources */,
 				503700A31ACA18E400A51A37 /* iOS/modules in Resources */,
-				503700A41ACA18E400A51A37 /* assets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -435,7 +428,6 @@
 				69D31DE41A547EC800EF4C92 /* iOS/Resources/Media.xcassets in Resources */,
 				83D632E519ECFCC4009E3161 /* iOS/Resources/PauseIndicatorView.xib in Resources */,
 				83EB676019EEAF050096F441 /* iOS/modules in Resources */,
-				84F9A9BC1A87E068003AF12F /* assets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
