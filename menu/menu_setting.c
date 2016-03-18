@@ -119,7 +119,7 @@ struct rarch_setting
          int                  integer;
          unsigned int         unsigned_integer;
          float                fraction;
-         char                 string;
+         char                 string[PATH_MAX_LENGTH];
          struct retro_keybind keybind;
       } source;
 
@@ -811,7 +811,7 @@ static int setting_string_action_left_driver(void *data,
       return -1;
 
    drv.label = setting->name;
-   drv.s     = setting->value.target.string;
+   drv.s     = setting->value.source.string;
    drv.len   = setting->size;
 
    if (!driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv))
@@ -830,7 +830,7 @@ static int setting_string_action_right_driver(void *data,
       return -1;
 
    drv.label = setting->name;
-   drv.s     = setting->value.target.string;
+   drv.s     = setting->value.source.string;
    drv.len   = setting->size;
 
    if (!driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv))
@@ -840,7 +840,7 @@ static int setting_string_action_right_driver(void *data,
       if (settings && settings->menu.navigation.wraparound.setting_enable)
       {
          drv.label = setting->name;
-         drv.s     = setting->value.target.string;
+         drv.s     = setting->value.source.string;
          drv.len   = setting->size;
          driver_ctl(RARCH_DRIVER_CTL_FIND_FIRST, &drv);
       }
@@ -926,7 +926,7 @@ static void setting_get_string_representation_st_path(void *data,
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      fill_short_pathname_representation(s, setting->value.target.string, len);
+      fill_short_pathname_representation(s, setting->value.source.string, len);
 }
 
 static void setting_get_string_representation_st_string(void *data,
@@ -935,7 +935,7 @@ static void setting_get_string_representation_st_string(void *data,
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      strlcpy(s, setting->value.target.string, len);
+      strlcpy(s, setting->value.source.string, len);
 }
 
 static void setting_get_string_representation_st_bind(void *data,
@@ -1183,7 +1183,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
             if (menu_setting_get_type(setting) == ST_STRING)
                menu_setting_set_with_string_representation(setting, setting->default_value.string);
             else
-               fill_pathname_expand_special(setting->value.target.string,
+               fill_pathname_expand_special(setting->value.source.string,
                      setting->default_value.string, setting->size);
          }
          break;
@@ -2091,7 +2091,7 @@ int menu_setting_set_with_string_representation(rarch_setting_t* setting,
       case ST_STRING:
       case ST_STRING_OPTIONS:
       case ST_ACTION:
-         strlcpy(setting->value.target.string, value, setting->size);
+         strlcpy(setting->value.source.string, value, setting->size);
          break;
       case ST_BOOL:
          if (string_is_equal(value, "true"))
@@ -2294,7 +2294,7 @@ static int setting_string_action_start_generic(void *data)
    if (!setting)
       return -1;
 
-   *setting->value.target.string = '\0';
+   setting->value.source.string[0] = '\0';
 
    return 0;
 }
@@ -2782,6 +2782,7 @@ void general_read_handler(void *data)
    if (!setting)
       return;
 
+
    switch (hash)
    {
       case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
@@ -2837,6 +2838,19 @@ void general_write_handler(void *data)
 
    if (!setting)
       return;
+
+   switch (menu_setting_get_type(setting))
+   {
+      case ST_PATH:
+      case ST_DIR:
+      case ST_STRING:
+      case ST_STRING_OPTIONS:
+      case ST_ACTION:
+         strlcpy(setting->value.target.string, setting->value.source.string, setting->size);
+         break;
+      default:
+         break;
+   }
 
    if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
    {
@@ -2984,7 +2998,7 @@ void general_write_handler(void *data)
          break;
       case MENU_LABEL_NETPLAY_IP_ADDRESS:
 #ifdef HAVE_NETPLAY
-         global->has_set.netplay_ip_address = (!string_is_empty(setting->value.target.string));
+         global->has_set.netplay_ip_address = (!string_is_empty(setting->value.source.string));
 #endif
          break;
       case MENU_LABEL_NETPLAY_MODE:
