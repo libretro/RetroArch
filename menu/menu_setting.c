@@ -111,14 +111,17 @@ struct rarch_setting
       const struct retro_keybind *keybind;
    } default_value;
    
-   union
+   struct
    {
-      bool                 *boolean;
-      int                  *integer;
-      unsigned int         *unsigned_integer;
-      float                *fraction;
-      char                 *string;
-      struct retro_keybind *keybind;
+      union
+      {
+         bool                 *boolean;
+         int                  *integer;
+         unsigned int         *unsigned_integer;
+         float                *fraction;
+         char                 *string;
+         struct retro_keybind *keybind;
+      } target;
    } value;
 
    union
@@ -282,7 +285,7 @@ static rarch_setting_t setting_float_setting(const char* name,
    result.rounding_fraction       = rounding;
    result.change_handler          = change_handler;
    result.read_handler            = read_handler;
-   result.value.fraction          = target;
+   result.value.target.fraction   = target;
    result.original_value.fraction = *target;
    result.default_value.fraction  = default_value;
    result.action_start            = setting_generic_action_start_default;
@@ -332,7 +335,7 @@ static rarch_setting_t setting_uint_setting(const char* name,
 
    result.change_handler                  = change_handler;
    result.read_handler                    = read_handler;
-   result.value.unsigned_integer          = target;
+   result.value.target.unsigned_integer   = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
    result.action_start                    = setting_generic_action_start_default;
@@ -379,7 +382,7 @@ static rarch_setting_t setting_hex_setting(const char* name,
 
    result.change_handler                  = change_handler;
    result.read_handler                    = read_handler;
-   result.value.unsigned_integer          = target;
+   result.value.target.unsigned_integer   = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
    result.action_start                    = setting_generic_action_start_default;
@@ -424,7 +427,7 @@ static rarch_setting_t setting_bind_setting(const char* name,
    result.subgroup              = subgroup;
    result.parent_group          = parent_group;
 
-   result.value.keybind         = target;
+   result.value.target.keybind  = target;
    result.default_value.keybind = default_value;
    result.index                 = idx;
    result.index_offset          = idx_offset;
@@ -475,7 +478,7 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
    result.dir.empty_path       = empty;
    result.change_handler       = change_handler;
    result.read_handler         = read_handler;
-   result.value.string         = target;
+   result.value.target.string  = target;
    result.default_value.string = default_value;
    result.action_start         = NULL;
    result.get_string_representation       = &setting_get_string_representation_st_string;
@@ -542,14 +545,14 @@ static int setting_int_action_left_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   if (*setting->value.integer != min)
-      *setting->value.integer =
-         *setting->value.integer - setting->step;
+   if (*setting->value.target.integer != min)
+      *setting->value.target.integer =
+         *setting->value.target.integer - setting->step;
 
    if (setting->enforce_minrange)
    {
-      if (*setting->value.integer < min)
-         *setting->value.integer = min;
+      if (*setting->value.target.integer < min)
+         *setting->value.target.integer = min;
    }
 
 
@@ -668,14 +671,14 @@ static int setting_uint_action_left_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   if (*setting->value.unsigned_integer != min)
-      *setting->value.unsigned_integer =
-         *setting->value.unsigned_integer - setting->step;
+   if (*setting->value.target.unsigned_integer != min)
+      *setting->value.target.unsigned_integer =
+         *setting->value.target.unsigned_integer - setting->step;
 
    if (setting->enforce_minrange)
    {
-      if (*setting->value.unsigned_integer < min)
-         *setting->value.unsigned_integer = min;
+      if (*setting->value.target.unsigned_integer < min)
+         *setting->value.target.unsigned_integer = min;
    }
 
 
@@ -691,19 +694,19 @@ static int setting_uint_action_right_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   *setting->value.unsigned_integer =
-      *setting->value.unsigned_integer + setting->step;
+   *setting->value.target.unsigned_integer =
+      *setting->value.target.unsigned_integer + setting->step;
 
    if (setting->enforce_maxrange)
    {
-      if (*setting->value.unsigned_integer > max)
+      if (*setting->value.target.unsigned_integer > max)
       {
          settings_t *settings = config_get_ptr();
 
          if (settings && settings->menu.navigation.wraparound.setting_enable)
-            *setting->value.unsigned_integer = min;
+            *setting->value.target.unsigned_integer = min;
          else
-            *setting->value.unsigned_integer = max;
+            *setting->value.target.unsigned_integer = max;
       }
    }
 
@@ -719,19 +722,19 @@ static int setting_int_action_right_default(void *data, bool wraparound)
    if (!setting)
       return -1;
 
-   *setting->value.integer =
-      *setting->value.integer + setting->step;
+   *setting->value.target.integer =
+      *setting->value.target.integer + setting->step;
 
    if (setting->enforce_maxrange)
    {
-      if (*setting->value.integer > max)
+      if (*setting->value.target.integer > max)
       {
          settings_t *settings = config_get_ptr();
 
          if (settings && settings->menu.navigation.wraparound.setting_enable)
-            *setting->value.integer = min;
+            *setting->value.target.integer = min;
          else
-            *setting->value.integer = max;
+            *setting->value.target.integer = max;
       }
    }
 
@@ -747,13 +750,13 @@ static int setting_fraction_action_left_default(
    if (!setting)
       return -1;
 
-   *setting->value.fraction =
-      *setting->value.fraction - setting->step;
+   *setting->value.target.fraction =
+      *setting->value.target.fraction - setting->step;
 
    if (setting->enforce_minrange)
    {
-      if (*setting->value.fraction < min)
-         *setting->value.fraction = min;
+      if (*setting->value.target.fraction < min)
+         *setting->value.target.fraction = min;
    }
 
    return 0;
@@ -769,19 +772,19 @@ static int setting_fraction_action_right_default(
    if (!setting)
       return -1;
 
-   *setting->value.fraction = 
-      *setting->value.fraction + setting->step;
+   *setting->value.target.fraction = 
+      *setting->value.target.fraction + setting->step;
 
    if (setting->enforce_maxrange)
    {
-      if (*setting->value.fraction > max)
+      if (*setting->value.target.fraction > max)
       {
          settings_t *settings = config_get_ptr();
 
          if (settings && settings->menu.navigation.wraparound.setting_enable)
-            *setting->value.fraction = min;
+            *setting->value.target.fraction = min;
          else
-            *setting->value.fraction = max;
+            *setting->value.target.fraction = max;
       }
    }
 
@@ -798,7 +801,7 @@ static int setting_string_action_left_driver(void *data,
       return -1;
 
    drv.label = setting->name;
-   drv.s     = setting->value.string;
+   drv.s     = setting->value.target.string;
    drv.len   = setting->size;
 
    if (!driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv))
@@ -817,7 +820,7 @@ static int setting_string_action_right_driver(void *data,
       return -1;
 
    drv.label = setting->name;
-   drv.s     = setting->value.string;
+   drv.s     = setting->value.target.string;
    drv.len   = setting->size;
 
    if (!driver_ctl(RARCH_DRIVER_CTL_FIND_NEXT, &drv))
@@ -827,7 +830,7 @@ static int setting_string_action_right_driver(void *data,
       if (settings && settings->menu.navigation.wraparound.setting_enable)
       {
          drv.label = setting->name;
-         drv.s     = setting->value.string;
+         drv.s     = setting->value.target.string;
          drv.len   = setting->size;
          driver_ctl(RARCH_DRIVER_CTL_FIND_FIRST, &drv);
       }
@@ -851,7 +854,7 @@ static void setting_get_string_representation_st_bool(void *data,
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      strlcpy(s, *setting->value.boolean ? setting->boolean.on_label :
+      strlcpy(s, *setting->value.target.boolean ? setting->boolean.on_label :
             setting->boolean.off_label, len);
 }
 
@@ -872,7 +875,7 @@ static void setting_get_string_representation_st_float(void *data,
 
    if (setting)
       snprintf(s, len, setting->rounding_fraction,
-            *setting->value.fraction);
+            *setting->value.target.fraction);
 }
 
 static void setting_get_string_representation_st_float_video_refresh_rate_auto(void *data,
@@ -902,8 +905,8 @@ static void setting_get_string_representation_st_dir(void *data,
 
    if (setting)
       strlcpy(s,
-            *setting->value.string ?
-            setting->value.string : setting->dir.empty_path,
+            *setting->value.target.string ?
+            setting->value.target.string : setting->dir.empty_path,
             len);
 }
 
@@ -913,7 +916,7 @@ static void setting_get_string_representation_st_path(void *data,
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      fill_short_pathname_representation(s, setting->value.string, len);
+      fill_short_pathname_representation(s, setting->value.target.string, len);
 }
 
 static void setting_get_string_representation_st_string(void *data,
@@ -922,7 +925,7 @@ static void setting_get_string_representation_st_string(void *data,
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      strlcpy(s, setting->value.string, len);
+      strlcpy(s, setting->value.target.string, len);
 }
 
 static void setting_get_string_representation_st_bind(void *data,
@@ -937,7 +940,7 @@ static void setting_get_string_representation_st_bind(void *data,
       return;
 
    index_offset = menu_setting_get_index_offset(setting);
-   keybind      = (const struct retro_keybind*)setting->value.keybind;
+   keybind      = (const struct retro_keybind*)setting->value.target.keybind;
    auto_bind    = (const struct retro_keybind*)
       input_get_auto_bind(index_offset, keybind->id);
 
@@ -950,7 +953,7 @@ static void setting_get_string_representation_int(void *data,
    rarch_setting_t *setting = (rarch_setting_t*)data;
 
    if (setting)
-      snprintf(s, len, "%d", *setting->value.integer);
+      snprintf(s, len, "%d", *setting->value.target.integer);
 }
 
 static void setting_get_string_representation_uint_video_monitor_index(void *data,
@@ -960,9 +963,9 @@ static void setting_get_string_representation_uint_video_monitor_index(void *dat
    if (!setting)
       return;
 
-   if (*setting->value.unsigned_integer)
+   if (*setting->value.target.unsigned_integer)
       snprintf(s, len, "%u",
-            *setting->value.unsigned_integer);
+            *setting->value.target.unsigned_integer);
    else
       strlcpy(s, "0 (Auto)", len);
 }
@@ -972,7 +975,7 @@ static void setting_get_string_representation_uint_video_rotation(void *data,
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
-      strlcpy(s, rotation_lut[*setting->value.unsigned_integer],
+      strlcpy(s, rotation_lut[*setting->value.target.unsigned_integer],
             len);
 }
 
@@ -982,7 +985,7 @@ static void setting_get_string_representation_uint_aspect_ratio_index(void *data
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       strlcpy(s,
-            aspectratio_lut[*setting->value.unsigned_integer].name,
+            aspectratio_lut[*setting->value.target.unsigned_integer].name,
             len);
 }
 
@@ -1064,9 +1067,9 @@ static void setting_get_string_representation_uint_autosave_interval(void *data,
    if (!setting)
       return;
 
-   if (*setting->value.unsigned_integer)
+   if (*setting->value.target.unsigned_integer)
       snprintf(s, len, "%u %s",
-            *setting->value.unsigned_integer, menu_hash_to_str(MENU_VALUE_SECONDS));
+            *setting->value.target.unsigned_integer, menu_hash_to_str(MENU_VALUE_SECONDS));
    else
       strlcpy(s, menu_hash_to_str(MENU_VALUE_OFF), len);
 }
@@ -1110,7 +1113,7 @@ static void setting_get_string_representation_uint_libretro_log_level(void *data
          "2 (Warning)",
          "3 (Error)"
       };
-      strlcpy(s, modes[*setting->value.unsigned_integer],
+      strlcpy(s, modes[*setting->value.target.unsigned_integer],
             len);
    }
 }
@@ -1121,7 +1124,7 @@ static void setting_get_string_representation_uint(void *data,
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, "%u",
-            *setting->value.unsigned_integer);
+            *setting->value.target.unsigned_integer);
 }
 
 static void setting_get_string_representation_hex(void *data,
@@ -1130,7 +1133,7 @@ static void setting_get_string_representation_hex(void *data,
    rarch_setting_t *setting = (rarch_setting_t*)data;
    if (setting)
       snprintf(s, len, "%08x",
-            *setting->value.unsigned_integer);
+            *setting->value.target.unsigned_integer);
 }
 
 /**
@@ -1147,19 +1150,19 @@ static void setting_reset_setting(rarch_setting_t* setting)
    switch (menu_setting_get_type(setting))
    {
       case ST_BOOL:
-         *setting->value.boolean          = setting->default_value.boolean;
+         *setting->value.target.boolean          = setting->default_value.boolean;
          break;
       case ST_INT:
-         *setting->value.integer          = setting->default_value.integer;
+         *setting->value.target.integer          = setting->default_value.integer;
          break;
       case ST_UINT:
-         *setting->value.unsigned_integer = setting->default_value.unsigned_integer;
+         *setting->value.target.unsigned_integer = setting->default_value.unsigned_integer;
          break;
       case ST_FLOAT:
-         *setting->value.fraction         = setting->default_value.fraction;
+         *setting->value.target.fraction         = setting->default_value.fraction;
          break;
       case ST_BIND:
-         *setting->value.keybind          = *setting->default_value.keybind;
+         *setting->value.target.keybind          = *setting->default_value.keybind;
          break;
       case ST_STRING:
       case ST_STRING_OPTIONS:
@@ -1170,7 +1173,7 @@ static void setting_reset_setting(rarch_setting_t* setting)
             if (menu_setting_get_type(setting) == ST_STRING)
                menu_setting_set_with_string_representation(setting, setting->default_value.string);
             else
-               fill_pathname_expand_special(setting->value.string,
+               fill_pathname_expand_special(setting->value.target.string,
                      setting->default_value.string, setting->size);
          }
          break;
@@ -1237,7 +1240,7 @@ static int setting_bool_action_ok_default(void *data, bool wraparound)
       return -1;
 
    menu_setting_set_with_string_representation(setting,
-         *setting->value.boolean ? "false" : "true");
+         *setting->value.target.boolean ? "false" : "true");
 
    return 0;
 }
@@ -1250,7 +1253,7 @@ static int setting_bool_action_toggle_default(void *data, bool wraparound)
       return -1;
 
    menu_setting_set_with_string_representation(setting,
-         *setting->value.boolean ? "false" : "true");
+         *setting->value.target.boolean ? "false" : "true");
 
    return 0;
 }
@@ -1409,7 +1412,7 @@ static rarch_setting_t setting_bool_setting(const char* name,
 
    result.change_handler         = change_handler;
    result.read_handler           = read_handler;
-   result.value.boolean          = target;
+   result.value.target.boolean   = target;
    result.original_value.boolean = *target;
    result.default_value.boolean  = default_value;
    result.boolean.off_label      = off;
@@ -1459,7 +1462,7 @@ static rarch_setting_t setting_int_setting(const char* name,
 
    result.change_handler         = change_handler;
    result.read_handler           = read_handler;
-   result.value.integer          = target;
+   result.value.target.integer   = target;
    result.original_value.integer = *target;
    result.default_value.integer  = default_value;
 
@@ -1978,20 +1981,20 @@ void *setting_get_ptr(rarch_setting_t *setting)
    switch (menu_setting_get_type(setting))
    {
       case ST_BOOL:
-         return setting->value.boolean;
+         return setting->value.target.boolean;
       case ST_INT:
-         return setting->value.integer;
+         return setting->value.target.integer;
       case ST_UINT:
-         return setting->value.unsigned_integer;
+         return setting->value.target.unsigned_integer;
       case ST_FLOAT:
-         return setting->value.fraction;
+         return setting->value.target.fraction;
       case ST_BIND:
-         return setting->value.keybind;
+         return setting->value.target.keybind;
       case ST_STRING:
       case ST_STRING_OPTIONS:
       case ST_PATH:
       case ST_DIR:
-         return setting->value.string;
+         return setting->value.target.string;
       default:
          break;
    }
@@ -2023,53 +2026,53 @@ int menu_setting_set_with_string_representation(rarch_setting_t* setting,
    switch (menu_setting_get_type(setting))
    {
       case ST_INT:
-         sscanf(value, "%d", setting->value.integer);
+         sscanf(value, "%d", setting->value.target.integer);
          if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->enforce_minrange && *setting->value.integer < min)
-               *setting->value.integer = min;
-            if (setting->enforce_maxrange && *setting->value.integer > max)
+            if (setting->enforce_minrange && *setting->value.target.integer < min)
+               *setting->value.target.integer = min;
+            if (setting->enforce_maxrange && *setting->value.target.integer > max)
             {
                settings_t *settings = config_get_ptr();
 
                if (settings && settings->menu.navigation.wraparound.setting_enable)
-                  *setting->value.integer = min;
+                  *setting->value.target.integer = min;
                else
-                  *setting->value.integer = max;
+                  *setting->value.target.integer = max;
             }
          }
          break;
       case ST_UINT:
-         sscanf(value, "%u", setting->value.unsigned_integer);
+         sscanf(value, "%u", setting->value.target.unsigned_integer);
          if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->enforce_minrange && *setting->value.unsigned_integer < min)
-               *setting->value.unsigned_integer = min;
-            if (setting->enforce_maxrange && *setting->value.unsigned_integer > max)
+            if (setting->enforce_minrange && *setting->value.target.unsigned_integer < min)
+               *setting->value.target.unsigned_integer = min;
+            if (setting->enforce_maxrange && *setting->value.target.unsigned_integer > max)
             {
                settings_t *settings = config_get_ptr();
 
                if (settings && settings->menu.navigation.wraparound.setting_enable)
-                  *setting->value.unsigned_integer = min;
+                  *setting->value.target.unsigned_integer = min;
                else
-                  *setting->value.unsigned_integer = max;
+                  *setting->value.target.unsigned_integer = max;
             }
          }
          break;      
       case ST_FLOAT:
-         sscanf(value, "%f", setting->value.fraction);
+         sscanf(value, "%f", setting->value.target.fraction);
          if (flags & SD_FLAG_HAS_RANGE)
          {
-            if (setting->enforce_minrange && *setting->value.fraction < min)
-               *setting->value.fraction = min;
-            if (setting->enforce_maxrange && *setting->value.fraction > max)
+            if (setting->enforce_minrange && *setting->value.target.fraction < min)
+               *setting->value.target.fraction = min;
+            if (setting->enforce_maxrange && *setting->value.target.fraction > max)
             {
                settings_t *settings = config_get_ptr();
 
                if (settings && settings->menu.navigation.wraparound.setting_enable)
-                  *setting->value.fraction = min;
+                  *setting->value.target.fraction = min;
                else
-                  *setting->value.fraction = max;
+                  *setting->value.target.fraction = max;
             }
          }
          break;
@@ -2078,13 +2081,13 @@ int menu_setting_set_with_string_representation(rarch_setting_t* setting,
       case ST_STRING:
       case ST_STRING_OPTIONS:
       case ST_ACTION:
-         strlcpy(setting->value.string, value, setting->size);
+         strlcpy(setting->value.target.string, value, setting->size);
          break;
       case ST_BOOL:
          if (string_is_equal(value, "true"))
-            *setting->value.boolean = true;
+            *setting->value.target.boolean = true;
          else if (string_is_equal(value, "false"))
-            *setting->value.boolean = false;
+            *setting->value.target.boolean = false;
          break;
       default:
          break;
@@ -2207,7 +2210,7 @@ static int setting_action_start_analog_dpad_mode(void *data)
    if (!setting)
       return -1;
 
-   *setting->value.unsigned_integer = 0;
+   *setting->value.target.unsigned_integer = 0;
 
    return 0;
 }
@@ -2281,7 +2284,7 @@ static int setting_string_action_start_generic(void *data)
    if (!setting)
       return -1;
 
-   *setting->value.string = '\0';
+   *setting->value.target.string = '\0';
 
    return 0;
 }
@@ -2303,7 +2306,7 @@ static int setting_bind_action_start(void *data)
    if (!setting)
       return -1;
 
-   keybind = (struct retro_keybind*)setting->value.keybind;
+   keybind = (struct retro_keybind*)setting->value.target.keybind;
    if (!keybind)
       return -1;
 
@@ -2772,8 +2775,8 @@ void general_read_handler(void *data)
    switch (hash)
    {
       case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
-         *setting->value.fraction = settings->audio.rate_control_delta;
-         if (*setting->value.fraction < 0.0005)
+         *setting->value.target.fraction = settings->audio.rate_control_delta;
+         if (*setting->value.target.fraction < 0.0005)
          {
             settings->audio.rate_control = false;
             settings->audio.rate_control_delta = 0.0;
@@ -2781,29 +2784,29 @@ void general_read_handler(void *data)
          else
          {
             settings->audio.rate_control = true;
-            settings->audio.rate_control_delta = *setting->value.fraction;
+            settings->audio.rate_control_delta = *setting->value.target.fraction;
          }
          break;
       case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
-         *setting->value.fraction = settings->audio.max_timing_skew;
+         *setting->value.target.fraction = settings->audio.max_timing_skew;
          break;
       case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
-         *setting->value.fraction = settings->video.refresh_rate;
+         *setting->value.target.fraction = settings->video.refresh_rate;
          break;
       case MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
-         *setting->value.integer = settings->input.joypad_map[0];
+         *setting->value.target.integer = settings->input.joypad_map[0];
          break;
       case MENU_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
-         *setting->value.integer = settings->input.joypad_map[1];
+         *setting->value.target.integer = settings->input.joypad_map[1];
          break;
       case MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
-         *setting->value.integer = settings->input.joypad_map[2];
+         *setting->value.target.integer = settings->input.joypad_map[2];
          break;
       case MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
-         *setting->value.integer = settings->input.joypad_map[3];
+         *setting->value.target.integer = settings->input.joypad_map[3];
          break;
       case MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-         *setting->value.integer = settings->input.joypad_map[4];
+         *setting->value.target.integer = settings->input.joypad_map[4];
          break;
    }
 }
@@ -2829,8 +2832,8 @@ void general_write_handler(void *data)
    {
       if (flags & SD_FLAG_EXIT)
       {
-         if (*setting->value.boolean)
-            *setting->value.boolean = false;
+         if (*setting->value.target.boolean)
+            *setting->value.target.boolean = false;
       }
       if (setting->cmd_trigger.triggered ||
             (flags & SD_FLAG_CMD_APPLY_AUTO))
@@ -2841,14 +2844,14 @@ void general_write_handler(void *data)
    {
       case MENU_LABEL_VIDEO_THREADED:
          {
-            if (*setting->value.boolean)
+            if (*setting->value.target.boolean)
                task_queue_ctl(TASK_QUEUE_CTL_SET_THREADED, NULL);
             else
                task_queue_ctl(TASK_QUEUE_CTL_UNSET_THREADED, NULL);
          }
          break;
       case MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
-         core_ctl(CORE_CTL_SET_POLL_TYPE, setting->value.integer);
+         core_ctl(CORE_CTL_SET_POLL_TYPE, setting->value.target.integer);
          break;
       case MENU_LABEL_VIDEO_SCALE_INTEGER:
          {
@@ -2860,7 +2863,7 @@ void general_write_handler(void *data)
 
             video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
 
-            if (*setting->value.boolean)
+            if (*setting->value.target.boolean)
             {
                custom->x      = 0;
                custom->y      = 0;
@@ -2872,7 +2875,7 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_LABEL_HELP:
-         if (*setting->value.boolean)
+         if (*setting->value.target.boolean)
          {
             info.list          = menu_stack;
             info.type          = 0; 
@@ -2886,10 +2889,10 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
-         settings->audio.max_timing_skew = *setting->value.fraction;
+         settings->audio.max_timing_skew = *setting->value.target.fraction;
          break;
       case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
-         if (*setting->value.fraction < 0.0005)
+         if (*setting->value.target.fraction < 0.0005)
          {
             settings->audio.rate_control = false;
             settings->audio.rate_control_delta = 0.0;
@@ -2897,42 +2900,42 @@ void general_write_handler(void *data)
          else
          {
             settings->audio.rate_control = true;
-            settings->audio.rate_control_delta = *setting->value.fraction;
+            settings->audio.rate_control_delta = *setting->value.target.fraction;
          }
          break;
       case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
-         driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, setting->value.fraction);
+         driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, setting->value.target.fraction);
 
          /* In case refresh rate update forced non-block video. */
          rarch_cmd = EVENT_CMD_VIDEO_SET_BLOCKING_STATE;
          break;
       case MENU_LABEL_VIDEO_SCALE:
-         settings->video.scale = roundf(*setting->value.fraction);
+         settings->video.scale = roundf(*setting->value.target.fraction);
 
          if (!settings->video.fullscreen)
             rarch_cmd = EVENT_CMD_REINIT;
          break;
       case MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
-         settings->input.joypad_map[0] = *setting->value.integer;
+         settings->input.joypad_map[0] = *setting->value.target.integer;
          break;
       case MENU_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
-         settings->input.joypad_map[1] = *setting->value.integer;
+         settings->input.joypad_map[1] = *setting->value.target.integer;
          break;
       case MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
-         settings->input.joypad_map[2] = *setting->value.integer;
+         settings->input.joypad_map[2] = *setting->value.target.integer;
          break;
       case MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
-         settings->input.joypad_map[3] = *setting->value.integer;
+         settings->input.joypad_map[3] = *setting->value.target.integer;
          break;
       case MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-         settings->input.joypad_map[4] = *setting->value.integer;
+         settings->input.joypad_map[4] = *setting->value.target.integer;
          break;
       case MENU_LABEL_LOG_VERBOSITY:
          {
             bool *verbose = retro_main_verbosity();
 
-            *verbose = *setting->value.boolean;
-            global->has_set.verbosity = *setting->value.boolean;
+            *verbose = *setting->value.target.boolean;
+            global->has_set.verbosity = *setting->value.target.boolean;
          }
          break;
       case MENU_LABEL_VIDEO_SMOOTH:
@@ -2940,23 +2943,23 @@ void general_write_handler(void *data)
          break;
       case MENU_LABEL_VIDEO_ROTATION:
          video_driver_set_rotation(
-               (*setting->value.unsigned_integer +
+               (*setting->value.target.unsigned_integer +
                 system->rotation) % 4);
          break;
       case MENU_LABEL_AUDIO_VOLUME:
-         audio_driver_set_volume_gain(db_to_gain(*setting->value.fraction));
+         audio_driver_set_volume_gain(db_to_gain(*setting->value.target.fraction));
          break;
       case MENU_LABEL_AUDIO_LATENCY:
          rarch_cmd = EVENT_CMD_AUDIO_REINIT;
          break;
       case MENU_LABEL_PAL60_ENABLE:
-         if (*setting->value.boolean && global->console.screen.pal_enable)
+         if (*setting->value.target.boolean && global->console.screen.pal_enable)
             rarch_cmd = EVENT_CMD_REINIT;
          else
             menu_setting_set_with_string_representation(setting, "false");
          break;
       case MENU_LABEL_SYSTEM_BGM_ENABLE:
-         if (*setting->value.boolean)
+         if (*setting->value.target.boolean)
          {
 #if defined(__CELLOS_LV2__) && (CELL_SDK_VERSION > 0x340000)
             cellSysutilEnableBgmPlayback();
@@ -2971,7 +2974,7 @@ void general_write_handler(void *data)
          break;
       case MENU_LABEL_NETPLAY_IP_ADDRESS:
 #ifdef HAVE_NETPLAY
-         global->has_set.netplay_ip_address = (!string_is_empty(setting->value.string));
+         global->has_set.netplay_ip_address = (!string_is_empty(setting->value.target.string));
 #endif
          break;
       case MENU_LABEL_NETPLAY_MODE:
@@ -3052,7 +3055,7 @@ static void overlay_enable_toggle_change_handler(void *data)
       return;
    }
 
-   if (setting->value.boolean)
+   if (setting->value.target.boolean)
       event_cmd_ctl(EVENT_CMD_OVERLAY_INIT, NULL);
    else
       event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
@@ -3356,7 +3359,7 @@ static bool setting_append_list_main_menu_options(
                &subgroup_info,
                parent_group);
          (*list)[list_info->index - 1].size         = sizeof(settings->libretro);
-         (*list)[list_info->index - 1].value.string = settings->libretro;
+         (*list)[list_info->index - 1].value.target.string = settings->libretro;
          (*list)[list_info->index - 1].values       = ext_name;
          menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
