@@ -404,7 +404,7 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
 
             impl_current = &impl_regular;
 #ifdef HAVE_THREADS
-            if (*boolean_val)
+            if (boolean_val && *boolean_val)
             {
                task_queue_ctl(TASK_QUEUE_CTL_SET_THREADED, NULL);
                impl_current = &impl_threaded;
