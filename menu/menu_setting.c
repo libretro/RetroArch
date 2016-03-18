@@ -1821,19 +1821,6 @@ int menu_action_handle_setting(rarch_setting_t *setting,
    return -1;
 }
 
-bool menu_setting_is_of_path_type(rarch_setting_t *setting)
-{
-   uint64_t flags = menu_setting_get_flags(setting);
-   if    (
-         setting &&
-         (menu_setting_get_type(setting) == ST_ACTION) &&
-         (flags & SD_FLAG_BROWSER_ACTION) &&
-         (setting->action_right || setting->action_left || setting->action_select) &&
-         setting->change_handler)
-      return true;
-   return false;
-}
-
 const char *menu_setting_get_values(rarch_setting_t *setting)
 {
    if (!setting)
@@ -7550,9 +7537,37 @@ error:
 
 bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
 {
+   uint64_t flags;
 
    switch (state)
    {
+      case MENU_SETTING_CTL_IS_OF_PATH_TYPE:
+         {
+            bool cbs_bound           = false;
+            rarch_setting_t *setting = (rarch_setting_t*)data;
+
+            if (!setting)
+               return false;
+
+            flags                    = menu_setting_get_flags(setting);
+
+            if (menu_setting_get_type(setting) != ST_ACTION)
+               return false;
+
+            if (!setting->change_handler)
+               return false;
+
+            cbs_bound = setting->action_right;
+            cbs_bound = cbs_bound || setting->action_left;
+            cbs_bound = cbs_bound || setting->action_select;
+
+            if (!cbs_bound)
+               return false;
+
+            if (!(flags & SD_FLAG_BROWSER_ACTION))
+               return false;
+         }
+         return true;
       case MENU_SETTING_CTL_NONE:
       default:
          break;

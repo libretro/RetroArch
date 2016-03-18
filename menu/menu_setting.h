@@ -65,7 +65,8 @@ enum setting_flags
 
 enum menu_setting_ctl_state
 {
-   MENU_SETTING_CTL_NONE = 0
+   MENU_SETTING_CTL_NONE = 0,
+   MENU_SETTING_CTL_IS_OF_PATH_TYPE
 };
 
 enum setting_list_flags
@@ -328,8 +329,6 @@ void menu_setting_free(rarch_setting_t *list);
  * settings on success, otherwise NULL.
  **/
 rarch_setting_t* menu_setting_new(void);
-
-bool menu_setting_is_of_path_type(rarch_setting_t *setting);
 
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);

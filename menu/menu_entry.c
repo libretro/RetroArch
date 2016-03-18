@@ -50,7 +50,7 @@ enum menu_entry_type menu_entry_get_type(uint32_t i)
    rarch_setting_t *setting  = menu_entries_get_setting(i);
 
    /* XXX Really a special kind of ST_ACTION, but this should be changed */
-   if (menu_setting_is_of_path_type(setting))
+   if (menu_setting_ctl(MENU_SETTING_CTL_IS_OF_PATH_TYPE, (void*)setting))
       return MENU_ENTRY_PATH;
 
    if (setting)
@@ -186,7 +186,8 @@ void menu_entry_bind_joyaxis_set(uint32_t i, int32_t value)
 void menu_entry_pathdir_selected(uint32_t i)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
-   if (menu_setting_is_of_path_type(setting))
+
+   if (menu_setting_ctl(MENU_SETTING_CTL_IS_OF_PATH_TYPE, (void*)setting))
       menu_setting_action_right(setting, false);
 }
 
