@@ -67,6 +67,7 @@ enum menu_setting_ctl_state
 {
    MENU_SETTING_CTL_NONE = 0,
    MENU_SETTING_CTL_FREE,
+   MENU_SETTING_CTL_NEW,
    MENU_SETTING_CTL_IS_OF_PATH_TYPE
 };
 
@@ -317,17 +318,6 @@ void menu_setting_get_string_representation(void *data, char *s, size_t len);
 void menu_setting_get_label(void *data, char *s,
       size_t len, unsigned *w, unsigned type, 
       const char *menu_label, const char *label, unsigned idx);
-
-/**
- * setting_new:
- * @mask               : Bitmask of settings to include.
- *
- * Request a list of settings based on @mask.
- *
- * Returns: settings list composed of all requested
- * settings on success, otherwise NULL.
- **/
-rarch_setting_t* menu_setting_new(void);
 
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);

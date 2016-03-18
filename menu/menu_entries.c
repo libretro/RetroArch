@@ -657,7 +657,7 @@ bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data)
          menu_entries_list_settings = NULL;
          break;
       case MENU_ENTRIES_CTL_SETTINGS_INIT:
-         menu_entries_list_settings      = menu_setting_new();
+         menu_setting_ctl(MENU_SETTING_CTL_NEW, &menu_entries_list_settings);
 
          if (!menu_entries_list_settings)
             return false;

@@ -7400,7 +7400,7 @@ static bool menu_setting_free(void *data)
  * Returns: settings list composed of all requested
  * settings on success, otherwise NULL.
  **/
-rarch_setting_t *menu_setting_new(void)
+static rarch_setting_t *menu_setting_new(void)
 {
    rarch_setting_t terminator      = { ST_NONE };
    rarch_setting_t* list           = NULL;
@@ -7569,9 +7569,17 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
             if (!(flags & SD_FLAG_BROWSER_ACTION))
                return false;
          }
-         return true;
+         break;
       case MENU_SETTING_CTL_FREE:
          return menu_setting_free(data);
+      case MENU_SETTING_CTL_NEW:
+         {
+            rarch_setting_t **setting = (rarch_setting_t**)data;
+            if (!setting)
+               return false;
+            *setting = menu_setting_new();
+         }
+         break;
       case MENU_SETTING_CTL_NONE:
       default:
          break;
