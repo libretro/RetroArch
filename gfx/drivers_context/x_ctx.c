@@ -409,7 +409,8 @@ static void *gfx_ctx_x_init(void *data)
    return x;
 
 error:
-   gfx_ctx_x_destroy_resources(x);
+   if (x)
+      gfx_ctx_x_destroy_resources(x);
 
    if (x)
       free(x);
@@ -729,6 +730,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    XSetErrorHandler(old_handler);
 
    XFree(vi);
+   vi = NULL;
 
    if (!x11_input_ctx_new(true_full))
       goto error;
