@@ -897,7 +897,7 @@ static bool device_is_game_console(const char *name)
          strstr(name, "S7800") ||
          strstr(name, "XD\n") ||
          strstr(name, "ARCHOS GAMEPAD") ||
-         strstr(name, "SHIELD Android TV")
+         strstr(name, "SHIELD Android TV") ||
          strstr(name, "SHIELD\n")
       )
       return true;
