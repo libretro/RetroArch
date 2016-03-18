@@ -358,6 +358,9 @@ const char *config_get_default_joypad(void)
  **/
 const char *config_get_default_menu(void)
 {
+   if (!string_is_empty(g_defaults.settings.menu))
+      return g_defaults.settings.menu;
+
    switch (MENU_DEFAULT_DRIVER)
    {
       case MENU_RGUI:

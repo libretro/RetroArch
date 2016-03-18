@@ -67,6 +67,7 @@ struct defaults
       int out_latency;
       float video_refresh_rate;
       bool video_threaded_enable;
+      char menu[PATH_MAX_LENGTH];
    } settings; 
 
 #ifndef IS_SALAMANDER

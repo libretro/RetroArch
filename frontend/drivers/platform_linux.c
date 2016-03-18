@@ -895,7 +895,10 @@ static bool device_is_game_console(const char *name)
          device_is_xperia_play(name) ||
          strstr(name, "GAMEMID_BT") ||
          strstr(name, "S7800") ||
-         strstr(name, "SHIELD")
+         strstr(name, "XD\n") ||
+         strstr(name, "ARCHOS GAMEPAD") ||
+         strstr(name, "SHIELD Android TV")
+         strstr(name, "SHIELD\n") ||
       )
       return true;
 
@@ -1952,13 +1955,16 @@ static void frontend_linux_get_env(int *argc,
    else if (strstr(device_model, "JSS15J"))
       g_defaults.settings.video_refresh_rate = 59.65;
 
-#if 0
+
    /* Explicitly disable input overlay by default
     * for gamepad-like/console devices. */
 
    if (device_is_game_console(device_model))
+   {
       g_defaults.settings.input_overlay_enable = false;
-#endif
+      snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
+   }
+
 #else
    char base_path[PATH_MAX];
    const char *xdg  = getenv("XDG_CONFIG_HOME");
