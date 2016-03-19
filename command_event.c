@@ -702,7 +702,7 @@ static bool event_save_core_config(void)
          else
             strlcpy(tmp, ".cfg", sizeof(tmp));
 
-         snprintf(config_path, sizeof(config_path), "%s%s", config_path, tmp);
+         strlcat(config_path, tmp, sizeof(config_path));
          if (!path_file_exists(config_path))
          {
             found_path = true;
