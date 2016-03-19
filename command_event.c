@@ -669,11 +669,10 @@ static bool event_save_core_config(void)
    global_t   *global                = global_get_ptr();
 
    *config_dir = '\0';
-
-   if (*settings->menu_config_directory)
+   if (!string_is_empty(settings->menu_config_directory))
       strlcpy(config_dir, settings->menu_config_directory,
             sizeof(config_dir));
-   else if (*global->path.config) /* Fallback */
+   else if (!string_is_empty(global->path.config)) /* Fallback */
       fill_pathname_basedir(config_dir, global->path.config,
             sizeof(config_dir));
    else
@@ -683,10 +682,11 @@ static bool event_save_core_config(void)
       return false;
    }
    /* Infer file name based on libretro core. */
-   if (*settings->libretro && path_file_exists(settings->libretro))
+   if (!string_is_empty(settings->libretro) 
+   && path_file_exists(settings->libretro))
    {
       unsigned i;
-
+      RARCH_LOG("Using core name for new config\n");
       /* In case of collision, find an alternative name. */
       for (i = 0; i < 16; i++)
       {
