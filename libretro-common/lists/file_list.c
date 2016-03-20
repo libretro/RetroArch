@@ -20,29 +20,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_assert.h>
 #include <retro_common.h>
 #include <lists/file_list.h>
 #include <compat/strcasestr.h>
 
-void file_list_push(file_list_t *list,
+/**
+ * string_list_capacity:
+ * @list             : pointer to string list
+ * @cap              : new capacity for string list.
+ *
+ * Change maximum capacity of string list's size.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+static bool file_list_capacity(file_list_t *list, size_t cap)
+{
+   struct item_file *new_data = NULL;
+   retro_assert(cap > list->size);
+
+   new_data = (struct item_file*)realloc(list->list,
+         cap * sizeof(struct item_file));
+
+   if (!new_data)
+      return false;
+
+   if (cap > list->capacity)
+      memset(&new_data[list->capacity], 0,
+            sizeof(*new_data) * (cap - list->capacity));
+
+   list->list     = new_data;
+   list->capacity = cap;
+
+   return true;
+}
+
+bool file_list_push(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr,
       size_t entry_idx)
 {
-   if (list->size >= list->capacity)
-   {
-      list->capacity += 1;
-      list->capacity *= 2;
-
-      list->list = (struct item_file*)realloc(list->list,
-            list->capacity * sizeof(struct item_file));
-
-      if (!list->list)
-         return;
-   }
+   if (list->size >= list->capacity &&
+      !file_list_capacity(list, list->capacity * 2 + 1))
+         return false;
 
    list->list[list->size].label         = NULL;
    list->list[list->size].path          = NULL;
@@ -59,6 +83,8 @@ void file_list_push(file_list_t *list,
       list->list[list->size].path       = strdup(path);
 
    list->size++;
+
+   return true;
 }
 
 size_t file_list_get_size(const file_list_t *list)
