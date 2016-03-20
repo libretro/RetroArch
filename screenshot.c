@@ -115,12 +115,28 @@ static bool screenshot_dump(const char *folder, const void *frame,
    scaler_ctx_gen_reset(&scaler);
 
    RARCH_LOG("Using RPNG for PNG screenshots.\n");
-   ret = rpng_save_image_bgr24(filename,
-         out_buffer, width, height, width * 3);
+   ret = rpng_save_image_bgr24(
+         filename,
+         out_buffer,
+         width,
+         height,
+         width * 3
+         );
    free(out_buffer);
 #else
-   ret = rbmp_save_image(filename, frame, width, height, pitch, bgr24,
-        (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888) );
+   enum rbmp_source_type bmp_type = RBMP_SOURCE_TYPE_DONT_CARE;
+
+   if (bgr24)
+      bmp_type = RBMP_SOURCE_TYPE_BGR24;
+   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
+      bmp_type = RBMP_SOURCE_TYPE_XRGB8888;
+
+   ret = rbmp_save_image(filename,
+         frame,
+         width,
+         height,
+         pitch,
+         bmp_type);
 #endif
    if (!ret)
       RARCH_ERR("Failed to take screenshot.\n");
