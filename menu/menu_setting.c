@@ -817,6 +817,9 @@ static int setting_string_action_left_driver(void *data,
    if (!driver_ctl(RARCH_DRIVER_CTL_FIND_PREV, &drv))
       return -1;
 
+   if (setting->change_handler)
+      setting->change_handler(setting);
+
    return 0;
 }
 
@@ -845,6 +848,9 @@ static int setting_string_action_right_driver(void *data,
          driver_ctl(RARCH_DRIVER_CTL_FIND_FIRST, &drv);
       }
    }
+
+   if (setting->change_handler)
+      setting->change_handler(setting);
 
    return 0;
 }
@@ -3563,8 +3569,8 @@ static bool setting_append_list_driver_options(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
-         NULL);
+         general_read_handler,
+         general_write_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
    strlcpy(
          (*list)[list_info->index - 1].value.source.string,
@@ -3584,8 +3590,8 @@ static bool setting_append_list_driver_options(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
-         NULL);
+         general_read_handler,
+         general_write_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
    strlcpy(
          (*list)[list_info->index - 1].value.source.string,
@@ -3605,8 +3611,8 @@ static bool setting_append_list_driver_options(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
-         NULL);
+         general_read_handler,
+         general_write_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
    strlcpy(
          (*list)[list_info->index - 1].value.source.string,
@@ -3626,8 +3632,8 @@ static bool setting_append_list_driver_options(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
-         NULL);
+         general_read_handler,
+         general_write_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
    strlcpy(
          (*list)[list_info->index - 1].value.source.string,
@@ -3647,8 +3653,8 @@ static bool setting_append_list_driver_options(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
-         NULL);
+         general_read_handler,
+         general_write_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
    strlcpy(
          (*list)[list_info->index - 1].value.source.string,
@@ -3668,8 +3674,8 @@ static bool setting_append_list_driver_options(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
-         NULL);
+         general_read_handler,
+         general_write_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
    strlcpy(
          (*list)[list_info->index - 1].value.source.string,
@@ -3689,8 +3695,8 @@ static bool setting_append_list_driver_options(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
-         NULL);
+         general_read_handler,
+         general_write_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
    strlcpy(
          (*list)[list_info->index - 1].value.source.string,
@@ -3710,8 +3716,8 @@ static bool setting_append_list_driver_options(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
-         NULL);
+         general_read_handler,
+         general_write_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
    strlcpy(
          (*list)[list_info->index - 1].value.source.string,
@@ -3731,8 +3737,8 @@ static bool setting_append_list_driver_options(
          &group_info,
          &subgroup_info,
          parent_group,
-         NULL,
-         NULL);
+         general_read_handler,
+         general_write_handler);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
    strlcpy(
          (*list)[list_info->index - 1].value.source.string,
