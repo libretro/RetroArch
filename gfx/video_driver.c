@@ -1571,7 +1571,9 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 #if defined(RARCH_CONSOLE) || defined(RARCH_MOBILE)
          return false;
 #else
-         return current_video->has_windowed(video_driver_data);
+         if (!current_video->has_windowed(video_driver_data))
+            return false;
+         break;
 #endif
       case RARCH_DISPLAY_CTL_GET_FRAME_COUNT:
          {
@@ -1730,8 +1732,10 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
                !video_driver_poke || 
                !video_driver_poke->get_current_software_framebuffer)
             return false;
-         return video_driver_poke->get_current_software_framebuffer(
-               video_driver_data, (struct retro_framebuffer *)data);
+         if (!video_driver_poke->get_current_software_framebuffer(
+               video_driver_data, (struct retro_framebuffer *)data))
+            return false;
+         break;
       case RARCH_DISPLAY_CTL_GET_HW_RENDER_INTERFACE:
          if (
                !video_driver_poke || 
