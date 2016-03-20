@@ -8,7 +8,7 @@ oldVersion = dom1.documentElement.getAttribute("android:versionCode")
 versionNumbers = oldVersion.split('.')
 
 versionName = dom1.documentElement.getAttribute("android:versionName")
-versionName = versionName + "+"
+versionName = versionName + "_GIT"
 
 versionNumbers[-1] = unicode(int(time.time()))
 dom1.documentElement.setAttribute("android:versionCode", u'.'.join(versionNumbers))
