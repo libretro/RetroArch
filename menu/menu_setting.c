@@ -7423,29 +7423,12 @@ static bool menu_setting_free(void *data)
    return true;
 }
 
-/**
- * menu_setting_new:
- * @mask               : Bitmask of settings to include.
- *
- * Request a list of settings based on @mask.
- *
- * Returns: settings list composed of all requested
- * settings on success, otherwise NULL.
- **/
-static rarch_setting_t *menu_setting_new(void)
+static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_info)
 {
-   rarch_setting_t terminator      = { ST_NONE };
-   rarch_setting_t* list           = NULL;
    rarch_setting_t* resized_list   = NULL;
-   rarch_setting_info_t *list_info = (rarch_setting_info_t*)
-      calloc(1, sizeof(*list_info));
+   rarch_setting_t terminator      = { ST_NONE };
    const char *root                = menu_hash_to_str(MENU_VALUE_MAIN_MENU);
-
-   if (!list_info)
-      return NULL;
-
-   list_info->size  = 32;
-   list = (rarch_setting_t*)calloc(list_info->size, sizeof(*list));
+   rarch_setting_t *list = (rarch_setting_t*)calloc(list_info->size, sizeof(*list));
    if (!list)
       goto error;
 
@@ -7463,7 +7446,7 @@ static rarch_setting_t *menu_setting_new(void)
 
    if (!setting_append_list_logging_options(&list, list_info, root))
       goto error;
-   
+
    if (!setting_append_list_saving_options(&list, list_info, root))
       goto error;
 
@@ -7500,7 +7483,7 @@ static rarch_setting_t *menu_setting_new(void)
 
    if (!setting_append_list_overlay_options(&list, list_info, root))
       goto error;
-   
+
    if (!setting_append_list_menu_options(&list, list_info, root))
       goto error;
 
@@ -7549,24 +7532,45 @@ static rarch_setting_t *menu_setting_new(void)
 
    /* flatten this array to save ourselves some kilobytes. */
    resized_list = (rarch_setting_t*) realloc(list, list_info->index * sizeof(rarch_setting_t));
-   if (resized_list)
-      list = resized_list;
-   else
+   if (!resized_list)
       goto error;
+
+   list = resized_list;
+
+   return list;
+
+error:
+   if (list)
+      free(list);
+   return NULL;
+}
+
+/**
+ * menu_setting_new:
+ * @mask               : Bitmask of settings to include.
+ *
+ * Request a list of settings based on @mask.
+ *
+ * Returns: settings list composed of all requested
+ * settings on success, otherwise NULL.
+ **/
+static rarch_setting_t *menu_setting_new(void)
+{
+   rarch_setting_t* list           = NULL;
+   rarch_setting_info_t *list_info = (rarch_setting_info_t*)
+      calloc(1, sizeof(*list_info));
+
+   if (!list_info)
+      return NULL;
+
+   list_info->size  = 32;
+
+   list = menu_setting_new_internal(list_info);
 
    menu_settings_info_list_free(list_info);
    list_info = NULL;
 
    return list;
-
-error:
-   RARCH_ERR("Allocation failed.\n");
-   menu_settings_info_list_free(list_info);
-   menu_setting_free(list);
-
-   list_info = NULL;
-
-   return NULL;
 }
 
 bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
