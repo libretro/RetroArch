@@ -39,7 +39,7 @@ extern "C" {
 #endif
 
 #include <rthreads/rthreads.h>
-#include <queues/fifo_buffer.h>
+#include <queues/fifo_queue.h>
 
 #include "libretro.h"
 #ifdef RARCH_INTERNAL

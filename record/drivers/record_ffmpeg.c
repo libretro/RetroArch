@@ -54,7 +54,7 @@ extern "C" {
 #include <compat/msvc.h>
 
 #include <boolean.h>
-#include <queues/fifo_buffer.h>
+#include <queues/fifo_queue.h>
 #include <rthreads/rthreads.h>
 #include <gfx/scaler/scaler.h>
 #include <file/config_file.h>

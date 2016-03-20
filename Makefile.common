@@ -166,7 +166,7 @@ OBJ += frontend/frontend.o \
        tasks/task_overlay.o \
        input/input_overlay.o \
        patch.o \
-       libretro-common/queues/fifo_buffer.o \
+       libretro-common/queues/fifo_queue.o \
        core_options.o \
        libretro-common/compat/compat_fnmatch.o \
        libretro-common/compat/compat_posix_string.o \

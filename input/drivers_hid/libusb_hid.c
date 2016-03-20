@@ -20,7 +20,7 @@
 
 #include <rthreads/rthreads.h>
 #include <compat/strl.h>
-#include <queues/fifo_buffer.h>
+#include <queues/fifo_queue.h>
 #include <string/stdstring.h>
 
 #include "../connect/joypad_connection.h"

@@ -479,7 +479,7 @@ STATE TRACKER
 /*============================================================
 FIFO BUFFER
 ============================================================ */
-#include "../libretro-common/queues/fifo_buffer.c"
+#include "../libretro-common/queues/fifo_queue.c"
 
 /*============================================================
 AUDIO RESAMPLER

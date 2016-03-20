@@ -19,7 +19,7 @@
 #include <alsa/asoundlib.h>
 
 #include <rthreads/rthreads.h>
-#include <queues/fifo_buffer.h>
+#include <queues/fifo_queue.h>
 
 #include "../audio_driver.h"
 #include "../../configuration.h"

@@ -23,7 +23,7 @@
 
 #include <boolean.h>
 #include <rthreads/rthreads.h>
-#include <queues/fifo_buffer.h>
+#include <queues/fifo_queue.h>
 #include <retro_inline.h>
 
 #include "../audio_driver.h"

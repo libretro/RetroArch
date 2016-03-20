@@ -27,7 +27,7 @@
 #include <AudioUnit/AUComponent.h>
 
 #include <boolean.h>
-#include <queues/fifo_buffer.h>
+#include <queues/fifo_queue.h>
 #include <rthreads/rthreads.h>
 #include <retro_endianness.h>
 #include <string/stdstring.h>

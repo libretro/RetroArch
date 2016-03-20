@@ -17,7 +17,7 @@
 
 #include <boolean.h>
 
-#include <queues/fifo_buffer.h>
+#include <queues/fifo_queue.h>
 #include <rthreads/rthreads.h>
 
 #include "../audio_driver.h"

@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <queues/fifo_buffer.h>
+#include <queues/fifo_queue.h>
 #include <rthreads/rthreads.h>
 
 #include "audio_thread_wrapper.h"
