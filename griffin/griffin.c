@@ -24,7 +24,12 @@
 
 #include <compat/posix_string.h>
 
+#if _MSC_VER
+#include "../libretro-common/compat/compat_snprintf.c"
+#endif
+
 #include "../verbosity.c"
+
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
 #include "../netlogger.c"
 #endif
