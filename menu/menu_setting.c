@@ -3113,118 +3113,6 @@ enum settings_list_type
    SETTINGS_LIST_PRIVACY
 };
 
-static bool setting_append_list_recording_options(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info, const char *parent_group)
-{
-   rarch_setting_group_info_t group_info    = {0};
-   rarch_setting_group_info_t subgroup_info = {0};
-   settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
-
-   START_GROUP(list, list_info, &group_info,
-         menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_SETTINGS),
-         parent_group);
-
-   parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
-
-   START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-   CONFIG_BOOL(
-         list, list_info,
-         recording_is_enabled(),
-         menu_hash_to_str(MENU_LABEL_RECORD_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_RECORD_ENABLE),
-         false,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_PATH(
-         list, list_info,
-         global->record.config,
-         sizeof(global->record.config),
-         menu_hash_to_str(MENU_LABEL_RECORD_CONFIG),
-         menu_hash_to_str(MENU_LABEL_VALUE_RECORD_CONFIG),
-         "",
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_values(list, list_info, "cfg");
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
-
-   CONFIG_STRING(
-         list, list_info,
-         global->record.path,
-         sizeof(global->record.path),
-         menu_hash_to_str(MENU_LABEL_RECORD_PATH),
-         menu_hash_to_str(MENU_LABEL_VALUE_RECORD_PATH),
-         "",
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-
-   CONFIG_BOOL(
-         list, list_info,
-         &global->record.use_output_dir,
-         menu_hash_to_str(MENU_LABEL_RECORD_USE_OUTPUT_DIRECTORY),
-         menu_hash_to_str(MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY),
-         false,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-
-   END_SUB_GROUP(list, list_info, parent_group);
-
-   START_SUB_GROUP(list, list_info, "Miscellaneous", &group_info, &subgroup_info, parent_group);
-
-   CONFIG_BOOL(
-         list, list_info,
-         &settings->video.post_filter_record,
-         menu_hash_to_str(MENU_LABEL_VIDEO_POST_FILTER_RECORD),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD),
-         post_filter_record,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-
-   CONFIG_BOOL(
-         list, list_info,
-         &settings->video.gpu_record,
-         menu_hash_to_str(MENU_LABEL_VIDEO_GPU_RECORD),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_GPU_RECORD),
-         gpu_record,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-
-   END_SUB_GROUP(list, list_info, parent_group);
-   END_GROUP(list, list_info, parent_group);
-
-   return true;
-}
-
 static bool setting_append_list_input_player_options(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -5297,8 +5185,105 @@ static bool setting_append_list(
       case SETTINGS_LIST_RECORDING:
          if (!string_is_equal(settings->record.driver, "null"))
          {
-            if (!setting_append_list_recording_options(list, list_info, parent_group))
-               return false;
+            START_GROUP(list, list_info, &group_info,
+                  menu_hash_to_str(MENU_LABEL_VALUE_RECORDING_SETTINGS),
+                  parent_group);
+
+            parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
+
+            START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  recording_is_enabled(),
+                  menu_hash_to_str(MENU_LABEL_RECORD_ENABLE),
+                  menu_hash_to_str(MENU_LABEL_VALUE_RECORD_ENABLE),
+                  false,
+                  menu_hash_to_str(MENU_VALUE_OFF),
+                  menu_hash_to_str(MENU_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+
+            CONFIG_PATH(
+                  list, list_info,
+                  global->record.config,
+                  sizeof(global->record.config),
+                  menu_hash_to_str(MENU_LABEL_RECORD_CONFIG),
+                  menu_hash_to_str(MENU_LABEL_VALUE_RECORD_CONFIG),
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_values(list, list_info, "cfg");
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
+
+            CONFIG_STRING(
+                  list, list_info,
+                  global->record.path,
+                  sizeof(global->record.path),
+                  menu_hash_to_str(MENU_LABEL_RECORD_PATH),
+                  menu_hash_to_str(MENU_LABEL_VALUE_RECORD_PATH),
+                  "",
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &global->record.use_output_dir,
+                  menu_hash_to_str(MENU_LABEL_RECORD_USE_OUTPUT_DIRECTORY),
+                  menu_hash_to_str(MENU_LABEL_VALUE_RECORD_USE_OUTPUT_DIRECTORY),
+                  false,
+                  menu_hash_to_str(MENU_VALUE_OFF),
+                  menu_hash_to_str(MENU_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+
+            END_SUB_GROUP(list, list_info, parent_group);
+
+            START_SUB_GROUP(list, list_info, "Miscellaneous", &group_info, &subgroup_info, parent_group);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->video.post_filter_record,
+                  menu_hash_to_str(MENU_LABEL_VIDEO_POST_FILTER_RECORD),
+                  menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_POST_FILTER_RECORD),
+                  post_filter_record,
+                  menu_hash_to_str(MENU_VALUE_OFF),
+                  menu_hash_to_str(MENU_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->video.gpu_record,
+                  menu_hash_to_str(MENU_LABEL_VIDEO_GPU_RECORD),
+                  menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_GPU_RECORD),
+                  gpu_record,
+                  menu_hash_to_str(MENU_VALUE_OFF),
+                  menu_hash_to_str(MENU_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+
+            END_SUB_GROUP(list, list_info, parent_group);
+            END_GROUP(list, list_info, parent_group);
          }
          break;
       case SETTINGS_LIST_INPUT_HOTKEY:
