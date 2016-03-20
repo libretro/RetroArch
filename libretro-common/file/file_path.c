@@ -26,10 +26,6 @@
 #include <time.h>
 #include <errno.h>
 
-#ifdef __HAIKU__
-#include <kernel/image.h>
-#endif
-
 #include <sys/stat.h>
 
 #include <file/file_path.h>
