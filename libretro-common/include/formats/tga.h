@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (rpng.h).
+ * The following license statement only applies to this file (rtga.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
