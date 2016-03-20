@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (file_archive.c).
+ * The following license statement only applies to this file (archive_file.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -39,7 +39,7 @@
 #endif
 
 #include <compat/strl.h>
-#include <file/file_archive.h>
+#include <file/archive_file.h>
 #include <file/file_path.h>
 #include <retro_file.h>
 #include <retro_stat.h>

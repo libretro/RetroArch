@@ -874,8 +874,8 @@ endif
 
 
 ifeq ($(HAVE_ZLIB), 1)
-   OBJ += libretro-common/file/file_archive.o \
-          libretro-common/file/file_archive_zlib.o \
+   OBJ += libretro-common/file/archive_file.o \
+          libretro-common/file/archive_file_zlib.o \
           tasks/task_decompress.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB

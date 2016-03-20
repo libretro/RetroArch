@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include <file/file_archive.h>
+#include <file/archive_file.h>
 
 #include "libretro-db/libretrodb.h"
 

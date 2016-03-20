@@ -20,7 +20,7 @@
 #include <string/stdstring.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include <file/file_archive.h>
+#include <file/archive_file.h>
 #include <net/net_compat.h>
 #include <retro_file.h>
 #include <retro_stat.h>

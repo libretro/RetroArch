@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (file_archive_zlib.c).
+ * The following license statement only applies to this file (archive_file_zlib.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -23,7 +23,7 @@
 #include <stdlib.h>
 
 #include <compat/zlib.h>
-#include <file/file_archive.h>
+#include <file/archive_file.h>
 #include <retro_file.h>
 
 static void *zlib_stream_new(void)

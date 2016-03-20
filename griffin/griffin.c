@@ -45,9 +45,13 @@ CONSOLE EXTENSIONS
 
 #endif
 
+/*============================================================
+ARCHIVE FILE
+============================================================ */
+
 #ifdef HAVE_ZLIB
-#include "../libretro-common/file/file_archive.c"
-#include "../libretro-common/file/file_archive_zlib.c"
+#include "../libretro-common/file/archive_file.c"
+#include "../libretro-common/file/archive_file_zlib.c"
 #endif
 
 /*============================================================

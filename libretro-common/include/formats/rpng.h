@@ -27,7 +27,7 @@
 #include <stddef.h>
 
 #include <boolean.h>
-#include <file/file_archive.h>
+#include <file/archive_file.h>
 
 #ifdef __cplusplus
 extern "C" {
