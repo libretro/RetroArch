@@ -30,11 +30,11 @@
 #include <compat/strcasestr.h>
 
 /**
- * string_list_capacity:
- * @list             : pointer to string list
- * @cap              : new capacity for string list.
+ * file_list_capacity:
+ * @list             : pointer to file list
+ * @cap              : new capacity for file list.
  *
- * Change maximum capacity of string list's size.
+ * Change maximum capacity of file list's size.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
