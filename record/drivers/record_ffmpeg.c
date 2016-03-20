@@ -34,6 +34,7 @@ extern "C" {
 #endif
 
 #include <libavcodec/avcodec.h>
+#include <libavutil/imgutils.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/avutil.h>
 #include <libavutil/avstring.h>
@@ -506,12 +507,28 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 
    video->frame_drop_ratio = params->frame_drop_ratio;
 
+#if FF_API_AVPICTURE
+   size = av_image_get_buffer_size(video->pix_fmt, param->out_width,
+         param->out_height, 1);
+#else
    size = avpicture_get_size(video->pix_fmt, param->out_width,
          param->out_height);
+#endif
    video->conv_frame_buf = (uint8_t*)av_malloc(size);
    video->conv_frame = av_frame_alloc();
-   avpicture_fill((AVPicture*)video->conv_frame, video->conv_frame_buf,
-         video->pix_fmt, param->out_width, param->out_height);
+
+   {
+      AVPicture *converted_frame = (AVPicture*)video->conv_frame;
+#if FF_API_AVPICTURE
+      av_image_fill_arrays(converted_frame->data,
+            converted_frame->linesize,
+            video->conv_frame_buf,
+            video->pix_fmt, param->out_width, param->out_height, 1);
+#else
+      avpicture_fill(converted_frame, video->conv_frame_buf,
+            video->pix_fmt, param->out_width, param->out_height);
+#endif
+   }
 
    video->conv_frame->width  = param->out_width;
    video->conv_frame->height = param->out_height;
