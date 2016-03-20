@@ -129,7 +129,7 @@ static bool screenshot_dump(const char *folder, const void *frame,
    if (bgr24)
       bmp_type = RBMP_SOURCE_TYPE_BGR24;
    else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
-      bmp_type = RBMP_SOURCE_TYPE_XRGB8888;
+      bmp_type = RBMP_SOURCE_TYPE_XRGB888;
 
    ret = rbmp_save_image(filename,
          frame,

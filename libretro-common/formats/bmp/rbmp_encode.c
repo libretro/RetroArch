@@ -142,7 +142,7 @@ static void dump_content(RFILE *file, const void *frame,
 {
    uint8_t *line;
    size_t line_size;
-   int i, j;
+   int j;
    int bytes_per_pixel = (type==RBMP_SOURCE_TYPE_ARGB8888?4:3);
    union
    {
