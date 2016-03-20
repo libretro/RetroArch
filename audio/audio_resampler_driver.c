@@ -24,7 +24,7 @@
 #include "../performance.h"
 #endif
 #ifndef DONT_HAVE_STRING_LIST
-#include "../string_list_special.h"
+#include "../list_special.h"
 #endif
 
 static const rarch_resampler_t *resampler_drivers[] = {

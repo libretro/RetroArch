@@ -33,7 +33,7 @@
 #include "../system.h"
 #include "../defaults.h"
 #include "../frontend/frontend.h"
-#include "../string_list_special.h"
+#include "../list_special.h"
 #include "../tasks/tasks_internal.h"
 #include "../ui/ui_companion_driver.h"
 #include "../verbosity.h"

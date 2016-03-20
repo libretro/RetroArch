@@ -1,4 +1,5 @@
 /*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2016 - Daniel De Matteis
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
@@ -15,7 +16,12 @@
 
 #include <string.h>
 
-#include "string_list_special.h"
+#include <lists/dir_list.h>
+
+#include "list_special.h"
+#include "frontend/frontend_driver.h"
+#include "configuration.h"
+#include "core_info.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
@@ -37,6 +43,62 @@
 #include "audio/audio_driver.h"
 #include "audio/audio_resampler_driver.h"
 #include "record/record_driver.h"
+
+struct string_list *dir_list_new_special(const char *input_dir,
+      enum dir_list_type type, const char *filter)
+{
+   char ext_name[PATH_MAX_LENGTH];
+   const char *dir   = NULL;
+   const char *exts  = NULL;
+   bool include_dirs = false;
+
+   settings_t *settings = config_get_ptr();
+
+   (void)input_dir;
+   (void)settings;
+
+   switch (type)
+   {
+      case DIR_LIST_CORES:
+         dir  = settings->libretro_directory;
+
+         if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+            return NULL;
+
+         exts = ext_name;
+         break;
+      case DIR_LIST_CORE_INFO:
+         {
+            core_info_list_t *list = NULL;
+            core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+
+            dir  = input_dir;
+            exts = list->all_ext;
+         }
+         break;
+      case DIR_LIST_SHADERS:
+         dir  = settings->video.shader_dir;
+         exts = "cg|cgp|glsl|glslp|slang|slangp";
+         break;
+      case DIR_LIST_COLLECTIONS:
+         dir  = settings->playlist_directory;
+         exts = "lpl";
+         break;
+      case DIR_LIST_DATABASES:
+         dir  = settings->content_database;
+         exts = "rdb";
+         break;
+      case DIR_LIST_PLAIN:
+         dir  = input_dir;
+         exts = filter;
+         break;
+      case DIR_LIST_NONE:
+      default:
+         return NULL;
+   }
+
+   return dir_list_new(dir, exts, include_dirs, type == DIR_LIST_CORE_INFO);
+}
 
 struct string_list *string_list_new_special(enum string_list_type type,
       void *data, unsigned *len, size_t *list_size)

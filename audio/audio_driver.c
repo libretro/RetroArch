@@ -29,7 +29,7 @@
 #include "../general.h"
 #include "../performance.h"
 #include "../verbosity.h"
-#include "../string_list_special.h"
+#include "../list_special.h"
 
 #ifndef AUDIO_BUFFER_FREE_SAMPLES_COUNT
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)

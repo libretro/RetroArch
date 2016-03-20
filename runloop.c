@@ -45,7 +45,7 @@
 #include "runloop.h"
 #include "rewind.h"
 #include "system.h"
-#include "dir_list_special.h"
+#include "list_special.h"
 #include "audio/audio_driver.h"
 #include "camera/camera_driver.h"
 #include "record/record_driver.h"

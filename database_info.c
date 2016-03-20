@@ -19,7 +19,7 @@
 
 #include <retro_endianness.h>
 
-#include "dir_list_special.h"
+#include "list_special.h"
 #include "database_info.h"
 #include "msg_hash.h"
 #include "verbosity.h"

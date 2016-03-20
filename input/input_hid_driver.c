@@ -19,7 +19,7 @@
 #include <string.h>
 
 #include "input_hid_driver.h"
-#include "../string_list_special.h"
+#include "../list_special.h"
 #include "../verbosity.h"
 
 static hid_driver_t *hid_drivers[] = {

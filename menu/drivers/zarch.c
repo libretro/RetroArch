@@ -35,7 +35,7 @@
 
 #include "../../config.def.h"
 
-#include "../../dir_list_special.h"
+#include "../../list_special.h"
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"

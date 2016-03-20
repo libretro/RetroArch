@@ -38,7 +38,7 @@
 #include "rewind.h"
 #include "system.h"
 #include "ui/ui_companion_driver.h"
-#include "dir_list_special.h"
+#include "list_special.h"
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos.h"

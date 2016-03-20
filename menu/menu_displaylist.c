@@ -39,8 +39,7 @@
 #include "../config.features.h"
 #include "../git_version.h"
 #include "../input/input_config.h"
-#include "../dir_list_special.h"
-#include "../string_list_special.h"
+#include "../list_special.h"
 #include "../performance.h"
 #include "../core_info.h"
 

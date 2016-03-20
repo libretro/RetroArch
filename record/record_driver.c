@@ -26,7 +26,7 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "../msg_hash.h"
-#include "../string_list_special.h"
+#include "../list_special.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

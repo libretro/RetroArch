@@ -20,7 +20,7 @@
 
 #include "../general.h"
 #include "../system.h"
-#include "../string_list_special.h"
+#include "../list_special.h"
 #include "../verbosity.h"
 
 static const location_driver_t *location_drivers[] = {

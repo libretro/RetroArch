@@ -20,7 +20,7 @@
 
 #include "../general.h"
 #include "../movie.h"
-#include "../string_list_special.h"
+#include "../list_special.h"
 #include "../verbosity.h"
 
 #ifdef HAVE_COMMAND

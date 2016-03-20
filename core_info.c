@@ -24,7 +24,7 @@
 
 #include "core_info.h"
 #include "configuration.h"
-#include "dir_list_special.h"
+#include "list_special.h"
 #include "config.def.h"
 
 #ifdef HAVE_CONFIG_H

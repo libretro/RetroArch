@@ -644,8 +644,7 @@ FILE
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/streams/file_stream.c"
 #include "../libretro-common/file/retro_stat.c"
-#include "../dir_list_special.c"
-#include "../string_list_special.c"
+#include "../list_special.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
 

@@ -29,7 +29,7 @@
 #include "../config.def.h"
 #include "../general.h"
 #include "../performance.h"
-#include "../string_list_special.h"
+#include "../list_special.h"
 #include "../libretro_version_1.h"
 #include "../system.h"
 #include "../command_event.h"
