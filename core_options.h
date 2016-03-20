@@ -22,8 +22,6 @@
 #include <boolean.h>
 #include <string/string_list.h>
 
-#include "libretro.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,7 +38,7 @@ typedef struct core_option_manager core_option_manager_t;
  * Returns: handle to new core manager handle, otherwise NULL.
  **/
 core_option_manager_t *core_option_new(const char *conf_path,
-      const struct retro_variable *vars);
+      const void *data);
 
 /**
  * core_option_updated:
@@ -85,8 +83,7 @@ bool core_option_flush_game_specific(
  **/
 void core_option_free(core_option_manager_t *opt);
 
-void core_option_get(core_option_manager_t *opt, 
-      struct retro_variable *var);
+void core_option_get(core_option_manager_t *opt,  void *data);
 
 /**
  * core_option_size:
