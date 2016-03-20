@@ -1166,24 +1166,11 @@ static void decode_thread(void *data)
 
    if (video_stream >= 0)
    {
-      AVPicture *converted_frame = (AVPicture*)conv_frame;
-
-#if FF_API_AVPICTURE
-      frame_size = av_image_get_buffer_size(PIX_FMT_RGB32, media.width, media.height, 1);
-#else
       frame_size = avpicture_get_size(PIX_FMT_RGB32, media.width, media.height);
-#endif
       conv_frame = av_frame_alloc();
       conv_frame_buf = av_malloc(frame_size);
-#if FF_API_AVPICTURE
-      av_image_fill_arrays(converted_frame->data,
-            converted_frame->linesize,
-            (const uint8_t*)conv_frame_buf,
-            PIX_FMT_RGB32, media.width, media.height, 1);
-#else
-      avpicture_fill(converted_frame, (const uint8_t*)conv_frame_buf,
+      avpicture_fill((AVPicture*)conv_frame, (const uint8_t*)conv_frame_buf,
             PIX_FMT_RGB32, media.width, media.height);
-#endif
    }
 
    while (!decode_thread_dead)
@@ -1324,11 +1311,7 @@ static void decode_thread(void *data)
          avsubtitle_free(&sub);
       }
 
-#if FF_API_AVPICTURE
-      av_packet_unref(&pkt);
-#else
       av_free_packet(&pkt);
-#endif
    }
 
    if (sws)
