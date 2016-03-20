@@ -578,12 +578,10 @@ bool file_archive_extract_first_content_file(
    bool ret                             = true;
    struct zip_extract_userdata userdata = {0};
 
+   /* We cannot unzip if the libretro 
+    * implementation does not have any valid extensions. */
    if (!valid_exts)
-   {
-      /* Libretro implementation does not have any valid extensions.
-       * Cannot unzip without knowing this. */
       return false;
-   }
 
    list = string_split(valid_exts, "|");
    if (!list)
@@ -672,7 +670,8 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
                return false;
 
             do{
-               ret = handle.backend->stream_decompress_data_to_file_iterate(handle.stream);
+               ret = handle.backend->stream_decompress_data_to_file_iterate(
+                     handle.stream);
             }while(ret == 0);
 
             if (!file_archive_decompress_data_to_file(&handle,
