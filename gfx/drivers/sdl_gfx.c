@@ -88,10 +88,10 @@ static void sdl_update_scaler(SDL_Surface *surf, struct scaler_ctx *scaler,
                               unsigned height, unsigned pitch)
 {
    if (
-          width  != scaler->in_width
-       || height != scaler->in_height
+          width  != (unsigned)scaler->in_width
+       || height != (unsigned)scaler->in_height
        || format != scaler->in_fmt
-       || pitch  != scaler->in_stride
+       || pitch  != (unsigned)scaler->in_stride
       )
    {
       scaler->in_fmt    = format;
