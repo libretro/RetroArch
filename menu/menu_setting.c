@@ -3563,8 +3563,8 @@ static bool setting_append_list_driver_options(
          &group_info,
          &subgroup_info,
          parent_group,
-         general_read_handler,
-         general_write_handler);
+         NULL,
+         NULL);
    settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
    strlcpy(
          (*list)[list_info->index - 1].value.source.string,
