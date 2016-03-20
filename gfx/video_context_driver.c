@@ -280,24 +280,32 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
          }
          break;
       case GFX_CTL_FIND_PREV_DRIVER:
-         return gfx_ctl_find_prev_driver();
+         if (!gfx_ctl_find_prev_driver())
+            return false;
+         break;
       case GFX_CTL_FIND_NEXT_DRIVER:
-         return gfx_ctl_find_next_driver();
+         if (!gfx_ctl_find_next_driver())
+            return false;
+         break;
       case GFX_CTL_IMAGE_BUFFER_INIT:
          if (!current_video_context || !current_video_context->image_buffer_init)
             return false;
-         return current_video_context->image_buffer_init(video_context_data,
-               (const video_info_t*)data);
+         if (!current_video_context->image_buffer_init(video_context_data,
+               (const video_info_t*)data))
+            return false;
+         break;
       case GFX_CTL_IMAGE_BUFFER_WRITE:
          {
             gfx_ctx_image_t *img = (gfx_ctx_image_t*)data;
 
             if (!current_video_context || !current_video_context->image_buffer_write)
                return false;
-            return current_video_context->image_buffer_write(video_context_data,
+            if (!current_video_context->image_buffer_write(video_context_data,
                   img->frame, img->width, img->height, img->pitch,
-                  img->rgb32, img->index, img->handle);
+                  img->rgb32, img->index, img->handle))
+               return false;
          }
+         break;
       case GFX_CTL_GET_VIDEO_OUTPUT_PREV:
          if (!current_video_context 
                || !current_video_context->get_video_output_prev)
@@ -339,11 +347,15 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
       case GFX_CTL_FOCUS:
          if (!video_context_data || !current_video_context->has_focus)
             return false;
-         return current_video_context->has_focus(video_context_data);
+         if (!current_video_context->has_focus(video_context_data))
+            return false;
+         break;
       case GFX_CTL_HAS_WINDOWED:
          if (!video_context_data)
             return false;
-         return current_video_context->has_windowed(video_context_data);
+         if (!current_video_context->has_windowed(video_context_data))
+            return false;
+         break;
       case GFX_CTL_FREE:
          if (current_video_context->destroy)
             current_video_context->destroy(video_context_data);
@@ -383,10 +395,12 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             gfx_ctx_metrics_t *metrics = (gfx_ctx_metrics_t*)data;
             if (!current_video_context || !current_video_context->get_metrics)
                return false;
-            return current_video_context->get_metrics(video_context_data,
+            if (!current_video_context->get_metrics(video_context_data,
                   metrics->type,
-                  metrics->value);
+                  metrics->value))
+               return false;
          }
+         break;
       case GFX_CTL_INPUT_DRIVER:
          {
             gfx_ctx_input_t *inp = (gfx_ctx_input_t*)data;
@@ -401,9 +415,11 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             bool *bool_data = (bool*)data;
             if (!video_context_data || !current_video_context)
                return false;
-            return current_video_context->suppress_screensaver(
-                  video_context_data, *bool_data);
+            if (!current_video_context->suppress_screensaver(
+                  video_context_data, *bool_data))
+               return false;
          }
+         break;
       case GFX_CTL_IDENT_GET:
          {
             gfx_ctx_ident_t *ident = (gfx_ctx_ident_t*)data;
@@ -417,18 +433,22 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
             gfx_ctx_mode_t *mode_info = (gfx_ctx_mode_t*)data;
             if (!current_video_context || !current_video_context->set_video_mode)
                return false;
-            return current_video_context->set_video_mode(
+            if (!current_video_context->set_video_mode(
                   video_context_data, mode_info->width,
-                  mode_info->height, mode_info->fullscreen);
+                  mode_info->height, mode_info->fullscreen))
+               return false;
          }
+         break;
       case GFX_CTL_SET_RESIZE:
          {
             gfx_ctx_mode_t *mode_info = (gfx_ctx_mode_t*)data;
             if (!current_video_context)
                return false;
-            return current_video_context->set_resize(
-                  video_context_data, mode_info->width, mode_info->height);
+            if (!current_video_context->set_resize(
+                  video_context_data, mode_info->width, mode_info->height))
+               return false;
          }
+         break;
       case GFX_CTL_GET_VIDEO_SIZE:
          {
             gfx_ctx_mode_t *mode_info = (gfx_ctx_mode_t*)data;

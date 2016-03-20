@@ -151,24 +151,30 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
       case SHADER_CTL_GET_FEEDBACK_PASS:
          if (!current_shader || !current_shader->get_feedback_pass)
             return false;
-         return current_shader->get_feedback_pass(shader_data,
-               (unsigned*)data);
+         if (!current_shader->get_feedback_pass(shader_data,
+               (unsigned*)data))
+            return false;
+         break;
       case SHADER_CTL_MIPMAP_INPUT:
          if (!current_shader)
             return false;
          {
             unsigned *index = (unsigned*)data;
-            return current_shader->mipmap_input(shader_data, *index);
+            if (!current_shader->mipmap_input(shader_data, *index))
+               return false;
          }
+         break;
       case SHADER_CTL_SET_COORDS:
          {
             video_shader_ctx_coords_t *coords = (video_shader_ctx_coords_t*)
                data;
             if (!current_shader || !current_shader->set_coords)
                return false;
-            return current_shader->set_coords(coords->handle_data,
-                  shader_data, coords->data);
+            if (!current_shader->set_coords(coords->handle_data,
+                  shader_data, coords->data))
+               return false;
          }
+         break;
       case SHADER_CTL_SCALE:
          {
             video_shader_ctx_scale_t *scaler = (video_shader_ctx_scale_t*)data;
@@ -202,17 +208,21 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
                return false;
             if (!mvp || !mvp->matrix)
                return false;
-            return current_shader->set_mvp(mvp->data, shader_data, mvp->matrix);
+            if (!current_shader->set_mvp(mvp->data, shader_data, mvp->matrix))
+               return false;
          }
+         break;
       case SHADER_CTL_FILTER_TYPE:
          {
             video_shader_ctx_filter_t *filter = 
                (video_shader_ctx_filter_t*)data;
             if (!current_shader || !current_shader->filter_type || !filter)
                return false;
-            return current_shader->filter_type(shader_data,
-                  filter->index, filter->smooth);
+            if (!current_shader->filter_type(shader_data,
+                  filter->index, filter->smooth))
+               return false;
          }
+         break;
       case SHADER_CTL_USE:
          {
             video_shader_ctx_info_t *shader_info = (video_shader_ctx_info_t*)data;

@@ -1548,8 +1548,10 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_READ_VIEWPORT:
          if (!current_video->read_viewport)
             return false;
-         return current_video->read_viewport(video_driver_data,
-               (uint8_t*)data);
+         if (!current_video->read_viewport(video_driver_data,
+               (uint8_t*)data))
+            return false;
+         break;
       case RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB:
          if (!video_driver_state.frame_cache.data)
             return false;
@@ -1735,8 +1737,10 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
                !video_driver_poke || 
                !video_driver_poke->get_hw_render_interface)
             return false;
-         return video_driver_poke->get_hw_render_interface(video_driver_data,
-               (const struct retro_hw_render_interface**)data);
+         if (!video_driver_poke->get_hw_render_interface(video_driver_data,
+               (const struct retro_hw_render_interface**)data))
+            return false;
+         break;
       case RARCH_DISPLAY_CTL_VIEWPORT_INFO:
          if (!current_video || !current_video->viewport_info)
             return false;
