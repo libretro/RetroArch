@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <formats/rbmp.h>
 
 static bool write_header_bmp(RFILE *file, unsigned width, unsigned height, bool is32bpp)

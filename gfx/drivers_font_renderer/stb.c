@@ -17,7 +17,7 @@
 #include <ctype.h>
 
 #include <file/file_path.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 
 #include "../font_driver.h"
 #include "../../general.h"

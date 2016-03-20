@@ -24,7 +24,7 @@
 
 #include <compat/zlib.h>
 #include <file/archive_file.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 
 static void *zlib_stream_new(void)
 {

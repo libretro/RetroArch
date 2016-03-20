@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (retro_file.c).
+ * The following license statement only applies to this file (file_stream.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -63,7 +63,7 @@
 #include <fcntl.h>
 #endif
 
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <memmap.h>
 
 #if 1

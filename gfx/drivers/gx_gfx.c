@@ -21,7 +21,7 @@
 #include <gccore.h>
 #include <ogcsys.h>
 
-#include <retro_file.h>
+#include <streams/file_stream.h>
 
 #include "../../driver.h"
 #include "../../general.h"

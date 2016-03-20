@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <retro_endianness.h>
 #include <compat/strl.h>
 

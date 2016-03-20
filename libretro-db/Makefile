@@ -10,6 +10,9 @@ else
 CFLAGS               = -g -O2 -Wall -DNDEBUG
 endif
 
+LIBRETRO_COMMON_C = \
+			 $(LIBRETRO_COMMON_DIR)/streams/file_stream.c
+
 C_CONVERTER_C = \
 			 rmsgpack.c \
 			 rmsgpack_dom.c \
@@ -19,7 +22,7 @@ C_CONVERTER_C = \
 			 c_converter.c \
 			 $(LIBRETRO_COMMON_DIR)/hash/rhash.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
-			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
+			 $(LIBRETRO_COMMON_C) \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 C_CONVERTER_OBJS := $(C_CONVERTER_C:.c=.o)
@@ -32,7 +35,7 @@ RARCHDB_TOOL_C = \
 			 query.c \
 			 libretrodb.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
-			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
+			 $(LIBRETRO_COMMON_C) \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 RARCHDB_TOOL_OBJS := $(RARCHDB_TOOL_C:.c=.o)
@@ -40,7 +43,7 @@ RARCHDB_TOOL_OBJS := $(RARCHDB_TOOL_C:.c=.o)
 RMSGPACK_C = \
 			rmsgpack.c \
 			rmsgpack_test.c \
-			$(LIBRETRO_COMMON_DIR)/file/retro_file.c
+			 $(LIBRETRO_COMMON_C)
 
 RMSGPACK_OBJS := $(RMSGPACK_C:.c=.o)
 

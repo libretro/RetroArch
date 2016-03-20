@@ -14,7 +14,7 @@
  */
 
 #include <retro_assert.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 

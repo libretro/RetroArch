@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include <retro_file.h>
+#include <streams/file_stream.h>
 
 struct rmsgpack_read_callbacks
 {

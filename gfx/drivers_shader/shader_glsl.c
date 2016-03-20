@@ -20,7 +20,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #include "../../general.h"

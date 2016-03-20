@@ -17,7 +17,7 @@
 #include <string>
 #include <sstream>
 
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <lists/string_list.h>
 
 #include "glslang_util.hpp"

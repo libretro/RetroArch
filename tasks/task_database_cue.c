@@ -21,7 +21,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <retro_endianness.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #include "tasks_internal.h"

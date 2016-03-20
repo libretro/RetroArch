@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include <retro_file.h>
+#include <streams/file_stream.h>
 
 #ifdef __cplusplus
 extern "C" {

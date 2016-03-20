@@ -17,7 +17,7 @@
 #include <ctype.h>
 
 #include <formats/jsonsax.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <rhash.h>
 #include <rthreads/async_job.h>
 

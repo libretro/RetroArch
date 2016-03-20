@@ -25,6 +25,7 @@
 
 #include <boolean.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 #include <lists/string_list.h>
 
 #ifdef _WIN32
@@ -59,7 +60,6 @@
 #include "performance.h"
 #include "cheats.h"
 #include "system.h"
-#include "retro_file.h"
 
 #include "git_version.h"
 

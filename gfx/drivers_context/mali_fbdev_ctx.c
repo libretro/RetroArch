@@ -21,7 +21,7 @@
 #include <linux/fb.h>
 #include <linux/vt.h>
 
-#include <retro_file.h>
+#include <streams/file_stream.h>
 
 #include "../../driver.h"
 #include "../../general.h"

@@ -41,7 +41,7 @@
 #include <compat/strl.h>
 #include <file/archive_file.h>
 #include <file/file_path.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <retro_stat.h>
 #include <retro_miscellaneous.h>
 #include <lists/string_list.h>

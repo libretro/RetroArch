@@ -29,7 +29,7 @@
 #include <ctype.h>
 
 #include <boolean.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <compat/posix_string.h>
 
 #include <formats/rxml.h>

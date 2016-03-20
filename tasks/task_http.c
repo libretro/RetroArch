@@ -22,7 +22,7 @@
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <net/net_compat.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 #include <retro_stat.h>
 
 #include "../msg_hash.h"

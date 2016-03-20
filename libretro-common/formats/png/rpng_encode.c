@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <retro_file.h>
+#include <streams/file_stream.h>
 
 #include "rpng_internal.h"
 

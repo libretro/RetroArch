@@ -38,10 +38,10 @@
 #include <boolean.h>
 #include <retro_dirent.h>
 #include <retro_inline.h>
-#include <retro_file.h>
 #include <compat/strl.h>
 #include <rhash.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #include "../frontend.h"

@@ -30,7 +30,7 @@
 #include <rhash.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 
 #define LSL32(x, n) ((uint32_t)(x) << (n))
 #define LSR32(x, n) ((uint32_t)(x) >> (n))

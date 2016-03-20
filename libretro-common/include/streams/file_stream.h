@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (retro_file.h).
+ * The following license statement only applies to this file (file_stream.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __RETRO_FILE_H
-#define __RETRO_FILE_H
+#ifndef __LIBRETRO_SDK_FILE_STREAM_H
+#define __LIBRETRO_SDK_FILE_STREAM_H
 
 #include <stdint.h>
 #include <stddef.h>

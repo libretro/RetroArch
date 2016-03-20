@@ -21,7 +21,7 @@
 
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include <retro_file.h>
+#include <streams/file_stream.h>
 
 #include "video_state_python.h"
 #include "../dynamic.h"
