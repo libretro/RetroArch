@@ -37,28 +37,24 @@ static INLINE bool realloc_checked(void **ptr, size_t size)
 }
 
 static bool gfx_coord_array_resize(gfx_coord_array_t *ca,
-   unsigned count)
+   unsigned cap)
 {
-   if (ca->coords.vertices + count >= ca->allocated)
-   {
-      unsigned alloc_size = next_pow2(ca->coords.vertices + count);
-      size_t base_size    = sizeof(float) * alloc_size;
+   size_t base_size    = sizeof(float) * cap;
 
-      if (!realloc_checked((void**)&ca->coords.vertex,
+   if (!realloc_checked((void**)&ca->coords.vertex,
             2 * base_size))
-         return false;
-      if (!realloc_checked((void**)&ca->coords.color,
+      return false;
+   if (!realloc_checked((void**)&ca->coords.color,
             4 * base_size))
-         return false;
-      if (!realloc_checked((void**)&ca->coords.tex_coord,
+      return false;
+   if (!realloc_checked((void**)&ca->coords.tex_coord,
             2 * base_size))
-         return false;
-      if (!realloc_checked((void**)&ca->coords.lut_tex_coord,
+      return false;
+   if (!realloc_checked((void**)&ca->coords.lut_tex_coord,
             2 * base_size))
-         return false;
+      return false;
 
-      ca->allocated = alloc_size;
-   }
+   ca->allocated = cap;
 
    return true;
 }
@@ -69,8 +65,12 @@ bool gfx_coord_array_add(gfx_coord_array_t *ca,
    size_t base_size, offset;
    count          = MIN(count, coords->vertices);
 
-   if (!gfx_coord_array_resize(ca, count))
-      return false;
+   if (ca->coords.vertices + count >= ca->allocated)
+   {
+      unsigned cap = next_pow2(ca->coords.vertices + count);
+      if (!gfx_coord_array_resize(ca, cap))
+         return false;
+   }
 
    base_size = count * sizeof(float);
    offset    = ca->coords.vertices;
