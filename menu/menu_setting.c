@@ -7420,6 +7420,8 @@ static bool menu_setting_free(void *data)
 
 static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_info)
 {
+   unsigned i;
+   enum settings_list_type list_types[3];
    rarch_setting_t* resized_list   = NULL;
    rarch_setting_t terminator      = { ST_NONE };
    const char *root                = menu_hash_to_str(MENU_VALUE_MAIN_MENU);
@@ -7427,14 +7429,15 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
    if (!list)
       goto error;
 
-   if (!setting_append_list(SETTINGS_LIST_MAIN_MENU, &list, list_info, root))
-      goto error;
+   list_types[0] = SETTINGS_LIST_MAIN_MENU;
+   list_types[1] = SETTINGS_LIST_DRIVERS;
+   list_types[2] = SETTINGS_LIST_CORE;
 
-   if (!setting_append_list(SETTINGS_LIST_DRIVERS,   &list, list_info, root))
-      goto error;
-
-   if (!setting_append_list(SETTINGS_LIST_CORE,      &list, list_info, root))
-      goto error;
+   for (i = 0; i < 3; i++)
+   {
+      if (!setting_append_list(list_types[i], &list, list_info, root))
+         goto error;
+   }
 
    if (!setting_append_list_configuration_options(&list, list_info, root))
       goto error;
