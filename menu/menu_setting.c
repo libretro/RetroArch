@@ -3316,7 +3316,16 @@ static bool setting_append_list_input_player_options(
    return true;
 }
 
-static bool setting_append_list_main_menu_options(
+enum settings_list_type
+{
+   SETTINGS_LIST_NONE = 0,
+   SETTINGS_LIST_MAIN_MENU,
+   SETTINGS_LIST_DRIVERS,
+   SETTINGS_LIST_CORE
+};
+
+static bool setting_append_list(
+      enum settings_list_type type,
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       const char *parent_group)
@@ -3328,495 +3337,481 @@ static bool setting_append_list_main_menu_options(
 
    (void)settings;
 
-   START_GROUP(list, list_info, &group_info, menu_hash_to_str(MENU_VALUE_MAIN_MENU), parent_group);
-   START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
-
-   CONFIG_INT(
-         list, list_info,
-         &settings->state_slot,
-         menu_hash_to_str(MENU_LABEL_STATE_SLOT),
-         menu_hash_to_str(MENU_LABEL_VALUE_STATE_SLOT),
-         0,
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_range(list, list_info, -1, 0, 1, true, false);
-
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_START_CORE),
-         menu_hash_to_str(MENU_LABEL_VALUE_START_CORE),
-         &group_info,
-         &subgroup_info,
-         parent_group);
-
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
-         menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS),
-         &group_info,
-         &subgroup_info,
-         parent_group);
-
-#ifndef HAVE_DYNAMIC
-   if (frontend_driver_has_fork())
-#endif
+   switch (type)
    {
-      char ext_name[PATH_MAX_LENGTH];
+      case SETTINGS_LIST_MAIN_MENU:
+         START_GROUP(list, list_info, &group_info, menu_hash_to_str(MENU_VALUE_MAIN_MENU), parent_group);
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-      if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
-      {
+         CONFIG_INT(
+               list, list_info,
+               &settings->state_slot,
+               menu_hash_to_str(MENU_LABEL_STATE_SLOT),
+               menu_hash_to_str(MENU_LABEL_VALUE_STATE_SLOT),
+               0,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, -1, 0, 1, true, false);
+
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_CORE_LIST),
-               menu_hash_to_str(MENU_LABEL_VALUE_CORE_LIST),
+               menu_hash_to_str(MENU_LABEL_START_CORE),
+               menu_hash_to_str(MENU_LABEL_VALUE_START_CORE),
                &group_info,
                &subgroup_info,
                parent_group);
-         (*list)[list_info->index - 1].size         = sizeof(settings->libretro);
-         (*list)[list_info->index - 1].value.target.string = settings->libretro;
-         (*list)[list_info->index - 1].values       = ext_name;
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
-      }
-   }
 
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST),
-         menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_LIST),
-         &group_info,
-         &subgroup_info,
-         parent_group);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
 
-   if (settings->history_list_enable)
-   {
-      CONFIG_ACTION(
-            list, list_info,
-            menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY),
-            menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY),
-            &group_info,
-            &subgroup_info,
-            parent_group);
-   }
+#ifndef HAVE_DYNAMIC
+         if (frontend_driver_has_fork())
+#endif
+         {
+            char ext_name[PATH_MAX_LENGTH];
+
+            if (frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
+            {
+               CONFIG_ACTION(
+                     list, list_info,
+                     menu_hash_to_str(MENU_LABEL_CORE_LIST),
+                     menu_hash_to_str(MENU_LABEL_VALUE_CORE_LIST),
+                     &group_info,
+                     &subgroup_info,
+                     parent_group);
+               (*list)[list_info->index - 1].size         = sizeof(settings->libretro);
+               (*list)[list_info->index - 1].value.target.string = settings->libretro;
+               (*list)[list_info->index - 1].values       = ext_name;
+               menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
+               settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
+            }
+         }
+
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_LIST),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         if (settings->history_list_enable)
+         {
+            CONFIG_ACTION(
+                  list, list_info,
+                  menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY),
+                  menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group);
+         }
 
 
 #if defined(HAVE_NETWORKING)
 
 #if defined(HAVE_LIBRETRODB)
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_ADD_CONTENT_LIST),
-         menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST),
-         &group_info,
-         &subgroup_info,
-         parent_group);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_ADD_CONTENT_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST),
+               &group_info,
+               &subgroup_info,
+               parent_group);
 #endif
 
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER),
-         menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER),
-         &group_info,
-         &subgroup_info,
-         parent_group);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER),
+               menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER),
+               &group_info,
+               &subgroup_info,
+               parent_group);
 #endif
 
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_SETTINGS),
-         menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
-         &group_info,
-         &subgroup_info,
-         parent_group);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
 
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_INFORMATION_LIST),
-         menu_hash_to_str(MENU_LABEL_VALUE_INFORMATION_LIST),
-         &group_info,
-         &subgroup_info,
-         parent_group);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_INFORMATION_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_INFORMATION_LIST),
+               &group_info,
+               &subgroup_info,
+               parent_group);
 
 #ifndef HAVE_DYNAMIC
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH),
-         menu_hash_to_str(MENU_LABEL_VALUE_RESTART_RETROARCH),
-         &group_info,
-         &subgroup_info,
-         parent_group);
-   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_RESTART_RETROARCH);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH),
+               menu_hash_to_str(MENU_LABEL_VALUE_RESTART_RETROARCH),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_RESTART_RETROARCH);
 #endif
 
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_CONFIGURATIONS),
-         menu_hash_to_str(MENU_LABEL_VALUE_CONFIGURATIONS),
-         &group_info,
-         &subgroup_info,
-         parent_group);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_CONFIGURATIONS),
+               menu_hash_to_str(MENU_LABEL_VALUE_CONFIGURATIONS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
 
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_SAVE_CURRENT_CONFIG),
-         menu_hash_to_str(MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG),
-         &group_info,
-         &subgroup_info,
-         parent_group);
-   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_SAVE_CURRENT_CONFIG),
+               menu_hash_to_str(MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
 
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG),
-         menu_hash_to_str(MENU_LABEL_VALUE_SAVE_NEW_CONFIG),
-         &group_info,
-         &subgroup_info,
-         parent_group);
-   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_SAVE_CONFIG);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG),
+               menu_hash_to_str(MENU_LABEL_VALUE_SAVE_NEW_CONFIG),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_SAVE_CONFIG);
 
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_HELP_LIST),
-         menu_hash_to_str(MENU_LABEL_VALUE_HELP_LIST),
-         &group_info,
-         &subgroup_info,
-         parent_group);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_HELP_LIST),
+               menu_hash_to_str(MENU_LABEL_VALUE_HELP_LIST),
+               &group_info,
+               &subgroup_info,
+               parent_group);
 
 #if !defined(IOS)
-   /* Apple rejects iOS apps that lets you forcibly quit an application. */
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH),
-         menu_hash_to_str(MENU_LABEL_VALUE_QUIT_RETROARCH),
-         &group_info,
-         &subgroup_info,
-         parent_group);
-   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_QUIT_RETROARCH);
+         /* Apple rejects iOS apps that lets you forcibly quit an application. */
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH),
+               menu_hash_to_str(MENU_LABEL_VALUE_QUIT_RETROARCH),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_QUIT_RETROARCH);
 #endif
 
 #if defined(HAVE_LAKKA)
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_SHUTDOWN),
-         menu_hash_to_str(MENU_LABEL_VALUE_SHUTDOWN),
-         &group_info,
-         &subgroup_info,
-         parent_group);
-   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_SHUTDOWN);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_SHUTDOWN),
+               menu_hash_to_str(MENU_LABEL_VALUE_SHUTDOWN),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_SHUTDOWN);
 
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_REBOOT),
-         menu_hash_to_str(MENU_LABEL_VALUE_REBOOT),
-         &group_info,
-         &subgroup_info,
-         parent_group);
-   menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REBOOT);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_REBOOT),
+               menu_hash_to_str(MENU_LABEL_VALUE_REBOOT),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REBOOT);
 #endif
 
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_INPUT_SETTINGS),
-         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SETTINGS),
-         &group_info,
-         &subgroup_info,
-         parent_group);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_INPUT_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
 
-   CONFIG_ACTION(
-         list, list_info,
-         menu_hash_to_str(MENU_LABEL_PLAYLIST_SETTINGS),
-         menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_SETTINGS),
-         &group_info,
-         &subgroup_info,
-         parent_group);
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_PLAYLIST_SETTINGS),
+               menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
 
-   for (user = 0; user < MAX_USERS; user++)
-      setting_append_list_input_player_options(list, list_info, parent_group, user);
+         for (user = 0; user < MAX_USERS; user++)
+            setting_append_list_input_player_options(list, list_info, parent_group, user);
 
-   END_SUB_GROUP(list, list_info, parent_group);
-   END_GROUP(list, list_info, parent_group);
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+      case SETTINGS_LIST_DRIVERS:
+         START_GROUP(list, list_info, &group_info, menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
 
-   return true;
-}
+         parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
-static bool setting_append_list_driver_options(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info    = {0};
-   rarch_setting_group_info_t subgroup_info = {0};
-   settings_t *settings = config_get_ptr();
-   
-   START_GROUP(list, list_info, &group_info, menu_hash_to_str(MENU_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
+         START_SUB_GROUP(list, list_info, "State", &group_info,
+               &subgroup_info, parent_group);
 
-   parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->input.driver,
+               sizeof(settings->input.driver),
+               menu_hash_to_str(MENU_LABEL_INPUT_DRIVER),
+               menu_hash_to_str(MENU_LABEL_VALUE_INPUT_DRIVER),
+               config_get_default_input(),
+               config_get_input_driver_options(),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_read_handler,
+               general_write_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+         strlcpy(
+               (*list)[list_info->index - 1].value.source.string,
+               (*list)[list_info->index - 1].value.target.string,
+               (*list)[list_info->index - 1].size);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
-   START_SUB_GROUP(list, list_info, "State", &group_info,
-         &subgroup_info, parent_group);
-   
-   CONFIG_STRING_OPTIONS(
-         list, list_info,
-         settings->input.driver,
-         sizeof(settings->input.driver),
-         menu_hash_to_str(MENU_LABEL_INPUT_DRIVER),
-         menu_hash_to_str(MENU_LABEL_VALUE_INPUT_DRIVER),
-         config_get_default_input(),
-         config_get_input_driver_options(),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_read_handler,
-         general_write_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   strlcpy(
-         (*list)[list_info->index - 1].value.source.string,
-         (*list)[list_info->index - 1].value.target.string,
-         (*list)[list_info->index - 1].size);
-   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->input.joypad_driver,
+               sizeof(settings->input.driver),
+               menu_hash_to_str(MENU_LABEL_JOYPAD_DRIVER),
+               menu_hash_to_str(MENU_LABEL_VALUE_JOYPAD_DRIVER),
+               config_get_default_joypad(),
+               config_get_joypad_driver_options(),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_read_handler,
+               general_write_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+         strlcpy(
+               (*list)[list_info->index - 1].value.source.string,
+               (*list)[list_info->index - 1].value.target.string,
+               (*list)[list_info->index - 1].size);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
-   CONFIG_STRING_OPTIONS(
-         list, list_info,
-         settings->input.joypad_driver,
-         sizeof(settings->input.driver),
-         menu_hash_to_str(MENU_LABEL_JOYPAD_DRIVER),
-         menu_hash_to_str(MENU_LABEL_VALUE_JOYPAD_DRIVER),
-         config_get_default_joypad(),
-         config_get_joypad_driver_options(),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_read_handler,
-         general_write_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   strlcpy(
-         (*list)[list_info->index - 1].value.source.string,
-         (*list)[list_info->index - 1].value.target.string,
-         (*list)[list_info->index - 1].size);
-   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->video.driver,
+               sizeof(settings->video.driver),
+               menu_hash_to_str(MENU_LABEL_VIDEO_DRIVER),
+               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_DRIVER),
+               config_get_default_video(),
+               config_get_video_driver_options(),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_read_handler,
+               general_write_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+         strlcpy(
+               (*list)[list_info->index - 1].value.source.string,
+               (*list)[list_info->index - 1].value.target.string,
+               (*list)[list_info->index - 1].size);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
-   CONFIG_STRING_OPTIONS(
-         list, list_info,
-         settings->video.driver,
-         sizeof(settings->video.driver),
-         menu_hash_to_str(MENU_LABEL_VIDEO_DRIVER),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_DRIVER),
-         config_get_default_video(),
-         config_get_video_driver_options(),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_read_handler,
-         general_write_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   strlcpy(
-         (*list)[list_info->index - 1].value.source.string,
-         (*list)[list_info->index - 1].value.target.string,
-         (*list)[list_info->index - 1].size);
-   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->audio.driver,
+               sizeof(settings->audio.driver),
+               menu_hash_to_str(MENU_LABEL_AUDIO_DRIVER),
+               menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_DRIVER),
+               config_get_default_audio(),
+               config_get_audio_driver_options(),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_read_handler,
+               general_write_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+         strlcpy(
+               (*list)[list_info->index - 1].value.source.string,
+               (*list)[list_info->index - 1].value.target.string,
+               (*list)[list_info->index - 1].size);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
-   CONFIG_STRING_OPTIONS(
-         list, list_info,
-         settings->audio.driver,
-         sizeof(settings->audio.driver),
-         menu_hash_to_str(MENU_LABEL_AUDIO_DRIVER),
-         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_DRIVER),
-         config_get_default_audio(),
-         config_get_audio_driver_options(),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_read_handler,
-         general_write_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   strlcpy(
-         (*list)[list_info->index - 1].value.source.string,
-         (*list)[list_info->index - 1].value.target.string,
-         (*list)[list_info->index - 1].size);
-   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->audio.resampler,
+               sizeof(settings->audio.resampler),
+               menu_hash_to_str(MENU_LABEL_AUDIO_RESAMPLER_DRIVER),
+               menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER),
+               config_get_default_audio_resampler(),
+               config_get_audio_resampler_driver_options(),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_read_handler,
+               general_write_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+         strlcpy(
+               (*list)[list_info->index - 1].value.source.string,
+               (*list)[list_info->index - 1].value.target.string,
+               (*list)[list_info->index - 1].size);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
-   CONFIG_STRING_OPTIONS(
-         list, list_info,
-         settings->audio.resampler,
-         sizeof(settings->audio.resampler),
-         menu_hash_to_str(MENU_LABEL_AUDIO_RESAMPLER_DRIVER),
-         menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER),
-         config_get_default_audio_resampler(),
-         config_get_audio_resampler_driver_options(),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_read_handler,
-         general_write_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   strlcpy(
-         (*list)[list_info->index - 1].value.source.string,
-         (*list)[list_info->index - 1].value.target.string,
-         (*list)[list_info->index - 1].size);
-   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->camera.driver,
+               sizeof(settings->camera.driver),
+               menu_hash_to_str(MENU_LABEL_CAMERA_DRIVER),
+               menu_hash_to_str(MENU_LABEL_VALUE_CAMERA_DRIVER),
+               config_get_default_camera(),
+               config_get_camera_driver_options(),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_read_handler,
+               general_write_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+         strlcpy(
+               (*list)[list_info->index - 1].value.source.string,
+               (*list)[list_info->index - 1].value.target.string,
+               (*list)[list_info->index - 1].size);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
-   CONFIG_STRING_OPTIONS(
-         list, list_info,
-         settings->camera.driver,
-         sizeof(settings->camera.driver),
-         menu_hash_to_str(MENU_LABEL_CAMERA_DRIVER),
-         menu_hash_to_str(MENU_LABEL_VALUE_CAMERA_DRIVER),
-         config_get_default_camera(),
-         config_get_camera_driver_options(),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_read_handler,
-         general_write_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   strlcpy(
-         (*list)[list_info->index - 1].value.source.string,
-         (*list)[list_info->index - 1].value.target.string,
-         (*list)[list_info->index - 1].size);
-   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->location.driver,
+               sizeof(settings->location.driver),
+               menu_hash_to_str(MENU_LABEL_LOCATION_DRIVER),
+               menu_hash_to_str(MENU_LABEL_VALUE_LOCATION_DRIVER),
+               config_get_default_location(),
+               config_get_location_driver_options(),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_read_handler,
+               general_write_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+         strlcpy(
+               (*list)[list_info->index - 1].value.source.string,
+               (*list)[list_info->index - 1].value.target.string,
+               (*list)[list_info->index - 1].size);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
-   CONFIG_STRING_OPTIONS(
-         list, list_info,
-         settings->location.driver,
-         sizeof(settings->location.driver),
-         menu_hash_to_str(MENU_LABEL_LOCATION_DRIVER),
-         menu_hash_to_str(MENU_LABEL_VALUE_LOCATION_DRIVER),
-         config_get_default_location(),
-         config_get_location_driver_options(),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_read_handler,
-         general_write_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   strlcpy(
-         (*list)[list_info->index - 1].value.source.string,
-         (*list)[list_info->index - 1].value.target.string,
-         (*list)[list_info->index - 1].size);
-   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->menu.driver,
+               sizeof(settings->menu.driver),
+               menu_hash_to_str(MENU_LABEL_MENU_DRIVER),
+               menu_hash_to_str(MENU_LABEL_VALUE_MENU_DRIVER),
+               config_get_default_menu(),
+               config_get_menu_driver_options(),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_read_handler,
+               general_write_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+         strlcpy(
+               (*list)[list_info->index - 1].value.source.string,
+               (*list)[list_info->index - 1].value.target.string,
+               (*list)[list_info->index - 1].size);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
-   CONFIG_STRING_OPTIONS(
-         list, list_info,
-         settings->menu.driver,
-         sizeof(settings->menu.driver),
-         menu_hash_to_str(MENU_LABEL_MENU_DRIVER),
-         menu_hash_to_str(MENU_LABEL_VALUE_MENU_DRIVER),
-         config_get_default_menu(),
-         config_get_menu_driver_options(),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_read_handler,
-         general_write_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   strlcpy(
-         (*list)[list_info->index - 1].value.source.string,
-         (*list)[list_info->index - 1].value.target.string,
-         (*list)[list_info->index - 1].size);
-   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               settings->record.driver,
+               sizeof(settings->record.driver),
+               menu_hash_to_str(MENU_LABEL_RECORD_DRIVER),
+               menu_hash_to_str(MENU_LABEL_VALUE_RECORD_DRIVER),
+               config_get_default_record(),
+               config_get_record_driver_options(),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_read_handler,
+               general_write_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
+         strlcpy(
+               (*list)[list_info->index - 1].value.source.string,
+               (*list)[list_info->index - 1].value.target.string,
+               (*list)[list_info->index - 1].size);
+         (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
+         (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
 
-   CONFIG_STRING_OPTIONS(
-         list, list_info,
-         settings->record.driver,
-         sizeof(settings->record.driver),
-         menu_hash_to_str(MENU_LABEL_RECORD_DRIVER),
-         menu_hash_to_str(MENU_LABEL_VALUE_RECORD_DRIVER),
-         config_get_default_record(),
-         config_get_record_driver_options(),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_read_handler,
-         general_write_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_IS_DRIVER);
-   strlcpy(
-         (*list)[list_info->index - 1].value.source.string,
-         (*list)[list_info->index - 1].value.target.string,
-         (*list)[list_info->index - 1].size);
-   (*list)[list_info->index - 1].action_left  = setting_string_action_left_driver;
-   (*list)[list_info->index - 1].action_right = setting_string_action_right_driver;
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+      case SETTINGS_LIST_CORE:
+         START_GROUP(list, list_info, &group_info, menu_hash_to_str(MENU_LABEL_VALUE_CORE_SETTINGS), parent_group);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   END_SUB_GROUP(list, list_info, parent_group);
-   END_GROUP(list, list_info, parent_group);
+         parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
 
-   return true;
-}
+         START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
+               parent_group);
 
-static bool setting_append_list_core_options(
-      rarch_setting_t **list,
-      rarch_setting_info_t *list_info,
-      const char *parent_group)
-{
-   rarch_setting_group_info_t group_info    = {0};
-   rarch_setting_group_info_t subgroup_info = {0};
-   settings_t *settings = config_get_ptr();
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->video.shared_context,
+               menu_hash_to_str(MENU_LABEL_VIDEO_SHARED_CONTEXT),
+               menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT),
+               false,
+               menu_hash_to_str(MENU_VALUE_OFF),
+               menu_hash_to_str(MENU_VALUE_ON),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   START_GROUP(list, list_info, &group_info, menu_hash_to_str(MENU_LABEL_VALUE_CORE_SETTINGS), parent_group);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->load_dummy_on_core_shutdown,
+               menu_hash_to_str(MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN),
+               menu_hash_to_str(MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN),
+               load_dummy_on_core_shutdown,
+               menu_hash_to_str(MENU_VALUE_OFF),
+               menu_hash_to_str(MENU_VALUE_ON),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->set_supports_no_game_enable,
+               menu_hash_to_str(MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
+               menu_hash_to_str(MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
+               true,
+               menu_hash_to_str(MENU_VALUE_OFF),
+               menu_hash_to_str(MENU_VALUE_ON),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-   START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info,
-         parent_group);
+         END_SUB_GROUP(list, list_info, parent_group);
+         END_GROUP(list, list_info, parent_group);
+         break;
+      case SETTINGS_LIST_NONE:
+      default:
+         break;
+   }
 
-   CONFIG_BOOL(
-         list, list_info,
-         &settings->video.shared_context,
-         menu_hash_to_str(MENU_LABEL_VIDEO_SHARED_CONTEXT),
-         menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHARED_CONTEXT),
-         false,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-   CONFIG_BOOL(
-         list, list_info,
-         &settings->load_dummy_on_core_shutdown,
-         menu_hash_to_str(MENU_LABEL_DUMMY_ON_CORE_SHUTDOWN),
-         menu_hash_to_str(MENU_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN),
-         load_dummy_on_core_shutdown,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-   CONFIG_BOOL(
-         list, list_info,
-         &settings->set_supports_no_game_enable,
-         menu_hash_to_str(MENU_LABEL_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
-         menu_hash_to_str(MENU_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE),
-         true,
-         menu_hash_to_str(MENU_VALUE_OFF),
-         menu_hash_to_str(MENU_VALUE_ON),
-         &group_info,
-         &subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
-
-   END_SUB_GROUP(list, list_info, parent_group);
-   END_GROUP(list, list_info, parent_group);
 
    return true;
 }
@@ -7432,13 +7427,13 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
    if (!list)
       goto error;
 
-   if (!setting_append_list_main_menu_options(&list, list_info, root))
+   if (!setting_append_list(SETTINGS_LIST_MAIN_MENU, &list, list_info, root))
       goto error;
 
-   if (!setting_append_list_driver_options(&list, list_info, root))
+   if (!setting_append_list(SETTINGS_LIST_DRIVERS,   &list, list_info, root))
       goto error;
 
-   if (!setting_append_list_core_options(&list, list_info, root))
+   if (!setting_append_list(SETTINGS_LIST_CORE,      &list, list_info, root))
       goto error;
 
    if (!setting_append_list_configuration_options(&list, list_info, root))
@@ -7531,7 +7526,8 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       goto error;
 
    /* flatten this array to save ourselves some kilobytes. */
-   resized_list = (rarch_setting_t*) realloc(list, list_info->index * sizeof(rarch_setting_t));
+   resized_list = (rarch_setting_t*)realloc(list,
+         list_info->index * sizeof(rarch_setting_t));
    if (!resized_list)
       goto error;
 
