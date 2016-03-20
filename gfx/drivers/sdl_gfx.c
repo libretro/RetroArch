@@ -158,17 +158,21 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
 
    for (; *msg; msg++)
    {
+      int glyph_width, glyph_height;
+      int base_x, base_y, max_width, max_height;
+      uint32_t *out      = NULL;
+      const uint8_t *src = NULL;
       const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
       if (!glyph)
          continue;
 
-      int glyph_width  = glyph->width;
-      int glyph_height = glyph->height;
+      glyph_width  = glyph->width;
+      glyph_height = glyph->height;
 
-      int base_x = msg_base_x + glyph->draw_offset_x;
-      int base_y = msg_base_y + glyph->draw_offset_y;
-
-      const uint8_t *src = atlas->buffer + glyph->atlas_offset_x + glyph->atlas_offset_y * atlas->width;
+      base_x = msg_base_x + glyph->draw_offset_x;
+      base_y = msg_base_y + glyph->draw_offset_y;
+      src    = atlas->buffer + glyph->atlas_offset_x 
+         + glyph->atlas_offset_y * atlas->width;
 
       if (base_x < 0)
       {
@@ -184,8 +188,8 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
          base_y = 0;
       }
 
-      int max_width  = width - base_x;
-      int max_height = height - base_y;
+      max_width  = width - base_x;
+      max_height = height - base_y;
 
       if (max_width <= 0 || max_height <= 0)
          continue;
@@ -195,7 +199,7 @@ static void sdl_render_msg(sdl_video_t *vid, SDL_Surface *buffer,
       if (glyph_height > max_height)
          glyph_height = max_height;
 
-      uint32_t *out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
+      out = (uint32_t*)buffer->pixels + base_y * (buffer->pitch >> 2) + base_x;
 
       for (y = 0; y < glyph_height; y++, src += atlas->width, out += buffer->pitch >> 2)
       {
@@ -386,7 +390,7 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
 
 static void sdl_gfx_set_nonblock_state(void *data, bool state)
 {
-   (void)data; // Can SDL even do this?
+   (void)data; /* Can SDL even do this? */
    (void)state;
 }
 

@@ -138,6 +138,7 @@ bool input_remapping_save_file(const char *path)
 
    for (i = 0; i < settings->input.max_users; i++)
    {
+      char buf[64] = {0};
       char key_ident[RARCH_FIRST_CUSTOM_BIND + 4][128]   = {{0}};
       char key_strings[RARCH_FIRST_CUSTOM_BIND + 4][128] = {
          "b", "y", "select", "start",
@@ -169,7 +170,6 @@ bool input_remapping_save_file(const char *path)
          }
       }
 
-      char buf[64] = {0};
 
       snprintf(buf, sizeof(buf), "input_libretro_device_p%u", i + 1);
       config_set_int(conf, buf, settings->input.libretro_device[i]);

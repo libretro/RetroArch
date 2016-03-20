@@ -2214,15 +2214,15 @@ static void gl_set_nonblock_state(void *data, bool state)
 
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
 {
+   unsigned major = 0, minor = 0;
    const char *vendor   = (const char*)glGetString(GL_VENDOR);
    const char *renderer = (const char*)glGetString(GL_RENDERER);
    const char *version  = (const char*)glGetString(GL_VERSION);
-   struct retro_hw_render_callback *hwr = NULL;
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 #if defined(HAVE_GL_SYNC) || defined(HAVE_FBO)
    settings_t *settings = config_get_ptr();
 #endif
-   unsigned major = 0, minor = 0;
+   struct retro_hw_render_callback *hwr = NULL;
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
     
    (void)vendor;
    (void)renderer;
@@ -2477,14 +2477,19 @@ static void gl_init_pbo_readback(gl_t *gl)
 
 static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 {
+   enum gfx_ctx_api api;
+   unsigned major, minor;
+   const char *api_name = NULL;
    struct retro_hw_render_callback *hwr = NULL;
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
-   unsigned major       = hwr->version_major;
-   unsigned minor       = hwr->version_minor;
    settings_t *settings = config_get_ptr();
+
+   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+
+   major       = hwr->version_major;
+   minor       = hwr->version_minor;
 #ifdef HAVE_OPENGLES
-   enum gfx_ctx_api api = GFX_CTX_OPENGL_ES_API;
-   const char *api_name = "OpenGL ES 2.0";
+   api = GFX_CTX_OPENGL_ES_API;
+   api_name = "OpenGL ES 2.0";
 #ifdef HAVE_OPENGLES3
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
    {
@@ -2496,8 +2501,8 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
       api_name = "OpenGL ES 3.1+";
 #endif
 #else
-   enum gfx_ctx_api api = GFX_CTX_OPENGL_API;
-   const char *api_name = "OpenGL";
+   api = GFX_CTX_OPENGL_API;
+   api_name = "OpenGL";
 #endif
     
    (void)api_name;

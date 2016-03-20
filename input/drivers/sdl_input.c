@@ -275,6 +275,9 @@ static int16_t sdl_input_state(void *data_, const struct retro_keybind **binds,
 
 static void sdl_input_free(void *data)
 {
+#ifndef HAVE_SDL2
+   SDL_Event event;
+#endif
    sdl_input_t *sdl = (sdl_input_t*)data;
 
    if (!data)
@@ -284,7 +287,6 @@ static void sdl_input_free(void *data)
 #ifdef HAVE_SDL2
    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
 #else
-   SDL_Event event;
    while (SDL_PollEvent(&event));
 #endif
 

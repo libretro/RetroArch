@@ -1861,6 +1861,14 @@ static unsigned cheevos_find_game_id_nes(
    }
    else
    {
+      unsigned bytes;
+      ssize_t num_read;
+      int i, mapper_no;
+      int not_power2[] =
+      {
+         53, 198, 228
+      };
+      bool round = true;
       RFILE *file = retro_fopen(info->path, RFILE_MODE_READ, 0);
       uint8_t * data = (uint8_t *) malloc(rom_size << 14);
       
@@ -1871,22 +1879,18 @@ static unsigned cheevos_find_game_id_nes(
       memset(data, 0xFF, rom_size << 14);
 
       /* from fceu core - compute size using the cart mapper */
-      int MapperNo = (header.rom_type >> 4);
-	   MapperNo |= (header.rom_type2 & 0xF0);
+      mapper_no = (header.rom_type >> 4);
+	   mapper_no |= (header.rom_type2 & 0xF0);
       
-      int not_power2[] =
-      {
-         53, 198, 228
-      };
 
-      bool round = true;
-      for (int i = 0; i != sizeof(not_power2) / sizeof(not_power2[0]); ++i) {
-         //for games not to the power of 2, so we just read enough
-         //prg rom from it, but we have to keep ROM_size to the power of 2
-         //since PRGCartMapping wants ROM_size to be to the power of 2
-         //so instead if not to power of 2, we just use head.ROM_size when
-         //we use FCEU_read
-         if (not_power2[i] == MapperNo) {
+      for (i = 0; i != sizeof(not_power2) / sizeof(not_power2[0]); ++i)
+      {
+         /* for games not to the power of 2, so we just read enough
+          * PRG rom from it, but we have to keep ROM_size to the power of 2
+          * since PRGCartMapping wants ROM_size to be to the power of 2
+          * so instead if not to power of 2, we just use head.ROM_size when
+          * we use FCEU_read. */
+         if (not_power2[i] == mapper_no) {
             round = false;
             break;
          }
@@ -1898,8 +1902,8 @@ static unsigned cheevos_find_game_id_nes(
       if (header.rom_type & 4)
          retro_fseek(file, sizeof(header), SEEK_CUR);
 
-      unsigned bytes = (round) ? rom_size : header.rom_size;
-      ssize_t num_read = retro_fread(file, (void*) data, 0x4000 * bytes );
+      bytes    = (round) ? rom_size : header.rom_size;
+      num_read = retro_fread(file, (void*) data, 0x4000 * bytes );
       retro_fclose(file);
 
       if (num_read <= 0)

@@ -2522,6 +2522,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
  **/
 bool config_save_file(const char *path)
 {
+   float msg_color;
    unsigned i           = 0;
    bool ret             = false;
    config_file_t *conf  = config_file_new(path);
@@ -2699,7 +2700,6 @@ bool config_save_file(const char *path)
    config_set_float(conf, "video_font_size", settings->video.font_size);
    config_set_bool(conf,  "video_font_enable", settings->video.font_enable);
 
-   float msg_color;
    msg_color = (((int)(settings->video.msg_color_r * 255.0f) & 0xff) << 16) +
                (((int)(settings->video.msg_color_g * 255.0f) & 0xff) <<  8) +
                (((int)(settings->video.msg_color_b * 255.0f) & 0xff));
