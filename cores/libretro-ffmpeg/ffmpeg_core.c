@@ -900,7 +900,7 @@ static bool init_media_info(void)
 #ifdef HAVE_SSA
    if (sctx[0])
    {
-      size_t i;
+      unsigned i;
 
       ass = ass_library_init();
       ass_set_message_cb(ass, ass_msg_cb, NULL);
@@ -915,7 +915,7 @@ static bool init_media_info(void)
       ass_set_fonts(ass_render, NULL, NULL, 1, NULL, 1);
       ass_set_hinting(ass_render, ASS_HINTING_LIGHT);
 
-      for (i = 0; i < subtitle_streams_num; i++)
+      for (i = 0; i < (unsigned)subtitle_streams_num; i++)
       {
          ass_track[i] = ass_new_track(ass);
          ass_process_codec_private(ass_track[i], (char*)ass_extra_data[i],
