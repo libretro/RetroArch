@@ -20,7 +20,6 @@
 #include <stddef.h>
 
 #include <boolean.h>
-#include <string/string_list.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -118,19 +117,6 @@ const char *core_option_get_desc(core_option_manager_t *opt,
  **/
 const char *core_option_get_val(core_option_manager_t *opt, 
       size_t idx);
-
-/**
- * core_option_get_vals:
- * @opt                   : pointer to core option manager object.
- * @idx                   : idx of core option.
- *
- * Gets list of core option values from core option at index @idx.
- *
- * Returns: string list of core option values if successful, otherwise
- * NULL.
- **/
-struct string_list *core_option_get_vals(
-      core_option_manager_t *opt, size_t idx);
 
 void core_option_set_val(core_option_manager_t *opt,
       size_t idx, size_t val_idx);

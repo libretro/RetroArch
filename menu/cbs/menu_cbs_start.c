@@ -14,6 +14,7 @@
  */
 
 #include <file/file_path.h>
+#include <string/string_list.h>
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"

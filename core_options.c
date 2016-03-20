@@ -22,6 +22,7 @@
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <string/string_list.h>
 
 #include "libretro.h"
 
@@ -326,24 +327,6 @@ const char *core_option_get_val(core_option_manager_t *opt, size_t idx)
    if (!option)
       return NULL;
    return option->vals->elems[option->index].data;
-}
-
-/**
- * core_option_get_vals:
- * @opt                   : pointer to core option manager object.
- * @idx                   : idx of core option.
- *
- * Gets list of core option values from core option at index @idx.
- *
- * Returns: string list of core option values if successful, otherwise
- * NULL.
- **/
-struct string_list *core_option_get_vals(
-      core_option_manager_t *opt, size_t idx)
-{
-   if (!opt)
-      return NULL;
-   return opt->opts[idx].vals;
 }
 
 void core_option_set_val(core_option_manager_t *opt,
