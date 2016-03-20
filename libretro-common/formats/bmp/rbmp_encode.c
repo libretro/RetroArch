@@ -26,9 +26,9 @@
 #include <retro_file.h>
 #include <formats/rbmp.h>
 
-static bool write_header_bmp(RFILE *file, unsigned width, unsigned height)
+static bool write_header_bmp(RFILE *file, unsigned width, unsigned height, bool is32bpp)
 {
-   unsigned line_size  = (width * 3 + 3) & ~3;
+   unsigned line_size  = (width * (is32bpp?4:3) + 3) & ~3;
    unsigned size       = line_size * height + 54;
    unsigned size_array = line_size * height;
    uint8_t header[54];
@@ -72,7 +72,7 @@ static bool write_header_bmp(RFILE *file, unsigned width, unsigned height)
    header[26] = 1;
    header[27] = 0;
    /* Bits per pixel */
-   header[28] = 24;
+   header[28] = is32bpp?32:24;
    header[29] = 0;
    /* Compression method */
    header[30] = 0;
@@ -108,21 +108,7 @@ static bool write_header_bmp(RFILE *file, unsigned width, unsigned height)
    return retro_fwrite(file, header, sizeof(header)) == sizeof(header);
 }
 
-static void dump_lines_file(RFILE *file, uint8_t **lines,
-      size_t line_size, unsigned height)
-{
-   unsigned i;
-
-   for (i = 0; i < height; i++)
-      retro_fwrite(file, lines[i], line_size);
-}
-
-static void dump_line_bgr(uint8_t *line, const uint8_t *src, unsigned width)
-{
-   memcpy(line, src, width * 3);
-}
-
-static void dump_line_16(uint8_t *line, const uint16_t *src, unsigned width)
+static void dump_line_565_to_24(uint8_t *line, const uint16_t *src, unsigned width)
 {
    unsigned i;
 
@@ -138,7 +124,7 @@ static void dump_line_16(uint8_t *line, const uint16_t *src, unsigned width)
    }
 }
 
-static void dump_line_32(uint8_t *line, const uint32_t *src, unsigned width)
+static void dump_line_32_to_24(uint8_t *line, const uint32_t *src, unsigned width)
 {
    unsigned i;
 
@@ -152,68 +138,81 @@ static void dump_line_32(uint8_t *line, const uint32_t *src, unsigned width)
 }
 
 static void dump_content(RFILE *file, const void *frame,
-      int width, int height, int pitch, bool bgr24, bool xrgb8888)
+      int width, int height, int pitch, rbmp_source_type type)
 {
+   uint8_t *line;
    size_t line_size;
    int i, j;
+   int bytes_per_pixel = (type==RBMP_SOURCE_TYPE_ARGB8888?4:3);
    union
    {
       const uint8_t *u8;
       const uint16_t *u16;
       const uint32_t *u32;
    } u;
-   uint8_t **lines = (uint8_t**)calloc(height, sizeof(uint8_t*));
 
-   if (!lines)
+   u.u8      = (const uint8_t*)frame + (height-1) * pitch;
+   line_size = (width * bytes_per_pixel + 3) & ~3;
+
+   if (type == RBMP_SOURCE_TYPE_BGR24)
+   {
+      /* BGR24 byte order input matches output. Can directly copy, but... need to make sure we pad it. */
+      uint32_t zeros = 0;
+      int pad = line_size-pitch;
+      for (j = height-1; j >= 0; j--, u.u8 -= pitch)
+      {
+         retro_fwrite(file, u.u8, pitch);
+         if(pad != 0) retro_fwrite(file, &zeros, pad);
+      }
       return;
-
-   u.u8      = (const uint8_t*)frame;
-   line_size = (width * 3 + 3) & ~3;
-
-   for (i = 0; i < height; i++)
+   }
+   else if(type == RBMP_SOURCE_TYPE_ARGB8888)
    {
-      lines[i] = (uint8_t*)calloc(1, line_size);
-      if (!lines[i])
-         goto end;
+      /* ARGB8888 byte order input matches output. Can directly copy. */
+      for (j = height-1; j >= 0; j--, u.u8 -= pitch)
+      {
+         retro_fwrite(file, u.u8, line_size);
+      }
+      return;
    }
 
-   if (bgr24) /* BGR24 byte order. Can directly copy. */
+   /* allocate line buffer, and initialize the final four bytes to zero, for deterministic padding */
+   line = (uint8_t*)malloc(line_size);
+   if (!line) return;
+   *(uint32_t*)(line + line_size - 4) = 0;
+
+   if (type == RBMP_SOURCE_TYPE_XRGB888)
    {
-      for (j = 0; j < height; j++, u.u8 += pitch)
-         dump_line_bgr(lines[j], u.u8, width);
+      for (j = height-1; j >= 0; j--, u.u8 -= pitch)
+      {
+         dump_line_32_to_24(line, u.u32, width);
+         retro_fwrite(file, line, line_size);
+      }
    }
-   else if (xrgb8888)
+   else /* type == RBMP_SOURCE_TYPE_RGB565 */
    {
-      for (j = 0; j < height; j++, u.u8 += pitch)
-         dump_line_32(lines[j], u.u32, width);
-   }
-   else /* RGB565 */
-   {
-      for (j = 0; j < height; j++, u.u8 += pitch)
-         dump_line_16(lines[j], u.u16, width);
+      for (j = height-1; j >= 0; j--, u.u8 -= pitch)
+      {
+         dump_line_565_to_24(line, u.u16, width);
+         retro_fwrite(file, line, line_size);
+      }
    }
 
-   dump_lines_file(file, lines, line_size, height);
-
-end:
-   for (i = 0; i < height; i++)
-      free(lines[i]);
-   free(lines);
 }
 
 bool rbmp_save_image(const char *filename, const void *frame,
       unsigned width, unsigned height,
-      unsigned pitch, bool bgr24, bool xrgb8888)
+      unsigned pitch, rbmp_source_type type)
 {
    bool ret;
    RFILE *file = retro_fopen(filename, RFILE_MODE_WRITE, -1);
    if (!file)
       return false;
 
-   ret = write_header_bmp(file, width, height);
+   ret = write_header_bmp(file, width, height, type==RBMP_SOURCE_TYPE_ARGB8888);
 
    if (ret)
-      dump_content(file, frame, width, height, pitch, bgr24, xrgb8888);
+      dump_content(file, frame, width, height, pitch, type);
 
    retro_fclose(file);
 

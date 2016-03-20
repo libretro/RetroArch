@@ -29,9 +29,17 @@
 extern "C" {
 #endif
 
+typedef enum
+{
+   RBMP_SOURCE_TYPE_BGR24,
+   RBMP_SOURCE_TYPE_XRGB888,
+   RBMP_SOURCE_TYPE_RGB565,
+   RBMP_SOURCE_TYPE_ARGB8888,
+} rbmp_source_type;
+
 bool rbmp_save_image(const char *filename, const void *frame,
       unsigned width, unsigned height,
-      unsigned pitch, bool bgr24, bool xrgb8888);
+      unsigned pitch, rbmp_source_type type);
 
 #ifdef __cplusplus
 }

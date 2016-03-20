@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <retro_common.h>
+
 #if defined(_WIN32)
 #  ifdef _MSC_VER
 #    define setmode _setmode

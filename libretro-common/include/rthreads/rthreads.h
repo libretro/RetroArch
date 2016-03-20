@@ -28,7 +28,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 
-#if defined(__cplusplus) && !defined(_MSC_VER)
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -170,7 +170,7 @@ int scond_broadcast(scond_t *cond);
  **/
 void scond_signal(scond_t *cond);
 
-#if defined(__cplusplus) && !defined(_MSC_VER)
+#if defined(__cplusplus)
 }
 #endif
 

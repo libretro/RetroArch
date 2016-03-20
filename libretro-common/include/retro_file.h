@@ -28,6 +28,7 @@
 
 #include <sys/types.h>
 
+#include <retro_common.h>
 #include <boolean.h>
 
 #ifdef __cplusplus
