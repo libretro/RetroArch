@@ -20,7 +20,7 @@
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
-#include <file/file_list.h>
+#include <lists/file_list.h>
 
 #ifdef __cplusplus
 extern "C" {

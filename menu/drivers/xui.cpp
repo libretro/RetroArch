@@ -25,7 +25,7 @@
 #include <xuiapp.h>
 
 #include <file/file_path.h>
-#include <string/string_list.h>
+#include <lists/string_list.h>
 #include <queues/message_queue.h>
 
 #include "menu_generic.h"

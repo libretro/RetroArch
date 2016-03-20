@@ -18,7 +18,7 @@
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
-#include <string/string_list.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <rhash.h>
 

@@ -22,7 +22,7 @@
 #include <limits.h>
 
 #include <string/stdstring.h>
-#include <string/string_list.h>
+#include <lists/string_list.h>
 #include <compat/posix_string.h>
 #include <encodings/utf.h>
 #include <file/file_path.h>

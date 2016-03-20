@@ -18,7 +18,7 @@
  * which can be passed to keyboard callback in a sensible way. */
 #include <xkbcommon/xkbcommon.h>
 
-#include <string/string_list.h>
+#include <lists/string_list.h>
 
 #include "../input_joypad_driver.h"
 #include "../input_keymaps.h"

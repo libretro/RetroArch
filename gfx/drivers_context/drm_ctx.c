@@ -32,7 +32,7 @@
 #include <libdrm/drm.h>
 #include <gbm.h>
 
-#include <file/dir_list.h>
+#include <lists/dir_list.h>
 #include <retro_file.h>
 
 #include "../../verbosity.h"

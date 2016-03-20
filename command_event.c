@@ -17,7 +17,7 @@
 
 #include <compat/strl.h>
 #include <file/file_path.h>
-#include <file/dir_list.h>
+#include <lists/dir_list.h>
 #include <string/stdstring.h>
 
 #include "command_event.h"

@@ -24,12 +24,12 @@ PPU_SRCS		= frontend/frontend_salamander.c \
 				  frontend/drivers/platform_ps3.c \
 				  frontend/drivers/platform_null.c \
 				  libretro-common/file/file_path.c \
-				  libretro-common/file/dir_list.c \
+				  libretro-common/lists/dir_list.c \
+				  libretro-common/lists/string_list.c \
 				  libretro-common/file/retro_dirent.c \
 				  libretro-common/file/retro_stat.c \
 				  libretro-common/hash/rhash.c \
 				  libretro-common/string/stdstring.c \
-				  libretro-common/string/string_list.c \
 				  libretro-common/compat/compat_strl.c \
 				  libretro-common/file/retro_file.c \
 				  libretro-common/file/config_file.c \

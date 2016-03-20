@@ -58,7 +58,7 @@
 #endif
 
 #ifdef GL_DEBUG
-#include <string/string_list.h>
+#include <lists/string_list.h>
 #endif
 
 #ifdef HAVE_MENU

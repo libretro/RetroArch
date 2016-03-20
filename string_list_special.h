@@ -18,7 +18,7 @@
 
 #include <stddef.h>
 
-#include <string/string_list.h>
+#include <lists/string_list.h>
 
 enum string_list_type
 {

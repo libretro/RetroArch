@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (string_list.c).
@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <string/string_list.h>
+#include <lists/string_list.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>

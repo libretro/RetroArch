@@ -23,7 +23,7 @@
 
 #include <file/file_path.h>
 #include <file/config_file_userdata.h>
-#include <file/dir_list.h>
+#include <lists/dir_list.h>
 
 #include "audio_dsp_filter.h"
 #include "audio_filters/dspfilter.h"

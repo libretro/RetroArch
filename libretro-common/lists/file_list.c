@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (file_list.c).
@@ -24,7 +24,7 @@
 #include <string.h>
 
 #include <retro_common.h>
-#include <file/file_list.h>
+#include <lists/file_list.h>
 #include <compat/strcasestr.h>
 
 void file_list_push(file_list_t *list,

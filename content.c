@@ -49,7 +49,7 @@
 #include <retro_stat.h>
 #include <retro_assert.h>
 
-#include <string/string_list.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
 
 #include "msg_hash.h"

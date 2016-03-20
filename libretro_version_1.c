@@ -23,7 +23,7 @@
 
 #include <retro_inline.h>
 #include <boolean.h>
-#include <string/string_list.h>
+#include <lists/string_list.h>
 
 #include "libretro.h"
 #include "libretro_version_1.h"

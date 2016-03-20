@@ -22,7 +22,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <retro_assert.h>
-#include <string/string_list.h>
+#include <lists/string_list.h>
 #include <file/config_file.h>
 #include <formats/image.h>
 #include <clamping.h>

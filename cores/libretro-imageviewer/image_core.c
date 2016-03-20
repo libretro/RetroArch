@@ -5,7 +5,7 @@
 #include <assert.h>
 
 #include <boolean.h>
-#include <file/dir_list.h>
+#include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
 

@@ -17,12 +17,13 @@
 #include <string>
 #include <sstream>
 
+#include <retro_file.h>
+#include <lists/string_list.h>
+
 #include "glslang_util.hpp"
 #include "glslang.hpp"
 
 #include "../../general.h"
-#include <retro_file.h>
-#include <string/string_list.h>
 
 using namespace std;
 

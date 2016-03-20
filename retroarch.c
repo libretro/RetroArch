@@ -25,7 +25,7 @@
 
 #include <boolean.h>
 #include <string/stdstring.h>
-#include <string/string_list.h>
+#include <lists/string_list.h>
 
 #ifdef _WIN32
 #ifdef _XBOX

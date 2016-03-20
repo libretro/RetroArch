@@ -18,7 +18,7 @@
 
 #include <file/config_file_userdata.h>
 #include <file/file_path.h>
-#include <file/dir_list.h>
+#include <lists/dir_list.h>
 #include <dynamic/dylib.h>
 
 #include "../frontend/frontend_driver.h"

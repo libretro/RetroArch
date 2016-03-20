@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-#include <string/string_list.h>
+#include <lists/string_list.h>
 
 enum dir_list_type
 {

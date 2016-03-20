@@ -26,7 +26,7 @@
 
 #include <file/file_path.h>
 #include <string/stdstring.h>
-#include <string/string_list.h>
+#include <lists/string_list.h>
 
 #include "../menu_driver.h"
 #include "../menu_hash.h"

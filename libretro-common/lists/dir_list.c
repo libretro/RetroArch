@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (dir_list.c).
@@ -22,9 +22,9 @@
 
 #include <stdlib.h>
 
-#include <file/dir_list.h>
+#include <lists/dir_list.h>
+#include <lists/string_list.h>
 #include <file/file_path.h>
-#include <string/string_list.h>
 
 #include <compat/strl.h>
 #include <retro_dirent.h>

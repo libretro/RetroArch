@@ -31,7 +31,7 @@
 
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
-#include <file/file_list.h>
+#include <lists/file_list.h>
 #endif
 #include <string/stdstring.h>
 

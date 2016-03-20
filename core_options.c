@@ -17,12 +17,12 @@
 #include <string.h>
 
 #include <file/config_file.h>
-#include <file/dir_list.h>
+#include <lists/dir_list.h>
+#include <lists/string_list.h>
 #include <compat/posix_string.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
-#include <string/string_list.h>
 
 #include "libretro.h"
 

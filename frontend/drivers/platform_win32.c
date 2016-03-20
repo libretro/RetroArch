@@ -21,7 +21,7 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 #include <dynamic/dylib.h>
-#include <file/file_list.h>
+#include <lists/file_list.h>
 
 #include "../frontend_driver.h"
 #include "../../general.h"

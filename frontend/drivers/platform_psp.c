@@ -34,7 +34,7 @@ int scePowerSetArmClockFrequency(int freq);
 #include <boolean.h>
 #include <file/file_path.h>
 #ifndef IS_SALAMANDER
-#include <file/file_list.h>
+#include <lists/file_list.h>
 #endif
 
 #include "../frontend_driver.h"

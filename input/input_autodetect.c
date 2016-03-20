@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include <file/dir_list.h>
+#include <lists/dir_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 

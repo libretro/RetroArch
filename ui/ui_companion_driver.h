@@ -20,7 +20,7 @@
 #include <stddef.h>
 #include <boolean.h>
 
-#include <file/file_list.h>
+#include <lists/file_list.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"

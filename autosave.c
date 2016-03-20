@@ -20,7 +20,7 @@
 
 #include <boolean.h>
 
-#include <string/string_list.h>
+#include <lists/string_list.h>
 #include <rthreads/rthreads.h>
 
 #include "autosave.h"

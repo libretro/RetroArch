@@ -44,7 +44,7 @@
 #include <retro_file.h>
 #include <retro_stat.h>
 #include <retro_miscellaneous.h>
-#include <string/string_list.h>
+#include <lists/string_list.h>
 
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
 #define CENTRAL_FILE_HEADER_SIGNATURE 0x02014b50

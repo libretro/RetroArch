@@ -634,16 +634,16 @@ FILE
 #include "../content.c"
 #include "../libretro-common/file/file_path.c"
 #include "../file_path_special.c"
-#include "../libretro-common/file/dir_list.c"
+#include "../libretro-common/lists/dir_list.c"
+#include "../libretro-common/lists/string_list.c"
+#include "../libretro-common/lists/file_list.c"
 #include "../libretro-common/file/retro_dirent.c"
 #include "../libretro-common/file/retro_file.c"
 #include "../libretro-common/file/retro_stat.c"
 #include "../dir_list_special.c"
 #include "../string_list_special.c"
-#include "../libretro-common/string/string_list.c"
 #include "../libretro-common/string/stdstring.c"
 #include "../libretro-common/file/nbio/nbio_stdio.c"
-#include "../libretro-common/file/file_list.c"
 
 /*============================================================
 MESSAGE

@@ -22,7 +22,7 @@
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
-#include <string/string_list.h>
+#include <lists/string_list.h>
 #include <rhash.h>
 
 #include "tasks_internal.h"

@@ -16,7 +16,7 @@
 #include <retro_miscellaneous.h>
 #include <net/net_http.h>
 #include <queues/message_queue.h>
-#include <string/string_list.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
