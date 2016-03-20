@@ -79,8 +79,6 @@ void *file_list_get_last_actiondata(const file_list_t *list);
 
 size_t file_list_get_size(const file_list_t *list);
 
-size_t file_list_get_entry_index(const file_list_t *list);
-
 size_t file_list_get_directory_ptr(const file_list_t *list);
 
 void file_list_get_at_offset(const file_list_t *list, size_t index,

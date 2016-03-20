@@ -94,15 +94,6 @@ size_t file_list_get_size(const file_list_t *list)
    return list->size;
 }
 
-size_t file_list_get_entry_index(const file_list_t *list)
-{
-   size_t size = 0;
-   if (!list)
-      return 0;
-   size = file_list_get_size(list);
-   return list->list[size].entry_idx;
-}
-
 size_t file_list_get_directory_ptr(const file_list_t *list)
 {
    size_t size = file_list_get_size(list);
