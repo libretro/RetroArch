@@ -140,6 +140,8 @@ VIDEO DRIVER
 #ifdef HAVE_VULKAN
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
 #include "../gfx/drivers_shader/glslang_util.cpp"
+#include "../gfx/drivers_shader/slang_reflection.cpp"
+#include "../deps/spir2cross/spir2cross.cpp"
 #endif
 
 /*============================================================
