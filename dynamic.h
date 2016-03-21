@@ -72,6 +72,21 @@ void libretro_get_environment_info(void (*)(retro_environment_t),
  **/
 bool libretro_get_system_info(const char *path,
       struct retro_system_info *info, bool *load_no_content);
+#else
+/**
+ * libretro_get_system_info_static:
+ * @info                         : System info information.
+ * @load_no_content              : If true, core should be able to auto-start
+ *                                 without any content loaded.
+ *
+ * Gets system info from the current statically linked libretro library.
+ * The struct returned must be freed as strings are allocated dynamically.
+ *
+ * Returns: true (1) if successful, otherwise false (0).
+ **/
+bool libretro_get_system_info_static(struct retro_system_info *info,
+      bool *load_no_content);
+#endif
 
 /**
  * libretro_free_system_info:
@@ -80,7 +95,6 @@ bool libretro_get_system_info(const char *path,
  * Frees system information.
  **/
 void libretro_free_system_info(struct retro_system_info *info);
-#endif
 
 /**
  * libretro_get_current_core_pathname:

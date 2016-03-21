@@ -356,7 +356,8 @@ bool glslang::compile_spirv(const string &source, Stage stage, std::vector<uint3
    shader.setStrings(&src, 1);
 
    string msg;
-   if (!shader.preprocess(&process.GetResources(), 100, ENoProfile, false, false, EShMsgDefault, &msg, TShader::ForbidInclude()))
+   auto forbid_include = TShader::ForbidInclude();
+   if (!shader.preprocess(&process.GetResources(), 100, ENoProfile, false, false, EShMsgDefault, &msg, forbid_include))
    {
       fprintf(stderr, "%s\n", msg.c_str());
       return {};

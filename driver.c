@@ -288,10 +288,6 @@ static void menu_update_libretro_info(void)
    if (!info)
       return;
 
-#ifndef HAVE_DYNAMIC
-   retro_get_system_info(info);
-#endif
-
    event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
    event_cmd_ctl(EVENT_CMD_LOAD_CORE_PERSIST, NULL);
 }
