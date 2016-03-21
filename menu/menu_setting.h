@@ -280,6 +280,8 @@ int menu_setting_set(unsigned type, const char *label,
  **/
 rarch_setting_t *menu_setting_find(const char *label);
 
+rarch_setting_t *menu_setting_find_prehashed(const char *label, uint32_t needle);
+
 /**
  * setting_set_with_string_representation:
  * @setting            : pointer to setting

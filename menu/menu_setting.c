@@ -1937,6 +1937,18 @@ rarch_setting_t *menu_setting_find(const char *label)
    return menu_setting_find_internal(setting, label, needle);
 }
 
+rarch_setting_t *menu_setting_find_prehashed(const char *label, uint32_t needle)
+{
+   rarch_setting_t *setting = NULL;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
+
+   if (!setting || !label)
+      return NULL;
+
+   return menu_setting_find_internal(setting, label, needle);
+}
+
 int menu_setting_set_flags(rarch_setting_t *setting)
 {
    if (!setting)

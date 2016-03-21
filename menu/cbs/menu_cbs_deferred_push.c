@@ -360,7 +360,17 @@ static int general_push(menu_displaylist_info_t *info,
    switch (id)
    {
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
-         info->setting      = menu_setting_find(info->label);
+      case PUSH_ARCHIVE_OPEN:
+      case PUSH_DEFAULT:
+         info->setting      = menu_setting_find_prehashed(info->label, info->label_hash);
+         break;
+      default:
+         break;
+   }
+
+   switch (id)
+   {
+      case PUSH_ARCHIVE_OPEN_DETECT_CORE:
   
          if (!string_is_empty(list->all_ext))
             strlcpy(info->exts, list->all_ext, sizeof(info->exts));
@@ -374,7 +384,6 @@ static int general_push(menu_displaylist_info_t *info,
             strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
          break;
       case PUSH_ARCHIVE_OPEN:
-         info->setting      = menu_setting_find(info->label);
          if (system_menu->valid_extensions)
          {
             if (*system_menu->valid_extensions)
@@ -385,7 +394,6 @@ static int general_push(menu_displaylist_info_t *info,
             strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
          break;
       case PUSH_DEFAULT:
-         info->setting      = menu_setting_find(info->label);
          if (menu_setting_get_browser_selection_type(info->setting) == ST_DIR)
          {
          }
