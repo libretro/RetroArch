@@ -771,6 +771,7 @@ ifeq ($(HAVE_VULKAN), 1)
 			 gfx/drivers_font/vulkan_raster_font.o \
 			 gfx/drivers_shader/shader_vulkan.o \
 			 gfx/drivers_shader/glslang_util.o \
+			 gfx/drivers_shader/slang_reflection.o \
 			 $(GLSLANG_OBJ) \
 			 $(SPIR2CROSS_OBJ)
 	ifeq ($(HAVE_MENU_COMMON), 1)

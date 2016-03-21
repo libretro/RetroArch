@@ -25,10 +25,9 @@
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
 #include "../video_shader_driver.h"
 #include "../../verbosity.h"
-#include "spir2cross.hpp"
+#include "slang_reflection.hpp"
 
 using namespace std;
-using namespace spir2cross;
 
 static uint32_t find_memory_type(
       const VkPhysicalDeviceMemoryProperties &mem_props,
@@ -248,14 +247,6 @@ class Pass
       }
 
    private:
-      struct UBO
-      {
-         float MVP[16];
-         float output_size[4];
-         float original_size[4];
-         float source_size[4];
-      };
-
       VkDevice device;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
       VkPipelineCache cache;
@@ -306,6 +297,10 @@ class Pass
             VkBuffer buffer,
             VkDeviceSize offset,
             VkDeviceSize range);
+
+      slang_reflection reflection;
+      void build_semantic_vec4(uint8_t *data, slang_texture_semantic semantic,
+            unsigned width, unsigned height);
 };
 
 // struct here since we're implementing the opaque typedef from C.
@@ -952,7 +947,7 @@ bool Pass::init_buffers()
    ubos.clear();
    for (unsigned i = 0; i < num_sync_indices; i++)
       ubos.emplace_back(new Buffer(device,
-               memory_properties, sizeof(UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+               memory_properties, reflection.ubo_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
    return true;
 }
 
@@ -967,6 +962,10 @@ bool Pass::build()
    }
 
    if (!init_pipeline())
+      return false;
+
+   memset(&reflection, 0, sizeof(reflection));
+   if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
       return false;
 
    if (!init_buffers())
@@ -1046,9 +1045,20 @@ void Pass::update_descriptor_set(
       const Texture &source)
 {
    set_uniform_buffer(sets[sync_index], 0,
-         ubos[sync_index]->get_buffer(), 0, sizeof(UBO));
+         ubos[sync_index]->get_buffer(), 0, reflection.ubo_size);
    set_texture(sets[sync_index], 1, original);
    set_texture(sets[sync_index], 2, source);
+}
+
+void Pass::build_semantic_vec4(uint8_t *data, slang_texture_semantic semantic, unsigned width, unsigned height)
+{
+   if (reflection.semantic_texture_ubo_mask & (1 << semantic))
+   {
+      build_vec4(
+            reinterpret_cast<float *>(data + reflection.semantic_textures[semantic].ubo_offset),
+            width,
+            height);
+   }
 }
 
 void Pass::build_commands(
@@ -1072,19 +1082,20 @@ void Pass::build_commands(
       current_framebuffer_size = size;
    }
 
-   UBO *u = static_cast<UBO*>(ubos[sync_index]->map());
+   uint8_t *u = static_cast<uint8_t*>(ubos[sync_index]->map());
 
    if (mvp)
-      memcpy(u->MVP, mvp, sizeof(float) * 16);
+      memcpy(u + reflection.mvp_offset, mvp, sizeof(float) * 16);
    else
-      build_identity_matrix(u->MVP);
-   build_vec4(u->output_size,
-         current_framebuffer_size.width,
-         current_framebuffer_size.height);
-   build_vec4(u->original_size,
+      build_identity_matrix(reinterpret_cast<float *>(u + reflection.mvp_offset));
+
+   build_semantic_vec4(u, SLANG_TEXTURE_SEMANTIC_OUTPUT,
+         current_framebuffer_size.width, current_framebuffer_size.height);
+   build_semantic_vec4(u, SLANG_TEXTURE_SEMANTIC_ORIGINAL,
          original.texture.width, original.texture.height);
-   build_vec4(u->source_size,
+   build_semantic_vec4(u, SLANG_TEXTURE_SEMANTIC_SOURCE,
          source.texture.width, source.texture.height);
+
    ubos[sync_index]->unmap();
 
    update_descriptor_set(original, source);
