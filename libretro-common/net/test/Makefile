@@ -1,10 +1,8 @@
 TARGETS  = http_test net_ifinfo
 
-INCFLAGS = -I../include -I../include/net
+LIBRETRO_COMM_DIR := ../..
 
-SOURCES := $(wildcard *.c) \
-				../compat/compat.c
-OBJS := $(SOURCES:.c=.o)
+INCFLAGS = -I$(LIBRETRO_COMM_DIR)/include
 
 ifeq ($(DEBUG),1)
 CFLAGS += -O0 -g
@@ -14,15 +12,15 @@ endif
 CFLAGS += -Wall -pedantic -std=gnu99
 
 HTTP_TEST_C = \
-				  net_http.c \
+				  $(LIBRETRO_COMM_DIR)/net/net_http.c \
 				  net_http_test.c \
-				  net_compat.c \
-				  ../compat/compat_strl.c
+				  $(LIBRETRO_COMM_DIR)/net/net_compat.c \
+				  $(LIBRETRO_COMM_DIR)/compat/compat_strl.c
 
 HTTP_TEST_OBJS := $(HTTP_TEST_C:.c=.o)
 
 NET_IFINFO_C = \
-					net_ifinfo.c \
+					$(LIBRETRO_COMM_DIR)/net/net_ifinfo.c \
 					net_ifinfo_test.c
 
 NET_IFINFO_OBJS := $(NET_IFINFO_C:.c=.o)
