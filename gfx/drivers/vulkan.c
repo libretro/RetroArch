@@ -1335,7 +1335,7 @@ static void vulkan_readback(vk_t *vk)
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
 
    VKFUNC(vkCmdCopyImage)(vk->cmd, vk->chain->backbuffer.image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -1527,12 +1527,12 @@ static bool vulkan_frame(void *data, const void *frame,
    rp_info.clearValueCount          = 1;
    rp_info.pClearValues             = &clear_value;
 
-   /* Prepare backbuffer for rendering */
+   /* Prepare backbuffer for rendering. We don't use WSI semaphores here. */
    vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-         0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+         0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
    /* Begin render pass and set up viewport */
    VKFUNC(vkCmdBeginRenderPass)(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -1613,10 +1613,10 @@ static bool vulkan_frame(void *data, const void *frame,
             chain->backbuffer.image,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            VK_ACCESS_TRANSFER_READ_BIT,
-            VK_ACCESS_MEMORY_READ_BIT,
+            0,
+            0,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
       vk->readback.pending = false;
    }
@@ -1628,9 +1628,9 @@ static bool vulkan_frame(void *data, const void *frame,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_ACCESS_MEMORY_READ_BIT,
+            0,
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
    }
 
    retro_perf_start(&end_cmd);

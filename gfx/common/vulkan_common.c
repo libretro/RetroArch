@@ -135,7 +135,7 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
 
    memset(&region, 0, sizeof(region));
    region.extent.width = dynamic->width;
@@ -445,14 +445,14 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       vulkan_image_layout_transition(vk, staging, tmp.image,
             VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_GENERAL,
             VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+            VK_PIPELINE_STAGE_HOST_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT);
 
       vulkan_image_layout_transition(vk, staging, tex.image,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             0, VK_ACCESS_TRANSFER_WRITE_BIT,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+            VK_PIPELINE_STAGE_TRANSFER_BIT);
 
       memset(&region, 0, sizeof(region));
       region.extent.width              = width;
@@ -473,7 +473,7 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
             VK_ACCESS_TRANSFER_WRITE_BIT,
             VK_ACCESS_SHADER_READ_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
       VKFUNC(vkEndCommandBuffer)(staging);
       submit_info.commandBufferCount = 1;
@@ -553,15 +553,35 @@ void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
    /* Transition to GENERAL layout for linear streamed textures.
     * We're using linear textures here, so only 
     * GENERAL layout is supported.
+    * If we're already in GENERAL, add a host -> shader read memory barrier
+    * to invalidate texture caches.
     */
-   if (texture->layout != VK_IMAGE_LAYOUT_PREINITIALIZED)
+   if (texture->layout != VK_IMAGE_LAYOUT_PREINITIALIZED &&
+       texture->layout != VK_IMAGE_LAYOUT_GENERAL)
       return;
 
-   vulkan_image_layout_transition(vk, vk->cmd, texture->image,
-         texture->layout, VK_IMAGE_LAYOUT_GENERAL,
-         VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+   switch (texture->type)
+   {
+      case VULKAN_TEXTURE_STREAMED:
+         vulkan_image_layout_transition(vk, vk->cmd, texture->image,
+               texture->layout, VK_IMAGE_LAYOUT_GENERAL,
+               VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+               VK_PIPELINE_STAGE_HOST_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+         break;
+
+      case VULKAN_TEXTURE_STAGING:
+         vulkan_image_layout_transition(vk, vk->cmd, texture->image,
+               texture->layout, VK_IMAGE_LAYOUT_GENERAL,
+               VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+               VK_PIPELINE_STAGE_HOST_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT);
+         break;
+
+      default:
+         retro_assert(0 && "Attempting to transition invalid texture type.\n");
+         break;
+   }
    texture->layout = VK_IMAGE_LAYOUT_GENERAL;
 }
 

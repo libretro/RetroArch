@@ -186,7 +186,7 @@ static void vulkan_test_render(void)
 
    VkImageMemoryBarrier prepare_rendering = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
    prepare_rendering.srcAccessMask = 0;
-   prepare_rendering.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+   prepare_rendering.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
    prepare_rendering.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
    prepare_rendering.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
    prepare_rendering.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -704,7 +704,7 @@ static void context_destroy(void)
 static bool retro_init_hw_context(void)
 {
    hw_render.context_type = RETRO_HW_CONTEXT_VULKAN;
-   hw_render.version_major = VK_API_VERSION;
+   hw_render.version_major = VK_MAKE_VERSION(1, 0, 6);
    hw_render.version_minor = 0;
    hw_render.context_reset = context_reset;
    hw_render.context_destroy = context_destroy;
