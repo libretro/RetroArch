@@ -1354,11 +1354,11 @@ static void vulkan_readback(vk_t *vk)
 static void vulkan_flush_caches(vk_t *vk)
 {
    VkMemoryBarrier barrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER };
-   barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+   barrier.srcAccessMask = 0;
    barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_UNIFORM_READ_BIT;
 
    VKFUNC(vkCmdPipelineBarrier)(vk->cmd,
-         VK_PIPELINE_STAGE_HOST_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
          VK_PIPELINE_STAGE_VERTEX_INPUT_BIT |
          VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,

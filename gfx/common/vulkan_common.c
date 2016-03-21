@@ -444,8 +444,8 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
 
       vulkan_image_layout_transition(vk, staging, tmp.image,
             VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_GENERAL,
-            VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-            VK_PIPELINE_STAGE_HOST_BIT,
+            0, VK_ACCESS_TRANSFER_READ_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT);
 
       vulkan_image_layout_transition(vk, staging, tex.image,
@@ -565,16 +565,16 @@ void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
       case VULKAN_TEXTURE_STREAMED:
          vulkan_image_layout_transition(vk, vk->cmd, texture->image,
                texture->layout, VK_IMAGE_LAYOUT_GENERAL,
-               VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-               VK_PIPELINE_STAGE_HOST_BIT,
+               0, VK_ACCESS_SHADER_READ_BIT,
+               VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
          break;
 
       case VULKAN_TEXTURE_STAGING:
          vulkan_image_layout_transition(vk, vk->cmd, texture->image,
                texture->layout, VK_IMAGE_LAYOUT_GENERAL,
-               VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-               VK_PIPELINE_STAGE_HOST_BIT,
+               0, VK_ACCESS_TRANSFER_READ_BIT,
+               VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                VK_PIPELINE_STAGE_TRANSFER_BIT);
          break;
 
