@@ -37,10 +37,6 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
    } scroll_index;
    static unsigned scroll_acceleration    = 0;
    static size_t selection_ptr            = 0;
-   settings_t          *settings          = config_get_ptr();
-   size_t          menu_list_size         = menu_entries_get_size();
-
-   (void)settings;
 
    switch (state)
    {
@@ -61,7 +57,9 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_INCREMENT:
          {
+            settings_t *settings   = config_get_ptr();
             unsigned *scroll_speed = (unsigned*)data;
+            size_t  menu_list_size = menu_entries_get_size();
 
             if (!scroll_speed)
                return false;
@@ -102,7 +100,9 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          {
             size_t idx             = 0;
             bool scroll            = true;
+            settings_t *settings   = config_get_ptr();
             unsigned *scroll_speed = (unsigned*)data;
+            size_t  menu_list_size = menu_entries_get_size();
 
             if (!scroll_speed)
                return false;
@@ -132,6 +132,7 @@ bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data)
          break;
       case MENU_NAVIGATION_CTL_SET_LAST:
          {
+            size_t  menu_list_size = menu_entries_get_size();
             size_t new_selection = menu_list_size - 1;
             menu_navigation_ctl(
                   MENU_NAVIGATION_CTL_SET_SELECTION, &new_selection);
