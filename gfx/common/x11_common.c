@@ -145,6 +145,10 @@ void x11_suspend_screensaver(Window wnd)
 {
    int ret;
    char cmd[64] = {0};
+   static bool screensaver_na = false;
+
+   if (screensaver_na)
+      return;
 
    RARCH_LOG("Suspending screensaver (X11).\n");
 
@@ -152,9 +156,15 @@ void x11_suspend_screensaver(Window wnd)
 
    ret = system(cmd);
    if (ret == -1)
+   {
+      screensaver_na = true;
       RARCH_WARN("Failed to launch xdg-screensaver.\n");
+   }
    else if (WEXITSTATUS(ret))
+   {
+      screensaver_na = true;
       RARCH_WARN("Could not suspend screen saver.\n");
+   }
 }
 
 static bool get_video_mode(Display *dpy, unsigned width, unsigned height,
