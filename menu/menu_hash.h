@@ -399,6 +399,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_AUDIO_LATENCY                                         0x89900e38U
 #define MENU_LABEL_NETPLAY_ENABLE                                              0x607fbd68U
 #define MENU_LABEL_VALUE_NETPLAY_ENABLE                                        0xbc3e81a9U
+#define MENU_LABEL_SSH_ENABLE                                                  0xd9854a79U
+#define MENU_LABEL_VALUE_SSH_ENABLE                                            0x0430627aU
 #define MENU_LABEL_NETPLAY_CLIENT_SWAP_INPUT                                   0xd87bbba9U
 #define MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT                             0x57e5be2dU
 #define MENU_LABEL_NETPLAY_DELAY_FRAMES                                        0x86b2c48dU

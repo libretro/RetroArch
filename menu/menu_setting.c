@@ -52,6 +52,7 @@
 #include "../input/input_autodetect.h"
 #include "../config.def.h"
 #include "../performance.h"
+#include "../lakka.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -3079,6 +3080,23 @@ static void overlay_enable_toggle_change_handler(void *data)
 }
 #endif
 
+#ifdef HAVE_LAKKA
+static void ssh_enable_toggle_change_handler(void *data)
+{
+   settings_t *settings  = config_get_ptr();
+   rarch_setting_t *setting = (rarch_setting_t *)data;
+
+   if (!setting)
+      return;
+
+   if (settings && settings->ssh_enable)
+      fopen(LAKKA_SSH_PATH, "ab+");
+   else
+      remove(LAKKA_SSH_PATH);
+
+   return;
+}
+#endif
 
 enum settings_list_type
 {
@@ -6500,10 +6518,10 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &global->netplay.enable,
-                  menu_hash_to_str(MENU_LABEL_NETPLAY_ENABLE),
-                  menu_hash_to_str(MENU_LABEL_VALUE_NETPLAY_ENABLE),
-                  false,
+                  &settings->ssh_enable,
+                  menu_hash_to_str(MENU_LABEL_SSH_ENABLE),
+                  menu_hash_to_str(MENU_LABEL_VALUE_SSH_ENABLE),
+                  true,
                   menu_hash_to_str(MENU_VALUE_OFF),
                   menu_hash_to_str(MENU_VALUE_ON),
                   &group_info,
@@ -6511,6 +6529,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            (*list)[list_info->index - 1].change_handler = ssh_enable_toggle_change_handler;
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
 #endif

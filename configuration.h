@@ -399,6 +399,11 @@ typedef struct settings
    unsigned int user_language;
 
    bool config_save_on_exit;
+
+#ifdef HAVE_LAKKA
+   bool ssh_enable;
+#endif
+
 } settings_t;
 
 /**

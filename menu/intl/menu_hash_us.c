@@ -262,6 +262,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "netplay_tcp_udp_port";
       case MENU_LABEL_NETPLAY_ENABLE:
          return "netplay_enable";
+      case MENU_LABEL_SSH_ENABLE:
+         return "ssh_enable";
       case MENU_LABEL_NETPLAY_DELAY_FRAMES:
          return "netplay_delay_frames";
       case MENU_LABEL_NETPLAY_MODE:
@@ -1008,6 +1010,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Netplay TCP/UDP Port";
       case MENU_LABEL_VALUE_NETPLAY_ENABLE:
          return "Netplay Enable";
+      case MENU_LABEL_VALUE_SSH_ENABLE:
+         return "SSH Enable";
       case MENU_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
          return "Netplay Delay Frames";
       case MENU_LABEL_VALUE_NETPLAY_MODE:
