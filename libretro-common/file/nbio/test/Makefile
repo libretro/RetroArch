@@ -1,9 +1,14 @@
 TARGET := nbio_test
 
-SOURCES := $(wildcard *.c)
+LIBRETRO_COMM_DIR := ../../..
+
+SOURCES := \
+	nbio_test.c \
+	../nbio_stdio.c
+
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -I../../include
+CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
 
 all: $(TARGET)
 

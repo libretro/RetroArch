@@ -1,10 +1,12 @@
 TARGET := rxml
 
-LIBRETRO_COMM_DIR := ../..
+LIBRETRO_XML_DIR  := ..
+LIBRETRO_COMM_DIR := ../../..
 
 SOURCES := \
-	$(wildcard *.c) \
-	$(LIBRETRO_COMM_DIR)/file/retro_file.c
+	rxml_test.c \
+	$(LIBRETRO_XML_DIR)/rxml.c \
+	$(LIBRETRO_COMM_DIR)/streams/file_stream.c
 
 OBJS := $(SOURCES:.c=.o)
 
