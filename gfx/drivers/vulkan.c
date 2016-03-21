@@ -1351,6 +1351,20 @@ static void vulkan_readback(vk_t *vk)
          VK_PIPELINE_STAGE_HOST_BIT);
 }
 
+static void vulkan_flush_vertex_caches(vk_t *vk)
+{
+   VkMemoryBarrier barrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER };
+   barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+   barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_UNIFORM_READ_BIT;
+
+   VKFUNC(vkCmdPipelineBarrier)(vk->cmd,
+         VK_PIPELINE_STAGE_HOST_BIT,
+         VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+         false,
+         1, &barrier,
+         0, NULL, 0, NULL);
+}
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
@@ -1406,6 +1420,8 @@ static bool vulkan_frame(void *data, const void *frame,
    retro_perf_stop(&begin_cmd);
 
    memset(&vk->tracker, 0, sizeof(vk->tracker));
+
+   vulkan_flush_vertex_caches(vk);
 
    /* Upload texture */
    retro_perf_start(&copy_frame);
