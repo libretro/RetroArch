@@ -78,7 +78,7 @@ void content_playlist_get_index(content_playlist_t *playlist,
    if (core_name)
       *core_name = playlist->entries[idx].core_name;
    if (db_name)
-      *db_name = playlist->entries[idx].db_name;
+      *db_name   = playlist->entries[idx].db_name;
    if (crc32)
       *crc32     = playlist->entries[idx].crc32;
 }
