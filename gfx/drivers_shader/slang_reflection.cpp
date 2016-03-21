@@ -49,12 +49,41 @@ static bool find_uniform_offset(const Compiler &compiler, const Resource &resour
    return false;
 }
 
+static bool find_semantic_uniform(slang_reflection *reflection, slang_texture_semantic index,
+      const Compiler &compiler, const Resource &resource, const char *name)
+{
+   unsigned member_index = 0;
+   auto &semantic = reflection->semantic_textures[index];
+
+   // TODO: Do we want to expose Size uniforms if no stage is using the texture?
+   if (find_uniform_offset(compiler, resource, name,
+            &semantic.ubo_offset, &member_index))
+   {
+      auto &type = compiler.get_type(
+            compiler.get_type(resource.type_id).member_types[member_index]);
+
+      // Verify that the type is a vec4 to avoid any nasty surprises later.
+      bool is_vec4 = type.basetype == SPIRType::Float &&
+         type.array.empty() &&
+         type.vecsize == 4 &&
+         type.columns == 1;
+
+      if (!is_vec4)
+      {
+         RARCH_ERR("Semantic uniform is not vec4.\n");
+         return false;
+      }
+
+      reflection->semantic_texture_ubo_mask |= 1 << index;
+   }
+
+   return true;
+}
+
 static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragment_compiler,
       const ShaderResources &vertex, const ShaderResources &fragment,
       slang_reflection *reflection)
 {
-   unsigned member_index = 0;
-
    // Validate use of unexpected types.
    if (
          !vertex.sampled_images.empty() ||
@@ -142,19 +171,34 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
             fragment_compiler.get_declared_struct_size(fragment_compiler.get_type(fragment.uniform_buffers[0].type_id)));
    }
 
+   // Find two magic uniforms, MVP and OutputSize.
+   unsigned member_index = 0;
    if (!find_uniform_offset(vertex_compiler, vertex.uniform_buffers[0], "MVP", &reflection->mvp_offset, &member_index))
    {
       RARCH_ERR("Could not find offset for MVP matrix.\n");
       return false;
    }
 
+   if (!find_semantic_uniform(reflection, SLANG_TEXTURE_SEMANTIC_OUTPUT,
+            fragment_compiler, fragment.uniform_buffers[0],
+            "OutputSize"))
+   {
+      // OutputSize isn't backed by an actual texture.
+      find_semantic_uniform(reflection, SLANG_TEXTURE_SEMANTIC_OUTPUT,
+            vertex_compiler, vertex.uniform_buffers[0],
+            "OutputSize");
+   }
+   ////
+
    uint32_t binding_mask = 1 << ubo_binding;
 
    // On to textures.
    for (auto &texture : fragment.sampled_images)
    {
-      unsigned set = fragment_compiler.get_decoration(texture.id, spv::DecorationDescriptorSet);
-      unsigned binding = fragment_compiler.get_decoration(texture.id, spv::DecorationBinding);
+      unsigned set = fragment_compiler.get_decoration(texture.id,
+            spv::DecorationDescriptorSet);
+      unsigned binding = fragment_compiler.get_decoration(texture.id,
+            spv::DecorationBinding);
 
       if (set != 0)
       {
@@ -188,25 +232,11 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
       semantic.stage_mask = SLANG_STAGE_FRAGMENT_MASK;
       reflection->semantic_texture_mask |= 1 << index;
 
-      // TODO: Do we want to expose Size uniforms if no stage is using the texture?
       char uniform_name[128];
       snprintf(uniform_name, sizeof(uniform_name), "%sSize", texture.name.c_str());
-      if (find_uniform_offset(fragment_compiler, fragment.uniform_buffers[0], uniform_name,
-               &semantic.ubo_offset, &member_index))
-      {
-         auto &type = fragment_compiler.get_type(
-               fragment_compiler.get_type(fragment.uniform_buffers[0].type_id).member_types[member_index]);
-
-         // Verify that the type is a vec4 to avoid any nasty surprises later.
-         bool is_vec4 = type.basetype == SPIRType::Float && type.array.empty() && type.vecsize == 4 && type.columns == 1;
-         if (!is_vec4)
-         {
-            RARCH_ERR("Semantic uniform is not vec4.\n");
-            return false;
-         }
-
-         reflection->semantic_texture_ubo_mask |= 1 << index;
-      }
+      find_semantic_uniform(reflection, index,
+            fragment_compiler, fragment.uniform_buffers[0],
+            uniform_name);
    }
 
    return true;
