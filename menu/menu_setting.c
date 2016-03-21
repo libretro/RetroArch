@@ -1886,27 +1886,9 @@ uint32_t menu_setting_get_index(rarch_setting_t *setting)
    return setting->index;
 }
 
-/**
- * menu_setting_find:
- * @settings           : pointer to settings
- * @name               : name of setting to search for
- *
- * Search for a setting with a specified name (@name).
- *
- * Returns: pointer to setting if found, NULL otherwise.
- **/
-rarch_setting_t *menu_setting_find(const char *label)
+static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting, 
+      const char *label, uint32_t needle)
 {
-   rarch_setting_t *setting = NULL;
-   uint32_t needle          = 0;
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
-
-   if (!setting || !label)
-      return NULL;
-
-   needle = menu_hash_calculate(label);
-
    for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
    {
       const char *name = menu_setting_get_name(setting);
@@ -1929,6 +1911,30 @@ rarch_setting_t *menu_setting_find(const char *label)
    }
 
    return NULL;
+}
+
+/**
+ * menu_setting_find:
+ * @settings           : pointer to settings
+ * @name               : name of setting to search for
+ *
+ * Search for a setting with a specified name (@name).
+ *
+ * Returns: pointer to setting if found, NULL otherwise.
+ **/
+rarch_setting_t *menu_setting_find(const char *label)
+{
+   rarch_setting_t *setting = NULL;
+   uint32_t needle          = 0;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
+
+   if (!setting || !label)
+      return NULL;
+
+   needle = menu_hash_calculate(label);
+
+   return menu_setting_find_internal(setting, label, needle);
 }
 
 int menu_setting_set_flags(rarch_setting_t *setting)
