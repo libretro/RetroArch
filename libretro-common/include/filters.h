@@ -33,6 +33,21 @@ static INLINE double sinc(double val)
    return sin(val) / val;
 }
 
+/* Paeth prediction filter. */
+static INLINE int paeth(int a, int b, int c)
+{
+   int p  = a + b - c;
+   int pa = abs(p - a);
+   int pb = abs(p - b);
+   int pc = abs(p - c);
+
+   if (pa <= pb && pa <= pc)
+      return a;
+   else if (pb <= pc)
+      return b;
+   return c;
+}
+
 /* Modified Bessel function of first order.
  * Check Wiki for mathematical definition ... */
 static INLINE double besseli0(double x)

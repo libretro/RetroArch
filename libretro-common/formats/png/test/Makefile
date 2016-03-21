@@ -21,6 +21,7 @@ SOURCES_C := 	\
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
 	$(LIBRETRO_COMM_DIR)//file/file_path.c \
+	$(LIBRETRO_COMM_DIR)//file/retro_stat.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c
 

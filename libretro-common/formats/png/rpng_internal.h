@@ -23,9 +23,9 @@
 #ifndef _RPNG_COMMON_H
 #define _RPNG_COMMON_H
 
-#include <retro_inline.h>
-#include <formats/rpng.h>
 #include <stdint.h>
+#include <filters.h>
+#include <formats/rpng.h>
 
 #undef GOTO_END_ERROR
 #define GOTO_END_ERROR() do { \
@@ -52,20 +52,5 @@ struct png_ihdr
    uint8_t filter;
    uint8_t interlace;
 };
-
-/* Paeth prediction filter. */
-static INLINE int paeth(int a, int b, int c)
-{
-   int p  = a + b - c;
-   int pa = abs(p - a);
-   int pb = abs(p - b);
-   int pc = abs(p - c);
-
-   if (pa <= pb && pa <= pc)
-      return a;
-   else if (pb <= pc)
-      return b;
-   return c;
-}
 
 #endif
