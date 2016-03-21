@@ -24,14 +24,16 @@
 #include "glslang.hpp"
 
 #include "../../general.h"
+#include "../../libretro-common/include/file/file_path.h"
 
 using namespace std;
 
-bool read_file(const char *path, vector<string> *output)
+static bool read_shader_file(const char *path, vector<string> *output)
 {
-   char              *buf   = nullptr;
+   char                *buf = nullptr;
    ssize_t              len = 0;
    struct string_list *list = NULL;
+   char include_path[PATH_MAX];
 
    if (retro_read_file(path, (void**)&buf, &len) < 0)
    {
@@ -54,15 +56,39 @@ bool read_file(const char *path, vector<string> *output)
       return false;
    }
 
-   output->clear();
    for (size_t i = 0; i < list->size; i++)
-      output->push_back(list->elems[i].data);
+   {
+      const char *line = list->elems[i].data;
+      if (strstr(line, "#include ") == line)
+      {
+         char *c = (char*)strchr(line, '"');
+         if (!c)
+         {
+            RARCH_ERR("Invalid include statement \"%s\".\n", line);
+            return false;
+         }
+         c++;
+         char *closing = (char*)strchr(c, '"');
+         if (!closing)
+         {
+            RARCH_ERR("Invalid include statement \"%s\".\n", line);
+            return false;
+         }
+         *closing = '\0';
+         fill_pathname_resolve_relative(include_path, path, c, sizeof(include_path));
+
+         if (!read_shader_file(include_path, output))
+            return false;
+      }
+      else
+         output->push_back(line);
+   }
 
    string_list_free(list);
    return true;
 }
 
-string build_stage_source(const vector<string> &lines, const char *stage)
+static string build_stage_source(const vector<string> &lines, const char *stage)
 {
    ostringstream str;
    bool active = true;
@@ -99,7 +125,7 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
    vector<string> lines;
 
    RARCH_LOG("Compiling shader \"%s\".\n", shader_path);
-   if (!read_file(shader_path, &lines))
+   if (!read_shader_file(shader_path, &lines))
       return false;
 
    auto &header = lines.front();
