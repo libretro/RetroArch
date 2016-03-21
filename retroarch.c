@@ -682,7 +682,11 @@ static void parse_input(int argc, char *argv[])
 
    runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
 
-   if (argc < 2)
+   /* As a special case, allow retroarch --verbose to go straight to menu as well.
+    * It's a fairly common pattern and verbose alone shouldn't alter other behavior. */
+   if (argc < 2 ||
+         (argc == 2 &&
+         (!strcmp(argv[1], "--verbose") || !strcmp(argv[1], "-v"))))
    {
       current_core_type                  = CORE_TYPE_DUMMY;
       return;
