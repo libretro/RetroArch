@@ -48,10 +48,6 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#ifndef XMB_THEME
-#define XMB_THEME "monochrome"
-#endif
-
 #ifndef XMB_DELAY
 #define XMB_DELAY 10
 #endif
@@ -231,6 +227,22 @@ typedef struct xmb_handle
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
+static char* xmb_theme()
+{
+   settings_t *settings = config_get_ptr();
+   switch (settings->menu.xmb_theme)
+   {
+      case 0:
+         return "monochrome";
+      case 1:
+         return "flatui";
+      case 2:
+         return "custom";
+      default:
+         return "monochrome";
+   }
+}
+
 static void xmb_fill_default_background_path(xmb_handle_t *xmb,
       char *path, size_t size)
 {
@@ -243,7 +255,7 @@ static void xmb_fill_default_background_path(xmb_handle_t *xmb,
 
     fill_pathname_join(mediapath, settings->assets_directory,
                        "xmb", sizeof(mediapath));
-    fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+    fill_pathname_join(themepath, mediapath, xmb_theme(), sizeof(themepath));
     fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
     fill_pathname_slash(iconpath, sizeof(iconpath));
 
@@ -1265,7 +1277,7 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 
    fill_pathname_join(mediapath, settings->assets_directory,
          "xmb", sizeof(mediapath));
-   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+   fill_pathname_join(themepath, mediapath, xmb_theme(), sizeof(themepath));
 
    xmb_context_destroy_horizontal_list(xmb);
    if (xmb->horizontal_list)
@@ -2062,7 +2074,7 @@ static void xmb_font(xmb_handle_t *xmb)
    fill_pathname_join(mediapath,
          settings->assets_directory, "xmb", sizeof(mediapath));
    fill_pathname_join(themepath,
-         mediapath, XMB_THEME, sizeof(themepath));
+         mediapath, xmb_theme(), sizeof(themepath));
    if (string_is_empty(settings->menu.xmb_font))
          fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
    else
@@ -2484,7 +2496,7 @@ static void xmb_context_reset(void *data)
 
    fill_pathname_join(mediapath, settings->assets_directory,
          "xmb", sizeof(mediapath));
-   fill_pathname_join(themepath, mediapath, XMB_THEME, sizeof(themepath));
+   fill_pathname_join(themepath, mediapath, xmb_theme(), sizeof(themepath));
    fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
