@@ -293,6 +293,9 @@ class Pass
       void set_texture(VkDescriptorSet set, unsigned binding,
             const Texture &texture);
 
+      void set_semantic_texture(VkDescriptorSet set, slang_texture_semantic semantic,
+            const Texture &texture);
+
       void set_uniform_buffer(VkDescriptorSet set, unsigned binding,
             VkBuffer buffer,
             VkDeviceSize offset,
@@ -683,26 +686,40 @@ void Pass::clear_vk()
 
 bool Pass::init_pipeline_layout()
 {
-   unsigned i;
    vector<VkDescriptorSetLayoutBinding> bindings;
    vector<VkDescriptorPoolSize> desc_counts;
 
-   // TODO: Expand this a lot, need to reflect shaders to figure this out.
-   bindings.push_back({ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-         nullptr });
+   // Main UBO.
+   VkShaderStageFlags ubo_mask = 0;
+   if (reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK)
+      ubo_mask |= VK_SHADER_STAGE_VERTEX_BIT;
+   if (reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+      ubo_mask |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
-   bindings.push_back({ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-         VK_SHADER_STAGE_FRAGMENT_BIT,
-         nullptr });
-
-   bindings.push_back({ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-         VK_SHADER_STAGE_FRAGMENT_BIT,
-         nullptr });
-
+   bindings.push_back({ reflection.ubo_binding,
+         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+         ubo_mask, nullptr });
    desc_counts.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, num_sync_indices });
-   desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_sync_indices });
-   desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_sync_indices });
+
+   // Semantic textures.
+   for (unsigned i = 0; i < 32; i++)
+   {
+      if (reflection.semantic_texture_mask & (1u << i))
+      {
+         auto &texture = reflection.semantic_textures[i];
+
+         VkShaderStageFlags stages = 0;
+         if (texture.stage_mask & SLANG_STAGE_VERTEX_MASK)
+            stages |= VK_SHADER_STAGE_VERTEX_BIT;
+         if (texture.stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+            stages |= VK_SHADER_STAGE_FRAGMENT_BIT;
+
+         bindings.push_back({ texture.binding,
+               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+               stages, nullptr });
+         desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_sync_indices });
+      }
+   }
 
    VkDescriptorSetLayoutCreateInfo set_layout_info = { 
       VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
@@ -738,7 +755,7 @@ bool Pass::init_pipeline_layout()
 
    sets.resize(num_sync_indices);
 
-   for (i = 0; i < num_sync_indices; i++)
+   for (unsigned i = 0; i < num_sync_indices; i++)
       VKFUNC(vkAllocateDescriptorSets)(device, &alloc_info, &sets[i]);
 
    return true;
@@ -961,11 +978,11 @@ bool Pass::build()
                pass_info.rt_format));
    }
 
-   if (!init_pipeline())
-      return false;
-
    memset(&reflection, 0, sizeof(reflection));
    if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
+      return false;
+
+   if (!init_pipeline())
       return false;
 
    if (!init_buffers())
@@ -1040,14 +1057,22 @@ void Pass::set_texture(VkDescriptorSet set, unsigned binding,
    VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, nullptr);
 }
 
+void Pass::set_semantic_texture(VkDescriptorSet set,
+      slang_texture_semantic semantic, const Texture &texture)
+{
+   if (reflection.semantic_texture_mask & (1u << semantic))
+      set_texture(set, reflection.semantic_textures[semantic].binding, texture);
+}
+
 void Pass::update_descriptor_set(
       const Texture &original,
       const Texture &source)
 {
    set_uniform_buffer(sets[sync_index], 0,
          ubos[sync_index]->get_buffer(), 0, reflection.ubo_size);
-   set_texture(sets[sync_index], 1, original);
-   set_texture(sets[sync_index], 2, source);
+
+   set_semantic_texture(sets[sync_index], SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
+   set_semantic_texture(sets[sync_index], SLANG_TEXTURE_SEMANTIC_SOURCE, source);
 }
 
 void Pass::build_semantic_vec4(uint8_t *data, slang_texture_semantic semantic, unsigned width, unsigned height)

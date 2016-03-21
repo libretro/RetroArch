@@ -50,17 +50,22 @@ static bool find_uniform_offset(const Compiler &compiler, const Resource &resour
 }
 
 static bool find_semantic_uniform(slang_reflection *reflection, slang_texture_semantic index,
-      const Compiler &compiler, const Resource &resource, const char *name)
+      const Compiler &vertex_compiler, const vector<Resource> &vertex_resources,
+      const Compiler &fragment_compiler, const vector<Resource> &fragment_resources,
+      const char *name)
 {
    unsigned member_index = 0;
    auto &semantic = reflection->semantic_textures[index];
 
+   size_t vertex_ubo_offset = size_t(-1);
+   size_t fragment_ubo_offset = size_t(-1);
+
    // TODO: Do we want to expose Size uniforms if no stage is using the texture?
-   if (find_uniform_offset(compiler, resource, name,
-            &semantic.ubo_offset, &member_index))
+   if (find_uniform_offset(vertex_compiler, vertex_resources[0], name,
+            &vertex_ubo_offset, &member_index))
    {
-      auto &type = compiler.get_type(
-            compiler.get_type(resource.type_id).member_types[member_index]);
+      auto &type = vertex_compiler.get_type(
+            vertex_compiler.get_type(vertex_resources[0].type_id).member_types[member_index]);
 
       // Verify that the type is a vec4 to avoid any nasty surprises later.
       bool is_vec4 = type.basetype == SPIRType::Float &&
@@ -70,13 +75,46 @@ static bool find_semantic_uniform(slang_reflection *reflection, slang_texture_se
 
       if (!is_vec4)
       {
-         RARCH_ERR("Semantic uniform is not vec4.\n");
+         RARCH_ERR("[slang]: Semantic uniform is not vec4.\n");
          return false;
       }
 
       reflection->semantic_texture_ubo_mask |= 1 << index;
    }
 
+   if (!fragment_resources.empty() &&
+         find_uniform_offset(fragment_compiler, fragment_resources[0], name,
+            &fragment_ubo_offset, &member_index))
+   {
+      auto &type = fragment_compiler.get_type(
+            fragment_compiler.get_type(fragment_resources[0].type_id).member_types[member_index]);
+
+      // Verify that the type is a vec4 to avoid any nasty surprises later.
+      bool is_vec4 = type.basetype == SPIRType::Float &&
+         type.array.empty() &&
+         type.vecsize == 4 &&
+         type.columns == 1;
+
+      if (!is_vec4)
+      {
+         RARCH_ERR("[slang]: Semantic uniform is not vec4.\n");
+         return false;
+      }
+
+      reflection->semantic_texture_ubo_mask |= 1 << index;
+   }
+
+   // Check for UBO offset mismatch between stages.
+   if (vertex_ubo_offset != size_t(-1) &&
+         fragment_ubo_offset != size_t(-1) &&
+         vertex_ubo_offset != fragment_ubo_offset)
+   {
+      RARCH_ERR("[slang]: Vertex (%u) and fragment (%u) UBO offset for %s mismatches.\n",
+            unsigned(vertex_ubo_offset), unsigned(fragment_ubo_offset), name);
+      return false;
+   }
+
+   semantic.ubo_offset = vertex_ubo_offset;
    return true;
 }
 
@@ -98,14 +136,14 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
          !fragment.atomic_counters.empty() ||
          !fragment.push_constant_buffers.empty())
    {
-      RARCH_ERR("Invalid resource type detected.\n");
+      RARCH_ERR("[slang]: Invalid resource type detected.\n");
       return false;
    }
 
    // Validate vertex input.
    if (vertex.stage_inputs.size() != 2)
    {
-      RARCH_ERR("Vertex must have two attributes.\n");
+      RARCH_ERR("[slang]: Vertex must have two attributes.\n");
       return false;
    }
 
@@ -115,33 +153,33 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
 
    if (location_mask != 0x3)
    {
-      RARCH_ERR("The two vertex attributes do not use location = 0 and location = 1.\n");
+      RARCH_ERR("[slang]: The two vertex attributes do not use location = 0 and location = 1.\n");
       return false;
    }
 
    // Validate the single uniform buffer.
    if (vertex.uniform_buffers.size() != 1)
    {
-      RARCH_ERR("Vertex must use exactly one uniform buffer.\n");
+      RARCH_ERR("[slang]: Vertex must use exactly one uniform buffer.\n");
       return false;
    }
 
    if (fragment.uniform_buffers.size() > 1)
    {
-      RARCH_ERR("Fragment must use zero or one uniform buffer.\n");
+      RARCH_ERR("[slang]: Fragment must use zero or one uniform buffer.\n");
       return false;
    }
 
    if (vertex_compiler.get_decoration(vertex.uniform_buffers[0].id, spv::DecorationDescriptorSet) != 0)
    {
-      RARCH_ERR("Resources must use descriptor set #0.\n");
+      RARCH_ERR("[slang]: Resources must use descriptor set #0.\n");
       return false;
    }
 
    if (!fragment.uniform_buffers.empty() &&
          fragment_compiler.get_decoration(fragment.uniform_buffers[0].id, spv::DecorationDescriptorSet) != 0)
    {
-      RARCH_ERR("Resources must use descriptor set #0.\n");
+      RARCH_ERR("[slang]: Resources must use descriptor set #0.\n");
       return false;
    }
 
@@ -150,16 +188,17 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
    if (!fragment.uniform_buffers.empty() &&
          ubo_binding != fragment_compiler.get_decoration(fragment.uniform_buffers[0].id, spv::DecorationBinding))
    {
-      RARCH_ERR("Vertex and fragment uniform buffer must have same binding.\n");
+      RARCH_ERR("[slang]: Vertex and fragment uniform buffer must have same binding.\n");
       return false;
    }
 
    if (ubo_binding >= SLANG_NUM_BINDINGS)
    {
-      RARCH_ERR("Binding %u is out of range.\n", ubo_binding);
+      RARCH_ERR("[slang]: Binding %u is out of range.\n", ubo_binding);
       return false;
    }
 
+   reflection->ubo_binding = ubo_binding;
    reflection->ubo_stage_mask = SLANG_STAGE_VERTEX_MASK;
    reflection->ubo_size = vertex_compiler.get_declared_struct_size(
          vertex_compiler.get_type(vertex.uniform_buffers[0].type_id));
@@ -175,18 +214,16 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
    unsigned member_index = 0;
    if (!find_uniform_offset(vertex_compiler, vertex.uniform_buffers[0], "MVP", &reflection->mvp_offset, &member_index))
    {
-      RARCH_ERR("Could not find offset for MVP matrix.\n");
+      RARCH_ERR("[slang]: Could not find offset for MVP matrix.\n");
       return false;
    }
 
    if (!find_semantic_uniform(reflection, SLANG_TEXTURE_SEMANTIC_OUTPUT,
-            fragment_compiler, fragment.uniform_buffers[0],
+            vertex_compiler, vertex.uniform_buffers,
+            fragment_compiler, fragment.uniform_buffers,
             "OutputSize"))
    {
-      // OutputSize isn't backed by an actual texture.
-      find_semantic_uniform(reflection, SLANG_TEXTURE_SEMANTIC_OUTPUT,
-            vertex_compiler, vertex.uniform_buffers[0],
-            "OutputSize");
+      return false;
    }
    ////
 
@@ -202,19 +239,19 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
 
       if (set != 0)
       {
-         RARCH_ERR("Resources must use descriptor set #0.\n");
+         RARCH_ERR("[slang]: Resources must use descriptor set #0.\n");
          return false;
       }
 
       if (binding >= SLANG_NUM_BINDINGS)
       {
-         RARCH_ERR("Binding %u is out of range.\n", ubo_binding);
+         RARCH_ERR("[slang]: Binding %u is out of range.\n", ubo_binding);
          return false;
       }
 
       if (binding_mask & (1 << binding))
       {
-         RARCH_ERR("Binding %u is already in use.\n", binding);
+         RARCH_ERR("[slang]: Binding %u is already in use.\n", binding);
          return false;
       }
       binding_mask |= 1 << binding;
@@ -223,7 +260,7 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
       
       if (index == SLANG_TEXTURE_INVALID_SEMANTIC)
       {
-         RARCH_ERR("Non-semantic textures not supported.\n");
+         RARCH_ERR("[slang]: Non-semantic textures not supported.\n");
          return false;
       }
 
@@ -235,7 +272,8 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
       char uniform_name[128];
       snprintf(uniform_name, sizeof(uniform_name), "%sSize", texture.name.c_str());
       find_semantic_uniform(reflection, index,
-            fragment_compiler, fragment.uniform_buffers[0],
+            vertex_compiler, vertex.uniform_buffers,
+            fragment_compiler, fragment.uniform_buffers,
             uniform_name);
    }
 
@@ -257,7 +295,7 @@ bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
                vertex_resources, fragment_resources,
                reflection))
       {
-         RARCH_ERR("Failed to reflect SPIR-V. Resource usage is inconsistent with expectations.\n");
+         RARCH_ERR("[slang]: Failed to reflect SPIR-V. Resource usage is inconsistent with expectations.\n");
          return false;
       }
 
@@ -265,7 +303,7 @@ bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
    }
    catch (const std::exception &e)
    {
-      RARCH_ERR("spir2cross threw exception: %s.\n", e.what());
+      RARCH_ERR("[slang]: spir2cross threw exception: %s.\n", e.what());
       return false;
    }
 }
