@@ -1262,7 +1262,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    app.applicationVersion            = 0;
    app.pEngineName                   = "RetroArch";
    app.engineVersion                 = 0;
-   app.apiVersion                    = VK_MAKE_VERSION(1, 0, 2);
+   app.apiVersion                    = VK_MAKE_VERSION(1, 0, 6);
 
    info.pApplicationInfo             = &app;
    info.enabledExtensionCount        = ARRAY_SIZE(instance_extensions);
