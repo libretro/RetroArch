@@ -23,6 +23,7 @@
 #ifndef _LIBRETRO_SDK_FILTERS_H
 #define _LIBRETRO_SDK_FILTERS_H
 
+#include <stdlib.h>
 #include <math.h>
 #include <retro_inline.h>
 
