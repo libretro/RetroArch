@@ -43,6 +43,7 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 #include "../../system.h"
 
 #include "../../tasks/tasks_internal.h"

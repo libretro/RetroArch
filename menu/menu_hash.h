@@ -16,8 +16,6 @@
 #ifndef MENU_HASH_H__
 #define MENU_HASH_H__
 
-#include "../retroarch.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

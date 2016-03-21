@@ -34,6 +34,7 @@
 #include "../../gfx/common/gl_common.h"
 #include "../../core_info.h"
 #include "../../configuration.h"
+#include "../../retroarch.h"
 
 bool zr_checkbox_bool(struct zr_context* cx, const char* text, bool *active)
 {

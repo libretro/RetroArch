@@ -36,6 +36,7 @@
 #include "../../general.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
+#include "../../retroarch.h"
 #include "../../system.h"
 
 enum
