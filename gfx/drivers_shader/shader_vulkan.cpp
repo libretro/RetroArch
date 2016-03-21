@@ -25,6 +25,7 @@
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
 #include "../video_shader_driver.h"
 #include "../../verbosity.h"
+#include "slang_reflection.hpp"
 
 using namespace std;
 
@@ -175,6 +176,18 @@ class Framebuffer
       void init_render_pass();
 };
 
+struct CommonResources
+{
+   CommonResources(VkDevice device,
+         const VkPhysicalDeviceMemoryProperties &memory_properties);
+   ~CommonResources();
+
+   unique_ptr<Buffer> vbo_offscreen, vbo_final;
+   VkSampler samplers[2];
+
+   VkDevice device;
+};
+
 class Pass
 {
    public:
@@ -228,15 +241,12 @@ class Pass
          return pass_info.source_filter;
       }
 
-   private:
-      struct UBO
+      void set_common_resources(const CommonResources &common)
       {
-         float MVP[16];
-         float output_size[4];
-         float original_size[4];
-         float source_size[4];
-      };
+         this->common = &common;
+      }
 
+   private:
       VkDevice device;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
       VkPipelineCache cache;
@@ -251,11 +261,10 @@ class Pass
       VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
       VkDescriptorSetLayout set_layout = VK_NULL_HANDLE;
       VkDescriptorPool pool = VK_NULL_HANDLE;
-      VkSampler samplers[2] = { VK_NULL_HANDLE, VK_NULL_HANDLE };
 
       vector<unique_ptr<Buffer>> ubos;
-      unique_ptr<Buffer> vbo;
       vector<VkDescriptorSet> sets;
+      const CommonResources *common = nullptr;
 
       Size2D current_framebuffer_size;
       VkViewport current_viewport;
@@ -270,7 +279,6 @@ class Pass
       bool init_pipeline();
       bool init_pipeline_layout();
       bool init_buffers();
-      bool init_samplers();
 
       void image_layout_transition(VkDevice device,
             VkCommandBuffer cmd, VkImage image,
@@ -285,10 +293,17 @@ class Pass
       void set_texture(VkDescriptorSet set, unsigned binding,
             const Texture &texture);
 
+      void set_semantic_texture(VkDescriptorSet set, slang_texture_semantic semantic,
+            const Texture &texture);
+
       void set_uniform_buffer(VkDescriptorSet set, unsigned binding,
             VkBuffer buffer,
             VkDeviceSize offset,
             VkDeviceSize range);
+
+      slang_reflection reflection;
+      void build_semantic_vec4(uint8_t *data, slang_texture_semantic semantic,
+            unsigned width, unsigned height);
 };
 
 // struct here since we're implementing the opaque typedef from C.
@@ -330,6 +345,7 @@ struct vulkan_filter_chain
       vector<unique_ptr<Pass>> passes;
       vector<vulkan_filter_chain_pass_info> pass_info;
       vector<vector<function<void ()>>> deferred_calls;
+      CommonResources common;
 
       vulkan_filter_chain_texture input_texture;
 
@@ -351,7 +367,8 @@ vulkan_filter_chain::vulkan_filter_chain(
       const vulkan_filter_chain_create_info &info)
    : device(info.device),
      memory_properties(*info.memory_properties),
-     cache(info.pipeline_cache)
+     cache(info.pipeline_cache),
+     common(info.device, *info.memory_properties)
 {
    max_input_size = { info.max_input_size.width, info.max_input_size.height };
    set_swapchain_info(info.swapchain);
@@ -397,6 +414,7 @@ void vulkan_filter_chain::set_num_passes(unsigned num_passes)
    {
       passes.emplace_back(new Pass(device, memory_properties,
                cache, deferred_calls.size(), i + 1 == num_passes));
+      passes.back()->set_common_resources(common);
    }
 }
 
@@ -660,42 +678,48 @@ void Pass::clear_vk()
    if (pipeline_layout != VK_NULL_HANDLE)
       VKFUNC(vkDestroyPipelineLayout)(device, pipeline_layout, nullptr);
 
-   for (auto &samp : samplers)
-   {
-      if (samp != VK_NULL_HANDLE)
-         VKFUNC(vkDestroySampler)(device, samp, nullptr);
-      samp = VK_NULL_HANDLE;
-   }
-
    pool       = VK_NULL_HANDLE;
    pipeline   = VK_NULL_HANDLE;
    set_layout = VK_NULL_HANDLE;
    ubos.clear();
-   vbo.reset();
 }
 
 bool Pass::init_pipeline_layout()
 {
-   unsigned i;
    vector<VkDescriptorSetLayoutBinding> bindings;
    vector<VkDescriptorPoolSize> desc_counts;
 
-   // TODO: Expand this a lot, need to reflect shaders to figure this out.
-   bindings.push_back({ 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-         nullptr });
+   // Main UBO.
+   VkShaderStageFlags ubo_mask = 0;
+   if (reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK)
+      ubo_mask |= VK_SHADER_STAGE_VERTEX_BIT;
+   if (reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+      ubo_mask |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
-   bindings.push_back({ 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-         VK_SHADER_STAGE_FRAGMENT_BIT,
-         nullptr });
-
-   bindings.push_back({ 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-         VK_SHADER_STAGE_FRAGMENT_BIT,
-         nullptr });
-
+   bindings.push_back({ reflection.ubo_binding,
+         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+         ubo_mask, nullptr });
    desc_counts.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, num_sync_indices });
-   desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_sync_indices });
-   desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_sync_indices });
+
+   // Semantic textures.
+   for (unsigned i = 0; i < 32; i++)
+   {
+      if (reflection.semantic_texture_mask & (1u << i))
+      {
+         auto &texture = reflection.semantic_textures[i];
+
+         VkShaderStageFlags stages = 0;
+         if (texture.stage_mask & SLANG_STAGE_VERTEX_MASK)
+            stages |= VK_SHADER_STAGE_VERTEX_BIT;
+         if (texture.stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+            stages |= VK_SHADER_STAGE_FRAGMENT_BIT;
+
+         bindings.push_back({ texture.binding,
+               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+               stages, nullptr });
+         desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_sync_indices });
+      }
+   }
 
    VkDescriptorSetLayoutCreateInfo set_layout_info = { 
       VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
@@ -731,7 +755,7 @@ bool Pass::init_pipeline_layout()
 
    sets.resize(num_sync_indices);
 
-   for (i = 0; i < num_sync_indices; i++)
+   for (unsigned i = 0; i < num_sync_indices; i++)
       VKFUNC(vkAllocateDescriptorSets)(device, &alloc_info, &sets[i]);
 
    return true;
@@ -869,8 +893,40 @@ bool Pass::init_pipeline()
    return true;
 }
 
-bool Pass::init_samplers()
+CommonResources::CommonResources(VkDevice device,
+      const VkPhysicalDeviceMemoryProperties &memory_properties)
+   : device(device)
 {
+   // The final pass uses an MVP designed for [0, 1] range VBO.
+   // For in-between passes, we just go with identity matrices, so keep it simple.
+   const float vbo_data_offscreen[] = {
+      -1.0f, -1.0f, 0.0f, 0.0f,
+      -1.0f, +1.0f, 0.0f, 1.0f,
+       1.0f, -1.0f, 1.0f, 0.0f,
+       1.0f, +1.0f, 1.0f, 1.0f,
+   };
+
+   const float vbo_data_final[] = {
+      0.0f,  0.0f, 0.0f, 0.0f,
+      0.0f, +1.0f, 0.0f, 1.0f,
+      1.0f,  0.0f, 1.0f, 0.0f,
+      1.0f, +1.0f, 1.0f, 1.0f,
+   };
+
+   vbo_offscreen = unique_ptr<Buffer>(new Buffer(device,
+            memory_properties, sizeof(vbo_data_offscreen), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+
+   void *ptr = vbo_offscreen->map();
+   memcpy(ptr, vbo_data_offscreen, sizeof(vbo_data_offscreen));
+   vbo_offscreen->unmap();
+
+   vbo_final = unique_ptr<Buffer>(new Buffer(device,
+            memory_properties, sizeof(vbo_data_final), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+
+   ptr = vbo_final->map();
+   memcpy(ptr, vbo_data_final, sizeof(vbo_data_final));
+   vbo_final->unmap();
+
    VkSamplerCreateInfo info = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
    info.magFilter               = VK_FILTER_NEAREST;
    info.minFilter               = VK_FILTER_NEAREST;
@@ -886,44 +942,29 @@ bool Pass::init_samplers()
    info.unnormalizedCoordinates = false;
    info.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-   if (VKFUNC(vkCreateSampler)(device,
-            &info, NULL, &samplers[VULKAN_FILTER_CHAIN_NEAREST]) != VK_SUCCESS)
-      return false;
+   VKFUNC(vkCreateSampler)(device,
+            &info, nullptr, &samplers[VULKAN_FILTER_CHAIN_NEAREST]);
 
    info.magFilter = VK_FILTER_LINEAR;
    info.minFilter = VK_FILTER_LINEAR;
 
-   if (VKFUNC(vkCreateSampler)(device,
-            &info, NULL, &samplers[VULKAN_FILTER_CHAIN_LINEAR]) != VK_SUCCESS)
-      return false;
+   VKFUNC(vkCreateSampler)(device,
+            &info, nullptr, &samplers[VULKAN_FILTER_CHAIN_LINEAR]);
+}
 
-   return true;
+CommonResources::~CommonResources()
+{
+   for (auto &samp : samplers)
+      if (samp != VK_NULL_HANDLE)
+         VKFUNC(vkDestroySampler)(device, samp, nullptr);
 }
 
 bool Pass::init_buffers()
 {
-   unsigned i;
-   // The final pass uses an MVP designed for [0, 1] range VBO.
-   // For in-between passes, we just go with identity matrices, so keep it simple.
-   float pos_min = final_pass ? 0.0f : -1.0f;
-
-   const float vbo_data[] = {
-      pos_min, pos_min, 0.0f, 0.0f,
-      pos_min,   +1.0f, 0.0f, 1.0f,
-      1.0f,    pos_min, 1.0f, 0.0f,
-      1.0f,      +1.0f, 1.0f, 1.0f,
-   };
-
    ubos.clear();
-   for (i = 0; i < num_sync_indices; i++)
+   for (unsigned i = 0; i < num_sync_indices; i++)
       ubos.emplace_back(new Buffer(device,
-               memory_properties, sizeof(UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
-   vbo = unique_ptr<Buffer>(new Buffer(device,
-            memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
-
-   void *ptr = vbo->map();
-   memcpy(ptr, vbo_data, sizeof(vbo_data));
-   vbo->unmap();
+               memory_properties, reflection.ubo_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
    return true;
 }
 
@@ -937,13 +978,14 @@ bool Pass::build()
                pass_info.rt_format));
    }
 
+   memset(&reflection, 0, sizeof(reflection));
+   if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
+      return false;
+
    if (!init_pipeline())
       return false;
 
    if (!init_buffers())
-      return false;
-
-   if (!init_samplers())
       return false;
 
    return true;
@@ -1001,7 +1043,7 @@ void Pass::set_texture(VkDescriptorSet set, unsigned binding,
       const Texture &texture)
 {
    VkDescriptorImageInfo image_info;
-   image_info.sampler         = samplers[texture.filter];
+   image_info.sampler         = common->samplers[texture.filter];
    image_info.imageView       = texture.texture.view;
    image_info.imageLayout     = texture.texture.layout;
 
@@ -1015,14 +1057,33 @@ void Pass::set_texture(VkDescriptorSet set, unsigned binding,
    VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, nullptr);
 }
 
+void Pass::set_semantic_texture(VkDescriptorSet set,
+      slang_texture_semantic semantic, const Texture &texture)
+{
+   if (reflection.semantic_texture_mask & (1u << semantic))
+      set_texture(set, reflection.semantic_textures[semantic].binding, texture);
+}
+
 void Pass::update_descriptor_set(
       const Texture &original,
       const Texture &source)
 {
    set_uniform_buffer(sets[sync_index], 0,
-         ubos[sync_index]->get_buffer(), 0, sizeof(UBO));
-   set_texture(sets[sync_index], 1, original);
-   set_texture(sets[sync_index], 2, source);
+         ubos[sync_index]->get_buffer(), 0, reflection.ubo_size);
+
+   set_semantic_texture(sets[sync_index], SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
+   set_semantic_texture(sets[sync_index], SLANG_TEXTURE_SEMANTIC_SOURCE, source);
+}
+
+void Pass::build_semantic_vec4(uint8_t *data, slang_texture_semantic semantic, unsigned width, unsigned height)
+{
+   if (reflection.semantic_texture_ubo_mask & (1 << semantic))
+   {
+      build_vec4(
+            reinterpret_cast<float *>(data + reflection.semantic_textures[semantic].ubo_offset),
+            width,
+            height);
+   }
 }
 
 void Pass::build_commands(
@@ -1046,19 +1107,20 @@ void Pass::build_commands(
       current_framebuffer_size = size;
    }
 
-   UBO *u = static_cast<UBO*>(ubos[sync_index]->map());
+   uint8_t *u = static_cast<uint8_t*>(ubos[sync_index]->map());
 
    if (mvp)
-      memcpy(u->MVP, mvp, sizeof(float) * 16);
+      memcpy(u + reflection.mvp_offset, mvp, sizeof(float) * 16);
    else
-      build_identity_matrix(u->MVP);
-   build_vec4(u->output_size,
-         current_framebuffer_size.width,
-         current_framebuffer_size.height);
-   build_vec4(u->original_size,
+      build_identity_matrix(reinterpret_cast<float *>(u + reflection.mvp_offset));
+
+   build_semantic_vec4(u, SLANG_TEXTURE_SEMANTIC_OUTPUT,
+         current_framebuffer_size.width, current_framebuffer_size.height);
+   build_semantic_vec4(u, SLANG_TEXTURE_SEMANTIC_ORIGINAL,
          original.texture.width, original.texture.height);
-   build_vec4(u->source_size,
+   build_semantic_vec4(u, SLANG_TEXTURE_SEMANTIC_SOURCE,
          source.texture.width, source.texture.height);
+
    ubos[sync_index]->unmap();
 
    update_descriptor_set(original, source);
@@ -1074,9 +1136,9 @@ void Pass::build_commands(
             framebuffer->get_image(),
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            VK_ACCESS_SHADER_READ_BIT,
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0,
+            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
       VkRenderPassBeginInfo rp_info = { 
@@ -1101,7 +1163,9 @@ void Pass::build_commands(
          0, 1, &sets[sync_index], 0, nullptr);
 
    VkDeviceSize offset = 0;
-   VKFUNC(vkCmdBindVertexBuffers)(cmd, 0, 1, &vbo->get_buffer(), &offset);
+   VKFUNC(vkCmdBindVertexBuffers)(cmd, 0, 1,
+         final_pass ? &common->vbo_final->get_buffer() : &common->vbo_offscreen->get_buffer(),
+         &offset);
 
    if (final_pass)
    {

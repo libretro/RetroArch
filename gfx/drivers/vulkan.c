@@ -978,6 +978,7 @@ static void *vulkan_init(const video_info_t *video,
    vk->tex_fmt           = video->rgb32 
       ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
    vk->keep_aspect       = video->force_aspect;
+   RARCH_LOG("[Vulkan]: Using %s format.\n", video->rgb32 ? "BGRA8888" : "RGB565");
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */
@@ -1334,7 +1335,7 @@ static void vulkan_readback(vk_t *vk)
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
 
    VKFUNC(vkCmdCopyImage)(vk->cmd, vk->chain->backbuffer.image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -1348,6 +1349,22 @@ static void vulkan_readback(vk_t *vk)
          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_HOST_BIT);
+}
+
+static void vulkan_flush_caches(vk_t *vk)
+{
+   VkMemoryBarrier barrier = { VK_STRUCTURE_TYPE_MEMORY_BARRIER };
+   barrier.srcAccessMask = 0;
+   barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_UNIFORM_READ_BIT;
+
+   VKFUNC(vkCmdPipelineBarrier)(vk->cmd,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+         VK_PIPELINE_STAGE_VERTEX_INPUT_BIT |
+         VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         false,
+         1, &barrier,
+         0, NULL, 0, NULL);
 }
 
 static bool vulkan_frame(void *data, const void *frame,
@@ -1405,6 +1422,8 @@ static bool vulkan_frame(void *data, const void *frame,
    retro_perf_stop(&begin_cmd);
 
    memset(&vk->tracker, 0, sizeof(vk->tracker));
+
+   vulkan_flush_caches(vk);
 
    /* Upload texture */
    retro_perf_start(&copy_frame);
@@ -1526,12 +1545,12 @@ static bool vulkan_frame(void *data, const void *frame,
    rp_info.clearValueCount          = 1;
    rp_info.pClearValues             = &clear_value;
 
-   /* Prepare backbuffer for rendering */
+   /* Prepare backbuffer for rendering. We don't use WSI semaphores here. */
    vulkan_image_layout_transition(vk, vk->cmd, chain->backbuffer.image,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-         0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+         0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
    /* Begin render pass and set up viewport */
    VKFUNC(vkCmdBeginRenderPass)(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -1612,10 +1631,10 @@ static bool vulkan_frame(void *data, const void *frame,
             chain->backbuffer.image,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            VK_ACCESS_TRANSFER_READ_BIT,
-            VK_ACCESS_MEMORY_READ_BIT,
+            0,
+            0,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
       vk->readback.pending = false;
    }
@@ -1627,9 +1646,9 @@ static bool vulkan_frame(void *data, const void *frame,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_ACCESS_MEMORY_READ_BIT,
+            0,
             VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
    }
 
    retro_perf_start(&end_cmd);
