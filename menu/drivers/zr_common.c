@@ -266,8 +266,9 @@ void zr_common_device_draw(struct zr_device *dev,
 
    /* setup global state */
    glEnable(GL_BLEND);
-   glBlendEquation(GL_FUNC_ADD);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+   glBlendEquation(GL_FUNC_ADD);
    glActiveTexture(GL_TEXTURE0);
 
    /* setup program */
@@ -334,8 +335,9 @@ void zr_common_device_draw(struct zr_device *dev,
    glBindBuffer(GL_ARRAY_BUFFER, (GLuint)last_vbo);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)last_ebo);
    glBindVertexArray((GLuint)last_vao);
-   glDisable(GL_BLEND);
 #endif
+
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
 void* zr_common_mem_alloc(zr_handle unused, size_t size)
