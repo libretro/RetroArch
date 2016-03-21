@@ -175,6 +175,18 @@ class Framebuffer
       void init_render_pass();
 };
 
+struct CommonResources
+{
+   CommonResources(VkDevice device,
+         const VkPhysicalDeviceMemoryProperties &memory_properties);
+   ~CommonResources();
+
+   unique_ptr<Buffer> vbo_offscreen, vbo_final;
+   VkSampler samplers[2];
+
+   VkDevice device;
+};
+
 class Pass
 {
    public:
@@ -228,6 +240,11 @@ class Pass
          return pass_info.source_filter;
       }
 
+      void set_common_resources(const CommonResources &common)
+      {
+         this->common = &common;
+      }
+
    private:
       struct UBO
       {
@@ -251,11 +268,10 @@ class Pass
       VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
       VkDescriptorSetLayout set_layout = VK_NULL_HANDLE;
       VkDescriptorPool pool = VK_NULL_HANDLE;
-      VkSampler samplers[2] = { VK_NULL_HANDLE, VK_NULL_HANDLE };
 
       vector<unique_ptr<Buffer>> ubos;
-      unique_ptr<Buffer> vbo;
       vector<VkDescriptorSet> sets;
+      const CommonResources *common = nullptr;
 
       Size2D current_framebuffer_size;
       VkViewport current_viewport;
@@ -270,7 +286,6 @@ class Pass
       bool init_pipeline();
       bool init_pipeline_layout();
       bool init_buffers();
-      bool init_samplers();
 
       void image_layout_transition(VkDevice device,
             VkCommandBuffer cmd, VkImage image,
@@ -330,6 +345,7 @@ struct vulkan_filter_chain
       vector<unique_ptr<Pass>> passes;
       vector<vulkan_filter_chain_pass_info> pass_info;
       vector<vector<function<void ()>>> deferred_calls;
+      CommonResources common;
 
       vulkan_filter_chain_texture input_texture;
 
@@ -351,7 +367,8 @@ vulkan_filter_chain::vulkan_filter_chain(
       const vulkan_filter_chain_create_info &info)
    : device(info.device),
      memory_properties(*info.memory_properties),
-     cache(info.pipeline_cache)
+     cache(info.pipeline_cache),
+     common(info.device, *info.memory_properties)
 {
    max_input_size = { info.max_input_size.width, info.max_input_size.height };
    set_swapchain_info(info.swapchain);
@@ -397,6 +414,7 @@ void vulkan_filter_chain::set_num_passes(unsigned num_passes)
    {
       passes.emplace_back(new Pass(device, memory_properties,
                cache, deferred_calls.size(), i + 1 == num_passes));
+      passes.back()->set_common_resources(common);
    }
 }
 
@@ -660,18 +678,10 @@ void Pass::clear_vk()
    if (pipeline_layout != VK_NULL_HANDLE)
       VKFUNC(vkDestroyPipelineLayout)(device, pipeline_layout, nullptr);
 
-   for (auto &samp : samplers)
-   {
-      if (samp != VK_NULL_HANDLE)
-         VKFUNC(vkDestroySampler)(device, samp, nullptr);
-      samp = VK_NULL_HANDLE;
-   }
-
    pool       = VK_NULL_HANDLE;
    pipeline   = VK_NULL_HANDLE;
    set_layout = VK_NULL_HANDLE;
    ubos.clear();
-   vbo.reset();
 }
 
 bool Pass::init_pipeline_layout()
@@ -869,8 +879,40 @@ bool Pass::init_pipeline()
    return true;
 }
 
-bool Pass::init_samplers()
+CommonResources::CommonResources(VkDevice device,
+      const VkPhysicalDeviceMemoryProperties &memory_properties)
+   : device(device)
 {
+   // The final pass uses an MVP designed for [0, 1] range VBO.
+   // For in-between passes, we just go with identity matrices, so keep it simple.
+   const float vbo_data_offscreen[] = {
+      -1.0f, -1.0f, 0.0f, 0.0f,
+      -1.0f, +1.0f, 0.0f, 1.0f,
+       1.0f, -1.0f, 1.0f, 0.0f,
+       1.0f, +1.0f, 1.0f, 1.0f,
+   };
+
+   const float vbo_data_final[] = {
+      0.0f,  0.0f, 0.0f, 0.0f,
+      0.0f, +1.0f, 0.0f, 1.0f,
+      1.0f,  0.0f, 1.0f, 0.0f,
+      1.0f, +1.0f, 1.0f, 1.0f,
+   };
+
+   vbo_offscreen = unique_ptr<Buffer>(new Buffer(device,
+            memory_properties, sizeof(vbo_data_offscreen), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+
+   void *ptr = vbo_offscreen->map();
+   memcpy(ptr, vbo_data_offscreen, sizeof(vbo_data_offscreen));
+   vbo_offscreen->unmap();
+
+   vbo_final = unique_ptr<Buffer>(new Buffer(device,
+            memory_properties, sizeof(vbo_data_final), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+
+   ptr = vbo_final->map();
+   memcpy(ptr, vbo_data_final, sizeof(vbo_data_final));
+   vbo_final->unmap();
+
    VkSamplerCreateInfo info = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
    info.magFilter               = VK_FILTER_NEAREST;
    info.minFilter               = VK_FILTER_NEAREST;
@@ -886,44 +928,29 @@ bool Pass::init_samplers()
    info.unnormalizedCoordinates = false;
    info.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-   if (VKFUNC(vkCreateSampler)(device,
-            &info, NULL, &samplers[VULKAN_FILTER_CHAIN_NEAREST]) != VK_SUCCESS)
-      return false;
+   VKFUNC(vkCreateSampler)(device,
+            &info, nullptr, &samplers[VULKAN_FILTER_CHAIN_NEAREST]);
 
    info.magFilter = VK_FILTER_LINEAR;
    info.minFilter = VK_FILTER_LINEAR;
 
-   if (VKFUNC(vkCreateSampler)(device,
-            &info, NULL, &samplers[VULKAN_FILTER_CHAIN_LINEAR]) != VK_SUCCESS)
-      return false;
+   VKFUNC(vkCreateSampler)(device,
+            &info, nullptr, &samplers[VULKAN_FILTER_CHAIN_LINEAR]);
+}
 
-   return true;
+CommonResources::~CommonResources()
+{
+   for (auto &samp : samplers)
+      if (samp != VK_NULL_HANDLE)
+         VKFUNC(vkDestroySampler)(device, samp, nullptr);
 }
 
 bool Pass::init_buffers()
 {
-   unsigned i;
-   // The final pass uses an MVP designed for [0, 1] range VBO.
-   // For in-between passes, we just go with identity matrices, so keep it simple.
-   float pos_min = final_pass ? 0.0f : -1.0f;
-
-   const float vbo_data[] = {
-      pos_min, pos_min, 0.0f, 0.0f,
-      pos_min,   +1.0f, 0.0f, 1.0f,
-      1.0f,    pos_min, 1.0f, 0.0f,
-      1.0f,      +1.0f, 1.0f, 1.0f,
-   };
-
    ubos.clear();
-   for (i = 0; i < num_sync_indices; i++)
+   for (unsigned i = 0; i < num_sync_indices; i++)
       ubos.emplace_back(new Buffer(device,
                memory_properties, sizeof(UBO), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
-   vbo = unique_ptr<Buffer>(new Buffer(device,
-            memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
-
-   void *ptr = vbo->map();
-   memcpy(ptr, vbo_data, sizeof(vbo_data));
-   vbo->unmap();
    return true;
 }
 
@@ -941,9 +968,6 @@ bool Pass::build()
       return false;
 
    if (!init_buffers())
-      return false;
-
-   if (!init_samplers())
       return false;
 
    return true;
@@ -1001,7 +1025,7 @@ void Pass::set_texture(VkDescriptorSet set, unsigned binding,
       const Texture &texture)
 {
    VkDescriptorImageInfo image_info;
-   image_info.sampler         = samplers[texture.filter];
+   image_info.sampler         = common->samplers[texture.filter];
    image_info.imageView       = texture.texture.view;
    image_info.imageLayout     = texture.texture.layout;
 
@@ -1101,7 +1125,9 @@ void Pass::build_commands(
          0, 1, &sets[sync_index], 0, nullptr);
 
    VkDeviceSize offset = 0;
-   VKFUNC(vkCmdBindVertexBuffers)(cmd, 0, 1, &vbo->get_buffer(), &offset);
+   VKFUNC(vkCmdBindVertexBuffers)(cmd, 0, 1,
+         final_pass ? &common->vbo_final->get_buffer() : &common->vbo_offscreen->get_buffer(),
+         &offset);
 
    if (final_pass)
    {
