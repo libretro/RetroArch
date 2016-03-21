@@ -261,12 +261,12 @@ void content_playlist_push(content_playlist_t *playlist,
    memmove(playlist->entries + 1, playlist->entries,
          (playlist->cap - 1) * sizeof(content_playlist_entry_t));
 
-   playlist->entries[0].path      = path ? strdup(path) : NULL;
-   playlist->entries[0].label     = label ? strdup(label) : NULL;
+   playlist->entries[0].path      = path      ? strdup(path)      : NULL;
+   playlist->entries[0].label     = label     ? strdup(label)     : NULL;
    playlist->entries[0].core_path = core_path ? strdup(core_path) : NULL;
    playlist->entries[0].core_name = core_name ? strdup(core_name) : NULL;
-   playlist->entries[0].db_name   = db_name ? strdup(db_name) : NULL;
-   playlist->entries[0].crc32     = crc32 ? strdup(crc32) : NULL;
+   playlist->entries[0].db_name   = db_name   ? strdup(db_name)   : NULL;
+   playlist->entries[0].crc32     = crc32     ? strdup(crc32)     : NULL;
    playlist->size++;
 }
 
@@ -285,11 +285,11 @@ void content_playlist_write_file(content_playlist_t *playlist)
 
    for (i = 0; i < playlist->size; i++)
       fprintf(file, "%s\n%s\n%s\n%s\n%s\n%s\n",
-            playlist->entries[i].path  ? playlist->entries[i].path : "",
-            playlist->entries[i].label ? playlist->entries[i].label : "",
+            playlist->entries[i].path    ? playlist->entries[i].path    : "",
+            playlist->entries[i].label   ? playlist->entries[i].label   : "",
             playlist->entries[i].core_path,
             playlist->entries[i].core_name,
-            playlist->entries[i].crc32 ? playlist->entries[i].crc32 : "",
+            playlist->entries[i].crc32   ? playlist->entries[i].crc32   : "",
             playlist->entries[i].db_name ? playlist->entries[i].db_name : ""
             );
 
@@ -354,7 +354,8 @@ size_t content_playlist_size(content_playlist_t *playlist)
    return playlist->size;
 }
 
-const char *content_playlist_entry_get_label(const content_playlist_entry_t *entry)
+const char *content_playlist_entry_get_label(
+      const content_playlist_entry_t *entry)
 {
    if (!entry)
       return NULL;
@@ -446,8 +447,10 @@ error:
    return NULL;
 }
 
-void content_playlist_qsort(content_playlist_t *playlist, content_playlist_sort_fun_t *fn)
+void content_playlist_qsort(content_playlist_t *playlist,
+      content_playlist_sort_fun_t *fn)
 {
-   qsort(playlist->entries, playlist->size, sizeof(content_playlist_entry_t),
+   qsort(playlist->entries, playlist->size,
+         sizeof(content_playlist_entry_t),
          (int (*)(const void *, const void *))fn);
 }
