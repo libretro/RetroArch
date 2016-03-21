@@ -1,6 +1,7 @@
 DEBUG                = 0
-LIBRETRO_COMMON_DIR := ../libretro-common
-INCFLAGS             = -I. -I$(LIBRETRO_COMMON_DIR)/include
+LIBRETRODB_DIR      := ../
+LIBRETRO_COMMON_DIR := ../../libretro-common
+INCFLAGS             = -I. -I$(LIBRETRODB_DIR) -I$(LIBRETRO_COMMON_DIR)/include
 
 TARGETS              = rmsgpack_test libretrodb_tool lua_converter
 
@@ -11,49 +12,49 @@ CFLAGS               = -g -O2 -Wall -DNDEBUG
 endif
 
 LUA_CONVERTER_C = \
-			 rmsgpack.c \
-			 rmsgpack_dom.c \
-			 lua/lua_common.c \
-			 libretrodb.c \
-			 bintree.c \
-			 query.c \
-			 lua/lua_converter.c \
+			 $(LIBRETRODB_DIR)/rmsgpack.c \
+			 $(LIBRETRODB_DIR)/rmsgpack_dom.c \
+			 lua_common.c \
+			 $(LIBRETRODB_DIR)/libretrodb.c \
+			 $(LIBRETRODB_DIR)/bintree.c \
+			 $(LIBRETRODB_DIR)/query.c \
+			 lua_converter.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
-			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
+			 $(LIBRETRO_COMMON_DIR)/streams/file_stream.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 LUA_CONVERTER_OBJS := $(LUA_CONVERTER_C:.c=.o)
 
 RARCHDB_TOOL_C = \
-			 rmsgpack.c \
-			 rmsgpack_dom.c \
-			 libretrodb_tool.c \
-			 bintree.c \
-			 query.c \
-			 libretrodb.c \
+			 $(LIBRETRODB_DIR)/rmsgpack.c \
+			 $(LIBRETRODB_DIR)/rmsgpack_dom.c \
+			 $(LIBRETRODB_DIR)/libretrodb_tool.c \
+			 $(LIBRETRODB_DIR)/bintree.c \
+			 $(LIBRETRODB_DIR)/query.c \
+			 ($LIBRETRODB_DIR)/libretrodb.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
-			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
+			 $(LIBRETRO_COMMON_DIR)/streams/file_stream.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 RARCHDB_TOOL_OBJS := $(RARCHDB_TOOL_C:.c=.o)
 
 TESTLIB_C = \
-			 lua/testlib.c \
-			 query.c \
-			 libretrodb.c \
-			 bintree.c \
-			 rmsgpack.c \
-			 rmsgpack_dom.c \
+			 testlib.c \
+			 $(LIBRETRODB_DIR)/query.c \
+			 ($LIBRETRODB_DIR)/libretrodb.c \
+			 $(LIBRETRODB_DIR)/bintree.c \
+			 $(LIBRETRODB_DIR)/rmsgpack.c \
+			 $(LIBRETRODB_DIR)/rmsgpack_dom.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_fnmatch.c \
-			 $(LIBRETRO_COMMON_DIR)/file/retro_file.c \
+			 $(LIBRETRO_COMMON_DIR)/streams/file_stream.c \
 			 $(LIBRETRO_COMMON_DIR)/compat/compat_strl.c
 
 TESTLIB_OBJS := $(TESTLIB_C:.c=.o)
 
 RMSGPACK_C = \
-			rmsgpack.c \
-			rmsgpack_test.c \
-			$(LIBRETRO_COMMON_DIR)/file/retro_file.c
+			$(LIBRETRODB_DIR)/rmsgpack.c \
+			$(LIBRETRODB_DIR)/rmsgpack_test.c \
+			$(LIBRETRO_COMMON_DIR)/streams/file_stream.c
 
 RMSGPACK_OBJS := $(RMSGPACK_C:.c=.o)
 
