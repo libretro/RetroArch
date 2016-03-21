@@ -6008,6 +6008,7 @@ static bool setting_append_list(
          END_GROUP(list, list_info, parent_group);
          break;
       case SETTINGS_LIST_USER_INTERFACE:
+#ifndef HAVE_LAKKA
          START_GROUP(list, list_info, &group_info,
                menu_hash_to_str(MENU_LABEL_VALUE_UI_SETTINGS),
                parent_group);
@@ -6093,6 +6094,7 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
+#endif
          break;
       case SETTINGS_LIST_PLAYLIST:
          START_GROUP(list, list_info, &group_info,
@@ -6104,6 +6106,7 @@ static bool setting_append_list(
 
          START_SUB_GROUP(list, list_info, "History", &group_info, &subgroup_info, parent_group);
 
+#ifndef HAVE_LAKKA
          CONFIG_BOOL(
                list, list_info,
                &settings->history_list_enable,
@@ -6117,6 +6120,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
+#endif
 
          CONFIG_UINT(
                list, list_info,
