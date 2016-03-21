@@ -3346,6 +3346,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_NETWORK_SETTINGS),   PARSE_ONLY_GROUP, false);
          ret = menu_displaylist_parse_settings(menu, info,
+               menu_hash_to_str(MENU_LABEL_VALUE_LAKKA_SERVICES),   PARSE_ONLY_GROUP, false);
+         ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_PLAYLIST_SETTINGS),   PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str(MENU_LABEL_VALUE_USER_SETTINGS),   PARSE_ONLY_GROUP, false);

@@ -1636,6 +1636,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Updater";
       case MENU_LABEL_VALUE_NETWORK_SETTINGS:
          return "Network";
+      case MENU_LABEL_VALUE_LAKKA_SERVICES:
+         return "Lakka Services";
       case MENU_LABEL_VALUE_PLAYLIST_SETTINGS:
          return "Playlists";
       case MENU_LABEL_VALUE_USER_SETTINGS:
