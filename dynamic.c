@@ -113,7 +113,23 @@ libretro_find_controller_description(
    return NULL;
 }
 
-#ifdef HAVE_DYNAMIC
+/**
+ * libretro_free_system_info:
+ * @info                         : Pointer to system info information.
+ *
+ * Frees system information.
+ **/
+void libretro_free_system_info(struct retro_system_info *info)
+{
+   if (!info)
+      return;
+
+   free((void*)info->library_name);
+   free((void*)info->library_version);
+   free((void*)info->valid_extensions);
+   memset(info, 0, sizeof(*info));
+}
+
 static bool *load_no_content_hook;
 
 static bool environ_cb_get_system_info(unsigned cmd, void *data)
@@ -131,6 +147,42 @@ static bool environ_cb_get_system_info(unsigned cmd, void *data)
    return true;
 }
 
+#ifndef HAVE_DYNAMIC
+bool libretro_get_system_info_static(struct retro_system_info *info,
+      bool *load_no_content)
+{
+   struct retro_system_info dummy_info = {0};
+
+   if (load_no_content)
+   {
+      load_no_content_hook = load_no_content;
+
+      /* load_no_content gets set in this callback. */
+      retro_set_environment(environ_cb_get_system_info);
+
+      /* It's possible that we just set get_system_info callback 
+       * to the currently running core.
+       *
+       * Make sure we reset it to the actual environment callback.
+       * Ignore any environment callbacks here in case we're running 
+       * on the non-current core. */
+      ignore_environment_cb = true;
+      retro_set_environment(rarch_environment_cb);
+      ignore_environment_cb = false;
+   }
+
+   retro_get_system_info(&dummy_info);
+   memcpy(info, &dummy_info, sizeof(*info));
+
+   info->library_name    = strdup(dummy_info.library_name);
+   info->library_version = strdup(dummy_info.library_version);
+   if (dummy_info.valid_extensions)
+      info->valid_extensions = strdup(dummy_info.valid_extensions);
+   return true;
+}
+#endif
+
+#ifdef HAVE_DYNAMIC
 /**
  * libretro_get_environment_info:
  * @func                         : Function pointer for get_environment_info.
@@ -238,22 +290,6 @@ bool libretro_get_system_info(const char *path,
    return true;
 }
 
-/**
- * libretro_free_system_info:
- * @info                         : Pointer to system info information.
- *
- * Frees system information.
- **/
-void libretro_free_system_info(struct retro_system_info *info)
-{
-   if (!info)
-      return;
-
-   free((void*)info->library_name);
-   free((void*)info->library_version);
-   free((void*)info->valid_extensions);
-   memset(info, 0, sizeof(*info));
-}
 static void load_dynamic_core(void)
 {
    settings_t *settings = config_get_ptr();

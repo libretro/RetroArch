@@ -1013,6 +1013,8 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 
                libretro_get_system_info(settings->libretro, system,
                      ptr);
+#else
+               libretro_get_system_info_static(system, ptr);
 #endif
                info_find.path = settings->libretro;
 
