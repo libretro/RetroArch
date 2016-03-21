@@ -172,7 +172,7 @@ OBJ += frontend/frontend.o \
        cheats.o \
        core_info.o \
        libretro-common/file/config_file.o \
-       libretro-common/file/config_file_userdata.o \
+       config_file_userdata.o \
        screenshot.o \
        libretro-common/gfx/scaler/scaler.o \
        gfx/drivers_shader/shader_null.o \

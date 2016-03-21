@@ -20,9 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <file/config_file_userdata.h>
 #include <file/file_path.h>
 #include <lists/string_list.h>
+
+#include "config_file_userdata.h"
 
 #define get_array_setup() \
    char key[2][256]; \

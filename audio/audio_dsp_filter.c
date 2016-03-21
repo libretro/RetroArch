@@ -22,12 +22,12 @@
 #include <dynamic/dylib.h>
 
 #include <file/file_path.h>
-#include <file/config_file_userdata.h>
 #include <lists/dir_list.h>
 
 #include "audio_dsp_filter.h"
 #include "audio_filters/dspfilter.h"
 
+#include "../config_file_userdata.h"
 #include "../frontend/frontend_driver.h"
 #include "../performance.h"
 #include "../dynamic.h"

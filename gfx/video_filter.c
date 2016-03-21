@@ -16,12 +16,12 @@
 
 #include <stdlib.h>
 
-#include <file/config_file_userdata.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <dynamic/dylib.h>
 
 #include "../frontend/frontend_driver.h"
+#include "../config_file_userdata.h"
 #include "../dynamic.h"
 #include "../general.h"
 #include "../performance.h"

@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (config_file_userdata.h).
@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-#include "config_file.h"
+#include <file/config_file.h>
 
 struct config_file_userdata
 {

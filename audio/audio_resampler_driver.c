@@ -16,10 +16,10 @@
 
 #include <string.h>
 
-#include <file/config_file_userdata.h>
 #include <string/stdstring.h>
 
 #include "audio_resampler_driver.h"
+#include "../config_file_userdata.h"
 #ifdef RARCH_INTERNAL
 #include "../performance.h"
 #endif

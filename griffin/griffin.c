@@ -100,7 +100,7 @@ CONFIG FILE
 #endif
 
 #include "../libretro-common/file/config_file.c"
-#include "../libretro-common/file/config_file_userdata.c"
+#include "../config_file_userdata.c"
 #include "../core_options.c"
 
 /*============================================================
