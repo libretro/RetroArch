@@ -25,8 +25,10 @@
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
 #include "../video_shader_driver.h"
 #include "../../verbosity.h"
+#include "spir2cross.hpp"
 
 using namespace std;
+using namespace spir2cross;
 
 static uint32_t find_memory_type(
       const VkPhysicalDeviceMemoryProperties &mem_props,
