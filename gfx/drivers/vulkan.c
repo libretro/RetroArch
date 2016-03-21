@@ -978,6 +978,7 @@ static void *vulkan_init(const video_info_t *video,
    vk->tex_fmt           = video->rgb32 
       ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
    vk->keep_aspect       = video->force_aspect;
+   RARCH_LOG("[Vulkan]: Using %s format.\n", video->rgb32 ? "BGRA8888" : "RGB565");
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */
