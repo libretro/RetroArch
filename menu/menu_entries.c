@@ -511,7 +511,7 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
    if (!list || !label)
       return;
 
-   file_list_push(list, path, label, type, directory_ptr, entry_idx);
+   file_list_append(list, path, label, type, directory_ptr, entry_idx);
 
    idx              = list->size - 1;
 
