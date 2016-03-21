@@ -25,7 +25,10 @@
 #include <boolean.h>
 #include <rthreads/rthreads.h>
 
-#if defined(_WIN32)
+/* with RETRO_WIN32_USE_PTHREADS, pthreads can be used even on win32. Maybe only supported in MSVC>=2005  */
+
+#if defined(_WIN32) && !defined(RETRO_WIN32_USE_PTHREADS)
+#define USE_WIN32_THREADS
 #ifdef _XBOX
 #include <xtl.h>
 #else
@@ -54,7 +57,7 @@ struct thread_data
 
 struct sthread
 {
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    HANDLE thread;
 #else
    pthread_t id;
@@ -63,7 +66,7 @@ struct sthread
 
 struct slock
 {
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    HANDLE lock;
 #else
    pthread_mutex_t lock;
@@ -72,14 +75,14 @@ struct slock
 
 struct scond
 {
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    HANDLE event;
 #else
    pthread_cond_t cond;
 #endif
 };
 
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
 static DWORD CALLBACK thread_wrap(void *data_)
 #else
 static void *thread_wrap(void *data_)
@@ -119,9 +122,9 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    data->func = thread_func;
    data->userdata = userdata;
 
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    thread->thread = CreateThread(NULL, 0, thread_wrap, data, 0, NULL);
-   thread_created = thread->thread;
+   thread_created = !!thread->thread;
 #else
    thread_created = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
 #endif
@@ -151,7 +154,7 @@ error:
  */
 int sthread_detach(sthread_t *thread)
 {
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    CloseHandle(thread->thread);
    free(thread);
    return 0;
@@ -173,13 +176,33 @@ int sthread_detach(sthread_t *thread)
  */
 void sthread_join(sthread_t *thread)
 {
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    WaitForSingleObject(thread->thread, INFINITE);
    CloseHandle(thread->thread);
 #else
    pthread_join(thread->id, NULL);
 #endif
    free(thread);
+}
+
+/**
+ * sthread_isself:
+ * @thread                  : pointer to thread object 
+ *
+ * Join with a terminated thread. Waits for the thread specified by
+ * @thread to terminate. If that thread has already terminated, then
+ * it will return immediately. The thread specified by @thread must
+ * be joinable.
+ * 
+ * Returns: true (1) if calling thread is the specified thread
+ */
+bool sthread_isself(sthread_t *thread)
+{
+#ifdef USE_WIN32_THREADS
+   return GetCurrentThread() == thread->thread;
+#else
+   return pthread_equal(pthread_self(),thread->id);
+#endif
 }
 
 /**
@@ -197,9 +220,9 @@ slock_t *slock_new(void)
    if (!lock)
       return NULL;
 
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    lock->lock         = CreateMutex(NULL, FALSE, NULL);
-   mutex_created      = lock->lock;
+   mutex_created      = !!lock->lock;
 #else
    mutex_created      = (pthread_mutex_init(&lock->lock, NULL) == 0);
 #endif
@@ -225,7 +248,7 @@ void slock_free(slock_t *lock)
    if (!lock)
       return;
 
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    CloseHandle(lock->lock);
 #else
    pthread_mutex_destroy(&lock->lock);
@@ -243,7 +266,7 @@ void slock_free(slock_t *lock)
 **/
 void slock_lock(slock_t *lock)
 {
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    WaitForSingleObject(lock->lock, INFINITE);
 #else
    pthread_mutex_lock(&lock->lock);
@@ -258,7 +281,7 @@ void slock_lock(slock_t *lock)
  **/
 void slock_unlock(slock_t *lock)
 {
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    ReleaseMutex(lock->lock);
 #else
    pthread_mutex_unlock(&lock->lock);
@@ -282,9 +305,9 @@ scond_t *scond_new(void)
    if (!cond)
       return NULL;
 
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    cond->event   = CreateEvent(NULL, FALSE, FALSE, NULL);
-   event_created = cond->event;
+   event_created = !!cond->event;
 #else
    event_created = (pthread_cond_init(&cond->cond, NULL) == 0);
 #endif
@@ -310,7 +333,7 @@ void scond_free(scond_t *cond)
    if (!cond)
       return;
 
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    CloseHandle(cond->event);
 #else
    pthread_cond_destroy(&cond->cond);
@@ -327,7 +350,7 @@ void scond_free(scond_t *cond)
  **/
 void scond_wait(scond_t *cond, slock_t *lock)
 {
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    WaitForSingleObject(cond->event, 0);
    
    SignalObjectAndWait(lock->lock, cond->event, INFINITE, FALSE);
@@ -346,7 +369,7 @@ void scond_wait(scond_t *cond, slock_t *lock)
  **/
 int scond_broadcast(scond_t *cond)
 {
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    /* FIXME _- check how this function should differ 
     * from scond_signal implementation. */
    SetEvent(cond->event);
@@ -365,7 +388,7 @@ int scond_broadcast(scond_t *cond)
  **/
 void scond_signal(scond_t *cond)
 {
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    SetEvent(cond->event);
 #else
    pthread_cond_signal(&cond->cond);
@@ -386,7 +409,7 @@ void scond_signal(scond_t *cond)
  **/
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
-#ifdef _WIN32
+#ifdef USE_WIN32_THREADS
    DWORD ret;
 
    WaitForSingleObject(cond->event, 0);
@@ -423,6 +446,8 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    gettimeofday(&tm, NULL);
    now.tv_sec = tm.tv_sec;
    now.tv_nsec = tm.tv_usec * 1000;
+#elif defined(RETRO_WIN32_USE_PTHREADS)
+   _ftime64_s(&now);
 #elif !defined(GEKKO)
    /* timeout on libogc is duration, not end time. */
    clock_gettime(CLOCK_REALTIME, &now);

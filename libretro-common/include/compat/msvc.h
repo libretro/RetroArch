@@ -86,7 +86,9 @@ typedef int ssize_t;
 #pragma warning(disable : 4723)
 #pragma warning(disable : 4996)
 
+#if _MSC_VER < 1200
 #define roundf(in) (in >= 0.0f ? floorf(in + 0.5f) : ceilf(in - 0.5f))
+#endif
 
 #ifndef PATH_MAX
 #define PATH_MAX _MAX_PATH

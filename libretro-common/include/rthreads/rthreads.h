@@ -75,6 +75,19 @@ int sthread_detach(sthread_t *thread);
 void sthread_join(sthread_t *thread);
 
 /**
+ * sthread_isself:
+ * @thread                  : pointer to thread object 
+ *
+ * Join with a terminated thread. Waits for the thread specified by
+ * @thread to terminate. If that thread has already terminated, then
+ * it will return immediately. The thread specified by @thread must
+ * be joinable.
+ * 
+ * Returns: true (1) if calling thread is the specified thread
+ */
+bool sthread_isself(sthread_t *thread);
+
+/**
  * slock_new:
  *
  * Create and initialize a new mutex. Must be manually

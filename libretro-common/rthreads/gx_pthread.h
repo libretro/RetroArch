@@ -107,6 +107,12 @@ static INLINE int pthread_create(pthread_t *thread,
          0, STACKSIZE, 64, 0 /* unused */);
 }
 
+static INLINE pthread_t pthread_self(void)
+{
+   /* zero 20-mar-2016: untested */
+   return LWP_GetSelf();
+}
+
 static INLINE int pthread_mutex_init(pthread_mutex_t *mutex,
       const pthread_mutexattr_t *attr)
 {

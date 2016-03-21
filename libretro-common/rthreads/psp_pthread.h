@@ -190,4 +190,11 @@ static INLINE void pthread_exit(void *retval)
    (void)retval;
 }
 
+static INLINE pthread_t pthread_self(void)
+{
+   /* zero 20-mar-2016: untested */
+   return sceKernelGetThreadId();
+}
+
+
 #endif //_PSP_PTHREAD_WRAP__

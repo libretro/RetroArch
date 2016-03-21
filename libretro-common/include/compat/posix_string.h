@@ -41,14 +41,19 @@ char *strtok_r(char *str, const char *delim, char **saveptr);
 #ifdef _MSC_VER
 #undef strcasecmp
 #undef strdup
-#undef isblank
 #define strcasecmp(a, b) retro_strcasecmp__(a, b)
 #define strdup(orig)     retro_strdup__(orig)
-#define isblank(c)       retro_isblank__(c)
 int strcasecmp(const char *a, const char *b);
 char *strdup(const char *orig);
+
+#if _MSC_VER < 1200
+#undef isblank
+#define isblank(c)       retro_isblank__(c)
 int isblank(int c);
 #endif
+
+#endif
+
 
 #ifdef __cplusplus
 }
