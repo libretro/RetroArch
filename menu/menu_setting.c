@@ -1442,6 +1442,8 @@ static rarch_setting_t setting_bool_setting(const char* name,
    result.action_cancel          = NULL;
 
    result.get_string_representation       = &setting_get_string_representation_st_bool;
+
+   result.name_hash              = name ? menu_hash_calculate(name) : 0;
    return result;
 }
 
@@ -1481,6 +1483,7 @@ static rarch_setting_t setting_int_setting(const char* name,
    result.value.target.integer   = target;
    result.original_value.integer = *target;
    result.default_value.integer  = default_value;
+   result.name_hash              = name ? menu_hash_calculate(name) : 0;
 
    result.action_start                    = setting_generic_action_start_default;
    result.action_left                     = setting_int_action_left_default;
