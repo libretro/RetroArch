@@ -295,10 +295,10 @@ void zr_common_device_draw(struct zr_device *dev,
    /* load draw vertices & elements directly into vertex + element buffer */
    vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
    elements = glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
+#endif
 
    /* fill converting configuration */
    memset(&config, 0, sizeof(config));
-#endif
 
    config.global_alpha         = 1.0f;
    config.shape_AA             = AA;
