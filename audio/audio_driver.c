@@ -26,7 +26,8 @@
 
 #include "../command_event.h"
 #include "../configuration.h"
-#include "../general.h"
+#include "../retroarch.h"
+#include "../runloop.h"
 #include "../performance.h"
 #include "../verbosity.h"
 #include "../list_special.h"

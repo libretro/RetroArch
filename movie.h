@@ -37,7 +37,7 @@ typedef struct bsv_movie bsv_movie_t;
 
 enum rarch_movie_type
 {
-   RARCH_MOVIE_PLAYBACK,
+   RARCH_MOVIE_PLAYBACK = 0,
    RARCH_MOVIE_RECORD
 };
 

@@ -173,6 +173,15 @@ const char *rarch_get_current_savefile_dir(void);
 
 bool rarch_game_options_validate(char *s, size_t len, bool mkdir);
 
+/**
+ * retro_fail:
+ * @error_code  : Error code.
+ * @error       : Error message to show.
+ *
+ * Sanely kills the program.
+ **/
+void retro_fail(int error_code, const char *error);
+
 #ifdef __cplusplus
 }
 #endif

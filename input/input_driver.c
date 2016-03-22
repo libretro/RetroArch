@@ -16,9 +16,12 @@
 
 #include <string.h>
 
+#include "input_driver.h"
+
 #include "input_remapping.h"
 
-#include "../general.h"
+#include "../retroarch.h"
+#include "../runloop.h"
 #include "../movie.h"
 #include "../list_special.h"
 #include "../verbosity.h"

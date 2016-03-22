@@ -33,21 +33,4 @@
 #define PACKAGE_VERSION "1.3.3"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * retro_fail:
- * @error_code  : Error code.
- * @error       : Error message to show.
- *
- * Sanely kills the program.
- **/
-void retro_fail(int error_code, const char *error);
-
-#ifdef __cplusplus
-}
-#endif
-
 #endif

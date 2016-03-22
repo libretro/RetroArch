@@ -21,10 +21,12 @@
 #include <rhash.h>
 #include <retro_endianness.h>
 
+#include "configuration.h"
 #include "movie.h"
 #include "libretro_version_1.h"
 #include "content.h"
-#include "general.h"
+#include "retroarch.h"
+#include "runloop.h"
 #include "msg_hash.h"
 #include "verbosity.h"
 

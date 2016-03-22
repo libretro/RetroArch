@@ -29,7 +29,7 @@
 
 #include "../content.h"
 #include "../core_info.h"
-#include "../general.h"
+#include "../retroarch.h"
 #include "../system.h"
 #include "../defaults.h"
 #include "../frontend/frontend.h"
