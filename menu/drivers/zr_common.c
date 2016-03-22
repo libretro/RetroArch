@@ -131,81 +131,82 @@ struct zr_user_font zr_common_font(
 {
    int glyph_count;
    int img_width, img_height;
+   void *img, *tmp;
+   size_t ttf_size;
+   size_t tmp_size, img_size;
+   struct texture_image ti;
+   struct zr_recti custom;
+   struct zr_font_config config;
    struct zr_font_glyph *glyphes;
    struct zr_baked_font baked_font;
    struct zr_user_font user_font;
-   struct zr_recti custom;
+   void *img_rgba          = NULL;
+   char *ttf_blob          = NULL;
+   const char *custom_data = "....";
 
-   memset(&baked_font, 0, sizeof(baked_font));
-   memset(&user_font, 0, sizeof(user_font));
-   memset(&custom, 0, sizeof(custom));
+   memset(&baked_font,  0, sizeof(baked_font));
+   memset(&user_font,   0, sizeof(user_font));
+   memset(&custom,      0, sizeof(custom));
 
-   {
-      struct texture_image ti;
-      /* bake and upload font texture */
-      struct zr_font_config config;
-      void *img, *tmp;
-      size_t ttf_size;
-      size_t tmp_size, img_size;
-      const char *custom_data = "....";
-      char *ttf_blob = zr_common_file_load(path, &ttf_size);
-       /* setup font configuration */
-      memset(&config, 0, sizeof(config));
+   /* bake and upload font texture */
+   ttf_blob            = zr_common_file_load(path, &ttf_size);
+   /* setup font configuration */
+   memset(&config, 0, sizeof(config));
 
-      config.ttf_blob     = ttf_blob;
-      config.ttf_size     = ttf_size;
-      config.font         = &baked_font;
-      config.coord_type   = ZR_COORD_UV;
-      config.range        = range;
-      config.pixel_snap   = zr_false;
-      config.size         = (float)font_height;
-      config.spacing      = zr_vec2(0,0);
-      config.oversample_h = 1;
-      config.oversample_v = 1;
+   config.ttf_blob     = ttf_blob;
+   config.ttf_size     = ttf_size;
+   config.font         = &baked_font;
+   config.coord_type   = ZR_COORD_UV;
+   config.range        = range;
+   config.pixel_snap   = zr_false;
+   config.size         = (float)font_height;
+   config.spacing      = zr_vec2(0,0);
+   config.oversample_h = 1;
+   config.oversample_v = 1;
 
-      /* query needed amount of memory for the font baking process */
-      zr_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
-      glyphes = (struct zr_font_glyph*)
-         calloc(sizeof(struct zr_font_glyph), (size_t)glyph_count);
-      tmp = calloc(1, tmp_size);
+   /* query needed amount of memory for the font baking process */
+   zr_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
 
-      /* pack all glyphes and return needed image width, height and memory size*/
-      custom.w = 2; custom.h = 2;
-      zr_font_bake_pack(&img_size,
-            &img_width,&img_height,&custom,tmp,tmp_size,&config, 1);
+   glyphes   = (struct zr_font_glyph*)
+      calloc(sizeof(struct zr_font_glyph), (size_t)glyph_count);
+   tmp       = calloc(1, tmp_size);
 
-      /* bake all glyphes and custom white pixel into image */
-      img = calloc(1, img_size);
-      zr_font_bake(img, img_width,
-            img_height, tmp, tmp_size, glyphes, glyph_count, &config, 1);
-      zr_font_bake_custom_data(img,
-            img_width, img_height, custom, custom_data, 2, 2, '.', 'X');
+   /* pack all glyphes and return needed image width, height and memory size*/
+   custom.w  = 2;
+   custom.h  = 2;
+   zr_font_bake_pack(&img_size,
+         &img_width,&img_height,&custom,tmp,tmp_size,&config, 1);
 
-      {
-         /* convert alpha8 image into rgba8 image */
-         void *img_rgba = calloc(4, (size_t)(img_height * img_width));
-         zr_font_bake_convert(img_rgba, img_width, img_height, img);
-         free(img);
-         img = img_rgba;
-      }
+   /* bake all glyphes and custom white pixel into image */
+   img       = calloc(1, img_size);
+   zr_font_bake(img, img_width,
+         img_height, tmp, tmp_size, glyphes, glyph_count, &config, 1);
+   zr_font_bake_custom_data(img,
+         img_width, img_height, custom, custom_data, 2, 2, '.', 'X');
 
-      /* upload baked font image */
-      ti.pixels = (uint32_t*)img;
-      ti.width  = (GLsizei)img_width;
-      ti.height = (GLsizei)img_height;
+   /* convert alpha8 image into rgba8 image */
+   img_rgba  = calloc(4, (size_t)(img_height * img_width));
+   zr_font_bake_convert(img_rgba, img_width, img_height, img);
 
-      video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_NEAREST, (uintptr_t*)&dev->font_tex);
+   free(img);
+   img       = img_rgba;
 
-      free(ttf_blob);
-      free(tmp);
-      free(img);
-   }
+   /* upload baked font image */
+   ti.pixels = (uint32_t*)img;
+   ti.width  = (GLsizei)img_width;
+   ti.height = (GLsizei)img_height;
+
+   video_driver_texture_load(&ti,
+         TEXTURE_FILTER_MIPMAP_NEAREST, (uintptr_t*)&dev->font_tex);
+
+   free(ttf_blob);
+   free(tmp);
+   free(img);
 
    /* default white pixel in a texture which is needed to draw primitives */
    dev->null.texture.id = (int)dev->font_tex;
-   dev->null.uv = zr_vec2((custom.x + 0.5f)/(float)img_width,
-      (custom.y + 0.5f)/(float)img_height);
+   dev->null.uv         = zr_vec2((custom.x + 0.5f) / (float)img_width,
+         (custom.y + 0.5f)/(float)img_height);
 
    /* setup font with glyphes. IMPORTANT: the font only references the glyphes
       this was done to have the possibility to have multible fonts with one
