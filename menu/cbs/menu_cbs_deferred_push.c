@@ -362,7 +362,7 @@ static int general_push(menu_displaylist_info_t *info,
       case PUSH_ARCHIVE_OPEN_DETECT_CORE:
       case PUSH_ARCHIVE_OPEN:
       case PUSH_DEFAULT:
-         info->setting      = menu_setting_find_prehashed(info->label, info->label_hash);
+         info->setting      = menu_setting_find(info->label);
          break;
       default:
          break;
