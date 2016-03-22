@@ -2187,10 +2187,13 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
 
 static void frontend_linux_exec(const char *path, bool should_load_game)
 {
+   char *newargv[]    = { NULL, NULL };
    const char *newargv[]    = { path, NULL };
+   size_t len         = strlen(path);
 
-   execv(path, newargv);
-   perror("execv");
+   newargv[0] = malloc(len);
+
+   strlcpy(newargv[0], path, len);
 }
 
 static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
