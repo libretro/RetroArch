@@ -399,6 +399,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_AUDIO_LATENCY                                         0x89900e38U
 #define MENU_LABEL_NETPLAY_ENABLE                                              0x607fbd68U
 #define MENU_LABEL_VALUE_NETPLAY_ENABLE                                        0xbc3e81a9U
+#define MENU_LABEL_SSH_ENABLE                                                  0xd9854a79U
+#define MENU_LABEL_VALUE_SSH_ENABLE                                            0x0430627aU
 #define MENU_LABEL_NETPLAY_CLIENT_SWAP_INPUT                                   0xd87bbba9U
 #define MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT                             0x57e5be2dU
 #define MENU_LABEL_NETPLAY_DELAY_FRAMES                                        0x86b2c48dU
@@ -897,6 +899,7 @@ extern "C" {
 #define MENU_LABEL_VALUE_CORE_UPDATER_SETTINGS                                 0x124ad454U
 #define MENU_LABEL_NETWORK_SETTINGS                                            0x8b50d180U
 #define MENU_LABEL_VALUE_NETWORK_SETTINGS                                      0x8b50d180U
+#define MENU_LABEL_VALUE_LAKKA_SERVICES                                        0x0c113d6dU
 #define MENU_LABEL_ARCHIVE_SETTINGS                                            0x78e85398U
 #define MENU_LABEL_USER_SETTINGS                                               0xcdc9a8f5U
 #define MENU_LABEL_VALUE_USER_SETTINGS                                         0xcdc9a8f5U

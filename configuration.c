@@ -35,6 +35,7 @@
 #include "retroarch.h"
 #include "system.h"
 #include "verbosity.h"
+#include "lakka.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -598,6 +599,10 @@ static void config_set_defaults(void)
    settings->stdin_cmd_enable                  = stdin_cmd_enable;
    settings->content_history_size              = default_content_history_size;
    settings->libretro_log_level                = libretro_log_level;
+
+#ifdef HAVE_LAKKA
+   settings->ssh_enable = path_file_exists(LAKKA_SSH_PATH);
+#endif
 
 #ifdef HAVE_MENU
    if (first_initialized)
@@ -1724,6 +1729,10 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, stdin_cmd_enable, "stdin_cmd_enable");
 #endif
 
+#ifdef HAVE_LAKKA
+   settings->ssh_enable = path_file_exists(LAKKA_SSH_PATH);
+#endif
+
 #ifdef HAVE_NETWORK_GAMEPAD
    CONFIG_GET_BOOL_BASE(conf, settings, network_remote_enable, "network_remote_enable");
    for (i = 0; i < MAX_USERS; i++)
@@ -2842,6 +2851,13 @@ bool config_save_file(const char *path)
          settings->stdin_cmd_enable);
    config_set_int(conf, "network_cmd_port",
          settings->network_cmd_port);
+#endif
+
+#ifdef HAVE_LAKKA
+   if (settings->ssh_enable)
+      fclose(fopen(LAKKA_SSH_PATH, "w"));
+   else
+      remove(LAKKA_SSH_PATH);
 #endif
 
    config_set_float(conf, "fastforward_ratio", settings->fastforward_ratio);

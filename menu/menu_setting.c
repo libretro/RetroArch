@@ -53,6 +53,7 @@
 #include "../input/input_autodetect.h"
 #include "../config.def.h"
 #include "../performance.h"
+#include "../lakka.h"
 
 #include "../tasks/tasks_internal.h"
 
@@ -3089,6 +3090,23 @@ static void overlay_enable_toggle_change_handler(void *data)
 }
 #endif
 
+#ifdef HAVE_LAKKA
+static void ssh_enable_toggle_change_handler(void *data)
+{
+   settings_t *settings  = config_get_ptr();
+   rarch_setting_t *setting = (rarch_setting_t *)data;
+
+   if (!setting)
+      return;
+
+   if (settings && settings->ssh_enable)
+      fclose(fopen(LAKKA_SSH_PATH, "w"));
+   else
+      remove(LAKKA_SSH_PATH);
+
+   return;
+}
+#endif
 
 enum settings_list_type
 {
@@ -3116,6 +3134,7 @@ enum settings_list_type
    SETTINGS_LIST_CHEEVOS,
    SETTINGS_LIST_CORE_UPDATER,
    SETTINGS_LIST_NETPLAY,
+   SETTINGS_LIST_LAKKA_SERVICES,
    SETTINGS_LIST_USER,
    SETTINGS_LIST_USER_ACCOUNTS,
    SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
@@ -6496,6 +6515,36 @@ static bool setting_append_list(
 #endif
          }
          break;
+      case SETTINGS_LIST_LAKKA_SERVICES:
+         {
+#if defined(HAVE_LAKKA)
+            START_GROUP(list, list_info, &group_info,
+                  menu_hash_to_str(MENU_LABEL_VALUE_LAKKA_SERVICES),
+                  parent_group);
+
+            parent_group = menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS);
+
+            START_SUB_GROUP(list, list_info, "Lakka Services", &group_info, &subgroup_info, parent_group);
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->ssh_enable,
+                  menu_hash_to_str(MENU_LABEL_SSH_ENABLE),
+                  menu_hash_to_str(MENU_LABEL_VALUE_SSH_ENABLE),
+                  true,
+                  menu_hash_to_str(MENU_VALUE_OFF),
+                  menu_hash_to_str(MENU_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].change_handler = ssh_enable_toggle_change_handler;
+            END_SUB_GROUP(list, list_info, parent_group);
+            END_GROUP(list, list_info, parent_group);
+#endif
+         }
+         break;
       case SETTINGS_LIST_USER:
          START_GROUP(list, list_info, &group_info,
                menu_hash_to_str(MENU_LABEL_VALUE_USER_SETTINGS),
@@ -7226,6 +7275,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
       SETTINGS_LIST_CHEEVOS,
       SETTINGS_LIST_CORE_UPDATER,
       SETTINGS_LIST_NETPLAY,
+      SETTINGS_LIST_LAKKA_SERVICES,
       SETTINGS_LIST_USER,
       SETTINGS_LIST_USER_ACCOUNTS,
       SETTINGS_LIST_USER_ACCOUNTS_CHEEVOS,
