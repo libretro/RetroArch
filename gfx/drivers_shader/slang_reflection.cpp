@@ -22,15 +22,26 @@
 using namespace std;
 using namespace spir2cross;
 
+static const char *texture_semantic_names[] = {
+   "Original",
+   "Source",
+};
+
+static const char *texture_semantic_uniform_names[] = {
+   "OriginalSize",
+   "SourceSize",
+};
+
+static const char *semantic_uniform_names[] = {
+   "MVP",
+   "OutputSize",
+   "FinalViewportSize",
+};
+
 static slang_texture_semantic slang_name_to_texture_semantic(const string &name)
 {
-   static const char *names[] = {
-      "Original",
-      "Source",
-   };
-
    unsigned i = 0;
-   for (auto n : names)
+   for (auto n : texture_semantic_names)
    {
       if (name == n)
          return static_cast<slang_texture_semantic>(i);
@@ -41,13 +52,8 @@ static slang_texture_semantic slang_name_to_texture_semantic(const string &name)
 
 static slang_texture_semantic slang_uniform_name_to_texture_semantic(const string &name)
 {
-   static const char *names[] = {
-      "OriginalSize",
-      "SourceSize",
-   };
-
    unsigned i = 0;
-   for (auto n : names)
+   for (auto n : texture_semantic_uniform_names)
    {
       if (name == n)
          return static_cast<slang_texture_semantic>(i);
@@ -58,14 +64,8 @@ static slang_texture_semantic slang_uniform_name_to_texture_semantic(const strin
 
 static slang_semantic slang_uniform_name_to_semantic(const string &name)
 {
-   static const char *names[] = {
-      "MVP",
-      "OutputSize",
-      "FinalViewportSize",
-   };
-
    unsigned i = 0;
-   for (auto n : names)
+   for (auto n : semantic_uniform_names)
    {
       if (name == n)
          return static_cast<slang_semantic>(i);
@@ -353,6 +353,32 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
       semantic.binding = binding;
       semantic.stage_mask = SLANG_STAGE_FRAGMENT_MASK;
       reflection->semantic_texture_mask |= 1 << index;
+   }
+
+   RARCH_LOG("[slang]: Reflection\n");
+   RARCH_LOG("[slang]:   Textures:\n");
+   for (unsigned i = 0; i < SLANG_NUM_TEXTURE_SEMANTICS; i++)
+      if (reflection->semantic_texture_mask & (1u << i))
+         RARCH_LOG("[slang]:      %s\n", texture_semantic_names[i]);
+
+   RARCH_LOG("[slang]:\n");
+   RARCH_LOG("[slang]:   Uniforms:\n");
+   for (unsigned i = 0; i < SLANG_NUM_SEMANTICS; i++)
+   {
+      if (reflection->semantic_ubo_mask & (1u << i))
+      {
+         RARCH_LOG("[slang]:      %s (Offset: %u)\n", semantic_uniform_names[i],
+               unsigned(reflection->semantics[i].ubo_offset));
+      }
+   }
+
+   for (unsigned i = 0; i < SLANG_NUM_TEXTURE_SEMANTICS; i++)
+   {
+      if (reflection->semantic_texture_ubo_mask & (1u << i))
+      {
+         RARCH_LOG("[slang]:      %s (Offset: %u)\n", texture_semantic_uniform_names[i],
+               unsigned(reflection->semantic_textures[i].ubo_offset));
+      }
    }
 
    return true;
