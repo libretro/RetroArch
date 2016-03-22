@@ -24,10 +24,19 @@ enum slang_texture_semantic
 {
    SLANG_TEXTURE_SEMANTIC_ORIGINAL = 0,
    SLANG_TEXTURE_SEMANTIC_SOURCE = 1,
-   SLANG_TEXTURE_SEMANTIC_OUTPUT = 2,
 
-   SLANG_TEXTURE_NUM_SEMANTICS,
-   SLANG_TEXTURE_INVALID_SEMANTIC = -1
+   SLANG_NUM_TEXTURE_SEMANTICS,
+   SLANG_INVALID_TEXTURE_SEMANTIC = -1
+};
+
+enum slang_semantic
+{
+   SLANG_SEMANTIC_MVP = 0,
+   SLANG_SEMANTIC_OUTPUT = 1,
+   SLANG_SEMANTIC_FINAL_VIEWPORT = 2,
+
+   SLANG_NUM_SEMANTICS,
+   SLANG_INVALID_SEMANTIC = -1
 };
 
 enum slang_stage
@@ -44,16 +53,22 @@ struct slang_texture_semantic_meta
    uint32_t stage_mask = 0;
 };
 
+struct slang_semantic_meta
+{
+   size_t ubo_offset = 0;
+};
+
 struct slang_reflection
 {
    size_t ubo_size = 0;
-   size_t mvp_offset = 0;
    unsigned ubo_binding = 0;
    uint32_t ubo_stage_mask = 0;
 
-   slang_texture_semantic_meta semantic_textures[SLANG_TEXTURE_NUM_SEMANTICS];
+   slang_texture_semantic_meta semantic_textures[SLANG_NUM_TEXTURE_SEMANTICS];
+   slang_semantic_meta semantics[SLANG_NUM_SEMANTICS];
    uint32_t semantic_texture_mask = 0;
    uint32_t semantic_texture_ubo_mask = 0;
+   uint32_t semantic_ubo_mask = 0;
 };
 
 bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,

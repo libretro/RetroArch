@@ -286,10 +286,6 @@ class Pass
             VkAccessFlags srcAccess, VkAccessFlags dstAccess,
             VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages);
 
-      void update_descriptor_set(
-            const Texture &original,
-            const Texture &source);
-
       void set_texture(VkDescriptorSet set, unsigned binding,
             const Texture &texture);
 
@@ -302,8 +298,15 @@ class Pass
             VkDeviceSize range);
 
       slang_reflection reflection;
-      void build_semantic_vec4(uint8_t *data, slang_texture_semantic semantic,
+      void build_semantics(VkDescriptorSet set, uint8_t *buffer,
+            const float *mvp, const Texture &original, const Texture &source);
+      void build_semantic_vec4(uint8_t *data, slang_semantic semantic,
             unsigned width, unsigned height);
+      void build_semantic_texture_vec4(uint8_t *data,
+            slang_texture_semantic semantic,
+            unsigned width, unsigned height);
+      void build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
+            slang_texture_semantic semantic, const Texture &texture);
 };
 
 // struct here since we're implementing the opaque typedef from C.
@@ -702,7 +705,7 @@ bool Pass::init_pipeline_layout()
    desc_counts.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, num_sync_indices });
 
    // Semantic textures.
-   for (unsigned i = 0; i < 32; i++)
+   for (unsigned i = 0; i < SLANG_NUM_TEXTURE_SEMANTICS; i++)
    {
       if (reflection.semantic_texture_mask & (1u << i))
       {
@@ -1064,18 +1067,8 @@ void Pass::set_semantic_texture(VkDescriptorSet set,
       set_texture(set, reflection.semantic_textures[semantic].binding, texture);
 }
 
-void Pass::update_descriptor_set(
-      const Texture &original,
-      const Texture &source)
-{
-   set_uniform_buffer(sets[sync_index], 0,
-         ubos[sync_index]->get_buffer(), 0, reflection.ubo_size);
-
-   set_semantic_texture(sets[sync_index], SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
-   set_semantic_texture(sets[sync_index], SLANG_TEXTURE_SEMANTIC_SOURCE, source);
-}
-
-void Pass::build_semantic_vec4(uint8_t *data, slang_texture_semantic semantic, unsigned width, unsigned height)
+void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic semantic,
+      unsigned width, unsigned height)
 {
    if (reflection.semantic_texture_ubo_mask & (1 << semantic))
    {
@@ -1084,6 +1077,46 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_texture_semantic semantic, u
             width,
             height);
    }
+}
+
+void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
+      unsigned width, unsigned height)
+{
+   if (reflection.semantic_ubo_mask & (1 << semantic))
+   {
+      build_vec4(
+            reinterpret_cast<float *>(data + reflection.semantics[semantic].ubo_offset),
+            width,
+            height);
+   }
+}
+
+void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
+      slang_texture_semantic semantic, const Texture &texture)
+{
+   build_semantic_texture_vec4(buffer, semantic,
+         texture.texture.width, texture.texture.height);
+   set_semantic_texture(set, semantic, texture);
+}
+
+void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
+      const float *mvp, const Texture &original, const Texture &source)
+{
+   if (reflection.semantic_ubo_mask & (1u << SLANG_SEMANTIC_MVP))
+   {
+      size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].ubo_offset;
+      if (mvp)
+         memcpy(buffer + offset, mvp, sizeof(float) * 16);
+      else
+         build_identity_matrix(reinterpret_cast<float *>(buffer + offset));
+   }
+
+   build_semantic_vec4(buffer, SLANG_SEMANTIC_OUTPUT,
+         current_framebuffer_size.width, current_framebuffer_size.height);
+   build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
+         unsigned(current_viewport.width), unsigned(current_viewport.height));
+   build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
+   build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
 }
 
 void Pass::build_commands(
@@ -1108,22 +1141,11 @@ void Pass::build_commands(
    }
 
    uint8_t *u = static_cast<uint8_t*>(ubos[sync_index]->map());
-
-   if (mvp)
-      memcpy(u + reflection.mvp_offset, mvp, sizeof(float) * 16);
-   else
-      build_identity_matrix(reinterpret_cast<float *>(u + reflection.mvp_offset));
-
-   build_semantic_vec4(u, SLANG_TEXTURE_SEMANTIC_OUTPUT,
-         current_framebuffer_size.width, current_framebuffer_size.height);
-   build_semantic_vec4(u, SLANG_TEXTURE_SEMANTIC_ORIGINAL,
-         original.texture.width, original.texture.height);
-   build_semantic_vec4(u, SLANG_TEXTURE_SEMANTIC_SOURCE,
-         source.texture.width, source.texture.height);
-
+   build_semantics(sets[sync_index], u, mvp, original, source);
    ubos[sync_index]->unmap();
 
-   update_descriptor_set(original, source);
+   set_uniform_buffer(sets[sync_index], 0,
+         ubos[sync_index]->get_buffer(), 0, reflection.ubo_size);
 
    // The final pass is always executed inside 
    // another render pass since the frontend will 
