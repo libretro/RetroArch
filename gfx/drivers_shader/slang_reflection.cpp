@@ -82,8 +82,8 @@ static bool set_ubo_texture_offset(slang_reflection *reflection, slang_texture_s
    {
       if (reflection->semantic_textures[semantic].ubo_offset != offset)
       {
-         RARCH_ERR("[slang]: Vertex and fragment have different offsets for same semantic #%u (%u vs. %u).\n",
-               unsigned(semantic),
+         RARCH_ERR("[slang]: Vertex and fragment have different offsets for same semantic %s (%u vs. %u).\n",
+               texture_semantic_uniform_names[semantic],
                unsigned(reflection->semantic_textures[semantic].ubo_offset),
                unsigned(offset));
          return false;
@@ -94,21 +94,31 @@ static bool set_ubo_texture_offset(slang_reflection *reflection, slang_texture_s
    return true;
 }
 
-static bool set_ubo_offset(slang_reflection *reflection, slang_semantic semantic, size_t offset)
+static bool set_ubo_offset(slang_reflection *reflection, slang_semantic semantic,
+      size_t offset, unsigned num_components)
 {
    if (reflection->semantic_ubo_mask & (1u << semantic))
    {
       if (reflection->semantics[semantic].ubo_offset != offset)
       {
-         RARCH_ERR("[slang]: Vertex and fragment have different offsets for same semantic #%u (%u vs. %u).\n",
-               unsigned(semantic),
+         RARCH_ERR("[slang]: Vertex and fragment have different offsets for same semantic %s (%u vs. %u).\n",
+               semantic_uniform_names[semantic],
                unsigned(reflection->semantics[semantic].ubo_offset),
                unsigned(offset));
          return false;
       }
+
+      if (reflection->semantics[semantic].num_components != num_components)
+      {
+         RARCH_ERR("[slang]: Vertex and fragment have different components for same semantic %s (%u vs. %u).\n",
+               semantic_uniform_names[semantic],
+               unsigned(reflection->semantics[semantic].num_components),
+               unsigned(num_components));
+      }
    }
    reflection->semantic_ubo_mask |= 1u << semantic;
    reflection->semantics[semantic].ubo_offset = offset;
+   reflection->semantics[semantic].num_components = num_components;
    return true;
 }
 
@@ -158,7 +168,7 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
             return false;
          }
 
-         if (!set_ubo_offset(reflection, sem, range.offset))
+         if (!set_ubo_offset(reflection, sem, range.offset, type.vecsize))
             return false;
       }
       else if (tex_sem != SLANG_INVALID_TEXTURE_SEMANTIC)
@@ -357,7 +367,9 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
          RARCH_LOG("[slang]:      %s\n", texture_semantic_names[i]);
 
    RARCH_LOG("[slang]:\n");
-   RARCH_LOG("[slang]:   Uniforms:\n");
+   RARCH_LOG("[slang]:   Uniforms (Vertex: %s, Fragment: %s):\n",
+         reflection->ubo_stage_mask & SLANG_STAGE_VERTEX_MASK ? "yes": "no",
+         reflection->ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK ? "yes": "no");
    for (unsigned i = 0; i < SLANG_NUM_SEMANTICS; i++)
    {
       if (reflection->semantic_ubo_mask & (1u << i))

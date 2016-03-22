@@ -56,6 +56,7 @@ struct slang_texture_semantic_meta
 struct slang_semantic_meta
 {
    size_t ubo_offset = 0;
+   unsigned num_components = 0;
 };
 
 struct slang_reflection
