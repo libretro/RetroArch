@@ -106,9 +106,7 @@ void zr_common_device_init(struct zr_device *dev)
 
       glGenBuffers(1, &dev->vbo);
       glGenBuffers(1, &dev->ebo);
-      glGenVertexArrays(1, &dev->vao);
 
-      glBindVertexArray(dev->vao);
       glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dev->ebo);
 
@@ -250,7 +248,7 @@ void zr_common_device_draw(struct zr_device *dev,
    const zr_draw_index       *offset = NULL;
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    GLint last_prog, last_tex;
-   GLint last_ebo, last_vbo, last_vao;
+   GLint last_ebo, last_vbo;
    GLfloat ortho[4][4] = {
       {2.0f, 0.0f, 0.0f, 0.0f},
       {0.0f,-2.0f, 0.0f, 0.0f},
@@ -263,7 +261,6 @@ void zr_common_device_draw(struct zr_device *dev,
    /* save previous opengl state */
    glGetIntegerv(GL_CURRENT_PROGRAM, &last_prog);
    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_tex);
-   glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_vao);
    glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_ebo);
    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vbo);
 #endif
@@ -280,7 +277,6 @@ void zr_common_device_draw(struct zr_device *dev,
    /* convert from command queue into draw list and draw to screen */
 
    /* allocate vertex and element buffer */
-   glBindVertexArray(dev->vao);
    glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dev->ebo);
 
@@ -337,7 +333,6 @@ void zr_common_device_draw(struct zr_device *dev,
    glBindTexture(GL_TEXTURE_2D, (GLuint)last_tex);
    glBindBuffer(GL_ARRAY_BUFFER, (GLuint)last_vbo);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)last_ebo);
-   glBindVertexArray((GLuint)last_vao);
 #endif
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
