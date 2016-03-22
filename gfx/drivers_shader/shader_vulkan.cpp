@@ -981,7 +981,7 @@ bool Pass::build()
                pass_info.rt_format));
    }
 
-   memset(&reflection, 0, sizeof(reflection));
+   reflection = slang_reflection{};
    if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
       return false;
 

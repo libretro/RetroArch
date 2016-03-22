@@ -60,6 +60,8 @@ struct slang_semantic_meta
 
 struct slang_reflection
 {
+   slang_reflection() = default;
+
    size_t ubo_size = 0;
    unsigned ubo_binding = 0;
    uint32_t ubo_stage_mask = 0;
