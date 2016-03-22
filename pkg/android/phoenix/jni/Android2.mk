@@ -85,7 +85,6 @@ LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/SPIRV
 LOCAL_SRC_FILES += $(RARCH_DIR)/deps/glslang/glslang.cpp \
-						 $(RARCH_DIR)/deps/glslang/glslang_tab.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/SpvBuilder.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/SPVRemapper.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/InReadableOrder.cpp \
