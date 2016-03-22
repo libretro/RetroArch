@@ -21,21 +21,16 @@
 
 struct zr_image zr_common_image_load(const char *filename)
 {
-    int x,y,n;
-    GLuint tex;
-    unsigned char *data = stbi_load(filename, &x, &y, &n, 0);
-    if (!data) printf("Failed to load image: %s\n", filename);
+   GLuint tex;
+   struct texture_image ti;
 
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
-    return zr_image_id((int)tex);
+   video_texture_image_load(&ti,
+         filename);
+
+   video_driver_texture_load(&ti,
+         TEXTURE_FILTER_MIPMAP_NEAREST, (uintptr_t*)&tex);
+
+   return zr_image_id((int)tex);
 }
 
 char* zr_common_file_load(const char* path, size_t* size)
