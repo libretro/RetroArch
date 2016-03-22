@@ -829,14 +829,20 @@ static void parse_input(int argc, char *argv[])
                      "Setting libretro_directory to \"%s\" instead.\n",
                      optarg);
             }
-            else
+            else if (path_file_exists(optarg))
             {
                runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, optarg);
                global->has_set.libretro = true;
+
+               /* We requested explicit core, so use PLAIN core type. */
+               current_core_type = CORE_TYPE_PLAIN;
+            }
+            else
+            {
+               RARCH_WARN("--libretro argument \"%s\" is neither a file nor directory. Ignoring.\n",
+                     optarg);
             }
 
-            /* We requested explicit core, so use PLAIN core type. */
-            current_core_type = CORE_TYPE_PLAIN;
             break;
 #endif
          case 'P':
