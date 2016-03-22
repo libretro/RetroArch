@@ -190,14 +190,12 @@ void zrmenu_get_state(zrmenu_handle_t *zr, const int id,
 
 void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr)
 {
-   struct zr_context *ctx = &zr->ctx;
-   const int id = ZRMENU_WND_SHADER_PARAMETERS;
-   settings_t *settings = config_get_ptr();
-
-   video_shader_ctx_t shader_info;
    unsigned i;
-
+   video_shader_ctx_t shader_info;
    struct zr_panel layout;
+   struct zr_context *ctx = &zr->ctx;
+   const int id           = ZRMENU_WND_SHADER_PARAMETERS;
+   settings_t *settings   = config_get_ptr();
 
    if (zr_begin(ctx, &layout, "Shader Parameters", zr_rect(240, 10, 300, 400),
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
@@ -205,7 +203,7 @@ void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr)
    {
       struct zr_panel combo;
       static const char *themes[] = {"Dark", "Light"};
-      enum   zrmenu_theme old         = zr->theme;
+      enum   zrmenu_theme old     = zr->theme;
 
       zr_layout_row_dynamic(ctx, 30, 1);
 
@@ -239,13 +237,12 @@ void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr)
 
 void zrmenu_wnd_control(zrmenu_handle_t *zr)
 {
-   struct zr_context *ctx = &zr->ctx;
-   const int id = ZRMENU_WND_CONTROL;
-   static int wnd_x = 900;
-   static int wnd_y = 60;
    struct zr_panel layout;
-
-   bool ret = (zr_begin(ctx, &layout, "Control",
+   struct zr_context *ctx = &zr->ctx;
+   const int id           = ZRMENU_WND_CONTROL;
+   static int wnd_x       = 900;
+   static int wnd_y       = 60;
+   bool ret               = (zr_begin(ctx, &layout, "Control",
       zr_rect(wnd_x, wnd_y, 350, 520),
       ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
       ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER));
@@ -297,11 +294,11 @@ void zrmenu_wnd_control(zrmenu_handle_t *zr)
 
 void zrmenu_wnd_test(zrmenu_handle_t *zr)
 {
-   struct zr_context *ctx = &zr->ctx;
-   const int id = ZRMENU_WND_TEST;
-   settings_t *settings = config_get_ptr();
-
    struct zr_panel layout;
+   struct zr_context *ctx = &zr->ctx;
+   const int id           = ZRMENU_WND_TEST;
+   settings_t *settings   = config_get_ptr();
+
    if (zr_begin(ctx, &layout, "Test", zr_rect(140, 90, 500, 600),
          ZR_WINDOW_CLOSABLE|ZR_WINDOW_MINIMIZABLE|ZR_WINDOW_MOVABLE|
          ZR_WINDOW_SCALABLE|ZR_WINDOW_BORDER))
@@ -310,7 +307,7 @@ void zrmenu_wnd_test(zrmenu_handle_t *zr)
       struct zr_panel combo;
       menu_entry_t entry;
       static const char *themes[] = {"Dark", "Light"};
-      enum   zrmenu_theme old         = zr->theme;
+      enum   zrmenu_theme old     = zr->theme;
 
       zr_layout_row_dynamic(ctx, 30, 2);
 
@@ -373,11 +370,10 @@ void zrmenu_wnd_test(zrmenu_handle_t *zr)
 
 void zrmenu_wnd_main(zrmenu_handle_t *zr)
 {
-   struct zr_context *ctx = &zr->ctx;
-   const int id = ZRMENU_WND_MAIN;
-
-   settings_t *settings = config_get_ptr();
    struct zr_panel layout;
+   struct zr_context *ctx = &zr->ctx;
+   const int id           = ZRMENU_WND_MAIN;
+   settings_t *settings   = config_get_ptr();
 
    if (zr_begin(ctx, &layout, "Main", zr_rect(-1, -1, 120, zr->size.x + 1),
          ZR_WINDOW_NO_SCROLLBAR))
@@ -465,15 +461,13 @@ void zrmenu_wnd_main(zrmenu_handle_t *zr)
 
 void zrmenu_wnd_wizard(zrmenu_handle_t *zr)
 {
-   struct zr_context *ctx = &zr->ctx;
-   const int id = ZRMENU_WND_WIZARD;
-
-   static int width = 640;
-   static int height = 480;
-   static int panel = 0;
-
-   settings_t *settings = config_get_ptr();
    struct zr_panel layout;
+   struct zr_context *ctx = &zr->ctx;
+   const int id           = ZRMENU_WND_WIZARD;
+   static int width       = 640;
+   static int height      = 480;
+   static int panel       = 0;
+   settings_t *settings   = config_get_ptr();
 
    if (zr_begin(ctx, &layout, "Setup Wizard", zr_rect(zr->size.x/2 -width/2,
       zr->size.y/2 - height/2, width, height),
