@@ -24,10 +24,8 @@
 #include <ctype.h>
 
 #include <boolean.h>
-#include <retro_miscellaneous.h>
 
 #include "menu_entries.h"
-#include "menu_setting.h"
 
 #include "../gfx/video_shader_driver.h"
 
