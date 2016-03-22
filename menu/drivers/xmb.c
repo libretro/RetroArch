@@ -227,7 +227,7 @@ typedef struct xmb_handle
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
-static char* xmb_theme_ident(void)
+static const char *xmb_theme_ident(void)
 {
    settings_t *settings = config_get_ptr();
    switch (settings->menu.xmb_theme)
