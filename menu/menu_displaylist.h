@@ -19,7 +19,6 @@
 #include <stdint.h>
 
 #include <boolean.h>
-#include <retro_miscellaneous.h>
 #include <lists/file_list.h>
 
 #ifdef __cplusplus
