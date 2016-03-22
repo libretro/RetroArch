@@ -18,7 +18,6 @@
 #define __CONFIG_DEF_H
 
 #include <boolean.h>
-#include "libretro.h"
 #include "driver.h"
 #include "gfx/video_driver.h"
 
