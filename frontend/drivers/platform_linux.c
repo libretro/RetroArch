@@ -2188,7 +2188,6 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
 static void frontend_linux_exec(const char *path, bool should_load_game)
 {
    char *newargv[]    = { NULL, NULL };
-   const char *newargv[]    = { path, NULL };
    size_t len         = strlen(path);
 
    newargv[0] = malloc(len);
