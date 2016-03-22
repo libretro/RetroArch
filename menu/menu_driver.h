@@ -32,8 +32,6 @@
 #include "../gfx/video_shader_driver.h"
 
 #include "../driver.h"
-#include "../libretro.h"
-#include "../dynamic.h"
 
 #ifdef __cplusplus
 extern "C" {

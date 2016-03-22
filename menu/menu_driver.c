@@ -28,6 +28,7 @@
 #include "menu_shader.h"
 
 #include "../content.h"
+#include "../dynamic.h"
 #include "../core_info.h"
 #include "../retroarch.h"
 #include "../system.h"
