@@ -32,13 +32,6 @@
 extern "C" {
 #endif
 
-#define AUDIO_CHUNK_SIZE_BLOCKING      512
-
-/* So we don't get complete line-noise when fast-forwarding audio. */
-#define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
-
-#define AUDIO_MAX_RATIO                16
-
 /* Specialized _MOUSE that targets the full screen regardless of viewport.
  */
 #define RARCH_DEVICE_MOUSE_SCREEN      (RETRO_DEVICE_MOUSE | 0x10000)
