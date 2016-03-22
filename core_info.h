@@ -20,6 +20,8 @@
 
 #include <stddef.h>
 
+#include <lists/string_list.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
