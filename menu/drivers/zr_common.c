@@ -23,7 +23,7 @@
 
 struct zr_image zr_common_image_load(const char *filename)
 {
-   GLuint tex;
+   uintptr_t tex;
    struct texture_image ti;
 
    video_texture_image_load(&ti,
