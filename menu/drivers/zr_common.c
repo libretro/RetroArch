@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2015 - Jean-Andr√© Santoni
- *  Copyright (C) 2016      - Andr√©s Su√°rez
+ *  Copyright (C) 2014-2015 - Jean-AndrÈ Santoni
+ *  Copyright (C) 2016      - AndrÈs Su·rez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -15,32 +15,41 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <streams/file_stream.h>
-
 #include "zr_common.h"
 
 #include "../menu_display.h"
 
 struct zr_image zr_common_image_load(const char *filename)
 {
-   uintptr_t tex;
-   struct texture_image ti;
+    int x,y,n;
+    GLuint tex;
+    unsigned char *data = stbi_load(filename, &x, &y, &n, 0);
+    if (!data) printf("Failed to load image: %s\n", filename);
 
-   video_texture_image_load(&ti,
-         filename);
-
-   video_driver_texture_load(&ti,
-         TEXTURE_FILTER_MIPMAP_NEAREST, (uintptr_t*)&tex);
-
-   return zr_image_id((int)tex);
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+    return zr_image_id((int)tex);
 }
 
 char* zr_common_file_load(const char* path, size_t* size)
 {
-   void *buf;
-   ssize_t *length = (ssize_t*)size;
-   retro_read_file(path, &buf, length);
-   return (char*)buf;
+   char *buf;
+   FILE *fd = fopen(path, "rb");
+
+   fseek(fd, 0, SEEK_END);
+   *size = (size_t)ftell(fd);
+   fseek(fd, 0, SEEK_SET);
+   buf = (char*)calloc(*size, 1);
+   fread(buf, *size, 1, fd);
+   fclose(fd);
+   return buf;
 }
 
 void zr_common_device_init(struct zr_device *dev)
@@ -102,7 +111,9 @@ void zr_common_device_init(struct zr_device *dev)
 
       glGenBuffers(1, &dev->vbo);
       glGenBuffers(1, &dev->ebo);
+      glGenVertexArrays(1, &dev->vao);
 
+      glBindVertexArray(dev->vao);
       glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dev->ebo);
 
@@ -131,82 +142,81 @@ struct zr_user_font zr_common_font(
 {
    int glyph_count;
    int img_width, img_height;
-   void *img, *tmp;
-   size_t ttf_size;
-   size_t tmp_size, img_size;
-   struct texture_image ti;
-   struct zr_recti custom;
-   struct zr_font_config config;
    struct zr_font_glyph *glyphes;
    struct zr_baked_font baked_font;
    struct zr_user_font user_font;
-   void *img_rgba          = NULL;
-   char *ttf_blob          = NULL;
-   const char *custom_data = "....";
+   struct zr_recti custom;
 
-   memset(&baked_font,  0, sizeof(baked_font));
-   memset(&user_font,   0, sizeof(user_font));
-   memset(&custom,      0, sizeof(custom));
+   memset(&baked_font, 0, sizeof(baked_font));
+   memset(&user_font, 0, sizeof(user_font));
+   memset(&custom, 0, sizeof(custom));
 
-   /* bake and upload font texture */
-   ttf_blob            = zr_common_file_load(path, &ttf_size);
-   /* setup font configuration */
-   memset(&config, 0, sizeof(config));
+   {
+      struct texture_image ti;
+      /* bake and upload font texture */
+      struct zr_font_config config;
+      void *img, *tmp;
+      size_t ttf_size;
+      size_t tmp_size, img_size;
+      const char *custom_data = "....";
+      char *ttf_blob = zr_common_file_load(path, &ttf_size);
+       /* setup font configuration */
+      memset(&config, 0, sizeof(config));
 
-   config.ttf_blob     = ttf_blob;
-   config.ttf_size     = ttf_size;
-   config.font         = &baked_font;
-   config.coord_type   = ZR_COORD_UV;
-   config.range        = range;
-   config.pixel_snap   = zr_false;
-   config.size         = (float)font_height;
-   config.spacing      = zr_vec2(0,0);
-   config.oversample_h = 1;
-   config.oversample_v = 1;
+      config.ttf_blob     = ttf_blob;
+      config.ttf_size     = ttf_size;
+      config.font         = &baked_font;
+      config.coord_type   = ZR_COORD_UV;
+      config.range        = range;
+      config.pixel_snap   = zr_false;
+      config.size         = (float)font_height;
+      config.spacing      = zr_vec2(0,0);
+      config.oversample_h = 1;
+      config.oversample_v = 1;
 
-   /* query needed amount of memory for the font baking process */
-   zr_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
+      /* query needed amount of memory for the font baking process */
+      zr_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
+      glyphes = (struct zr_font_glyph*)
+         calloc(sizeof(struct zr_font_glyph), (size_t)glyph_count);
+      tmp = calloc(1, tmp_size);
 
-   glyphes   = (struct zr_font_glyph*)
-      calloc(sizeof(struct zr_font_glyph), (size_t)glyph_count);
-   tmp       = calloc(1, tmp_size);
+      /* pack all glyphes and return needed image width, height and memory size*/
+      custom.w = 2; custom.h = 2;
+      zr_font_bake_pack(&img_size,
+            &img_width,&img_height,&custom,tmp,tmp_size,&config, 1);
 
-   /* pack all glyphes and return needed image width, height and memory size*/
-   custom.w  = 2;
-   custom.h  = 2;
-   zr_font_bake_pack(&img_size,
-         &img_width,&img_height,&custom,tmp,tmp_size,&config, 1);
+      /* bake all glyphes and custom white pixel into image */
+      img = calloc(1, img_size);
+      zr_font_bake(img, img_width,
+            img_height, tmp, tmp_size, glyphes, glyph_count, &config, 1);
+      zr_font_bake_custom_data(img,
+            img_width, img_height, custom, custom_data, 2, 2, '.', 'X');
 
-   /* bake all glyphes and custom white pixel into image */
-   img       = calloc(1, img_size);
-   zr_font_bake(img, img_width,
-         img_height, tmp, tmp_size, glyphes, glyph_count, &config, 1);
-   zr_font_bake_custom_data(img,
-         img_width, img_height, custom, custom_data, 2, 2, '.', 'X');
+      {
+         /* convert alpha8 image into rgba8 image */
+         void *img_rgba = calloc(4, (size_t)(img_height * img_width));
+         zr_font_bake_convert(img_rgba, img_width, img_height, img);
+         free(img);
+         img = img_rgba;
+      }
 
-   /* convert alpha8 image into rgba8 image */
-   img_rgba  = calloc(4, (size_t)(img_height * img_width));
-   zr_font_bake_convert(img_rgba, img_width, img_height, img);
+      /* upload baked font image */
+      ti.pixels = (uint32_t*)img;
+      ti.width  = (GLsizei)img_width;
+      ti.height = (GLsizei)img_height;
 
-   free(img);
-   img       = img_rgba;
+      video_driver_texture_load(&ti,
+            TEXTURE_FILTER_MIPMAP_NEAREST, (uintptr_t*)&dev->font_tex);
 
-   /* upload baked font image */
-   ti.pixels = (uint32_t*)img;
-   ti.width  = (GLsizei)img_width;
-   ti.height = (GLsizei)img_height;
-
-   video_driver_texture_load(&ti,
-         TEXTURE_FILTER_MIPMAP_NEAREST, (uintptr_t*)&dev->font_tex);
-
-   free(ttf_blob);
-   free(tmp);
-   free(img);
+      free(ttf_blob);
+      free(tmp);
+      free(img);
+   }
 
    /* default white pixel in a texture which is needed to draw primitives */
    dev->null.texture.id = (int)dev->font_tex;
-   dev->null.uv         = zr_vec2((custom.x + 0.5f) / (float)img_width,
-         (custom.y + 0.5f)/(float)img_height);
+   dev->null.uv = zr_vec2((custom.x + 0.5f)/(float)img_width,
+      (custom.y + 0.5f)/(float)img_height);
 
    /* setup font with glyphes. IMPORTANT: the font only references the glyphes
       this was done to have the possibility to have multible fonts with one
@@ -245,7 +255,7 @@ void zr_common_device_draw(struct zr_device *dev,
    const zr_draw_index       *offset = NULL;
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    GLint last_prog, last_tex;
-   GLint last_ebo, last_vbo;
+   GLint last_ebo, last_vbo, last_vao;
    GLfloat ortho[4][4] = {
       {2.0f, 0.0f, 0.0f, 0.0f},
       {0.0f,-2.0f, 0.0f, 0.0f},
@@ -258,6 +268,7 @@ void zr_common_device_draw(struct zr_device *dev,
    /* save previous opengl state */
    glGetIntegerv(GL_CURRENT_PROGRAM, &last_prog);
    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_tex);
+   glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_vao);
    glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_ebo);
    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vbo);
 #endif
@@ -274,6 +285,7 @@ void zr_common_device_draw(struct zr_device *dev,
    /* convert from command queue into draw list and draw to screen */
 
    /* allocate vertex and element buffer */
+   glBindVertexArray(dev->vao);
    glBindBuffer(GL_ARRAY_BUFFER, dev->vbo);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dev->ebo);
 
@@ -330,6 +342,7 @@ void zr_common_device_draw(struct zr_device *dev,
    glBindTexture(GL_TEXTURE_2D, (GLuint)last_tex);
    glBindBuffer(GL_ARRAY_BUFFER, (GLuint)last_vbo);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)last_ebo);
+   glBindVertexArray((GLuint)last_vao);
 #endif
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
