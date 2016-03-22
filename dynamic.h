@@ -19,19 +19,12 @@
 
 #include <boolean.h>
 
+#include "core_type.h"
 #include "libretro.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-enum rarch_core_type 
-{
-   CORE_TYPE_PLAIN = 0,
-   CORE_TYPE_DUMMY,
-   CORE_TYPE_FFMPEG,
-   CORE_TYPE_IMAGEVIEWER
-};
 
 #ifdef __cplusplus
 extern "C" {

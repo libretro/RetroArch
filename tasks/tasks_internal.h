@@ -21,6 +21,7 @@
 
 #include <queues/task_queue.h>
 
+#include "../core_type.h"
 #include "../runloop.h"
 
 #ifdef __cplusplus

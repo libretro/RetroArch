@@ -45,6 +45,7 @@
 #include <retro_assert.h>
 
 #include "content.h"
+#include "core_type.h"
 #include "core_info.h"
 #include "msg_hash.h"
 #include "movie.h"

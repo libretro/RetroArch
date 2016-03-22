@@ -29,7 +29,9 @@
 #include "config.h"
 #endif
 
+#include "dynamic.h"
 #include "command_event.h"
+
 #include "audio/audio_driver.h"
 #include "camera/camera_driver.h"
 #include "location/location_driver.h"

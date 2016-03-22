@@ -25,6 +25,7 @@
 #include <boolean.h>
 #include <lists/string_list.h>
 
+#include "dynamic.h"
 #include "libretro.h"
 #include "libretro_version_1.h"
 #include "general.h"
