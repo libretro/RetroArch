@@ -52,6 +52,7 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
+#include "defaults.h"
 #include "msg_hash.h"
 #include "content.h"
 #include "general.h"

@@ -22,6 +22,7 @@
 
 #include "command_event.h"
 
+#include "defaults.h"
 #include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"

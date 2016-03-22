@@ -22,6 +22,7 @@
 
 #include <bps/bps.h>
 
+#include "../../defaults.h"
 #include "../../dynamic.h"
 
 static void frontend_qnx_init(void *data)

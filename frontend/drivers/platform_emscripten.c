@@ -19,6 +19,7 @@
 
 #include <file/config_file.h>
 
+#include "../../defaults.h"
 #include "../../general.h"
 #include "../../content.h"
 #include "../frontend.h"

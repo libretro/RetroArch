@@ -30,6 +30,7 @@
 #include "../database_info.h"
 #endif
 
+#include "../defaults.h"
 #include "../cheats.h"
 #include "../general.h"
 #include "../retroarch.h"

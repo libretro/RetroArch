@@ -46,9 +46,10 @@
 #include <rhash.h>
 
 #include "../frontend_driver.h"
-#include "../../ui/ui_companion_driver.h"
+#include "../../defaults.h"
 #include "../../general.h"
 #include "../../verbosity.h"
+#include "../../ui/ui_companion_driver.h"
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
