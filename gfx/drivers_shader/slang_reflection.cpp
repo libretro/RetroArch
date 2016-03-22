@@ -261,16 +261,11 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
       return false;
    }
 
-   if (!vertex_ubo && !fragment_ubo)
-   {
-      RARCH_ERR("[slang]: No UBO is in use. This cannot be a correct shader.\n");
-      return false;
-   }
-
    unsigned vertex_ubo_binding = vertex_ubo ?
       vertex_compiler.get_decoration(vertex_ubo, spv::DecorationBinding) : -1u;
    unsigned fragment_ubo_binding = fragment_ubo ?
       fragment_compiler.get_decoration(fragment_ubo, spv::DecorationBinding) : -1u;
+   bool has_ubo = vertex_ubo || fragment_ubo;
 
    if (vertex_ubo_binding != -1u &&
          fragment_ubo_binding != -1u &&
@@ -282,13 +277,13 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
 
    unsigned ubo_binding = vertex_ubo_binding != -1u ? vertex_ubo_binding : fragment_ubo_binding;
 
-   if (ubo_binding >= SLANG_NUM_BINDINGS)
+   if (has_ubo && ubo_binding >= SLANG_NUM_BINDINGS)
    {
       RARCH_ERR("[slang]: Binding %u is out of range.\n", ubo_binding);
       return false;
    }
 
-   reflection->ubo_binding = ubo_binding;
+   reflection->ubo_binding = has_ubo ? ubo_binding : 0;
    reflection->ubo_stage_mask = 0;
    reflection->ubo_size = 0;
 
@@ -312,7 +307,7 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
    if (fragment_ubo && !add_active_buffer_ranges(fragment_compiler, fragment.uniform_buffers[0], reflection))
       return false;
 
-   uint32_t binding_mask = 1 << ubo_binding;
+   uint32_t binding_mask = has_ubo ? (1 << ubo_binding) : 0;
 
    // On to textures.
    for (auto &texture : fragment.sampled_images)

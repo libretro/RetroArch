@@ -699,10 +699,13 @@ bool Pass::init_pipeline_layout()
    if (reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
       ubo_mask |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
-   bindings.push_back({ reflection.ubo_binding,
-         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-         ubo_mask, nullptr });
-   desc_counts.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, num_sync_indices });
+   if (ubo_mask != 0)
+   {
+      bindings.push_back({ reflection.ubo_binding,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+            ubo_mask, nullptr });
+      desc_counts.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, num_sync_indices });
+   }
 
    // Semantic textures.
    for (unsigned i = 0; i < SLANG_NUM_TEXTURE_SEMANTICS; i++)
@@ -965,9 +968,12 @@ CommonResources::~CommonResources()
 bool Pass::init_buffers()
 {
    ubos.clear();
-   for (unsigned i = 0; i < num_sync_indices; i++)
-      ubos.emplace_back(new Buffer(device,
-               memory_properties, reflection.ubo_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+   if (reflection.ubo_stage_mask)
+   {
+      for (unsigned i = 0; i < num_sync_indices; i++)
+         ubos.emplace_back(new Buffer(device,
+                  memory_properties, reflection.ubo_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+   }
    return true;
 }
 
@@ -1070,7 +1076,7 @@ void Pass::set_semantic_texture(VkDescriptorSet set,
 void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic semantic,
       unsigned width, unsigned height)
 {
-   if (reflection.semantic_texture_ubo_mask & (1 << semantic))
+   if (data && (reflection.semantic_texture_ubo_mask & (1 << semantic)))
    {
       build_vec4(
             reinterpret_cast<float *>(data + reflection.semantic_textures[semantic].ubo_offset),
@@ -1082,7 +1088,7 @@ void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic sem
 void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       unsigned width, unsigned height)
 {
-   if (reflection.semantic_ubo_mask & (1 << semantic))
+   if (data && (reflection.semantic_ubo_mask & (1 << semantic)))
    {
       build_vec4(
             reinterpret_cast<float *>(data + reflection.semantics[semantic].ubo_offset),
@@ -1102,7 +1108,7 @@ void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
 void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
       const float *mvp, const Texture &original, const Texture &source)
 {
-   if (reflection.semantic_ubo_mask & (1u << SLANG_SEMANTIC_MVP))
+   if (buffer && (reflection.semantic_ubo_mask & (1u << SLANG_SEMANTIC_MVP)))
    {
       size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].ubo_offset;
       if (mvp)
@@ -1140,12 +1146,20 @@ void Pass::build_commands(
       current_framebuffer_size = size;
    }
 
-   uint8_t *u = static_cast<uint8_t*>(ubos[sync_index]->map());
-   build_semantics(sets[sync_index], u, mvp, original, source);
-   ubos[sync_index]->unmap();
+   if (reflection.ubo_stage_mask)
+   {
+      uint8_t *u = static_cast<uint8_t*>(ubos[sync_index]->map());
+      build_semantics(sets[sync_index], u, mvp, original, source);
+      ubos[sync_index]->unmap();
+   }
+   else
+      build_semantics(sets[sync_index], nullptr, mvp, original, source);
 
-   set_uniform_buffer(sets[sync_index], 0,
-         ubos[sync_index]->get_buffer(), 0, reflection.ubo_size);
+   if (reflection.ubo_stage_mask)
+   {
+      set_uniform_buffer(sets[sync_index], 0,
+            ubos[sync_index]->get_buffer(), 0, reflection.ubo_size);
+   }
 
    // The final pass is always executed inside 
    // another render pass since the frontend will 
