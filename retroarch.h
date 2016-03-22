@@ -18,7 +18,6 @@
 #define __RETROARCH_H
 
 #include <boolean.h>
-#include <retro_miscellaneous.h>
 
 #ifdef __cplusplus
 extern "C" {
