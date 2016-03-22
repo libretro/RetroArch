@@ -95,6 +95,7 @@ LOCAL_SRC_FILES += $(RARCH_DIR)/deps/glslang/glslang.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/GenericCodeGen/Link.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/GenericCodeGen/CodeGen.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/Intermediate.cpp \
+						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/glslang_tab.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/Versions.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/RemoveTree.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent/limits.cpp \
