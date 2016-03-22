@@ -3090,7 +3090,7 @@ static void ssh_enable_toggle_change_handler(void *data)
       return;
 
    if (settings && settings->ssh_enable)
-      fclose(LAKKA_SSH_PATH, "w");
+      fclose(fopen(LAKKA_SSH_PATH, "w"));
    else
       remove(LAKKA_SSH_PATH);
 

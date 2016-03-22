@@ -2855,7 +2855,7 @@ bool config_save_file(const char *path)
 
 #ifdef HAVE_LAKKA
    if (settings->ssh_enable)
-      fclose(LAKKA_SSH_PATH, "w");
+      fclose(fopen(LAKKA_SSH_PATH, "w"));
    else
       remove(LAKKA_SSH_PATH);
 #endif
