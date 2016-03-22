@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <streams/file_stream.h>
+
 #include "zr_common.h"
 
 #include "../menu_display.h"
@@ -43,15 +45,9 @@ struct zr_image zr_common_image_load(const char *filename)
 
 char* zr_common_file_load(const char* path, size_t* size)
 {
-   char *buf;
-   FILE *fd = fopen(path, "rb");
-
-   fseek(fd, 0, SEEK_END);
-   *size = (size_t)ftell(fd);
-   fseek(fd, 0, SEEK_SET);
-   buf = (char*)calloc(*size, 1);
-   fread(buf, *size, 1, fd);
-   fclose(fd);
+   void *buf;
+   ssize_t *length = (ssize_t*)size;
+   retro_read_file(path, &buf, length);
    return buf;
 }
 
