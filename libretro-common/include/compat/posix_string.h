@@ -46,7 +46,7 @@ char *strtok_r(char *str, const char *delim, char **saveptr);
 int strcasecmp(const char *a, const char *b);
 char *strdup(const char *orig);
 
-/* isblank is availables ince MSVC 2013 */
+/* isblank is available since MSVC 2013 */
 #if _MSC_VER < 1800
 #undef isblank
 #define isblank(c)       retro_isblank__(c)
