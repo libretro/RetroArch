@@ -34,6 +34,16 @@ enum rarch_input_keyboard_ctl_state
    RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED,
    RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED,
    RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED,
+
+   /*
+    * Waits for keys to be pressed (used for binding 
+    * keys in the menu).
+    * Callback returns false when all polling is done.
+    **/
+   RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS,
+
+   /* Cancels keyboard wait for keys function callback. */
+   RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS
 };
 
 /* Keyboard line reader. Handles textual input in a direct fashion. */
@@ -47,6 +57,13 @@ typedef void (*input_keyboard_line_complete_t)(void *userdata,
       const char *line);
 
 typedef bool (*input_keyboard_press_t)(void *userdata, unsigned code);
+
+typedef struct input_keyboard_ctx_wait
+{
+   void *userdata;
+   input_keyboard_press_t cb;
+} input_keyboard_ctx_wait_t;
+
 
 /**
  * input_keyboard_line_new:
@@ -123,22 +140,6 @@ void input_keyboard_event(bool down, unsigned code, uint32_t character,
 const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb);
 
-/**
- * input_keyboard_wait_keys:
- * @userdata                 : Userdata.
- * @cb                       : Callback function.
- *
- * Waits for keys to be pressed (used for binding keys in the menu).
- * Callback returns false when all polling is done.
- **/
-void input_keyboard_wait_keys(void *userdata, input_keyboard_press_t cb);
-
-/**
- * input_keyboard_wait_keys_cancel:
- *
- * Cancels function callback set by input_keyboard_wait_keys().
- **/
-void input_keyboard_wait_keys_cancel(void);
 
 bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data);
 

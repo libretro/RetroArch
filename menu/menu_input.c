@@ -433,6 +433,7 @@ static bool menu_input_key_bind_set_mode(
       enum menu_input_ctl_state state, void *data)
 {
    unsigned index_offset;
+   input_keyboard_ctx_wait_t keys;
    menu_handle_t       *menu = NULL;
    menu_input_t  *menu_input = menu_input_get_ptr();
    rarch_setting_t  *setting = (rarch_setting_t*)data;
@@ -456,8 +457,10 @@ static bool menu_input_key_bind_set_mode(
    menu_input->binds.timeout_end   = retro_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
 
-   input_keyboard_wait_keys(menu,
-         menu_input_key_bind_custom_bind_keyboard_cb);
+   keys.userdata = menu;
+   keys.cb       = menu_input_key_bind_custom_bind_keyboard_cb;
+
+   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS, &keys);
    return true;
 }
 
@@ -600,7 +603,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
-         input_keyboard_wait_keys_cancel();
+         input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
 
       return true;
    }
@@ -622,7 +625,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
 
       if (binds.begin > binds.last)
       {
-         input_keyboard_wait_keys_cancel();
+         input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
          return true;
       }
 

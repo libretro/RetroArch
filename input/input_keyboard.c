@@ -200,35 +200,6 @@ const char **input_keyboard_start_line(void *userdata,
 }
 
 /**
- * input_keyboard_wait_keys:
- * @userdata                 : Userdata.
- * @cb                       : Callback function.
- *
- * Waits for keys to be pressed (used for binding keys in the menu).
- * Callback returns false when all polling is done.
- **/
-void input_keyboard_wait_keys(void *userdata, input_keyboard_press_t cb)
-{
-   g_keyboard_press_cb = cb;
-   g_keyboard_press_data = userdata;
-
-   /* While waiting for input, we have to block all hotkeys. */
-   input_driver_keyboard_mapping_set_block(true);
-}
-
-/**
- * input_keyboard_wait_keys_cancel:
- *
- * Cancels function callback set by input_keyboard_wait_keys().
- **/
-void input_keyboard_wait_keys_cancel(void)
-{
-   g_keyboard_press_cb   = NULL;
-   g_keyboard_press_data = NULL;
-   input_driver_keyboard_mapping_set_block(false);
-}
-
-/**
  * input_keyboard_event:
  * @down                     : Keycode was pressed down?
  * @code                     : Keycode.
@@ -248,14 +219,12 @@ void input_keyboard_event(bool down, unsigned code,
       if (down)
          return;
 
-      input_keyboard_wait_keys_cancel();
+      input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS, NULL);
       deferred_wait_keys = false;
    }
    else if (g_keyboard_press_cb)
    {
-      if (!down)
-         return;
-      if (code == RETROK_UNKNOWN)
+      if (!down || code == RETROK_UNKNOWN)
          return;
       if (g_keyboard_press_cb(g_keyboard_press_data, code))
          return;
@@ -302,6 +271,25 @@ bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS:
+         {
+            input_keyboard_ctx_wait_t *keys = (input_keyboard_ctx_wait_t*)data;
+
+            if (!keys)
+               return false;
+
+            g_keyboard_press_cb   = keys->cb;
+            g_keyboard_press_data = keys->userdata;
+         }
+
+         /* While waiting for input, we have to block all hotkeys. */
+         input_driver_keyboard_mapping_set_block(true);
+         break;
+      case RARCH_INPUT_KEYBOARD_CTL_CANCEL_WAIT_KEYS:
+         g_keyboard_press_cb   = NULL;
+         g_keyboard_press_data = NULL;
+         input_driver_keyboard_mapping_set_block(false);
+         break;
       case RARCH_INPUT_KEYBOARD_CTL_DESTROY:
          input_driver_keyboard_linefeed_enable = false;
          break;
