@@ -1733,7 +1733,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
 #ifdef HAVE_LAKKA
    settings->ssh_enable = path_file_exists(LAKKA_SSH_PATH);
-   settings->ssh_enable = path_file_exists(LAKKA_SAMBA_PATH);
+   settings->samba_enable = path_file_exists(LAKKA_SAMBA_PATH);
    settings->bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
