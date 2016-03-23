@@ -43,12 +43,6 @@ struct hid_driver
    const char *ident;
 };
 
-extern hid_driver_t iohidmanager_hid;
-extern hid_driver_t btstack_hid;
-extern hid_driver_t libusb_hid;
-extern hid_driver_t wiiusb_hid;
-extern hid_driver_t null_hid;
-
 /**
  * hid_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -86,6 +80,12 @@ const char* config_get_hid_driver_options(void);
 const hid_driver_t *input_hid_init_first(void);
 
 const void *hid_driver_get_data(void);
+
+extern hid_driver_t iohidmanager_hid;
+extern hid_driver_t btstack_hid;
+extern hid_driver_t libusb_hid;
+extern hid_driver_t wiiusb_hid;
+extern hid_driver_t null_hid;
 
 #ifdef __cplusplus
 }
