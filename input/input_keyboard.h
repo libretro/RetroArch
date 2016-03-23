@@ -66,20 +66,6 @@ typedef struct input_keyboard_ctx_wait
 
 
 /**
- * input_keyboard_line_new:
- * @userdata                 : Userdata.
- * @cb                       : Callback function.
- *
- * Creates and initializes input keyboard line handle.
- * Also sets callback function for keyboard line handle
- * to provided callback @cb.
- *
- * Returns: keyboard handle on success, otherwise NULL.
- **/
-input_keyboard_line_t *input_keyboard_line_new(void *userdata,
-      input_keyboard_line_complete_t cb);
-
-/**
  * input_keyboard_line_event:
  * @state                    : Input keyboard line handle.
  * @character                : Inputted character.
@@ -105,14 +91,6 @@ bool input_keyboard_line_event(input_keyboard_line_t *state,
  **/
 const char **input_keyboard_line_get_buffer(
       const input_keyboard_line_t *state);
-
-/**
- * input_keyboard_line_free:
- * @state                    : Input keyboard line handle.
- *
- * Frees input keyboard line handle.
- **/
-void input_keyboard_line_free(input_keyboard_line_t *state);
 
 /**
  * input_keyboard_event:

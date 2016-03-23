@@ -63,7 +63,7 @@ static void input_keyboard_line_toggle_osk(bool enable)
  *
  * Frees input keyboard line handle.
  **/
-void input_keyboard_line_free(input_keyboard_line_t *state)
+static void input_keyboard_line_free(input_keyboard_line_t *state)
 {
    if (!state)
       return;
@@ -85,7 +85,7 @@ void input_keyboard_line_free(input_keyboard_line_t *state)
  *
  * Returns: keyboard handle on success, otherwise NULL.
  **/
-input_keyboard_line_t *input_keyboard_line_new(void *userdata,
+static input_keyboard_line_t *input_keyboard_line_new(void *userdata,
       input_keyboard_line_complete_t cb)
 {
    input_keyboard_line_t *state = (input_keyboard_line_t*)
