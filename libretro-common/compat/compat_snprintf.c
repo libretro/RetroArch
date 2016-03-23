@@ -24,6 +24,7 @@
 
 #include <retro_common.h>
 
+#include <stdio.h>
 #include <stdarg.h>
 
 /* http://stackoverflow.com/questions/2915672/snprintf-and-visual-studio-2010 */
