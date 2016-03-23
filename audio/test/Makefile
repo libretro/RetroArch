@@ -20,10 +20,10 @@ CFLAGS += -I$(LIBRETRO_COMM_DIR)/include -I../../
 LDFLAGS += -lm
 
 SHAREDOBJ += $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
-				 $(LIBRETRO_COMM_DIR)/string/string_list.o \
-				 $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
+				 $(LIBRETRO_COMM_DIR)/lists/string_list.o \
+				 ../..//config_file_userdata.o \
 				 $(LIBRETRO_COMM_DIR)/file/config_file.o \
-				 $(LIBRETRO_COMM_DIR)/file/retro_file.o \
+				 $(LIBRETRO_COMM_DIR)/streams/file_stream.o \
 				 $(LIBRETRO_COMM_DIR)/file/file_path.o \
 				 $(LIBRETRO_COMM_DIR)/compat/compat.o \
 				 $(LIBRETRO_COMM_DIR)/hash/rhash.o \
