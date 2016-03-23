@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include "input_driver.h"
-
+#include "input_keyboard.h"
 #include "input_remapping.h"
 
 #include "../retroarch.h"
@@ -639,7 +639,6 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
    static bool input_driver_block_hotkey             = false;
    static bool input_driver_block_libretro_input     = false;
    static bool input_driver_osk_enabled              = false;
-   static bool input_driver_keyboard_linefeed_enable = false;
    static bool input_driver_nonblock_state           = false;
    static bool input_driver_flushing_input           = false;
    static bool input_driver_data_own                 = false;
@@ -677,9 +676,9 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          current_input_data = NULL;
          break;
       case RARCH_INPUT_CTL_DESTROY:
+         input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_DESTROY, NULL);
          input_driver_block_hotkey             = false;
          input_driver_block_libretro_input     = false;
-         input_driver_keyboard_linefeed_enable = false;
          input_driver_nonblock_state           = false;
          input_driver_flushing_input           = false;
          input_driver_data_own                 = false;
@@ -778,14 +777,6 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
          break;
       case RARCH_INPUT_CTL_IS_OSK_ENABLED:
          return input_driver_osk_enabled;
-      case RARCH_INPUT_CTL_SET_KEYBOARD_LINEFEED_ENABLED:
-         input_driver_keyboard_linefeed_enable = true;
-         break;
-      case RARCH_INPUT_CTL_UNSET_KEYBOARD_LINEFEED_ENABLED:
-         input_driver_keyboard_linefeed_enable = false;
-         break;
-      case RARCH_INPUT_CTL_IS_KEYBOARD_LINEFEED_ENABLED:
-         return input_driver_keyboard_linefeed_enable;
       case RARCH_INPUT_CTL_COMMAND_INIT:
 #ifdef HAVE_COMMAND
          if (!settings->stdin_cmd_enable && !settings->network_cmd_enable)

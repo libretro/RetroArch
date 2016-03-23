@@ -52,9 +52,9 @@ static void input_keyboard_line_toggle_osk(bool enable)
       return;
 
    if (enable)
-      input_driver_ctl(RARCH_INPUT_CTL_SET_KEYBOARD_LINEFEED_ENABLED, NULL);
+      input_driver_ctl(RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
    else
-      input_driver_ctl(RARCH_INPUT_CTL_UNSET_KEYBOARD_LINEFEED_ENABLED, NULL);
+      input_driver_ctl(RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
 }
 
 /**
@@ -298,8 +298,21 @@ void input_keyboard_event(bool down, unsigned code,
 
 bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
 {
+   static bool input_driver_keyboard_linefeed_enable = false;
+
    switch (state)
    {
+      case RARCH_INPUT_KEYBOARD_CTL_DESTROY:
+         input_driver_keyboard_linefeed_enable = false;
+         break;
+      case RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED:
+         input_driver_keyboard_linefeed_enable = true;
+         break;
+      case RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED:
+         input_driver_keyboard_linefeed_enable = false;
+         break;
+      case RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED:
+         return input_driver_keyboard_linefeed_enable;
       case RARCH_INPUT_KEYBOARD_CTL_NONE:
       default:
          break;

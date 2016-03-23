@@ -29,7 +29,11 @@ extern "C" {
 
 enum rarch_input_keyboard_ctl_state
 {
-   RARCH_INPUT_KEYBOARD_CTL_NONE = 0
+   RARCH_INPUT_KEYBOARD_CTL_NONE = 0,
+   RARCH_INPUT_KEYBOARD_CTL_DESTROY,
+   RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED,
+   RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED,
+   RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED,
 };
 
 /* Keyboard line reader. Handles textual input in a direct fashion. */
