@@ -86,7 +86,8 @@ typedef int ssize_t;
 #pragma warning(disable : 4723)
 #pragma warning(disable : 4996)
 
-#if _MSC_VER < 1200
+/* roundf is available since MSVC 2013 */
+#if _MSC_VER < 1800
 #define roundf(in) (in >= 0.0f ? floorf(in + 0.5f) : ceilf(in - 0.5f))
 #endif
 
