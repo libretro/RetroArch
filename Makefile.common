@@ -428,6 +428,7 @@ endif
 
 ifeq ($(HAVE_LAKKA), 1)
    DEFINES += -DHAVE_LAKKA
+   DEFINES += -DLAKKA_PROJECT=$(LAKKA_PROJECT)
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)
