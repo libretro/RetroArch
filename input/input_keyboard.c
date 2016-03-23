@@ -52,9 +52,9 @@ static void input_keyboard_line_toggle_osk(bool enable)
       return;
 
    if (enable)
-      input_driver_ctl(RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
+      input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
    else
-      input_driver_ctl(RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
+      input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
 }
 
 /**
