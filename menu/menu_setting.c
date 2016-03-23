@@ -3106,6 +3106,21 @@ static void ssh_enable_toggle_change_handler(void *data)
 
    return;
 }
+static void samba_enable_toggle_change_handler(void *data)
+{
+   settings_t *settings  = config_get_ptr();
+   rarch_setting_t *setting = (rarch_setting_t *)data;
+
+   if (!setting)
+      return;
+
+   if (settings && settings->samba_enable)
+      fclose(fopen(LAKKA_SAMBA_PATH, "w"));
+   else
+      remove(LAKKA_SAMBA_PATH);
+
+   return;
+}
 #endif
 
 enum settings_list_type
@@ -6540,6 +6555,22 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].change_handler = ssh_enable_toggle_change_handler;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->samba_enable,
+                  menu_hash_to_str(MENU_LABEL_SAMBA_ENABLE),
+                  menu_hash_to_str(MENU_LABEL_VALUE_SAMBA_ENABLE),
+                  true,
+                  menu_hash_to_str(MENU_VALUE_OFF),
+                  menu_hash_to_str(MENU_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].change_handler = samba_enable_toggle_change_handler;
+
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
 #endif

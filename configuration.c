@@ -602,6 +602,7 @@ static void config_set_defaults(void)
 
 #ifdef HAVE_LAKKA
    settings->ssh_enable = path_file_exists(LAKKA_SSH_PATH);
+   settings->samba_enable = path_file_exists(LAKKA_SAMBA_PATH);
 #endif
 
 #ifdef HAVE_MENU
@@ -1731,6 +1732,7 @@ static bool config_load_file(const char *path, bool set_defaults)
 
 #ifdef HAVE_LAKKA
    settings->ssh_enable = path_file_exists(LAKKA_SSH_PATH);
+   settings->ssh_enable = path_file_exists(LAKKA_SAMBA_PATH);
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
@@ -2858,6 +2860,10 @@ bool config_save_file(const char *path)
       fclose(fopen(LAKKA_SSH_PATH, "w"));
    else
       remove(LAKKA_SSH_PATH);
+   if (settings->samba_enable)
+      fclose(fopen(LAKKA_SAMBA_PATH, "w"));
+   else
+      remove(LAKKA_SAMBA_PATH);
 #endif
 
    config_set_float(conf, "fastforward_ratio", settings->fastforward_ratio);
