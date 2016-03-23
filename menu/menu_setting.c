@@ -3094,10 +3094,6 @@ static void overlay_enable_toggle_change_handler(void *data)
 static void ssh_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-   rarch_setting_t *setting = (rarch_setting_t *)data;
-
-   if (!setting)
-      return;
 
    if (settings && settings->ssh_enable)
       fclose(fopen(LAKKA_SSH_PATH, "w"));
@@ -3109,10 +3105,6 @@ static void ssh_enable_toggle_change_handler(void *data)
 static void samba_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-   rarch_setting_t *setting = (rarch_setting_t *)data;
-
-   if (!setting)
-      return;
 
    if (settings && settings->samba_enable)
       fclose(fopen(LAKKA_SAMBA_PATH, "w"));
@@ -3124,10 +3116,6 @@ static void samba_enable_toggle_change_handler(void *data)
 static void bluetooth_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-   rarch_setting_t *setting = (rarch_setting_t *)data;
-
-   if (!setting)
-      return;
 
    if (settings && settings->bluetooth_enable)
       fclose(fopen(LAKKA_BLUETOOTH_PATH, "w"));
