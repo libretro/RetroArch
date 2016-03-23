@@ -21,9 +21,16 @@
 extern "C" {
 #endif
 
-#include <boolean.h>
-#include "../libretro.h"
 #include <stdint.h>
+
+#include <boolean.h>
+
+#include "../libretro.h"
+
+enum rarch_input_keyboard_ctl_state
+{
+   RARCH_INPUT_KEYBOARD_CTL_NONE = 0
+};
 
 /* Keyboard line reader. Handles textual input in a direct fashion. */
 typedef struct input_keyboard_line input_keyboard_line_t;
@@ -128,6 +135,8 @@ void input_keyboard_wait_keys(void *userdata, input_keyboard_press_t cb);
  * Cancels function callback set by input_keyboard_wait_keys().
  **/
 void input_keyboard_wait_keys_cancel(void);
+
+bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

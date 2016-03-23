@@ -295,3 +295,15 @@ void input_keyboard_event(bool down, unsigned code,
          (*key_event)(down, code, character, mod);
    }
 }
+
+bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
+{
+   switch (state)
+   {
+      case RARCH_INPUT_KEYBOARD_CTL_NONE:
+      default:
+         break;
+   }
+
+   return true;
+}
