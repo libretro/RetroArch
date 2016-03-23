@@ -18,5 +18,8 @@
 #define __RARCH_LAKKA_H
 
 #define LAKKA_SSH_PATH "/storage/.cache/services/sshd.conf"
+#define LAKKA_SAMBA_PATH "/storage/.cache/services/samba.conf"
+#define LAKKA_BLUETOOTH_PATH "/storage/.cache/services/bluez.conf"
+#define LAKKA_UPDATE_DIR "/storage/.update/"
 
 #endif

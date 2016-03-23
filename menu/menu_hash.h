@@ -401,6 +401,10 @@ extern "C" {
 #define MENU_LABEL_VALUE_NETPLAY_ENABLE                                        0xbc3e81a9U
 #define MENU_LABEL_SSH_ENABLE                                                  0xd9854a79U
 #define MENU_LABEL_VALUE_SSH_ENABLE                                            0x0430627aU
+#define MENU_LABEL_SAMBA_ENABLE                                                0x379e15efU
+#define MENU_LABEL_VALUE_SAMBA_ENABLE                                          0x9846d9b0U
+#define MENU_LABEL_BLUETOOTH_ENABLE                                            0xbac1e1e1U
+#define MENU_LABEL_VALUE_BLUETOOTH_ENABLE                                      0xf7e31e22U
 #define MENU_LABEL_NETPLAY_CLIENT_SWAP_INPUT                                   0xd87bbba9U
 #define MENU_LABEL_VALUE_NETPLAY_CLIENT_SWAP_INPUT                             0x57e5be2dU
 #define MENU_LABEL_NETPLAY_DELAY_FRAMES                                        0x86b2c48dU

@@ -3091,19 +3091,35 @@ static void overlay_enable_toggle_change_handler(void *data)
 #endif
 
 #ifdef HAVE_LAKKA
+
+void lakka_service_toggle(const char *path, bool enable)
+{
+   if (enable)
+      fclose(fopen(path, "w"));
+   else
+      remove(path);
+   return;
+}
+
 static void ssh_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-   rarch_setting_t *setting = (rarch_setting_t *)data;
-
-   if (!setting)
-      return;
-
-   if (settings && settings->ssh_enable)
-      fclose(fopen(LAKKA_SSH_PATH, "w"));
-   else
-      remove(LAKKA_SSH_PATH);
-
+   lakka_service_toggle(LAKKA_SSH_PATH,
+         settings && settings->ssh_enable);
+   return;
+}
+static void samba_enable_toggle_change_handler(void *data)
+{
+   settings_t *settings  = config_get_ptr();
+   lakka_service_toggle(LAKKA_SAMBA_PATH,
+         settings && settings->samba_enable);
+   return;
+}
+static void bluetooth_enable_toggle_change_handler(void *data)
+{
+   settings_t *settings  = config_get_ptr();
+   lakka_service_toggle(LAKKA_BLUETOOTH_PATH,
+         settings && settings->bluetooth_enable);
    return;
 }
 #endif
@@ -6540,6 +6556,37 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             (*list)[list_info->index - 1].change_handler = ssh_enable_toggle_change_handler;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->samba_enable,
+                  menu_hash_to_str(MENU_LABEL_SAMBA_ENABLE),
+                  menu_hash_to_str(MENU_LABEL_VALUE_SAMBA_ENABLE),
+                  true,
+                  menu_hash_to_str(MENU_VALUE_OFF),
+                  menu_hash_to_str(MENU_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].change_handler = samba_enable_toggle_change_handler;
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bluetooth_enable,
+                  menu_hash_to_str(MENU_LABEL_BLUETOOTH_ENABLE),
+                  menu_hash_to_str(MENU_LABEL_VALUE_BLUETOOTH_ENABLE),
+                  true,
+                  menu_hash_to_str(MENU_VALUE_OFF),
+                  menu_hash_to_str(MENU_VALUE_ON),
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].change_handler = bluetooth_enable_toggle_change_handler;
+
             END_SUB_GROUP(list, list_info, parent_group);
             END_GROUP(list, list_info, parent_group);
 #endif
