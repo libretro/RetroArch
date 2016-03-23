@@ -621,7 +621,10 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
       binds.begin++;
 
       if (binds.begin > binds.last)
+      {
+         input_keyboard_wait_keys_cancel();
          return true;
+      }
 
       binds.target++;
       binds.timeout_end = retro_get_time_usec() +
