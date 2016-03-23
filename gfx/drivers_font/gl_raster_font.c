@@ -330,7 +330,7 @@ static void gl_raster_font_render_line(
       coords.lut_tex_coord = font_lut_tex_coord;
 
       if (font->block)
-         gfx_coord_array_add(&font->block->carr, &coords, coords.vertices);
+         gfx_coord_array_append(&font->block->carr, &coords, coords.vertices);
       else
          gl_raster_font_draw_vertices(gl, &coords);
 

@@ -84,7 +84,7 @@ typedef struct gfx_raster_block
    gfx_coord_array_t carr;
 } gfx_font_raster_block_t;
 
-bool gfx_coord_array_add(gfx_coord_array_t *ca,
+bool gfx_coord_array_append(gfx_coord_array_t *ca,
       const gfx_coords_t *coords, unsigned count);
 
 void gfx_coord_array_free(gfx_coord_array_t *ca);

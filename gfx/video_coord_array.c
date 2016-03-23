@@ -59,7 +59,7 @@ static bool gfx_coord_array_resize(gfx_coord_array_t *ca,
    return true;
 }
 
-bool gfx_coord_array_add(gfx_coord_array_t *ca,
+bool gfx_coord_array_append(gfx_coord_array_t *ca,
       const gfx_coords_t *coords, unsigned count)
 {
    size_t base_size, offset;

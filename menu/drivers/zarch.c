@@ -346,14 +346,14 @@ static void zarch_zui_push_quad(unsigned width, unsigned height,
    coords.lut_tex_coord = coord_draw.ptr;
    coords.vertices      = 3;
 
-   gfx_coord_array_add(ca, &coords, 3);
+   gfx_coord_array_append(ca, &coords, 3);
 
    coords.color         += 4;
    coords.vertex        += 2;
    coords.tex_coord     += 2;
    coords.lut_tex_coord += 2;
 
-   gfx_coord_array_add(ca, &coords, 3);
+   gfx_coord_array_append(ca, &coords, 3);
 }
 
 static float zarch_zui_randf(float min, float max)
