@@ -266,6 +266,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "ssh_enable";
       case MENU_LABEL_SAMBA_ENABLE:
          return "samba_enable";
+      case MENU_LABEL_BLUETOOTH_ENABLE:
+         return "bluetooth_enable";
       case MENU_LABEL_NETPLAY_DELAY_FRAMES:
          return "netplay_delay_frames";
       case MENU_LABEL_NETPLAY_MODE:
@@ -1016,6 +1018,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "SSH Enable";
       case MENU_LABEL_VALUE_SAMBA_ENABLE:
          return "SAMBA Enable";
+      case MENU_LABEL_VALUE_BLUETOOTH_ENABLE:
+         return "Bluetooth Enable";
       case MENU_LABEL_VALUE_NETPLAY_DELAY_FRAMES:
          return "Netplay Delay Frames";
       case MENU_LABEL_VALUE_NETPLAY_MODE:
