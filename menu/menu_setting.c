@@ -3091,37 +3091,35 @@ static void overlay_enable_toggle_change_handler(void *data)
 #endif
 
 #ifdef HAVE_LAKKA
+
+void lakka_service_toggle(const char *path, bool enable)
+{
+   if (enable)
+      fclose(fopen(path, "w"));
+   else
+      remove(path);
+   return;
+}
+
 static void ssh_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-
-   if (settings && settings->ssh_enable)
-      fclose(fopen(LAKKA_SSH_PATH, "w"));
-   else
-      remove(LAKKA_SSH_PATH);
-
+   lakka_service_toggle(LAKKA_SSH_PATH,
+         settings && settings->ssh_enable);
    return;
 }
 static void samba_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-
-   if (settings && settings->samba_enable)
-      fclose(fopen(LAKKA_SAMBA_PATH, "w"));
-   else
-      remove(LAKKA_SAMBA_PATH);
-
+   lakka_service_toggle(LAKKA_SAMBA_PATH,
+         settings && settings->samba_enable);
    return;
 }
 static void bluetooth_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-
-   if (settings && settings->bluetooth_enable)
-      fclose(fopen(LAKKA_BLUETOOTH_PATH, "w"));
-   else
-      remove(LAKKA_BLUETOOTH_PATH);
-
+   lakka_service_toggle(LAKKA_BLUETOOTH_PATH,
+         settings && settings->bluetooth_enable);
    return;
 }
 #endif
