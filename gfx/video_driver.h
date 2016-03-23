@@ -540,16 +540,6 @@ bool video_driver_texture_load(void *data,
 
 bool video_driver_texture_unload(uintptr_t *id);
 
-#ifdef HAVE_OPENGL
-void gl_load_texture_data(uint32_t id,
-      enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type,
-      unsigned alignment,
-      unsigned width, unsigned height,
-      const void *frame,
-      unsigned base_size);
-#endif
-
 extern video_driver_t video_gl;
 extern video_driver_t video_vulkan;
 extern video_driver_t video_psp1;

@@ -16,6 +16,13 @@
 
 #include "gl_common.h"
 
+extern void gl_load_texture_data(uint32_t id_data,
+      enum gfx_wrap_type wrap_type,
+      enum texture_filter_type filter_type,
+      unsigned alignment,
+      unsigned width, unsigned height,
+      const void *frame, unsigned base_size);
+
 void gl_ff_vertex(const void *data)
 {
 #ifndef NO_GL_FF_VERTEX
