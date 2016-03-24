@@ -24,7 +24,7 @@ static void (*co_swap)(cothread_t, cothread_t) = 0;
 #endif
 
 #ifdef _WIN32
-//ABI: Win64
+/* ABI: Win64 */
 static unsigned char co_swap_function[] = {
   0x48, 0x89, 0x22,                                 /* mov    [rdx],rsp        */
   0x48, 0x8b, 0x21,                                 /* mov    rsp,[rcx]        */
@@ -81,7 +81,7 @@ void co_init(void)
          sizeof(co_swap_function), PAGE_EXECUTE_READWRITE, &old_privileges);
 }
 #else
-//ABI: SystemV
+/* ABI: SystemV */
 #ifndef CO_USE_INLINE_ASM
 static unsigned char co_swap_function[] = {
   0x48, 0x89, 0x26,                                 /* mov    [rsi],rsp      */
