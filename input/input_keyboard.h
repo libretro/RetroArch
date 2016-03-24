@@ -66,34 +66,6 @@ typedef struct input_keyboard_ctx_wait
    input_keyboard_press_t cb;
 } input_keyboard_ctx_wait_t;
 
-
-/**
- * input_keyboard_line_event:
- * @state                    : Input keyboard line handle.
- * @character                : Inputted character.
- *
- * Called on every keyboard character event.
- *
- * Returns: true (1) on success, otherwise false (0).
- **/
-bool input_keyboard_line_event(input_keyboard_line_t *state,
-      uint32_t character);
-
-/**
- * input_keyboard_line_get_buffer:
- * @state                    : Input keyboard line handle.
- *
- * Gets the underlying buffer of the keyboard line.
- *
- * The underlying buffer can be reallocated at any time 
- * (or be NULL), but the pointer to it remains constant 
- * throughout the objects lifetime.
- *
- * Returns: pointer to string.
- **/
-const char **input_keyboard_line_get_buffer(
-      const input_keyboard_line_t *state);
-
 /**
  * input_keyboard_event:
  * @down                     : Keycode was pressed down?
@@ -114,8 +86,11 @@ void input_keyboard_event(bool down, unsigned code, uint32_t character,
  *
  * Sets function pointer for keyboard line handle.
  *
- * Returns: underlying buffer returned by 
- * input_keyboard_line_get_buffer().
+ * The underlying buffer can be reallocated at any time 
+ * (or be NULL), but the pointer to it remains constant 
+ * throughout the objects lifetime.
+ *
+ * Returns: underlying buffer of the keyboard line.
  **/
 const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb);

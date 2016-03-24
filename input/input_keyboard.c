@@ -110,7 +110,7 @@ static input_keyboard_line_t *input_keyboard_line_new(void *userdata,
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool input_keyboard_line_event(
+static bool input_keyboard_line_event(
       input_keyboard_line_t *state, uint32_t character)
 {
    char c = character >= 128 ? '?' : character;
@@ -158,32 +158,17 @@ bool input_keyboard_line_event(
 }
 
 /**
- * input_keyboard_line_get_buffer:
- * @state                    : Input keyboard line handle.
- *
- * Gets the underlying buffer of the keyboard line.
- *
- * The underlying buffer can be reallocated at any time 
- * (or be NULL), but the pointer to it remains constant 
- * throughout the objects lifetime.
- *
- * Returns: pointer to string.
- **/
-const char **input_keyboard_line_get_buffer(
-      const input_keyboard_line_t *state)
-{
-   return (const char**)&state->buffer;
-}
-
-/**
  * input_keyboard_start_line:
  * @userdata                 : Userdata.
  * @cb                       : Line complete callback function.
  *
  * Sets function pointer for keyboard line handle.
  *
- * Returns: underlying buffer returned by 
- * input_keyboard_line_get_buffer().
+ * The underlying buffer can be reallocated at any time 
+ * (or be NULL), but the pointer to it remains constant 
+ * throughout the objects lifetime.
+ *
+ * Returns: underlying buffer of the keyboard line.
  **/
 const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb)
@@ -195,7 +180,7 @@ const char **input_keyboard_start_line(void *userdata,
    /* While reading keyboard line input, we have to block all hotkeys. */
    input_driver_keyboard_mapping_set_block(true);
 
-   return input_keyboard_line_get_buffer(g_keyboard_line);
+   return (const char**)&g_keyboard_line->buffer;
 }
 
 /**
