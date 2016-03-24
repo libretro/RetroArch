@@ -36,12 +36,12 @@ EOF
 			*)
 			case "$VAL" in
 				'yes'*)
-					print_help_option "--disable-$VAR" "$COMMENT";;
+					print_help_option "--disable-$VAR" "Disable $COMMENT";;
 				'no'*)
-					print_help_option "--enable-$VAR" "$COMMENT";;
+					print_help_option "--enable-$VAR" "Enable $COMMENT";;
 				'auto'*)
-					print_help_option "--enable-$VAR" "$COMMENT"
-					print_help_option "--disable-$VAR";;
+					print_help_option "--enable-$VAR" "Enable $COMMENT"
+					print_help_option "--disable-$VAR" "Disable $COMMENT";;
 				*)
 					print_help_option "--with-$VAR" "$COMMENT";;
 			esac
