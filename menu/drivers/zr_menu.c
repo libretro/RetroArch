@@ -80,7 +80,6 @@ static int ui_selector(struct zr_context *ctx, const char *title, int *selected,
 {
    struct zr_vec2 item_padding;
    struct zr_rect bounds, label, content, tri, sel;
-   struct zr_window *win;
    struct zr_panel *layout;
    struct zr_command_buffer *out;
    struct zr_color col;
@@ -92,7 +91,6 @@ static int ui_selector(struct zr_context *ctx, const char *title, int *selected,
    if (!ctx || !ctx->current)
       return 0;
 
-   win = ctx->current;
    layout = zr_window_get_panel(ctx);
    ZR_ASSERT(layout);
    out = zr_window_get_canvas(ctx);
@@ -168,7 +166,6 @@ static void ui_slider(struct zr_context *ctx, const char *title, int *value, int
 {
    struct zr_vec2 item_padding;
    struct zr_rect bounds, label, content, bar, cursor, tri;
-   struct zr_window *win;
    struct zr_panel *layout;
    struct zr_command_buffer *out;
    struct zr_color col;
@@ -181,7 +178,6 @@ static void ui_slider(struct zr_context *ctx, const char *title, int *value, int
    if (!ctx || !ctx->current)
       return;
 
-    win = ctx->current;
     layout = zr_window_get_panel(ctx);
     ZR_ASSERT(layout);
     out = zr_window_get_canvas(ctx);
