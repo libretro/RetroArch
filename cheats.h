@@ -27,8 +27,6 @@ typedef struct cheat_manager cheat_manager_t;
 
 unsigned cheat_manager_get_size(void);
 
-cheat_manager_t *cheat_manager_new(unsigned size);
-
 bool cheat_manager_load(const char *path);
 
 /**

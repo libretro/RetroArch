@@ -177,6 +177,38 @@ bool cheat_manager_save(const char *path)
    return ret;
 }
 
+static cheat_manager_t *cheat_manager_new(unsigned size)
+{
+   unsigned i;
+   cheat_manager_t *handle = (cheat_manager_t*)
+      calloc(1, sizeof(struct cheat_manager));
+
+   if (!handle)
+      return NULL;
+
+   handle->buf_size = size;
+   handle->size     = size;
+   handle->cheats   = (struct item_cheat*)
+      calloc(handle->buf_size, sizeof(struct item_cheat));
+
+   if (!handle->cheats)
+   {
+      handle->buf_size = 0;
+      handle->size = 0;
+      handle->cheats = NULL;
+      return handle;
+   }
+
+   for (i = 0; i < handle->size; i++)
+   {
+      handle->cheats[i].desc   = NULL;
+      handle->cheats[i].code   = NULL;
+      handle->cheats[i].state  = false;
+   }
+
+   return handle;
+}
+
 bool cheat_manager_load(const char *path)
 {
    unsigned cheats = 0, i;
@@ -230,37 +262,6 @@ bool cheat_manager_load(const char *path)
    return true;
 }
 
-cheat_manager_t *cheat_manager_new(unsigned size)
-{
-   unsigned i;
-   cheat_manager_t *handle = (cheat_manager_t*)
-      calloc(1, sizeof(struct cheat_manager));
-
-   if (!handle)
-      return NULL;
-
-   handle->buf_size = size;
-   handle->size     = size;
-   handle->cheats   = (struct item_cheat*)
-      calloc(handle->buf_size, sizeof(struct item_cheat));
-
-   if (!handle->cheats)
-   {
-      handle->buf_size = 0;
-      handle->size = 0;
-      handle->cheats = NULL;
-      return handle;
-   }
-
-   for (i = 0; i < handle->size; i++)
-   {
-      handle->cheats[i].desc   = NULL;
-      handle->cheats[i].code   = NULL;
-      handle->cheats[i].state  = false;
-   }
-
-   return handle;
-}
 
 bool cheat_manager_realloc(unsigned new_size)
 {
