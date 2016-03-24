@@ -35,6 +35,8 @@ enum rarch_input_keyboard_ctl_state
    RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED,
    RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED,
 
+   RARCH_INPUT_KEYBOARD_CTL_LINE_FREE,
+
    /*
     * Waits for keys to be pressed (used for binding 
     * keys in the menu).

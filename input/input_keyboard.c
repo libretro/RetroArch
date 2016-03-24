@@ -188,8 +188,7 @@ const char **input_keyboard_line_get_buffer(
 const char **input_keyboard_start_line(void *userdata,
       input_keyboard_line_complete_t cb)
 {
-   if (g_keyboard_line)
-      input_keyboard_line_free(g_keyboard_line);
+   input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
    g_keyboard_line = input_keyboard_line_new(userdata, cb);
 
@@ -249,8 +248,7 @@ void input_keyboard_event(bool down, unsigned code,
       }
 
       /* Line is complete, can free it now. */
-      input_keyboard_line_free(g_keyboard_line);
-      g_keyboard_line = NULL;
+      input_keyboard_ctl(RARCH_INPUT_KEYBOARD_CTL_LINE_FREE, NULL);
 
       /* Unblock all hotkeys. */
       input_driver_keyboard_mapping_set_block(false);
@@ -271,6 +269,11 @@ bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data)
 
    switch (state)
    {
+      case RARCH_INPUT_KEYBOARD_CTL_LINE_FREE:
+         if (g_keyboard_line)
+            input_keyboard_line_free(g_keyboard_line);
+         g_keyboard_line = NULL;
+         break;
       case RARCH_INPUT_KEYBOARD_CTL_START_WAIT_KEYS:
          {
             input_keyboard_ctx_wait_t *keys = (input_keyboard_ctx_wait_t*)data;
