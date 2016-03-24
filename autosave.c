@@ -242,17 +242,20 @@ void unlock_autosave(void)
 void autosave_event_init(void)
 {
    unsigned i;
+   autosave_t **list    = NULL;
    settings_t *settings = config_get_ptr();
    global_t   *global   = global_get_ptr();
 
    if (settings->autosave_interval < 1 || !global->savefiles)
       return;
 
-   if (!(autosave_state.list = (autosave_t**)calloc(global->savefiles->size,
-               sizeof(*autosave_state.list))))
+   list = (autosave_t**)calloc(global->savefiles->size,
+               sizeof(*autosave_state.list));
+   if (!list)
       return;
 
-   autosave_state.num = global->savefiles->size;
+   autosave_state.list = list;
+   autosave_state.num  = global->savefiles->size;
 
    for (i = 0; i < global->savefiles->size; i++)
    {
