@@ -681,8 +681,8 @@ void zrmenu_wnd_wizard(zrmenu_handle_t *zr)
    struct zr_panel layout;
    struct zr_context *ctx = &zr->ctx;
    const int id           = ZRMENU_WND_WIZARD;
-   static int width       = 640;
-   static int height      = 480;
+   static int width       = 800;
+   static int height      = 600;
    static int panel       = 0;
    settings_t *settings   = config_get_ptr();
 
@@ -782,20 +782,52 @@ void zrmenu_wnd_wizard(zrmenu_handle_t *zr)
                panel++;
             break;
          case 2:
-            if (zr_input_is_key_pressed(&ctx->input, ZR_KEY_UP))
-                active = MAX(0, active-1);
-            if (zr_input_is_key_pressed(&ctx->input, ZR_KEY_DOWN))
-                active = MIN(active+1, WIDGET_MAX-1);
+            zr_layout_row_begin(ctx, ZR_DYNAMIC, height * 0.80f, 2);
+            zr_layout_row_push(ctx, 0.15f);
+            if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER))
+            {
+               zr_layout_space_begin(ctx, ZR_STATIC, width * 0.15f, 1);
+               zr_layout_space_push(ctx, zr_rect(0, 0, width * 0.15f, width * 0.15f));
+               zr_layout_space_end(ctx);
+               zr_group_end(ctx);
+            }
+            zr_layout_row_push(ctx, 0.85f);
+
+            if (zr_group_begin(ctx, &sub, "", ZR_WINDOW_NO_SCROLLBAR|ZR_WINDOW_BORDER|ZR_WINDOW_NO_SCROLLBAR))
+            {
+
+               zr_layout_row_dynamic(ctx, 14, 15);
+               zr_image(ctx, zr->icons.page_on);
+               zr_image(ctx, zr->icons.page_on);
+               zr_image(ctx, zr->icons.page_on);
+               zr_image(ctx, zr->icons.page_off);
+               zr_image(ctx, zr->icons.page_off);
+
                zr_layout_row_dynamic(ctx, 50, 1);
-            ui_selector(ctx, "Windowed Mode", &window_mode, display, LEN(display), WINDOW_MODE == active);
-            ui_selector(ctx, "Model Detail", &model_detail, detail, LEN(detail), MODEL_DETAIL == active);
-            ui_selector(ctx, "Textures", &texture_detail, detail, LEN(detail), TEXTURES == active);
-            ui_selector(ctx, "Shadows", &shadow_detail, detail, LEN(detail), SHADOWS == active);
-            ui_selector(ctx, "Lighting", &lighning_detail, detail, LEN(detail), LIGHTNING == active);
-            ui_selector(ctx, "Effects", &effects_detail, detail, LEN(detail), EFFECTS == active);
-            ui_selector(ctx, "Console", &show_console, state, LEN(state), CONSOLE == active);
-            ui_slider(ctx, "Brightness", &brightness, 100, BRIGHTNESS == active);
-            ui_slider(ctx, "Volume", &volume, 100, VOLUME == active);
+               ui_selector(ctx, "Windowed Mode", &window_mode, display, LEN(display), WINDOW_MODE == active);
+               ui_selector(ctx, "Model Detail", &model_detail, detail, LEN(detail), MODEL_DETAIL == active);
+               ui_selector(ctx, "Textures", &texture_detail, detail, LEN(detail), TEXTURES == active);
+               ui_selector(ctx, "Shadows", &shadow_detail, detail, LEN(detail), SHADOWS == active);
+               ui_selector(ctx, "Lighting", &lighning_detail, detail, LEN(detail), LIGHTNING == active);
+               ui_selector(ctx, "Effects", &effects_detail, detail, LEN(detail), EFFECTS == active);
+               ui_selector(ctx, "Console", &show_console, state, LEN(state), CONSOLE == active);
+               ui_slider(ctx, "Brightness", &brightness, 100, BRIGHTNESS == active);
+               ui_slider(ctx, "Volume", &volume, 100, VOLUME == active);
+
+               if (zr_input_is_key_pressed(&ctx->input, ZR_KEY_UP))
+                   active = MAX(0, active-1);
+               if (zr_input_is_key_pressed(&ctx->input, ZR_KEY_DOWN))
+                   active = MIN(active+1, WIDGET_MAX - 2);
+               zr_group_end(ctx);
+            }
+            zr_layout_row_end(ctx);
+            zr_layout_row_dynamic(ctx, 30, 4);
+            zr_label(ctx,"", ZR_TEXT_RIGHT);
+            zr_label(ctx,"", ZR_TEXT_RIGHT);
+            if (zr_button_text(ctx, "Previous", ZR_BUTTON_DEFAULT))
+               panel--;
+            if (zr_button_text(ctx, "Next", ZR_BUTTON_DEFAULT))
+               panel++;
             break;
          default:
             zr_layout_row_begin(ctx, ZR_DYNAMIC, height * 0.80f, 2);
