@@ -26,29 +26,6 @@ extern "C" {
 typedef struct autosave autosave_t;
 
 /**
- * autosave_new:
- * @path            : path to autosave file
- * @data            : pointer to buffer
- * @size            : size of @data buffer
- * @interval        : interval at which saves should be performed.
- *
- * Create and initialize autosave object.
- *
- * Returns: pointer to new autosave_t object if successful, otherwise
- * NULL.
- **/
-autosave_t *autosave_new(const char *path, const void *data,
-      size_t size, unsigned interval);
-
-/**
- * autosave_free:
- * @handle          : pointer to autosave object
- *
- * Frees autosave object.
- **/
-void autosave_free(autosave_t *handle);
-
-/**
  * lock_autosave:
  *
  * Lock autosave.

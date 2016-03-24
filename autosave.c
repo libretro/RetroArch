@@ -149,12 +149,13 @@ static void autosave_thread(void *data)
  * Returns: pointer to new autosave_t object if successful, otherwise
  * NULL.
  **/
-autosave_t *autosave_new(const char *path, const void *data, size_t size,
+static autosave_t *autosave_new(const char *path,
+      const void *data, size_t size,
       unsigned interval)
 {
    autosave_t *handle = (autosave_t*)calloc(1, sizeof(*handle));
    if (!handle)
-      return NULL;
+      goto error;
 
    handle->bufsize      = size;
    handle->interval     = interval;
@@ -163,10 +164,8 @@ autosave_t *autosave_new(const char *path, const void *data, size_t size,
    handle->retro_buffer = data;
 
    if (!handle->buffer)
-   {
-      free(handle);
-      return NULL;
-   }
+      goto error;
+
    memcpy(handle->buffer, handle->retro_buffer, handle->bufsize);
 
    handle->lock         = slock_new();
@@ -176,6 +175,11 @@ autosave_t *autosave_new(const char *path, const void *data, size_t size,
    handle->thread       = sthread_create(autosave_thread, handle);
 
    return handle;
+
+error:
+   if (handle)
+      free(handle);
+   return NULL;
 }
 
 /**
@@ -184,7 +188,7 @@ autosave_t *autosave_new(const char *path, const void *data, size_t size,
  *
  * Frees autosave object.
  **/
-void autosave_free(autosave_t *handle)
+static void autosave_free(autosave_t *handle)
 {
    if (!handle)
       return;
