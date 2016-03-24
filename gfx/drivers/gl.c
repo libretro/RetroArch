@@ -367,11 +367,11 @@ static void gl_compute_fbo_geometry(gl_t *gl,
       unsigned vp_width, unsigned vp_height)
 {
    int i;
-   bool size_modified = false;
-   GLint max_size = 0;
-   unsigned last_width = width;
-   unsigned last_height = height;
-   unsigned last_max_width = gl->tex_w;
+   bool size_modified       = false;
+   GLint max_size           = 0;
+   unsigned last_width      = width;
+   unsigned last_height     = height;
+   unsigned last_max_width  = gl->tex_w;
    unsigned last_max_height = gl->tex_h;
 
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
@@ -420,25 +420,25 @@ static void gl_compute_fbo_geometry(gl_t *gl,
 
       if (fbo_rect->img_width > (unsigned)max_size)
       {
-         size_modified = true;
-         fbo_rect->img_width = max_size;
+         size_modified            = true;
+         fbo_rect->img_width      = max_size;
       }
 
       if (fbo_rect->img_height > (unsigned)max_size)
       {
-         size_modified = true;
-         fbo_rect->img_height = max_size;
+         size_modified            = true;
+         fbo_rect->img_height     = max_size;
       }
 
       if (fbo_rect->max_img_width > (unsigned)max_size)
       {
-         size_modified = true;
-         fbo_rect->max_img_width = max_size;
+         size_modified            = true;
+         fbo_rect->max_img_width  = max_size;
       }
 
       if (fbo_rect->max_img_height > (unsigned)max_size)
       {
-         size_modified = true;
+         size_modified            = true;
          fbo_rect->max_img_height = max_size;
       }
 
@@ -459,8 +459,8 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
    bool fp_fbo, srgb_fbo;
    GLenum min_filter, mag_filter, wrap_enum;
    video_shader_ctx_filter_t filter_type;
-   bool mipmapped = false;
-   bool smooth = false;
+   bool mipmapped       = false;
+   bool smooth          = false;
    settings_t *settings = config_get_ptr();
    GLuint base_filt     = settings->video.smooth ? GL_LINEAR : GL_NEAREST;
    GLuint base_mip_filt = settings->video.smooth ? 
@@ -482,12 +482,11 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
    }
 
    mag_filter = min_filter_to_mag(min_filter);
-
-   wrap.idx = i + 2;
+   wrap.idx   = i + 2;
 
    video_shader_driver_ctl(SHADER_CTL_WRAP_TYPE, &wrap);
 
-   wrap_enum = gl_wrap_type_to_enum(wrap.type);
+   wrap_enum  = gl_wrap_type_to_enum(wrap.type);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mag_filter);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
@@ -641,7 +640,7 @@ static void gl_deinit_fbo(gl_t *gl)
    memset(gl->fbo_texture, 0, sizeof(gl->fbo_texture));
    memset(gl->fbo, 0, sizeof(gl->fbo));
    gl->fbo_inited = false;
-   gl->fbo_pass = 0;
+   gl->fbo_pass   = 0;
 
    if (gl->fbo_feedback)
       glDeleteFramebuffers(1, &gl->fbo_feedback);
@@ -780,8 +779,10 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 {
    GLenum status;
    unsigned i;
-   bool depth = false, stencil = false;
-   GLint max_fbo_size = 0, max_renderbuffer_size = 0;
+   bool depth                           = false;
+   bool stencil                         = false;
+   GLint max_fbo_size                   = 0;
+   GLint max_renderbuffer_size          = 0;
    struct retro_hw_render_callback *hwr = NULL;
    video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 
@@ -896,11 +897,12 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
 {
    gfx_ctx_aspect_t aspect_data;
    unsigned width, height;
-   int x = 0, y = 0;
-   float device_aspect   = (float)viewport_width / viewport_height;
+   int x                  = 0;
+   int y                  = 0;
+   float device_aspect    = (float)viewport_width / viewport_height;
    struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
-   settings_t *settings  = config_get_ptr();
-   gl_t           *gl    = (gl_t*)data;
+   settings_t *settings   = config_get_ptr();
+   gl_t           *gl     = (gl_t*)data;
 
    video_driver_get_size(&width, &height);
 
@@ -994,7 +996,7 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
 
 static void gl_set_rotation(void *data, unsigned rotation)
 {
-   gl_t *gl = (gl_t*)data;
+   gl_t               *gl = (gl_t*)data;
    struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!gl)
@@ -1173,8 +1175,8 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       prev_rect = &gl->fbo_rect[i - 1];
       fbo_info  = &fbo_tex_info[i - 1];
 
-      xamt = (GLfloat)prev_rect->img_width / prev_rect->width;
-      yamt = (GLfloat)prev_rect->img_height / prev_rect->height;
+      xamt      = (GLfloat)prev_rect->img_width / prev_rect->width;
+      yamt      = (GLfloat)prev_rect->img_height / prev_rect->height;
 
       set_texture_coords(fbo_tex_coords, xamt, yamt);
 
@@ -1292,17 +1294,17 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
    video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
 
-   gl->coords.vertex = gl->vertex_ptr;
+   gl->coords.vertex    = gl->vertex_ptr;
 
-   gl->coords.vertices = 4;
+   gl->coords.vertices  = 4;
 
-   coords.handle_data = NULL;
-   coords.data        = &gl->coords;
+   coords.handle_data   = NULL;
+   coords.data          = &gl->coords;
 
    video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
 
-   mvp.data = gl;
-   mvp.matrix = &gl->mvp;
+   mvp.data             = gl;
+   mvp.matrix           = &gl->mvp;
 
    video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1323,7 +1325,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
    {
       /* Resolution change. Need to clear out texture. */
 
-      gl->last_width[gl->tex_index] = width;
+      gl->last_width[gl->tex_index]  = width;
       gl->last_height[gl->tex_index] = height;
 
       if (clear)
@@ -1413,6 +1415,7 @@ static INLINE void gl_convert_frame_argb8888_abgr8888(gl_t *gl,
 static void gl_init_textures_data(gl_t *gl)
 {
    unsigned i;
+
    for (i = 0; i < gl->textures; i++)
    {
       gl->last_width[i]  = gl->tex_w;
@@ -1665,10 +1668,10 @@ static INLINE void gl_set_prev_texture(gl_t *gl,
     * for FBO pass #N and feedbacks. */
    if (gl->fbo_feedback_enable)
    {
-      GLuint tmp_fbo = gl->fbo_feedback;
-      GLuint tmp_tex = gl->fbo_feedback_texture;
-      gl->fbo_feedback = gl->fbo[gl->fbo_feedback_pass];
-      gl->fbo_feedback_texture = gl->fbo_texture[gl->fbo_feedback_pass];
+      GLuint tmp_fbo                 = gl->fbo_feedback;
+      GLuint tmp_tex                 = gl->fbo_feedback_texture;
+      gl->fbo_feedback               = gl->fbo[gl->fbo_feedback_pass];
+      gl->fbo_feedback_texture       = gl->fbo_texture[gl->fbo_feedback_pass];
       gl->fbo[gl->fbo_feedback_pass] = tmp_fbo;
       gl->fbo_texture[gl->fbo_feedback_pass] = tmp_tex;
    }
@@ -1760,8 +1763,8 @@ static INLINE void gl_draw_texture(gl_t *gl)
    gl->coords.color     = color;
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   shader_info.data = gl;
-   shader_info.idx  = GL_SHADER_STOCK_BLEND;
+   shader_info.data     = gl;
+   shader_info.idx      = GL_SHADER_STOCK_BLEND;
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
@@ -1772,8 +1775,8 @@ static INLINE void gl_draw_texture(gl_t *gl)
 
    video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
 
-   mvp.data   = gl;
-   mvp.matrix = &gl->mvp_no_rot;
+   mvp.data             = gl;
+   mvp.matrix           = &gl->mvp_no_rot;
 
    video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
 
@@ -1857,8 +1860,8 @@ static bool gl_frame(void *data, const void *frame,
 
       gl->should_resize = false;
 
-      mode.width  = width;
-      mode.height = height;
+      mode.width        = width;
+      mode.height       = height;
 
       gfx_ctx_ctl(GFX_CTL_SET_RESIZE, &mode);
 
@@ -1936,14 +1939,14 @@ static bool gl_frame(void *data, const void *frame,
    if (gl->fbo_feedback_enable)
    {
       const struct gfx_fbo_rect *rect = &gl->fbo_rect[gl->fbo_feedback_pass];
-      GLfloat xamt = (GLfloat)rect->img_width / rect->width;
-      GLfloat yamt = (GLfloat)rect->img_height / rect->height;
+      GLfloat xamt                    = (GLfloat)rect->img_width / rect->width;
+      GLfloat yamt                    = (GLfloat)rect->img_height / rect->height;
 
-      feedback_info.tex           = gl->fbo_feedback_texture;
-      feedback_info.input_size[0] = rect->img_width;
-      feedback_info.input_size[1] = rect->img_height;
-      feedback_info.tex_size[0]   = rect->width;
-      feedback_info.tex_size[1]   = rect->height;
+      feedback_info.tex               = gl->fbo_feedback_texture;
+      feedback_info.input_size[0]     = rect->img_width;
+      feedback_info.input_size[1]     = rect->img_height;
+      feedback_info.tex_size[0]       = rect->width;
+      feedback_info.tex_size[1]       = rect->height;
 
       set_texture_coords(feedback_info.coord, xamt, yamt);
    }
@@ -2195,7 +2198,7 @@ static void gl_free(void *data)
 
 static void gl_set_nonblock_state(void *data, bool state)
 {
-   unsigned interval;
+   unsigned interval           = 0;
    gl_t             *gl        = (gl_t*)data;
    settings_t        *settings = config_get_ptr();
 
@@ -2206,7 +2209,8 @@ static void gl_set_nonblock_state(void *data, bool state)
 
    context_bind_hw_render(gl, false);
 
-   interval = state ? 0 : settings->video.swap_interval;
+   if (!state)
+      interval = settings->video.swap_interval;
 
    gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
    context_bind_hw_render(gl, true);
