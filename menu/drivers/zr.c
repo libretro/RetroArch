@@ -74,6 +74,32 @@ static void zrmenu_main(zrmenu_handle_t *zr)
    zr_buffer_info(&zr->status, &zr->ctx.memory);
 }
 
+static void zrmenu_input_gamepad(zrmenu_handle_t *zr)
+{
+   switch (zr->action)
+   {
+      case MENU_ACTION_LEFT:
+         zr_input_key(&zr->ctx, ZR_KEY_LEFT, 1);
+         break;
+      case MENU_ACTION_RIGHT:
+         zr_input_key(&zr->ctx, ZR_KEY_RIGHT, 1);
+         break;
+      case MENU_ACTION_DOWN:
+         zr_input_key(&zr->ctx, ZR_KEY_DOWN, 1);
+         break;
+      case MENU_ACTION_UP:
+         zr_input_key(&zr->ctx, ZR_KEY_UP, 1);
+         break;
+      default:
+         zr_input_key(&zr->ctx, ZR_KEY_UP, 0);
+         zr_input_key(&zr->ctx, ZR_KEY_DOWN, 0);
+         zr_input_key(&zr->ctx, ZR_KEY_LEFT, 0);
+         zr_input_key(&zr->ctx, ZR_KEY_RIGHT, 0);
+         break;
+   }
+
+}
+
 static void zrmenu_input_mouse_movement(struct zr_context *ctx)
 {
    int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
@@ -197,6 +223,7 @@ static void zrmenu_frame(void *data)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
    zr_input_begin(&zr->ctx);
+   zrmenu_input_gamepad(zr);
    zrmenu_input_mouse_movement(&zr->ctx);
    zrmenu_input_mouse_button(&zr->ctx);
    zrmenu_input_keyboard(&zr->ctx);
@@ -413,10 +440,32 @@ static bool zrmenu_init_list(void *data)
    return false;
 }
 
+static int zrmenu_iterate(void *data, void *userdata, enum menu_action action)
+{
+   int ret;
+   size_t selection;
+   menu_entry_t entry;
+   zrmenu_handle_t *zr   = (zrmenu_handle_t*)userdata;
+
+   if (!zr)
+      return -1;
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return 0;
+
+   menu_entry_get(&entry, 0, selection, NULL, false);
+
+   zr->action       = action;
+
+   ret = menu_entry_action(&entry, selection, action);
+   if (ret)
+      return -1;
+   return 0;
+}
+
 menu_ctx_driver_t menu_ctx_zr = {
    NULL,
    zrmenu_get_message,
-   generic_menu_iterate,
+   zrmenu_iterate,
    NULL,
    zrmenu_frame,
    zrmenu_init,

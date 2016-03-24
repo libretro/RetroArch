@@ -17,6 +17,7 @@
 
 #include "zr_common.h"
 #include "../menu_display.h"
+#include "../menu_input.h"
 
 enum
 {
@@ -62,6 +63,7 @@ typedef struct zrmenu_handle
    void *memory;
    struct zr_context ctx;
    struct zr_memory_status status;
+   enum menu_action action;
 
    /* window control variables */
    struct zr_vec2 size;
@@ -93,3 +95,6 @@ void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr);
 void zrmenu_wnd_control(zrmenu_handle_t *zr);
 void zrmenu_wnd_test(zrmenu_handle_t *zr);
 void zrmenu_wnd_main(zrmenu_handle_t *zr);
+
+static void ui_slider(struct zr_context *ctx, const char *title, int *value, int max, int active);
+static int ui_selector(struct zr_context *ctx, const char *title, int *selected, const char *items[], int max, int active);
