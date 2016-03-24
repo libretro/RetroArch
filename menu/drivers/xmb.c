@@ -2105,18 +2105,25 @@ static void xmb_layout(xmb_handle_t *xmb)
 
    scale_factor                 = (settings->menu.xmb_scale_factor * width) / (1920.0 * 100);
    new_font_size                = 32.0  * scale_factor;
+   xmb->margins.screen.left     = 336.0 * scale_factor;
+
+   /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
+   if (width <= 640)
+   {
+      scale_factor              = scale_factor * 1.5;
+      xmb->margins.screen.left  = 136.0 * scale_factor;
+      new_font_size             = 42.0  * scale_factor;
+   }
+
    new_header_height            = 128.0 * scale_factor;
+   xmb->margins.screen.top      = (256+32) * scale_factor;
 
    xmb->boxart_width            = 460.0 * scale_factor;
    xmb->cursor.size             = 64.0;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
-
    xmb->icon.spacing.horizontal = 200.0 * scale_factor;
    xmb->icon.spacing.vertical   = 64.0 * scale_factor;
-   xmb->margins.screen.left     = 336.0 * scale_factor;
-   xmb->margins.screen.top      = (256+32) * scale_factor;
+
    xmb->margins.title.left      = 60 * scale_factor;
    xmb->margins.title.top       = 60 * scale_factor + new_font_size / 3;
    xmb->margins.title.bottom    = 60 * scale_factor - new_font_size / 3;
@@ -2124,6 +2131,9 @@ static void xmb_layout(xmb_handle_t *xmb)
    xmb->margins.label.top       = new_font_size / 3.0;
    xmb->margins.setting.left    = 600.0 * scale_factor;
    xmb->icon.size               = 128.0 * scale_factor;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,     &new_font_size);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &new_header_height);
 
    current = selection;
    end     = menu_entries_get_end();
