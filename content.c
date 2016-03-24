@@ -230,7 +230,7 @@ static int content_7zip_file_read(
             {
                const void *ptr = (const void*)(output + offset);
 
-               if (!retro_write_file(optional_outfile, ptr, outsize))
+               if (!filestream_write_file(optional_outfile, ptr, outsize))
                {
                   RARCH_ERR("Could not open outfilepath %s.\n",
                         optional_outfile);
@@ -489,7 +489,8 @@ static int content_zip_file_decompressed(
             {
                RARCH_LOG("Extracting file : %s\n", st->opt_file);
                memcpy(buf, handle.data, size);
-               if (!retro_write_file(st->opt_file, buf, size))
+
+               if (!filestream_write_file(st->opt_file, buf, size))
                   goto_error = true;
             }
 
@@ -642,7 +643,7 @@ error:
  * @length           : Number of items read, -1 on error.
  *
  * Read the contents of a file into @buf. Will call content_file_compressed_read 
- * if path contains a compressed file, otherwise will call retro_read_file().
+ * if path contains a compressed file, otherwise will call filestream_read_file().
  *
  * Returns: 1 if file read, 0 on error.
  */
@@ -655,7 +656,7 @@ static int content_file_read(const char *path, void **buf, ssize_t *length)
          return 1;
    }
 #endif
-   return retro_read_file(path, buf, length);
+   return filestream_read_file(path, buf, length);
 }
 
 struct string_list *compressed_file_list_new(const char *path,
@@ -985,7 +986,7 @@ static bool dump_to_file_desperate(const void *data,
    strftime(timebuf, sizeof(timebuf), "%Y-%m-%d-%H-%M-%S", localtime(&time_));
    strlcat(path, timebuf, sizeof(path));
 
-   if (!retro_write_file(path, data, size))
+   if (!filestream_write_file(path, data, size))
       return false;
 
    RARCH_WARN("Succeeded in saving RAM data to \"%s\".\n", path);
@@ -1032,7 +1033,7 @@ static bool content_save_state(const char *path)
    ret = core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
 
    if (ret)
-      ret = retro_write_file(path, data, info.size);
+      ret = filestream_write_file(path, data, info.size);
    else
    {
       RARCH_ERR("%s \"%s\".\n",
@@ -1063,7 +1064,7 @@ static bool content_load_state(const char *path)
    struct sram_block *blocks = NULL;
    settings_t *settings      = config_get_ptr();
    global_t *global          = global_get_ptr();
-   bool ret                  = retro_read_file(path, &buf, &size);
+   bool ret                  = filestream_read_file(path, &buf, &size);
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),
@@ -1189,7 +1190,7 @@ static bool load_ram_file(void *data)
    if (mem_info.size == 0 || !mem_info.data)
       return false;
 
-   if (!retro_read_file(ram->path, &buf, &rc))
+   if (!filestream_read_file(ram->path, &buf, &rc))
       return false;
 
    if (rc > 0)
@@ -1232,7 +1233,7 @@ static bool save_ram_file(ram_type_t *ram)
    if (!mem_info.data || mem_info.size == 0)
       return false;
 
-   if (!retro_write_file(ram->path, mem_info.data, mem_info.size))
+   if (!filestream_write_file(ram->path, mem_info.data, mem_info.size))
    {
       RARCH_ERR("%s.\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));

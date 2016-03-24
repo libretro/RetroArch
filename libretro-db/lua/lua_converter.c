@@ -9,6 +9,8 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
+#include <streams/file_stream.h>
+
 #include "libretrodb.h"
 #include "lua_common.h"
 
@@ -90,7 +92,7 @@ int main(int argc, char ** argv)
 
    call_init(L, argc - 2, (const char **) argv + 2);
 
-   dst = retro_fopen(db_file, RFILE_MODE_WRITE, -1);
+   dst = filestream_fopen(db_file, RFILE_MODE_WRITE, -1);
    if (!dst)
    {
       printf(
@@ -106,6 +108,6 @@ int main(int argc, char ** argv)
 
 clean:
    lua_close(L);
-   retro_fclose(dst);
+   filestream_fclose(dst);
    return rv;
 }

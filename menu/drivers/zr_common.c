@@ -47,7 +47,7 @@ char* zr_common_file_load(const char* path, size_t* size)
 {
    void *buf;
    ssize_t *length = (ssize_t*)size;
-   retro_read_file(path, &buf, length);
+   filestream_read_file(path, &buf, length);
    return buf;
 }
 

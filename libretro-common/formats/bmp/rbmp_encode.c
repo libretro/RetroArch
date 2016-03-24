@@ -105,7 +105,7 @@ static bool write_header_bmp(RFILE *file, unsigned width, unsigned height, bool 
    header[52] = 0;
    header[53] = 0;
 
-   return retro_fwrite(file, header, sizeof(header)) == sizeof(header);
+   return filestream_fwrite(file, header, sizeof(header)) == sizeof(header);
 }
 
 static void dump_line_565_to_24(uint8_t *line, const uint16_t *src, unsigned width)
@@ -161,8 +161,9 @@ static void dump_content(RFILE *file, const void *frame,
       int pad = line_size-pitch;
       for (j = height-1; j >= 0; j--, u.u8 -= pitch)
       {
-         retro_fwrite(file, u.u8, pitch);
-         if(pad != 0) retro_fwrite(file, &zeros, pad);
+         filestream_fwrite(file, u.u8, pitch);
+         if(pad != 0)
+            filestream_fwrite(file, &zeros, pad);
       }
       return;
    }
@@ -170,9 +171,7 @@ static void dump_content(RFILE *file, const void *frame,
    {
       /* ARGB8888 byte order input matches output. Can directly copy. */
       for (j = height-1; j >= 0; j--, u.u8 -= pitch)
-      {
-         retro_fwrite(file, u.u8, line_size);
-      }
+         filestream_fwrite(file, u.u8, line_size);
       return;
    }
 
@@ -186,7 +185,7 @@ static void dump_content(RFILE *file, const void *frame,
       for (j = height-1; j >= 0; j--, u.u8 -= pitch)
       {
          dump_line_32_to_24(line, u.u32, width);
-         retro_fwrite(file, line, line_size);
+         filestream_fwrite(file, line, line_size);
       }
    }
    else /* type == RBMP_SOURCE_TYPE_RGB565 */
@@ -194,7 +193,7 @@ static void dump_content(RFILE *file, const void *frame,
       for (j = height-1; j >= 0; j--, u.u8 -= pitch)
       {
          dump_line_565_to_24(line, u.u16, width);
-         retro_fwrite(file, line, line_size);
+         filestream_fwrite(file, line, line_size);
       }
    }
 
@@ -205,7 +204,7 @@ bool rbmp_save_image(const char *filename, const void *frame,
       unsigned pitch, enum rbmp_source_type type)
 {
    bool ret;
-   RFILE *file = retro_fopen(filename, RFILE_MODE_WRITE, -1);
+   RFILE *file = filestream_fopen(filename, RFILE_MODE_WRITE, -1);
    if (!file)
       return false;
 
@@ -214,7 +213,7 @@ bool rbmp_save_image(const char *filename, const void *frame,
    if (ret)
       dump_content(file, frame, width, height, pitch, type);
 
-   retro_fclose(file);
+   filestream_fclose(file);
 
    return ret;
 }

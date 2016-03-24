@@ -1354,7 +1354,7 @@ static void cb_generic_download(void *task_data,
    fill_pathname_join(output_path, dir_path,
          transf->path, sizeof(output_path));
 
-   if (!retro_write_file(output_path, data->data, data->len))
+   if (!filestream_write_file(output_path, data->data, data->len))
    {
       err = "Write failed.";
       goto finish;

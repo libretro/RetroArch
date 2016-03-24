@@ -181,7 +181,7 @@ static void *file_archive_open(const char *path)
    if (!data)
       return NULL;
 
-   read_from_file = retro_read_file(path, &data->data, &ret);
+   read_from_file = filestream_read_file(path, &data->data, &ret);
 
    /* Failed to open archive? */
    if (!read_from_file || ret < 0)
@@ -447,7 +447,7 @@ static int file_archive_decompress_data_to_file(
    }
 #endif
 
-   if (!retro_write_file(path, handle->data, size))
+   if (!filestream_write_file(path, handle->data, size))
    {
       ret = false;
       goto end;
@@ -655,7 +655,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
    switch (cmode)
    {
       case ZLIB_MODE_UNCOMPRESSED:
-         if (!retro_write_file(path, cdata, size))
+         if (!filestream_write_file(path, cdata, size))
             return false;
          break;
 

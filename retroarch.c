@@ -25,7 +25,6 @@
 
 #include <boolean.h>
 #include <string/stdstring.h>
-#include <streams/file_stream.h>
 #include <lists/string_list.h>
 
 #ifdef _WIN32

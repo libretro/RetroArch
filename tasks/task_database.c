@@ -208,7 +208,7 @@ static int database_info_iterate_playlist(
       default:
          {
             ssize_t ret;
-            int read_from            = retro_read_file(
+            int read_from            = filestream_read_file(
                   name, (void**)&db_state->buf, &ret);
 #ifdef HAVE_ZLIB
             const struct file_archive_file_backend *stream_backend = 

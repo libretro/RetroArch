@@ -418,7 +418,7 @@ rxml_document_t *rxml_load_document(const char *path)
    char *new_memory_buffer = NULL;
    const char *mem_ptr     = NULL;
    long len                = 0;
-   RFILE *file             = retro_fopen(path, RFILE_MODE_READ, -1);
+   RFILE *file             = filestream_fopen(path, RFILE_MODE_READ, -1);
    if (!file)
       return NULL;
 
@@ -426,19 +426,19 @@ rxml_document_t *rxml_load_document(const char *path)
    if (!doc)
       goto error;
 
-   retro_fseek(file, 0, SEEK_END);
-   len = retro_ftell(file);
-   retro_frewind(file);
+   filestream_fseek(file, 0, SEEK_END);
+   len = filestream_ftell(file);
+   filestream_frewind(file);
 
    memory_buffer = (char*)malloc(len + 1);
    if (!memory_buffer)
       goto error;
 
    memory_buffer[len] = '\0';
-   if (retro_fread(file, memory_buffer, len) != (size_t)len)
+   if (filestream_fread(file, memory_buffer, len) != (size_t)len)
       goto error;
 
-   retro_fclose(file);
+   filestream_fclose(file);
    file = NULL;
 
    mem_ptr = memory_buffer;
@@ -462,7 +462,7 @@ rxml_document_t *rxml_load_document(const char *path)
 
 error:
    free(memory_buffer);
-   retro_fclose(file);
+   filestream_fclose(file);
    rxml_free_document(doc);
    return NULL;
 }

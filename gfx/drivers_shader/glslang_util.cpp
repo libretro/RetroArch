@@ -35,7 +35,7 @@ static bool read_shader_file(const char *path, vector<string> *output)
    struct string_list *list = NULL;
    char include_path[PATH_MAX];
 
-   if (retro_read_file(path, (void**)&buf, &len) < 0)
+   if (filestream_read_file(path, (void**)&buf, &len) < 0)
    {
       RARCH_ERR("Failed to open shader file: \"%s\".\n", path);
       return false;

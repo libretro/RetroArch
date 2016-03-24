@@ -53,7 +53,7 @@ static bool png_write_crc(RFILE *file, const uint8_t *data, size_t size)
    uint32_t crc = stream_backend->stream_crc_calculate(0, data, size);
 
    dword_write_be(crc_raw, crc);
-   return retro_fwrite(file, crc_raw, sizeof(crc_raw)) == sizeof(crc_raw);
+   return filestream_fwrite(file, crc_raw, sizeof(crc_raw)) == sizeof(crc_raw);
 }
 
 static bool png_write_ihdr(RFILE *file, const struct png_ihdr *ihdr)
@@ -85,7 +85,7 @@ static bool png_write_ihdr(RFILE *file, const struct png_ihdr *ihdr)
    dword_write_be(ihdr_raw +  0, sizeof(ihdr_raw) - 8);
    dword_write_be(ihdr_raw +  8, ihdr->width);
    dword_write_be(ihdr_raw + 12, ihdr->height);
-   if (retro_fwrite(file, ihdr_raw, sizeof(ihdr_raw)) != sizeof(ihdr_raw))
+   if (filestream_fwrite(file, ihdr_raw, sizeof(ihdr_raw)) != sizeof(ihdr_raw))
       return false;
 
    if (!png_write_crc(file, ihdr_raw + sizeof(uint32_t),
@@ -97,7 +97,7 @@ static bool png_write_ihdr(RFILE *file, const struct png_ihdr *ihdr)
 
 static bool png_write_idat(RFILE *file, const uint8_t *data, size_t size)
 {
-   if (retro_fwrite(file, data, size) != (ssize_t)size)
+   if (filestream_fwrite(file, data, size) != (ssize_t)size)
       return false;
 
    if (!png_write_crc(file, data + sizeof(uint32_t), size - sizeof(uint32_t)))
@@ -113,7 +113,7 @@ static bool png_write_iend(RFILE *file)
       'I', 'E', 'N', 'D',
    };
 
-   if (retro_fwrite(file, data, sizeof(data)) != sizeof(data))
+   if (filestream_fwrite(file, data, sizeof(data)) != sizeof(data))
       return false;
 
    if (!png_write_crc(file, data + sizeof(uint32_t),
@@ -227,13 +227,13 @@ static bool rpng_save_image(const char *path,
    uint8_t *prev_encoded   = NULL;
    uint8_t *encode_target  = NULL;
    void *stream            = NULL;
-   RFILE *file             = retro_fopen(path, RFILE_MODE_WRITE, -1);
+   RFILE *file             = filestream_fopen(path, RFILE_MODE_WRITE, -1);
    if (!file)
       GOTO_END_ERROR();
 
    stream_backend = file_archive_get_default_file_backend();
 
-   if (retro_fwrite(file, png_magic, sizeof(png_magic)) != sizeof(png_magic))
+   if (filestream_fwrite(file, png_magic, sizeof(png_magic)) != sizeof(png_magic))
       GOTO_END_ERROR();
 
    ihdr.width = width;
@@ -356,7 +356,7 @@ static bool rpng_save_image(const char *path,
       GOTO_END_ERROR();
 
 end:
-   retro_fclose(file);
+   filestream_fclose(file);
    free(encode_buf);
    free(deflate_buf);
    free(rgba_line);

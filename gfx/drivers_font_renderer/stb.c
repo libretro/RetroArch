@@ -146,7 +146,7 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
    if (!self)
       goto error;
 
-   if (!retro_read_file(font_path, (void**)&font_data, NULL))
+   if (!filestream_read_file(font_path, (void**)&font_data, NULL))
       goto error;
 
    if (!font_renderer_stb_create_atlas(self, font_data, font_size, 512, 512))

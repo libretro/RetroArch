@@ -90,7 +90,7 @@ struct RFILE
 #endif
 };
 
-int retro_get_fd(RFILE *stream)
+int filestream_get_fd(RFILE *stream)
 {
    if (!stream)
       return -1;
@@ -105,7 +105,7 @@ int retro_get_fd(RFILE *stream)
 #endif
 }
 
-RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
+RFILE *filestream_fopen(const char *path, unsigned mode, ssize_t len)
 {
    int            flags = 0;
    int         mode_int = 0;
@@ -213,12 +213,12 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
       {
          stream->mappos  = 0;
          stream->mapped  = NULL;
-         stream->mapsize = retro_fseek(stream, 0, SEEK_END);
+         stream->mapsize = filestream_fseek(stream, 0, SEEK_END);
 
          if (stream->mapsize == (uint64_t)-1)
             goto error;
 
-         retro_frewind(stream);
+         filestream_frewind(stream);
 
          stream->mapped = (uint8_t*)mmap((void*)0, stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
 
@@ -237,11 +237,11 @@ RFILE *retro_fopen(const char *path, unsigned mode, ssize_t len)
    return stream;
 
 error:
-   retro_fclose(stream);
+   filestream_fclose(stream);
    return NULL;
 }
 
-ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
+ssize_t filestream_fseek(RFILE *stream, ssize_t offset, int whence)
 {
    int ret = 0;
    if (!stream)
@@ -266,7 +266,8 @@ ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
    else
 #endif
 #ifdef HAVE_MMAP
-      /* Need to check stream->mapped because this function is called in retro_fopen() */
+      /* Need to check stream->mapped because this function is 
+       * called in filestream_fopen() */
       if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
       {
          /* fseek() returns error on under/overflow but allows cursor > EOF for
@@ -308,7 +309,7 @@ ssize_t retro_fseek(RFILE *stream, ssize_t offset, int whence)
 #endif
 }
 
-ssize_t retro_ftell(RFILE *stream)
+ssize_t filestream_ftell(RFILE *stream)
 {
    if (!stream)
       return -1;
@@ -326,7 +327,8 @@ ssize_t retro_ftell(RFILE *stream)
    else
 #endif
 #ifdef HAVE_MMAP
-      /* Need to check stream->mapped because this function is called in retro_fopen() */
+      /* Need to check stream->mapped because this function 
+       * is called in filestream_fopen() */
       if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
          return stream->mappos;
       else
@@ -335,12 +337,12 @@ ssize_t retro_ftell(RFILE *stream)
 #endif
 }
 
-void retro_frewind(RFILE *stream)
+void filestream_frewind(RFILE *stream)
 {
-   retro_fseek(stream, 0L, SEEK_SET);
+   filestream_fseek(stream, 0L, SEEK_SET);
 }
 
-ssize_t retro_fread(RFILE *stream, void *s, size_t len)
+ssize_t filestream_fread(RFILE *stream, void *s, size_t len)
 {
    if (!stream || !s)
       return -1;
@@ -377,7 +379,7 @@ ssize_t retro_fread(RFILE *stream, void *s, size_t len)
 #endif
 }
 
-ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len)
+ssize_t filestream_fwrite(RFILE *stream, const void *s, size_t len)
 {
    if (!stream)
       return -1;
@@ -403,7 +405,7 @@ ssize_t retro_fwrite(RFILE *stream, const void *s, size_t len)
 #endif
 }
 
-int retro_fclose(RFILE *stream)
+int filestream_fclose(RFILE *stream)
 {
    if (!stream)
       return -1;
@@ -437,7 +439,7 @@ int retro_fclose(RFILE *stream)
 }
 
 /**
- * retro_read_file:
+ * filestream_read_file:
  * @path             : path to file.
  * @buf              : buffer to allocate and read the contents of the
  *                     file into. Needs to be freed manually.
@@ -446,12 +448,12 @@ int retro_fclose(RFILE *stream)
  *
  * Returns: number of items read, -1 on error.
  */
-int retro_read_file(const char *path, void **buf, ssize_t *len)
+int filestream_read_file(const char *path, void **buf, ssize_t *len)
 {
    ssize_t ret              = 0;
    ssize_t content_buf_size = 0;
    void *content_buf        = NULL;
-   RFILE *file              = retro_fopen(path, RFILE_MODE_READ, -1);
+   RFILE *file              = filestream_fopen(path, RFILE_MODE_READ, -1);
 
    if (!file)
    {
@@ -463,21 +465,21 @@ int retro_read_file(const char *path, void **buf, ssize_t *len)
       goto error;
    }
 
-   if (retro_fseek(file, 0, SEEK_END) != 0)
+   if (filestream_fseek(file, 0, SEEK_END) != 0)
       goto error;
 
-   content_buf_size = retro_ftell(file);
+   content_buf_size = filestream_ftell(file);
    if (content_buf_size < 0)
       goto error;
 
-   retro_frewind(file);
+   filestream_frewind(file);
 
    content_buf = malloc(content_buf_size + 1);
 
    if (!content_buf)
       goto error;
 
-   ret = retro_fread(file, content_buf, content_buf_size);
+   ret = filestream_fread(file, content_buf, content_buf_size);
    if (ret < 0)
    {
 #if __STDC_VERSION__ >= 199901L
@@ -488,7 +490,7 @@ int retro_read_file(const char *path, void **buf, ssize_t *len)
       goto error;
    }
 
-   retro_fclose(file);
+   filestream_fclose(file);
 
    *buf    = content_buf;
 
@@ -503,7 +505,7 @@ int retro_read_file(const char *path, void **buf, ssize_t *len)
 
 error:
    if (file)
-      retro_fclose(file);
+      filestream_fclose(file);
    if (content_buf)
       free(content_buf);
    if (len)
@@ -513,7 +515,7 @@ error:
 }
 
 /**
- * retro_write_file:
+ * filestream_write_file:
  * @path             : path to file.
  * @data             : contents to write to the file.
  * @size             : size of the contents.
@@ -522,15 +524,15 @@ error:
  *
  * Returns: true (1) on success, false (0) otherwise.
  */
-bool retro_write_file(const char *path, const void *data, ssize_t size)
+bool filestream_write_file(const char *path, const void *data, ssize_t size)
 {
    ssize_t ret   = 0;
-   RFILE *file   = retro_fopen(path, RFILE_MODE_WRITE, -1);
+   RFILE *file   = filestream_fopen(path, RFILE_MODE_WRITE, -1);
    if (!file)
       return false;
 
-   ret = retro_fwrite(file, data, size);
-   retro_fclose(file);
+   ret = filestream_fwrite(file, data, size);
+   filestream_fclose(file);
 
    return (ret == size);
 }

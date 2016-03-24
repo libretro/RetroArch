@@ -274,7 +274,7 @@ static void cpulist_read_from(CpuList* list, const char* filename)
 
    list->mask = 0;
 
-   if (retro_read_file(filename, (void**)&buf, &length) != 1)
+   if (filestream_read_file(filename, (void**)&buf, &length) != 1)
    {
       RARCH_ERR("Could not read %s: %s\n", filename, strerror(errno));
       return;
@@ -317,7 +317,7 @@ static void linux_cpu_init(void)
    g_cpuFeatures = 0;
    g_cpuCount    = 1;
 
-   if (retro_read_file("/proc/cpuinfo", &buf, &length) != 1)
+   if (filestream_read_file("/proc/cpuinfo", &buf, &length) != 1)
       return;
 
    /* Count the CPU cores, the value may be 0 for single-core CPUs */
@@ -1008,11 +1008,11 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
 
-   if (!retro_read_file(path, (void**)&buf, &length))
+   if (!filestream_read_file(path, (void**)&buf, &length))
       goto end;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "info");
-   if (!retro_read_file(path, (void**)&buf_info, &length))
+   if (!filestream_read_file(path, (void**)&buf_info, &length))
       goto end;
 
    ptr = &buf[0];
@@ -1133,7 +1133,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       return;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
-   if (retro_read_file(path, (void**)&buf, &length) != 1)
+   if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
    if (strstr((char*)buf, "Discharging"))
@@ -1142,7 +1142,7 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       *have_battery = true;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "capacity");
-   if (retro_read_file(path, (void**)&buf, &length) != 1)
+   if (filestream_read_file(path, (void**)&buf, &length) != 1)
       goto end;
 
    capacity = atoi(buf);
@@ -1166,7 +1166,7 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    ssize_t length   = 0;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
-   if (retro_read_file(path, (void**)&buf, &length) != 1)
+   if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
    ptr = &buf[0];
@@ -1193,7 +1193,7 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    const char *base = proc_acpi_sysfs_ac_adapter_path;
 
    snprintf(path, sizeof(path), "%s/%s", base, "online");
-   if (retro_read_file(path, (void**)&buf, &length) != 1)
+   if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
    if (strstr((char*)buf, "1"))
@@ -1248,7 +1248,7 @@ static bool frontend_linux_powerstate_check_apm(
    char  *buf          = NULL;
    char *str           = NULL;
 
-   if (retro_read_file(proc_apm_path, (void**)&buf, &length) != 1)
+   if (filestream_read_file(proc_apm_path, (void**)&buf, &length) != 1)
       goto error;
 
    ptr                 = &buf[0];

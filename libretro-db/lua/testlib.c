@@ -6,6 +6,8 @@
 #include <errno.h>
 #include <string.h>
 
+#include <streams/file_stream.h>
+
 #include "lua.h"
 #include "lauxlib.h"
 
@@ -104,7 +106,7 @@ static int create_db(lua_State *L)
    }
    lua_setfield(L, LUA_REGISTRYINDEX, "testlib_get_value");
 
-   dst = retro_fopen(db_file, RFILE_MODE_WRITE, -1);
+   dst = filestream_fopen(db_file, RFILE_MODE_WRITE, -1);
    if (!dst)
    {
       lua_pushstring(L, "Could not open destination file");
@@ -112,7 +114,7 @@ static int create_db(lua_State *L)
    }
 
    libretrodb_create(dst, &value_provider, L);
-   retro_fclose(dst);
+   filestream_fclose(dst);
 
    return 0;
 }

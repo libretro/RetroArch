@@ -794,7 +794,7 @@ int main(int argc, char** argv)
       dat_buffer++;
    }
 
-   rdb_file = retro_fopen(rdb_path, RFILE_MODE_WRITE, -1);
+   rdb_file = filestream_fopen(rdb_path, RFILE_MODE_WRITE, -1);
 
    if (!rdb_file)
    {
@@ -815,7 +815,7 @@ int main(int argc, char** argv)
          &current_item);
    dat_converter_value_provider_free();
 
-   retro_fclose(rdb_file);
+   filestream_fclose(rdb_file);
 
    dat_converter_list_free(dat_parser_list);
 

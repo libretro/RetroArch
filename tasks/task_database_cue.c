@@ -65,7 +65,7 @@ static ssize_t get_token(RFILE *fd, char *token, size_t max_len)
 
    while (1)
    {
-      int rv = retro_fread(fd, c, 1);
+      int rv = filestream_fread(fd, c, 1);
       if (rv == 0)
          return 0;
 
@@ -143,21 +143,21 @@ static int detect_ps1_game_sub(const char *track_path,
    uint8_t* tmp;
    uint8_t buffer[2048 * 2];
    int skip, frame_size, is_mode1, cd_sector;
-   RFILE *fp = retro_fopen(track_path, RFILE_MODE_READ, -1);
+   RFILE *fp = filestream_fopen(track_path, RFILE_MODE_READ, -1);
    if (!fp)
       return 0;
 
    is_mode1 = 0;
-   retro_fseek(fp, 0, SEEK_END);
+   filestream_fseek(fp, 0, SEEK_END);
 
    if (!sub_channel_mixed)
    {
-      if (!(retro_ftell(fp) & 0x7FF))
+      if (!(filestream_ftell(fp) & 0x7FF))
       {
          unsigned int mode_test = 0;
 
-         retro_fseek(fp, 0, SEEK_SET);
-         retro_fread(fp, &mode_test, 4);
+         filestream_fseek(fp, 0, SEEK_SET);
+         filestream_fread(fp, &mode_test, 4);
          if (mode_test != MODETEST_VAL)
             is_mode1 = 1;
       }
@@ -166,12 +166,12 @@ static int detect_ps1_game_sub(const char *track_path,
    skip       = is_mode1? 0: 24;
    frame_size = sub_channel_mixed? 2448: is_mode1? 2048: 2352;
 
-   retro_fseek(fp, 156 + skip + 16 * frame_size, SEEK_SET);
-   retro_fread(fp, buffer, 6);
+   filestream_fseek(fp, 156 + skip + 16 * frame_size, SEEK_SET);
+   filestream_fread(fp, buffer, 6);
 
    cd_sector = buffer[2] | (buffer[3] << 8) | (buffer[4] << 16);
-   retro_fseek(fp, skip + cd_sector * frame_size, SEEK_SET);
-   retro_fread(fp, buffer, 2048 * 2);
+   filestream_fseek(fp, skip + cd_sector * frame_size, SEEK_SET);
+   filestream_fread(fp, buffer, 2048 * 2);
 
    tmp = buffer;
    while (tmp < (buffer + 2048 * 2))
@@ -188,8 +188,8 @@ static int detect_ps1_game_sub(const char *track_path,
       return 0;
 
    cd_sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
-   retro_fseek(fp, 13 + skip + cd_sector * frame_size, SEEK_SET);
-   retro_fread(fp, buffer, 256);
+   filestream_fseek(fp, 13 + skip + cd_sector * frame_size, SEEK_SET);
+   filestream_fread(fp, buffer, 256);
 
    tmp = (uint8_t*)strrchr((const char*)buffer, '\\');
    if(!tmp)
@@ -211,7 +211,7 @@ static int detect_ps1_game_sub(const char *track_path,
    *game_id++ = *tmp++;
    *game_id = 0;
 
-   retro_fclose(fp);
+   filestream_fclose(fp);
    return 1;
 }
 
@@ -225,9 +225,9 @@ int detect_ps1_game(const char *track_path, char *game_id)
 
 int detect_psp_game(const char *track_path, char *game_id)
 {
-   bool rv = false;
    unsigned pos;
-   RFILE *fd = retro_fopen(track_path, RFILE_MODE_READ, -1);
+   bool rv   = false;
+   RFILE *fd = filestream_fopen(track_path, RFILE_MODE_READ, -1);
 
    if (!fd)
    {
@@ -237,9 +237,9 @@ int detect_psp_game(const char *track_path, char *game_id)
 
    for (pos = 0; pos < 100000; pos++)
    {
-      retro_fseek(fd, pos, SEEK_SET);
+      filestream_fseek(fd, pos, SEEK_SET);
 
-      if (retro_fread(fd, game_id, 5) > 0)
+      if (filestream_fread(fd, game_id, 5) > 0)
       {
          game_id[5] = '\0';
          if (string_is_equal(game_id, "ULES-")
@@ -269,8 +269,8 @@ int detect_psp_game(const char *track_path, char *game_id)
           || string_is_equal(game_id, "NPJZ-")
          )
          {
-            retro_fseek(fd, pos, SEEK_SET);
-            if (retro_fread(fd, game_id, 10) > 0)
+            filestream_fseek(fd, pos, SEEK_SET);
+            if (filestream_fread(fd, game_id, 10) > 0)
             {
 #if 0
                game_id[4] = '-';
@@ -287,7 +287,7 @@ int detect_psp_game(const char *track_path, char *game_id)
          break;
    }
 
-   retro_fclose(fd);
+   filestream_fclose(fd);
    return rv;
 }
 
@@ -297,7 +297,7 @@ int detect_system(const char *track_path, int32_t offset,
    int rv;
    char magic[MAGIC_LEN];
    int i;
-   RFILE *fd = retro_fopen(track_path, RFILE_MODE_READ, -1);
+   RFILE *fd = filestream_fopen(track_path, RFILE_MODE_READ, -1);
    
    if (!fd)
    {
@@ -307,8 +307,8 @@ int detect_system(const char *track_path, int32_t offset,
       goto clean;
    }
 
-   retro_fseek(fd, offset, SEEK_SET);
-   if (retro_fread(fd, magic, MAGIC_LEN) < MAGIC_LEN)
+   filestream_fseek(fd, offset, SEEK_SET);
+   if (filestream_fread(fd, magic, MAGIC_LEN) < MAGIC_LEN)
    {
       RARCH_LOG("Could not read data from file '%s' at offset %d: %s\n",
             track_path, offset, strerror(errno));
@@ -327,8 +327,8 @@ int detect_system(const char *track_path, int32_t offset,
       }
    }
 
-   retro_fseek(fd, 0x8008, SEEK_SET);
-   if (retro_fread(fd, magic, 8) > 0)
+   filestream_fseek(fd, 0x8008, SEEK_SET);
+   if (filestream_fread(fd, magic, 8) > 0)
    {
       magic[8] = '\0';
       if (string_is_equal(magic, "PSP GAME"))
@@ -342,7 +342,7 @@ int detect_system(const char *track_path, int32_t offset,
    RARCH_LOG("Could not find compatible system\n");
    rv = -EINVAL;
 clean:
-   retro_fclose(fd);
+   filestream_fclose(fd);
    return rv;
 }
 
@@ -357,7 +357,7 @@ int find_first_data_track(const char *cue_path,
    strlcpy(cue_dir, cue_path, sizeof(cue_dir));
    path_basedir(cue_dir);
 
-   fd = retro_fopen(cue_path, RFILE_MODE_READ, -1);
+   fd = filestream_fopen(cue_path, RFILE_MODE_READ, -1);
    if (!fd)
    {
       RARCH_LOG("Could not open CUE file '%s': %s\n", cue_path,
@@ -405,6 +405,6 @@ int find_first_data_track(const char *cue_path,
    rv = -EINVAL;
 
 clean:
-   retro_fclose(fd);
+   filestream_fclose(fd);
    return rv;
 }

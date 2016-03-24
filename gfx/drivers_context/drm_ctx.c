@@ -324,7 +324,7 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
    drm_free();
 
    if (g_drm_fd >= 0)
-      retro_fclose(drm->drm);
+      filestream_fclose(drm->drm);
 
    g_gbm_surface      = NULL;
    g_gbm_dev          = NULL;
@@ -395,14 +395,14 @@ nextgpu:
    }
    gpu = gpu_descriptors->elems[gpu_index++].data;
 
-   drm->drm    = retro_fopen(gpu, RFILE_MODE_READ_WRITE, -1);
+   drm->drm    = filestream_fopen(gpu, RFILE_MODE_READ_WRITE, -1);
    if (!drm->drm)
    {
       RARCH_WARN("[KMS]: Couldn't open DRM device.\n");
       goto nextgpu;
    }
 
-   fd = retro_get_fd(drm->drm);
+   fd = filestream_get_fd(drm->drm);
 
    if (!drm_get_resources(fd))
       goto nextgpu;

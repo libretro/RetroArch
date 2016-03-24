@@ -194,7 +194,7 @@ static bool video_texture_image_load_tga(
    ssize_t len;
    void *raw_buf = NULL;
    uint8_t *buf  = NULL;
-   bool      ret = retro_read_file(path, &raw_buf, &len);
+   bool      ret = filestream_read_file(path, &raw_buf, &len);
 
    if (!ret || len < 0)
    {

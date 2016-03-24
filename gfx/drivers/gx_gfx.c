@@ -662,12 +662,12 @@ static void gx_efb_screenshot(void)
 {
    int x, y;
    uint8_t tga_header[] = {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x02, 0xE0, 0x01, 0x18, 0x00};
-   RFILE           *out = retro_fopen("/screenshot.tga", RFILE_MODE_WRITE, -1);
+   RFILE           *out = filestream_fopen("/screenshot.tga", RFILE_MODE_WRITE, -1);
 
    if (!out)
       return;
 
-   retro_fwrite(out, tga_header, sizeof(tga_header));
+   filestream_fwrite(out, tga_header, sizeof(tga_header));
 
    for (y = 479; y >= 0; --y)
    {
@@ -682,10 +682,10 @@ static void gx_efb_screenshot(void)
          line[i++] = color.g;
          line[i++] = color.r;
       }
-      retro_fwrite(out, line, sizeof(line));
+      filestream_fwrite(out, line, sizeof(line));
    }
 
-   retro_fclose(out);
+   filestream_fclose(out);
 }
 
 #endif

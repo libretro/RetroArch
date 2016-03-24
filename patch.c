@@ -517,7 +517,7 @@ static bool apply_patch_content(uint8_t **buf,
    
    if (!path_is_valid(patch_path))
       return false;
-   if (!retro_read_file(patch_path, &patch_data, &patch_size))
+   if (!filestream_read_file(patch_path, &patch_data, &patch_size))
       return false;
    if (patch_size < 0)
       return false;

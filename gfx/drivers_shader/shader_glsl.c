@@ -464,7 +464,7 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
    ssize_t len;
-   bool ret = retro_read_file(path,
+   bool ret = filestream_read_file(path,
          (void**)&pass->source.string.vertex, &len);
    if (!ret || len <= 0)
       return false;

@@ -302,7 +302,7 @@ py_state_t *py_state_new(const char *script,
        * compiled with MSVC. */
       ssize_t len;
       char *script_ = NULL;
-      bool ret      = retro_read_file
+      bool ret      = filestream_read_file
          (script, (void**)&script_, &len);
 
       if (!ret || len < 0)
