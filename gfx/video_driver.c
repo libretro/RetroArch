@@ -17,8 +17,12 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <retro_assert.h>
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
 #include <file/config_file.h>
 
@@ -1268,10 +1272,40 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
    /* Set to true by driver if context caching succeeded. */
    static bool video_driver_cache_context_ack       = false;
    static uint8_t *video_driver_record_gpu_buffer   = NULL;
+#ifdef HAVE_THREADS
+   static slock_t *display_lock                     = NULL;
+#endif
    settings_t *settings                             = config_get_ptr();
 
    switch (state)
    {
+      case RARCH_DISPLAY_CTL_LOCK:
+#ifdef HAVE_THREADS
+         if (!display_lock)
+            return false;
+         slock_lock(display_lock);
+#endif
+         break;
+      case RARCH_DISPLAY_CTL_UNLOCK:
+#ifdef HAVE_THREADS
+         if (!display_lock)
+            return false;
+         slock_unlock(display_lock);
+#endif
+         break;
+      case RARCH_DISPLAY_CTL_LOCK_FREE:
+#ifdef HAVE_THREADS
+         slock_free(display_lock);
+         display_lock = NULL;
+#endif
+         break;
+      case RARCH_DISPLAY_CTL_LOCK_NEW:
+#ifdef HAVE_THREADS
+         if (!display_lock)
+            display_lock = slock_new();
+         retro_assert(display_lock);
+#endif
+         break;
       case RARCH_DISPLAY_CTL_DESTROY:
          video_driver_use_rgba          = false;
          video_driver_data_own          = false;
@@ -1405,13 +1439,26 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          }
          break;
       case RARCH_DISPLAY_CTL_SET_RGBA:
+         video_driver_ctl(RARCH_DISPLAY_CTL_LOCK, NULL);
          video_driver_use_rgba = true;
+         video_driver_ctl(RARCH_DISPLAY_CTL_UNLOCK, NULL);
          break;
       case RARCH_DISPLAY_CTL_UNSET_RGBA:
+         video_driver_ctl(RARCH_DISPLAY_CTL_LOCK, NULL);
          video_driver_use_rgba = false;
+         video_driver_ctl(RARCH_DISPLAY_CTL_UNLOCK, NULL);
          break;
       case RARCH_DISPLAY_CTL_SUPPORTS_RGBA:
-         return video_driver_use_rgba;
+         {
+            bool tmp = false;
+            video_driver_ctl(RARCH_DISPLAY_CTL_LOCK, NULL);
+            tmp = video_driver_use_rgba;
+            video_driver_ctl(RARCH_DISPLAY_CTL_UNLOCK, NULL);
+
+            if (!tmp)
+               return false;
+         }
+         break;
       case RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT:
          if (!video_driver_poke)
             return false;
@@ -1429,12 +1476,14 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
          video_driver_poke->get_video_output_prev(video_driver_data);
          break;
       case RARCH_DISPLAY_CTL_INIT:
+         video_driver_ctl(RARCH_DISPLAY_CTL_LOCK_NEW, NULL);
          return init_video();
       case RARCH_DISPLAY_CTL_DESTROY_DATA:
          video_driver_data = NULL;
          break;
       case RARCH_DISPLAY_CTL_DEINIT:
          uninit_video_input();
+         video_driver_ctl(RARCH_DISPLAY_CTL_LOCK_FREE, NULL);
          video_driver_data = NULL;
          break;
       case RARCH_DISPLAY_CTL_MONITOR_RESET:
