@@ -1688,7 +1688,7 @@ static size_t cheevos_eval_md5(
    }
    else
    {
-      RFILE *file = filestream_fopen(info->path, RFILE_MODE_READ, 0);
+      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
       size_t size = 0;
       
       if (!file)
@@ -1697,7 +1697,7 @@ static size_t cheevos_eval_md5(
       for (;;)
       {
          uint8_t buffer[4096];
-         ssize_t num_read = filestream_fread(file,
+         ssize_t num_read = filestream_read(file,
                (void*)buffer, sizeof(buffer));
          
          if (num_read <= 0)
@@ -1707,7 +1707,7 @@ static size_t cheevos_eval_md5(
          size += num_read;
       }
       
-      filestream_fclose(file);
+      filestream_close(file);
       return size;
    }
 }
@@ -1825,14 +1825,14 @@ static unsigned cheevos_find_game_id_nes(
    }
    else
    {
-      RFILE *file = filestream_fopen(info->path, RFILE_MODE_READ, 0);
+      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
       ssize_t num_read;
       
       if (!file)
          return 0;
       
-      num_read = filestream_fread(file, (void*)&header, sizeof(header));
-      filestream_fclose(file);
+      num_read = filestream_read(file, (void*)&header, sizeof(header));
+      filestream_close(file);
       
       if (num_read < (ssize_t)sizeof(header))
          return 0;
@@ -1869,7 +1869,7 @@ static unsigned cheevos_find_game_id_nes(
          53, 198, 228
       };
       bool round  = true;
-      RFILE *file = filestream_fopen(info->path, RFILE_MODE_READ, 0);
+      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
       uint8_t * data = (uint8_t *) malloc(rom_size << 14);
       
       if (!file || !data)
@@ -1897,14 +1897,14 @@ static unsigned cheevos_find_game_id_nes(
       }
       
       MD5_Init(&ctx);
-      filestream_fseek(file, sizeof(header), SEEK_SET);
+      filestream_seek(file, sizeof(header), SEEK_SET);
       /* from fceu core - check if Trainer included in ROM data */
       if (header.rom_type & 4)
-         filestream_fseek(file, sizeof(header), SEEK_CUR);
+         filestream_seek(file, sizeof(header), SEEK_CUR);
 
       bytes    = (round) ? rom_size : header.rom_size;
-      num_read = filestream_fread(file, (void*) data, 0x4000 * bytes );
-      filestream_fclose(file);
+      num_read = filestream_read(file, (void*) data, 0x4000 * bytes );
+      filestream_close(file);
 
       if (num_read <= 0)
             return 0;

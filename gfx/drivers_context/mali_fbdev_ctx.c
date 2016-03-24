@@ -65,12 +65,12 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
    }
 
    /* Clear framebuffer and set cursor on again */
-   fd = filestream_fopen("/dev/tty", RFILE_MODE_READ_WRITE, -1);
+   fd = filestream_open("/dev/tty", RFILE_MODE_READ_WRITE, -1);
    fb = filestream_get_fd(fd);
 
    ioctl(fb, VT_ACTIVATE,5);
    ioctl(fb, VT_ACTIVATE,1);
-   filestream_fclose(fd);
+   filestream_close(fd);
    system("setterm -cursor on");
 }
 
@@ -181,7 +181,7 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       EGL_NONE
    };
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
-   RFILE *fd             = filestream_fopen("/dev/fb0", RFILE_MODE_READ_WRITE, -1);
+   RFILE *fd             = filestream_open("/dev/fb0", RFILE_MODE_READ_WRITE, -1);
    int fb                = filestream_get_fd(fd);
 
    if (ioctl(fb, FBIOGET_VSCREENINFO, &vinfo) < 0)
@@ -190,7 +190,7 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       goto error;
    }
 
-   filestream_fclose(fd);
+   filestream_close(fd);
    
    width                      = vinfo.xres;
    height                     = vinfo.yres;
@@ -216,7 +216,7 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
 
 error:
    if (fd)
-      filestream_fclose(fd);
+      filestream_close(fd);
    RARCH_ERR("[Mali fbdev]: EGL error: %d.\n", eglGetError());
    gfx_ctx_mali_fbdev_destroy(data);
    return false;

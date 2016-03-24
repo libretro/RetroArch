@@ -511,7 +511,7 @@ int sha1_calculate(const char *path, char *result)
    unsigned char buff[4096] = {0};
    SHA1Context sha;
    int rv = 1;
-   RFILE *fd = filestream_fopen(path, RFILE_MODE_READ, -1);
+   RFILE *fd = filestream_open(path, RFILE_MODE_READ, -1);
 
    if (!fd)
       goto error;
@@ -520,7 +520,7 @@ int sha1_calculate(const char *path, char *result)
 
    do
    {
-      rv = filestream_fread(fd, buff, 4096);
+      rv = filestream_read(fd, buff, 4096);
       if (rv < 0)
          goto error;
 
@@ -536,12 +536,12 @@ int sha1_calculate(const char *path, char *result)
          sha.Message_Digest[2],
          sha.Message_Digest[3], sha.Message_Digest[4]);
 
-   filestream_fclose(fd);
+   filestream_close(fd);
    return 0;
 
 error:
    if (fd)
-      filestream_fclose(fd);
+      filestream_close(fd);
    return -1;
 }
 

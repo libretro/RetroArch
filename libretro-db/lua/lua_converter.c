@@ -92,7 +92,7 @@ int main(int argc, char ** argv)
 
    call_init(L, argc - 2, (const char **) argv + 2);
 
-   dst = filestream_fopen(db_file, RFILE_MODE_WRITE, -1);
+   dst = filestream_open(db_file, RFILE_MODE_WRITE, -1);
    if (!dst)
    {
       printf(
@@ -108,6 +108,6 @@ int main(int argc, char ** argv)
 
 clean:
    lua_close(L);
-   filestream_fclose(dst);
+   filestream_close(dst);
    return rv;
 }

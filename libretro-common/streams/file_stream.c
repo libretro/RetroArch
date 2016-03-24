@@ -105,7 +105,7 @@ int filestream_get_fd(RFILE *stream)
 #endif
 }
 
-RFILE *filestream_fopen(const char *path, unsigned mode, ssize_t len)
+RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 {
    int            flags = 0;
    int         mode_int = 0;
@@ -213,12 +213,12 @@ RFILE *filestream_fopen(const char *path, unsigned mode, ssize_t len)
       {
          stream->mappos  = 0;
          stream->mapped  = NULL;
-         stream->mapsize = filestream_fseek(stream, 0, SEEK_END);
+         stream->mapsize = filestream_seek(stream, 0, SEEK_END);
 
          if (stream->mapsize == (uint64_t)-1)
             goto error;
 
-         filestream_frewind(stream);
+         filestream_rewind(stream);
 
          stream->mapped = (uint8_t*)mmap((void*)0, stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
 
@@ -237,11 +237,11 @@ RFILE *filestream_fopen(const char *path, unsigned mode, ssize_t len)
    return stream;
 
 error:
-   filestream_fclose(stream);
+   filestream_close(stream);
    return NULL;
 }
 
-ssize_t filestream_fseek(RFILE *stream, ssize_t offset, int whence)
+ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 {
    int ret = 0;
    if (!stream)
@@ -267,7 +267,7 @@ ssize_t filestream_fseek(RFILE *stream, ssize_t offset, int whence)
 #endif
 #ifdef HAVE_MMAP
       /* Need to check stream->mapped because this function is 
-       * called in filestream_fopen() */
+       * called in filestream_open() */
       if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
       {
          /* fseek() returns error on under/overflow but allows cursor > EOF for
@@ -309,7 +309,7 @@ ssize_t filestream_fseek(RFILE *stream, ssize_t offset, int whence)
 #endif
 }
 
-ssize_t filestream_ftell(RFILE *stream)
+ssize_t filestream_tell(RFILE *stream)
 {
    if (!stream)
       return -1;
@@ -328,7 +328,7 @@ ssize_t filestream_ftell(RFILE *stream)
 #endif
 #ifdef HAVE_MMAP
       /* Need to check stream->mapped because this function 
-       * is called in filestream_fopen() */
+       * is called in filestream_open() */
       if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
          return stream->mappos;
       else
@@ -337,12 +337,12 @@ ssize_t filestream_ftell(RFILE *stream)
 #endif
 }
 
-void filestream_frewind(RFILE *stream)
+void filestream_rewind(RFILE *stream)
 {
-   filestream_fseek(stream, 0L, SEEK_SET);
+   filestream_seek(stream, 0L, SEEK_SET);
 }
 
-ssize_t filestream_fread(RFILE *stream, void *s, size_t len)
+ssize_t filestream_read(RFILE *stream, void *s, size_t len)
 {
    if (!stream || !s)
       return -1;
@@ -379,7 +379,7 @@ ssize_t filestream_fread(RFILE *stream, void *s, size_t len)
 #endif
 }
 
-ssize_t filestream_fwrite(RFILE *stream, const void *s, size_t len)
+ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
 {
    if (!stream)
       return -1;
@@ -405,7 +405,7 @@ ssize_t filestream_fwrite(RFILE *stream, const void *s, size_t len)
 #endif
 }
 
-int filestream_fclose(RFILE *stream)
+int filestream_close(RFILE *stream)
 {
    if (!stream)
       return -1;
@@ -453,7 +453,7 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
    ssize_t ret              = 0;
    ssize_t content_buf_size = 0;
    void *content_buf        = NULL;
-   RFILE *file              = filestream_fopen(path, RFILE_MODE_READ, -1);
+   RFILE *file              = filestream_open(path, RFILE_MODE_READ, -1);
 
    if (!file)
    {
@@ -465,21 +465,21 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
       goto error;
    }
 
-   if (filestream_fseek(file, 0, SEEK_END) != 0)
+   if (filestream_seek(file, 0, SEEK_END) != 0)
       goto error;
 
-   content_buf_size = filestream_ftell(file);
+   content_buf_size = filestream_tell(file);
    if (content_buf_size < 0)
       goto error;
 
-   filestream_frewind(file);
+   filestream_rewind(file);
 
    content_buf = malloc(content_buf_size + 1);
 
    if (!content_buf)
       goto error;
 
-   ret = filestream_fread(file, content_buf, content_buf_size);
+   ret = filestream_read(file, content_buf, content_buf_size);
    if (ret < 0)
    {
 #if __STDC_VERSION__ >= 199901L
@@ -490,7 +490,7 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
       goto error;
    }
 
-   filestream_fclose(file);
+   filestream_close(file);
 
    *buf    = content_buf;
 
@@ -505,7 +505,7 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
 
 error:
    if (file)
-      filestream_fclose(file);
+      filestream_close(file);
    if (content_buf)
       free(content_buf);
    if (len)
@@ -527,12 +527,12 @@ error:
 bool filestream_write_file(const char *path, const void *data, ssize_t size)
 {
    ssize_t ret   = 0;
-   RFILE *file   = filestream_fopen(path, RFILE_MODE_WRITE, -1);
+   RFILE *file   = filestream_open(path, RFILE_MODE_WRITE, -1);
    if (!file)
       return false;
 
-   ret = filestream_fwrite(file, data, size);
-   filestream_fclose(file);
+   ret = filestream_write(file, data, size);
+   filestream_close(file);
 
    return (ret == size);
 }

@@ -106,7 +106,7 @@ static int create_db(lua_State *L)
    }
    lua_setfield(L, LUA_REGISTRYINDEX, "testlib_get_value");
 
-   dst = filestream_fopen(db_file, RFILE_MODE_WRITE, -1);
+   dst = filestream_open(db_file, RFILE_MODE_WRITE, -1);
    if (!dst)
    {
       lua_pushstring(L, "Could not open destination file");
@@ -114,7 +114,7 @@ static int create_db(lua_State *L)
    }
 
    libretrodb_create(dst, &value_provider, L);
-   filestream_fclose(dst);
+   filestream_close(dst);
 
    return 0;
 }

@@ -181,14 +181,14 @@ static bool menu_content_load_from_playlist(void *data)
 
       free(path_tolower);
 
-      fp = filestream_fopen(path_check, RFILE_MODE_READ, -1);
+      fp = filestream_open(path_check, RFILE_MODE_READ, -1);
 
       free(path_check);
 
       if (!fp)
          goto error;
 
-      filestream_fclose(fp);
+      filestream_close(fp);
    }
 
    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
