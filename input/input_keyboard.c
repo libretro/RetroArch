@@ -21,7 +21,6 @@
 #include "input_keyboard.h"
 
 #include "../general.h"
-#include "../system.h"
 
 struct input_keyboard_line
 {
