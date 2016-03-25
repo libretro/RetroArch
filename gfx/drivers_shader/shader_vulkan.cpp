@@ -708,11 +708,12 @@ bool Pass::init_pipeline_layout()
    }
 
    // Semantic textures.
-   for (unsigned i = 0; i < SLANG_NUM_TEXTURE_SEMANTICS; i++)
+   for (auto &semantic : reflection.semantic_textures)
    {
-      if (reflection.semantic_texture_mask & (1u << i))
+      for (auto &texture : semantic)
       {
-         auto &texture = reflection.semantic_textures[i];
+         if (!texture.texture)
+            continue;
 
          VkShaderStageFlags stages = 0;
          if (texture.stage_mask & SLANG_STAGE_VERTEX_MASK)
@@ -1069,17 +1070,17 @@ void Pass::set_texture(VkDescriptorSet set, unsigned binding,
 void Pass::set_semantic_texture(VkDescriptorSet set,
       slang_texture_semantic semantic, const Texture &texture)
 {
-   if (reflection.semantic_texture_mask & (1u << semantic))
-      set_texture(set, reflection.semantic_textures[semantic].binding, texture);
+   if (reflection.semantic_textures[semantic][0].texture)
+      set_texture(set, reflection.semantic_textures[semantic][0].binding, texture);
 }
 
 void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic semantic,
       unsigned width, unsigned height)
 {
-   if (data && (reflection.semantic_texture_ubo_mask & (1 << semantic)))
+   if (data && reflection.semantic_textures[semantic][0].uniform)
    {
       build_vec4(
-            reinterpret_cast<float *>(data + reflection.semantic_textures[semantic].ubo_offset),
+            reinterpret_cast<float *>(data + reflection.semantic_textures[semantic][0].ubo_offset),
             width,
             height);
    }
@@ -1088,7 +1089,7 @@ void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic sem
 void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       unsigned width, unsigned height)
 {
-   if (data && (reflection.semantic_ubo_mask & (1 << semantic)))
+   if (data && reflection.semantics[semantic].uniform)
    {
       build_vec4(
             reinterpret_cast<float *>(data + reflection.semantics[semantic].ubo_offset),
@@ -1108,7 +1109,7 @@ void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
 void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
       const float *mvp, const Texture &original, const Texture &source)
 {
-   if (buffer && (reflection.semantic_ubo_mask & (1u << SLANG_SEMANTIC_MVP)))
+   if (buffer && reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
    {
       size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].ubo_offset;
       if (mvp)
