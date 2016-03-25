@@ -1481,6 +1481,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
    /* Notify filter chain about the new sync index. */
    vulkan_filter_chain_notify_sync_index(vk->filter_chain, frame_index);
+   vulkan_filter_chain_set_frame_count(vk->filter_chain, frame_count);
 
    retro_perf_start(&build_cmd);
    /* Render offscreen filter chain passes. */

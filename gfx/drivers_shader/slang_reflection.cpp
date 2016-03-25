@@ -68,6 +68,7 @@ static const char *semantic_uniform_names[] = {
    "MVP",
    "OutputSize",
    "FinalViewportSize",
+   "FrameCount",
 };
 
 static slang_texture_semantic slang_name_to_texture_semantic_array(const string &name, const char **names,
@@ -197,6 +198,10 @@ static bool validate_type_for_semantic(const SPIRType &type, slang_semantic sem)
       case SLANG_SEMANTIC_MVP:
          // mat4
          return type.basetype == SPIRType::Float && type.vecsize == 4 && type.columns == 4;
+
+      case SLANG_SEMANTIC_FRAME_COUNT:
+         // uint
+         return type.basetype == SPIRType::UInt && type.vecsize == 1 && type.columns == 1;
 
       default:
          // vec4

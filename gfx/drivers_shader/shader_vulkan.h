@@ -116,6 +116,13 @@ bool vulkan_filter_chain_init(vulkan_filter_chain_t *chain);
 void vulkan_filter_chain_set_input_texture(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_texture *texture);
 
+void vulkan_filter_chain_set_frame_count(vulkan_filter_chain_t *chain,
+      uint64_t count);
+
+void vulkan_filter_chain_set_frame_count_period(vulkan_filter_chain_t *chain,
+      unsigned pass,
+      unsigned period);
+
 void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp);
 void vulkan_filter_chain_build_viewport_pass(vulkan_filter_chain_t *chain,

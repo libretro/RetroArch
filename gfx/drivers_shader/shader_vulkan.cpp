@@ -276,6 +276,16 @@ class Pass
          sync_index = index;
       }
 
+      void set_frame_count(uint64_t count)
+      {
+         frame_count = count;
+      }
+
+      void set_frame_count_period(unsigned period)
+      {
+         frame_count_period = period;
+      }
+
       vulkan_filter_chain_filter get_source_filter() const
       {
          return pass_info.source_filter;
@@ -347,6 +357,7 @@ class Pass
             const float *mvp, const Texture &original, const Texture &source);
       void build_semantic_vec4(uint8_t *data, slang_semantic semantic,
             unsigned width, unsigned height);
+      void build_semantic_uint(uint8_t *data, slang_semantic semantic, uint32_t value);
       void build_semantic_texture_vec4(uint8_t *data,
             slang_texture_semantic semantic,
             unsigned width, unsigned height);
@@ -357,6 +368,9 @@ class Pass
             slang_texture_semantic semantic, const Texture &texture);
       void build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
             slang_texture_semantic semantic, unsigned index, const Texture &texture);
+
+      uint64_t frame_count = 0;
+      unsigned frame_count_period = 0;
 };
 
 // struct here since we're implementing the opaque typedef from C.
@@ -390,6 +404,9 @@ struct vulkan_filter_chain
       void build_offscreen_passes(VkCommandBuffer cmd, const VkViewport &vp);
       void build_viewport_pass(VkCommandBuffer cmd,
             const VkViewport &vp, const float *mvp);
+
+      void set_frame_count(uint64_t count);
+      void set_frame_count_period(unsigned pass, unsigned period);
 
    private:
       VkDevice device;
@@ -509,6 +526,17 @@ void vulkan_filter_chain::set_input_texture(
       const vulkan_filter_chain_texture &texture)
 {
    input_texture = texture;
+}
+
+void vulkan_filter_chain::set_frame_count(uint64_t count)
+{
+   for (auto &pass : passes)
+      pass->set_frame_count(count);
+}
+
+void vulkan_filter_chain::set_frame_count_period(unsigned pass, unsigned period)
+{
+   passes[pass]->set_frame_count_period(period);
 }
 
 void vulkan_filter_chain::execute_deferred()
@@ -1378,6 +1406,13 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
    }
 }
 
+void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
+      uint32_t value)
+{
+   if (data && reflection.semantics[semantic].uniform)
+      *reinterpret_cast<uint32_t*>(data + reflection.semantics[semantic].ubo_offset) = value;
+}
+
 void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
 {
@@ -1412,6 +1447,8 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
          current_framebuffer_size.width, current_framebuffer_size.height);
    build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
          unsigned(current_viewport.width), unsigned(current_viewport.height));
+   build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
+         frame_count_period ? uint32_t(frame_count % frame_count_period) : uint32_t(frame_count));
 
    // Standard inputs
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
@@ -1908,6 +1945,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             output.fragment.data(),
             output.fragment.size());
 
+      chain->set_frame_count_period(i, pass->frame_count_mod);
+
       if (pass->filter == RARCH_FILTER_UNSPEC)
          pass_info.source_filter = filter;
       else
@@ -2065,6 +2104,21 @@ void vulkan_filter_chain_set_input_texture(
       const struct vulkan_filter_chain_texture *texture)
 {
    chain->set_input_texture(*texture);
+}
+
+void vulkan_filter_chain_set_frame_count(
+      vulkan_filter_chain_t *chain,
+      uint64_t count)
+{
+   chain->set_frame_count(count);
+}
+
+void vulkan_filter_chain_set_frame_count_period(
+      vulkan_filter_chain_t *chain,
+      unsigned pass,
+      unsigned period)
+{
+   chain->set_frame_count_period(pass, period);
 }
 
 void vulkan_filter_chain_build_offscreen_passes(
