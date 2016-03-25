@@ -561,7 +561,10 @@ bool vulkan_filter_chain::init_history()
    }
 
    if (required_images < 2)
+   {
+      RARCH_LOG("[Vulkan filter chain]: Not using frame history.\n");
       return true;
+   }
 
    // We don't need to store array element #0, since it's aliased with the actual original.
    required_images--;
@@ -586,6 +589,8 @@ bool vulkan_filter_chain::init_history()
 
       common.original_history.push_back(source);
    }
+
+   RARCH_LOG("[Vulkan filter chain]: Using history of %u frames.\n", required_images);
 
    // On first frame, we need to clear the textures to a known state, but we need
    // a command buffer for that, so just defer to first frame.
@@ -617,10 +622,16 @@ bool vulkan_filter_chain::init_feedback()
 
       if (use_feedback && !passes[i]->init_feedback())
          return false;
+
+      if (use_feedback)
+         RARCH_LOG("[Vulkan filter chain]: Using framebuffer feedback for pass #%u.\n", i);
    }
 
    if (!use_feedbacks)
+   {
+      RARCH_LOG("[Vulkan filter chain]: Not using framebuffer feedback.\n");
       return true;
+   }
 
    common.framebuffer_feedback.resize(passes.size() - 1);
    return true;
