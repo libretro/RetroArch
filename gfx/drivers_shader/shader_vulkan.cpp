@@ -32,13 +32,13 @@ using namespace std;
 static void image_layout_transition(
       VkCommandBuffer cmd, VkImage image,
       VkImageLayout old_layout, VkImageLayout new_layout,
-      VkAccessFlags srcAccess, VkAccessFlags dstAccess,
-      VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages)
+      VkAccessFlags src_access, VkAccessFlags dst_access,
+      VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages)
 {
    VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 
-   barrier.srcAccessMask               = srcAccess;
-   barrier.dstAccessMask               = dstAccess;
+   barrier.srcAccessMask               = src_access;
+   barrier.dstAccessMask               = dst_access;
    barrier.oldLayout                   = old_layout;
    barrier.newLayout                   = new_layout;
    barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
@@ -49,8 +49,8 @@ static void image_layout_transition(
    barrier.subresourceRange.layerCount = 1;
 
    VKFUNC(vkCmdPipelineBarrier)(cmd,
-         srcStages,
-         dstStages,
+         src_stages,
+         dst_stages,
          false,
          0, nullptr,
          0, nullptr,
