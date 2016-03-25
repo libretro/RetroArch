@@ -29,6 +29,34 @@
 
 using namespace std;
 
+static void image_layout_transition(
+      VkCommandBuffer cmd, VkImage image,
+      VkImageLayout old_layout, VkImageLayout new_layout,
+      VkAccessFlags srcAccess, VkAccessFlags dstAccess,
+      VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages)
+{
+   VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+
+   barrier.srcAccessMask               = srcAccess;
+   barrier.dstAccessMask               = dstAccess;
+   barrier.oldLayout                   = old_layout;
+   barrier.newLayout                   = new_layout;
+   barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.image                       = image;
+   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   barrier.subresourceRange.levelCount = 1;
+   barrier.subresourceRange.layerCount = 1;
+
+   VKFUNC(vkCmdPipelineBarrier)(cmd,
+         srcStages,
+         dstStages,
+         false,
+         0, nullptr,
+         0, nullptr,
+         1, &barrier);
+}
+
 static uint32_t find_memory_type(
       const VkPhysicalDeviceMemoryProperties &mem_props,
       uint32_t device_reqs, uint32_t host_reqs)
@@ -153,6 +181,9 @@ class Framebuffer
       VkFramebuffer get_framebuffer() const { return framebuffer; }
       VkRenderPass get_render_pass() const { return render_pass; }
 
+      void clear(VkCommandBuffer cmd);
+      void copy(VkCommandBuffer cmd, VkImage image, VkImageLayout layout);
+
    private:
       VkDevice device = VK_NULL_HANDLE;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
@@ -211,6 +242,11 @@ class Pass
          return *framebuffer;
       }
 
+      Framebuffer *get_feedback_framebuffer()
+      {
+         return framebuffer_feedback.get();
+      }
+
       Size2D set_pass_info(
             const Size2D &max_original,
             const Size2D &max_source,
@@ -222,6 +258,7 @@ class Pass
             size_t spirv_words);
 
       bool build();
+      bool init_feedback();
 
       void build_commands(
             DeferredDisposer &disposer,
@@ -245,6 +282,13 @@ class Pass
       {
          this->common = &common;
       }
+
+      const slang_reflection &get_reflection() const
+      {
+         return reflection;
+      }
+
+      void end_frame();
 
    private:
       VkDevice device;
@@ -273,18 +317,13 @@ class Pass
       vector<uint32_t> vertex_shader;
       vector<uint32_t> fragment_shader;
       unique_ptr<Framebuffer> framebuffer;
+      unique_ptr<Framebuffer> framebuffer_feedback;
       VkRenderPass swapchain_render_pass;
 
       void clear_vk();
       bool init_pipeline();
       bool init_pipeline_layout();
       bool init_buffers();
-
-      void image_layout_transition(VkDevice device,
-            VkCommandBuffer cmd, VkImage image,
-            VkImageLayout old_layout, VkImageLayout new_layout,
-            VkAccessFlags srcAccess, VkAccessFlags dstAccess,
-            VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages);
 
       void set_texture(VkDescriptorSet set, unsigned binding,
             const Texture &texture);
@@ -349,6 +388,7 @@ struct vulkan_filter_chain
       vector<vulkan_filter_chain_pass_info> pass_info;
       vector<vector<function<void ()>>> deferred_calls;
       CommonResources common;
+      VkFormat original_format;
 
       vulkan_filter_chain_texture input_texture;
 
@@ -364,6 +404,11 @@ struct vulkan_filter_chain
       void execute_deferred();
       void set_num_sync_indices(unsigned num_indices);
       void set_swapchain_info(const vulkan_filter_chain_swapchain_info &info);
+
+      bool init_history();
+      void update_history(DeferredDisposer &disposer, VkCommandBuffer cmd);
+      vector<unique_ptr<Framebuffer>> original_history;
+      bool require_clear = false;
 };
 
 vulkan_filter_chain::vulkan_filter_chain(
@@ -371,7 +416,8 @@ vulkan_filter_chain::vulkan_filter_chain(
    : device(info.device),
      memory_properties(*info.memory_properties),
      cache(info.pipeline_cache),
-     common(info.device, *info.memory_properties)
+     common(info.device, *info.memory_properties),
+     original_format(info.original_format)
 {
    max_input_size = { info.max_input_size.width, info.max_input_size.height };
    set_swapchain_info(info.swapchain);
@@ -466,6 +512,38 @@ void vulkan_filter_chain::flush()
    execute_deferred();
 }
 
+bool vulkan_filter_chain::init_history()
+{
+   original_history.clear();
+   require_clear = false;
+
+   size_t required_images = 0;
+   for (auto &pass : passes)
+   {
+      required_images =
+         max(required_images,
+               pass->get_reflection().semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
+   }
+
+   if (required_images < 2)
+      return true;
+
+   // We don't need to store array element #0, since it's aliased with the actual original.
+   required_images--;
+   original_history.reserve(required_images);
+
+   for (unsigned i = 0; i < required_images; i++)
+   {
+      original_history.emplace_back(new Framebuffer(device, memory_properties,
+               max_input_size, original_format));
+   }
+
+   // On first frame, we need to clear the textures to a known state, but we need
+   // a command buffer for that, so just defer to first frame.
+   require_clear = true;
+   return true;
+}
+
 bool vulkan_filter_chain::init()
 {
    Size2D source = max_input_size;
@@ -479,12 +557,29 @@ bool vulkan_filter_chain::init()
          return false;
    }
 
+   if (!init_history())
+      return false;
+
    return true;
 }
 
 void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       const VkViewport &vp)
 {
+   // First frame, make sure our history and feedback textures are in a clean state.
+   if (require_clear)
+   {
+      for (auto &texture : original_history)
+         texture->clear(cmd);
+      for (auto &pass : passes)
+      {
+         auto *fb = pass->get_feedback_framebuffer();
+         if (fb)
+            fb->clear(cmd);
+      }
+      require_clear = false;
+   }
+
    unsigned i;
    DeferredDisposer disposer(deferred_calls[current_sync_index]);
    const Texture original = { 
@@ -504,6 +599,54 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       source.texture.height   = fb.get_size().height;
       source.filter           = passes[i + 1]->get_source_filter();
    }
+}
+
+void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBuffer cmd)
+{
+   VkImageLayout src_layout = input_texture.layout;
+   // Transition input texture to something appropriate.
+   if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
+   {
+      image_layout_transition(cmd,
+            input_texture.image,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            0,
+            VK_ACCESS_TRANSFER_READ_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+      src_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   }
+
+   unique_ptr<Framebuffer> tmp;
+   unique_ptr<Framebuffer> &back = original_history.back();
+   swap(back, tmp);
+
+   if (input_texture.width != tmp->get_size().width ||
+         input_texture.height != tmp->get_size().height)
+   {
+      tmp->set_size(disposer, { input_texture.width, input_texture.height });
+   }
+
+   tmp->copy(cmd, input_texture.image, src_layout);
+
+   // Transition input texture back.
+   if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
+   {
+      image_layout_transition(cmd,
+            input_texture.image,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            0,
+            VK_ACCESS_SHADER_READ_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   }
+
+   // Should ring buffer, but we don't have *that* many passes.
+   move(begin(original_history), end(original_history) - 1, begin(original_history) + 1);
+   swap(original_history.front(), tmp);
 }
 
 void vulkan_filter_chain::build_viewport_pass(
@@ -528,6 +671,16 @@ void vulkan_filter_chain::build_viewport_pass(
 
    passes.back()->build_commands(disposer, cmd,
          original, source, vp, mvp);
+
+   // If we need to keep old frames, copy it after fragment is complete.
+   // TODO: We can improve pipelining by figuring out which pass is the last that reads from
+   // the history and dispatch the copy earlier.
+   if (!original_history.empty())
+      update_history(disposer, cmd);
+
+   // For feedback FBOs, swap current and previous.
+   for (auto &pass : passes)
+      pass->end_frame();
 }
 
 Buffer::Buffer(VkDevice device,
@@ -978,8 +1131,29 @@ bool Pass::init_buffers()
    return true;
 }
 
+void Pass::end_frame()
+{
+   if (framebuffer_feedback)
+      swap(framebuffer, framebuffer_feedback);
+}
+
+bool Pass::init_feedback()
+{
+   if (final_pass)
+      return false;
+
+   framebuffer_feedback = unique_ptr<Framebuffer>(
+         new Framebuffer(device, memory_properties,
+            current_framebuffer_size,
+            pass_info.rt_format));
+   return true;
+}
+
 bool Pass::build()
 {
+   framebuffer.reset();
+   framebuffer_feedback.reset();
+
    if (!final_pass)
    {
       framebuffer = unique_ptr<Framebuffer>(
@@ -999,34 +1173,6 @@ bool Pass::build()
       return false;
 
    return true;
-}
-
-void Pass::image_layout_transition(VkDevice device,
-      VkCommandBuffer cmd, VkImage image,
-      VkImageLayout old_layout, VkImageLayout new_layout,
-      VkAccessFlags srcAccess, VkAccessFlags dstAccess,
-      VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages)
-{
-   VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-
-   barrier.srcAccessMask               = srcAccess;
-   barrier.dstAccessMask               = dstAccess;
-   barrier.oldLayout                   = old_layout;
-   barrier.newLayout                   = new_layout;
-   barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-   barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-   barrier.image                       = image;
-   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   barrier.subresourceRange.levelCount = 1;
-   barrier.subresourceRange.layerCount = 1;
-
-   VKFUNC(vkCmdPipelineBarrier)(cmd,
-         srcStages,
-         dstStages,
-         0,
-         0, nullptr,
-         0, nullptr,
-         1, &barrier);
 }
 
 void Pass::set_uniform_buffer(VkDescriptorSet set, unsigned binding,
@@ -1169,7 +1315,7 @@ void Pass::build_commands(
    if (!final_pass)
    {
       // Render.
-      image_layout_transition(device, cmd,
+      image_layout_transition(cmd,
             framebuffer->get_image(),
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -1247,7 +1393,6 @@ void Pass::build_commands(
 
       // Barrier to sync with next pass.
       image_layout_transition(
-            device,
             cmd,
             framebuffer->get_image(),
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -1274,6 +1419,63 @@ Framebuffer::Framebuffer(
    init(nullptr);
 }
 
+void Framebuffer::clear(VkCommandBuffer cmd)
+{
+   image_layout_transition(cmd, image,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+   VkClearColorValue color;
+   memset(&color, 0, sizeof(color));
+
+   VkImageSubresourceRange range;
+   memset(&range, 0, sizeof(range));
+   range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   range.levelCount = 1;
+   range.layerCount = 1;
+
+   VKFUNC(vkCmdClearColorImage)(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         &color, 1, &range);
+
+   image_layout_transition(cmd, image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+}
+
+void Framebuffer::copy(VkCommandBuffer cmd,
+      VkImage src_image, VkImageLayout src_layout)
+{
+   image_layout_transition(cmd, image,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+   VkImageCopy region;
+   memset(&region, 0, sizeof(region));
+   region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.srcSubresource.layerCount = 1;
+   region.dstSubresource = region.srcSubresource;
+   region.extent.width = size.width;
+   region.extent.height = size.height;
+   region.extent.depth = 1;
+
+   VKFUNC(vkCmdCopyImage)(cmd,
+         src_image, src_layout,
+         image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         1, &region);
+
+   image_layout_transition(cmd, image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+}
+
 void Framebuffer::init(DeferredDisposer *disposer)
 {
    VkMemoryRequirements mem_reqs;
@@ -1288,7 +1490,8 @@ void Framebuffer::init(DeferredDisposer *disposer)
    info.samples           = VK_SAMPLE_COUNT_1_BIT;
    info.tiling            = VK_IMAGE_TILING_OPTIMAL;
    info.usage             = VK_IMAGE_USAGE_SAMPLED_BIT | 
-      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+      VK_IMAGE_USAGE_TRANSFER_DST_BIT;
    info.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
    info.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
 

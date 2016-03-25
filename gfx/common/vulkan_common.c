@@ -1153,6 +1153,7 @@ static bool vulkan_load_device_symbols(gfx_ctx_vulkan_data_t *vk)
 
    /* Image commands */
    VK_GET_DEVICE_PROC_ADDR(CmdCopyImage);
+   VK_GET_DEVICE_PROC_ADDR(CmdClearColorImage);
 
    /* Vertex input descriptions */
    VK_GET_DEVICE_PROC_ADDR(CmdBindVertexBuffers);
