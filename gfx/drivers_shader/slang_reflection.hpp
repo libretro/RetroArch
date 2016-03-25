@@ -22,8 +22,30 @@
 // Textures with built-in meaning.
 enum slang_texture_semantic
 {
+   // The input texture to the filter chain.
+   // Canonical name: "Original".
    SLANG_TEXTURE_SEMANTIC_ORIGINAL = 0,
+
+   // The output from pass N - 1 if executing pass N, or ORIGINAL
+   // if pass #0 is executed.
+   // Canonical name: "Source".
    SLANG_TEXTURE_SEMANTIC_SOURCE = 1,
+
+   // The original inputs with a history back in time.
+   // Canonical name: "OriginalHistory#", e.g. "OriginalHistory2" <- Two frames back.
+   // "OriginalHistory0" is an alias for SEMANTIC_ORIGINAL.
+   // Size name: "OriginalHistorySize#".
+   SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY = 2,
+
+   // The output from pass #N, where pass #0 is the first pass.
+   // Canonical name: "PassOutput#", e.g. "PassOutput3".
+   // Size name: "PassOutputSize#".
+   SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT = 3,
+
+   // The output from pass #N, one frame ago where pass #0 is the first pass.
+   // It is not valid to use the pass feedback from a pass which is not offscreen.
+   // Canonical name: "PassFeedback#", e.g. "PassFeedback2".
+   SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK = 4,
 
    SLANG_NUM_TEXTURE_SEMANTICS,
    SLANG_INVALID_TEXTURE_SEMANTIC = -1
@@ -44,6 +66,8 @@ enum slang_stage
    SLANG_STAGE_VERTEX_MASK = 1 << 0,
    SLANG_STAGE_FRAGMENT_MASK = 1 << 1
 };
+
+// Vulkan minimum limit.
 #define SLANG_NUM_BINDINGS 16
 
 struct slang_texture_semantic_meta
@@ -51,27 +75,28 @@ struct slang_texture_semantic_meta
    size_t ubo_offset = 0;
    unsigned binding = 0;
    uint32_t stage_mask = 0;
+
+   bool texture = false;
+   bool uniform = false;
 };
 
 struct slang_semantic_meta
 {
    size_t ubo_offset = 0;
    unsigned num_components = 0;
+   bool uniform = false;
 };
 
 struct slang_reflection
 {
-   slang_reflection() = default;
+   slang_reflection();
 
    size_t ubo_size = 0;
    unsigned ubo_binding = 0;
    uint32_t ubo_stage_mask = 0;
 
-   slang_texture_semantic_meta semantic_textures[SLANG_NUM_TEXTURE_SEMANTICS];
+   std::vector<slang_texture_semantic_meta> semantic_textures[SLANG_NUM_TEXTURE_SEMANTICS];
    slang_semantic_meta semantics[SLANG_NUM_SEMANTICS];
-   uint32_t semantic_texture_mask = 0;
-   uint32_t semantic_texture_ubo_mask = 0;
-   uint32_t semantic_ubo_mask = 0;
 };
 
 bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,

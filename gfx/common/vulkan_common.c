@@ -158,6 +158,8 @@ void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
          VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+   dynamic->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
@@ -1153,6 +1155,7 @@ static bool vulkan_load_device_symbols(gfx_ctx_vulkan_data_t *vk)
 
    /* Image commands */
    VK_GET_DEVICE_PROC_ADDR(CmdCopyImage);
+   VK_GET_DEVICE_PROC_ADDR(CmdClearColorImage);
 
    /* Vertex input descriptions */
    VK_GET_DEVICE_PROC_ADDR(CmdBindVertexBuffers);

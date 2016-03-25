@@ -29,6 +29,34 @@
 
 using namespace std;
 
+static void image_layout_transition(
+      VkCommandBuffer cmd, VkImage image,
+      VkImageLayout old_layout, VkImageLayout new_layout,
+      VkAccessFlags src_access, VkAccessFlags dst_access,
+      VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages)
+{
+   VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+
+   barrier.srcAccessMask               = src_access;
+   barrier.dstAccessMask               = dst_access;
+   barrier.oldLayout                   = old_layout;
+   barrier.newLayout                   = new_layout;
+   barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.image                       = image;
+   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   barrier.subresourceRange.levelCount = 1;
+   barrier.subresourceRange.layerCount = 1;
+
+   VKFUNC(vkCmdPipelineBarrier)(cmd,
+         src_stages,
+         dst_stages,
+         false,
+         0, nullptr,
+         0, nullptr,
+         1, &barrier);
+}
+
 static uint32_t find_memory_type(
       const VkPhysicalDeviceMemoryProperties &mem_props,
       uint32_t device_reqs, uint32_t host_reqs)
@@ -153,6 +181,9 @@ class Framebuffer
       VkFramebuffer get_framebuffer() const { return framebuffer; }
       VkRenderPass get_render_pass() const { return render_pass; }
 
+      void clear(VkCommandBuffer cmd);
+      void copy(VkCommandBuffer cmd, VkImage image, VkImageLayout layout);
+
    private:
       VkDevice device = VK_NULL_HANDLE;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
@@ -182,8 +213,11 @@ struct CommonResources
          const VkPhysicalDeviceMemoryProperties &memory_properties);
    ~CommonResources();
 
-   unique_ptr<Buffer> vbo_offscreen, vbo_final;
+   unique_ptr<Buffer> vbo;
    VkSampler samplers[2];
+
+   vector<Texture> original_history;
+   vector<Texture> framebuffer_feedback;
 
    VkDevice device;
 };
@@ -211,6 +245,11 @@ class Pass
          return *framebuffer;
       }
 
+      Framebuffer *get_feedback_framebuffer()
+      {
+         return framebuffer_feedback.get();
+      }
+
       Size2D set_pass_info(
             const Size2D &max_original,
             const Size2D &max_source,
@@ -222,6 +261,7 @@ class Pass
             size_t spirv_words);
 
       bool build();
+      bool init_feedback();
 
       void build_commands(
             DeferredDisposer &disposer,
@@ -245,6 +285,13 @@ class Pass
       {
          this->common = &common;
       }
+
+      const slang_reflection &get_reflection() const
+      {
+         return reflection;
+      }
+
+      void end_frame();
 
    private:
       VkDevice device;
@@ -273,6 +320,7 @@ class Pass
       vector<uint32_t> vertex_shader;
       vector<uint32_t> fragment_shader;
       unique_ptr<Framebuffer> framebuffer;
+      unique_ptr<Framebuffer> framebuffer_feedback;
       VkRenderPass swapchain_render_pass;
 
       void clear_vk();
@@ -280,16 +328,13 @@ class Pass
       bool init_pipeline_layout();
       bool init_buffers();
 
-      void image_layout_transition(VkDevice device,
-            VkCommandBuffer cmd, VkImage image,
-            VkImageLayout old_layout, VkImageLayout new_layout,
-            VkAccessFlags srcAccess, VkAccessFlags dstAccess,
-            VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages);
-
       void set_texture(VkDescriptorSet set, unsigned binding,
             const Texture &texture);
 
       void set_semantic_texture(VkDescriptorSet set, slang_texture_semantic semantic,
+            const Texture &texture);
+      void set_semantic_texture_array(VkDescriptorSet set,
+            slang_texture_semantic semantic, unsigned index,
             const Texture &texture);
 
       void set_uniform_buffer(VkDescriptorSet set, unsigned binding,
@@ -305,8 +350,13 @@ class Pass
       void build_semantic_texture_vec4(uint8_t *data,
             slang_texture_semantic semantic,
             unsigned width, unsigned height);
+      void build_semantic_texture_array_vec4(uint8_t *data,
+            slang_texture_semantic semantic, unsigned index,
+            unsigned width, unsigned height);
       void build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
             slang_texture_semantic semantic, const Texture &texture);
+      void build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
+            slang_texture_semantic semantic, unsigned index, const Texture &texture);
 };
 
 // struct here since we're implementing the opaque typedef from C.
@@ -349,6 +399,7 @@ struct vulkan_filter_chain
       vector<vulkan_filter_chain_pass_info> pass_info;
       vector<vector<function<void ()>>> deferred_calls;
       CommonResources common;
+      VkFormat original_format;
 
       vulkan_filter_chain_texture input_texture;
 
@@ -364,6 +415,15 @@ struct vulkan_filter_chain
       void execute_deferred();
       void set_num_sync_indices(unsigned num_indices);
       void set_swapchain_info(const vulkan_filter_chain_swapchain_info &info);
+
+      bool init_history();
+      bool init_feedback();
+      void update_history(DeferredDisposer &disposer, VkCommandBuffer cmd);
+      vector<unique_ptr<Framebuffer>> original_history;
+      bool require_clear = false;
+      void clear_history_and_feedback(VkCommandBuffer cmd);
+      void update_feedback_info();
+      void update_history_info();
 };
 
 vulkan_filter_chain::vulkan_filter_chain(
@@ -371,7 +431,8 @@ vulkan_filter_chain::vulkan_filter_chain(
    : device(info.device),
      memory_properties(*info.memory_properties),
      cache(info.pipeline_cache),
-     common(info.device, *info.memory_properties)
+     common(info.device, *info.memory_properties),
+     original_format(info.original_format)
 {
    max_input_size = { info.max_input_size.width, info.max_input_size.height };
    set_swapchain_info(info.swapchain);
@@ -466,6 +527,121 @@ void vulkan_filter_chain::flush()
    execute_deferred();
 }
 
+void vulkan_filter_chain::update_history_info()
+{
+   unsigned i = 0;
+   for (auto &texture : original_history)
+   {
+      Texture &source         = common.original_history[i];
+      source.texture.image    = texture->get_image();
+      source.texture.view     = texture->get_view();
+      source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      source.texture.width    = texture->get_size().width;
+      source.texture.height   = texture->get_size().height;
+      source.filter           = passes.front()->get_source_filter();
+      i++;
+   }
+}
+
+void vulkan_filter_chain::update_feedback_info()
+{
+   if (common.framebuffer_feedback.empty())
+      return;
+
+   for (unsigned i = 0; i < passes.size() - 1; i++)
+   {
+      auto fb = passes[i]->get_feedback_framebuffer();
+      if (!fb)
+         continue;
+
+      auto &source = common.framebuffer_feedback[i];
+      source.texture.image    = fb->get_image();
+      source.texture.view     = fb->get_view();
+      source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      source.texture.width    = fb->get_size().width;
+      source.texture.height   = fb->get_size().height;
+      source.filter           = passes[i]->get_source_filter();
+   }
+}
+
+bool vulkan_filter_chain::init_history()
+{
+   original_history.clear();
+   common.original_history.clear();
+
+   size_t required_images = 0;
+   for (auto &pass : passes)
+   {
+      required_images =
+         max(required_images,
+               pass->get_reflection().semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size());
+   }
+
+   if (required_images < 2)
+   {
+      RARCH_LOG("[Vulkan filter chain]: Not using frame history.\n");
+      return true;
+   }
+
+   // We don't need to store array element #0, since it's aliased with the actual original.
+   required_images--;
+   original_history.reserve(required_images);
+   common.original_history.resize(required_images);
+
+   for (unsigned i = 0; i < required_images; i++)
+   {
+      original_history.emplace_back(new Framebuffer(device, memory_properties,
+               max_input_size, original_format));
+   }
+
+   RARCH_LOG("[Vulkan filter chain]: Using history of %u frames.\n", required_images);
+
+   // On first frame, we need to clear the textures to a known state, but we need
+   // a command buffer for that, so just defer to first frame.
+   require_clear = true;
+   return true;
+}
+
+bool vulkan_filter_chain::init_feedback()
+{
+   common.framebuffer_feedback.clear();
+
+   bool use_feedbacks = false;
+
+   // Final pass cannot have feedback.
+   for (unsigned i = 0; i < passes.size() - 1; i++)
+   {
+      bool use_feedback = false;
+      for (auto &pass : passes)
+      {
+         auto &r = pass->get_reflection();
+         auto &feedbacks = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+         if (i < feedbacks.size() && feedbacks[i].texture)
+         {
+            use_feedback = true;
+            use_feedbacks = true;
+            break;
+         }
+      }
+
+      if (use_feedback && !passes[i]->init_feedback())
+         return false;
+
+      if (use_feedback)
+         RARCH_LOG("[Vulkan filter chain]: Using framebuffer feedback for pass #%u.\n", i);
+   }
+
+   if (!use_feedbacks)
+   {
+      RARCH_LOG("[Vulkan filter chain]: Not using framebuffer feedback.\n");
+      return true;
+   }
+
+   common.framebuffer_feedback.resize(passes.size() - 1);
+   require_clear = true;
+   return true;
+}
+
 bool vulkan_filter_chain::init()
 {
    Size2D source = max_input_size;
@@ -479,12 +655,40 @@ bool vulkan_filter_chain::init()
          return false;
    }
 
+   require_clear = false;
+   if (!init_history())
+      return false;
+   if (!init_feedback())
+      return false;
+
    return true;
+}
+
+void vulkan_filter_chain::clear_history_and_feedback(VkCommandBuffer cmd)
+{
+   for (auto &texture : original_history)
+      texture->clear(cmd);
+   for (auto &pass : passes)
+   {
+      auto *fb = pass->get_feedback_framebuffer();
+      if (fb)
+         fb->clear(cmd);
+   }
 }
 
 void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       const VkViewport &vp)
 {
+   // First frame, make sure our history and feedback textures are in a clean state.
+   if (require_clear)
+   {
+      clear_history_and_feedback(cmd);
+      require_clear = false;
+   }
+
+   update_history_info();
+   update_feedback_info();
+
    unsigned i;
    DeferredDisposer disposer(deferred_calls[current_sync_index]);
    const Texture original = { 
@@ -506,9 +710,65 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
    }
 }
 
+void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBuffer cmd)
+{
+   VkImageLayout src_layout = input_texture.layout;
+
+   // Transition input texture to something appropriate.
+   if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
+   {
+      image_layout_transition(cmd,
+            input_texture.image,
+            input_texture.layout,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            0,
+            VK_ACCESS_TRANSFER_READ_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+      src_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   }
+
+   unique_ptr<Framebuffer> tmp;
+   unique_ptr<Framebuffer> &back = original_history.back();
+   swap(back, tmp);
+
+   if (input_texture.width != tmp->get_size().width ||
+         input_texture.height != tmp->get_size().height)
+   {
+      tmp->set_size(disposer, { input_texture.width, input_texture.height });
+   }
+
+   tmp->copy(cmd, input_texture.image, src_layout);
+
+   // Transition input texture back.
+   if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
+   {
+      image_layout_transition(cmd,
+            input_texture.image,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            input_texture.layout,
+            0,
+            VK_ACCESS_SHADER_READ_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   }
+
+   // Should ring buffer, but we don't have *that* many passes.
+   move_backward(begin(original_history), end(original_history) - 1, end(original_history));
+   swap(original_history.front(), tmp);
+}
+
 void vulkan_filter_chain::build_viewport_pass(
       VkCommandBuffer cmd, const VkViewport &vp, const float *mvp)
 {
+   // First frame, make sure our history and feedback textures are in a clean state.
+   if (require_clear)
+   {
+      clear_history_and_feedback(cmd);
+      require_clear = false;
+   }
+
    Texture source;
    DeferredDisposer disposer(deferred_calls[current_sync_index]);
    const Texture original = { 
@@ -528,6 +788,16 @@ void vulkan_filter_chain::build_viewport_pass(
 
    passes.back()->build_commands(disposer, cmd,
          original, source, vp, mvp);
+
+   // If we need to keep old frames, copy it after fragment is complete.
+   // TODO: We can improve pipelining by figuring out which pass is the last that reads from
+   // the history and dispatch the copy earlier.
+   if (!original_history.empty())
+      update_history(disposer, cmd);
+
+   // For feedback FBOs, swap current and previous.
+   for (auto &pass : passes)
+      pass->end_frame();
 }
 
 Buffer::Buffer(VkDevice device,
@@ -549,7 +819,7 @@ Buffer::Buffer(VkDevice device,
 
    alloc.memoryTypeIndex      = find_memory_type(
          mem_props, mem_reqs.memoryTypeBits,
-         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 
+         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
    VKFUNC(vkAllocateMemory)(device, &alloc, NULL, &memory);
@@ -708,11 +978,12 @@ bool Pass::init_pipeline_layout()
    }
 
    // Semantic textures.
-   for (unsigned i = 0; i < SLANG_NUM_TEXTURE_SEMANTICS; i++)
+   for (auto &semantic : reflection.semantic_textures)
    {
-      if (reflection.semantic_texture_mask & (1u << i))
+      for (auto &texture : semantic)
       {
-         auto &texture = reflection.semantic_textures[i];
+         if (!texture.texture)
+            continue;
 
          VkShaderStageFlags stages = 0;
          if (texture.stage_mask & SLANG_STAGE_VERTEX_MASK)
@@ -905,33 +1176,26 @@ CommonResources::CommonResources(VkDevice device,
 {
    // The final pass uses an MVP designed for [0, 1] range VBO.
    // For in-between passes, we just go with identity matrices, so keep it simple.
-   const float vbo_data_offscreen[] = {
+   const float vbo_data[] = {
+      // Offscreen
       -1.0f, -1.0f, 0.0f, 0.0f,
       -1.0f, +1.0f, 0.0f, 1.0f,
        1.0f, -1.0f, 1.0f, 0.0f,
        1.0f, +1.0f, 1.0f, 1.0f,
-   };
 
-   const float vbo_data_final[] = {
+       // Final
       0.0f,  0.0f, 0.0f, 0.0f,
       0.0f, +1.0f, 0.0f, 1.0f,
       1.0f,  0.0f, 1.0f, 0.0f,
       1.0f, +1.0f, 1.0f, 1.0f,
    };
 
-   vbo_offscreen = unique_ptr<Buffer>(new Buffer(device,
-            memory_properties, sizeof(vbo_data_offscreen), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+   vbo = unique_ptr<Buffer>(new Buffer(device,
+            memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 
-   void *ptr = vbo_offscreen->map();
-   memcpy(ptr, vbo_data_offscreen, sizeof(vbo_data_offscreen));
-   vbo_offscreen->unmap();
-
-   vbo_final = unique_ptr<Buffer>(new Buffer(device,
-            memory_properties, sizeof(vbo_data_final), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
-
-   ptr = vbo_final->map();
-   memcpy(ptr, vbo_data_final, sizeof(vbo_data_final));
-   vbo_final->unmap();
+   void *ptr = vbo->map();
+   memcpy(ptr, vbo_data, sizeof(vbo_data));
+   vbo->unmap();
 
    VkSamplerCreateInfo info = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
    info.magFilter               = VK_FILTER_NEAREST;
@@ -977,8 +1241,29 @@ bool Pass::init_buffers()
    return true;
 }
 
+void Pass::end_frame()
+{
+   if (framebuffer_feedback)
+      swap(framebuffer, framebuffer_feedback);
+}
+
+bool Pass::init_feedback()
+{
+   if (final_pass)
+      return false;
+
+   framebuffer_feedback = unique_ptr<Framebuffer>(
+         new Framebuffer(device, memory_properties,
+            current_framebuffer_size,
+            pass_info.rt_format));
+   return true;
+}
+
 bool Pass::build()
 {
+   framebuffer.reset();
+   framebuffer_feedback.reset();
+
    if (!final_pass)
    {
       framebuffer = unique_ptr<Framebuffer>(
@@ -998,34 +1283,6 @@ bool Pass::build()
       return false;
 
    return true;
-}
-
-void Pass::image_layout_transition(VkDevice device,
-      VkCommandBuffer cmd, VkImage image,
-      VkImageLayout old_layout, VkImageLayout new_layout,
-      VkAccessFlags srcAccess, VkAccessFlags dstAccess,
-      VkPipelineStageFlags srcStages, VkPipelineStageFlags dstStages)
-{
-   VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-
-   barrier.srcAccessMask               = srcAccess;
-   barrier.dstAccessMask               = dstAccess;
-   barrier.oldLayout                   = old_layout;
-   barrier.newLayout                   = new_layout;
-   barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-   barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-   barrier.image                       = image;
-   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   barrier.subresourceRange.levelCount = 1;
-   barrier.subresourceRange.layerCount = 1;
-
-   VKFUNC(vkCmdPipelineBarrier)(cmd,
-         srcStages,
-         dstStages,
-         0,
-         0, nullptr,
-         0, nullptr,
-         1, &barrier);
 }
 
 void Pass::set_uniform_buffer(VkDescriptorSet set, unsigned binding,
@@ -1069,17 +1326,41 @@ void Pass::set_texture(VkDescriptorSet set, unsigned binding,
 void Pass::set_semantic_texture(VkDescriptorSet set,
       slang_texture_semantic semantic, const Texture &texture)
 {
-   if (reflection.semantic_texture_mask & (1u << semantic))
-      set_texture(set, reflection.semantic_textures[semantic].binding, texture);
+   if (reflection.semantic_textures[semantic][0].texture)
+      set_texture(set, reflection.semantic_textures[semantic][0].binding, texture);
+}
+
+void Pass::set_semantic_texture_array(VkDescriptorSet set,
+      slang_texture_semantic semantic, unsigned index,
+      const Texture &texture)
+{
+   if (index < reflection.semantic_textures[semantic].size() &&
+         reflection.semantic_textures[semantic][index].texture)
+   {
+      set_texture(set, reflection.semantic_textures[semantic][index].binding, texture);
+   }
 }
 
 void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic semantic,
       unsigned width, unsigned height)
 {
-   if (data && (reflection.semantic_texture_ubo_mask & (1 << semantic)))
+   if (data && reflection.semantic_textures[semantic][0].uniform)
    {
       build_vec4(
-            reinterpret_cast<float *>(data + reflection.semantic_textures[semantic].ubo_offset),
+            reinterpret_cast<float *>(data + reflection.semantic_textures[semantic][0].ubo_offset),
+            width,
+            height);
+   }
+}
+
+void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,
+      unsigned index, unsigned width, unsigned height)
+{
+   if (data && index < reflection.semantic_textures[semantic].size() &&
+         reflection.semantic_textures[semantic][index].uniform)
+   {
+      build_vec4(
+            reinterpret_cast<float *>(data + reflection.semantic_textures[semantic][index].ubo_offset),
             width,
             height);
    }
@@ -1088,7 +1369,7 @@ void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic sem
 void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       unsigned width, unsigned height)
 {
-   if (data && (reflection.semantic_ubo_mask & (1 << semantic)))
+   if (data && reflection.semantics[semantic].uniform)
    {
       build_vec4(
             reinterpret_cast<float *>(data + reflection.semantics[semantic].ubo_offset),
@@ -1105,10 +1386,19 @@ void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
    set_semantic_texture(set, semantic, texture);
 }
 
+void Pass::build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
+      slang_texture_semantic semantic, unsigned index, const Texture &texture)
+{
+   build_semantic_texture_array_vec4(buffer, semantic, index,
+         texture.texture.width, texture.texture.height);
+   set_semantic_texture_array(set, semantic, index, texture);
+}
+
 void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
       const float *mvp, const Texture &original, const Texture &source)
 {
-   if (buffer && (reflection.semantic_ubo_mask & (1u << SLANG_SEMANTIC_MVP)))
+   // MVP
+   if (buffer && reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
    {
       size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].ubo_offset;
       if (mvp)
@@ -1117,12 +1407,38 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
          build_identity_matrix(reinterpret_cast<float *>(buffer + offset));
    }
 
+   // Output information
    build_semantic_vec4(buffer, SLANG_SEMANTIC_OUTPUT,
          current_framebuffer_size.width, current_framebuffer_size.height);
    build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
          unsigned(current_viewport.width), unsigned(current_viewport.height));
+
+   // Standard inputs
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
+
+   // ORIGINAL_HISTORY[0] is an alias of ORIGINAL.
+   build_semantic_texture_array(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
+
+   // Previous inputs.
+   unsigned i = 0;
+   for (auto &texture : common->original_history)
+   {
+      build_semantic_texture_array(set, buffer,
+            SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
+            texture);
+      i++;
+   }
+
+   // Feedback FBOs.
+   i = 0;
+   for (auto &texture : common->framebuffer_feedback)
+   {
+      build_semantic_texture_array(set, buffer,
+            SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
+            texture);
+      i++;
+   }
 }
 
 void Pass::build_commands(
@@ -1138,13 +1454,13 @@ void Pass::build_commands(
          { original.texture.width, original.texture.height },
          { source.texture.width, source.texture.height });
 
-   if (     size.width  != current_framebuffer_size.width 
-         || size.height != current_framebuffer_size.height)
+   if (framebuffer &&
+         (size.width  != framebuffer->get_size().width ||
+          size.height != framebuffer->get_size().height))
    {
-      if (framebuffer)
-         framebuffer->set_size(disposer, size);
-      current_framebuffer_size = size;
+      framebuffer->set_size(disposer, size);
    }
+   current_framebuffer_size = size;
 
    if (reflection.ubo_stage_mask)
    {
@@ -1168,7 +1484,7 @@ void Pass::build_commands(
    if (!final_pass)
    {
       // Render.
-      image_layout_transition(device, cmd,
+      image_layout_transition(cmd,
             framebuffer->get_image(),
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -1198,9 +1514,9 @@ void Pass::build_commands(
    VKFUNC(vkCmdBindDescriptorSets)(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
          0, 1, &sets[sync_index], 0, nullptr);
 
-   VkDeviceSize offset = 0;
+   VkDeviceSize offset = final_pass ? 16 * sizeof(float) : 0;
    VKFUNC(vkCmdBindVertexBuffers)(cmd, 0, 1,
-         final_pass ? &common->vbo_final->get_buffer() : &common->vbo_offscreen->get_buffer(),
+         &common->vbo->get_buffer(),
          &offset);
 
    if (final_pass)
@@ -1246,7 +1562,6 @@ void Pass::build_commands(
 
       // Barrier to sync with next pass.
       image_layout_transition(
-            device,
             cmd,
             framebuffer->get_image(),
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -1273,6 +1588,63 @@ Framebuffer::Framebuffer(
    init(nullptr);
 }
 
+void Framebuffer::clear(VkCommandBuffer cmd)
+{
+   image_layout_transition(cmd, image,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+   VkClearColorValue color;
+   memset(&color, 0, sizeof(color));
+
+   VkImageSubresourceRange range;
+   memset(&range, 0, sizeof(range));
+   range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   range.levelCount = 1;
+   range.layerCount = 1;
+
+   VKFUNC(vkCmdClearColorImage)(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         &color, 1, &range);
+
+   image_layout_transition(cmd, image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+}
+
+void Framebuffer::copy(VkCommandBuffer cmd,
+      VkImage src_image, VkImageLayout src_layout)
+{
+   image_layout_transition(cmd, image,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+   VkImageCopy region;
+   memset(&region, 0, sizeof(region));
+   region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.srcSubresource.layerCount = 1;
+   region.dstSubresource = region.srcSubresource;
+   region.extent.width = size.width;
+   region.extent.height = size.height;
+   region.extent.depth = 1;
+
+   VKFUNC(vkCmdCopyImage)(cmd,
+         src_image, src_layout,
+         image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         1, &region);
+
+   image_layout_transition(cmd, image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+}
+
 void Framebuffer::init(DeferredDisposer *disposer)
 {
    VkMemoryRequirements mem_reqs;
@@ -1287,7 +1659,8 @@ void Framebuffer::init(DeferredDisposer *disposer)
    info.samples           = VK_SAMPLE_COUNT_1_BIT;
    info.tiling            = VK_IMAGE_TILING_OPTIMAL;
    info.usage             = VK_IMAGE_USAGE_SAMPLED_BIT | 
-      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+      VK_IMAGE_USAGE_TRANSFER_DST_BIT;
    info.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
    info.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
 

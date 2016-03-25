@@ -37,6 +37,7 @@ enum vulkan_filter_chain_filter
 
 struct vulkan_filter_chain_texture
 {
+   VkImage image;
    VkImageView view;
    VkImageLayout layout;
    unsigned width;
@@ -82,6 +83,7 @@ struct vulkan_filter_chain_create_info
    VkPipelineCache pipeline_cache;
    unsigned num_passes;
 
+   VkFormat original_format;
    struct
    {
       unsigned width, height;

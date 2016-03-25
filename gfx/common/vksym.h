@@ -191,6 +191,7 @@ typedef struct vulkan_context_fp
 
    /* Image commands */
    PFN_vkCmdCopyImage                            vkCmdCopyImage;
+   PFN_vkCmdClearColorImage                      vkCmdClearColorImage;
 
    /* Pipeline commands */
    PFN_vkCmdBindPipeline                         vkCmdBindPipeline;

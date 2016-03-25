@@ -584,6 +584,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.swapchain.format      = vk->context->swapchain_format;
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
+   info.original_format       = vk->tex_fmt;
 
    vk->filter_chain           = vulkan_filter_chain_create_default(
          &info,
@@ -614,6 +615,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.swapchain.format      = vk->context->swapchain_format;
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
+   info.original_format       = vk->tex_fmt;
 
    vk->filter_chain           = vulkan_filter_chain_create_from_preset(
          &info, shader_path,
@@ -1495,6 +1497,7 @@ static bool vulkan_frame(void *data, const void *frame,
             return false;
          }
 
+         input.image        = vk->hw.image->create_info.image;
          input.view         = vk->hw.image->image_view;
          input.layout       = vk->hw.image->image_layout;
 
@@ -1520,6 +1523,7 @@ static bool vulkan_frame(void *data, const void *frame,
          else
             vulkan_transition_texture(vk, tex);
 
+         input.image  = tex->image;
          input.view   = tex->view;
          input.layout = tex->layout;
          input.width  = tex->width;
