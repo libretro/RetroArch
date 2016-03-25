@@ -213,7 +213,7 @@ struct CommonResources
          const VkPhysicalDeviceMemoryProperties &memory_properties);
    ~CommonResources();
 
-   unique_ptr<Buffer> vbo_offscreen, vbo_final;
+   unique_ptr<Buffer> vbo;
    VkSampler samplers[2];
 
    vector<Texture> original_history;
@@ -1176,33 +1176,26 @@ CommonResources::CommonResources(VkDevice device,
 {
    // The final pass uses an MVP designed for [0, 1] range VBO.
    // For in-between passes, we just go with identity matrices, so keep it simple.
-   const float vbo_data_offscreen[] = {
+   const float vbo_data[] = {
+      // Offscreen
       -1.0f, -1.0f, 0.0f, 0.0f,
       -1.0f, +1.0f, 0.0f, 1.0f,
        1.0f, -1.0f, 1.0f, 0.0f,
        1.0f, +1.0f, 1.0f, 1.0f,
-   };
 
-   const float vbo_data_final[] = {
+       // Final
       0.0f,  0.0f, 0.0f, 0.0f,
       0.0f, +1.0f, 0.0f, 1.0f,
       1.0f,  0.0f, 1.0f, 0.0f,
       1.0f, +1.0f, 1.0f, 1.0f,
    };
 
-   vbo_offscreen = unique_ptr<Buffer>(new Buffer(device,
-            memory_properties, sizeof(vbo_data_offscreen), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+   vbo = unique_ptr<Buffer>(new Buffer(device,
+            memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
 
-   void *ptr = vbo_offscreen->map();
-   memcpy(ptr, vbo_data_offscreen, sizeof(vbo_data_offscreen));
-   vbo_offscreen->unmap();
-
-   vbo_final = unique_ptr<Buffer>(new Buffer(device,
-            memory_properties, sizeof(vbo_data_final), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
-
-   ptr = vbo_final->map();
-   memcpy(ptr, vbo_data_final, sizeof(vbo_data_final));
-   vbo_final->unmap();
+   void *ptr = vbo->map();
+   memcpy(ptr, vbo_data, sizeof(vbo_data));
+   vbo->unmap();
 
    VkSamplerCreateInfo info = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
    info.magFilter               = VK_FILTER_NEAREST;
@@ -1521,9 +1514,9 @@ void Pass::build_commands(
    VKFUNC(vkCmdBindDescriptorSets)(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
          0, 1, &sets[sync_index], 0, nullptr);
 
-   VkDeviceSize offset = 0;
+   VkDeviceSize offset = final_pass ? 16 * sizeof(float) : 0;
    VKFUNC(vkCmdBindVertexBuffers)(cmd, 0, 1,
-         final_pass ? &common->vbo_final->get_buffer() : &common->vbo_offscreen->get_buffer(),
+         &common->vbo->get_buffer(),
          &offset);
 
    if (final_pass)
