@@ -569,8 +569,6 @@ bool vulkan_filter_chain::init_history()
    original_history.clear();
    common.original_history.clear();
 
-   require_clear = false;
-
    size_t required_images = 0;
    for (auto &pass : passes)
    {
@@ -640,6 +638,7 @@ bool vulkan_filter_chain::init_feedback()
    }
 
    common.framebuffer_feedback.resize(passes.size() - 1);
+   require_clear = true;
    return true;
 }
 
@@ -656,9 +655,9 @@ bool vulkan_filter_chain::init()
          return false;
    }
 
+   require_clear = false;
    if (!init_history())
       return false;
-
    if (!init_feedback())
       return false;
 
@@ -1462,13 +1461,13 @@ void Pass::build_commands(
          { original.texture.width, original.texture.height },
          { source.texture.width, source.texture.height });
 
-   if (     size.width  != current_framebuffer_size.width 
-         || size.height != current_framebuffer_size.height)
+   if (framebuffer &&
+         (size.width  != framebuffer->get_size().width ||
+          size.height != framebuffer->get_size().height))
    {
-      if (framebuffer)
-         framebuffer->set_size(disposer, size);
-      current_framebuffer_size = size;
+      framebuffer->set_size(disposer, size);
    }
+   current_framebuffer_size = size;
 
    if (reflection.ubo_stage_mask)
    {
