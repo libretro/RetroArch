@@ -219,6 +219,10 @@ struct CommonResources
    vector<Texture> original_history;
    vector<Texture> framebuffer_feedback;
 
+   unordered_map<string, slang_texture_semantic_map> texture_semantic_map;
+   unordered_map<string, slang_texture_semantic_map> texture_semantic_uniform_map;
+   unordered_map<string, slang_semantic> semantic_map;
+
    VkDevice device;
 };
 
@@ -1301,6 +1305,10 @@ bool Pass::build()
    }
 
    reflection = slang_reflection{};
+   reflection.texture_semantic_map = &common->texture_semantic_map;
+   reflection.texture_semantic_uniform_map = &common->texture_semantic_uniform_map;
+   reflection.semantic_map = &common->semantic_map;
+
    if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
       return false;
 

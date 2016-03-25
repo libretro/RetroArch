@@ -102,18 +102,42 @@ static slang_texture_semantic slang_name_to_texture_semantic_array(const string 
    return SLANG_INVALID_TEXTURE_SEMANTIC;
 }
 
-static slang_texture_semantic slang_name_to_texture_semantic(const string &name, unsigned *index)
+static slang_texture_semantic slang_name_to_texture_semantic(
+      const unordered_map<string, slang_texture_semantic_map> &semantic_map,
+      const string &name, unsigned *index)
 {
+   auto itr = semantic_map.find(name);
+   if (itr != end(semantic_map))
+   {
+      *index = itr->second.index;
+      return itr->second.semantic;
+   }
+
    return slang_name_to_texture_semantic_array(name, texture_semantic_names, index);
 }
 
-static slang_texture_semantic slang_uniform_name_to_texture_semantic(const string &name, unsigned *index)
+static slang_texture_semantic slang_uniform_name_to_texture_semantic(
+      const unordered_map<string, slang_texture_semantic_map> &semantic_map,
+      const string &name, unsigned *index)
 {
+   auto itr = semantic_map.find(name);
+   if (itr != end(semantic_map))
+   {
+      *index = itr->second.index;
+      return itr->second.semantic;
+   }
+
    return slang_name_to_texture_semantic_array(name, texture_semantic_uniform_names, index);
 }
 
-static slang_semantic slang_uniform_name_to_semantic(const string &name)
+static slang_semantic slang_uniform_name_to_semantic(
+      const unordered_map<string, slang_semantic> &semantic_map,
+      const string &name)
 {
+   auto itr = semantic_map.find(name);
+   if (itr != end(semantic_map))
+      return itr->second;
+
    unsigned i = 0;
    for (auto n : semantic_uniform_names)
    {
@@ -227,8 +251,9 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
       auto &type = compiler.get_type(compiler.get_type(resource.type_id).member_types[range.index]);
 
       unsigned tex_sem_index = 0;
-      auto sem = slang_uniform_name_to_semantic(name);
-      auto tex_sem = slang_uniform_name_to_texture_semantic(name, &tex_sem_index);
+      auto sem = slang_uniform_name_to_semantic(*reflection->semantic_map, name);
+      auto tex_sem = slang_uniform_name_to_texture_semantic(*reflection->texture_semantic_uniform_map,
+            name, &tex_sem_index);
 
       if (sem != SLANG_INVALID_SEMANTIC)
       {
@@ -417,7 +442,8 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
       binding_mask |= 1 << binding;
 
       unsigned array_index = 0;
-      slang_texture_semantic index = slang_name_to_texture_semantic(texture.name, &array_index);
+      slang_texture_semantic index = slang_name_to_texture_semantic(*reflection->texture_semantic_map,
+            texture.name, &array_index);
       
       if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
       {

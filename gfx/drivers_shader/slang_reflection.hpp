@@ -17,6 +17,7 @@
 #define SLANG_REFLECTION_HPP
 
 #include <string>
+#include <unordered_map>
 #include <stdint.h>
 
 // Textures with built-in meaning.
@@ -88,6 +89,12 @@ struct slang_semantic_meta
    bool uniform = false;
 };
 
+struct slang_texture_semantic_map
+{
+   slang_texture_semantic semantic;
+   unsigned index;
+};
+
 struct slang_reflection
 {
    slang_reflection();
@@ -98,6 +105,10 @@ struct slang_reflection
 
    std::vector<slang_texture_semantic_meta> semantic_textures[SLANG_NUM_TEXTURE_SEMANTICS];
    slang_semantic_meta semantics[SLANG_NUM_SEMANTICS];
+
+   const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_map = nullptr;
+   const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_uniform_map = nullptr;
+   const std::unordered_map<std::string, slang_semantic> *semantic_map = nullptr;
 };
 
 bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,
