@@ -216,6 +216,9 @@ struct CommonResources
    unique_ptr<Buffer> vbo_offscreen, vbo_final;
    VkSampler samplers[2];
 
+   vector<Texture> origin_history;
+   vector<Texture> framebuffer_feedback;
+
    VkDevice device;
 };
 
@@ -406,9 +409,12 @@ struct vulkan_filter_chain
       void set_swapchain_info(const vulkan_filter_chain_swapchain_info &info);
 
       bool init_history();
+      bool init_feedback();
       void update_history(DeferredDisposer &disposer, VkCommandBuffer cmd);
       vector<unique_ptr<Framebuffer>> original_history;
       bool require_clear = false;
+      void clear_history_and_feedback(VkCommandBuffer cmd);
+      void update_feedback_info();
 };
 
 vulkan_filter_chain::vulkan_filter_chain(
@@ -512,6 +518,27 @@ void vulkan_filter_chain::flush()
    execute_deferred();
 }
 
+void vulkan_filter_chain::update_feedback_info()
+{
+   if (common.framebuffer_feedback.empty())
+      return;
+
+   for (unsigned i = 0; i < passes.size() - 1; i++)
+   {
+      auto fb = passes[i]->get_feedback_framebuffer();
+      if (!fb)
+         continue;
+
+      auto &source = common.framebuffer_feedback[i];
+      source.texture.image    = fb->get_image();
+      source.texture.view     = fb->get_view();
+      source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      source.texture.width    = fb->get_size().width;
+      source.texture.height   = fb->get_size().height;
+      source.filter           = passes[i]->get_source_filter();
+   }
+}
+
 bool vulkan_filter_chain::init_history()
 {
    original_history.clear();
@@ -532,15 +559,62 @@ bool vulkan_filter_chain::init_history()
    required_images--;
    original_history.reserve(required_images);
 
+   common.origin_history.clear();
+   common.origin_history.reserve(passes.size());
    for (unsigned i = 0; i < required_images; i++)
    {
       original_history.emplace_back(new Framebuffer(device, memory_properties,
                max_input_size, original_format));
+
+      Texture source;
+      auto &fb = *original_history.back();
+
+      source.texture.image    = fb.get_image();
+      source.texture.view     = fb.get_view();
+      source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      source.texture.width    = fb.get_size().width;
+      source.texture.height   = fb.get_size().height;
+      source.filter           = passes.front()->get_source_filter();
+
+      common.origin_history.push_back(source);
    }
 
    // On first frame, we need to clear the textures to a known state, but we need
    // a command buffer for that, so just defer to first frame.
    require_clear = true;
+   return true;
+}
+
+bool vulkan_filter_chain::init_feedback()
+{
+   common.framebuffer_feedback.clear();
+
+   bool use_feedbacks = false;
+
+   // Final pass cannot have feedback.
+   for (unsigned i = 0; i < passes.size() - 1; i++)
+   {
+      bool use_feedback = false;
+      for (auto &pass : passes)
+      {
+         auto &r = pass->get_reflection();
+         auto &feedbacks = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+         if (i < feedbacks.size() && feedbacks[i].texture)
+         {
+            use_feedback = true;
+            use_feedbacks = true;
+            break;
+         }
+      }
+
+      if (use_feedback && !passes[i]->init_feedback())
+         return false;
+   }
+
+   if (!use_feedbacks)
+      return true;
+
+   common.framebuffer_feedback.resize(passes.size() - 1);
    return true;
 }
 
@@ -560,7 +634,22 @@ bool vulkan_filter_chain::init()
    if (!init_history())
       return false;
 
+   if (!init_feedback())
+      return false;
+
    return true;
+}
+
+void vulkan_filter_chain::clear_history_and_feedback(VkCommandBuffer cmd)
+{
+   for (auto &texture : original_history)
+      texture->clear(cmd);
+   for (auto &pass : passes)
+   {
+      auto *fb = pass->get_feedback_framebuffer();
+      if (fb)
+         fb->clear(cmd);
+   }
 }
 
 void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
@@ -569,16 +658,11 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
    // First frame, make sure our history and feedback textures are in a clean state.
    if (require_clear)
    {
-      for (auto &texture : original_history)
-         texture->clear(cmd);
-      for (auto &pass : passes)
-      {
-         auto *fb = pass->get_feedback_framebuffer();
-         if (fb)
-            fb->clear(cmd);
-      }
+      clear_history_and_feedback(cmd);
       require_clear = false;
    }
+
+   update_feedback_info();
 
    unsigned i;
    DeferredDisposer disposer(deferred_calls[current_sync_index]);
@@ -604,12 +688,13 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
 void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBuffer cmd)
 {
    VkImageLayout src_layout = input_texture.layout;
+
    // Transition input texture to something appropriate.
    if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
    {
       image_layout_transition(cmd,
             input_texture.image,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            input_texture.layout,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             0,
             VK_ACCESS_TRANSFER_READ_BIT,
@@ -637,7 +722,7 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBu
       image_layout_transition(cmd,
             input_texture.image,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            input_texture.layout,
             0,
             VK_ACCESS_SHADER_READ_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -652,6 +737,13 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBu
 void vulkan_filter_chain::build_viewport_pass(
       VkCommandBuffer cmd, const VkViewport &vp, const float *mvp)
 {
+   // First frame, make sure our history and feedback textures are in a clean state.
+   if (require_clear)
+   {
+      clear_history_and_feedback(cmd);
+      require_clear = false;
+   }
+
    Texture source;
    DeferredDisposer disposer(deferred_calls[current_sync_index]);
    const Texture original = { 
