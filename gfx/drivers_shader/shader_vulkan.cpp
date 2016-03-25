@@ -216,7 +216,7 @@ struct CommonResources
    unique_ptr<Buffer> vbo_offscreen, vbo_final;
    VkSampler samplers[2];
 
-   vector<Texture> origin_history;
+   vector<Texture> original_history;
    vector<Texture> framebuffer_feedback;
 
    VkDevice device;
@@ -333,6 +333,9 @@ class Pass
 
       void set_semantic_texture(VkDescriptorSet set, slang_texture_semantic semantic,
             const Texture &texture);
+      void set_semantic_texture_array(VkDescriptorSet set,
+            slang_texture_semantic semantic, unsigned index,
+            const Texture &texture);
 
       void set_uniform_buffer(VkDescriptorSet set, unsigned binding,
             VkBuffer buffer,
@@ -347,8 +350,13 @@ class Pass
       void build_semantic_texture_vec4(uint8_t *data,
             slang_texture_semantic semantic,
             unsigned width, unsigned height);
+      void build_semantic_texture_array_vec4(uint8_t *data,
+            slang_texture_semantic semantic, unsigned index,
+            unsigned width, unsigned height);
       void build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
             slang_texture_semantic semantic, const Texture &texture);
+      void build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
+            slang_texture_semantic semantic, unsigned index, const Texture &texture);
 };
 
 // struct here since we're implementing the opaque typedef from C.
@@ -559,8 +567,8 @@ bool vulkan_filter_chain::init_history()
    required_images--;
    original_history.reserve(required_images);
 
-   common.origin_history.clear();
-   common.origin_history.reserve(passes.size());
+   common.original_history.clear();
+   common.original_history.reserve(passes.size());
    for (unsigned i = 0; i < required_images; i++)
    {
       original_history.emplace_back(new Framebuffer(device, memory_properties,
@@ -576,7 +584,7 @@ bool vulkan_filter_chain::init_history()
       source.texture.height   = fb.get_size().height;
       source.filter           = passes.front()->get_source_filter();
 
-      common.origin_history.push_back(source);
+      common.original_history.push_back(source);
    }
 
    // On first frame, we need to clear the textures to a known state, but we need
@@ -794,7 +802,7 @@ Buffer::Buffer(VkDevice device,
 
    alloc.memoryTypeIndex      = find_memory_type(
          mem_props, mem_reqs.memoryTypeBits,
-         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT 
+         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
    VKFUNC(vkAllocateMemory)(device, &alloc, NULL, &memory);
@@ -1312,6 +1320,17 @@ void Pass::set_semantic_texture(VkDescriptorSet set,
       set_texture(set, reflection.semantic_textures[semantic][0].binding, texture);
 }
 
+void Pass::set_semantic_texture_array(VkDescriptorSet set,
+      slang_texture_semantic semantic, unsigned index,
+      const Texture &texture)
+{
+   if (index < reflection.semantic_textures[semantic].size() &&
+         reflection.semantic_textures[semantic][index].texture)
+   {
+      set_texture(set, reflection.semantic_textures[semantic][index].binding, texture);
+   }
+}
+
 void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic semantic,
       unsigned width, unsigned height)
 {
@@ -1319,6 +1338,19 @@ void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic sem
    {
       build_vec4(
             reinterpret_cast<float *>(data + reflection.semantic_textures[semantic][0].ubo_offset),
+            width,
+            height);
+   }
+}
+
+void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,
+      unsigned index, unsigned width, unsigned height)
+{
+   if (data && index < reflection.semantic_textures[semantic].size() &&
+         reflection.semantic_textures[semantic][index].uniform)
+   {
+      build_vec4(
+            reinterpret_cast<float *>(data + reflection.semantic_textures[semantic][index].ubo_offset),
             width,
             height);
    }
@@ -1344,9 +1376,18 @@ void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
    set_semantic_texture(set, semantic, texture);
 }
 
+void Pass::build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
+      slang_texture_semantic semantic, unsigned index, const Texture &texture)
+{
+   build_semantic_texture_array_vec4(buffer, semantic, index,
+         texture.texture.width, texture.texture.height);
+   set_semantic_texture_array(set, semantic, index, texture);
+}
+
 void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
       const float *mvp, const Texture &original, const Texture &source)
 {
+   // MVP
    if (buffer && reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
    {
       size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].ubo_offset;
@@ -1356,12 +1397,38 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
          build_identity_matrix(reinterpret_cast<float *>(buffer + offset));
    }
 
+   // Output information
    build_semantic_vec4(buffer, SLANG_SEMANTIC_OUTPUT,
          current_framebuffer_size.width, current_framebuffer_size.height);
    build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
          unsigned(current_viewport.width), unsigned(current_viewport.height));
+
+   // Standard inputs
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
+
+   // ORIGINAL_HISTORY[0] is an alias of ORIGINAL.
+   build_semantic_texture_array(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
+
+   // Previous inputs.
+   unsigned i = 0;
+   for (auto &texture : common->original_history)
+   {
+      build_semantic_texture_array(set, buffer,
+            SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
+            texture);
+      i++;
+   }
+
+   // Feedback FBOs.
+   i = 0;
+   for (auto &texture : common->framebuffer_feedback)
+   {
+      build_semantic_texture_array(set, buffer,
+            SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
+            texture);
+      i++;
+   }
 }
 
 void Pass::build_commands(
