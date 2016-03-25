@@ -423,6 +423,7 @@ struct vulkan_filter_chain
       bool require_clear = false;
       void clear_history_and_feedback(VkCommandBuffer cmd);
       void update_feedback_info();
+      void update_history_info();
 };
 
 vulkan_filter_chain::vulkan_filter_chain(
@@ -526,6 +527,22 @@ void vulkan_filter_chain::flush()
    execute_deferred();
 }
 
+void vulkan_filter_chain::update_history_info()
+{
+   unsigned i = 0;
+   for (auto &texture : original_history)
+   {
+      Texture &source         = common.original_history[i];
+      source.texture.image    = texture->get_image();
+      source.texture.view     = texture->get_view();
+      source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      source.texture.width    = texture->get_size().width;
+      source.texture.height   = texture->get_size().height;
+      source.filter           = passes.front()->get_source_filter();
+      i++;
+   }
+}
+
 void vulkan_filter_chain::update_feedback_info()
 {
    if (common.framebuffer_feedback.empty())
@@ -550,6 +567,8 @@ void vulkan_filter_chain::update_feedback_info()
 bool vulkan_filter_chain::init_history()
 {
    original_history.clear();
+   common.original_history.clear();
+
    require_clear = false;
 
    size_t required_images = 0;
@@ -569,25 +588,12 @@ bool vulkan_filter_chain::init_history()
    // We don't need to store array element #0, since it's aliased with the actual original.
    required_images--;
    original_history.reserve(required_images);
+   common.original_history.resize(required_images);
 
-   common.original_history.clear();
-   common.original_history.reserve(passes.size());
    for (unsigned i = 0; i < required_images; i++)
    {
       original_history.emplace_back(new Framebuffer(device, memory_properties,
                max_input_size, original_format));
-
-      Texture source;
-      auto &fb = *original_history.back();
-
-      source.texture.image    = fb.get_image();
-      source.texture.view     = fb.get_view();
-      source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      source.texture.width    = fb.get_size().width;
-      source.texture.height   = fb.get_size().height;
-      source.filter           = passes.front()->get_source_filter();
-
-      common.original_history.push_back(source);
    }
 
    RARCH_LOG("[Vulkan filter chain]: Using history of %u frames.\n", required_images);
@@ -681,6 +687,7 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
       require_clear = false;
    }
 
+   update_history_info();
    update_feedback_info();
 
    unsigned i;
@@ -749,7 +756,7 @@ void vulkan_filter_chain::update_history(DeferredDisposer &disposer, VkCommandBu
    }
 
    // Should ring buffer, but we don't have *that* many passes.
-   move(begin(original_history), end(original_history) - 1, begin(original_history) + 1);
+   move_backward(begin(original_history), end(original_history) - 1, end(original_history));
    swap(original_history.front(), tmp);
 }
 
