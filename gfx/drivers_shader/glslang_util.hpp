@@ -23,7 +23,7 @@
 enum glslang_format
 {
    // 8-bit
-   SLANG_FORMAT_R8_UNORM,
+   SLANG_FORMAT_R8_UNORM = 0,
    SLANG_FORMAT_R8_UINT,
    SLANG_FORMAT_R8_SINT,
    SLANG_FORMAT_R8G8_UNORM,
@@ -35,8 +35,8 @@ enum glslang_format
    SLANG_FORMAT_R8G8B8A8_SRGB,
 
    // 10-bit
-   SLANG_FORMAT_A2B10G10R10_UNORM,
-   SLANG_FORMAT_A2B10G10R10_UINT,
+   SLANG_FORMAT_A2B10G10R10_UNORM_PACK32,
+   SLANG_FORMAT_A2B10G10R10_UINT_PACK32,
 
    // 16-bit
    SLANG_FORMAT_R16_UINT,
@@ -52,20 +52,21 @@ enum glslang_format
    // 32-bit
    SLANG_FORMAT_R32_UINT,
    SLANG_FORMAT_R32_SINT,
-   SLANG_FORMAT_R32_FLOAT,
+   SLANG_FORMAT_R32_SFLOAT,
    SLANG_FORMAT_R32G32_UINT,
    SLANG_FORMAT_R32G32_SINT,
-   SLANG_FORMAT_R32G32_FLOAT,
+   SLANG_FORMAT_R32G32_SFLOAT,
    SLANG_FORMAT_R32G32B32A32_UINT,
    SLANG_FORMAT_R32G32B32A32_SINT,
-   SLANG_FORMAT_R32G32B32A32_FLOAT,
+   SLANG_FORMAT_R32G32B32A32_SFLOAT,
 
-   SLANG_FORMAT_INVALID
+   SLANG_FORMAT_UNKNOWN
 };
 
 struct glslang_meta
 {
    std::string name;
+   glslang_format rt_format = SLANG_FORMAT_UNKNOWN;
 };
 
 struct glslang_output
@@ -76,7 +77,7 @@ struct glslang_output
 };
 
 bool glslang_compile_shader(const char *shader_path, glslang_output *output);
-
+const char *glslang_format_to_string(enum glslang_format fmt);
 
 #endif
 
