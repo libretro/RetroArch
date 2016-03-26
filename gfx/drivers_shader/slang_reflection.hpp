@@ -109,6 +109,7 @@ struct slang_reflection
    const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_map = nullptr;
    const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_uniform_map = nullptr;
    const std::unordered_map<std::string, slang_semantic> *semantic_map = nullptr;
+   unsigned pass_number = 0;
 };
 
 bool slang_reflect_spirv(const std::vector<uint32_t> &vertex,

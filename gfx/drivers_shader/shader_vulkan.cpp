@@ -315,6 +315,11 @@ class Pass
          return reflection;
       }
 
+      void set_pass_number(unsigned pass)
+      {
+         pass_number = pass;
+      }
+
       void end_frame();
 
    private:
@@ -385,6 +390,7 @@ class Pass
 
       uint64_t frame_count = 0;
       unsigned frame_count_period = 0;
+      unsigned pass_number = 0;
 
       string pass_name;
 };
@@ -514,6 +520,7 @@ void vulkan_filter_chain::set_num_passes(unsigned num_passes)
       passes.emplace_back(new Pass(device, memory_properties,
                cache, deferred_calls.size(), i + 1 == num_passes));
       passes.back()->set_common_resources(common);
+      passes.back()->set_pass_number(i);
    }
 }
 
@@ -1377,6 +1384,7 @@ bool Pass::build()
    }
 
    reflection = slang_reflection{};
+   reflection.pass_number = pass_number;
    reflection.texture_semantic_map = &common->texture_semantic_map;
    reflection.texture_semantic_uniform_map = &common->texture_semantic_uniform_map;
    reflection.semantic_map = &common->semantic_map;

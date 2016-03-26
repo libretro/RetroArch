@@ -255,6 +255,13 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
       auto tex_sem = slang_uniform_name_to_texture_semantic(*reflection->texture_semantic_uniform_map,
             name, &tex_sem_index);
 
+      if (tex_sem == SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT && tex_sem_index >= reflection->pass_number)
+      {
+         RARCH_ERR("[slang]: Non causal filter chain detected. Shader is trying to use output from pass #%u, but this shader is pass #%u.\n",
+               tex_sem_index, reflection->pass_number);
+         return false;
+      }
+
       if (sem != SLANG_INVALID_SEMANTIC)
       {
          if (!validate_type_for_semantic(type, sem))
@@ -280,6 +287,8 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
       else
       {
          // TODO: Handle invalid semantics as user defined.
+         RARCH_ERR("[slang]: Unknown semantic found.\n");
+         return false;
       }
    }
    return true;
