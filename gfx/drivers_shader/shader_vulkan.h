@@ -79,6 +79,7 @@ struct vulkan_filter_chain_swapchain_info
 struct vulkan_filter_chain_create_info
 {
    VkDevice device;
+   VkPhysicalDevice gpu;
    const VkPhysicalDeviceMemoryProperties *memory_properties;
    VkPipelineCache pipeline_cache;
    unsigned num_passes;

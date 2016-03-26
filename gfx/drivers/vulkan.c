@@ -576,6 +576,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    memset(&info, 0, sizeof(info));
 
    info.device                = vk->context->device;
+   info.gpu                   = vk->context->gpu;
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
    info.max_input_size.width  = vk->tex_w;
@@ -607,6 +608,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    memset(&info, 0, sizeof(info));
 
    info.device                = vk->context->device;
+   info.gpu                   = vk->context->gpu;
    info.memory_properties     = &vk->context->memory_properties;
    info.pipeline_cache        = vk->pipelines.cache;
    info.max_input_size.width  = vk->tex_w;

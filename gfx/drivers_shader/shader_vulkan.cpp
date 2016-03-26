@@ -214,6 +214,12 @@ struct CommonResources
    ~CommonResources();
 
    unique_ptr<Buffer> vbo;
+   unique_ptr<Buffer> ubo;
+   uint8_t *ubo_mapped = nullptr;
+   size_t ubo_sync_index_stride = 0;
+   size_t ubo_offset = 0;
+   size_t ubo_alignment = 1;
+
    VkSampler samplers[2];
 
    vector<Texture> original_history;
@@ -305,9 +311,9 @@ class Pass
          return pass_info.source_filter;
       }
 
-      void set_common_resources(const CommonResources &common)
+      void set_common_resources(CommonResources *common)
       {
-         this->common = &common;
+         this->common = common;
       }
 
       const slang_reflection &get_reflection() const
@@ -321,6 +327,7 @@ class Pass
       }
 
       void end_frame();
+      void allocate_buffers();
 
    private:
       VkDevice device;
@@ -338,9 +345,8 @@ class Pass
       VkDescriptorSetLayout set_layout = VK_NULL_HANDLE;
       VkDescriptorPool pool = VK_NULL_HANDLE;
 
-      vector<unique_ptr<Buffer>> ubos;
       vector<VkDescriptorSet> sets;
-      const CommonResources *common = nullptr;
+      CommonResources *common = nullptr;
 
       Size2D current_framebuffer_size;
       VkViewport current_viewport;
@@ -355,7 +361,6 @@ class Pass
       void clear_vk();
       bool init_pipeline();
       bool init_pipeline_layout();
-      bool init_buffers();
 
       void set_texture(VkDescriptorSet set, unsigned binding,
             const Texture &texture);
@@ -392,6 +397,7 @@ class Pass
       unsigned frame_count_period = 0;
       unsigned pass_number = 0;
 
+      size_t ubo_offset = 0;
       string pass_name;
 };
 
@@ -433,6 +439,7 @@ struct vulkan_filter_chain
 
    private:
       VkDevice device;
+      VkPhysicalDevice gpu;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
       VkPipelineCache cache;
       vector<unique_ptr<Pass>> passes;
@@ -456,6 +463,7 @@ struct vulkan_filter_chain
       void set_num_sync_indices(unsigned num_indices);
       void set_swapchain_info(const vulkan_filter_chain_swapchain_info &info);
 
+      bool init_ubo();
       bool init_history();
       bool init_feedback();
       bool init_alias();
@@ -470,6 +478,7 @@ struct vulkan_filter_chain
 vulkan_filter_chain::vulkan_filter_chain(
       const vulkan_filter_chain_create_info &info)
    : device(info.device),
+     gpu(info.gpu),
      memory_properties(*info.memory_properties),
      cache(info.pipeline_cache),
      common(info.device, *info.memory_properties),
@@ -519,7 +528,7 @@ void vulkan_filter_chain::set_num_passes(unsigned num_passes)
    {
       passes.emplace_back(new Pass(device, memory_properties,
                cache, deferred_calls.size(), i + 1 == num_passes));
-      passes.back()->set_common_resources(common);
+      passes.back()->set_common_resources(&common);
       passes.back()->set_pass_number(i);
    }
 }
@@ -749,12 +758,43 @@ bool vulkan_filter_chain::init_alias()
    return true;
 }
 
+bool vulkan_filter_chain::init_ubo()
+{
+   common.ubo.reset();
+   common.ubo_offset = 0;
+
+   VkPhysicalDeviceProperties props;
+   VKFUNC(vkGetPhysicalDeviceProperties)(gpu, &props);
+   common.ubo_alignment = props.limits.minUniformBufferOffsetAlignment;
+
+   // Who knows. :)
+   if (common.ubo_alignment == 0)
+      common.ubo_alignment = 1;
+
+   for (auto &pass : passes)
+      pass->allocate_buffers();
+
+   common.ubo_offset = (common.ubo_offset + common.ubo_alignment - 1) &
+      ~(common.ubo_alignment - 1);
+   common.ubo_sync_index_stride = common.ubo_offset;
+
+   if (common.ubo_offset != 0)
+   {
+      common.ubo = unique_ptr<Buffer>(new Buffer(device,
+               memory_properties, common.ubo_offset * deferred_calls.size(),
+               VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+   }
+
+   return true;
+}
+
 bool vulkan_filter_chain::init()
 {
    Size2D source = max_input_size;
 
    if (!init_alias())
       return false;
+
    for (unsigned i = 0; i < passes.size(); i++)
    {
       auto &pass = passes[i];
@@ -767,6 +807,8 @@ bool vulkan_filter_chain::init()
    }
 
    require_clear = false;
+   if (!init_ubo())
+      return false;
    if (!init_history())
       return false;
    if (!init_feedback())
@@ -799,6 +841,8 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
 
    update_history_info();
    update_feedback_info();
+
+   common.ubo_mapped = static_cast<uint8_t*>(common.ubo->map());
 
    unsigned i;
    DeferredDisposer disposer(deferred_calls[current_sync_index]);
@@ -899,6 +943,9 @@ void vulkan_filter_chain::build_viewport_pass(
 
    passes.back()->build_commands(disposer, cmd,
          original, source, vp, mvp);
+
+   common.ubo->unmap();
+   common.ubo_mapped = nullptr;
 
    // If we need to keep old frames, copy it after fragment is complete.
    // TODO: We can improve pipelining by figuring out which pass is the last that reads from
@@ -1065,7 +1112,6 @@ void Pass::clear_vk()
    pool       = VK_NULL_HANDLE;
    pipeline   = VK_NULL_HANDLE;
    set_layout = VK_NULL_HANDLE;
-   ubos.clear();
 }
 
 bool Pass::init_pipeline_layout()
@@ -1340,16 +1386,18 @@ CommonResources::~CommonResources()
          VKFUNC(vkDestroySampler)(device, samp, nullptr);
 }
 
-bool Pass::init_buffers()
+void Pass::allocate_buffers()
 {
-   ubos.clear();
    if (reflection.ubo_stage_mask)
    {
-      for (unsigned i = 0; i < num_sync_indices; i++)
-         ubos.emplace_back(new Buffer(device,
-                  memory_properties, reflection.ubo_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+      // Align
+      common->ubo_offset = (common->ubo_offset + common->ubo_alignment - 1) &
+         ~(common->ubo_alignment - 1);
+      ubo_offset = common->ubo_offset;
+
+      // Allocate
+      common->ubo_offset += reflection.ubo_size;
    }
-   return true;
 }
 
 void Pass::end_frame()
@@ -1393,9 +1441,6 @@ bool Pass::build()
       return false;
 
    if (!init_pipeline())
-      return false;
-
-   if (!init_buffers())
       return false;
 
    return true;
@@ -1587,11 +1632,11 @@ void Pass::build_commands(
    }
    current_framebuffer_size = size;
 
-   if (reflection.ubo_stage_mask)
+   if (reflection.ubo_stage_mask && common->ubo_mapped)
    {
-      uint8_t *u = static_cast<uint8_t*>(ubos[sync_index]->map());
+      uint8_t *u = common->ubo_mapped + ubo_offset +
+         sync_index * common->ubo_sync_index_stride;
       build_semantics(sets[sync_index], u, mvp, original, source);
-      ubos[sync_index]->unmap();
    }
    else
       build_semantics(sets[sync_index], nullptr, mvp, original, source);
@@ -1599,7 +1644,8 @@ void Pass::build_commands(
    if (reflection.ubo_stage_mask)
    {
       set_uniform_buffer(sets[sync_index], 0,
-            ubos[sync_index]->get_buffer(), 0, reflection.ubo_size);
+            common->ubo->get_buffer(),
+            ubo_offset, reflection.ubo_size);
    }
 
    // The final pass is always executed inside 
