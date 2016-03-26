@@ -115,6 +115,10 @@ static string build_stage_source(const vector<string> &lines, const char *stage)
             str << '\n';
          }
       }
+      else if (itr->find("#pragma name ") != string::npos)
+      {
+         // Ignore
+      }
       else if (active)
          str << *itr;
       str << '\n';
