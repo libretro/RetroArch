@@ -68,6 +68,7 @@ static const char *semantic_uniform_names[] = {
    "MVP",
    "OutputSize",
    "FinalViewportSize",
+   "FrameCount",
 };
 
 static slang_texture_semantic slang_name_to_texture_semantic_array(const string &name, const char **names,
@@ -101,18 +102,42 @@ static slang_texture_semantic slang_name_to_texture_semantic_array(const string 
    return SLANG_INVALID_TEXTURE_SEMANTIC;
 }
 
-static slang_texture_semantic slang_name_to_texture_semantic(const string &name, unsigned *index)
+static slang_texture_semantic slang_name_to_texture_semantic(
+      const unordered_map<string, slang_texture_semantic_map> &semantic_map,
+      const string &name, unsigned *index)
 {
+   auto itr = semantic_map.find(name);
+   if (itr != end(semantic_map))
+   {
+      *index = itr->second.index;
+      return itr->second.semantic;
+   }
+
    return slang_name_to_texture_semantic_array(name, texture_semantic_names, index);
 }
 
-static slang_texture_semantic slang_uniform_name_to_texture_semantic(const string &name, unsigned *index)
+static slang_texture_semantic slang_uniform_name_to_texture_semantic(
+      const unordered_map<string, slang_texture_semantic_map> &semantic_map,
+      const string &name, unsigned *index)
 {
+   auto itr = semantic_map.find(name);
+   if (itr != end(semantic_map))
+   {
+      *index = itr->second.index;
+      return itr->second.semantic;
+   }
+
    return slang_name_to_texture_semantic_array(name, texture_semantic_uniform_names, index);
 }
 
-static slang_semantic slang_uniform_name_to_semantic(const string &name)
+static slang_semantic slang_uniform_name_to_semantic(
+      const unordered_map<string, slang_semantic> &semantic_map,
+      const string &name)
 {
+   auto itr = semantic_map.find(name);
+   if (itr != end(semantic_map))
+      return itr->second;
+
    unsigned i = 0;
    for (auto n : semantic_uniform_names)
    {
@@ -198,6 +223,10 @@ static bool validate_type_for_semantic(const SPIRType &type, slang_semantic sem)
          // mat4
          return type.basetype == SPIRType::Float && type.vecsize == 4 && type.columns == 4;
 
+      case SLANG_SEMANTIC_FRAME_COUNT:
+         // uint
+         return type.basetype == SPIRType::UInt && type.vecsize == 1 && type.columns == 1;
+
       default:
          // vec4
          return type.basetype == SPIRType::Float && type.vecsize == 4 && type.columns == 1;
@@ -222,8 +251,16 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
       auto &type = compiler.get_type(compiler.get_type(resource.type_id).member_types[range.index]);
 
       unsigned tex_sem_index = 0;
-      auto sem = slang_uniform_name_to_semantic(name);
-      auto tex_sem = slang_uniform_name_to_texture_semantic(name, &tex_sem_index);
+      auto sem = slang_uniform_name_to_semantic(*reflection->semantic_map, name);
+      auto tex_sem = slang_uniform_name_to_texture_semantic(*reflection->texture_semantic_uniform_map,
+            name, &tex_sem_index);
+
+      if (tex_sem == SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT && tex_sem_index >= reflection->pass_number)
+      {
+         RARCH_ERR("[slang]: Non causal filter chain detected. Shader is trying to use output from pass #%u, but this shader is pass #%u.\n",
+               tex_sem_index, reflection->pass_number);
+         return false;
+      }
 
       if (sem != SLANG_INVALID_SEMANTIC)
       {
@@ -250,6 +287,8 @@ static bool add_active_buffer_ranges(const Compiler &compiler, const Resource &r
       else
       {
          // TODO: Handle invalid semantics as user defined.
+         RARCH_ERR("[slang]: Unknown semantic found.\n");
+         return false;
       }
    }
    return true;
@@ -412,7 +451,8 @@ static bool slang_reflect(const Compiler &vertex_compiler, const Compiler &fragm
       binding_mask |= 1 << binding;
 
       unsigned array_index = 0;
-      slang_texture_semantic index = slang_name_to_texture_semantic(texture.name, &array_index);
+      slang_texture_semantic index = slang_name_to_texture_semantic(*reflection->texture_semantic_map,
+            texture.name, &array_index);
       
       if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
       {

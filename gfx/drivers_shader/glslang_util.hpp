@@ -18,11 +18,18 @@
 
 #include <stdint.h>
 #include <vector>
+#include <string>
+
+struct glslang_meta
+{
+   std::string name;
+};
 
 struct glslang_output
 {
    std::vector<uint32_t> vertex;
    std::vector<uint32_t> fragment;
+   glslang_meta meta;
 };
 
 bool glslang_compile_shader(const char *shader_path, glslang_output *output);

@@ -219,6 +219,10 @@ struct CommonResources
    vector<Texture> original_history;
    vector<Texture> framebuffer_feedback;
 
+   unordered_map<string, slang_texture_semantic_map> texture_semantic_map;
+   unordered_map<string, slang_texture_semantic_map> texture_semantic_uniform_map;
+   unordered_map<string, slang_semantic> semantic_map;
+
    VkDevice device;
 };
 
@@ -276,6 +280,26 @@ class Pass
          sync_index = index;
       }
 
+      void set_frame_count(uint64_t count)
+      {
+         frame_count = count;
+      }
+
+      void set_frame_count_period(unsigned period)
+      {
+         frame_count_period = period;
+      }
+
+      void set_name(const char *name)
+      {
+         pass_name = name;
+      }
+
+      const string &get_name() const
+      {
+         return pass_name;
+      }
+
       vulkan_filter_chain_filter get_source_filter() const
       {
          return pass_info.source_filter;
@@ -289,6 +313,11 @@ class Pass
       const slang_reflection &get_reflection() const
       {
          return reflection;
+      }
+
+      void set_pass_number(unsigned pass)
+      {
+         pass_number = pass;
       }
 
       void end_frame();
@@ -347,6 +376,7 @@ class Pass
             const float *mvp, const Texture &original, const Texture &source);
       void build_semantic_vec4(uint8_t *data, slang_semantic semantic,
             unsigned width, unsigned height);
+      void build_semantic_uint(uint8_t *data, slang_semantic semantic, uint32_t value);
       void build_semantic_texture_vec4(uint8_t *data,
             slang_texture_semantic semantic,
             unsigned width, unsigned height);
@@ -357,6 +387,12 @@ class Pass
             slang_texture_semantic semantic, const Texture &texture);
       void build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
             slang_texture_semantic semantic, unsigned index, const Texture &texture);
+
+      uint64_t frame_count = 0;
+      unsigned frame_count_period = 0;
+      unsigned pass_number = 0;
+
+      string pass_name;
 };
 
 // struct here since we're implementing the opaque typedef from C.
@@ -391,6 +427,10 @@ struct vulkan_filter_chain
       void build_viewport_pass(VkCommandBuffer cmd,
             const VkViewport &vp, const float *mvp);
 
+      void set_frame_count(uint64_t count);
+      void set_frame_count_period(unsigned pass, unsigned period);
+      void set_pass_name(unsigned pass, const char *name);
+
    private:
       VkDevice device;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
@@ -418,6 +458,7 @@ struct vulkan_filter_chain
 
       bool init_history();
       bool init_feedback();
+      bool init_alias();
       void update_history(DeferredDisposer &disposer, VkCommandBuffer cmd);
       vector<unique_ptr<Framebuffer>> original_history;
       bool require_clear = false;
@@ -479,6 +520,7 @@ void vulkan_filter_chain::set_num_passes(unsigned num_passes)
       passes.emplace_back(new Pass(device, memory_properties,
                cache, deferred_calls.size(), i + 1 == num_passes));
       passes.back()->set_common_resources(common);
+      passes.back()->set_pass_number(i);
    }
 }
 
@@ -509,6 +551,22 @@ void vulkan_filter_chain::set_input_texture(
       const vulkan_filter_chain_texture &texture)
 {
    input_texture = texture;
+}
+
+void vulkan_filter_chain::set_frame_count(uint64_t count)
+{
+   for (auto &pass : passes)
+      pass->set_frame_count(count);
+}
+
+void vulkan_filter_chain::set_frame_count_period(unsigned pass, unsigned period)
+{
+   passes[pass]->set_frame_count_period(period);
+}
+
+void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
+{
+   passes[pass]->set_name(name);
 }
 
 void vulkan_filter_chain::execute_deferred()
@@ -642,13 +700,66 @@ bool vulkan_filter_chain::init_feedback()
    return true;
 }
 
+template <typename M, typename P>
+static bool set_unique_map(M &m, const string &name, const P &p)
+{
+   auto itr = m.find(name);
+   if (itr != end(m))
+   {
+      RARCH_ERR("[slang]: Alias \"%s\" already exists.\n",
+            name.c_str());
+      return false;
+   }
+
+   m[name] = p;
+   return true;
+}
+
+bool vulkan_filter_chain::init_alias()
+{
+   common.texture_semantic_map.clear();
+   common.texture_semantic_uniform_map.clear();
+   common.semantic_map.clear();
+
+   unsigned i = 0;
+   for (auto &pass : passes)
+   {
+      auto &name = pass->get_name();
+      if (name.empty())
+         continue;
+
+      if (!set_unique_map(common.texture_semantic_map, name,
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+         return false;
+
+      if (!set_unique_map(common.texture_semantic_uniform_map, name + "Size",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+         return false;
+
+      if (!set_unique_map(common.texture_semantic_map, name + "Feedback",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+         return false;
+
+      if (!set_unique_map(common.texture_semantic_uniform_map, name + "FeedbackSize",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+         return false;
+
+      i++;
+   }
+   return true;
+}
+
 bool vulkan_filter_chain::init()
 {
    Size2D source = max_input_size;
 
+   if (!init_alias())
+      return false;
    for (unsigned i = 0; i < passes.size(); i++)
    {
       auto &pass = passes[i];
+      RARCH_LOG("[slang]: Building pass #%u (%s)\n", i, pass->get_name().empty() ? "N/A" : pass->get_name().c_str());
+
       source = pass->set_pass_info(max_input_size,
             source, swapchain_info, pass_info[i]);
       if (!pass->build())
@@ -1273,6 +1384,11 @@ bool Pass::build()
    }
 
    reflection = slang_reflection{};
+   reflection.pass_number = pass_number;
+   reflection.texture_semantic_map = &common->texture_semantic_map;
+   reflection.texture_semantic_uniform_map = &common->texture_semantic_uniform_map;
+   reflection.semantic_map = &common->semantic_map;
+
    if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
       return false;
 
@@ -1378,6 +1494,13 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
    }
 }
 
+void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
+      uint32_t value)
+{
+   if (data && reflection.semantics[semantic].uniform)
+      *reinterpret_cast<uint32_t*>(data + reflection.semantics[semantic].ubo_offset) = value;
+}
+
 void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
 {
@@ -1412,6 +1535,8 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
          current_framebuffer_size.width, current_framebuffer_size.height);
    build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
          unsigned(current_viewport.width), unsigned(current_viewport.height));
+   build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
+         frame_count_period ? uint32_t(frame_count % frame_count_period) : uint32_t(frame_count));
 
    // Standard inputs
    build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
@@ -1908,6 +2033,15 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             output.fragment.data(),
             output.fragment.size());
 
+      chain->set_frame_count_period(i, pass->frame_count_mod);
+
+      if (!output.meta.name.empty())
+         chain->set_pass_name(i, output.meta.name.c_str());
+
+      // Preset overrides.
+      if (*pass->alias)
+         chain->set_pass_name(i, pass->alias);
+
       if (pass->filter == RARCH_FILTER_UNSPEC)
          pass_info.source_filter = filter;
       else
@@ -2065,6 +2199,29 @@ void vulkan_filter_chain_set_input_texture(
       const struct vulkan_filter_chain_texture *texture)
 {
    chain->set_input_texture(*texture);
+}
+
+void vulkan_filter_chain_set_frame_count(
+      vulkan_filter_chain_t *chain,
+      uint64_t count)
+{
+   chain->set_frame_count(count);
+}
+
+void vulkan_filter_chain_set_frame_count_period(
+      vulkan_filter_chain_t *chain,
+      unsigned pass,
+      unsigned period)
+{
+   chain->set_frame_count_period(pass, period);
+}
+
+void vulkan_filter_chain_set_pass_name(
+      vulkan_filter_chain_t *chain,
+      unsigned pass,
+      const char *name)
+{
+   chain->set_pass_name(pass, name);
 }
 
 void vulkan_filter_chain_build_offscreen_passes(
