@@ -2029,6 +2029,51 @@ struct ConfigDeleter
    }
 };
 
+static VkFormat glslang_format_to_vk(glslang_format fmt)
+{
+#undef FMT
+#define FMT(x) case SLANG_FORMAT_##x: return VK_FORMAT_##x
+   switch (fmt)
+   {
+      FMT(R8_UNORM);
+      FMT(R8_SINT);
+      FMT(R8_UINT);
+      FMT(R8G8_UNORM);
+      FMT(R8G8_SINT);
+      FMT(R8G8_UINT);
+      FMT(R8G8B8A8_UNORM);
+      FMT(R8G8B8A8_SINT);
+      FMT(R8G8B8A8_UINT);
+      FMT(R8G8B8A8_SRGB);
+
+      FMT(A2B10G10R10_UNORM_PACK32);
+      FMT(A2B10G10R10_UINT_PACK32);
+
+      FMT(R16_UINT);
+      FMT(R16_SINT);
+      FMT(R16_SFLOAT);
+      FMT(R16G16_UINT);
+      FMT(R16G16_SINT);
+      FMT(R16G16_SFLOAT);
+      FMT(R16G16B16A16_UINT);
+      FMT(R16G16B16A16_SINT);
+      FMT(R16G16B16A16_SFLOAT);
+
+      FMT(R32_UINT);
+      FMT(R32_SINT);
+      FMT(R32_SFLOAT);
+      FMT(R32G32_UINT);
+      FMT(R32G32_SINT);
+      FMT(R32G32_SFLOAT);
+      FMT(R32G32B32A32_UINT);
+      FMT(R32G32B32A32_SINT);
+      FMT(R32G32B32A32_SFLOAT);
+
+      default:
+         return VK_FORMAT_UNDEFINED;
+   }
+}
+
 vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const struct vulkan_filter_chain_create_info *info,
       const char *path, vulkan_filter_chain_filter filter)
@@ -2097,6 +2142,12 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             VULKAN_FILTER_CHAIN_NEAREST;
       }
 
+      bool explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
+
+      // Set a reasonable default.
+      if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
+         output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_UNORM;
+
       if (!pass->fbo.valid)
       {
          pass_info.scale_type_x = i + 1 == shader->passes 
@@ -2107,18 +2158,34 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             : VULKAN_FILTER_CHAIN_SCALE_SOURCE;
          pass_info.scale_x = 1.0f;
          pass_info.scale_y = 1.0f;
-         pass_info.rt_format = i + 1 == shader->passes 
-            ? tmpinfo.swapchain.format 
-            : VK_FORMAT_R8G8B8A8_UNORM;
+
+         if (i + 1 == shader->passes)
+         {
+            pass_info.rt_format = tmpinfo.swapchain.format;
+
+            if (explicit_format)
+               RARCH_WARN("[slang]: Using explicit format for last pass in chain, but it is not rendered to framebuffer, using swapchain format instead.\n");
+         }
+         else
+         {
+            pass_info.rt_format = glslang_format_to_vk(output.meta.rt_format);
+            RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
+                  glslang_format_to_string(output.meta.rt_format), i);
+         }
       }
       else
       {
-         // TODO: Add more general format spec.
-         pass_info.rt_format = VK_FORMAT_R8G8B8A8_UNORM;
+         // Preset overrides shader.
+         // Kinda ugly ...
          if (pass->fbo.srgb_fbo)
-            pass_info.rt_format = VK_FORMAT_R8G8B8A8_SRGB;
+            output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_SRGB;
          else if (pass->fbo.fp_fbo)
-            pass_info.rt_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+            output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+         ///
+
+         pass_info.rt_format = glslang_format_to_vk(output.meta.rt_format);
+         RARCH_LOG("[slang]: Using render target format %s for pass output #%u.\n",
+               glslang_format_to_string(output.meta.rt_format), i);
 
          switch (pass->fbo.type_x)
          {
