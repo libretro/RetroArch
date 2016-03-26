@@ -608,6 +608,7 @@ static void parse_input(int argc, char *argv[])
    const char *optstring = NULL;
    global_t  *global     = global_get_ptr();
    settings_t *settings  = config_get_ptr();
+   bool explicit_menu    = false;
 
    const struct option opts[] = {
 #ifdef HAVE_DYNAMIC
@@ -657,7 +658,29 @@ static void parse_input(int argc, char *argv[])
       { NULL, 0, NULL, 0 }
    };
 
-   current_core_type                     = CORE_TYPE_PLAIN;
+   /* Handling the core type is finicky. Based on the arguments we pass in,
+    * we handle it differently.
+    * Some current cases which track desired behavior and how it is supposed to work:
+    *
+    * Dynamically linked RA:
+    * ./retroarch                            -> CORE_TYPE_DUMMY
+    * ./retroarch -v                         -> CORE_TYPE_DUMMY + verbose
+    * ./retroarch --menu                     -> CORE_TYPE_DUMMY
+    * ./retroarch --menu -v                  -> CORE_TYPE_DUMMY + verbose
+    * ./retroarch -L contentless-core        -> CORE_TYPE_PLAIN
+    * ./retroarch -L content-core            -> CORE_TYPE_PLAIN + FAIL (This currently crashes)
+    * ./retroarch [-L content-core] ROM      -> CORE_TYPE_PLAIN
+    * ./retroarch <-L or ROM> --menu         -> FAIL
+    *
+    * The heuristic here seems to be that if we use the -L CLI option or
+    * optind < argc at the end we should set CORE_TYPE_PLAIN.
+    * To handle --menu, we should ensure that CORE_TYPE_DUMMY is still set
+    * otherwise, fail early, since the CLI options are non-sensical.
+    * We could also simply ignore --menu in this case to be more friendly with
+    * bogus arguments.
+    */
+
+   current_core_type                     = CORE_TYPE_DUMMY;
    *global->subsystem                    = '\0';
    global->has_set.save_path             = false;
    global->has_set.state_path            = false;
@@ -682,12 +705,6 @@ static void parse_input(int argc, char *argv[])
    *global->name.ips                     = '\0';
 
    runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
-
-   if (argc < 2)
-   {
-      current_core_type                  = CORE_TYPE_DUMMY;
-      return;
-   }
 
    /* Make sure we can call parse_input several times ... */
    optind    = 0;
@@ -811,11 +828,20 @@ static void parse_input(int argc, char *argv[])
                      "Setting libretro_directory to \"%s\" instead.\n",
                      optarg);
             }
-            else
+            else if (path_file_exists(optarg))
             {
                runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, optarg);
                global->has_set.libretro = true;
+
+               /* We requested explicit core, so use PLAIN core type. */
+               current_core_type = CORE_TYPE_PLAIN;
             }
+            else
+            {
+               RARCH_WARN("--libretro argument \"%s\" is neither a file nor directory. Ignoring.\n",
+                     optarg);
+            }
+
             break;
 #endif
          case 'P':
@@ -903,7 +929,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_MENU:
-            current_core_type = CORE_TYPE_DUMMY;
+            explicit_menu = true;
             break;
 
 #ifdef HAVE_NETPLAY
@@ -994,20 +1020,24 @@ static void parse_input(int argc, char *argv[])
       }
    }
 
-   if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+   if (explicit_menu && current_core_type != CORE_TYPE_DUMMY)
    {
-      if (optind < argc)
-      {
-         RARCH_ERR("--menu was used, but content file was passed as well.\n");
-         retro_fail(1, "parse_input()");
-      }
+      RARCH_ERR("--menu was used, but content file or libretro core was passed as well.\n");
+      retro_fail(1, "parse_input()");
    }
-   else if (!*global->subsystem && optind < argc)
+
+   if (!*global->subsystem && optind < argc)
    {
+      /* We requested explicit ROM, so use PLAIN core type. */
+      current_core_type = CORE_TYPE_PLAIN;
       rarch_ctl(RARCH_CTL_SET_PATHS, (void*)argv[optind]);
    }
    else if (*global->subsystem && optind < argc)
+   {
+      /* We requested explicit ROM, so use PLAIN core type. */
+      current_core_type = CORE_TYPE_PLAIN;
       set_special_paths(argv + optind, argc - optind);
+   }
    else
       content_ctl(CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT, NULL);
 
