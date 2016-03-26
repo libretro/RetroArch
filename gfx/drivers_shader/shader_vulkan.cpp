@@ -290,6 +290,16 @@ class Pass
          frame_count_period = period;
       }
 
+      void set_name(const char *name)
+      {
+         pass_name = name;
+      }
+
+      const string &get_name() const
+      {
+         return pass_name;
+      }
+
       vulkan_filter_chain_filter get_source_filter() const
       {
          return pass_info.source_filter;
@@ -375,6 +385,8 @@ class Pass
 
       uint64_t frame_count = 0;
       unsigned frame_count_period = 0;
+
+      string pass_name;
 };
 
 // struct here since we're implementing the opaque typedef from C.
@@ -411,6 +423,7 @@ struct vulkan_filter_chain
 
       void set_frame_count(uint64_t count);
       void set_frame_count_period(unsigned pass, unsigned period);
+      void set_pass_name(unsigned pass, const char *name);
 
    private:
       VkDevice device;
@@ -439,6 +452,7 @@ struct vulkan_filter_chain
 
       bool init_history();
       bool init_feedback();
+      bool init_alias();
       void update_history(DeferredDisposer &disposer, VkCommandBuffer cmd);
       vector<unique_ptr<Framebuffer>> original_history;
       bool require_clear = false;
@@ -541,6 +555,11 @@ void vulkan_filter_chain::set_frame_count(uint64_t count)
 void vulkan_filter_chain::set_frame_count_period(unsigned pass, unsigned period)
 {
    passes[pass]->set_frame_count_period(period);
+}
+
+void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
+{
+   passes[pass]->set_name(name);
 }
 
 void vulkan_filter_chain::execute_deferred()
@@ -674,13 +693,66 @@ bool vulkan_filter_chain::init_feedback()
    return true;
 }
 
+template <typename M, typename P>
+static bool set_unique_map(M &m, const string &name, const P &p)
+{
+   auto itr = m.find(name);
+   if (itr != end(m))
+   {
+      RARCH_ERR("[slang]: Alias \"%s\" already exists.\n",
+            name.c_str());
+      return false;
+   }
+
+   m[name] = p;
+   return true;
+}
+
+bool vulkan_filter_chain::init_alias()
+{
+   common.texture_semantic_map.clear();
+   common.texture_semantic_uniform_map.clear();
+   common.semantic_map.clear();
+
+   unsigned i = 0;
+   for (auto &pass : passes)
+   {
+      auto &name = pass->get_name();
+      if (name.empty())
+         continue;
+
+      if (!set_unique_map(common.texture_semantic_map, name,
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+         return false;
+
+      if (!set_unique_map(common.texture_semantic_uniform_map, name + "Size",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+         return false;
+
+      if (!set_unique_map(common.texture_semantic_map, name + "Feedback",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+         return false;
+
+      if (!set_unique_map(common.texture_semantic_uniform_map, name + "FeedbackSize",
+               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+         return false;
+
+      i++;
+   }
+   return true;
+}
+
 bool vulkan_filter_chain::init()
 {
    Size2D source = max_input_size;
 
+   if (!init_alias())
+      return false;
    for (unsigned i = 0; i < passes.size(); i++)
    {
       auto &pass = passes[i];
+      RARCH_LOG("[slang]: Building pass #%u (%s)\n", i, pass->get_name().empty() ? "N/A" : pass->get_name().c_str());
+
       source = pass->set_pass_info(max_input_size,
             source, swapchain_info, pass_info[i]);
       if (!pass->build())
@@ -1955,6 +2027,13 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
       chain->set_frame_count_period(i, pass->frame_count_mod);
 
+      if (!output.meta.name.empty())
+         chain->set_pass_name(i, output.meta.name.c_str());
+
+      // Preset overrides.
+      if (*pass->alias)
+         chain->set_pass_name(i, pass->alias);
+
       if (pass->filter == RARCH_FILTER_UNSPEC)
          pass_info.source_filter = filter;
       else
@@ -2127,6 +2206,14 @@ void vulkan_filter_chain_set_frame_count_period(
       unsigned period)
 {
    chain->set_frame_count_period(pass, period);
+}
+
+void vulkan_filter_chain_set_pass_name(
+      vulkan_filter_chain_t *chain,
+      unsigned pass,
+      const char *name)
+{
+   chain->set_pass_name(pass, name);
 }
 
 void vulkan_filter_chain_build_offscreen_passes(

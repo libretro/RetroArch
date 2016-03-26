@@ -123,6 +123,10 @@ void vulkan_filter_chain_set_frame_count_period(vulkan_filter_chain_t *chain,
       unsigned pass,
       unsigned period);
 
+void vulkan_filter_chain_set_pass_name(vulkan_filter_chain_t *chain,
+      unsigned pass,
+      const char *name);
+
 void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp);
 void vulkan_filter_chain_build_viewport_pass(vulkan_filter_chain_t *chain,

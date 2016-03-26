@@ -101,8 +101,11 @@ static string build_stage_source(const vector<string> &lines, const char *stage)
    {
       if (itr->find("#pragma stage ") != string::npos)
       {
-         auto expected = string("#pragma stage ") + stage;
-         active = itr->find(expected) != string::npos;
+         if (stage)
+         {
+            auto expected = string("#pragma stage ") + stage;
+            active = itr->find(expected) != string::npos;
+         }
 
          // Improve debuggability.
          if (active)
@@ -120,12 +123,37 @@ static string build_stage_source(const vector<string> &lines, const char *stage)
    return str.str();
 }
 
+static bool glslang_parse_meta(const vector<string> &lines, glslang_meta *meta)
+{
+   *meta = glslang_meta{};
+   for (auto &line : lines)
+   {
+      if (line.find("#pragma name ") != string::npos)
+      {
+         if (!meta->name.empty())
+         {
+            RARCH_ERR("[slang]: Trying to declare multiple names for file.\n");
+            return false;
+         }
+
+         const char *str = line.c_str() + strlen("#pragma name ");
+         while (*str == ' ')
+            str++;
+         meta->name = str;
+      }
+   }
+   return true;
+}
+
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
    vector<string> lines;
 
-   RARCH_LOG("Compiling shader \"%s\".\n", shader_path);
+   RARCH_LOG("[slang]: Compiling shader \"%s\".\n", shader_path);
    if (!read_shader_file(shader_path, &lines))
+      return false;
+
+   if (!glslang_parse_meta(lines, &output->meta))
       return false;
 
    auto &header = lines.front();
