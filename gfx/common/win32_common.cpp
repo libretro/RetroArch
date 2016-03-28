@@ -258,7 +258,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
             return ret;
          break;
       case WM_CREATE:
-         create_gl_context(hwnd, &g_quit);
+         create_graphics_context(hwnd, &g_quit);
          return 0;
    }
 

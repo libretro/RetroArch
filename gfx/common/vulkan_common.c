@@ -1481,8 +1481,8 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 
             surf_info.sType     = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
             surf_info.flags     = 0;
-            surf_info.hinstance = display;
-            surf_info.hwnd      = surface;
+            surf_info.hinstance = *(const HINSTANCE*)display;
+            surf_info.hwnd      = *(const HWND*)surface;
 
             if (VKFUNC(vkCreateWin32SurfaceKHR)(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)

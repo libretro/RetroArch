@@ -48,6 +48,10 @@
 #include "../../libretro_vulkan.h"
 #include "../drivers_shader/shader_vulkan.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct vulkan_filter_chain vulkan_filter_chain_t;
 
 enum vk_texture_type
@@ -502,6 +506,10 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk);
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       unsigned swap_interval);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 
