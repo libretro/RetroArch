@@ -73,5 +73,5 @@ HAVE_MMAP=auto             # MMAP support
 HAVE_QT=no                 # QT companion support
 HAVE_XSHM=no               # XShm video driver support (disabled because it's just a dummied out stub)
 HAVE_CHEEVOS=yes           # Retro Achievements
-HAVE_VULKAN=auto           # Vulkan support
+HAVE_VULKAN=no             # Vulkan support
 C89_VULKAN=no
