@@ -1255,7 +1255,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 #endif
 
    if (!vulkan_library)
+   {
+      RARCH_ERR("[Vulkan]: Failed to open Vulkan loader.\n");
       return false;
+   }
 
    RARCH_LOG("Vulkan dynamic library loaded.\n");
    
@@ -1300,19 +1303,31 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    }
 
    if (!vulkan_load_instance_symbols(vk))
+   {
+      RARCH_ERR("[Vulkan]: Failed to load instance symbols.\n");
       return false;
+   }
 
    if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
             &gpu_count, NULL) != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
       return false;
+   }
 
    gpus = (VkPhysicalDevice*)calloc(gpu_count, sizeof(*gpus));
    if (!gpus)
+   {
+      RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
       return false;
+   }
 
    if (VKFUNC(vkEnumeratePhysicalDevices)(vk->context.instance,
             &gpu_count, gpus) != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan]: Failed to enumerate physical devices.\n");
       return false;
+   }
 
    if (gpu_count < 1)
    {
@@ -1332,7 +1347,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          &queue_count, NULL);
 
    if (queue_count < 1 || queue_count > 32)
+   {
+      RARCH_ERR("[Vulkan]: Invalid number of queues detected.\n");
       return false;
+   }
 
    VKFUNC(vkGetPhysicalDeviceQueueFamilyProperties)(vk->context.gpu,
          &queue_count, queue_properties);
@@ -1376,10 +1394,16 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    }
    else if (VKFUNC(vkCreateDevice)(vk->context.gpu, &device_info,
             NULL, &vk->context.device) != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan]: Failed to create device.\n");
       return false;
+   }
 
    if (!vulkan_load_device_symbols(vk))
+   {
+      RARCH_ERR("[Vulkan]: Failed to load device symbols.\n");
       return false;
+   }
 
    VKFUNC(vkGetDeviceQueue)(vk->context.device,
          vk->context.graphics_queue_index, 0, &vk->context.queue);
@@ -1423,7 +1447,10 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
    vk->context.queue_lock = slock_new();
    if (!vk->context.queue_lock)
+   {
+      RARCH_ERR("[Vulkan]: Failed to create queue lock.\n");
       return false;
+   }
 
    return true;
 }
@@ -1764,7 +1791,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.imageUsage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT 
       | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-   VKFUNC(vkCreateSwapchainKHR)(vk->context.device, &info, NULL, &vk->swapchain);
+   if (VKFUNC(vkCreateSwapchainKHR)(vk->context.device, &info, NULL, &vk->swapchain) != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan]: Failed to create swapchain.\n");
+      return false;
+   }
 
    if (old_swapchain != VK_NULL_HANDLE)
       VKFUNC(vkDestroySwapchainKHR)(vk->context.device, old_swapchain, NULL);
