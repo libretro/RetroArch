@@ -223,8 +223,6 @@ typedef struct gl
    bool keep_aspect;
    unsigned rotation;
 
-   unsigned full_x, full_y;
-
    struct video_viewport vp;
    unsigned vp_out_width;
    unsigned vp_out_height;

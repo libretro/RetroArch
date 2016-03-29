@@ -912,6 +912,7 @@ static void *vulkan_init(const video_info_t *video,
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned interval;
+   unsigned full_x, full_y;
    unsigned win_width;
    unsigned win_height;
    unsigned temp_width                = 0;
@@ -931,12 +932,12 @@ static void *vulkan_init(const video_info_t *video,
    gfx_ctx_ctl(GFX_CTL_SET, (void*)ctx_driver);
 
    gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
-   vk->full_x = mode.width;
-   vk->full_y = mode.height;
+   full_x = mode.width;
+   full_y = mode.height;
    mode.width  = 0;
    mode.height = 0;
 
-   RARCH_LOG("Detecting screen resolution %ux%u.\n", vk->full_x, vk->full_y);
+   RARCH_LOG("Detecting screen resolution %ux%u.\n", full_x, full_y);
    interval = video->vsync ? settings->video.swap_interval : 0;
    gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
 
@@ -945,8 +946,8 @@ static void *vulkan_init(const video_info_t *video,
 
    if (video->fullscreen && (win_width == 0) && (win_height == 0))
    {
-      win_width  = vk->full_x;
-      win_height = vk->full_y;
+      win_width  = full_x;
+      win_height = full_y;
    }
 
    mode.width      = win_width;
@@ -964,14 +965,6 @@ static void *vulkan_init(const video_info_t *video,
    video_driver_get_size(&temp_width, &temp_height);
 
    RARCH_LOG("Vulkan: Using resolution %ux%u\n", temp_width, temp_height);
-
-   /* FIXME: Is this check right? */
-   if (vk->full_x || vk->full_y)
-   {
-      /* We got bogus from gfx_ctx_get_video_size. Replace. */
-      vk->full_x = temp_width;
-      vk->full_y = temp_height;
-   }
 
    gfx_ctx_ctl(GFX_CTL_GET_CONTEXT_DATA, &vk->context);
 

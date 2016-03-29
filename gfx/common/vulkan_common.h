@@ -259,7 +259,6 @@ typedef struct vk
 {
    vulkan_context_t *context;
    video_info_t video;
-   unsigned full_x, full_y;
 
    unsigned tex_w, tex_h;
    VkFormat tex_fmt;
