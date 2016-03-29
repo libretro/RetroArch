@@ -1798,7 +1798,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    }
 
    if (old_swapchain != VK_NULL_HANDLE)
+   {
+      RARCH_LOG("[Vulkan]: Recycled old swapchain.\n");
       VKFUNC(vkDestroySwapchainKHR)(vk->context.device, old_swapchain, NULL);
+   }
 
    vk->context.swapchain_width  = swapchain_size.width;
    vk->context.swapchain_height = swapchain_size.height;

@@ -511,7 +511,10 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       bool fullscreen)
 {
    if (!win32_set_video_mode(NULL, width, height, fullscreen))
+   {
+      RARCH_ERR("[WGL]: win32_set_video_mode failed.\n");
       goto error;
+   }
 
    switch (g_api)
    {
