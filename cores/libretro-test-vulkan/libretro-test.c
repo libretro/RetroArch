@@ -4,7 +4,6 @@
 #include <string.h>
 #include <math.h>
 
-#define VK_PROTOTYPES
 #include "../../libretro_vulkan.h"
 #include "shaders/triangle.vert.inc"
 #include "shaders/triangle.frag.inc"
@@ -16,6 +15,294 @@ static const struct retro_hw_render_interface_vulkan *vulkan;
 #define BASE_WIDTH 320
 #define BASE_HEIGHT 240
 #define MAX_SYNC 8
+
+/* We'll probably want a libretro common solution for this, but this will do for now. */
+#define VK_GET_DEVICE_PROC_ADDR(entrypoint) do {                                                 \
+   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) vulkan->get_device_proc_addr(vulkan->device,      \
+         "vk" #entrypoint);                                                                      \
+} while(0)
+
+#define VK_GET_INSTANCE_PROC_ADDR(entrypoint) do {                                               \
+   vkcfp.vk##entrypoint = (PFN_vk##entrypoint) vulkan->get_instance_proc_addr(vulkan->instance,  \
+         "vk" #entrypoint);                                                                      \
+} while(0)
+
+typedef struct vulkan_context_fp
+{
+   /* Device */
+   PFN_vkDeviceWaitIdle                          vkDeviceWaitIdle;
+
+   /* Device Memory */
+   PFN_vkAllocateMemory                          vkAllocateMemory;
+   PFN_vkFreeMemory                              vkFreeMemory;
+
+   /* Command Function Pointers */
+   PFN_vkGetInstanceProcAddr                     vkGetInstanceProcAddr;
+   PFN_vkGetDeviceProcAddr                       vkGetDeviceProcAddr;
+
+   /* Buffers */
+   PFN_vkCreateBuffer                            vkCreateBuffer;
+   PFN_vkDestroyBuffer                           vkDestroyBuffer;
+
+   /* Fences */
+   PFN_vkCreateFence                             vkCreateFence;
+   PFN_vkDestroyFence                            vkDestroyFence;
+   PFN_vkResetFences                             vkResetFences;
+   PFN_vkWaitForFences                           vkWaitForFences;
+
+   /* Semaphores */
+   PFN_vkCreateSemaphore                         vkCreateSemaphore;
+   PFN_vkDestroySemaphore                        vkDestroySemaphore;
+
+   /* Images */
+   PFN_vkCreateImage                             vkCreateImage;
+   PFN_vkDestroyImage                            vkDestroyImage;
+   PFN_vkGetImageSubresourceLayout               vkGetImageSubresourceLayout;
+
+   /* Images (Resource Memory Association) */
+   PFN_vkGetBufferMemoryRequirements             vkGetBufferMemoryRequirements;
+   PFN_vkBindBufferMemory                        vkBindBufferMemory;
+   PFN_vkBindImageMemory                         vkBindImageMemory;
+
+   /* Image Views */
+   PFN_vkCreateImageView                         vkCreateImageView;
+   PFN_vkDestroyImageView                        vkDestroyImageView;
+
+   /* Image Views (Resource Memory Association) */
+   PFN_vkGetImageMemoryRequirements              vkGetImageMemoryRequirements;
+
+   /* Queues */
+   PFN_vkGetDeviceQueue                          vkGetDeviceQueue;
+   PFN_vkQueueWaitIdle                           vkQueueWaitIdle;
+
+   /* Pipelines */
+   PFN_vkDestroyPipeline                         vkDestroyPipeline;
+   PFN_vkCreateGraphicsPipelines                 vkCreateGraphicsPipelines;
+
+   /* Pipeline Layouts */
+   PFN_vkCreatePipelineLayout                    vkCreatePipelineLayout;
+   PFN_vkDestroyPipelineLayout                   vkDestroyPipelineLayout;
+
+   /* Pipeline Cache */
+   PFN_vkCreatePipelineCache                     vkCreatePipelineCache;
+   PFN_vkDestroyPipelineCache                    vkDestroyPipelineCache;
+
+   /* Pipeline Barriers */
+   PFN_vkCmdPipelineBarrier                      vkCmdPipelineBarrier;
+
+   /* Descriptor pools */
+   PFN_vkCreateDescriptorPool                    vkCreateDescriptorPool;
+   PFN_vkDestroyDescriptorPool                   vkDestroyDescriptorPool;
+
+   /* Descriptor sets */
+   PFN_vkAllocateDescriptorSets                  vkAllocateDescriptorSets;
+   PFN_vkFreeDescriptorSets                      vkFreeDescriptorSets;
+   PFN_vkCmdBindDescriptorSets                   vkCmdBindDescriptorSets;
+   PFN_vkUpdateDescriptorSets                    vkUpdateDescriptorSets;
+
+   /* Descriptor Set Layout */
+   PFN_vkCreateDescriptorSetLayout               vkCreateDescriptorSetLayout;
+   PFN_vkDestroyDescriptorSetLayout              vkDestroyDescriptorSetLayout;
+
+   /* Command Buffers */
+   PFN_vkCreateCommandPool                       vkCreateCommandPool;
+   PFN_vkDestroyCommandPool                      vkDestroyCommandPool;
+   PFN_vkBeginCommandBuffer                      vkBeginCommandBuffer;
+   PFN_vkEndCommandBuffer                        vkEndCommandBuffer;
+   PFN_vkResetCommandBuffer                      vkResetCommandBuffer;
+   PFN_vkFreeCommandBuffers                      vkFreeCommandBuffers;
+   PFN_vkAllocateCommandBuffers                  vkAllocateCommandBuffers;
+
+   /* Command Buffer Submission */
+   PFN_vkQueueSubmit                             vkQueueSubmit;
+
+   /* Framebuffers */
+   PFN_vkCreateFramebuffer                       vkCreateFramebuffer;
+   PFN_vkDestroyFramebuffer                      vkDestroyFramebuffer;
+
+   /* Memory allocation */
+   PFN_vkMapMemory                               vkMapMemory;
+   PFN_vkUnmapMemory                             vkUnmapMemory;
+
+   /* Samplers */
+   PFN_vkCreateSampler                           vkCreateSampler;
+   PFN_vkDestroySampler                          vkDestroySampler;
+
+   /* Render Passes */
+   PFN_vkCreateRenderPass                        vkCreateRenderPass;
+   PFN_vkDestroyRenderPass                       vkDestroyRenderPass;
+
+   /* Image commands */
+   PFN_vkCmdCopyImage                            vkCmdCopyImage;
+   PFN_vkCmdClearColorImage                      vkCmdClearColorImage;
+
+   /* Pipeline commands */
+   PFN_vkCmdBindPipeline                         vkCmdBindPipeline;
+
+   /* Vertex input descriptions */
+   PFN_vkCmdBindVertexBuffers                    vkCmdBindVertexBuffers;
+
+   /* Render Pass commands */
+   PFN_vkCmdBeginRenderPass                      vkCmdBeginRenderPass;
+   PFN_vkCmdEndRenderPass                        vkCmdEndRenderPass;
+
+   /* Clear commands */
+   PFN_vkCmdClearAttachments                     vkCmdClearAttachments;
+
+   /* Drawing commands */
+   PFN_vkCmdDraw                                 vkCmdDraw;
+
+   /* Fragment operations */
+   PFN_vkCmdSetScissor                           vkCmdSetScissor;
+
+   /* Fixed-function vertex postprocessing */
+   PFN_vkCmdSetViewport                          vkCmdSetViewport;
+
+   /* Shaders */
+   PFN_vkCreateShaderModule                      vkCreateShaderModule;
+   PFN_vkDestroyShaderModule                     vkDestroyShaderModule;
+
+   PFN_vkGetPhysicalDeviceProperties             vkGetPhysicalDeviceProperties;
+   PFN_vkGetPhysicalDeviceMemoryProperties       vkGetPhysicalDeviceMemoryProperties;
+} vulkan_context_fp_t;
+
+static vulkan_context_fp_t vkcfp;
+#define VKFUNC(sym) (vkcfp.sym)
+
+static void load_device_symbols(void)
+{
+   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceProperties);
+   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceMemoryProperties);
+
+   /* Memory */
+   VK_GET_DEVICE_PROC_ADDR(AllocateMemory);
+   VK_GET_DEVICE_PROC_ADDR(FreeMemory);
+
+   /* Waiting */
+   VK_GET_DEVICE_PROC_ADDR(DeviceWaitIdle);
+
+   /* Queues */
+   VK_GET_DEVICE_PROC_ADDR(GetDeviceQueue);
+   VK_GET_DEVICE_PROC_ADDR(QueueWaitIdle);
+   VK_GET_DEVICE_PROC_ADDR(QueueSubmit);
+
+   /* Semaphores */
+   VK_GET_DEVICE_PROC_ADDR(CreateSemaphore);
+   VK_GET_DEVICE_PROC_ADDR(DestroySemaphore);
+
+   /* Buffers */
+   VK_GET_DEVICE_PROC_ADDR(CreateBuffer);
+   VK_GET_DEVICE_PROC_ADDR(DestroyBuffer);
+
+   /* Fences */
+   VK_GET_DEVICE_PROC_ADDR(CreateFence);
+   VK_GET_DEVICE_PROC_ADDR(DestroyFence);
+   VK_GET_DEVICE_PROC_ADDR(ResetFences);
+   VK_GET_DEVICE_PROC_ADDR(WaitForFences);
+
+   /* Images */
+   VK_GET_DEVICE_PROC_ADDR(CreateImage);
+   VK_GET_DEVICE_PROC_ADDR(DestroyImage);
+   VK_GET_DEVICE_PROC_ADDR(GetImageSubresourceLayout);
+
+   /* Images (Resource Memory Association) */
+   VK_GET_DEVICE_PROC_ADDR(GetBufferMemoryRequirements);
+   VK_GET_DEVICE_PROC_ADDR(BindBufferMemory);
+   VK_GET_DEVICE_PROC_ADDR(BindImageMemory);
+
+   /* Image Views */
+   VK_GET_DEVICE_PROC_ADDR(CreateImageView);
+   VK_GET_DEVICE_PROC_ADDR(DestroyImageView);
+
+   /* Resource Memory Associations */
+   VK_GET_DEVICE_PROC_ADDR(GetImageMemoryRequirements);
+
+   /* Descriptor pools */
+   VK_GET_DEVICE_PROC_ADDR(CreateDescriptorPool);
+   VK_GET_DEVICE_PROC_ADDR(DestroyDescriptorPool);
+
+   /* Descriptor sets */
+   VK_GET_DEVICE_PROC_ADDR(AllocateDescriptorSets);
+   VK_GET_DEVICE_PROC_ADDR(FreeDescriptorSets);
+   VK_GET_DEVICE_PROC_ADDR(UpdateDescriptorSets);
+
+   /* Descriptor Set Layout */
+   VK_GET_DEVICE_PROC_ADDR(CreateDescriptorSetLayout);
+   VK_GET_DEVICE_PROC_ADDR(DestroyDescriptorSetLayout);
+
+   /* Framebuffers */
+   VK_GET_DEVICE_PROC_ADDR(CreateFramebuffer);
+   VK_GET_DEVICE_PROC_ADDR(DestroyFramebuffer);
+   VK_GET_DEVICE_PROC_ADDR(AllocateCommandBuffers);
+   VK_GET_DEVICE_PROC_ADDR(FreeCommandBuffers);
+
+   /* Memory allocation */
+   VK_GET_DEVICE_PROC_ADDR(MapMemory);
+   VK_GET_DEVICE_PROC_ADDR(UnmapMemory);
+
+   /* Render Passes */
+   VK_GET_DEVICE_PROC_ADDR(CreateRenderPass);
+   VK_GET_DEVICE_PROC_ADDR(DestroyRenderPass);
+
+   /* Pipelines */
+   VK_GET_DEVICE_PROC_ADDR(DestroyPipeline);
+   VK_GET_DEVICE_PROC_ADDR(CreateGraphicsPipelines);
+
+   /* Shaders */
+   VK_GET_DEVICE_PROC_ADDR(CreateShaderModule);
+   VK_GET_DEVICE_PROC_ADDR(DestroyShaderModule);
+
+   /* Pipeline Layouts */
+   VK_GET_DEVICE_PROC_ADDR(CreatePipelineLayout);
+   VK_GET_DEVICE_PROC_ADDR(DestroyPipelineLayout);
+
+   /* Pipeline Cache */
+   VK_GET_DEVICE_PROC_ADDR(CreatePipelineCache);
+   VK_GET_DEVICE_PROC_ADDR(DestroyPipelineCache);
+
+   /* Command buffers */
+   VK_GET_DEVICE_PROC_ADDR(CreateCommandPool);
+   VK_GET_DEVICE_PROC_ADDR(DestroyCommandPool);
+   VK_GET_DEVICE_PROC_ADDR(BeginCommandBuffer);
+   VK_GET_DEVICE_PROC_ADDR(ResetCommandBuffer);
+   VK_GET_DEVICE_PROC_ADDR(EndCommandBuffer);
+
+   /* Image commands */
+   VK_GET_DEVICE_PROC_ADDR(CmdCopyImage);
+   VK_GET_DEVICE_PROC_ADDR(CmdClearColorImage);
+
+   /* Vertex input descriptions */
+   VK_GET_DEVICE_PROC_ADDR(CmdBindVertexBuffers);
+
+   /* Descriptor Set commands */
+   VK_GET_DEVICE_PROC_ADDR(CmdBindDescriptorSets);
+
+   /* Fragment operations */
+   VK_GET_DEVICE_PROC_ADDR(CmdSetScissor);
+
+   /* Render Pass commands */
+   VK_GET_DEVICE_PROC_ADDR(CmdBeginRenderPass);
+   VK_GET_DEVICE_PROC_ADDR(CmdEndRenderPass);
+
+   /* Samplers */
+   VK_GET_DEVICE_PROC_ADDR(CreateSampler);
+   VK_GET_DEVICE_PROC_ADDR(DestroySampler);
+
+   /* Fixed-function vertex postprocessing */
+   VK_GET_DEVICE_PROC_ADDR(CmdSetViewport);
+
+   /* Clear commands */
+   VK_GET_DEVICE_PROC_ADDR(CmdClearAttachments);
+
+   /* Pipeline */
+   VK_GET_DEVICE_PROC_ADDR(CmdBindPipeline);
+
+   /* Pipeline Barriers */
+   VK_GET_DEVICE_PROC_ADDR(CmdPipelineBarrier);
+
+   /* Drawing commands */
+   VK_GET_DEVICE_PROC_ADDR(CmdDraw);
+}
 
 struct buffer
 {
@@ -167,10 +454,10 @@ static void update_ubo(void)
    tmp[15] = 1.0f;
 
    float *mvp = NULL;
-   vkMapMemory(vulkan->device, vk.ubo[vk.index].memory,
+   VKFUNC(vkMapMemory)(vulkan->device, vk.ubo[vk.index].memory,
          0, 16 * sizeof(float), 0, (void**)&mvp);
    memcpy(mvp, tmp, sizeof(tmp));
-   vkUnmapMemory(vulkan->device, vk.ubo[vk.index].memory);
+   VKFUNC(vkUnmapMemory)(vulkan->device, vk.ubo[vk.index].memory);
 }
 
 static void vulkan_test_render(void)
@@ -181,8 +468,8 @@ static void vulkan_test_render(void)
 
    VkCommandBufferBeginInfo begin_info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-   vkResetCommandBuffer(cmd, 0);
-   vkBeginCommandBuffer(cmd, &begin_info);
+   VKFUNC(vkResetCommandBuffer)(cmd, 0);
+   VKFUNC(vkBeginCommandBuffer)(cmd, &begin_info);
 
    VkImageMemoryBarrier prepare_rendering = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
    prepare_rendering.srcAccessMask = 0;
@@ -195,7 +482,7 @@ static void vulkan_test_render(void)
    prepare_rendering.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    prepare_rendering.subresourceRange.levelCount = 1;
    prepare_rendering.subresourceRange.layerCount = 1;
-   vkCmdPipelineBarrier(cmd,
+   VKFUNC(vkCmdPipelineBarrier)(cmd,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
          false, 
          0, NULL,
@@ -215,10 +502,10 @@ static void vulkan_test_render(void)
    rp_begin.renderArea.extent.height = BASE_HEIGHT;
    rp_begin.clearValueCount = 1;
    rp_begin.pClearValues = &clear_value;
-   vkCmdBeginRenderPass(cmd, &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
+   VKFUNC(vkCmdBeginRenderPass)(cmd, &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
 
-   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline);
-   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+   VKFUNC(vkCmdBindPipeline)(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline);
+   VKFUNC(vkCmdBindDescriptorSets)(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
          vk.pipeline_layout, 0,
          1, &vk.desc_set[vk.index], 0, NULL);
 
@@ -229,20 +516,20 @@ static void vulkan_test_render(void)
    vp.height = BASE_HEIGHT;
    vp.minDepth = 0.0f;
    vp.maxDepth = 1.0f;
-   vkCmdSetViewport(cmd, 0, 1, &vp);
+   VKFUNC(vkCmdSetViewport)(cmd, 0, 1, &vp);
 
    VkRect2D scissor;
    memset(&scissor, 0, sizeof(scissor));
    scissor.extent.width = BASE_WIDTH;
    scissor.extent.height = BASE_HEIGHT;
-   vkCmdSetScissor(cmd, 0, 1, &scissor);
+   VKFUNC(vkCmdSetScissor)(cmd, 0, 1, &scissor);
 
    VkDeviceSize offset = 0;
-   vkCmdBindVertexBuffers(cmd, 0, 1, &vk.vbo.buffer, &offset);
+   VKFUNC(vkCmdBindVertexBuffers)(cmd, 0, 1, &vk.vbo.buffer, &offset);
 
-   vkCmdDraw(cmd, 3, 1, 0, 0);
+   VKFUNC(vkCmdDraw)(cmd, 3, 1, 0, 0);
 
-   vkCmdEndRenderPass(cmd);
+   VKFUNC(vkCmdEndRenderPass)(cmd);
 
    VkImageMemoryBarrier prepare_presentation = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
    prepare_presentation.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -256,14 +543,14 @@ static void vulkan_test_render(void)
    prepare_presentation.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    prepare_presentation.subresourceRange.levelCount = 1;
    prepare_presentation.subresourceRange.layerCount = 1;
-   vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+   VKFUNC(vkCmdPipelineBarrier)(cmd, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
          false,
          0, NULL,
          0, NULL,
          1, &prepare_presentation);
 
-   vkEndCommandBuffer(cmd);
+   VKFUNC(vkEndCommandBuffer)(cmd);
 }
 
 static struct buffer create_buffer(const void *initial, size_t size, VkBufferUsageFlags usage)
@@ -275,10 +562,10 @@ static struct buffer create_buffer(const void *initial, size_t size, VkBufferUsa
    info.usage = usage;
    info.size = size;
 
-   vkCreateBuffer(device, &info, NULL, &buffer.buffer);
+   VKFUNC(vkCreateBuffer)(device, &info, NULL, &buffer.buffer);
 
    VkMemoryRequirements mem_reqs;
-   vkGetBufferMemoryRequirements(device, buffer.buffer, &mem_reqs);
+   VKFUNC(vkGetBufferMemoryRequirements)(device, buffer.buffer, &mem_reqs);
 
    VkMemoryAllocateInfo alloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
    alloc.allocationSize = mem_reqs.size;
@@ -286,15 +573,15 @@ static struct buffer create_buffer(const void *initial, size_t size, VkBufferUsa
    alloc.memoryTypeIndex = find_memory_type_from_requirements(mem_reqs.memoryTypeBits,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-   vkAllocateMemory(device, &alloc, NULL, &buffer.memory);
-   vkBindBufferMemory(device, buffer.buffer, buffer.memory, 0);
+   VKFUNC(vkAllocateMemory)(device, &alloc, NULL, &buffer.memory);
+   VKFUNC(vkBindBufferMemory)(device, buffer.buffer, buffer.memory, 0);
 
    if (initial)
    {
       void *ptr;
-      vkMapMemory(device, buffer.memory, 0, size, 0, &ptr);
+      VKFUNC(vkMapMemory)(device, buffer.memory, 0, size, 0, &ptr);
       memcpy(ptr, initial, size);
-      vkUnmapMemory(device, buffer.memory);
+      VKFUNC(vkUnmapMemory)(device, buffer.memory);
    }
 
    return buffer;
@@ -326,7 +613,7 @@ static VkShaderModule create_shader_module(const uint8_t *data, size_t size)
    VkShaderModule module;
    module_info.codeSize = size;
    module_info.pCode = (const uint32_t*)data;
-   vkCreateShaderModule(vulkan->device, &module_info, NULL, &module);
+   VKFUNC(vkCreateShaderModule)(vulkan->device, &module_info, NULL, &module);
    return module;
 }
 
@@ -348,19 +635,19 @@ static void init_descriptor(void)
    VkDescriptorSetLayoutCreateInfo set_layout_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
    set_layout_info.bindingCount = 1;
    set_layout_info.pBindings = &binding;
-   vkCreateDescriptorSetLayout(device, &set_layout_info, NULL, &vk.set_layout);
+   VKFUNC(vkCreateDescriptorSetLayout)(device, &set_layout_info, NULL, &vk.set_layout);
 
    VkPipelineLayoutCreateInfo layout_info = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
    layout_info.setLayoutCount = 1;
    layout_info.pSetLayouts = &vk.set_layout;
-   vkCreatePipelineLayout(device, &layout_info, NULL, &vk.pipeline_layout);
+   VKFUNC(vkCreatePipelineLayout)(device, &layout_info, NULL, &vk.pipeline_layout);
 
    VkDescriptorPoolCreateInfo pool_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
    pool_info.maxSets = vk.num_swapchain_images;
    pool_info.poolSizeCount = 1;
    pool_info.pPoolSizes = pool_sizes;
    pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-   vkCreateDescriptorPool(device, &pool_info, NULL, &vk.desc_pool);
+   VKFUNC(vkCreateDescriptorPool)(device, &pool_info, NULL, &vk.desc_pool);
 
    VkDescriptorSetAllocateInfo alloc_info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
    alloc_info.descriptorPool = vk.desc_pool;
@@ -368,7 +655,7 @@ static void init_descriptor(void)
    alloc_info.pSetLayouts = &vk.set_layout;
    for (unsigned i = 0; i < vk.num_swapchain_images; i++)
    {
-      vkAllocateDescriptorSets(device, &alloc_info, &vk.desc_set[i]);
+      VKFUNC(vkAllocateDescriptorSets)(device, &alloc_info, &vk.desc_set[i]);
 
       VkWriteDescriptorSet write = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
       VkDescriptorBufferInfo buffer_info;
@@ -383,7 +670,7 @@ static void init_descriptor(void)
       buffer_info.offset = 0;
       buffer_info.range = 16 * sizeof(float);
 
-      vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
+      VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
    }
 }
 
@@ -479,10 +766,10 @@ static void init_pipeline(void)
    pipe.renderPass = vk.render_pass;
    pipe.layout = vk.pipeline_layout;
 
-   vkCreateGraphicsPipelines(vulkan->device, vk.pipeline_cache, 1, &pipe, NULL, &vk.pipeline);
+   VKFUNC(vkCreateGraphicsPipelines)(vulkan->device, vk.pipeline_cache, 1, &pipe, NULL, &vk.pipeline);
 
-   vkDestroyShaderModule(device, shader_stages[0].module, NULL);
-   vkDestroyShaderModule(device, shader_stages[1].module, NULL);
+   VKFUNC(vkDestroyShaderModule)(device, shader_stages[0].module, NULL);
+   VKFUNC(vkDestroyShaderModule)(device, shader_stages[1].module, NULL);
 }
 
 static void init_render_pass(VkFormat format)
@@ -509,7 +796,7 @@ static void init_render_pass(VkFormat format)
    rp_info.pAttachments = &attachment;
    rp_info.subpassCount = 1;
    rp_info.pSubpasses = &subpass;
-   vkCreateRenderPass(vulkan->device, &rp_info, NULL, &vk.render_pass);
+   VKFUNC(vkCreateRenderPass)(vulkan->device, &rp_info, NULL, &vk.render_pass);
 }
 
 static void init_swapchain(void)
@@ -536,17 +823,17 @@ static void init_swapchain(void)
       image.mipLevels = 1;
       image.arrayLayers = 1;
 
-      vkCreateImage(device, &image, NULL, &vk.images[i].create_info.image);
+      VKFUNC(vkCreateImage)(device, &image, NULL, &vk.images[i].create_info.image);
 
       VkMemoryAllocateInfo alloc = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
       VkMemoryRequirements mem_reqs;
 
-      vkGetImageMemoryRequirements(device, vk.images[i].create_info.image, &mem_reqs);
+      VKFUNC(vkGetImageMemoryRequirements)(device, vk.images[i].create_info.image, &mem_reqs);
       alloc.allocationSize = mem_reqs.size;
       alloc.memoryTypeIndex = find_memory_type_from_requirements(
             mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-      vkAllocateMemory(device, &alloc, NULL, &vk.image_memory[i]);
-      vkBindImageMemory(device, vk.images[i].create_info.image, vk.image_memory[i], 0);
+      VKFUNC(vkAllocateMemory)(device, &alloc, NULL, &vk.image_memory[i]);
+      VKFUNC(vkBindImageMemory)(device, vk.images[i].create_info.image, vk.image_memory[i], 0);
 
       vk.images[i].create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
       vk.images[i].create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -561,7 +848,7 @@ static void init_swapchain(void)
       vk.images[i].create_info.components.b = VK_COMPONENT_SWIZZLE_B;
       vk.images[i].create_info.components.a = VK_COMPONENT_SWIZZLE_A;
 
-      vkCreateImageView(device, &vk.images[i].create_info,
+      VKFUNC(vkCreateImageView)(device, &vk.images[i].create_info,
             NULL, &vk.images[i].image_view);
       vk.images[i].image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
@@ -573,7 +860,7 @@ static void init_swapchain(void)
       fb_info.height = BASE_HEIGHT;
       fb_info.layers = 1;
 
-      vkCreateFramebuffer(device, &fb_info, NULL, &vk.framebuffers[i]);
+      VKFUNC(vkCreateFramebuffer)(device, &fb_info, NULL, &vk.framebuffers[i]);
    }
 }
 
@@ -587,18 +874,18 @@ static void init_command(void)
 
    for (unsigned i = 0; i < vk.num_swapchain_images; i++)
    {
-      vkCreateCommandPool(vulkan->device, &pool_info, NULL, &vk.cmd_pool[i]);
+      VKFUNC(vkCreateCommandPool)(vulkan->device, &pool_info, NULL, &vk.cmd_pool[i]);
       info.commandPool = vk.cmd_pool[i];
       info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
       info.commandBufferCount = 1;
-      vkAllocateCommandBuffers(vulkan->device, &info, &vk.cmd[i]);
+      VKFUNC(vkAllocateCommandBuffers)(vulkan->device, &info, &vk.cmd[i]);
    }
 }
 
 static void vulkan_test_init(void)
 {
-   vkGetPhysicalDeviceProperties(vulkan->gpu, &vk.gpu_properties);
-   vkGetPhysicalDeviceMemoryProperties(vulkan->gpu, &vk.memory_properties);
+   VKFUNC(vkGetPhysicalDeviceProperties)(vulkan->gpu, &vk.gpu_properties);
+   VKFUNC(vkGetPhysicalDeviceMemoryProperties)(vulkan->gpu, &vk.memory_properties);
 
    unsigned num_images = 0;
    uint32_t mask = vulkan->get_sync_index_mask(vulkan->handle);
@@ -614,7 +901,7 @@ static void vulkan_test_init(void)
    init_descriptor();
 
    VkPipelineCacheCreateInfo pipeline_cache_info = { VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
-   vkCreatePipelineCache(vulkan->device, &pipeline_cache_info,
+   VKFUNC(vkCreatePipelineCache)(vulkan->device, &pipeline_cache_info,
          NULL, &vk.pipeline_cache);
 
    init_render_pass(VK_FORMAT_R8G8B8A8_UNORM);
@@ -624,35 +911,38 @@ static void vulkan_test_init(void)
 
 static void vulkan_test_deinit(void)
 {
+   if (!vulkan)
+      return;
+
    VkDevice device = vulkan->device;
-   vkDeviceWaitIdle(device);
+   VKFUNC(vkDeviceWaitIdle)(device);
 
    for (unsigned i = 0; i < vk.num_swapchain_images; i++)
    {
-      vkDestroyFramebuffer(device, vk.framebuffers[i], NULL);
-      vkDestroyImageView(device, vk.images[i].image_view, NULL);
-      vkFreeMemory(device, vk.image_memory[i], NULL);
-      vkDestroyImage(device, vk.images[i].create_info.image, NULL);
+      VKFUNC(vkDestroyFramebuffer)(device, vk.framebuffers[i], NULL);
+      VKFUNC(vkDestroyImageView)(device, vk.images[i].image_view, NULL);
+      VKFUNC(vkFreeMemory)(device, vk.image_memory[i], NULL);
+      VKFUNC(vkDestroyImage)(device, vk.images[i].create_info.image, NULL);
 
-      vkFreeMemory(device, vk.ubo[i].memory, NULL);
-      vkDestroyBuffer(device, vk.ubo[i].buffer, NULL);
+      VKFUNC(vkFreeMemory)(device, vk.ubo[i].memory, NULL);
+      VKFUNC(vkDestroyBuffer)(device, vk.ubo[i].buffer, NULL);
    }
 
-   vkFreeDescriptorSets(device, vk.desc_pool, vk.num_swapchain_images, vk.desc_set);
-   vkDestroyDescriptorPool(device, vk.desc_pool, NULL);
+   VKFUNC(vkFreeDescriptorSets)(device, vk.desc_pool, vk.num_swapchain_images, vk.desc_set);
+   VKFUNC(vkDestroyDescriptorPool)(device, vk.desc_pool, NULL);
 
-   vkDestroyRenderPass(device, vk.render_pass, NULL);
-   vkDestroyPipeline(device, vk.pipeline, NULL);
-   vkDestroyPipelineLayout(device, vk.pipeline_layout, NULL);
+   VKFUNC(vkDestroyRenderPass)(device, vk.render_pass, NULL);
+   VKFUNC(vkDestroyPipeline)(device, vk.pipeline, NULL);
+   VKFUNC(vkDestroyPipelineLayout)(device, vk.pipeline_layout, NULL);
 
-   vkFreeMemory(device, vk.vbo.memory, NULL);
-   vkDestroyBuffer(device, vk.vbo.buffer, NULL);
-   vkDestroyPipelineCache(device, vk.pipeline_cache, NULL);
+   VKFUNC(vkFreeMemory)(device, vk.vbo.memory, NULL);
+   VKFUNC(vkDestroyBuffer)(device, vk.vbo.buffer, NULL);
+   VKFUNC(vkDestroyPipelineCache)(device, vk.pipeline_cache, NULL);
 
    for (unsigned i = 0; i < vk.num_swapchain_images; i++)
    {
-      vkFreeCommandBuffers(device, vk.cmd_pool[i], 1, &vk.cmd[i]);
-      vkDestroyCommandPool(device, vk.cmd_pool[i], NULL);
+      VKFUNC(vkFreeCommandBuffers)(device, vk.cmd_pool[i], 1, &vk.cmd[i]);
+      VKFUNC(vkDestroyCommandPool)(device, vk.cmd_pool[i], NULL);
    }
 
    memset(&vk, 0, sizeof(vk));
@@ -690,6 +980,16 @@ static void context_reset(void)
       fprintf(stderr, "Failed to get HW rendering interface!\n");
       return;
    }
+
+   if (vulkan->interface_version != RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION)
+   {
+      fprintf(stderr, "HW render interface mismatch, expected %u, got %u!\n",
+            RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION, vulkan->interface_version);
+      vulkan = NULL;
+      return;
+   }
+
+   load_device_symbols();
    vulkan_test_init();
 }
 

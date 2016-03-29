@@ -874,6 +874,9 @@ static void vulkan_init_hw_render(vk_t *vk)
    iface->set_command_buffers = vulkan_set_command_buffers;
    iface->lock_queue          = vulkan_lock_queue;
    iface->unlock_queue        = vulkan_unlock_queue;
+
+   iface->get_device_proc_addr   = VKFUNC(vkGetDeviceProcAddr);
+   iface->get_instance_proc_addr = VKFUNC(vkGetInstanceProcAddr);
 }
 
 static void vulkan_init_readback(vk_t *vk)

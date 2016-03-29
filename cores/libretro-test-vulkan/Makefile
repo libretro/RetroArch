@@ -30,12 +30,10 @@ ifeq ($(platform), unix)
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
    SHARED := -shared -Wl,--version-script=link.T -Wl,--no-undefined
-   VULKAN_LIB := -lvulkan
 else
    CC = gcc
    TARGET := $(TARGET_NAME)_libretro.dll
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
-   VULKAN_LIB := -lvulkan
    CFLAGS += -I..
 endif
 
@@ -48,12 +46,11 @@ endif
 CFLAGS += -std=gnu99
 OBJECTS := libretro-test.o
 CFLAGS += -Wall -pedantic $(fpic)
-LIBS += $(VULKAN_LIB)
 
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) $(LIBS) -lm $(EXTRA_VULKAN_LIBS)
+	$(CC) $(fpic) $(SHARED) $(INCLUDES) -o $@ $(OBJECTS) $(LIBS) -lm
 
 %.o: %.c
 	$(CC) -I../../libretro-common/include $(CFLAGS) -c -o $@ $<

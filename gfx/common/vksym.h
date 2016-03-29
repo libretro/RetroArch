@@ -29,8 +29,6 @@
 
 #define VKFUNC(sym) (vkcfp.sym)
 
-#define VK_PROTOTYPES
-
 #ifdef HAVE_WAYLAND
 #define VK_USE_PLATFORM_WAYLAND_KHR
 #endif

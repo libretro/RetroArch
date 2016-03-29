@@ -26,7 +26,7 @@
 #include "libretro.h"
 #include <vulkan/vulkan.h>
 
-#define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 1
+#define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 2
 
 struct retro_vulkan_image
 {
@@ -82,6 +82,11 @@ struct retro_hw_render_interface_vulkan
    VkPhysicalDevice gpu;
    /* The logical device used. */
    VkDevice device;
+
+   /* Allows a core to fetch all its needed symbols without having to link
+    * against the loader itself. */
+   PFN_vkGetDeviceProcAddr get_device_proc_addr;
+   PFN_vkGetInstanceProcAddr get_instance_proc_addr;
 
    /* The queue the core must use to submit data.
     * This queue and index must remain constant throughout the lifetime
