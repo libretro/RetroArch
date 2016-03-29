@@ -519,12 +519,15 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
 #ifdef HAVE_OPENGL
          p_swap_interval = (BOOL (APIENTRY *)(int))
             wglGetProcAddress("wglSwapIntervalEXT");
-
-         gfx_ctx_wgl_swap_interval(data, g_interval);
 #endif
+         break;
+
+      case GFX_CTX_NONE:
+      default:
          break;
    }
 
+   gfx_ctx_wgl_swap_interval(data, g_interval);
    return true;
 
 error:
@@ -612,6 +615,14 @@ static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
    }
 }
 
+#ifdef HAVE_VULKAN
+static void *gfx_ctx_wgl_get_context_data(void *data)
+{
+   (void)data;
+   return &g_vk.context;
+}
+#endif
+
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_init,
    gfx_ctx_wgl_destroy,
@@ -638,5 +649,10 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_show_mouse,
    "wgl",
    gfx_ctx_wgl_bind_hw_render,
+#ifdef HAVE_VULKAN
+   gfx_ctx_wgl_get_context_data,
+#else
+   NULL,
+#endif
 };
 
