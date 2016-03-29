@@ -248,6 +248,7 @@ void create_graphics_context(HWND hwnd, bool *quit)
                   &instance, &hwnd, 
                   width, height, g_interval))
             *quit = true;
+         g_inited = true;
          break;
 #endif
       }
