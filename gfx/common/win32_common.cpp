@@ -471,7 +471,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
 			 {}
 
          /* Display settings might have changed, get new coordinates. */
-         GetMonitorInfo(*hm_to_use, (MONITORINFO*)&current_mon);
+         GetMonitorInfo(*hm_to_use, (MONITORINFO*)current_mon);
          *mon_rect = current_mon->rcMonitor;
       }
    }

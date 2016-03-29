@@ -2660,6 +2660,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_ctx_mode_t mode;
    gfx_ctx_input_t inp;
    unsigned interval, mip_level;
+   unsigned full_x, full_y;
    video_shader_ctx_wrap_t wrap_info;
    video_shader_ctx_filter_t shader_filter;
    video_shader_ctx_info_t shader_info;
@@ -2687,12 +2688,12 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
 
-   gl->full_x  = mode.width;
-   gl->full_y  = mode.height;
+   full_x  = mode.width;
+   full_y  = mode.height;
    mode.width  = 0;
    mode.height = 0;
 
-   RARCH_LOG("Detecting screen resolution %ux%u.\n", gl->full_x, gl->full_y);
+   RARCH_LOG("Detecting screen resolution %ux%u.\n", full_x, full_y);
 
    interval = video->vsync ? settings->video.swap_interval : 0;
 
@@ -2703,8 +2704,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    if (video->fullscreen && (win_width == 0) && (win_height == 0))
    {
-      win_width  = gl->full_x;
-      win_height = gl->full_y;
+      win_width  = full_x;
+      win_height = full_y;
    }
 
    mode.width      = win_width;
@@ -2762,13 +2763,6 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    video_driver_get_size(&temp_width, &temp_height);
 
    RARCH_LOG("GL: Using resolution %ux%u\n", temp_width, temp_height);
-
-   if (gl->full_x || gl->full_y)
-   {
-      /* We got bogus from gfx_ctx_get_video_size. Replace. */
-      gl->full_x = temp_width;
-      gl->full_y = temp_height;
-   }
 
    video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 
