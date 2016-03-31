@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (filters.h).
@@ -22,6 +22,9 @@
 
 #ifndef _LIBRETRO_SDK_FILTERS_H
 #define _LIBRETRO_SDK_FILTERS_H
+
+/* for MSVC; should be benign under any circumstances */
+#define _USE_MATH_DEFINES
 
 #include <stdlib.h>
 #include <math.h>
