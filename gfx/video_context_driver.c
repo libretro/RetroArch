@@ -269,7 +269,9 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 
             video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
-            if (!video_context_data)
+            if (!video_context_data || !size_data)
+               return false;
+            if (!current_video_context || !current_video_context->check_window)
                return false;
 
             current_video_context->check_window(video_context_data,
