@@ -32,6 +32,7 @@
 #include "input/input_remapping.h"
 #include "defaults.h"
 #include "general.h"
+#include "libretro_version_1.h"
 #include "retroarch.h"
 #include "system.h"
 #include "verbosity.h"
@@ -2422,7 +2423,7 @@ void config_load(void)
       config_save_file(global->path.core_specific_config);
 
    /* Flush out some states that could have been set by core environment variables */
-   global->has_set.input_descriptors = false;
+   core_ctl(CORE_CTL_UNSET_INPUT_DESCRIPTORS, NULL);
 
    if (!rarch_ctl(RARCH_CTL_IS_BLOCK_CONFIG_READ, NULL))
    {

@@ -873,7 +873,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
          }
 
-         global->has_set.input_descriptors = true;
+         core_ctl(CORE_CTL_SET_INPUT_DESCRIPTORS, NULL);
 
          break;
       }

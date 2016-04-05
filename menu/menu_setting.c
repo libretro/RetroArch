@@ -3327,7 +3327,7 @@ static bool setting_append_list_input_player_options(
       if (
             settings->input.input_descriptor_label_show
             && (i < RARCH_FIRST_META_KEY)
-            && (global->has_set.input_descriptors)
+            && (core_ctl(CORE_CTL_HAS_SET_INPUT_DESCRIPTORS, NULL))
             && (i != RARCH_TURBO_ENABLE)
          )
       {

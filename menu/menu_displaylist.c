@@ -35,6 +35,7 @@
 #include "../general.h"
 #include "../retroarch.h"
 #include "../system.h"
+#include "../libretro_version_1.h"
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_shader_driver.h"
@@ -2026,7 +2027,6 @@ static int menu_displaylist_parse_load_content_settings(
       menu_displaylist_info_t *info)
 {
    menu_handle_t *menu    = NULL;
-   global_t *global       = global_get_ptr();
 #ifdef HAVE_CHEEVOS
    settings_t *settings   = config_get_ptr();
 #endif
@@ -2077,7 +2077,7 @@ static int menu_displaylist_parse_load_content_settings(
             menu_hash_to_str(MENU_LABEL_CORE_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
 
-      if (global->has_set.input_descriptors)
+      if (core_ctl(CORE_CTL_HAS_SET_INPUT_DESCRIPTORS, NULL))
          menu_entries_push(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
                menu_hash_to_str(MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS),

@@ -173,6 +173,7 @@ static void retro_set_rewind_callbacks(void)
 
 bool core_ctl(enum core_ctl_state state, void *data)
 {
+   static bool   has_set_input_descriptors = false;
    static struct retro_callbacks retro_ctx;
 
    switch (state)
@@ -365,6 +366,14 @@ bool core_ctl(enum core_ctl_state state, void *data)
                return false;
             }
          }
+         break;
+      case CORE_CTL_HAS_SET_INPUT_DESCRIPTORS:
+         return has_set_input_descriptors;
+      case CORE_CTL_SET_INPUT_DESCRIPTORS:
+         has_set_input_descriptors = true;
+         break;
+      case CORE_CTL_UNSET_INPUT_DESCRIPTORS:
+         has_set_input_descriptors = false;
          break;
       case CORE_CTL_NONE:
       default:

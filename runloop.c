@@ -901,6 +901,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH,  NULL);
             runloop_overrides_active   = false;
 
+            core_ctl(CORE_CTL_UNSET_INPUT_DESCRIPTORS, NULL);
+
             global = global_get_ptr();
             memset(global, 0, sizeof(struct global));
          }
