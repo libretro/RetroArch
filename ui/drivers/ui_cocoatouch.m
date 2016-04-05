@@ -361,7 +361,7 @@ enum
    [self supportOtherAudioSessions];
 #endif
 
-   if (rarch_main(0, NULL, NULL))
+   if (rarch_main(argc, argv, NULL))
       apple_rarch_exited();
 
   iterate_observer = CFRunLoopObserverCreate(0, kCFRunLoopBeforeWaiting,
