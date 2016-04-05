@@ -3151,7 +3151,6 @@ static bool setting_append_list_input_player_options(
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
-   global_t   *global   = global_get_ptr();
    const struct retro_keybind* const defaults =
       (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
    rarch_system_info_t *system = NULL;
