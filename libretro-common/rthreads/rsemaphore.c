@@ -77,6 +77,21 @@ void ssem_free(ssem_t *semaphore)
    free((void*)semaphore);
 }
 
+int ssem_get(ssem_t *semaphore)
+{
+   int val = 0;
+   if (!semaphore)
+      return 0;
+
+   slock_lock(semaphore->mutex);
+
+   val = semaphore->value;
+
+   slock_unlock(semaphore->mutex);
+
+   return val;
+}
+
 void ssem_wait(ssem_t *semaphore)
 {
    if (!semaphore)

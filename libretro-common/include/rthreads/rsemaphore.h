@@ -41,6 +41,8 @@ ssem_t *ssem_new(int value);
 
 void ssem_free(ssem_t *semaphore);
 
+int ssem_get(ssem_t *semaphore);
+
 void ssem_wait(ssem_t *semaphore);
 
 void ssem_signal(ssem_t *semaphore);
