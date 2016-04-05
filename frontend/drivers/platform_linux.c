@@ -724,9 +724,10 @@ static void jni_thread_destruct(void *value)
 
 static void android_app_entry(void *data)
 {
-   char *argv[1];
-   int argc = 0;
-   int ret  = 0;
+   char arguments[]  = "retroarch";
+   char      *argv[] = {arguments,   NULL};
+   int          ret  = 0;
+   int          argc = 1;
 
    if (rarch_main(argc, argv, data) != 0)
       goto end;
