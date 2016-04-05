@@ -186,13 +186,13 @@ typedef struct global
    {
       bool save_path;
       bool state_path;
+      bool verbosity;
+
       bool libretro_device[MAX_USERS];
       bool libretro;
       bool libretro_directory;
-      bool verbosity;
 
       bool netplay_mode;
-      bool username;
       bool netplay_ip_address;
       bool netplay_delay_frames;
       bool netplay_ip_port;

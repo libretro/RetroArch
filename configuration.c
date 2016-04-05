@@ -1768,7 +1768,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_get_path(conf, "joypad_autoconfig_dir",
          settings->input.autoconfig_dir, sizeof(settings->input.autoconfig_dir));
 
-   if (!global->has_set.username)
+   if (!rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
       config_get_path(conf, "netplay_nickname",  settings->username, sizeof(settings->username));
    CONFIG_GET_INT_BASE(conf, settings, user_language, "user_language");
 #ifdef HAVE_NETPLAY
