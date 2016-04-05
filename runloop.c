@@ -874,6 +874,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_END, NULL);
          bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
          break;
+      case RUNLOOP_CTL_FRAME_TIME_FREE:
+         memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
+         runloop_frame_time_last           = 0;
+         runloop_max_frames                = 0;
+         break;
       case RUNLOOP_CTL_STATE_FREE:
          runloop_perfcnt_enable            = false;
          runloop_idle                      = false;
@@ -882,8 +887,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_frame_time_last_enable    = false;
          runloop_set_frame_limit           = false;
          runloop_overrides_active          = false;
-         runloop_frame_time_last           = 0;
-         runloop_max_frames                = 0;
+         runloop_ctl(RUNLOOP_CTL_FRAME_TIME_FREE, NULL);
          break;
       case RUNLOOP_CTL_GLOBAL_FREE:
          {

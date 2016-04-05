@@ -309,6 +309,7 @@ bool core_ctl(enum core_ctl_state state, void *data)
       case CORE_CTL_RETRO_DEINIT:
          core.retro_deinit();
          uninit_libretro_sym(&core);
+         runloop_ctl(RUNLOOP_CTL_FRAME_TIME_FREE, NULL);
          break;
       case CORE_CTL_RETRO_UNLOAD_GAME:
          video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT_HW_CONTEXT, NULL);
