@@ -1020,10 +1020,19 @@ static void parse_input(int argc, char *argv[])
       }
    }
 
-   if (explicit_menu && current_core_type != CORE_TYPE_DUMMY)
+   if (explicit_menu)
    {
-      RARCH_ERR("--menu was used, but content file or libretro core was passed as well.\n");
-      retro_fail(1, "parse_input()");
+      if (optind < argc)
+      {
+         RARCH_ERR("--menu was used, but content file was passed as well.\n");
+         retro_fail(1, "parse_input()");
+      }
+      else
+      {
+         /* Allow stray -L arguments to go through to workaround cases where it's used as "config file".
+          * This seems to still be the case for Android, which should be properly fixed. */
+         current_core_type = CORE_TYPE_DUMMY;
+      }
    }
 
    if (!*global->subsystem && optind < argc)
