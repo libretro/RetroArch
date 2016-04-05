@@ -331,7 +331,8 @@ enum
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
 {
-   const char *argv[] = {"retroarch", NULL};
+   char arguments[]   = "retroarch";
+   char       *argv[] = {arguments,   NULL};
    int argc           = 1;
    apple_platform     = self;
 
