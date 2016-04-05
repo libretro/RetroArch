@@ -20,6 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef __unix__
+#define _POSIX_C_SOURCE 199309
+#endif
+
 #include <stdlib.h>
 
 #include <boolean.h>
