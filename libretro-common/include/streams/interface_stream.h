@@ -53,4 +53,7 @@ void *intfstream_init(intfstream_info_t *info);
 bool intfstream_resize(intfstream_internal_t *intf,
       intfstream_info_t *info);
 
+bool intfstream_open(intfstream_internal_t *intf,
+      const char *path, unsigned mode, ssize_t len);
+
 #endif
