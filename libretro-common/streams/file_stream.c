@@ -434,8 +434,8 @@ int filestream_close(RFILE *stream)
          munmap(stream->mapped, stream->mapsize);
 #endif
 
-      if (stream->fd > 0)
-         close(stream->fd);
+   if (stream->fd > 0)
+      close(stream->fd);
 #endif
    free(stream);
 
