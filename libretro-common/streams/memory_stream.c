@@ -50,9 +50,9 @@ size_t memstream_get_last_size(void)
 
 static void memstream_init(memstream_t *stream, uint8_t *buffer, size_t max_size)
 {
-   stream->m_buf = buffer;
+   stream->m_buf  = buffer;
    stream->m_size = max_size;
-   stream->m_ptr = 0;
+   stream->m_ptr  = 0;
 }
 
 memstream_t *memstream_open(void)

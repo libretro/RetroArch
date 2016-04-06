@@ -263,49 +263,45 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return fseek(stream->fp, (long)offset, whence);
-   else
 #endif
 #ifdef HAVE_MMAP
-      /* Need to check stream->mapped because this function is 
-       * called in filestream_open() */
-      if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
+   /* Need to check stream->mapped because this function is 
+    * called in filestream_open() */
+   if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
+   {
+      /* fseek() returns error on under/overflow but allows cursor > EOF for
+         read-only file descriptors. */
+      switch (whence)
       {
-         /* fseek() returns error on under/overflow but allows cursor > EOF for
-            read-only file descriptors. */
-         switch (whence)
-         {
-            case SEEK_SET:
-               if (offset < 0)
-                  return -1;
+         case SEEK_SET:
+            if (offset < 0)
+               return -1;
 
-               stream->mappos = offset;
-               break;
+            stream->mappos = offset;
+            break;
 
-            case SEEK_CUR:
-               if ((offset < 0 && stream->mappos + offset > stream->mappos) ||
-                   (offset > 0 && stream->mappos + offset < stream->mappos))
-                  return -1;
+         case SEEK_CUR:
+            if ((offset < 0 && stream->mappos + offset > stream->mappos) ||
+                  (offset > 0 && stream->mappos + offset < stream->mappos))
+               return -1;
 
-               stream->mappos += offset;
-               break;
+            stream->mappos += offset;
+            break;
 
-            case SEEK_END:
-               if (stream->mapsize + offset < stream->mapsize)
-                  return -1;
+         case SEEK_END:
+            if (stream->mapsize + offset < stream->mapsize)
+               return -1;
 
-               stream->mappos = stream->mapsize + offset;
+            stream->mappos = stream->mapsize + offset;
 
-               break;
-         }
-
-         return stream->mappos;
+            break;
       }
-      else
+
+      return stream->mappos;
+   }
 #endif
-      {
-         ret = lseek(stream->fd, offset, whence);
-         return ret < 0 ? -1 : ret;
-      }
+   ret = lseek(stream->fd, offset, whence);
+   return ret < 0 ? -1 : ret;
 #endif
 }
 
@@ -324,16 +320,14 @@ ssize_t filestream_tell(RFILE *stream)
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return ftell(stream->fp);
-   else
 #endif
 #ifdef HAVE_MMAP
-      /* Need to check stream->mapped because this function 
-       * is called in filestream_open() */
-      if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
-         return stream->mappos;
-      else
+   /* Need to check stream->mapped because this function 
+    * is called in filestream_open() */
+   if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
+      return stream->mappos;
 #endif
-         return lseek(stream->fd, 0, SEEK_CUR);
+   return lseek(stream->fd, 0, SEEK_CUR);
 #endif
 }
 
@@ -357,25 +351,23 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return fread(s, 1, len, stream->fp);
-   else
 #endif
 #ifdef HAVE_MMAP
-      if (stream->hints & RFILE_HINT_MMAP)
-      {
-         if (stream->mappos > stream->mapsize)
-            return -1;
+   if (stream->hints & RFILE_HINT_MMAP)
+   {
+      if (stream->mappos > stream->mapsize)
+         return -1;
 
-         if (stream->mappos + len > stream->mapsize)
-            len = stream->mapsize - stream->mappos;
+      if (stream->mappos + len > stream->mapsize)
+         len = stream->mapsize - stream->mappos;
 
-         memcpy(s, &stream->mapped[stream->mappos], len);
-         stream->mappos += len;
+      memcpy(s, &stream->mapped[stream->mappos], len);
+      stream->mappos += len;
 
-         return len;
-      }
-      else
+      return len;
+   }
 #endif
-         return read(stream->fd, s, len);
+   return read(stream->fd, s, len);
 #endif
 }
 
@@ -394,14 +386,12 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return fwrite(s, 1, len, stream->fp);
-   else
 #endif
 #ifdef HAVE_MMAP
-      if (stream->hints & RFILE_HINT_MMAP)
-         return -1;
-      else
+   if (stream->hints & RFILE_HINT_MMAP)
+      return -1;
 #endif
-         return write(stream->fd, s, len);
+   return write(stream->fd, s, len);
 #endif
 }
 
