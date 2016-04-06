@@ -133,6 +133,8 @@ OBJ += frontend/frontend.o \
        libretro-common/lists/dir_list.o \
        libretro-common/file/retro_dirent.o \
        libretro-common/streams/file_stream.o \
+		 libretro-common/streams/interface_stream.o \
+		 libretro-common/streams/memory_stream.o \
        libretro-common/file/retro_stat.o \
        libretro-common/lists/string_list.o \
        libretro-common/string/stdstring.o \
