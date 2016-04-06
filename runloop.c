@@ -37,6 +37,7 @@
 #endif
 #include "autosave.h"
 #include "core_info.h"
+#include "core_options.h"
 #include "cheats.h"
 #include "configuration.h"
 #include "performance.h"
@@ -429,6 +430,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
    static bool runloop_perfcnt_enable               = false;
    static bool runloop_overrides_active             = false;
    static bool runloop_game_options_active          = false;
+   static core_option_manager_t *runloop_core_options = NULL;
 #ifdef HAVE_THREADS
    static slock_t *runloop_msg_queue_lock           = NULL;
 #endif
@@ -465,11 +467,19 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            *idx = core_option_size(runloop_system.core_options);
+            *idx = core_option_size(runloop_core_options);
          }
          break;
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:
-         return runloop_system.core_options;
+         return runloop_core_options;
+      case RUNLOOP_CTL_COREOPTS_GET:
+         {
+            core_option_manager_t **coreopts = (core_option_manager_t**)data;
+            if (!coreopts)
+               return false;
+            *coreopts = runloop_core_options;
+         }
+         break;
       case RUNLOOP_CTL_SYSTEM_INFO_GET:
          {
             rarch_system_info_t **system = (rarch_system_info_t**)data;
@@ -479,18 +489,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_SYSTEM_INFO_FREE:
-         if (runloop_system.core_options)
-         {
-            core_option_flush(runloop_system.core_options);
-            core_option_free(runloop_system.core_options);
-         }
-
-         runloop_system.core_options   = NULL;
 
          /* No longer valid. */
          if (runloop_system.subsystem.data)
             free(runloop_system.subsystem.data);
-         runloop_system.subsystem.data        = NULL;
+         runloop_system.subsystem.data = NULL;
          if (runloop_system.ports.data)
             free(runloop_system.ports.data);
          runloop_system.subsystem.size = 0;
@@ -1067,15 +1070,15 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          task_queue_ctl(TASK_QUEUE_CTL_DEINIT, NULL);
          break;
       case RUNLOOP_CTL_IS_CORE_OPTION_UPDATED:
-         if (!runloop_system.core_options)
+         if (!runloop_core_options)
             return false;
-         return  core_option_updated(runloop_system.core_options);
+         return  core_option_updated(runloop_core_options);
       case RUNLOOP_CTL_CORE_OPTION_PREV:
          {
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            core_option_prev(runloop_system.core_options, *idx);
+            core_option_prev(runloop_core_options, *idx);
             if (ui_companion_is_on_foreground())
                ui_companion_driver_notify_refresh();
          }
@@ -1085,7 +1088,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            core_option_next(runloop_system.core_options, *idx);
+            core_option_next(runloop_core_options, *idx);
             if (ui_companion_is_on_foreground())
                ui_companion_driver_notify_refresh();
          }
@@ -1094,11 +1097,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          {
             struct retro_variable *var = (struct retro_variable*)data;
 
-            if (!runloop_system.core_options || !var)
+            if (!runloop_core_options || !var)
                return false;
 
             RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
-            core_option_get(runloop_system.core_options, var);
+            core_option_get(runloop_core_options, var);
             RARCH_LOG("\t%s\n", var->value ? var->value : "N/A");
          }
          break;
@@ -1126,42 +1129,45 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if(ret)
             {
                runloop_ctl(RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE, NULL);
-               runloop_system.core_options = 
+               runloop_core_options = 
                   core_option_new(game_options_path, vars);
                free(game_options_path);
             }
             else
             {
                runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
-               runloop_system.core_options = 
+               runloop_core_options = 
                   core_option_new(options_path, vars);
             }
 
          }
          break;
+      case RUNLOOP_CTL_CORE_OPTIONS_FREE:
+         if (runloop_core_options)
+            core_option_free(runloop_core_options);
+         runloop_core_options          = NULL;
+         break;
       case RUNLOOP_CTL_CORE_OPTIONS_DEINIT:
          {
             global_t *global                  = global_get_ptr();
-            if (!global || !runloop_system.core_options)
+            if (!runloop_core_options)
                return false;
 
             /* check if game options file was just created and flush
                to that file instead */
-            if(!string_is_empty(global->path.core_options_path))
+            if(global && !string_is_empty(global->path.core_options_path))
             {
-               core_option_flush_game_specific(runloop_system.core_options,
+               core_option_flush_game_specific(runloop_core_options,
                      global->path.core_options_path);
                global->path.core_options_path[0] = '\0';
             }
             else
-               core_option_flush(runloop_system.core_options);
-
-            core_option_free(runloop_system.core_options);
+               core_option_flush(runloop_core_options);
 
             if (runloop_ctl(RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
                runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
 
-            runloop_system.core_options = NULL;
+            runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_FREE, NULL);
          }
          break;
       case RUNLOOP_CTL_KEY_EVENT_GET:

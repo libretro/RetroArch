@@ -27,6 +27,7 @@
 #include "../../input/input_config.h"
 
 #include "../../core_info.h"
+#include "../../core_options.h"
 #include "../../cheats.h"
 #include "../../general.h"
 #include "../../performance.h"
@@ -1068,10 +1069,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       const char *path,
       char *s2, size_t len2)
 {
-   rarch_system_info_t *system = NULL;
    uint32_t hash_label         = menu_hash_calculate(label);
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    *s = '\0';
    *w = 19;
@@ -1137,17 +1135,19 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    }
    else if (type >= MENU_SETTINGS_CORE_OPTION_START)
    {
+      core_option_manager_t *coreopts = NULL;
       const char *core_opt = NULL;
-      if (!system)
-         return;
 
-      core_opt = core_option_get_val(system->core_options,
+      if (runloop_ctl(RUNLOOP_CTL_COREOPTS_GET, &coreopts))
+      {
+         core_opt = core_option_get_val(coreopts,
                type - MENU_SETTINGS_CORE_OPTION_START);
 
-      strlcpy(s, "", len);
+         strlcpy(s, "", len);
 
-      if (core_opt)
-         strlcpy(s, core_opt, len);
+         if (core_opt)
+            strlcpy(s, core_opt, len);
+      }
    }
    else
       menu_setting_get_label(list, s,

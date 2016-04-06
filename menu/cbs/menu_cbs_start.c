@@ -25,6 +25,7 @@
 #include "../menu_hash.h"
 
 #include "../../core_info.h"
+#include "../../core_options.h"
 #include "../../cheats.h"
 #include "../../general.h"
 #include "../../retroarch.h"
@@ -255,12 +256,10 @@ static int action_start_core_setting(unsigned type,
       const char *label)
 {
    unsigned idx                = type - MENU_SETTINGS_CORE_OPTION_START;
-   rarch_system_info_t *system = NULL;
+   core_option_manager_t *coreopts = NULL;
    
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
-   if (system)
-      core_option_set_default(system->core_options, idx);
+   if (runloop_ctl(RUNLOOP_CTL_COREOPTS_GET, &coreopts))
+      core_option_set_default(coreopts, idx);
 
    return 0;
 }
