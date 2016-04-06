@@ -109,13 +109,14 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 {
    int            flags = 0;
    int         mode_int = 0;
+#if defined(HAVE_BUFFERED_IO)
    const char *mode_str = NULL;
+#endif
    RFILE        *stream = (RFILE*)calloc(1, sizeof(*stream));
 
    if (!stream)
       return NULL;
 
-   (void)mode_str;
    (void)mode_int;
    (void)flags;
 
@@ -220,7 +221,8 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 
          filestream_rewind(stream);
 
-         stream->mapped = (uint8_t*)mmap((void*)0, stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
+         stream->mapped = (uint8_t*)mmap((void*)0,
+               stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0);
 
          if (stream->mapped == MAP_FAILED)
             stream->hints &= ~RFILE_HINT_MMAP;
@@ -245,19 +247,19 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 {
    int ret = 0;
    if (!stream)
-      return -1;
+      goto error;
 
    (void)ret;
 
 #if defined(VITA) || defined(PSP)
    ret = sceIoLseek(stream->fd, (SceOff)offset, whence);
    if (ret == -1)
-      return -1;
+      goto error;
    return 0;
 #elif defined(__CELLOS_LV2__)
    uint64_t pos = 0;
    if (cellFsLseek(stream->fd, offset, whence, &pos) != CELL_FS_SUCCEEDED)
-      return -1;
+      goto error;
    return 0;
 #else
 #if defined(HAVE_BUFFERED_IO)
@@ -275,7 +277,7 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
       {
          case SEEK_SET:
             if (offset < 0)
-               return -1;
+               goto error;
 
             stream->mappos = offset;
             break;
@@ -283,38 +285,41 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
          case SEEK_CUR:
             if ((offset < 0 && stream->mappos + offset > stream->mappos) ||
                   (offset > 0 && stream->mappos + offset < stream->mappos))
-               return -1;
+               goto error;
 
             stream->mappos += offset;
             break;
 
          case SEEK_END:
             if (stream->mapsize + offset < stream->mapsize)
-               return -1;
+               goto error;
 
             stream->mappos = stream->mapsize + offset;
-
             break;
       }
-
       return stream->mappos;
    }
 #endif
    ret = lseek(stream->fd, offset, whence);
-   return ret < 0 ? -1 : ret;
+   if (ret < 0)
+      goto error;
+   return ret;
 #endif
+
+error:
+   return -1;
 }
 
 ssize_t filestream_tell(RFILE *stream)
 {
    if (!stream)
-      return -1;
+      goto error;
 #if defined(VITA) || defined(PSP)
    return sceIoLseek(stream->fd, 0, SEEK_CUR);
 #elif defined(__CELLOS_LV2__)
    uint64_t pos = 0;
    if (cellFsLseek(stream->fd, 0, CELL_FS_SEEK_CUR, &pos) != CELL_FS_SUCCEEDED)
-      return -1;
+      goto error;
    return 0;
 #else
 #if defined(HAVE_BUFFERED_IO)
@@ -329,6 +334,9 @@ ssize_t filestream_tell(RFILE *stream)
 #endif
    return lseek(stream->fd, 0, SEEK_CUR);
 #endif
+
+error:
+   return -1;
 }
 
 void filestream_rewind(RFILE *stream)
@@ -339,13 +347,13 @@ void filestream_rewind(RFILE *stream)
 ssize_t filestream_read(RFILE *stream, void *s, size_t len)
 {
    if (!stream || !s)
-      return -1;
+      goto error;
 #if defined(VITA) || defined(PSP)
    return sceIoRead(stream->fd, s, len);
 #elif defined(__CELLOS_LV2__)
    uint64_t bytes_written;
    if (cellFsRead(stream->fd, s, len, &bytes_written) != CELL_FS_SUCCEEDED)
-      return -1;
+      goto error;
    return bytes_written;
 #else
 #if defined(HAVE_BUFFERED_IO)
@@ -356,7 +364,7 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
    if (stream->hints & RFILE_HINT_MMAP)
    {
       if (stream->mappos > stream->mapsize)
-         return -1;
+         goto error;
 
       if (stream->mappos + len > stream->mapsize)
          len = stream->mapsize - stream->mappos;
@@ -369,18 +377,21 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
 #endif
    return read(stream->fd, s, len);
 #endif
+
+error:
+   return -1;
 }
 
 ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
 {
    if (!stream)
-      return -1;
+      goto error;
 #if defined(VITA) || defined(PSP)
    return sceIoWrite(stream->fd, s, len);
 #elif defined(__CELLOS_LV2__)
    uint64_t bytes_written;
    if (cellFsWrite(stream->fd, s, len, &bytes_written) != CELL_FS_SUCCEEDED)
-      return -1;
+      goto error;
    return bytes_written;
 #else
 #if defined(HAVE_BUFFERED_IO)
@@ -389,16 +400,19 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
 #endif
 #ifdef HAVE_MMAP
    if (stream->hints & RFILE_HINT_MMAP)
-      return -1;
+      goto error;
 #endif
    return write(stream->fd, s, len);
 #endif
+
+error:
+   return -1;
 }
 
 int filestream_close(RFILE *stream)
 {
    if (!stream)
-      return -1;
+      goto error;
 
 #if defined(VITA) || defined(PSP)
    if (stream->fd > 0)
@@ -426,6 +440,9 @@ int filestream_close(RFILE *stream)
    free(stream);
 
    return 0;
+
+error:
+   return -1;
 }
 
 /**
@@ -524,5 +541,8 @@ bool filestream_write_file(const char *path, const void *data, ssize_t size)
    ret = filestream_write(file, data, size);
    filestream_close(file);
 
-   return (ret == size);
+   if (ret != size)
+      return false;
+
+   return true;
 }
