@@ -300,6 +300,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "xmb_font";
       case MENU_LABEL_XMB_THEME:
          return "xmb_theme";
+      case MENU_LABEL_XMB_SHADOWS:
+         return "xmb_shadows";
       case MENU_LABEL_XMB_SCALE_FACTOR:
          return "xmb_scale_factor";
       case MENU_LABEL_XMB_ALPHA_FACTOR:
@@ -1056,6 +1058,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "XMB Font";
       case MENU_LABEL_VALUE_XMB_THEME:
          return "XMB Theme";
+      case MENU_LABEL_VALUE_XMB_SHADOWS:
+         return "XMB Shadows";
       case MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
          return "Suspend Screensaver";
       case MENU_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
