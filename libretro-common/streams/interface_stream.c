@@ -43,6 +43,7 @@ struct intfstream_internal
          unsigned size;
       } buf;
       memstream_t *fp;
+      bool writable;
    } memory;
 };
 
@@ -56,8 +57,8 @@ bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
       case INTFSTREAM_FILE:
          break;
       case INTFSTREAM_MEMORY:
-         intf->memory.buf.data = info->buf.data;
-         intf->memory.buf.size = info->buf.size;
+         intf->memory.buf.data = info->memory.buf.data;
+         intf->memory.buf.size = info->memory.buf.size;
 
          memstream_set_buffer(intf->memory.buf.data,
                intf->memory.buf.size);
@@ -81,7 +82,7 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
             return false;
          break;
       case INTFSTREAM_MEMORY:
-         intf->memory.fp = memstream_open(0);
+         intf->memory.fp = memstream_open(intf->memory.writable);
          if (!intf->memory.fp)
             return false;
          break;
@@ -125,6 +126,7 @@ void *intfstream_init(intfstream_info_t *info)
       case INTFSTREAM_FILE:
          break;
       case INTFSTREAM_MEMORY:
+         intf->memory.writable = info->memory.writable;
          if (!intfstream_resize(intf, info))
             goto error;
          break;

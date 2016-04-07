@@ -42,9 +42,13 @@ typedef struct intfstream_info
 {
    struct
    {
-      uint8_t *data;
-      unsigned size;
-   } buf;
+      struct
+      {
+         uint8_t *data;
+         unsigned size;
+      } buf;
+      bool writable;
+   } memory;
    enum intfstream_type type;
 } intfstream_info_t;
 
