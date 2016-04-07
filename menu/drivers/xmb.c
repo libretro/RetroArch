@@ -341,6 +341,43 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
    return iy;
 }
 
+static void xmb_draw_icon_predone(xmb_handle_t *xmb,
+      math_matrix_4x4 *mymat,
+      uintptr_t texture,
+      float x, float y,
+      unsigned width, unsigned height,
+      float alpha, float rotation, float scale_factor,
+      float *color)
+{
+   menu_display_ctx_draw_t draw;
+
+   struct gfx_coords coords;
+
+   if (
+         x < -xmb->icon.size/2 ||
+         x > width ||
+         y < xmb->icon.size/2 ||
+         y > height + xmb->icon.size)
+      return;
+
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = (const float*)color;
+
+   draw.x           = x;
+   draw.y           = height - y;
+   draw.width       = xmb->icon.size;
+   draw.height      = xmb->icon.size;
+   draw.coords      = &coords;
+   draw.matrix_data = mymat;
+   draw.texture     = texture;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
+}
+
 static void xmb_draw_icon(xmb_handle_t *xmb,
       uintptr_t texture,
       float x, float y,
@@ -369,59 +406,8 @@ static void xmb_draw_icon(xmb_handle_t *xmb,
 
    menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
 
-   coords.vertices      = 4;
-   coords.vertex        = NULL;
-   coords.tex_coord     = NULL;
-   coords.lut_tex_coord = NULL;
-   coords.color         = (const float*)color;
-
-   draw.x           = x;
-   draw.y           = height - y;
-   draw.width       = xmb->icon.size;
-   draw.height      = xmb->icon.size;
-   draw.coords      = &coords;
-   draw.matrix_data = &mymat;
-   draw.texture     = texture;
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-}
-
-static void xmb_draw_icon_predone(xmb_handle_t *xmb,
-      math_matrix_4x4 *mymat,
-      uintptr_t texture,
-      float x, float y,
-      unsigned width, unsigned height,
-      float alpha, float rotation, float scale_factor,
-      float *color)
-{
-   menu_display_ctx_draw_t draw;
-
-   struct gfx_coords coords;
-
-   if (
-         x < -xmb->icon.size/2 ||
-         x > width ||
-         y < xmb->icon.size/2 ||
-         y > height + xmb->icon.size)
-      return;
-
-   coords.vertices      = 4;
-   coords.vertex        = NULL;
-   coords.tex_coord     = NULL;
-   coords.lut_tex_coord = NULL;
-   coords.color         = color;
-
-   draw.x           = x;
-   draw.y           = height - y;
-   draw.width       = xmb->icon.size;
-   draw.height      = xmb->icon.size;
-   draw.coords      = &coords;
-   draw.matrix_data = mymat;
-   draw.texture     = texture;
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
+   xmb_draw_icon_predone(xmb, &mymat, texture, x, y,
+         width, height, 1.0, rotation, scale_factor, color);
 }
 
 static void xmb_draw_boxart(xmb_handle_t *xmb, float *color,
