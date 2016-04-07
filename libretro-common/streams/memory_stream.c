@@ -48,7 +48,8 @@ size_t memstream_get_last_size(void)
    return last_file_size;
 }
 
-static void memstream_init(memstream_t *stream, uint8_t *buffer, size_t max_size)
+static void memstream_init(memstream_t *stream,
+      uint8_t *buffer, size_t max_size)
 {
    if (!stream)
       return;

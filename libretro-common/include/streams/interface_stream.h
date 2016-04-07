@@ -67,4 +67,7 @@ char *intfstream_gets(intfstream_internal_t *intf,
 
 int intfstream_getc(intfstream_internal_t *intf);
 
+int intfstream_seek(intfstream_internal_t *intf,
+      int offset, int whence);
+
 #endif

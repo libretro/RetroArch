@@ -67,7 +67,8 @@ bool intfstream_resize(intfstream_internal_t *intf, intfstream_info_t *info)
    return true;
 }
 
-bool intfstream_open(intfstream_internal_t *intf, const char *path, unsigned mode, ssize_t len)
+bool intfstream_open(intfstream_internal_t *intf, const char *path,
+      unsigned mode, ssize_t len)
 {
    if (!intf)
       return false;
@@ -120,6 +121,22 @@ error:
    return NULL;
 }
 
+int intfstream_seek(intfstream_internal_t *intf, int offset, int whence)
+{
+   if (!intf)
+      return -1;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_seek(intf->file.fp, offset, whence);
+      case INTFSTREAM_MEMORY:
+         return memstream_seek(intf->memory.fp, offset, whence);
+   }
+
+   return -1;
+}
+
 ssize_t intfstream_read(intfstream_internal_t *intf, void *s, size_t len)
 {
    if (!intf)
@@ -136,7 +153,8 @@ ssize_t intfstream_read(intfstream_internal_t *intf, void *s, size_t len)
    return 0;
 }
 
-ssize_t intfstream_write(intfstream_internal_t *intf, const void *s, size_t len)
+ssize_t intfstream_write(intfstream_internal_t *intf,
+      const void *s, size_t len)
 {
    if (!intf)
       return 0;
@@ -152,7 +170,8 @@ ssize_t intfstream_write(intfstream_internal_t *intf, const void *s, size_t len)
    return 0;
 }
 
-char *intfstream_gets(intfstream_internal_t *intf, char *buffer, size_t len)
+char *intfstream_gets(intfstream_internal_t *intf,
+      char *buffer, size_t len)
 {
    if (!intf)
       return NULL;
