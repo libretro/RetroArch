@@ -240,27 +240,23 @@ error:
 
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 {
-   int ret = 0;
    if (!stream)
       goto error;
 
-   (void)ret;
-
 #if defined(VITA) || defined(PSP)
-   ret = sceIoLseek(stream->fd, (SceOff)offset, whence);
-   if (ret == -1)
+   if (sceIoLseek(stream->fd, (SceOff)offset, whence) == -1)
       goto error;
-   return 0;
 #elif defined(__CELLOS_LV2__)
    uint64_t pos = 0;
    if (cellFsLseek(stream->fd, offset, whence, &pos) != CELL_FS_SUCCEEDED)
       goto error;
-   return 0;
 #else
+
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return fseek(stream->fp, (long)offset, whence);
 #endif
+
 #ifdef HAVE_MMAP
    /* Need to check stream->mapped because this function is 
     * called in filestream_open() */
@@ -295,11 +291,13 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
       return stream->mappos;
    }
 #endif
-   ret = lseek(stream->fd, offset, whence);
-   if (ret < 0)
+
+   if (lseek(stream->fd, offset, whence) < 0)
       goto error;
-   return ret;
+
 #endif
+
+   return 0;
 
 error:
    return -1;
