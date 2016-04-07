@@ -72,4 +72,6 @@ int intfstream_seek(intfstream_internal_t *intf,
 
 void intfstream_rewind(intfstream_internal_t *intf);
 
+int intfstream_close(intfstream_internal_t *intf);
+
 #endif

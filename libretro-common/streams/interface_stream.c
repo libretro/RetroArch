@@ -90,6 +90,23 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
    return true;
 }
 
+int intfstream_close(intfstream_internal_t *intf)
+{
+   if (!intf)
+      return -1;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_close(intf->file.fp);
+      case INTFSTREAM_MEMORY:
+         memstream_close(intf->memory.fp);
+         return 0;
+   }
+
+   return -1;
+}
+
 void *intfstream_init(intfstream_info_t *info)
 {
    intfstream_internal_t *intf = NULL;
