@@ -482,6 +482,7 @@ static void config_set_defaults(void)
    settings->menu.xmb_scale_factor   = xmb_scale_factor;
    settings->menu.xmb_alpha_factor   = xmb_alpha_factor;
    settings->menu.xmb_theme          = xmb_theme;
+   settings->menu.xmb_shadows        = xmb_shadows;
    settings->menu.xmb_font[0]        = '\0';
    settings->menu.throttle_framerate = true;
    settings->menu.linear_filter      = true;
@@ -1539,6 +1540,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb_scale_factor, "xmb_scale_factor");
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb_alpha_factor, "xmb_alpha_factor");
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb_theme, "xmb_theme");
+   CONFIG_GET_BOOL_BASE(conf, settings, menu.xmb_shadows, "xmb_shadows");
    config_get_path(conf, "xmb_font", settings->menu.xmb_font, sizeof(settings->menu.xmb_font));
 #endif
    config_get_array(conf, "video_context_driver", settings->video.context_driver, sizeof(settings->video.context_driver));
@@ -2770,6 +2772,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "xmb_scale_factor", settings->menu.xmb_scale_factor);
    config_set_int(conf, "xmb_alpha_factor", settings->menu.xmb_alpha_factor);
    config_set_int(conf, "xmb_theme", settings->menu.xmb_theme);
+   config_set_bool(conf, "xmb_shadows", settings->menu.xmb_shadows);
    config_set_path(conf, "xmb_font",
          !string_is_empty(settings->menu.xmb_font) ? settings->menu.xmb_font : "");
    config_set_path(conf, "rgui_browser_directory",

@@ -349,9 +349,11 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
       float alpha, float rotation, float scale_factor,
       float *color)
 {
+   settings_t *settings = config_get_ptr();
    menu_display_ctx_draw_t draw;
-
    struct gfx_coords coords;
+   float shadow[16];
+   unsigned i;
 
    if (
          x < -xmb->icon.size/2 ||
@@ -364,16 +366,30 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
    coords.vertex        = NULL;
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
-   coords.color         = (const float*)color;
 
-   draw.x           = x;
-   draw.y           = height - y;
    draw.width       = xmb->icon.size;
    draw.height      = xmb->icon.size;
    draw.coords      = &coords;
    draw.matrix_data = mymat;
    draw.texture     = texture;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   if (settings->menu.xmb_shadows)
+   {
+      for (i = 0; i < 16; i++)
+         shadow[i]  = 0;
+      shadow[3] = shadow[7] = shadow[11] = shadow[15] = color[3];
+
+      coords.color     = shadow;
+      draw.x           = x + 2;
+      draw.y           = height - y - 2;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
+   }
+
+   coords.color     = (const float*)color;
+   draw.x           = x;
+   draw.y           = height - y;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 }
@@ -454,6 +470,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
       enum text_alignment text_align,
       unsigned width, unsigned height)
 {
+   settings_t *settings = config_get_ptr();
    struct font_params params;
    uint8_t a8                =   0;
    void *disp_buf            = NULL;
@@ -479,6 +496,12 @@ static void xmb_draw_text(xmb_handle_t *xmb,
    params.color       = FONT_COLOR_RGBA(255, 255, 255, a8);
    params.full_screen = true;
    params.text_align  = text_align;
+
+   if (settings->menu.xmb_shadows)
+   {
+      params.drop_x      = 2.0f;
+      params.drop_y      = -2.0f;
+   }
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &disp_buf);
 
