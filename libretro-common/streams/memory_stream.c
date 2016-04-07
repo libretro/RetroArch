@@ -50,6 +50,9 @@ size_t memstream_get_last_size(void)
 
 static void memstream_init(memstream_t *stream, uint8_t *buffer, size_t max_size)
 {
+   if (!stream)
+      return;
+
    stream->buf  = buffer;
    stream->size   = max_size;
    stream->ptr    = 0;
@@ -71,13 +74,21 @@ memstream_t *memstream_open(void)
 
 void memstream_close(memstream_t *stream)
 {
+   if (!stream)
+      return;
+
    last_file_size = stream->ptr;
    free(stream);
 }
 
 size_t memstream_read(memstream_t *stream, void *data, size_t bytes)
 {
-   size_t avail = stream->size - stream->ptr;
+   size_t avail = 0;
+
+   if (!stream)
+      return 0;
+   
+   avail = stream->size - stream->ptr;
    if (bytes > avail)
       bytes = avail;
 
@@ -88,7 +99,12 @@ size_t memstream_read(memstream_t *stream, void *data, size_t bytes)
 
 size_t memstream_write(memstream_t *stream, const void *data, size_t bytes)
 {
-   size_t avail = stream->size - stream->ptr;
+   size_t avail = 0;
+
+   if (!stream)
+      return 0;
+   
+   avail = stream->size - stream->ptr;
    if (bytes > avail)
       bytes = avail;
 
@@ -121,6 +137,7 @@ int memstream_seek(memstream_t *stream, int offset, int whence)
       stream->ptr = ptr;
       return 0;
    }
+
    return -1;
 }
 
