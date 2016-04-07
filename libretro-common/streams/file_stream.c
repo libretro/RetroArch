@@ -66,10 +66,6 @@
 #include <streams/file_stream.h>
 #include <memmap.h>
 
-#if 1
-#define HAVE_BUFFERED_IO 1
-#endif
-
 struct RFILE
 {
    unsigned hints;
@@ -78,6 +74,9 @@ struct RFILE
 #elif defined(__CELLOS_LV2__)
    int fd;
 #else
+
+#define HAVE_BUFFERED_IO 1
+
 #if defined(HAVE_BUFFERED_IO)
    FILE *fp;
 #endif
