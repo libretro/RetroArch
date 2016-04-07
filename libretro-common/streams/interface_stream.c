@@ -81,7 +81,7 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
             return false;
          break;
       case INTFSTREAM_MEMORY:
-         intf->memory.fp = memstream_open();
+         intf->memory.fp = memstream_open(0);
          if (!intf->memory.fp)
             return false;
          break;
