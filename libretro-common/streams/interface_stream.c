@@ -98,3 +98,34 @@ error:
    return NULL;
 }
 
+ssize_t intfstream_read(intfstream_internal_t *intf, void *s, size_t len)
+{
+   if (!intf)
+      return 0;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_read(intf->file.fp, s, len);
+      case INTFSTREAM_MEMORY:
+         return memstream_read(intf->memory.fp, s, len);
+   }
+
+   return 0;
+}
+
+ssize_t intfstream_write(intfstream_internal_t *intf, const void *s, size_t len)
+{
+   if (!intf)
+      return 0;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_write(intf->file.fp, s, len);
+      case INTFSTREAM_MEMORY:
+         return memstream_write(intf->memory.fp, s, len);
+   }
+
+   return 0;
+}
