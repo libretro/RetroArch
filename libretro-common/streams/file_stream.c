@@ -308,12 +308,12 @@ ssize_t filestream_tell(RFILE *stream)
    if (!stream)
       goto error;
 #if defined(VITA) || defined(PSP)
-   return sceIoLseek(stream->fd, 0, SEEK_CUR);
+  if (sceIoLseek(stream->fd, 0, SEEK_CUR) < 0)
+     goto error;
 #elif defined(__CELLOS_LV2__)
    uint64_t pos = 0;
    if (cellFsLseek(stream->fd, 0, CELL_FS_SEEK_CUR, &pos) != CELL_FS_SUCCEEDED)
       goto error;
-   return 0;
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -325,8 +325,11 @@ ssize_t filestream_tell(RFILE *stream)
    if (stream->mapped && stream->hints & RFILE_HINT_MMAP)
       return stream->mappos;
 #endif
-   return lseek(stream->fd, 0, SEEK_CUR);
+   if (lseek(stream->fd, 0, SEEK_CUR) < 0)
+      goto error;
 #endif
+
+   return 0;
 
 error:
    return -1;
