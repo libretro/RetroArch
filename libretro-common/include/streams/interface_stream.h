@@ -74,6 +74,8 @@ void intfstream_rewind(intfstream_internal_t *intf);
 
 size_t intfstream_tell(intfstream_internal_t *intf);
 
+void intfstream_putc(intfstream_internal_t *intf, int c);
+
 int intfstream_close(intfstream_internal_t *intf);
 
 #endif

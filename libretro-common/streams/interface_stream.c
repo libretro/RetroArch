@@ -250,3 +250,19 @@ void intfstream_rewind(intfstream_internal_t *intf)
          break;
    }
 }
+
+void intfstream_putc(intfstream_internal_t *intf, int c)
+{
+   if (!intf)
+      return;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         filestream_putc(intf->file.fp, c);
+         break;
+      case INTFSTREAM_MEMORY:
+         memstream_putc(intf->memory.fp, c);
+         break;
+   }
+}
