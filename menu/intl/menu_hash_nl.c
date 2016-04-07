@@ -206,8 +206,6 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Assets Map";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Dynamische Wallpapers Map";
-      case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
-         return "Boxarts Map";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Bestandsbeheer Map";
       case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
@@ -586,8 +584,6 @@ const char *menu_hash_to_str_nl(uint32_t hash)
          return "Menu Wallpaper";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Dynamic Wallpaper";
-      case MENU_LABEL_VALUE_BOXART:
-         return "Boxart weergeven";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Core Invoer Opties";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:

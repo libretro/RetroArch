@@ -29,7 +29,7 @@
 #include "../verbosity.h"
 
 #define CB_MENU_WALLPAPER     0xb476e505U
-#define CB_MENU_BOXART        0x68b307cdU
+#define CB_MENU_THUMBNAIL     0x82f93a21U
 
 enum nbio_image_status_enum
 {
@@ -149,7 +149,7 @@ static int cb_image_menu_wallpaper(void *data, size_t len)
    return 0;
 }
 
-static int cb_image_menu_boxart(void *data, size_t len)
+static int cb_image_menu_thumbnail(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
@@ -299,7 +299,7 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
    return cb_nbio_generic(nbio, &len);
 }
 
-static int cb_nbio_image_menu_boxart(void *data, size_t len)
+static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
@@ -307,7 +307,7 @@ static int cb_nbio_image_menu_boxart(void *data, size_t len)
       return -1;
    
    nbio->image.handle = rpng_alloc();
-   nbio->image.cb     = &cb_image_menu_boxart;
+   nbio->image.cb     = &cb_image_menu_thumbnail;
 
    return cb_nbio_generic(nbio, &len);
 }
@@ -347,8 +347,8 @@ bool rarch_task_push_image_load(const char *fullpath,
 
    if (cb_type_hash == CB_MENU_WALLPAPER)
       nbio->cb = &cb_nbio_image_menu_wallpaper;
-   else if (cb_type_hash == CB_MENU_BOXART)
-      nbio->cb = &cb_nbio_image_menu_boxart;
+   else if (cb_type_hash == CB_MENU_THUMBNAIL)
+      nbio->cb = &cb_nbio_image_menu_thumbnail;
 
    nbio_begin_read(handle);
 

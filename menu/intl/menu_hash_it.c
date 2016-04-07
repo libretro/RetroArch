@@ -279,8 +279,6 @@ const char *menu_hash_to_str_it(uint32_t hash)
          return "Directory degli asset";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Directory degli sfondi dinamici";
-      case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
-         return "Directory copertine";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Directory di selezione file";
       case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
@@ -671,8 +669,6 @@ const char *menu_hash_to_str_it(uint32_t hash)
          return "Menù sfondi";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Sfondo dinamico";
-      case MENU_LABEL_VALUE_BOXART:
-         return "Mostra Copertina";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Opzioni di rimappatura degli input del core";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:

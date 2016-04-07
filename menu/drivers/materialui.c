@@ -1176,7 +1176,7 @@ static bool mui_load_image(void *userdata, void *data, enum menu_image_type type
                TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.bg);
          mui_allocate_white_texture(mui);
          break;
-      case MENU_IMAGE_BOXART:
+      case MENU_IMAGE_THUMBNAIL:
          break;
    }
 

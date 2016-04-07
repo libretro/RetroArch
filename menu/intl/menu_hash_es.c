@@ -269,8 +269,6 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Carpeta de recursos";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Carpeta de fondos de pantalla dinámicos";
-      case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
-         return "Carpeta de carátulas";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Carpeta del navegador de archivos";
       case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
@@ -673,8 +671,6 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "Fondo del menú";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Fondo de pantalla dinámico";
-      case MENU_LABEL_VALUE_BOXART:
-         return "Mostrar carátula";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Opciones de entrada del núcleo";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:

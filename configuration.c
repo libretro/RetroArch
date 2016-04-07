@@ -617,7 +617,7 @@ static void config_set_defaults(void)
    settings->menu.timedate_enable              = true;
    settings->menu.core_enable                  = true;
    settings->menu.dynamic_wallpaper_enable     = false;
-   settings->menu.boxart_enable                = false;
+   settings->menu.thumbnails                   = 0;
    *settings->menu.wallpaper                   = '\0';
    settings->menu.show_advanced_settings       = show_advanced_settings;
    settings->menu.entry_normal_color           = menu_entry_normal_color;
@@ -765,7 +765,7 @@ static void config_set_defaults(void)
    *settings->core_assets_directory = '\0';
    *settings->assets_directory = '\0';
    *settings->dynamic_wallpapers_directory = '\0';
-   *settings->boxarts_directory = '\0';
+   *settings->thumbnails_directory = '\0';
    *settings->playlist_directory = '\0';
    *settings->video.shader_path = '\0';
    *settings->video.shader_dir = '\0';
@@ -1352,8 +1352,8 @@ static bool config_load_file(const char *path, bool set_defaults)
          "menu_core_enable");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.dynamic_wallpaper_enable,
          "menu_dynamic_wallpaper_enable");
-   CONFIG_GET_BOOL_BASE(conf, settings, menu.boxart_enable,
-         "menu_boxart_enable");
+   CONFIG_GET_INT_BASE(conf, settings, menu.thumbnails,
+         "thumbnails");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.enable,
          "menu_navigation_wraparound_enable");
    CONFIG_GET_BOOL_BASE(conf, settings,
@@ -1603,8 +1603,8 @@ static bool config_load_file(const char *path, bool set_defaults)
          sizeof(settings->assets_directory));
    config_get_path(conf, "dynamic_wallpapers_directory", settings->dynamic_wallpapers_directory,
          sizeof(settings->dynamic_wallpapers_directory));
-   config_get_path(conf, "boxarts_directory", settings->boxarts_directory,
-         sizeof(settings->boxarts_directory));
+   config_get_path(conf, "thumbnails_directory", settings->thumbnails_directory,
+         sizeof(settings->thumbnails_directory));
    config_get_path(conf, "playlist_directory", settings->playlist_directory,
          sizeof(settings->playlist_directory));
    if (string_is_equal(settings->core_assets_directory, "default"))
@@ -1613,8 +1613,8 @@ static bool config_load_file(const char *path, bool set_defaults)
       *settings->assets_directory = '\0';
    if (string_is_equal(settings->dynamic_wallpapers_directory, "default"))
       *settings->dynamic_wallpapers_directory = '\0';
-   if (string_is_equal(settings->boxarts_directory, "default"))
-      *settings->boxarts_directory = '\0';
+   if (string_is_equal(settings->thumbnails_directory, "default"))
+      *settings->thumbnails_directory = '\0';
    if (string_is_equal(settings->playlist_directory, "default"))
       *settings->playlist_directory = '\0';
 #ifdef HAVE_MENU
@@ -2659,7 +2659,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf,"menu_core_enable", settings->menu.core_enable);
    config_set_bool(conf,"menu_dynamic_wallpaper_enable",
          settings->menu.dynamic_wallpaper_enable);
-   config_set_bool(conf,"menu_boxart_enable", settings->menu.boxart_enable);
+   config_set_int(conf,"thumbnails", settings->menu.thumbnails);
    config_set_path(conf, "menu_wallpaper", settings->menu.wallpaper);
 #endif
    config_set_bool(conf,  "video_vsync", settings->video.vsync);
@@ -2763,9 +2763,9 @@ bool config_save_file(const char *path)
    config_set_path(conf, "dynamic_wallpapers_directory",
          *settings->dynamic_wallpapers_directory ?
          settings->dynamic_wallpapers_directory : "default");
-   config_set_path(conf, "boxarts_directory",
-         *settings->boxarts_directory ?
-         settings->boxarts_directory : "default");
+   config_set_path(conf, "thumbnails_directory",
+         *settings->thumbnails_directory ?
+         settings->thumbnails_directory : "default");
    config_set_path(conf, "playlist_directory",
          *settings->playlist_directory ?
          settings->playlist_directory : "default");
