@@ -1,3 +1,25 @@
+/* Copyright  (C) 2010-2016 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (interface_stream.c).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 #include <stdlib.h>
 
 #include <streams/interface_stream.h>
@@ -125,6 +147,40 @@ ssize_t intfstream_write(intfstream_internal_t *intf, const void *s, size_t len)
          return filestream_write(intf->file.fp, s, len);
       case INTFSTREAM_MEMORY:
          return memstream_write(intf->memory.fp, s, len);
+   }
+
+   return 0;
+}
+
+char *intfstream_gets(intfstream_internal_t *intf, char *buffer, size_t len)
+{
+   if (!intf)
+      return NULL;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         /* unimplemented */
+         break;
+      case INTFSTREAM_MEMORY:
+         return memstream_gets(intf->memory.fp, buffer, len);
+   }
+
+   return NULL;
+}
+
+int intfstream_getc(intfstream_internal_t *intf)
+{
+   if (!intf)
+      return 0;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         /* unimplemented */
+         break;
+      case INTFSTREAM_MEMORY:
+         return memstream_getc(intf->memory.fp);
    }
 
    return 0;

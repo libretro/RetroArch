@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2015 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memory_stream.h).
+ * The following license statement only applies to this file (interface_stream.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -61,5 +61,10 @@ ssize_t intfstream_read(intfstream_internal_t *intf,
 
 ssize_t intfstream_write(intfstream_internal_t *intf,
       const void *s, size_t len);
+
+char *intfstream_gets(intfstream_internal_t *intf,
+      char *buffer, size_t len);
+
+int intfstream_getc(intfstream_internal_t *intf);
 
 #endif
