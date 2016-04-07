@@ -204,3 +204,16 @@ int intfstream_getc(intfstream_internal_t *intf)
 
    return 0;
 }
+
+void intfstream_rewind(intfstream_internal_t *intf)
+{
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         filestream_rewind(intf->file.fp);
+         break;
+      case INTFSTREAM_MEMORY:
+         memstream_rewind(intf->memory.fp);
+         break;
+   }
+}

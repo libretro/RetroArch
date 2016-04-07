@@ -70,4 +70,6 @@ int intfstream_getc(intfstream_internal_t *intf);
 int intfstream_seek(intfstream_internal_t *intf,
       int offset, int whence);
 
+void intfstream_rewind(intfstream_internal_t *intf);
+
 #endif
