@@ -222,6 +222,22 @@ int intfstream_getc(intfstream_internal_t *intf)
    return 0;
 }
 
+size_t intfstream_tell(intfstream_internal_t *intf)
+{
+   if (!intf)
+      return -1;
+
+   switch (intf->type)
+   {
+      case INTFSTREAM_FILE:
+         return filestream_tell(intf->file.fp);
+      case INTFSTREAM_MEMORY:
+         return memstream_pos(intf->memory.fp);
+   }
+
+   return -1;
+}
+
 void intfstream_rewind(intfstream_internal_t *intf)
 {
    switch (intf->type)
