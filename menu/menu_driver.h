@@ -58,7 +58,7 @@ enum menu_image_type
 {
    MENU_IMAGE_NONE = 0,
    MENU_IMAGE_WALLPAPER,
-   MENU_IMAGE_BOXART
+   MENU_IMAGE_THUMBNAIL
 };
 
 enum menu_environ_cb

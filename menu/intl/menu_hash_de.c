@@ -160,8 +160,6 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Assets-Verzeichnis";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Dynamische-Bildschirmhintergründe-Verzeichnis";
-      case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
-         return "Boxart-Verzeichnis";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Browser-Directory";
       case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
@@ -542,8 +540,6 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Menühintergrund";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Dynamischer Hintergrund";
-      case MENU_LABEL_VALUE_BOXART:
-         return "Zeige Boxart";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Core-Input-Optionen";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:

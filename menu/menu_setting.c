@@ -5964,19 +5964,18 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
 
-         CONFIG_BOOL(
+         CONFIG_UINT(
                list, list_info,
-               &settings->menu.boxart_enable,
-               menu_hash_to_str(MENU_LABEL_BOXART),
-               menu_hash_to_str(MENU_LABEL_VALUE_BOXART),
-               true,
-               menu_hash_to_str(MENU_VALUE_OFF),
-               menu_hash_to_str(MENU_VALUE_ON),
+               &settings->menu.thumbnails,
+               menu_hash_to_str(MENU_LABEL_THUMBNAILS),
+               menu_hash_to_str(MENU_LABEL_VALUE_THUMBNAILS),
+               0,
                &group_info,
                &subgroup_info,
                parent_group,
                general_write_handler,
                general_read_handler);
+         menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
 
          CONFIG_BOOL(
                list, list_info,
@@ -6811,10 +6810,10 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->boxarts_directory,
-               sizeof(settings->boxarts_directory),
-               menu_hash_to_str(MENU_LABEL_BOXARTS_DIRECTORY),
-               menu_hash_to_str(MENU_LABEL_VALUE_BOXARTS_DIRECTORY),
+               settings->thumbnails_directory,
+               sizeof(settings->thumbnails_directory),
+               menu_hash_to_str(MENU_LABEL_THUMBNAILS_DIRECTORY),
+               menu_hash_to_str(MENU_LABEL_VALUE_THUMBNAILS_DIRECTORY),
                "",
                menu_hash_to_str(MENU_VALUE_DIRECTORY_DEFAULT),
                &group_info,

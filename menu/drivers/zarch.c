@@ -1218,7 +1218,7 @@ static bool zarch_load_image(void *userdata,
                TEXTURE_FILTER_MIPMAP_LINEAR,
                &zui->textures.bg);
          break;
-      case MENU_IMAGE_BOXART:
+      case MENU_IMAGE_THUMBNAIL:
          break;
    }
 

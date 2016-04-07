@@ -142,11 +142,11 @@ typedef struct xmb_handle
    char box_message[PATH_MAX_LENGTH];
    float x;
    float alpha;
-   uintptr_t boxart;
-   float boxart_width;
-   float boxart_height;
+   uintptr_t thumbnail;
+   float thumbnail_width;
+   float thumbnail_height;
    char background_file_path[PATH_MAX_LENGTH];
-   char boxart_file_path[PATH_MAX_LENGTH];
+   char thumbnail_file_path[PATH_MAX_LENGTH];
 
    struct
    {
@@ -243,6 +243,26 @@ static const char *xmb_theme_ident(void)
    }
 
    return "monochrome";
+}
+
+static const char *xmb_thumbnails_ident(void)
+{
+   settings_t *settings = config_get_ptr();
+   switch (settings->menu.thumbnails)
+   {
+      case 0:
+         return "OFF";
+      case 1:
+         return "Named_Snaps";
+      case 2:
+         return "Named_Titles";
+      case 3:
+         return "Named_Boxarts";
+      default:
+         break;
+   }
+
+   return "OFF";
 }
 
 static void xmb_fill_default_background_path(xmb_handle_t *xmb,
@@ -426,14 +446,14 @@ static void xmb_draw_icon(xmb_handle_t *xmb,
          width, height, 1.0, rotation, scale_factor, color);
 }
 
-static void xmb_draw_boxart(xmb_handle_t *xmb, float *color,
+static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
       unsigned width, unsigned height)
 {
    menu_display_ctx_rotate_draw_t rotate_draw;
    menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
-   float y = xmb->margins.screen.top + xmb->icon.size + xmb->boxart_height;
+   float y = xmb->margins.screen.top + xmb->icon.size + xmb->thumbnail_height;
    float x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
       xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
 
@@ -454,11 +474,11 @@ static void xmb_draw_boxart(xmb_handle_t *xmb, float *color,
 
    draw.x           = x;
    draw.y           = height - y;
-   draw.width       = xmb->boxart_width;
-   draw.height      = xmb->boxart_height;
+   draw.width       = xmb->thumbnail_width;
+   draw.height      = xmb->thumbnail_height;
    draw.coords      = &coords;
    draw.matrix_data = &mymat;
-   draw.texture     = xmb->boxart;
+   draw.texture     = xmb->thumbnail;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
@@ -563,31 +583,31 @@ end:
    string_list_free(list);
 }
 
-static void xmb_update_boxart_path(xmb_handle_t *xmb, unsigned i)
+static void xmb_update_thumbnail_path(xmb_handle_t *xmb, unsigned i)
 {
    menu_entry_t entry;
    settings_t *settings       = config_get_ptr();
 
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   fill_pathname_join(xmb->boxart_file_path, settings->boxarts_directory,
-         xmb->title_name, sizeof(xmb->boxart_file_path));
-   fill_pathname_join(xmb->boxart_file_path, xmb->boxart_file_path,
-         "Named_Snaps", sizeof(xmb->boxart_file_path));
-   fill_pathname_join(xmb->boxart_file_path, xmb->boxart_file_path,
-         entry.path, sizeof(xmb->boxart_file_path));
+   fill_pathname_join(xmb->thumbnail_file_path, settings->thumbnails_directory,
+         xmb->title_name, sizeof(xmb->thumbnail_file_path));
+   fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
+         xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
+   fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
+         entry.path, sizeof(xmb->thumbnail_file_path));
 
-   strlcat(xmb->boxart_file_path, ".png", sizeof(xmb->boxart_file_path));
+   strlcat(xmb->thumbnail_file_path, ".png", sizeof(xmb->thumbnail_file_path));
 }
 
-static void menu_display_handle_boxart_upload(void *task_data,
+static void menu_display_handle_thumbnail_upload(void *task_data,
       void *user_data, const char *err)
 {
    menu_ctx_load_image_t load_image_info;
    struct texture_image *img = (struct texture_image*)task_data;
 
    load_image_info.data = img;
-   load_image_info.type = MENU_IMAGE_BOXART;
+   load_image_info.type = MENU_IMAGE_THUMBNAIL;
 
    menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
 
@@ -595,13 +615,13 @@ static void menu_display_handle_boxart_upload(void *task_data,
    free(img);
 }
 
-static void xmb_update_boxart_image(xmb_handle_t *xmb)
+static void xmb_update_thumbnail_image(xmb_handle_t *xmb)
 {
-   if (path_file_exists(xmb->boxart_file_path))
-      rarch_task_push_image_load(xmb->boxart_file_path, "cb_menu_boxart",
-            menu_display_handle_boxart_upload, NULL);
+   if (path_file_exists(xmb->thumbnail_file_path))
+      rarch_task_push_image_load(xmb->thumbnail_file_path, "cb_menu_thumbnail",
+            menu_display_handle_thumbnail_upload, NULL);
    else if (xmb->depth == 1)
-      xmb->boxart = 0;
+      xmb->thumbnail = 0;
 }
 
 static void xmb_selection_pointer_changed(
@@ -654,10 +674,10 @@ static void xmb_selection_pointer_changed(
          iz = XMB_ITEM_ACTIVE_ZOOM;
 
          depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-         if (settings->menu.boxart_enable && depth == 1)
+         if (strcmp(xmb_thumbnails_ident(), "OFF") && depth == 1)
          {
-            xmb_update_boxart_path(xmb, i);
-            xmb_update_boxart_image(xmb);
+            xmb_update_thumbnail_path(xmb, i);
+            xmb_update_thumbnail_image(xmb);
          }
       }
 
@@ -1092,10 +1112,10 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    xmb_list_switch_new(xmb, selection_buf, dir, selection);
    xmb->categories.active.idx_old = xmb->categories.selection_ptr;
 
-   if (settings->menu.boxart_enable)
+   if (strcmp(xmb_thumbnails_ident(), "OFF"))
    {
-      xmb_update_boxart_path(xmb, 0);
-      xmb_update_boxart_image(xmb);
+      xmb_update_thumbnail_path(xmb, 0);
+      xmb_update_thumbnail_image(xmb);
    }
 }
 
@@ -1393,8 +1413,8 @@ static void xmb_populate_entries(void *data,
    {
       xmb_selection_pointer_changed(xmb, false);
       menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
-      if (settings->menu.boxart_enable)
-         xmb_update_boxart_image(xmb);
+      if (strcmp(xmb_thumbnails_ident(), "OFF"))
+         xmb_update_thumbnail_image(xmb);
       return;
    }
 
@@ -1654,7 +1674,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       ticker_limit = 35;
       if (string_is_empty(entry.value))
       {
-         if (settings->menu.boxart_enable && xmb->boxart)
+         if (strcmp(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
             ticker_limit = 40;
          else
             ticker_limit = 70;
@@ -1975,8 +1995,8 @@ static void xmb_frame(void *data)
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-   if (settings->menu.boxart_enable && xmb->boxart)
-      xmb_draw_boxart(xmb, &coord_color2[0], width, height);
+   if (strcmp(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
+      xmb_draw_thumbnail(xmb, &coord_color2[0], width, height);
 
    /* set alpha components of colors */
    coord_color2[3]  = coord_color2[7]  = coord_color2[11]  =
@@ -2127,7 +2147,7 @@ static void xmb_layout(xmb_handle_t *xmb)
    new_header_height            = 128.0 * scale_factor;
    xmb->margins.screen.top      = (256+32) * scale_factor;
 
-   xmb->boxart_width            = 460.0 * scale_factor;
+   xmb->thumbnail_width            = 460.0 * scale_factor;
    xmb->cursor.size             = 64.0;
 
    xmb->icon.spacing.horizontal = 200.0 * scale_factor;
@@ -2318,13 +2338,13 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
                TEXTURE_FILTER_MIPMAP_LINEAR,
                &xmb->textures.bg);
          break;
-      case MENU_IMAGE_BOXART:
+      case MENU_IMAGE_THUMBNAIL:
          {
             struct texture_image *img = (struct texture_image*)data;
-            xmb->boxart_height = xmb->boxart_width
+            xmb->thumbnail_height = xmb->thumbnail_width
                * (float)img->height / (float)img->width;
             video_driver_texture_load(data,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, &xmb->boxart);
+                  TEXTURE_FILTER_MIPMAP_LINEAR, &xmb->thumbnail);
          }
          break;
    }
@@ -2527,8 +2547,8 @@ static void xmb_context_reset(void *data)
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb, themepath);
 
-   if (settings->menu.boxart_enable)
-      xmb_update_boxart_image(xmb);
+   if (strcmp(xmb_thumbnails_ident(), "OFF"))
+      xmb_update_thumbnail_image(xmb);
 }
 
 static void xmb_navigation_clear(void *data, bool pending_push)

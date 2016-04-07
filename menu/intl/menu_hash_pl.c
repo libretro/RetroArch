@@ -170,8 +170,6 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "Katalog assetów";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Katalog dynamicznych tapet";
-      case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
-         return "Katalog ok³adek";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Katalog przegl±darki";
       case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
@@ -552,8 +550,6 @@ const char *menu_hash_to_str_pl(uint32_t hash)
          return "Tapeta menu";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Dynamiczna tapeta";
-      case MENU_LABEL_VALUE_BOXART:
-         return "Wy¶wietlaj ok³adkê";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Opcje remapowania kontrolera rdzenia"; /* this is quite bad */
       case MENU_LABEL_VALUE_SHADER_OPTIONS:

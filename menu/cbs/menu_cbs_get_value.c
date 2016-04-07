@@ -615,6 +615,39 @@ static void menu_action_setting_disp_set_label_xmb_theme(
    }
 }
 
+static void menu_action_setting_disp_set_label_thumbnails(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings        = config_get_ptr();
+
+   if (!settings)
+      return;
+
+   strlcpy(s2, path, len2);
+   *w = 19;
+   switch (settings->menu.thumbnails)
+   {
+      case 0:
+         snprintf(s, len, "%s", "OFF");
+         break;
+      case 1:
+         snprintf(s, len, "%s", "Screenshots");
+         break;
+      case 2:
+         snprintf(s, len, "%s", "Title Screens");
+         break;
+      case 3:
+         snprintf(s, len, "%s", "Boxarts");
+         break;
+   }
+}
+
 static void menu_action_setting_disp_set_label_menu_toggle_gamepad_combo(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1172,6 +1205,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_XMB_THEME:
          BIND_ACTION_GET_VALUE(cbs,
             menu_action_setting_disp_set_label_xmb_theme);
+         break;
+      case MENU_LABEL_THUMBNAILS:
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_thumbnails);
          break;
       case MENU_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
          BIND_ACTION_GET_VALUE(cbs,

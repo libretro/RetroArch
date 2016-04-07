@@ -222,8 +222,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "assets_directory";
       case MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "dynamic_wallpapers_directory";
-      case MENU_LABEL_BOXARTS_DIRECTORY:
-         return "boxarts_directory";
+      case MENU_LABEL_THUMBNAILS_DIRECTORY:
+         return "thumbnails_directory";
       case MENU_LABEL_RGUI_BROWSER_DIRECTORY:
          return "rgui_browser_directory";
       case MENU_LABEL_RGUI_CONFIG_DIRECTORY:
@@ -684,8 +684,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "menu_wallpaper";
       case MENU_LABEL_DYNAMIC_WALLPAPER:
          return "menu_dynamic_wallpaper_enable";
-      case MENU_LABEL_BOXART:
-         return "menu_boxart_enable";
+      case MENU_LABEL_THUMBNAILS:
+         return "thumbnails";
       case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
          return "core_input_remapping_options";
       case MENU_LABEL_SHADER_OPTIONS:
@@ -976,8 +976,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Assets Dir";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Dynamic Wallpapers Dir";
-      case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
-         return "Boxarts Dir";
+      case MENU_LABEL_VALUE_THUMBNAILS_DIRECTORY:
+         return "Thumbnails Dir";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "File Browser Dir";
       case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
@@ -1392,8 +1392,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Menu Wallpaper";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Dynamic Wallpaper";
-      case MENU_LABEL_VALUE_BOXART:
-         return "Display Boxart";
+      case MENU_LABEL_VALUE_THUMBNAILS:
+         return "Thumbnails";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Core Input Options";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:

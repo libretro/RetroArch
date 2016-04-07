@@ -161,8 +161,6 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Recursos (Assets)";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Papéis de Parede Dinâmicos";
-      case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
-         return "Boxarts";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Navegação";
       case MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY:
@@ -541,8 +539,6 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Papel de Parede do Menu";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Papel de Parede Dinâmico";
-      case MENU_LABEL_VALUE_BOXART:
-         return "Mostrar Boxart";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* TODO/FIXME */
          return "Opções de Remapeamento de Controlador de Core";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:

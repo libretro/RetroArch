@@ -175,7 +175,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Dossier des assets";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY:
          return "Dossier des fonds d'écran dynamiques";
-      case MENU_LABEL_VALUE_BOXARTS_DIRECTORY:
+      case MENU_LABEL_VALUE_THUMBNAILS_DIRECTORY:
          return "Dossier des vignettes";
       case MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY:
          return "Dossier racine de navigation";
@@ -551,8 +551,8 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "Fond d'écran";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Fond d'écran dynamique";
-      case MENU_LABEL_VALUE_BOXART:
-         return "Afficher les vignettes";
+      case MENU_LABEL_VALUE_THUMBNAILS:
+         return "Vignettes";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* TODO/FIXME */
          return "Options de remap d'entrées du coeur";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
