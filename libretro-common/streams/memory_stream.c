@@ -142,6 +142,11 @@ int memstream_seek(memstream_t *stream, int offset, int whence)
    return -1;
 }
 
+void memstream_rewind(memstream_t *stream)
+{
+   memstream_seek(stream, 0L, SEEK_SET);
+}
+
 size_t memstream_pos(memstream_t *stream)
 {
    return stream->ptr;

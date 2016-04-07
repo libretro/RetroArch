@@ -42,6 +42,8 @@ char *memstream_gets(memstream_t *stream, char *buffer, size_t len);
 
 size_t memstream_pos(memstream_t *stream);
 
+void memstream_rewind(memstream_t *stream);
+
 int memstream_seek(memstream_t *stream, int offset, int whence);
 
 void memstream_set_buffer(uint8_t *buffer, size_t size);
