@@ -93,15 +93,11 @@ int filestream_get_fd(RFILE *stream)
 {
    if (!stream)
       return -1;
-#if defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
-   return stream->fd;
-#else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
       return fileno(stream->fp);
 #endif
    return stream->fd;
-#endif
 }
 
 RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
