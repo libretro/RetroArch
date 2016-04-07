@@ -409,6 +409,18 @@ error:
    return -1;
 }
 
+int filestream_putc(RFILE *stream, int c)
+{
+   if (!stream)
+      return EOF;
+
+#if defined(HAVE_BUFFERED_IO)
+   return fputc(c, stream->fp);
+#else
+   return EOF;
+#endif
+}
+
 int filestream_close(RFILE *stream)
 {
    if (!stream)

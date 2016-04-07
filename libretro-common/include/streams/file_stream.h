@@ -66,6 +66,8 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len);
 
 bool filestream_write_file(const char *path, const void *data, ssize_t size);
 
+int filestream_putc(RFILE *stream, int c);
+
 int filestream_get_fd(RFILE *stream);
 
 #ifdef __cplusplus
