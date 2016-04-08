@@ -216,9 +216,6 @@ static int file_archive_get_file_list_cb(
    (void)csize;
    (void)size;
    (void)checksum;
-   (void)valid_exts;
-   (void)file_ext;
-   (void)ext_list;
 
    memset(&attr, 0, sizeof(attr));
 
@@ -538,10 +535,8 @@ static bool file_archive_parse_file(const char *file, const char *valid_exts,
 
    for (;;)
    {
-      int ret = file_archive_parse_file_iterate(&state, &returnerr, file,
-            valid_exts, file_cb, userdata);
-
-      if (ret != 0)
+      if (file_archive_parse_file_iterate(&state, &returnerr, file,
+            valid_exts, file_cb, userdata) != 0)
          break;
    }
 
@@ -656,7 +651,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
    {
       case ZLIB_MODE_UNCOMPRESSED:
          if (!filestream_write_file(path, cdata, size))
-            return false;
+            goto error;
          break;
 
       case ZLIB_MODE_DEFLATE:
@@ -667,7 +662,7 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
 
             if (!handle.backend->stream_decompress_data_to_file_init(&handle,
                      cdata, csize, size))
-               return false;
+               goto error;
 
             do{
                ret = handle.backend->stream_decompress_data_to_file_iterate(
@@ -677,14 +672,17 @@ bool file_archive_perform_mode(const char *path, const char *valid_exts,
             if (!file_archive_decompress_data_to_file(&handle,
                      ret, path, valid_exts,
                      cdata, csize, size, crc32))
-               return false;
+               goto error;
          }
          break;
       default:
-         return false;
+         goto error;
    }
 
    return true;
+
+error:
+   return false;
 }
 
 const struct file_archive_file_backend *file_archive_get_default_file_backend(void)
