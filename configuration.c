@@ -1353,7 +1353,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, menu.dynamic_wallpaper_enable,
          "menu_dynamic_wallpaper_enable");
    CONFIG_GET_INT_BASE(conf, settings, menu.thumbnails,
-         "thumbnails");
+         "menu_thumbnails");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.navigation.wraparound.enable,
          "menu_navigation_wraparound_enable");
    CONFIG_GET_BOOL_BASE(conf, settings,
@@ -2659,7 +2659,7 @@ bool config_save_file(const char *path)
    config_set_bool(conf,"menu_core_enable", settings->menu.core_enable);
    config_set_bool(conf,"menu_dynamic_wallpaper_enable",
          settings->menu.dynamic_wallpaper_enable);
-   config_set_int(conf,"thumbnails", settings->menu.thumbnails);
+   config_set_int(conf,"menu_thumbnails", settings->menu.thumbnails);
    config_set_path(conf, "menu_wallpaper", settings->menu.wallpaper);
 #endif
    config_set_bool(conf,  "video_vsync", settings->video.vsync);
