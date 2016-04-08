@@ -167,7 +167,7 @@ static int zlib_stream_decompress_data_to_file_iterate(void *data)
    z_stream *stream = (z_stream*)data;
 
    if (!stream)
-      return -1;
+      goto error;
 
    zstatus = inflate(stream, Z_NO_FLUSH);
 
@@ -175,9 +175,12 @@ static int zlib_stream_decompress_data_to_file_iterate(void *data)
       return 1;
 
    if (zstatus != Z_OK && zstatus != Z_BUF_ERROR)
-      return -1;
+      goto error;
 
    return 0;
+
+error:
+   return -1;
 }
 
 static void zlib_stream_compress_init(void *data, int level)
