@@ -144,14 +144,6 @@ netplay_t *netplay_new(const char *server,
 void netplay_free(netplay_t *handle);
 
 /**
- * netplay_flip_users:
- * @netplay              : pointer to netplay object
- *
- * On regular netplay, flip who controls user 1 and 2.
- **/
-void netplay_flip_users(netplay_t *handle);
-
-/**
  * netplay_pre_frame:   
  * @netplay              : pointer to netplay object
  *

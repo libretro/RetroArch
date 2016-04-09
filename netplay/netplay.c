@@ -969,7 +969,7 @@ error:
  *
  * On regular netplay, flip who controls user 1 and 2.
  **/
-void netplay_flip_users(netplay_t *netplay)
+static void netplay_flip_users(netplay_t *netplay)
 {
    uint32_t flip_frame = netplay->frame_count + 2 * UDP_FRAME_PACKETS;
    uint32_t flip_frame_net = htonl(flip_frame);
@@ -1180,7 +1180,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          {
             bool *state = (bool*)data;
             if (*state)
-               event_cmd_ctl(EVENT_CMD_NETPLAY_FLIP_PLAYERS, NULL);
+               netplay_flip_users((netplay_t*)netplay_data);
          }
          break;
       case RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE:
