@@ -85,6 +85,8 @@ struct font_params
    /* Drop shadow offset.
     * If both are 0, no drop shadow will be rendered. */
    int drop_x, drop_y;
+   /* Drop shadow alpha */
+   float drop_alpha;
    /* ABGR. Use the macros. */
    uint32_t color;
    bool full_screen;

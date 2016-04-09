@@ -400,7 +400,7 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
    {
       for (i = 0; i < 16; i++)
          shadow[i]  = 0;
-      shadow[3] = shadow[7] = shadow[11] = shadow[15] = color[3];
+      shadow[3] = shadow[7] = shadow[11] = shadow[15] = color[3]/4;
 
       coords.color     = shadow;
       draw.x           = x + 2;
@@ -523,6 +523,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
    {
       params.drop_x      = 2.0f;
       params.drop_y      = -2.0f;
+      params.drop_alpha  = 0.25f;
    }
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &disp_buf);

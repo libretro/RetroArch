@@ -253,7 +253,7 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
 static void vulkan_raster_font_render_msg(void *data, const char *msg,
       const void *userdata)
 {
-   float x, y, scale, drop_mod;
+   float x, y, scale, drop_mod, drop_alpha;
    float color[4], color_dark[4];
    int drop_x, drop_y;
    bool full_screen;
@@ -279,6 +279,7 @@ static void vulkan_raster_font_render_msg(void *data, const char *msg,
       drop_x      = params->drop_x;
       drop_y      = params->drop_y;
       drop_mod    = params->drop_mod;
+      drop_alpha  = params->drop_alpha;
 
       color[0]    = FONT_COLOR_GET_RED(params->color) / 255.0f;
       color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
@@ -305,6 +306,7 @@ static void vulkan_raster_font_render_msg(void *data, const char *msg,
       drop_x = -2;
       drop_y = -2;
       drop_mod = 0.3f;
+      drop_alpha = 1.0f;
    }
 
    vulkan_raster_font_setup_viewport(font, full_screen);
@@ -325,7 +327,7 @@ static void vulkan_raster_font_render_msg(void *data, const char *msg,
       color_dark[0] = color[0] * drop_mod;
       color_dark[1] = color[1] * drop_mod;
       color_dark[2] = color[2] * drop_mod;
-      color_dark[3] = color[3];
+      color_dark[3] = color[3] * drop_alpha;
 
       vulkan_raster_font_render_message(font, msg, scale, color_dark,
             x + scale * drop_x / vk->vp.width, y + 
