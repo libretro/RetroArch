@@ -237,6 +237,8 @@ static const char *xmb_theme_ident(void)
       case 1:
          return "flatui";
       case 2:
+         return "retroactive";
+      case 3:
          return "custom";
       default:
          break;
