@@ -75,10 +75,10 @@ enum netplay_cmd
 
    /* Controlling game playback */
 
-   /* Pauses the game, takes no args  */
+   /* Pauses the game, takes no arguments  */
    NETPLAY_CMD_PAUSE          = 0x0030, 
 
-   /* Resumes the game, takes no args */
+   /* Resumes the game, takes no arguments */
    NETPLAY_CMD_RESUME         = 0x0031  
 };
 

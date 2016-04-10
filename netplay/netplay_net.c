@@ -82,8 +82,8 @@ static void netplay_net_post_frame(netplay_t *netplay)
       while (first || (netplay->tmp_ptr != netplay->self_ptr))
       {
          serial_info.data       = netplay->buffer[netplay->tmp_ptr].state;
-         serial_info.data_const = NULL;
          serial_info.size       = netplay->state_size;
+         serial_info.data_const = NULL;
 
          core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
 

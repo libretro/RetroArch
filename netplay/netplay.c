@@ -733,10 +733,14 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
 
    while (tmp_info)
    {
-      int fd;
-      if ((fd = init_tcp_connection(tmp_info, server, netplay->spectate.enabled,
-               (struct sockaddr*)&netplay->other_addr,
-               sizeof(netplay->other_addr))) >= 0)
+      int fd = init_tcp_connection(
+            tmp_info,
+            server,
+            netplay->spectate.enabled,
+            (struct sockaddr*)&netplay->other_addr,
+            sizeof(netplay->other_addr));
+
+      if (fd >= 0)
       {
          ret = true;
          netplay->fd = fd;
