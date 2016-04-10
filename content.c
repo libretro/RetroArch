@@ -1226,6 +1226,9 @@ static bool save_ram_file(ram_type_t *ram)
 {
    retro_ctx_memory_info_t mem_info;
 
+   if (!ram)
+      return false;
+
    mem_info.id = ram->type;
 
    core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
@@ -1611,7 +1614,7 @@ static bool init_content_file_set_attribs(
  *
  * Returns : true if successful, otherwise false.
  **/
-static bool content_init_file(struct string_list *temporary_content)
+static bool content_file_init(struct string_list *temporary_content)
 {
    unsigned i;
    struct retro_game_info               *info = NULL;
@@ -1660,6 +1663,29 @@ error:
    return ret;
 }
 
+static bool content_file_free(struct string_list *temporary_content)
+{
+   unsigned i;
+
+   if (!temporary_content)
+      return false;
+
+   for (i = 0; i < temporary_content->size; i++)
+   {
+      const char *path = temporary_content->elems[i].data;
+
+      RARCH_LOG("%s: %s.\n",
+            msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
+      if (remove(path) < 0)
+         RARCH_ERR("%s: %s.\n",
+               msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
+               path);
+   }
+   string_list_free(temporary_content);
+
+   return true;
+}
+
 bool content_ctl(enum content_ctl_state state, void *data)
 {
    unsigned i;
@@ -1674,13 +1700,7 @@ bool content_ctl(enum content_ctl_state state, void *data)
       case CONTENT_CTL_LOAD_RAM_FILE:
          return load_ram_file(data);
       case CONTENT_CTL_SAVE_RAM_FILE:
-         {
-            ram_type_t *ram = (ram_type_t*)data;
-            if (!ram)
-               return false;
-            save_ram_file(ram);
-         }
-         break;
+         return save_ram_file((ram_type_t*)data);
       case CONTENT_CTL_DOES_NOT_NEED_CONTENT:
          return core_does_not_need_content;
       case CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT:
@@ -1724,7 +1744,7 @@ bool content_ctl(enum content_ctl_state state, void *data)
          temporary_content = string_list_new();
          if (!temporary_content)
             return false;
-         if (content_init_file(temporary_content))
+         if (content_file_init(temporary_content))
          {
             content_is_inited = true;
             return true;
@@ -1732,22 +1752,7 @@ bool content_ctl(enum content_ctl_state state, void *data)
          content_ctl(CONTENT_CTL_DEINIT, NULL);
          return false;
       case CONTENT_CTL_TEMPORARY_FREE:
-         if (!temporary_content)
-            return false;
-
-         for (i = 0; i < temporary_content->size; i++)
-         {
-            const char *path = temporary_content->elems[i].data;
-
-            RARCH_LOG("%s: %s.\n",
-                  msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE), path);
-            if (remove(path) < 0)
-               RARCH_ERR("%s: %s.\n",
-                     msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
-                     path);
-         }
-         string_list_free(temporary_content);
-
+         content_file_free(temporary_content);
          temporary_content = NULL;
          break;
       case CONTENT_CTL_STREAM_INIT:
