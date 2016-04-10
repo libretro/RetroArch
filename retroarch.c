@@ -1325,40 +1325,6 @@ error:
    return 1;
 }
 
-/**
- * rarch_main_deinit:
- *
- * Deinitializes the program.
- **/
-static void rarch_main_deinit(void)
-{
-   global_t *global = global_get_ptr();
-
-   event_cmd_ctl(EVENT_CMD_NETPLAY_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_COMMAND_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_REMOTE_DEINIT, NULL);
-
-   if (global->sram.use)
-      event_cmd_ctl(EVENT_CMD_AUTOSAVE_DEINIT, NULL);
-
-   event_cmd_ctl(EVENT_CMD_RECORD_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_SAVEFILES, NULL);
-
-   event_cmd_ctl(EVENT_CMD_REWIND_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_CHEATS_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
-
-   event_cmd_ctl(EVENT_CMD_AUTOSAVE_STATE, NULL);
-
-   event_cmd_ctl(EVENT_CMD_CORE_DEINIT, NULL);
-
-   event_cmd_ctl(EVENT_CMD_TEMPORARY_CONTENT_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT, NULL);
-   event_cmd_ctl(EVENT_CMD_SAVEFILES_DEINIT, NULL);
-
-   rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
-}
-
 #define FAIL_CPU(simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
    retro_fail(1, "validate_cpu_features()"); \
@@ -1450,7 +1416,28 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_MAIN_DEINIT:
          if (!rarch_ctl(RARCH_CTL_IS_INITED, NULL))
             return false;
-         rarch_main_deinit();
+         event_cmd_ctl(EVENT_CMD_NETPLAY_DEINIT, NULL);
+         event_cmd_ctl(EVENT_CMD_COMMAND_DEINIT, NULL);
+         event_cmd_ctl(EVENT_CMD_REMOTE_DEINIT, NULL);
+
+         event_cmd_ctl(EVENT_CMD_AUTOSAVE_DEINIT, NULL);
+
+         event_cmd_ctl(EVENT_CMD_RECORD_DEINIT, NULL);
+         event_cmd_ctl(EVENT_CMD_SAVEFILES, NULL);
+
+         event_cmd_ctl(EVENT_CMD_REWIND_DEINIT, NULL);
+         event_cmd_ctl(EVENT_CMD_CHEATS_DEINIT, NULL);
+         event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
+
+         event_cmd_ctl(EVENT_CMD_AUTOSAVE_STATE, NULL);
+
+         event_cmd_ctl(EVENT_CMD_CORE_DEINIT, NULL);
+
+         event_cmd_ctl(EVENT_CMD_TEMPORARY_CONTENT_DEINIT, NULL);
+         event_cmd_ctl(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT, NULL);
+         event_cmd_ctl(EVENT_CMD_SAVEFILES_DEINIT, NULL);
+
+         rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
          break;
       case RARCH_CTL_MAIN_INIT:
          {
