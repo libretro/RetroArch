@@ -329,9 +329,7 @@ bool core_ctl(enum core_ctl_state state, void *data)
          if (core.retro_run)
             core.retro_run();
          if (core_poll_type == POLL_TYPE_LATE && !core_input_polled)
-         {
             input_poll();
-         }
          break;
       case CORE_CTL_SET_CBS:
          return retro_set_default_callbacks(data);

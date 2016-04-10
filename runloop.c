@@ -407,6 +407,119 @@ static bool rarch_game_specific_options(char **output)
    return true;
 }
 
+static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader_dir)
+{
+   bool tmp                  = false;
+   settings_t *settings      = config_get_ptr();
+
+   if (!cmd || runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
+      return false;
+
+   if (runloop_cmd_triggered(cmd, RARCH_SCREENSHOT))
+      event_cmd_ctl(EVENT_CMD_TAKE_SCREENSHOT, NULL);
+
+   if (runloop_cmd_triggered(cmd, RARCH_MUTE))
+      event_cmd_ctl(EVENT_CMD_AUDIO_MUTE_TOGGLE, NULL);
+
+   if (runloop_cmd_triggered(cmd, RARCH_OSK))
+   {
+      if (input_keyboard_ctl(
+               RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
+         input_keyboard_ctl(
+               RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
+      else
+         input_keyboard_ctl(
+               RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
+   }
+
+   if (runloop_cmd_press(cmd, RARCH_VOLUME_UP))
+      event_cmd_ctl(EVENT_CMD_VOLUME_UP, NULL);
+   else if (runloop_cmd_press(cmd, RARCH_VOLUME_DOWN))
+      event_cmd_ctl(EVENT_CMD_VOLUME_DOWN, NULL);
+
+#ifdef HAVE_NETPLAY
+   tmp = runloop_cmd_triggered(cmd, RARCH_NETPLAY_FLIP);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &tmp);
+   tmp = runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &tmp);
+#endif
+   if (!runloop_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, cmd))
+      return false;
+
+   check_fast_forward_button(
+         runloop_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY),
+         runloop_cmd_press    (cmd, RARCH_FAST_FORWARD_HOLD_KEY),
+         runloop_cmd_pressed  (cmd, RARCH_FAST_FORWARD_HOLD_KEY));
+   check_stateslots(settings,
+         runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS),
+         runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS)
+         );
+
+   if (runloop_cmd_triggered(cmd, RARCH_SAVE_STATE_KEY))
+      event_cmd_ctl(EVENT_CMD_SAVE_STATE, NULL);
+   else if (runloop_cmd_triggered(cmd, RARCH_LOAD_STATE_KEY))
+      event_cmd_ctl(EVENT_CMD_LOAD_STATE, NULL);
+
+#ifdef HAVE_CHEEVOS
+   if(!settings->cheevos.hardcore_mode_enable)
+#endif
+      state_manager_check_rewind(runloop_cmd_press(cmd, RARCH_REWIND));
+
+   tmp = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
+
+   runloop_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &tmp);
+
+   if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
+      runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
+
+   check_shader_dir(shader_dir,
+         runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
+         runloop_cmd_triggered(cmd, RARCH_SHADER_PREV));
+
+   if (runloop_cmd_triggered(cmd, RARCH_DISK_EJECT_TOGGLE))
+      event_cmd_ctl(EVENT_CMD_DISK_EJECT_TOGGLE, NULL);
+   else if (runloop_cmd_triggered(cmd, RARCH_DISK_NEXT))
+      event_cmd_ctl(EVENT_CMD_DISK_NEXT, NULL);
+   else if (runloop_cmd_triggered(cmd, RARCH_DISK_PREV))
+      event_cmd_ctl(EVENT_CMD_DISK_PREV, NULL);
+
+   if (runloop_cmd_triggered(cmd, RARCH_RESET))
+      event_cmd_ctl(EVENT_CMD_RESET, NULL);
+
+   cheat_manager_state_checks(
+         runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_PLUS),
+         runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_MINUS),
+         runloop_cmd_triggered(cmd, RARCH_CHEAT_TOGGLE));
+
+   return true;
+}
+
+static bool runloop_check_pause_state(event_cmd_state_t *cmd)
+{
+   bool check_is_oneshot = false;
+
+   if (!cmd)
+      return false;
+
+   check_is_oneshot      = runloop_cmd_triggered(cmd,
+         RARCH_FRAMEADVANCE) 
+      || runloop_cmd_press(cmd, RARCH_REWIND);
+
+   if (!runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+      return true;
+
+   if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
+   {
+      event_cmd_ctl(EVENT_CMD_FULLSCREEN_TOGGLE, NULL);
+      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+   }
+
+   if (!check_is_oneshot)
+      return false;
+
+   return true;
+}
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    static rarch_dir_list_t runloop_shader_dir;
@@ -676,115 +789,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_CHECK_STATE:
-         {
-            bool tmp                  = false;
-            event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
-
-            if (!cmd || runloop_idle)
-               return false;
-
-            if (runloop_cmd_triggered(cmd, RARCH_SCREENSHOT))
-               event_cmd_ctl(EVENT_CMD_TAKE_SCREENSHOT, NULL);
-
-            if (runloop_cmd_triggered(cmd, RARCH_MUTE))
-               event_cmd_ctl(EVENT_CMD_AUDIO_MUTE_TOGGLE, NULL);
-
-            if (runloop_cmd_triggered(cmd, RARCH_OSK))
-            {
-               if (input_keyboard_ctl(
-                        RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
-                  input_keyboard_ctl(
-                        RARCH_INPUT_KEYBOARD_CTL_UNSET_LINEFEED_ENABLED, NULL);
-               else
-                  input_keyboard_ctl(
-                        RARCH_INPUT_KEYBOARD_CTL_SET_LINEFEED_ENABLED, NULL);
-            }
-
-            if (runloop_cmd_press(cmd, RARCH_VOLUME_UP))
-               event_cmd_ctl(EVENT_CMD_VOLUME_UP, NULL);
-            else if (runloop_cmd_press(cmd, RARCH_VOLUME_DOWN))
-               event_cmd_ctl(EVENT_CMD_VOLUME_DOWN, NULL);
-
-#ifdef HAVE_NETPLAY
-            tmp = runloop_cmd_triggered(cmd, RARCH_NETPLAY_FLIP);
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_FLIP_PLAYERS, &tmp);
-            tmp = runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
-            netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &tmp);
-#endif
-            if (!runloop_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, data))
-               return false;
-
-            check_fast_forward_button(
-                  runloop_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY),
-                  runloop_cmd_press    (cmd, RARCH_FAST_FORWARD_HOLD_KEY),
-                  runloop_cmd_pressed  (cmd, RARCH_FAST_FORWARD_HOLD_KEY));
-            check_stateslots(settings,
-                  runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS),
-                  runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS)
-                  );
-
-            if (runloop_cmd_triggered(cmd, RARCH_SAVE_STATE_KEY))
-               event_cmd_ctl(EVENT_CMD_SAVE_STATE, NULL);
-            else if (runloop_cmd_triggered(cmd, RARCH_LOAD_STATE_KEY))
-               event_cmd_ctl(EVENT_CMD_LOAD_STATE, NULL);
-
-#ifdef HAVE_CHEEVOS
-            if(!settings->cheevos.hardcore_mode_enable)
-#endif
-               state_manager_check_rewind(runloop_cmd_press(cmd, RARCH_REWIND));
-
-            tmp = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
-
-            runloop_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &tmp);
-
-            if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
-               runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
-
-            check_shader_dir(&runloop_shader_dir,
-                  runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
-                  runloop_cmd_triggered(cmd, RARCH_SHADER_PREV));
-
-            if (runloop_cmd_triggered(cmd, RARCH_DISK_EJECT_TOGGLE))
-               event_cmd_ctl(EVENT_CMD_DISK_EJECT_TOGGLE, NULL);
-            else if (runloop_cmd_triggered(cmd, RARCH_DISK_NEXT))
-               event_cmd_ctl(EVENT_CMD_DISK_NEXT, NULL);
-            else if (runloop_cmd_triggered(cmd, RARCH_DISK_PREV))
-               event_cmd_ctl(EVENT_CMD_DISK_PREV, NULL);
-
-            if (runloop_cmd_triggered(cmd, RARCH_RESET))
-               event_cmd_ctl(EVENT_CMD_RESET, NULL);
-
-            cheat_manager_state_checks(
-                  runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_PLUS),
-                  runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_MINUS),
-                  runloop_cmd_triggered(cmd, RARCH_CHEAT_TOGGLE));
-         }
-         break;
+         return runloop_check_state((event_cmd_state_t*)data, &runloop_shader_dir);
       case RUNLOOP_CTL_CHECK_PAUSE_STATE:
-         {
-            bool check_is_oneshot;
-            event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
-
-            if (!cmd)
-               return false;
-
-            check_is_oneshot     = runloop_cmd_triggered(cmd,
-                  RARCH_FRAMEADVANCE) 
-               || runloop_cmd_press(cmd, RARCH_REWIND);
-
-            if (!runloop_paused)
-               return true;
-
-            if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
-            {
-               event_cmd_ctl(EVENT_CMD_FULLSCREEN_TOGGLE, NULL);
-               video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
-            }
-
-            if (!check_is_oneshot)
-               return false;
-         }
-         break;
+         return runloop_check_pause_state((event_cmd_state_t*)data);
       case RUNLOOP_CTL_CHECK_SLOWMOTION:
          {
             bool *ptr            = (bool*)data;
