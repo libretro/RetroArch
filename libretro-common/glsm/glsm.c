@@ -421,6 +421,15 @@ void rglLinkProgram(GLuint program)
    glLinkProgram(program);
 }
 
+void rglFramebufferTexture(GLenum target, GLenum attachment,
+  	GLuint texture, GLint level)
+{
+#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES32)
+#else
+   glFramebufferTexture(target, attachment, texture, level);
+#endif
+}
+
 void rglFramebufferTexture2D(GLenum target, GLenum attachment,
       GLenum textarget, GLuint texture, GLint level)
 {
@@ -446,7 +455,7 @@ void rglFramebufferRenderbuffer(GLenum target, GLenum attachment,
    glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
 }
 
-void rglDeleteFramebuffers(GLsizei n, GLuint *framebuffers)
+void rglDeleteFramebuffers(GLsizei n, const GLuint *framebuffers)
 {
    glDeleteFramebuffers(n, framebuffers);
 }
@@ -703,6 +712,12 @@ void rglUniform4fv(GLint location, GLsizei count, const GLfloat *value)
    glUniform4fv(location, count, value);
 }
 
+void rglTexStorage2D(GLenum target, GLsizei levels, GLenum internalFormat,
+      GLsizei width, GLsizei height)
+{
+   glTexStorage2D(target, levels, internalFormat, width, height);
+}
+
 void rglPolygonOffset(GLfloat factor, GLfloat units)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -710,6 +725,30 @@ void rglPolygonOffset(GLfloat factor, GLfloat units)
    gl_state.polygonoffset.used   = true;
    gl_state.polygonoffset.factor = factor;
    gl_state.polygonoffset.units  = units;
+}
+
+void rglDrawBuffers(GLsizei n, const GLenum *bufs)
+{
+#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
+#else
+   glDrawBuffers(n, bufs);
+#endif
+}
+
+void rglBindVertexArray(GLuint array)
+{
+#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
+#else
+   glBindVertexArray(array);
+#endif
+}
+
+void rglGenVertexArrays(GLsizei n, GLuint *arrays)
+{
+#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
+#else
+   glGenVertexArrays(n, arrays);
+#endif
 }
 
 /* GLSM-side */

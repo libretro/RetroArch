@@ -41,6 +41,7 @@ extern "C" {
 #define glCompressedTexImage2D      rglCompressedTexImage2D
 #define glBindTexture               rglBindTexture
 #define glActiveTexture             rglActiveTexture
+#define glFramebufferTexture        rglFramebufferTexture
 #define glFramebufferTexture2D      rglFramebufferTexture2D
 #define glFramebufferRenderbuffer   rglFramebufferRenderbuffer
 #define glDeleteFramebuffers        rglDeleteFramebuffers
@@ -112,22 +113,31 @@ extern "C" {
 #define glReadBuffer                rglReadBuffer
 #define glUniformMatrix4fv          rglUniformMatrix4fv
 #define glGetAttribLocation         rglGetAttribLocation
+#define glTexStorage2D              rglTexStorage2D
+#define glDrawBuffers               rglDrawBuffers
+#define glGenVertexArrays           rglGenVertexArrays
+#define glBindVertexArray           rglBindVertexArray
 
+void rglGenVertexArrays(GLsizei n, GLuint *arrays);
 void rglReadBuffer(GLenum mode);
 void rglPixelStorei(GLenum pname, GLint param);
 void rglTexCoord2f(GLfloat s, GLfloat t);
 void rglDrawElements(GLenum mode, GLsizei count, GLenum type,
                            const GLvoid * indices);
+void rglTexStorage2D(GLenum target, GLsizei levels, GLenum internalFormat,
+      GLsizei width, GLsizei height);
 void rglCompressedTexImage2D(GLenum target, GLint level,
       GLenum internalformat, GLsizei width, GLsizei height,
       GLint border, GLsizei imageSize, const GLvoid *data);
 void glBindTexture(GLenum target, GLuint texture);
 void glActiveTexture(GLenum texture);
+void rglFramebufferTexture(GLenum target, GLenum attachment,
+  	GLuint texture, GLint level);
 void rglFramebufferTexture2D(GLenum target, GLenum attachment,
       GLenum textarget, GLuint texture, GLint level);
 void rglFramebufferRenderbuffer(GLenum target, GLenum attachment,
       GLenum renderbuffertarget, GLuint renderbuffer);
-void rglDeleteFramebuffers(GLsizei n, GLuint *framebuffers);
+void rglDeleteFramebuffers(GLsizei n, const GLuint *framebuffers);
 void rglRenderbufferStorage(GLenum target, GLenum internalFormat,
       GLsizei width, GLsizei height);
 void rglDeleteTextures(GLsizei n, const GLuint *textures);
@@ -214,6 +224,8 @@ void rglDetachShader(GLuint program, GLuint shader);
 void rglUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
       const GLfloat *value);
 GLint rglGetAttribLocation(GLuint program, const GLchar *name);
+void rglDrawBuffers(GLsizei n, const GLenum *bufs);
+void rglBindVertexArray(GLuint array);
 
 #ifdef __cplusplus
 }
