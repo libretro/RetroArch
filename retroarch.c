@@ -1224,7 +1224,6 @@ bool rarch_game_options_validate(char *s, size_t len, bool mkdir)
 static int rarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
-   int flags         = DRIVERS_CMD_ALL;
    bool *verbosity   = NULL;
 
    init_state();
@@ -1305,7 +1304,7 @@ static int rarch_main_init(int argc, char *argv[])
    if (!event_cmd_ctl(EVENT_CMD_CORE_INIT, &current_core_type))
       goto error;
 
-   driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
+   driver_ctl(RARCH_DRIVER_CTL_INIT_ALL, NULL);
    event_cmd_ctl(EVENT_CMD_COMMAND_INIT, NULL);
    event_cmd_ctl(EVENT_CMD_REMOTE_INIT, NULL);
    event_cmd_ctl(EVENT_CMD_REWIND_INIT, NULL);
@@ -1377,33 +1376,26 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          rarch_is_inited         = true;
          break;
       case RARCH_CTL_DESTROY:
-         {
-            int flags = DRIVERS_CMD_ALL;
+         has_set_username        = false;
+         rarch_is_inited         = false;
+         rarch_error_on_init     = false;
+         rarch_block_config_read = false;
+         rarch_force_fullscreen  = false;
 
-            has_set_username        = false;
-            rarch_is_inited         = false;
-            rarch_error_on_init     = false;
-            rarch_block_config_read = false;
-            rarch_force_fullscreen  = false;
+         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
+         driver_ctl(RARCH_DRIVER_CTL_UNINIT_ALL, NULL);
+         event_cmd_ctl(EVENT_CMD_LOG_FILE_DEINIT, NULL);
 
-            runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
-            driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
-            event_cmd_ctl(EVENT_CMD_LOG_FILE_DEINIT, NULL);
-
-            runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
-            runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
-            runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
-            config_free();
-         }
+         runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
+         runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
+         runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
+         config_free();
          break;
       case RARCH_CTL_DEINIT:
-         {
-            int flags = DRIVERS_CMD_ALL;
-            if (!rarch_ctl(RARCH_CTL_IS_INITED, NULL))
-               return false;
+         if (!rarch_ctl(RARCH_CTL_IS_INITED, NULL))
+            return false;
 
-            driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
-         }
+         driver_ctl(RARCH_DRIVER_CTL_UNINIT_ALL, NULL);
          break;
       case RARCH_CTL_PREINIT:
          if (!config_realloc())

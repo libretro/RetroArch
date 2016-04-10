@@ -172,10 +172,15 @@ enum driver_ctl_state
     * @data is a bitmask which determines 
     * which drivers get deinitialized. */
    RARCH_DRIVER_CTL_UNINIT,
+
+   RARCH_DRIVER_CTL_UNINIT_ALL,
+
    /* Initializes drivers.
     * @data is a bitmask which determines 
     * which drivers get initialized. */
    RARCH_DRIVER_CTL_INIT,
+
+   RARCH_DRIVER_CTL_INIT_ALL,
    /* Attempts to find a default driver for 
     * all driver types.
     *
