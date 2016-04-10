@@ -1688,7 +1688,6 @@ static bool content_file_free(struct string_list *temporary_content)
 
 bool content_ctl(enum content_ctl_state state, void *data)
 {
-   unsigned i;
    static const struct file_archive_file_backend *stream_backend = NULL;
    static struct string_list *temporary_content                  = NULL;
    static bool content_is_inited                                 = false;

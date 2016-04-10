@@ -424,8 +424,6 @@ static void xmb_draw_icon(xmb_handle_t *xmb,
       float *color)
 {
    menu_display_ctx_rotate_draw_t rotate_draw;
-   menu_display_ctx_draw_t draw;
-   struct gfx_coords coords;
    math_matrix_4x4 mymat;
 
    if (
@@ -637,7 +635,6 @@ static void xmb_selection_pointer_changed(
    int threshold              = 0;
    menu_list_t     *menu_list = NULL;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   settings_t       *settings = config_get_ptr();
 
    menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
 
@@ -1085,7 +1082,6 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    size_t selection;
    int dir = -1;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
-   settings_t     *settings   = config_get_ptr();
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
@@ -1406,7 +1402,6 @@ static void xmb_populate_entries(void *data,
       const char *path,
       const char *label, unsigned k)
 {
-   settings_t *settings = config_get_ptr();
    xmb_handle_t *xmb = (xmb_handle_t*)data;
 
    if (!xmb)
@@ -1508,7 +1503,6 @@ static void xmb_draw_items(xmb_handle_t *xmb,
    uint64_t *frame_count       = NULL;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-   settings_t   *settings      = config_get_ptr();
 
    video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
 
