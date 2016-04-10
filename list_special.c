@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <lists/dir_list.h>
+#include <compat/strl.h>
 
 #include "list_special.h"
 #include "frontend/frontend_driver.h"
@@ -47,6 +48,7 @@
 struct string_list *dir_list_new_special(const char *input_dir,
       enum dir_list_type type, const char *filter)
 {
+   char ext_shaders[PATH_MAX_LENGTH];
    char ext_name[PATH_MAX_LENGTH];
    const char *dir   = NULL;
    const char *exts  = NULL;
@@ -56,6 +58,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
    (void)input_dir;
    (void)settings;
+   (void)ext_shaders;
 
    switch (type)
    {
@@ -78,7 +81,16 @@ struct string_list *dir_list_new_special(const char *input_dir,
          break;
       case DIR_LIST_SHADERS:
          dir  = settings->video.shader_dir;
-         exts = "cg|cgp|glsl|glslp|slang|slangp";
+#ifdef HAVE_CG
+         strlcat(ext_shaders, "cg|cgp", sizeof(ext_shaders));
+#endif
+#ifdef HAVE_GLSL
+         strlcat(ext_shaders, "glsl|glslp", sizeof(ext_shaders));
+#endif
+#ifdef HAVE_VULKAN
+         strlcat(ext_shaders, "slang|slangp", sizeof(ext_shaders));
+#endif
+         exts = ext_shaders;
          break;
       case DIR_LIST_COLLECTIONS:
          dir  = settings->playlist_directory;
