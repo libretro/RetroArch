@@ -2347,8 +2347,8 @@ static int menu_displaylist_parse_add_content_list(
 
 #if 0
    menu_entries_push(info->list,
-         "Daddy is talking shit",
-         "daddys_talking_shit",
+         "Test",
+         "new_test",
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
