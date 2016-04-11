@@ -536,6 +536,40 @@ void menu_entries_add(file_list_t *list, const char *path, const char *label,
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
+void menu_entries_push(file_list_t *list, const char *path, const char *label,
+      unsigned type, size_t directory_ptr, size_t entry_idx)
+{
+   menu_ctx_list_t list_info;
+   size_t idx;
+   menu_file_list_cbs_t *cbs       = NULL;
+   if (!list || !label)
+      return;
+
+   file_list_push(list, path, label, type, directory_ptr, entry_idx);
+
+   idx              = 0;
+
+   list_info.list   = list;
+   list_info.path   = path;
+   list_info.label  = label;
+   list_info.idx    = idx;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LIST_INSERT, &list_info);
+
+   file_list_free_actiondata(list, idx);
+   cbs = (menu_file_list_cbs_t*)
+      calloc(1, sizeof(menu_file_list_cbs_t));
+
+   if (!cbs)
+      return;
+
+   file_list_set_actiondata(list, idx, cbs);
+
+   cbs->setting = menu_setting_find(label);
+
+   menu_cbs_init(list, cbs, path, label, type, idx);
+}
+
 menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
 {
    menu_list_t *menu_list         = NULL;

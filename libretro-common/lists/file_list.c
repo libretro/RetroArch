@@ -59,6 +59,49 @@ static bool file_list_capacity(file_list_t *list, size_t cap)
    return true;
 }
 
+bool file_list_push(file_list_t *list,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr,
+      size_t entry_idx)
+{
+   unsigned i;
+   if (list->size >= list->capacity &&
+      !file_list_capacity(list, list->capacity * 2 + 1))
+         return false;
+
+   list->size++;
+
+   for (i = list->size -1; i > 0; i--)
+   {
+      file_list_t *copy = calloc(1, sizeof(file_list_t));
+      
+      memcpy(copy, &list->list[i-1], sizeof(file_list_t));
+
+      memcpy(&list->list[i-1], &list->list[i], sizeof(file_list_t));
+      memcpy(&list->list[i],             copy, sizeof(file_list_t));
+
+      free(copy);
+   }
+
+   memset(&list->list[0], 0, sizeof(file_list_t));
+
+   list->list[0].label         = NULL;
+   list->list[0].path          = NULL;
+   list->list[0].alt           = NULL;
+   list->list[0].userdata      = NULL;
+   list->list[0].actiondata    = NULL;
+   list->list[0].type          = type;
+   list->list[0].directory_ptr = directory_ptr;
+   list->list[0].entry_idx     = entry_idx;
+
+   if (label)
+      list->list[0].label      = strdup(label);
+   if (path)
+      list->list[0].path       = strdup(path);
+
+   return true;
+}
+
 bool file_list_append(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr,

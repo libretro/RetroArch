@@ -174,6 +174,9 @@ void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
 
 rarch_setting_t *menu_entries_get_setting(uint32_t i);
 
+void menu_entries_push(file_list_t *list, const char *path, const char *label,
+      unsigned type, size_t directory_ptr, size_t entry_idx);
+
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
 
 #ifdef __cplusplus
