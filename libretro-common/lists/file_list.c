@@ -73,12 +73,12 @@ bool file_list_prepend(file_list_t *list,
 
    for (i = list->size -1; i > 0; i--)
    {
-      file_list_t *copy = calloc(1, sizeof(file_list_t));
+      struct item_file *copy = calloc(1, sizeof(struct item_file));
       
-      memcpy(copy, &list->list[i-1], sizeof(file_list_t));
+      memcpy(copy, &list->list[i-1], sizeof(struct item_file));
 
-      memcpy(&list->list[i-1], &list->list[i], sizeof(file_list_t));
-      memcpy(&list->list[i],             copy, sizeof(file_list_t));
+      memcpy(&list->list[i-1], &list->list[i], sizeof(struct item_file));
+      memcpy(&list->list[i],             copy, sizeof(struct item_file));
 
       free(copy);
    }
