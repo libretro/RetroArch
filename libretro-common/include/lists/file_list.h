@@ -65,7 +65,7 @@ bool file_list_append(file_list_t *userdata, const char *path,
       const char *label, unsigned type, size_t current_directory_ptr,
       size_t entry_index);
 
-bool file_list_push(file_list_t *list,
+bool file_list_prepend(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr,
       size_t entry_idx);

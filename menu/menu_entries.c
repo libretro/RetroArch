@@ -536,7 +536,7 @@ void menu_entries_add(file_list_t *list, const char *path, const char *label,
    menu_cbs_init(list, cbs, path, label, type, idx);
 }
 
-void menu_entries_push(file_list_t *list, const char *path, const char *label,
+void menu_entries_prepend(file_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
    menu_ctx_list_t list_info;
@@ -545,7 +545,7 @@ void menu_entries_push(file_list_t *list, const char *path, const char *label,
    if (!list || !label)
       return;
 
-   file_list_push(list, path, label, type, directory_ptr, entry_idx);
+   file_list_prepend(list, path, label, type, directory_ptr, entry_idx);
 
    idx              = 0;
 
