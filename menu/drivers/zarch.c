@@ -1345,6 +1345,7 @@ menu_ctx_driver_t menu_ctx_zarch = {
    NULL,
    NULL,
    NULL,
+   NULL,
    zarch_load_image,
    "zarch",
    NULL,

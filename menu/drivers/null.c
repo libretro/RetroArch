@@ -46,6 +46,7 @@ menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* navigation_ascend_alphabet */
   NULL,  /* lists_init */
   NULL,  /* list_insert */
+  NULL,  /* list_prepend */
   NULL,  /* list_delete */
   NULL,  /* list_clear */
   NULL,  /* list_cache */

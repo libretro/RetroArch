@@ -325,6 +325,8 @@ typedef struct menu_ctx_driver
    bool  (*lists_init)(void*);
    void  (*list_insert)(void *userdata,
          file_list_t *list, const char *, const char *, size_t);
+   int   (*list_prepend)(void *userdata,
+         file_list_t *list, const char *, const char *, size_t);
    void  (*list_free)(file_list_t *list, size_t, size_t);
    void  (*list_clear)(file_list_t *list);
    void  (*list_cache)(void *data, enum menu_list_type, unsigned);

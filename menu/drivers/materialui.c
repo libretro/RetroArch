@@ -1581,6 +1581,7 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    NULL,
    NULL,
+   NULL,
    mui_list_cache,
    mui_list_push,
    mui_list_get_selection,
