@@ -1670,7 +1670,7 @@ static int generic_action_ok_network(const char *path,
          break;
       case ACTION_OK_NETWORK_CORE_UPDATER_LIST:
          fill_pathname_join(url_path, settings->network.buildbot_url,
-               ".index", sizeof(url_path));
+               ".index-extended", sizeof(url_path));
          url_label = "cb_core_updater_list";
          type_id2  = ACTION_OK_DL_CORE_UPDATER_LIST;
          callback = cb_net_generic;

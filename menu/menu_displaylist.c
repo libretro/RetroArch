@@ -138,6 +138,107 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
    /* If the buffer was completely full, and didn't end
     * with a newline, just ignore the partial last line. */
 }
+
+static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
+      unsigned type)
+{
+   char c;
+   int i, j = 0;
+   char *line_start = buf;
+
+   if (!buf || !buf_size)
+   {
+      menu_entries_push(list, "No entries to display.", "",
+            MENU_FILE_NONE, 0, 0);
+      return;
+   }
+
+   for (i = 0; i < buf_size; i++)
+   {
+      size_t ln;
+      const char *core_date        = NULL;
+      const char *core_crc         = NULL;
+      const char *core_pathname    = NULL;
+      struct string_list *str_list = NULL;
+
+      /* The end of the buffer, print the last bit */
+      if (*(buf + i) == '\0')
+         break;
+
+      if (*(buf + i) != '\n')
+         continue;
+
+      /* Found a line ending, print the line and compute new line_start */
+
+      /* Save the next char  */
+      c = *(buf + i + 1);
+      /* replace with \0 */
+      *(buf + i + 1) = '\0';
+
+      /* We need to strip the newline. */
+      ln = strlen(line_start) - 1;
+      if (line_start[ln] == '\n')
+         line_start[ln] = '\0';
+
+      str_list      = string_split(line_start, " ");
+
+      if (str_list->elems[0].data)
+         core_date     = str_list->elems[0].data;
+      if (str_list->elems[1].data)
+         core_crc      = str_list->elems[1].data;
+      if (str_list->elems[2].data)
+         core_pathname = str_list->elems[2].data;
+
+      (void)core_date;
+      (void)core_crc;
+#if 0
+      RARCH_LOG("elem date: %s\n",          core_date);
+      RARCH_LOG("elem crc: %s\n",           core_crc);
+      RARCH_LOG("elem core pathname: %s\n", core_pathname);
+#endif
+
+      menu_entries_push(list, core_pathname, "",
+            type, 0, 0);
+      if (type == MENU_FILE_DOWNLOAD_CORE)
+      {
+         settings_t *settings      = config_get_ptr();
+
+         if (settings)
+         {
+            char core_path[PATH_MAX_LENGTH];
+            char display_name[PATH_MAX_LENGTH];
+            char *last = NULL;
+
+            fill_pathname_join(core_path, settings->libretro_info_path,
+                  core_pathname, sizeof(core_path));
+
+            path_remove_extension(core_path);
+            path_remove_extension(core_path);
+            last = (char*)strrchr(core_path, '_');
+            if (*last)
+            {
+               if (!string_is_equal(last, "_libretro"))
+                  *last = '\0';
+            }
+            strlcat(core_path, ".info", sizeof(core_path));
+
+            if (core_info_get_display_name(
+                     core_path, display_name, sizeof(display_name)))
+               menu_entries_set_alt_at_offset(list, j, display_name);
+         }
+      }
+      j++;
+
+      string_list_free(str_list);
+
+      /* Restore the saved char */
+      *(buf + i + 1) = c;
+      line_start     = buf + i + 1;
+   }
+   file_list_sort_on_alt(list);
+   /* If the buffer was completely full, and didn't end
+    * with a newline, just ignore the partial last line. */
+}
 #endif
 
 static void menu_displaylist_push_perfcounter(
@@ -3528,7 +3629,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_CORES_UPDATER:
 #ifdef HAVE_NETWORKING
-         print_buf_lines(info->list, core_buf,
+         print_buf_lines_extended(info->list, core_buf,
                core_len, MENU_FILE_DOWNLOAD_CORE);
          info->need_push    = true;
          info->need_refresh = true;
