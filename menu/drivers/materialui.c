@@ -1396,7 +1396,7 @@ static int mui_list_push(void *data, void *userdata,
    {
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-         menu_entries_push(info->list,
+         menu_entries_add(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
                menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
                MENU_SETTING_ACTION, 0, 0);
@@ -1404,12 +1404,12 @@ static int mui_list_push(void *data, void *userdata,
          core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
          if (core_info_list_num_info_files(list))
          {
-            menu_entries_push(info->list,
+            menu_entries_add(info->list,
                   menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
                   menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
                   MENU_SETTING_ACTION, 0, 0);
 
-            menu_entries_push(info->list,
+            menu_entries_add(info->list,
                   menu_hash_to_str(MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
                   menu_hash_to_str(MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
                   MENU_SETTING_ACTION, 0, 0);

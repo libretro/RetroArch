@@ -2971,7 +2971,7 @@ static bool xmb_menu_init_list(void *data)
    strlcpy(info.label,
          menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
 
-   menu_entries_push(menu_stack, info.path,
+   menu_entries_add(menu_stack, info.path,
          info.label, info.type, info.flags, 0);
 
    info.list  = selection_buf;

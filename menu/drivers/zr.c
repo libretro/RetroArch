@@ -424,7 +424,7 @@ static bool zrmenu_init_list(void *data)
    strlcpy(info.label,
          menu_hash_to_str(MENU_VALUE_HISTORY_TAB), sizeof(info.label));
 
-   menu_entries_push(menu_stack,
+   menu_entries_add(menu_stack,
          info.path, info.label, info.type, info.flags, 0);
 
    event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);

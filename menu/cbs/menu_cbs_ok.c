@@ -424,8 +424,7 @@ int generic_action_ok_displaylist_push(const char *path,
          info.list          = selection_buf;
          info_path          = menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS);
          info_label         = menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS);
-         menu_entries_push(menu_stack,
-               info_path, info_label, 0, 0, 0);
+         menu_entries_add(menu_stack, info_path, info_label, 0, 0, 0);
          break;
    }
 

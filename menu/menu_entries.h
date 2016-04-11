@@ -139,7 +139,7 @@ file_list_t *menu_entries_get_selection_buf_ptr(size_t idx);
 
 file_list_t *menu_entries_get_menu_stack_ptr(size_t idx);
 
-void menu_entries_push(file_list_t *list, const char *path, const char *label,
+void menu_entries_add(file_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx);
 
 void menu_entries_get_last_stack(const char **path, const char **label,

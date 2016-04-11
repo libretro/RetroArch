@@ -2109,9 +2109,9 @@ static void cheevos_populate_menu(void *data)
    settings_t *settings          = config_get_ptr();
    menu_displaylist_info_t *info = (menu_displaylist_info_t*)data;
    
-   menu_entries_push(info->list, "Unlocked Achievements:",
+   menu_entries_add(info->list, "Unlocked Achievements:",
          "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
-   menu_entries_push(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+   menu_entries_add(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
 
    cheevo = cheevos_locals.core.cheevos;
    end    = cheevos_locals.core.cheevos + cheevos_locals.core.count;
@@ -2119,7 +2119,7 @@ static void cheevos_populate_menu(void *data)
    for (i = 0; cheevo < end; i++, cheevo++)
    {
       if (!cheevo->active)
-         menu_entries_push(info->list, cheevo->title,
+         menu_entries_add(info->list, cheevo->title,
                cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
    
@@ -2132,15 +2132,15 @@ static void cheevos_populate_menu(void *data)
       for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
       {
          if (!cheevo->active)
-            menu_entries_push(info->list, cheevo->title,
+            menu_entries_add(info->list, cheevo->title,
                   cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
    
-   menu_entries_push(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
-   menu_entries_push(info->list, "Locked Achievements:", "",
+   menu_entries_add(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+   menu_entries_add(info->list, "Locked Achievements:", "",
          MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
-   menu_entries_push(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
+   menu_entries_add(info->list, "", "", MENU_SETTINGS_CHEEVOS_NONE, 0, 0);
 
    cheevo = cheevos_locals.core.cheevos;
    end    = cheevos_locals.core.cheevos + cheevos_locals.core.count;
@@ -2148,7 +2148,7 @@ static void cheevos_populate_menu(void *data)
    for (i = 0; cheevo < end; i++, cheevo++)
    {
       if (cheevo->active)
-         menu_entries_push(info->list, cheevo->title,
+         menu_entries_add(info->list, cheevo->title,
                cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
    }
    
@@ -2161,7 +2161,7 @@ static void cheevos_populate_menu(void *data)
       for (i = cheevos_locals.core.count; cheevo < end; i++, cheevo++)
       {
          if (cheevo->active)
-            menu_entries_push(info->list, cheevo->title,
+            menu_entries_add(info->list, cheevo->title,
                   cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }

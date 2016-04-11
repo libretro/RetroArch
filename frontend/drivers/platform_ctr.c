@@ -247,7 +247,7 @@ static int frontend_ctr_parse_drive_list(void *data)
    if (!list)
       return -1;
 
-   menu_entries_push(list,
+   menu_entries_add(list,
          "sdmc:/", "", MENU_FILE_DIRECTORY, 0, 0);
 #endif
 
