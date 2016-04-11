@@ -528,3 +528,16 @@ void menu_display_handle_wallpaper_upload(void *task_data,
    video_texture_image_free(img);
    free(img);
 }
+
+void menu_display_allocate_white_texture()
+{
+   struct texture_image ti;
+   static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
+
+   ti.width  = 1;
+   ti.height = 1;
+   ti.pixels = (uint32_t*)&white_data;
+
+   video_driver_texture_load(&ti,
+         TEXTURE_FILTER_NEAREST, &menu_display_white_texture);
+}

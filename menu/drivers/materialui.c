@@ -89,7 +89,6 @@ typedef struct mui_handle
 
       menu_texture_item bg;
       menu_texture_item list[MUI_TEXTURE_LAST];
-      uintptr_t white;
    } textures;
 
    struct
@@ -295,7 +294,7 @@ static void mui_render_quad(mui_handle_t *mui,
    draw.height      = h;
    draw.coords      = &coords;
    draw.matrix_data = NULL;
-   draw.texture     = mui->textures.white;
+   draw.texture     = menu_display_white_texture;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
@@ -831,7 +830,7 @@ static void mui_frame(void *data)
 
       draw.width              = width;
       draw.height             = height;
-      draw.texture            = mui->textures.white;
+      draw.texture            = menu_display_white_texture;
       draw.handle_alpha       = 0.75f;
       draw.force_transparency = false;
       draw.color              = &white_transp_bg[0];
@@ -1012,19 +1011,6 @@ static void mui_frame(void *data)
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
-static void mui_allocate_white_texture(mui_handle_t *mui)
-{
-   struct texture_image ti;
-   static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
-
-   ti.width  = 1;
-   ti.height = 1;
-   ti.pixels = (uint32_t*)&white_data;
-
-   video_driver_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST, &mui->textures.white);
-}
-
 static void mui_font(void)
 {
    int font_size;
@@ -1115,7 +1101,7 @@ static void *mui_init(void **userdata)
    *userdata = mui;
 
    mui_layout(mui);
-   mui_allocate_white_texture(mui);
+   menu_display_allocate_white_texture();
 
 
    return menu;
@@ -1143,7 +1129,7 @@ static void mui_context_bg_destroy(mui_handle_t *mui)
       return;
 
    video_driver_texture_unload(&mui->textures.bg);
-   video_driver_texture_unload(&mui->textures.white);
+   video_driver_texture_unload(&menu_display_white_texture);
 }
 
 static void mui_context_destroy(void *data)
@@ -1174,7 +1160,7 @@ static bool mui_load_image(void *userdata, void *data, enum menu_image_type type
          mui_context_bg_destroy(mui);
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.bg);
-         mui_allocate_white_texture(mui);
+         menu_display_allocate_white_texture();
          break;
       case MENU_IMAGE_THUMBNAIL:
          break;
@@ -1275,7 +1261,7 @@ static void mui_context_reset(void *data)
 
    mui_layout(mui);
    mui_context_bg_destroy(mui);
-   mui_allocate_white_texture(mui);
+   menu_display_allocate_white_texture();
    mui_context_reset_textures(mui, iconpath);
 
    rarch_task_push_image_load(settings->menu.wallpaper, "cb_menu_wallpaper",
