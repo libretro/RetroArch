@@ -117,7 +117,11 @@ extern "C" {
 #define glDrawBuffers               rglDrawBuffers
 #define glGenVertexArrays           rglGenVertexArrays
 #define glBindVertexArray           rglBindVertexArray
+#define glBlendEquation             rglBlendEquation
+#define glBlendColor                rglBlendColor
 
+void rglBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+void rglBlendEquation(GLenum mode);
 void rglGenVertexArrays(GLsizei n, GLuint *arrays);
 void rglReadBuffer(GLenum mode);
 void rglPixelStorei(GLenum pname, GLint param);

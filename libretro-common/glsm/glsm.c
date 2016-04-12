@@ -735,6 +735,17 @@ void rglDrawBuffers(GLsizei n, const GLenum *bufs)
 #endif
 }
 
+void rglBlendEquation(GLenum mode)
+{
+   glBlendEquation(mode);
+}
+
+void rglBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
+{
+   glBlendColor(red, green, blue, alpha);
+}
+
+
 void rglBindVertexArray(GLuint array)
 {
 #if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
