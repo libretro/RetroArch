@@ -177,14 +177,18 @@ static void menu_display_gl_draw_bg(void *data)
    draw->x           = 0;
    draw->y           = 0;
    draw->coords      = &coords;
+
+   if (!draw->texture)
+      draw->texture     = menu_display_white_texture;
+
    draw->matrix_data = (math_matrix_4x4*)
       menu_display_gl_get_default_mvp();
 
    menu_display_gl_draw(draw);
 
-   menu_display_gl_blend_end();
-
    gl->coords.color = gl->white_color_ptr;
+
+   menu_display_gl_blend_end();
 }
 
 static void menu_display_gl_restore_clear_color(void)
