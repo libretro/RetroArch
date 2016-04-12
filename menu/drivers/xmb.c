@@ -2264,6 +2264,8 @@ static void *xmb_init(void **userdata)
    menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &width);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
 
+   menu_display_allocate_white_texture();
+
    xmb_init_horizontal_list(xmb);
    xmb_font(xmb);
 
@@ -2316,6 +2318,7 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
    if (!xmb)
       return;
    video_driver_texture_unload(&xmb->textures.bg);
+   video_driver_texture_unload(&menu_display_white_texture);
 }
 
 static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type)
@@ -2334,6 +2337,7 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR,
                &xmb->textures.bg);
+         menu_display_allocate_white_texture();
          break;
       case MENU_IMAGE_THUMBNAIL:
          {
@@ -2485,6 +2489,8 @@ static void xmb_context_reset_textures(
 
       video_texture_image_free(&ti);
    }
+
+   menu_display_allocate_white_texture();
 
    xmb->main_menu_node.icon  = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
    xmb->main_menu_node.alpha = XMB_CATEGORIES_ACTIVE_ALPHA;
