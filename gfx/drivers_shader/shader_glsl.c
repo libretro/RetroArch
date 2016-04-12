@@ -211,6 +211,43 @@ static const char *stock_fragment_core_blend =
    "   FragColor = color * texture(Texture, tex_coord);\n"
    "}";
 
+static const char *stock_vertex_xmb =
+   "attribute vec3 vPosition;\n"
+   "uniform float time;\n"
+   "varying vec3 v;\n"
+   "float iqhash( float n )\n"
+   "{\n"
+   "  return fract(sin(n)*43758.5453);\n"
+   "}\n"
+   "float noise( vec3 x )\n"
+   "{\n"
+   "  vec3 p = floor(x);\n"
+   "  vec3 f = fract(x);\n"
+   "  f = f*f*(3.0-2.0*f);\n"
+   "  float n = p.x + p.y*57.0 + 113.0*p.z;\n"
+   "  return mix(mix(mix( iqhash(n+0.0 ), iqhash(n+1.0 ),f.x),\n"
+   "  mix( iqhash(n+57.0 ), iqhash(n+58.0 ),f.x),f.y),\n"
+   "  mix(mix( iqhash(n+113.0), iqhash(n+114.0),f.x),\n"
+   "  mix( iqhash(n+170.0), iqhash(n+171.0),f.x),f.y),f.z);\n"
+   "}\n"
+   "void main()\n"
+   "{\n"
+   "  v = vPosition;\n"
+   "  vec3 v2 = v;\n"
+   "  v2.x = v2.x + time/2.0;\n"
+   "  v2.z = v.z * 3.0;\n"
+   "  v.y = -cos((v.x+v.z/3.0+time)*2.0)/10.0 - noise(v2.xyz)/4.0;\n"
+   "  gl_Position = vec4(v, 1.0);\n"
+   "}\n";
+
+static const char *stock_fragment_xmb =
+   "uniform float time;\n"
+   "varying vec3 v;\n"
+   "void main()\n"
+   "{\n"
+   "  gl_FragColor = vec4(1.0, 1.0, 1.0, 0.05);\n"
+   "}\n";
+
 typedef struct glsl_shader_data
 {
    struct video_shader *shader;
@@ -944,6 +981,12 @@ static void *gl_glsl_init(void *data, const char *path)
       glsl->gl_uniforms[GL_SHADER_STOCK_BLEND] = glsl->gl_uniforms[0];
    }
 
+   glsl->gl_program[GL_SHADER_STOCK_XMB] = gl_glsl_compile_program(
+         glsl,
+         stock_vertex_xmb,
+         stock_fragment_xmb,
+         GL_SHADER_STOCK_XMB);
+
    gl_glsl_reset_attrib(glsl);
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
@@ -962,6 +1005,10 @@ error:
 
    return NULL;
 }
+
+#if 0
+static float t = 0;
+#endif
 
 static void gl_glsl_set_params(void *data, void *shader_data,
       unsigned width, unsigned height, 
@@ -995,6 +1042,14 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
    if (glsl->gl_program[glsl->glsl_active_index] == 0)
       return;
+
+#if 0
+   t += 0.004;
+   glUseProgram(glsl->gl_program[GL_SHADER_STOCK_XMB]);
+   int location = glGetUniformLocation(glsl->gl_program[GL_SHADER_STOCK_XMB], "time");
+   glUniform1f(location, t);
+   glUseProgram(0);
+#endif
 
    input_size [0]  = (float)width;
    input_size [1]  = (float)height;
