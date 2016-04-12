@@ -1079,7 +1079,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    if (uni->frame_direction >= 0)
       glUniform1i(uni->frame_direction, state_manager_frame_is_reversed() ? -1 : 1);
 
-
+   /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)
    {
       if (uni->lut_texture[i] < 0)
