@@ -227,6 +227,9 @@ typedef struct xmb_handle
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
+static float ribbon_verts[1536];
+static int ribbon_idx[1024];
+
 static const char *xmb_theme_ident(void)
 {
    settings_t *settings = config_get_ptr();
@@ -1490,6 +1493,47 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 }
 
+static void xmb_blend_begin(void)
+{
+   int r, c;
+   int i = 0;
+   int ribbon_rows    = 16;
+   int ribbon_columns = 32;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+
+#if 0
+   /* Set up vertices */
+   for (r = 0; r < ribbon_rows; ++r)
+   {
+      for (c = 0; c < ribbon_columns; ++c)
+      {
+         int index = r * ribbon_columns + c;
+         ribbon_verts[3*index + 0] = ((float) c)/15.0f - 1.0;
+         ribbon_verts[3*index + 1] = 0.0f;
+         ribbon_verts[3*index + 2] = ((float) r)/8.0f - 1.0;
+      }
+   }
+
+   for (r = 0; r < ribbon_rows - 1; ++r)
+   {
+      ribbon_idx[i++] = r * ribbon_columns;
+
+      for (c = 0; c < ribbon_columns; ++c)
+      {
+         ribbon_idx[i++] = r * ribbon_columns + c;
+         ribbon_idx[i++] = (r + 1) * ribbon_columns + c;
+      }
+      ribbon_idx[i++] = (r + 1) * ribbon_columns + (ribbon_columns - 1);
+   }
+#endif
+}
+
+static void xmb_blend_end(void)
+{
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+}
+
 static void xmb_draw_items(xmb_handle_t *xmb,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr, float *color,
@@ -1713,7 +1757,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                TEXT_ALIGN_LEFT,
                width, height);
 
-      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+      xmb_blend_begin();
 
       /* set alpha components of color */
       color[3] = color[7] = color[11] = color[15] =
@@ -1741,7 +1785,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                0,
                1, &color[0]);
 
-      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+      xmb_blend_end();
    }
 }
 
@@ -1758,7 +1802,7 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   xmb_blend_begin();
 
    draw.x           = x - (xmb->cursor.size / 2);
    draw.y           = height - y - (xmb->cursor.size / 2);
@@ -1771,7 +1815,7 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+   xmb_blend_end();
 }
 
 static void xmb_render(void *data)
@@ -1851,7 +1895,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
       if (!node)
          continue;
 
-      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+      xmb_blend_begin();
 
       /* set alpha components of color */
       color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha)
@@ -1868,8 +1912,13 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
                node->zoom,
                &color[0]);
 
-      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+      xmb_blend_end();
    }
+}
+
+static void xmb_draw_bg(menu_display_ctx_draw_t *draw)
+{
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
 }
 
 static void xmb_frame(void *data)
@@ -1935,7 +1984,7 @@ static void xmb_frame(void *data)
    draw.vertex_count       = 4;
    draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
+   xmb_draw_bg(&draw);
 
    xmb_draw_text(xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -1990,7 +2039,7 @@ static void xmb_frame(void *data)
 
    menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   xmb_blend_begin();
 
    if (strcmp(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
       xmb_draw_thumbnail(xmb, &coord_color2[0], width, height);
@@ -2067,7 +2116,7 @@ static void xmb_frame(void *data)
       draw.vertex_count       = 4;
       draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
+      xmb_draw_bg(&draw);
 
       xmb_render_messagebox_internal(xmb, msg);
    }
