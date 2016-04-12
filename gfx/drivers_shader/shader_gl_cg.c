@@ -337,47 +337,41 @@ static void gl_cg_set_params(void *data, void *shader_data,
    uniform_params[0].type          = UNIFORM_2F;
    uniform_params[0].result.f.a    = width;
    uniform_params[0].result.f.b    = height;
-   uniform_count++;
    
    uniform_params[1].data          = cg_data->prg[cg_data->active_idx].tex_size_f;
    uniform_params[1].type          = UNIFORM_2F;
    uniform_params[1].result.f.a    = tex_width;
    uniform_params[1].result.f.b    = tex_height;
-   uniform_count++;
 
    uniform_params[2].data          = cg_data->prg[cg_data->active_idx].out_size_f;
    uniform_params[2].type          = UNIFORM_2F;
    uniform_params[2].result.f.a    = out_width;
    uniform_params[2].result.f.b    = out_height;
-   uniform_count++;
 
    uniform_params[3].data          = cg_data->prg[cg_data->active_idx].frame_dir_f;
    uniform_params[3].type          = UNIFORM_1F;
    uniform_params[3].result.f.a    = state_manager_frame_is_reversed() ? -1.0 : 1.0;
-   uniform_count++;
 
    uniform_params[4].data          = cg_data->prg[cg_data->active_idx].vid_size_v;
    uniform_params[4].type          = UNIFORM_2F;
    uniform_params[4].result.f.a    = width;
    uniform_params[4].result.f.b    = height;
-   uniform_count++;
 
    uniform_params[5].data          = cg_data->prg[cg_data->active_idx].tex_size_v;
    uniform_params[5].type          = UNIFORM_2F;
    uniform_params[5].result.f.a    = tex_width;
    uniform_params[5].result.f.b    = tex_height;
-   uniform_count++;
 
    uniform_params[6].data          = cg_data->prg[cg_data->active_idx].out_size_v;
    uniform_params[6].type          = UNIFORM_2F;
    uniform_params[6].result.f.a    = out_width;
    uniform_params[6].result.f.b    = out_height;
-   uniform_count++;
 
    uniform_params[7].data          = cg_data->prg[cg_data->active_idx].frame_dir_v;
    uniform_params[7].type          = UNIFORM_1F;
    uniform_params[7].result.f.a    = state_manager_frame_is_reversed() ? -1.0 : 1.0;
-   uniform_count++;
+
+   uniform_count += 8;
 
    if (cg_data->prg[cg_data->active_idx].frame_cnt_f || cg_data->prg[cg_data->active_idx].frame_cnt_v)
    {
@@ -388,12 +382,12 @@ static void gl_cg_set_params(void *data, void *shader_data,
       uniform_params[8].data          = cg_data->prg[cg_data->active_idx].frame_cnt_f;
       uniform_params[8].type          = UNIFORM_1F;
       uniform_params[8].result.f.a    = (float)frame_count;
-      uniform_count++;
 
       uniform_params[9].data          = cg_data->prg[cg_data->active_idx].frame_cnt_v;
       uniform_params[9].type          = UNIFORM_1F;
       uniform_params[9].result.f.a    = (float)frame_count;
-      uniform_count++;
+
+      uniform_count += 2;
    }
 
    for (i = 0; i < (uniform_count+1); i++)
