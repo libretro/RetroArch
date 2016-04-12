@@ -162,8 +162,6 @@ static void menu_display_gl_draw_bg(void *data)
    coords.lut_tex_coord = new_tex_coord;
    coords.color         = (const float*)draw->color;
 
-   menu_display_gl_blend_begin();
-
    draw->x           = 0;
    draw->y           = 0;
    draw->coords      = &coords;
@@ -177,8 +175,6 @@ static void menu_display_gl_draw_bg(void *data)
    menu_display_gl_draw(draw);
 
    gl->coords.color = gl->white_color_ptr;
-
-   menu_display_gl_blend_end();
 }
 
 static void menu_display_gl_restore_clear_color(void)
