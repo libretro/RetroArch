@@ -1495,10 +1495,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
 static void xmb_blend_begin(void)
 {
-   int r, c;
-   int i = 0;
-   int ribbon_rows    = 16;
-   int ribbon_columns = 32;
+   unsigned r, c;
+   unsigned i = 0;
+   const unsigned ribbon_rows    = 16;
+   const unsigned ribbon_columns = 32;
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
