@@ -1918,6 +1918,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 
 static void xmb_draw_bg(menu_display_ctx_draw_t *draw)
 {
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
 }
 

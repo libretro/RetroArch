@@ -164,8 +164,6 @@ static void menu_display_gl_draw_bg(void *data)
 
    menu_display_gl_blend_begin();
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
-
    draw->x           = 0;
    draw->y           = 0;
    draw->coords      = &coords;
