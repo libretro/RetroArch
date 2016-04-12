@@ -1978,11 +1978,18 @@ static void xmb_frame(void *data)
    draw.handle_alpha       = xmb->alpha;
    draw.force_transparency = false;
    draw.color              = &coord_color[0];
-   draw.color2             = &coord_color2[0];
    draw.vertex             = NULL;
    draw.tex_coord          = NULL;
    draw.vertex_count       = 4;
    draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   if (
+         (settings->menu.pause_libretro
+          || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
+          || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+         )
+      && !draw.force_transparency && draw.texture)
+      draw.color             = &coord_color2[0];
 
    xmb_draw_bg(&draw);
 
@@ -2110,11 +2117,18 @@ static void xmb_frame(void *data)
       draw.handle_alpha       = xmb->alpha;
       draw.force_transparency = true;
       draw.color              = &coord_color[0];
-      draw.color2             = &coord_color2[0];
       draw.vertex             = NULL;
       draw.tex_coord          = NULL;
       draw.vertex_count       = 4;
       draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+      if (
+            (settings->menu.pause_libretro
+             || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
+             || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+            )
+            && !draw.force_transparency && draw.texture)
+         draw.color             = &coord_color2[0];
 
       xmb_draw_bg(&draw);
 

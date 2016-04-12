@@ -166,14 +166,6 @@ static void menu_display_gl_draw_bg(void *data)
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   if (
-         (settings->menu.pause_libretro
-          || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
-          || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-         )
-      && !draw->force_transparency && draw->texture)
-      coords.color = (const float*)draw->color2;
-
    draw->x           = 0;
    draw->y           = 0;
    draw->coords      = &coords;

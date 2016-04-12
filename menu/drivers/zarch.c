@@ -43,6 +43,7 @@
 #include "../menu_display.h"
 #include "../menu_navigation.h"
 #include "../menu_hash.h"
+#include "../../retroarch.h"
 
 #include "../../gfx/font_driver.h"
 
@@ -1102,11 +1103,18 @@ static void zarch_frame(void *data)
    draw.handle_alpha       = 0.75f;
    draw.force_transparency = false;
    draw.color              = &coord_color[0];
-   draw.color2             = &coord_color2[0];
    draw.vertex             = NULL;
    draw.tex_coord          = coord_draw.ptr;
    draw.vertex_count       = 4;
    draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   if (
+         (settings->menu.pause_libretro
+          || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
+          || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+         )
+      && !draw.force_transparency && draw.texture)
+      draw.color             = &coord_color2[0];
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
 

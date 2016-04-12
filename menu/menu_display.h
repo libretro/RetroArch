@@ -116,7 +116,6 @@ typedef struct menu_display_ctx_draw
    float handle_alpha;
    bool force_transparency;
    float *color;
-   float *color2;
    const float *vertex;
    const float *tex_coord;
    size_t vertex_count;

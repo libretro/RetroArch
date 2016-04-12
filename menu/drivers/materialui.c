@@ -834,11 +834,18 @@ static void mui_frame(void *data)
       draw.handle_alpha       = 0.75f;
       draw.force_transparency = false;
       draw.color              = &white_transp_bg[0];
-      draw.color2             = &white_bg[0];
       draw.vertex             = NULL;
       draw.tex_coord          = NULL;
       draw.vertex_count       = 4;
       draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+      if (
+            (settings->menu.pause_libretro
+             || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
+             || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+            )
+            && !draw.force_transparency && draw.texture)
+         draw.color             = &white_bg[0];
 
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
    }
@@ -868,11 +875,18 @@ static void mui_frame(void *data)
          draw.handle_alpha       = 0.75f;
          draw.force_transparency = true;
          draw.color              = &white_transp_bg[0];
-         draw.color2             = &white_bg[0];
          draw.vertex             = NULL;
          draw.tex_coord          = NULL;
          draw.vertex_count       = 4;
          draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+         if (
+               (settings->menu.pause_libretro
+                || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
+                || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+               )
+               && !draw.force_transparency && draw.texture)
+            draw.color             = &white_bg[0];
 
          menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
 
