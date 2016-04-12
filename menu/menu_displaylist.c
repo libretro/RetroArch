@@ -2345,7 +2345,7 @@ static int menu_displaylist_parse_add_content_list(
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
-#if 1
+#if 0
    menu_entries_prepend(info->list,
          "Test",
          "new_test",
