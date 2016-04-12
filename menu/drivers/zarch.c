@@ -1116,7 +1116,9 @@ static void zarch_frame(void *data)
       && !draw.force_transparency && draw.texture)
       draw.color             = &coord_color2[0];
 
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 
    zui->rendering = false;
 

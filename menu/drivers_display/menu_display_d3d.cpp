@@ -188,8 +188,6 @@ static void menu_display_d3d_draw_bg(void *data)
    coords.lut_tex_coord = new_tex_coord;
    coords.color         = (const float*)draw->color;
 
-   menu_display_d3d_blend_begin();
-
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
    draw->x           = 0;
@@ -198,8 +196,6 @@ static void menu_display_d3d_draw_bg(void *data)
       menu_display_d3d_get_default_mvp();
 
    menu_display_d3d_draw(draw);
-
-   menu_display_d3d_blend_end();
 
 #if 0
    gl->coords.color = gl->white_color_ptr;

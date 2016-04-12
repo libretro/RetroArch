@@ -738,6 +738,13 @@ static int mui_get_core_title(char *s, size_t len)
    return 0;
 }
 
+static void mui_draw_bg(menu_display_ctx_draw_t *draw)
+{
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+}
+
 static void mui_frame(void *data)
 {
    unsigned header_height;
@@ -847,7 +854,7 @@ static void mui_frame(void *data)
             && !draw.force_transparency && draw.texture)
          draw.color             = &white_bg[0];
 
-      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
+      mui_draw_bg(&draw);
    }
    else
    {
@@ -888,7 +895,7 @@ static void mui_frame(void *data)
                && !draw.force_transparency && draw.texture)
             draw.color             = &white_bg[0];
 
-         menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
+         mui_draw_bg(&draw);
 
          /* Restore opacity of transposed white background */
          bgcolor_setalpha(white_transp_bg, 0.90);

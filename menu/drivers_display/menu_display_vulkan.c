@@ -157,7 +157,6 @@ static void menu_display_vk_draw_bg(void *data)
    coords.tex_coord     = new_tex_coord;
    coords.color         = (const float*)draw->color;
 
-   vk->display.blend = true;
    draw->x           = 0;
    draw->y           = 0;
    draw->coords      = &coords;
@@ -165,8 +164,6 @@ static void menu_display_vk_draw_bg(void *data)
       menu_display_vk_get_default_mvp();
 
    menu_display_vk_draw(draw);
-
-   vk->display.blend = false;
 }
 
 static void menu_display_vk_restore_clear_color(void)
