@@ -240,6 +240,9 @@ error:
 
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 {
+#if defined(__CELLOS_LV2__)
+   uint64_t pos = 0;
+#endif
    if (!stream)
       goto error;
 
@@ -247,7 +250,6 @@ ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
    if (sceIoLseek(stream->fd, (SceOff)offset, whence) == -1)
       goto error;
 #elif defined(__CELLOS_LV2__)
-   uint64_t pos = 0;
    if (cellFsLseek(stream->fd, offset, whence, &pos) != CELL_FS_SUCCEEDED)
       goto error;
 #else
@@ -305,13 +307,15 @@ error:
 
 ssize_t filestream_tell(RFILE *stream)
 {
+#if defined(__CELLOS_LV2__)
+   uint64_t pos = 0;
+#endif
    if (!stream)
       goto error;
 #if defined(VITA) || defined(PSP)
   if (sceIoLseek(stream->fd, 0, SEEK_CUR) < 0)
      goto error;
 #elif defined(__CELLOS_LV2__)
-   uint64_t pos = 0;
    if (cellFsLseek(stream->fd, 0, CELL_FS_SEEK_CUR, &pos) != CELL_FS_SUCCEEDED)
       goto error;
 #else

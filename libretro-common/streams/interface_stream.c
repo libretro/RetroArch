@@ -224,7 +224,7 @@ int intfstream_getc(intfstream_internal_t *intf)
    return 0;
 }
 
-size_t intfstream_tell(intfstream_internal_t *intf)
+int intfstream_tell(intfstream_internal_t *intf)
 {
    if (!intf)
       return -1;
