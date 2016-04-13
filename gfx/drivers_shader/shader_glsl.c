@@ -1202,7 +1202,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       orig_uniforms[0].enabled           = false;
       orig_uniforms[0].location          = uni->orig.texture_size;
       orig_uniforms[0].type              = UNIFORM_2FV;
-      orig_uniforms[0].result.integer.v0 = texunit;
       orig_uniforms[0].result.floatv     = (float*)info->tex_size;
 
       if (uni->orig.texture_size >= 0)
@@ -1211,7 +1210,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       orig_uniforms[1].enabled           = false;
       orig_uniforms[1].location          = uni->orig.input_size;
       orig_uniforms[1].type              = UNIFORM_2FV;
-      orig_uniforms[1].result.integer.v0 = texunit;
       orig_uniforms[1].result.floatv     = (float*)info->input_size;
 
       if (uni->orig.input_size >= 0)
@@ -1278,19 +1276,40 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       /* Bind FBO textures. */
       for (i = 0; i < fbo_info_cnt; i++)
       {
+         unsigned j;
+         struct uniform_info fbo_tex_params[3];
+
          if (uni->pass[i].texture)
          {
             glActiveTexture(GL_TEXTURE0 + texunit);
             glBindTexture(GL_TEXTURE_2D, fbo_info[i].tex);
-            glUniform1i(uni->pass[i].texture, texunit);
+
+            fbo_tex_params[0].enabled  = true;
+            fbo_tex_params[0].location = uni->pass[i].texture;
+            fbo_tex_params[0].type     = UNIFORM_1I;
+            fbo_tex_params[0].result.integer.v0 = texunit;
+
             texunit++;
          }
 
+         fbo_tex_params[1].enabled  = false;
+         fbo_tex_params[1].location = uni->pass[i].texture_size;
+         fbo_tex_params[1].type     = UNIFORM_2FV;
+         fbo_tex_params[1].result.floatv = (float*)fbo_info[i].tex_size;
+
          if (uni->pass[i].texture_size >= 0)
-            glUniform2fv(uni->pass[i].texture_size, 1, fbo_info[i].tex_size);
+            fbo_tex_params[1].enabled  = true;
+
+         fbo_tex_params[2].enabled  = false;
+         fbo_tex_params[2].location = uni->pass[i].input_size;
+         fbo_tex_params[2].type     = UNIFORM_2FV;
+         fbo_tex_params[2].result.floatv = (float*)fbo_info[i].input_size;
 
          if (uni->pass[i].input_size >= 0)
-            glUniform2fv(uni->pass[i].input_size, 1, fbo_info[i].input_size);
+            fbo_tex_params[2].enabled  = true;
+
+         for (j = 0; j < 3; j++)
+            glsl_uniform_set_parameter(&fbo_tex_params[i], NULL);
 
          if (uni->pass[i].tex_coord >= 0)
          {
