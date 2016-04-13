@@ -1177,6 +1177,9 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
    if (glsl->glsl_active_index)
    {
+      unsigned j;
+      struct uniform_info orig_uniforms[2];
+
       /* Set original texture. */
       if (uni->orig.texture >= 0)
       {
@@ -1195,11 +1198,26 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          texunit++;
       }
 
+      orig_uniforms[0].enabled           = false;
+      orig_uniforms[0].location          = uni->orig.texture_size;
+      orig_uniforms[0].type              = UNIFORM_2FV;
+      orig_uniforms[0].result.integer.v0 = texunit;
+      orig_uniforms[0].result.floatv     = (float*)info->tex_size;
+
       if (uni->orig.texture_size >= 0)
-         glUniform2fv(uni->orig.texture_size, 1, info->tex_size);
+         orig_uniforms[0].enabled        = true;
+
+      orig_uniforms[1].enabled           = false;
+      orig_uniforms[1].location          = uni->orig.input_size;
+      orig_uniforms[1].type              = UNIFORM_2FV;
+      orig_uniforms[1].result.integer.v0 = texunit;
+      orig_uniforms[1].result.floatv     = (float*)info->input_size;
 
       if (uni->orig.input_size >= 0)
-         glUniform2fv(uni->orig.input_size, 1, info->input_size);
+         orig_uniforms[1].enabled        = true;
+
+      for (j = 0; j < 2; j++)
+         glsl_uniform_set_parameter(&orig_uniforms[i], NULL);
 
       /* Pass texture coordinates. */
       if (uni->orig.tex_coord >= 0)
