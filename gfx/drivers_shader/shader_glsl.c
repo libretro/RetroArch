@@ -1204,8 +1204,8 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       /* Pass texture coordinates. */
       if (uni->orig.tex_coord >= 0)
       {
-         attr->loc = uni->orig.tex_coord;
-         attr->size = 2;
+         attr->loc    = uni->orig.tex_coord;
+         attr->size   = 2;
          attr->offset = size * sizeof(GLfloat);
          attribs_size++;
          attr++;
@@ -1233,8 +1233,8 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       /* Pass texture coordinates. */
       if (uni->feedback.tex_coord >= 0)
       {
-         attr->loc = uni->feedback.tex_coord;
-         attr->size = 2;
+         attr->loc    = uni->feedback.tex_coord;
+         attr->size   = 2;
          attr->offset = size * sizeof(GLfloat);
          attribs_size++;
          attr++;
@@ -1262,8 +1262,8 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
          if (uni->pass[i].tex_coord >= 0)
          {
-            attr->loc = uni->pass[i].tex_coord;
-            attr->size = 2;
+            attr->loc    = uni->pass[i].tex_coord;
+            attr->size   = 2;
             attr->offset = size * sizeof(GLfloat);
             attribs_size++;
             attr++;
@@ -1294,8 +1294,8 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       /* Pass texture coordinates. */
       if (uni->prev[i].tex_coord >= 0)
       {
-         attr->loc = uni->prev[i].tex_coord;
-         attr->size = 2;
+         attr->loc    = uni->prev[i].tex_coord;
+         attr->size   = 2;
          attr->offset = size * sizeof(GLfloat);
          attribs_size++;
          attr++;
@@ -1306,12 +1306,10 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    }
 
    if (size)
-   {
       gl_glsl_set_attribs(glsl, glsl->vbo[glsl->glsl_active_index].vbo_secondary,
             &glsl->vbo[glsl->glsl_active_index].buffer_secondary,
             &glsl->vbo[glsl->glsl_active_index].size_secondary,
             buffer, size, attribs, attribs_size);
-   }
 
    glActiveTexture(GL_TEXTURE0);
 
