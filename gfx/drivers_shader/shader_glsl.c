@@ -1008,6 +1008,34 @@ error:
 
 #if 0
 static float t = 0;
+
+static void glsl_uniform_set_parameter(void *data, void *uniform_data)
+{
+   struct uniform_info *param = (struct uniform_info*)data;
+
+   if (!param)
+      return;
+
+   switch (param->type)
+   {
+      case UNIFORM_1F:
+         break;
+      case UNIFORM_2F:
+         break;
+      case UNIFORM_3F:
+         break;
+      case UNIFORM_4F:
+         break;
+      case UNIFORM_1FV:
+         break;
+      case UNIFORM_2FV:
+         break;
+      case UNIFORM_3FV:
+         break;
+      case UNIFORM_4FV:
+         break;
+   }
+}
 #endif
 
 static void gl_glsl_set_params(void *data, void *shader_data,
@@ -1020,6 +1048,9 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       const void *_feedback_info,
       const void *_fbo_info, unsigned fbo_info_cnt)
 {
+#if 0
+   struct uniform_info uniform_params[10];
+#endif
    GLfloat buffer[512];
    struct glsl_attrib attribs[32];
    float input_size[2], output_size[2], texture_size[2];
