@@ -92,6 +92,7 @@ enum shader_uniform_type
 struct uniform_info
 {
    enum shader_uniform_type type;
+   bool enabled;
 
    struct
    {
