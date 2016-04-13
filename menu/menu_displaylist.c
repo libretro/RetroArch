@@ -2595,13 +2595,13 @@ static int menu_displaylist_parse_generic(
             true, true);
 
    if (hash_label == MENU_LABEL_SCAN_DIRECTORY)
-      menu_entries_add(info->list,
+      menu_entries_prepend(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_SCAN_THIS_DIRECTORY),
             menu_hash_to_str(MENU_LABEL_SCAN_THIS_DIRECTORY),
             MENU_FILE_SCAN_DIRECTORY, 0 ,0);
 
    if (push_dir)
-      menu_entries_add(info->list,
+      menu_entries_prepend(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_USE_THIS_DIRECTORY),
             menu_hash_to_str(MENU_LABEL_USE_THIS_DIRECTORY),
             MENU_FILE_USE_DIRECTORY, 0 ,0);
@@ -2613,7 +2613,7 @@ static int menu_displaylist_parse_generic(
 
       if (!string_is_empty(out_dir))
       {
-         menu_entries_add(info->list, "..", info->path,
+         menu_entries_prepend(info->list, "..", info->path,
                MENU_FILE_PARENT_DIRECTORY, 0, 0);
       }
    }
