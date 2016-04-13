@@ -617,7 +617,8 @@ static void gl_cg_deinit(void *data)
       listing_##type = strdup(list); \
 }
 
-static bool gl_cg_compile_program(void *data,
+static bool gl_cg_compile_program(
+      void *data,
       unsigned idx,
       shader_program_data_t *program,
       struct shader_program_info *program_info)
