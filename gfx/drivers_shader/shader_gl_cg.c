@@ -504,6 +504,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
 
       for (i = 0; i < cnt; i++)
       {
+         unsigned j;
          struct uniform_info state_params[2];
          CGparameter pragma_cg_params[2];
 
@@ -522,7 +523,8 @@ static void gl_cg_set_params(void *data, void *shader_data,
          uniform_params[1].type          = UNIFORM_1F;
          uniform_params[1].result.f.v0   = tracker_info[i].value;
 
-         cg_uniform_set_parameter(&state_params[i], &pragma_cg_params[i]);
+         for (j = 0; j < 2; j++)
+            cg_uniform_set_parameter(&uniform_params[j], &pragma_cg_params[j]);
       }
    }
 }
