@@ -1245,7 +1245,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          feedback_texture_param.result.integer.v0 = texunit;
 
          glsl_uniform_set_parameter(&feedback_texture_param, NULL);
-         glUniform1i(uni->feedback.texture, texunit);
 
          glBindTexture(GL_TEXTURE_2D, feedback_info->tex);
          texunit++;
