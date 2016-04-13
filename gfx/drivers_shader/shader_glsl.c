@@ -421,8 +421,7 @@ static bool gl_glsl_link_program(GLuint prog)
 
 static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
       unsigned idx,
-      const char *vertex,
-      const char *fragment)
+      struct shader_program_info *program_info)
 {
    GLuint vert = 0;
    GLuint frag = 0;
@@ -431,13 +430,13 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
    if (!prog)
       goto error;
 
-   if (vertex)
+   if (program_info->vertex)
    {
       RARCH_LOG("Found GLSL vertex shader.\n");
       vert = glCreateShader(GL_VERTEX_SHADER);
       if (!gl_glsl_compile_shader(
                glsl,
-               vert, "#define VERTEX\n#define PARAMETER_UNIFORM\n", vertex))
+               vert, "#define VERTEX\n#define PARAMETER_UNIFORM\n", program_info->vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", idx);
          goto error;
@@ -446,12 +445,12 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
       glAttachShader(prog, vert);
    }
 
-   if (fragment)
+   if (program_info->fragment)
    {
       RARCH_LOG("Found GLSL fragment shader.\n");
       frag = glCreateShader(GL_FRAGMENT_SHADER);
       if (!gl_glsl_compile_shader(glsl, frag,
-               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n", fragment))
+               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n", program_info->fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", idx);
          goto error;
@@ -460,7 +459,7 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
       glAttachShader(prog, frag);
    }
 
-   if (vertex || fragment)
+   if (program_info->vertex || program_info->fragment)
    {
       RARCH_LOG("Linking GLSL program.\n");
       if (!gl_glsl_link_program(prog))
@@ -523,6 +522,7 @@ static bool gl_glsl_compile_programs(
 
    for (i = 0; i < glsl->shader->passes; i++)
    {
+      struct shader_program_info shader_prog_info;
       const char *vertex           = NULL;
       const char *fragment         = NULL;
       struct video_shader_pass *pass = (struct video_shader_pass*)
@@ -544,7 +544,11 @@ static bool gl_glsl_compile_programs(
       vertex   = pass->source.string.vertex;
       fragment = pass->source.string.fragment;
 
-      gl_prog[i] = gl_glsl_compile_program(glsl, i, vertex, fragment);
+      shader_prog_info.vertex   = vertex;
+      shader_prog_info.fragment = fragment;
+      shader_prog_info.is_file  = false;
+
+      gl_prog[i] = gl_glsl_compile_program(glsl, i, &shader_prog_info);
 
       if (!gl_prog[i])
       {
@@ -790,6 +794,7 @@ static void gl_glsl_deinit(void *data)
 static void *gl_glsl_init(void *data, const char *path)
 {
    unsigned i;
+   struct shader_program_info shader_prog_info;
    config_file_t *conf        = NULL;
    const char *stock_vertex   = NULL;
    const char *stock_fragment = NULL;
@@ -918,7 +923,11 @@ static void *gl_glsl_init(void *data, const char *path)
       }
    }
 
-   if (!(glsl->gl_program[0] = gl_glsl_compile_program(glsl, 0, stock_vertex, stock_fragment)))
+   shader_prog_info.vertex   = stock_vertex;
+   shader_prog_info.fragment = stock_fragment;
+   shader_prog_info.is_file  = false;
+
+   if (!(glsl->gl_program[0] = gl_glsl_compile_program(glsl, 0, &shader_prog_info)))
    {
       RARCH_ERR("GLSL stock programs failed to compile.\n");
       goto error;
@@ -970,13 +979,18 @@ static void *gl_glsl_init(void *data, const char *path)
 
    if (glsl->shader->modern)
    {
+      shader_prog_info.vertex   = 
+            glsl_core ? 
+            stock_vertex_core_blend : stock_vertex_modern_blend;
+      shader_prog_info.fragment = 
+            glsl_core ? 
+            stock_fragment_core_blend : stock_fragment_modern_blend;
+      shader_prog_info.is_file  = false;
+
       glsl->gl_program[GL_SHADER_STOCK_BLEND] = gl_glsl_compile_program(
             glsl,
             GL_SHADER_STOCK_BLEND,
-            glsl_core ? 
-            stock_vertex_core_blend : stock_vertex_modern_blend,
-            glsl_core ? 
-            stock_fragment_core_blend : stock_fragment_modern_blend
+            &shader_prog_info
             );
       gl_glsl_find_uniforms(glsl, 0, glsl->gl_program[GL_SHADER_STOCK_BLEND],
             &glsl->uniforms[GL_SHADER_STOCK_BLEND]);
@@ -987,11 +1001,14 @@ static void *gl_glsl_init(void *data, const char *path)
       glsl->uniforms[GL_SHADER_STOCK_BLEND] = glsl->uniforms[0];
    }
 
+   shader_prog_info.vertex   = stock_vertex_xmb;
+   shader_prog_info.fragment = stock_fragment_xmb;
+   shader_prog_info.is_file  = false;
+
    glsl->gl_program[GL_SHADER_STOCK_XMB] = gl_glsl_compile_program(
          glsl,
          GL_SHADER_STOCK_XMB,
-         stock_vertex_xmb,
-         stock_fragment_xmb);
+         &shader_prog_info);
 
    gl_glsl_reset_attrib(glsl);
 

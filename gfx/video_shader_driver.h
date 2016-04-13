@@ -90,6 +90,14 @@ enum shader_uniform_type
    UNIFORM_1I
 };
 
+struct shader_program_info
+{
+   const char *vertex;
+   const char *fragment;
+   const char *combined;
+   bool is_file;
+};
+
 struct uniform_info
 {
    enum shader_uniform_type type;
