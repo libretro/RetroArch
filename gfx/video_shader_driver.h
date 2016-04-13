@@ -80,7 +80,13 @@ enum video_shader_driver_ctl_state
 enum shader_uniform_type
 {
    UNIFORM_1F = 0,
-   UNIFORM_2F
+   UNIFORM_2F,
+   UNIFORM_3F,
+   UNIFORM_4F,
+   UNIFORM_1FV,
+   UNIFORM_2FV,
+   UNIFORM_3FV,
+   UNIFORM_4FV,
 };
 
 struct uniform_info
@@ -91,10 +97,33 @@ struct uniform_info
    {
       struct
       {
-         float a;
-         float b;
-         float c;
+         intptr_t v0;
+         intptr_t v1;
+         intptr_t v2;
+         intptr_t v3;
+      } integer;
+
+      intptr_t *integerv;
+
+      struct
+      {
+         uintptr_t v0;
+         uintptr_t v1;
+         uintptr_t v2;
+         uintptr_t v3;
+      } unsigned_integer;
+
+      uintptr_t *unsigned_integerv;
+
+      struct
+      {
+         float v0;
+         float v1;
+         float v2;
+         float v3;
       } f;
+
+      float *floatv;
    } result;
 };
 
