@@ -87,7 +87,7 @@ enum shader_uniform_type
    UNIFORM_2FV,
    UNIFORM_3FV,
    UNIFORM_4FV,
-   UNIFORM_1I,
+   UNIFORM_1I
 };
 
 struct uniform_info
