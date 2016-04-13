@@ -86,6 +86,9 @@ static void cg_uniform_set_parameter(void *data, void *uniform_data)
       case UNIFORM_4FV:
          cgGLSetParameter3fv((CGparameter)*cg_param, param->result.floatv);
          break;
+      case UNIFORM_1I:
+         /* Unimplemented - Cg limitation */
+         break;
    }
 }
 
@@ -465,6 +468,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
    /* #pragma parameters. */
    for (i = 0; i < cg_data->shader->num_parameters; i++)
    {
+      unsigned j;
       struct uniform_info pragma_params[2];
       CGparameter pragma_cg_params[2];
 
@@ -483,7 +487,8 @@ static void gl_cg_set_params(void *data, void *shader_data,
       uniform_params[1].type          = UNIFORM_1F;
       uniform_params[1].result.f.v0   = cg_data->shader->parameters[i].current;
 
-      cg_uniform_set_parameter(&pragma_params[i], &pragma_cg_params[i]);
+      for (j = 0; j < 2; j++)
+         cg_uniform_set_parameter(&uniform_params[j], &pragma_cg_params[j]);
    }
 
    /* Set state parameters. */
