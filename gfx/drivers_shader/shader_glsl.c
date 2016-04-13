@@ -1158,13 +1158,20 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)
    {
+      struct uniform_info lut_uniform;
       if (uni->lut_texture[i] < 0)
          continue;
 
       /* Have to rebind as HW render could override this. */
       glActiveTexture(GL_TEXTURE0 + texunit);
       glBindTexture(GL_TEXTURE_2D, glsl->gl_teximage[i]);
-      glUniform1i(uni->lut_texture[i], texunit);
+
+      lut_uniform.enabled           = true;
+      lut_uniform.location          = uni->lut_texture[i];
+      lut_uniform.type              = UNIFORM_1I;
+      lut_uniform.result.integer.v0 = texunit;
+
+      glsl_uniform_set_parameter(&lut_uniform, NULL);
       texunit++;
    }
 
@@ -1173,9 +1180,17 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       /* Set original texture. */
       if (uni->orig.texture >= 0)
       {
+         struct uniform_info orig_tex_uniform;
          /* Bind original texture. */
          glActiveTexture(GL_TEXTURE0 + texunit);
-         glUniform1i(uni->orig.texture, texunit);
+
+         orig_tex_uniform.enabled           = true;
+         orig_tex_uniform.location          = uni->orig.texture;
+         orig_tex_uniform.type              = UNIFORM_1I;
+         orig_tex_uniform.result.integer.v0 = texunit;
+
+         glsl_uniform_set_parameter(&orig_tex_uniform, NULL);
+
          glBindTexture(GL_TEXTURE_2D, info->tex);
          texunit++;
       }
