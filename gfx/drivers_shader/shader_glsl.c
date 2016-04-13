@@ -251,8 +251,8 @@ static const char *stock_fragment_xmb =
 typedef struct glsl_shader_data
 {
    struct video_shader *shader;
-   struct shader_uniforms gl_uniforms[GFX_MAX_SHADERS];
-   struct cache_vbo glsl_vbo[GFX_MAX_SHADERS];
+   struct shader_uniforms uniforms[GFX_MAX_SHADERS];
+   struct cache_vbo vbo[GFX_MAX_SHADERS];
    char glsl_alias_define[1024];
    unsigned glsl_active_index;
    unsigned gl_attrib_index;
@@ -746,7 +746,7 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
       glDeleteTextures(glsl->shader->luts, glsl->gl_teximage);
 
    memset(glsl->gl_program, 0, sizeof(glsl->gl_program));
-   memset(glsl->gl_uniforms, 0, sizeof(glsl->gl_uniforms));
+   memset(glsl->uniforms, 0, sizeof(glsl->uniforms));
    glsl->glsl_active_index = 0;
 
    gl_glsl_deinit_shader(glsl);
@@ -759,15 +759,15 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
-      if (glsl->glsl_vbo[i].vbo_primary)
-         glDeleteBuffers(1, &glsl->glsl_vbo[i].vbo_primary);
-      if (glsl->glsl_vbo[i].vbo_secondary)
-         glDeleteBuffers(1, &glsl->glsl_vbo[i].vbo_secondary);
+      if (glsl->vbo[i].vbo_primary)
+         glDeleteBuffers(1, &glsl->vbo[i].vbo_primary);
+      if (glsl->vbo[i].vbo_secondary)
+         glDeleteBuffers(1, &glsl->vbo[i].vbo_secondary);
 
-      free(glsl->glsl_vbo[i].buffer_primary);
-      free(glsl->glsl_vbo[i].buffer_secondary);
+      free(glsl->vbo[i].buffer_primary);
+      free(glsl->vbo[i].buffer_secondary);
    }
-   memset(&glsl->glsl_vbo, 0, sizeof(glsl->glsl_vbo));
+   memset(&glsl->vbo, 0, sizeof(glsl->vbo));
 }
 
 static void gl_glsl_deinit(void *data)
@@ -929,7 +929,7 @@ static void *gl_glsl_init(void *data, const char *path)
    }
 
    for (i = 0; i <= glsl->shader->passes; i++)
-      gl_glsl_find_uniforms(glsl, i, glsl->gl_program[i], &glsl->gl_uniforms[i]);
+      gl_glsl_find_uniforms(glsl, i, glsl->gl_program[i], &glsl->uniforms[i]);
 
 #ifdef GLSL_DEBUG
    if (!gl_check_error())
@@ -961,7 +961,7 @@ static void *gl_glsl_init(void *data, const char *path)
    }
    
    glsl->gl_program[glsl->shader->passes  + 1] = glsl->gl_program[0];
-   glsl->gl_uniforms[glsl->shader->passes + 1] = glsl->gl_uniforms[0];
+   glsl->uniforms[glsl->shader->passes + 1] = glsl->uniforms[0];
 
    if (glsl->shader->modern)
    {
@@ -973,12 +973,12 @@ static void *gl_glsl_init(void *data, const char *path)
             stock_fragment_core_blend : stock_fragment_modern_blend,
             GL_SHADER_STOCK_BLEND);
       gl_glsl_find_uniforms(glsl, 0, glsl->gl_program[GL_SHADER_STOCK_BLEND],
-            &glsl->gl_uniforms[GL_SHADER_STOCK_BLEND]);
+            &glsl->uniforms[GL_SHADER_STOCK_BLEND]);
    }
    else
    {
       glsl->gl_program [GL_SHADER_STOCK_BLEND] = glsl->gl_program[0];
-      glsl->gl_uniforms[GL_SHADER_STOCK_BLEND] = glsl->gl_uniforms[0];
+      glsl->uniforms[GL_SHADER_STOCK_BLEND] = glsl->uniforms[0];
    }
 
    glsl->gl_program[GL_SHADER_STOCK_XMB] = gl_glsl_compile_program(
@@ -991,8 +991,8 @@ static void *gl_glsl_init(void *data, const char *path)
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
-      glGenBuffers(1, &glsl->glsl_vbo[i].vbo_primary);
-      glGenBuffers(1, &glsl->glsl_vbo[i].vbo_secondary);
+      glGenBuffers(1, &glsl->vbo[i].vbo_primary);
+      glGenBuffers(1, &glsl->vbo[i].vbo_secondary);
    }
 
    return glsl;
@@ -1036,7 +1036,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    if (!glsl)
       return;
 
-   uni = (const struct shader_uniforms*)&glsl->gl_uniforms[glsl->glsl_active_index];
+   uni = (const struct shader_uniforms*)&glsl->uniforms[glsl->glsl_active_index];
 
    (void)data;
 
@@ -1216,9 +1216,9 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
    if (size)
    {
-      gl_glsl_set_attribs(glsl, glsl->glsl_vbo[glsl->glsl_active_index].vbo_secondary,
-            &glsl->glsl_vbo[glsl->glsl_active_index].buffer_secondary,
-            &glsl->glsl_vbo[glsl->glsl_active_index].size_secondary,
+      gl_glsl_set_attribs(glsl, glsl->vbo[glsl->glsl_active_index].vbo_secondary,
+            &glsl->vbo[glsl->glsl_active_index].buffer_secondary,
+            &glsl->vbo[glsl->glsl_active_index].size_secondary,
             buffer, size, attribs, attribs_size);
    }
 
@@ -1266,7 +1266,7 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
       return false;
    }
 
-   loc = glsl->gl_uniforms[glsl->glsl_active_index].mvp;
+   loc = glsl->uniforms[glsl->glsl_active_index].mvp;
    if (loc >= 0)
       glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
 
@@ -1303,7 +1303,7 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void 
    }
 
    attr = attribs;
-   uni  = &glsl->gl_uniforms[glsl->glsl_active_index];
+   uni  = &glsl->uniforms[glsl->glsl_active_index];
 
    if (uni->tex_coord >= 0)
    {
@@ -1358,14 +1358,12 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void 
    }
 
    if (size)
-   {
       gl_glsl_set_attribs(glsl,
-            glsl->glsl_vbo[glsl->glsl_active_index].vbo_primary,
-            &glsl->glsl_vbo[glsl->glsl_active_index].buffer_primary,
-            &glsl->glsl_vbo[glsl->glsl_active_index].size_primary,
+            glsl->vbo[glsl->glsl_active_index].vbo_primary,
+            &glsl->vbo[glsl->glsl_active_index].buffer_primary,
+            &glsl->vbo[glsl->glsl_active_index].size_primary,
             buffer, size,
             attribs, attribs_size);
-   }
 
    if (buffer != short_buffer)
       free(buffer);
@@ -1437,7 +1435,7 @@ static unsigned gl_glsl_get_prev_textures(void *data)
 
    for (i = 1; i <= glsl->shader->passes; i++)
       for (j = 0; j < PREV_TEXTURES; j++)
-         if (glsl->gl_uniforms[i].prev[j].texture >= 0)
+         if (glsl->uniforms[i].prev[j].texture >= 0)
             max_prev = MAX(j + 1, max_prev);
 
    return max_prev;
