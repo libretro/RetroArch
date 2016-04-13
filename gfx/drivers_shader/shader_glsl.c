@@ -1328,19 +1328,40 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    /* Set previous textures. Only bind if they're actually used. */
    for (i = 0; i < PREV_TEXTURES; i++)
    {
+      unsigned j;
+      struct uniform_info prev_tex_params[3];
+
       if (uni->prev[i].texture >= 0)
       {
          glActiveTexture(GL_TEXTURE0 + texunit);
          glBindTexture(GL_TEXTURE_2D, prev_info[i].tex);
-         glUniform1i(uni->prev[i].texture, texunit);
+
+         prev_tex_params[0].enabled  = true;
+         prev_tex_params[0].location = uni->prev[i].texture;
+         prev_tex_params[0].type     = UNIFORM_1I;
+         prev_tex_params[0].result.integer.v0 = texunit;
+
          texunit++;
       }
 
+      prev_tex_params[1].enabled  = false;
+      prev_tex_params[1].location = uni->prev[i].texture_size;
+      prev_tex_params[1].type     = UNIFORM_2FV;
+      prev_tex_params[1].result.floatv = (float*)prev_info[i].tex_size;
+
       if (uni->prev[i].texture_size >= 0)
-         glUniform2fv(uni->prev[i].texture_size, 1, prev_info[i].tex_size);
+         prev_tex_params[1].enabled  = true;
+
+      prev_tex_params[2].enabled  = false;
+      prev_tex_params[2].location = uni->prev[i].input_size;
+      prev_tex_params[2].type     = UNIFORM_2FV;
+      prev_tex_params[2].result.floatv = (float*)prev_info[i].input_size;
 
       if (uni->prev[i].input_size >= 0)
-         glUniform2fv(uni->prev[i].input_size, 1, prev_info[i].input_size);
+         prev_tex_params[2].enabled  = true;
+
+      for (j = 0; j < 3; j++)
+         glsl_uniform_set_parameter(&prev_tex_params[i], NULL);
 
       /* Pass texture coordinates. */
       if (uni->prev[i].tex_coord >= 0)
