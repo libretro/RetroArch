@@ -423,9 +423,12 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
       const char *vertex,
       const char *fragment, unsigned i)
 {
-   GLuint vert = 0, frag = 0, prog = glCreateProgram();
+   GLuint vert = 0;
+   GLuint frag = 0;
+   GLuint prog = glCreateProgram();
+
    if (!prog)
-      return 0;
+      goto error;
 
    if (vertex)
    {
@@ -436,7 +439,7 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
                vert, "#define VERTEX\n#define PARAMETER_UNIFORM\n", vertex))
       {
          RARCH_ERR("Failed to compile vertex shader #%u\n", i);
-         return 0;
+         goto error;
       }
 
       glAttachShader(prog, vert);
@@ -450,7 +453,7 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
                "#define FRAGMENT\n#define PARAMETER_UNIFORM\n", fragment))
       {
          RARCH_ERR("Failed to compile fragment shader #%u\n", i);
-         return 0;
+         goto error;
       }
 
       glAttachShader(prog, frag);
@@ -460,10 +463,7 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
    {
       RARCH_LOG("Linking GLSL program.\n");
       if (!gl_glsl_link_program(prog))
-      {
-         RARCH_ERR("Failed to link program #%u.\n", i);
-         return 0;
-      }
+         goto error;
 
       /* Clean up dead memory. We're not going to relink the program.
        * Detaching first seems to kill some mobile drivers 
@@ -479,6 +479,10 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
    }
 
    return prog;
+
+error:
+   RARCH_ERR("Failed to link program #%u.\n", i);
+   return 0;
 }
 
 static void gl_glsl_strip_parameter_pragmas(char *source)
