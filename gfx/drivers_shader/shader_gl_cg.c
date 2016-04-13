@@ -333,15 +333,16 @@ static void gl_cg_set_params(void *data, void *shader_data,
    unsigned i;
    struct uniform_info uniform_params[10];
    CGparameter uniform_data[10];
-   unsigned uniform_count = 0;
-   const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
-   const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
+   unsigned uniform_count                   = 0;
+   const struct gfx_tex_info *info          = (const struct gfx_tex_info*)_info;
+   const struct gfx_tex_info *prev_info     = (const struct gfx_tex_info*)_prev_info;
    const struct gfx_tex_info *feedback_info = (const struct gfx_tex_info*)_feedback_info;
-   const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
-   cg_shader_data_t *cg_data = (cg_shader_data_t*)shader_data;
+   const struct gfx_tex_info *fbo_info      = (const struct gfx_tex_info*)_fbo_info;
+   cg_shader_data_t *cg_data                = (cg_shader_data_t*)shader_data;
 
-   if (!cg_data || (cg_data->active_idx == 0) ||
-         (cg_data->active_idx == GL_SHADER_STOCK_BLEND))
+   if (!cg_data || (cg_data->active_idx == 0))
+         return;
+   if (cg_data->active_idx == GL_SHADER_STOCK_BLEND)
       return;
 
    /* Set frame. */
