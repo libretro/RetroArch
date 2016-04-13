@@ -1234,9 +1234,19 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       /* Set feedback texture. */
       if (uni->feedback.texture >= 0)
       {
+         struct uniform_info feedback_texture_param;
+
          /* Bind original texture. */
          glActiveTexture(GL_TEXTURE0 + texunit);
+
+         feedback_texture_param.enabled  = true;
+         feedback_texture_param.location = uni->pass[i].texture;
+         feedback_texture_param.type     = UNIFORM_1I;
+         feedback_texture_param.result.integer.v0 = texunit;
+
+         glsl_uniform_set_parameter(&feedback_texture_param, NULL);
          glUniform1i(uni->feedback.texture, texunit);
+
          glBindTexture(GL_TEXTURE_2D, feedback_info->tex);
          texunit++;
       }
@@ -1388,10 +1398,17 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    /* #pragma parameters. */
    for (i = 0; i < glsl->shader->num_parameters; i++)
    {
+      struct uniform_info pragma_param;
       int location = glGetUniformLocation(
             glsl->gl_program[glsl->glsl_active_index],
             glsl->shader->parameters[i].id);
-      glUniform1f(location, glsl->shader->parameters[i].current);
+
+      pragma_param.enabled     = true;
+      pragma_param.location    = location;
+      pragma_param.type        = UNIFORM_1F;
+      pragma_param.result.f.v0 = glsl->shader->parameters[i].current;
+
+      glsl_uniform_set_parameter(&pragma_param, NULL);
    }
 
    /* Set state parameters. */
@@ -1406,10 +1423,17 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
       for (i = 0; i < cnt; i++)
       {
+         struct uniform_info state_param;
          int location = glGetUniformLocation(
                glsl->gl_program[glsl->glsl_active_index],
                state_info[i].id);
-         glUniform1f(location, state_info[i].value);
+
+         state_param.enabled     = true;
+         state_param.location    = location;
+         state_param.type        = UNIFORM_1F;
+         state_param.result.f.v0 = state_info[i].value;
+
+         glsl_uniform_set_parameter(&state_param, NULL);
       }
    }
 }
