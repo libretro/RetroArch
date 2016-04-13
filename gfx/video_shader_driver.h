@@ -77,6 +77,27 @@ enum video_shader_driver_ctl_state
    SHADER_CTL_GET_PREV_TEXTURES
 };
 
+enum shader_uniform_type
+{
+   UNIFORM_1F = 0,
+   UNIFORM_2F
+};
+
+struct uniform_info
+{
+   enum shader_uniform_type type;
+
+   struct
+   {
+      struct
+      {
+         float a;
+         float b;
+         float c;
+      } f;
+   } result;
+};
+
 typedef struct shader_backend
 {
    void *(*init)(void *data, const char *path);
