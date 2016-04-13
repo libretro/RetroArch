@@ -66,3 +66,25 @@ Usecase: Search for all games released on October 1995.
 
 `libretrodb_tool <db file> find "{'releasemonth':10,'releaseyear':1995}"`
 
+## Compiling the Database
+
+The [libretro-database](https://github.com/libretro/libretro-database) is a set of compiled assets that RetroArch uses in order to parse game data correctly. This database needs to be compiled in order for RetroArch to read it quickly..
+
+1. Run the following command:
+  ``` bash
+  make compile
+  ```
+
+2. Fork the [libretro-database](https://github.com/libretro/libretro-database) repository to your own organization
+
+3. Push the new database files to your fork:
+  ``` bash
+  cd libretro-database
+  git remote add myremote git@github.com:USERNAME/libretro-database.git
+  git checkout -b update
+  git add -A
+  git commit -m "Update the rdb files"
+  git push myremote update
+  ```
+
+4. Submit a pull request with the new updated database files
