@@ -1179,6 +1179,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    {
       unsigned j;
       struct uniform_info orig_uniforms[2];
+      struct uniform_info feedback_uniforms[2];
 
       /* Set original texture. */
       if (uni->orig.texture >= 0)
@@ -1242,11 +1243,24 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          texunit++;
       }
 
+      feedback_uniforms[0].enabled           = false;
+      feedback_uniforms[0].location          = uni->feedback.texture_size;
+      feedback_uniforms[0].type              = UNIFORM_2FV;
+      feedback_uniforms[0].result.floatv     = (float*)feedback_info->tex_size;
+
       if (uni->feedback.texture_size >= 0)
-         glUniform2fv(uni->feedback.texture_size, 1, feedback_info->tex_size);
+         feedback_uniforms[0].enabled        = true;
+
+      feedback_uniforms[1].enabled           = false;
+      feedback_uniforms[1].location          = uni->feedback.input_size;
+      feedback_uniforms[1].type              = UNIFORM_2FV;
+      feedback_uniforms[1].result.floatv     = (float*)feedback_info->input_size;
 
       if (uni->feedback.input_size >= 0)
-         glUniform2fv(uni->feedback.input_size, 1, feedback_info->input_size);
+         feedback_uniforms[1].enabled        = true;
+
+      for (j = 0; j < 2; j++)
+         glsl_uniform_set_parameter(&feedback_uniforms[i], NULL);
 
       /* Pass texture coordinates. */
       if (uni->feedback.tex_coord >= 0)
