@@ -165,7 +165,7 @@ struct cg_fbo_params
 
 #define PREV_TEXTURES (GFX_MAX_TEXTURES - 1)
 
-struct cg_program
+struct shader_program_data
 {
    CGprogram vprg;
    CGprogram fprg;
@@ -195,7 +195,7 @@ struct cg_program
 
 typedef struct cg_shader_data
 {
-   struct cg_program prg[GFX_MAX_SHADERS];
+   shader_program_data_t prg[GFX_MAX_SHADERS];
    unsigned active_idx;
    unsigned cg_attrib_idx;
    CGprofile cgVProf;
@@ -619,6 +619,7 @@ static void gl_cg_deinit(void *data)
 
 static bool gl_cg_compile_program(void *data,
       unsigned idx,
+      shader_program_data_t *program,
       struct shader_program_info *program_info)
 {
    const char *argv[2 + GFX_MAX_SHADERS];
@@ -638,26 +639,26 @@ static bool gl_cg_compile_program(void *data,
 
    if (program_info->is_file)
    {
-      cg_data->prg[idx].fprg = cgCreateProgramFromFile(
+      program->fprg = cgCreateProgramFromFile(
             cg_data->cgCtx, CG_SOURCE,
             program_info->combined, cg_data->cgFProf, "main_fragment", argv);
       CG_GL_SET_LISTING(cg_data, f);
-      cg_data->prg[idx].vprg = cgCreateProgramFromFile(
+      program->vprg = cgCreateProgramFromFile(
             cg_data->cgCtx, CG_SOURCE,
             program_info->combined, cg_data->cgVProf, "main_vertex", argv);
       CG_GL_SET_LISTING(cg_data, v);
    }
    else
    {
-      cg_data->prg[idx].fprg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
+      program->fprg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
             program_info->combined, cg_data->cgFProf, "main_fragment", argv);
       CG_GL_SET_LISTING(cg_data, f);
-      cg_data->prg[idx].vprg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
+      program->vprg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
             program_info->combined, cg_data->cgVProf, "main_vertex", argv);
       CG_GL_SET_LISTING(cg_data, v);
    }
 
-   if (!cg_data->prg[idx].fprg || !cg_data->prg[idx].vprg)
+   if (!program->fprg || !program->vprg)
    {
       RARCH_ERR("CG error: %s\n", cgGetErrorString(cgGetError()));
       if (listing_f)
@@ -669,8 +670,8 @@ static bool gl_cg_compile_program(void *data,
       goto end;
    }
 
-   cgGLLoadProgram(cg_data->prg[idx].fprg);
-   cgGLLoadProgram(cg_data->prg[idx].vprg);
+   cgGLLoadProgram(program->fprg);
+   cgGLLoadProgram(program->vprg);
 
 end:
    free(listing_f);
@@ -732,11 +733,12 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
 static bool gl_cg_load_stock(void *data)
 {
    struct shader_program_info program_info;
+   cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
 
    program_info.combined = stock_cg_gl_program;
    program_info.is_file  = false;
 
-   if (!gl_cg_compile_program(data, 0, &program_info))
+   if (!gl_cg_compile_program(data, 0, &cg_data->prg[0], &program_info))
    {
       RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
@@ -769,7 +771,7 @@ static bool gl_cg_load_plain(void *data, const char *path)
       RARCH_LOG("Loading Cg file: %s\n", path);
       strlcpy(cg_data->shader->pass[0].source.path, path,
             sizeof(cg_data->shader->pass[0].source.path));
-      if (!gl_cg_compile_program(data, 1, &program_info))
+      if (!gl_cg_compile_program(data, 1, &cg_data->prg[1], &program_info))
          return false;
    }
    else
@@ -857,7 +859,7 @@ static bool gl_cg_load_shader(void *data, unsigned i)
    RARCH_LOG("Loading Cg shader: \"%s\".\n",
          cg_data->shader->pass[i].source.path);
 
-   if (!gl_cg_compile_program(data, i + 1, &program_info))
+   if (!gl_cg_compile_program(data, i + 1, &cg_data->prg[i + 1],&program_info))
       return false;
 
    return true;
@@ -937,7 +939,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
 }
 
 static void gl_cg_set_pass_attrib(
-      struct cg_program *program,
+      shader_program_data_t *program,
       struct cg_fbo_params *fbo,
       const char *attr)
 {

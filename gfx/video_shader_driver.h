@@ -98,6 +98,8 @@ struct shader_program_info
    bool is_file;
 };
 
+typedef struct shader_program_data shader_program_data_t;
+
 struct uniform_info
 {
    enum shader_uniform_type type;
