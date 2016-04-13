@@ -419,7 +419,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
       uniform_count += 2;
    }
 
-   for (i = 0; i < (uniform_count+1); i++)
+   for (i = 0; i < uniform_count; i++)
       cg_uniform_set_parameter(&uniform_params[i], &uniform_data[i]);
 
    /* Set orig texture. */

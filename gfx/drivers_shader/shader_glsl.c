@@ -1156,7 +1156,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       state_manager_frame_is_reversed() ? -1 : 1;
    uniform_count++;
 
-   for (i = 0; i < (uniform_count+1); i++)
+   for (i = 0; i < uniform_count; i++)
       glsl_uniform_set_parameter(&uniform_params[i], NULL);
 
    /* Set lookup textures. */
