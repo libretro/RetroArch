@@ -419,12 +419,14 @@ static bool gl_glsl_link_program(GLuint prog)
    return true;
 }
 
-static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
+static GLuint gl_glsl_compile_program(
+      void *data,
       unsigned idx,
       struct shader_program_info *program_info)
 {
    GLuint vert = 0;
    GLuint frag = 0;
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)data;
    GLuint prog = glCreateProgram();
 
    if (!prog)
