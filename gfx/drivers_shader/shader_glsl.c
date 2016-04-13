@@ -420,8 +420,9 @@ static bool gl_glsl_link_program(GLuint prog)
 }
 
 static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
+      unsigned idx,
       const char *vertex,
-      const char *fragment, unsigned i)
+      const char *fragment)
 {
    GLuint vert = 0;
    GLuint frag = 0;
@@ -438,7 +439,7 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
                glsl,
                vert, "#define VERTEX\n#define PARAMETER_UNIFORM\n", vertex))
       {
-         RARCH_ERR("Failed to compile vertex shader #%u\n", i);
+         RARCH_ERR("Failed to compile vertex shader #%u\n", idx);
          goto error;
       }
 
@@ -452,7 +453,7 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
       if (!gl_glsl_compile_shader(glsl, frag,
                "#define FRAGMENT\n#define PARAMETER_UNIFORM\n", fragment))
       {
-         RARCH_ERR("Failed to compile fragment shader #%u\n", i);
+         RARCH_ERR("Failed to compile fragment shader #%u\n", idx);
          goto error;
       }
 
@@ -481,7 +482,7 @@ static GLuint gl_glsl_compile_program(glsl_shader_data_t *glsl,
    return prog;
 
 error:
-   RARCH_ERR("Failed to link program #%u.\n", i);
+   RARCH_ERR("Failed to link program #%u.\n", idx);
    return 0;
 }
 
@@ -543,7 +544,7 @@ static bool gl_glsl_compile_programs(
       vertex   = pass->source.string.vertex;
       fragment = pass->source.string.fragment;
 
-      gl_prog[i] = gl_glsl_compile_program(glsl, vertex, fragment, i);
+      gl_prog[i] = gl_glsl_compile_program(glsl, i, vertex, fragment);
 
       if (!gl_prog[i])
       {
@@ -917,7 +918,7 @@ static void *gl_glsl_init(void *data, const char *path)
       }
    }
 
-   if (!(glsl->gl_program[0] = gl_glsl_compile_program(glsl, stock_vertex, stock_fragment, 0)))
+   if (!(glsl->gl_program[0] = gl_glsl_compile_program(glsl, 0, stock_vertex, stock_fragment)))
    {
       RARCH_ERR("GLSL stock programs failed to compile.\n");
       goto error;
@@ -971,11 +972,12 @@ static void *gl_glsl_init(void *data, const char *path)
    {
       glsl->gl_program[GL_SHADER_STOCK_BLEND] = gl_glsl_compile_program(
             glsl,
+            GL_SHADER_STOCK_BLEND,
             glsl_core ? 
             stock_vertex_core_blend : stock_vertex_modern_blend,
             glsl_core ? 
-            stock_fragment_core_blend : stock_fragment_modern_blend,
-            GL_SHADER_STOCK_BLEND);
+            stock_fragment_core_blend : stock_fragment_modern_blend
+            );
       gl_glsl_find_uniforms(glsl, 0, glsl->gl_program[GL_SHADER_STOCK_BLEND],
             &glsl->uniforms[GL_SHADER_STOCK_BLEND]);
    }
@@ -987,9 +989,9 @@ static void *gl_glsl_init(void *data, const char *path)
 
    glsl->gl_program[GL_SHADER_STOCK_XMB] = gl_glsl_compile_program(
          glsl,
+         GL_SHADER_STOCK_XMB,
          stock_vertex_xmb,
-         stock_fragment_xmb,
-         GL_SHADER_STOCK_XMB);
+         stock_fragment_xmb);
 
    gl_glsl_reset_attrib(glsl);
 
