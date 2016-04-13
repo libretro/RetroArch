@@ -1009,6 +1009,7 @@ error:
 #if 0
 static float t = 0;
 
+#endif
 static void glsl_uniform_set_parameter(void *data, void *uniform_data)
 {
    struct uniform_info *param = (struct uniform_info*)data;
@@ -1019,24 +1020,38 @@ static void glsl_uniform_set_parameter(void *data, void *uniform_data)
    switch (param->type)
    {
       case UNIFORM_1F:
+         glUniform1f(param->location, param->result.f.v0);
          break;
       case UNIFORM_2F:
+         glUniform2f(param->location, param->result.f.v0,
+               param->result.f.v1);
          break;
       case UNIFORM_3F:
+         glUniform3f(param->location, param->result.f.v0,
+               param->result.f.v1, param->result.f.v2);
          break;
       case UNIFORM_4F:
+         glUniform4f(param->location, param->result.f.v0,
+               param->result.f.v1, param->result.f.v2,
+               param->result.f.v3);
          break;
       case UNIFORM_1FV:
+         glUniform1fv(param->location, 1, param->result.floatv);
          break;
       case UNIFORM_2FV:
+         glUniform2fv(param->location, 1, param->result.floatv);
          break;
       case UNIFORM_3FV:
+         glUniform3fv(param->location, 1, param->result.floatv);
          break;
       case UNIFORM_4FV:
+         glUniform4fv(param->location, 1, param->result.floatv);
+         break;
+      case UNIFORM_1I:
+         glUniform1i(param->location, param->result.integer.v0);
          break;
    }
 }
-#endif
 
 static void gl_glsl_set_params(void *data, void *shader_data,
       unsigned width, unsigned height, 
@@ -1048,13 +1063,13 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       const void *_feedback_info,
       const void *_fbo_info, unsigned fbo_info_cnt)
 {
-#if 0
+   unsigned i;
    struct uniform_info uniform_params[10];
-#endif
    GLfloat buffer[512];
    struct glsl_attrib attribs[32];
    float input_size[2], output_size[2], texture_size[2];
-   unsigned i, texunit = 1;
+   unsigned uniform_count = 0;
+   unsigned texunit = 1;
    const struct shader_uniforms *uni = NULL;
    size_t size = 0, attribs_size = 0;
    const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
@@ -1089,26 +1104,56 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    texture_size[0] = (float)tex_width;
    texture_size[1] = (float)tex_height;
 
+   uniform_params[0].enabled       = false;
+   uniform_params[0].location      = uni->input_size;
+   uniform_params[0].type          = UNIFORM_2FV;
+   uniform_params[0].result.floatv = input_size;
+
    if (uni->input_size >= 0)
-      glUniform2fv(uni->input_size, 1, input_size);
+      uniform_params[0].enabled       = true;
+
+   uniform_params[1].enabled       = false;
+   uniform_params[1].location      = uni->output_size;
+   uniform_params[1].type          = UNIFORM_2FV;
+   uniform_params[1].result.floatv = output_size;
 
    if (uni->output_size >= 0)
-      glUniform2fv(uni->output_size, 1, output_size);
+      uniform_params[1].enabled       = true;
+
+   uniform_params[2].enabled       = false;
+   uniform_params[2].location      = uni->texture_size;
+   uniform_params[2].type          = UNIFORM_2FV;
+   uniform_params[2].result.floatv = texture_size;
 
    if (uni->texture_size >= 0)
-      glUniform2fv(uni->texture_size, 1, texture_size);
+      uniform_params[2].enabled       = true;
 
+   uniform_count += 3;
+   
    if (uni->frame_count >= 0 && glsl->glsl_active_index)
    {
       unsigned modulo = glsl->shader->pass[glsl->glsl_active_index - 1].frame_count_mod;
 
       if (modulo)
          frame_count %= modulo;
-      glUniform1i(uni->frame_count, frame_count);
+
+      uniform_params[uniform_count].enabled  = true;
+      uniform_params[uniform_count].location = uni->frame_count;
+      uniform_params[uniform_count].type     = UNIFORM_1I;
+      uniform_params[uniform_count].result.integer.v0 = frame_count;
+
+      uniform_count++;
    }
 
-   if (uni->frame_direction >= 0)
-      glUniform1i(uni->frame_direction, state_manager_frame_is_reversed() ? -1 : 1);
+   uniform_params[uniform_count].enabled  = true;
+   uniform_params[uniform_count].location = uni->frame_direction;
+   uniform_params[uniform_count].type     = UNIFORM_1I;
+   uniform_params[uniform_count].result.integer.v0 = 
+      state_manager_frame_is_reversed() ? -1 : 1;
+   uniform_count++;
+
+   for (i = 0; i < (uniform_count+1); i++)
+      glsl_uniform_set_parameter(&uniform_params[i], NULL);
 
    /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)

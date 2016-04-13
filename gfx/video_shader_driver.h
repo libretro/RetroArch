@@ -87,12 +87,16 @@ enum shader_uniform_type
    UNIFORM_2FV,
    UNIFORM_3FV,
    UNIFORM_4FV,
+   UNIFORM_1I,
 };
 
 struct uniform_info
 {
    enum shader_uniform_type type;
    bool enabled;
+
+   int32_t location;
+   int32_t count;
 
    struct
    {

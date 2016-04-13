@@ -276,24 +276,28 @@ static void gl_cg_set_texture_info(
       cgGLEnableTextureParameter(param);
    }
 
+   uniform_params[0].location      = 0;
    uniform_params[0].enabled       = true;
    uniform_params[0].type          = UNIFORM_2F;
    uniform_params[0].result.f.v0   = info->input_size[0];
    uniform_params[0].result.f.v1   = info->input_size[1];
    uniform_data[0]                 = params->vid_size_v;
 
+   uniform_params[1].location      = 1;
    uniform_params[1].enabled       = true;
    uniform_params[1].type          = UNIFORM_2F;
    uniform_params[1].result.f.v0   = info->input_size[0];
    uniform_params[1].result.f.v1   = info->input_size[1];
    uniform_data[1]                 = params->vid_size_f;
 
+   uniform_params[2].location      = 2;
    uniform_params[2].enabled       = true;
    uniform_params[2].type          = UNIFORM_2F;
    uniform_params[2].result.f.v0   = info->tex_size[0];
    uniform_params[2].result.f.v1   = info->tex_size[1];
    uniform_data[2]                 = params->tex_size_v;
 
+   uniform_params[3].location      = 3;
    uniform_params[3].enabled       = true;
    uniform_params[3].type          = UNIFORM_2F;
    uniform_params[3].result.f.v0   = info->tex_size[0];
@@ -338,47 +342,55 @@ static void gl_cg_set_params(void *data, void *shader_data,
       return;
 
    /* Set frame. */
+   uniform_params[0].location      = 0;
    uniform_params[0].enabled       = true;
    uniform_params[0].type          = UNIFORM_2F;
    uniform_params[0].result.f.v0   = width;
    uniform_params[0].result.f.v1   = height;
    uniform_data[0]                 = cg_data->prg[cg_data->active_idx].vid_size_f;
    
+   uniform_params[1].location      = 1;
    uniform_params[1].enabled       = true;
    uniform_params[1].type          = UNIFORM_2F;
    uniform_params[1].result.f.v0   = tex_width;
    uniform_params[1].result.f.v1   = tex_height;
    uniform_data[1]                 = cg_data->prg[cg_data->active_idx].tex_size_f;
 
+   uniform_params[2].location      = 2;
    uniform_params[2].enabled       = true;
    uniform_params[2].type          = UNIFORM_2F;
    uniform_params[2].result.f.v0   = out_width;
    uniform_params[2].result.f.v1   = out_height;
    uniform_data[2]                 = cg_data->prg[cg_data->active_idx].out_size_f;
 
+   uniform_params[3].location      = 3;
    uniform_params[3].enabled       = true;
    uniform_params[3].type          = UNIFORM_1F;
    uniform_params[3].result.f.v0   = state_manager_frame_is_reversed() ? -1.0 : 1.0;
    uniform_data[3]                 = cg_data->prg[cg_data->active_idx].frame_dir_f;
 
+   uniform_params[4].location      = 4;
    uniform_params[4].enabled       = true;
    uniform_params[4].type          = UNIFORM_2F;
    uniform_params[4].result.f.v0   = width;
    uniform_params[4].result.f.v1   = height;
    uniform_data[4]                 = cg_data->prg[cg_data->active_idx].vid_size_v;
 
+   uniform_params[5].location      = 5;
    uniform_params[5].enabled       = true;
    uniform_params[5].type          = UNIFORM_2F;
    uniform_params[5].result.f.v0   = tex_width;
    uniform_params[5].result.f.v1   = tex_height;
    uniform_data[5]                 = cg_data->prg[cg_data->active_idx].tex_size_v;
 
+   uniform_params[6].location      = 6;
    uniform_params[6].enabled       = true;
    uniform_params[6].type          = UNIFORM_2F;
    uniform_params[6].result.f.v0   = out_width;
    uniform_params[6].result.f.v1   = out_height;
    uniform_data[6]                 = cg_data->prg[cg_data->active_idx].out_size_v;
 
+   uniform_params[7].location      = 7;
    uniform_params[7].enabled       = true;
    uniform_params[7].type          = UNIFORM_1F;
    uniform_params[7].result.f.v0   = state_manager_frame_is_reversed() ? -1.0 : 1.0;
@@ -392,11 +404,13 @@ static void gl_cg_set_params(void *data, void *shader_data,
       if (modulo)
          frame_count %= modulo;
 
+      uniform_params[8].location      = 8;
       uniform_params[8].enabled       = true;
       uniform_params[8].type          = UNIFORM_1F;
       uniform_params[8].result.f.v0   = (float)frame_count;
       uniform_data[8]                 = cg_data->prg[cg_data->active_idx].frame_cnt_f;
 
+      uniform_params[9].location      = 9;
       uniform_params[9].enabled       = true;
       uniform_params[9].type          = UNIFORM_1F;
       uniform_params[9].result.f.v0   = (float)frame_count;
@@ -459,10 +473,12 @@ static void gl_cg_set_params(void *data, void *shader_data,
       pragma_cg_params[1] = cgGetNamedParameter(
             cg_data->prg[cg_data->active_idx].fprg, cg_data->shader->parameters[i].id);
 
+      uniform_params[0].location      = 0;
       uniform_params[0].enabled       = true;
       uniform_params[0].type          = UNIFORM_1F;
       uniform_params[0].result.f.v0   = cg_data->shader->parameters[i].current;
 
+      uniform_params[1].location      = 1;
       uniform_params[1].enabled       = true;
       uniform_params[1].type          = UNIFORM_1F;
       uniform_params[1].result.f.v0   = cg_data->shader->parameters[i].current;
@@ -491,10 +507,12 @@ static void gl_cg_set_params(void *data, void *shader_data,
          pragma_cg_params[1] = cgGetNamedParameter(
                cg_data->prg[cg_data->active_idx].fprg, tracker_info[i].id);
 
+         uniform_params[0].location      = 0;
          uniform_params[0].enabled       = true;
          uniform_params[0].type          = UNIFORM_1F;
          uniform_params[0].result.f.v0    = tracker_info[i].value;
 
+         uniform_params[1].location      = 1;
          uniform_params[1].enabled       = true;
          uniform_params[1].type          = UNIFORM_1F;
          uniform_params[1].result.f.v0   = tracker_info[i].value;
