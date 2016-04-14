@@ -53,6 +53,7 @@ typedef struct database_state_handle
    size_t list_index;
    size_t entry_index;
    uint32_t crc;
+   uint32_t zip_crc;
    uint8_t *buf;
    char zip_name[PATH_MAX_LENGTH];
    char serial[4096];
@@ -172,6 +173,29 @@ static int cue_get_serial(database_state_handle_t *db_state,
    return iso_get_serial(db_state, db, track_path, serial);
 }
 
+static bool file_get_crc(database_state_handle_t *db_state,
+      const char *name, uint32_t *crc)
+{
+   ssize_t ret;
+   int read_from            = filestream_read_file(
+         name, (void**)&db_state->buf, &ret);
+
+#ifdef HAVE_ZLIB
+   const struct file_archive_file_backend *stream_backend = 
+      file_archive_get_default_file_backend();
+#endif
+
+   if (read_from != 1 || ret <= 0)
+      return 0;
+
+#ifdef HAVE_ZLIB
+   *crc = stream_backend->stream_crc_calculate(
+         0, db_state->buf, ret);
+#endif
+
+   return 1;
+}
+
 static int database_info_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
@@ -191,7 +215,7 @@ static int database_info_iterate_playlist(
          memset(&db->state, 0, sizeof(file_archive_transfer_t));
          db_state->zip_name[0] = '\0';
          db->state.type = ZLIB_TRANSFER_INIT;
-         return 1;
+         return file_get_crc(db_state, name, &db_state->zip_crc);
 #endif
       case HASH_EXTENSION_CUE:
       case HASH_EXTENSION_CUE_UPPERCASE:
@@ -207,23 +231,8 @@ static int database_info_iterate_playlist(
          return 1;
       default:
          {
-            ssize_t ret;
-            int read_from            = filestream_read_file(
-                  name, (void**)&db_state->buf, &ret);
-#ifdef HAVE_ZLIB
-            const struct file_archive_file_backend *stream_backend = 
-               file_archive_get_default_file_backend();
-#endif
-
-            if (read_from != 1 || ret <= 0)
-               return 0;
-
-
-#ifdef HAVE_ZLIB
-            db_state->crc = stream_backend->stream_crc_calculate(
-                  0, db_state->buf, ret);
-#endif
             db->type = DATABASE_TYPE_CRC_LOOKUP;
+            return file_get_crc(db_state, name, &db_state->crc);
          }
          break;
    }
@@ -241,6 +250,7 @@ static int database_info_list_iterate_end_no_match(
 
    if (db_state->crc != 0)
       db_state->crc = 0;
+
    return 0;
 }
 
@@ -365,7 +375,8 @@ static int database_info_iterate_crc_lookup(
    {
       char query[50] = {0};
       snprintf(query, sizeof(query),
-            "{crc: b\"%08X\"}", swap_if_big32(db_state->crc));
+            "{crc:or(b\"%08X\",b\"%08X\")}",
+            swap_if_big32(db_state->crc), swap_if_big32(db_state->zip_crc));
 
       database_info_list_iterate_new(db_state, query);
    }
@@ -381,7 +392,8 @@ static int database_info_iterate_crc_lookup(
          RARCH_LOG("CRC32: 0x%08X , entry CRC32: 0x%08X (%s).\n",
                db_state->crc, db_info_entry->crc32, db_info_entry->name);
 #endif
-         if (db_state->crc == db_info_entry->crc32)
+         if (db_state->crc == db_info_entry->crc32
+            || db_state->zip_crc == db_info_entry->crc32)
             return database_info_list_iterate_found_match(
                   db_state, db, zip_entry);
       }
