@@ -90,6 +90,7 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 
 struct hlsl_shader_data
 {
+   d3d_video_t *d3d;
    shader_program_data_t prg[RARCH_HLSL_MAX_SHADERS];
    unsigned active_idx;
    struct video_shader *cg_shader;
@@ -153,13 +154,12 @@ static void hlsl_set_params(void *data, void *shader_data,
 
 static bool hlsl_compile_program(
       void *data,
-      void *device_data,
       unsigned idx,
       shader_program_data_t *program,
       struct shader_program_info *program_info)
 {
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
-   d3d_video_t *d3d = (d3d_video_t*)device_data;
+   d3d_video_t *d3d = (d3d_video_t*)hlsl->d3d;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    HRESULT ret, ret_fp, ret_vp;
    ID3DXBuffer *listing_f = NULL;
@@ -215,7 +215,9 @@ static bool hlsl_load_stock(hlsl_shader_data_t *hlsl, void *data)
    program_info.combined = stock_hlsl_program;
    program_info.is_file  = false;
 
-   if (!hlsl_compile_program(hlsl, data, 0, &hlsl->prg[0], &program_info))
+   hlsl->d3d = (d3d_video_t*)data;
+
+   if (!hlsl_compile_program(hlsl, 0, &hlsl->prg[0], &program_info))
    {
       RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
@@ -257,6 +259,8 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
 
    RARCH_LOG("Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
+   hlsl->d3d = (d3d_video_t*)data;
+
    if (!hlsl_compile_program(hlsl, data, i + 1, &hlsl->prg[i + 1], &program_info))
       return false;
 
@@ -285,6 +289,8 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, void *data, const char *pa
 
       strlcpy(hlsl->cg_shader->pass[0].source.path,
 		  path, sizeof(hlsl->cg_shader->pass[0].source.path));
+
+      hlsl->d3d = (d3d_video_t*)data;
       if (!hlsl_compile_program(hlsl, data, 1, &hlsl->prg[1], &progarm_info))
          return false;
    }
