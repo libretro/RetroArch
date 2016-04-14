@@ -310,31 +310,26 @@ static void hlsl_deinit_state(hlsl_shader_data_t *hlsl)
 
 static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, void *data, const char *path)
 {
+   config_file_t *conf = NULL;
    if (!hlsl_load_stock(hlsl, data))
       return false;
 
    RARCH_LOG("Loading Cg meta-shader: %s\n", path);
-   config_file_t *conf = config_file_new(path);
+
+   conf = config_file_new(path);
 
    if (!conf)
-   {
-      RARCH_ERR("Failed to load preset.\n");
-      return false;
-   }
+      goto error;
 
    if (!hlsl->cg_shader)
       hlsl->cg_shader = (struct video_shader*)calloc(1, sizeof(*hlsl->cg_shader));
    if (!hlsl->cg_shader)
-   {
-      config_file_free(conf);
-      return false;
-   }
+      goto error;
 
    if (!video_shader_read_conf_cgp(conf, hlsl->cg_shader))
    {
       RARCH_ERR("Failed to parse CGP file.\n");
-      config_file_free(conf);
-      return false;
+      goto error;
    }
 
    config_file_free(conf);
@@ -354,8 +349,15 @@ static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, void *data, const char *p
    }
 
    /* TODO - textures / imports */
-
    return true;
+
+error:
+   RARCH_ERR("Failed to load preset.\n");
+   if (conf)
+      config_file_free(conf);
+   conf = NULL;
+
+   return false;
 }
 
 static void *hlsl_init(void *data, const char *path)
