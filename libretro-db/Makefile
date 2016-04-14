@@ -68,3 +68,9 @@ rmsgpack_test: $(RMSGPACK_OBJS)
 
 clean:
 	rm -rf $(TARGETS) $(C_CONVERTER_OBJS) $(RARCHDB_TOOL_OBJS) $(RMSGPACK_OBJS) $(TESTLIB_OBJS) 
+
+libretro-database:
+	@git clone git@github.com:libretro/libretro-database.git
+
+compile: c_converter libretro-database
+	@./c_converter_compiler.sh
