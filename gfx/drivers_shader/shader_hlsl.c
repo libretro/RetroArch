@@ -310,6 +310,7 @@ static void hlsl_deinit_state(hlsl_shader_data_t *hlsl)
 
 static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, void *data, const char *path)
 {
+   unsigned i;
    config_file_t *conf = NULL;
    if (!hlsl_load_stock(hlsl, data))
       return false;
@@ -339,13 +340,11 @@ static bool hlsl_load_preset(hlsl_shader_data_t *hlsl, void *data, const char *p
       RARCH_WARN("Too many shaders ... Capping shader amount to %d.\n", RARCH_HLSL_MAX_SHADERS - 3);
       hlsl->cg_shader->passes = RARCH_HLSL_MAX_SHADERS - 3;
    }
-   for (unsigned i = 0; i < hlsl->cg_shader->passes; i++)
+
+   for (i = 0; i < hlsl->cg_shader->passes; i++)
    {
       if (!hlsl_load_shader(hlsl, data, path, i))
-      {
-         RARCH_ERR("Failed to load shaders ...\n");
-         return false;
-      }
+         goto error;
    }
 
    /* TODO - textures / imports */
