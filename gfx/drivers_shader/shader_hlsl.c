@@ -103,6 +103,45 @@ void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value)
       hlsl_data->prg[hlsl_data->active_idx].mvp_val = rotation_value;
 }
 
+static void hlsl_uniform_set_parameter(void *data, void *uniform_data)
+{
+   struct uniform_info *param = (struct uniform_info*)data;
+
+   if (!param || !param->enabled)
+      return;
+
+   switch (param->type)
+   {
+      case UNIFORM_1F:
+         /* Unimplemented - Cg limitation */
+         break;
+      case UNIFORM_2F:
+         /* Unimplemented - Cg limitation */
+         break;
+      case UNIFORM_3F:
+         /* Unimplemented - Cg limitation */
+         break;
+      case UNIFORM_4F:
+         /* Unimplemented - Cg limitation */
+         break;
+      case UNIFORM_1FV:
+         /* Unimplemented - Cg limitation */
+         break;
+      case UNIFORM_2FV:
+         /* Unimplemented - Cg limitation */
+         break;
+      case UNIFORM_3FV:
+         /* Unimplemented - Cg limitation */
+         break;
+      case UNIFORM_4FV:
+         /* Unimplemented - Cg limitation */
+         break;
+      case UNIFORM_1I:
+         /* Unimplemented - Cg limitation */
+         break;
+   }
+}
+
 #define set_param_2f(param, xy, constanttable) \
    if (param) constanttable->SetFloatArray(d3d_device_ptr, param, xy, 2)
 #define set_param_1f(param, x, constanttable) \
