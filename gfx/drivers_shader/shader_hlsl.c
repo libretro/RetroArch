@@ -64,21 +64,23 @@ static const char *stock_hlsl_program =
       "  return OUT;\n"
       "}\n";
 
-struct hlsl_program
+struct shader_program_data 
 {
    LPDIRECT3DVERTEXSHADER vprg;
    LPDIRECT3DPIXELSHADER fprg;
-   D3DXHANDLE	vid_size_f;
-   D3DXHANDLE	tex_size_f;
-   D3DXHANDLE	out_size_f;
-   D3DXHANDLE   frame_cnt_f;
-   D3DXHANDLE   frame_dir_f;
-   D3DXHANDLE	vid_size_v;
-   D3DXHANDLE	tex_size_v;
-   D3DXHANDLE	out_size_v;
-   D3DXHANDLE   frame_cnt_v;
-   D3DXHANDLE   frame_dir_v;
-   D3DXHANDLE   mvp;
+
+   D3DXHANDLE	   vid_size_f;
+   D3DXHANDLE	   tex_size_f;
+   D3DXHANDLE	   out_size_f;
+   D3DXHANDLE     frame_cnt_f;
+   D3DXHANDLE     frame_dir_f;
+   D3DXHANDLE	   vid_size_v;
+   D3DXHANDLE	   tex_size_v;
+   D3DXHANDLE	   out_size_v;
+   D3DXHANDLE     frame_cnt_v;
+   D3DXHANDLE     frame_dir_v;
+   D3DXHANDLE     mvp;
+
    LPD3DXCONSTANTTABLE v_ctable;
    LPD3DXCONSTANTTABLE f_ctable;
    XMMATRIX mvp_val;   /* TODO: Move to D3DXMATRIX here */
@@ -88,7 +90,7 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 
 struct hlsl_shader_data
 {
-   struct hlsl_program prg[RARCH_HLSL_MAX_SHADERS];
+   shader_program_data_t prg[RARCH_HLSL_MAX_SHADERS];
    unsigned active_idx;
    struct video_shader *cg_shader;
 };
@@ -149,10 +151,10 @@ static void hlsl_set_params(void *data, void *shader_data,
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
 
-static bool hlsl_load_program(hlsl_shader_data_t *hlsl,
-	void *data, unsigned idx, const char *prog, bool path_is_file)
+static bool hlsl_compile_program(hlsl_shader_data_t *hlsl,
+	void *device_data, unsigned idx, const char *prog, bool path_is_file)
 {
-   d3d_video_t *d3d = (d3d_video_t*)data;
+   d3d_video_t *d3d = (d3d_video_t*)device_data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    HRESULT ret, ret_fp, ret_vp;
    ID3DXBuffer *listing_f = NULL;
@@ -203,7 +205,7 @@ end:
 
 static bool hlsl_load_stock(hlsl_shader_data_t *hlsl, void *data)
 {
-   if (!hlsl_load_program(hlsl, data, 0, stock_hlsl_program, false))
+   if (!hlsl_compile_program(hlsl, data, 0, stock_hlsl_program, false))
    {
       RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
       return false;
@@ -241,7 +243,7 @@ static bool hlsl_load_shader(hlsl_shader_data_t *hlsl,
 
    RARCH_LOG("Loading Cg/HLSL shader: \"%s\".\n", path_buf);
 
-   if (!hlsl_load_program(hlsl, data, i + 1, path_buf, true))
+   if (!hlsl_compile_program(hlsl, data, i + 1, path_buf, true))
       return false;
 
    return true;
@@ -263,7 +265,7 @@ static bool hlsl_load_plain(hlsl_shader_data_t *hlsl, void *data, const char *pa
       RARCH_LOG("Loading Cg/HLSL file: %s\n", path);
       strlcpy(hlsl->cg_shader->pass[0].source.path,
 		  path, sizeof(hlsl->cg_shader->pass[0].source.path));
-      if (!hlsl_load_program(hlsl, data, 1, path, true))
+      if (!hlsl_compile_program(hlsl, data, 1, path, true))
          return false;
    }
    else
