@@ -151,9 +151,14 @@ static void hlsl_set_params(void *data, void *shader_data,
    /* TODO - set lookup textures/FBO textures/state parameters/etc */
 }
 
-static bool hlsl_compile_program(hlsl_shader_data_t *hlsl,
-	void *device_data, unsigned idx, const char *prog, bool path_is_file)
+static bool hlsl_compile_program(
+      void *data,
+      void *device_data,
+      unsigned idx,
+      const char *prog,
+      bool path_is_file)
 {
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
    d3d_video_t *d3d = (d3d_video_t*)device_data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    HRESULT ret, ret_fp, ret_vp;
