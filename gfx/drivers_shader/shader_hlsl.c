@@ -284,17 +284,19 @@ static void hlsl_deinit_progs(hlsl_shader_data_t *hlsl)
    {
       if (hlsl->prg[i].fprg && hlsl->prg[i].fprg != hlsl->prg[0].fprg)
          hlsl->prg[i].fprg->Release();
-	  hlsl->prg[i].fprg = NULL;
       if (hlsl->prg[i].vprg && hlsl->prg[i].vprg != hlsl->prg[0].vprg)
          hlsl->prg[i].vprg->Release();
+
+	  hlsl->prg[i].fprg = NULL;
 	  hlsl->prg[i].vprg = NULL;
    }
 
    if (hlsl->prg[0].fprg)
       hlsl->prg[0].fprg->Release();
-   hlsl->prg[0].fprg = NULL;
    if (hlsl->prg[0].vprg)
       hlsl->prg[0].vprg->Release();
+
+   hlsl->prg[0].fprg = NULL;
    hlsl->prg[0].vprg = NULL;
 }
 
