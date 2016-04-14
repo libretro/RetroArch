@@ -392,8 +392,10 @@ static int database_info_iterate_crc_lookup(
          RARCH_LOG("CRC32: 0x%08X , entry CRC32: 0x%08X (%s).\n",
                db_state->crc, db_info_entry->crc32, db_info_entry->name);
 #endif
-         if (db_state->crc == db_info_entry->crc32
-            || db_state->zip_crc == db_info_entry->crc32)
+         if (db_state->zip_crc == db_info_entry->crc32)
+            return database_info_list_iterate_found_match(
+                  db_state, db, NULL);
+         if (db_state->crc == db_info_entry->crc32)
             return database_info_list_iterate_found_match(
                   db_state, db, zip_entry);
       }
