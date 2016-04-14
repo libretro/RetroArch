@@ -103,7 +103,7 @@ void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value)
       hlsl_data->prg[hlsl_data->active_idx].mvp_val = rotation_value;
 }
 
-static void hlsl_uniform_set_parameter(void *data, void *uniform_data)
+static void hlsl_uniform_set_parameter(void *data, shader_program_data_t *shader_data, void *uniform_data)
 {
    struct uniform_info *param = (struct uniform_info*)data;
 

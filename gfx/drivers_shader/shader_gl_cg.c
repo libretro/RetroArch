@@ -50,7 +50,7 @@
 #define SEMANTIC_COLOR0       0xa9e93e54U
 #define SEMANTIC_POSITION     0xd87309baU
 
-static void cg_uniform_set_parameter(void *data, void *uniform_data)
+static void cg_uniform_set_parameter(void *data, shader_program_data_t *shader_data, void *uniform_data)
 {
    struct uniform_info *param = (struct uniform_info*)data;
    CGparameter      *cg_param = (CGparameter*)uniform_data;
@@ -308,7 +308,7 @@ static void gl_cg_set_texture_info(
    uniform_data[3]                 = params->tex_size_f;
 
    for (i = 0; i < 4; i++)
-      cg_uniform_set_parameter(&uniform_params[i], &uniform_data[i]);
+      cg_uniform_set_parameter(&uniform_params[i], NULL, &uniform_data[i]);
 
    if (params->coord)
    {
@@ -424,7 +424,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
    }
 
    for (i = 0; i < uniform_count; i++)
-      cg_uniform_set_parameter(&uniform_params[i], &uniform_data[i]);
+      cg_uniform_set_parameter(&uniform_params[i], &cg_data->prg[i], &uniform_data[i]);
 
    /* Set orig texture. */
    gl_cg_set_texture_info(cg_data, &cg_data->prg[cg_data->active_idx].orig, info);
@@ -489,7 +489,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
       uniform_params[1].result.f.v0   = cg_data->shader->parameters[i].current;
 
       for (j = 0; j < 2; j++)
-         cg_uniform_set_parameter(&uniform_params[j], &pragma_cg_params[j]);
+         cg_uniform_set_parameter(&uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
    }
 
    /* Set state parameters. */
@@ -525,7 +525,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
          uniform_params[1].result.f.v0   = tracker_info[i].value;
 
          for (j = 0; j < 2; j++)
-            cg_uniform_set_parameter(&uniform_params[j], &pragma_cg_params[j]);
+            cg_uniform_set_parameter(&uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
       }
    }
 }
