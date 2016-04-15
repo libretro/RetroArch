@@ -82,7 +82,7 @@ else
 	OBJS += audio/audio_resampler_driver.o
 	OBJS += audio/drivers_resampler/sinc_resampler.o
 	OBJS += audio/drivers_resampler/nearest_resampler.o
-    OBJS += audio/drivers_resampler/null_resampler.o
+	OBJS += audio/drivers_resampler/null_resampler.o
 	OBJS += audio/drivers_resampler/cc_resampler.o
 	OBJS += camera/drivers/nullcamera.o
 	OBJS += location/drivers/nulllocation.o
@@ -165,7 +165,7 @@ else
 	OBJS += record/record_driver.o
 	OBJS += record/drivers/record_null.o
 	OBJS += tasks/task_content.o
-    OBJS += tasks/task_file_transfer.o
+	OBJS += tasks/task_file_transfer.o
 	OBJS += tasks/task_decompress.o
 	OBJS += screenshot.o
 	OBJS += playlist.o
