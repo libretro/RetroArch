@@ -149,7 +149,7 @@ typedef struct menu_display_ctx_driver
    void (*blend_begin)(void);
    void (*blend_end)(void);
    void (*restore_clear_color)(void);
-   void (*clear_color)(void *data);
+   void (*clear_color)(menu_display_ctx_clearcolor_t *clearcolor);
    void *(*get_default_mvp)(void);
    const float *(*get_default_vertices)(void);
    const float *(*get_default_tex_coords)(void);

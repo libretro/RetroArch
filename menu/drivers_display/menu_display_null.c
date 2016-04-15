@@ -46,9 +46,9 @@ static void menu_display_null_restore_clear_color(void)
 {
 }
 
-static void menu_display_null_clear_color(void *data)
+static void menu_display_null_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
 {
-   (void)data;
+   (void)clearcolor;
 }
 
 static bool menu_display_null_font_init_first(

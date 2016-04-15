@@ -164,12 +164,10 @@ static void menu_display_d3d_restore_clear_color(void)
    d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
 }
 
-static void menu_display_d3d_clear_color(void *data)
+static void menu_display_d3d_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
 {
    DWORD    clear_color                      = 0;
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
-   menu_display_ctx_clearcolor_t *clearcolor = 
-      (menu_display_ctx_clearcolor_t*)data;
 
    if (!d3d || !clearcolor)
       return;

@@ -143,10 +143,8 @@ static void menu_display_gl_restore_clear_color(void)
    glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
 }
 
-static void menu_display_gl_clear_color(void *data)
+static void menu_display_gl_clear_color(menu_display_ctx_clearcolor_t *clearcolor)
 {
-   menu_display_ctx_clearcolor_t *clearcolor = 
-      (menu_display_ctx_clearcolor_t*)data;
    if (!clearcolor)
       return;
 
