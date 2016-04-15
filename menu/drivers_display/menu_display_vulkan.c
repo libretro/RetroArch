@@ -45,6 +45,16 @@ static void *menu_display_vk_get_default_mvp(void)
    return &vk->mvp_no_rot;
 }
 
+static const float *menu_display_vk_get_default_vertices(void)
+{
+   return &vk_vertexes[0];
+}
+
+static const float *menu_display_vk_get_default_tex_coords(void)
+{
+   return &vk_tex_coords[0];
+}
+
 static unsigned to_display_pipeline(
       enum menu_display_prim_type type, bool blend)
 {
@@ -79,9 +89,11 @@ static void menu_display_vk_draw(void *data)
    if (!mat)
       mat             = (math_matrix_4x4*)menu_display_vk_get_default_mvp();
    if (!vertex)
-      vertex          = &vk_vertexes[0];
+      vertex          = menu_display_vk_get_default_vertices();
    if (!tex_coord)
-      tex_coord       = &vk_tex_coords[0];
+      tex_coord       = menu_display_vk_get_default_tex_coords();
+   if (!draw->coords->lut_tex_coord)
+      draw->coords->lut_tex_coord = menu_display_vk_get_default_tex_coords();
    if (!texture)
       texture         = &vk->display.blank_texture;
 
@@ -127,15 +139,6 @@ static void menu_display_vk_draw(void *data)
    }
 }
 
-static const float *menu_display_vk_get_default_vertices(void)
-{
-   return &vk_vertexes[0];
-}
-
-static const float *menu_display_vk_get_default_tex_coords(void)
-{
-   return &vk_tex_coords[0];
-}
 
 static void menu_display_vk_restore_clear_color(void)
 {
