@@ -80,27 +80,6 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
          "filters", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,
          "retroarch.cfg", sizeof(g_defaults.path.config));
-   
-#ifndef IS_SALAMANDER
-   /* clean-up argc/argv */
-   if(*argc)
-   {
-      int i = *argc - 1;
-      *argc = 0;
-      while (i)
-      {
-         if(argv[i] && isalnum(argv[i][0])
-            && strncmp(argv[i], "3dslink:/", 9))
-         {
-            argv[1] = argv[i];
-            argv[2] = NULL;
-            *argc = 2;
-            break;
-         }
-         i--;
-      }
-   }
-#endif
 }
 
 static void frontend_ctr_deinit(void *data)
