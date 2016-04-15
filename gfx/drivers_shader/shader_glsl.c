@@ -1133,8 +1133,8 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
 #if 0
    t += 0.004;
-   glUseProgram(glsl->prg[GL_SHADER_STOCK_XMB]);
-   int location = glGetUniformLocation(glsl->prg[GL_SHADER_STOCK_XMB], "time");
+   glUseProgram(glsl->prg[VIDEO_SHADER_MENU]);
+   int location = glGetUniformLocation(glsl->prg[VIDEO_SHADER_MENU], "time");
    glUniform1f(location, t);
    glUseProgram(0);
 #endif
