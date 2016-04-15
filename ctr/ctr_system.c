@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "ctr_debug.h"
 
 #define CTR_APPMEMALLOC_PTR ((u32*)0x1FF80040)
@@ -33,7 +34,7 @@ void __system_allocateHeaps();
 void __system_initArgv();
 
 void __ctru_exit(int rc);
-int __libctru_gtod(struct _reent *ptr, struct timeval *tp, struct timezone *tz);
+int __libctru_gtod(struct _reent* ptr, struct timeval* tp, struct timezone* tz);
 void (*__system_retAddr)(void);
 extern void* __service_ptr;
 
@@ -44,24 +45,25 @@ Result __sync_init(void) __attribute__((weak));
 
 void __attribute__((weak)) __libctru_init(void (*retAddr)(void))
 {
-	// Store the return address
-	__system_retAddr = envIsHomebrew() ? retAddr : NULL;
+   // Store the return address
+   __system_retAddr = envIsHomebrew() ? retAddr : NULL;
 
-	// Initialize the synchronization subsystem
-	__sync_init();
+   // Initialize the synchronization subsystem
+   __sync_init();
 
-	// Initialize newlib support system calls
-	__system_initSyscalls();
+   // Initialize newlib support system calls
+   __system_initSyscalls();
 
-	// Allocate application and linear heaps
-	__system_allocateHeaps();
+   // Allocate application and linear heaps
+   __system_allocateHeaps();
 
-	// Build argc/argv if present
-	__system_initArgv();
+   // Build argc/argv if present
+   __system_initArgv();
 
 }
-void __system_allocateHeaps() {
-   u32 tmp=0;
+void __system_allocateHeaps()
+{
+   u32 tmp = 0;
 
    MemInfo stack_memInfo;
    PageInfo stack_pageInfo;
@@ -72,7 +74,7 @@ void __system_allocateHeaps() {
 
    __stacksize__ += 0xFFF;
    __stacksize__ &= ~0xFFF;
-   __stack_size_extra = __stacksize__ > stack_memInfo.size ? __stacksize__ - stack_memInfo.size: 0;
+   __stack_size_extra = __stacksize__ > stack_memInfo.size ? __stacksize__ - stack_memInfo.size : 0;
    __stack_bottom = stack_memInfo.base_addr - __stack_size_extra;
 
    if (__stack_size_extra)
@@ -81,13 +83,13 @@ void __system_allocateHeaps() {
       memset((void*)__stack_bottom, 0xFC, __stack_size_extra);
    }
 
-	// setup the application heap
-	__heapBase = 0x08000000;
+   // setup the application heap
+   __heapBase = 0x08000000;
    __heap_size = 0;
 
-	// Allocate the linear heap
-	svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
-	// Set up newlib heap
+   // Allocate the linear heap
+   svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size, MEMOP_ALLOC_LINEAR, MEMPERM_READ | MEMPERM_WRITE);
+   // Set up newlib heap
    extern char* fake_heap_end;
    fake_heap_end = (char*)0x13F00000;
 
@@ -98,32 +100,32 @@ Result __sync_fini(void) __attribute__((weak));
 extern char** __system_argv;
 void __attribute__((noreturn)) __libctru_exit(int rc)
 {
-	u32 tmp=0;
+   u32 tmp = 0;
 
-   if(__system_argv)
+   if (__system_argv)
       free(__system_argv);
 
-	// Unmap the linear heap
-	svcControlMemory(&tmp, __linear_heap, 0x0, __linear_heap_size, MEMOP_FREE, 0x0);
+   // Unmap the linear heap
+   svcControlMemory(&tmp, __linear_heap, 0x0, __linear_heap_size, MEMOP_FREE, 0x0);
 
-	// Unmap the application heap
-	svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_FREE, 0x0);
+   // Unmap the application heap
+   svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_FREE, 0x0);
 
    if (__stack_size_extra)
       svcControlMemory(&tmp, __stack_bottom, 0x0, __stack_size_extra, MEMOP_FREE, 0x0);
 
-	// Close some handles
-	envDestroyHandles();
+   // Close some handles
+   envDestroyHandles();
 
    if (__sync_fini)
-		__sync_fini();
+      __sync_fini();
 
-	// Jump to the loader if it provided a callback
-	if (__system_retAddr)
-		__system_retAddr();
+   // Jump to the loader if it provided a callback
+   if (__system_retAddr)
+      __system_retAddr();
 
-	// Since above did not jump, end this process
-	svcExitProcess();
+   // Since above did not jump, end this process
+   svcExitProcess();
 }
 
 #include <3ds/types.h>
@@ -135,50 +137,48 @@ int __system_argc;
 char** __system_argv;
 extern const char* __system_arglist;
 
-//extern char* fake_heap_start;
-extern char* fake_heap_end;
-
 void __system_initArgv()
 {
-	int i;
-	const char* temp = __system_arglist;
+   int i;
+   struct
+   {
+     u32 argc;
+     char args[];
+   }*arg_struct = (void*)__system_arglist;
 
-	// Check if the argument list is present
-	if (!temp)
-		return;
+   __system_argc = 0;
 
-	// Retrieve argc
-	__system_argc = *(u32*)temp;
-	temp += sizeof(u32);
+   if (arg_struct)
+      __system_argc = arg_struct->argc;
 
-	// Find the end of the argument data
-	for (i = 0; i < __system_argc; i ++)
-	{
-		for (; *temp; temp ++);
-		temp ++;
-	}
+   if (__system_argc)
+   {
+      __system_argv = (char**) malloc((__system_argc + 1) * sizeof(char**));
+      __system_argv[0] = arg_struct->args;
+      for (i = 1; i < __system_argc; i++)
+         __system_argv[i] = __system_argv[i - 1] + strlen(__system_argv[i - 1]) + 1;
 
-	// Reserve heap memory for argv data
-	u32 argSize = temp - __system_arglist - sizeof(u32);
-//	__system_argv = (char**)fake_heap_start;
-//	fake_heap_start += sizeof(char**)*(__system_argc + 1);
-//	char* argCopy = fake_heap_start;
-//	fake_heap_start += argSize;
-
-   __system_argv = malloc(sizeof(char**)*(__system_argc + 1) + argSize);
-   char* argCopy = (char*)__system_argv + sizeof(char**)*(__system_argc + 1);
-
-
-	// Fill argv array
-	memcpy(argCopy, &__system_arglist[4], argSize);
-	temp = argCopy;
-	for (i = 0; i < __system_argc; i ++)
-	{
-		__system_argv[i] = (char*)temp;
-		for (; *temp; temp ++);
-		temp ++;
-	}
-	__system_argv[__system_argc] = NULL;
+      i = __system_argc - 1;
+      __system_argc = 1;
+      while (i)
+      {
+         if(__system_argv[i] && isalnum(__system_argv[i][0])
+            && strncmp(__system_argv[i], "3dslink:/", 9))
+         {
+            __system_argv[1] = __system_argv[i];
+            __system_argc = 2;
+            break;
+         }
+         i--;
+      }
+   }
+   else
+   {
+      __system_argc = 1;
+      __system_argv = (char**) malloc(sizeof(char**) * 2);
+      __system_argv[0] = "sdmc:/retroarch/retroarch";
+   }
+   __system_argv[__system_argc] = NULL;
 }
 
 void initSystem(void (*retAddr)(void))
@@ -195,7 +195,8 @@ void __attribute__((noreturn)) __ctru_exit(int rc)
    __libctru_exit(rc);
 }
 
-typedef union{
+typedef union
+{
    struct
    {
       unsigned description : 10;
@@ -205,7 +206,7 @@ typedef union{
       unsigned level       : 5;
    };
    Result val;
-}ctr_result_value;
+} ctr_result_value;
 
 void dump_result_value(Result val)
 {
@@ -225,7 +226,7 @@ void wait_for_input(void)
    printf("\n\nPress Start.\n\n");
    fflush(stdout);
 
-   while(aptMainLoop())
+   while (aptMainLoop())
    {
       u32 kDown;
 
@@ -238,6 +239,7 @@ void wait_for_input(void)
 
       if (kDown & KEY_SELECT)
          exit(0);
+
 #if 0
       select_pressed = true;
 #endif
@@ -249,7 +251,7 @@ void wait_for_input(void)
 
 long sysconf(int name)
 {
-   switch(name)
+   switch (name)
    {
    case _SC_NPROCESSORS_ONLN:
       return 2;

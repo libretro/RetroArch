@@ -34,6 +34,7 @@ OBJS += ctr/ctr_svchax.o
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJS += griffin/griffin.o
 else
+	CFLAGS += -DHAVE_COMPRESSION
 	OBJS += libretro-common/file/archive_file.o
 	OBJS += libretro-common/file/archive_file_zlib.o
 	OBJS += libretro-common/encodings/encoding_utf.o
@@ -132,7 +133,6 @@ else
 	OBJS += list_special.o
 	OBJS += libretro-common/lists/string_list.o
 	OBJS += libretro-common/string/stdstring.o
-#	OBJS += file_ops.o
 	OBJS += libretro-common/file/nbio/nbio_stdio.o
 	OBJS += libretro-common/lists/file_list.o
 	OBJS += libretro-common/queues/message_queue.o
@@ -225,8 +225,6 @@ else
 	OBJS += deps/zlib/trees.o
 	OBJS += deps/zlib/uncompr.o
 	OBJS += deps/zlib/zutil.o
-#	OBJS += deps/zlib/ioapi.o
-#	OBJS += deps/zlib/unzip.o
 	OBJS += audio/audio_utils.o
 endif
 
@@ -286,7 +284,6 @@ CFLAGS += -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
 CFLAGS += -DHAVE_GRIFFIN=1 -DHAVE_FILTERS_BUILTIN -DHAVE_MENU -DHAVE_RGUI
 CFLAGS += -DHAVE_ZLIB -DHAVE_RPNG -DWANT_ZLIB -DHAVE_BUILTIN_AUTOCONFIG
-CFLAGS += -DHAVE_COMPRESSION
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
