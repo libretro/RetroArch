@@ -228,7 +228,7 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
             video_shader_ctx_info_t *shader_info = (video_shader_ctx_info_t*)data;
             if (!current_shader || !shader_info)
                return false;
-            current_shader->use(shader_info->data, shader_data, shader_info->idx, true);
+            current_shader->use(shader_info->data, shader_data, shader_info->idx, shader_info->set_active);
          }
          break;
       case SHADER_CTL_WRAP_TYPE:

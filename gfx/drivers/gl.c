@@ -1190,8 +1190,9 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
       glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo[i]);
 
-      shader_info.data = gl;
-      shader_info.idx  = i + 1;
+      shader_info.data       = gl;
+      shader_info.idx        = i + 1;
+      shader_info.set_active = true;
 
       video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
@@ -1263,8 +1264,9 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    /* Render our FBO texture to back buffer. */
    gl_bind_backbuffer();
 
-   shader_info.data = gl;
-   shader_info.idx  = gl->fbo_pass + 1;
+   shader_info.data       = gl;
+   shader_info.idx        = gl->fbo_pass + 1;
+   shader_info.set_active = true;
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
@@ -1685,8 +1687,9 @@ static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
 
    video_driver_get_size(&width, &height);
 
-   shader_info.data = gl;
-   shader_info.idx  = idx;
+   shader_info.data       = gl;
+   shader_info.idx        = idx;
+   shader_info.set_active = true;
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
    gl_set_viewport(gl, width, height, false, true);
@@ -1763,8 +1766,9 @@ static INLINE void gl_draw_texture(gl_t *gl)
    gl->coords.color     = color;
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
-   shader_info.data     = gl;
-   shader_info.idx      = GL_SHADER_STOCK_BLEND;
+   shader_info.data       = gl;
+   shader_info.idx        = GL_SHADER_STOCK_BLEND;
+   shader_info.set_active = true;
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
@@ -1833,9 +1837,9 @@ static bool gl_frame(void *data, const void *frame,
       glBindVertexArray(gl->vao);
 #endif
 
-
-   shader_info.data = gl;
-   shader_info.idx  = 1;
+   shader_info.data       = gl;
+   shader_info.idx        = 1;
+   shader_info.set_active = true;
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
@@ -2015,8 +2019,9 @@ static bool gl_frame(void *data, const void *frame,
    /* Reset state which could easily mess up libretro core. */
    if (gl->hw_render_fbo_init)
    {
-      shader_info.data = gl;
-      shader_info.idx  = 0;
+      shader_info.data       = gl;
+      shader_info.idx        = 0;
+      shader_info.set_active = true;
 
       video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
@@ -3600,8 +3605,9 @@ static void gl_render_overlay(gl_t *gl)
       glViewport(0, 0, width, height);
 
    /* Ensure that we reset the attrib array. */
-   shader_info.data = gl;
-   shader_info.idx  = GL_SHADER_STOCK_BLEND;
+   shader_info.data       = gl;
+   shader_info.idx        = GL_SHADER_STOCK_BLEND;
+   shader_info.set_active = true;
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 

@@ -1600,21 +1600,19 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void 
 static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
    GLuint id;
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
-
-   (void)data;
-
-   if (!glsl)
-      return;
 
    if (set_active)
    {
+      glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
+      if (!glsl)
+         return;
+
       gl_glsl_reset_attrib(glsl);
       glsl->glsl_active_index = idx;
       id                      = glsl->prg[idx].id;
    }
    else 
-      id = idx;
+      id = (GLuint)idx;
 
    glUseProgram(id);
 }

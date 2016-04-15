@@ -84,6 +84,7 @@ static void menu_display_gl_blend_begin(void)
 
    shader_info.data = NULL;
    shader_info.idx  = GL_SHADER_STOCK_BLEND;
+   shader_info.set_active = true;
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 }

@@ -20,6 +20,7 @@
 #include "zr_common.h"
 
 #include "../menu_display.h"
+#include "../../gfx/video_shader_driver.h"
 
 struct zr_image zr_common_image_load(const char *filename)
 {
@@ -246,6 +247,7 @@ void zr_common_device_draw(struct zr_device *dev,
       struct zr_context *ctx, int width, int height,
       enum zr_anti_aliasing AA)
 {
+   video_shader_ctx_info_t shader_info;
    struct zr_buffer vbuf, ebuf;
    struct zr_convert_config config;
    const struct zr_draw_command *cmd = NULL;
@@ -276,9 +278,15 @@ void zr_common_device_draw(struct zr_device *dev,
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glActiveTexture(GL_TEXTURE0);
+#endif
 
    /* setup program */
-   glUseProgram(dev->prog);
+   shader_info.data       = NULL;
+   shader_info.idx        = dev->prog;
+   shader_info.set_active = false;
+   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glUniformMatrix4fv(dev->uniform_proj, 1, GL_FALSE, &ortho[0][0]);
 
    /* convert from command queue into draw list and draw to screen */
@@ -335,9 +343,13 @@ void zr_common_device_draw(struct zr_device *dev,
    }
    zr_clear(ctx);
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    /* restore old state */
-   glUseProgram((GLuint)last_prog);
+   shader_info.data       = NULL;
+   shader_info.idx        = last_prog;
+   shader_info.set_active = false;
+   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glBindTexture(GL_TEXTURE_2D, (GLuint)last_tex);
    glBindBuffer(GL_ARRAY_BUFFER, (GLuint)last_vbo);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)last_ebo);

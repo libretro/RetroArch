@@ -222,6 +222,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
 
    shader_info.data = d3d;
    shader_info.idx  = pass;
+   shader_info.set_active = true;
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 

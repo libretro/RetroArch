@@ -216,6 +216,7 @@ typedef struct video_shader_ctx_scale
 
 typedef struct video_shader_ctx_info
 {
+   bool set_active;
    unsigned num;
    unsigned idx;
    void *data;
