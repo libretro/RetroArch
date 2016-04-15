@@ -31,8 +31,8 @@
 
 #include "video_shader_parse.h"
 
-#define GL_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
-#define GL_SHADER_STOCK_XMB (GFX_MAX_SHADERS - 2)
+#define VIDEO_SHADER_STOCK_BLEND (GFX_MAX_SHADERS - 1)
+#define VIDEO_SHADER_MENU        (GFX_MAX_SHADERS - 2)
 
 #endif
 

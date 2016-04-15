@@ -1007,18 +1007,18 @@ static void *gl_glsl_init(void *data, const char *path)
 
       gl_glsl_compile_program(
             glsl,
-            GL_SHADER_STOCK_BLEND,
-            &glsl->prg[GL_SHADER_STOCK_BLEND],
+            VIDEO_SHADER_STOCK_BLEND,
+            &glsl->prg[VIDEO_SHADER_STOCK_BLEND],
             &shader_prog_info
             );
 
-      gl_glsl_find_uniforms(glsl, 0, glsl->prg[GL_SHADER_STOCK_BLEND].id,
-            &glsl->uniforms[GL_SHADER_STOCK_BLEND]);
+      gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_STOCK_BLEND].id,
+            &glsl->uniforms[VIDEO_SHADER_STOCK_BLEND]);
    }
    else
    {
-      glsl->prg[GL_SHADER_STOCK_BLEND] = glsl->prg[0];
-      glsl->uniforms[GL_SHADER_STOCK_BLEND] = glsl->uniforms[0];
+      glsl->prg[VIDEO_SHADER_STOCK_BLEND] = glsl->prg[0];
+      glsl->uniforms[VIDEO_SHADER_STOCK_BLEND] = glsl->uniforms[0];
    }
 
    shader_prog_info.vertex   = stock_vertex_xmb;
@@ -1027,8 +1027,8 @@ static void *gl_glsl_init(void *data, const char *path)
 
    gl_glsl_compile_program(
          glsl,
-         GL_SHADER_STOCK_XMB,
-         &glsl->prg[GL_SHADER_STOCK_XMB],
+         VIDEO_SHADER_MENU,
+         &glsl->prg[VIDEO_SHADER_MENU],
          &shader_prog_info);
 
    gl_glsl_reset_attrib(glsl);

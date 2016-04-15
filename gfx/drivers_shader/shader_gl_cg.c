@@ -342,7 +342,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
 
    if (!cg_data || (cg_data->active_idx == 0))
          return;
-   if (cg_data->active_idx == GL_SHADER_STOCK_BLEND)
+   if (cg_data->active_idx == VIDEO_SHADER_STOCK_BLEND)
       return;
 
    /* Set frame. */
@@ -1147,7 +1147,7 @@ static void *gl_cg_init(void *data, const char *path)
    cg_data->prg[cg_data->shader->passes + 1] = cg_data->prg[0]; 
 
    /* No need to apply Android hack in Cg. */
-   cg_data->prg[GL_SHADER_STOCK_BLEND] = cg_data->prg[0];
+   cg_data->prg[VIDEO_SHADER_STOCK_BLEND] = cg_data->prg[0];
 
    cgGLBindProgram(cg_data->prg[1].fprg);
    cgGLBindProgram(cg_data->prg[1].vprg);

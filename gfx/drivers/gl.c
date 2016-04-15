@@ -1767,7 +1767,7 @@ static INLINE void gl_draw_texture(gl_t *gl)
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
 
    shader_info.data       = gl;
-   shader_info.idx        = GL_SHADER_STOCK_BLEND;
+   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
@@ -3606,7 +3606,7 @@ static void gl_render_overlay(gl_t *gl)
 
    /* Ensure that we reset the attrib array. */
    shader_info.data       = gl;
-   shader_info.idx        = GL_SHADER_STOCK_BLEND;
+   shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
