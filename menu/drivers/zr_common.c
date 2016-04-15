@@ -250,12 +250,13 @@ void zr_common_device_draw(struct zr_device *dev,
    video_shader_ctx_info_t shader_info;
    struct zr_buffer vbuf, ebuf;
    struct zr_convert_config config;
+   uintptr_t                 last_prog;
    const struct zr_draw_command *cmd = NULL;
    void                    *vertices = NULL;
    void                    *elements = NULL;
    const zr_draw_index       *offset = NULL;
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-   GLint last_prog, last_tex;
+   GLint last_tex;
    GLint last_ebo, last_vbo, last_vao;
    GLfloat ortho[4][4] = {
       {2.0f, 0.0f, 0.0f, 0.0f},
@@ -267,7 +268,7 @@ void zr_common_device_draw(struct zr_device *dev,
    ortho[1][1] /= (GLfloat)height;
 
    /* save previous opengl state */
-   glGetIntegerv(GL_CURRENT_PROGRAM, &last_prog);
+   glGetIntegerv(GL_CURRENT_PROGRAM, (GLint*)&last_prog);
    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_tex);
    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_vao);
    glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_ebo);
@@ -345,7 +346,7 @@ void zr_common_device_draw(struct zr_device *dev,
 
    /* restore old state */
    shader_info.data       = NULL;
-   shader_info.idx        = last_prog;
+   shader_info.idx        = (GLint)last_prog;
    shader_info.set_active = false;
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
