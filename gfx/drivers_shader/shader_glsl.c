@@ -1599,6 +1599,7 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void 
 
 static void gl_glsl_use(void *data, void *shader_data, unsigned idx)
 {
+   GLuint id;
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
 
    (void)data;
@@ -1609,7 +1610,9 @@ static void gl_glsl_use(void *data, void *shader_data, unsigned idx)
    gl_glsl_reset_attrib(glsl);
 
    glsl->glsl_active_index = idx;
-   glUseProgram(glsl->prg[idx].id);
+   id                      = glsl->prg[idx].id;
+
+   glUseProgram(id);
 }
 
 static unsigned gl_glsl_num(void *data)
