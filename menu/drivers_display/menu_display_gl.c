@@ -139,8 +139,8 @@ static void menu_display_gl_draw(void *data)
 static void menu_display_gl_draw_bg(void *data)
 {
    struct gfx_coords coords;
-   const GLfloat *new_vertex     = NULL;
-   const GLfloat *new_tex_coord  = NULL;
+   const float *new_vertex     = NULL;
+   const float *new_tex_coord  = NULL;
    settings_t *settings          = config_get_ptr();
    gl_t             *gl          = gl_get_ptr();
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;

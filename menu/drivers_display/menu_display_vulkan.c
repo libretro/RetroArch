@@ -157,6 +157,9 @@ static void menu_display_vk_draw_bg(void *data)
    coords.tex_coord     = new_tex_coord;
    coords.color         = (const float*)draw->color;
 
+   if (!draw->texture)
+      draw->texture     = menu_display_white_texture;
+
    draw->x           = 0;
    draw->y           = 0;
    draw->coords      = &coords;
