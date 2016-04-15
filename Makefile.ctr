@@ -34,7 +34,9 @@ OBJS += ctr/ctr_svchax.o
 ifeq ($(GRIFFIN_BUILD), 1)
 	OBJS += griffin/griffin.o
 else
-	OBJS += libretro-common/file/file_extract.o
+	OBJS += libretro-common/file/archive_file.o
+	OBJS += libretro-common/file/archive_file_zlib.o
+	OBJS += libretro-common/encodings/encoding_utf.o
 	OBJS += verbosity.o
 	OBJS += performance.o
 	OBJS += libretro-common/compat/compat_getopt.o
@@ -43,13 +45,13 @@ else
 	OBJS += libretro-common/compat/compat_fnmatch.o
 	OBJS += libretro-common/memmap/memalign.o
 	OBJS += libretro-common/file/config_file.o
-	OBJS += libretro-common/file/config_file_userdata.o
+	OBJS += config_file_userdata.o
 	OBJS += core_options.o
 	OBJS += cheats.o
 	OBJS += libretro-common/hash/rhash.o
 	OBJS += gfx/video_context_driver.o
 	OBJS += gfx/drivers_context/gfx_null_ctx.o
-	OBJS += gfx/image/image.o
+	OBJS += gfx/video_texture_image.o
 	OBJS += libretro-common/formats/tga/rtga.o
 	OBJS += libretro-common/formats/png/rpng.o
 	OBJS += libretro-common/formats/png/rpng_encode.o
@@ -77,8 +79,9 @@ else
 	OBJS += gfx/video_state_tracker.o
 	OBJS += libretro-common/queues/fifo_queue.o
 	OBJS += audio/audio_resampler_driver.o
-	OBJS += audio/drivers_resampler/sinc.o
-	OBJS += audio/drivers_resampler/nearest.o
+	OBJS += audio/drivers_resampler/sinc_resampler.o
+	OBJS += audio/drivers_resampler/nearest_resampler.o
+    OBJS += audio/drivers_resampler/null_resampler.o
 	OBJS += audio/drivers_resampler/cc_resampler.o
 	OBJS += camera/drivers/nullcamera.o
 	OBJS += location/drivers/nulllocation.o
@@ -86,7 +89,7 @@ else
 	OBJS += audio/drivers/ctr_dsp_audio.o
 	OBJS += audio/drivers/nullaudio.o
 	OBJS += gfx/video_driver.o
-	OBJS += gfx/video_common.o
+	OBJS += gfx/video_coord_array.o
 	OBJS += input/input_driver.o
 	OBJS += audio/audio_driver.o
 	OBJS += camera/camera_driver.o
@@ -129,7 +132,7 @@ else
 	OBJS += list_special.o
 	OBJS += libretro-common/lists/string_list.o
 	OBJS += libretro-common/string/stdstring.o
-	OBJS += file_ops.o
+#	OBJS += file_ops.o
 	OBJS += libretro-common/file/nbio/nbio_stdio.o
 	OBJS += libretro-common/lists/file_list.o
 	OBJS += libretro-common/queues/message_queue.o
@@ -146,7 +149,8 @@ else
 	OBJS += libretro_version_1.o
 	OBJS += retroarch.o
 	OBJS += runloop.o
-	OBJS += tasks/tasks.o
+	OBJS += libretro-common/queues/task_queue.o
+	OBJS += tasks/tasks_internal.o
 	OBJS += msg_hash.o
 	OBJS += intl/msg_hash_de.o
 	OBJS += intl/msg_hash_es.o
@@ -160,8 +164,9 @@ else
 	OBJS += movie.o
 	OBJS += record/record_driver.o
 	OBJS += record/drivers/record_null.o
+	OBJS += tasks/task_content.o
+    OBJS += tasks/task_file_transfer.o
 	OBJS += tasks/task_decompress.o
-	OBJS += tasks/task_file_transfer.o
 	OBJS += screenshot.o
 	OBJS += playlist.o
 	OBJS += menu/menu_driver.o
@@ -171,6 +176,7 @@ else
 	OBJS += menu/menu_entries.o
 	OBJS += menu/menu_setting.o
 	OBJS += menu/menu_cbs.o
+	OBJS += menu/menu_content.o
 	OBJS += menu/cbs/menu_cbs_ok.o
 	OBJS += menu/cbs/menu_cbs_cancel.o
 	OBJS += menu/cbs/menu_cbs_select.o
@@ -219,8 +225,8 @@ else
 	OBJS += deps/zlib/trees.o
 	OBJS += deps/zlib/uncompr.o
 	OBJS += deps/zlib/zutil.o
-	OBJS += deps/zlib/ioapi.o
-	OBJS += deps/zlib/unzip.o
+#	OBJS += deps/zlib/ioapi.o
+#	OBJS += deps/zlib/unzip.o
 	OBJS += audio/audio_utils.o
 endif
 
@@ -280,6 +286,7 @@ CFLAGS += -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
 CFLAGS += -DHAVE_GRIFFIN=1 -DHAVE_FILTERS_BUILTIN -DHAVE_MENU -DHAVE_RGUI
 CFLAGS += -DHAVE_ZLIB -DHAVE_RPNG -DWANT_ZLIB -DHAVE_BUILTIN_AUTOCONFIG
+CFLAGS += -DHAVE_COMPRESSION
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 

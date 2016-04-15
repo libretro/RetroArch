@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 
 #include "menu_input.h"
 
