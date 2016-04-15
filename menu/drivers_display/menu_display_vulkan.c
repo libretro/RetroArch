@@ -205,11 +205,6 @@ static void menu_display_vk_clear_color(void *data)
    VKFUNC(vkCmdClearAttachments)(vk->cmd, 1, &attachment, 1, &rect);
 }
 
-static const float *menu_display_vk_get_tex_coords(void)
-{
-   return &vk_tex_coords[0];
-}
-
 static void menu_display_vk_blend_begin(void)
 {
    vk_t *vk = vk_get_ptr();
@@ -238,7 +233,8 @@ menu_display_ctx_driver_t menu_display_ctx_vulkan = {
    menu_display_vk_restore_clear_color,
    menu_display_vk_clear_color,
    menu_display_vk_get_default_mvp,
-   menu_display_vk_get_tex_coords,
+   menu_display_vk_get_default_vertices,
+   menu_display_vk_get_default_tex_coords,
    menu_display_vk_font_init_first,
    MENU_VIDEO_DRIVER_VULKAN,
    "menu_display_vulkan",

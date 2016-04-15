@@ -152,7 +152,8 @@ typedef struct menu_display_ctx_driver
    void (*restore_clear_color)(void);
    void (*clear_color)(void *data);
    void *(*get_default_mvp)(void);
-   const float *(*get_tex_coords)(void);
+   const float *(*get_default_vertices)(void);
+   const float *(*get_default_tex_coords)(void);
    bool (*font_init_first)(
          void **font_handle, void *video_data,
          const char *font_path, float font_size);

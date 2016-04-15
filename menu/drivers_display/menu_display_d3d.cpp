@@ -229,11 +229,6 @@ static void menu_display_d3d_clear_color(void *data)
    d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
 }
 
-static const float *menu_display_d3d_get_tex_coords(void)
-{
-   return &d3d_tex_coords[0];
-}
-
 static bool menu_display_d3d_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size)
@@ -250,7 +245,8 @@ menu_display_ctx_driver_t menu_display_ctx_d3d = {
    menu_display_d3d_restore_clear_color,
    menu_display_d3d_clear_color,
    menu_display_d3d_get_default_mvp,
-   menu_display_d3d_get_tex_coords,
+   menu_display_d3d_get_default_vertices,
+   menu_display_d3d_get_default_tex_coords,
    menu_display_d3d_font_init_first,
    MENU_VIDEO_DRIVER_DIRECT3D,
    "menu_display_d3d",

@@ -498,10 +498,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             if (!draw)
                return false;
 
-            if (!menu_disp || !menu_disp->get_tex_coords)
+            if (!menu_disp || !menu_disp->get_default_tex_coords)
                return false;
 
-            draw->ptr = menu_disp->get_tex_coords();
+            draw->ptr = menu_disp->get_default_tex_coords();
          }
          break;
       case MENU_DISPLAY_CTL_TIMEDATE:

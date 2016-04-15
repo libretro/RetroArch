@@ -200,11 +200,6 @@ static void menu_display_gl_clear_color(void *data)
    glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static const float *menu_display_gl_get_tex_coords(void)
-{
-   return &gl_tex_coords[0];
-}
-
 static bool menu_display_gl_font_init_first(
       void **font_handle, void *video_data,
       const char *font_path, float font_size)
@@ -221,7 +216,8 @@ menu_display_ctx_driver_t menu_display_ctx_gl = {
    menu_display_gl_restore_clear_color,
    menu_display_gl_clear_color,
    menu_display_gl_get_default_mvp,
-   menu_display_gl_get_tex_coords,
+   menu_display_gl_get_default_vertices,
+   menu_display_gl_get_default_tex_coords,
    menu_display_gl_font_init_first,
    MENU_VIDEO_DRIVER_OPENGL,
    "menu_display_gl",
