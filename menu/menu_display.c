@@ -463,10 +463,39 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          menu_disp->draw(data);
          break;
       case MENU_DISPLAY_CTL_DRAW_BG:
-         if (!menu_disp || !menu_disp->draw_bg)
-            return false;
+         {
+            struct gfx_coords coords;
+            const float *new_vertex       = NULL;
+            const float *new_tex_coord    = NULL;
+            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+            if (!menu_disp || !draw)
+               return false;
 
-         menu_disp->draw_bg(data);
+            new_vertex           = draw->vertex;
+            new_tex_coord        = draw->tex_coord;
+
+            if (!new_vertex)
+               new_vertex        = menu_disp->get_default_vertices();
+            if (!new_tex_coord)
+               new_tex_coord     = menu_disp->get_default_tex_coords();
+
+            coords.vertices      = draw->vertex_count;
+            coords.vertex        = new_vertex;
+            coords.tex_coord     = new_tex_coord;
+            coords.lut_tex_coord = new_tex_coord;
+            coords.color         = (const float*)draw->color;
+
+            draw->x              = 0;
+            draw->y              = 0;
+            draw->coords         = &coords;
+
+            if (!draw->texture)
+               draw->texture     = menu_display_white_texture;
+
+            draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp();
+
+            menu_disp->draw(draw);
+         }
          break;
       case MENU_DISPLAY_CTL_ROTATE_Z:
          {

@@ -146,7 +146,6 @@ typedef struct menu_display_ctx_datetime
 typedef struct menu_display_ctx_driver
 {
    void (*draw)(void *data);
-   void (*draw_bg)(void *data);
    void (*blend_begin)(void);
    void (*blend_end)(void);
    void (*restore_clear_color)(void);

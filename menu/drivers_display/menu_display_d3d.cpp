@@ -165,42 +165,6 @@ static void menu_display_d3d_draw(void *data)
          0, draw->coords->vertices);
 }
 
-static void menu_display_d3d_draw_bg(void *data)
-{
-   struct gfx_coords coords;
-   const float    *new_vertex    = NULL;
-   const float    *new_tex_coord = NULL;
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-
-   if (!draw)
-      return;
-
-   new_vertex          = draw->vertex;
-   new_tex_coord        = draw->tex_coord;
-
-   if (!new_vertex)
-      new_vertex        = menu_display_d3d_get_default_vertices();
-   if (!new_tex_coord)
-      new_tex_coord     = menu_display_d3d_get_default_tex_coords()
-
-   coords.vertices      = draw->vertex_count;
-   coords.vertex        = new_vertex;
-   coords.tex_coord     = new_tex_coord;
-   coords.lut_tex_coord = new_tex_coord;
-   coords.color         = (const float*)draw->color;
-
-   if (!draw->texture)
-      draw->texture     = menu_display_white_texture;
-
-   draw->x           = 0;
-   draw->y           = 0;
-   draw->coords      = &coords;
-   draw->matrix_data = (math_matrix_4x4*)
-      menu_display_d3d_get_default_mvp();
-
-   menu_display_d3d_draw(draw);
-}
-
 static void menu_display_d3d_restore_clear_color(void)
 {
    d3d_video_t     *d3d = d3d_get_ptr();
@@ -239,7 +203,6 @@ static bool menu_display_d3d_font_init_first(
 
 menu_display_ctx_driver_t menu_display_ctx_d3d = {
    menu_display_d3d_draw,
-   menu_display_d3d_draw_bg,
    menu_display_d3d_blend_begin,
    menu_display_d3d_blend_end,
    menu_display_d3d_restore_clear_color,

@@ -146,43 +146,6 @@ static void menu_display_gl_draw(void *data)
    gl->coords.color     = gl->white_color_ptr;
 }
 
-static void menu_display_gl_draw_bg(void *data)
-{
-   struct gfx_coords coords;
-   const float *new_vertex     = NULL;
-   const float *new_tex_coord  = NULL;
-   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-
-   if (!draw)
-      return;
-
-   new_vertex           = draw->vertex;
-   new_tex_coord        = draw->tex_coord;
-
-   if (!new_vertex)
-      new_vertex        = menu_display_gl_get_default_vertices();
-   if (!new_tex_coord)
-      new_tex_coord     = menu_display_gl_get_default_tex_coords();
-
-   coords.vertices      = draw->vertex_count;
-   coords.vertex        = new_vertex;
-   coords.tex_coord     = new_tex_coord;
-   coords.lut_tex_coord = new_tex_coord;
-   coords.color         = (const float*)draw->color;
-
-   draw->x              = 0;
-   draw->y              = 0;
-   draw->coords         = &coords;
-
-   if (!draw->texture)
-      draw->texture     = menu_display_white_texture;
-
-   draw->matrix_data = (math_matrix_4x4*)
-      menu_display_gl_get_default_mvp();
-
-   menu_display_gl_draw(draw);
-}
-
 static void menu_display_gl_restore_clear_color(void)
 {
    glClearColor(0.0f, 0.0f, 0.0f, 0.00f);
@@ -210,7 +173,6 @@ static bool menu_display_gl_font_init_first(
 
 menu_display_ctx_driver_t menu_display_ctx_gl = {
    menu_display_gl_draw,
-   menu_display_gl_draw_bg,
    menu_display_gl_blend_begin,
    menu_display_gl_blend_end,
    menu_display_gl_restore_clear_color,
