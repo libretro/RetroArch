@@ -135,22 +135,30 @@ static void menu_display_vk_draw(void *data)
    }
 }
 
+static const float *menu_display_vk_get_default_vertices(void)
+{
+   return &vk_vertexes[0];
+}
+
+static const float *menu_display_vk_get_default_tex_coords(void)
+{
+   return &vk_tex_coords[0];
+}
+
 static void menu_display_vk_draw_bg(void *data)
 {
    struct gfx_coords coords;
    const float *new_vertex       = NULL;
    const float *new_tex_coord    = NULL;
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   settings_t *settings          = config_get_ptr();
-   vk_t             *vk          = vk_get_ptr();
 
-   if (!vk || !draw)
+   if (!draw)
       return;
 
    if (!new_vertex)
-      new_vertex = &vk_vertexes[0];
+      new_vertex    = menu_display_vk_get_default_vertices();
    if (!new_tex_coord)
-      new_tex_coord = &vk_tex_coords[0];
+      new_tex_coord = menu_display_vk_get_default_tex_coords();
 
    coords.vertices      = draw->vertex_count;
    coords.vertex        = new_vertex;

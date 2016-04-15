@@ -46,6 +46,16 @@ static gl_t *gl_get_ptr(void)
    return gl;
 }
 
+static const float *menu_display_gl_get_default_vertices(void)
+{
+   return &gl_vertexes[0];
+}
+
+static const float *menu_display_gl_get_default_tex_coords(void)
+{
+   return &gl_tex_coords[0];
+}
+
 static void *menu_display_gl_get_default_mvp(void)
 {
    gl_t *gl = gl_get_ptr();
@@ -111,11 +121,11 @@ static void menu_display_gl_draw(void *data)
    if (!mat)
       mat = (math_matrix_4x4*)menu_display_gl_get_default_mvp();
    if (!draw->coords->vertex)
-      draw->coords->vertex = &gl_vertexes[0];
+      draw->coords->vertex = menu_display_gl_get_default_vertices();
    if (!draw->coords->tex_coord)
-      draw->coords->tex_coord = &gl_tex_coords[0];
+      draw->coords->tex_coord = menu_display_gl_get_default_tex_coords();
    if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = &gl_tex_coords[0];
+      draw->coords->lut_tex_coord = menu_display_gl_get_default_tex_coords();
 
    glViewport(draw->x, draw->y, draw->width, draw->height);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
@@ -141,20 +151,18 @@ static void menu_display_gl_draw_bg(void *data)
    struct gfx_coords coords;
    const float *new_vertex     = NULL;
    const float *new_tex_coord  = NULL;
-   settings_t *settings          = config_get_ptr();
-   gl_t             *gl          = gl_get_ptr();
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
-   if (!gl || !draw)
+   if (!draw)
       return;
 
-   new_vertex    = draw->vertex;
-   new_tex_coord = draw->tex_coord;
+   new_vertex           = draw->vertex;
+   new_tex_coord        = draw->tex_coord;
 
    if (!new_vertex)
-      new_vertex = &gl_vertexes[0];
+      new_vertex        = menu_display_gl_get_default_vertices();
    if (!new_tex_coord)
-      new_tex_coord = &gl_tex_coords[0];
+      new_tex_coord     = menu_display_gl_get_default_tex_coords();
 
    coords.vertices      = draw->vertex_count;
    coords.vertex        = new_vertex;
@@ -162,9 +170,9 @@ static void menu_display_gl_draw_bg(void *data)
    coords.lut_tex_coord = new_tex_coord;
    coords.color         = (const float*)draw->color;
 
-   draw->x           = 0;
-   draw->y           = 0;
-   draw->coords      = &coords;
+   draw->x              = 0;
+   draw->y              = 0;
+   draw->coords         = &coords;
 
    if (!draw->texture)
       draw->texture     = menu_display_white_texture;
@@ -173,8 +181,6 @@ static void menu_display_gl_draw_bg(void *data)
       menu_display_gl_get_default_mvp();
 
    menu_display_gl_draw(draw);
-
-   gl->coords.color = gl->white_color_ptr;
 }
 
 static void menu_display_gl_restore_clear_color(void)

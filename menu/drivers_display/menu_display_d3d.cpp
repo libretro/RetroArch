@@ -42,6 +42,16 @@ static const float d3d_tex_coords[] = {
    1, 0
 };
 
+static const float *menu_display_d3d_get_default_vertices(void)
+{
+   return &d3d_vertexes[0];
+}
+
+static const float *menu_display_d3d_get_default_tex_coords(void)
+{
+   return &d3d_tex_coords[0];
+}
+
 static d3d_video_t *d3d_get_ptr(void)
 {
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
@@ -129,11 +139,11 @@ static void menu_display_d3d_draw(void *data)
       mat                         = (math_matrix_4x4*)
          menu_display_d3d_get_default_mvp();
    if (!draw->coords->vertex)
-      draw->coords->vertex        = &d3d_vertexes[0];
+      draw->coords->vertex        = menu_display_d3d_get_default_vertices();
    if (!draw->coords->tex_coord)
-      draw->coords->tex_coord     = &d3d_tex_coords[0];
+      draw->coords->tex_coord     = menu_display_d3d_get_default_tex_coords();
    if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = &d3d_tex_coords[0];
+      draw->coords->lut_tex_coord = menu_display_d3d_get_default_tex_coords();
 
    vp.X      = draw->x;
    vp.Y      = draw->y;
@@ -153,10 +163,6 @@ static void menu_display_d3d_draw(void *data)
    d3d_draw_primitive(d3d->dev, (D3DPRIMITIVETYPE)
          menu_display_prim_to_d3d_enum(draw->prim_type),
          0, draw->coords->vertices);
-
-#if 0
-   gl->coords.color     = gl->white_color_ptr;
-#endif
 }
 
 static void menu_display_d3d_draw_bg(void *data)
@@ -164,23 +170,18 @@ static void menu_display_d3d_draw_bg(void *data)
    struct gfx_coords coords;
    const float    *new_vertex    = NULL;
    const float    *new_tex_coord = NULL;
-   global_t              *global = global_get_ptr();
-   settings_t          *settings = config_get_ptr();
-   d3d_video_t              *d3d = d3d_get_ptr();
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
-   if (!d3d || !draw)
+   if (!draw)
       return;
 
-   (void)coords;
-
-   new_vertex    = draw->vertex;
-   new_tex_coord = draw->tex_coord;
+   new_vertex          = draw->vertex;
+   new_tex_coord        = draw->tex_coord;
 
    if (!new_vertex)
-      new_vertex = &d3d_vertexes[0];
+      new_vertex        = menu_display_d3d_get_default_vertices();
    if (!new_tex_coord)
-      new_tex_coord = &d3d_tex_coords[0];
+      new_tex_coord     = menu_display_d3d_get_default_tex_coords()
 
    coords.vertices      = draw->vertex_count;
    coords.vertex        = new_vertex;
@@ -188,18 +189,16 @@ static void menu_display_d3d_draw_bg(void *data)
    coords.lut_tex_coord = new_tex_coord;
    coords.color         = (const float*)draw->color;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+   if (!draw->texture)
+      draw->texture     = menu_display_white_texture;
 
    draw->x           = 0;
    draw->y           = 0;
+   draw->coords      = &coords;
    draw->matrix_data = (math_matrix_4x4*)
       menu_display_d3d_get_default_mvp();
 
    menu_display_d3d_draw(draw);
-
-#if 0
-   gl->coords.color = gl->white_color_ptr;
-#endif
 }
 
 static void menu_display_d3d_restore_clear_color(void)
