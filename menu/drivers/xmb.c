@@ -591,6 +591,7 @@ static void xmb_update_thumbnail_path(xmb_handle_t *xmb, unsigned i)
 {
    menu_entry_t entry;
    settings_t *settings       = config_get_ptr();
+   char *tmp = NULL;
 
    menu_entry_get(&entry, 0, i, NULL, true);
 
@@ -598,8 +599,15 @@ static void xmb_update_thumbnail_path(xmb_handle_t *xmb, unsigned i)
          xmb->title_name, sizeof(xmb->thumbnail_file_path));
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
-   fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
-         entry.path, sizeof(xmb->thumbnail_file_path));
+
+   tmp = string_replace_substring(entry.path, "/", "-");
+
+   if (tmp)
+   {
+      fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
+            tmp, sizeof(xmb->thumbnail_file_path));
+      free(tmp);
+   }
 
    strlcat(xmb->thumbnail_file_path, ".png", sizeof(xmb->thumbnail_file_path));
 }
