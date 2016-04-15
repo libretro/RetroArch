@@ -471,7 +471,7 @@ static void hlsl_deinit(void *data)
       free(hlsl_data);
 }
 
-static void hlsl_use(void *data, void *shader_data, unsigned idx)
+static void hlsl_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    hlsl_shader_data_t *hlsl_data = (hlsl_shader_data_t*)shader_data;
@@ -479,7 +479,11 @@ static void hlsl_use(void *data, void *shader_data, unsigned idx)
 
    if (hlsl_data && hlsl_data->prg[idx].vprg && hlsl_data->prg[idx].fprg)
    {
-      hlsl_data->active_idx = idx;
+      if (set_active)
+      {
+         hlsl_data->active_idx = idx;
+      }
+
       d3d_set_vertex_shader(d3dr, idx, hlsl_data->prg[idx].vprg);
 #ifdef _XBOX
       D3DDevice_SetPixelShader(d3dr, hlsl_data->prg[idx].fprg);

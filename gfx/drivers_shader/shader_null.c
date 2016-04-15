@@ -99,10 +99,11 @@ static bool shader_null_set_coords(void *handle_data, void *shader_data, const v
    return false;
 }
 
-static void shader_null_use(void *data, void *shader_data, unsigned idx)
+static void shader_null_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
    (void)data;
    (void)idx;
+   (void)set_active;
 }
 
 static unsigned shader_null_num(void *data)

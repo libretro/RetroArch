@@ -156,7 +156,7 @@ typedef struct shader_backend
          const void *feedback_info,
          const void *fbo_info, unsigned fbo_info_cnt);
 
-   void (*use)(void *data, void *shader_data, unsigned index);
+   void (*use)(void *data, void *shader_data, unsigned index, bool set_active);
    unsigned (*num_shaders)(void *data);
    bool (*filter_type)(void *data, unsigned index, bool *smooth);
    enum gfx_wrap_type (*wrap_type)(void *data, unsigned index);

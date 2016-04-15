@@ -1161,14 +1161,17 @@ error:
    return NULL;
 }
 
-static void gl_cg_use(void *data, void *shader_data, unsigned idx)
+static void gl_cg_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
    cg_shader_data_t *cg_data = (cg_shader_data_t*)shader_data;
    if (cg_data && cg_data->prg[idx].vprg && cg_data->prg[idx].fprg)
    {
-      gl_cg_reset_attrib(cg_data);
+      if (set_active)
+      {
+         gl_cg_reset_attrib(cg_data);
+         cg_data->active_idx = idx;
+      }
 
-      cg_data->active_idx = idx;
       cgGLBindProgram(cg_data->prg[idx].vprg);
       cgGLBindProgram(cg_data->prg[idx].fprg);
    }
