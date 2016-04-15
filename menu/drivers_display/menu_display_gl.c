@@ -38,14 +38,6 @@ static const GLfloat gl_tex_coords[] = {
    1, 0
 };
 
-static gl_t *gl_get_ptr(void)
-{
-   gl_t *gl = (gl_t*)video_driver_get_ptr(false);
-   if (!gl)
-      return NULL;
-   return gl;
-}
-
 static const float *menu_display_gl_get_default_vertices(void)
 {
    return &gl_vertexes[0];
@@ -58,7 +50,7 @@ static const float *menu_display_gl_get_default_tex_coords(void)
 
 static void *menu_display_gl_get_default_mvp(void)
 {
-   gl_t *gl = gl_get_ptr();
+   gl_t *gl = (gl_t*)video_driver_get_ptr(false);
 
    if (!gl)
       return NULL;
@@ -105,7 +97,7 @@ static void menu_display_gl_draw(void *data)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
-   gl_t             *gl          = gl_get_ptr();
+   gl_t             *gl          = (gl_t*)video_driver_get_ptr(false);
    math_matrix_4x4 *mat          = NULL;
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    

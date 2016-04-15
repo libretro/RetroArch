@@ -37,17 +37,9 @@ static const float vk_tex_coords[] = {
    1, 1
 };
 
-static vk_t *vk_get_ptr(void)
-{
-   vk_t *vk = (vk_t*)video_driver_get_ptr(false);
-   if (!vk)
-      return NULL;
-   return vk;
-}
-
 static void *menu_display_vk_get_default_mvp(void)
 {
-   vk_t *vk = vk_get_ptr();
+   vk_t *vk = (vk_t*)video_driver_get_ptr(false);
    if (!vk)
       return NULL;
    return &vk->mvp_no_rot;
@@ -70,7 +62,7 @@ static void menu_display_vk_draw(void *data)
    math_matrix_4x4 *mat          = NULL;
    struct vk_vertex *pv          = NULL;
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-   vk_t *vk                      = vk_get_ptr();
+   vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
    if (!vk)
       return;
 
@@ -155,7 +147,7 @@ static void menu_display_vk_clear_color(void *data)
    VkClearAttachment attachment;
    menu_display_ctx_clearcolor_t *clearcolor =
       (menu_display_ctx_clearcolor_t*)data;
-   vk_t *vk = vk_get_ptr();
+   vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
    if (!vk || !clearcolor)
       return;
 
@@ -175,13 +167,13 @@ static void menu_display_vk_clear_color(void *data)
 
 static void menu_display_vk_blend_begin(void)
 {
-   vk_t *vk = vk_get_ptr();
+   vk_t *vk = (vk_t*)video_driver_get_ptr(false);
    vk->display.blend = true;
 }
 
 static void menu_display_vk_blend_end(void)
 {
-   vk_t *vk = vk_get_ptr();
+   vk_t *vk = (vk_t*)video_driver_get_ptr(false);
    vk->display.blend = false;
 }
 

@@ -52,22 +52,13 @@ static const float *menu_display_d3d_get_default_tex_coords(void)
    return &d3d_tex_coords[0];
 }
 
-static d3d_video_t *d3d_get_ptr(void)
-{
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
-
-   if (!d3d)
-      return NULL;
-   return d3d;
-}
-
 static void *menu_display_d3d_get_default_mvp(void)
 {
 #ifndef _XBOX
    static math_matrix_4x4 default_mvp;
    D3DXMATRIX ortho, mvp;
 #endif
-   d3d_video_t *d3d = d3d_get_ptr();
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)
       return NULL;
@@ -101,7 +92,7 @@ static unsigned menu_display_prim_to_d3d_enum(
 
 static void menu_display_d3d_blend_begin(void)
 {
-   d3d_video_t *d3d = d3d_get_ptr();
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)
       return;
@@ -111,7 +102,7 @@ static void menu_display_d3d_blend_begin(void)
 
 static void menu_display_d3d_blend_end(void)
 {
-   d3d_video_t *d3d = d3d_get_ptr();
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
 
    if (!d3d)
       return;
@@ -123,7 +114,7 @@ static void menu_display_d3d_draw(void *data)
 {
    D3DVIEWPORT                vp = {0};
    math_matrix_4x4          *mat = NULL;
-   d3d_video_t              *d3d = d3d_get_ptr();
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
    if (!d3d || !draw)
@@ -167,7 +158,7 @@ static void menu_display_d3d_draw(void *data)
 
 static void menu_display_d3d_restore_clear_color(void)
 {
-   d3d_video_t     *d3d = d3d_get_ptr();
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
    DWORD    clear_color = 0x00000000;
 
    d3d_clear(d3d->dev, 0, NULL, D3DCLEAR_TARGET, clear_color, 0, 0);
@@ -176,7 +167,7 @@ static void menu_display_d3d_restore_clear_color(void)
 static void menu_display_d3d_clear_color(void *data)
 {
    DWORD    clear_color                      = 0;
-   d3d_video_t     *d3d                      = d3d_get_ptr();
+   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_clearcolor_t *clearcolor = 
       (menu_display_ctx_clearcolor_t*)data;
 
