@@ -73,14 +73,16 @@ static void menu_display_vk_draw(void *data)
    struct vk_vertex *pv          = NULL;
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
-   if (!vk)
+
+   if (!vk || !draw)
       return;
 
    texture            = (struct vk_texture*)draw->texture;
-   mat                = (math_matrix_4x4*)draw->matrix_data;
    vertex             = draw->coords->vertex;
    tex_coord          = draw->coords->tex_coord;
    color              = draw->coords->color;
+
+   mat                = (math_matrix_4x4*)draw->matrix_data;
 
    /* TODO - edge case */
    if (draw->height <= 0)
