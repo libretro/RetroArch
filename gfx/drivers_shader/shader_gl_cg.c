@@ -113,13 +113,10 @@ struct uniform_cg_data
 static void gl_cg_set_uniform_parameter(
       void *data,
       struct uniform_info *param,
-      void *_shader_info_data,
       void *uniform_data)
 {
    CGparameter location;
    cg_shader_data_t *cg_data        = (cg_shader_data_t*)data;
-
-   (void)_shader_info_data;
 
    if (!param || !param->enabled)
       return;
@@ -326,7 +323,7 @@ static void gl_cg_set_texture_info(
    uniform_data[3].loc             = params->tex_size_f;
 
    for (i = 0; i < 4; i++)
-      gl_cg_set_uniform_parameter(cg_data, &uniform_params[i], NULL, &uniform_data[i]);
+      gl_cg_set_uniform_parameter(cg_data, &uniform_params[i], &uniform_data[i]);
 
    if (params->coord)
    {
@@ -442,7 +439,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
    }
 
    for (i = 0; i < uniform_count; i++)
-      gl_cg_set_uniform_parameter(cg_data, &uniform_params[i], &cg_data->prg[i], &uniform_data[i]);
+      gl_cg_set_uniform_parameter(cg_data, &uniform_params[i], &uniform_data[i]);
 
    /* Set orig texture. */
    gl_cg_set_texture_info(cg_data, &cg_data->prg[cg_data->active_idx].orig, info);
@@ -506,7 +503,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
       uniform_params[1].result.f.v0   = cg_data->shader->parameters[i].current;
 
       for (j = 0; j < 2; j++)
-         gl_cg_set_uniform_parameter(cg_data, &uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
+         gl_cg_set_uniform_parameter(cg_data, &uniform_params[j], &pragma_cg_params[j]);
    }
 
    /* Set state parameters. */
@@ -541,7 +538,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
          uniform_params[1].result.f.v0   = tracker_info[i].value;
 
          for (j = 0; j < 2; j++)
-            gl_cg_set_uniform_parameter(cg_data, &uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
+            gl_cg_set_uniform_parameter(cg_data, &uniform_params[j], &pragma_cg_params[j]);
       }
    }
 }
