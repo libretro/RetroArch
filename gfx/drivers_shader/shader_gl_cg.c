@@ -105,10 +105,11 @@ typedef struct cg_shader_data
    CGcontext cgCtx;
 } cg_shader_data_t;
 
-static void cg_uniform_set_parameter(void *data, struct shader_program_cg_data *shader_data, void *uniform_data)
+static void cg_uniform_set_parameter(void *data, void *_shader_data, void *uniform_data)
 {
    struct uniform_info *param = (struct uniform_info*)data;
    CGparameter      *cg_param = (CGparameter*)uniform_data;
+   struct shader_program_cg_data *shader_data = (struct shader_program_cg_data*)_shader_data;
 
    if (!param || !param->enabled)
       return;

@@ -1053,9 +1053,10 @@ error:
 static float t = 0;
 
 #endif
-static void glsl_uniform_set_parameter(void *data, struct shader_program_glsl_data *shader_data, void *uniform_data)
+static void glsl_uniform_set_parameter(void *data, void *_shader_data, void *uniform_data)
 {
    struct uniform_info *param = (struct uniform_info*)data;
+   struct shader_program_glsl_data *shader_data = (struct shader_program_glsl_data*)_shader_data;
 
    if (!param)
       return;

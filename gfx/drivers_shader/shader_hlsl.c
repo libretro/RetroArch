@@ -64,7 +64,7 @@ static const char *stock_hlsl_program =
       "  return OUT;\n"
       "}\n";
 
-struct shader_program_data 
+struct shader_program_hlsl_data 
 {
    LPDIRECT3DVERTEXSHADER vprg;
    LPDIRECT3DPIXELSHADER fprg;
@@ -91,7 +91,7 @@ typedef struct hlsl_shader_data hlsl_shader_data_t;
 struct hlsl_shader_data
 {
    d3d_video_t *d3d;
-   shader_program_data_t prg[RARCH_HLSL_MAX_SHADERS];
+   struct shader_program_hlsl_data prg[RARCH_HLSL_MAX_SHADERS];
    unsigned active_idx;
    struct video_shader *cg_shader;
 };
@@ -103,9 +103,10 @@ void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value)
       hlsl_data->prg[hlsl_data->active_idx].mvp_val = rotation_value;
 }
 
-static void hlsl_uniform_set_parameter(void *data, shader_program_data_t *shader_data, void *uniform_data)
+static void hlsl_uniform_set_parameter(void *data, void *_shader_data, void *uniform_data)
 {
    struct uniform_info *param = (struct uniform_info*)data;
+   struct shader_program_hlsl_data *shader_data = (struct shader_program_hlsl_data*)_shader_data;
 
    if (!param || !param->enabled)
       return;
@@ -199,7 +200,7 @@ static bool hlsl_compile_program(
 {
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
    d3d_video_t *d3d = (d3d_video_t*)hlsl->d3d;
-   shader_program_data_t *program  = (shader_program_data_t*)program_data;
+   struct shader_program_hlsl_data *program  = (struct shader_program_hlsl_data*)program_data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    HRESULT ret, ret_fp, ret_vp;
    ID3DXBuffer *listing_f = NULL;
