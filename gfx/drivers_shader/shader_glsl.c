@@ -58,7 +58,7 @@ struct cache_vbo
    size_t size_secondary;
 };
 
-struct shader_program_data
+struct shader_program_glsl_data
 {
    GLuint vprg;
    GLuint fprg;
@@ -264,7 +264,7 @@ typedef struct glsl_shader_data
    char glsl_alias_define[1024];
    unsigned glsl_active_index;
    unsigned gl_attrib_index;
-   struct shader_program_data prg[GFX_MAX_SHADERS];
+   struct shader_program_glsl_data prg[GFX_MAX_SHADERS];
    GLuint gl_teximage[GFX_MAX_TEXTURES];
    GLint gl_attribs[PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    state_tracker_t *gl_state_tracker;
@@ -435,7 +435,7 @@ static bool gl_glsl_compile_program(
       struct shader_program_info *program_info)
 {
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)data;
-   struct shader_program_data *program = (struct shader_program_data*)program_data;
+   struct shader_program_glsl_data *program = (struct shader_program_glsl_data*)program_data;
    GLuint prog = glCreateProgram();
 
    if (!program)
@@ -537,7 +537,7 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
 }
 
 static bool gl_glsl_compile_programs(
-      glsl_shader_data_t *glsl, struct shader_program_data *program)
+      glsl_shader_data_t *glsl, struct shader_program_glsl_data *program)
 {
    unsigned i;
 
@@ -1053,7 +1053,7 @@ error:
 static float t = 0;
 
 #endif
-static void glsl_uniform_set_parameter(void *data, struct shader_program_data *shader_data, void *uniform_data)
+static void glsl_uniform_set_parameter(void *data, struct shader_program_glsl_data *shader_data, void *uniform_data)
 {
    struct uniform_info *param = (struct uniform_info*)data;
 
