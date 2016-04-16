@@ -170,32 +170,8 @@ static const char *stock_fragment_legacy =
    "   gl_FragColor = color * texture2D(Texture, gl_TexCoord[0].xy);\n"
    "}";
 
-static const char *stock_vertex_modern_blend =
-   "#ifdef GL_ES\n"
-   "precision mediump float;\n"
-   "#endif\n"
-   "attribute vec2 TexCoord;\n"
-   "attribute vec2 VertexCoord;\n"
-   "attribute vec4 Color;\n"
-   "uniform mat4 MVPMatrix;\n"
-   "varying vec2 tex_coord;\n"
-   "varying vec4 color;\n"
-   "void main() {\n"
-   "   gl_Position = MVPMatrix * vec4(VertexCoord, 0.0, 1.0);\n"
-   "   tex_coord = TexCoord;\n"
-   "   color = Color;\n"
-   "}";
-
-static const char *stock_fragment_modern_blend =
-   "#ifdef GL_ES\n"
-   "precision mediump float;\n"
-   "#endif\n"
-   "uniform sampler2D Texture;\n"
-   "varying vec2 tex_coord;\n"
-   "varying vec4 color;\n"
-   "void main() {\n"
-   "   gl_FragColor = color * texture2D(Texture, tex_coord);\n"
-   "}";
+#include "../drivers/gl_shaders/modern_alpha_blend_glsl.vert.h"
+#include "../drivers/gl_shaders/modern_alpha_blend_glsl.frag.h"
 
 static const char *stock_vertex_core_blend =
    "in vec2 TexCoord;\n"
