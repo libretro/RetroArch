@@ -132,6 +132,16 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
          shader_data    = NULL;
          current_shader = NULL;
          break;
+      case SHADER_CTL_SET_PARAMETER:
+         {
+            struct uniform_info *param = (struct uniform_info*)data;
+
+            if (!current_shader || !param)
+               return false;
+            current_shader->set_uniform_parameter(shader_data,
+                  param, NULL);
+         }
+         break;
       case SHADER_CTL_SET_PARAMS:
          {
             video_shader_ctx_params_t *params = 

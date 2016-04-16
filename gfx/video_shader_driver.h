@@ -61,6 +61,7 @@ enum video_shader_driver_ctl_state
    SHADER_CTL_INIT,
    /* Finds first suitable shader context driver. */
    SHADER_CTL_INIT_FIRST,
+   SHADER_CTL_SET_PARAMETER,
    SHADER_CTL_SET_PARAMS,
    SHADER_CTL_GET_FEEDBACK_PASS,
    SHADER_CTL_MIPMAP_INPUT,
