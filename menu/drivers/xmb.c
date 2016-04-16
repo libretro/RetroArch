@@ -227,8 +227,10 @@ typedef struct xmb_handle
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
+#if 0
 static float ribbon_verts[1536];
 static int ribbon_idx[1024];
+#endif
 
 static const char *xmb_theme_ident(void)
 {
