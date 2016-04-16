@@ -1057,7 +1057,8 @@ static void gl_glsl_set_uniform_parameter(
 {
    GLint location = 0;
    glsl_shader_data_t              *glsl = (glsl_shader_data_t*)data;
-   struct shader_program_glsl_data *shader_data = (struct shader_program_glsl_data*)shader_info_data;
+
+   (void)shader_info_data;
 
    if (!param)
       return;

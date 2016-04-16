@@ -118,7 +118,8 @@ static void gl_cg_set_uniform_parameter(
 {
    CGparameter location;
    cg_shader_data_t *cg_data        = (cg_shader_data_t*)data;
-   struct shader_program_cg_data *shader_data = (struct shader_program_cg_data*)_shader_info_data;
+
+   (void)_shader_info_data;
 
    if (!param || !param->enabled)
       return;

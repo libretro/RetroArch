@@ -103,16 +103,16 @@ void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value)
       hlsl_data->prg[hlsl_data->active_idx].mvp_val = rotation_value;
 }
 
-static void hlsl_uniform_set_parameter(
+static void hlsl_set_uniform_parameter(
       void *data,
       struct uniform_info *param,
       void *_shader_info_data,
       void *uniform_data)
 {
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
-   struct shader_program_hlsl_data *shader_data = (struct shader_program_hlsl_data*)_shader_info_data;
 
    (void)hlsl;
+   (void)_shader_info_data;
 
    if (!param || !param->enabled)
       return;
@@ -570,7 +570,7 @@ const shader_backend_t hlsl_backend = {
    hlsl_init,
    hlsl_deinit,
    hlsl_set_params,
-   hlsl_uniform_set_parameter,
+   hlsl_set_uniform_parameter,
    hlsl_use,
    hlsl_num,
    hlsl_filter_type,
