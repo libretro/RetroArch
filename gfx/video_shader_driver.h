@@ -111,6 +111,13 @@ struct uniform_info
 
    struct
    {
+      const char *ident;
+      uint32_t idx;
+      bool enable;
+   } lookup;
+
+   struct
+   {
       struct
       {
          intptr_t v0;

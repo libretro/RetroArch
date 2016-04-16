@@ -1049,46 +1049,57 @@ error:
    return NULL;
 }
 
-static void glsl_uniform_set_parameter(void *data, void *_shader_data, void *uniform_data)
+static void glsl_uniform_set_parameter(
+      void *data,
+      void *uniform_info_data,
+      void *shader_info_data,
+      void *uniform_data)
 {
-   struct uniform_info *param = (struct uniform_info*)data;
-   struct shader_program_glsl_data *shader_data = (struct shader_program_glsl_data*)_shader_data;
+   GLint location = 0;
+   glsl_shader_data_t              *glsl = (glsl_shader_data_t*)data;
+   struct uniform_info            *param = (struct uniform_info*)uniform_info_data;
+   struct shader_program_glsl_data *shader_data = (struct shader_program_glsl_data*)shader_info_data;
 
    if (!param)
       return;
 
+   if (param->lookup.enable)
+      location = glGetUniformLocation(glsl->prg[param->lookup.idx].id, param->lookup.ident);
+   else
+      location = param->location;
+
    switch (param->type)
    {
       case UNIFORM_1F:
-         glUniform1f(param->location, param->result.f.v0);
+         glUniform1f(location, param->result.f.v0);
          break;
       case UNIFORM_2F:
-         glUniform2f(param->location, param->result.f.v0,
+         glUniform2f(location, param->result.f.v0,
                param->result.f.v1);
          break;
       case UNIFORM_3F:
-         glUniform3f(param->location, param->result.f.v0,
+         glUniform3f(location, param->result.f.v0,
                param->result.f.v1, param->result.f.v2);
          break;
       case UNIFORM_4F:
-         glUniform4f(param->location, param->result.f.v0,
+         glUniform4f(location, param->result.f.v0,
                param->result.f.v1, param->result.f.v2,
                param->result.f.v3);
          break;
       case UNIFORM_1FV:
-         glUniform1fv(param->location, 1, param->result.floatv);
+         glUniform1fv(location, 1, param->result.floatv);
          break;
       case UNIFORM_2FV:
-         glUniform2fv(param->location, 1, param->result.floatv);
+         glUniform2fv(location, 1, param->result.floatv);
          break;
       case UNIFORM_3FV:
-         glUniform3fv(param->location, 1, param->result.floatv);
+         glUniform3fv(location, 1, param->result.floatv);
          break;
       case UNIFORM_4FV:
-         glUniform4fv(param->location, 1, param->result.floatv);
+         glUniform4fv(location, 1, param->result.floatv);
          break;
       case UNIFORM_1I:
-         glUniform1i(param->location, param->result.integer.v0);
+         glUniform1i(location, param->result.integer.v0);
          break;
    }
 }
@@ -1104,7 +1115,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       const void *_fbo_info, unsigned fbo_info_cnt)
 {
    unsigned i;
-   struct uniform_info uniform_params[10];
+   struct uniform_info uniform_params[10] = {0};
    GLfloat buffer[512];
    struct glsl_attrib attribs[32];
    float input_size[2], output_size[2], texture_size[2];
@@ -1183,12 +1194,12 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    uniform_count++;
 
    for (i = 0; i < uniform_count; i++)
-      glsl_uniform_set_parameter(&uniform_params[i], NULL, NULL);
+      glsl_uniform_set_parameter(glsl, &uniform_params[i], NULL, NULL);
 
    /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)
    {
-      struct uniform_info lut_uniform;
+      struct uniform_info lut_uniform = {0};
       if (uni->lut_texture[i] < 0)
          continue;
 
@@ -1201,7 +1212,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       lut_uniform.type              = UNIFORM_1I;
       lut_uniform.result.integer.v0 = texunit;
 
-      glsl_uniform_set_parameter(&lut_uniform, NULL, NULL);
+      glsl_uniform_set_parameter(glsl, &lut_uniform, NULL, NULL);
       texunit++;
    }
 
@@ -1214,7 +1225,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       /* Set original texture. */
       if (uni->orig.texture >= 0)
       {
-         struct uniform_info orig_tex_uniform;
+         struct uniform_info orig_tex_uniform = {0};
          /* Bind original texture. */
          glActiveTexture(GL_TEXTURE0 + texunit);
 
@@ -1223,7 +1234,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          orig_tex_uniform.type              = UNIFORM_1I;
          orig_tex_uniform.result.integer.v0 = texunit;
 
-         glsl_uniform_set_parameter(&orig_tex_uniform, NULL, NULL);
+         glsl_uniform_set_parameter(glsl, &orig_tex_uniform, NULL, NULL);
 
          glBindTexture(GL_TEXTURE_2D, info->tex);
          texunit++;
@@ -1246,7 +1257,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          orig_uniforms[1].enabled        = true;
 
       for (j = 0; j < 2; j++)
-         glsl_uniform_set_parameter(&orig_uniforms[i], NULL, NULL);
+         glsl_uniform_set_parameter(glsl, &orig_uniforms[i], NULL, NULL);
 
       /* Pass texture coordinates. */
       if (uni->orig.tex_coord >= 0)
@@ -1264,7 +1275,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       /* Set feedback texture. */
       if (uni->feedback.texture >= 0)
       {
-         struct uniform_info feedback_texture_param;
+         struct uniform_info feedback_texture_param = {0};
 
          /* Bind original texture. */
          glActiveTexture(GL_TEXTURE0 + texunit);
@@ -1274,7 +1285,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          feedback_texture_param.type     = UNIFORM_1I;
          feedback_texture_param.result.integer.v0 = texunit;
 
-         glsl_uniform_set_parameter(&feedback_texture_param, NULL, NULL);
+         glsl_uniform_set_parameter(glsl, &feedback_texture_param, NULL, NULL);
 
          glBindTexture(GL_TEXTURE_2D, feedback_info->tex);
          texunit++;
@@ -1297,7 +1308,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          feedback_uniforms[1].enabled        = true;
 
       for (j = 0; j < 2; j++)
-         glsl_uniform_set_parameter(&feedback_uniforms[i], NULL, NULL);
+         glsl_uniform_set_parameter(glsl, &feedback_uniforms[i], NULL, NULL);
 
       /* Pass texture coordinates. */
       if (uni->feedback.tex_coord >= 0)
@@ -1316,7 +1327,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       for (i = 0; i < fbo_info_cnt; i++)
       {
          unsigned j;
-         struct uniform_info fbo_tex_params[3];
+         struct uniform_info fbo_tex_params[3] = {0};
 
          if (uni->pass[i].texture)
          {
@@ -1348,7 +1359,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
             fbo_tex_params[2].enabled  = true;
 
          for (j = 0; j < 3; j++)
-            glsl_uniform_set_parameter(&fbo_tex_params[i], NULL, NULL);
+            glsl_uniform_set_parameter(glsl, &fbo_tex_params[i], NULL, NULL);
 
          if (uni->pass[i].tex_coord >= 0)
          {
@@ -1368,7 +1379,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    for (i = 0; i < PREV_TEXTURES; i++)
    {
       unsigned j;
-      struct uniform_info prev_tex_params[3];
+      struct uniform_info prev_tex_params[3] = {0};
 
       if (uni->prev[i].texture >= 0)
       {
@@ -1400,7 +1411,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          prev_tex_params[2].enabled  = true;
 
       for (j = 0; j < 3; j++)
-         glsl_uniform_set_parameter(&prev_tex_params[i], NULL, NULL);
+         glsl_uniform_set_parameter(glsl, &prev_tex_params[i], NULL, NULL);
 
       /* Pass texture coordinates. */
       if (uni->prev[i].tex_coord >= 0)
@@ -1427,7 +1438,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    /* #pragma parameters. */
    for (i = 0; i < glsl->shader->num_parameters; i++)
    {
-      struct uniform_info pragma_param;
+      struct uniform_info pragma_param = {0};
       int location = glGetUniformLocation(
             glsl->prg[glsl->glsl_active_index].id,
             glsl->shader->parameters[i].id);
@@ -1437,7 +1448,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       pragma_param.type        = UNIFORM_1F;
       pragma_param.result.f.v0 = glsl->shader->parameters[i].current;
 
-      glsl_uniform_set_parameter(&pragma_param, NULL, NULL);
+      glsl_uniform_set_parameter(glsl, &pragma_param, NULL, NULL);
    }
 
    /* Set state parameters. */
@@ -1452,7 +1463,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
       for (i = 0; i < cnt; i++)
       {
-         struct uniform_info state_param;
+         struct uniform_info state_param = {0};
          int location = glGetUniformLocation(
                glsl->prg[glsl->glsl_active_index].id,
                state_info[i].id);
@@ -1462,7 +1473,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          state_param.type        = UNIFORM_1F;
          state_param.result.f.v0 = state_info[i].value;
 
-         glsl_uniform_set_parameter(&state_param, NULL, NULL);
+         glsl_uniform_set_parameter(glsl, &state_param, NULL, NULL);
       }
    }
 }

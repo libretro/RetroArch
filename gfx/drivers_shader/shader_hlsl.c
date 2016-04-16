@@ -103,10 +103,17 @@ void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value)
       hlsl_data->prg[hlsl_data->active_idx].mvp_val = rotation_value;
 }
 
-static void hlsl_uniform_set_parameter(void *data, void *_shader_data, void *uniform_data)
+static void hlsl_uniform_set_parameter(
+      void *data,
+      void *uniform_info_data,
+      void *_shader_info_data,
+      void *uniform_data)
 {
-   struct uniform_info *param = (struct uniform_info*)data;
-   struct shader_program_hlsl_data *shader_data = (struct shader_program_hlsl_data*)_shader_data;
+   hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
+   struct uniform_info *param = (struct uniform_info*)uniform_info_data;
+   struct shader_program_hlsl_data *shader_data = (struct shader_program_hlsl_data*)_shader_info_data;
+
+   (void)hlsl;
 
    if (!param || !param->enabled)
       return;
@@ -114,28 +121,28 @@ static void hlsl_uniform_set_parameter(void *data, void *_shader_data, void *uni
    switch (param->type)
    {
       case UNIFORM_1F:
-         /* Unimplemented - Cg limitation */
+         /* Unimplemented  */
          break;
       case UNIFORM_2F:
-         /* Unimplemented - Cg limitation */
+         /* Unimplemented  */
          break;
       case UNIFORM_3F:
-         /* Unimplemented - Cg limitation */
+         /* Unimplemented  */
          break;
       case UNIFORM_4F:
-         /* Unimplemented - Cg limitation */
+         /* Unimplemented  */
          break;
       case UNIFORM_1FV:
-         /* Unimplemented - Cg limitation */
+         /* Unimplemented  */
          break;
       case UNIFORM_2FV:
-         /* Unimplemented - Cg limitation */
+         /* Unimplemented  */
          break;
       case UNIFORM_3FV:
-         /* Unimplemented - Cg limitation */
+         /* Unimplemented  */
          break;
       case UNIFORM_4FV:
-         /* Unimplemented - Cg limitation */
+         /* Unimplemented  */
          break;
       case UNIFORM_1I:
          /* Unimplemented - Cg limitation */

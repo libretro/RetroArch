@@ -105,42 +105,61 @@ typedef struct cg_shader_data
    CGcontext cgCtx;
 } cg_shader_data_t;
 
-static void cg_uniform_set_parameter(void *data, void *_shader_data, void *uniform_data)
+struct uniform_cg_data
 {
-   struct uniform_info *param = (struct uniform_info*)data;
-   CGparameter      *cg_param = (CGparameter*)uniform_data;
-   struct shader_program_cg_data *shader_data = (struct shader_program_cg_data*)_shader_data;
+   CGparameter loc;
+};
+
+static void cg_uniform_set_parameter(
+      void *data,
+      void *uniform_info_data,
+      void *_shader_info_data,
+      void *uniform_data)
+{
+   CGparameter location;
+   cg_shader_data_t *cg_data        = (cg_shader_data_t*)data;
+   struct uniform_info *param       = (struct uniform_info*)uniform_info_data;
+   struct shader_program_cg_data *shader_data = (struct shader_program_cg_data*)_shader_info_data;
 
    if (!param || !param->enabled)
       return;
 
+   if (param->lookup.enable)
+      location = cgGetNamedParameter(
+            cg_data->prg[param->lookup.idx].fprg, cg_data->shader->lut[param->lookup.idx].id);
+   else
+   {
+      struct uniform_cg_data *cg_param = (struct uniform_cg_data*)uniform_data;
+      location = cg_param->loc;
+   }
+
    switch (param->type)
    {
       case UNIFORM_1F:
-         cgGLSetParameter1f((CGparameter)*cg_param, param->result.f.v0);
+         cgGLSetParameter1f(location, param->result.f.v0);
          break;
       case UNIFORM_2F:
-         cgGLSetParameter2f((CGparameter)*cg_param, param->result.f.v0, param->result.f.v1);
+         cgGLSetParameter2f(location, param->result.f.v0, param->result.f.v1);
          break;
       case UNIFORM_3F:
-         cgGLSetParameter3f((CGparameter)*cg_param, param->result.f.v0, param->result.f.v1,
+         cgGLSetParameter3f(location, param->result.f.v0, param->result.f.v1,
                param->result.f.v2);
          break;
       case UNIFORM_4F:
-         cgGLSetParameter4f((CGparameter)*cg_param, param->result.f.v0, param->result.f.v1,
+         cgGLSetParameter4f(location, param->result.f.v0, param->result.f.v1,
                param->result.f.v2, param->result.f.v3);
          break;
       case UNIFORM_1FV:
-         cgGLSetParameter1fv((CGparameter)*cg_param, param->result.floatv);
+         cgGLSetParameter1fv(location, param->result.floatv);
          break;
       case UNIFORM_2FV:
-         cgGLSetParameter2fv((CGparameter)*cg_param, param->result.floatv);
+         cgGLSetParameter2fv(location, param->result.floatv);
          break;
       case UNIFORM_3FV:
-         cgGLSetParameter3fv((CGparameter)*cg_param, param->result.floatv);
+         cgGLSetParameter3fv(location, param->result.floatv);
          break;
       case UNIFORM_4FV:
-         cgGLSetParameter3fv((CGparameter)*cg_param, param->result.floatv);
+         cgGLSetParameter3fv(location, param->result.floatv);
          break;
       case UNIFORM_1I:
          /* Unimplemented - Cg limitation */
@@ -268,8 +287,8 @@ static void gl_cg_set_texture_info(
       const struct gfx_tex_info *info)
 {
    unsigned i;
-   CGparameter         uniform_data[4]; 
-   struct uniform_info uniform_params[4];
+   struct uniform_cg_data uniform_data[4];
+   struct uniform_info uniform_params[4] = {0};
    CGparameter param = params->tex;
 
    if (param)
@@ -283,31 +302,31 @@ static void gl_cg_set_texture_info(
    uniform_params[0].type          = UNIFORM_2F;
    uniform_params[0].result.f.v0   = info->input_size[0];
    uniform_params[0].result.f.v1   = info->input_size[1];
-   uniform_data[0]                 = params->vid_size_v;
+   uniform_data[0].loc             = params->vid_size_v;
 
    uniform_params[1].location      = 1;
    uniform_params[1].enabled       = true;
    uniform_params[1].type          = UNIFORM_2F;
    uniform_params[1].result.f.v0   = info->input_size[0];
    uniform_params[1].result.f.v1   = info->input_size[1];
-   uniform_data[1]                 = params->vid_size_f;
+   uniform_data[1].loc             = params->vid_size_f;
 
    uniform_params[2].location      = 2;
    uniform_params[2].enabled       = true;
    uniform_params[2].type          = UNIFORM_2F;
    uniform_params[2].result.f.v0   = info->tex_size[0];
    uniform_params[2].result.f.v1   = info->tex_size[1];
-   uniform_data[2]                 = params->tex_size_v;
+   uniform_data[2].loc             = params->tex_size_v;
 
    uniform_params[3].location      = 3;
    uniform_params[3].enabled       = true;
    uniform_params[3].type          = UNIFORM_2F;
    uniform_params[3].result.f.v0   = info->tex_size[0];
    uniform_params[3].result.f.v1   = info->tex_size[1];
-   uniform_data[3]                 = params->tex_size_f;
+   uniform_data[3].loc             = params->tex_size_f;
 
    for (i = 0; i < 4; i++)
-      cg_uniform_set_parameter(&uniform_params[i], NULL, &uniform_data[i]);
+      cg_uniform_set_parameter(cg_data, &uniform_params[i], NULL, &uniform_data[i]);
 
    if (params->coord)
    {
@@ -330,8 +349,8 @@ static void gl_cg_set_params(void *data, void *shader_data,
       unsigned fbo_info_cnt)
 {
    unsigned i;
-   struct uniform_info uniform_params[10];
-   CGparameter uniform_data[10];
+   struct uniform_cg_data uniform_data[10];
+   struct uniform_info uniform_params[10] = {0};
    unsigned uniform_count                   = 0;
    const struct gfx_tex_info *info          = (const struct gfx_tex_info*)_info;
    const struct gfx_tex_info *prev_info     = (const struct gfx_tex_info*)_prev_info;
@@ -350,54 +369,54 @@ static void gl_cg_set_params(void *data, void *shader_data,
    uniform_params[0].type          = UNIFORM_2F;
    uniform_params[0].result.f.v0   = width;
    uniform_params[0].result.f.v1   = height;
-   uniform_data[0]                 = cg_data->prg[cg_data->active_idx].vid_size_f;
+   uniform_data[0].loc             = cg_data->prg[cg_data->active_idx].vid_size_f;
    
    uniform_params[1].location      = 1;
    uniform_params[1].enabled       = true;
    uniform_params[1].type          = UNIFORM_2F;
    uniform_params[1].result.f.v0   = tex_width;
    uniform_params[1].result.f.v1   = tex_height;
-   uniform_data[1]                 = cg_data->prg[cg_data->active_idx].tex_size_f;
+   uniform_data[1].loc             = cg_data->prg[cg_data->active_idx].tex_size_f;
 
    uniform_params[2].location      = 2;
    uniform_params[2].enabled       = true;
    uniform_params[2].type          = UNIFORM_2F;
    uniform_params[2].result.f.v0   = out_width;
    uniform_params[2].result.f.v1   = out_height;
-   uniform_data[2]                 = cg_data->prg[cg_data->active_idx].out_size_f;
+   uniform_data[2].loc             = cg_data->prg[cg_data->active_idx].out_size_f;
 
    uniform_params[3].location      = 3;
    uniform_params[3].enabled       = true;
    uniform_params[3].type          = UNIFORM_1F;
    uniform_params[3].result.f.v0   = state_manager_frame_is_reversed() ? -1.0 : 1.0;
-   uniform_data[3]                 = cg_data->prg[cg_data->active_idx].frame_dir_f;
+   uniform_data[3].loc             = cg_data->prg[cg_data->active_idx].frame_dir_f;
 
    uniform_params[4].location      = 4;
    uniform_params[4].enabled       = true;
    uniform_params[4].type          = UNIFORM_2F;
    uniform_params[4].result.f.v0   = width;
    uniform_params[4].result.f.v1   = height;
-   uniform_data[4]                 = cg_data->prg[cg_data->active_idx].vid_size_v;
+   uniform_data[4].loc             = cg_data->prg[cg_data->active_idx].vid_size_v;
 
    uniform_params[5].location      = 5;
    uniform_params[5].enabled       = true;
    uniform_params[5].type          = UNIFORM_2F;
    uniform_params[5].result.f.v0   = tex_width;
    uniform_params[5].result.f.v1   = tex_height;
-   uniform_data[5]                 = cg_data->prg[cg_data->active_idx].tex_size_v;
+   uniform_data[5].loc             = cg_data->prg[cg_data->active_idx].tex_size_v;
 
    uniform_params[6].location      = 6;
    uniform_params[6].enabled       = true;
    uniform_params[6].type          = UNIFORM_2F;
    uniform_params[6].result.f.v0   = out_width;
    uniform_params[6].result.f.v1   = out_height;
-   uniform_data[6]                 = cg_data->prg[cg_data->active_idx].out_size_v;
+   uniform_data[6].loc             = cg_data->prg[cg_data->active_idx].out_size_v;
 
    uniform_params[7].location      = 7;
    uniform_params[7].enabled       = true;
    uniform_params[7].type          = UNIFORM_1F;
    uniform_params[7].result.f.v0   = state_manager_frame_is_reversed() ? -1.0 : 1.0;
-   uniform_data[7]                 = cg_data->prg[cg_data->active_idx].frame_dir_v;
+   uniform_data[7].loc             = cg_data->prg[cg_data->active_idx].frame_dir_v;
 
    uniform_count += 8;
 
@@ -411,19 +430,19 @@ static void gl_cg_set_params(void *data, void *shader_data,
       uniform_params[8].enabled       = true;
       uniform_params[8].type          = UNIFORM_1F;
       uniform_params[8].result.f.v0   = (float)frame_count;
-      uniform_data[8]                 = cg_data->prg[cg_data->active_idx].frame_cnt_f;
+      uniform_data[8].loc             = cg_data->prg[cg_data->active_idx].frame_cnt_f;
 
       uniform_params[9].location      = 9;
       uniform_params[9].enabled       = true;
       uniform_params[9].type          = UNIFORM_1F;
       uniform_params[9].result.f.v0   = (float)frame_count;
-      uniform_data[9]                 = cg_data->prg[cg_data->active_idx].frame_cnt_v;
+      uniform_data[9].loc             = cg_data->prg[cg_data->active_idx].frame_cnt_v;
 
       uniform_count += 2;
    }
 
    for (i = 0; i < uniform_count; i++)
-      cg_uniform_set_parameter(&uniform_params[i], &cg_data->prg[i], &uniform_data[i]);
+      cg_uniform_set_parameter(cg_data, &uniform_params[i], &cg_data->prg[i], &uniform_data[i]);
 
    /* Set orig texture. */
    gl_cg_set_texture_info(cg_data, &cg_data->prg[cg_data->active_idx].orig, info);
@@ -469,11 +488,11 @@ static void gl_cg_set_params(void *data, void *shader_data,
    for (i = 0; i < cg_data->shader->num_parameters; i++)
    {
       unsigned j;
-      CGparameter pragma_cg_params[2];
+      struct uniform_cg_data pragma_cg_params[2];
 
-      pragma_cg_params[0] = cgGetNamedParameter(
+      pragma_cg_params[0].loc = cgGetNamedParameter(
             cg_data->prg[cg_data->active_idx].vprg, cg_data->shader->parameters[i].id);
-      pragma_cg_params[1] = cgGetNamedParameter(
+      pragma_cg_params[1].loc = cgGetNamedParameter(
             cg_data->prg[cg_data->active_idx].fprg, cg_data->shader->parameters[i].id);
 
       uniform_params[0].location      = 0;
@@ -487,7 +506,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
       uniform_params[1].result.f.v0   = cg_data->shader->parameters[i].current;
 
       for (j = 0; j < 2; j++)
-         cg_uniform_set_parameter(&uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
+         cg_uniform_set_parameter(cg_data, &uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
    }
 
    /* Set state parameters. */
@@ -504,11 +523,11 @@ static void gl_cg_set_params(void *data, void *shader_data,
       for (i = 0; i < cnt; i++)
       {
          unsigned j;
-         CGparameter pragma_cg_params[2];
+         struct uniform_cg_data pragma_cg_params[2];
 
-         pragma_cg_params[0] = cgGetNamedParameter(
+         pragma_cg_params[0].loc = cgGetNamedParameter(
                cg_data->prg[cg_data->active_idx].vprg, tracker_info[i].id);
-         pragma_cg_params[1] = cgGetNamedParameter(
+         pragma_cg_params[1].loc = cgGetNamedParameter(
                cg_data->prg[cg_data->active_idx].fprg, tracker_info[i].id);
 
          uniform_params[0].location      = 0;
@@ -522,7 +541,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
          uniform_params[1].result.f.v0   = tracker_info[i].value;
 
          for (j = 0; j < 2; j++)
-            cg_uniform_set_parameter(&uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
+            cg_uniform_set_parameter(cg_data, &uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
       }
    }
 }
