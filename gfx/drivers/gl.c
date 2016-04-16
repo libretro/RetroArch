@@ -236,8 +236,6 @@ static bool gl_shader_init(gl_t *gl)
 {
    video_shader_ctx_init_t init_data;
    enum rarch_shader_type type;
-   bool ret                        = false;
-   const shader_backend_t *backend = NULL;
    settings_t *settings            = config_get_ptr();
    const char *shader_path         = (settings->video.shader_enable 
          && *settings->video.shader_path) ? settings->video.shader_path : NULL;
@@ -249,71 +247,43 @@ static bool gl_shader_init(gl_t *gl)
    }
 
    type = video_shader_parse_type(shader_path,
-      gl->core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
-
-   if (type == RARCH_SHADER_NONE)
-   {
-      RARCH_LOG("[GL]: Not loading any shader.\n");
-      return true;
-   }
+         gl->core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
 
    switch (type)
    {
 #ifdef HAVE_CG
       case RARCH_SHADER_CG:
-         RARCH_LOG("[GL]: Using Cg shader backend.\n");
-         backend = &gl_cg_backend;
+         if (gl->core_context)
+            shader_path = NULL;
          break;
 #endif
 
 #ifdef HAVE_GLSL
       case RARCH_SHADER_GLSL:
-         RARCH_LOG("[GL]: Using GLSL shader backend.\n");
-         backend = &gl_glsl_backend;
          break;
 #endif
 
       default:
-         break;
-   }
-
-   if (!backend)
-   {
-      RARCH_ERR("[GL]: Didn't find valid shader backend. Continuing without shaders.\n");
-      return true;
-   }
-
-#ifdef HAVE_GLSL
-#ifdef HAVE_CG
-   if (gl->core_context && backend == &gl_cg_backend)
-   {
-      RARCH_ERR("[GL]: Cg cannot be used with core GL context. Falling back to GLSL.\n");
-      backend = &gl_glsl_backend;
-      shader_path = NULL;
+         RARCH_ERR("[GL]: Not loading any shader, or couldn't find valid shader backend. Continuing without shaders.\n");
+         return true;
    }
 
    init_data.gl.core_context_enabled = gl->core_context;
-#endif
-#endif
+   init_data.shader_type             = type;
+   init_data.shader                  = NULL;
+   init_data.data                    = gl;
+   init_data.path                    = shader_path;
 
-   init_data.shader = backend;
+   if (video_shader_driver_ctl(SHADER_CTL_INIT, &init_data))
+      return true;
+
+   RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
+
    init_data.data   = gl;
-   init_data.path   = shader_path;
+   init_data.shader = NULL;
+   init_data.path   = NULL;
 
-   ret = video_shader_driver_ctl(SHADER_CTL_INIT, &init_data);
-
-   if (!ret)
-   {
-      RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
-
-      init_data.shader = backend;
-      init_data.data   = gl;
-      init_data.path   = NULL;
-
-      ret = video_shader_driver_ctl(SHADER_CTL_INIT, &init_data);
-   }
-
-   return ret;
+   return video_shader_driver_ctl(SHADER_CTL_INIT, &init_data);
 }
 
 static void gl_shader_deinit(gl_t *gl)
