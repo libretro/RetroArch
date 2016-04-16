@@ -112,13 +112,12 @@ struct uniform_cg_data
 
 static void gl_cg_set_uniform_parameter(
       void *data,
-      void *uniform_info_data,
+      struct uniform_info *param,
       void *_shader_info_data,
       void *uniform_data)
 {
    CGparameter location;
    cg_shader_data_t *cg_data        = (cg_shader_data_t*)data;
-   struct uniform_info *param       = (struct uniform_info*)uniform_info_data;
    struct shader_program_cg_data *shader_data = (struct shader_program_cg_data*)_shader_info_data;
 
    if (!param || !param->enabled)

@@ -105,12 +105,11 @@ void hlsl_set_proj_matrix(void *data, XMMATRIX rotation_value)
 
 static void hlsl_uniform_set_parameter(
       void *data,
-      void *uniform_info_data,
+      struct uniform_info *param,
       void *_shader_info_data,
       void *uniform_data)
 {
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
-   struct uniform_info *param = (struct uniform_info*)uniform_info_data;
    struct shader_program_hlsl_data *shader_data = (struct shader_program_hlsl_data*)_shader_info_data;
 
    (void)hlsl;

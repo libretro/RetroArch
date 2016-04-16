@@ -76,7 +76,7 @@ static void shader_null_set_params(void *data, void *shader_data,
 
 static void shader_null_set_uniform_parameter(
       void *data,
-      void *uniform_info_data,
+      struct uniform_info *param,
       void *shader_info_data,
       void *uniform_data)
 {

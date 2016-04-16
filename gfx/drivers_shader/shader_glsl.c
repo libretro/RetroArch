@@ -1051,13 +1051,12 @@ error:
 
 static void gl_glsl_set_uniform_parameter(
       void *data,
-      void *uniform_info_data,
+      struct uniform_info *param,
       void *shader_info_data,
       void *uniform_data)
 {
    GLint location = 0;
    glsl_shader_data_t              *glsl = (glsl_shader_data_t*)data;
-   struct uniform_info            *param = (struct uniform_info*)uniform_info_data;
    struct shader_program_glsl_data *shader_data = (struct shader_program_glsl_data*)shader_info_data;
 
    if (!param)
