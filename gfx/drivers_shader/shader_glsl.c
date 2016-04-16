@@ -1436,14 +1436,14 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    for (i = 0; i < glsl->shader->num_parameters; i++)
    {
       struct uniform_info pragma_param = {0};
-      int location = glGetUniformLocation(
-            glsl->prg[glsl->glsl_active_index].id,
-            glsl->shader->parameters[i].id);
 
-      pragma_param.enabled     = true;
-      pragma_param.location    = location;
-      pragma_param.type        = UNIFORM_1F;
-      pragma_param.result.f.v0 = glsl->shader->parameters[i].current;
+      pragma_param.lookup.enable  = true;
+      pragma_param.lookup.idx     = glsl->glsl_active_index;
+      pragma_param.lookup.ident   = glsl->shader->parameters[i].id;
+      pragma_param.lookup.type    = SHADER_PROGRAM_COMBINED;
+      pragma_param.enabled        = true;
+      pragma_param.type           = UNIFORM_1F;
+      pragma_param.result.f.v0    = glsl->shader->parameters[i].current;
 
       gl_glsl_set_uniform_parameter(glsl, &pragma_param, NULL);
    }
