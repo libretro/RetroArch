@@ -171,7 +171,7 @@ static void ctr_check_dspfirm(void)
    }
 }
 
-void svchax_init(void);
+__attribute__((weak)) void svchax_init(void);
 
 static void frontend_ctr_init(void *data)
 {
@@ -189,9 +189,12 @@ static void frontend_ctr_init(void *data)
    consoleInit(GFX_BOTTOM, NULL);
 
    /* enable access to all service calls when possible. */
-   osSetSpeedupEnable(false);
-   svchax_init();
-   osSetSpeedupEnable(true);
+   if(svchax_init)
+   {
+      osSetSpeedupEnable(false);
+      svchax_init();
+      osSetSpeedupEnable(true);
+   }
 
    audio_driver_t* dsp_audio_driver = &audio_ctr_dsp;
    if(csndInit() != 0)
