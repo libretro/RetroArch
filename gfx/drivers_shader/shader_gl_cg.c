@@ -468,7 +468,6 @@ static void gl_cg_set_params(void *data, void *shader_data,
    for (i = 0; i < cg_data->shader->num_parameters; i++)
    {
       unsigned j;
-      struct uniform_info pragma_params[2];
       CGparameter pragma_cg_params[2];
 
       pragma_cg_params[0] = cgGetNamedParameter(
@@ -504,7 +503,6 @@ static void gl_cg_set_params(void *data, void *shader_data,
       for (i = 0; i < cnt; i++)
       {
          unsigned j;
-         struct uniform_info state_params[2];
          CGparameter pragma_cg_params[2];
 
          pragma_cg_params[0] = cgGetNamedParameter(

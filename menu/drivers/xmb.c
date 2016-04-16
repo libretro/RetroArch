@@ -1503,10 +1503,12 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
 static void xmb_blend_begin(void)
 {
+#if 0
    unsigned r, c;
    unsigned i = 0;
    const unsigned ribbon_rows    = 16;
    const unsigned ribbon_columns = 32;
+#endif
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 

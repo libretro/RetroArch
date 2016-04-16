@@ -543,7 +543,6 @@ static bool gl_glsl_compile_programs(
 
    for (i = 0; i < glsl->shader->passes; i++)
    {
-      struct shader_program_data prg;
       struct shader_program_info shader_prog_info;
       const char *vertex           = NULL;
       const char *fragment         = NULL;
