@@ -135,7 +135,7 @@ static void gl_cg_set_uniform_parameter(
             prog = cg_data->prg[param->lookup.idx].fprg;
             break;
       }
-      location = cgGetNamedParameter(prog, cg_data->shader->lut[param->lookup.idx].id);
+      location = cgGetNamedParameter(prog, param->lookup.ident);
    }
    else
    {
@@ -498,25 +498,27 @@ static void gl_cg_set_params(void *data, void *shader_data,
    for (i = 0; i < cg_data->shader->num_parameters; i++)
    {
       unsigned j;
-      struct uniform_cg_data pragma_cg_params[2];
 
-      pragma_cg_params[0].loc = cgGetNamedParameter(
-            cg_data->prg[cg_data->active_idx].vprg, cg_data->shader->parameters[i].id);
-      pragma_cg_params[1].loc = cgGetNamedParameter(
-            cg_data->prg[cg_data->active_idx].fprg, cg_data->shader->parameters[i].id);
-
+      uniform_params[0].lookup.enable = true;
+      uniform_params[0].lookup.idx    = cg_data->active_idx;
+      uniform_params[0].lookup.ident  = cg_data->shader->parameters[i].id;
+      uniform_params[0].lookup.type   = SHADER_PROGRAM_VERTEX;
       uniform_params[0].location      = 0;
       uniform_params[0].enabled       = true;
       uniform_params[0].type          = UNIFORM_1F;
       uniform_params[0].result.f.v0   = cg_data->shader->parameters[i].current;
 
+      uniform_params[1].lookup.enable = true;
+      uniform_params[1].lookup.idx    = cg_data->active_idx;
+      uniform_params[1].lookup.ident  = cg_data->shader->parameters[i].id;
+      uniform_params[1].lookup.type   = SHADER_PROGRAM_FRAGMENT;
       uniform_params[1].location      = 1;
       uniform_params[1].enabled       = true;
       uniform_params[1].type          = UNIFORM_1F;
       uniform_params[1].result.f.v0   = cg_data->shader->parameters[i].current;
 
       for (j = 0; j < 2; j++)
-         gl_cg_set_uniform_parameter(cg_data, &uniform_params[j], &pragma_cg_params[j]);
+         gl_cg_set_uniform_parameter(cg_data, &uniform_params[j], NULL);
    }
 
    /* Set state parameters. */
