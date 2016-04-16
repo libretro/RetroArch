@@ -503,12 +503,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             const float *new_vertex       = NULL;
             const float *new_tex_coord    = NULL;
             menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-            float bg[16] = {
-               1, 0, 0.1, 1,
-               1, 0.1, 0, 1,
-               0.05, 0, 0.05, 1,
-               0.05, 0, 0.05, 1
-            };
 
             if (!menu_disp || !draw)
                return false;
@@ -525,7 +519,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             coords.vertex        = new_vertex;
             coords.tex_coord     = new_tex_coord;
             coords.lut_tex_coord = new_tex_coord;
-            coords.color         = bg;
+            coords.color         = (const float*)draw->color;
 
             draw->x              = 0;
             draw->y              = 0;
