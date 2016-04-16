@@ -1510,40 +1510,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
 static void xmb_blend_begin(void)
 {
-#ifdef XMB_RIBBON_ENABLE
-   unsigned r, c;
-   unsigned i = 0;
-   const unsigned ribbon_rows    = 16;
-   const unsigned ribbon_columns = 32;
-#endif
-
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
-
-#ifdef XMB_RIBBON_ENABLE
-   /* Set up vertices */
-   for (r = 0; r < ribbon_rows; ++r)
-   {
-      for (c = 0; c < ribbon_columns; ++c)
-      {
-         int index = r * ribbon_columns + c;
-         ribbon_verts[3*index + 0] = ((float) c)/15.0f - 1.0;
-         ribbon_verts[3*index + 1] = 0.0f;
-         ribbon_verts[3*index + 2] = ((float) r)/8.0f - 1.0;
-      }
-   }
-
-   for (r = 0; r < ribbon_rows - 1; ++r)
-   {
-      ribbon_idx[i++] = r * ribbon_columns;
-
-      for (c = 0; c < ribbon_columns; ++c)
-      {
-         ribbon_idx[i++] = r * ribbon_columns + c;
-         ribbon_idx[i++] = (r + 1) * ribbon_columns + c;
-      }
-      ribbon_idx[i++] = (r + 1) * ribbon_columns + (ribbon_columns - 1);
-   }
-#endif
 }
 
 static void xmb_blend_end(void)
@@ -1942,17 +1909,19 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
    video_shader_ctx_info_t shader_info;
    math_matrix_4x4 mymat;
    struct gfx_coords coords;
-   float bg[16] = {
-      1, 0, 0.1, 1,
-      1, 0.1, 0, 1,
-      0.05, 0, 0.05, 1,
-      0.05, 0, 0.05, 1
+   float white[16] = {
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
    };
 
-   coords.vertices = draw->vertex_count;
-   coords.color    = bg;
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, draw);
 
    xmb_blend_begin();
+
+   coords.vertices = draw->vertex_count;
+   coords.color = white;
 
    draw->x      = 0;
    draw->y      = 0;
@@ -1964,7 +1933,7 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
-   t += 0.02;
+   t += 0.01;
 
    uniform_param.lookup.enable = true;
    uniform_param.lookup.idx    = VIDEO_SHADER_MENU;
@@ -2356,6 +2325,41 @@ static void xmb_layout(xmb_handle_t *xmb)
    }
 }
 
+
+static void xmb_init_ribbon()
+{
+#ifdef XMB_RIBBON_ENABLE
+   unsigned r, c;
+   unsigned i = 0;
+   const unsigned ribbon_rows    = 16;
+   const unsigned ribbon_columns = 32;
+
+   /* Set up vertices */
+   for (r = 0; r < ribbon_rows; ++r)
+   {
+      for (c = 0; c < ribbon_columns; ++c)
+      {
+         int index = r * ribbon_columns + c;
+         ribbon_verts[3*index + 0] = ((float) c)/15.0f - 1.0;
+         ribbon_verts[3*index + 1] = 0.0f;
+         ribbon_verts[3*index + 2] = ((float) r)/8.0f - 1.0;
+      }
+   }
+
+   for (r = 0; r < ribbon_rows - 1; ++r)
+   {
+      ribbon_idx[i++] = r * ribbon_columns;
+
+      for (c = 0; c < ribbon_columns; ++c)
+      {
+         ribbon_idx[i++] = r * ribbon_columns + c;
+         ribbon_idx[i++] = (r + 1) * ribbon_columns + c;
+      }
+      ribbon_idx[i++] = (r + 1) * ribbon_columns + (ribbon_columns - 1);
+   }
+#endif
+}
+
 static void *xmb_init(void **userdata)
 {
    unsigned width, height;
@@ -2408,6 +2412,7 @@ static void *xmb_init(void **userdata)
 
    xmb_init_horizontal_list(xmb);
    xmb_font(xmb);
+   xmb_init_ribbon();
 
    return menu;
 
