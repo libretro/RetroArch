@@ -338,19 +338,12 @@ static void* ctr_init(const video_info_t* video,
 
    GPU_SetTextureEnable(GPU_TEXUNIT0);
 
-   GPU_SetTexEnv(0,
-                 GPU_TEVSOURCES(GPU_TEXTURE0, GPU_PRIMARY_COLOR, 0),
-                 GPU_TEVSOURCES(GPU_TEXTURE0, GPU_PRIMARY_COLOR, 0),
-                 GPU_TEVOPERANDS(0, 0, 0),
-                 GPU_TEVOPERANDS(0, 0, 0),
-                 GPU_MODULATE, GPU_MODULATE,
-                 0xFFFFFFFF);
-
-   GPU_SetTexEnv(1, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
-   GPU_SetTexEnv(2, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
-   GPU_SetTexEnv(3, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
-   GPU_SetTexEnv(4, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
-   GPU_SetTexEnv(5, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
+   GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, 0, GPU_REPLACE, GPU_REPLACE, 0);
+   GPU_SetTexEnv(1, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+   GPU_SetTexEnv(2, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+   GPU_SetTexEnv(3, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+   GPU_SetTexEnv(4, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+   GPU_SetTexEnv(5, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
 
    ctrGuSetAttributeBuffers(2,
                             VIRT_TO_PHYS(ctr->menu.frame_coords),
@@ -615,15 +608,9 @@ static bool ctr_frame(void* data, const void* frame,
    /* restore */
    if (ctr->rgb32)
    {
-      GPU_SetTexEnv(0,
-                    GPU_TEVSOURCES(GPU_TEXTURE0, GPU_PRIMARY_COLOR, 0),
-                    GPU_TEVSOURCES(GPU_TEXTURE0, GPU_PRIMARY_COLOR, 0),
-                    GPU_TEVOPERANDS(0, 0, 0),
-                    GPU_TEVOPERANDS(0, 0, 0),
-                    GPU_MODULATE, GPU_MODULATE,
-                    0xFFFFFFFF);
-      GPU_SetTexEnv(1, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
-      GPU_SetTexEnv(2, GPU_PREVIOUS,GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, 0, GPU_REPLACE, GPU_REPLACE, 0);
+      GPU_SetTexEnv(1, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      GPU_SetTexEnv(2, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
    }
 
    if (ctr->menu_texture_enable)

@@ -1,27 +1,33 @@
-; Uniforms
-;.fvec scale_vector
-;.alias viewport_scale scale_vector.yxyx
-;.alias texture_scale scale_vector.zwzw
-.fvec c0_
+;.vsh
+.entry main_vsh
 
-.constf c20_(1.0, 1.0, 1.0, 1.0)
-.constf c21_(0.0, 0.0, 0.0, 0.0)
-.constf c22_(0.0, 1.0, 0.0, 1.0)
-.constf c23_(0.0, 0.0, -1.0, 1.0)
+; Uniforms
+.fvec    scale_vector
+.alias   viewport_scale scale_vector.yxyx
+.alias   texture_scale scale_vector.zwzw
+
+; Constants
+.constf  _01N1   (0.0, 1.0, -1.0, 1.0)
+.alias   _0000    _01N1.xxxx
+.alias   _1111    _01N1.yyyy
+.alias   _0101    _01N1.xyxy
 
 ; Inputs
-;.alias pos        v0
-;.alias tex_coord  v1
+.alias   pos_in         v0
+.alias   texcoord_in    v1
 
-.out o0_ position
-.out o1_ texcoord0
+; Output
+.out     pos         position
+.out     texcoord    texcoord0
+.out     color       color
 
-.entry main_vsh
 .proc main_vsh
-   mul r0, c0_.yxyx, v0.yxwz
-   add o0_, c20_, r0
-   mul r1.zw, c0_.zwzw, v1.xyxy
-   mov r1.xy, c21_
-   add o1_, c22_, r1
+
+   mul   r0, viewport_scale, pos_in.yxwz
+   add   pos, _1111, r0
+   mul   r1.zw, texture_scale, texcoord_in.xyxy
+   mov   r1.xy, _0000
+   add   texcoord, _0101, r1
+
    end
 .end
