@@ -27,6 +27,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <gfx/math/matrix_4x4.h>
+#include <glsym/glsym.h>
 
 #include "menu_generic.h"
 
@@ -1928,11 +1929,66 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
    }
 }
 
+static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
+{
+#if 1
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
+#else
+   static float t = 0;
+   int location;
+   video_shader_ctx_info_t shader_info;
+   math_matrix_4x4 mymat;
+   struct gfx_coords coords;
+   float bg[16] = {
+      1, 0, 0.1, 1,
+      1, 0.1, 0, 1,
+      0.05, 0, 0.05, 1,
+      0.05, 0, 0.05, 1
+   };
+
+   coords.vertices = draw->vertex_count;
+   coords.color    = bg;
+
+   xmb_blend_begin();
+
+   draw->x      = 0;
+   draw->y      = 0;
+   draw->coords = &coords;
+   draw->matrix_data = &mymat;
+
+   shader_info.data = NULL;
+   shader_info.idx  = VIDEO_SHADER_MENU;
+
+   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+
+   t += 0.04;
+
+#if 0
+   location = glGetUniformLocation(glsl->prg[VIDEO_SHADER_MENU], "time");
+   glUniform1f(location, t);
+#endif
+
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+
+   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ribbon_verts);
+   glEnableVertexAttribArray(0);
+
+   glVertexPointer(3, GL_FLOAT, 0, ribbon_verts);
+   glDrawElements(GL_TRIANGLE_STRIP, 1024, GL_UNSIGNED_INT, ribbon_idx);
+
+   xmb_blend_end();
+
+   //gl->coords.color = gl->white_color_ptr;
+#endif
+}
+
 static void xmb_draw_bg(menu_display_ctx_draw_t *draw)
 {
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
+
+   xmb_draw_ribbon(draw);
+
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 

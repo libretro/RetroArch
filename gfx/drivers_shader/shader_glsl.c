@@ -1049,10 +1049,6 @@ error:
    return NULL;
 }
 
-#if 0
-static float t = 0;
-
-#endif
 static void glsl_uniform_set_parameter(void *data, void *_shader_data, void *uniform_data)
 {
    struct uniform_info *param = (struct uniform_info*)data;
@@ -1130,14 +1126,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
    if (glsl->prg[glsl->glsl_active_index].id == 0)
       return;
-
-#if 0
-   t += 0.004;
-   glUseProgram(glsl->prg[VIDEO_SHADER_MENU]);
-   int location = glGetUniformLocation(glsl->prg[VIDEO_SHADER_MENU], "time");
-   glUniform1f(location, t);
-   glUseProgram(0);
-#endif
 
    input_size [0]  = (float)width;
    input_size [1]  = (float)height;
