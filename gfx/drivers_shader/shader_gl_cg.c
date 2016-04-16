@@ -52,6 +52,10 @@
 
 #define PREV_TEXTURES         (GFX_MAX_TEXTURES - 1)
 
+#if 0
+#define RARCH_CG_DEBUG
+#endif
+
 struct cg_fbo_params
 {
    CGparameter vid_size_f;
@@ -109,6 +113,8 @@ struct uniform_cg_data
 {
    CGparameter loc;
 };
+
+#include "../drivers/gl_shaders/opaque.cg.h"
 
 static void gl_cg_set_uniform_parameter(
       void *data,
@@ -177,41 +183,6 @@ static void gl_cg_set_uniform_parameter(
    }
 }
 
-#if 0
-#define RARCH_CG_DEBUG
-#endif
-
-/* Used when we call deactivate() since just unbinding 
- * the program didn't seem to work... */
-static const char *stock_cg_gl_program =
-      "struct input"
-      "{"
-      "  float2 tex_coord;"
-      "  float4 color;"
-      "  float4 vertex_coord;"
-      "  uniform float4x4 mvp_matrix;"
-      "  uniform sampler2D texture;"
-      "};"
-      "struct vertex_data"
-      "{"
-      "  float2 tex;"
-      "  float4 color;"
-      "};"
-      "void main_vertex"
-      "("
-      "	out float4 oPosition : POSITION,"
-      "  input IN,"
-      "  out vertex_data vert"
-      ")"
-      "{"
-      "	oPosition = mul(IN.mvp_matrix, IN.vertex_coord);"
-      "  vert = vertex_data(IN.tex_coord, IN.color);"
-      "}"
-      ""
-      "float4 main_fragment(input IN, vertex_data vert, uniform sampler2D s0 : TEXUNIT0) : COLOR"
-      "{"
-      "  return vert.color * tex2D(s0, vert.tex);"
-      "}";
 
 #ifdef RARCH_CG_DEBUG
 static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
