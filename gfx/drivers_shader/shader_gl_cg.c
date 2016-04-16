@@ -110,7 +110,7 @@ struct uniform_cg_data
    CGparameter loc;
 };
 
-static void cg_uniform_set_parameter(
+static void gl_cg_set_uniform_parameter(
       void *data,
       void *uniform_info_data,
       void *_shader_info_data,
@@ -326,7 +326,7 @@ static void gl_cg_set_texture_info(
    uniform_data[3].loc             = params->tex_size_f;
 
    for (i = 0; i < 4; i++)
-      cg_uniform_set_parameter(cg_data, &uniform_params[i], NULL, &uniform_data[i]);
+      gl_cg_set_uniform_parameter(cg_data, &uniform_params[i], NULL, &uniform_data[i]);
 
    if (params->coord)
    {
@@ -442,7 +442,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
    }
 
    for (i = 0; i < uniform_count; i++)
-      cg_uniform_set_parameter(cg_data, &uniform_params[i], &cg_data->prg[i], &uniform_data[i]);
+      gl_cg_set_uniform_parameter(cg_data, &uniform_params[i], &cg_data->prg[i], &uniform_data[i]);
 
    /* Set orig texture. */
    gl_cg_set_texture_info(cg_data, &cg_data->prg[cg_data->active_idx].orig, info);
@@ -506,7 +506,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
       uniform_params[1].result.f.v0   = cg_data->shader->parameters[i].current;
 
       for (j = 0; j < 2; j++)
-         cg_uniform_set_parameter(cg_data, &uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
+         gl_cg_set_uniform_parameter(cg_data, &uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
    }
 
    /* Set state parameters. */
@@ -541,7 +541,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
          uniform_params[1].result.f.v0   = tracker_info[i].value;
 
          for (j = 0; j < 2; j++)
-            cg_uniform_set_parameter(cg_data, &uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
+            gl_cg_set_uniform_parameter(cg_data, &uniform_params[j], &cg_data->prg[j], &pragma_cg_params[j]);
       }
    }
 }
@@ -1282,6 +1282,7 @@ const shader_backend_t gl_cg_backend = {
    gl_cg_init,
    gl_cg_deinit,
    gl_cg_set_params,
+   gl_cg_set_uniform_parameter,
    gl_cg_compile_program,
    gl_cg_use,
    gl_cg_num,

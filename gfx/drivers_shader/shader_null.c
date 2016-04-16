@@ -74,6 +74,14 @@ static void shader_null_set_params(void *data, void *shader_data,
 {
 }
 
+static void shader_null_set_uniform_parameter(
+      void *data,
+      void *uniform_info_data,
+      void *shader_info_data,
+      void *uniform_data)
+{
+}
+
 static bool shader_null_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
 {
 #ifdef HAVE_OPENGL
@@ -166,6 +174,7 @@ const shader_backend_t shader_null_backend = {
    shader_null_init,
    shader_null_deinit,
    shader_null_set_params,
+   shader_null_set_uniform_parameter,
    shader_null_compile_program,
    shader_null_use,
    shader_null_num,

@@ -1049,7 +1049,7 @@ error:
    return NULL;
 }
 
-static void glsl_uniform_set_parameter(
+static void gl_glsl_set_uniform_parameter(
       void *data,
       void *uniform_info_data,
       void *shader_info_data,
@@ -1194,7 +1194,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    uniform_count++;
 
    for (i = 0; i < uniform_count; i++)
-      glsl_uniform_set_parameter(glsl, &uniform_params[i], NULL, NULL);
+      gl_glsl_set_uniform_parameter(glsl, &uniform_params[i], NULL, NULL);
 
    /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)
@@ -1212,7 +1212,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       lut_uniform.type              = UNIFORM_1I;
       lut_uniform.result.integer.v0 = texunit;
 
-      glsl_uniform_set_parameter(glsl, &lut_uniform, NULL, NULL);
+      gl_glsl_set_uniform_parameter(glsl, &lut_uniform, NULL, NULL);
       texunit++;
    }
 
@@ -1234,7 +1234,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          orig_tex_uniform.type              = UNIFORM_1I;
          orig_tex_uniform.result.integer.v0 = texunit;
 
-         glsl_uniform_set_parameter(glsl, &orig_tex_uniform, NULL, NULL);
+         gl_glsl_set_uniform_parameter(glsl, &orig_tex_uniform, NULL, NULL);
 
          glBindTexture(GL_TEXTURE_2D, info->tex);
          texunit++;
@@ -1257,7 +1257,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          orig_uniforms[1].enabled        = true;
 
       for (j = 0; j < 2; j++)
-         glsl_uniform_set_parameter(glsl, &orig_uniforms[i], NULL, NULL);
+         gl_glsl_set_uniform_parameter(glsl, &orig_uniforms[i], NULL, NULL);
 
       /* Pass texture coordinates. */
       if (uni->orig.tex_coord >= 0)
@@ -1285,7 +1285,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          feedback_texture_param.type     = UNIFORM_1I;
          feedback_texture_param.result.integer.v0 = texunit;
 
-         glsl_uniform_set_parameter(glsl, &feedback_texture_param, NULL, NULL);
+         gl_glsl_set_uniform_parameter(glsl, &feedback_texture_param, NULL, NULL);
 
          glBindTexture(GL_TEXTURE_2D, feedback_info->tex);
          texunit++;
@@ -1308,7 +1308,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          feedback_uniforms[1].enabled        = true;
 
       for (j = 0; j < 2; j++)
-         glsl_uniform_set_parameter(glsl, &feedback_uniforms[i], NULL, NULL);
+         gl_glsl_set_uniform_parameter(glsl, &feedback_uniforms[i], NULL, NULL);
 
       /* Pass texture coordinates. */
       if (uni->feedback.tex_coord >= 0)
@@ -1359,7 +1359,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
             fbo_tex_params[2].enabled  = true;
 
          for (j = 0; j < 3; j++)
-            glsl_uniform_set_parameter(glsl, &fbo_tex_params[i], NULL, NULL);
+            gl_glsl_set_uniform_parameter(glsl, &fbo_tex_params[i], NULL, NULL);
 
          if (uni->pass[i].tex_coord >= 0)
          {
@@ -1411,7 +1411,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          prev_tex_params[2].enabled  = true;
 
       for (j = 0; j < 3; j++)
-         glsl_uniform_set_parameter(glsl, &prev_tex_params[i], NULL, NULL);
+         gl_glsl_set_uniform_parameter(glsl, &prev_tex_params[i], NULL, NULL);
 
       /* Pass texture coordinates. */
       if (uni->prev[i].tex_coord >= 0)
@@ -1448,7 +1448,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       pragma_param.type        = UNIFORM_1F;
       pragma_param.result.f.v0 = glsl->shader->parameters[i].current;
 
-      glsl_uniform_set_parameter(glsl, &pragma_param, NULL, NULL);
+      gl_glsl_set_uniform_parameter(glsl, &pragma_param, NULL, NULL);
    }
 
    /* Set state parameters. */
@@ -1473,7 +1473,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          state_param.type        = UNIFORM_1F;
          state_param.result.f.v0 = state_info[i].value;
 
-         glsl_uniform_set_parameter(glsl, &state_param, NULL, NULL);
+         gl_glsl_set_uniform_parameter(glsl, &state_param, NULL, NULL);
       }
    }
 }
@@ -1714,6 +1714,7 @@ const shader_backend_t gl_glsl_backend = {
    gl_glsl_init,
    gl_glsl_deinit,
    gl_glsl_set_params,
+   gl_glsl_set_uniform_parameter,
    gl_glsl_compile_program,
    gl_glsl_use,
    gl_glsl_num,
