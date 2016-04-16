@@ -253,16 +253,16 @@ static const char *xmb_theme_ident(void)
 static const char *xmb_thumbnails_ident(void)
 {
    settings_t *settings = config_get_ptr();
+
    switch (settings->menu.thumbnails)
    {
-      case 0:
-         return "OFF";
       case 1:
          return "Named_Snaps";
       case 2:
          return "Named_Titles";
       case 3:
          return "Named_Boxarts";
+      case 0:
       default:
          break;
    }
