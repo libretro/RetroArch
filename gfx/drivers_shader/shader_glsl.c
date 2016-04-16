@@ -1216,8 +1216,8 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    if (glsl->glsl_active_index)
    {
       unsigned j;
-      struct uniform_info orig_uniforms[2];
-      struct uniform_info feedback_uniforms[2];
+      struct uniform_info orig_uniforms[2]     = {0};
+      struct uniform_info feedback_uniforms[2] = {0};
 
       /* Set original texture. */
       if (uni->orig.texture >= 0)

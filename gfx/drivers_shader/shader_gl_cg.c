@@ -122,8 +122,21 @@ static void gl_cg_set_uniform_parameter(
       return;
 
    if (param->lookup.enable)
-      location = cgGetNamedParameter(
-            cg_data->prg[param->lookup.idx].fprg, cg_data->shader->lut[param->lookup.idx].id);
+   {
+      CGprogram prog = 0;
+
+      switch (param->lookup.type)
+      {
+         case SHADER_PROGRAM_VERTEX:
+            prog = cg_data->prg[param->lookup.idx].vprg;
+            break;
+         case SHADER_PROGRAM_FRAGMENT:
+         default:
+            prog = cg_data->prg[param->lookup.idx].fprg;
+            break;
+      }
+      location = cgGetNamedParameter(prog, cg_data->shader->lut[param->lookup.idx].id);
+   }
    else
    {
       struct uniform_cg_data *cg_param = (struct uniform_cg_data*)uniform_data;

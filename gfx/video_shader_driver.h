@@ -91,6 +91,13 @@ enum shader_uniform_type
    UNIFORM_1I
 };
 
+enum shader_program_type
+{
+   SHADER_PROGRAM_VERTEX = 0,
+   SHADER_PROGRAM_FRAGMENT,
+   SHADER_PROGRAM_COMBINED
+};
+
 struct shader_program_info
 {
    void *data;
@@ -111,6 +118,7 @@ struct uniform_info
 
    struct
    {
+      enum shader_program_type type;
       const char *ident;
       uint32_t idx;
       bool enable;
