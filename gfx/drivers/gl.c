@@ -3043,8 +3043,7 @@ static bool gl_set_shader(void *data,
 
       default:
          RARCH_ERR("[GL]: Cannot find shader core for path: %s.\n", path);
-         context_bind_hw_render(gl, true);
-         return false;
+         goto error;
    }
 
 #ifdef HAVE_FBO
@@ -3065,8 +3064,7 @@ static bool gl_set_shader(void *data,
 
       RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
 
-      context_bind_hw_render(gl, true);
-      return false;
+      goto error;
    }
 
    gl_update_tex_filter_frame(gl);
@@ -3109,10 +3107,14 @@ static bool gl_set_shader(void *data,
 #if defined(_WIN32) && !defined(_XBOX)
    shader_dlg_params_reload();
 #endif
-   return true;
-#else
-   return false;
+
 #endif
+
+   return true;
+
+error:
+   context_bind_hw_render(gl, true);
+   return false;
 }
 
 static void gl_viewport_info(void *data, struct video_viewport *vp)
