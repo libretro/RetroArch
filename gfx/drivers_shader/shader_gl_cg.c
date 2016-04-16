@@ -623,6 +623,9 @@ static bool gl_cg_compile_program(
    struct shader_program_data *program = (struct shader_program_data*)program_data;
    cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
 
+   if (!program)
+      program = &cg_data->prg[idx];
+
    argv[argc++] = "-DPARAMETER_UNIFORM";
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {

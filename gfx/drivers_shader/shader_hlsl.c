@@ -207,6 +207,9 @@ static bool hlsl_compile_program(
    ID3DXBuffer *code_f = NULL;
    ID3DXBuffer *code_v = NULL;
 
+   if (!program)
+      program = &hlsl->prg[idx];
+
    if (program_info->is_file)
    {
       ret_fp = D3DXCompileShaderFromFile(program_info->combined, NULL, NULL,
