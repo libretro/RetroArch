@@ -113,124 +113,19 @@ static const char *glsl_prefixes[] = {
    "ruby",
 };
 
-/* Need to duplicate these to work around broken stuff on Android.
- * Must enforce alpha = 1.0 or 32-bit games can potentially go black. */
-static const char *stock_vertex_modern =
-   "attribute vec2 TexCoord;\n"
-   "attribute vec2 VertexCoord;\n"
-   "attribute vec4 Color;\n"
-   "uniform mat4 MVPMatrix;\n"
-   "varying vec2 tex_coord;\n"
-   "void main() {\n"
-   "   gl_Position = MVPMatrix * vec4(VertexCoord, 0.0, 1.0);\n"
-   "   tex_coord = TexCoord;\n"
-   "}";
+#include "../drivers/gl_shaders/modern_opaque.glsl.vert.h"
+#include "../drivers/gl_shaders/modern_opaque.glsl.frag.h"
+#include "../drivers/gl_shaders/core_opaque.glsl.vert.h"
+#include "../drivers/gl_shaders/core_opaque.glsl.frag.h"
+#include "../drivers/gl_shaders/legacy_opaque.glsl.vert.h"
+#include "../drivers/gl_shaders/legacy_opaque.glsl.frag.h"
+#include "../drivers/gl_shaders/modern_alpha_blend.glsl.vert.h"
+#include "../drivers/gl_shaders/modern_alpha_blend.glsl.frag.h"
+#include "../drivers/gl_shaders/core_alpha_blend.glsl.vert.h"
+#include "../drivers/gl_shaders/core_alpha_blend.glsl.frag.h"
 
-static const char *stock_fragment_modern =
-   "#ifdef GL_ES\n"
-   "precision mediump float;\n"
-   "#endif\n"
-   "uniform sampler2D Texture;\n"
-   "varying vec2 tex_coord;\n"
-   "void main() {\n"
-   "   gl_FragColor = vec4(texture2D(Texture, tex_coord).rgb, 1.0);\n"
-   "}";
-
-static const char *stock_vertex_core =
-   "in vec2 TexCoord;\n"
-   "in vec2 VertexCoord;\n"
-   "in vec4 Color;\n"
-   "uniform mat4 MVPMatrix;\n"
-   "out vec2 tex_coord;\n"
-   "void main() {\n"
-   "   gl_Position = MVPMatrix * vec4(VertexCoord, 0.0, 1.0);\n"
-   "   tex_coord = TexCoord;\n"
-   "}";
-
-static const char *stock_fragment_core =
-   "uniform sampler2D Texture;\n"
-   "in vec2 tex_coord;\n"
-   "out vec4 FragColor;\n"
-   "void main() {\n"
-   "   FragColor = vec4(texture(Texture, tex_coord).rgb, 1.0);\n"
-   "}";
-
-static const char *stock_vertex_legacy =
-   "varying vec4 color;\n"
-   "void main() {\n"
-   "   gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
-   "   gl_TexCoord[0] = gl_MultiTexCoord0;\n"
-   "   color = gl_Color;\n"
-   "}";
-
-static const char *stock_fragment_legacy =
-   "uniform sampler2D Texture;\n"
-   "varying vec4 color;\n"
-   "void main() {\n"
-   "   gl_FragColor = color * texture2D(Texture, gl_TexCoord[0].xy);\n"
-   "}";
-
-#include "../drivers/gl_shaders/modern_alpha_blend_glsl.vert.h"
-#include "../drivers/gl_shaders/modern_alpha_blend_glsl.frag.h"
-
-static const char *stock_vertex_core_blend =
-   "in vec2 TexCoord;\n"
-   "in vec2 VertexCoord;\n"
-   "in vec4 Color;\n"
-   "uniform mat4 MVPMatrix;\n"
-   "out vec2 tex_coord;\n"
-   "out vec4 color;\n"
-   "void main() {\n"
-   "   gl_Position = MVPMatrix * vec4(VertexCoord, 0.0, 1.0);\n"
-   "   tex_coord = TexCoord;\n"
-   "   color = Color;\n"
-   "}";
-
-static const char *stock_fragment_core_blend =
-   "uniform sampler2D Texture;\n"
-   "in vec2 tex_coord;\n"
-   "in vec4 color;\n"
-   "out vec4 FragColor;\n"
-   "void main() {\n"
-   "   FragColor = color * texture(Texture, tex_coord);\n"
-   "}";
-
-static const char *stock_vertex_xmb =
-   "attribute vec3 vPosition;\n"
-   "uniform float time;\n"
-   "varying vec3 v;\n"
-   "float iqhash( float n )\n"
-   "{\n"
-   "  return fract(sin(n)*43758.5453);\n"
-   "}\n"
-   "float noise( vec3 x )\n"
-   "{\n"
-   "  vec3 p = floor(x);\n"
-   "  vec3 f = fract(x);\n"
-   "  f = f*f*(3.0-2.0*f);\n"
-   "  float n = p.x + p.y*57.0 + 113.0*p.z;\n"
-   "  return mix(mix(mix( iqhash(n+0.0 ), iqhash(n+1.0 ),f.x),\n"
-   "  mix( iqhash(n+57.0 ), iqhash(n+58.0 ),f.x),f.y),\n"
-   "  mix(mix( iqhash(n+113.0), iqhash(n+114.0),f.x),\n"
-   "  mix( iqhash(n+170.0), iqhash(n+171.0),f.x),f.y),f.z);\n"
-   "}\n"
-   "void main()\n"
-   "{\n"
-   "  v = vPosition;\n"
-   "  vec3 v2 = v;\n"
-   "  v2.x = v2.x + time/2.0;\n"
-   "  v2.z = v.z * 3.0;\n"
-   "  v.y = -cos((v.x+v.z/3.0+time)*2.0)/10.0 - noise(v2.xyz)/4.0;\n"
-   "  gl_Position = vec4(v, 1.0);\n"
-   "}\n";
-
-static const char *stock_fragment_xmb =
-   "uniform float time;\n"
-   "varying vec3 v;\n"
-   "void main()\n"
-   "{\n"
-   "  gl_FragColor = vec4(1.0, 1.0, 1.0, 0.05);\n"
-   "}\n";
+#include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.vert.h"
+#include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
 
 typedef struct glsl_shader_data
 {
