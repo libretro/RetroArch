@@ -1909,17 +1909,19 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
    video_shader_ctx_info_t shader_info;
    math_matrix_4x4 mymat;
    struct gfx_coords coords;
-   float bg[16] = {
-      1, 0, 0.1, 1,
-      1, 0.1, 0, 1,
-      0.05, 0, 0.05, 1,
-      0.05, 0, 0.05, 1
+   float white[16] = {
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
    };
 
-   coords.vertices = draw->vertex_count;
-   coords.color    = bg;
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, draw);
 
    xmb_blend_begin();
+
+   coords.vertices = draw->vertex_count;
+   coords.color = white;
 
    draw->x      = 0;
    draw->y      = 0;
