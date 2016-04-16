@@ -50,6 +50,61 @@
 #define SEMANTIC_COLOR0       0xa9e93e54U
 #define SEMANTIC_POSITION     0xd87309baU
 
+#define PREV_TEXTURES         (GFX_MAX_TEXTURES - 1)
+
+struct cg_fbo_params
+{
+   CGparameter vid_size_f;
+   CGparameter tex_size_f;
+   CGparameter vid_size_v;
+   CGparameter tex_size_v;
+   CGparameter tex;
+   CGparameter coord;
+};
+
+struct shader_program_data
+{
+   CGprogram vprg;
+   CGprogram fprg;
+
+   CGparameter tex;
+   CGparameter lut_tex;
+   CGparameter color;
+   CGparameter vertex;
+
+   CGparameter vid_size_f;
+   CGparameter tex_size_f;
+   CGparameter out_size_f;
+   CGparameter frame_cnt_f;
+   CGparameter frame_dir_f;
+   CGparameter vid_size_v;
+   CGparameter tex_size_v;
+   CGparameter out_size_v;
+   CGparameter frame_cnt_v;
+   CGparameter frame_dir_v;
+   CGparameter mvp;
+
+   struct cg_fbo_params fbo[GFX_MAX_SHADERS];
+   struct cg_fbo_params orig;
+   struct cg_fbo_params feedback;
+   struct cg_fbo_params prev[PREV_TEXTURES];
+};
+
+typedef struct cg_shader_data
+{
+   shader_program_data_t prg[GFX_MAX_SHADERS];
+   unsigned active_idx;
+   unsigned cg_attrib_idx;
+   CGprofile cgVProf;
+   CGprofile cgFProf;
+   struct video_shader *shader;
+   state_tracker_t *state_tracker;
+   GLuint lut_textures[GFX_MAX_TEXTURES];
+   CGparameter cg_attribs[PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
+   char cg_alias_define[GFX_MAX_SHADERS][128];
+   CGcontext cgCtx;
+} cg_shader_data_t;
+
 static void cg_uniform_set_parameter(void *data, shader_program_data_t *shader_data, void *uniform_data)
 {
    struct uniform_info *param = (struct uniform_info*)data;
@@ -152,62 +207,6 @@ static void cg_error_handler(CGcontext ctx, CGerror error, void *data)
 }
 #endif
 
-
-struct cg_fbo_params
-{
-   CGparameter vid_size_f;
-   CGparameter tex_size_f;
-   CGparameter vid_size_v;
-   CGparameter tex_size_v;
-   CGparameter tex;
-   CGparameter coord;
-};
-
-#define PREV_TEXTURES (GFX_MAX_TEXTURES - 1)
-
-struct shader_program_data
-{
-   CGprogram vprg;
-   CGprogram fprg;
-
-   CGparameter tex;
-   CGparameter lut_tex;
-   CGparameter color;
-   CGparameter vertex;
-
-   CGparameter vid_size_f;
-   CGparameter tex_size_f;
-   CGparameter out_size_f;
-   CGparameter frame_cnt_f;
-   CGparameter frame_dir_f;
-   CGparameter vid_size_v;
-   CGparameter tex_size_v;
-   CGparameter out_size_v;
-   CGparameter frame_cnt_v;
-   CGparameter frame_dir_v;
-   CGparameter mvp;
-
-   struct cg_fbo_params fbo[GFX_MAX_SHADERS];
-   struct cg_fbo_params orig;
-   struct cg_fbo_params feedback;
-   struct cg_fbo_params prev[PREV_TEXTURES];
-};
-
-typedef struct cg_shader_data
-{
-   shader_program_data_t prg[GFX_MAX_SHADERS];
-   unsigned active_idx;
-   unsigned cg_attrib_idx;
-   CGprofile cgVProf;
-   CGprofile cgFProf;
-   struct video_shader *shader;
-   state_tracker_t *state_tracker;
-   GLuint lut_textures[GFX_MAX_TEXTURES];
-   CGparameter cg_attribs[PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
-   char cg_alias_define[GFX_MAX_SHADERS][128];
-   CGcontext cgCtx;
-} cg_shader_data_t;
-
 static void gl_cg_reset_attrib(void *data)
 {
    unsigned i;
@@ -261,7 +260,6 @@ fallback:
    gl_ff_vertex(coords);
    return false;
 }
-
 
 static void gl_cg_set_texture_info(
       cg_shader_data_t *cg_data, 
@@ -608,13 +606,6 @@ static void gl_cg_deinit(void *data)
    gl_cg_deinit_context_state(cg_data);
 
    free(cg_data);
-}
-
-#define CG_GL_SET_LISTING(cg_data, type) \
-{ \
-   const char *list = cgGetLastListing(cg_data->cgCtx); \
-   if (list) \
-      listing_##type = strdup(list); \
 }
 
 static bool gl_cg_compile_program(
