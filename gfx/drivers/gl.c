@@ -279,7 +279,6 @@ static bool gl_shader_init(gl_t *gl)
 
    RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
 
-   init_data.data   = gl;
    init_data.shader = NULL;
    init_data.path   = NULL;
 
@@ -538,9 +537,7 @@ static void gl_create_fbo_textures(gl_t *gl)
    glGenTextures(gl->fbo_pass, gl->fbo_texture);
 
    for (i = 0; i < gl->fbo_pass; i++)
-   {
       gl_create_fbo_texture(gl, i, gl->fbo_texture[i]);
-   }
 
    if (gl->fbo_feedback_enable)
    {
@@ -1855,8 +1852,9 @@ static bool gl_frame(void *data, const void *frame,
          gl_set_viewport(gl, width, height, false, true);
    }
 
-   gl->tex_index = frame ?
-      ((gl->tex_index + 1) % gl->textures) : (gl->tex_index);
+   if (frame)
+      gl->tex_index = ((gl->tex_index + 1) % gl->textures);
+
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    /* Can be NULL for frame dupe / NULL render. */
@@ -2291,8 +2289,6 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #endif
 
 #ifdef HAVE_OPENGLES2
-
-
    /* There are both APPLE and EXT variants. */
    /* Videocore hardware supports BGRA8888 extension, but
     * should be purposefully avoided. */
@@ -2315,12 +2311,12 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    }
 
    /* No extensions for float FBO currently. */
-   gl->has_srgb_fbo = gles3 || gl_query_extension(gl, "EXT_sRGB");
+   gl->has_srgb_fbo       = gles3 || gl_query_extension(gl, "EXT_sRGB");
    gl->has_srgb_fbo_gles3 = gles3;
 #else
 #ifdef HAVE_FBO
    /* Float FBO is core in 3.2. */
-   gl->has_fp_fbo = gl->core_context || gl_query_extension(gl, "ARB_texture_float");
+   gl->has_fp_fbo   = gl->core_context || gl_query_extension(gl, "ARB_texture_float");
    gl->has_srgb_fbo = gl->core_context || 
       (gl_query_extension(gl, "EXT_texture_sRGB")
        && gl_query_extension(gl, "ARB_framebuffer_sRGB"));
@@ -3018,8 +3014,9 @@ static bool gl_set_shader(void *data,
       enum rarch_shader_type type, const char *path)
 {
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
+   unsigned textures;
+   video_shader_ctx_texture_t texture_info;
    video_shader_ctx_init_t init_data;
-   const shader_backend_t *shader = NULL;
    gl_t *gl = (gl_t*)data;
 
    if (!gl)
@@ -3036,25 +3033,18 @@ static bool gl_set_shader(void *data,
    {
 #ifdef HAVE_GLSL
       case RARCH_SHADER_GLSL:
-         shader = &gl_glsl_backend;
          break;
 #endif
 
 #ifdef HAVE_CG
       case RARCH_SHADER_CG:
-         shader = &gl_cg_backend;
          break;
 #endif
 
       default:
-         break;
-   }
-
-   if (!shader)
-   {
-      RARCH_ERR("[GL]: Cannot find shader core for path: %s.\n", path);
-      context_bind_hw_render(gl, true);
-      return false;
+         RARCH_ERR("[GL]: Cannot find shader core for path: %s.\n", path);
+         context_bind_hw_render(gl, true);
+         return false;
    }
 
 #ifdef HAVE_FBO
@@ -3062,9 +3052,10 @@ static bool gl_set_shader(void *data,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 #endif
 
-   init_data.shader = shader;
-   init_data.data   = gl;
-   init_data.path   = path;
+   init_data.shader_type = type;
+   init_data.shader      = NULL;
+   init_data.data        = gl;
+   init_data.path        = path;
 
    if (!video_shader_driver_ctl(SHADER_CTL_INIT, &init_data))
    {
@@ -3080,37 +3071,31 @@ static bool gl_set_shader(void *data,
 
    gl_update_tex_filter_frame(gl);
 
-   if (shader)
+   video_shader_driver_ctl(SHADER_CTL_GET_PREV_TEXTURES, &texture_info);
+
+   textures = texture_info.id + 1;
+
+   if (textures > gl->textures) /* Have to reinit a bit. */
    {
-      unsigned textures;
-      video_shader_ctx_texture_t texture_info;
-
-      video_shader_driver_ctl(SHADER_CTL_GET_PREV_TEXTURES, &texture_info);
-
-      textures = texture_info.id + 1;
-
-      if (textures > gl->textures) /* Have to reinit a bit. */
-      {
 #if defined(HAVE_FBO)
-         gl_deinit_hw_render(gl);
+      gl_deinit_hw_render(gl);
 #endif
 
-         glDeleteTextures(gl->textures, gl->texture);
+      glDeleteTextures(gl->textures, gl->texture);
 #if defined(HAVE_PSGL)
-         glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
-         glDeleteBuffers(1, &gl->pbo);
+      glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
+      glDeleteBuffers(1, &gl->pbo);
 #endif
-         gl->textures = textures;
-         RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
-         gl->tex_index = 0;
-         gl_init_textures(gl, &gl->video_info);
-         gl_init_textures_data(gl);
+      gl->textures = textures;
+      RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
+      gl->tex_index = 0;
+      gl_init_textures(gl, &gl->video_info);
+      gl_init_textures_data(gl);
 
 #if defined(HAVE_FBO)
-         if (gl->hw_render_use)
-            gl_init_hw_render(gl, gl->tex_w, gl->tex_h);
+      if (gl->hw_render_use)
+         gl_init_hw_render(gl, gl->tex_w, gl->tex_h);
 #endif
-      }
    }
 
 #ifdef HAVE_FBO
