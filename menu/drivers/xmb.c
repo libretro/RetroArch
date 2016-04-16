@@ -1510,40 +1510,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
 static void xmb_blend_begin(void)
 {
-#ifdef XMB_RIBBON_ENABLE
-   unsigned r, c;
-   unsigned i = 0;
-   const unsigned ribbon_rows    = 16;
-   const unsigned ribbon_columns = 32;
-#endif
-
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
-
-#ifdef XMB_RIBBON_ENABLE
-   /* Set up vertices */
-   for (r = 0; r < ribbon_rows; ++r)
-   {
-      for (c = 0; c < ribbon_columns; ++c)
-      {
-         int index = r * ribbon_columns + c;
-         ribbon_verts[3*index + 0] = ((float) c)/15.0f - 1.0;
-         ribbon_verts[3*index + 1] = 0.0f;
-         ribbon_verts[3*index + 2] = ((float) r)/8.0f - 1.0;
-      }
-   }
-
-   for (r = 0; r < ribbon_rows - 1; ++r)
-   {
-      ribbon_idx[i++] = r * ribbon_columns;
-
-      for (c = 0; c < ribbon_columns; ++c)
-      {
-         ribbon_idx[i++] = r * ribbon_columns + c;
-         ribbon_idx[i++] = (r + 1) * ribbon_columns + c;
-      }
-      ribbon_idx[i++] = (r + 1) * ribbon_columns + (ribbon_columns - 1);
-   }
-#endif
 }
 
 static void xmb_blend_end(void)
@@ -2356,6 +2323,41 @@ static void xmb_layout(xmb_handle_t *xmb)
    }
 }
 
+
+static void xmb_init_ribbon()
+{
+#ifdef XMB_RIBBON_ENABLE
+   unsigned r, c;
+   unsigned i = 0;
+   const unsigned ribbon_rows    = 16;
+   const unsigned ribbon_columns = 32;
+
+   /* Set up vertices */
+   for (r = 0; r < ribbon_rows; ++r)
+   {
+      for (c = 0; c < ribbon_columns; ++c)
+      {
+         int index = r * ribbon_columns + c;
+         ribbon_verts[3*index + 0] = ((float) c)/15.0f - 1.0;
+         ribbon_verts[3*index + 1] = 0.0f;
+         ribbon_verts[3*index + 2] = ((float) r)/8.0f - 1.0;
+      }
+   }
+
+   for (r = 0; r < ribbon_rows - 1; ++r)
+   {
+      ribbon_idx[i++] = r * ribbon_columns;
+
+      for (c = 0; c < ribbon_columns; ++c)
+      {
+         ribbon_idx[i++] = r * ribbon_columns + c;
+         ribbon_idx[i++] = (r + 1) * ribbon_columns + c;
+      }
+      ribbon_idx[i++] = (r + 1) * ribbon_columns + (ribbon_columns - 1);
+   }
+#endif
+}
+
 static void *xmb_init(void **userdata)
 {
    unsigned width, height;
@@ -2408,6 +2410,7 @@ static void *xmb_init(void **userdata)
 
    xmb_init_horizontal_list(xmb);
    xmb_font(xmb);
+   xmb_init_ribbon();
 
    return menu;
 
