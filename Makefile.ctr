@@ -31,6 +31,11 @@ OBJS += ctr/ctr_system.o
 OBJS += ctr/ctr_memory.o
 OBJS += ctr/ctr_linear.o
 
+ifeq ($(APP_BIG_TEXT_SECTION), 1)
+	APP_USE_SVCHAX = 1
+    LDFLAGS  += -Wl,--defsym,__ctr_patch_services=__service_ptr
+endif
+
 ifeq ($(APP_USE_SVCHAX), 1)
 	OBJS += ctr/ctr_svchax.o
 endif
@@ -292,7 +297,7 @@ CFLAGS += -DHAVE_ZLIB -DHAVE_RPNG -DWANT_ZLIB -DHAVE_BUILTIN_AUTOCONFIG
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH) -O3
-LDFLAGS   =	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS  +=	-specs=ctr/3dsx_custom.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 CFLAGS   += -std=gnu99 -ffast-math
 

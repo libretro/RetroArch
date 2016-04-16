@@ -172,6 +172,7 @@ static void ctr_check_dspfirm(void)
 }
 
 __attribute__((weak)) Result svchax_init(bool patch_srv);
+__attribute__((weak)) u32 __ctr_patch_services;
 
 static void frontend_ctr_init(void *data)
 {
@@ -181,9 +182,6 @@ static void frontend_ctr_init(void *data)
 
    *verbose           = true;
 
-#if 0
-   APT_SetAppCpuTimeLimit(NULL, 80);
-#endif
    gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);   
    gfxSet3D(false);
    consoleInit(GFX_BOTTOM, NULL);
@@ -192,7 +190,7 @@ static void frontend_ctr_init(void *data)
    if(svchax_init)
    {
       osSetSpeedupEnable(false);
-      svchax_init(false);
+      svchax_init(__ctr_patch_services);
       osSetSpeedupEnable(true);
    }
 
