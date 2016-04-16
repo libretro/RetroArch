@@ -34,6 +34,32 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
+static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type type)
+{
+   switch (type)
+   {
+      case RARCH_SHADER_CG:
+#ifdef HAVE_CG
+         RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
+         return &gl_cg_backend;
+#else
+         break;
+#endif
+      case RARCH_SHADER_GLSL:
+#ifdef HAVE_GLSL
+         RARCH_LOG("[Shader driver]: Using GLSL shader backend.\n");
+         return &gl_glsl_backend;
+#else
+         break;
+#endif
+      case RARCH_SHADER_NONE:
+      default:
+         break;
+   }
+
+   return NULL;
+}
+
 bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *data)
 {
    static const shader_backend_t *current_shader = NULL;
@@ -138,12 +164,10 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
 
             if (!init->shader || !init->shader->init)
             {
-               switch (init->shader_type)
-               {
-                  case RARCH_SHADER_NONE:
-                  default:
-                     return false;
-               }
+               init->shader = video_shader_set_backend(init->shader_type);
+               
+               if (!init->shader)
+                  return false;
             }
 
             tmp = init->shader->init(init->data, init->path);
