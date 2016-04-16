@@ -223,6 +223,15 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
                return false;
          }
          break;
+      case SHADER_CTL_COMPILE_PROGRAM:
+         {
+            struct shader_program_info *program_info = (struct shader_program_info*)data;
+            if (!current_shader || !program_info)
+               return false;
+            return current_shader->compile_program(program_info->data,
+                  program_info->idx, NULL, program_info);
+         }
+         break;
       case SHADER_CTL_USE:
          {
             video_shader_ctx_info_t *shader_info = (video_shader_ctx_info_t*)data;

@@ -153,10 +153,20 @@ static struct video_shader *shader_null_get_current_shader(void *data)
    return NULL;
 }
 
+static bool shader_null_compile_program(
+      void *data,
+      unsigned idx,
+      void *program_data,
+      struct shader_program_info *program_info)
+{
+   return true;
+}
+
 const shader_backend_t shader_null_backend = {
    shader_null_init,
    shader_null_deinit,
    shader_null_set_params,
+   shader_null_compile_program,
    shader_null_use,
    shader_null_num,
    shader_null_filter_type,

@@ -65,6 +65,7 @@ enum video_shader_driver_ctl_state
    SHADER_CTL_GET_FEEDBACK_PASS,
    SHADER_CTL_MIPMAP_INPUT,
    SHADER_CTL_SET_COORDS,
+   SHADER_CTL_COMPILE_PROGRAM,
    SHADER_CTL_SCALE,
    SHADER_CTL_INFO,
    SHADER_CTL_SET_MVP,
@@ -92,13 +93,13 @@ enum shader_uniform_type
 
 struct shader_program_info
 {
+   void *data;
    const char *vertex;
    const char *fragment;
    const char *combined;
+   unsigned idx;
    bool is_file;
 };
-
-typedef struct shader_program_data shader_program_data_t;
 
 struct uniform_info
 {
@@ -155,6 +156,8 @@ typedef struct shader_backend
          const void *prev_info,
          const void *feedback_info,
          const void *fbo_info, unsigned fbo_info_cnt);
+   bool (*compile_program)(void *data, unsigned idx,
+         void *program_data, struct shader_program_info *program_info);
 
    void (*use)(void *data, void *shader_data, unsigned index, bool set_active);
    unsigned (*num_shaders)(void *data);

@@ -194,11 +194,12 @@ static void hlsl_set_params(void *data, void *shader_data,
 static bool hlsl_compile_program(
       void *data,
       unsigned idx,
-      shader_program_data_t *program,
+      void *program_data,
       struct shader_program_info *program_info)
 {
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)data;
    d3d_video_t *d3d = (d3d_video_t*)hlsl->d3d;
+   shader_program_data_t *program  = (shader_program_data_t*)program_data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
    HRESULT ret, ret_fp, ret_vp;
    ID3DXBuffer *listing_f = NULL;

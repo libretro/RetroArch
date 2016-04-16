@@ -92,7 +92,7 @@ struct shader_program_data
 
 typedef struct cg_shader_data
 {
-   shader_program_data_t prg[GFX_MAX_SHADERS];
+   struct shader_program_data prg[GFX_MAX_SHADERS];
    unsigned active_idx;
    unsigned cg_attrib_idx;
    CGprofile cgVProf;
@@ -105,7 +105,7 @@ typedef struct cg_shader_data
    CGcontext cgCtx;
 } cg_shader_data_t;
 
-static void cg_uniform_set_parameter(void *data, shader_program_data_t *shader_data, void *uniform_data)
+static void cg_uniform_set_parameter(void *data, struct shader_program_data *shader_data, void *uniform_data)
 {
    struct uniform_info *param = (struct uniform_info*)data;
    CGparameter      *cg_param = (CGparameter*)uniform_data;
@@ -611,7 +611,7 @@ static void gl_cg_deinit(void *data)
 static bool gl_cg_compile_program(
       void *data,
       unsigned idx,
-      shader_program_data_t *program,
+      void *program_data,
       struct shader_program_info *program_info)
 {
    const char *list = NULL;
@@ -620,6 +620,7 @@ static bool gl_cg_compile_program(
    char *listing_f  = NULL;
    char *listing_v  = NULL;
    unsigned i, argc = 0;
+   struct shader_program_data *program = (struct shader_program_data*)program_data;
    cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
 
    argv[argc++] = "-DPARAMETER_UNIFORM";
@@ -940,7 +941,7 @@ static bool gl_cg_load_preset(void *data, const char *path)
 }
 
 static void gl_cg_set_pass_attrib(
-      shader_program_data_t *program,
+      struct shader_program_data *program,
       struct cg_fbo_params *fbo,
       const char *attr)
 {
@@ -1260,6 +1261,7 @@ const shader_backend_t gl_cg_backend = {
    gl_cg_init,
    gl_cg_deinit,
    gl_cg_set_params,
+   gl_cg_compile_program,
    gl_cg_use,
    gl_cg_num,
    gl_cg_filter_type,

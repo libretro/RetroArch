@@ -264,7 +264,7 @@ typedef struct glsl_shader_data
    char glsl_alias_define[1024];
    unsigned glsl_active_index;
    unsigned gl_attrib_index;
-   shader_program_data_t prg[GFX_MAX_SHADERS];
+   struct shader_program_data prg[GFX_MAX_SHADERS];
    GLuint gl_teximage[GFX_MAX_TEXTURES];
    GLint gl_attribs[PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    state_tracker_t *gl_state_tracker;
@@ -431,11 +431,15 @@ static bool gl_glsl_link_program(GLuint prog)
 static bool gl_glsl_compile_program(
       void *data,
       unsigned idx,
-      shader_program_data_t *program,
+      void *program_data,
       struct shader_program_info *program_info)
 {
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)data;
+   struct shader_program_data *program = (struct shader_program_data*)program_data;
    GLuint prog = glCreateProgram();
+
+   if (!program)
+      program = &glsl->prg[idx];
 
    if (!prog)
       goto error;
@@ -533,13 +537,13 @@ static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
 }
 
 static bool gl_glsl_compile_programs(
-      glsl_shader_data_t *glsl, shader_program_data_t *program)
+      glsl_shader_data_t *glsl, struct shader_program_data *program)
 {
    unsigned i;
 
    for (i = 0; i < glsl->shader->passes; i++)
    {
-      shader_program_data_t prg;
+      struct shader_program_data prg;
       struct shader_program_info shader_prog_info;
       const char *vertex           = NULL;
       const char *fragment         = NULL;
@@ -1050,7 +1054,7 @@ error:
 static float t = 0;
 
 #endif
-static void glsl_uniform_set_parameter(void *data, shader_program_data_t *shader_data, void *uniform_data)
+static void glsl_uniform_set_parameter(void *data, struct shader_program_data *shader_data, void *uniform_data)
 {
    struct uniform_info *param = (struct uniform_info*)data;
 
@@ -1711,6 +1715,7 @@ const shader_backend_t gl_glsl_backend = {
    gl_glsl_init,
    gl_glsl_deinit,
    gl_glsl_set_params,
+   gl_glsl_compile_program,
    gl_glsl_use,
    gl_glsl_num,
    gl_glsl_filter_type,
