@@ -850,7 +850,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
    if (path)
    {
-      bool ret;
+      bool ret             = false;
       const char *path_ext = path_get_extension(path);
 
       if (string_is_equal(path_ext, "glsl"))
@@ -869,11 +869,7 @@ static void *gl_glsl_init(void *data, const char *path)
             ret = video_shader_read_conf_cgp(conf, glsl->shader);
             glsl->shader->modern = true;
          }
-         else
-            ret = false;
       }
-      else
-         ret = false;
 
       if (!ret)
       {

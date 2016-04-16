@@ -623,6 +623,7 @@ static bool gl_cg_compile_program(
       shader_program_data_t *program,
       struct shader_program_info *program_info)
 {
+   const char *list = NULL;
    const char *argv[2 + GFX_MAX_SHADERS];
    bool ret         = true;
    char *listing_f  = NULL;
@@ -639,25 +640,32 @@ static bool gl_cg_compile_program(
    argv[argc] = NULL;
 
    if (program_info->is_file)
-   {
       program->fprg = cgCreateProgramFromFile(
             cg_data->cgCtx, CG_SOURCE,
             program_info->combined, cg_data->cgFProf, "main_fragment", argv);
-      CG_GL_SET_LISTING(cg_data, f);
+   else
+      program->fprg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
+            program_info->combined, cg_data->cgFProf, "main_fragment", argv);
+
+   list = cgGetLastListing(cg_data->cgCtx);
+
+   if (list)
+      listing_f = strdup(list);
+
+   list = NULL;
+
+   if (program_info->is_file)
       program->vprg = cgCreateProgramFromFile(
             cg_data->cgCtx, CG_SOURCE,
             program_info->combined, cg_data->cgVProf, "main_vertex", argv);
-      CG_GL_SET_LISTING(cg_data, v);
-   }
    else
-   {
-      program->fprg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
-            program_info->combined, cg_data->cgFProf, "main_fragment", argv);
-      CG_GL_SET_LISTING(cg_data, f);
       program->vprg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE,
             program_info->combined, cg_data->cgVProf, "main_vertex", argv);
-      CG_GL_SET_LISTING(cg_data, v);
-   }
+
+   list = cgGetLastListing(cg_data->cgCtx);
+
+   if (list)
+      listing_v = strdup(list);
 
    if (!program->fprg || !program->vprg)
    {
@@ -722,13 +730,13 @@ static void gl_cg_set_program_base_attrib(void *data, unsigned i)
    }
 
    if (!cg_data->prg[i].tex)
-      cg_data->prg[i].tex = cgGetNamedParameter  (cg_data->prg[i].vprg, "IN.tex_coord");
+      cg_data->prg[i].tex     = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.tex_coord");
    if (!cg_data->prg[i].color)
-      cg_data->prg[i].color = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.color");
+      cg_data->prg[i].color   = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.color");
    if (!cg_data->prg[i].vertex)
-      cg_data->prg[i].vertex = cgGetNamedParameter   (cg_data->prg[i].vprg, "IN.vertex_coord");
+      cg_data->prg[i].vertex  = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.vertex_coord");
    if (!cg_data->prg[i].lut_tex)
-      cg_data->prg[i].lut_tex = cgGetNamedParameter  (cg_data->prg[i].vprg, "IN.lut_tex_coord");
+      cg_data->prg[i].lut_tex = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.lut_tex_coord");
 }
 
 static bool gl_cg_load_stock(void *data)
@@ -756,7 +764,8 @@ static bool gl_cg_load_plain(void *data, const char *path)
    if (!gl_cg_load_stock(cg_data))
       return false;
 
-   cg_data->shader = (struct video_shader*)calloc(1, sizeof(*cg_data->shader));
+   cg_data->shader = (struct video_shader*)
+      calloc(1, sizeof(*cg_data->shader));
    if (!cg_data->shader)
       return false;
 
@@ -991,23 +1000,23 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
    cg_data->prg[i].frame_cnt_v = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.frame_count");
    cg_data->prg[i].frame_dir_v = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.frame_direction");
 
-   cg_data->prg[i].mvp = cgGetNamedParameter(cg_data->prg[i].vprg, "modelViewProj");
+   cg_data->prg[i].mvp                 = cgGetNamedParameter(cg_data->prg[i].vprg, "modelViewProj");
    if (!cg_data->prg[i].mvp)
-      cg_data->prg[i].mvp = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.mvp_matrix");
+      cg_data->prg[i].mvp              = cgGetNamedParameter(cg_data->prg[i].vprg, "IN.mvp_matrix");
 
-   cg_data->prg[i].orig.tex = cgGetNamedParameter(cg_data->prg[i].fprg, "ORIG.texture");
-   cg_data->prg[i].orig.vid_size_v = cgGetNamedParameter(cg_data->prg[i].vprg, "ORIG.video_size");
-   cg_data->prg[i].orig.vid_size_f = cgGetNamedParameter(cg_data->prg[i].fprg, "ORIG.video_size");
-   cg_data->prg[i].orig.tex_size_v = cgGetNamedParameter(cg_data->prg[i].vprg, "ORIG.texture_size");
-   cg_data->prg[i].orig.tex_size_f = cgGetNamedParameter(cg_data->prg[i].fprg, "ORIG.texture_size");
-   cg_data->prg[i].orig.coord = cgGetNamedParameter(cg_data->prg[i].vprg, "ORIG.tex_coord");
+   cg_data->prg[i].orig.tex            = cgGetNamedParameter(cg_data->prg[i].fprg, "ORIG.texture");
+   cg_data->prg[i].orig.vid_size_v     = cgGetNamedParameter(cg_data->prg[i].vprg, "ORIG.video_size");
+   cg_data->prg[i].orig.vid_size_f     = cgGetNamedParameter(cg_data->prg[i].fprg, "ORIG.video_size");
+   cg_data->prg[i].orig.tex_size_v     = cgGetNamedParameter(cg_data->prg[i].vprg, "ORIG.texture_size");
+   cg_data->prg[i].orig.tex_size_f     = cgGetNamedParameter(cg_data->prg[i].fprg, "ORIG.texture_size");
+   cg_data->prg[i].orig.coord          = cgGetNamedParameter(cg_data->prg[i].vprg, "ORIG.tex_coord");
 
-   cg_data->prg[i].feedback.tex = cgGetNamedParameter(cg_data->prg[i].fprg, "FEEDBACK.texture");
+   cg_data->prg[i].feedback.tex        = cgGetNamedParameter(cg_data->prg[i].fprg, "FEEDBACK.texture");
    cg_data->prg[i].feedback.vid_size_v = cgGetNamedParameter(cg_data->prg[i].vprg, "FEEDBACK.video_size");
    cg_data->prg[i].feedback.vid_size_f = cgGetNamedParameter(cg_data->prg[i].fprg, "FEEDBACK.video_size");
    cg_data->prg[i].feedback.tex_size_v = cgGetNamedParameter(cg_data->prg[i].vprg, "FEEDBACK.texture_size");
    cg_data->prg[i].feedback.tex_size_f = cgGetNamedParameter(cg_data->prg[i].fprg, "FEEDBACK.texture_size");
-   cg_data->prg[i].feedback.coord = cgGetNamedParameter(cg_data->prg[i].vprg, "FEEDBACK.tex_coord");
+   cg_data->prg[i].feedback.coord      = cgGetNamedParameter(cg_data->prg[i].vprg, "FEEDBACK.tex_coord");
 
    if (i > 1)
    {
@@ -1108,8 +1117,6 @@ static void *gl_cg_init(void *data, const char *path)
          cg_data->cgVProf == CG_PROFILE_UNKNOWN)
    {
       RARCH_ERR("Invalid profile type\n");
-      free(cg_data);
-      cg_data = NULL;
       goto error;
    }
 
@@ -1133,8 +1140,7 @@ static void *gl_cg_init(void *data, const char *path)
          goto error;
    }
 
-   cg_data->prg[0].mvp = cgGetNamedParameter(
-         cg_data->prg[0].vprg, "IN.mvp_matrix");
+   cg_data->prg[0].mvp = cgGetNamedParameter(cg_data->prg[0].vprg, "IN.mvp_matrix");
 
    for (i = 1; i <= cg_data->shader->passes; i++)
       gl_cg_set_program_attributes(cg_data, i);
@@ -1147,7 +1153,7 @@ static void *gl_cg_init(void *data, const char *path)
    cg_data->prg[cg_data->shader->passes + 1] = cg_data->prg[0]; 
 
    /* No need to apply Android hack in Cg. */
-   cg_data->prg[VIDEO_SHADER_STOCK_BLEND] = cg_data->prg[0];
+   cg_data->prg[VIDEO_SHADER_STOCK_BLEND]    = cg_data->prg[0];
 
    cgGLBindProgram(cg_data->prg[1].fprg);
    cgGLBindProgram(cg_data->prg[1].vprg);
