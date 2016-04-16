@@ -49,6 +49,10 @@
 
 #include "../../tasks/tasks_internal.h"
 
+#if 0
+#define XMB_RIBBON_ENABLE
+#endif
+
 #ifndef XMB_DELAY
 #define XMB_DELAY 10
 #endif
@@ -228,7 +232,7 @@ typedef struct xmb_handle
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
-#if 0
+#ifdef XMB_RIBBON_ENABLE
 static float ribbon_verts[1536];
 static int ribbon_idx[1024];
 #endif
@@ -1506,7 +1510,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 
 static void xmb_blend_begin(void)
 {
-#if 0
+#ifdef XMB_RIBBON_ENABLE
    unsigned r, c;
    unsigned i = 0;
    const unsigned ribbon_rows    = 16;
@@ -1515,7 +1519,7 @@ static void xmb_blend_begin(void)
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-#if 0
+#ifdef XMB_RIBBON_ENABLE
    /* Set up vertices */
    for (r = 0; r < ribbon_rows; ++r)
    {
@@ -1931,9 +1935,8 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 
 static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
 {
-#if 1
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
-#else
+#ifdef XMB_RIBBON_ENABLE
+   struct uniform_info uniform_param = {0};
    static float t = 0;
    int location;
    video_shader_ctx_info_t shader_info;
@@ -1961,12 +1964,15 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
 
    video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
-   t += 0.04;
+   t += 0.02;
 
-#if 0
-   location = glGetUniformLocation(glsl->prg[VIDEO_SHADER_MENU], "time");
-   glUniform1f(location, t);
-#endif
+   uniform_param.lookup.enable = true;
+   uniform_param.lookup.idx    = VIDEO_SHADER_MENU;
+   uniform_param.lookup.type   = SHADER_PROGRAM_FRAGMENT;
+   uniform_param.lookup.ident  = "time";
+   uniform_param.result.f.v0   = t;
+
+   video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
@@ -1977,8 +1983,8 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
    glDrawElements(GL_TRIANGLE_STRIP, 1024, GL_UNSIGNED_INT, ribbon_idx);
 
    xmb_blend_end();
-
-   //gl->coords.color = gl->white_color_ptr;
+#else
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
 #endif
 }
 
