@@ -1900,8 +1900,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
    }
 }
 
-static void xmb_draw_ribbon(xmb_handle_t *xmb,
-      menu_display_ctx_draw_t *draw)
+static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
 {
 #ifdef XMB_RIBBON_ENABLE
    struct uniform_info uniform_param = {0};
@@ -1910,22 +1909,12 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb,
    video_shader_ctx_info_t shader_info;
    math_matrix_4x4 mymat;
    struct gfx_coords coords;
-
    float white[16] = {
-      1, 1, 1, xmb->alpha,
-      1, 1, 1, xmb->alpha,
-      1, 1, 1, xmb->alpha,
-      1, 1, 1, xmb->alpha,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
+      1, 1, 1, 1,
    };
-
-   float gradient[16] = {
-      1   , 0  , 0.1 , xmb->alpha,
-      1   , 0.1, 0   , xmb->alpha,
-      0.05, 0  , 0.05, xmb->alpha,
-      0.05, 0  , 0.05, xmb->alpha,
-   };
-
-   draw->color  = gradient;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, draw);
 
@@ -1968,12 +1957,12 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb,
 #endif
 }
 
-static void xmb_draw_bg(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
+static void xmb_draw_bg(menu_display_ctx_draw_t *draw)
 {
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   xmb_draw_ribbon(xmb, draw);
+   xmb_draw_ribbon(draw);
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
@@ -2048,7 +2037,7 @@ static void xmb_frame(void *data)
       && !draw.force_transparency && draw.texture)
       draw.color             = &coord_color2[0];
 
-   xmb_draw_bg(xmb, &draw);
+   xmb_draw_bg(&draw);
 
    xmb_draw_text(xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -2187,7 +2176,7 @@ static void xmb_frame(void *data)
             && !draw.force_transparency && draw.texture)
          draw.color             = &coord_color2[0];
 
-      xmb_draw_bg(xmb, &draw);
+      xmb_draw_bg(&draw);
 
       xmb_render_messagebox_internal(xmb, msg);
    }
