@@ -1254,7 +1254,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          orig_uniforms[1].enabled        = true;
 
       for (j = 0; j < 2; j++)
-         gl_glsl_set_uniform_parameter(glsl, &orig_uniforms[i], NULL);
+         gl_glsl_set_uniform_parameter(glsl, &orig_uniforms[j], NULL);
 
       /* Pass texture coordinates. */
       if (uni->orig.tex_coord >= 0)
@@ -1305,7 +1305,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          feedback_uniforms[1].enabled        = true;
 
       for (j = 0; j < 2; j++)
-         gl_glsl_set_uniform_parameter(glsl, &feedback_uniforms[i], NULL);
+         gl_glsl_set_uniform_parameter(glsl, &feedback_uniforms[j], NULL);
 
       /* Pass texture coordinates. */
       if (uni->feedback.tex_coord >= 0)
@@ -1356,7 +1356,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
             fbo_tex_params[2].enabled  = true;
 
          for (j = 0; j < 3; j++)
-            gl_glsl_set_uniform_parameter(glsl, &fbo_tex_params[i], NULL);
+            gl_glsl_set_uniform_parameter(glsl, &fbo_tex_params[j], NULL);
 
          if (uni->pass[i].tex_coord >= 0)
          {
@@ -1408,7 +1408,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          prev_tex_params[2].enabled  = true;
 
       for (j = 0; j < 3; j++)
-         gl_glsl_set_uniform_parameter(glsl, &prev_tex_params[i], NULL);
+         gl_glsl_set_uniform_parameter(glsl, &prev_tex_params[j], NULL);
 
       /* Pass texture coordinates. */
       if (uni->prev[i].tex_coord >= 0)
