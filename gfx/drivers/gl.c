@@ -291,6 +291,8 @@ static bool gl_shader_init(gl_t *gl)
       backend = &gl_glsl_backend;
       shader_path = NULL;
    }
+
+   init_data.gl.core_context_enabled = gl->core_context;
 #endif
 #endif
 

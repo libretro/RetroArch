@@ -137,7 +137,14 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
             void *tmp = NULL;
 
             if (!init->shader || !init->shader->init)
-               return false;
+            {
+               switch (init->shader_type)
+               {
+                  case RARCH_SHADER_NONE:
+                  default:
+                     return false;
+               }
+            }
 
             tmp = init->shader->init(init->data, init->path);
 

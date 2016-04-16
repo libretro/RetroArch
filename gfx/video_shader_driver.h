@@ -183,7 +183,12 @@ typedef struct shader_backend
 
 typedef struct video_shader_ctx_init
 {
+   enum rarch_shader_type shader_type;
    const shader_backend_t *shader;
+   struct
+   {
+      bool core_context_enabled;
+   } gl;
    void *data;
    const char *path;
 } video_shader_ctx_init_t;
