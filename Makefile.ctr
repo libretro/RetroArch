@@ -352,14 +352,15 @@ else
 	BANNERTOOL = ctr/tools/bannertool.exe
 endif
 
-%.o: %.shader
-	python $(AEMSTRO)/aemstro_as.py $< $(notdir $<).shbin
-	$(DEVKITARM)/bin/bin2s $(notdir $<).shbin | $(PREFIX)as -o $@
-	echo "extern const u8" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(notdir $<).shbin | tr . _)`.h
-	echo "extern const u8" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(notdir $<).shbin | tr . _)`.h
-	echo "extern const u32" `(echo $(notdir $<).shbin | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(notdir $<).shbin | tr . _)`.h
-	rm $(notdir $<).shbin
+%.o: %.vsh %.gsh
+	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
+	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	rm $*.shbin
 
+%.o: %.vsh
+	$(DEVKITARM)/bin/picasso $^ -o $*.shbin
+	$(DEVKITARM)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
+	rm $*.shbin
 
 %.o: %.cpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCDIRS)
@@ -415,7 +416,6 @@ clean:
 	rm -f $(TARGET).smdh
 	rm -f $(TARGET).bnr
 	rm -f $(TARGET).icn
-	rm -f *_shader_shbin.h
 	rm -f ctr/ctr_config_*.o
 	rm -f ctr/3dsx_custom_crt0.o
 

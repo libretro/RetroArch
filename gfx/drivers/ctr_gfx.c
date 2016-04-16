@@ -22,7 +22,6 @@
 #include <retro_inline.h>
 
 #include "ctr_gu.h"
-#include "ctr_sprite_shader_shbin.h"
 
 #include "../../command_event.h"
 #include "../../general.h"
@@ -36,6 +35,8 @@
 #define CTR_GPU_FRAMEBUFFER         ((void*)0x1F119400)
 #define CTR_GPU_DEPTHBUFFER         ((void*)0x1F370800)
 
+extern const u8 ctr_sprite_shbin[];
+extern const u32 ctr_sprite_shbin_size;
 
 typedef struct
 {
@@ -306,7 +307,7 @@ static void* ctr_init(const video_info_t* video,
                         CTR_TOP_FRAMEBUFFER_WIDTH, CTR_TOP_FRAMEBUFFER_HEIGHT,
                         ctr->menu.texture_width, ctr->menu.texture_height);
 
-   ctr->dvlb = DVLB_ParseFile((u32*)ctr_sprite_shader_shbin, ctr_sprite_shader_shbin_size);
+   ctr->dvlb = DVLB_ParseFile((u32*)ctr_sprite_shbin, ctr_sprite_shbin_size);
    ctrGuSetVshGsh(&ctr->shader, ctr->dvlb, 2, 2);
    shaderProgramUse(&ctr->shader);
 
