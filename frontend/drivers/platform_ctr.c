@@ -171,7 +171,7 @@ static void ctr_check_dspfirm(void)
    }
 }
 
-__attribute__((weak)) void svchax_init(void);
+__attribute__((weak)) Result svchax_init(bool patch_srv);
 
 static void frontend_ctr_init(void *data)
 {
@@ -192,7 +192,7 @@ static void frontend_ctr_init(void *data)
    if(svchax_init)
    {
       osSetSpeedupEnable(false);
-      svchax_init();
+      svchax_init(false);
       osSetSpeedupEnable(true);
    }
 
