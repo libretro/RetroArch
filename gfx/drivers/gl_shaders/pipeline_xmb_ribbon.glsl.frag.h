@@ -1,4 +1,7 @@
 static const char *stock_fragment_xmb =
+   "#ifdef GL_ES\n"
+   "precision mediump float;\n"
+   "#endif\n"
    "uniform float time;\n"
    "void main()\n"
    "{\n"
