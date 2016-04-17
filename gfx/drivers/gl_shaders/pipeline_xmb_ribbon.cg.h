@@ -6,7 +6,7 @@ static const char *stock_xmb =
 
 "float iqhash(float n)\n"
 "{\n"
-"return fract(sin(n)*43758.5453);\n"
+"return frac(sin(n)*43758.5453);\n"
 "}\n"
 
 "float noise(float3 x)\n"

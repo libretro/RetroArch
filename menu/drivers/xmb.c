@@ -1939,6 +1939,7 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
 
    t += 0.01;
 
+   uniform_param.enabled           = true;
    uniform_param.lookup.enable     = true;
    uniform_param.lookup.add_prefix = true;
    uniform_param.lookup.idx        = VIDEO_SHADER_MENU;
