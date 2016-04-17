@@ -238,7 +238,6 @@ typedef struct xmb_handle
 } xmb_handle_t;
 
 #ifdef XMB_RIBBON_ENABLE
-static float ribbon_verts[XMB_RIBBON_VERTICES];
 static unsigned ribbon_idx[XMB_RIBBON_INDEXES];
 #endif
 
@@ -1905,7 +1904,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
    }
 }
 
-static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
+static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 {
 #ifdef XMB_RIBBON_ENABLE
    struct uniform_info uniform_param = {0};
@@ -1929,7 +1928,7 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
 
    xmb_blend_begin();
 
-   coords.vertex = ribbon_verts;
+   coords.vertex = xmb->ribbon_coords.coords.vertex;
    coords.index = ribbon_idx;
    coords.color = white;
 
@@ -1970,12 +1969,12 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
 #endif
 }
 
-static void xmb_draw_bg(menu_display_ctx_draw_t *draw)
+static void xmb_draw_bg(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 {
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   xmb_draw_ribbon(draw);
+   xmb_draw_ribbon(xmb, draw);
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
@@ -2050,7 +2049,7 @@ static void xmb_frame(void *data)
       && !draw.force_transparency && draw.texture)
       draw.color             = &coord_color2[0];
 
-   xmb_draw_bg(&draw);
+   xmb_draw_bg(xmb, &draw);
 
    xmb_draw_text(xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -2189,7 +2188,7 @@ static void xmb_frame(void *data)
             && !draw.force_transparency && draw.texture)
          draw.color             = &coord_color2[0];
 
-      xmb_draw_bg(&draw);
+      xmb_draw_bg(xmb, &draw);
 
       xmb_render_messagebox_internal(xmb, msg);
    }
@@ -2342,6 +2341,8 @@ static void xmb_layout(xmb_handle_t *xmb)
 static void xmb_init_ribbon(xmb_handle_t * xmb)
 {
 #ifdef XMB_RIBBON_ENABLE
+   float ribbon_verts[XMB_RIBBON_VERTICES];
+
    unsigned r, c;
    unsigned i = 0;
 
@@ -2358,6 +2359,20 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
          ribbon_verts[3*index + 2] = ((float) r)/8.0f - 1.0;
       }
    }
+
+   gfx_coords_t coords;
+   menu_display_ctx_coord_draw_t coord_draw;
+   float white[XMB_RIBBON_VERTICES*4] = { 1.0f };
+
+   menu_display_ctl(MENU_DISPLAY_CTL_TEX_COORDS_GET, &coord_draw);
+
+   coords.color         = white;
+   coords.vertex        = ribbon_verts;
+   coords.tex_coord     = coord_draw.ptr;
+   coords.lut_tex_coord = coord_draw.ptr;
+   coords.vertices      = XMB_RIBBON_VERTICES;
+
+   gfx_coord_array_append(&xmb->ribbon_coords, &coords, XMB_RIBBON_VERTICES);
 
    for (r = 0; r < XMB_RIBBON_ROWS - 1; ++r)
    {

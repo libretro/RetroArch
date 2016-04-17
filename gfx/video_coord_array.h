@@ -62,6 +62,7 @@ typedef struct gfx_coords
    const float *lut_tex_coord;
    unsigned vertices;
    const unsigned *index;
+   unsigned indexes;
 } gfx_coords_t;
 
 typedef struct gfx_mut_coords
@@ -71,6 +72,8 @@ typedef struct gfx_mut_coords
    float *tex_coord;
    float *lut_tex_coord;
    unsigned vertices;
+   unsigned *index;
+   unsigned indexes;
 } gfx_mut_coords_t;
 
 typedef struct gfx_coord_array
