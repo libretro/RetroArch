@@ -22,6 +22,9 @@
 #include "../menu_display.h"
 #include "../../gfx/video_shader_driver.h"
 
+#include "../../gfx/drivers/gl_shaders/pipeline_zahnrad.glsl.vert.h"
+#include "../../gfx/drivers/gl_shaders/pipeline_zahnrad.glsl.frag.h"
+
 struct zr_image zr_common_image_load(const char *filename)
 {
     int x,y,n;
@@ -56,35 +59,12 @@ void zr_common_device_init(struct zr_device *dev)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    GLint status;
-   static const GLchar *vertex_shader =
-      "#version 300 es\n"
-      "uniform mat4 ProjMtx;\n"
-      "in vec2 Position;\n"
-      "in vec2 TexCoord;\n"
-      "in vec4 Color;\n"
-      "out vec2 Frag_UV;\n"
-      "out vec4 Frag_Color;\n"
-      "void main() {\n"
-      "   Frag_UV = TexCoord;\n"
-      "   Frag_Color = Color;\n"
-      "   gl_Position = ProjMtx * vec4(Position.xy, 0, 1);\n"
-      "}\n";
-   static const GLchar *fragment_shader =
-      "#version 300 es\n"
-      "precision mediump float;\n"
-      "uniform sampler2D Texture;\n"
-      "in vec2 Frag_UV;\n"
-      "in vec4 Frag_Color;\n"
-      "out vec4 Out_Color;\n"
-      "void main(){\n"
-      "   Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
-      "}\n";
 
-   dev->prog = glCreateProgram();
+   dev->prog      = glCreateProgram();
    dev->vert_shdr = glCreateShader(GL_VERTEX_SHADER);
    dev->frag_shdr = glCreateShader(GL_FRAGMENT_SHADER);
-   glShaderSource(dev->vert_shdr, 1, &vertex_shader, 0);
-   glShaderSource(dev->frag_shdr, 1, &fragment_shader, 0);
+   glShaderSource(dev->vert_shdr, 1, &zahnrad_vertex_shader, 0);
+   glShaderSource(dev->frag_shdr, 1, &zahnrad_fragment_shader, 0);
    glCompileShader(dev->vert_shdr);
    glCompileShader(dev->frag_shdr);
    glGetShaderiv(dev->vert_shdr, GL_COMPILE_STATUS, &status);
