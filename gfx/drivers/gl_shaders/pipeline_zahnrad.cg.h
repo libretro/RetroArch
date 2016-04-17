@@ -34,3 +34,4 @@ static const char *zahnrad_shader =
 "   OUT.color = tex2D(Texture, texCoord);\n"
 "   return OUT;\n"
 "}\n"
+;

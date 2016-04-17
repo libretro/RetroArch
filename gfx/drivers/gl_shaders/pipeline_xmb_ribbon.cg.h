@@ -55,3 +55,4 @@ static const char *stock_xmb =
 "   OUT.color = float4(1.0, 1.0, 1.0, 0.05);\n"
 "   return OUT;\n"
 "}\n"
+;

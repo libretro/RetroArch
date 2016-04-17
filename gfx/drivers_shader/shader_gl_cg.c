@@ -43,6 +43,8 @@
 #include "../../rewind.h"
 #include "../video_state_tracker.h"
 
+#include "../drivers/gl_shaders/pipeline_xmb_ribbon.cg.h"
+
 #define SEMANTIC_TEXCOORD     0x92ee91cdU
 #define SEMANTIC_TEXCOORD0    0xf0c0cb9dU
 #define SEMANTIC_TEXCOORD1    0xf0c0cb9eU
@@ -1091,6 +1093,7 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
 static void *gl_cg_init(void *data, const char *path)
 {
    unsigned i;
+   struct shader_program_info shader_prog_info;
    cg_shader_data_t *cg_data = (cg_shader_data_t*)
       calloc(1, sizeof(cg_shader_data_t));
 
@@ -1161,6 +1164,15 @@ static void *gl_cg_init(void *data, const char *path)
    cg_data->prg[VIDEO_SHADER_STOCK_BLEND]    = cg_data->prg[0];
 
    gl_cg_set_shaders(cg_data->prg[1].fprg, cg_data->prg[1].vprg);
+
+   shader_prog_info.combined = stock_xmb;
+   shader_prog_info.is_file  = false;
+
+   gl_cg_compile_program(
+         cg_data,
+         VIDEO_SHADER_MENU,
+         &cg_data->prg[VIDEO_SHADER_MENU],
+         &shader_prog_info);
 
    return cg_data;
 
