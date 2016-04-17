@@ -1354,16 +1354,17 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
    (void)data;
 
    if (!glsl || !glsl->shader->modern)
-   {
-      gl_ff_matrix(mat);
-      return false;
-   }
+      goto fallback;
 
    loc = glsl->uniforms[glsl->glsl_active_index].mvp;
    if (loc >= 0)
       glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
 
    return true;
+
+fallback:
+   gl_ff_matrix(mat);
+   return false;
 }
 
 static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void *data)
@@ -1379,10 +1380,7 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void 
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
 
    if (!glsl || !glsl->shader->modern || !coords)
-   {
-      gl_ff_vertex(coords);
-      return false;
-   }
+      goto fallback;
 
    buffer = short_buffer;
    if (coords->vertices > 4)
@@ -1390,10 +1388,7 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void 
             (2 + 2 + 4 + 2), sizeof(*buffer));
 
    if (!buffer)
-   {
-      gl_ff_vertex(coords);
-      return false;
-   }
+      goto fallback;
 
    attr = attribs;
    uni  = &glsl->uniforms[glsl->glsl_active_index];
@@ -1462,6 +1457,10 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void 
       free(buffer);
 
    return true;
+
+fallback:
+   gl_ff_vertex(coords);
+   return false;
 }
 
 static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_active)
