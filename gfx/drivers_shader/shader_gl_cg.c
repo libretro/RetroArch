@@ -974,6 +974,12 @@ static void gl_cg_set_pass_attrib(
       fbo->coord = cgGetNamedParameter(program->vprg, attr_buf);
 }
 
+static INLINE void gl_cg_set_shaders(CGprogram frag, CGprogram vert)
+{
+   cgGLBindProgram(frag);
+   cgGLBindProgram(vert);
+}
+
 static void gl_cg_set_program_attributes(void *data, unsigned i)
 {
    unsigned j;
@@ -982,8 +988,7 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
    if (!cg_data)
       return;
 
-   cgGLBindProgram(cg_data->prg[i].fprg);
-   cgGLBindProgram(cg_data->prg[i].vprg);
+   gl_cg_set_shaders(cg_data->prg[i].fprg, cg_data->prg[i].vprg);
 
    gl_cg_set_program_base_attrib(cg_data, i);
 
@@ -1153,8 +1158,7 @@ static void *gl_cg_init(void *data, const char *path)
    /* No need to apply Android hack in Cg. */
    cg_data->prg[VIDEO_SHADER_STOCK_BLEND]    = cg_data->prg[0];
 
-   cgGLBindProgram(cg_data->prg[1].fprg);
-   cgGLBindProgram(cg_data->prg[1].vprg);
+   gl_cg_set_shaders(cg_data->prg[1].fprg, cg_data->prg[1].vprg);
 
    return cg_data;
 
@@ -1176,8 +1180,7 @@ static void gl_cg_use(void *data, void *shader_data, unsigned idx, bool set_acti
          cg_data->active_idx = idx;
       }
 
-      cgGLBindProgram(cg_data->prg[idx].vprg);
-      cgGLBindProgram(cg_data->prg[idx].fprg);
+      gl_cg_set_shaders(cg_data->prg[idx].fprg, cg_data->prg[idx].vprg);
    }
 }
 

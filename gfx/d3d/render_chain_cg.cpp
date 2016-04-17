@@ -205,10 +205,10 @@ end:
    return ret;
 }
 
-static INLINE void renderchain_set_shaders(void *data, CGprogram *fPrg, CGprogram *vPrg)
+static INLINE void renderchain_set_shaders(CGprogram frag, CGprogram vert)
 {
-   cgD3D9BindProgram(*fPrg);
-   cgD3D9BindProgram(*vPrg);
+   cgD3D9BindProgram(frag);
+   cgD3D9BindProgram(vert);
 }
 
 static void renderchain_set_shader_mvp(cg_renderchain_t *chain, void *shader_data, void *matrix_data)
@@ -860,7 +860,7 @@ static bool cg_d3d9_renderchain_init(void *data,
    if (!d3d9_cg_load_program(chain, &chain->fStock, &chain->vStock, NULL, false))
       return false;
 
-   renderchain_set_shaders(chain, &chain->fStock, &chain->vStock);
+   renderchain_set_shaders(chain->fStock, chain->vStock);
 
    return true;
 }
@@ -1275,7 +1275,7 @@ static void renderchain_render_pass(
    if (!chain)
       return;
    
-   renderchain_set_shaders(chain, &pass->fPrg, &pass->vPrg);
+   renderchain_set_shaders(pass->fPrg, pass->vPrg);
 
    d3d_set_texture(chain->dev, 0, pass->tex);
    d3d_set_sampler_minfilter(chain->dev, 0,
@@ -1443,7 +1443,7 @@ static bool cg_d3d9_renderchain_render(
    back_buffer->Release();
 
    renderchain_end_render(chain);
-   renderchain_set_shaders(chain, &chain->fStock, &chain->vStock);
+   renderchain_set_shaders(chain->fStock, chain->vStock);
    renderchain_set_mvp(chain, chain->vStock, chain->final_viewport->Width,
          chain->final_viewport->Height, 0);
 
