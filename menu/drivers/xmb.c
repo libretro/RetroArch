@@ -1918,7 +1918,7 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
    if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
       draw->handle_alpha = 0.75;
    else
-      draw->handle_alpha = 1.00;
+      draw->handle_alpha = 0.90;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, draw);
 
