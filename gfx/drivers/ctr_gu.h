@@ -67,6 +67,8 @@ extern u32 gpuCmdBufOffset;
 extern u32 __linear_heap_size;
 extern u32 __linear_heap;
 
+Result ctr_set_parallax_layer(bool state);
+
 __attribute__((always_inline))
 static INLINE void ctrGuSetTexture(GPU_TEXUNIT unit, u32* data,
       u16 width, u16 height, u32 param, GPU_TEXCOLOR colorType)
@@ -177,13 +179,13 @@ __attribute__((always_inline))
 static INLINE Result ctrGuDisplayTransfer
      (bool queued,
       void* src, int src_w, int src_h, int src_fmt,
-      void* dst, int dst_w, int dst_h, int dst_fmt, int multisample_lvl)
+      void* dst, int dst_w,            int dst_fmt, int multisample_lvl)
 {
    u32 gxCommand[0x8];
    gxCommand[0]=0x03 | (queued? 0x01000000 : 0x0); //CommandID
    gxCommand[1]=(u32)src;
    gxCommand[2]=(u32)dst;
-   gxCommand[3]=CTRGU_SIZE(dst_w, dst_h);
+   gxCommand[3]=CTRGU_SIZE(dst_w, 0);
    gxCommand[4]=CTRGU_SIZE(src_w, src_h);
    gxCommand[5]=(src_fmt << 8) | (dst_fmt << 12) | multisample_lvl;
    gxCommand[6]=gxCommand[7]=0x0;

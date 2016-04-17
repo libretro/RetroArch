@@ -30,10 +30,17 @@
 #include "../../retroarch.h"
 #include "../../performance.h"
 
-#define CTR_TOP_FRAMEBUFFER_WIDTH    400
-#define CTR_TOP_FRAMEBUFFER_HEIGHT   240
-#define CTR_GPU_FRAMEBUFFER         ((void*)0x1F119400)
-#define CTR_GPU_DEPTHBUFFER         ((void*)0x1F370800)
+#define CTR_TOP_FRAMEBUFFER_WIDTH   400
+#define CTR_TOP_FRAMEBUFFER_HEIGHT  240
+#define CTR_TOP_FRAMEBUFFER_SIZE    (CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 4)
+
+#define CTR_VRAM_START              0x1F000000
+#define CTR_TOP_FRAMEBUFFER         ((void*)CTR_VRAM_START)
+#define CTR_TOP_FRAMEBUFFER_LEFT    ((void*)CTR_TOP_FRAMEBUFFER)
+#define CTR_TOP_FRAMEBUFFER_RIGHT   ((void*)((u32)CTR_TOP_FRAMEBUFFER_LEFT + CTR_TOP_FRAMEBUFFER_SIZE))
+
+#define CTR_GPU_DEPTHBUFFER         ((void*)(CTR_TOP_FRAMEBUFFER_RIGHT + CTR_TOP_FRAMEBUFFER_SIZE))
+
 
 extern const u8 ctr_sprite_shbin[];
 extern const u32 ctr_sprite_shbin_size;
@@ -51,6 +58,14 @@ typedef struct
    s16 x0, y0, x1, y1;
    s16 u0, v0, u1, v1;
 } ctr_vertex_t;
+
+typedef enum
+{
+   CTR_VIDEO_MODE_NORMAL,
+   CTR_VIDEO_MODE_800x240,
+   CTR_VIDEO_MODE_400x240,
+   CTR_VIDEO_MODE_3D
+}ctr_video_mode_enum;
 
 typedef struct ctr_video
 {
@@ -93,7 +108,56 @@ typedef struct ctr_video
    void* empty_framebuffer;
 
    aptHookCookie lcd_aptHook;
+   ctr_video_mode_enum video_mode;
+   int current_buffer_top;
 } ctr_video_t;
+
+static INLINE void ctr_check_3D_slider(ctr_video_t* ctr)
+{
+   float slider_val = *(float*)0x1FF81080;
+   ctr_video_mode_enum old_mode = ctr->video_mode;
+
+   if (slider_val == 0.0)
+      ctr->video_mode = CTR_VIDEO_MODE_NORMAL;
+   else if (slider_val < 0.1)
+      ctr->video_mode = CTR_VIDEO_MODE_800x240;
+   else if (slider_val < 0.6)
+      ctr->video_mode = CTR_VIDEO_MODE_400x240;
+   else
+      ctr->video_mode = CTR_VIDEO_MODE_3D;
+
+   if (old_mode != ctr->video_mode)
+   {
+      switch (ctr->video_mode)
+      {
+      case CTR_VIDEO_MODE_800x240:
+      case CTR_VIDEO_MODE_400x240:
+         if (ctr_set_parallax_layer(false))
+            ctr->video_mode = CTR_VIDEO_MODE_3D;
+         break;
+      case CTR_VIDEO_MODE_3D:
+         ctr_set_parallax_layer(true);
+         break;
+      default:
+         break;
+      }
+   }
+
+   if (ctr->video_mode == CTR_VIDEO_MODE_3D)
+   {
+      s16 offset = (slider_val - 0.6) * 10.0;
+      ctr->menu.frame_coords[1] = ctr->menu.frame_coords[0];
+      ctr->menu.frame_coords[2] = ctr->menu.frame_coords[0];
+
+      ctr->menu.frame_coords[1].x0 += offset;
+      ctr->menu.frame_coords[1].x1 += offset;
+      ctr->menu.frame_coords[2].x0 -= offset;
+      ctr->menu.frame_coords[2].x1 -= offset;
+
+      GSPGPU_FlushDataCache(ctr->menu.frame_coords, 3 * sizeof(ctr_vertex_t));
+
+   }
+}
 
 static INLINE void ctr_set_scale_vector(ctr_scale_vector_t* vec,
       int viewport_width, int viewport_height,
@@ -249,9 +313,6 @@ static void* ctr_init(const video_info_t* video,
    if (!ctr)
       return NULL;
 
-//   gfxInitDefault();
-//   gfxSet3D(false);
-
    memset(ctr, 0, sizeof(ctr_video_t));
 
 
@@ -293,7 +354,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->menu.texture_swizzled =
          linearMemAlign(ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t), 128);
 
-   ctr->menu.frame_coords = linearAlloc(sizeof(ctr_vertex_t));
+   ctr->menu.frame_coords = linearAlloc(3 * sizeof(ctr_vertex_t));
 
    ctr->menu.frame_coords->x0 = 40;
    ctr->menu.frame_coords->y0 = 0;
@@ -317,12 +378,8 @@ static void* ctr_init(const video_info_t* video,
    shaderProgramUse(&ctr->shader);
 
    GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
-                   VIRT_TO_PHYS(CTR_GPU_FRAMEBUFFER),
+                   VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER),
                    0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT, CTR_TOP_FRAMEBUFFER_WIDTH);
-
-//      GPU_SetViewport(NULL,
-//                      VIRT_TO_PHYS(CTR_GPU_FRAMEBUFFER),
-//                      0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT, CTR_TOP_FRAMEBUFFER_WIDTH);
 
    GPU_DepthMap(-1.0f, 0.0f);
    GPU_SetFaceCulling(GPU_CULL_NONE);
@@ -371,6 +428,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->smooth        = video->smooth;
    ctr->vsync         = video->vsync;
    ctr->lcd_buttom_on = true;
+   ctr->current_buffer_top = 0;
 
    ctr->empty_framebuffer = linearAlloc(320 * 240 * 2);
    memset(ctr->empty_framebuffer, 0, 320 * 240 * 2);
@@ -442,6 +500,8 @@ static bool ctr_frame(void* data, const void* frame,
 
       ctr->lcd_buttom_on = !ctr->lcd_buttom_on;
    }
+
+   ctr_check_3D_slider(ctr);
 
    svcWaitSynchronization(gspEvents[GSPGPU_EVENT_P3D], 20000000);
    svcClearEvent(gspEvents[GSPGPU_EVENT_P3D]);
@@ -522,8 +582,8 @@ static bool ctr_frame(void* data, const void* frame,
    if (ctr->should_resize)
       ctr_update_viewport(ctr);
 
-   ctrGuSetMemoryFill(true, (u32*)CTR_GPU_FRAMEBUFFER, 0x00000000,
-                    (u32*)(CTR_GPU_FRAMEBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
+   ctrGuSetMemoryFill(true, (u32*)CTR_TOP_FRAMEBUFFER, 0x00000000,
+                    (u32*)(CTR_TOP_FRAMEBUFFER + 2 * CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
                     0x201, (u32*)CTR_GPU_DEPTHBUFFER, 0x00000000,
                     (u32*)(CTR_GPU_DEPTHBUFFER + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * sizeof(uint32_t)),
                     0x201);
@@ -610,7 +670,21 @@ static bool ctr_frame(void* data, const void* frame,
                     0xFF0000);
    }
 
+   GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
+                   VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER),
+                   0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                   ctr->video_mode == CTR_VIDEO_MODE_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+
    GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+
+   if(ctr->video_mode == CTR_VIDEO_MODE_3D)
+   {
+      GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
+                      VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER_RIGHT),
+                      0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                      CTR_TOP_FRAMEBUFFER_WIDTH);
+      GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+   }
 
    /* restore */
    if (ctr->rgb32)
@@ -634,20 +708,83 @@ static bool ctr_frame(void* data, const void* frame,
                      GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
                      GPU_RGBA4);
 
-
-      ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->menu.frame_coords));
       ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->menu.scale_vector, 1);
-      GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+      GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
+                      VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER),
+                      0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                      ctr->video_mode == CTR_VIDEO_MODE_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
+
+      if (ctr->video_mode == CTR_VIDEO_MODE_3D)
+      {
+         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(&ctr->menu.frame_coords[1]));
+         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+
+         GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
+                         VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER_RIGHT),
+                         0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
+                         CTR_TOP_FRAMEBUFFER_WIDTH);
+         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(&ctr->menu.frame_coords[2]));
+         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+      }
+      else
+      {
+
+         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->menu.frame_coords));
+         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+      }
    }
 
    GPU_FinishDrawing();
    GPUCMD_Finalize();
    ctrGuFlushAndRun(true);
 
-   ctrGuDisplayTransfer(true, CTR_GPU_FRAMEBUFFER, 240,400, CTRGU_RGBA8,
-                        gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL), 240,400,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
+   ctrGuDisplayTransfer(true, CTR_TOP_FRAMEBUFFER,
+                        240,
+                        ctr->video_mode == CTR_VIDEO_MODE_800x240 ? 800 : 400,
+                        CTRGU_RGBA8,
+                        gfxTopLeftFramebuffers[ctr->current_buffer_top], 240,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
 
-   gfxSwapBuffersGpu();
+
+   if ((ctr->video_mode == CTR_VIDEO_MODE_400x240) || (ctr->video_mode == CTR_VIDEO_MODE_3D))
+      ctrGuDisplayTransfer(true, CTR_TOP_FRAMEBUFFER_RIGHT,
+                           240,
+                           400,
+                           CTRGU_RGBA8,
+                           gfxTopRightFramebuffers[ctr->current_buffer_top], 240,CTRGU_RGB8, CTRGU_MULTISAMPLE_NONE);
+
+
+   // Swap buffers :
+   ctr->current_buffer_top ^= 1;
+   extern GSPGPU_FramebufferInfo topFramebufferInfo;
+   extern u8* gfxSharedMemory;
+   extern u8 gfxThreadID;
+
+   topFramebufferInfo.active_framebuf=ctr->current_buffer_top;
+   topFramebufferInfo.framebuf0_vaddr=(u32*)gfxTopLeftFramebuffers[ctr->current_buffer_top];
+   if(ctr->video_mode == CTR_VIDEO_MODE_800x240)
+   {
+      topFramebufferInfo.framebuf1_vaddr=(u32*)(gfxTopLeftFramebuffers[ctr->current_buffer_top] + 240 * 3);
+      topFramebufferInfo.framebuf_widthbytesize = 240 * 3 * 2;
+   }
+   else
+   {
+      topFramebufferInfo.framebuf1_vaddr=(u32*)gfxTopRightFramebuffers[ctr->current_buffer_top];
+      topFramebufferInfo.framebuf_widthbytesize = 240 * 3;
+   }
+
+
+   topFramebufferInfo.format=(1<<8)|(1<<5)|GSP_BGR8_OES;
+   topFramebufferInfo.framebuf_dispselect=ctr->current_buffer_top;
+   topFramebufferInfo.unk=0x00000000;
+
+   u8* framebufferInfoHeader=gfxSharedMemory+0x200+gfxThreadID*0x80;
+	GSPGPU_FramebufferInfo* framebufferInfo=(GSPGPU_FramebufferInfo*)&framebufferInfoHeader[0x4];
+	framebufferInfoHeader[0x0] ^= 1;
+	framebufferInfo[framebufferInfoHeader[0x0]] = topFramebufferInfo;
+	framebufferInfoHeader[0x1]=1;
+
+
+
    retro_perf_stop(&ctrframe_f);
 
    return true;
