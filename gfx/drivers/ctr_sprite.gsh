@@ -2,17 +2,21 @@
 .entry main_gsh
 
 ; Constants
-.constf  _01N1   (0.0, 1.0, -1.0, 1.0)
-.alias   _0000    _01N1.xxxx
-.alias   _1111    _01N1.yyyy
-.alias   _0101    _01N1.xyxy
-.alias   _N1N1    _01N1.zwzw
+.constf  _N1N1   (-1.0, 1.0, -1.0, 1.0)
 
 ; Inputs
-.alias sprite_coords v0
-.alias tex_size      v1
-.alias top_left      sprite_coords.xyxy
-.alias bottom_right  sprite_coords.zwzw
+.alias sprite_coords    v0
+.alias tex_frame_coords v1    ;(0.0, 1.0, w/tex_w, 1.0 - h/tex_h)
+
+.alias top_left            sprite_coords.xy ; real: top_right
+.alias bottom_right        sprite_coords.zw ; real: bottom_left
+.alias top_right           sprite_coords.zy ; real: bottom_right
+.alias bottom_left         sprite_coords.xw ; real: top_left
+
+.alias tex_top_left        tex_frame_coords.xy
+.alias tex_bottom_right    tex_frame_coords.zw
+.alias tex_top_right       tex_frame_coords.xw
+.alias tex_bottom_left     tex_frame_coords.zy
 
 ; Outputs
 .out  pos            position
@@ -22,29 +26,25 @@
    setemit 0
       mov pos.xy, top_left.xy
       mov pos.zw, _N1N1
-      mov texcoord.xy, tex_size.xy
+      mov texcoord.xy, tex_top_left.xy
    emit
 
    setemit 1
-      mov pos.x, top_left.x
-      mov pos.y, bottom_right.y
+      mov pos.xy, bottom_left.xy
       mov pos.zw, _N1N1
-      mov texcoord.x, tex_size.z
-      mov texcoord.y, tex_size.y
+      mov texcoord.xy, tex_bottom_left.xy
    emit
 
    setemit 2, prim inv
       mov pos.xy, bottom_right.xy
       mov pos.zw, _N1N1
-      mov texcoord.xy, tex_size.zw
+      mov texcoord.xy, tex_bottom_right.xy
    emit
 
    setemit 1, prim
-      mov pos.x, bottom_right.x
-      mov pos.y, top_left.y
+      mov pos.xy, top_right.xy
       mov pos.zw, _N1N1
-      mov texcoord.x, tex_size.x
-      mov texcoord.y, tex_size.w
+      mov texcoord.xy, tex_top_right.xy
    emit
 
    end

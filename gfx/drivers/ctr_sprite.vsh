@@ -19,7 +19,6 @@
 ; Output
 .out     pos         position
 .out     texcoord    texcoord0
-.out     color       color
 
 .proc main_vsh
 
