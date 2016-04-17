@@ -224,12 +224,13 @@ static void gl_cg_reset_attrib(void *data)
 static bool gl_cg_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
 {
    cg_shader_data_t *cg_data = (cg_shader_data_t*)shader_data;
-   if (cg_data && cg_data->prg[cg_data->active_idx].mvp)
-   {
-      cgGLSetMatrixParameterfc(cg_data->prg[cg_data->active_idx].mvp, mat->data);
-      return true;
-   }
+   if (!cg_data || !cg_data->prg[cg_data->active_idx].mvp)
+      goto fallback;
 
+   cgGLSetMatrixParameterfc(cg_data->prg[cg_data->active_idx].mvp, mat->data);
+   return true;
+
+fallback:
    gl_ff_matrix(mat);
    return false;
 }
@@ -257,6 +258,7 @@ static bool gl_cg_set_coords(void *handle_data, void *shader_data, const void *d
    SET_COORD(cg_data, color, color, 4);
 
    return true;
+
 fallback:
    gl_ff_vertex(coords);
    return false;
