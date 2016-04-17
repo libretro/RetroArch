@@ -2341,10 +2341,11 @@ static void xmb_layout(xmb_handle_t *xmb)
 static void xmb_init_ribbon(xmb_handle_t * xmb)
 {
 #ifdef XMB_RIBBON_ENABLE
+   gfx_coords_t coords;
    float ribbon_verts[XMB_RIBBON_VERTICES];
-
    unsigned r, c;
    unsigned i = 0;
+   float white[XMB_RIBBON_VERTICES*4] = { 1.0f };
 
    xmb->ribbon_coords.allocated     =  0;
 
@@ -2360,9 +2361,7 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
       }
    }
 
-   gfx_coords_t coords;
    menu_display_ctx_coord_draw_t coord_draw;
-   float white[XMB_RIBBON_VERTICES*4] = { 1.0f };
 
    menu_display_ctl(MENU_DISPLAY_CTL_TEX_COORDS_GET, &coord_draw);
 
