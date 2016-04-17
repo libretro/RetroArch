@@ -1905,7 +1905,6 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
 #ifdef XMB_RIBBON_ENABLE
    struct uniform_info uniform_param = {0};
    static float t = 0;
-   int location;
    video_shader_ctx_info_t shader_info;
    math_matrix_4x4 mymat;
    struct gfx_coords coords;
