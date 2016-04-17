@@ -145,16 +145,11 @@ static INLINE CGparameter d3d9_cg_find_param_from_semantic(
    return NULL;
 }
 
-#define CG_D3D_SET_LISTING(cg_data, type) \
-{ \
-   const char *list = cgGetLastListing(cg_data->cgCtx); \
-   if (list) \
-      listing_##type = strdup(list); \
-}
-
 static bool d3d9_cg_load_program(void *data,
       void *fragment_data, void *vertex_data, const char *prog, bool path_is_file)
 {
+   bool ret                   = true;
+   const char *list           = NULL;
    char *listing_f            = NULL;
    char *listing_v            = NULL;
    CGprogram *fPrg            = (CGprogram*)fragment_data;
@@ -169,23 +164,26 @@ static bool d3d9_cg_load_program(void *data,
    RARCH_LOG("[D3D Cg]: Fragment profile: %s\n", cgGetProfileString(fragment_profile));
 
    if (path_is_file && !string_is_empty(prog))
-   {
       *fPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
             prog, fragment_profile, "main_fragment", fragment_opts);
-      CG_D3D_SET_LISTING(cg_data, f);
-      *vPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
-            prog, vertex_profile, "main_vertex", vertex_opts);
-      CG_D3D_SET_LISTING(cg_data, v);
-   }
    else
-   {
       *fPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_cg_d3d9_program,
             fragment_profile, "main_fragment", fragment_opts);
-      CG_D3D_SET_LISTING(cg_data, f);
+
+   list = cgGetLastListing(cg_data->cgCtx);
+   if (list)
+      listing_f = strdup(list);
+
+   if (path_is_file && !string_is_empty(prog))
+      *vPrg = cgCreateProgramFromFile(cg_data->cgCtx, CG_SOURCE,
+            prog, vertex_profile, "main_vertex", vertex_opts);
+   else
       *vPrg = cgCreateProgram(cg_data->cgCtx, CG_SOURCE, stock_cg_d3d9_program,
             vertex_profile, "main_vertex", vertex_opts);
-      CG_D3D_SET_LISTING(cg_data, v);
-   }
+
+   list = cgGetLastListing(cg_data->cgCtx);
+   if (list)
+      listing_v = strdup(list);
 
    if (!fPrg || !vPrg)
    {
@@ -194,16 +192,17 @@ static bool d3d9_cg_load_program(void *data,
          RARCH_ERR("Fragment:\n%s\n", listing_f);
       else if (listing_v)
          RARCH_ERR("Vertex:\n%s\n", listing_v);
-      free(listing_f);
-      free(listing_v);
-      return false;
+      ret = false;
+      goto end;
    }
 
    cgD3D9LoadProgram(*fPrg, true, 0);
    cgD3D9LoadProgram(*vPrg, true, 0);
+
+end:
    free(listing_f);
    free(listing_v);
-   return true;
+   return ret;
 }
 
 static INLINE void renderchain_set_shaders(void *data, CGprogram *fPrg, CGprogram *vPrg)
