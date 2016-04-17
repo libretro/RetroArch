@@ -49,7 +49,7 @@ typedef struct
 typedef struct
 {
    s16 x0, y0, x1, y1;
-   s16 u, v;
+   s16 u0, v0, u1, v1;
 } ctr_vertex_t;
 
 typedef struct ctr_video
@@ -147,12 +147,14 @@ static void ctr_update_viewport(ctr_video_t* ctr)
    float height         = ctr->vp.full_height;
    settings_t *settings = config_get_ptr();
 
+   float desired_aspect = video_driver_get_aspect_ratio();
+   if(ctr->rotation & 0x1)
+      desired_aspect = 1.0 / desired_aspect;
+
    if (settings->video.scale_integer)
    {
       video_viewport_get_scaled_integer(&ctr->vp, ctr->vp.full_width,
-            ctr->vp.full_height, video_driver_get_aspect_ratio(), ctr->keep_aspect);
-      width  = ctr->vp.width;
-      height = ctr->vp.height;
+            ctr->vp.full_height, desired_aspect, ctr->keep_aspect);
    }
    else if (ctr->keep_aspect)
    {
@@ -173,7 +175,6 @@ static void ctr_update_viewport(ctr_video_t* ctr)
 #endif
       {
          float delta;
-         float desired_aspect = video_driver_get_aspect_ratio();
 
          if (fabsf(device_aspect - desired_aspect) < 0.0001f)
          {
@@ -279,8 +280,10 @@ static void* ctr_init(const video_info_t* video,
    ctr->frame_coords->y0 = 0;
    ctr->frame_coords->x1 = CTR_TOP_FRAMEBUFFER_WIDTH;
    ctr->frame_coords->y1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   ctr->frame_coords->u = CTR_TOP_FRAMEBUFFER_WIDTH;
-   ctr->frame_coords->v = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->frame_coords->u0 = 0;
+   ctr->frame_coords->v0 = 0;
+   ctr->frame_coords->u1 = CTR_TOP_FRAMEBUFFER_WIDTH;
+   ctr->frame_coords->v1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
    GSPGPU_FlushDataCache(ctr->frame_coords, sizeof(ctr_vertex_t));
 
    ctr->menu.texture_width = 512;
@@ -296,8 +299,10 @@ static void* ctr_init(const video_info_t* video,
    ctr->menu.frame_coords->y0 = 0;
    ctr->menu.frame_coords->x1 = CTR_TOP_FRAMEBUFFER_WIDTH - 40;
    ctr->menu.frame_coords->y1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   ctr->menu.frame_coords->u = CTR_TOP_FRAMEBUFFER_WIDTH - 80;
-   ctr->menu.frame_coords->v = CTR_TOP_FRAMEBUFFER_HEIGHT;
+   ctr->menu.frame_coords->u0 = 0;
+   ctr->menu.frame_coords->v0 = 0;
+   ctr->menu.frame_coords->u1 = CTR_TOP_FRAMEBUFFER_WIDTH - 80;
+   ctr->menu.frame_coords->v1 = CTR_TOP_FRAMEBUFFER_HEIGHT;
    GSPGPU_FlushDataCache(ctr->menu.frame_coords, sizeof(ctr_vertex_t));
 
    ctr_set_scale_vector(&ctr->scale_vector,
@@ -348,7 +353,7 @@ static void* ctr_init(const video_info_t* video,
    ctrGuSetAttributeBuffers(2,
                             VIRT_TO_PHYS(ctr->menu.frame_coords),
                             CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 0 |
-                            CTRGU_ATTRIBFMT(GPU_SHORT, 2) << 4,
+                            CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 4,
                             sizeof(ctr_vertex_t));
    GPUCMD_Finalize();
    ctrGuFlushAndRun(true);
@@ -563,8 +568,10 @@ static bool ctr_frame(void* data, const void* frame,
 
       }
 
-      ctr->frame_coords->u = width;
-      ctr->frame_coords->v = height;
+      ctr->frame_coords->u0 = 0;
+      ctr->frame_coords->v0 = 0;
+      ctr->frame_coords->u1 = width;
+      ctr->frame_coords->v1 = height;
       GSPGPU_FlushDataCache(ctr->frame_coords, sizeof(ctr_vertex_t));
 
       ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
@@ -730,8 +737,10 @@ static void ctr_set_texture_frame(void* data, const void* frame, bool rgb32,
    ctr->menu.frame_coords->y0 = (CTR_TOP_FRAMEBUFFER_HEIGHT - height) / 2;
    ctr->menu.frame_coords->x1 = ctr->menu.frame_coords->x0 + width;
    ctr->menu.frame_coords->y1 = ctr->menu.frame_coords->y0 + height;
-   ctr->menu.frame_coords->u = width;
-   ctr->menu.frame_coords->v = height;
+   ctr->menu.frame_coords->u0 = 0;
+   ctr->menu.frame_coords->v0 = 0;
+   ctr->menu.frame_coords->u1 = width;
+   ctr->menu.frame_coords->v1 = height;
    GSPGPU_FlushDataCache(ctr->menu.frame_coords, sizeof(ctr_vertex_t));
 }
 
