@@ -339,7 +339,7 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-void gl_ff_vertex(const void *data);
-void gl_ff_matrix(const void *data);
+void gl_ff_vertex(const struct gfx_coords *coords);
+void gl_ff_matrix(const math_matrix_4x4 *mat);
 
 #endif

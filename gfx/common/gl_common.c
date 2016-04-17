@@ -23,11 +23,9 @@ extern void gl_load_texture_data(uint32_t id_data,
       unsigned width, unsigned height,
       const void *frame, unsigned base_size);
 
-void gl_ff_vertex(const void *data)
+void gl_ff_vertex(const struct gfx_coords *coords)
 {
 #ifndef NO_GL_FF_VERTEX
-   const struct gfx_coords *coords = (const struct gfx_coords*)data;
-
    /* Fall back to fixed function-style if needed and possible. */
    glClientActiveTexture(GL_TEXTURE1);
    glTexCoordPointer(2, GL_FLOAT, 0, coords->lut_tex_coord);
@@ -42,11 +40,10 @@ void gl_ff_vertex(const void *data)
 #endif
 }
 
-void gl_ff_matrix(const void *data)
+void gl_ff_matrix(const math_matrix_4x4 *mat)
 {
 #ifndef NO_GL_FF_MATRIX
    math_matrix_4x4 ident;
-   const math_matrix_4x4 *mat = (const math_matrix_4x4*)data;
 
    /* Fall back to fixed function-style if needed and possible. */
    glMatrixMode(GL_PROJECTION);
