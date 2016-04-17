@@ -142,6 +142,7 @@ enum
 
 typedef struct xmb_handle
 {
+   gfx_coord_array_t ribbon_coords;
    file_list_t *menu_stack_old;
    file_list_t *selection_buf_old;
    file_list_t *horizontal_list;
@@ -2338,11 +2339,13 @@ static void xmb_layout(xmb_handle_t *xmb)
 }
 
 
-static void xmb_init_ribbon()
+static void xmb_init_ribbon(xmb_handle_t * xmb)
 {
 #ifdef XMB_RIBBON_ENABLE
    unsigned r, c;
    unsigned i = 0;
+
+   xmb->ribbon_coords.allocated     =  0;
 
    /* Set up vertices */
    for (r = 0; r < XMB_RIBBON_ROWS; ++r)
@@ -2422,7 +2425,7 @@ static void *xmb_init(void **userdata)
 
    xmb_init_horizontal_list(xmb);
    xmb_font(xmb);
-   xmb_init_ribbon();
+   xmb_init_ribbon(xmb);
 
    return menu;
 
@@ -2462,10 +2465,14 @@ static void xmb_free(void *data)
          file_list_free(xmb->horizontal_list);
       xmb->horizontal_list = NULL;
 
+#ifdef XMB_ENABLE_RIBBON
+      gfx_coord_array_free(&xmb->ribbon_coords);
+#endif
       gfx_coord_array_free(&xmb->raster_block.carr);
    }
 
    font_driver_bind_block(NULL, NULL);
+
 }
 
 static void xmb_context_bg_destroy(xmb_handle_t *xmb)
