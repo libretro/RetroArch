@@ -1367,6 +1367,18 @@ fallback:
    return false;
 }
 
+#define gl_glsl_set_coord_array(attr, coord1, coord2, coords, size, multiplier) \
+{ \
+      attr->loc    = coord1; \
+      attr->size   = multiplier; \
+      attr->offset = size * sizeof(GLfloat); \
+      attribs_size++; \
+      attr++; \
+      memcpy(buffer + size, coord2,  \
+            multiplier * coords->vertices * sizeof(GLfloat)); \
+      size += multiplier * coords->vertices; \
+}
+
 static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void *data)
 {
    /* Avoid hitting malloc on every single regular quad draw. */
@@ -1394,56 +1406,16 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void 
    uni  = &glsl->uniforms[glsl->glsl_active_index];
 
    if (uni->tex_coord >= 0)
-   {
-      attr->loc    = uni->tex_coord;
-      attr->size   = 2;
-      attr->offset = size * sizeof(GLfloat);
-      attribs_size++;
-      attr++;
-
-      memcpy(buffer + size, coords->tex_coord, 
-            2 * coords->vertices * sizeof(GLfloat));
-      size += 2 * coords->vertices;
-   }
+      gl_glsl_set_coord_array(attr, uni->tex_coord, coords->tex_coord, coords, size, 2);
 
    if (uni->vertex_coord >= 0)
-   {
-      attr->loc    = uni->vertex_coord;
-      attr->size   = 2;
-      attr->offset = size * sizeof(GLfloat);
-      attribs_size++;
-      attr++;
-
-      memcpy(buffer + size, coords->vertex, 
-            2 * coords->vertices * sizeof(GLfloat));
-      size += 2 * coords->vertices;
-   }
+      gl_glsl_set_coord_array(attr, uni->vertex_coord, coords->vertex, coords, size, 2);
 
    if (uni->color >= 0)
-   {
-      attr->loc    = uni->color;
-      attr->size   = 4;
-      attr->offset = size * sizeof(GLfloat);
-      attribs_size++;
-      attr++;
-
-      memcpy(buffer + size, coords->color,
-            4 * coords->vertices * sizeof(GLfloat));
-      size += 4 * coords->vertices;
-   }
+      gl_glsl_set_coord_array(attr, uni->color, coords->color, coords, size, 4);
 
    if (uni->lut_tex_coord >= 0)
-   {
-      attr->loc    = uni->lut_tex_coord;
-      attr->size   = 2;
-      attr->offset = size * sizeof(GLfloat);
-      attribs_size++;
-      attr++;
-
-      memcpy(buffer + size, coords->lut_tex_coord,
-            2 * coords->vertices * sizeof(GLfloat));
-      size += 2 * coords->vertices;
-   }
+      gl_glsl_set_coord_array(attr, uni->lut_tex_coord, coords->lut_tex_coord, coords, size, 2);
 
    if (size)
       gl_glsl_set_attribs(glsl,
