@@ -1379,7 +1379,7 @@ fallback:
       size += multiplier * coords->vertices; \
 }
 
-static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void *data)
+static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struct gfx_coords *coords)
 {
    /* Avoid hitting malloc on every single regular quad draw. */
    GLfloat short_buffer[4 * (2 + 2 + 4 + 2)];
@@ -1388,7 +1388,6 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const void 
    size_t attribs_size = 0, size = 0;
    struct glsl_attrib *attr = NULL;
    const struct shader_uniforms *uni = NULL;
-   const struct gfx_coords *coords = (const struct gfx_coords*)data;
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
 
    if (!glsl || !glsl->shader->modern || !coords)

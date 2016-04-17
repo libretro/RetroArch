@@ -92,15 +92,12 @@ static bool shader_null_set_mvp(void *data, void *shader_data, const math_matrix
    return false;
 }
 
-static bool shader_null_set_coords(void *handle_data, void *shader_data, const void *data)
+static bool shader_null_set_coords(void *handle_data, void *shader_data, const struct gfx_coords *coords)
 {
 #ifdef HAVE_OPENGL
 #ifndef NO_GL_FF_VERTEX
    if (string_is_equal(video_driver_get_ident(), "gl"))
-   {
-      const struct gfx_coords *coords = (const struct gfx_coords*)data;
       gl_ff_vertex(coords);
-   }
 #endif
 #endif
    return false;

@@ -253,9 +253,8 @@ fallback:
    } \
 } while(0)
 
-static bool gl_cg_set_coords(void *handle_data, void *shader_data, const void *data)
+static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct gfx_coords *coords)
 {
-   const struct gfx_coords *coords = (const struct gfx_coords*)data;
    cg_shader_data_t *cg_data = (cg_shader_data_t*)shader_data;
 
    if (!cg_data || !coords)

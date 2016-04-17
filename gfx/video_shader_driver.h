@@ -20,6 +20,8 @@
 
 #include <gfx/math/matrix_4x4.h>
 
+#include "video_coord_array.h"
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
@@ -183,7 +185,7 @@ typedef struct shader_backend
    void (*shader_scale)(void *data,
          unsigned index, struct gfx_fbo_scale *scale);
    bool (*set_coords)(void *handle_data,
-         void *shader_data, const void *data);
+         void *shader_data, const struct gfx_coords *coords);
    bool (*set_mvp)(void *data, void *shader_data,
          const math_matrix_4x4 *mat);
    unsigned (*get_prev_textures)(void *data);
