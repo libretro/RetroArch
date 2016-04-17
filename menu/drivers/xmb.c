@@ -1960,7 +1960,6 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, draw->coords->vertex);
    glEnableVertexAttribArray(0);
 
-   glVertexPointer(3, GL_FLOAT, 0, draw->coords->vertex);
    glDrawElements(GL_TRIANGLE_STRIP,
          XMB_RIBBON_INDEXES, GL_UNSIGNED_INT, draw->coords->index);
 
