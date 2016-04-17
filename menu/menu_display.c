@@ -455,7 +455,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
       case MENU_DISPLAY_CTL_CLEAR_COLOR:
          if (!menu_disp || !menu_disp->clear_color)
             return false;
-         menu_disp->clear_color(data);
+         menu_disp->clear_color((menu_display_ctx_clearcolor_t*)data);
          break;
       case MENU_DISPLAY_CTL_DRAW:
          if (!menu_disp || !menu_disp->draw)

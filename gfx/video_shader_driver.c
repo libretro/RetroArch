@@ -224,7 +224,7 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
             if (!current_shader || !current_shader->set_coords)
                return false;
             if (!current_shader->set_coords(coords->handle_data,
-                  shader_data, coords->data))
+                  shader_data, (const struct gfx_coords*)coords->data))
                return false;
          }
          break;
