@@ -1915,6 +1915,11 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
       1, 1, 1, 1,
    };
 
+   if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
+      draw->handle_alpha = 0.75;
+   else
+      draw->handle_alpha = 1.00;
+
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, draw);
 
    xmb_blend_begin();

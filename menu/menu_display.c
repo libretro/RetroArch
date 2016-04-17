@@ -504,10 +504,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             const float *new_tex_coord    = NULL;
             menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
             float bg[16] = {
-               1, 0, 0.1, 1,
-               1, 0.1, 0, 1,
-               0.05, 0, 0.05, 1,
-               0.05, 0, 0.05, 1
+               1, 0, 0.1, draw->handle_alpha,
+               1, 0.1, 0, draw->handle_alpha,
+               0.05, 0, 0.05, draw->handle_alpha,
+               0.05, 0, 0.05, draw->handle_alpha
             };
 
             if (!menu_disp || !draw)
