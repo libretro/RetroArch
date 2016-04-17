@@ -22,6 +22,8 @@
 #include "../d3d/d3d.h"
 #include "../../general.h"
 
+#include "../drivers/d3d_shaders/font.hlsl.d3d9.h"
+
 #ifdef _XBOX360
 struct XPR_HEADER
 {
@@ -445,37 +447,6 @@ typedef struct
    GLYPH_ATTR m_Glyphs[1];              /* Array of font strike uv's etc... NOTE: It's m_dwNumGlyphs in size. */
 } FontFileStrikesImage_t; 
 
-static const char g_strFontShader[] =
-"struct VS_IN\n"
-"{\n"
-"float2 Pos : POSITION;\n"
-"float2 Tex : TEXCOORD0;\n"
-"};\n"
-"struct VS_OUT\n"
-"{\n"
-"float4 Position : POSITION;\n"
-"float2 TexCoord0 : TEXCOORD0;\n"
-"};\n"
-"uniform float4 Color : register(c1);\n"
-"uniform float2 TexScale : register(c2);\n"
-"sampler FontTexture : register(s0);\n"
-"VS_OUT main_vertex( VS_IN In )\n"
-"{\n"
-"VS_OUT Out;\n"
-"Out.Position.x  = (In.Pos.x-0.5);\n"
-"Out.Position.y  = (In.Pos.y-0.5);\n"
-"Out.Position.z  = ( 0.0 );\n"
-"Out.Position.w  = ( 1.0 );\n"
-"Out.TexCoord0.x = In.Tex.x * TexScale.x;\n"
-"Out.TexCoord0.y = In.Tex.y * TexScale.y;\n"
-"return Out;\n"
-"}\n"
-"float4 main_fragment( VS_OUT In ) : COLOR0\n"
-"{\n"
-"float4 FontTexel = tex2D( FontTexture, In.TexCoord0 );\n"
-"return FontTexel;\n"
-"}\n";
-
 static PackedResource m_xprResource;
 
 static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
@@ -508,7 +479,7 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
       {
          ID3DXBuffer* pShaderCode;
 
-         hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
+         hr = D3DXCompileShader( font_hlsl_d3d9_program, sizeof(font_hlsl_d3d9_program)-1 ,
                NULL, NULL, "main_vertex", "vs.2.0", 0,&pShaderCode, NULL, NULL );
 
          if (hr >= 0)
@@ -519,7 +490,7 @@ static HRESULT xdk360_video_font_create_shaders(xdk360_video_font_t * font)
 
             if (hr >= 0)
             {
-               hr = D3DXCompileShader( g_strFontShader, sizeof(g_strFontShader)-1 ,
+               hr = D3DXCompileShader(font_hlsl_d3d9_program, sizeof(font_hlsl_d3d9_program)-1 ,
                      NULL, NULL, "main_fragment", "ps.2.0", 0,&pShaderCode, NULL, NULL );
 
                if (hr >= 0)
