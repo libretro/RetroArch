@@ -19,14 +19,12 @@
 ; Output
 .out     pos         position
 .out     texcoord    texcoord0
-.out     color       color
 
 .proc main_vsh
 
    mul   r0, viewport_scale, pos_in.yxwz
    add   pos, _1111, r0
-   mul   r1.zw, texture_scale, texcoord_in.xyxy
-   mov   r1.xy, _0000
+   mul   r1, texture_scale, texcoord_in
    add   texcoord, _0101, r1
 
    end

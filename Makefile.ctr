@@ -21,12 +21,12 @@ APP_RSF              = ctr/tools/template.rsf
 APP_SYSTEM_MODE      = 64MB
 APP_SYSTEM_MODE_EXT  = 124MB
 APP_BIG_TEXT_SECTION = 0
-APP_USE_SVCHAX       = 0
+APP_USE_SVCHAX       = 1
 
 include ctr/Makefile.cores
 
 OBJS :=
-OBJS += gfx/drivers/ctr_sprite.o
+OBJS += gfx/drivers/ctr_shaders/ctr_sprite.o
 OBJS += ctr/ctr_system.o
 OBJS += ctr/ctr_memory.o
 OBJS += ctr/ctr_linear.o
@@ -324,11 +324,6 @@ all: $(TARGET)
 $(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
 $(TARGET).3dsx: $(TARGET).elf
 $(TARGET).elf: $(OBJS) libretro_ctr.a
-
-ctr_sprite_shader_shbin.h: gfx/drivers/ctr_sprite.o
-gfx/drivers/ctr_gfx.c: ctr_sprite_shader_shbin.h
-griffin/griffin.o: gfx/drivers/ctr_gfx.c
-
 
 PREFIX		:=	$(DEVKITARM)/bin/arm-none-eabi-
 
