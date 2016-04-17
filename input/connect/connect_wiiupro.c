@@ -20,8 +20,9 @@
 
 #include <boolean.h>
 
-#include "../../driver.h"
 #include "joypad_connection.h"
+#include "../input_defines.h"
+#include "../../driver.h"
 
 struct wiiupro_buttons
 {
