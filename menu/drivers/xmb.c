@@ -49,8 +49,12 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#if 0
+#if 1
 #define XMB_RIBBON_ENABLE
+#define XMB_RIBBON_ROWS 16
+#define XMB_RIBBON_COLS 32
+#define XMB_RIBBON_VERTICES XMB_RIBBON_COLS*XMB_RIBBON_ROWS*3
+#define XMB_RIBBON_INDEXES (XMB_RIBBON_COLS * 2 + 2) * XMB_RIBBON_ROWS + (XMB_RIBBON_ROWS - 1) * 2
 #endif
 
 #ifndef XMB_DELAY
@@ -233,8 +237,8 @@ typedef struct xmb_handle
 } xmb_handle_t;
 
 #ifdef XMB_RIBBON_ENABLE
-static float ribbon_verts[1536];
-static int ribbon_idx[1024];
+static float ribbon_verts[XMB_RIBBON_VERTICES];
+static unsigned ribbon_idx[XMB_RIBBON_INDEXES];
 #endif
 
 static const char *xmb_theme_ident(void)
@@ -1924,7 +1928,8 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
 
    xmb_blend_begin();
 
-   coords.vertices = draw->vertex_count;
+   coords.vertex = ribbon_verts;
+   coords.index = ribbon_idx;
    coords.color = white;
 
    draw->x      = 0;
@@ -1951,11 +1956,12 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ribbon_verts);
+   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, draw->coords->vertex);
    glEnableVertexAttribArray(0);
 
-   glVertexPointer(3, GL_FLOAT, 0, ribbon_verts);
-   glDrawElements(GL_TRIANGLE_STRIP, 1024, GL_UNSIGNED_INT, ribbon_idx);
+   glVertexPointer(3, GL_FLOAT, 0, draw->coords->vertex);
+   glDrawElements(GL_TRIANGLE_STRIP,
+         XMB_RIBBON_INDEXES, GL_UNSIGNED_INT, draw->coords->index);
 
    xmb_blend_end();
 #else
@@ -2337,31 +2343,29 @@ static void xmb_init_ribbon()
 #ifdef XMB_RIBBON_ENABLE
    unsigned r, c;
    unsigned i = 0;
-   const unsigned ribbon_rows    = 16;
-   const unsigned ribbon_columns = 32;
 
    /* Set up vertices */
-   for (r = 0; r < ribbon_rows; ++r)
+   for (r = 0; r < XMB_RIBBON_ROWS; ++r)
    {
-      for (c = 0; c < ribbon_columns; ++c)
+      for (c = 0; c < XMB_RIBBON_COLS; ++c)
       {
-         int index = r * ribbon_columns + c;
+         int index = r * XMB_RIBBON_COLS + c;
          ribbon_verts[3*index + 0] = ((float) c)/15.0f - 1.0;
          ribbon_verts[3*index + 1] = 0.0f;
          ribbon_verts[3*index + 2] = ((float) r)/8.0f - 1.0;
       }
    }
 
-   for (r = 0; r < ribbon_rows - 1; ++r)
+   for (r = 0; r < XMB_RIBBON_ROWS - 1; ++r)
    {
-      ribbon_idx[i++] = r * ribbon_columns;
+      ribbon_idx[i++] = r * XMB_RIBBON_COLS;
 
-      for (c = 0; c < ribbon_columns; ++c)
+      for (c = 0; c < XMB_RIBBON_COLS; ++c)
       {
-         ribbon_idx[i++] = r * ribbon_columns + c;
-         ribbon_idx[i++] = (r + 1) * ribbon_columns + c;
+         ribbon_idx[i++] = r * XMB_RIBBON_COLS + c;
+         ribbon_idx[i++] = (r + 1) * XMB_RIBBON_COLS + c;
       }
-      ribbon_idx[i++] = (r + 1) * ribbon_columns + (ribbon_columns - 1);
+      ribbon_idx[i++] = (r + 1) * XMB_RIBBON_COLS + (XMB_RIBBON_COLS - 1);
    }
 #endif
 }
