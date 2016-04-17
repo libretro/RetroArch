@@ -111,7 +111,7 @@ struct shader_program_info
 
 struct uniform_info
 {
-   enum shader_uniform_type type;
+   unsigned type; /* shader uniform type */
    bool enabled;
 
    int32_t location;
