@@ -52,6 +52,7 @@ extern pad_connection_interface_t pad_connection_ps4;
 extern pad_connection_interface_t pad_connection_snesusb;
 extern pad_connection_interface_t pad_connection_nesusb;
 extern pad_connection_interface_t pad_connection_wiiugca;
+extern pad_connection_interface_t pad_connection_ps2adapter;
 
 int32_t pad_connection_pad_init(joypad_connection_t *joyconn,
    const char* name, uint16_t vid, uint16_t pid,
