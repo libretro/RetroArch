@@ -122,6 +122,7 @@ struct uniform_info
       enum shader_program_type type;
       const char *ident;
       uint32_t idx;
+      bool add_prefix;
       bool enable;
    } lookup;
 

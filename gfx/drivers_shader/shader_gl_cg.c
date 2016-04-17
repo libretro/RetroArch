@@ -131,6 +131,7 @@ static void gl_cg_set_uniform_parameter(
 
    if (param->lookup.enable)
    {
+      char ident[64];
       CGprogram prog = 0;
 
       switch (param->lookup.type)
@@ -143,7 +144,13 @@ static void gl_cg_set_uniform_parameter(
             prog = cg_data->prg[param->lookup.idx].fprg;
             break;
       }
-      location = cgGetNamedParameter(prog, param->lookup.ident);
+
+      if (param->lookup.add_prefix)
+      {
+         strlcat(ident, "IN.", sizeof(ident));
+         strlcat(ident, param->lookup.ident, sizeof(ident));
+      }
+      location = cgGetNamedParameter(prog, param->lookup.add_prefix ? ident : param->lookup.ident);
    }
    else
    {

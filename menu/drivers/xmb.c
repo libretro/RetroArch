@@ -1934,11 +1934,13 @@ static void xmb_draw_ribbon(menu_display_ctx_draw_t *draw)
 
    t += 0.01;
 
-   uniform_param.lookup.enable = true;
-   uniform_param.lookup.idx    = VIDEO_SHADER_MENU;
-   uniform_param.lookup.type   = SHADER_PROGRAM_FRAGMENT;
-   uniform_param.lookup.ident  = "time";
-   uniform_param.result.f.v0   = t;
+   uniform_param.lookup.enable     = true;
+   uniform_param.lookup.add_prefix = true;
+   uniform_param.lookup.idx        = VIDEO_SHADER_MENU;
+   uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
+   uniform_param.type              = UNIFORM_1F;
+   uniform_param.lookup.ident      = "time";
+   uniform_param.result.f.v0       = t;
 
    video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
 
