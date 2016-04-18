@@ -284,6 +284,55 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
    if(!ctr)
       return;
 
+   if(hook == APTHOOK_ONRESTORE)
+   {
+      GPUCMD_SetBufferOffset(0);
+      shaderProgramUse(&ctr->shader);
+
+      GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
+                      VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER),
+                      0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT, CTR_TOP_FRAMEBUFFER_WIDTH);
+
+      GPU_DepthMap(-1.0f, 0.0f);
+      GPU_SetFaceCulling(GPU_CULL_NONE);
+      GPU_SetStencilTest(false, GPU_ALWAYS, 0x00, 0xFF, 0x00);
+      GPU_SetStencilOp(GPU_STENCIL_KEEP, GPU_STENCIL_KEEP, GPU_STENCIL_KEEP);
+      GPU_SetBlendingColor(0, 0, 0, 0);
+      GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_ALL);
+      GPUCMD_AddMaskedWrite(GPUREG_EARLYDEPTH_TEST1, 0x1, 0);
+      GPUCMD_AddWrite(GPUREG_EARLYDEPTH_TEST2, 0);
+      GPU_SetAlphaBlending(GPU_BLEND_ADD, GPU_BLEND_ADD,
+                           GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA,
+                           GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
+      GPU_SetAlphaTest(false, GPU_ALWAYS, 0x00);
+      GPU_SetTextureEnable(GPU_TEXUNIT0);
+      GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, 0, GPU_REPLACE, GPU_REPLACE, 0);
+      GPU_SetTexEnv(1, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      GPU_SetTexEnv(2, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      GPU_SetTexEnv(3, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      GPU_SetTexEnv(4, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      GPU_SetTexEnv(5, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      ctrGuSetAttributeBuffers(2,
+                               VIRT_TO_PHYS(ctr->menu.frame_coords),
+                               CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 0 |
+                               CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 4,
+                               sizeof(ctr_vertex_t));
+      GPUCMD_Finalize();
+      ctrGuFlushAndRun(true);
+      gspWaitForEvent(GSPGPU_EVENT_P3D, false);
+   }
+
+   if((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_400x240))
+   {
+      memcpy(gfxTopRightFramebuffers[ctr->current_buffer_top],
+            gfxTopLeftFramebuffers[ctr->current_buffer_top],
+            400 * 240 * 3);
+      GSPGPU_FlushDataCache(gfxTopRightFramebuffers[ctr->current_buffer_top], 400 * 240 * 3);
+   }
+
+   if ((hook == APTHOOK_ONSUSPEND))
+      ctr_set_parallax_layer(*(float*)0x1FF81080 != 0.0);
+
    if((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE))
    {
       Handle lcd_handle;
