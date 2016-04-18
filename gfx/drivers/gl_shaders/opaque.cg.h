@@ -1,5 +1,3 @@
-/* Used when we call deactivate() since just unbinding 
- * the program didn't seem to work... */
 static const char *stock_cg_gl_program =
       "struct input"
       "{"
