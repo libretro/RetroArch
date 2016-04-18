@@ -220,8 +220,8 @@ static void frontend_ctr_init(void *data)
    {
       osSetSpeedupEnable(false);
       svchax_init(__ctr_patch_services);
-      osSetSpeedupEnable(true);
    }
+   osSetSpeedupEnable(true);
 
    audio_driver_t* dsp_audio_driver = &audio_ctr_dsp;
    if(csndInit() != 0)
