@@ -69,6 +69,7 @@ HAVE_PRESERVE_DYLIB=no     # Enable dlclose() for Valgrind support
 HAVE_PARPORT=auto          # Parallel port joypad support
 HAVE_IMAGEVIEWER=yes       # Built-in image viewer support.
 C89_IMAGEVIEWER=no         # stb_image hates C89
+C90_IMAGEVIEWER=no         # stb_image hates C90
 HAVE_MMAP=auto             # MMAP support
 HAVE_QT=no                 # QT companion support
 HAVE_XSHM=no               # XShm video driver support (disabled because it's just a dummied out stub)
