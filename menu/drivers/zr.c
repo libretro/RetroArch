@@ -32,7 +32,7 @@
 #include <lists/string_list.h>
 
 #include "menu_generic.h"
-#include "zr_menu.h"
+#include "nk_menu.h"
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
@@ -50,7 +50,7 @@
 
 static void zrmenu_main(zrmenu_handle_t *zr)
 {
-   struct zr_context *ctx = &zr->ctx;
+   struct nk_context *ctx = &zr->ctx;
 
    if (zr->window[ZRMENU_WND_MAIN].open)
       zrmenu_wnd_main(zr);
@@ -63,15 +63,15 @@ static void zrmenu_main(zrmenu_handle_t *zr)
    if (zr->window[ZRMENU_WND_WIZARD].open)
       zrmenu_wnd_wizard(zr);
 
-   zr->window[ZRMENU_WND_CONTROL].open = !zr_window_is_closed(ctx, "Control");
-   zr->window[ZRMENU_WND_SHADER_PARAMETERS].open = !zr_window_is_closed(ctx, "Shader Parameters");
-   zr->window[ZRMENU_WND_TEST].open = !zr_window_is_closed(ctx, "Test");
-   zr->window[ZRMENU_WND_WIZARD].open = !zr_window_is_closed(ctx, "Setup Wizard");
+   zr->window[ZRMENU_WND_CONTROL].open = !nk_window_is_closed(ctx, "Control");
+   zr->window[ZRMENU_WND_SHADER_PARAMETERS].open = !nk_window_is_closed(ctx, "Shader Parameters");
+   zr->window[ZRMENU_WND_TEST].open = !nk_window_is_closed(ctx, "Test");
+   zr->window[ZRMENU_WND_WIZARD].open = !nk_window_is_closed(ctx, "Setup Wizard");
 
-   if(zr_window_is_closed(ctx, "Setup Wizard"))
+   if(nk_window_is_closed(ctx, "Setup Wizard"))
       zr->window[ZRMENU_WND_MAIN].open = true;
 
-   zr_buffer_info(&zr->status, &zr->ctx.memory);
+   nk_buffer_info(&zr->status, &zr->ctx.memory);
 }
 
 static void zrmenu_input_gamepad(zrmenu_handle_t *zr)
@@ -79,56 +79,56 @@ static void zrmenu_input_gamepad(zrmenu_handle_t *zr)
    switch (zr->action)
    {
       case MENU_ACTION_LEFT:
-         zr_input_key(&zr->ctx, ZR_KEY_LEFT, 1);
+         nk_input_key(&zr->ctx, NK_KEY_LEFT, 1);
          break;
       case MENU_ACTION_RIGHT:
-         zr_input_key(&zr->ctx, ZR_KEY_RIGHT, 1);
+         nk_input_key(&zr->ctx, NK_KEY_RIGHT, 1);
          break;
       case MENU_ACTION_DOWN:
-         zr_input_key(&zr->ctx, ZR_KEY_DOWN, 1);
+         nk_input_key(&zr->ctx, NK_KEY_DOWN, 1);
          break;
       case MENU_ACTION_UP:
-         zr_input_key(&zr->ctx, ZR_KEY_UP, 1);
+         nk_input_key(&zr->ctx, NK_KEY_UP, 1);
          break;
       default:
-         zr_input_key(&zr->ctx, ZR_KEY_UP, 0);
-         zr_input_key(&zr->ctx, ZR_KEY_DOWN, 0);
-         zr_input_key(&zr->ctx, ZR_KEY_LEFT, 0);
-         zr_input_key(&zr->ctx, ZR_KEY_RIGHT, 0);
+         nk_input_key(&zr->ctx, NK_KEY_UP, 0);
+         nk_input_key(&zr->ctx, NK_KEY_DOWN, 0);
+         nk_input_key(&zr->ctx, NK_KEY_LEFT, 0);
+         nk_input_key(&zr->ctx, NK_KEY_RIGHT, 0);
          break;
    }
 
 }
 
-static void zrmenu_input_mouse_movement(struct zr_context *ctx)
+static void zrmenu_input_mouse_movement(struct nk_context *ctx)
 {
    int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-   zr_input_motion(ctx, mouse_x, mouse_y);
-   zr_input_scroll(ctx, menu_input_mouse_state(MENU_MOUSE_WHEEL_UP) -
+   nk_input_motion(ctx, mouse_x, mouse_y);
+   nk_input_scroll(ctx, menu_input_mouse_state(MENU_MOUSE_WHEEL_UP) -
       menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN));
 
 }
 
-static void zrmenu_input_mouse_button(struct zr_context *ctx)
+static void zrmenu_input_mouse_button(struct nk_context *ctx)
 {
    int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-   zr_input_button(ctx, ZR_BUTTON_LEFT,
+   nk_input_button(ctx, NK_BUTTON_LEFT,
          mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_LEFT_BUTTON));
-   zr_input_button(ctx, ZR_BUTTON_RIGHT,
+   nk_input_button(ctx, NK_BUTTON_RIGHT,
          mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON));
 }
 
-static void zrmenu_input_keyboard(struct zr_context *ctx)
+static void zrmenu_input_keyboard(struct nk_context *ctx)
 {
    /* placeholder, it just presses 1 on right click
       needs to be hooked up correctly
    */
    if(menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON))
-      zr_input_char(ctx, '1');
+      nk_input_char(ctx, '1');
 }
 
 static void zrmenu_context_reset_textures(zrmenu_handle_t *zr,
@@ -136,14 +136,14 @@ static void zrmenu_context_reset_textures(zrmenu_handle_t *zr,
 {
    unsigned i;
 
-   for (i = 0; i < ZR_TEXTURE_LAST; i++)
+   for (i = 0; i < NK_TEXTURE_LAST; i++)
    {
       struct texture_image ti     = {0};
       char path[PATH_MAX_LENGTH]  = {0};
 
       switch(i)
       {
-         case ZR_TEXTURE_POINTER:
+         case NK_TEXTURE_POINTER:
             fill_pathname_join(path, iconpath,
                   "pointer.png", sizeof(path));
             break;
@@ -191,7 +191,7 @@ static void zrmenu_draw_cursor(zrmenu_handle_t *zr,
    draw.height      = 64;
    draw.coords      = &coords;
    draw.matrix_data = NULL;
-   draw.texture     = zr->textures.list[ZR_TEXTURE_POINTER];
+   draw.texture     = zr->textures.list[NK_TEXTURE_POINTER];
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
@@ -222,7 +222,7 @@ static void zrmenu_frame(void *data)
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   zr_input_begin(&zr->ctx);
+   nk_input_begin(&zr->ctx);
    zrmenu_input_gamepad(zr);
    zrmenu_input_mouse_movement(&zr->ctx);
    zrmenu_input_mouse_button(&zr->ctx);
@@ -235,9 +235,9 @@ static void zrmenu_frame(void *data)
       zr->size_changed = true;
    }
 
-   zr_input_end(&zr->ctx);
+   nk_input_end(&zr->ctx);
    zrmenu_main(zr);
-   zr_common_device_draw(&device, &zr->ctx, width, height, ZR_ANTI_ALIASING_ON);
+   nk_common_device_draw(&device, &zr->ctx, width, height, NK_ANTI_ALIASING_ON);
 
    if (settings->menu.mouse.enable && (settings->video.fullscreen
             || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
@@ -272,31 +272,31 @@ static void zrmenu_init_device(zrmenu_handle_t *zr)
    fill_pathname_join(buf, zr->assets_directory,
          "DroidSans.ttf", sizeof(buf));
 
-   zr_alloc.userdata.ptr = NULL;
-   zr_alloc.alloc = zr_common_mem_alloc;
-   zr_alloc.free = zr_common_mem_free;
-   zr_buffer_init(&device.cmds, &zr_alloc, 1024);
-   usrfnt = zr_common_font(&device, &font, buf, 16,
-      zr_font_default_glyph_ranges());
-   zr_init(&zr->ctx, &zr_alloc, &usrfnt);
-   zr_common_device_init(&device);
+   nk_alloc.userdata.ptr = NULL;
+   nk_alloc.alloc = nk_common_mem_alloc;
+   nk_alloc.free = nk_common_mem_free;
+   nk_buffer_init(&device.cmds, &nk_alloc, 1024);
+   usrfnt = nk_common_font(&device, &font, buf, 16,
+      nk_font_default_glyph_ranges());
+   nk_init(&zr->ctx, &nk_alloc, &usrfnt);
+   nk_common_device_init(&device);
 
    fill_pathname_join(buf, zr->assets_directory, "folder.png", sizeof(buf));
-   zr->icons.folder = zr_common_image_load(buf);
+   zr->icons.folder = nk_common_image_load(buf);
    fill_pathname_join(buf, zr->assets_directory, "speaker.png", sizeof(buf));
-   zr->icons.speaker = zr_common_image_load(buf);
+   zr->icons.speaker = nk_common_image_load(buf);
    fill_pathname_join(buf, zr->assets_directory, "gamepad.png", sizeof(buf));
-   zr->icons.gamepad = zr_common_image_load(buf);
+   zr->icons.gamepad = nk_common_image_load(buf);
    fill_pathname_join(buf, zr->assets_directory, "monitor.png", sizeof(buf));
-   zr->icons.monitor = zr_common_image_load(buf);
+   zr->icons.monitor = nk_common_image_load(buf);
    fill_pathname_join(buf, zr->assets_directory, "settings.png", sizeof(buf));
-   zr->icons.settings = zr_common_image_load(buf);
+   zr->icons.settings = nk_common_image_load(buf);
    fill_pathname_join(buf, zr->assets_directory, "invader.png", sizeof(buf));
-   zr->icons.invader = zr_common_image_load(buf);
+   zr->icons.invader = nk_common_image_load(buf);
    fill_pathname_join(buf, zr->assets_directory, "page_on.png", sizeof(buf));
-   zr->icons.page_on = zr_common_image_load(buf);
+   zr->icons.page_on = nk_common_image_load(buf);
    fill_pathname_join(buf, zr->assets_directory, "page_off.png", sizeof(buf));
-   zr->icons.page_off = zr_common_image_load(buf);
+   zr->icons.page_off = nk_common_image_load(buf);
 
    zrmenu_set_style(&zr->ctx, THEME_DARK);
    zr->size_changed = true;
@@ -346,9 +346,9 @@ static void zrmenu_free(void *data)
       return;
 
    free(font.glyphs);
-   zr_free(&zr->ctx);
-   zr_buffer_free(&device.cmds);
-   zr_common_device_shutdown(&device);
+   nk_free(&zr->ctx);
+   nk_buffer_free(&device.cmds);
+   nk_common_device_shutdown(&device);
 
    gfx_coord_array_free(&zr->list_block.carr);
    font_driver_bind_block(NULL, NULL);
@@ -369,7 +369,7 @@ static void zrmenu_context_destroy(void *data)
    if (!zr)
       return;
 
-   for (i = 0; i < ZR_TEXTURE_LAST; i++)
+   for (i = 0; i < NK_TEXTURE_LAST; i++)
       video_driver_texture_unload((uintptr_t*)&zr->textures.list[i]);
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);

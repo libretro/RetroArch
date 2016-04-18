@@ -896,9 +896,8 @@ MENU
 #endif
 
 #ifdef HAVE_ZAHNRAD
-#include "../deps/zahnrad/zahnrad.c"
-#include "../menu/drivers/zr_common.c"
-#include "../menu/drivers/zr_menu.c"
+#include "../menu/drivers/nk_common.c"
+#include "../menu/drivers/nk_menu.c"
 #include "../menu/drivers/zr.c"
 #endif
 
