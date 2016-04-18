@@ -2342,6 +2342,7 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
 {
 #ifdef XMB_RIBBON_ENABLE
    gfx_coords_t coords;
+   menu_display_ctx_coord_draw_t coord_draw;
    float ribbon_verts[XMB_RIBBON_VERTICES];
    unsigned r, c;
    unsigned i = 0;
@@ -2360,8 +2361,6 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
          ribbon_verts[3*index + 2] = ((float) r)/8.0f - 1.0;
       }
    }
-
-   menu_display_ctx_coord_draw_t coord_draw;
 
    menu_display_ctl(MENU_DISPLAY_CTL_TEX_COORDS_GET, &coord_draw);
 
