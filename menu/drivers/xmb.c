@@ -1512,16 +1512,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 }
 
-static void xmb_blend_begin(void)
-{
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
-}
-
-static void xmb_blend_end(void)
-{
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
-}
-
 static void xmb_draw_items(xmb_handle_t *xmb,
       file_list_t *list, file_list_t *stack,
       size_t current, size_t cat_selection_ptr, float *color,
@@ -1745,7 +1735,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                TEXT_ALIGN_LEFT,
                width, height);
 
-      xmb_blend_begin();
+      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
       /* set alpha components of color */
       color[3] = color[7] = color[11] = color[15] =
@@ -1773,7 +1763,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                0,
                1, &color[0]);
 
-      xmb_blend_end();
+      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
    }
 }
 
@@ -1790,7 +1780,7 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   xmb_blend_begin();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
    draw.x           = x - (xmb->cursor.size / 2);
    draw.y           = height - y - (xmb->cursor.size / 2);
@@ -1802,8 +1792,7 @@ static void xmb_draw_cursor(xmb_handle_t *xmb,
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-
-   xmb_blend_end();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
 static void xmb_render(void *data)
@@ -1883,7 +1872,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
       if (!node)
          continue;
 
-      xmb_blend_begin();
+      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
       /* set alpha components of color */
       color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha)
@@ -1900,7 +1889,7 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
                node->zoom,
                &color[0]);
 
-      xmb_blend_end();
+      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
    }
 }
 
@@ -1926,7 +1915,7 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, draw);
 
-   xmb_blend_begin();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
    coords.vertex = xmb->ribbon_coords.coords.vertex;
    coords.index = ribbon_idx;
@@ -1963,7 +1952,7 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
    glDrawElements(GL_TRIANGLE_STRIP,
          XMB_RIBBON_INDEXES, GL_UNSIGNED_INT, draw->coords->index);
 
-   xmb_blend_end();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 #else
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
 #endif
@@ -2103,8 +2092,7 @@ static void xmb_frame(void *data)
    rotate_draw.scale_enable = true;
 
    menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
-
-   xmb_blend_begin();
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
    if (strcmp(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
       xmb_draw_thumbnail(xmb, &coord_color2[0], width, height);
