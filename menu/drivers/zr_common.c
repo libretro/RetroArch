@@ -25,6 +25,11 @@
 #include "../../gfx/drivers/gl_shaders/pipeline_zahnrad.glsl.vert.h"
 #include "../../gfx/drivers/gl_shaders/pipeline_zahnrad.glsl.frag.h"
 
+struct zr_font font;
+struct zr_user_font usrfnt;
+struct zr_allocator zr_alloc;
+struct zr_device device;
+
 struct zr_image zr_common_image_load(const char *filename)
 {
     int x,y,n;
@@ -52,7 +57,7 @@ char* zr_common_file_load(const char* path, size_t* size)
    void *buf;
    ssize_t *length = (ssize_t*)size;
    filestream_read_file(path, &buf, length);
-   return buf;
+   return (char*)buf;
 }
 
 void zr_common_device_init(struct zr_device *dev)

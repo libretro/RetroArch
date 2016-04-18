@@ -48,10 +48,10 @@
  #endif
  };
 
-struct zr_font font;
-struct zr_user_font usrfnt;
-struct zr_allocator zr_alloc;
-struct zr_device device;
+extern struct zr_font font;
+extern struct zr_user_font usrfnt;
+extern struct zr_allocator zr_alloc;
+extern struct zr_device device;
 
 struct zr_image zr_common_image_load(const char *filename);
 

@@ -37,6 +37,8 @@
 #include "../gfx/video_thread_wrapper.h"
 #endif
 
+uintptr_t menu_display_white_texture;
+
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
 #ifdef HAVE_D3D
    &menu_display_ctx_d3d,
@@ -598,7 +600,7 @@ void menu_display_handle_wallpaper_upload(void *task_data,
    free(img);
 }
 
-void menu_display_allocate_white_texture()
+void menu_display_allocate_white_texture(void)
 {
    struct texture_image ti;
    static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
