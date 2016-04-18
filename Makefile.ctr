@@ -21,7 +21,7 @@ APP_RSF              = ctr/tools/template.rsf
 APP_SYSTEM_MODE      = 64MB
 APP_SYSTEM_MODE_EXT  = 124MB
 APP_BIG_TEXT_SECTION = 0
-APP_USE_SVCHAX       = 1
+APP_USE_SVCHAX       = 0
 
 include ctr/Makefile.cores
 

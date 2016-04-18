@@ -109,6 +109,9 @@ static void frontend_ctr_deinit(void *data)
       svcCloseHandle(lcd_handle);
    }
 
+   u32 parallax_layer_reg_state = (*(float*)0x1FF81080 == 0.0)? 0x0 : 0x00010001;
+   GSPGPU_WriteHWRegs(0x202000, &parallax_layer_reg_state, 4);
+
    cfguExit();
    ndspExit();
    csndExit();   

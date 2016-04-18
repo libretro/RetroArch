@@ -45,27 +45,6 @@ static u32 svc_7b(backdoor_fn entry_fn, ...) // can pass up to two arguments to 
    return 0;
 }
 
-static __attribute__((naked))
-u32 k_get_PA(u32* addr)
-{
-   __asm__ volatile(
-      "mov r1, r0 \n\t"
-      "mcr p15, 0, r0, c7, c8, 1 \n\t"
-      "mrc p15, 0, r0, c7, c4, 0 \n\t"
-      "mov r0, r0, LSR#12 \n\t"
-      "mov r0, r0, LSL#12 \n\t"
-      "mov r1, r1, LSL#20 \n\t"
-      "orr r0, r1, LSR#20 \n\t"
-      "bx lr \n\t"
-   );
-   return 0;
-}
-
-u32 get_PA(u32 addr)
-{
-   return svc_7b((backdoor_fn)k_get_PA, addr);
-}
-
 static void k_enable_all_svcs(u32 isNew3DS)
 {
    u32* thread_ACL = *(*(u32***)CURRENT_KTHREAD + 0x22) - 0x6;
@@ -524,30 +503,5 @@ Result svchax_init(bool patch_srv)
       __ctr_svchax_srv = 1;
    }
 
-   return 0;
-}
-
-Result ctr_set_parallax_layer(bool state)
-{
-   static u32 parallax_layer_kaddr = 0;
-
-   if(!__ctr_svchax)
-      return -1;
-
-   if(!parallax_layer_kaddr)
-   {
-      for (parallax_layer_kaddr = 0xfffc0000; parallax_layer_kaddr < 0xfffe0000; parallax_layer_kaddr += 0x2000)
-      {
-         if (get_PA(parallax_layer_kaddr) == 0x10202000)
-            break;
-         else
-            svcSleepThread(10000);
-      }
-   }
-
-   write_kaddr(parallax_layer_kaddr, state? 0x00010001: 0x0);
-#if 0
-   printf("set layer : %s\n", state?"ON" : "OFF");
-#endif
    return 0;
 }

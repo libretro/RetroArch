@@ -119,43 +119,39 @@ static INLINE void ctr_check_3D_slider(ctr_video_t* ctr)
 
    if (slider_val == 0.0)
       ctr->video_mode = CTR_VIDEO_MODE_NORMAL;
-   else if (slider_val < 0.1)
+   else if (slider_val < 0.2)
       ctr->video_mode = CTR_VIDEO_MODE_800x240;
-   else if (slider_val < 0.6)
+   else if (slider_val < 0.5)
       ctr->video_mode = CTR_VIDEO_MODE_400x240;
    else
       ctr->video_mode = CTR_VIDEO_MODE_3D;
 
-   if (old_mode != ctr->video_mode)
+   if (ctr->video_mode)
    {
       switch (ctr->video_mode)
       {
       case CTR_VIDEO_MODE_800x240:
       case CTR_VIDEO_MODE_400x240:
-         if (ctr_set_parallax_layer(false))
-            ctr->video_mode = CTR_VIDEO_MODE_3D;
+         ctr_set_parallax_layer(false);
          break;
       case CTR_VIDEO_MODE_3D:
+      {
+         s16 offset = (slider_val - 0.6) * 10.0;
+         ctr->frame_coords[1] = ctr->frame_coords[0];
+         ctr->frame_coords[2] = ctr->frame_coords[0];
+
+         ctr->frame_coords[1].x0 -= offset;
+         ctr->frame_coords[1].x1 -= offset;
+         ctr->frame_coords[2].x0 += offset;
+         ctr->frame_coords[2].x1 += offset;
+
+         GSPGPU_FlushDataCache(ctr->frame_coords, 3 * sizeof(ctr_vertex_t));
          ctr_set_parallax_layer(true);
          break;
+      }
       default:
          break;
       }
-   }
-
-   if (ctr->video_mode == CTR_VIDEO_MODE_3D)
-   {
-      s16 offset = (slider_val - 0.6) * 10.0;
-      ctr->menu.frame_coords[1] = ctr->menu.frame_coords[0];
-      ctr->menu.frame_coords[2] = ctr->menu.frame_coords[0];
-
-      ctr->menu.frame_coords[1].x0 += offset;
-      ctr->menu.frame_coords[1].x1 += offset;
-      ctr->menu.frame_coords[2].x0 -= offset;
-      ctr->menu.frame_coords[2].x1 -= offset;
-
-      GSPGPU_FlushDataCache(ctr->menu.frame_coords, 3 * sizeof(ctr_vertex_t));
-
    }
 }
 
@@ -288,6 +284,55 @@ static void ctr_lcd_aptHook(APT_HookType hook, void* param)
    if(!ctr)
       return;
 
+   if(hook == APTHOOK_ONRESTORE)
+   {
+      GPUCMD_SetBufferOffset(0);
+      shaderProgramUse(&ctr->shader);
+
+      GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
+                      VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER),
+                      0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT, CTR_TOP_FRAMEBUFFER_WIDTH);
+
+      GPU_DepthMap(-1.0f, 0.0f);
+      GPU_SetFaceCulling(GPU_CULL_NONE);
+      GPU_SetStencilTest(false, GPU_ALWAYS, 0x00, 0xFF, 0x00);
+      GPU_SetStencilOp(GPU_STENCIL_KEEP, GPU_STENCIL_KEEP, GPU_STENCIL_KEEP);
+      GPU_SetBlendingColor(0, 0, 0, 0);
+      GPU_SetDepthTestAndWriteMask(false, GPU_ALWAYS, GPU_WRITE_ALL);
+      GPUCMD_AddMaskedWrite(GPUREG_EARLYDEPTH_TEST1, 0x1, 0);
+      GPUCMD_AddWrite(GPUREG_EARLYDEPTH_TEST2, 0);
+      GPU_SetAlphaBlending(GPU_BLEND_ADD, GPU_BLEND_ADD,
+                           GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA,
+                           GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
+      GPU_SetAlphaTest(false, GPU_ALWAYS, 0x00);
+      GPU_SetTextureEnable(GPU_TEXUNIT0);
+      GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, 0, GPU_REPLACE, GPU_REPLACE, 0);
+      GPU_SetTexEnv(1, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      GPU_SetTexEnv(2, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      GPU_SetTexEnv(3, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      GPU_SetTexEnv(4, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      GPU_SetTexEnv(5, GPU_PREVIOUS, GPU_PREVIOUS, 0, 0, 0, 0, 0);
+      ctrGuSetAttributeBuffers(2,
+                               VIRT_TO_PHYS(ctr->menu.frame_coords),
+                               CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 0 |
+                               CTRGU_ATTRIBFMT(GPU_SHORT, 4) << 4,
+                               sizeof(ctr_vertex_t));
+      GPUCMD_Finalize();
+      ctrGuFlushAndRun(true);
+      gspWaitForEvent(GSPGPU_EVENT_P3D, false);
+   }
+
+   if((hook == APTHOOK_ONSUSPEND) && (ctr->video_mode == CTR_VIDEO_MODE_400x240))
+   {
+      memcpy(gfxTopRightFramebuffers[ctr->current_buffer_top],
+            gfxTopLeftFramebuffers[ctr->current_buffer_top],
+            400 * 240 * 3);
+      GSPGPU_FlushDataCache(gfxTopRightFramebuffers[ctr->current_buffer_top], 400 * 240 * 3);
+   }
+
+   if ((hook == APTHOOK_ONSUSPEND))
+      ctr_set_parallax_layer(*(float*)0x1FF81080 != 0.0);
+
    if((hook == APTHOOK_ONSUSPEND) || (hook == APTHOOK_ONRESTORE))
    {
       Handle lcd_handle;
@@ -336,7 +381,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->texture_swizzled =
          linearMemAlign(ctr->texture_width * ctr->texture_height * (ctr->rgb32? 4:2), 128);
 
-   ctr->frame_coords = linearAlloc(sizeof(ctr_vertex_t));
+   ctr->frame_coords = linearAlloc(3 * sizeof(ctr_vertex_t));
    ctr->frame_coords->x0 = 0;
    ctr->frame_coords->y0 = 0;
    ctr->frame_coords->x1 = CTR_TOP_FRAMEBUFFER_WIDTH;
@@ -354,7 +399,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->menu.texture_swizzled =
          linearMemAlign(ctr->menu.texture_width * ctr->menu.texture_height * sizeof(uint16_t), 128);
 
-   ctr->menu.frame_coords = linearAlloc(3 * sizeof(ctr_vertex_t));
+   ctr->menu.frame_coords = linearAlloc(sizeof(ctr_vertex_t));
 
    ctr->menu.frame_coords->x0 = 40;
    ctr->menu.frame_coords->y0 = 0;
@@ -501,8 +546,6 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->lcd_buttom_on = !ctr->lcd_buttom_on;
    }
 
-   ctr_check_3D_slider(ctr);
-
    svcWaitSynchronization(gspEvents[GSPGPU_EVENT_P3D], 20000000);
    svcClearEvent(gspEvents[GSPGPU_EVENT_P3D]);
    svcWaitSynchronization(gspEvents[GSPGPU_EVENT_PPF], 20000000);
@@ -633,8 +676,6 @@ static bool ctr_frame(void* data, const void* frame,
       ctr->frame_coords->u1 = width;
       ctr->frame_coords->v1 = height;
       GSPGPU_FlushDataCache(ctr->frame_coords, sizeof(ctr_vertex_t));
-
-      ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
       ctrGuSetVertexShaderFloatUniform(0, (float*)&ctr->scale_vector, 1);
    }
 
@@ -643,6 +684,8 @@ static bool ctr_frame(void* data, const void* frame,
                               : GPU_TEXTURE_MAG_FILTER(GPU_NEAREST) | GPU_TEXTURE_MIN_FILTER(GPU_NEAREST)) |
                   GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
                   ctr->rgb32 ? GPU_RGBA8: GPU_RGB565);
+
+   ctr_check_3D_slider(ctr);
 
    /* ARGB --> RGBA */
    if (ctr->rgb32)
@@ -675,16 +718,28 @@ static bool ctr_frame(void* data, const void* frame,
                    0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
                    ctr->video_mode == CTR_VIDEO_MODE_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
-   GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
-
-   if(ctr->video_mode == CTR_VIDEO_MODE_3D)
+   if (ctr->video_mode == CTR_VIDEO_MODE_3D)
    {
+      if (ctr->menu_texture_enable)
+      {
+         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(&ctr->frame_coords[1]));
+         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(&ctr->frame_coords[2]));
+      }
+      else
+      {
+         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
+         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+      }
       GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
                       VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER_RIGHT),
                       0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
                       CTR_TOP_FRAMEBUFFER_WIDTH);
-      GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
    }
+   else
+      ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->frame_coords));
+
+   GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
 
    /* restore */
    if (ctr->rgb32)
@@ -714,22 +769,15 @@ static bool ctr_frame(void* data, const void* frame,
                       0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
                       ctr->video_mode == CTR_VIDEO_MODE_800x240 ? CTR_TOP_FRAMEBUFFER_WIDTH * 2 : CTR_TOP_FRAMEBUFFER_WIDTH);
 
+      ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->menu.frame_coords));
+      GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
+
       if (ctr->video_mode == CTR_VIDEO_MODE_3D)
       {
-         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(&ctr->menu.frame_coords[1]));
-         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
-
          GPU_SetViewport(VIRT_TO_PHYS(CTR_GPU_DEPTHBUFFER),
                          VIRT_TO_PHYS(CTR_TOP_FRAMEBUFFER_RIGHT),
                          0, 0, CTR_TOP_FRAMEBUFFER_HEIGHT,
                          CTR_TOP_FRAMEBUFFER_WIDTH);
-         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(&ctr->menu.frame_coords[2]));
-         GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
-      }
-      else
-      {
-
-         ctrGuSetAttributeBuffersAddress(VIRT_TO_PHYS(ctr->menu.frame_coords));
          GPU_DrawArray(GPU_GEOMETRY_PRIM, 0, 1);
       }
    }
