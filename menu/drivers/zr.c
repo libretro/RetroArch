@@ -54,22 +54,13 @@ static void zrmenu_main(zrmenu_handle_t *zr)
 
    if (zr->window[ZRMENU_WND_MAIN].open)
       zrmenu_wnd_main(zr);
-   if (zr->window[ZRMENU_WND_CONTROL].open)
-      zrmenu_wnd_control(zr);
    if (zr->window[ZRMENU_WND_SHADER_PARAMETERS].open)
       zrmenu_wnd_shader_parameters(zr);
    if (zr->window[ZRMENU_WND_TEST].open)
       zrmenu_wnd_test(zr);
-   if (zr->window[ZRMENU_WND_WIZARD].open)
-      zrmenu_wnd_wizard(zr);
 
-   zr->window[ZRMENU_WND_CONTROL].open = !nk_window_is_closed(ctx, "Control");
    zr->window[ZRMENU_WND_SHADER_PARAMETERS].open = !nk_window_is_closed(ctx, "Shader Parameters");
    zr->window[ZRMENU_WND_TEST].open = !nk_window_is_closed(ctx, "Test");
-   zr->window[ZRMENU_WND_WIZARD].open = !nk_window_is_closed(ctx, "Setup Wizard");
-
-   if(nk_window_is_closed(ctx, "Setup Wizard"))
-      zr->window[ZRMENU_WND_MAIN].open = true;
 
    nk_buffer_info(&zr->status, &zr->ctx.memory);
 }
@@ -298,7 +289,6 @@ static void zrmenu_init_device(zrmenu_handle_t *zr)
    fill_pathname_join(buf, zr->assets_directory, "page_off.png", sizeof(buf));
    zr->icons.page_off = nk_common_image_load(buf);
 
-   zrmenu_set_style(&zr->ctx, THEME_DARK);
    zr->size_changed = true;
 }
 
@@ -328,8 +318,6 @@ static void *zrmenu_init(void **userdata)
    fill_pathname_join(zr->assets_directory, settings->assets_directory,
          "zahnrad", sizeof(zr->assets_directory));
    zrmenu_init_device(zr);
-
-   zr->window[ZRMENU_WND_WIZARD].open = true;
 
    return menu;
 error:

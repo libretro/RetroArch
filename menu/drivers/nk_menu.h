@@ -28,10 +28,8 @@ enum
 enum
 {
    ZRMENU_WND_MAIN = 0,
-   ZRMENU_WND_CONTROL,
    ZRMENU_WND_SHADER_PARAMETERS,
    ZRMENU_WND_TEST,
-   ZRMENU_WND_WIZARD
 };
 
 enum zrmenu_theme
@@ -88,13 +86,7 @@ typedef struct zrmenu_handle
    gfx_font_raster_block_t list_block;
 } zrmenu_handle_t;
 
-void zrmenu_set_style(struct nk_context *ctx, enum zrmenu_theme theme);
-
-void zrmenu_wnd_wizard(zrmenu_handle_t *zr);
 void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr);
-void zrmenu_wnd_control(zrmenu_handle_t *zr);
 void zrmenu_wnd_test(zrmenu_handle_t *zr);
 void zrmenu_wnd_main(zrmenu_handle_t *zr);
 
-static void ui_slider(struct nk_context *ctx, const char *title, int *value, int max, int active);
-static int ui_selector(struct nk_context *ctx, const char *title, int *selected, const char *items[], int max, int active);

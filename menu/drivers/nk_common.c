@@ -23,6 +23,7 @@
 #define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
 #define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_DEFAULT_FONT
+#define NK_IMPLEMENTATION
 
 #include "nk_common.h"
 
@@ -214,7 +215,7 @@ struct nk_user_font nk_common_font(
    nk_font_init(font,
          (float)font_height, '?', glyphes,
          &baked_font, dev->null.texture);
-   user_font = nk_font_ref(font);
+   user_font = font->handle;
    return user_font;
 }
 
@@ -301,7 +302,7 @@ void nk_common_device_draw(struct nk_device *dev,
    config.shape_AA             = AA;
    config.line_AA              = AA;
    config.circle_segment_count = 22;
-   config.line_thickness       = 1.0f;
+   //config.line_thickness       = 1.0f;
    config.null                 = dev->null;
 
    /* setup buffers to load vertices and elements */
