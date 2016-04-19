@@ -1765,34 +1765,6 @@ static void xmb_draw_items(xmb_handle_t *xmb,
    }
 }
 
-static void xmb_draw_cursor(xmb_handle_t *xmb,
-      float *color,
-      float x, float y, unsigned width, unsigned height)
-{
-   menu_display_ctx_draw_t draw;
-   struct gfx_coords coords;
-
-   coords.vertices      = 4;
-   coords.vertex        = NULL;
-   coords.tex_coord     = NULL;
-   coords.lut_tex_coord = NULL;
-   coords.color         = (const float*)color;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
-
-   draw.x           = x - (xmb->cursor.size / 2);
-   draw.y           = height - y - (xmb->cursor.size / 2);
-   draw.width       = xmb->cursor.size;
-   draw.height      = xmb->cursor.size;
-   draw.coords      = &coords;
-   draw.matrix_data = NULL;
-   draw.texture     = xmb->textures.list[XMB_TEXTURE_POINTER];
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
-}
-
 static void xmb_render(void *data)
 {
    float delta_time;
@@ -2192,7 +2164,14 @@ static void xmb_frame(void *data)
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      xmb_draw_cursor(xmb, &coord_color2[0], mouse_x, mouse_y, width, height);
+      menu_display_draw_cursor(
+            &coord_color2[0],
+            xmb->cursor.size,
+            xmb->textures.list[XMB_TEXTURE_POINTER],
+            mouse_x,
+            mouse_y,
+            width,
+            height);
    }
 
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);

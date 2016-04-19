@@ -646,34 +646,6 @@ static void mui_render_menu_list(mui_handle_t *mui,
    }
 }
 
-static void mui_draw_cursor(mui_handle_t *mui,
-      float *color,
-      float x, float y, unsigned width, unsigned height)
-{
-   menu_display_ctx_draw_t draw;
-   struct gfx_coords coords;
-
-   coords.vertices      = 4;
-   coords.vertex        = NULL;
-   coords.tex_coord     = NULL;
-   coords.lut_tex_coord = NULL;
-   coords.color         = (const float*)color;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
-
-   draw.x           = x - (mui->cursor.size / 2);
-   draw.y           = (int)height - y - (mui->cursor.size / 2);
-   draw.width       = mui->cursor.size;
-   draw.height      = mui->cursor.size;
-   draw.coords      = &coords;
-   draw.matrix_data = NULL;
-   draw.texture     = mui->textures.list[MUI_TEXTURE_POINTER];
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
-}
 
 static size_t mui_list_get_size(void *data, enum menu_list_type type)
 {
@@ -1019,7 +991,14 @@ static void mui_frame(void *data)
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      mui_draw_cursor(mui, &white_bg[0], mouse_x, mouse_y, width, height);
+      menu_display_draw_cursor(
+            &white_bg[0],
+            mui->cursor.size,
+            mui->textures.list[MUI_TEXTURE_POINTER],
+            mouse_x,
+            mouse_y,
+            width,
+            height);
    }
 
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);

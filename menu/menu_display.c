@@ -606,6 +606,34 @@ void menu_display_allocate_white_texture(void)
          TEXTURE_FILTER_NEAREST, &menu_display_white_texture);
 }
 
+void menu_display_draw_cursor(
+      float *color, float cursor_size, uintptr_t texture,
+      float x, float y, unsigned width, unsigned height)
+{
+   menu_display_ctx_draw_t draw;
+   struct gfx_coords coords;
+
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = (const float*)color;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+
+   draw.x               = x - (cursor_size / 2);
+   draw.y               = (int)height - y - (cursor_size / 2);
+   draw.width           = cursor_size;
+   draw.height          = cursor_size;
+   draw.coords          = &coords;
+   draw.matrix_data     = NULL;
+   draw.texture         = texture;
+   draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+}
+
 static INLINE float menu_display_scalef(float val,
       float oldmin, float oldmax, float newmin, float newmax)
 {

@@ -183,8 +183,13 @@ void menu_display_push_quad(
 
 void menu_display_snow(int width, int height);
 
+void menu_display_allocate_white_texture(void);
+
+void menu_display_draw_cursor(
+      float *color, float cursor_size, uintptr_t texture,
+      float x, float y, unsigned width, unsigned height);
+
 extern uintptr_t menu_display_white_texture;
-void menu_display_allocate_white_texture();
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;
 extern menu_display_ctx_driver_t menu_display_ctx_vulkan;
