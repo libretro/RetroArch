@@ -469,7 +469,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
          return "Speichere neue Konfiguration";
       case MENU_LABEL_VALUE_RESTART_CONTENT:
-         return "Starte Content neu";
+         return "Starte neu";
       case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
          return "Core-Updater";
       case MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
@@ -497,7 +497,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Lade Content"; /* FIXME */
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
-         return "Schlieﬂe Content"; /* FIXME */
+         return "Schlieﬂe";
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Datenbank-Einstellungen";
       case MENU_LABEL_VALUE_SAVE_STATE:
@@ -505,7 +505,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_STATE:
          return "Lade Savestate";
       case MENU_LABEL_VALUE_RESUME_CONTENT:
-         return "Content fortsetzen";
+         return "Fortsetzen";
       case MENU_LABEL_VALUE_INPUT_DRIVER:
          return "Eingabe-Treiber";
       case MENU_LABEL_VALUE_AUDIO_DRIVER:

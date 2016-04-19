@@ -513,7 +513,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
          return "Nieuwe configuratie opslaan";
       case MENU_LABEL_VALUE_RESTART_CONTENT:
-         return "Herstart Content";
+         return "Herstart";
       case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
          return "Core Updater";
       case MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
@@ -541,7 +541,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Selecteer bestand";
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
-         return "Content afsluiten";
+         return "Afsluiten";
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Database";
       case MENU_LABEL_VALUE_SAVE_STATE:
@@ -549,7 +549,7 @@ const char *menu_hash_to_str_nl(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_STATE:
          return "Laad State";
       case MENU_LABEL_VALUE_RESUME_CONTENT:
-         return "Hervatten van Content";
+         return "Hervatten";
       case MENU_LABEL_VALUE_INPUT_DRIVER:
          return "Input Driver";
       case MENU_LABEL_VALUE_AUDIO_DRIVER:

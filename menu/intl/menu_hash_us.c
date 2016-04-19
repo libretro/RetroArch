@@ -1315,7 +1315,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
          return "Save New Config";
       case MENU_LABEL_VALUE_RESTART_CONTENT:
-         return "Restart Content";
+         return "Restart";
       case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
          return "Core Updater";
       case MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
@@ -1349,7 +1349,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Select File";
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
-         return "Close Content";
+         return "Close";
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Database Settings";
       case MENU_LABEL_VALUE_SAVE_STATE:
@@ -1357,7 +1357,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_STATE:
          return "Load State";
       case MENU_LABEL_VALUE_RESUME_CONTENT:
-         return "Resume Content";
+         return "Resume";
       case MENU_LABEL_VALUE_INPUT_DRIVER:
          return "Input Driver";
       case MENU_LABEL_VALUE_AUDIO_DRIVER:

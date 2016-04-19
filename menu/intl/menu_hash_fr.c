@@ -508,7 +508,7 @@ const char *menu_hash_to_str_fr(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Via les fichiers";
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
-         return "Quitter le coeur";
+         return "Quitter";
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Gestion avancée";
       case MENU_LABEL_VALUE_SAVE_STATE:

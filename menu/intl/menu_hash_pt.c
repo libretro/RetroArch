@@ -468,7 +468,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
          return "Salvar Nova Configuração";
       case MENU_LABEL_VALUE_RESTART_CONTENT:
-         return "Reiniciar Conteúdo";
+         return "Reiniciar";
       case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
          return "Atualização de Cores";
       case MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
@@ -496,7 +496,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Selecionar Arquivo";
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
-         return "Fechar Conteúdo";
+         return "Fechar";
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Databases";
       case MENU_LABEL_VALUE_SAVE_STATE:
@@ -504,7 +504,7 @@ const char *menu_hash_to_str_pt(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_STATE:
          return "Carregar Savestate";
       case MENU_LABEL_VALUE_RESUME_CONTENT:
-         return "Retomar Conteúdo";
+         return "Retomar";
       case MENU_LABEL_VALUE_INPUT_DRIVER:
          return "Driver de Controlador";
       case MENU_LABEL_VALUE_AUDIO_DRIVER:

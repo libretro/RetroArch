@@ -479,7 +479,7 @@ const char *menu_hash_to_str_pl(uint32_t hash)
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
          return "Zapisz now± konfiguracjê";
       case MENU_LABEL_VALUE_RESTART_CONTENT:
-         return "Restartuj tre¶æ";
+         return "Restartuj";
       case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
          return "Aktualizator rdzeni";
       case MENU_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL:
@@ -507,7 +507,7 @@ const char *menu_hash_to_str_pl(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_CONTENT:
          return "Wybierz plik";
       case MENU_LABEL_VALUE_CLOSE_CONTENT:
-         return "Zamknij tre¶æ";
+         return "Zamknij";
       case MENU_LABEL_VALUE_MANAGEMENT:
          return "Ustawienia bazy danych";
       case MENU_LABEL_VALUE_SAVE_STATE:
@@ -515,7 +515,7 @@ const char *menu_hash_to_str_pl(uint32_t hash)
       case MENU_LABEL_VALUE_LOAD_STATE:
          return "Wczytaj stan";
       case MENU_LABEL_VALUE_RESUME_CONTENT:
-         return "Wznów tre¶æ";
+         return "Wznów";
       case MENU_LABEL_VALUE_INPUT_DRIVER:
          return "Kontroler wej¶cia";
       case MENU_LABEL_VALUE_AUDIO_DRIVER:
