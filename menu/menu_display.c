@@ -501,9 +501,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          break;
       case MENU_DISPLAY_CTL_DRAW_GRADIENT:
          {
-            struct gfx_coords coords;
-            const float *new_vertex       = NULL;
-            const float *new_tex_coord    = NULL;
             menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
             float bg[16] = {
                1, 0, 0.1,     1,
@@ -514,31 +511,10 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
             bg[3] = bg[7] = bg[11] = bg[15] = draw->handle_alpha;
 
-            if (!menu_disp || !draw)
-               return false;
+            draw->color   = bg;
+            draw->texture = 0;
 
-            new_vertex           = draw->vertex;
-            new_tex_coord        = draw->tex_coord;
-
-            if (!new_vertex)
-               new_vertex        = menu_disp->get_default_vertices();
-            if (!new_tex_coord)
-               new_tex_coord     = menu_disp->get_default_tex_coords();
-
-            coords.vertices      = draw->vertex_count;
-            coords.vertex        = new_vertex;
-            coords.tex_coord     = new_tex_coord;
-            coords.lut_tex_coord = new_tex_coord;
-            coords.color         = bg;
-
-            draw->x              = 0;
-            draw->y              = 0;
-            draw->coords         = &coords;
-            draw->texture        = menu_display_white_texture;
-
-            draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp();
-
-            menu_disp->draw(draw);
+            menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
          }
          break;
       case MENU_DISPLAY_CTL_ROTATE_Z:
