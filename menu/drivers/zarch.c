@@ -128,7 +128,6 @@ typedef struct zarch_handle
    struct
    {
       menu_texture_item bg;
-      menu_texture_item white;
    } textures;
 
    /* LAY_ROOT's "Recent" */
@@ -950,7 +949,7 @@ static void zarch_frame(void *data)
    draw.height      = zui->height;
    draw.coords      = (struct gfx_coords*)ca;
    draw.matrix_data = &zui->mvp;
-   draw.texture     = zui->textures.white;
+   draw.texture     = menu_display_white_texture;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLES;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
@@ -1064,7 +1063,7 @@ static void zarch_context_bg_destroy(void *data)
    if (!zui)
       return;
    video_driver_texture_unload(&zui->textures.bg);
-   video_driver_texture_unload(&zui->textures.white);
+   video_driver_texture_unload(&menu_display_white_texture);
 }
 
 static void zarch_context_destroy(void *data)
@@ -1098,20 +1097,6 @@ static bool zarch_load_image(void *userdata,
    return true;
 }
 
-static void zarch_allocate_white_texture(zui_t *zui)
-{
-   struct texture_image ti;
-   static const uint32_t data = UINT32_MAX;
-
-   ti.width  = 1;
-   ti.height = 1;
-   ti.pixels = (uint32_t*)&data;
-
-   video_driver_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST,
-         &zui->textures.white);
-}
-
 static void zarch_context_reset(void *data)
 {
    menu_display_ctx_font_t font_info;
@@ -1135,7 +1120,7 @@ static void zarch_context_reset(void *data)
    rarch_task_push_image_load(settings->menu.wallpaper,
          "cb_menu_wallpaper", menu_display_handle_wallpaper_upload, NULL);
 
-   zarch_allocate_white_texture(zui);
+   menu_display_allocate_white_texture();
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE, &zui->font_size);
    zarch_zui_font();
