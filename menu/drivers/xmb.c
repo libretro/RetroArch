@@ -1857,9 +1857,9 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
    }
 }
 
+#ifdef XMB_RIBBON_ENABLE
 static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 {
-#ifdef XMB_RIBBON_ENABLE
    struct uniform_info uniform_param = {0};
    static float t = 0;
    video_shader_ctx_info_t shader_info;
@@ -1873,8 +1873,6 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
       draw->handle_alpha = 0.90;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, draw);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
    draw->x           = 0;
    draw->y           = 0;
@@ -1900,21 +1898,21 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
    video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, draw);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
-#else
-   draw->x              = 0;
-   draw->y              = 0;
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
-#endif
 }
+#endif
 
 static void xmb_draw_bg(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 {
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
+#ifdef XMB_RIBBON_ENABLE
    xmb_draw_ribbon(xmb, draw);
+#else
+   draw->x              = 0;
+   draw->y              = 0;
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
+#endif
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
