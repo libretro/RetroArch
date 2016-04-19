@@ -604,8 +604,9 @@ static INLINE float menu_display_randf(float min, float max)
 }
 
 
-void menu_display_push_quad(unsigned width, unsigned height,
-      const float *colors, gfx_coord_array_t *ca, int x1, int y1,
+void menu_display_push_quad(gfx_coord_array_t *ca,
+      unsigned width, unsigned height,
+      const float *colors, int x1, int y1,
       int x2, int y2)
 {
    menu_display_ctx_coord_draw_t coord_draw;
@@ -721,8 +722,8 @@ void menu_display_snow(gfx_coord_array_t *ca, int width, int height)
             colors[j] = alpha;
       }
 
-      menu_display_push_quad(width, height,
-            colors, ca, p->x-2, p->y-2, p->x+2, p->y+2);
+      menu_display_push_quad(ca, width, height,
+            colors, p->x-2, p->y-2, p->x+2, p->y+2);
 
       j++;
    }

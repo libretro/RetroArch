@@ -322,7 +322,7 @@ static bool zarch_zui_button_full(zui_t *zui,
    if (zui->item.active == id || zui->item.hot == id)
       bg = zui_bg_hilite;
 
-   menu_display_push_quad(zui->width, zui->height,  bg, &zui->ca,  x1, y1, x2, y2);
+   menu_display_push_quad(&zui->ca, zui->width, zui->height,  bg, x1, y1, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, x1+12, y1 + 41, label);
 
    return active;
@@ -378,7 +378,7 @@ static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int 
 
    menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
-   menu_display_push_quad(zui->width, zui->height, bg, &zui->ca, x1, y1, x2, y2);
+   menu_display_push_quad(&zui->ca, zui->width, zui->height, bg, x1, y1, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 12, y1 + 35, title_buf);
 
    if (entry)
@@ -437,7 +437,7 @@ static bool zarch_zui_tab(zui_t *zui, struct zui_tabbed *tab,
    else if (selected)
       bg             = zui_bg_pad_hilite;
 
-   menu_display_push_quad(zui->width, zui->height,  bg, &zui->ca, x1+0, y1+0, x2, y2);
+   menu_display_push_quad(&zui->ca, zui->width, zui->height,  bg, x1+0, y1+0, x2, y2);
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, x1+12, y1 + 41, label);
 
    if (tab->vertical)
@@ -762,8 +762,8 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    zarch_zui_draw_text(zui, ZUI_FG_NORMAL, 1600 +12, 300 + 111, item); 
 #endif
 
-   menu_display_push_quad(zui->width, zui->height,
-         zui_bg_hilite, &zui->ca, 0, 60, zui->width - 290 - 40, 60+4);
+   menu_display_push_quad(&zui->ca, zui->width, zui->height,
+         zui_bg_hilite, 0, 60, zui->width - 290 - 40, 60+4);
 
    return 0;
 }
@@ -907,8 +907,8 @@ static void zarch_frame(void *data)
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BIND_BLOCK, &zui->tmp_block);
 
-   menu_display_push_quad(zui->width, zui->height, zui_bg_screen,
-         &zui->ca, 0, 0, zui->width, zui->height);
+   menu_display_push_quad(&zui->ca, zui->width, zui->height, zui_bg_screen,
+         0, 0, zui->width, zui->height);
    menu_display_snow(&zui->ca, zui->width, zui->height);
 
    switch (zarch_layout)
