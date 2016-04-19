@@ -85,7 +85,6 @@ static void menu_display_vk_draw(void *data)
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
    const float *color            = NULL;
-   math_matrix_4x4 *mat          = NULL;
    struct vk_vertex *pv          = NULL;
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
@@ -98,10 +97,6 @@ static void menu_display_vk_draw(void *data)
    tex_coord          = draw->coords->tex_coord;
    color              = draw->coords->color;
 
-   mat                = (math_matrix_4x4*)draw->matrix_data;
-
-   if (!mat)
-      mat             = (math_matrix_4x4*)menu_display_vk_get_default_mvp();
    if (!vertex)
       vertex          = menu_display_vk_get_default_vertices();
    if (!tex_coord)
@@ -140,7 +135,8 @@ static void menu_display_vk_draw(void *data)
          texture,
          texture->default_smooth 
             ? vk->samplers.linear : vk->samplers.nearest,
-         mat,
+         draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data 
+            : (math_matrix_4x4*)menu_display_vk_get_default_mvp(),
          &range,
          draw->coords->vertices,
       };

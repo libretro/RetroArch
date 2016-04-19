@@ -118,17 +118,12 @@ static void menu_display_gl_draw(void *data)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
-   math_matrix_4x4 *mat          = NULL;
    gl_t             *gl          = (gl_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    
    if (!gl || !draw)
       return;
 
-   mat = (math_matrix_4x4*)draw->matrix_data;
-
-   if (!mat)
-      mat = (math_matrix_4x4*)menu_display_gl_get_default_mvp();
    if (!draw->coords->vertex)
       draw->coords->vertex = menu_display_gl_get_default_vertices();
    if (!draw->coords->tex_coord)
@@ -145,7 +140,8 @@ static void menu_display_gl_draw(void *data)
    video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
 
    mvp.data   = gl;
-   mvp.matrix = mat;
+   mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data 
+      : (math_matrix_4x4*)menu_display_gl_get_default_mvp();
 
    video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
 

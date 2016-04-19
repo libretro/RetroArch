@@ -142,17 +142,15 @@ static void menu_display_d3d_bind_texture(void *data)
 
 static void menu_display_d3d_draw(void *data)
 {
+#if 0
    math_matrix_4x4          *mat = NULL;
-   d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
+#endif
+   d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
 
    if (!d3d || !draw)
       return;
    
-   mat = (math_matrix_4x4*)draw->matrix_data;
-   if (!mat)
-      mat                         = (math_matrix_4x4*)
-         menu_display_d3d_get_default_mvp();
    if (!draw->coords->vertex)
       draw->coords->vertex        = menu_display_d3d_get_default_vertices();
    if (!draw->coords->tex_coord)
@@ -164,6 +162,10 @@ static void menu_display_d3d_draw(void *data)
    menu_display_d3d_bind_texture(draw);
 
 #if 0
+   mat = (math_matrix_4x4*)draw->matrix_data;
+   if (!mat)
+      mat                         = (math_matrix_4x4*)
+         menu_display_d3d_get_default_mvp();
    video_shader_driver_set_coords(d3d, draw->coords);
    video_shader_driver_set_mvp(d3d, mat);
 #endif
