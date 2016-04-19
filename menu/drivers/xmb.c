@@ -53,8 +53,7 @@
 #define XMB_RIBBON_ENABLE
 #define XMB_RIBBON_ROWS 16
 #define XMB_RIBBON_COLS 32
-#define XMB_RIBBON_VERTICES XMB_RIBBON_COLS*XMB_RIBBON_ROWS*3
-#define XMB_RIBBON_INDEXES (XMB_RIBBON_COLS * 2 + 2) * XMB_RIBBON_ROWS + (XMB_RIBBON_ROWS - 1) * 2
+#define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
 #endif
 
 #ifndef XMB_DELAY
@@ -235,10 +234,6 @@ typedef struct xmb_handle
 
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
-
-#ifdef XMB_RIBBON_ENABLE
-static unsigned ribbon_idx[XMB_RIBBON_INDEXES];
-#endif
 
 static const char *xmb_theme_ident(void)
 {
@@ -1869,14 +1864,6 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
    struct uniform_info uniform_param = {0};
    static float t = 0;
    video_shader_ctx_info_t shader_info;
-   math_matrix_4x4 mymat;
-   struct gfx_coords coords;
-   float white[16] = {
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-   };
    gfx_coord_array_t *ca   = NULL;
 
    menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
@@ -1890,14 +1877,10 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-   coords.vertex     = ca->coords.vertex;
-   coords.index      = ribbon_idx;
-   coords.color      = white;
-
    draw->x           = 0;
    draw->y           = 0;
-   draw->coords      = &coords;
-   draw->matrix_data = &mymat;
+   draw->coords      = (struct gfx_coords*)(&ca->coords);
+   draw->matrix_data = NULL;
 
    shader_info.data = NULL;
    shader_info.idx  = VIDEO_SHADER_MENU;
@@ -1917,13 +1900,7 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 
    video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
-
-   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, draw->coords->vertex);
-   glEnableVertexAttribArray(0);
-
-   glDrawElements(GL_TRIANGLE_STRIP,
-         XMB_RIBBON_INDEXES, GL_UNSIGNED_INT, draw->coords->index);
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, draw);
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 #else
@@ -2307,55 +2284,45 @@ static void xmb_layout(xmb_handle_t *xmb)
    }
 }
 
+#ifdef XMB_RIBBON_ENABLE
+static void xmb_ribbon_set_vertex(float *ribbon_verts, unsigned idx, unsigned row, unsigned col)
+{
+   ribbon_verts[idx++] = ((float)col) / 15.5f - 1.0f;
+   ribbon_verts[idx++] = ((float)row) / 7.5f  - 1.0f;
+}
 
 static void xmb_init_ribbon(xmb_handle_t * xmb)
 {
-#ifdef XMB_RIBBON_ENABLE
    gfx_coords_t coords;
-   menu_display_ctx_coord_draw_t coord_draw;
-   float ribbon_verts[XMB_RIBBON_VERTICES];
-   unsigned r, c;
-   unsigned i = 0;
-   float white[XMB_RIBBON_VERTICES*4] = { 1.0f };
+   float ribbon_verts[2 * XMB_RIBBON_VERTICES];
+   unsigned i, r, c, col;
    gfx_coord_array_t *ca   = NULL;
+   float dummy[4 * XMB_RIBBON_VERTICES] = { };
 
    menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
 
    /* Set up vertices */
-   for (r = 0; r < XMB_RIBBON_ROWS; ++r)
+   i = 0;
+   for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
    {
-      for (c = 0; c < XMB_RIBBON_COLS; ++c)
+      for (c = 0; c < XMB_RIBBON_COLS; c++)
       {
-         int index = r * XMB_RIBBON_COLS + c;
-         ribbon_verts[3*index + 0] = ((float) c)/15.0f - 1.0;
-         ribbon_verts[3*index + 1] = 0.0f;
-         ribbon_verts[3*index + 2] = ((float) r)/8.0f - 1.0;
+         col = r % 2 ? XMB_RIBBON_COLS - c - 1 : c;
+         xmb_ribbon_set_vertex(ribbon_verts, i, r, col);
+         xmb_ribbon_set_vertex(ribbon_verts, i + 2, r + 1, col);
+         i += 4;
       }
    }
 
-   menu_display_ctl(MENU_DISPLAY_CTL_TEX_COORDS_GET, &coord_draw);
-
-   coords.color         = white;
-   coords.vertex        = ribbon_verts;
-   coords.tex_coord     = coord_draw.ptr;
-   coords.lut_tex_coord = coord_draw.ptr;
+   coords.color         = dummy;
+   coords.vertex        = dummy;
+   coords.tex_coord     = dummy;
+   coords.lut_tex_coord = ribbon_verts;
    coords.vertices      = XMB_RIBBON_VERTICES;
 
    gfx_coord_array_append(ca, &coords, XMB_RIBBON_VERTICES);
-
-   for (r = 0; r < XMB_RIBBON_ROWS - 1; ++r)
-   {
-      ribbon_idx[i++] = r * XMB_RIBBON_COLS;
-
-      for (c = 0; c < XMB_RIBBON_COLS; ++c)
-      {
-         ribbon_idx[i++] = r * XMB_RIBBON_COLS + c;
-         ribbon_idx[i++] = (r + 1) * XMB_RIBBON_COLS + c;
-      }
-      ribbon_idx[i++] = (r + 1) * XMB_RIBBON_COLS + (XMB_RIBBON_COLS - 1);
-   }
-#endif
 }
+#endif
 
 static void *xmb_init(void **userdata)
 {
@@ -2409,7 +2376,9 @@ static void *xmb_init(void **userdata)
 
    xmb_init_horizontal_list(xmb);
    xmb_font(xmb);
+#ifdef XMB_RIBBON_ENABLE
    xmb_init_ribbon(xmb);
+#endif
 
    return menu;
 
