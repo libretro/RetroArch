@@ -983,6 +983,8 @@ static void zarch_frame(void *data)
       draw.color             = &coord_color2[0];
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   draw.x              = 0;
+   draw.y              = 0;
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 

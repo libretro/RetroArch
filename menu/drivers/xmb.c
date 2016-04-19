@@ -1927,6 +1927,8 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 #else
+   draw->x              = 0;
+   draw->y              = 0;
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
 #endif
 }

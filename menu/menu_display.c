@@ -502,8 +502,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             coords.lut_tex_coord = new_tex_coord;
             coords.color         = (const float*)draw->color;
 
-            draw->x              = 0;
-            draw->y              = 0;
             draw->coords         = &coords;
 
             if (!draw->texture)
@@ -528,6 +526,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
             draw->color   = bg;
             draw->texture = 0;
+            draw->x       = 0;
+            draw->y       = 0;
 
             menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
          }
