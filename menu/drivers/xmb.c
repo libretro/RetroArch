@@ -245,14 +245,13 @@ static const char *xmb_theme_ident(void)
    settings_t *settings = config_get_ptr();
    switch (settings->menu.xmb_theme)
    {
-      case 0:
-         return "monochrome";
       case 1:
          return "flatui";
       case 2:
          return "retroactive";
       case 3:
          return "custom";
+      case 0:
       default:
          break;
    }
