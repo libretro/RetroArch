@@ -127,10 +127,6 @@ static void menu_display_gl_draw(void *data)
 
    mat = (math_matrix_4x4*)draw->matrix_data;
 
-   /* TODO - edge case */
-   if (draw->height <= 0)
-      draw->height = 1;
-
    if (!mat)
       mat = (math_matrix_4x4*)menu_display_gl_get_default_mvp();
    if (!draw->coords->vertex)

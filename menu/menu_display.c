@@ -475,9 +475,16 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          menu_disp->clear_color((menu_display_ctx_clearcolor_t*)data);
          break;
       case MENU_DISPLAY_CTL_DRAW:
-         if (!menu_disp || !menu_disp->draw)
-            return false;
-         menu_disp->draw(data);
+         {
+            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+            if (!menu_disp || !draw || !menu_disp->draw)
+               return false;
+            /* TODO - edge case */
+            if (draw->height <= 0)
+               draw->height = 1;
+
+            menu_disp->draw(draw);
+         }
          break;
       case MENU_DISPLAY_CTL_DRAW_BG:
          {
@@ -510,7 +517,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
             draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp();
 
-            menu_disp->draw(draw);
+            menu_display_ctl(MENU_DISPLAY_CTL_DRAW, draw);
          }
          break;
       case MENU_DISPLAY_CTL_DRAW_GRADIENT:
