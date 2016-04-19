@@ -104,6 +104,16 @@ static void menu_display_gl_viewport(void *data)
    glViewport(draw->x, draw->y, draw->width, draw->height);
 }
 
+static void menu_display_gl_bind_texture(void *data)
+{
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   
+   if (!draw)
+      return;
+
+   glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
+}
+
 static void menu_display_gl_draw(void *data)
 {
    video_shader_ctx_mvp_t mvp;
@@ -131,7 +141,7 @@ static void menu_display_gl_draw(void *data)
       draw->coords->lut_tex_coord = menu_display_gl_get_default_tex_coords();
 
    menu_display_gl_viewport(draw);
-   glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
+   menu_display_gl_bind_texture(draw);
 
    coords.handle_data = gl;
    coords.data        = draw->coords;

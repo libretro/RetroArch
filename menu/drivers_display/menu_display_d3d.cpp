@@ -129,6 +129,17 @@ static void menu_display_d3d_viewport(void *data)
    d3d_set_viewports(d3d->dev, &vp);
 }
 
+static void menu_display_d3d_bind_texture(void *data)
+{
+   d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   
+   if (!d3d || !draw)
+      return;
+
+   d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE)draw->texture);
+}
+
 static void menu_display_d3d_draw(void *data)
 {
    math_matrix_4x4          *mat = NULL;
@@ -155,7 +166,7 @@ static void menu_display_d3d_draw(void *data)
       draw->coords->lut_tex_coord = menu_display_d3d_get_default_tex_coords();
 
    menu_display_d3d_viewport(draw);
-   d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE)draw->texture);
+   menu_display_d3d_bind_texture(draw);
 
 #if 0
    video_shader_driver_set_coords(d3d, draw->coords);
