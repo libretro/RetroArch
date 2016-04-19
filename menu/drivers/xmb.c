@@ -2254,7 +2254,7 @@ static void xmb_layout(xmb_handle_t *xmb)
    new_header_height            = 128.0 * scale_factor;
    xmb->margins.screen.top      = (256+32) * scale_factor;
 
-   xmb->thumbnail_width            = 460.0 * scale_factor;
+   xmb->thumbnail_width         = 460.0 * scale_factor;
    xmb->cursor.size             = 64.0;
 
    xmb->icon.spacing.horizontal = 200.0 * scale_factor;

@@ -80,6 +80,11 @@ typedef struct mui_handle
    unsigned glyph_width;
    char box_message[PATH_MAX_LENGTH];
 
+   struct
+   {
+      int size;
+   } cursor;
+
    struct 
    {
       struct
@@ -656,10 +661,10 @@ static void mui_draw_cursor(mui_handle_t *mui,
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-   draw.x           = x - 32;
-   draw.y           = (int)height - y - 32;
-   draw.width       = 64;
-   draw.height      = 64;
+   draw.x           = x - (mui->cursor.size / 2);
+   draw.y           = (int)height - y - (mui->cursor.size / 2);
+   draw.width       = mui->cursor.size;
+   draw.height      = mui->cursor.size;
    draw.coords      = &coords;
    draw.matrix_data = NULL;
    draw.texture     = mui->textures.list[MUI_TEXTURE_POINTER];
@@ -1113,6 +1118,7 @@ static void *mui_init(void **userdata)
    mui_layout(mui);
    menu_display_allocate_white_texture();
 
+   mui->cursor.size  = 64.0;
 
    return menu;
 error:
