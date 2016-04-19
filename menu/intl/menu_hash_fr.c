@@ -435,11 +435,11 @@ const char *menu_hash_to_str_fr(uint32_t hash)
          return "<Choisir ce dossier>";
       case MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Exécuter le contenu";
-      case MENU_LABEL_VALUE_DISK_OPTIONS:
+      case MENU_LABEL_VALUE_DISK_OPTIONS: /* UPDATE/FIXME */
          return "Options de disques";
       case MENU_LABEL_VALUE_CORE_OPTIONS:
-         return "Options du coeur";
-      case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS:
+         return "Options";
+      case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS: /* UPDATE/FIXME */
          return "Options de triche";
       case MENU_LABEL_VALUE_TAKE_SCREENSHOT:
          return "Capturer l écran";

@@ -543,11 +543,11 @@ const char *menu_hash_to_str_it(uint32_t hash)
          return "<Usa questo directory>";
       case MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Avvia contenuto";
-      case MENU_LABEL_VALUE_DISK_OPTIONS:
+      case MENU_LABEL_VALUE_DISK_OPTIONS: /* UPDATE/FIXME */
          return "Opzioni disco";
       case MENU_LABEL_VALUE_CORE_OPTIONS:
-         return "Opzioni del core";
-      case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS:
+         return "Opzioni";
+      case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS: /* UPDATE/FIXME */
          return "Opzione dei trucchi per il core";
       case MENU_LABEL_VALUE_CHEAT_FILE_LOAD:
          return "Carica i trucchi";
@@ -671,8 +671,8 @@ const char *menu_hash_to_str_it(uint32_t hash)
          return "Sfondo dinamico";
       case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
          return "Opzioni di rimappatura degli input del core";
-      case MENU_LABEL_VALUE_SHADER_OPTIONS:
-         return "Opzioni Shader";
+      case MENU_LABEL_VALUE_SHADER_OPTIONS: /* UPDATE/FIXME */
+         return "Shaders";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
          return "Antemprima Parametri Shader";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:

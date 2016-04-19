@@ -122,7 +122,7 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "<Keins>";
       case MENU_VALUE_NOT_AVAILABLE:
          return "Nicht verfügbar";
-      case MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY:
+      case MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY: /* UPDATE/FIXME */
          return "Eingabebelegungs-Verzeichnis";
       case MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR:
          return "Eingabegerät-Autoconfig-Verzeichnis";
@@ -420,12 +420,12 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "<Diesen Ordner verwenden>";
       case MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Starte Content";
-      case MENU_LABEL_VALUE_DISK_OPTIONS:
+      case MENU_LABEL_VALUE_DISK_OPTIONS: /* UPDATE/FIXME */
          return "Datenträger-Optionen";
       case MENU_LABEL_VALUE_CORE_OPTIONS:
-         return "Core-Optionen";
+         return "Optionen";
       case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS:
-         return "Core-Cheat-Optionen";
+         return "Cheats";
       case MENU_LABEL_VALUE_CHEAT_FILE_LOAD:
          return "Lade Cheat-Datei";
       case MENU_LABEL_VALUE_CHEAT_FILE_SAVE_AS:
@@ -540,10 +540,10 @@ const char *menu_hash_to_str_de(uint32_t hash)
          return "Menühintergrund";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Dynamischer Hintergrund";
-      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* UPDATE/FIXME */
          return "Core-Input-Optionen";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
-         return "Shader-Optionen";
+         return "Shaders";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
          return "Momentane Shaderparameter"; /* FIXME/UPDATE */
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:

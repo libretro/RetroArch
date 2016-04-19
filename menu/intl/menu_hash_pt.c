@@ -419,12 +419,12 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "<Usar este diretório>";
       case MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Iniciar Conteúdo";
-      case MENU_LABEL_VALUE_DISK_OPTIONS:
+      case MENU_LABEL_VALUE_DISK_OPTIONS:    /* UPDATE/FIXME */
          return "Opções de Disco do Core";
       case MENU_LABEL_VALUE_CORE_OPTIONS:
-         return "Opções do Core";
+         return "Opções";
       case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS:
-         return "Opções de Cheat do Core";
+         return "Cheats";
       case MENU_LABEL_VALUE_CHEAT_FILE_LOAD:
          return "Carregar Cheat";
       case MENU_LABEL_VALUE_CHEAT_FILE_SAVE_AS:
@@ -539,10 +539,10 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Papel de Parede do Menu";
       case MENU_LABEL_VALUE_DYNAMIC_WALLPAPER:
          return "Papel de Parede Dinâmico";
-      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* TODO/FIXME */
+      case MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS: /* UPDATE/FIXME */
          return "Opções de Remapeamento de Controlador de Core";
       case MENU_LABEL_VALUE_SHADER_OPTIONS:
-         return "Opções de Shaders";
+         return "Shaders";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PARAMETERS:
          return "Parâmetros de Shader em Uso";
       case MENU_LABEL_VALUE_VIDEO_SHADER_PRESET_PARAMETERS:

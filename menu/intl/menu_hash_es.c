@@ -543,11 +543,11 @@ const char *menu_hash_to_str_es(uint32_t hash)
          return "(Usar esta carpeta)";
       case MENU_LABEL_VALUE_RDB_ENTRY_START_CONTENT:
          return "Ejecutar contenido";
-      case MENU_LABEL_VALUE_DISK_OPTIONS:
+      case MENU_LABEL_VALUE_DISK_OPTIONS: /* UPDATE/FIXME */
          return "Opciones del disco del núcleo";
       case MENU_LABEL_VALUE_CORE_OPTIONS:
-         return "Opciones del núcleo";
-      case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS:
+         return "Opciones";
+      case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS: /* UPDATE/FIXME */
          return "Opciones de trucos del núcleo";
       case MENU_LABEL_VALUE_CHEAT_FILE_LOAD:
          return "Cargar archivo de trucos";

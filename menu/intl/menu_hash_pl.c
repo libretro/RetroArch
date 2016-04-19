@@ -433,7 +433,7 @@ const char *menu_hash_to_str_pl(uint32_t hash)
       case MENU_LABEL_VALUE_DISK_OPTIONS:
          return "Opcje dysku rdzenia";
       case MENU_LABEL_VALUE_CORE_OPTIONS:
-         return "Opcje rdzenia";
+         return "Opcje";
       case MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS:
          return "Opcje cheatów rdzenia";
       case MENU_LABEL_VALUE_CHEAT_FILE_LOAD:
