@@ -78,7 +78,9 @@ enum menu_display_ctl_state
    MENU_DISPLAY_CTL_DRAW_GRADIENT,
    MENU_DISPLAY_CTL_ROTATE_Z,
    MENU_DISPLAY_CTL_TEX_COORDS_GET,
-   MENU_DISPLAY_CTL_TIMEDATE
+   MENU_DISPLAY_CTL_TIMEDATE,
+   MENU_DISPLAY_CTL_COORDS_ARRAY_RESET,
+   MENU_DISPLAY_CTL_COORDS_ARRAY_GET
 };
 
 enum menu_display_prim_type
@@ -174,12 +176,12 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err);
 
-void menu_display_push_quad(gfx_coord_array_t *ca, 
+void menu_display_push_quad( 
       unsigned width, unsigned height,
       const float *colors, int x1, int y1,
       int x2, int y2);
 
-void menu_display_snow(gfx_coord_array_t *ca, int width, int height);
+void menu_display_snow(int width, int height);
 
 extern uintptr_t menu_display_white_texture;
 void menu_display_allocate_white_texture();

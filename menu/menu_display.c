@@ -132,6 +132,7 @@ static void menu_display_timedate(void *data)
 bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 {
    unsigned width, height;
+   static gfx_coord_array_t menu_disp_ca;
    static unsigned menu_display_framebuf_width      = 0;
    static unsigned menu_display_framebuf_height     = 0;
    static size_t menu_display_framebuf_pitch        = 0;
@@ -202,6 +203,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
       case MENU_DISPLAY_CTL_DEINIT:
          if (menu_display_msg_queue)
             msg_queue_free(menu_display_msg_queue);
+         gfx_coord_array_free(&menu_disp_ca);
          menu_display_msg_queue       = NULL;
          menu_display_msg_force       = false;
          menu_display_header_height   = 0;
@@ -212,6 +214,18 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
          break;
       case MENU_DISPLAY_CTL_INIT:
          retro_assert(menu_display_msg_queue = msg_queue_new(8));
+         menu_disp_ca.allocated     =  0;
+         break;
+      case MENU_DISPLAY_CTL_COORDS_ARRAY_RESET:
+         menu_disp_ca.coords.vertices = 0;
+         break;
+      case MENU_DISPLAY_CTL_COORDS_ARRAY_GET:
+         {
+            void **ptr = (void**)data;
+            if (!ptr)
+               return false;
+            *ptr = &menu_disp_ca;
+         }
          break;
       case MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME:
          break;
@@ -603,8 +617,7 @@ static INLINE float menu_display_randf(float min, float max)
    return (rand() * ((max - min) / RAND_MAX)) + min;
 }
 
-
-void menu_display_push_quad(gfx_coord_array_t *ca,
+void menu_display_push_quad(
       unsigned width, unsigned height,
       const float *colors, int x1, int y1,
       int x2, int y2)
@@ -612,6 +625,9 @@ void menu_display_push_quad(gfx_coord_array_t *ca,
    menu_display_ctx_coord_draw_t coord_draw;
    gfx_coords_t coords;
    float vertex[8];
+   gfx_coord_array_t *ca   = NULL;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
@@ -644,7 +660,7 @@ void menu_display_push_quad(gfx_coord_array_t *ca,
 
 #define PARTICLES_COUNT            100
 
-void menu_display_snow(gfx_coord_array_t *ca, int width, int height)
+void menu_display_snow(int width, int height)
 {
    struct display_particle
    {
@@ -722,7 +738,7 @@ void menu_display_snow(gfx_coord_array_t *ca, int width, int height)
             colors[j] = alpha;
       }
 
-      menu_display_push_quad(ca, width, height,
+      menu_display_push_quad(width, height,
             colors, p->x-2, p->y-2, p->x+2, p->y+2);
 
       j++;

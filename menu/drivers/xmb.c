@@ -49,7 +49,7 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#if 0
+#if 1
 #define XMB_RIBBON_ENABLE
 #define XMB_RIBBON_ROWS 16
 #define XMB_RIBBON_COLS 32
@@ -142,7 +142,6 @@ enum
 
 typedef struct xmb_handle
 {
-   gfx_coord_array_t ribbon_coords;
    file_list_t *menu_stack_old;
    file_list_t *selection_buf_old;
    file_list_t *horizontal_list;
@@ -1907,6 +1906,9 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
       1, 1, 1, 1,
       1, 1, 1, 1,
    };
+   gfx_coord_array_t *ca   = NULL;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
 
    if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
       draw->handle_alpha = 0.75;
@@ -1917,13 +1919,13 @@ static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-   coords.vertex = xmb->ribbon_coords.coords.vertex;
-   coords.index = ribbon_idx;
-   coords.color = white;
+   coords.vertex     = ca->coords.vertex;
+   coords.index      = ribbon_idx;
+   coords.color      = white;
 
-   draw->x      = 0;
-   draw->y      = 0;
-   draw->coords = &coords;
+   draw->x           = 0;
+   draw->y           = 0;
+   draw->coords      = &coords;
    draw->matrix_data = &mymat;
 
    shader_info.data = NULL;
@@ -2335,8 +2337,9 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    unsigned r, c;
    unsigned i = 0;
    float white[XMB_RIBBON_VERTICES*4] = { 1.0f };
+   gfx_coord_array_t *ca   = NULL;
 
-   xmb->ribbon_coords.allocated     =  0;
+   menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
 
    /* Set up vertices */
    for (r = 0; r < XMB_RIBBON_ROWS; ++r)
@@ -2358,7 +2361,7 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    coords.lut_tex_coord = coord_draw.ptr;
    coords.vertices      = XMB_RIBBON_VERTICES;
 
-   gfx_coord_array_append(&xmb->ribbon_coords, &coords, XMB_RIBBON_VERTICES);
+   gfx_coord_array_append(ca, &coords, XMB_RIBBON_VERTICES);
 
    for (r = 0; r < XMB_RIBBON_ROWS - 1; ++r)
    {
@@ -2466,9 +2469,6 @@ static void xmb_free(void *data)
          file_list_free(xmb->horizontal_list);
       xmb->horizontal_list = NULL;
 
-#ifdef XMB_ENABLE_RIBBON
-      gfx_coord_array_free(&xmb->ribbon_coords);
-#endif
       gfx_coord_array_free(&xmb->raster_block.carr);
    }
 
