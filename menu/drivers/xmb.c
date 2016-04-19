@@ -27,7 +27,6 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <gfx/math/matrix_4x4.h>
-#include <glsym/glsym.h>
 
 #include "menu_generic.h"
 
