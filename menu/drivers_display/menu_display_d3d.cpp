@@ -110,9 +110,27 @@ static void menu_display_d3d_blend_end(void)
    d3d_disable_blend_func(d3d->dev);
 }
 
-static void menu_display_d3d_draw(void *data)
+static void menu_display_d3d_viewport(void *data)
 {
    D3DVIEWPORT                vp = {0};
+   d3d_video_t              *d3d = (d3d_video_t*)video_driver_get_ptr(false);
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+
+   if (!d3d || !draw)
+      return;
+
+   vp.X      = draw->x;
+   vp.Y      = draw->y;
+   vp.Width  = draw->width;
+   vp.Height = draw->height;
+   vp.MinZ   = 0.0f;
+   vp.MaxZ   = 1.0f;
+
+   d3d_set_viewports(d3d->dev, &vp);
+}
+
+static void menu_display_d3d_draw(void *data)
+{
    math_matrix_4x4          *mat = NULL;
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
@@ -136,14 +154,7 @@ static void menu_display_d3d_draw(void *data)
    if (!draw->coords->lut_tex_coord)
       draw->coords->lut_tex_coord = menu_display_d3d_get_default_tex_coords();
 
-   vp.X      = draw->x;
-   vp.Y      = draw->y;
-   vp.Width  = draw->width;
-   vp.Height = draw->height;
-   vp.MinZ   = 0.0f;
-   vp.MaxZ   = 1.0f;
-
-   d3d_set_viewports(d3d->dev, &vp);
+   menu_display_d3d_viewport(draw);
    d3d_set_texture(d3d->dev, 0, (LPDIRECT3DTEXTURE)draw->texture);
 
 #if 0
@@ -192,6 +203,7 @@ static bool menu_display_d3d_font_init_first(
 
 menu_display_ctx_driver_t menu_display_ctx_d3d = {
    menu_display_d3d_draw,
+   menu_display_d3d_viewport,
    menu_display_d3d_blend_begin,
    menu_display_d3d_blend_end,
    menu_display_d3d_restore_clear_color,

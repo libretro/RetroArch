@@ -49,7 +49,7 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#if 0
+#if 1
 #define XMB_RIBBON_ENABLE
 #define XMB_RIBBON_ROWS 16
 #define XMB_RIBBON_COLS 32

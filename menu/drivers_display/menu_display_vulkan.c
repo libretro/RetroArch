@@ -61,6 +61,22 @@ static unsigned to_display_pipeline(
    return ((type == MENU_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | (blend << 0);
 }
 
+static void menu_display_vk_viewport(void *data)
+{
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
+
+   if (!vk || !draw)
+      return;
+
+   vk->vk_vp.x        = draw->x;
+   vk->vk_vp.y        = vk->context->swapchain_height - draw->y - draw->height;
+   vk->vk_vp.width    = draw->width;
+   vk->vk_vp.height   = draw->height;
+   vk->vk_vp.minDepth = 0.0f;
+   vk->vk_vp.maxDepth = 1.0f;
+}
+
 static void menu_display_vk_draw(void *data)
 {
    unsigned i;
@@ -99,12 +115,7 @@ static void menu_display_vk_draw(void *data)
    if (!texture)
       texture         = &vk->display.blank_texture;
 
-   vk->vk_vp.x        = draw->x;
-   vk->vk_vp.y        = vk->context->swapchain_height - draw->y - draw->height;
-   vk->vk_vp.width    = draw->width;
-   vk->vk_vp.height   = draw->height;
-   vk->vk_vp.minDepth = 0.0f;
-   vk->vk_vp.maxDepth = 1.0f;
+   menu_display_vk_viewport(draw);
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 
    /* Bake interleaved VBO. Kinda ugly, we should probably try to move to
@@ -190,6 +201,7 @@ static bool menu_display_vk_font_init_first(
 
 menu_display_ctx_driver_t menu_display_ctx_vulkan = {
    menu_display_vk_draw,
+   menu_display_vk_viewport,
    menu_display_vk_blend_begin,
    menu_display_vk_blend_end,
    menu_display_vk_restore_clear_color,

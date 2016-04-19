@@ -42,6 +42,11 @@ static void menu_display_null_draw(void *data)
    (void)data;
 }
 
+static void menu_display_null_viewport(void *data)
+{
+   (void)data;
+}
+
 static void menu_display_null_restore_clear_color(void)
 {
 }
@@ -72,6 +77,7 @@ static const float *menu_display_null_get_default_tex_coords(void)
 
 menu_display_ctx_driver_t menu_display_ctx_null = {
    menu_display_null_draw,
+   menu_display_null_viewport,
    menu_display_null_blend_begin,
    menu_display_null_blend_end,
    menu_display_null_restore_clear_color,

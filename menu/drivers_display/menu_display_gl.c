@@ -94,12 +94,22 @@ static void menu_display_gl_blend_end(void)
    glDisable(GL_BLEND);
 }
 
+static void menu_display_gl_viewport(void *data)
+{
+   gl_t             *gl          = (gl_t*)video_driver_get_ptr(false);
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   
+   if (!gl || !draw)
+      return;
+   glViewport(draw->x, draw->y, draw->width, draw->height);
+}
+
 static void menu_display_gl_draw(void *data)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords;
-   gl_t             *gl          = (gl_t*)video_driver_get_ptr(false);
    math_matrix_4x4 *mat          = NULL;
+   gl_t             *gl          = (gl_t*)video_driver_get_ptr(false);
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    
    if (!gl || !draw)
@@ -120,7 +130,7 @@ static void menu_display_gl_draw(void *data)
    if (!draw->coords->lut_tex_coord)
       draw->coords->lut_tex_coord = menu_display_gl_get_default_tex_coords();
 
-   glViewport(draw->x, draw->y, draw->width, draw->height);
+   menu_display_gl_viewport(draw);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
    coords.handle_data = gl;
@@ -164,6 +174,7 @@ static bool menu_display_gl_font_init_first(
 
 menu_display_ctx_driver_t menu_display_ctx_gl = {
    menu_display_gl_draw,
+   menu_display_gl_viewport,
    menu_display_gl_blend_begin,
    menu_display_gl_blend_end,
    menu_display_gl_restore_clear_color,
