@@ -174,6 +174,12 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err);
 
+void menu_display_push_quad(unsigned width, unsigned height,
+      const float *colors, gfx_coord_array_t *ca, int x1, int y1,
+      int x2, int y2);
+
+void menu_display_snow(gfx_coord_array_t *ca, int width, int height);
+
 extern uintptr_t menu_display_white_texture;
 void menu_display_allocate_white_texture();
 

@@ -37,6 +37,7 @@
 #include "../gfx/video_thread_wrapper.h"
 #endif
 
+
 uintptr_t menu_display_white_texture;
 
 static menu_display_ctx_driver_t *menu_display_ctx_drivers[] = {
@@ -589,4 +590,140 @@ void menu_display_allocate_white_texture(void)
 
    video_driver_texture_load(&ti,
          TEXTURE_FILTER_NEAREST, &menu_display_white_texture);
+}
+
+static INLINE float menu_display_scalef(float val,
+      float oldmin, float oldmax, float newmin, float newmax)
+{
+   return (((val - oldmin) * (newmax - newmin)) / (oldmax - oldmin)) + newmin;
+}
+
+static INLINE float menu_display_randf(float min, float max)
+{
+   return (rand() * ((max - min) / RAND_MAX)) + min;
+}
+
+
+void menu_display_push_quad(unsigned width, unsigned height,
+      const float *colors, gfx_coord_array_t *ca, int x1, int y1,
+      int x2, int y2)
+{
+   menu_display_ctx_coord_draw_t coord_draw;
+   gfx_coords_t coords;
+   float vertex[8];
+
+   vertex[0]             = x1 / (float)width;
+   vertex[1]             = y1 / (float)height;
+   vertex[2]             = x2 / (float)width;
+   vertex[3]             = y1 / (float)height;
+   vertex[4]             = x1 / (float)width;
+   vertex[5]             = y2 / (float)height;
+   vertex[6]             = x2 / (float)width;
+   vertex[7]             = y2 / (float)height;
+
+   coord_draw.ptr        = NULL;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_TEX_COORDS_GET, &coord_draw);
+
+   coords.color          = colors;
+   coords.vertex         = vertex;
+   coords.tex_coord      = coord_draw.ptr;
+   coords.lut_tex_coord  = coord_draw.ptr;
+   coords.vertices       = 3;
+
+   gfx_coord_array_append(ca, &coords, 3);
+
+   coords.color         += 4;
+   coords.vertex        += 2;
+   coords.tex_coord     += 2;
+   coords.lut_tex_coord += 2;
+
+   gfx_coord_array_append(ca, &coords, 3);
+}
+
+#define PARTICLES_COUNT            100
+
+void menu_display_snow(gfx_coord_array_t *ca, int width, int height)
+{
+   struct display_particle
+   {
+      float x, y;
+      float xspeed, yspeed;
+      float alpha;
+      bool alive;
+   };
+   static struct display_particle particles[PARTICLES_COUNT];
+   static bool initialized = false;
+   static int timeout      = 0;
+   unsigned i, max_gen     = 2;
+
+   if (!initialized)
+   {
+      memset(particles, 0, sizeof(particles));
+      initialized = true;
+   }
+
+   for (i = 0; i < PARTICLES_COUNT; ++i)
+   {
+      struct display_particle *p = (struct display_particle*)&particles[i];
+
+      if (!p)
+         return;
+
+      if (p->alive)
+      {
+         int16_t mouse_x  = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
+
+         p->y            += p->yspeed;
+         p->x            += menu_display_scalef(mouse_x, 0, width, -0.3, 0.3);
+         p->x            += p->xspeed;
+
+         p->alive         = p->y >= 0 && p->y < height 
+            && p->x >= 0 && p->x < width;
+      }
+      else if (max_gen > 0 && timeout <= 0)
+      {
+         p->xspeed = menu_display_randf(-0.2, 0.2);
+         p->yspeed = menu_display_randf(1, 2);
+         p->y      = 0;
+         p->x      = rand() % width;
+         p->alpha  = (float)rand() / (float)RAND_MAX;
+         p->alive  = true;
+
+         max_gen--;
+      }
+   }
+
+   if (max_gen == 0)
+      timeout = 3;
+   else
+      timeout--;
+
+   for (i = 0; i < PARTICLES_COUNT; ++i)
+   {
+      unsigned j;
+      float alpha;
+      float colors[16];
+      struct display_particle *p = &particles[i];
+
+      if (!p)
+         return;
+
+      if (!p->alive)
+         continue;
+
+      alpha = menu_display_randf(0, 100) > 90 ? p->alpha/2 : p->alpha;
+
+      for (j = 0; j < 16; j++)
+      {
+         colors[j] = 1;
+         if (j == 3 || j == 7 || j == 11 || j == 15)
+            colors[j] = alpha;
+      }
+
+      menu_display_push_quad(width, height,
+            colors, ca, p->x-2, p->y-2, p->x+2, p->y+2);
+
+      j++;
+   }
 }
