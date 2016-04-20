@@ -527,10 +527,13 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                1, 0, 0.1,     1,
                1, 0.1, 0,     1,
                0.05, 0, 0.05, 1,
-               0.05, 0, 0.05, 1 
+               0.05, 0, 0.05, 1
             };
 
-            bg[3] = bg[7] = bg[11] = bg[15] = draw->handle_alpha;
+            bg[3]  = draw->color[3];
+            bg[7]  = draw->color[7];
+            bg[11] = draw->color[11];
+            bg[15] = draw->color[15];
 
             draw->color   = bg;
             draw->texture = 0;
@@ -549,11 +552,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             gfx_coord_array_t *ca   = NULL;
 
             menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
-
-            if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
-               draw->handle_alpha = 0.75;
-            else
-               draw->handle_alpha = 0.90;
 
             menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, draw);
 
