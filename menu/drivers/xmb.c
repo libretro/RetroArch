@@ -512,8 +512,8 @@ static void xmb_draw_text(xmb_handle_t *xmb,
          || y < -xmb->icon.size || y > height + xmb->icon.size)
       return;
 
-   params.x           = x;
-   params.y           = y;
+   params.x           = x / width;
+   params.y           = 1.0f - y / height;
    params.scale       = scale_factor;
    params.drop_mod    = 0.0f;
    params.drop_x      = 0.0f;
