@@ -1923,6 +1923,8 @@ static void xmb_frame(void *data)
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BIND_BLOCK, &xmb->raster_block);
 
+   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
+
    xmb->raster_block.carr.coords.vertices = 0;
 
    for (i = 0; i < 16; i++)
@@ -2053,7 +2055,6 @@ static void xmb_frame(void *data)
    xmb_frame_horizontal_list(xmb, width, height, &item_color[0]);
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK, NULL);
-   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
    if (display_kb)
    {
