@@ -350,10 +350,11 @@ void nk_common_device_draw(struct nk_device *dev,
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
-void* nk_common_mem_alloc(nk_handle unused, size_t size)
+//void nk_mem_alloc(nk_handle a, void *old, nk_size b);
+void* nk_common_mem_alloc(nk_handle a, void *old, nk_size b)
 {
-   (void)unused;
-   return calloc(1, size);
+   (void)a;
+   return calloc(1, b);
 }
 
 void nk_common_mem_free(nk_handle unused, void *ptr)

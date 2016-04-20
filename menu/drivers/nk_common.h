@@ -77,6 +77,6 @@ void nk_common_device_draw(struct nk_device *dev,
    struct nk_context *ctx, int width, int height,
    enum nk_anti_aliasing AA);
 
-void* nk_common_mem_alloc(nk_handle unused, size_t size);
+void* nk_common_mem_alloc(nk_handle a, void *old, nk_size b);
 
 void nk_common_mem_free(nk_handle unused, void *ptr);

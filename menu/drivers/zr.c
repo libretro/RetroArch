@@ -228,6 +228,8 @@ static void zrmenu_frame(void *data)
 
    nk_input_end(&zr->ctx);
    zrmenu_main(zr);
+   if(nk_window_is_closed(&zr->ctx, "Shader Parameters"))
+      zrmenu_wnd_shader_parameters(zr);
    nk_common_device_draw(&device, &zr->ctx, width, height, NK_ANTI_ALIASING_ON);
 
    if (settings->menu.mouse.enable && (settings->video.fullscreen
