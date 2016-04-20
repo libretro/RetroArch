@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2015 - Jean-André Santoni
- *  Copyright (C) 2016      - Andrés Suárez
+ *  Copyright (C) 2014-2015 - Jean-Andrï¿½ Santoni
+ *  Copyright (C) 2016      - Andrï¿½s Suï¿½rez
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -17,7 +17,15 @@
 
 #include <streams/file_stream.h>
 
-#include "zr_common.h"
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
+#define NK_IMPLEMENTATION
+
+#include "nk_common.h"
 
 #include "../menu_display.h"
 #include "../../gfx/video_shader_driver.h"
@@ -25,12 +33,12 @@
 #include "../../gfx/drivers/gl_shaders/pipeline_zahnrad.glsl.vert.h"
 #include "../../gfx/drivers/gl_shaders/pipeline_zahnrad.glsl.frag.h"
 
-struct zr_font font;
-struct zr_user_font usrfnt;
-struct zr_allocator zr_alloc;
-struct zr_device device;
+struct nk_font font;
+struct nk_user_font usrfnt;
+struct nk_allocator nk_alloc;
+struct nk_device device;
 
-struct zr_image zr_common_image_load(const char *filename)
+struct nk_image nk_common_image_load(const char *filename)
 {
     int x,y,n;
     GLuint tex;
@@ -49,10 +57,10 @@ struct zr_image zr_common_image_load(const char *filename)
 #endif
 
     stbi_image_free(data);
-    return zr_image_id((int)tex);
+    return nk_image_id((int)tex);
 }
 
-char* zr_common_file_load(const char* path, size_t* size)
+char* nk_common_file_load(const char* path, size_t* size)
 {
    void *buf;
    ssize_t *length = (ssize_t*)size;
@@ -60,7 +68,7 @@ char* zr_common_file_load(const char* path, size_t* size)
    return (char*)buf;
 }
 
-void zr_common_device_init(struct zr_device *dev)
+NK_API void nk_common_device_init(struct nk_device *dev)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    GLint status;
@@ -73,14 +81,11 @@ void zr_common_device_init(struct zr_device *dev)
    glCompileShader(dev->vert_shdr);
    glCompileShader(dev->frag_shdr);
    glGetShaderiv(dev->vert_shdr, GL_COMPILE_STATUS, &status);
-   assert(status == GL_TRUE);
    glGetShaderiv(dev->frag_shdr, GL_COMPILE_STATUS, &status);
-   assert(status == GL_TRUE);
    glAttachShader(dev->prog, dev->vert_shdr);
    glAttachShader(dev->prog, dev->frag_shdr);
    glLinkProgram(dev->prog);
    glGetProgramiv(dev->prog, GL_LINK_STATUS, &status);
-   assert(status == GL_TRUE);
 
    dev->uniform_proj = glGetUniformLocation(dev->prog, "ProjMtx");
    dev->attrib_pos   = glGetAttribLocation(dev->prog, "Position");
@@ -89,10 +94,10 @@ void zr_common_device_init(struct zr_device *dev)
 
    {
       /* buffer setup */
-      GLsizei vs = sizeof(struct zr_draw_vertex);
-      size_t vp = offsetof(struct zr_draw_vertex, position);
-      size_t vt = offsetof(struct zr_draw_vertex, uv);
-      size_t vc = offsetof(struct zr_draw_vertex, col);
+      GLsizei vs = sizeof(struct nk_draw_vertex);
+      size_t vp = offsetof(struct nk_draw_vertex, position);
+      size_t vt = offsetof(struct nk_draw_vertex, uv);
+      size_t vc = offsetof(struct nk_draw_vertex, col);
 
       glGenBuffers(1, &dev->vbo);
       glGenBuffers(1, &dev->ebo);
@@ -118,19 +123,19 @@ void zr_common_device_init(struct zr_device *dev)
 #endif
 }
 
-struct zr_user_font zr_common_font(
-      struct zr_device *dev,
-      struct zr_font *font,
+struct nk_user_font nk_common_font(
+      struct nk_device *dev,
+      struct nk_font *font,
       const char *path,
       unsigned int font_height,
-      const zr_rune *range)
+      const nk_rune *range)
 {
    int glyph_count;
    int img_width, img_height;
-   struct zr_font_glyph *glyphes;
-   struct zr_baked_font baked_font;
-   struct zr_user_font user_font;
-   struct zr_recti custom;
+   struct nk_font_glyph *glyphes;
+   struct nk_baked_font baked_font;
+   struct nk_user_font user_font;
+   struct nk_recti custom;
 
    memset(&baked_font, 0, sizeof(baked_font));
    memset(&user_font, 0, sizeof(user_font));
@@ -139,48 +144,48 @@ struct zr_user_font zr_common_font(
    {
       struct texture_image ti;
       /* bake and upload font texture */
-      struct zr_font_config config;
+      struct nk_font_config config;
       void *img, *tmp;
       size_t ttf_size;
       size_t tmp_size, img_size;
       const char *custom_data = "....";
-      char *ttf_blob = zr_common_file_load(path, &ttf_size);
+      char *ttf_blob = nk_common_file_load(path, &ttf_size);
        /* setup font configuration */
       memset(&config, 0, sizeof(config));
 
       config.ttf_blob     = ttf_blob;
       config.ttf_size     = ttf_size;
       config.font         = &baked_font;
-      config.coord_type   = ZR_COORD_UV;
+      config.coord_type   = NK_COORD_UV;
       config.range        = range;
-      config.pixel_snap   = zr_false;
+      config.pixel_snap   = nk_false;
       config.size         = (float)font_height;
-      config.spacing      = zr_vec2(0,0);
+      config.spacing      = nk_vec2(0,0);
       config.oversample_h = 1;
       config.oversample_v = 1;
 
       /* query needed amount of memory for the font baking process */
-      zr_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
-      glyphes = (struct zr_font_glyph*)
-         calloc(sizeof(struct zr_font_glyph), (size_t)glyph_count);
+      nk_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
+      glyphes = (struct nk_font_glyph*)
+         calloc(sizeof(struct nk_font_glyph), (size_t)glyph_count);
       tmp = calloc(1, tmp_size);
 
       /* pack all glyphes and return needed image width, height and memory size*/
       custom.w = 2; custom.h = 2;
-      zr_font_bake_pack(&img_size,
-            &img_width,&img_height,&custom,tmp,tmp_size,&config, 1);
+      nk_font_bake_pack(&img_size,
+            &img_width,&img_height,&custom,tmp,tmp_size,&config, 1, &nk_alloc);
 
       /* bake all glyphes and custom white pixel into image */
       img = calloc(1, img_size);
-      zr_font_bake(img, img_width,
+      nk_font_bake(img, img_width,
             img_height, tmp, tmp_size, glyphes, glyph_count, &config, 1);
-      zr_font_bake_custom_data(img,
+      nk_font_bake_custom_data(img,
             img_width, img_height, custom, custom_data, 2, 2, '.', 'X');
 
       {
          /* convert alpha8 image into rgba8 image */
          void *img_rgba = calloc(4, (size_t)(img_height * img_width));
-         zr_font_bake_convert(img_rgba, img_width, img_height, img);
+         nk_font_bake_convert(img_rgba, img_width, img_height, img);
          free(img);
          img = img_rgba;
       }
@@ -200,21 +205,21 @@ struct zr_user_font zr_common_font(
 
    /* default white pixel in a texture which is needed to draw primitives */
    dev->null.texture.id = (int)dev->font_tex;
-   dev->null.uv = zr_vec2((custom.x + 0.5f)/(float)img_width,
+   dev->null.uv = nk_vec2((custom.x + 0.5f)/(float)img_width,
       (custom.y + 0.5f)/(float)img_height);
 
    /* setup font with glyphes. IMPORTANT: the font only references the glyphes
       this was done to have the possibility to have multible fonts with one
       total glyph array. Not quite sure if it is a good thing since the
       glyphes have to be freed as well. */
-   zr_font_init(font,
+   nk_font_init(font,
          (float)font_height, '?', glyphes,
          &baked_font, dev->null.texture);
-   user_font = zr_font_ref(font);
+   user_font = font->handle;
    return user_font;
 }
 
-void zr_common_device_shutdown(struct zr_device *dev)
+void nk_common_device_shutdown(struct nk_device *dev)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glDetachShader(dev->prog, dev->vert_shdr);
@@ -228,18 +233,18 @@ void zr_common_device_shutdown(struct zr_device *dev)
 #endif
 }
 
-void zr_common_device_draw(struct zr_device *dev,
-      struct zr_context *ctx, int width, int height,
-      enum zr_anti_aliasing AA)
+void nk_common_device_draw(struct nk_device *dev,
+      struct nk_context *ctx, int width, int height,
+      enum nk_anti_aliasing AA)
 {
    video_shader_ctx_info_t shader_info;
-   struct zr_buffer vbuf, ebuf;
-   struct zr_convert_config config;
+   struct nk_buffer vbuf, ebuf;
+   struct nk_convert_config config;
    uintptr_t                 last_prog;
-   const struct zr_draw_command *cmd = NULL;
+   const struct nk_draw_command *cmd = NULL;
    void                    *vertices = NULL;
    void                    *elements = NULL;
-   const zr_draw_index       *offset = NULL;
+   const nk_draw_index       *offset = NULL;
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    GLint last_tex;
    GLint last_ebo, last_vbo, last_vao;
@@ -297,13 +302,13 @@ void zr_common_device_draw(struct zr_device *dev,
    config.shape_AA             = AA;
    config.line_AA              = AA;
    config.circle_segment_count = 22;
-   config.line_thickness       = 1.0f;
+   //config.line_thickness       = 1.0f;
    config.null                 = dev->null;
 
    /* setup buffers to load vertices and elements */
-   zr_buffer_init_fixed(&vbuf, vertices, MAX_VERTEX_MEMORY);
-   zr_buffer_init_fixed(&ebuf, elements, MAX_ELEMENT_MEMORY);
-   zr_convert(ctx, &dev->cmds, &vbuf, &ebuf, &config);
+   nk_buffer_init_fixed(&vbuf, vertices, MAX_VERTEX_MEMORY);
+   nk_buffer_init_fixed(&ebuf, elements, MAX_ELEMENT_MEMORY);
+   nk_convert(ctx, &dev->cmds, &vbuf, &ebuf, &config);
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glUnmapBuffer(GL_ARRAY_BUFFER);
@@ -311,7 +316,7 @@ void zr_common_device_draw(struct zr_device *dev,
 #endif
 
    /* iterate over and execute each draw command */
-   zr_draw_foreach(cmd, ctx, &dev->cmds)
+   nk_draw_foreach(cmd, ctx, &dev->cmds)
    {
       if (!cmd->elem_count)
          continue;
@@ -327,7 +332,7 @@ void zr_common_device_draw(struct zr_device *dev,
 
       offset += cmd->elem_count;
    }
-   zr_clear(ctx);
+   nk_clear(ctx);
 
    /* restore old state */
    shader_info.data       = NULL;
@@ -345,13 +350,14 @@ void zr_common_device_draw(struct zr_device *dev,
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
-void* zr_common_mem_alloc(zr_handle unused, size_t size)
+//void nk_mem_alloc(nk_handle a, void *old, nk_size b);
+void* nk_common_mem_alloc(nk_handle a, void *old, nk_size b)
 {
-   (void)unused;
-   return calloc(1, size);
+   (void)a;
+   return calloc(1, b);
 }
 
-void zr_common_mem_free(zr_handle unused, void *ptr)
+void nk_common_mem_free(nk_handle unused, void *ptr)
 {
    (void)unused;
    free(ptr);

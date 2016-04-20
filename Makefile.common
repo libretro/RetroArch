@@ -412,9 +412,8 @@ ifeq ($(HAVE_MATERIALUI), 1)
    DEFINES += -DHAVE_MATERIALUI
 endif
 ifeq ($(HAVE_ZAHNRAD), 1)
-   OBJ += deps/zahnrad/zahnrad.o
-   OBJ += menu/drivers/zr_common.o
-   OBJ += menu/drivers/zr_menu.o
+   OBJ += menu/drivers/nk_common.o
+   OBJ += menu/drivers/nk_menu.o
    OBJ += menu/drivers/zr.o
    DEFINES += -DHAVE_ZAHNRAD
 endif

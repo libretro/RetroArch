@@ -15,23 +15,21 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "zr_common.h"
+#include "nk_common.h"
 #include "../menu_display.h"
 #include "../menu_input.h"
 
 enum
 {
-   ZR_TEXTURE_POINTER = 0,
-   ZR_TEXTURE_LAST
+   NK_TEXTURE_POINTER = 0,
+   NK_TEXTURE_LAST
 };
 
 enum
 {
    ZRMENU_WND_MAIN = 0,
-   ZRMENU_WND_CONTROL,
    ZRMENU_WND_SHADER_PARAMETERS,
    ZRMENU_WND_TEST,
-   ZRMENU_WND_WIZARD
 };
 
 enum zrmenu_theme
@@ -41,32 +39,32 @@ enum zrmenu_theme
 };
 
 struct icons {
-    struct zr_image folder;
-    struct zr_image monitor;
-    struct zr_image gamepad;
-    struct zr_image settings;
-    struct zr_image speaker;
-    struct zr_image invader;
-    struct zr_image page_on;
-    struct zr_image page_off;
+    struct nk_image folder;
+    struct nk_image monitor;
+    struct nk_image gamepad;
+    struct nk_image settings;
+    struct nk_image speaker;
+    struct nk_image invader;
+    struct nk_image page_on;
+    struct nk_image page_off;
 };
 
 struct window {
    bool open;
-   struct zr_vec2 position;
-   struct zr_vec2 size;
+   struct nk_vec2 position;
+   struct nk_vec2 size;
 };
 
 typedef struct zrmenu_handle
 {
    /* zahnrad mandatory */
    void *memory;
-   struct zr_context ctx;
-   struct zr_memory_status status;
+   struct nk_context ctx;
+   struct nk_memory_status status;
    enum menu_action action;
 
    /* window control variables */
-   struct zr_vec2 size;
+   struct nk_vec2 size;
    bool size_changed;
    struct window window[5];
 
@@ -82,19 +80,13 @@ typedef struct zrmenu_handle
    struct
    {
       menu_texture_item bg;
-      menu_texture_item list[ZR_TEXTURE_LAST];
+      menu_texture_item list[NK_TEXTURE_LAST];
    } textures;
 
    gfx_font_raster_block_t list_block;
 } zrmenu_handle_t;
 
-void zrmenu_set_style(struct zr_context *ctx, enum zrmenu_theme theme);
-
-void zrmenu_wnd_wizard(zrmenu_handle_t *zr);
 void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr);
-void zrmenu_wnd_control(zrmenu_handle_t *zr);
 void zrmenu_wnd_test(zrmenu_handle_t *zr);
 void zrmenu_wnd_main(zrmenu_handle_t *zr);
 
-static void ui_slider(struct zr_context *ctx, const char *title, int *value, int max, int active);
-static int ui_selector(struct zr_context *ctx, const char *title, int *selected, const char *items[], int max, int active);
