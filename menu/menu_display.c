@@ -562,10 +562,12 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             draw->coords      = (struct gfx_coords*)(&ca->coords);
             draw->matrix_data = NULL;
 
+#if defined(HAVE_GLSL) || defined(HAVE_CG) || defined(HAVE_HLSL)
             shader_info.data = NULL;
             shader_info.idx  = VIDEO_SHADER_MENU;
 
             video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+#endif
 
             t += 0.01;
 
