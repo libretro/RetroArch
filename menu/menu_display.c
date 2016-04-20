@@ -784,13 +784,10 @@ void menu_display_snow(int width, int height)
 void menu_display_draw_text(const char *msg, 
       int width, int height, struct font_params *params)
 {
-   int font_size;
    void *fb_buf              = NULL;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
-
-   params->x           = params->x / width;
-   params->y           = 1.0f - (params->y + font_size / 3) / height;
+   params->x           = params->x;
+   params->y           = params->y;
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
 

@@ -245,10 +245,13 @@ static void mui_draw_tab(mui_handle_t *mui,
 static void mui_draw_text(float x, float y, unsigned width, unsigned height,
       const char *msg, uint32_t color, enum text_alignment text_align)
 {
+   int font_size;
    struct font_params params;
 
-   params.x           = x;
-   params.y           = y;
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
+
+   params.x           = x / width;
+   params.y           = 1.0f - (y + font_size / 3) / height;
    params.scale       = 1.0f;
    params.drop_mod    = 0.0f;
    params.drop_x      = 0.0f;
