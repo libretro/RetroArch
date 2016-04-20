@@ -113,7 +113,6 @@ typedef struct menu_display_ctx_draw
    float y;
    unsigned width;
    unsigned height;
-   bool dont_replace_coords;
    struct gfx_coords *coords;
    void *matrix_data;
    uintptr_t texture;
