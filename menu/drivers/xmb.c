@@ -1429,8 +1429,11 @@ static void xmb_populate_entries(void *data,
 }
 
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
-      xmb_node_t *core_node, xmb_node_t *node, unsigned type, bool active)
+      xmb_node_t *core_node, xmb_node_t *node, 
+      uint32_t hash, unsigned type, bool active)
 {
+   uintptr_t id = 0;
+
    switch(type)
    {
       case MENU_FILE_DIRECTORY:
@@ -1491,7 +1494,35 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_CORE_INFO];
    }
 
-   return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
+   id = xmb->textures.list[XMB_TEXTURE_SUBSETTING];
+
+   switch (hash)
+   {
+      case MENU_LABEL_CORE_OPTIONS:
+         return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
+      case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+         return xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS];
+      case MENU_LABEL_CORE_CHEAT_OPTIONS:
+         return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
+      case MENU_LABEL_DISK_OPTIONS:
+         return xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS];
+      case MENU_LABEL_SHADER_OPTIONS:
+         return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
+      case MENU_LABEL_ACHIEVEMENT_LIST:
+         return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENT_LIST];
+      case MENU_LABEL_SAVESTATE:
+         return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
+      case MENU_LABEL_LOADSTATE:
+         return xmb->textures.list[XMB_TEXTURE_LOADSTATE];
+      case MENU_LABEL_TAKE_SCREENSHOT:
+         return xmb->textures.list[XMB_TEXTURE_SCREENSHOT];
+      case MENU_LABEL_RESTART_CONTENT:
+         return xmb->textures.list[XMB_TEXTURE_RELOAD];
+      case MENU_LABEL_RESUME_CONTENT:
+         return xmb->textures.list[XMB_TEXTURE_RESUME];
+   }
+
+   return id;
 }
 
 static void xmb_draw_items(xmb_handle_t *xmb,
@@ -1575,44 +1606,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          fill_short_pathname_representation(entry.path, entry.path,
                sizeof(entry.path));
 
-      icon = xmb_icon_get_id(xmb, core_node, node, entry.type, (i == current));
-
-      switch (hash_label)
-      {
-         case MENU_LABEL_CORE_OPTIONS:
-            icon = xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
-            break;
-         case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
-            icon = xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS];
-            break;
-         case MENU_LABEL_CORE_CHEAT_OPTIONS:
-            icon = xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
-            break;
-         case MENU_LABEL_DISK_OPTIONS:
-            icon = xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS];
-            break;
-         case MENU_LABEL_SHADER_OPTIONS:
-            icon = xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
-            break;
-         case MENU_LABEL_ACHIEVEMENT_LIST:
-            icon = xmb->textures.list[XMB_TEXTURE_ACHIEVEMENT_LIST];
-            break;
-         case MENU_LABEL_SAVESTATE:
-            icon = xmb->textures.list[XMB_TEXTURE_SAVESTATE];
-            break;
-         case MENU_LABEL_LOADSTATE:
-            icon = xmb->textures.list[XMB_TEXTURE_LOADSTATE];
-            break;
-         case MENU_LABEL_TAKE_SCREENSHOT:
-            icon = xmb->textures.list[XMB_TEXTURE_SCREENSHOT];
-            break;
-         case MENU_LABEL_RESTART_CONTENT:
-            icon = xmb->textures.list[XMB_TEXTURE_RELOAD];
-            break;
-         case MENU_LABEL_RESUME_CONTENT:
-            icon = xmb->textures.list[XMB_TEXTURE_RESUME];
-            break;
-      }
+      icon = xmb_icon_get_id(xmb, core_node, node, hash_label, entry.type, (i == current));
 
       if (string_is_equal(entry.value, "disabled") ||
             string_is_equal(entry.value, "off"))
@@ -1635,23 +1629,14 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          switch (hash_value)
          {
             case MENU_VALUE_COMP:
-               break;
             case MENU_VALUE_MORE:
-               break;
             case MENU_VALUE_CORE:
-               break;
             case MENU_VALUE_RDB:
-               break;
             case MENU_VALUE_CURSOR:
-               break;
             case MENU_VALUE_FILE:
-               break;
             case MENU_VALUE_DIR:
-               break;
             case MENU_VALUE_MUSIC:
-               break;
             case MENU_VALUE_IMAGE:
-               break;
             case MENU_VALUE_MOVIE:
                break;
             case MENU_VALUE_ON:
