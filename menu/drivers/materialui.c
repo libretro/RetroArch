@@ -243,16 +243,12 @@ static void mui_draw_tab(mui_handle_t *mui,
 }
 
 static void mui_blit_line(float x, float y, unsigned width, unsigned height,
-      const char *message, uint32_t color, enum text_alignment text_align)
+      const char *msg, uint32_t color, enum text_alignment text_align)
 {
-   int font_size;
    struct font_params params;
-   void *fb_buf              = NULL;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
-
-   params.x           = x / width;
-   params.y           = 1.0f - (y + font_size / 3) / height;
+   params.x           = x;
+   params.y           = y;
    params.scale       = 1.0f;
    params.drop_mod    = 0.0f;
    params.drop_x      = 0.0f;
@@ -261,9 +257,7 @@ static void mui_blit_line(float x, float y, unsigned width, unsigned height,
    params.full_screen = true;
    params.text_align  = text_align;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
-
-   video_driver_set_osd_msg(message, &params, fb_buf);
+   menu_display_draw_text(msg, width, height, &params);
 }
 
 static void mui_render_quad(mui_handle_t *mui,

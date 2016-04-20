@@ -191,6 +191,9 @@ void menu_display_draw_cursor(
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height);
 
+void menu_display_draw_text(const char *msg, int width, int height, 
+      struct font_params *params);
+
 extern uintptr_t menu_display_white_texture;
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;

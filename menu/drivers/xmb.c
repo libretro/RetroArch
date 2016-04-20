@@ -499,7 +499,6 @@ static void xmb_draw_text(xmb_handle_t *xmb,
    settings_t *settings = config_get_ptr();
    struct font_params params;
    uint8_t a8                =   0;
-   void *disp_buf            = NULL;
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
@@ -513,8 +512,8 @@ static void xmb_draw_text(xmb_handle_t *xmb,
          || y < -xmb->icon.size || y > height + xmb->icon.size)
       return;
 
-   params.x           = x        / width;
-   params.y           = 1.0f - y / height;
+   params.x           = x;
+   params.y           = y;
    params.scale       = scale_factor;
    params.drop_mod    = 0.0f;
    params.drop_x      = 0.0f;
@@ -530,9 +529,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
       params.drop_alpha  = 0.25f;
    }
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &disp_buf);
-
-   video_driver_set_osd_msg(str, &params, disp_buf);
+   menu_display_draw_text(str, width, height, &params);
 }
 
 static void xmb_messagebox(void *data, const char *message)
