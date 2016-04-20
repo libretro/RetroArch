@@ -1833,44 +1833,10 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 #ifdef XMB_RIBBON_ENABLE
 static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 {
-   struct uniform_info uniform_param = {0};
-   static float t = 0;
-   video_shader_ctx_info_t shader_info;
-   gfx_coord_array_t *ca   = NULL;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
-
-   if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
-      draw->handle_alpha = 0.75;
-   else
-      draw->handle_alpha = 0.90;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, draw);
-
-   draw->x           = 0;
-   draw->y           = 0;
-   draw->coords      = (struct gfx_coords*)(&ca->coords);
-   draw->matrix_data = NULL;
-
-   shader_info.data = NULL;
-   shader_info.idx  = VIDEO_SHADER_MENU;
-
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
-
-   t += 0.01;
-
-   uniform_param.enabled           = true;
-   uniform_param.lookup.enable     = true;
-   uniform_param.lookup.add_prefix = true;
-   uniform_param.lookup.idx        = VIDEO_SHADER_MENU;
-   uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
-   uniform_param.type              = UNIFORM_1F;
-   uniform_param.lookup.ident      = "time";
-   uniform_param.result.f.v0       = t;
-
-   video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 #endif
 
@@ -1878,15 +1844,9 @@ static void xmb_draw_bg(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 {
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
-
-#ifdef XMB_RIBBON_ENABLE
-   xmb_draw_ribbon(xmb, draw);
-#else
    draw->x              = 0;
    draw->y              = 0;
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
-#endif
-
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
@@ -1962,7 +1922,11 @@ static void xmb_frame(void *data)
       && !draw.force_transparency && draw.texture)
       draw.color             = &coord_color2[0];
 
+#ifdef XMB_RIBBON_ENABLE
+   xmb_draw_ribbon(xmb, &draw);
+#else
    xmb_draw_bg(xmb, &draw);
+#endif
 
    xmb_draw_text(xmb,
          xmb->title_name, xmb->margins.title.left,
