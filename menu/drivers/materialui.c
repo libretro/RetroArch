@@ -242,7 +242,7 @@ static void mui_draw_tab(mui_handle_t *mui,
          width, height, 0, 1, &pure_white[0]);
 }
 
-static void mui_blit_line(float x, float y, unsigned width, unsigned height,
+static void mui_draw_text(float x, float y, unsigned width, unsigned height,
       const char *msg, uint32_t color, enum text_alignment text_align)
 {
    struct font_params params;
@@ -403,7 +403,7 @@ static void mui_render_messagebox(const char *message)
    {
       const char *msg = list->elems[i].data;
       if (msg)
-         mui_blit_line(x, y + i * font_size,
+         mui_draw_text(x, y + i * font_size,
                width, height,
                msg, normal_color, TEXT_ALIGN_CENTER);
    }
@@ -521,7 +521,7 @@ static void mui_render_label_value(mui_handle_t *mui,
 
    menu_animation_ctl(MENU_ANIMATION_CTL_TICKER, &ticker);
 
-   mui_blit_line(mui->margin, y + mui->line_height / 2,
+   mui_draw_text(mui->margin, y + mui->line_height / 2,
          width, height, label_str, color, TEXT_ALIGN_LEFT);
 
    hash_value = menu_hash_calculate(value);
@@ -583,7 +583,7 @@ static void mui_render_label_value(mui_handle_t *mui,
    }
 
    if (do_draw_text)
-      mui_blit_line(width - mui->margin,
+      mui_draw_text(width - mui->margin,
             y + mui->line_height / 2,
             width, height, value_str, color, TEXT_ALIGN_RIGHT);
 
@@ -954,7 +954,7 @@ static void mui_frame(void *data)
       strlcpy(title_buf, title_buf_msg_tmp, sizeof(title_buf));
    }
 
-   mui_blit_line(title_margin, header_height / 2, width, height,
+   mui_draw_text(title_margin, header_height / 2, width, height,
          title_buf, title_color, TEXT_ALIGN_LEFT);
 
    mui_draw_scrollbar(mui, width, height, &grey_bg[0]);
