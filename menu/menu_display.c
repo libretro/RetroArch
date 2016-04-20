@@ -567,7 +567,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             shader_info.idx  = VIDEO_SHADER_MENU;
 
             video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
-#endif
 
             t += 0.01;
 
@@ -581,6 +580,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             uniform_param.result.f.v0       = t;
 
             video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
+#endif
 
             menu_display_ctl(MENU_DISPLAY_CTL_DRAW, draw);
          }
