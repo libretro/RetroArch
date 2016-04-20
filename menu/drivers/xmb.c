@@ -1833,7 +1833,10 @@ static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
 #ifdef XMB_RIBBON_ENABLE
 static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 {
-
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 #endif
 
@@ -1841,16 +1844,9 @@ static void xmb_draw_bg(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 {
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
-
-#ifdef XMB_RIBBON_ENABLE
-   //xmb_draw_ribbon(xmb, draw);
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, draw);
-#else
    draw->x              = 0;
    draw->y              = 0;
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
-#endif
-
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
@@ -1926,7 +1922,11 @@ static void xmb_frame(void *data)
       && !draw.force_transparency && draw.texture)
       draw.color             = &coord_color2[0];
 
+#ifdef XMB_RIBBON_ENABLE
+   xmb_draw_ribbon(xmb, &draw);
+#else
    xmb_draw_bg(xmb, &draw);
+#endif
 
    xmb_draw_text(xmb,
          xmb->title_name, xmb->margins.title.left,
