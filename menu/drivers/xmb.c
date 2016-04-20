@@ -377,11 +377,11 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
       float alpha, float rotation, float scale_factor,
       float *color)
 {
-   settings_t *settings = config_get_ptr();
    menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
    float shadow[16];
    unsigned i;
+   settings_t *settings = config_get_ptr();
 
    if (
          x < -xmb->icon.size/2 ||
@@ -1025,28 +1025,21 @@ static void xmb_set_title(xmb_handle_t *xmb)
 
 static xmb_node_t* xmb_get_node(xmb_handle_t *xmb, unsigned i)
 {
-   xmb_node_t *node = NULL;
-
    switch (i)
    {
       case XMB_SYSTEM_TAB_SETTINGS:
-         node = &xmb->settings_tab_node;
-         break;
+         return &xmb->settings_tab_node;
       case XMB_SYSTEM_TAB_HISTORY:
-         node = &xmb->history_tab_node;
-         break;
+         return &xmb->history_tab_node;
       case XMB_SYSTEM_TAB_ADD:
-         node = &xmb->add_tab_node;
-         break;
+         return &xmb->add_tab_node;
       default:
-         node = &xmb->main_menu_node;
          if (i > XMB_SYSTEM_TAB_END)
-            node = xmb_get_userdata_from_horizontal_list(
+            return xmb_get_userdata_from_horizontal_list(
                   xmb, i - (XMB_SYSTEM_TAB_END + 1));
-         break;
    }
 
-   return node;
+   return &xmb->main_menu_node;
 }
 
 static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
