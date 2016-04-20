@@ -1736,12 +1736,12 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
 static void xmb_render(void *data)
 {
+   size_t i;
    float delta_time;
-   size_t i, selection;
    menu_animation_ctx_delta_t delta;
-   unsigned end, height     = 0;
    settings_t   *settings   = config_get_ptr();
    xmb_handle_t *xmb        = (xmb_handle_t*)data;
+   unsigned      end        = menu_entries_get_size();
 
    if (!xmb)
       return;
@@ -1753,15 +1753,13 @@ static void xmb_render(void *data)
    if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
       menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE, &delta.ideal);
 
-   video_driver_get_size(NULL, &height);
-
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
-
-   end     = menu_entries_get_size();
-
    if (settings->menu.pointer.enable || settings->menu.mouse.enable)
    {
+      size_t selection;
+
+      if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+         return;
+
       for (i = 0; i < end; i++)
       {
          float item_y1     = xmb->margins.screen.top
