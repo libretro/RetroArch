@@ -326,29 +326,30 @@ static size_t xmb_list_get_size(void *data, enum menu_list_type type)
 
 static void *xmb_list_get_entry(void *data, enum menu_list_type type, unsigned i)
 {
-   void *ptr               = NULL;
    size_t list_size        = 0;
    xmb_handle_t *xmb       = (xmb_handle_t*)data;
-   file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
 
    switch (type)
    {
       case MENU_LIST_PLAIN:
-         list_size  = menu_entries_get_stack_size(0);
-         if (i < list_size)
-            ptr = (void*)&menu_stack->list[i];
+         {
+            file_list_t *menu_stack = menu_entries_get_menu_stack_ptr(0);
+            list_size  = menu_entries_get_stack_size(0);
+            if (i < list_size)
+               return (void*)&menu_stack->list[i];
+         }
          break;
       case MENU_LIST_HORIZONTAL:
          if (xmb && xmb->horizontal_list)
             list_size = file_list_get_size(xmb->horizontal_list);
          if (i < list_size)
-            ptr = (void*)&xmb->horizontal_list->list[i];
+            return (void*)&xmb->horizontal_list->list[i];
          break;
       default:
          break;
    }
 
-   return ptr;
+   return NULL;
 }
 
 static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
