@@ -69,17 +69,26 @@ static uint64_t hidpad_ps2adapter_get_buttons(void *data)
 
 static int16_t hidpad_ps2adapter_get_axis(void *data, unsigned axis)
 {
-   int val;
+   int val                               = 0;
    struct hidpad_ps2adapter_data *device = (struct hidpad_ps2adapter_data*)data;
 
    if (!device || axis >= 2)
       return 0;
    
-   switch (axis) {
-      case 0: val = device->data[4];break;
-      case 1: val = device->data[5];break;
-      case 2: val = device->data[3];break;
-      case 3: val = device->data[2];break;
+   switch (axis)
+   {
+      case 0:
+         val = device->data[4];
+         break;
+      case 1:
+         val = device->data[5];
+         break;
+      case 2:
+         val = device->data[3];
+         break;
+      case 3:
+         val = device->data[2];
+         break;
    }
    
    val = (val << 8) - 0x8000;
