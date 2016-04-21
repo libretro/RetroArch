@@ -370,12 +370,17 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
    return iy;
 }
 
-static void xmb_draw_icon_predone(xmb_handle_t *xmb,
+static void xmb_draw_icon(
+      xmb_handle_t *xmb,
       math_matrix_4x4 *mymat,
       uintptr_t texture,
-      float x, float y,
-      unsigned width, unsigned height,
-      float alpha, float rotation, float scale_factor,
+      float x,
+      float y,
+      unsigned width,
+      unsigned height,
+      float alpha,
+      float rotation,
+      float scale_factor,
       float *color)
 {
    menu_display_ctx_draw_t draw;
@@ -396,62 +401,32 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
 
-   draw.width       = xmb->icon.size;
-   draw.height      = xmb->icon.size;
-   draw.coords      = &coords;
-   draw.matrix_data = mymat;
-   draw.texture     = texture;
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.width           = xmb->icon.size;
+   draw.height          = xmb->icon.size;
+   draw.coords          = &coords;
+   draw.matrix_data     = mymat;
+   draw.texture         = texture;
+   draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    if (settings->menu.xmb_shadows)
    {
       for (i = 0; i < 16; i++)
-         shadow[i]  = 0;
+         shadow[i]      = 0;
 
       menu_display_set_alpha(shadow, color[3] / 4);
 
-      coords.color     = shadow;
-      draw.x           = x + 2;
-      draw.y           = height - y - 2;
+      coords.color      = shadow;
+      draw.x            = x + 2;
+      draw.y            = height - y - 2;
 
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
    }
 
-   coords.color     = (const float*)color;
-   draw.x           = x;
-   draw.y           = height - y;
+   coords.color         = (const float*)color;
+   draw.x               = x;
+   draw.y               = height - y;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-}
-
-static void xmb_draw_icon(xmb_handle_t *xmb,
-      uintptr_t texture,
-      float x, float y,
-      unsigned width, unsigned height,
-      float rotation, float scale_factor,
-      float *color)
-{
-   menu_display_ctx_rotate_draw_t rotate_draw;
-   math_matrix_4x4 mymat;
-
-   if (
-         x < -xmb->icon.size/2 ||
-         x > width ||
-         y < xmb->icon.size/2 ||
-         y > height + xmb->icon.size)
-      return;
-
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = rotation;
-   rotate_draw.scale_x      = scale_factor;
-   rotate_draw.scale_y      = scale_factor;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
-
-   xmb_draw_icon_predone(xmb, &mymat, texture, x, y,
-         width, height, 1.0, rotation, scale_factor, color);
 }
 
 static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
@@ -1706,22 +1681,33 @@ static void xmb_draw_items(xmb_handle_t *xmb,
             ? xmb->alpha : node->alpha);
 
       if (color[3] != 0)
-         xmb_draw_icon(
-               xmb,
-               icon,
-               icon_x,
-               icon_y,
-               width,
-               height,
-               0,
-               node->zoom,
-               &color[0]);
+      {
+         menu_display_ctx_rotate_draw_t rotate_draw;
+         math_matrix_4x4 mymat;
+         uintptr_t texture        = icon;
+         float x                  = icon_x;
+         float y                  = icon_y;
+         float rotation           = 0;
+         float scale_factor       = node->zoom;
+
+         rotate_draw.matrix       = &mymat;
+         rotate_draw.rotation     = rotation;
+         rotate_draw.scale_x      = scale_factor;
+         rotate_draw.scale_y      = scale_factor;
+         rotate_draw.scale_z      = 1;
+         rotate_draw.scale_enable = true;
+
+         menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
+
+         xmb_draw_icon(xmb, &mymat, texture, x, y,
+               width, height, 1.0, rotation, scale_factor, &color[0]);
+      }
 
       menu_display_set_alpha(color, node->alpha > xmb->alpha
             ? xmb->alpha : node->alpha);
 
       if (texture_switch != 0 && color[3] != 0)
-         xmb_draw_icon_predone(xmb, &mymat,
+         xmb_draw_icon(xmb, &mymat,
                texture_switch,
                node->x + xmb->margins.screen.left
                + xmb->icon.spacing.horizontal
@@ -1918,7 +1904,7 @@ static void xmb_frame(void *data)
    menu_display_set_alpha(coord_color2,
          1.00f > xmb->alpha ? xmb->alpha : 1.00f);
    if (settings->menu.timedate_enable && coord_color2[3] != 0)
-      xmb_draw_icon_predone(xmb, &mymat,
+      xmb_draw_icon(xmb, &mymat,
             xmb->textures.list[XMB_TEXTURE_CLOCK],
             width - xmb->icon.size, xmb->icon.size,width,
             height, 1, 0, 1, &coord_color2[0]);
@@ -1945,7 +1931,7 @@ static void xmb_frame(void *data)
            xmb->textures.arrow.alpha > xmb->alpha
          ? xmb->alpha : xmb->textures.arrow.alpha);
    if (coord_color2[3] != 0)
-      xmb_draw_icon_predone(
+      xmb_draw_icon(
             xmb,
             &mymat,
             xmb->textures.list[XMB_TEXTURE_ARROW],
@@ -1975,18 +1961,29 @@ static void xmb_frame(void *data)
             node->alpha > xmb->alpha ? xmb->alpha : node->alpha);
 
       if (item_color[3] != 0)
-         xmb_draw_icon(
-               xmb,
-               node->icon,
-               xmb->x + xmb->categories.x_pos +
-               xmb->margins.screen.left +
-               xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
-               xmb->margins.screen.top + xmb->icon.size / 2.0,
-               width,
-               height,
-               0,
-               node->zoom,
-               &item_color[0]);
+      {
+         menu_display_ctx_rotate_draw_t rotate_draw;
+         math_matrix_4x4 mymat;
+         uintptr_t texture        = node->icon;
+         float x                  = xmb->x + xmb->categories.x_pos +
+                                    xmb->margins.screen.left +
+                                    xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0;
+         float y                  = xmb->margins.screen.top + xmb->icon.size / 2.0;
+         float rotation           = 0;
+         float scale_factor       = node->zoom;
+
+         rotate_draw.matrix       = &mymat;
+         rotate_draw.rotation     = rotation;
+         rotate_draw.scale_x      = scale_factor;
+         rotate_draw.scale_y      = scale_factor;
+         rotate_draw.scale_z      = 1;
+         rotate_draw.scale_enable = true;
+
+         menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
+
+         xmb_draw_icon(xmb, &mymat, texture, x, y,
+               width, height, 1.0, rotation, scale_factor, &item_color[0]);
+      }
 
       menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
    }
