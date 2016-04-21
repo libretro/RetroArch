@@ -1788,27 +1788,47 @@ static void xmb_render(void *data)
    menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 }
 
-static void xmb_draw_bg(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw,
+static void xmb_draw_bg(
+      xmb_handle_t *xmb,
+      unsigned width,
+      unsigned height,
+      float alpha,
+      bool force_transparency,
+      uintptr_t texture_id,
+      float *coord_color,
       float *coord_color2)
 {
+   menu_display_ctx_draw_t draw;
    settings_t   *settings                  = config_get_ptr();
+
+   draw.texture              = texture_id;
+   draw.width                = width;
+   draw.height               = height;
+   draw.color                = &coord_color[0];
+   draw.handle_alpha         = alpha;
+   draw.force_transparency   = force_transparency;
+   draw.vertex               = NULL;
+   draw.tex_coord            = NULL;
+   draw.vertex_count         = 4;
+   draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    if (
          (settings->menu.pause_libretro
           || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
           || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
          )
-      && !draw->force_transparency && draw->texture)
-      draw->color             = &coord_color2[0];
+      && !draw.force_transparency && draw.texture)
+      draw.color             = &coord_color2[0];
+
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 #ifdef XMB_RIBBON_ENABLE
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, &draw);
 #else
-   draw->x              = 0;
-   draw->y              = 0;
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
+   draw.x              = 0;
+   draw.y              = 0;
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
 #endif
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
@@ -1823,9 +1843,8 @@ static void xmb_frame(void *data)
    float item_color[16];
    float coord_color[16];
    float coord_color2[16];
-   menu_display_ctx_draw_t draw;
    menu_display_ctx_rotate_draw_t rotate_draw;
-   bool display_kb;
+   bool display_kb                         = false;
    bool render_background                  = false;
    xmb_handle_t *xmb                       = (xmb_handle_t*)data;
    settings_t   *settings                  = config_get_ptr();
@@ -1861,20 +1880,15 @@ static void xmb_frame(void *data)
        xmb->alpha : (float)settings->menu.xmb_alpha_factor/100);
    menu_display_set_alpha(coord_color2, xmb->alpha);
 
-   memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
-
-   draw.width              = width;
-   draw.height             = height;
-   draw.texture            = xmb->textures.bg;
-   draw.handle_alpha       = xmb->alpha;
-   draw.force_transparency = false;
-   draw.color              = &coord_color[0];
-   draw.vertex             = NULL;
-   draw.tex_coord          = NULL;
-   draw.vertex_count       = 4;
-   draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-
-   xmb_draw_bg(xmb, &draw, coord_color2);
+   xmb_draw_bg(
+         xmb,
+         width,
+         height,
+         xmb->alpha,
+         false,
+         xmb->textures.bg,
+         coord_color,
+         coord_color2);
 
    xmb_draw_text(xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -2011,20 +2025,15 @@ static void xmb_frame(void *data)
 
    if (render_background)
    {
-      memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
-
-      draw.width              = width;
-      draw.height             = height;
-      draw.texture            = xmb->textures.bg;
-      draw.handle_alpha       = xmb->alpha;
-      draw.force_transparency = true;
-      draw.color              = &coord_color[0];
-      draw.vertex             = NULL;
-      draw.tex_coord          = NULL;
-      draw.vertex_count       = 4;
-      draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-
-      xmb_draw_bg(xmb, &draw, coord_color2);
+      xmb_draw_bg(
+            xmb,
+            width,
+            height,
+            xmb->alpha,
+            true,
+            xmb->textures.bg,
+            coord_color,
+            coord_color2);
 
       xmb_render_messagebox_internal(xmb, msg);
    }
