@@ -1968,6 +1968,8 @@ static void xmb_frame(void *data)
             0,
             1, &coord_color2[0]);
 
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+
    /* Horizontal tab icons */
    for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
       + XMB_SYSTEM_TAB_END; i++)
@@ -1976,8 +1978,6 @@ static void xmb_frame(void *data)
 
       if (!node)
          continue;
-
-      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
       menu_display_set_alpha(item_color,
             node->alpha > xmb->alpha ? xmb->alpha : node->alpha);
@@ -2016,9 +2016,9 @@ static void xmb_frame(void *data)
                scale_factor,
                &item_color[0]);
       }
-
-      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
    }
+
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 
    /* Vertical icons */
    xmb_draw_items(xmb,
