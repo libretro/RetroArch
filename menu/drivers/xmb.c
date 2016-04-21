@@ -473,6 +473,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
       enum text_alignment text_align,
       unsigned width, unsigned height)
 {
+   int font_size;
    settings_t *settings = config_get_ptr();
    struct font_params params;
    uint8_t a8                =   0;
@@ -489,8 +490,10 @@ static void xmb_draw_text(xmb_handle_t *xmb,
          || y < -xmb->icon.size || y > height + xmb->icon.size)
       return;
 
+   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
+
    params.x           = x / width;
-   params.y           = 1.0f - y / height;
+   params.y           = 1.0f - (y + font_size / 3) / height;
    params.scale       = scale_factor;
    params.drop_mod    = 0.0f;
    params.drop_x      = 0.0f;
