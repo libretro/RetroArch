@@ -1790,42 +1790,6 @@ static void xmb_render(void *data)
    menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 }
 
-static void xmb_frame_horizontal_list(xmb_handle_t *xmb,
-      unsigned width, unsigned height,
-      float *color)
-{
-   unsigned i;
-   size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
-      + XMB_SYSTEM_TAB_END;
-
-   for (i = 0; i <= list_size; i++)
-   {
-      xmb_node_t *node = xmb_get_node(xmb, i);
-
-      if (!node)
-         continue;
-
-      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
-
-      /* set alpha components of color */
-      color[3] = color[7] = color[11] = color[15] = (node->alpha > xmb->alpha)
-         ? xmb->alpha : node->alpha;
-
-      if (color[3] != 0)
-         xmb_draw_icon(xmb, node->icon,
-               xmb->x + xmb->categories.x_pos +
-               xmb->margins.screen.left +
-               xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
-               xmb->margins.screen.top + xmb->icon.size / 2.0,
-               width, height,
-               0,
-               node->zoom,
-               &color[0]);
-
-      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
-   }
-}
-
 #ifdef XMB_RIBBON_ENABLE
 static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
 {
@@ -2012,7 +1976,33 @@ static void xmb_frame(void *data)
             0,
             1, &coord_color2[0]);
 
-   xmb_frame_horizontal_list(xmb, width, height, &item_color[0]);
+   for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
+      + XMB_SYSTEM_TAB_END; i++)
+   {
+      xmb_node_t *node = xmb_get_node(xmb, i);
+
+      if (!node)
+         continue;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+
+      /* set alpha components of color */
+      item_color[3] = item_color[7] = item_color[11] = item_color[15] = (node->alpha > xmb->alpha)
+         ? xmb->alpha : node->alpha;
+
+      if (item_color[3] != 0)
+         xmb_draw_icon(xmb, node->icon,
+               xmb->x + xmb->categories.x_pos +
+               xmb->margins.screen.left +
+               xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
+               xmb->margins.screen.top + xmb->icon.size / 2.0,
+               width, height,
+               0,
+               node->zoom,
+               &item_color[0]);
+
+      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+   }
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK, NULL);
 
