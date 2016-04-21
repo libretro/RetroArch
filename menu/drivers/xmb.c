@@ -1540,6 +1540,8 @@ static void xmb_draw_items(xmb_handle_t *xmb,
    if (list == xmb->selection_buf_old)
       i = 0;
 
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+
    for (; i < end; i++)
    {
       menu_entry_t entry;
@@ -1678,7 +1680,6 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                TEXT_ALIGN_LEFT,
                width, height);
 
-      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
       menu_display_set_alpha(color, node->alpha > xmb->alpha
             ? xmb->alpha : node->alpha);
@@ -1732,9 +1733,9 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                node->alpha,
                0,
                1, &color[0]);
-
-      menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
    }
+
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
 static void xmb_render(void *data)
