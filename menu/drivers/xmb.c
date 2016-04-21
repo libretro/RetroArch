@@ -1706,8 +1706,16 @@ static void xmb_draw_items(xmb_handle_t *xmb,
             ? xmb->alpha : node->alpha);
 
       if (color[3] != 0)
-         xmb_draw_icon(xmb, icon, icon_x, icon_y, width, height,
-               0, node->zoom, &color[0]);
+         xmb_draw_icon(
+               xmb,
+               icon,
+               icon_x,
+               icon_y,
+               width,
+               height,
+               0,
+               node->zoom,
+               &color[0]);
 
       menu_display_set_alpha(color, node->alpha > xmb->alpha
             ? xmb->alpha : node->alpha);
@@ -1837,25 +1845,18 @@ static void xmb_frame(void *data)
 {
    size_t selection;
    math_matrix_4x4 mymat;
-   unsigned depth, i, width, height;
-   char msg[PATH_MAX_LENGTH];
-   char title_msg[256];
-   float item_color[16];
-   float coord_color[16];
-   float coord_color2[16];
+   unsigned i, width, height;
+   char msg[PATH_MAX_LENGTH], title_msg[256];
+   float item_color[16], coord_color[16], coord_color2[16];
    menu_display_ctx_rotate_draw_t rotate_draw;
    bool display_kb                         = false;
    bool render_background                  = false;
-   xmb_handle_t *xmb                       = (xmb_handle_t*)data;
+   file_list_t *selection_buf              = NULL;
+   file_list_t *menu_stack                 = NULL;
    settings_t   *settings                  = config_get_ptr();
-   file_list_t *selection_buf              =
-      menu_entries_get_selection_buf_ptr(0);
-   file_list_t *menu_stack                 =
-      menu_entries_get_menu_stack_ptr(0);
+   xmb_handle_t *xmb                       = (xmb_handle_t*)data;
 
    if (!xmb)
-      return;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
    msg[0]       = '\0';
@@ -1864,8 +1865,6 @@ static void xmb_frame(void *data)
    video_driver_get_size(&width, &height);
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_BIND_BLOCK, &xmb->raster_block);
-
-   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
    xmb->raster_block.carr.coords.vertices = 0;
 
@@ -1876,8 +1875,9 @@ static void xmb_frame(void *data)
       item_color[i]   = 1.0f;
    }
 
-   menu_display_set_alpha(coord_color, ((float)settings->menu.xmb_alpha_factor/100 > xmb->alpha) ?
-       xmb->alpha : (float)settings->menu.xmb_alpha_factor/100);
+   menu_display_set_alpha(coord_color,
+         ((float)settings->menu.xmb_alpha_factor/100 > xmb->alpha) ?
+         xmb->alpha : (float)settings->menu.xmb_alpha_factor/100);
    menu_display_set_alpha(coord_color2, xmb->alpha);
 
    xmb_draw_bg(
@@ -1890,10 +1890,38 @@ static void xmb_frame(void *data)
          coord_color,
          coord_color2);
 
+   /* Title text */
    xmb_draw_text(xmb,
          xmb->title_name, xmb->margins.title.left,
          xmb->margins.title.top, 1, 1, TEXT_ALIGN_LEFT,
          width, height);
+
+   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
+      xmb_draw_text(xmb, title_msg, xmb->margins.title.left,
+            height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
+            width, height);
+
+   rotate_draw.matrix       = &mymat;
+   rotate_draw.rotation     = 0;
+   rotate_draw.scale_x      = 1;
+   rotate_draw.scale_y      = 1;
+   rotate_draw.scale_z      = 1;
+   rotate_draw.scale_enable = true;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+
+   if (strcmp(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
+      xmb_draw_thumbnail(xmb, &coord_color2[0], width, height);
+
+   /* Clock image */
+   menu_display_set_alpha(coord_color2,
+         1.00f > xmb->alpha ? xmb->alpha : 1.00f);
+   if (settings->menu.timedate_enable && coord_color2[3] != 0)
+      xmb_draw_icon_predone(xmb, &mymat,
+            xmb->textures.list[XMB_TEXTURE_CLOCK],
+            width - xmb->icon.size, xmb->icon.size,width,
+            height, 1, 0, 1, &coord_color2[0]);
 
    if (settings->menu.timedate_enable)
    {
@@ -1912,52 +1940,10 @@ static void xmb_frame(void *data)
             width, height);
    }
 
-   if (menu_entries_get_core_title(title_msg, sizeof(title_msg)) == 0)
-      xmb_draw_text(xmb, title_msg, xmb->margins.title.left,
-            height - xmb->margins.title.bottom, 1, 1, TEXT_ALIGN_LEFT,
-            width, height);
-
-   depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-
-   xmb_draw_items(xmb,
-         xmb->selection_buf_old,
-         xmb->menu_stack_old,
-         xmb->selection_ptr_old,
-         depth > 1 ? xmb->categories.selection_ptr :
-         xmb->categories.selection_ptr_old,
-         &item_color[0], width, height);
-
-   xmb_draw_items(xmb,
-         selection_buf,
-         menu_stack,
-         selection,
-         xmb->categories.selection_ptr,
-         &item_color[0], width, height);
-
-   rotate_draw.matrix       = &mymat;
-   rotate_draw.rotation     = 0;
-   rotate_draw.scale_x      = 1;
-   rotate_draw.scale_y      = 1;
-   rotate_draw.scale_z      = 1;
-   rotate_draw.scale_enable = true;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
-
-   if (strcmp(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
-      xmb_draw_thumbnail(xmb, &coord_color2[0], width, height);
-
-   menu_display_set_alpha(coord_color2, 1.00f > xmb->alpha ? xmb->alpha : 1.00f);
-
-   if (settings->menu.timedate_enable && coord_color2[3] != 0)
-      xmb_draw_icon_predone(xmb, &mymat,
-            xmb->textures.list[XMB_TEXTURE_CLOCK],
-            width - xmb->icon.size, xmb->icon.size,width,
-            height, 1, 0, 1, &coord_color2[0]);
-
-   menu_display_set_alpha(coord_color2, xmb->textures.arrow.alpha > xmb->alpha
-      ? xmb->alpha : xmb->textures.arrow.alpha);
-
+   /* Arrow image */
+   menu_display_set_alpha(coord_color2,
+           xmb->textures.arrow.alpha > xmb->alpha
+         ? xmb->alpha : xmb->textures.arrow.alpha);
    if (coord_color2[3] != 0)
       xmb_draw_icon_predone(
             xmb,
@@ -1974,6 +1960,7 @@ static void xmb_frame(void *data)
             0,
             1, &coord_color2[0]);
 
+   /* Horizontal tab icons */
    for (i = 0; i <= xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL)
       + XMB_SYSTEM_TAB_END; i++)
    {
@@ -1984,16 +1971,19 @@ static void xmb_frame(void *data)
 
       menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-      menu_display_set_alpha(item_color, node->alpha > xmb->alpha
-         ? xmb->alpha : node->alpha);
+      menu_display_set_alpha(item_color,
+            node->alpha > xmb->alpha ? xmb->alpha : node->alpha);
 
       if (item_color[3] != 0)
-         xmb_draw_icon(xmb, node->icon,
+         xmb_draw_icon(
+               xmb,
+               node->icon,
                xmb->x + xmb->categories.x_pos +
                xmb->margins.screen.left +
                xmb->icon.spacing.horizontal * (i + 1) - xmb->icon.size / 2.0,
                xmb->margins.screen.top + xmb->icon.size / 2.0,
-               width, height,
+               width,
+               height,
                0,
                node->zoom,
                &item_color[0]);
@@ -2001,7 +1991,36 @@ static void xmb_frame(void *data)
       menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
    }
 
+   /* Vertical icons */
+   xmb_draw_items(xmb,
+         xmb->selection_buf_old,
+         xmb->menu_stack_old,
+         xmb->selection_ptr_old,
+         (xmb_list_get_size(xmb, MENU_LIST_PLAIN) > 1) 
+         ? xmb->categories.selection_ptr : xmb->categories.selection_ptr_old,
+         &item_color[0],
+         width,
+         height);
+
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
+
+   selection_buf = menu_entries_get_selection_buf_ptr(0);
+   menu_stack    = menu_entries_get_menu_stack_ptr(0);
+
+   xmb_draw_items(
+         xmb,
+         selection_buf,
+         menu_stack,
+         selection,
+         xmb->categories.selection_ptr,
+         &item_color[0],
+         width,
+         height);
+
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK, NULL);
+
+   menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_DISPLAY, &display_kb);
 
    if (display_kb)
    {
@@ -2038,8 +2057,9 @@ static void xmb_frame(void *data)
       xmb_render_messagebox_internal(xmb, msg);
    }
 
-   menu_display_set_alpha(coord_color2, 1.00f > xmb->alpha ? xmb->alpha : 1.00f);
-
+   /* Cursor image */
+   menu_display_set_alpha(coord_color2,
+         1.00f > xmb->alpha ? xmb->alpha : 1.00f);
    menu_display_draw_cursor(
          &coord_color2[0],
          xmb->cursor.size,
