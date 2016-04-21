@@ -371,7 +371,7 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 }
 
 static void xmb_draw_icon(
-      xmb_handle_t *xmb,
+      int icon_size,
       math_matrix_4x4 *mymat,
       uintptr_t texture,
       float x,
@@ -390,10 +390,10 @@ static void xmb_draw_icon(
    settings_t *settings = config_get_ptr();
 
    if (
-         x < -xmb->icon.size/2 ||
+         x < -icon_size / 2 ||
          x > width ||
-         y < xmb->icon.size/2 ||
-         y > height + xmb->icon.size)
+         y < icon_size  / 2 ||
+         y > height + icon_size)
       return;
 
    coords.vertices      = 4;
@@ -401,8 +401,8 @@ static void xmb_draw_icon(
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
 
-   draw.width           = xmb->icon.size;
-   draw.height          = xmb->icon.size;
+   draw.width           = icon_size;
+   draw.height          = icon_size;
    draw.coords          = &coords;
    draw.matrix_data     = mymat;
    draw.texture         = texture;
@@ -1699,15 +1699,27 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
          menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
 
-         xmb_draw_icon(xmb, &mymat, texture, x, y,
-               width, height, 1.0, rotation, scale_factor, &color[0]);
+         xmb_draw_icon(
+               xmb->icon.size,
+               &mymat,
+               texture,
+               x,
+               y,
+               width,
+               height,
+               1.0,
+               rotation,
+               scale_factor,
+               &color[0]);
       }
 
       menu_display_set_alpha(color, node->alpha > xmb->alpha
             ? xmb->alpha : node->alpha);
 
       if (texture_switch != 0 && color[3] != 0)
-         xmb_draw_icon(xmb, &mymat,
+         xmb_draw_icon(
+               xmb->icon.size,
+               &mymat,
                texture_switch,
                node->x + xmb->margins.screen.left
                + xmb->icon.spacing.horizontal
@@ -1904,10 +1916,17 @@ static void xmb_frame(void *data)
    menu_display_set_alpha(coord_color2,
          1.00f > xmb->alpha ? xmb->alpha : 1.00f);
    if (settings->menu.timedate_enable && coord_color2[3] != 0)
-      xmb_draw_icon(xmb, &mymat,
+      xmb_draw_icon(
+            xmb->icon.size,
+            &mymat,
             xmb->textures.list[XMB_TEXTURE_CLOCK],
-            width - xmb->icon.size, xmb->icon.size,width,
-            height, 1, 0, 1, &coord_color2[0]);
+            width - xmb->icon.size,
+            xmb->icon.size,width,
+            height,
+            1,
+            0,
+            1,
+            &coord_color2[0]);
 
    if (settings->menu.timedate_enable)
    {
@@ -1932,7 +1951,7 @@ static void xmb_frame(void *data)
          ? xmb->alpha : xmb->textures.arrow.alpha);
    if (coord_color2[3] != 0)
       xmb_draw_icon(
-            xmb,
+            xmb->icon.size,
             &mymat,
             xmb->textures.list[XMB_TEXTURE_ARROW],
             xmb->x + xmb->margins.screen.left +
@@ -1981,8 +2000,18 @@ static void xmb_frame(void *data)
 
          menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
 
-         xmb_draw_icon(xmb, &mymat, texture, x, y,
-               width, height, 1.0, rotation, scale_factor, &item_color[0]);
+         xmb_draw_icon(
+               xmb->icon.size,
+               &mymat,
+               texture,
+               x,
+               y,
+               width,
+               height,
+               1.0,
+               rotation,
+               scale_factor,
+               &item_color[0]);
       }
 
       menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
