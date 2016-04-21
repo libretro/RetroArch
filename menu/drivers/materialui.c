@@ -167,7 +167,8 @@ static void mui_context_reset_textures(mui_handle_t *mui,
    }
 }
 
-static void mui_draw_icon(mui_handle_t *mui,
+static void mui_draw_icon(
+      unsigned icon_size,
       uintptr_t texture,
       float x, float y,
       unsigned width, unsigned height,
@@ -196,14 +197,14 @@ static void mui_draw_icon(mui_handle_t *mui,
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   draw.x           = x;
-   draw.y           = height - y - mui->icon_size;
-   draw.width       = mui->icon_size;
-   draw.height      = mui->icon_size;
-   draw.coords      = &coords;
-   draw.matrix_data = &mymat;
-   draw.texture     = texture;
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.x               = x;
+   draw.y               = height - y - icon_size;
+   draw.width           = icon_size;
+   draw.height          = icon_size;
+   draw.coords          = &coords;
+   draw.matrix_data     = &mymat;
+   draw.texture         = texture;
+   draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 
@@ -220,26 +221,31 @@ static void mui_draw_tab(mui_handle_t *mui,
    switch (i)
    {
       case MUI_SYSTEM_TAB_MAIN:
-         tab_icon = (i == mui->categories.selection_ptr)
-            ? MUI_TEXTURE_TAB_MAIN_ACTIVE
-            : MUI_TEXTURE_TAB_MAIN_PASSIVE;
+         tab_icon = MUI_TEXTURE_TAB_MAIN_PASSIVE;
+         if (i == mui->categories.selection_ptr)
+            tab_icon = MUI_TEXTURE_TAB_MAIN_ACTIVE;
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
-         tab_icon = (i == mui->categories.selection_ptr)
-            ? MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE
-            : MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
+         tab_icon = MUI_TEXTURE_TAB_PLAYLISTS_PASSIVE;
+         if (i == mui->categories.selection_ptr)
+            tab_icon = MUI_TEXTURE_TAB_PLAYLISTS_ACTIVE;
          break;
       case MUI_SYSTEM_TAB_SETTINGS:
-         tab_icon = (i == mui->categories.selection_ptr)
-            ? MUI_TEXTURE_TAB_SETTINGS_ACTIVE
-            : MUI_TEXTURE_TAB_SETTINGS_PASSIVE;
+         tab_icon = MUI_TEXTURE_TAB_SETTINGS_PASSIVE;
+         if (i == mui->categories.selection_ptr)
+            tab_icon = MUI_TEXTURE_TAB_SETTINGS_ACTIVE;
          break;
    }
 
-   mui_draw_icon(mui, mui->textures.list[tab_icon],
+   mui_draw_icon(mui->icon_size,
+         mui->textures.list[tab_icon],
          width / (MUI_SYSTEM_TAB_END+1) * (i+0.5) - mui->icon_size/2,
          height - mui->tabs_height,
-         width, height, 0, 1, &pure_white[0]);
+         width,
+         height,
+         0,
+         1,
+         &pure_white[0]);
 }
 
 static void mui_draw_text(float x, float y, unsigned width, unsigned height,
@@ -591,9 +597,15 @@ static void mui_render_label_value(mui_handle_t *mui,
             width, height, value_str, color, TEXT_ALIGN_RIGHT);
 
    if (texture_switch)
-      mui_draw_icon(mui, texture_switch,
-            width - mui->margin - mui->icon_size, y,
-            width, height, 0, 1, &pure_white[0]);
+      mui_draw_icon(mui->icon_size,
+            texture_switch,
+            width - mui->margin - mui->icon_size,
+            y,
+            width,
+            height,
+            0,
+            1,
+            &pure_white[0]);
 }
 
 static void mui_render_menu_list(mui_handle_t *mui,
@@ -910,8 +922,15 @@ static void mui_frame(void *data)
    if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
    {
       title_margin = mui->icon_size;
-      mui_draw_icon(mui, mui->textures.list[MUI_TEXTURE_BACK],
-         0, 0, width, height, 0, 1, &pure_white[0]);
+      mui_draw_icon(mui->icon_size,
+            mui->textures.list[MUI_TEXTURE_BACK],
+            0,
+            0,
+            width,
+            height,
+            0,
+            1,
+            &pure_white[0]);
    }
 
    ticker_limit = (width - mui->margin*2) / mui->glyph_width;
