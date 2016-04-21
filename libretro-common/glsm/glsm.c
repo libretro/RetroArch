@@ -184,6 +184,12 @@ static struct gl_cached_state gl_state;
 
 /* GL wrapper-side */
 
+/*
+ * Category: FBO
+ *
+ * Core in:
+ * OpenGL    : 3.0
+ */
 void rglBlitFramebuffer(
       GLint srcX0, GLint srcY0,
       GLint srcX1, GLint srcY1,
@@ -291,11 +297,21 @@ void rglStencilFunc(GLenum func, GLint ref, GLuint mask)
    gl_state.stencilfunc.mask = mask;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
 GLboolean rglIsEnabled(GLenum cap)
 {
    return gl_state.cap_state[cap] ? GL_TRUE : GL_FALSE;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
 void rglClearColor(GLclampf red, GLclampf green,
       GLclampf blue, GLclampf alpha)
 {
@@ -318,6 +334,11 @@ void rglScissor(GLint x, GLint y, GLsizei width, GLsizei height)
    gl_state.scissor.h    = height;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
 void rglViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -337,6 +358,12 @@ void rglBlendFunc(GLenum sfactor, GLenum dfactor)
    glBlendFunc(sfactor, dfactor);
 }
 
+/*
+ * Category: Blending
+ *
+ * Core in:
+ * OpenGL    : 1.4
+ */
 void rglBlendFuncSeparate(GLenum sfactor, GLenum dfactor)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -348,6 +375,12 @@ void rglBlendFuncSeparate(GLenum sfactor, GLenum dfactor)
    glBlendFunc(sfactor, dfactor);
 }
 
+/*
+ * Category: Textures
+ *
+ * Core in:
+ * OpenGL    : 1.3 
+ */
 void rglActiveTexture(GLenum texture)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -355,6 +388,11 @@ void rglActiveTexture(GLenum texture)
    gl_state.active_texture = texture - GL_TEXTURE0;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.1
+ */
 void rglBindTexture(GLenum target, GLuint texture)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -362,6 +400,11 @@ void rglBindTexture(GLenum target, GLuint texture)
    gl_state.bind_textures.ids[gl_state.active_texture] = texture;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
 void rglDisable(GLenum cap)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -369,6 +412,11 @@ void rglDisable(GLenum cap)
    gl_state.cap_state[cap] = 0;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
 void rglEnable(GLenum cap)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -376,6 +424,12 @@ void rglEnable(GLenum cap)
    gl_state.cap_state[cap] = 1;
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUseProgram(GLuint program)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -383,6 +437,11 @@ void rglUseProgram(GLuint program)
    glUseProgram(program);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
 void rglDepthMask(GLboolean flag)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -391,6 +450,11 @@ void rglDepthMask(GLboolean flag)
    gl_state.depthmask.mask = flag;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
 void rglStencilMask(GLenum mask)
 {
    glStencilMask(mask);
@@ -398,29 +462,56 @@ void rglStencilMask(GLenum mask)
    gl_state.stencilmask.mask = mask;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.5
+ */
 void rglBufferData(GLenum target, GLsizeiptr size,
       const GLvoid *data, GLenum usage)
 {
    glBufferData(target, size, data, usage);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.5
+ */
 void rglBufferSubData(GLenum target, GLintptr offset,
       GLsizeiptr size, const GLvoid *data)
 {
    glBufferSubData(target, offset, size, data);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.5
+ */
 void rglBindBuffer(GLenum target, GLuint buffer)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
    glBindBuffer(target, buffer);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0
+ */
 void rglLinkProgram(GLuint program)
 {
    glLinkProgram(program);
 }
 
+/*
+ * Category: FBO
+ *
+ * Core in:
+ * OpenGL    : 3.0
+ */
 void rglFramebufferTexture(GLenum target, GLenum attachment,
   	GLuint texture, GLint level)
 {
@@ -430,15 +521,25 @@ void rglFramebufferTexture(GLenum target, GLenum attachment,
 #endif
 }
 
-void rglFramebufferTexture2D(GLenum target, GLenum attachment,
-      GLenum textarget, GLuint texture, GLint level)
-{
-   glFramebufferTexture2D(target, attachment, textarget, texture, level);
-}
-
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.1
+ */
 void rglDrawArrays(GLenum mode, GLint first, GLsizei count)
 {
    glDrawArrays(mode, first, count);
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.1
+ */
+void rglDrawElements(GLenum mode, GLsizei count, GLenum type,
+                           const GLvoid * indices)
+{
+   glDrawElements(mode, count, type, indices);
 }
 
 void rglCompressedTexImage2D(GLenum target, GLint level,
@@ -449,11 +550,6 @@ void rglCompressedTexImage2D(GLenum target, GLint level,
          width, height, border, imageSize, data);
 }
 
-void rglFramebufferRenderbuffer(GLenum target, GLenum attachment,
-      GLenum renderbuffertarget, GLuint renderbuffer)
-{
-   glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
-}
 
 void rglDeleteFramebuffers(GLsizei n, const GLuint *framebuffers)
 {
@@ -486,31 +582,53 @@ void rglGenRenderbuffers(GLsizei n, GLuint *renderbuffers)
    glGenRenderbuffers(n, renderbuffers);
 }
 
-void rglGenFramebuffers(GLsizei n, GLuint *ids)
-{
-   glGenFramebuffers(n, ids);
-}
-
-void rglBindFramebuffer(GLenum target, GLuint framebuffer)
-{
-   glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
-   if (!glsm_ctl(GLSM_CTL_IS_FRAMEBUFFER_LOCKED, NULL))
-   {
-      glBindFramebuffer(target, framebuffer);
-      gl_state.framebuf = framebuffer;
-   }
-}
 
 void rglGenerateMipmap(GLenum target)
 {
    glGenerateMipmap(target);
 }
 
+/*
+ * Category: FBO
+ *
+ * Core in:
+ * OpenGL    : 3.0 
+ */
 GLenum rglCheckFramebufferStatus(GLenum target)
 {
    return glCheckFramebufferStatus(target);
 }
 
+/*
+ * Category: FBO
+ *
+ * Core in:
+ * OpenGL    : 3.0 
+ */
+void rglFramebufferRenderbuffer(GLenum target, GLenum attachment,
+      GLenum renderbuffertarget, GLuint renderbuffer)
+{
+   glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
+}
+
+/*
+ * Category: FBO
+ *
+ * Core in:
+ * OpenGL    : 3.0 
+ */
+void rglFramebufferTexture2D(GLenum target, GLenum attachment,
+      GLenum textarget, GLuint texture, GLint level)
+{
+   glFramebufferTexture2D(target, attachment, textarget, texture, level);
+}
+
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 3.0 
+ */
 void rglBindFragDataLocation(GLuint program, GLuint colorNumber,
                                    const char * name)
 {
@@ -519,98 +637,148 @@ void rglBindFragDataLocation(GLuint program, GLuint colorNumber,
 #endif
 }
 
-void rglBindAttribLocation(GLuint program, GLuint index, const GLchar *name)
-{
-   glBindAttribLocation(program, index, name);
-}
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglGetProgramiv(GLuint shader, GLenum pname, GLint *params)
 {
    glGetProgramiv(shader, pname, params);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
       const GLfloat *value)
 {
    glUniformMatrix4fv(location, count, transpose, value);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglDetachShader(GLuint program, GLuint shader)
 {
    glDetachShader(program, shader);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglGetShaderiv(GLuint shader, GLenum pname, GLint *params)
 {
    glGetShaderiv(shader, pname, params);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglAttachShader(GLuint program, GLuint shader)
 {
    glAttachShader(program, shader);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 GLint rglGetAttribLocation(GLuint program, const GLchar *name)
 {
    return glGetAttribLocation(program, name);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglShaderSource(GLuint shader, GLsizei count,
       const GLchar **string, const GLint *length)
 {
    return glShaderSource(shader, count, string, length);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglCompileShader(GLuint shader)
 {
    glCompileShader(shader);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 GLuint rglCreateProgram(void)
 {
    return glCreateProgram();
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.1 
+ */
 void rglGenTextures(GLsizei n, GLuint *textures)
 {
    glGenTextures(n, textures);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglGetShaderInfoLog(GLuint shader, GLsizei maxLength,
       GLsizei *length, GLchar *infoLog)
 {
    glGetShaderInfoLog(shader, maxLength, length, infoLog);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglGetProgramInfoLog(GLuint shader, GLsizei maxLength,
       GLsizei *length, GLchar *infoLog)
 {
    glGetProgramInfoLog(shader, maxLength, length, infoLog);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 GLboolean rglIsProgram(GLuint program)
 {
    return glIsProgram(program);
 }
 
-void rglEnableVertexAttribArray(GLuint index)
-{
-   glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
-   gl_state.vertex_attrib_pointer.enabled[index] = 1;
-   glEnableVertexAttribArray(index);
-}
-
-void rglDisableVertexAttribArray(GLuint index)
-{
-   gl_state.vertex_attrib_pointer.enabled[index] = 0;
-   glDisableVertexAttribArray(index);
-}
-
-void rglDrawElements(GLenum mode, GLsizei count, GLenum type,
-                           const GLvoid * indices)
-{
-   glDrawElements(mode, count, type, indices);
-}
 
 void rglTexCoord2f(GLfloat s, GLfloat t)
 {
@@ -619,6 +787,37 @@ void rglTexCoord2f(GLfloat s, GLfloat t)
 #endif
 }
 
+/*
+ * Category: Generic vertex attributes
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
+void rglDisableVertexAttribArray(GLuint index)
+{
+   gl_state.vertex_attrib_pointer.enabled[index] = 0;
+   glDisableVertexAttribArray(index);
+}
+
+/*
+ * Category: Generic vertex attributes
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
+void rglEnableVertexAttribArray(GLuint index)
+{
+   glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
+   gl_state.vertex_attrib_pointer.enabled[index] = 1;
+   glEnableVertexAttribArray(index);
+}
+
+/*
+ * Category: Generic vertex attributes
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglVertexAttribPointer(GLuint name, GLint size,
       GLenum type, GLboolean normalized, GLsizei stride,
       const GLvoid* pointer)
@@ -626,87 +825,198 @@ void rglVertexAttribPointer(GLuint name, GLint size,
    glVertexAttribPointer(name, size, type, normalized, stride, pointer);
 }
 
+/*
+ * Category: Generic vertex attributes
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
+void rglBindAttribLocation(GLuint program, GLuint index, const GLchar *name)
+{
+   glBindAttribLocation(program, index, name);
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglVertexAttrib4f(GLuint name, GLfloat x, GLfloat y,
       GLfloat z, GLfloat w)
 {
     glVertexAttrib4f(name, x, y, z, w);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglVertexAttrib4fv(GLuint name, GLfloat* v)
 {
     glVertexAttrib4fv(name, v);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 GLuint rglCreateShader(GLenum shaderType)
 {
    return glCreateShader(shaderType);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglDeleteProgram(GLuint program)
 {
    glDeleteProgram(program);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglDeleteShader(GLuint shader)
 {
    glDeleteShader(shader);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 GLint rglGetUniformLocation(GLuint program, const GLchar *name)
 {
    return glGetUniformLocation(program, name);
 }
 
+/*
+ * Category: VBO and PBO
+ *
+ * Core in:
+ * OpenGL    : 1.5 
+ */
 void rglDeleteBuffers(GLsizei n, const GLuint *buffers)
 {
    glDeleteBuffers(n, buffers);
 }
 
+/*
+ * Category: VBO and PBO
+ *
+ * Core in:
+ * OpenGL    : 1.5 
+ */
 void rglGenBuffers(GLsizei n, GLuint *buffers)
 {
    glGenBuffers(n, buffers);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUniform1f(GLint location, GLfloat v0)
 {
    glUniform1f(location, v0);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUniform1i(GLint location, GLint v0)
 {
    glUniform1i(location, v0);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUniform2f(GLint location, GLfloat v0, GLfloat v1)
 {
    glUniform2f(location, v0, v1);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUniform2i(GLint location, GLint v0, GLint v1)
 {
    glUniform2i(location, v0, v1);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUniform2fv(GLint location, GLsizei count, const GLfloat *value)
 {
    glUniform2fv(location, count, value);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2)
 {
    glUniform3f(location, v0, v1, v2);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUniform3fv(GLint location, GLsizei count, const GLfloat *value)
 {
    glUniform3fv(location, count, value);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
 {
    glUniform4f(location, v0, v1, v2, v3);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUniform4fv(GLint location, GLsizei count, const GLfloat *value)
 {
    glUniform4fv(location, count, value);
@@ -718,6 +1028,11 @@ void rglTexStorage2D(GLenum target, GLsizei levels, GLenum internalFormat,
    glTexStorage2D(target, levels, internalFormat, width, height);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0 
+ */
 void rglPolygonOffset(GLfloat factor, GLfloat units)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -727,6 +1042,39 @@ void rglPolygonOffset(GLfloat factor, GLfloat units)
    gl_state.polygonoffset.units  = units;
 }
 
+/*
+ * Category: FBO
+ *
+ * Core in:
+ * OpenGL    : 3.0 
+ */
+void rglGenFramebuffers(GLsizei n, GLuint *ids)
+{
+   glGenFramebuffers(n, ids);
+}
+
+/*
+ * Category: FBO
+ *
+ * Core in:
+ * OpenGL    : 3.0 
+ */
+void rglBindFramebuffer(GLenum target, GLuint framebuffer)
+{
+   glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
+   if (!glsm_ctl(GLSM_CTL_IS_FRAMEBUFFER_LOCKED, NULL))
+   {
+      glBindFramebuffer(target, framebuffer);
+      gl_state.framebuf = framebuffer;
+   }
+}
+
+/*
+ * Category: FBO
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglDrawBuffers(GLsizei n, const GLenum *bufs)
 {
 #if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
@@ -746,6 +1094,12 @@ void rglBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 }
 
 
+/*
+ * Category: VAO
+ *
+ * Core in:
+ * OpenGL    : 3.0 
+ */
 void rglBindVertexArray(GLuint array)
 {
 #if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
@@ -754,6 +1108,12 @@ void rglBindVertexArray(GLuint array)
 #endif
 }
 
+/*
+ * Category: VAO
+ *
+ * Core in:
+ * OpenGL    : 3.0 
+ */
 void rglGenVertexArrays(GLsizei n, GLuint *arrays)
 {
 #if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
