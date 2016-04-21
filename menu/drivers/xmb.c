@@ -48,7 +48,7 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#if 1
+#if 0
 #define XMB_RIBBON_ENABLE
 #define XMB_RIBBON_ROWS 16
 #define XMB_RIBBON_COLS 32
@@ -2040,16 +2040,14 @@ static void xmb_frame(void *data)
 
    menu_display_set_alpha(coord_color2, 1.00f > xmb->alpha ? xmb->alpha : 1.00f);
 
-   if (        settings->menu.mouse.enable && (settings->video.fullscreen
-            || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
-      menu_display_draw_cursor(
-            &coord_color2[0],
-            xmb->cursor.size,
-            xmb->textures.list[XMB_TEXTURE_POINTER],
-            menu_input_mouse_state(MENU_MOUSE_X_AXIS),
-            menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
-            width,
-            height);
+   menu_display_draw_cursor(
+         &coord_color2[0],
+         xmb->cursor.size,
+         xmb->textures.list[XMB_TEXTURE_POINTER],
+         menu_input_mouse_state(MENU_MOUSE_X_AXIS),
+         menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+         width,
+         height);
 
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }

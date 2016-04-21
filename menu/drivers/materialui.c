@@ -975,16 +975,14 @@ static void mui_frame(void *data)
       mui->box_message[0] = '\0';
    }
 
-   if (settings->menu.mouse.enable && (settings->video.fullscreen 
-            || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
-      menu_display_draw_cursor(
-            &white_bg[0],
-            mui->cursor.size,
-            mui->textures.list[MUI_TEXTURE_POINTER],
-            menu_input_mouse_state(MENU_MOUSE_X_AXIS),
-            menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
-            width,
-            height);
+   menu_display_draw_cursor(
+         &white_bg[0],
+         mui->cursor.size,
+         mui->textures.list[MUI_TEXTURE_POINTER],
+         menu_input_mouse_state(MENU_MOUSE_X_AXIS),
+         menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+         width,
+         height);
 
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);

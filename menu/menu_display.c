@@ -662,6 +662,14 @@ void menu_display_draw_cursor(
 {
    menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
+   settings_t *settings = config_get_ptr();
+   bool cursor_visible  = settings->video.fullscreen ||
+       !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL);
+
+   if ( !settings->menu.mouse.enable)
+      return;
+   if (!cursor_visible)
+      return;
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
