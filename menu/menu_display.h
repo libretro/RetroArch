@@ -194,6 +194,8 @@ void menu_display_draw_cursor(
 void menu_display_draw_text(const char *msg, int width, int height, 
       struct font_params *params);
 
+void menu_display_set_alpha(float *color, float alpha_value);
+
 extern uintptr_t menu_display_white_texture;
 
 extern menu_display_ctx_driver_t menu_display_ctx_gl;

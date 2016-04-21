@@ -659,14 +659,6 @@ static size_t mui_list_get_size(void *data, enum menu_list_type type)
    return 0;
 }
 
-static void bgcolor_setalpha(float *bg, float alpha)
-{
-   bg[3]  = alpha;
-   bg[7]  = alpha;
-   bg[11] = alpha;
-   bg[15] = alpha;
-}
-
 static int mui_get_core_title(char *s, size_t len)
 {
    struct retro_system_info    *system = NULL;
@@ -836,8 +828,7 @@ static void mui_frame(void *data)
       {
          background_rendered = true;
 
-         /* Set new opacity for transposed white background */
-         bgcolor_setalpha(white_transp_bg, 0.30);
+         menu_display_set_alpha(white_transp_bg, 0.30);
 
          memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
 
@@ -863,7 +854,7 @@ static void mui_frame(void *data)
          mui_draw_bg(&draw);
 
          /* Restore opacity of transposed white background */
-         bgcolor_setalpha(white_transp_bg, 0.90);
+         menu_display_set_alpha(white_transp_bg, 0.90);
       }
    }
 
@@ -873,9 +864,9 @@ static void mui_frame(void *data)
       return;
 
    if (background_rendered || libretro_running)
-      bgcolor_setalpha(lightblue_bg, 0.75);
+      menu_display_set_alpha(lightblue_bg, 0.75);
    else
-      bgcolor_setalpha(lightblue_bg, 1.0);
+      menu_display_set_alpha(lightblue_bg, 1.0);
 
    /* highlighted entry */
    mui_render_quad(mui, 0,

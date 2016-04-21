@@ -407,7 +407,8 @@ static void xmb_draw_icon_predone(xmb_handle_t *xmb,
    {
       for (i = 0; i < 16; i++)
          shadow[i]  = 0;
-      shadow[3] = shadow[7] = shadow[11] = shadow[15] = color[3]/4;
+
+      menu_display_set_alpha(shadow, color[3] / 4);
 
       coords.color     = shadow;
       draw.x           = x + 2;
@@ -1701,19 +1702,15 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-      /* set alpha components of color */
-      color[3] = color[7] = color[11] = color[15] =
-         (node->alpha > xmb->alpha)
-         ? xmb->alpha : node->alpha;
+      menu_display_set_alpha(color, node->alpha > xmb->alpha
+            ? xmb->alpha : node->alpha);
 
       if (color[3] != 0)
          xmb_draw_icon(xmb, icon, icon_x, icon_y, width, height,
                0, node->zoom, &color[0]);
 
-      /* set alpha components of color */
-      color[3]  = color[7]  = color[11]  = color[15]  =
-         (node->alpha > xmb->alpha)
-         ? xmb->alpha : node->alpha;
+      menu_display_set_alpha(color, node->alpha > xmb->alpha
+            ? xmb->alpha : node->alpha);
 
       if (texture_switch != 0 && color[3] != 0)
          xmb_draw_icon_predone(xmb, &mymat,
@@ -1855,12 +1852,9 @@ static void xmb_frame(void *data)
       item_color[i]   = 1.0f;
    }
 
-   /* set alpha components of colors */
-   coord_color[3]  = coord_color[7]  = coord_color[11]  = coord_color[15]  =
-       ((float)settings->menu.xmb_alpha_factor/100 > xmb->alpha) ?
-       xmb->alpha : (float)settings->menu.xmb_alpha_factor/100;
-   coord_color2[3] = coord_color2[7] = coord_color2[11] = coord_color2[15] =
-      xmb->alpha;
+   menu_display_set_alpha(coord_color, ((float)settings->menu.xmb_alpha_factor/100 > xmb->alpha) ?
+       xmb->alpha : (float)settings->menu.xmb_alpha_factor/100);
+   menu_display_set_alpha(coord_color2, xmb->alpha);
 
    memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
 
@@ -1946,9 +1940,7 @@ static void xmb_frame(void *data)
    if (strcmp(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
       xmb_draw_thumbnail(xmb, &coord_color2[0], width, height);
 
-   /* set alpha components of colors */
-   coord_color2[3]  = coord_color2[7]  = coord_color2[11]  =
-      coord_color2[15]  = (1.00f > xmb->alpha) ? xmb->alpha : 1.00f;
+   menu_display_set_alpha(coord_color2, 1.00f > xmb->alpha ? xmb->alpha : 1.00f);
 
    if (settings->menu.timedate_enable && coord_color2[3] != 0)
       xmb_draw_icon_predone(xmb, &mymat,
@@ -1956,10 +1948,8 @@ static void xmb_frame(void *data)
             width - xmb->icon.size, xmb->icon.size,width,
             height, 1, 0, 1, &coord_color2[0]);
 
-   /* set alpha components of colors */
-   coord_color2[3]  = coord_color2[7]  = coord_color2[11]  =
-      coord_color2[15]  = (xmb->textures.arrow.alpha > xmb->alpha)
-      ? xmb->alpha : xmb->textures.arrow.alpha;
+   menu_display_set_alpha(coord_color2, xmb->textures.arrow.alpha > xmb->alpha
+      ? xmb->alpha : xmb->textures.arrow.alpha);
 
    if (coord_color2[3] != 0)
       xmb_draw_icon_predone(
@@ -1987,9 +1977,8 @@ static void xmb_frame(void *data)
 
       menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
-      /* set alpha components of color */
-      item_color[3] = item_color[7] = item_color[11] = item_color[15] = (node->alpha > xmb->alpha)
-         ? xmb->alpha : node->alpha;
+      menu_display_set_alpha(item_color, node->alpha > xmb->alpha
+         ? xmb->alpha : node->alpha);
 
       if (item_color[3] != 0)
          xmb_draw_icon(xmb, node->icon,
@@ -2055,9 +2044,7 @@ static void xmb_frame(void *data)
       xmb_render_messagebox_internal(xmb, msg);
    }
 
-   /* set alpha components of colors */
-   coord_color2[3]  = coord_color2[7]  = coord_color2[11]  =
-      coord_color2[15]  = (1.00f > xmb->alpha) ? xmb->alpha : 1.00f;
+   menu_display_set_alpha(coord_color2, 1.00f > xmb->alpha ? xmb->alpha : 1.00f);
 
    if (        settings->menu.mouse.enable && (settings->video.fullscreen
             || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))

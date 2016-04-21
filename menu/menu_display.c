@@ -835,3 +835,10 @@ void menu_display_draw_text(const char *msg,
 
    video_driver_set_osd_msg(msg, params, fb_buf);
 }
+
+void menu_display_set_alpha(float *color, float alpha_value)
+{
+   if (!color)
+      return;
+   color[3] = color[7] = color[11] = color[15] = alpha_value;
+}
