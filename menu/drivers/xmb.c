@@ -48,7 +48,7 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#if 0
+#if 1
 #define XMB_RIBBON_ENABLE
 #define XMB_RIBBON_ROWS 16
 #define XMB_RIBBON_COLS 32
@@ -1788,23 +1788,28 @@ static void xmb_render(void *data)
    menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 }
 
-#ifdef XMB_RIBBON_ENABLE
-static void xmb_draw_ribbon(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
+static void xmb_draw_bg(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw,
+      float *coord_color2)
 {
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, draw);
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
-}
-#endif
+   settings_t   *settings                  = config_get_ptr();
 
-static void xmb_draw_bg(xmb_handle_t *xmb, menu_display_ctx_draw_t *draw)
-{
+   if (
+         (settings->menu.pause_libretro
+          || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
+          || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
+         )
+      && !draw->force_transparency && draw->texture)
+      draw->color             = &coord_color2[0];
+
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+#ifdef XMB_RIBBON_ENABLE
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, draw);
+#else
    draw->x              = 0;
    draw->y              = 0;
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
+#endif
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
@@ -1869,19 +1874,7 @@ static void xmb_frame(void *data)
    draw.vertex_count       = 4;
    draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   if (
-         (settings->menu.pause_libretro
-          || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
-          || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-         )
-      && !draw.force_transparency && draw.texture)
-      draw.color             = &coord_color2[0];
-
-#ifdef XMB_RIBBON_ENABLE
-   xmb_draw_ribbon(xmb, &draw);
-#else
-   xmb_draw_bg(xmb, &draw);
-#endif
+   xmb_draw_bg(xmb, &draw, coord_color2);
 
    xmb_draw_text(xmb,
          xmb->title_name, xmb->margins.title.left,
@@ -2031,15 +2024,7 @@ static void xmb_frame(void *data)
       draw.vertex_count       = 4;
       draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-      if (
-            (settings->menu.pause_libretro
-             || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
-             || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-            )
-            && !draw.force_transparency && draw.texture)
-         draw.color             = &coord_color2[0];
-
-      xmb_draw_bg(xmb, &draw);
+      xmb_draw_bg(xmb, &draw, coord_color2);
 
       xmb_render_messagebox_internal(xmb, msg);
    }
