@@ -1885,7 +1885,8 @@ static void xmb_draw_bg(
       float *coord_white)
 {
    menu_display_ctx_draw_t draw;
-   settings_t   *settings                  = config_get_ptr();
+   settings_t *settings = config_get_ptr();
+   bool running = menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
 
    draw.x                    = 0;
    draw.y                    = 0;
@@ -1898,22 +1899,26 @@ static void xmb_draw_bg(
    draw.vertex_count         = 4;
    draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
-         && draw.texture)
-      draw.color             = &coord_white[0];
-
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
    if (settings->menu.xmb_ribbon_enable)
    {
       draw.color = xmb_gradient_ident();
-      menu_display_set_alpha(draw.color, coord_black[3]);
+
+      if (running)
+         menu_display_set_alpha(draw.color, coord_black[3]);
+      else
+         menu_display_set_alpha(draw.color, coord_white[3]);
+
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, &draw);
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, &draw);
    }
    else
    {
+      if (!running && draw.texture)
+         draw.color = &coord_white[0];
+
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
    }
 
