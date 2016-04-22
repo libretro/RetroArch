@@ -48,8 +48,8 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#define XMB_RIBBON_ROWS 16
-#define XMB_RIBBON_COLS 32
+#define XMB_RIBBON_ROWS 64
+#define XMB_RIBBON_COLS 64
 #define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
 
 #ifndef XMB_DELAY
@@ -67,9 +67,9 @@
 #define XMB_ITEM_PASSIVE_ZOOM        0.5
 
 #define XMB_CATEGORIES_ACTIVE_ALPHA  1.0
-#define XMB_CATEGORIES_PASSIVE_ALPHA 0.5
+#define XMB_CATEGORIES_PASSIVE_ALPHA 0.85
 #define XMB_ITEM_ACTIVE_ALPHA        1.0
-#define XMB_ITEM_PASSIVE_ALPHA       0.5
+#define XMB_ITEM_PASSIVE_ALPHA       0.85
 
 typedef struct
 {
@@ -495,7 +495,7 @@ static void xmb_draw_icon(
       for (i = 0; i < 16; i++)
          shadow[i]      = 0;
 
-      menu_display_set_alpha(shadow, color[3] / 4);
+      menu_display_set_alpha(shadow, color[3] * 0.35f);
 
       coords.color      = shadow;
       draw.x            = x + 2;
@@ -585,7 +585,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
    {
       params.drop_x      = 2.0f;
       params.drop_y      = -2.0f;
-      params.drop_alpha  = 0.25f;
+      params.drop_alpha  = 0.35f;
    }
 
    menu_display_draw_text(str, width, height, &params);
@@ -1043,7 +1043,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
    {
       xmb_node_t *node = (xmb_node_t*)
          menu_entries_get_userdata_at_offset(list, i);
-      float ia         = 0.5;
+      float ia         = XMB_ITEM_PASSIVE_ALPHA;
 
       if (!node)
          continue;
@@ -2338,8 +2338,8 @@ static void xmb_layout(xmb_handle_t *xmb)
 
 static void xmb_ribbon_set_vertex(float *ribbon_verts, unsigned idx, unsigned row, unsigned col)
 {
-   ribbon_verts[idx++] = ((float)col) / 15.5f - 1.0f;
-   ribbon_verts[idx++] = ((float)row) / 7.5f  - 1.0f;
+   ribbon_verts[idx++] = ((float)col) / (XMB_RIBBON_COLS-1) * 2.0f - 1.0f;
+   ribbon_verts[idx++] = ((float)row) / XMB_RIBBON_ROWS * 2.0f  - 1.0f;
 }
 
 static void xmb_init_ribbon(xmb_handle_t * xmb)
