@@ -281,6 +281,13 @@ float gradient_undersea[16] = {
 
 };
 
+float gradient_volcanic_red[16] = {
+   1.0, 0.0, 0.1, 1.00,
+   1.0, 0.1, 0.0, 1.00,
+   0.1, 0.0, 0.1, 1.00,
+   0.1, 0.0, 0.1, 1.00,
+};
+
 static const char *xmb_theme_ident(void)
 {
    settings_t *settings = config_get_ptr();
@@ -338,6 +345,8 @@ static float *xmb_gradient_ident(void)
          return &gradient_apple_green[0];
       case 6:
          return &gradient_undersea[0];
+      case 7:
+         return &gradient_volcanic_red[0];
       case 0:
       default:
          break;
@@ -760,7 +769,7 @@ static void xmb_selection_pointer_changed(
          entry.duration     = XMB_DELAY;
          entry.target_value = ia;
          entry.subject      = &node->alpha;
-         entry.easing_enum  = EASING_IN_OUT_QUAD;
+         entry.easing_enum  = EASING_OUT_QUAD;
          entry.tag          = tag.id;
          entry.cb           = NULL;
 
@@ -826,7 +835,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
          entry.duration     = XMB_DELAY;
          entry.target_value = ia;
          entry.subject      = &node->alpha;
-         entry.easing_enum  = EASING_IN_OUT_QUAD;
+         entry.easing_enum  = EASING_OUT_QUAD;
          entry.tag          = -1;
          entry.cb           = NULL;
 
@@ -896,7 +905,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
          entry.duration     = XMB_DELAY;
          entry.target_value = ia;
          entry.subject      = &node->alpha;
-         entry.easing_enum  = EASING_IN_OUT_QUAD;
+         entry.easing_enum  = EASING_OUT_QUAD;
          entry.tag          = -1;
          entry.cb           = NULL;
 
@@ -956,7 +965,7 @@ static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
    entry.duration     = XMB_DELAY;
    entry.target_value = ia;
    entry.subject      = &node->alpha;
-   entry.easing_enum  = EASING_IN_OUT_QUAD;
+   entry.easing_enum  = EASING_OUT_QUAD;
    entry.tag          = -1;
    entry.cb           = NULL;
 
@@ -1117,7 +1126,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
       entry.duration     = XMB_DELAY;
       entry.target_value = ia;
       entry.subject      = &node->alpha;
-      entry.easing_enum  = EASING_IN_OUT_QUAD;
+      entry.easing_enum  = EASING_OUT_QUAD;
       entry.tag          = -1;
       entry.cb           = NULL;
 
@@ -1150,7 +1159,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    entry.duration     = XMB_DELAY;
    entry.target_value = xmb->icon.spacing.horizontal * -(float)xmb->categories.selection_ptr;
    entry.subject      = &xmb->categories.x_pos;
-   entry.easing_enum  = EASING_IN_OUT_QUAD;
+   entry.easing_enum  = EASING_OUT_QUAD;
    entry.tag          = -1;
    entry.cb           = NULL;
 
@@ -1195,7 +1204,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
       entry.duration     = XMB_DELAY;
       entry.target_value = ia;
       entry.subject      = &node->alpha;
-      entry.easing_enum  = EASING_IN_OUT_QUAD;
+      entry.easing_enum  = EASING_OUT_QUAD;
       entry.tag          = -1;
       entry.cb           = NULL;
 
@@ -1424,7 +1433,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    entry.duration     = XMB_DELAY;
    entry.target_value = xmb->icon.size * -(xmb->depth*2-2);
    entry.subject      = &xmb->x;
-   entry.easing_enum  = EASING_IN_OUT_QUAD;
+   entry.easing_enum  = EASING_OUT_QUAD;
    entry.tag          = -1;
    entry.cb           = NULL;
 
@@ -2952,10 +2961,10 @@ static void xmb_toggle(void *userdata, bool menu_on)
       return;
    }
 
-   entry.duration     = XMB_DELAY;
+   entry.duration     = XMB_DELAY * 2;
    entry.target_value = 1.0f;
    entry.subject      = &xmb->alpha;
-   entry.easing_enum  = EASING_IN_OUT_QUAD;
+   entry.easing_enum  = EASING_OUT_QUAD;
    entry.tag          = -1;
    entry.cb           = NULL;
 

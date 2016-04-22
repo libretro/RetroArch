@@ -658,6 +658,9 @@ static void menu_action_setting_disp_set_label_xmb_gradient(
       case 6:
          snprintf(s, len, "%s", "Undersea");
          break;
+      case 7:
+         snprintf(s, len, "%s", "Volcanic Red");
+         break;
    }
 }
 
