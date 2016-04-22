@@ -779,7 +779,6 @@ static void mui_frame(void *data)
    uint64_t *frame_count;
    menu_display_ctx_draw_t draw;
    mui_handle_t *mui               = (mui_handle_t*)data;
-   settings_t *settings            = config_get_ptr();
    const uint32_t normal_color     = 0x212121ff;
    const uint32_t hover_color      = 0x212121ff;
    const uint32_t title_color      = 0xffffffff;
