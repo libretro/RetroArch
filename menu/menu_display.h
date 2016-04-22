@@ -117,8 +117,6 @@ typedef struct menu_display_ctx_draw
    void *matrix_data;
    uintptr_t texture;
    enum menu_display_prim_type prim_type;
-   float handle_alpha;
-   bool force_transparency;
    float *color;
    const float *vertex;
    const float *tex_coord;

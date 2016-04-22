@@ -1873,10 +1873,9 @@ static void xmb_draw_bg(
       unsigned width,
       unsigned height,
       float alpha,
-      bool force_transparency,
       uintptr_t texture_id,
-      float *coord_color,
-      float *coord_color2)
+      float *coord_black,
+      float *coord_white)
 {
    menu_display_ctx_draw_t draw;
    settings_t   *settings                  = config_get_ptr();
@@ -1884,22 +1883,15 @@ static void xmb_draw_bg(
    draw.texture              = texture_id;
    draw.width                = width;
    draw.height               = height;
-   draw.color                = &coord_color[0];
-   draw.handle_alpha         = alpha;
-   draw.force_transparency   = force_transparency;
+   draw.color                = &coord_black[0];
    draw.vertex               = NULL;
    draw.tex_coord            = NULL;
    draw.vertex_count         = 4;
    draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   if (
-         (settings->menu.pause_libretro
-          || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
-          || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-         )
-      && !draw.force_transparency && draw.texture)
-      draw.color             = &coord_color2[0];
-
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
+         && draw.texture)
+      draw.color             = &coord_white[0];
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
@@ -1907,7 +1899,7 @@ static void xmb_draw_bg(
    if (settings->menu.xmb_ribbon_enable)
    {
       draw.color = xmb_gradient_ident();
-      menu_display_set_alpha(draw.color, coord_color[3]);
+      menu_display_set_alpha(draw.color, coord_black[3]);
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, &draw);
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, &draw);
    }
@@ -1964,7 +1956,7 @@ static void xmb_frame(void *data)
    math_matrix_4x4 mymat;
    unsigned i, width, height;
    char msg[PATH_MAX_LENGTH], title_msg[256];
-   float item_color[16], coord_color[16], coord_color2[16];
+   float item_color[16], coord_black[16], coord_white[16];
    menu_display_ctx_rotate_draw_t rotate_draw;
    bool display_kb                         = false;
    bool render_background                  = false;
@@ -1987,25 +1979,24 @@ static void xmb_frame(void *data)
 
    for (i = 0; i < 16; i++)
    {
-      coord_color[i]  = 0;
-      coord_color2[i] = 1.0f;
+      coord_black[i]  = 0;
+      coord_white[i] = 1.0f;
       item_color[i]   = 1.0f;
    }
 
-   menu_display_set_alpha(coord_color,
+   menu_display_set_alpha(coord_black,
          ((float)settings->menu.xmb_alpha_factor/100 > xmb->alpha) ?
          xmb->alpha : (float)settings->menu.xmb_alpha_factor/100);
-   menu_display_set_alpha(coord_color2, xmb->alpha);
+   menu_display_set_alpha(coord_white, xmb->alpha);
 
    xmb_draw_bg(
          xmb,
          width,
          height,
          xmb->alpha,
-         false,
          xmb->textures.bg,
-         coord_color,
-         coord_color2);
+         coord_black,
+         coord_white);
 
    /* Title text */
    xmb_draw_text(xmb,
@@ -2029,12 +2020,12 @@ static void xmb_frame(void *data)
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
    if (strcmp(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
-      xmb_draw_thumbnail(xmb, &coord_color2[0], width, height);
+      xmb_draw_thumbnail(xmb, &coord_white[0], width, height);
 
    /* Clock image */
-   menu_display_set_alpha(coord_color2,
+   menu_display_set_alpha(coord_white,
          1.00f > xmb->alpha ? xmb->alpha : 1.00f);
-   if (settings->menu.timedate_enable && coord_color2[3] != 0)
+   if (settings->menu.timedate_enable && coord_white[3] != 0)
       xmb_draw_icon(
             xmb->icon.size,
             &mymat,
@@ -2045,7 +2036,7 @@ static void xmb_frame(void *data)
             1,
             0,
             1,
-            &coord_color2[0]);
+            &coord_white[0]);
 
    if (settings->menu.timedate_enable)
    {
@@ -2065,10 +2056,10 @@ static void xmb_frame(void *data)
    }
 
    /* Arrow image */
-   menu_display_set_alpha(coord_color2,
+   menu_display_set_alpha(coord_white,
            xmb->textures.arrow.alpha > xmb->alpha
          ? xmb->alpha : xmb->textures.arrow.alpha);
-   if (coord_color2[3] != 0)
+   if (coord_white[3] != 0)
       xmb_draw_icon(
             xmb->icon.size,
             &mymat,
@@ -2082,7 +2073,7 @@ static void xmb_frame(void *data)
             height,
             xmb->textures.arrow.alpha,
             0,
-            1, &coord_color2[0]);
+            1, &coord_white[0]);
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
 
@@ -2195,10 +2186,10 @@ static void xmb_frame(void *data)
    }
 
    /* Cursor image */
-   menu_display_set_alpha(coord_color2,
+   menu_display_set_alpha(coord_white,
          1.00f > xmb->alpha ? xmb->alpha : 1.00f);
    menu_display_draw_cursor(
-         &coord_color2[0],
+         &coord_white[0],
          xmb->cursor.size,
          xmb->textures.list[XMB_TEXTURE_POINTER],
          menu_input_mouse_state(MENU_MOUSE_X_AXIS),
