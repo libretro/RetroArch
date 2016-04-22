@@ -1751,8 +1751,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                width, height);
 
 
-      menu_display_set_alpha(color, node->alpha > xmb->alpha
-            ? xmb->alpha : node->alpha);
+      menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
 
       if (color[3] != 0)
       {
@@ -1787,8 +1786,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                &color[0]);
       }
 
-      menu_display_set_alpha(color, node->alpha > xmb->alpha
-            ? xmb->alpha : node->alpha);
+      menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
 
       if (texture_switch != 0 && color[3] != 0)
          xmb_draw_icon(
@@ -1880,6 +1878,8 @@ static void xmb_draw_bg(
    menu_display_ctx_draw_t draw;
    settings_t   *settings                  = config_get_ptr();
 
+   draw.x                    = 0;
+   draw.y                    = 0;
    draw.texture              = texture_id;
    draw.width                = width;
    draw.height               = height;
@@ -1905,8 +1905,6 @@ static void xmb_draw_bg(
    }
    else
    {
-      draw.x              = 0;
-      draw.y              = 0;
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
    }
 
@@ -1928,7 +1926,7 @@ static void xmb_draw_dark_layer(
       0, 0, 0, 1,
    };
 
-   menu_display_set_alpha(black, xmb->alpha < 0.75 ? xmb->alpha : 0.75);
+   menu_display_set_alpha(black, MIN(xmb->alpha, 0.75));
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -1984,9 +1982,8 @@ static void xmb_frame(void *data)
       item_color[i]   = 1.0f;
    }
 
-   menu_display_set_alpha(coord_black,
-         ((float)settings->menu.xmb_alpha_factor/100 > xmb->alpha) ?
-         xmb->alpha : (float)settings->menu.xmb_alpha_factor/100);
+   menu_display_set_alpha(coord_black, MIN(
+         (float)settings->menu.xmb_alpha_factor/100, xmb->alpha));
    menu_display_set_alpha(coord_white, xmb->alpha);
 
    xmb_draw_bg(
@@ -2023,8 +2020,8 @@ static void xmb_frame(void *data)
       xmb_draw_thumbnail(xmb, &coord_white[0], width, height);
 
    /* Clock image */
-   menu_display_set_alpha(coord_white,
-         1.00f > xmb->alpha ? xmb->alpha : 1.00f);
+   menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
+
    if (settings->menu.timedate_enable && coord_white[3] != 0)
       xmb_draw_icon(
             xmb->icon.size,
@@ -2056,9 +2053,8 @@ static void xmb_frame(void *data)
    }
 
    /* Arrow image */
-   menu_display_set_alpha(coord_white,
-           xmb->textures.arrow.alpha > xmb->alpha
-         ? xmb->alpha : xmb->textures.arrow.alpha);
+   menu_display_set_alpha(coord_white, MIN(xmb->textures.arrow.alpha, xmb->alpha));
+
    if (coord_white[3] != 0)
       xmb_draw_icon(
             xmb->icon.size,
@@ -2086,8 +2082,7 @@ static void xmb_frame(void *data)
       if (!node)
          continue;
 
-      menu_display_set_alpha(item_color,
-            node->alpha > xmb->alpha ? xmb->alpha : node->alpha);
+      menu_display_set_alpha(item_color, MIN(node->alpha, xmb->alpha));
 
       if (item_color[3] != 0)
       {
@@ -2186,8 +2181,7 @@ static void xmb_frame(void *data)
    }
 
    /* Cursor image */
-   menu_display_set_alpha(coord_white,
-         1.00f > xmb->alpha ? xmb->alpha : 1.00f);
+   menu_display_set_alpha(coord_white, MIN(xmb->alpha, 1.00f));
    menu_display_draw_cursor(
          &coord_white[0],
          xmb->cursor.size,
