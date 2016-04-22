@@ -2952,7 +2952,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
       return;
    }
 
-   entry.duration     = XMB_DELAY;
+   entry.duration     = XMB_DELAY * 2;
    entry.target_value = 1.0f;
    entry.subject      = &xmb->alpha;
    entry.easing_enum  = EASING_OUT_QUAD;
