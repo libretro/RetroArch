@@ -237,7 +237,8 @@ static void mui_draw_tab(mui_handle_t *mui,
          break;
    }
 
-   mui_draw_icon(mui->icon_size,
+   mui_draw_icon(
+         mui->icon_size,
          mui->textures.list[tab_icon],
          width / (MUI_SYSTEM_TAB_END+1) * (i+0.5) - mui->icon_size/2,
          height - mui->tabs_height,
@@ -597,7 +598,8 @@ static void mui_render_label_value(mui_handle_t *mui,
             width, height, value_str, color, TEXT_ALIGN_RIGHT);
 
    if (texture_switch)
-      mui_draw_icon(mui->icon_size,
+      mui_draw_icon(
+            mui->icon_size,
             texture_switch,
             width - mui->margin - mui->icon_size,
             y,
@@ -922,7 +924,8 @@ static void mui_frame(void *data)
    if (menu_entries_ctl(MENU_ENTRIES_CTL_SHOW_BACK, NULL))
    {
       title_margin = mui->icon_size;
-      mui_draw_icon(mui->icon_size,
+      mui_draw_icon(
+            mui->icon_size,
             mui->textures.list[MUI_TEXTURE_BACK],
             0,
             0,
