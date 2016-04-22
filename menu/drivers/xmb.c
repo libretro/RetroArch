@@ -231,6 +231,34 @@ typedef struct xmb_handle
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
+float gradient_volcano[16] = {
+   1, 0, 0.1,     1,
+   1, 0.1, 0,     1,
+   0.05, 0, 0.05, 1,
+   0.05, 0, 0.05, 1,
+};
+
+float gradient_midnight_blue[16] = {
+   44/255.0, 62/255.0, 80/255.0, 1.0,
+   44/255.0, 62/255.0, 80/255.0, 1.0,
+   44/255.0, 62/255.0, 80/255.0, 1.0,
+   44/255.0, 62/255.0, 80/255.0, 1.0,
+};
+
+float gradient_wisteria[16] = {
+   142/255.0, 68/255.0, 173/255.0, 1.0,
+   142/255.0, 68/255.0, 173/255.0, 1.0,
+   142/255.0, 68/255.0, 173/255.0, 1.0,
+   142/255.0, 68/255.0, 173/255.0, 1.0,
+};
+
+float gradient_pomegranate[16] = {
+   192/255.0, 57/255.0, 43/255.0, 1.0,
+   192/255.0, 57/255.0, 43/255.0, 1.0,
+   192/255.0, 57/255.0, 43/255.0, 1.0,
+   192/255.0, 57/255.0, 43/255.0, 1.0,
+};
+
 static const char *xmb_theme_ident(void)
 {
    settings_t *settings = config_get_ptr();
@@ -268,6 +296,26 @@ static const char *xmb_thumbnails_ident(void)
    }
 
    return "OFF";
+}
+
+static float *xmb_gradient_ident(void)
+{
+   settings_t *settings = config_get_ptr();
+
+   switch (settings->menu.xmb_gradient)
+   {
+      case 1:
+         return &gradient_volcano[0];
+      case 2:
+         return &gradient_midnight_blue[0];
+      case 3:
+         return &gradient_wisteria[0];
+      case 0:
+      default:
+         break;
+   }
+
+   return &gradient_pomegranate[0];
 }
 
 static void xmb_fill_default_background_path(xmb_handle_t *xmb,
@@ -1830,6 +1878,9 @@ static void xmb_draw_bg(
 
    if (settings->menu.xmb_ribbon_enable)
    {
+      draw.color = xmb_gradient_ident();
+      menu_display_set_alpha(draw.color, coord_color[3]);
+      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, &draw);
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, &draw);
    }
    else

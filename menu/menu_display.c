@@ -522,19 +522,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
       case MENU_DISPLAY_CTL_DRAW_GRADIENT:
          {
             menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-            float bg[16] = {
-               1, 0, 0.1,     1,
-               1, 0.1, 0,     1,
-               0.05, 0, 0.05, 1,
-               0.05, 0, 0.05, 1
-            };
 
-            bg[3]  = draw->color[3];
-            bg[7]  = draw->color[7];
-            bg[11] = draw->color[11];
-            bg[15] = draw->color[15];
-
-            draw->color   = bg;
             draw->texture = 0;
             draw->x       = 0;
             draw->y       = 0;
@@ -551,8 +539,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             gfx_coord_array_t *ca   = NULL;
 
             menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
-
-            menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, draw);
 
             draw->x           = 0;
             draw->y           = 0;

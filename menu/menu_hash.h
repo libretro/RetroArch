@@ -388,6 +388,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_XMB_FONT                                              0x0020337E7
 #define MENU_LABEL_XMB_THEME                                                   0x824c5a7eU
 #define MENU_LABEL_VALUE_XMB_THEME                                             0x3603f65fU
+#define MENU_LABEL_XMB_GRADIENT                                                0x18e63099U
+#define MENU_LABEL_VALUE_XMB_GRADIENT                                          0x8a520681U
 #define MENU_LABEL_XMB_SHADOWS_ENABLE                                          0xd0fcc82aU
 #define MENU_LABEL_VALUE_XMB_SHADOWS_ENABLE                                    0x5982498cU
 #define MENU_LABEL_XMB_RIBBON_ENABLE                                           0x8e89c3edU

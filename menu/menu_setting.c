@@ -5902,6 +5902,19 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->menu.xmb_gradient,
+                  menu_hash_to_str(MENU_LABEL_XMB_GRADIENT),
+                  menu_hash_to_str(MENU_LABEL_VALUE_XMB_GRADIENT),
+                  xmb_gradient,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 3, 1, true, true);
          }
 
          CONFIG_BOOL(
