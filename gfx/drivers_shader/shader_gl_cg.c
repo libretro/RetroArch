@@ -100,13 +100,16 @@ typedef struct cg_shader_data
 {
    struct shader_program_cg_data prg[GFX_MAX_SHADERS];
    unsigned active_idx;
-   unsigned cg_attrib_idx;
+   struct
+   {
+      CGparameter elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
+      unsigned index;
+   } attribs;
    CGprofile cgVProf;
    CGprofile cgFProf;
    struct video_shader *shader;
    state_tracker_t *state_tracker;
    GLuint lut_textures[GFX_MAX_TEXTURES];
-   CGparameter cg_attribs[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    char cg_alias_define[GFX_MAX_SHADERS][128];
    CGcontext cgCtx;
 } cg_shader_data_t;
@@ -220,11 +223,11 @@ static void gl_cg_reset_attrib(void *data)
    cg_shader_data_t *cg_data = (cg_shader_data_t*)data;
 
    /* Add sanity check that we did not overflow. */
-   retro_assert(cg_data->cg_attrib_idx <= ARRAY_SIZE(cg_data->cg_attribs));
+   retro_assert(cg_data->attribs.index <= ARRAY_SIZE(cg_data->attribs.elems));
 
-   for (i = 0; i < cg_data->cg_attrib_idx; i++)
-      cgGLDisableClientState(cg_data->cg_attribs[i]);
-   cg_data->cg_attrib_idx = 0;
+   for (i = 0; i < cg_data->attribs.index; i++)
+      cgGLDisableClientState(cg_data->attribs.elems[i]);
+   cg_data->attribs.index = 0;
 }
 
 static bool gl_cg_set_mvp(void *data, void *shader_data, const math_matrix_4x4 *mat)
@@ -246,7 +249,7 @@ fallback:
    { \
       cgGLSetParameterPointer(cg_data->prg[cg_data->active_idx].name, len, GL_FLOAT, 0, coords->coords_name); \
       cgGLEnableClientState(cg_data->prg[cg_data->active_idx].name); \
-      cg_data->cg_attribs[cg_data->cg_attrib_idx++] = cg_data->prg[cg_data->active_idx].name; \
+      cg_data->attribs.elems[cg_data->attribs.index++] = cg_data->prg[cg_data->active_idx].name; \
    } \
 } while(0)
 
@@ -321,7 +324,7 @@ static void gl_cg_set_texture_info(
       cgGLSetParameterPointer(params->coord, 2,
             GL_FLOAT, 0, info->coord);
       cgGLEnableClientState(params->coord);
-      cg_data->cg_attribs[cg_data->cg_attrib_idx++] = params->coord;
+      cg_data->attribs.elems[cg_data->attribs.index++] = params->coord;
    }
 }
 

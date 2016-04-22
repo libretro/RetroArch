@@ -134,10 +134,14 @@ typedef struct glsl_shader_data
    struct cache_vbo vbo[GFX_MAX_SHADERS];
    char glsl_alias_define[1024];
    unsigned glsl_active_index;
-   unsigned gl_attrib_index;
+   struct
+   {
+      GLint elems[PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
+      unsigned index;
+   } attribs;
+
    struct shader_program_glsl_data prg[GFX_MAX_SHADERS];
    GLuint gl_teximage[GFX_MAX_TEXTURES];
-   GLint gl_attribs[PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    state_tracker_t *gl_state_tracker;
 } glsl_shader_data_t;
 
@@ -457,11 +461,11 @@ static void gl_glsl_reset_attrib(glsl_shader_data_t *glsl)
    unsigned i;
 
    /* Add sanity check that we did not overflow. */
-   retro_assert(glsl->gl_attrib_index <= ARRAY_SIZE(glsl->gl_attribs));
+   retro_assert(glsl->attribs.index <= ARRAY_SIZE(glsl->attribs.elems));
 
-   for (i = 0; i < glsl->gl_attrib_index; i++)
-      glDisableVertexAttribArray(glsl->gl_attribs[i]);
-   glsl->gl_attrib_index = 0;
+   for (i = 0; i < glsl->attribs.index; i++)
+      glDisableVertexAttribArray(glsl->attribs.elems[i]);
+   glsl->attribs.index = 0;
 }
 
 static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
@@ -501,12 +505,12 @@ static void gl_glsl_set_attribs(glsl_shader_data_t *glsl,
    {
       GLint loc = attrs[i].loc;
 
-      if (glsl->gl_attrib_index < ARRAY_SIZE(glsl->gl_attribs))
+      if (glsl->attribs.index < ARRAY_SIZE(glsl->attribs.elems))
       {
          glEnableVertexAttribArray(loc);
          glVertexAttribPointer(loc, attrs[i].size, GL_FLOAT, GL_FALSE, 0,
                (const GLvoid*)(uintptr_t)attrs[i].offset);
-         glsl->gl_attribs[glsl->gl_attrib_index++] = loc;
+         glsl->attribs.elems[glsl->attribs.index++] = loc;
       }
       else
          RARCH_WARN("Attrib array buffer was overflown!\n");
