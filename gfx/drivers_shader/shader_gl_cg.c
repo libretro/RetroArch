@@ -744,14 +744,15 @@ static bool gl_cg_load_stock(void *data)
    program_info.is_file  = false;
 
    if (!gl_cg_compile_program(data, 0, &cg_data->prg[0], &program_info))
-   {
-      RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
-      return false;
-   }
+      goto error;
 
    gl_cg_set_program_base_attrib(data, 0);
 
    return true;
+
+error:
+   RARCH_ERR("Failed to compile passthrough shader, is something wrong with your environment?\n");
+   return false;
 }
 
 static bool gl_cg_load_plain(void *data, const char *path)
