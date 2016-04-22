@@ -1893,10 +1893,7 @@ static void xmb_draw_bg(
    draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    if (
-         (settings->menu.pause_libretro
-          || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
-          || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-         )
+      !menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
       && !draw.force_transparency && draw.texture)
       draw.color             = &coord_white[0];
 
