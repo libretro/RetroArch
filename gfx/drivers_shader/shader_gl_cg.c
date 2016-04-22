@@ -480,26 +480,20 @@ static void gl_cg_set_params(void *data, void *shader_data,
    {
       unsigned j;
 
-      uniform_params[0].lookup.enable = true;
-      uniform_params[0].lookup.idx    = cg_data->active_idx;
-      uniform_params[0].lookup.ident  = cg_data->shader->parameters[i].id;
       uniform_params[0].lookup.type   = SHADER_PROGRAM_VERTEX;
-      uniform_params[0].location      = 0;
-      uniform_params[0].enabled       = true;
-      uniform_params[0].type          = UNIFORM_1F;
-      uniform_params[0].result.f.v0   = cg_data->shader->parameters[i].current;
-
-      uniform_params[1].lookup.enable = true;
-      uniform_params[1].lookup.idx    = cg_data->active_idx;
-      uniform_params[1].lookup.ident  = cg_data->shader->parameters[i].id;
       uniform_params[1].lookup.type   = SHADER_PROGRAM_FRAGMENT;
-      uniform_params[1].location      = 1;
-      uniform_params[1].enabled       = true;
-      uniform_params[1].type          = UNIFORM_1F;
-      uniform_params[1].result.f.v0   = cg_data->shader->parameters[i].current;
 
       for (j = 0; j < 2; j++)
+      {
+         uniform_params[j].lookup.enable = true;
+         uniform_params[j].lookup.idx    = cg_data->active_idx;
+         uniform_params[j].lookup.ident  = cg_data->shader->parameters[i].id;
+         uniform_params[j].location      = j;
+         uniform_params[j].enabled       = true;
+         uniform_params[j].type          = UNIFORM_1F;
+         uniform_params[j].result.f.v0   = cg_data->shader->parameters[i].current;
          gl_cg_set_uniform_parameter(cg_data, &uniform_params[j], NULL);
+      }
    }
 
    /* Set state parameters. */
@@ -517,26 +511,20 @@ static void gl_cg_set_params(void *data, void *shader_data,
       {
          unsigned j;
 
-         uniform_params[0].lookup.enable = true;
-         uniform_params[0].lookup.idx    = cg_data->active_idx;
-         uniform_params[0].lookup.ident  = tracker_info[i].id;
          uniform_params[0].lookup.type   = SHADER_PROGRAM_VERTEX;
-         uniform_params[0].location      = 0;
-         uniform_params[0].enabled       = true;
-         uniform_params[0].type          = UNIFORM_1F;
-         uniform_params[0].result.f.v0    = tracker_info[i].value;
-
-         uniform_params[1].lookup.enable = true;
-         uniform_params[1].lookup.idx    = cg_data->active_idx;
-         uniform_params[1].lookup.ident  = tracker_info[i].id;
          uniform_params[1].lookup.type   = SHADER_PROGRAM_FRAGMENT;
-         uniform_params[1].location      = 1;
-         uniform_params[1].enabled       = true;
-         uniform_params[1].type          = UNIFORM_1F;
-         uniform_params[1].result.f.v0   = tracker_info[i].value;
 
          for (j = 0; j < 2; j++)
+         {
+            uniform_params[j].lookup.enable = true;
+            uniform_params[j].lookup.idx    = cg_data->active_idx;
+            uniform_params[j].lookup.ident  = tracker_info[i].id;
+            uniform_params[j].location      = j;
+            uniform_params[j].enabled       = true;
+            uniform_params[j].type          = UNIFORM_1F;
+            uniform_params[j].result.f.v0   = tracker_info[i].value;
             gl_cg_set_uniform_parameter(cg_data, &uniform_params[j], NULL);
+         }
       }
    }
 }
