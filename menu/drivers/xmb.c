@@ -405,7 +405,7 @@ static void xmb_draw_icon(
    draw.texture         = texture;
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   if (settings->menu.xmb_shadows)
+   if (settings->menu.xmb_shadows_enable)
    {
       for (i = 0; i < 16; i++)
          shadow[i]      = 0;
@@ -496,7 +496,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
    params.full_screen = true;
    params.text_align  = text_align;
 
-   if (settings->menu.xmb_shadows)
+   if (settings->menu.xmb_shadows_enable)
    {
       params.drop_x      = 2.0f;
       params.drop_y      = -2.0f;

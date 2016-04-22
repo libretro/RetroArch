@@ -5877,10 +5877,10 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  &settings->menu.xmb_shadows,
-                  menu_hash_to_str(MENU_LABEL_XMB_SHADOWS),
-                  menu_hash_to_str(MENU_LABEL_VALUE_XMB_SHADOWS),
-                  xmb_shadows,
+                  &settings->menu.xmb_shadows_enable,
+                  menu_hash_to_str(MENU_LABEL_XMB_SHADOWS_ENABLE),
+                  menu_hash_to_str(MENU_LABEL_VALUE_XMB_SHADOWS_ENABLE),
+                  xmb_shadows_enable,
                   menu_hash_to_str(MENU_VALUE_OFF),
                   menu_hash_to_str(MENU_VALUE_ON),
                   &group_info,
