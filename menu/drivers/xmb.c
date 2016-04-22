@@ -281,6 +281,13 @@ float gradient_undersea[16] = {
 
 };
 
+float gradient_volcanic_red[16] = {
+   1.0, 0.0, 0.1, 1.00,
+   1.0, 0.1, 0.0, 1.00,
+   0.1, 0.0, 0.1, 1.00,
+   0.1, 0.0, 0.1, 1.00,
+};
+
 static const char *xmb_theme_ident(void)
 {
    settings_t *settings = config_get_ptr();
@@ -338,6 +345,8 @@ static float *xmb_gradient_ident(void)
          return &gradient_apple_green[0];
       case 6:
          return &gradient_undersea[0];
+      case 7:
+         return &gradient_volcanic_red[0];
       case 0:
       default:
          break;
