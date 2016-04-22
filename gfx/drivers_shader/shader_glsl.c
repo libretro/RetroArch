@@ -136,7 +136,7 @@ typedef struct glsl_shader_data
    unsigned glsl_active_index;
    struct
    {
-      GLint elems[PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
+      GLint elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
       unsigned index;
    } attribs;
 
