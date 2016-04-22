@@ -1873,7 +1873,6 @@ static void xmb_draw_bg(
       unsigned width,
       unsigned height,
       float alpha,
-      bool force_transparency,
       uintptr_t texture_id,
       float *coord_black,
       float *coord_white)
@@ -1885,8 +1884,6 @@ static void xmb_draw_bg(
    draw.width                = width;
    draw.height               = height;
    draw.color                = &coord_black[0];
-   draw.handle_alpha         = alpha;
-   draw.force_transparency   = force_transparency;
    draw.vertex               = NULL;
    draw.tex_coord            = NULL;
    draw.vertex_count         = 4;
@@ -1894,7 +1891,7 @@ static void xmb_draw_bg(
 
    if (
       !menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
-      && !draw.force_transparency && draw.texture)
+      && draw.texture)
       draw.color             = &coord_white[0];
 
 
@@ -1999,7 +1996,6 @@ static void xmb_frame(void *data)
          width,
          height,
          xmb->alpha,
-         false,
          xmb->textures.bg,
          coord_black,
          coord_white);

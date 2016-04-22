@@ -807,8 +807,6 @@ static void mui_frame(void *data)
       draw.width              = width;
       draw.height             = height;
       draw.texture            = menu_display_white_texture;
-      draw.handle_alpha       = 0.75f;
-      draw.force_transparency = false;
       draw.color              = &white_transp_bg[0];
       draw.vertex             = NULL;
       draw.tex_coord          = NULL;
@@ -820,7 +818,7 @@ static void mui_frame(void *data)
              || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
              || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
             )
-            && !draw.force_transparency && draw.texture)
+            && draw.texture)
          draw.color             = &white_bg[0];
 
       mui_draw_bg(&draw);
@@ -847,8 +845,6 @@ static void mui_frame(void *data)
          draw.width              = width;
          draw.height             = height;
          draw.texture            = mui->textures.bg;
-         draw.handle_alpha       = 0.75f;
-         draw.force_transparency = true;
          draw.color              = &white_transp_bg[0];
          draw.vertex             = NULL;
          draw.tex_coord          = NULL;
@@ -860,7 +856,7 @@ static void mui_frame(void *data)
                 || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
                 || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
                )
-               && !draw.force_transparency && draw.texture)
+               && draw.texture)
             draw.color             = &white_bg[0];
 
          mui_draw_bg(&draw);
