@@ -390,6 +390,8 @@ extern "C" {
 #define MENU_LABEL_VALUE_XMB_THEME                                             0x3603f65fU
 #define MENU_LABEL_XMB_SHADOWS                                                 0xf9859e24U
 #define MENU_LABEL_VALUE_XMB_SHADOWS                                           0x7993b645U
+#define MENU_LABEL_XMB_RIBBON_ENABLE                                           0x8e89c3edU
+#define MENU_LABEL_VALUE_XMB_RIBBON_ENABLE                                     0xd53e09c8U
 #define MENU_LABEL_VOLUME_UP                                                   0xa66e9681U
 #define MENU_LABEL_VOLUME_DOWN                                                 0xfc64f3d4U
 #define MENU_LABEL_LOG_VERBOSITY                                               0x6648c96dU
