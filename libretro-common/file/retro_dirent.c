@@ -64,6 +64,7 @@ struct RDIR
 #if defined(_WIN32)
    WIN32_FIND_DATA entry;
    HANDLE directory;
+   bool next;
 #elif defined(VITA) || defined(PSP)
    SceUID directory;
    SceIoDirent entry;
@@ -118,7 +119,12 @@ bool retro_dirent_error(struct RDIR *rdir)
 int retro_readdir(struct RDIR *rdir)
 {
 #if defined(_WIN32)
-   return (FindNextFile(rdir->directory, &rdir->entry) != 0);
+   if(rdir->next)
+      return (FindNextFile(rdir->directory, &rdir->entry) != 0);
+   else {
+      rdir->next = true;
+      return (rdir->directory != INVALID_HANDLE_VALUE);
+   }
 #elif defined(VITA) || defined(PSP)
    return (sceIoDread(rdir->directory, &rdir->entry) > 0);
 #elif defined(__CELLOS_LV2__)
@@ -152,7 +158,7 @@ const char *retro_dirent_get_name(struct RDIR *rdir)
  * Returns: true if directory listing entry is
  * a directory, false if not.
  */
-bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
+bool retro_dirent_is_dir(struct RDIR *rdir)
 {
 #if defined(_WIN32)
    const WIN32_FIND_DATA *entry = (const WIN32_FIND_DATA*)&rdir->entry;
@@ -172,11 +178,13 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
    if (entry->d_type == DT_DIR)
       return true;
    /* This can happen on certain file systems. */
+   const char *path = retro_dirent_get_name(rdir);
    if (entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK)
       return path_is_directory(path);
    return false;
 #else
    /* dirent struct doesn't have d_type, do it the slow way ... */
+   const char *path = retro_dirent_get_name(rdir);
    return path_is_directory(path);
 #endif
 }
