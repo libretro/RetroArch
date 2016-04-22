@@ -760,7 +760,7 @@ static void xmb_selection_pointer_changed(
          entry.duration     = XMB_DELAY;
          entry.target_value = ia;
          entry.subject      = &node->alpha;
-         entry.easing_enum  = EASING_IN_OUT_QUAD;
+         entry.easing_enum  = EASING_OUT_QUAD;
          entry.tag          = tag.id;
          entry.cb           = NULL;
 
@@ -826,7 +826,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
          entry.duration     = XMB_DELAY;
          entry.target_value = ia;
          entry.subject      = &node->alpha;
-         entry.easing_enum  = EASING_IN_OUT_QUAD;
+         entry.easing_enum  = EASING_OUT_QUAD;
          entry.tag          = -1;
          entry.cb           = NULL;
 
@@ -896,7 +896,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
          entry.duration     = XMB_DELAY;
          entry.target_value = ia;
          entry.subject      = &node->alpha;
-         entry.easing_enum  = EASING_IN_OUT_QUAD;
+         entry.easing_enum  = EASING_OUT_QUAD;
          entry.tag          = -1;
          entry.cb           = NULL;
 
@@ -956,7 +956,7 @@ static void xmb_push_animations(xmb_node_t *node, float ia, float ix)
    entry.duration     = XMB_DELAY;
    entry.target_value = ia;
    entry.subject      = &node->alpha;
-   entry.easing_enum  = EASING_IN_OUT_QUAD;
+   entry.easing_enum  = EASING_OUT_QUAD;
    entry.tag          = -1;
    entry.cb           = NULL;
 
@@ -1117,7 +1117,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
       entry.duration     = XMB_DELAY;
       entry.target_value = ia;
       entry.subject      = &node->alpha;
-      entry.easing_enum  = EASING_IN_OUT_QUAD;
+      entry.easing_enum  = EASING_OUT_QUAD;
       entry.tag          = -1;
       entry.cb           = NULL;
 
@@ -1150,7 +1150,7 @@ static void xmb_list_switch(xmb_handle_t *xmb)
    entry.duration     = XMB_DELAY;
    entry.target_value = xmb->icon.spacing.horizontal * -(float)xmb->categories.selection_ptr;
    entry.subject      = &xmb->categories.x_pos;
-   entry.easing_enum  = EASING_IN_OUT_QUAD;
+   entry.easing_enum  = EASING_OUT_QUAD;
    entry.tag          = -1;
    entry.cb           = NULL;
 
@@ -1195,7 +1195,7 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
       entry.duration     = XMB_DELAY;
       entry.target_value = ia;
       entry.subject      = &node->alpha;
-      entry.easing_enum  = EASING_IN_OUT_QUAD;
+      entry.easing_enum  = EASING_OUT_QUAD;
       entry.tag          = -1;
       entry.cb           = NULL;
 
@@ -1424,7 +1424,7 @@ static void xmb_list_open(xmb_handle_t *xmb)
    entry.duration     = XMB_DELAY;
    entry.target_value = xmb->icon.size * -(xmb->depth*2-2);
    entry.subject      = &xmb->x;
-   entry.easing_enum  = EASING_IN_OUT_QUAD;
+   entry.easing_enum  = EASING_OUT_QUAD;
    entry.tag          = -1;
    entry.cb           = NULL;
 
@@ -2955,7 +2955,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
    entry.duration     = XMB_DELAY;
    entry.target_value = 1.0f;
    entry.subject      = &xmb->alpha;
-   entry.easing_enum  = EASING_IN_OUT_QUAD;
+   entry.easing_enum  = EASING_OUT_QUAD;
    entry.tag          = -1;
    entry.cb           = NULL;
 
