@@ -106,7 +106,7 @@ typedef struct cg_shader_data
    struct video_shader *shader;
    state_tracker_t *state_tracker;
    GLuint lut_textures[GFX_MAX_TEXTURES];
-   CGparameter cg_attribs[PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
+   CGparameter cg_attribs[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    char cg_alias_define[GFX_MAX_SHADERS][128];
    CGcontext cgCtx;
 } cg_shader_data_t;
