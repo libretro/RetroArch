@@ -48,12 +48,9 @@
 
 #include "../../tasks/tasks_internal.h"
 
-#if 0
-#define XMB_RIBBON_ENABLE
 #define XMB_RIBBON_ROWS 16
 #define XMB_RIBBON_COLS 32
 #define XMB_RIBBON_VERTICES 2*XMB_RIBBON_COLS*XMB_RIBBON_ROWS-2*XMB_RIBBON_COLS
-#endif
 
 #ifndef XMB_DELAY
 #define XMB_DELAY 10
@@ -1830,13 +1827,18 @@ static void xmb_draw_bg(
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
-#ifdef XMB_RIBBON_ENABLE
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, &draw);
-#else
-   draw.x              = 0;
-   draw.y              = 0;
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
-#endif
+
+   if (settings->menu.xmb_ribbon_enable)
+   {
+      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, &draw);
+   }
+   else
+   {
+      draw.x              = 0;
+      draw.y              = 0;
+      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
+   }
+
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
@@ -2227,7 +2229,6 @@ static void xmb_layout(xmb_handle_t *xmb)
    }
 }
 
-#ifdef XMB_RIBBON_ENABLE
 static void xmb_ribbon_set_vertex(float *ribbon_verts, unsigned idx, unsigned row, unsigned col)
 {
    ribbon_verts[idx++] = ((float)col) / 15.5f - 1.0f;
@@ -2265,7 +2266,6 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
 
    gfx_coord_array_append(ca, &coords, XMB_RIBBON_VERTICES);
 }
-#endif
 
 static void *xmb_init(void **userdata)
 {
@@ -2319,9 +2319,7 @@ static void *xmb_init(void **userdata)
 
    xmb_init_horizontal_list(xmb);
    xmb_font(xmb);
-#ifdef XMB_RIBBON_ENABLE
    xmb_init_ribbon(xmb);
-#endif
 
    return menu;
 
