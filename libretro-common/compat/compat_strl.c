@@ -29,6 +29,8 @@
 
 /* Implementation of strlcpy()/strlcat() based on OpenBSD. */
 
+#ifndef __MACH__
+
 size_t strlcpy(char *dest, const char *source, size_t size)
 {
    size_t src_size = 0;
@@ -59,3 +61,4 @@ size_t strlcat(char *dest, const char *source, size_t size)
 
    return len + strlcpy(dest, source, size);
 }
+#endif
