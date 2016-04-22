@@ -1893,6 +1893,39 @@ static void xmb_draw_bg(
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
+static void xmb_draw_dark_layer(
+      xmb_handle_t *xmb,
+      unsigned width,
+      unsigned height)
+{
+   menu_display_ctx_draw_t draw;
+   settings_t   *settings                  = config_get_ptr();
+
+   float black[16] = {
+      0, 0, 0, 1,
+      0, 0, 0, 1,
+      0, 0, 0, 1,
+      0, 0, 0, 1,
+   };
+
+   menu_display_set_alpha(black, xmb->alpha < 0.75 ? xmb->alpha : 0.75);
+
+   draw.x                    = 0;
+   draw.y                    = 0;
+   draw.width                = width;
+   draw.height               = height;
+   draw.color                = &black[0];
+   draw.vertex               = NULL;
+   draw.tex_coord            = NULL;
+   draw.vertex_count         = 4;
+   draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+}
+
 static void xmb_frame(void *data)
 {
    size_t selection;
@@ -2124,15 +2157,7 @@ static void xmb_frame(void *data)
 
    if (render_background)
    {
-      xmb_draw_bg(
-            xmb,
-            width,
-            height,
-            xmb->alpha,
-            true,
-            xmb->textures.bg,
-            coord_color,
-            coord_color2);
+      xmb_draw_dark_layer(xmb, width, height);
 
       xmb_render_messagebox_internal(xmb, msg);
    }
