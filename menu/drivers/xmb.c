@@ -1898,9 +1898,9 @@ static void xmb_draw_dark_layer(
       unsigned width,
       unsigned height)
 {
-   menu_display_ctx_draw_t draw;
-   settings_t   *settings                  = config_get_ptr();
 
+   menu_display_ctx_draw_t draw;
+   struct gfx_coords coords;
    float black[16] = {
       0, 0, 0, 1,
       0, 0, 0, 1,
@@ -1910,19 +1910,23 @@ static void xmb_draw_dark_layer(
 
    menu_display_set_alpha(black, xmb->alpha < 0.75 ? xmb->alpha : 0.75);
 
-   draw.x                    = 0;
-   draw.y                    = 0;
-   draw.width                = width;
-   draw.height               = height;
-   draw.color                = &black[0];
-   draw.vertex               = NULL;
-   draw.tex_coord            = NULL;
-   draw.vertex_count         = 4;
-   draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = &black[0];
+
+   draw.x           = 0;
+   draw.y           = 0;
+   draw.width       = width;
+   draw.height      = height;
+   draw.coords      = &coords;
+   draw.matrix_data = NULL;
+   draw.texture     = menu_display_white_texture;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
