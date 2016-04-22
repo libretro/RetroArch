@@ -231,11 +231,11 @@ typedef struct xmb_handle
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
-float gradient_volcano[16] = {
-   1, 0, 0.1,     1,
-   1, 0.1, 0,     1,
-   0.05, 0, 0.05, 1,
-   0.05, 0, 0.05, 1,
+float gradient_dark_purple[16] = {
+    20/255.0,  13/255.0,  20/255.0, 1.0,
+    20/255.0,  13/255.0,  20/255.0, 1.0,
+    92/255.0,  44/255.0,  92/255.0, 1.0,
+   148/255.0,  90/255.0, 148/255.0, 1.0,
 };
 
 float gradient_midnight_blue[16] = {
@@ -245,18 +245,40 @@ float gradient_midnight_blue[16] = {
    44/255.0, 62/255.0, 80/255.0, 1.0,
 };
 
-float gradient_wisteria[16] = {
-   142/255.0, 68/255.0, 173/255.0, 1.0,
-   142/255.0, 68/255.0, 173/255.0, 1.0,
-   142/255.0, 68/255.0, 173/255.0, 1.0,
-   142/255.0, 68/255.0, 173/255.0, 1.0,
+float gradient_golden[16] = {
+   174/255.0, 123/255.0,  44/255.0, 1.0,
+   205/255.0, 174/255.0,  84/255.0, 1.0,
+   58/255.0,   43/255.0,  24/255.0, 1.0,
+   58/255.0,   43/255.0,  24/255.0, 1.0,
 };
 
-float gradient_pomegranate[16] = {
-   192/255.0, 57/255.0, 43/255.0, 1.0,
-   192/255.0, 57/255.0, 43/255.0, 1.0,
-   192/255.0, 57/255.0, 43/255.0, 1.0,
-   192/255.0, 57/255.0, 43/255.0, 1.0,
+float gradient_legacy_red[16] = {
+   171/255.0,  70/255.0,  59/255.0, 1.0,
+   171/255.0,  70/255.0,  59/255.0, 1.0,
+   190/255.0,  80/255.0,  69/255.0, 1.0,
+   190/255.0,  80/255.0,  69/255.0, 1.0,
+};
+
+float gradient_electric_blue[16] = {
+     1/255.0,   2/255.0,  67/255.0, 1.0,
+     1/255.0,  73/255.0, 183/255.0, 1.0,
+     1/255.0,  93/255.0, 194/255.0, 1.0,
+     3/255.0, 162/255.0, 254/255.0, 1.0,
+};
+
+float gradient_apple_green[16] = {
+   102/255.0, 134/255.0,  58/255.0, 1.0,
+   122/255.0, 131/255.0,  52/255.0, 1.0,
+    82/255.0, 101/255.0,  35/255.0, 1.0,
+    63/255.0,  95/255.0,  30/255.0, 1.0,
+};
+
+float gradient_undersea[16] = {
+    23/255.0,  18/255.0,  41/255.0, 1.0,
+    30/255.0,  72/255.0, 114/255.0, 1.0,
+    52/255.0,  88/255.0, 110/255.0, 1.0,
+    69/255.0, 125/255.0, 140/255.0, 1.0,
+
 };
 
 static const char *xmb_theme_ident(void)
@@ -305,17 +327,23 @@ static float *xmb_gradient_ident(void)
    switch (settings->menu.xmb_gradient)
    {
       case 1:
-         return &gradient_volcano[0];
+         return &gradient_dark_purple[0];
       case 2:
          return &gradient_midnight_blue[0];
       case 3:
-         return &gradient_wisteria[0];
+         return &gradient_golden[0];
+      case 4:
+         return &gradient_electric_blue[0];
+      case 5:
+         return &gradient_apple_green[0];
+      case 6:
+         return &gradient_undersea[0];
       case 0:
       default:
          break;
    }
 
-   return &gradient_pomegranate[0];
+   return &gradient_legacy_red[0];
 }
 
 static void xmb_fill_default_background_path(xmb_handle_t *xmb,

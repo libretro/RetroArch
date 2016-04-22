@@ -638,16 +638,25 @@ static void menu_action_setting_disp_set_label_xmb_gradient(
    switch (settings->menu.xmb_gradient)
    {
       case 0:
-         snprintf(s, len, "%s", "Pomegranate");
+         snprintf(s, len, "%s", "Legacy Red");
          break;
       case 1:
-         snprintf(s, len, "%s", "Volcano");
+         snprintf(s, len, "%s", "Dark Purple");
          break;
       case 2:
          snprintf(s, len, "%s", "Midnight Blue");
          break;
       case 3:
-         snprintf(s, len, "%s", "Wisteria");
+         snprintf(s, len, "%s", "Golden");
+         break;
+      case 4:
+         snprintf(s, len, "%s", "Electric Blue");
+         break;
+      case 5:
+         snprintf(s, len, "%s", "Apple Green");
+         break;
+      case 6:
+         snprintf(s, len, "%s", "Undersea");
          break;
    }
 }
