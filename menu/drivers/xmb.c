@@ -231,6 +231,56 @@ typedef struct xmb_handle
    gfx_font_raster_block_t raster_block;
 } xmb_handle_t;
 
+float gradient_dark_purple[16] = {
+    20/255.0,  13/255.0,  20/255.0, 1.0,
+    20/255.0,  13/255.0,  20/255.0, 1.0,
+    92/255.0,  44/255.0,  92/255.0, 1.0,
+   148/255.0,  90/255.0, 148/255.0, 1.0,
+};
+
+float gradient_midnight_blue[16] = {
+   44/255.0, 62/255.0, 80/255.0, 1.0,
+   44/255.0, 62/255.0, 80/255.0, 1.0,
+   44/255.0, 62/255.0, 80/255.0, 1.0,
+   44/255.0, 62/255.0, 80/255.0, 1.0,
+};
+
+float gradient_golden[16] = {
+   174/255.0, 123/255.0,  44/255.0, 1.0,
+   205/255.0, 174/255.0,  84/255.0, 1.0,
+   58/255.0,   43/255.0,  24/255.0, 1.0,
+   58/255.0,   43/255.0,  24/255.0, 1.0,
+};
+
+float gradient_legacy_red[16] = {
+   171/255.0,  70/255.0,  59/255.0, 1.0,
+   171/255.0,  70/255.0,  59/255.0, 1.0,
+   190/255.0,  80/255.0,  69/255.0, 1.0,
+   190/255.0,  80/255.0,  69/255.0, 1.0,
+};
+
+float gradient_electric_blue[16] = {
+     1/255.0,   2/255.0,  67/255.0, 1.0,
+     1/255.0,  73/255.0, 183/255.0, 1.0,
+     1/255.0,  93/255.0, 194/255.0, 1.0,
+     3/255.0, 162/255.0, 254/255.0, 1.0,
+};
+
+float gradient_apple_green[16] = {
+   102/255.0, 134/255.0,  58/255.0, 1.0,
+   122/255.0, 131/255.0,  52/255.0, 1.0,
+    82/255.0, 101/255.0,  35/255.0, 1.0,
+    63/255.0,  95/255.0,  30/255.0, 1.0,
+};
+
+float gradient_undersea[16] = {
+    23/255.0,  18/255.0,  41/255.0, 1.0,
+    30/255.0,  72/255.0, 114/255.0, 1.0,
+    52/255.0,  88/255.0, 110/255.0, 1.0,
+    69/255.0, 125/255.0, 140/255.0, 1.0,
+
+};
+
 static const char *xmb_theme_ident(void)
 {
    settings_t *settings = config_get_ptr();
@@ -268,6 +318,32 @@ static const char *xmb_thumbnails_ident(void)
    }
 
    return "OFF";
+}
+
+static float *xmb_gradient_ident(void)
+{
+   settings_t *settings = config_get_ptr();
+
+   switch (settings->menu.xmb_gradient)
+   {
+      case 1:
+         return &gradient_dark_purple[0];
+      case 2:
+         return &gradient_midnight_blue[0];
+      case 3:
+         return &gradient_golden[0];
+      case 4:
+         return &gradient_electric_blue[0];
+      case 5:
+         return &gradient_apple_green[0];
+      case 6:
+         return &gradient_undersea[0];
+      case 0:
+      default:
+         break;
+   }
+
+   return &gradient_legacy_red[0];
 }
 
 static void xmb_fill_default_background_path(xmb_handle_t *xmb,
@@ -405,7 +481,7 @@ static void xmb_draw_icon(
    draw.texture         = texture;
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   if (settings->menu.xmb_shadows)
+   if (settings->menu.xmb_shadows_enable)
    {
       for (i = 0; i < 16; i++)
          shadow[i]      = 0;
@@ -496,7 +572,7 @@ static void xmb_draw_text(xmb_handle_t *xmb,
    params.full_screen = true;
    params.text_align  = text_align;
 
-   if (settings->menu.xmb_shadows)
+   if (settings->menu.xmb_shadows_enable)
    {
       params.drop_x      = 2.0f;
       params.drop_y      = -2.0f;
@@ -1830,6 +1906,9 @@ static void xmb_draw_bg(
 
    if (settings->menu.xmb_ribbon_enable)
    {
+      draw.color = xmb_gradient_ident();
+      menu_display_set_alpha(draw.color, coord_color[3]);
+      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, &draw);
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, &draw);
    }
    else
@@ -1839,6 +1918,43 @@ static void xmb_draw_bg(
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
    }
 
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+}
+
+static void xmb_draw_dark_layer(
+      xmb_handle_t *xmb,
+      unsigned width,
+      unsigned height)
+{
+
+   menu_display_ctx_draw_t draw;
+   struct gfx_coords coords;
+   float black[16] = {
+      0, 0, 0, 1,
+      0, 0, 0, 1,
+      0, 0, 0, 1,
+      0, 0, 0, 1,
+   };
+
+   menu_display_set_alpha(black, xmb->alpha < 0.75 ? xmb->alpha : 0.75);
+
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = &black[0];
+
+   draw.x           = 0;
+   draw.y           = 0;
+   draw.width       = width;
+   draw.height      = height;
+   draw.coords      = &coords;
+   draw.matrix_data = NULL;
+   draw.texture     = menu_display_white_texture;
+   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
@@ -2073,15 +2189,7 @@ static void xmb_frame(void *data)
 
    if (render_background)
    {
-      xmb_draw_bg(
-            xmb,
-            width,
-            height,
-            xmb->alpha,
-            true,
-            xmb->textures.bg,
-            coord_color,
-            coord_color2);
+      xmb_draw_dark_layer(xmb, width, height);
 
       xmb_render_messagebox_internal(xmb, msg);
    }

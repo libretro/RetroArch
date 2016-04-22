@@ -619,6 +619,48 @@ static void menu_action_setting_disp_set_label_xmb_theme(
    }
 }
 
+static void menu_action_setting_disp_set_label_xmb_gradient(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings        = config_get_ptr();
+
+   if (!settings)
+      return;
+
+   strlcpy(s2, path, len2);
+   *w = 19;
+   switch (settings->menu.xmb_gradient)
+   {
+      case 0:
+         snprintf(s, len, "%s", "Legacy Red");
+         break;
+      case 1:
+         snprintf(s, len, "%s", "Dark Purple");
+         break;
+      case 2:
+         snprintf(s, len, "%s", "Midnight Blue");
+         break;
+      case 3:
+         snprintf(s, len, "%s", "Golden");
+         break;
+      case 4:
+         snprintf(s, len, "%s", "Electric Blue");
+         break;
+      case 5:
+         snprintf(s, len, "%s", "Apple Green");
+         break;
+      case 6:
+         snprintf(s, len, "%s", "Undersea");
+         break;
+   }
+}
+
 static void menu_action_setting_disp_set_label_thumbnails(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1208,6 +1250,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_XMB_THEME:
          BIND_ACTION_GET_VALUE(cbs,
             menu_action_setting_disp_set_label_xmb_theme);
+         break;
+      case MENU_LABEL_XMB_GRADIENT:
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_xmb_gradient);
          break;
       case MENU_LABEL_THUMBNAILS:
          BIND_ACTION_GET_VALUE(cbs,

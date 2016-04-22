@@ -167,7 +167,8 @@ typedef struct settings
       unsigned xmb_scale_factor;
       unsigned xmb_alpha_factor;
       unsigned xmb_theme;
-      bool xmb_shadows;
+      unsigned xmb_gradient;
+      bool xmb_shadows_enable;
       bool xmb_ribbon_enable;
       char xmb_font[PATH_MAX_LENGTH];
       bool throttle_framerate;
