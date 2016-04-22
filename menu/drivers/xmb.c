@@ -1889,11 +1889,9 @@ static void xmb_draw_bg(
    draw.vertex_count         = 4;
    draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   if (
-      !menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
-      && draw.texture)
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
+         && draw.texture)
       draw.color             = &coord_white[0];
-
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);

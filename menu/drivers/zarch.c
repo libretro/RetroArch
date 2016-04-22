@@ -971,12 +971,8 @@ static void zarch_frame(void *data)
    draw.vertex_count       = 4;
    draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   if (
-         (settings->menu.pause_libretro
-          || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
-          || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-         )
-      && draw.texture)
+   if (!menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
+         && draw.texture)
       draw.color             = &coord_color2[0];
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);

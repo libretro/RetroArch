@@ -813,11 +813,7 @@ static void mui_frame(void *data)
       draw.vertex_count       = 4;
       draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-      if (
-            (settings->menu.pause_libretro
-             || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
-             || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-            )
+      if (!menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
             && draw.texture)
          draw.color             = &white_bg[0];
 
@@ -851,11 +847,7 @@ static void mui_frame(void *data)
          draw.vertex_count       = 4;
          draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-         if (
-               (settings->menu.pause_libretro
-                || !rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
-                || rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL)
-               )
+         if (!menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
                && draw.texture)
             draw.color             = &white_bg[0];
 
