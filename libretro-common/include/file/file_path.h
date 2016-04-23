@@ -28,12 +28,12 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#include <retro_common_api.h>
+
 #include <boolean.h>
 #include <retro_inline.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 /* Order in this enum is equivalent to negative sort order in filelist
  *  (i.e. DIRECTORY is on top of PLAIN_FILE) */
@@ -402,8 +402,6 @@ void fill_pathname_application_path(char *buf, size_t size);
  **/
 bool path_mkdir(const char *dir);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

@@ -23,14 +23,14 @@
 #ifndef __LIBRETRO_SDK_RTHREADS_H__
 #define __LIBRETRO_SDK_RTHREADS_H__
 
+#include <retro_common_api.h>
+
 #include <boolean.h>
 #include <stdint.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct sthread sthread_t;
 typedef struct slock slock_t;
@@ -183,8 +183,6 @@ int scond_broadcast(scond_t *cond);
  **/
 void scond_signal(scond_t *cond);
 
-#if defined(__cplusplus)
-}
-#endif
+RETRO_END_DECLS
 
 #endif

@@ -23,6 +23,14 @@
 #ifndef __LIBRETRO_SDK_ENVIRONMENT_H
 #define __LIBRETRO_SDK_ENVIRONMENT_H
 
+/*
+This file is designed to create a normalized environment for compiling
+libretro-common's private implementations, or any other sources which might
+enjoy use of it's environment (RetroArch for instance).
+This should be an elaborately crafted environment so that sources don't
+need to be full of platform-specific workarounds.
+*/
+
 #if defined (__cplusplus)
 #if 0
 printf("This is C++, version %d.\n", __cplusplus);
@@ -64,5 +72,7 @@ printf("This is C++, version %d.\n", __cplusplus);
 #else   /* !defined(__STDC__) */
 /* This is not standard C. __STDC__ is not defined. */
 #endif
+
+
 
 #endif

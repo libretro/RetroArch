@@ -23,11 +23,11 @@
 #ifndef __RETRO_DIRENT_H
 #define __RETRO_DIRENT_H
 
+#include <retro_common_api.h>
+
 #include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 struct RDIR;
 
@@ -53,8 +53,6 @@ bool retro_dirent_is_dir(struct RDIR *rdir);
 
 void retro_closedir(struct RDIR *rdir);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

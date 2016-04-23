@@ -27,11 +27,11 @@
 #include "config.h"
 #endif
 
+#include <retro_common_api.h>
+
 #include "rglgen_headers.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 struct rglgen_sym_map;
 
@@ -41,9 +41,7 @@ void rglgen_resolve_symbols(rglgen_proc_address_t proc);
 void rglgen_resolve_symbols_custom(rglgen_proc_address_t proc,
       const struct rglgen_sym_map *map);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

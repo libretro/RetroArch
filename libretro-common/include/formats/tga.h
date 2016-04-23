@@ -26,24 +26,22 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include <boolean.h>
-
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+#include <boolean.h>
+
+RETRO_BEGIN_DECLS
 
 bool rtga_image_load_shift(uint8_t *buf,
       void *data,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

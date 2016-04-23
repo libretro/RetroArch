@@ -23,11 +23,11 @@
 #ifndef __LIBRETRO_SDK_FORMAT_RBMP_H__
 #define __LIBRETRO_SDK_FORMAT_RBMP_H__
 
+#include <retro_common_api.h>
+
 #include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum rbmp_source_type
 {
@@ -46,8 +46,6 @@ bool rbmp_save_image(
       unsigned pitch,
       enum rbmp_source_type type);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

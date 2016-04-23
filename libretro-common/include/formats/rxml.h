@@ -22,9 +22,9 @@
 #ifndef __LIBRETRO_SDK_FORMAT_RXML_H__
 #define __LIBRETRO_SDK_FORMAT_RXML_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 /* Total NIH. Very trivial "XML" implementation for use in RetroArch.
  * Error checking is minimal. Invalid documents may lead to very 
@@ -89,9 +89,7 @@ typedef rxml_document_t *xmlDocPtr;
 #define xmlFreeParserCtxt(ctx) ((void)0)
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

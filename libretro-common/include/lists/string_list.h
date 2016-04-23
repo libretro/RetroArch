@@ -23,13 +23,13 @@
 #ifndef __LIBRETRO_SDK_STRING_LIST_H
 #define __LIBRETRO_SDK_STRING_LIST_H
 
+#include <retro_common_api.h>
+
 #include <boolean.h>
 #include <stdlib.h>
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 union string_list_elem_attr
 {
@@ -141,8 +141,6 @@ void string_list_join_concat(char *buffer, size_t size,
 void string_list_set(struct string_list *list, unsigned idx,
       const char *str);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

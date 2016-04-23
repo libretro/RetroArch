@@ -24,9 +24,9 @@
 #ifndef __LIBRETRO_SDK_CONFIG_FILE_H
 #define __LIBRETRO_SDK_CONFIG_FILE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 #include <stdio.h>
 #include <stdint.h>
@@ -158,9 +158,7 @@ bool config_file_write(config_file_t *conf, const char *path);
  * Does not close the file. */
 void config_file_dump(config_file_t *conf, FILE *file);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

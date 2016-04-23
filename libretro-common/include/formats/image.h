@@ -18,11 +18,12 @@
 #define __RARCH_IMAGE_CONTEXT_H
 
 #include <stdint.h>
+
+#include <retro_common_api.h>
+
 #include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum image_process_code
 {
@@ -49,8 +50,6 @@ bool video_texture_image_color_convert(unsigned r_shift,
 bool video_texture_image_load(struct texture_image *img, const char *path);
 void video_texture_image_free(struct texture_image *img);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

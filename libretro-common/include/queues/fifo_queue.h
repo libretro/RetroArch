@@ -26,9 +26,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct fifo_buffer fifo_buffer_t;
 
@@ -46,9 +46,7 @@ size_t fifo_read_avail(fifo_buffer_t *buffer);
 
 size_t fifo_write_avail(fifo_buffer_t *buffer);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

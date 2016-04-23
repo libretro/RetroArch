@@ -29,15 +29,15 @@
 #include "config.h"
 #endif
 
+#include <retro_common_api.h>
+
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
 #define NEED_DYNAMIC
 #else
 #undef NEED_DYNAMIC
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef void *dylib_t;
 typedef void (*function_t)(void);
@@ -66,9 +66,6 @@ char *dylib_error(void);
 function_t dylib_proc(dylib_t lib, const char *proc);
 #endif
 
-#ifdef __cplusplus
-}
-#endif
-
+RETRO_END_DECLS
 
 #endif

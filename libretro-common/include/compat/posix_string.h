@@ -23,13 +23,13 @@
 #ifndef __LIBRETRO_SDK_COMPAT_POSIX_STRING_H
 #define __LIBRETRO_SDK_COMPAT_POSIX_STRING_H
 
+#include <retro_common_api.h>
+
 #ifdef _MSC_VER
 #include <compat/msvc.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 #ifdef _WIN32
 #undef strtok_r
@@ -56,8 +56,6 @@ int isblank(int c);
 #endif
 
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

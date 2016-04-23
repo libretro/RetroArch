@@ -23,9 +23,9 @@
 #ifndef __LIBRETRO_SDK_FILE_LIST_H__
 #define __LIBRETRO_SDK_FILE_LIST_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -117,8 +117,6 @@ void file_list_sort_on_type(file_list_t *list);
 bool file_list_search(const file_list_t *list, const char *needle,
       size_t *index);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

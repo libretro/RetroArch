@@ -23,14 +23,14 @@
 #ifndef __LIBRETRO_SDK_SCALER_H__
 #define __LIBRETRO_SDK_SCALER_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
 
 #include <stdint.h>
 #include <stddef.h>
 #include <boolean.h>
 #include <clamping.h>
+
+RETRO_BEGIN_DECLS
 
 #define FILTER_UNITY (1 << 14)
 
@@ -145,9 +145,7 @@ void *scaler_alloc(size_t elem_size, size_t size);
  **/
 void scaler_free(void *ptr);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

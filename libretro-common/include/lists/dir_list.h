@@ -23,11 +23,11 @@
 #ifndef __LIBRETRO_SDK_DIR_LIST_H
 #define __LIBRETRO_SDK_DIR_LIST_H
 
+#include <retro_common_api.h>
+
 #include <lists/string_list.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 /**
  * dir_list_new:
@@ -63,8 +63,6 @@ void dir_list_sort(struct string_list *list, bool dir_first);
  **/
 void dir_list_free(struct string_list *list);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

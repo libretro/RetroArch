@@ -23,13 +23,13 @@
 #ifndef LIBRETRO_SDK_GLSM_H
 #define LIBRETRO_SDK_GLSM_H
 
+#include <retro_common_api.h>
+
 #include <boolean.h>
 #include <libretro.h>
 #include <glsym/rglgen_headers.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 #ifdef HAVE_OPENGLES2
 typedef GLfloat GLdouble;
@@ -147,8 +147,6 @@ typedef struct glsm_ctx_params
 
 bool glsm_ctl(enum glsm_state_ctl state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

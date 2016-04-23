@@ -26,12 +26,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <retro_common_api.h>
+
 #include <boolean.h>
 #include <file/archive_file.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct rpng rpng_t;
 
@@ -62,9 +62,7 @@ bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
       unsigned width, unsigned height, unsigned pitch);
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

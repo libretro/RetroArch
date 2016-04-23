@@ -27,9 +27,9 @@
 #include <boolean.h>
 #include <string.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 struct http_t;
 struct http_connection_t;
@@ -68,8 +68,6 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error);
 /* Cleans up all memory. */
 void net_http_delete(struct http_t *state);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

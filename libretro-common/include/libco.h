@@ -23,6 +23,8 @@
 #ifndef LIBCO_H
 #define LIBCO_H
 
+#include <retro_common_api.h>
+
 #ifdef LIBCO_C
   #ifdef LIBCO_MP
     #define thread_local __thread
@@ -31,9 +33,7 @@
   #endif
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef void* cothread_t;
 
@@ -73,9 +73,7 @@ void co_delete(cothread_t cothread);
  */
 void co_switch(cothread_t cothread);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 /* ifndef LIBCO_H */
 #endif

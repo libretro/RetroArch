@@ -23,9 +23,9 @@
 #ifndef __LIBRETRO_SDK_SEMAPHORE_H
 #define __LIBRETRO_SDK_SEMAPHORE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct ssem ssem_t;
 
@@ -47,8 +47,6 @@ void ssem_wait(ssem_t *semaphore);
 
 void ssem_signal(ssem_t *semaphore);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif /* __LIBRETRO_SDK_SEMAPHORE_H */

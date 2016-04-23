@@ -28,12 +28,10 @@
 
 #include <sys/types.h>
 
-#include <retro_common.h>
+#include <retro_common_api.h>
 #include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct RFILE RFILE;
 
@@ -70,8 +68,6 @@ int filestream_putc(RFILE *stream, int c);
 
 int filestream_get_fd(RFILE *stream);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
