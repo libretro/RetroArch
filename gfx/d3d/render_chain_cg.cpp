@@ -262,9 +262,7 @@ static void renderchain_set_shader_params(cg_renderchain_t *chain,
 }
 
 
-#define DECL_FVF_POSITION(stream) \
-   { (WORD)(stream), 0 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, \
-      D3DDECLUSAGE_POSITION, 0 }
+
 #define DECL_FVF_TEXCOORD(stream, offset, index) \
    { (WORD)(stream), (WORD)(offset * sizeof(float)), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, \
       D3DDECLUSAGE_TEXCOORD, (BYTE)(index) }
@@ -283,10 +281,6 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
    cg_renderchain_t *chain                     = (cg_renderchain_t*)data;
    Pass          *pass                         = (Pass*)pass_data;
    static const D3DVERTEXELEMENT decl_end      = D3DDECL_END();
-   static const D3DVERTEXELEMENT position_decl = DECL_FVF_POSITION(0);
-   static const D3DVERTEXELEMENT tex_coord0    = DECL_FVF_TEXCOORD(1, 3, 0);
-   static const D3DVERTEXELEMENT tex_coord1    = DECL_FVF_TEXCOORD(2, 5, 1);
-   static const D3DVERTEXELEMENT color         = DECL_FVF_COLOR(3, 7, 0);
    D3DVERTEXELEMENT decl[MAXD3DDECLLENGTH]     = {{0}};
 
    if (cgD3D9GetVertexDeclaration(pass->vPrg, decl) == CG_FALSE)
@@ -318,11 +312,20 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    if (param)
    {
+      static const D3DVERTEXELEMENT element = 
+	  {
+		  0, 0 * sizeof(float),
+			  D3DDECLTYPE_FLOAT3,
+			  D3DDECLMETHOD_DEFAULT,
+			  D3DDECLUSAGE_POSITION,
+			  0
+	  };
       stream_taken[0] = true;
-      RARCH_LOG("[FVF]: POSITION semantic found.\n");
       index           = cgGetParameterResourceIndex(param);
-      decl[index]     = position_decl;
+      decl[index]     = element;
       indices[index]  = true;
+
+      RARCH_LOG("[FVF]: POSITION semantic found.\n");
    }
 
    param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD");
@@ -331,6 +334,7 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    if (param)
    {
+      static const D3DVERTEXELEMENT tex_coord0    = DECL_FVF_TEXCOORD(1, 3, 0);
       stream_taken[1] = true;
       texcoord0_taken = true;
       RARCH_LOG("[FVF]: TEXCOORD0 semantic found.\n");
@@ -342,6 +346,7 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
    param = d3d9_cg_find_param_from_semantic(cgGetFirstParameter(pass->vPrg, CG_PROGRAM), "TEXCOORD1");
    if (param)
    {
+      static const D3DVERTEXELEMENT tex_coord1    = DECL_FVF_TEXCOORD(2, 5, 1);
       stream_taken[2] = true;
       texcoord1_taken = true;
       RARCH_LOG("[FVF]: TEXCOORD1 semantic found.\n");
@@ -356,6 +361,7 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
 
    if (param)
    {
+      static const D3DVERTEXELEMENT color = DECL_FVF_COLOR(3, 7, 0);
       stream_taken[3] = true;
       RARCH_LOG("[FVF]: COLOR0 semantic found.\n");
       index           = cgGetParameterResourceIndex(param);
@@ -364,7 +370,11 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
    }
 
    /* Stream {0, 1, 2, 3} might be already taken. Find first vacant stream. */
-   for (index = 0; index < 4 && stream_taken[index]; index++);
+   for (index = 0; index < 4; index++)
+   {
+	   if (stream_taken[index] == false)
+		   break;
+   }
 
    /* Find first vacant texcoord declaration. */
    if (texcoord0_taken && texcoord1_taken)
@@ -387,14 +397,11 @@ static bool cg_d3d9_renderchain_init_shader_fvf(void *data, void *pass_data)
          decl[i]     = elem;
 
          /* Find next vacant stream. */
-         index++;
-
-         while (index < 4 && stream_taken[index])
+         while ((++index < 4) && stream_taken[index])
             index++;
 
          /* Find next vacant texcoord declaration. */
-         tex_index++;
-         if (tex_index == 1 && texcoord1_taken)
+         if ((++tex_index == 1) && texcoord1_taken)
             tex_index++;
       }
    }
