@@ -50,6 +50,7 @@ struct defaults
       char remap[PATH_MAX_LENGTH];
       char cache[PATH_MAX_LENGTH];
       char wallpapers[PATH_MAX_LENGTH];
+      char thumbnails[PATH_MAX_LENGTH];
       char database[PATH_MAX_LENGTH];
       char cursor[PATH_MAX_LENGTH];
       char cheats[PATH_MAX_LENGTH];

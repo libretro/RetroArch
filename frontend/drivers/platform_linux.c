@@ -1837,6 +1837,8 @@ static void frontend_linux_get_env(int *argc,
                   app_dir, "remaps", sizeof(g_defaults.dir.remap));
             fill_pathname_join(g_defaults.dir.wallpapers,
                   app_dir, "wallpapers", sizeof(g_defaults.dir.wallpapers));
+            fill_pathname_join(g_defaults.dir.thumbnails,
+                  app_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
             if(*downloads_dir && test_permissions(downloads_dir))
             {
                fill_pathname_join(g_defaults.dir.core_assets,
@@ -2008,6 +2010,8 @@ static void frontend_linux_get_env(int *argc,
          "downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.screenshot, base_path,
          "screenshots", sizeof(g_defaults.dir.screenshot));
+   fill_pathname_join(g_defaults.dir.thumbnails, base_path,
+         "thumbnails", sizeof(g_defaults.dir.thumbnails));
 #endif
 }
 
