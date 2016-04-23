@@ -364,6 +364,13 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = menu_hash_to_str(
                MENU_LABEL_DEFERRED_CORE_UPDATER_LIST);
          break;
+      case ACTION_OK_DL_THUMBNAILS_UPDATER_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = menu_hash_to_str(
+               MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST);
+         break;
       case ACTION_OK_DL_CORE_CONTENT_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -1252,10 +1259,15 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
 
    if (dec && !err)
    {
-      if (type_hash == CB_CORE_UPDATER_DOWNLOAD)
-         event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
-      else if (type_hash == CB_UPDATE_ASSETS)
-         event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+      switch (type_hash)
+      {
+         case CB_CORE_UPDATER_DOWNLOAD:
+            event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
+            break;
+         case CB_UPDATE_ASSETS:
+            event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+            break;
+      }
    }
 
    if (err)
@@ -1291,6 +1303,9 @@ static void cb_generic_download(void *task_data,
     * http transfer. */
    switch (transf->type_hash)
    {
+      case CB_CORE_THUMBNAILS_DOWNLOAD:
+         dir_path = settings->thumbnails_directory;
+         break;
       case CB_CORE_UPDATER_DOWNLOAD:
          dir_path = settings->libretro_directory;
          break;
@@ -1341,6 +1356,7 @@ static void cb_generic_download(void *task_data,
 
    fill_pathname_join(output_path, dir_path,
          transf->path, sizeof(output_path));
+   RARCH_LOG("output_path: %s\n", output_path);
 
    /* Make sure the directory exists */
    path_basedir(output_path);
@@ -1371,8 +1387,12 @@ static void cb_generic_download(void *task_data,
             cb_decompressed, (void*)(uintptr_t)transf->type_hash);
    }
 #else
-   if (transf->type_hash == CB_CORE_UPDATER_DOWNLOAD)
-      event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
+   switch (transf->type_hash)
+   {
+      case CB_CORE_UPDATER_DOWNLOAD:
+         event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
+         break;
+   }
 #endif
 
 finish:
@@ -1440,6 +1460,10 @@ static int action_ok_download_generic(const char *path,
       path = "shaders_glsl.zip";
    else if (string_is_equal(type_msg, "cb_update_shaders_cg"))
       path = "shaders_cg.zip";
+   else if (string_is_equal(type_msg, "cb_core_thumbnails_download"))
+   {
+      strlcpy(s, "http://ia800500.us.archive.org/33/items/No-Intro-Collection_2015-03-03", sizeof(s));
+   }
    else
       strlcpy(s, settings->network.buildbot_url, sizeof(s));
 
@@ -1459,6 +1483,20 @@ static int action_ok_core_content_download(const char *path,
 {
    return action_ok_download_generic(path, label, type, idx, entry_idx,
          "cb_core_content_download");
+}
+
+static int action_ok_core_content_thumbnails(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
+         "cb_core_thumbnails_download");
+}
+
+static int action_ok_thumbnails_updater_download(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return action_ok_download_generic(path, label, type, idx, entry_idx,
+         "cb_thumbnails_updater_download");
 }
 
 static int action_ok_core_updater_download(const char *path,
@@ -1637,6 +1675,7 @@ enum
 {
    ACTION_OK_NETWORK_CORE_CONTENT_LIST = 0,
    ACTION_OK_NETWORK_CORE_UPDATER_LIST,
+   ACTION_OK_NETWORK_THUMBNAILS_UPDATER_LIST,
    ACTION_OK_NETWORK_LAKKA_LIST
 };
 
@@ -1674,6 +1713,14 @@ static int generic_action_ok_network(const char *path,
          type_id2  = ACTION_OK_DL_CORE_UPDATER_LIST;
          callback = cb_net_generic;
          break;
+      case ACTION_OK_NETWORK_THUMBNAILS_UPDATER_LIST:
+         fill_pathname_join(url_path,
+               "http://ia801501.us.archive.org/24/items/No-Intro_Thumbnails_2016-04-10",
+               "index", sizeof(url_path));
+         url_label = "cb_thumbnails_updater_list";
+         type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
+         callback = cb_net_generic;
+         break;
 #ifdef HAVE_LAKKA
       case ACTION_OK_NETWORK_LAKKA_LIST:
          /* TODO unhardcode this path */
@@ -1706,6 +1753,13 @@ static int action_ok_core_updater_list(const char *path,
 {
    return generic_action_ok_network(path, label, type, idx, entry_idx,
          ACTION_OK_NETWORK_CORE_UPDATER_LIST);
+}
+
+static int action_ok_thumbnails_updater_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   return generic_action_ok_network(path, label, type, idx, entry_idx,
+         ACTION_OK_NETWORK_THUMBNAILS_UPDATER_LIST);
 }
 
 static int action_ok_lakka_list(const char *path,
@@ -2318,6 +2372,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_VALUE_CORE_UPDATER_LIST:
          BIND_ACTION_OK(cbs, action_ok_core_updater_list);
          break;
+      case MENU_LABEL_THUMBNAILS_UPDATER_LIST:
+         BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_list);
+         break;
       case MENU_LABEL_UPDATE_LAKKA:
          BIND_ACTION_OK(cbs, action_ok_lakka_list);
          break;
@@ -2583,8 +2640,14 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_DOWNLOAD_CORE_CONTENT:
             BIND_ACTION_OK(cbs, action_ok_core_content_download);
             break;
+         case MENU_FILE_DOWNLOAD_THUMBNAIL_CONTENT:
+            BIND_ACTION_OK(cbs, action_ok_core_content_thumbnails);
+            break;
          case MENU_FILE_DOWNLOAD_CORE:
             BIND_ACTION_OK(cbs, action_ok_core_updater_download);
+            break;
+         case MENU_FILE_DOWNLOAD_THUMBNAIL:
+            BIND_ACTION_OK(cbs, action_ok_thumbnails_updater_download);
             break;
          case MENU_FILE_DOWNLOAD_LAKKA:
             BIND_ACTION_OK(cbs, action_ok_lakka_download);

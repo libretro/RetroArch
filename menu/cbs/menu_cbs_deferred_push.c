@@ -298,6 +298,11 @@ static int deferred_push_disk_options(menu_displaylist_info_t *info)
 }
 
 #ifdef HAVE_NETWORKING
+static int deferred_push_thumbnails_updater_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_THUMBNAILS_UPDATER);
+}
+
 static int deferred_push_core_updater_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_CORES_UPDATER);
@@ -620,6 +625,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_core_updater_list);
+#endif
+            break;
+         case MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
+#ifdef HAVE_NETWORKING
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_thumbnails_updater_list);
 #endif
             break;
          case MENU_LABEL_DEFERRED_LAKKA_LIST:

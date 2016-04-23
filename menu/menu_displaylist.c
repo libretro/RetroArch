@@ -100,34 +100,40 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 
       menu_entries_add(list, line_start, "",
             type, 0, 0);
-      if (type == MENU_FILE_DOWNLOAD_CORE)
+
+      switch (type)
       {
-         settings_t *settings      = config_get_ptr();
-
-         if (settings)
-         {
-            char core_path[PATH_MAX_LENGTH];
-            char display_name[PATH_MAX_LENGTH];
-            char *last = NULL;
-
-            fill_pathname_join(core_path, settings->libretro_info_path,
-                  line_start, sizeof(core_path));
-
-            path_remove_extension(core_path);
-            path_remove_extension(core_path);
-            last = (char*)strrchr(core_path, '_');
-            if (*last)
+         case MENU_FILE_DOWNLOAD_CORE:
             {
-               if (!string_is_equal(last, "_libretro"))
-                  *last = '\0';
-            }
-            strlcat(core_path, ".info", sizeof(core_path));
+               settings_t *settings      = config_get_ptr();
 
-            if (core_info_get_display_name(
-                     core_path, display_name, sizeof(display_name)))
-               menu_entries_set_alt_at_offset(list, j, display_name);
-         }
+               if (settings)
+               {
+                  char core_path[PATH_MAX_LENGTH];
+                  char display_name[PATH_MAX_LENGTH];
+                  char *last = NULL;
+
+                  fill_pathname_join(core_path, settings->libretro_info_path,
+                        line_start, sizeof(core_path));
+
+                  path_remove_extension(core_path);
+                  path_remove_extension(core_path);
+                  last = (char*)strrchr(core_path, '_');
+                  if (*last)
+                  {
+                     if (!string_is_equal(last, "_libretro"))
+                        *last = '\0';
+                  }
+                  strlcat(core_path, ".info", sizeof(core_path));
+
+                  if (core_info_get_display_name(
+                           core_path, display_name, sizeof(display_name)))
+                     menu_entries_set_alt_at_offset(list, j, display_name);
+               }
+            }
+            break;
       }
+
       j++;
 
       /* Restore the saved char */
@@ -199,34 +205,40 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
 
       menu_entries_add(list, core_pathname, "",
             type, 0, 0);
-      if (type == MENU_FILE_DOWNLOAD_CORE)
+
+      switch (type)
       {
-         settings_t *settings      = config_get_ptr();
-
-         if (settings)
-         {
-            char core_path[PATH_MAX_LENGTH];
-            char display_name[PATH_MAX_LENGTH];
-            char *last = NULL;
-
-            fill_pathname_join(core_path, settings->libretro_info_path,
-                  core_pathname, sizeof(core_path));
-
-            path_remove_extension(core_path);
-            path_remove_extension(core_path);
-            last = (char*)strrchr(core_path, '_');
-            if (*last)
+         case MENU_FILE_DOWNLOAD_CORE:
             {
-               if (!string_is_equal(last, "_libretro"))
-                  *last = '\0';
-            }
-            strlcat(core_path, ".info", sizeof(core_path));
+               settings_t *settings      = config_get_ptr();
 
-            if (core_info_get_display_name(
-                     core_path, display_name, sizeof(display_name)))
-               menu_entries_set_alt_at_offset(list, j, display_name);
-         }
+               if (settings)
+               {
+                  char core_path[PATH_MAX_LENGTH];
+                  char display_name[PATH_MAX_LENGTH];
+                  char *last = NULL;
+
+                  fill_pathname_join(core_path, settings->libretro_info_path,
+                        core_pathname, sizeof(core_path));
+
+                  path_remove_extension(core_path);
+                  path_remove_extension(core_path);
+                  last = (char*)strrchr(core_path, '_');
+                  if (*last)
+                  {
+                     if (!string_is_equal(last, "_libretro"))
+                        *last = '\0';
+                  }
+                  strlcat(core_path, ".info", sizeof(core_path));
+
+                  if (core_info_get_display_name(
+                           core_path, display_name, sizeof(display_name)))
+                     menu_entries_set_alt_at_offset(list, j, display_name);
+               }
+            }
+            break;
       }
+
       j++;
 
       string_list_free(str_list);
@@ -2386,6 +2398,11 @@ static int menu_displaylist_parse_options(
          MENU_SETTING_ACTION, 0, 0);
 
    menu_entries_add(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
+         menu_hash_to_str(MENU_LABEL_THUMBNAILS_UPDATER_LIST),
+         MENU_SETTING_ACTION, 0, 0);
+
+   menu_entries_add(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_CORE_INFO_FILES),
          menu_hash_to_str(MENU_LABEL_UPDATE_CORE_INFO_FILES),
          MENU_SETTING_ACTION, 0, 0);
@@ -3110,6 +3127,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_CORES:
       case DISPLAYLIST_CORES_DETECTED:
       case DISPLAYLIST_CORES_UPDATER:
+      case DISPLAYLIST_THUMBNAILS_UPDATER:
       case DISPLAYLIST_LAKKA:
       case DISPLAYLIST_CORES_SUPPORTED:
       case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
@@ -3638,6 +3656,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #ifdef HAVE_NETWORKING
          print_buf_lines_extended(info->list, core_buf,
                core_len, MENU_FILE_DOWNLOAD_CORE);
+         info->need_push    = true;
+         info->need_refresh = true;
+#endif
+         break;
+      case DISPLAYLIST_THUMBNAILS_UPDATER:
+#ifdef HAVE_NETWORKING
+         print_buf_lines(info->list, core_buf,
+               core_len, MENU_FILE_DOWNLOAD_THUMBNAIL_CONTENT);
          info->need_push    = true;
          info->need_refresh = true;
 #endif
