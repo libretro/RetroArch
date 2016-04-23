@@ -548,6 +548,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 #if defined(HAVE_GLSL) || defined(HAVE_CG) || defined(HAVE_HLSL)
             shader_info.data = NULL;
             shader_info.idx  = VIDEO_SHADER_MENU;
+            shader_info.set_active = true;
 
             video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
