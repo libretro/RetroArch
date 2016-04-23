@@ -8,6 +8,7 @@ static const char *stock_vertex_xmb =
    "#endif\n"
    "COMPAT_ATTRIBUTE vec3 VertexCoord;\n"
    "uniform float time;\n"
+   "COMPAT_VARYING vec3 fragVertexEc;\n"
    "float iqhash( float n )\n"
    "{\n"
    "  return fract(sin(n)*43758.5453);\n"
@@ -23,12 +24,27 @@ static const char *stock_vertex_xmb =
    "  mix(mix( iqhash(n+113.0), iqhash(n+114.0),f.x),\n"
    "  mix( iqhash(n+170.0), iqhash(n+171.0),f.x),f.y),f.z);\n"
    "}\n"
+   "float noise2( vec3 x )\n"
+   "{\n"
+   "  return cos((x.z*1.0)*2.0);"
+   "}\n"
    "void main()\n"
    "{\n"
    "  vec3 v = vec3(VertexCoord.x, 0.0, VertexCoord.y);\n"
    "  vec3 v2 = v;\n"
-   "  v2.x = v2.x + time/2.0;\n"
-   "  v2.z = v.z * 3.0;\n"
-   "  v.y = -cos((v.x+v.z/3.0+time)*2.0)/10.0 - noise(v2.xyz)/4.0;\n"
+   "  vec3 v3 = v;\n"
+
+   "  v.y = noise2(v2)/6.0;\n"
+
+   "  v3.x = v3.x + time/5.0;\n"
+   "  v3.x = v3.x / 2.0;\n"
+
+   "  v3.z = v3.z + time/10.0;\n"
+   "  v3.y = v3.y + time/100.0;\n"
+
+   "  v.z = v.z + noise(v3*7.0)/15.0;\n"
+   "  v.y = v.y + noise(v3*7.0)/15.0 + cos(v.x*2.0-time/5.0)/5.0 - 0.3;\n"
+
    "  gl_Position = vec4(v, 1.0);\n"
+   "  fragVertexEc = gl_Position.xyz;\n"
    "}\n";
