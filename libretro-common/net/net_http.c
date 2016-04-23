@@ -215,10 +215,9 @@ bool net_http_connection_iterate(struct http_connection_t *conn)
 {
    if (!conn)
       return false;
-   if (*conn->scan != '/' && *conn->scan != ':' && *conn->scan != '\0')
+   while (*conn->scan != '/' && *conn->scan != ':' && *conn->scan != '\0')
    {
       conn->scan++;
-      return false;
    }
    return true;
 }
