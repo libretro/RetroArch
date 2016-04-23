@@ -152,6 +152,8 @@ void d3d_vertex_buffer_unlock(LPDIRECT3DVERTEXBUFFER vertbuf)
 #endif
 
 #endif
+
+#endif
 }
 
 void *d3d_vertex_buffer_lock(LPDIRECT3DVERTEXBUFFER vertbuf)
@@ -369,7 +371,7 @@ void d3d_set_texture(LPDIRECT3DDEVICE dev, unsigned sampler,
             + fetchConstant, D3DTAG_START(D3DTAG_FETCHCONSTANTS)
             + fetchConstant);
    D3DDevice_SetTexture(dev, sampler, tex, pendingMask3);
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetTexture(dev, sampler, tex);
 #else
    dev->SetTexture(sampler, tex);
@@ -505,7 +507,7 @@ void d3d_set_vertex_declaration(void *data, void *vertex_data)
       return;
 #ifdef _XBOX1
    d3d_set_vertex_shader(dev, D3DFVF_XYZ | D3DFVF_TEX1, NULL);
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetVertexDeclaration(dev, decl);
 #elif defined(HAVE_D3D9)
    dev->SetVertexDeclaration(decl);
