@@ -351,7 +351,7 @@ void d3d_set_viewports(LPDIRECT3DDEVICE dev, D3DVIEWPORT *vp)
    D3DDevice_SetViewport(dev, vp);
 #elif defined(_XBOX1)
    D3DDevice_SetViewport(vp);
-#if defined(HAVE_D3D9) && !defined(__cplusplus)
+#elif defined(HAVE_D3D9) && !defined(__cplusplus)
    IDirect3DDevice9_SetViewport(dev, vp);
 #else
    dev->SetViewport(vp);
