@@ -734,6 +734,8 @@ static void check_defaults_dirs(void)
       check_defaults_dir_create_dir(g_defaults.dir.cursor);
    if (*g_defaults.dir.cheats)
       check_defaults_dir_create_dir(g_defaults.dir.cheats);
+   if (*g_defaults.dir.thumbnails)
+      check_defaults_dir_create_dir(g_defaults.dir.thumbnails);
 }
 
 void content_push_to_history_playlist(bool do_push,
