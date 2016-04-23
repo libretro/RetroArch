@@ -40,7 +40,7 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
       D3DPOOL pool, unsigned filter, unsigned mipfilter,
-      D3DCOLOR color_key, D3DXIMAGE_INFO *src_info, 
+      D3DCOLOR color_key, void *src_info, 
       PALETTEENTRY *palette);
 
 void d3d_set_stream_source(LPDIRECT3DDEVICE dev, unsigned stream_no,

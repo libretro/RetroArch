@@ -26,6 +26,8 @@
 
 #include "../menu_display.h"
 
+#include "../../gfx/include/d3d9/d3dx9math.h"
+
 #define BYTE_CLAMP(i) (int) ((((i) > 255) ? 255 : (((i) < 0) ? 0 : (i))))
 
 static const float d3d_vertexes[] = {

@@ -18,6 +18,8 @@
 #include "../font_driver.h"
 #include "../../general.h"
 
+#include "../include/d3d9/d3dx9core.h"
+
 typedef struct
 {
    d3d_video_t *d3d;

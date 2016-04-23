@@ -18,6 +18,8 @@
 
 #include "d3d_common.h"
 
+#include "../include/d3d9/d3dx9core.h"
+
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev)
 {
 #if defined(_XBOX1)
@@ -55,11 +57,12 @@ LPDIRECT3DTEXTURE d3d_texture_new(LPDIRECT3DDEVICE dev,
       const char *path, unsigned width, unsigned height,
       unsigned miplevels, unsigned usage, D3DFORMAT format,
       D3DPOOL pool, unsigned filter, unsigned mipfilter,
-      D3DCOLOR color_key, D3DXIMAGE_INFO *src_info, 
+      D3DCOLOR color_key, D3DXIMAGE_INFO *src_info_data, 
       PALETTEENTRY *palette)
 {
    HRESULT hr;
    LPDIRECT3DTEXTURE buf;
+   D3DXIMAGE_INFO *src_info = (D3DXIMAGE_INFO*)src_info_data;
 
    if (path)
       hr = D3DXCreateTextureFromFileExA(dev,
