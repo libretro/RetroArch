@@ -1462,7 +1462,7 @@ static int action_ok_download_generic(const char *path,
       path = "shaders_cg.zip";
    else if (string_is_equal(type_msg, "cb_core_thumbnails_download"))
    {
-      strlcpy(s, "http://ia800500.us.archive.org/33/items/No-Intro-Collection_2015-03-03", sizeof(s));
+      strlcpy(s, "http://ia801501.us.archive.org/24/items/No-Intro_Thumbnails_2016-04-10", sizeof(s));
    }
    else
       strlcpy(s, settings->network.buildbot_url, sizeof(s));
