@@ -24,7 +24,7 @@ static const char *stock_vertex_xmb =
    "  mix(mix( iqhash(n+113.0), iqhash(n+114.0),f.x),\n"
    "  mix( iqhash(n+170.0), iqhash(n+171.0),f.x),f.y),f.z);\n"
    "}\n"
-   "float noise2( vec3 x )\n"
+   "float xmb_noise2( vec3 x )\n"
    "{\n"
    "  return cos((x.z*1.0)*2.0);"
    "}\n"
@@ -34,7 +34,7 @@ static const char *stock_vertex_xmb =
    "  vec3 v2 = v;\n"
    "  vec3 v3 = v;\n"
 
-   "  v.y = noise2(v2)/6.0;\n"
+   "  v.y = xmb_noise2(v2)/6.0;\n"
 
    "  v3.x = v3.x + time/5.0;\n"
    "  v3.x = v3.x / 2.0;\n"
