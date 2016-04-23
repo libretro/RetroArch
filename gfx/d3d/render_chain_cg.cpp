@@ -20,8 +20,8 @@
 #include <string>
 #include <vector>
 
-#include <Cg/cg.h>
-#include <Cg/cgD3D9.h>
+#include "../include/Cg/cg.h"
+#include "../include/Cg/cgD3D9.h"
 
 #include <retro_inline.h>
 #include <compat/strl.h>

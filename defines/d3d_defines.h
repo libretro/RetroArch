@@ -20,8 +20,7 @@
 #if defined(HAVE_D3D9)
 /* Direct3D 9 */
 #include <d3d9.h>
-#include <d3dx9.h>
-#include <d3dx9core.h>
+#include "../gfx/include/d3d9/d3dx9core.h"
 
 #define LPDIRECT3D                     LPDIRECT3D9
 #define LPDIRECT3DDEVICE               LPDIRECT3DDEVICE9

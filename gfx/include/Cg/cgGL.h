@@ -56,7 +56,7 @@
 /*** CGGL Run-Time Library API                                         ***/
 /*************************************************************************/
 
-#include <Cg/cg.h>
+#include "cg.h"
 
 #ifdef _WIN32
 # ifndef APIENTRY /* From Win32's <windef.h> */

@@ -22,10 +22,10 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <Cg/cg.h>
+#include "../include/Cg/cg.h"
 #ifdef HAVE_OPENGL
 #include "../common/gl_common.h"
-#include <Cg/cgGL.h>
+#include "../include/Cg/cgGL.h"
 #endif
 
 #include <compat/strl.h>
