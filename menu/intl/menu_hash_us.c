@@ -1073,7 +1073,7 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_XMB_SHADOWS_ENABLE:
          return "XMB Shadows Enable";
       case MENU_LABEL_VALUE_XMB_RIBBON_ENABLE:
-         return "XMB Ribbon Enable";
+         return "Menu Shader Pipeline";
       case MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
          return "Suspend Screensaver";
       case MENU_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION:
