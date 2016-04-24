@@ -940,7 +940,7 @@ NK_API void nk_buffer_init(struct nk_buffer*, const struct nk_allocator*, nk_siz
 NK_API void nk_buffer_init_fixed(struct nk_buffer*, void *memory, nk_size size);
 NK_API void nk_buffer_info(struct nk_memory_status*, struct nk_buffer*);
 NK_API void nk_buffer_push(struct nk_buffer*, enum nk_buffer_allocation_type type,
-                    void *memory, nk_size size, nk_size align);
+                            void *memory, nk_size size, nk_size align);
 NK_API void nk_buffer_mark(struct nk_buffer*, enum nk_buffer_allocation_type type);
 NK_API void nk_buffer_reset(struct nk_buffer*, enum nk_buffer_allocation_type type);
 NK_API void nk_buffer_clear(struct nk_buffer*);
@@ -1104,7 +1104,7 @@ NK_API void nk_textedit_redo(struct nk_text_edit*);
 
     While the first approach works fine if you don't want to use the optional
     vertex buffer output it is not enough if you do. To get font handling working
-    for these cases you have to provide to additional parameter inside the
+    for these cases you have to provide two additional parameter inside the
     `nk_user_font`. First a texture atlas handle used to draw text as subimages
     of a bigger font atlas texture and a callback to query a characters glyph
     information (offset, size, ...). So it is still possible to provide your own
@@ -7731,7 +7731,7 @@ NK_INTERN void
 nk_tt__handle_clipped_edge(float *scanline, int x, struct nk_tt__active_edge *e,
     float x0, float y0, float x1, float y1)
 {
-    if (!(y0>y1) && !(y0<y1)) return;
+    if (y0 == y1) return;
     NK_ASSERT(y0 < y1);
     NK_ASSERT(e->sy <= e->ey);
     if (y0 > e->ey) return;
@@ -7745,8 +7745,8 @@ nk_tt__handle_clipped_edge(float *scanline, int x, struct nk_tt__active_edge *e,
         y1 = e->ey;
     }
 
-    if (!(x0 > x) && !(x0 < x)) NK_ASSERT(x1 <= x+1);
-    else if (!(x0 > x+1) && !(x0 < x+1)) NK_ASSERT(x1 >= x);
+    if (x0 == x) NK_ASSERT(x1 <= x+1);
+    else if (x0 == x+1) NK_ASSERT(x1 >= x);
     else if (x0 <= x) NK_ASSERT(x1 <= x);
     else if (x0 >= x+1) NK_ASSERT(x1 >= x+1);
     else NK_ASSERT(x1 >= x && x1 <= x+1);
@@ -7771,7 +7771,7 @@ nk_tt__fill_active_edges_new(float *scanline, float *scanline_fill, int len,
         /* brute force every pixel */
         /* compute intersection points with top & bottom */
         NK_ASSERT(e->ey >= y_top);
-        if (!(e->fdx > 0) && (e->fdx < 0)) {
+        if (e->fdx == 0) {
             float x0 = e->fx;
             if (x0 < len) {
                 if (x0 >= 0) {
@@ -7970,11 +7970,15 @@ nk_tt__rasterize_sorted_edges(struct nk_tt__bitmap *result, struct nk_tt__edge *
 
         /* insert all edges that start before the bottom of this scanline */
         while (e->y0 <= scan_y_bottom) {
-            struct nk_tt__active_edge *z = nk_tt__new_active(&hh, e, off_x, scan_y_top);
-            NK_ASSERT(z->ey >= scan_y_top);
-            /* insert at front */
-            z->next = active;
-            active = z;
+            if (e->y0 != e->y1) {
+                struct nk_tt__active_edge *z = nk_tt__new_active(&hh, e, off_x, scan_y_top);
+                if (z != 0) {
+                    NK_ASSERT(z->ey >= scan_y_top);
+                    /* insert at front */
+                    z->next = active;
+                    active = z;
+                }
+            }
             ++e;
         }
 
@@ -8136,7 +8140,7 @@ nk_tt__rasterize(struct nk_tt__bitmap *result, struct nk_tt__point *pts,
         for (k=0; k < wcount[i]; j=k++) {
             int a=k,b=j;
             /* skip the edge if horizontal */
-            if (!(p[j].y > p[k].y) && !(p[j].y < p[k].y))
+            if (p[j].y == p[k].y)
                 continue;
 
             /* add edge from j to k to the list */
@@ -8345,7 +8349,7 @@ nk_tt_PackBegin(struct nk_tt_pack_context *spc, unsigned char *pixels,
     spc->pack_info = context;
     spc->nodes = nodes;
     spc->padding = padding;
-    spc->stride_in_bytes = stride_in_bytes != 0 ? stride_in_bytes : pw;
+    spc->stride_in_bytes = (stride_in_bytes != 0) ? stride_in_bytes : pw;
     spc->h_oversample = 1;
     spc->v_oversample = 1;
 
@@ -9479,7 +9483,7 @@ nk_font_config(float pixel_height)
     cfg.ttf_size = 0;
     cfg.ttf_data_owned_by_atlas = 0;
     cfg.size = pixel_height;
-    cfg.oversample_h = 1;
+    cfg.oversample_h = 3;
     cfg.oversample_v = 1;
     cfg.pixel_snap = 0;
     cfg.coord_type = NK_COORD_UV;
@@ -9728,7 +9732,6 @@ nk_font_atlas_bake(struct nk_font_atlas *atlas, int *width, int *height,
 {
     int i = 0;
     void *tmp = 0;
-    const char *custom_data = "....";
     nk_size tmp_size, img_size;
 
     NK_ASSERT(width);
@@ -9742,8 +9745,9 @@ nk_font_atlas_bake(struct nk_font_atlas *atlas, int *width, int *height,
 #ifdef NK_INCLUDE_DEFAULT_FONT
     /* no font added so just use default font */
     if (!atlas->font_num)
-        atlas->default_font = nk_font_atlas_add_default(atlas, 14.0f, 0);
+        atlas->default_font = nk_font_atlas_add_default(atlas, 13.0f, 0);
 #endif
+    NK_ASSERT(atlas->font_num);
     if (!atlas->font_num) return 0;
 
     /* allocate temporary memory required for the baking process */
@@ -9752,7 +9756,7 @@ nk_font_atlas_bake(struct nk_font_atlas *atlas, int *width, int *height,
     NK_ASSERT(tmp);
     if (!tmp) goto failed;
 
-    /* allocate memory glyphs for all fonts */
+    /* allocate glyph memory for all fonts */
     atlas->glyphs = (struct nk_font_glyph*)
         atlas->alloc.alloc(atlas->alloc.userdata,0,
                 sizeof(struct nk_font_glyph) * (nk_size)atlas->glyph_count);
@@ -9773,10 +9777,11 @@ nk_font_atlas_bake(struct nk_font_atlas *atlas, int *width, int *height,
         goto failed;
 
     /* bake glyphs and custom white pixel into image */
+    {const char *custom_data = "....";
     nk_font_bake(atlas->pixel, *width, *height, tmp, tmp_size, atlas->glyphs,
         atlas->glyph_count, atlas->config, atlas->font_num);
     nk_font_bake_custom_data(atlas->pixel, *width, *height, atlas->custom,
-            custom_data, 2, 2, '.', 'X');
+            custom_data, 2, 2, '.', 'X');}
 
     /* convert alpha8 image into rgba32 image */
     if (fmt == NK_FONT_ATLAS_RGBA32) {
@@ -17223,11 +17228,11 @@ NK_API unsigned int
 nk_check_flags_text(struct nk_context *ctx, const char *text, int len,
     unsigned int flags, unsigned int value)
 {
-    int old_active, active;
+    int old_active;
     NK_ASSERT(ctx);
     NK_ASSERT(text);
     if (!ctx || !text) return flags;
-    old_active = active = (int)((flags & value) & value);
+    old_active = (int)((flags & value) & value);
     if (nk_check_text(ctx, text, len, old_active))
         flags |= value;
     else flags &= ~value;
