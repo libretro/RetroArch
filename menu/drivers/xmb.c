@@ -1916,7 +1916,7 @@ static void xmb_draw_bg(
          draw.pipeline.id  = VIDEO_SHADER_MENU;
 
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, &draw);
-      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, &draw);
+      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_PIPELINE, &draw);
    }
    else
    {

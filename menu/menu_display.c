@@ -530,7 +530,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
          }
          break;
-      case MENU_DISPLAY_CTL_DRAW_RIBBON:
+      case MENU_DISPLAY_CTL_DRAW_PIPELINE:
          {
             menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
             struct uniform_info uniform_param = {0};
@@ -546,24 +546,30 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             draw->matrix_data = NULL;
 
 #if defined(HAVE_GLSL) || defined(HAVE_CG) || defined(HAVE_HLSL)
-            shader_info.data = NULL;
-            shader_info.idx  = draw->pipeline.id;
-            shader_info.set_active = true;
+            switch (draw->pipeline.id)
+            {
+               case VIDEO_SHADER_MENU:
+               case VIDEO_SHADER_MENU_SEC:
+                  shader_info.data       = NULL;
+                  shader_info.idx        = draw->pipeline.id;
+                  shader_info.set_active = true;
 
-            video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+                  video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 
-            t += 0.01;
+                  t += 0.01;
 
-            uniform_param.enabled           = true;
-            uniform_param.lookup.enable     = true;
-            uniform_param.lookup.add_prefix = true;
-            uniform_param.lookup.idx        = VIDEO_SHADER_MENU;
-            uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
-            uniform_param.type              = UNIFORM_1F;
-            uniform_param.lookup.ident      = "time";
-            uniform_param.result.f.v0       = t;
+                  uniform_param.enabled           = true;
+                  uniform_param.lookup.enable     = true;
+                  uniform_param.lookup.add_prefix = true;
+                  uniform_param.lookup.idx        = VIDEO_SHADER_MENU;
+                  uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
+                  uniform_param.type              = UNIFORM_1F;
+                  uniform_param.lookup.ident      = "time";
+                  uniform_param.result.f.v0       = t;
 
-            video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
+                  video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
+                  break;
+            }
 #endif
 
             menu_display_ctl(MENU_DISPLAY_CTL_DRAW, draw);
