@@ -594,11 +594,11 @@ static INLINE void android_input_poll_event_type_key(
    switch (action)
    {
       case AKEY_EVENT_ACTION_UP:
-         printf ("UP: %d\n", keycode);
+         RARCH_LOG ("UP: %d\n", keycode);
          BIT_CLEAR(buf, keycode);
          break;
       case AKEY_EVENT_ACTION_DOWN:
-         printf ("DOWN: %d\n", keycode);
+         RARCH_LOG ("DOWN: %d\n", keycode);
          BIT_SET(buf, keycode);
          break;
    }
