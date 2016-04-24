@@ -1911,6 +1911,10 @@ static void xmb_draw_bg(
       else
          menu_display_set_alpha(draw.color, coord_white[3]);
 
+      draw.pipeline.id = VIDEO_SHADER_MENU_SEC;
+      if (settings->menu.xmb_ribbon_enable == 2)
+         draw.pipeline.id  = VIDEO_SHADER_MENU;
+
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, &draw);
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_RIBBON, &draw);
    }

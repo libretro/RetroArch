@@ -547,11 +547,8 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
 
 #if defined(HAVE_GLSL) || defined(HAVE_CG) || defined(HAVE_HLSL)
             shader_info.data = NULL;
-            shader_info.idx  = VIDEO_SHADER_MENU_SEC;
+            shader_info.idx  = draw->pipeline.id;
             shader_info.set_active = true;
-
-            if (settings->menu.xmb_ribbon_enable == 2)
-               shader_info.idx  = VIDEO_SHADER_MENU;
 
             video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
 

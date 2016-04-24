@@ -121,6 +121,10 @@ typedef struct menu_display_ctx_draw
    const float *vertex;
    const float *tex_coord;
    size_t vertex_count;
+   struct
+   {
+      unsigned id;
+   } pipeline;
 } menu_display_ctx_draw_t;
 
 typedef struct menu_display_ctx_rotate_draw
