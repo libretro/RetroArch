@@ -358,6 +358,7 @@ int generic_action_ok_displaylist_push(const char *path,
                MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST);
          break;
       case ACTION_OK_DL_CORE_UPDATER_LIST:
+         dl_type            = DISPLAYLIST_PENDING_CLEAR;
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
@@ -373,6 +374,7 @@ int generic_action_ok_displaylist_push(const char *path,
                MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST);
          break;
       case ACTION_OK_DL_CORE_CONTENT_LIST:
+         dl_type            = DISPLAYLIST_PENDING_CLEAR;
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
@@ -380,6 +382,7 @@ int generic_action_ok_displaylist_push(const char *path,
                MENU_LABEL_DEFERRED_CORE_CONTENT_LIST);
          break;
       case ACTION_OK_DL_LAKKA_LIST:
+         dl_type            = DISPLAYLIST_PENDING_CLEAR;
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
