@@ -912,6 +912,15 @@ static void *gl_glsl_init(void *data, const char *path)
          &glsl->prg[VIDEO_SHADER_MENU],
          &shader_prog_info);
 
+   shader_prog_info.vertex   = stock_vertex_xmb_simple;
+   shader_prog_info.fragment = stock_fragment_xmb_simple;
+
+   gl_glsl_compile_program(
+         glsl,
+         VIDEO_SHADER_MENU_SEC,
+         &glsl->prg[VIDEO_SHADER_MENU_SEC],
+         &shader_prog_info);
+
    gl_glsl_reset_attrib(glsl);
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)

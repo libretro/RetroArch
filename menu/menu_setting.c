@@ -5889,19 +5889,18 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
 
-            CONFIG_BOOL(
+            CONFIG_UINT(
                   list, list_info,
                   &settings->menu.xmb_ribbon_enable,
                   menu_hash_to_str(MENU_LABEL_XMB_RIBBON_ENABLE),
                   menu_hash_to_str(MENU_LABEL_VALUE_XMB_RIBBON_ENABLE),
                   xmb_ribbon_enable,
-                  menu_hash_to_str(MENU_VALUE_OFF),
-                  menu_hash_to_str(MENU_VALUE_ON),
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
+            menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
 
             CONFIG_UINT(
                   list, list_info,
