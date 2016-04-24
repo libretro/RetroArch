@@ -1,4 +1,4 @@
-static const char *stock_xmb = 
+static const char *stock_xmb_simple = 
 "struct input\n"
 "{\n"
 "  float time;\n"
