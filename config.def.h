@@ -513,7 +513,7 @@ static unsigned xmb_alpha_factor = 75;
 static unsigned xmb_theme = 0;
 static unsigned xmb_gradient = 0;
 static bool xmb_shadows_enable = false;
-static bool xmb_ribbon_enable = false;
+static unsigned xmb_ribbon_enable = 0;
 
 static bool show_advanced_settings    = true;
 static const uint32_t menu_entry_normal_color = 0xffffffff;

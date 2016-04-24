@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 #ifndef GFX_MAX_SHADERS
-#define GFX_MAX_SHADERS 25
+#define GFX_MAX_SHADERS 26
 #endif
 
 #ifndef GFX_MAX_TEXTURES

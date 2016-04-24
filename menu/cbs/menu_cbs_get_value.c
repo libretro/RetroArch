@@ -166,6 +166,37 @@ static void menu_action_setting_disp_set_label_filter(
             settings->video.softfilter_plugin, len);
 }
 
+static void menu_action_setting_disp_set_label_pipeline(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   settings_t *settings = config_get_ptr();
+
+   *s = '\0';
+   *w = 19;
+
+   switch (settings->menu.xmb_ribbon_enable)
+   {
+      case 0:
+         snprintf(s, len, "%s", "Off");
+         break;
+      case 1:
+         snprintf(s, len, "%s", "Ribbon (simplified)");
+         break;
+      case 2:
+         snprintf(s, len, "%s", "Ribbon");
+         break;
+   }
+
+   strlcpy(s2, path, len2);
+
+}
+
 static void menu_action_setting_disp_set_label_shader_num_passes(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1285,6 +1316,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
          BIND_ACTION_GET_VALUE(cbs,
             menu_action_setting_disp_set_label_shader_num_passes);
+         break;
+      case MENU_LABEL_XMB_RIBBON_ENABLE:
+         BIND_ACTION_GET_VALUE(cbs,
+            menu_action_setting_disp_set_label_pipeline);
          break;
       case MENU_LABEL_VIDEO_SHADER_PASS:
          BIND_ACTION_GET_VALUE(cbs,

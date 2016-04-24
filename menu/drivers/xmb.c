@@ -1902,7 +1902,7 @@ static void xmb_draw_bg(
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   if (settings->menu.xmb_ribbon_enable)
+   if (settings->menu.xmb_ribbon_enable > 0)
    {
       draw.color = xmb_gradient_ident();
 
