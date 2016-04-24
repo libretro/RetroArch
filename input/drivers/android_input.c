@@ -987,6 +987,8 @@ static void android_input_poll_input(void *data)
                   else
                      android_input_poll_event_type_key(android_app,
                         event, port, keycode, source, type_event, &handled);
+                     AInputQueue_finishEvent(android_app->inputQueue, event,
+                        handled);
                }
                break;
          }
