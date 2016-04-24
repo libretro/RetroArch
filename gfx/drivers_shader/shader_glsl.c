@@ -897,8 +897,13 @@ static void *gl_glsl_init(void *data, const char *path)
       glsl->uniforms[VIDEO_SHADER_STOCK_BLEND] = glsl->uniforms[0];
    }
 
+#if defined(HAVE_OPENGLES2)
+   shader_prog_info.vertex   = stock_vertex_xmb_simple;
+   shader_prog_info.fragment = stock_fragment_xmb_simple;
+#else
    shader_prog_info.vertex   = stock_vertex_xmb;
    shader_prog_info.fragment = stock_fragment_xmb;
+#endif
    shader_prog_info.is_file  = false;
 
    gl_glsl_compile_program(
