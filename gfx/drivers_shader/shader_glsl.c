@@ -124,6 +124,8 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/core_alpha_blend.glsl.vert.h"
 #include "../drivers/gl_shaders/core_alpha_blend.glsl.frag.h"
 
+#include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.vert.h"
+#include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
 
