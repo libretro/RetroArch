@@ -2934,6 +2934,8 @@ static void menu_displaylist_parse_playlist_associations(
 
 static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
 {
+   size_t idx = 0;
+
    if (!info)
       return false;
 
@@ -2942,6 +2944,9 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
 
    if (info->need_refresh)
       menu_entries_ctl(MENU_ENTRIES_CTL_REFRESH, info->list);
+
+   if (info->need_clear)
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &idx);
 
    if (info->need_push)
    {
@@ -3183,6 +3188,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_entries_add(info->list, info->path,
                   info->label, info->type, info->directory_ptr, 0);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+            menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+         }
+         break;
+      case DISPLAYLIST_PENDING_CLEAR:
+         {
+            menu_ctx_list_t list_info;
+            bool refresh      = false;
+
+            list_info.type    = MENU_LIST_PLAIN;
+            list_info.action  = 0;
+
+            menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+
+            menu_entries_add(info->list, info->path,
+                  info->label, info->type, info->directory_ptr, 0);
             menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
          }
          break;
@@ -3658,6 +3678,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                core_len, MENU_FILE_DOWNLOAD_CORE);
          info->need_push    = true;
          info->need_refresh = true;
+         info->need_clear   = true;
 #endif
          break;
       case DISPLAYLIST_THUMBNAILS_UPDATER:
@@ -3666,6 +3687,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                core_len, MENU_FILE_DOWNLOAD_THUMBNAIL_CONTENT);
          info->need_push    = true;
          info->need_refresh = true;
+         info->need_clear   = true;
 #endif
          break;
       case DISPLAYLIST_LAKKA:
@@ -3674,6 +3696,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                core_len, MENU_FILE_DOWNLOAD_LAKKA);
          info->need_push    = true;
          info->need_refresh = true;
+         info->need_clear   = true;
 #endif
          break;
       case DISPLAYLIST_PLAYLIST_COLLECTION:
