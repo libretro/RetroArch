@@ -33,7 +33,8 @@
 #include "../../gfx/drivers/gl_shaders/pipeline_zahnrad.glsl.vert.h"
 #include "../../gfx/drivers/gl_shaders/pipeline_zahnrad.glsl.frag.h"
 
-struct nk_font font;
+struct nk_font *font;
+struct nk_font_atlas atlas;
 struct nk_user_font usrfnt;
 struct nk_allocator nk_alloc;
 struct nk_device device;
@@ -123,100 +124,14 @@ NK_API void nk_common_device_init(struct nk_device *dev)
 #endif
 }
 
-struct nk_user_font nk_common_font(
-      struct nk_device *dev,
-      struct nk_font *font,
-      const char *path,
-      unsigned int font_height,
-      const nk_rune *range)
+void device_upload_atlas(struct nk_device *dev, const void *image, int width, int height)
 {
-   int glyph_count;
-   int img_width, img_height;
-   struct nk_font_glyph *glyphes;
-   struct nk_baked_font baked_font;
-   struct nk_user_font user_font;
-   struct nk_recti custom;
-
-   memset(&baked_font, 0, sizeof(baked_font));
-   memset(&user_font, 0, sizeof(user_font));
-   memset(&custom, 0, sizeof(custom));
-
-   {
-      struct texture_image ti;
-      /* bake and upload font texture */
-      struct nk_font_config config;
-      void *img, *tmp;
-      size_t ttf_size;
-      size_t tmp_size, img_size;
-      const char *custom_data = "....";
-      char *ttf_blob = nk_common_file_load(path, &ttf_size);
-       /* setup font configuration */
-      memset(&config, 0, sizeof(config));
-
-      config.ttf_blob     = ttf_blob;
-      config.ttf_size     = ttf_size;
-      config.font         = &baked_font;
-      config.coord_type   = NK_COORD_UV;
-      config.range        = range;
-      config.pixel_snap   = nk_false;
-      config.size         = (float)font_height;
-      config.spacing      = nk_vec2(0,0);
-      config.oversample_h = 1;
-      config.oversample_v = 1;
-
-      /* query needed amount of memory for the font baking process */
-      nk_font_bake_memory(&tmp_size, &glyph_count, &config, 1);
-      glyphes = (struct nk_font_glyph*)
-         calloc(sizeof(struct nk_font_glyph), (size_t)glyph_count);
-      tmp = calloc(1, tmp_size);
-
-      /* pack all glyphes and return needed image width, height and memory size*/
-      custom.w = 2; custom.h = 2;
-      nk_font_bake_pack(&img_size,
-            &img_width,&img_height,&custom,tmp,tmp_size,&config, 1, &nk_alloc);
-
-      /* bake all glyphes and custom white pixel into image */
-      img = calloc(1, img_size);
-      nk_font_bake(img, img_width,
-            img_height, tmp, tmp_size, glyphes, glyph_count, &config, 1);
-      nk_font_bake_custom_data(img,
-            img_width, img_height, custom, custom_data, 2, 2, '.', 'X');
-
-      {
-         /* convert alpha8 image into rgba8 image */
-         void *img_rgba = calloc(4, (size_t)(img_height * img_width));
-         nk_font_bake_convert(img_rgba, img_width, img_height, img);
-         free(img);
-         img = img_rgba;
-      }
-
-      /* upload baked font image */
-      ti.pixels = (uint32_t*)img;
-      ti.width  = (GLsizei)img_width;
-      ti.height = (GLsizei)img_height;
-
-      video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_NEAREST, (uintptr_t*)&dev->font_tex);
-
-      free(ttf_blob);
-      free(tmp);
-      free(img);
-   }
-
-   /* default white pixel in a texture which is needed to draw primitives */
-   dev->null.texture.id = (int)dev->font_tex;
-   dev->null.uv = nk_vec2((custom.x + 0.5f)/(float)img_width,
-      (custom.y + 0.5f)/(float)img_height);
-
-   /* setup font with glyphes. IMPORTANT: the font only references the glyphes
-      this was done to have the possibility to have multible fonts with one
-      total glyph array. Not quite sure if it is a good thing since the
-      glyphes have to be freed as well. */
-   nk_font_init(font,
-         (float)font_height, '?', glyphes,
-         &baked_font, dev->null.texture);
-   user_font = font->handle;
-   return user_font;
+    glGenTextures(1, &dev->font_tex);
+    glBindTexture(GL_TEXTURE_2D, dev->font_tex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)width, (GLsizei)height, 0,
+                GL_RGBA, GL_UNSIGNED_BYTE, image);
 }
 
 void nk_common_device_shutdown(struct nk_device *dev)

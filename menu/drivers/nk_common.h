@@ -54,7 +54,8 @@
 #endif
 };
 
-extern struct nk_font font;
+extern struct nk_font *font;
+extern struct nk_font_atlas atlas;
 extern struct nk_user_font usrfnt;
 extern struct nk_allocator nk_alloc;
 extern struct nk_device device;
@@ -64,12 +65,6 @@ struct nk_image nk_common_image_load(const char *filename);
 char* nk_common_file_load(const char* path, size_t* size);
 
 void nk_common_device_init(struct nk_device *dev);
-struct nk_user_font nk_common_font(
-   struct nk_device *dev,
-   struct nk_font *font,
-   const char *path,
-   unsigned int font_height,
-   const nk_rune *range);
 
 void nk_common_device_shutdown(struct nk_device *dev);
 
@@ -80,3 +75,5 @@ void nk_common_device_draw(struct nk_device *dev,
 void* nk_common_mem_alloc(nk_handle a, void *old, nk_size b);
 
 void nk_common_mem_free(nk_handle unused, void *ptr);
+
+void device_upload_atlas(struct nk_device *dev, const void *image, int width, int height);

@@ -269,9 +269,16 @@ static void zrmenu_init_device(zrmenu_handle_t *zr)
    nk_alloc.alloc = nk_common_mem_alloc;
    nk_alloc.free = nk_common_mem_free;
    nk_buffer_init(&device.cmds, &nk_alloc, 1024);
-   usrfnt = nk_common_font(&device, &font, buf, 16,
-      nk_font_default_glyph_ranges());
-   nk_init(&zr->ctx, &nk_alloc, &usrfnt);
+   const void *image; int w, h;
+   nk_font_atlas_init_default(&atlas);
+   nk_font_atlas_begin(&atlas);
+   font = nk_font_atlas_add_default(&atlas, 13.0f, NULL);
+   image = nk_font_atlas_bake(&atlas, &w, &h, NK_FONT_ATLAS_RGBA32);
+   device_upload_atlas(&device, image, w, h);
+   nk_font_atlas_end(&atlas, nk_handle_id((int)device.font_tex), &device.null);
+   nk_init_default(&zr->ctx, &font->handle);
+
+   //nk_init(&zr->ctx, &nk_alloc, &usrfnt);
    nk_common_device_init(&device);
 
    fill_pathname_join(buf, zr->assets_directory, "folder.png", sizeof(buf));
@@ -334,8 +341,7 @@ static void zrmenu_free(void *data)
 
    if (!zr)
       return;
-
-   free(font.glyphs);
+   free(font);
    nk_free(&zr->ctx);
    nk_buffer_free(&device.cmds);
    nk_common_device_shutdown(&device);
