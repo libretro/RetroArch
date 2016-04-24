@@ -115,7 +115,8 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE,
    DISPLAYLIST_CORE_CONTENT,
    DISPLAYLIST_PROCESS,
-   DISPLAYLIST_PUSH_ONTO_STACK
+   DISPLAYLIST_PUSH_ONTO_STACK,
+   DISPLAYLIST_PENDING_CLEAR
 };
 
 typedef struct menu_displaylist_info
@@ -123,6 +124,7 @@ typedef struct menu_displaylist_info
    bool need_sort;
    bool need_refresh;
    bool need_push;
+   bool need_clear;
    file_list_t *list;
    file_list_t *menu_list;
    char path[PATH_MAX_LENGTH];
