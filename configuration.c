@@ -807,6 +807,9 @@ static void config_set_defaults(void)
    if (*g_defaults.dir.wallpapers)
       strlcpy(settings->dynamic_wallpapers_directory,
             g_defaults.dir.wallpapers, sizeof(settings->dynamic_wallpapers_directory));
+   if (*g_defaults.dir.thumbnails)
+      strlcpy(settings->thumbnails_directory,
+            g_defaults.dir.thumbnails, sizeof(settings->thumbnails_directory));
    if (*g_defaults.dir.remap)
       strlcpy(settings->input_remapping_directory,
             g_defaults.dir.remap, sizeof(settings->input_remapping_directory));
