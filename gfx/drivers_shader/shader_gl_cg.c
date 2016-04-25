@@ -120,6 +120,23 @@ struct uniform_cg_data
    CGparameter loc;
 };
 
+#define cg_gl_set_coord(cg_data, name, coords_name, len) do { \
+   if (cg_data->prg[cg_data->active_idx].name) \
+   { \
+      cgGLSetParameterPointer(cg_data->prg[cg_data->active_idx].name, len, GL_FLOAT, 0, coords->coords_name); \
+      cgGLEnableClientState(cg_data->prg[cg_data->active_idx].name); \
+      cg_data->attribs.elems[cg_data->attribs.index++] = cg_data->prg[cg_data->active_idx].name; \
+   } \
+} while(0)
+
+#define cg_gl_set_texture_parameter(param, texture) \
+   if (param) \
+   { \
+      cgGLSetTextureParameter(param, texture); \
+      cgGLEnableTextureParameter(param); \
+   }
+
+
 #include "../drivers/gl_shaders/opaque.cg.h"
 
 static void gl_cg_set_uniform_parameter(
@@ -245,15 +262,6 @@ fallback:
    return false;
 }
 
-#define SET_COORD(cg_data, name, coords_name, len) do { \
-   if (cg_data->prg[cg_data->active_idx].name) \
-   { \
-      cgGLSetParameterPointer(cg_data->prg[cg_data->active_idx].name, len, GL_FLOAT, 0, coords->coords_name); \
-      cgGLEnableClientState(cg_data->prg[cg_data->active_idx].name); \
-      cg_data->attribs.elems[cg_data->attribs.index++] = cg_data->prg[cg_data->active_idx].name; \
-   } \
-} while(0)
-
 static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct gfx_coords *coords)
 {
    cg_shader_data_t *cg_data = (cg_shader_data_t*)shader_data;
@@ -261,10 +269,10 @@ static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct 
    if (!cg_data || !coords)
       goto fallback;
 
-   SET_COORD(cg_data, vertex, vertex, 2);
-   SET_COORD(cg_data, tex, tex_coord, 2);
-   SET_COORD(cg_data, lut_tex, lut_tex_coord, 2);
-   SET_COORD(cg_data, color, color, 4);
+   cg_gl_set_coord(cg_data, vertex, vertex, 2);
+   cg_gl_set_coord(cg_data, tex, tex_coord, 2);
+   cg_gl_set_coord(cg_data, lut_tex, lut_tex_coord, 2);
+   cg_gl_set_coord(cg_data, color, color, 4);
 
    return true;
 
@@ -272,6 +280,7 @@ fallback:
    gl_ff_vertex(coords);
    return false;
 }
+
 
 static void gl_cg_set_texture_info(
       cg_shader_data_t *cg_data, 
@@ -281,13 +290,9 @@ static void gl_cg_set_texture_info(
    unsigned i;
    struct uniform_cg_data uniform_data[4];
    struct uniform_info uniform_params[4] = {0};
-   CGparameter param = params->tex;
+   CGparameter param                     = params->tex;
 
-   if (param)
-   {
-      cgGLSetTextureParameter(param, info->tex);
-      cgGLEnableTextureParameter(param);
-   }
+   cg_gl_set_texture_parameter(param, info->tex);
 
    uniform_params[0].location      = 0;
    uniform_params[0].enabled       = true;
@@ -449,24 +454,13 @@ static void gl_cg_set_params(void *data, void *shader_data,
    /* Set lookup textures. */
    for (i = 0; i < cg_data->shader->luts; i++)
    {
-      CGparameter vparam;
       CGparameter fparam = cgGetNamedParameter(
             cg_data->prg[cg_data->active_idx].fprg, cg_data->shader->lut[i].id);
-
-      if (fparam)
-      {
-         cgGLSetTextureParameter(fparam, cg_data->lut_textures[i]);
-         cgGLEnableTextureParameter(fparam);
-      }
-
-      vparam = cgGetNamedParameter(cg_data->prg[cg_data->active_idx].vprg,
+      CGparameter vparam = cgGetNamedParameter(cg_data->prg[cg_data->active_idx].vprg,
 		  cg_data->shader->lut[i].id);
 
-      if (vparam)
-      {
-         cgGLSetTextureParameter(vparam, cg_data->lut_textures[i]);
-         cgGLEnableTextureParameter(vparam);
-      }
+      cg_gl_set_texture_parameter(fparam, cg_data->lut_textures[i]);
+      cg_gl_set_texture_parameter(vparam, cg_data->lut_textures[i]);
    }
 
    /* Set FBO textures. */
