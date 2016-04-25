@@ -98,19 +98,20 @@ struct shader_program_cg_data
 
 typedef struct cg_shader_data
 {
-   struct shader_program_cg_data prg[GFX_MAX_SHADERS];
+   struct video_shader *shader;
+   char alias_define[GFX_MAX_SHADERS][128];
    unsigned active_idx;
    struct
    {
       CGparameter elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
       unsigned index;
    } attribs;
+
    CGprofile cgVProf;
    CGprofile cgFProf;
-   struct video_shader *shader;
-   state_tracker_t *state_tracker;
+   struct shader_program_cg_data prg[GFX_MAX_SHADERS];
    GLuint lut_textures[GFX_MAX_TEXTURES];
-   char cg_alias_define[GFX_MAX_SHADERS][128];
+   state_tracker_t *state_tracker;
    CGcontext cgCtx;
 } cg_shader_data_t;
 
@@ -630,8 +631,8 @@ static bool gl_cg_compile_program(
    argv[argc++] = "-DPARAMETER_UNIFORM";
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
-      if (*(cg_data->cg_alias_define[i]))
-         argv[argc++] = cg_data->cg_alias_define[i];
+      if (*(cg_data->alias_define[i]))
+         argv[argc++] = cg_data->alias_define[i];
    }
    argv[argc] = NULL;
 
@@ -916,8 +917,8 @@ static bool gl_cg_load_preset(void *data, const char *path)
 
    for (i = 0; i < cg_data->shader->passes; i++)
       if (*cg_data->shader->pass[i].alias)
-         snprintf(cg_data->cg_alias_define[i],
-               sizeof(cg_data->cg_alias_define[i]),
+         snprintf(cg_data->alias_define[i],
+               sizeof(cg_data->alias_define[i]),
                "-D%s_ALIAS",
                cg_data->shader->pass[i].alias);
 
@@ -1130,7 +1131,7 @@ static void *gl_cg_init(void *data, const char *path)
    cgGLEnableProfile(cg_data->cgFProf);
    cgGLEnableProfile(cg_data->cgVProf);
 
-   memset(cg_data->cg_alias_define, 0, sizeof(cg_data->cg_alias_define));
+   memset(cg_data->alias_define, 0, sizeof(cg_data->alias_define));
 
    if (path && string_is_equal(path_get_extension(path), "cgp"))
    {

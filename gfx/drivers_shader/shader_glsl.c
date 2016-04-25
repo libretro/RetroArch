@@ -134,8 +134,8 @@ typedef struct glsl_shader_data
    struct video_shader *shader;
    struct shader_uniforms uniforms[GFX_MAX_SHADERS];
    struct cache_vbo vbo[GFX_MAX_SHADERS];
-   char glsl_alias_define[1024];
-   unsigned glsl_active_index;
+   char alias_define[1024];
+   unsigned active_idx;
    struct
    {
       GLint elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
@@ -143,8 +143,8 @@ typedef struct glsl_shader_data
    } attribs;
 
    struct shader_program_glsl_data prg[GFX_MAX_SHADERS];
-   GLuint gl_teximage[GFX_MAX_TEXTURES];
-   state_tracker_t *gl_state_tracker;
+   GLuint lut_textures[GFX_MAX_TEXTURES];
+   state_tracker_t *state_tracker;
 } glsl_shader_data_t;
 
 static bool glsl_core;
@@ -276,7 +276,7 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
 
    source[0] = version;
    source[1] = define;
-   source[2] = glsl->glsl_alias_define;
+   source[2] = glsl->alias_define;
    source[3] = program;
 
    glShaderSource(shader, ARRAY_SIZE(source), source, NULL);
@@ -650,17 +650,17 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
    }
 
    if (glsl->shader && glsl->shader->luts)
-      glDeleteTextures(glsl->shader->luts, glsl->gl_teximage);
+      glDeleteTextures(glsl->shader->luts, glsl->lut_textures);
 
    memset(glsl->prg, 0, sizeof(glsl->prg));
    memset(glsl->uniforms, 0, sizeof(glsl->uniforms));
-   glsl->glsl_active_index = 0;
+   glsl->active_idx = 0;
 
    gl_glsl_deinit_shader(glsl);
 
-   if (glsl->gl_state_tracker)
-      state_tracker_free(glsl->gl_state_tracker);
-   glsl->gl_state_tracker = NULL;
+   if (glsl->state_tracker)
+      state_tracker_free(glsl->state_tracker);
+   glsl->state_tracker = NULL;
 
    gl_glsl_reset_attrib(glsl);
 
@@ -804,7 +804,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
    /* Find all aliases we use in our GLSLP and add #defines for them so
     * that a shader can choose a fallback if we are not using a preset. */
-   *glsl->glsl_alias_define = '\0';
+   *glsl->alias_define = '\0';
    for (i = 0; i < glsl->shader->passes; i++)
    {
       if (*glsl->shader->pass[i].alias)
@@ -813,7 +813,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
          snprintf(define, sizeof(define), "#define %s_ALIAS\n",
                glsl->shader->pass[i].alias);
-         strlcat(glsl->glsl_alias_define, define, sizeof(glsl->glsl_alias_define));
+         strlcat(glsl->alias_define, define, sizeof(glsl->alias_define));
       }
    }
 
@@ -830,7 +830,7 @@ static void *gl_glsl_init(void *data, const char *path)
    if (!gl_glsl_compile_programs(glsl, &glsl->prg[1]))
       goto error;
 
-   if (!gl_load_luts(glsl->shader, glsl->gl_teximage))
+   if (!gl_load_luts(glsl->shader, glsl->lut_textures))
    {
       RARCH_ERR("[GL]: Failed to load LUTs.\n");
       goto error;
@@ -863,8 +863,8 @@ static void *gl_glsl_init(void *data, const char *path)
          glsl->shader->script_class : NULL;
 #endif
 
-      glsl->gl_state_tracker = state_tracker_init(&info);
-      if (!glsl->gl_state_tracker)
+      glsl->state_tracker = state_tracker_init(&info);
+      if (!glsl->state_tracker)
          RARCH_WARN("Failed to init state tracker.\n");
    }
    
@@ -1021,9 +1021,9 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    if (!glsl)
       return;
 
-   uni = (const struct shader_uniforms*)&glsl->uniforms[glsl->glsl_active_index];
+   uni = (const struct shader_uniforms*)&glsl->uniforms[glsl->active_idx];
 
-   if (glsl->prg[glsl->glsl_active_index].id == 0)
+   if (glsl->prg[glsl->active_idx].id == 0)
       return;
 
    input_size [0]  = (float)width;
@@ -1059,9 +1059,9 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
    uniform_count += 3;
    
-   if (uni->frame_count >= 0 && glsl->glsl_active_index)
+   if (uni->frame_count >= 0 && glsl->active_idx)
    {
-      unsigned modulo = glsl->shader->pass[glsl->glsl_active_index - 1].frame_count_mod;
+      unsigned modulo = glsl->shader->pass[glsl->active_idx - 1].frame_count_mod;
 
       if (modulo)
          frame_count %= modulo;
@@ -1093,7 +1093,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
       /* Have to rebind as HW render could override this. */
       glActiveTexture(GL_TEXTURE0 + texunit);
-      glBindTexture(GL_TEXTURE_2D, glsl->gl_teximage[i]);
+      glBindTexture(GL_TEXTURE_2D, glsl->lut_textures[i]);
 
       lut_uniform.enabled           = true;
       lut_uniform.location          = uni->lut_texture[i];
@@ -1104,7 +1104,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       texunit++;
    }
 
-   if (glsl->glsl_active_index)
+   if (glsl->active_idx)
    {
       unsigned j;
       struct uniform_info orig_uniforms[2]     = {{0}};
@@ -1316,9 +1316,9 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    }
 
    if (size)
-      gl_glsl_set_attribs(glsl, glsl->vbo[glsl->glsl_active_index].vbo_secondary,
-            &glsl->vbo[glsl->glsl_active_index].buffer_secondary,
-            &glsl->vbo[glsl->glsl_active_index].size_secondary,
+      gl_glsl_set_attribs(glsl, glsl->vbo[glsl->active_idx].vbo_secondary,
+            &glsl->vbo[glsl->active_idx].buffer_secondary,
+            &glsl->vbo[glsl->active_idx].size_secondary,
             buffer, size, attribs, attribs_size);
 
    glActiveTexture(GL_TEXTURE0);
@@ -1329,7 +1329,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       struct uniform_info pragma_param = {0};
 
       pragma_param.lookup.enable  = true;
-      pragma_param.lookup.idx     = glsl->glsl_active_index;
+      pragma_param.lookup.idx     = glsl->active_idx;
       pragma_param.lookup.ident   = glsl->shader->parameters[i].id;
       pragma_param.lookup.type    = SHADER_PROGRAM_COMBINED;
       pragma_param.enabled        = true;
@@ -1340,13 +1340,13 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    }
 
    /* Set state parameters. */
-   if (glsl->gl_state_tracker)
+   if (glsl->state_tracker)
    {
       static struct state_tracker_uniform state_info[GFX_MAX_VARIABLES];
       static unsigned cnt = 0;
 
-      if (glsl->glsl_active_index == 1)
-         cnt = state_tracker_get_uniform(glsl->gl_state_tracker, state_info,
+      if (glsl->active_idx == 1)
+         cnt = state_tracker_get_uniform(glsl->state_tracker, state_info,
                GFX_MAX_VARIABLES, frame_count);
 
       for (i = 0; i < cnt; i++)
@@ -1354,7 +1354,7 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          struct uniform_info state_param = {0};
 
          state_param.lookup.enable = true;
-         state_param.lookup.idx    = glsl->glsl_active_index;
+         state_param.lookup.idx    = glsl->active_idx;
          state_param.lookup.ident  = state_info[i].id;
          state_param.lookup.type   = SHADER_PROGRAM_COMBINED;
          state_param.enabled       = true;
@@ -1376,7 +1376,7 @@ static bool gl_glsl_set_mvp(void *data, void *shader_data, const math_matrix_4x4
    if (!glsl || !glsl->shader->modern)
       goto fallback;
 
-   loc = glsl->uniforms[glsl->glsl_active_index].mvp;
+   loc = glsl->uniforms[glsl->active_idx].mvp;
    if (loc >= 0)
       glUniformMatrix4fv(loc, 1, GL_FALSE, mat->data);
 
@@ -1422,7 +1422,7 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
       goto fallback;
 
    attr = attribs;
-   uni  = &glsl->uniforms[glsl->glsl_active_index];
+   uni  = &glsl->uniforms[glsl->active_idx];
 
    if (uni->tex_coord >= 0)
       gl_glsl_set_coord_array(attr, uni->tex_coord, coords->tex_coord, coords, size, 2);
@@ -1438,9 +1438,9 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
 
    if (size)
       gl_glsl_set_attribs(glsl,
-            glsl->vbo[glsl->glsl_active_index].vbo_primary,
-            &glsl->vbo[glsl->glsl_active_index].buffer_primary,
-            &glsl->vbo[glsl->glsl_active_index].size_primary,
+            glsl->vbo[glsl->active_idx].vbo_primary,
+            &glsl->vbo[glsl->active_idx].buffer_primary,
+            &glsl->vbo[glsl->active_idx].size_primary,
             buffer, size,
             attribs, attribs_size);
 
@@ -1465,7 +1465,7 @@ static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_ac
          return;
 
       gl_glsl_reset_attrib(glsl);
-      glsl->glsl_active_index = idx;
+      glsl->active_idx        = idx;
       id                      = glsl->prg[idx].id;
    }
    else 
