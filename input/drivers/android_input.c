@@ -964,7 +964,7 @@ static void android_input_poll_input(void *data)
          if (port < 0 && !is_keyboard_id(id))
             handle_hotplug(android_data, android_app,
             &port, id, source);
- 
+         RARCH_LOG ("Predispatched: %d\n", predispatched);
          switch (type_event)
          {
             case AINPUT_EVENT_TYPE_MOTION:
@@ -975,7 +975,7 @@ static void android_input_poll_input(void *data)
             case AINPUT_EVENT_TYPE_KEY:
                {
                   int keycode = AKeyEvent_getKeyCode(event);
-
+                  RARCH_LOG ("KeyCode Event: %d\n", keycode);
                   if (is_keyboard_id(id))
                   {
                      if (!predispatched)
