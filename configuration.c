@@ -373,6 +373,8 @@ const char *config_get_default_menu(void)
          return "glui";
       case MENU_XMB:
          return "xmb";
+      case MENU_NUKLEAR:
+         return "nuklear";
       default:
          break;
    }

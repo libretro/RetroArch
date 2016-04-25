@@ -389,8 +389,8 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
       HAVE_MATERIALUI = 1
    endif
 
-   #ifeq ($(HAVE_ZAHNRAD),)
-      #HAVE_ZAHNRAD = 1
+   #ifeq ($(HAVE_NUKLEAR),)
+      #HAVE_NUKLEAR = 1
    #endif
 
    ifeq ($(HAVE_XMB),)
@@ -399,7 +399,7 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
 else
    HAVE_ZARCH = 0
    HAVE_MATERIALUI  = 0
-   #HAVE_ZAHNRAD = 0
+   #HAVE_NUKLEAR = 0
    HAVE_XMB   = 0
 endif
 
@@ -411,11 +411,11 @@ ifeq ($(HAVE_MATERIALUI), 1)
    OBJ += menu/drivers/materialui.o
    DEFINES += -DHAVE_MATERIALUI
 endif
-ifeq ($(HAVE_ZAHNRAD), 1)
+ifeq ($(HAVE_NUKLEAR), 1)
    OBJ += menu/drivers/nk_common.o
    OBJ += menu/drivers/nk_menu.o
-   OBJ += menu/drivers/zr.o
-   DEFINES += -DHAVE_ZAHNRAD
+   OBJ += menu/drivers/nuklear.o
+   DEFINES += -DHAVE_NUKLEAR
 endif
 ifeq ($(HAVE_ZARCH), 1)
    OBJ += menu/drivers/zarch.o

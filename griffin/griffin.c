@@ -895,10 +895,10 @@ MENU
 #include "../menu/drivers/materialui.c"
 #endif
 
-#ifdef HAVE_ZAHNRAD
+#ifdef HAVE_NUKLEAR
 #include "../menu/drivers/nk_common.c"
 #include "../menu/drivers/nk_menu.c"
-#include "../menu/drivers/zr.c"
+#include "../menu/drivers/nuklear.c"
 #endif
 
 #ifdef HAVE_ZARCH

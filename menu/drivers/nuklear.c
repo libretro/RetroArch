@@ -458,7 +458,7 @@ static int zrmenu_iterate(void *data, void *userdata, enum menu_action action)
    return 0;
 }
 
-menu_ctx_driver_t menu_ctx_zr = {
+menu_ctx_driver_t menu_ctx_nuklear = {
    NULL,
    zrmenu_get_message,
    zrmenu_iterate,
@@ -490,7 +490,7 @@ menu_ctx_driver_t menu_ctx_zr = {
    NULL,
    NULL,
    NULL,
-   "zahnrad",
+   "nuklear",
    zrmenu_environ,
    NULL,
 };
