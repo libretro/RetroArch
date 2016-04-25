@@ -120,14 +120,12 @@ struct uniform_cg_data
    CGparameter loc;
 };
 
-#define cg_gl_set_coord(param, cg_data, ptr, len) do { \
-   if (param) \
-   { \
-      cgGLSetParameterPointer(param, len, GL_FLOAT, 0, ptr); \
-      cgGLEnableClientState(param); \
-      cg_data->attribs.elems[cg_data->attribs.index++] = param; \
-   } \
-} while(0)
+#define gl_cg_set_coord_array(param, cg_data, ptr, len) \
+{ \
+   cgGLSetParameterPointer(param, len, GL_FLOAT, 0, ptr); \
+   cgGLEnableClientState(param); \
+   cg_data->attribs.elems[cg_data->attribs.index++] = param; \
+}
 
 #define cg_gl_set_texture_parameter(param, texture) \
    if (param) \
@@ -269,10 +267,17 @@ static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct 
    if (!cg_data || !coords)
       goto fallback;
 
-   cg_gl_set_coord(cg_data->prg[cg_data->active_idx].vertex, cg_data, coords->vertex, 2);
-   cg_gl_set_coord(cg_data->prg[cg_data->active_idx].tex, cg_data, coords->tex_coord, 2);
-   cg_gl_set_coord(cg_data->prg[cg_data->active_idx].lut_tex, cg_data, coords->lut_tex_coord, 2);
-   cg_gl_set_coord(cg_data->prg[cg_data->active_idx].color, cg_data, coords->color, 4);
+   if (cg_data->prg[cg_data->active_idx].vertex)
+      gl_cg_set_coord_array(cg_data->prg[cg_data->active_idx].vertex, cg_data, coords->vertex, 2);
+
+   if (cg_data->prg[cg_data->active_idx].tex)
+      gl_cg_set_coord_array(cg_data->prg[cg_data->active_idx].tex, cg_data, coords->tex_coord, 2);
+
+   if (cg_data->prg[cg_data->active_idx].lut_tex)
+      gl_cg_set_coord_array(cg_data->prg[cg_data->active_idx].lut_tex, cg_data, coords->lut_tex_coord, 2);
+
+   if (cg_data->prg[cg_data->active_idx].color)
+      gl_cg_set_coord_array(cg_data->prg[cg_data->active_idx].color, cg_data, coords->color, 4);
 
    return true;
 
@@ -280,7 +285,6 @@ fallback:
    gl_ff_vertex(coords);
    return false;
 }
-
 
 static void gl_cg_set_texture_info(
       cg_shader_data_t *cg_data, 
@@ -325,7 +329,8 @@ static void gl_cg_set_texture_info(
    for (i = 0; i < 4; i++)
       gl_cg_set_uniform_parameter(cg_data, &uniform_params[i], &uniform_data[i]);
 
-   cg_gl_set_coord(params->coord, cg_data, info->coord, 2);
+   if (params->coord)
+      gl_cg_set_coord_array(params->coord, cg_data, info->coord, 2);
 }
 
 static void gl_cg_set_params(void *data, void *shader_data,
