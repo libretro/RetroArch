@@ -486,6 +486,14 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             menu_disp->draw(draw);
          }
          break;
+      case MENU_DISPLAY_CTL_DRAW_PIPELINE:
+         {
+            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+            if (!menu_disp || !draw || !menu_disp->draw_pipeline)
+               return false;
+            menu_disp->draw_pipeline(draw);
+         }
+         break;
       case MENU_DISPLAY_CTL_DRAW_BG:
          {
             struct gfx_coords coords;
@@ -515,8 +523,6 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                draw->texture     = menu_display_white_texture;
 
             draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp();
-
-            menu_display_ctl(MENU_DISPLAY_CTL_DRAW, draw);
          }
          break;
       case MENU_DISPLAY_CTL_DRAW_GRADIENT:
@@ -528,51 +534,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
             draw->y       = 0;
 
             menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
-         }
-         break;
-      case MENU_DISPLAY_CTL_DRAW_PIPELINE:
-         {
-            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-            struct uniform_info uniform_param = {0};
-            static float t = 0;
-            video_shader_ctx_info_t shader_info;
-            gfx_coord_array_t *ca   = NULL;
-
-            menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
-
-            draw->x           = 0;
-            draw->y           = 0;
-            draw->coords      = (struct gfx_coords*)(&ca->coords);
-            draw->matrix_data = NULL;
-
-#if defined(HAVE_GLSL) || defined(HAVE_CG) || defined(HAVE_HLSL)
-            switch (draw->pipeline.id)
-            {
-               case VIDEO_SHADER_MENU:
-               case VIDEO_SHADER_MENU_SEC:
-                  shader_info.data       = NULL;
-                  shader_info.idx        = draw->pipeline.id;
-                  shader_info.set_active = true;
-
-                  video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
-
-                  t += 0.01;
-
-                  uniform_param.enabled           = true;
-                  uniform_param.lookup.enable     = true;
-                  uniform_param.lookup.add_prefix = true;
-                  uniform_param.lookup.idx        = VIDEO_SHADER_MENU;
-                  uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
-                  uniform_param.type              = UNIFORM_1F;
-                  uniform_param.lookup.ident      = "time";
-                  uniform_param.result.f.v0       = t;
-
-                  video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
-                  break;
-            }
-#endif
-
-            menu_display_ctl(MENU_DISPLAY_CTL_DRAW, draw);
+            menu_display_ctl(MENU_DISPLAY_CTL_DRAW,    draw);
          }
          break;
       case MENU_DISPLAY_CTL_ROTATE_Z:

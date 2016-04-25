@@ -177,6 +177,49 @@ static void menu_display_d3d_draw(void *data)
          0, draw->coords->vertices);
 }
 
+static void menu_display_d3d_draw_pipeline(void *data)
+{
+#if defined(HAVE_HLSL) || defined(HAVE_CG)
+   video_shader_ctx_info_t shader_info;
+   menu_display_ctx_draw_t *draw     = (menu_display_ctx_draw_t*)data;
+   struct uniform_info uniform_param = {0};
+   static float t                    = 0;
+   gfx_coord_array_t *ca             = NULL;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
+
+   draw->x           = 0;
+   draw->y           = 0;
+   draw->coords      = (struct gfx_coords*)(&ca->coords);
+   draw->matrix_data = NULL;
+
+   switch (draw->pipeline.id)
+   {
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_SEC:
+         shader_info.data       = NULL;
+         shader_info.idx        = draw->pipeline.id;
+         shader_info.set_active = true;
+
+         video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+
+         t += 0.01;
+
+         uniform_param.enabled           = true;
+         uniform_param.lookup.enable     = true;
+         uniform_param.lookup.add_prefix = true;
+         uniform_param.lookup.idx        = VIDEO_SHADER_MENU;
+         uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
+         uniform_param.type              = UNIFORM_1F;
+         uniform_param.lookup.ident      = "time";
+         uniform_param.result.f.v0       = t;
+
+         video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
+         break;
+   }
+#endif
+}
+
 static void menu_display_d3d_restore_clear_color(void)
 {
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(false);
@@ -213,6 +256,7 @@ static bool menu_display_d3d_font_init_first(
 
 menu_display_ctx_driver_t menu_display_ctx_d3d = {
    menu_display_d3d_draw,
+   menu_display_d3d_draw_pipeline,
    menu_display_d3d_viewport,
    menu_display_d3d_blend_begin,
    menu_display_d3d_blend_end,

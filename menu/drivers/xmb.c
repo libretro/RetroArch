@@ -1926,6 +1926,8 @@ static void xmb_draw_bg(
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, &draw);
    }
 
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
+
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 

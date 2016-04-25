@@ -77,6 +77,20 @@ static void menu_display_vk_viewport(void *data)
    vk->vk_vp.maxDepth = 1.0f;
 }
 
+static void menu_display_vk_draw_pipeline(void *data)
+{
+   menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
+   vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
+
+   if (!vk || !draw)
+      return;
+
+   (void)draw;
+   (void)vk;
+
+   /* TODO/FIXME - to implement */
+}
+
 static void menu_display_vk_draw(void *data)
 {
    unsigned i;
@@ -193,6 +207,7 @@ static bool menu_display_vk_font_init_first(
 
 menu_display_ctx_driver_t menu_display_ctx_vulkan = {
    menu_display_vk_draw,
+   menu_display_vk_draw_pipeline,
    menu_display_vk_viewport,
    menu_display_vk_blend_begin,
    menu_display_vk_blend_end,

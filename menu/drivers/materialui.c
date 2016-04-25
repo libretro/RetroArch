@@ -712,7 +712,8 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw)
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    draw->x              = 0;
    draw->y              = 0;
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG,   draw);
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW,      draw);
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
