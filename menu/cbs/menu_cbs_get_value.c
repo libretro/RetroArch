@@ -183,7 +183,7 @@ static void menu_action_setting_disp_set_label_pipeline(
    switch (settings->menu.xmb_ribbon_enable)
    {
       case 0:
-         snprintf(s, len, "%s", "Off");
+         snprintf(s, len, "%s", "OFF");
          break;
       case 1:
          snprintf(s, len, "%s", "Ribbon (simplified)");
