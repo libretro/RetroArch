@@ -880,7 +880,7 @@ static int menu_input_mouse_frame(
 
    if (BIT64_GET(input_mouse, MENU_MOUSE_ACTION_BUTTON_R))
    {
-      menu_entries_pop_stack(&selection, 0);
+      menu_entries_pop_stack(&selection, 0, 1);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
    }
 
@@ -949,7 +949,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
          /* Back button */
          if ((unsigned)menu_input_mouse_state(MENU_MOUSE_X_AXIS) < header_height)
          {
-            menu_entries_pop_stack(&selection, 0);
+            menu_entries_pop_stack(&selection, 0, 1);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
             return 0;
          }
@@ -1180,7 +1180,7 @@ static int menu_input_pointer_post_iterate(
       if (!pointer_oldback)
       {
          pointer_oldback = true;
-         menu_entries_pop_stack(&selection, 0);
+         menu_entries_pop_stack(&selection, 0, 1);
          menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
       }
    }

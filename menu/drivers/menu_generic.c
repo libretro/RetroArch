@@ -313,7 +313,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
             if (menu_input_ctl(MENU_INPUT_CTL_BIND_ITERATE, &bind))
             {
-               menu_entries_pop_stack(&selection, 0);
+               menu_entries_pop_stack(&selection, 0, 0);
                menu_navigation_ctl(
                      MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
             }
@@ -378,7 +378,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    if (BIT64_GET(menu->state, MENU_STATE_POP_STACK))
    {
       size_t new_selection_ptr = selection;
-      menu_entries_pop_stack(&new_selection_ptr, 0);
+      menu_entries_pop_stack(&new_selection_ptr, 0, 0);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
    }
    
