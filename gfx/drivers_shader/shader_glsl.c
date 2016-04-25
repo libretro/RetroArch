@@ -911,6 +911,8 @@ static void *gl_glsl_init(void *data, const char *path)
          VIDEO_SHADER_MENU,
          &glsl->prg[VIDEO_SHADER_MENU],
          &shader_prog_info);
+   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU].id,
+         &glsl->uniforms[VIDEO_SHADER_MENU]);
 
    shader_prog_info.vertex   = stock_vertex_xmb_simple;
    shader_prog_info.fragment = stock_fragment_xmb_simple;
@@ -920,6 +922,8 @@ static void *gl_glsl_init(void *data, const char *path)
          VIDEO_SHADER_MENU_SEC,
          &glsl->prg[VIDEO_SHADER_MENU_SEC],
          &shader_prog_info);
+   gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_SEC].id,
+         &glsl->uniforms[VIDEO_SHADER_MENU_SEC]);
 
    gl_glsl_reset_attrib(glsl);
 

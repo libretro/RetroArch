@@ -2391,9 +2391,9 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    }
 
    coords.color         = dummy;
-   coords.vertex        = dummy;
+   coords.vertex        = ribbon_verts;
    coords.tex_coord     = dummy;
-   coords.lut_tex_coord = ribbon_verts;
+   coords.lut_tex_coord = dummy;
    coords.vertices      = XMB_RIBBON_VERTICES;
 
    gfx_coord_array_append(ca, &coords, XMB_RIBBON_VERTICES);
