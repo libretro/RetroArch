@@ -57,6 +57,11 @@
 
 #include "../tasks/tasks_internal.h"
 
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
 
 struct rarch_setting_info
 {
@@ -3068,34 +3073,44 @@ static void overlay_enable_toggle_change_handler(void *data)
 #endif
 
 #ifdef HAVE_LAKKA
-
-void lakka_service_toggle(const char *path, bool enable)
+void lakka_service_toggle(const char *path, char *unit, bool enable)
 {
+   int pid = fork();
+   char* args[] = {"systemctl", NULL, NULL, NULL};
+
+   args[1] = enable ? "start" : "stop";
+   args[2] = unit;
+
    if (enable)
       fclose(fopen(path, "w"));
    else
       remove(path);
+
+   if (pid == 0) {
+      execvp(args[0], args);
+   }
+
    return;
 }
 
 static void ssh_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-   lakka_service_toggle(LAKKA_SSH_PATH,
+   lakka_service_toggle(LAKKA_SSH_PATH, "sshd.service",
          settings && settings->ssh_enable);
    return;
 }
 static void samba_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-   lakka_service_toggle(LAKKA_SAMBA_PATH,
+   lakka_service_toggle(LAKKA_SAMBA_PATH, "smbd.service",
          settings && settings->samba_enable);
    return;
 }
 static void bluetooth_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-   lakka_service_toggle(LAKKA_BLUETOOTH_PATH,
+   lakka_service_toggle(LAKKA_BLUETOOTH_PATH, "bluetooth.service",
          settings && settings->bluetooth_enable);
    return;
 }
