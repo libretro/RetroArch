@@ -3072,8 +3072,8 @@ static void overlay_enable_toggle_change_handler(void *data)
 }
 #endif
 
-#ifdef HAVE_LAKKA
-void lakka_service_toggle(const char *path, char *unit, bool enable)
+#ifdef HAVE_SYSTEMD
+static void systemd_service_toggle(const char *path, char *unit, bool enable)
 {
    int pid = fork();
    char* args[] = {"systemctl", NULL, NULL, NULL};
@@ -3096,21 +3096,21 @@ void lakka_service_toggle(const char *path, char *unit, bool enable)
 static void ssh_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-   lakka_service_toggle(LAKKA_SSH_PATH, "sshd.service",
+   systemd_service_toggle(LAKKA_SSH_PATH, "sshd.service",
          settings && settings->ssh_enable);
    return;
 }
 static void samba_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-   lakka_service_toggle(LAKKA_SAMBA_PATH, "smbd.service",
+   systemd_service_toggle(LAKKA_SAMBA_PATH, "smbd.service",
          settings && settings->samba_enable);
    return;
 }
 static void bluetooth_enable_toggle_change_handler(void *data)
 {
    settings_t *settings  = config_get_ptr();
-   lakka_service_toggle(LAKKA_BLUETOOTH_PATH, "bluetooth.service",
+   systemd_service_toggle(LAKKA_BLUETOOTH_PATH, "bluetooth.service",
          settings && settings->bluetooth_enable);
    return;
 }
@@ -6527,7 +6527,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_LAKKA_SERVICES:
          {
-#if defined(HAVE_LAKKA)
+#if defined(HAVE_SYSTEMD)
             START_GROUP(list, list_info, &group_info,
                   menu_hash_to_str(MENU_LABEL_VALUE_LAKKA_SERVICES),
                   parent_group);

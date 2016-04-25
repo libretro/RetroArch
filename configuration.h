@@ -403,7 +403,7 @@ typedef struct settings
 
    bool config_save_on_exit;
 
-#ifdef HAVE_LAKKA
+#ifdef HAVE_SYSTEMD
    bool ssh_enable;
    bool samba_enable;
    bool bluetooth_enable;
