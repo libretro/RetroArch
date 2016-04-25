@@ -2350,10 +2350,11 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
 {
    gfx_coords_t coords;
    float ribbon_verts[2 * XMB_RIBBON_VERTICES];
+   float dummy[4 * XMB_RIBBON_VERTICES];
    unsigned i, r, c, col;
    gfx_coord_array_t *ca   = NULL;
-   float dummy[4 * XMB_RIBBON_VERTICES] = { };
 
+   memset(&dummy[0], 0, 4 * XMB_RIBBON_VERTICES * sizeof(float));
    menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
 
    /* Set up vertices */

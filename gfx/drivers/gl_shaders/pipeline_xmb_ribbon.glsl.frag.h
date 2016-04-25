@@ -12,6 +12,5 @@ static const char *stock_fragment_xmb =
    "  vec3 normal=normalize(cross(X,Y));\n"
    "  float c = (1.0 - dot(normal, up));\n"
    "  c = (1.0 - cos(c*c))/3.0;\n"
-   //"  c = pow(c, 4	);\n"
    "  gl_FragColor = vec4(1.0, 1.0, 1.0, c);\n"
    "}\n";
