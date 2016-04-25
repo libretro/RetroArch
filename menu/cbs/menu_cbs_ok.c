@@ -675,7 +675,7 @@ static int action_ok_playlist_entry(const char *path,
       {
          case MENU_LABEL_COLLECTION:
          case MENU_LABEL_RDB_ENTRY_START_CONTENT:
-            menu_entries_pop_stack(&selection, 0);
+            menu_entries_pop_stack(&selection, 0, 1);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION,
                   &selection);
             break;
@@ -1113,7 +1113,7 @@ static int action_ok_core_deferred_set(const char *path,
 
    content_playlist_write_file(playlist);
 
-   menu_entries_pop_stack(&selection, 0);
+   menu_entries_pop_stack(&selection, 0, 1);
    menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
 
    return menu_cbs_exit();

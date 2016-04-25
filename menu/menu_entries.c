@@ -163,7 +163,7 @@ static int menu_entries_flush_stack_type(const char *needle, const char *label,
 }
 
 static bool menu_list_pop_stack(menu_list_t *list,
-      size_t idx, size_t *directory_ptr)
+      size_t idx, size_t *directory_ptr, bool animate)
 {
    menu_ctx_list_t list_info;
    bool refresh           = false;
@@ -179,7 +179,8 @@ static bool menu_list_pop_stack(menu_list_t *list,
    list_info.type   = MENU_LIST_PLAIN;
    list_info.action = 0;
 
-   menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
+   if (animate)
+      menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
 
    if (menu_list->size != 0)
    {
@@ -194,7 +195,8 @@ static bool menu_list_pop_stack(menu_list_t *list,
 
    file_list_pop(menu_list, directory_ptr);
    menu_driver_ctl(RARCH_MENU_CTL_LIST_SET_SELECTION, menu_list);
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   if (animate)
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
    return true;
 }
@@ -222,7 +224,7 @@ static void menu_list_flush_stack(menu_list_t *list,
       menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION,
             &new_selection_ptr);
 
-      if (!menu_list_pop_stack(list, idx, &new_selection_ptr))
+      if (!menu_list_pop_stack(list, idx, &new_selection_ptr, 1))
          break;
 
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION,
@@ -598,12 +600,12 @@ void menu_entries_flush_stack(const char *needle, unsigned final_type)
       menu_list_flush_stack(menu_list, 0, needle, final_type);
 }
 
-void menu_entries_pop_stack(size_t *ptr, size_t idx)
+void menu_entries_pop_stack(size_t *ptr, size_t idx, bool animate)
 {
    menu_list_t *menu_list         = NULL;
    menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
    if (menu_list)
-      menu_list_pop_stack(menu_list, idx, ptr);
+      menu_list_pop_stack(menu_list, idx, ptr, animate);
 }
 
 size_t menu_entries_get_stack_size(size_t idx)

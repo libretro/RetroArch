@@ -1496,7 +1496,7 @@ static int mui_pointer_tap(void *userdata,
 
    if (y < header_height)
    {
-      menu_entries_pop_stack(&selection, 0);
+      menu_entries_pop_stack(&selection, 0, 1);
       menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION, &selection);
    }
    else if (y > height - mui->tabs_height)
