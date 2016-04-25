@@ -546,8 +546,6 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
    draw.texture     = xmb->thumbnail;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-
    if (settings->menu.xmb_shadows_enable)
    {
       for (i = 0; i < 16; i++)
