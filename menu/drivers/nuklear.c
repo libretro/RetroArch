@@ -48,50 +48,50 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
-static void zrmenu_main(zrmenu_handle_t *zr)
+static void nk_menu_main(nk_menu_handle_t *nk)
 {
-   struct nk_context *ctx = &zr->ctx;
+   struct nk_context *ctx = &nk->ctx;
 
-   if (zr->window[ZRMENU_WND_MAIN].open)
-      zrmenu_wnd_main(zr);
-   if (zr->window[ZRMENU_WND_SHADER_PARAMETERS].open)
-      zrmenu_wnd_shader_parameters(zr);
-   if (zr->window[ZRMENU_WND_TEST].open)
-      zrmenu_wnd_test(zr);
+   if (nk->window[ZRMENU_WND_MAIN].open)
+      nk_menu_wnd_main(nk);
+   if (nk->window[ZRMENU_WND_SHADER_PARAMETERS].open)
+      nk_menu_wnd_shader_parameters(nk);
+   if (nk->window[ZRMENU_WND_TEST].open)
+      nk_menu_wnd_test(nk);
 
-   zr->window[ZRMENU_WND_SHADER_PARAMETERS].open = !nk_window_is_closed(ctx, "Shader Parameters");
-   zr->window[ZRMENU_WND_TEST].open = !nk_window_is_closed(ctx, "Test");
+   nk->window[ZRMENU_WND_SHADER_PARAMETERS].open = !nk_window_is_closed(ctx, "Shader Parameters");
+   nk->window[ZRMENU_WND_TEST].open = !nk_window_is_closed(ctx, "Test");
 
-   nk_buffer_info(&zr->status, &zr->ctx.memory);
+   nk_buffer_info(&nk->status, &nk->ctx.memory);
 }
 
-static void zrmenu_input_gamepad(zrmenu_handle_t *zr)
+static void nk_menu_input_gamepad(nk_menu_handle_t *nk)
 {
-   switch (zr->action)
+   switch (nk->action)
    {
       case MENU_ACTION_LEFT:
-         nk_input_key(&zr->ctx, NK_KEY_LEFT, 1);
+         nk_input_key(&nk->ctx, NK_KEY_LEFT, 1);
          break;
       case MENU_ACTION_RIGHT:
-         nk_input_key(&zr->ctx, NK_KEY_RIGHT, 1);
+         nk_input_key(&nk->ctx, NK_KEY_RIGHT, 1);
          break;
       case MENU_ACTION_DOWN:
-         nk_input_key(&zr->ctx, NK_KEY_DOWN, 1);
+         nk_input_key(&nk->ctx, NK_KEY_DOWN, 1);
          break;
       case MENU_ACTION_UP:
-         nk_input_key(&zr->ctx, NK_KEY_UP, 1);
+         nk_input_key(&nk->ctx, NK_KEY_UP, 1);
          break;
       default:
-         nk_input_key(&zr->ctx, NK_KEY_UP, 0);
-         nk_input_key(&zr->ctx, NK_KEY_DOWN, 0);
-         nk_input_key(&zr->ctx, NK_KEY_LEFT, 0);
-         nk_input_key(&zr->ctx, NK_KEY_RIGHT, 0);
+         nk_input_key(&nk->ctx, NK_KEY_UP, 0);
+         nk_input_key(&nk->ctx, NK_KEY_DOWN, 0);
+         nk_input_key(&nk->ctx, NK_KEY_LEFT, 0);
+         nk_input_key(&nk->ctx, NK_KEY_RIGHT, 0);
          break;
    }
 
 }
 
-static void zrmenu_input_mouse_movement(struct nk_context *ctx)
+static void nk_menu_input_mouse_movement(struct nk_context *ctx)
 {
    int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
@@ -102,7 +102,7 @@ static void zrmenu_input_mouse_movement(struct nk_context *ctx)
 
 }
 
-static void zrmenu_input_mouse_button(struct nk_context *ctx)
+static void nk_menu_input_mouse_button(struct nk_context *ctx)
 {
    int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
    int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
@@ -113,7 +113,7 @@ static void zrmenu_input_mouse_button(struct nk_context *ctx)
          mouse_x, mouse_y, menu_input_mouse_state(MENU_MOUSE_RIGHT_BUTTON));
 }
 
-static void zrmenu_input_keyboard(struct nk_context *ctx)
+static void nk_menu_input_keyboard(struct nk_context *ctx)
 {
    /* placeholder, it just presses 1 on right click
       needs to be hooked up correctly
@@ -122,7 +122,7 @@ static void zrmenu_input_keyboard(struct nk_context *ctx)
       nk_input_char(ctx, '1');
 }
 
-static void zrmenu_context_reset_textures(zrmenu_handle_t *zr,
+static void nk_menu_context_reset_textures(nk_menu_handle_t *nk,
       const char *iconpath)
 {
    unsigned i;
@@ -145,23 +145,23 @@ static void zrmenu_context_reset_textures(zrmenu_handle_t *zr,
 
       video_texture_image_load(&ti, path);
       video_driver_texture_load(&ti,
-            TEXTURE_FILTER_MIPMAP_LINEAR, &zr->textures.list[i]);
+            TEXTURE_FILTER_MIPMAP_LINEAR, &nk->textures.list[i]);
 
       video_texture_image_free(&ti);
    }
 }
 
-static void zrmenu_get_message(void *data, const char *message)
+static void nk_menu_get_message(void *data, const char *message)
 {
-   zrmenu_handle_t *zr   = (zrmenu_handle_t*)data;
+   nk_menu_handle_t *nk   = (nk_menu_handle_t*)data;
 
-   if (!zr || !message || !*message)
+   if (!nk || !message || !*message)
       return;
 
-   strlcpy(zr->box_message, message, sizeof(zr->box_message));
+   strlcpy(nk->box_message, message, sizeof(nk->box_message));
 }
 
-static void zrmenu_draw_cursor(zrmenu_handle_t *zr,
+static void nk_menu_draw_cursor(nk_menu_handle_t *nk,
       float *color,
       float x, float y, unsigned width, unsigned height)
 {
@@ -182,7 +182,7 @@ static void zrmenu_draw_cursor(zrmenu_handle_t *zr,
    draw.height      = 64;
    draw.coords      = &coords;
    draw.matrix_data = NULL;
-   draw.texture     = zr->textures.list[NK_TEXTURE_POINTER];
+   draw.texture     = nk->textures.list[NK_TEXTURE_POINTER];
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
@@ -190,7 +190,7 @@ static void zrmenu_draw_cursor(zrmenu_handle_t *zr,
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
 }
 
-static void zrmenu_frame(void *data)
+static void nk_menu_frame(void *data)
 {
    float white_bg[16]=  {
       0.98, 0.98, 0.98, 1,
@@ -200,37 +200,37 @@ static void zrmenu_frame(void *data)
    };
 
    unsigned width, height, ticker_limit, i;
-   zrmenu_handle_t *zr = (zrmenu_handle_t*)data;
+   nk_menu_handle_t *nk = (nk_menu_handle_t*)data;
    settings_t *settings  = config_get_ptr();
 
    bool libretro_running = menu_display_ctl(
          MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
 
-   if (!zr)
+   if (!nk)
       return;
 
    video_driver_get_size(&width, &height);
 
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   nk_input_begin(&zr->ctx);
-   zrmenu_input_gamepad(zr);
-   zrmenu_input_mouse_movement(&zr->ctx);
-   zrmenu_input_mouse_button(&zr->ctx);
-   zrmenu_input_keyboard(&zr->ctx);
+   nk_input_begin(&nk->ctx);
+   nk_menu_input_gamepad(nk);
+   nk_menu_input_mouse_movement(&nk->ctx);
+   nk_menu_input_mouse_button(&nk->ctx);
+   nk_menu_input_keyboard(&nk->ctx);
 
-   if (width != zr->size.x || height != zr->size.y)
+   if (width != nk->size.x || height != nk->size.y)
    {
-      zr->size.x = width;
-      zr->size.y = height;
-      zr->size_changed = true;
+      nk->size.x = width;
+      nk->size.y = height;
+      nk->size_changed = true;
    }
 
-   nk_input_end(&zr->ctx);
-   zrmenu_main(zr);
-   if(nk_window_is_closed(&zr->ctx, "Shader Parameters"))
-      zrmenu_wnd_shader_parameters(zr);
-   nk_common_device_draw(&device, &zr->ctx, width, height, NK_ANTI_ALIASING_ON);
+   nk_input_end(&nk->ctx);
+   nk_menu_main(nk);
+   if(nk_window_is_closed(&nk->ctx, "Shader Parameters"))
+      nk_menu_wnd_shader_parameters(nk);
+   nk_common_device_draw(&device, &nk->ctx, width, height, NK_ANTI_ALIASING_ON);
 
    if (settings->menu.mouse.enable && (settings->video.fullscreen
             || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
@@ -238,14 +238,14 @@ static void zrmenu_frame(void *data)
       int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
       int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
 
-      zrmenu_draw_cursor(zr, &white_bg[0], mouse_x, mouse_y, width, height);
+      nk_menu_draw_cursor(nk, &white_bg[0], mouse_x, mouse_y, width, height);
    }
 
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
 }
 
-static void zrmenu_layout(zrmenu_handle_t *zr)
+static void nk_menu_layout(nk_menu_handle_t *nk)
 {
    void *fb_buf;
    float scale_factor;
@@ -259,10 +259,10 @@ static void zrmenu_layout(zrmenu_handle_t *zr)
 
 }
 
-static void zrmenu_init_device(zrmenu_handle_t *zr)
+static void nk_menu_init_device(nk_menu_handle_t *nk)
 {
    char buf[PATH_MAX_LENGTH];
-   fill_pathname_join(buf, zr->assets_directory,
+   fill_pathname_join(buf, nk->assets_directory,
          "DroidSans.ttf", sizeof(buf));
 
    nk_alloc.userdata.ptr = NULL;
@@ -276,35 +276,35 @@ static void zrmenu_init_device(zrmenu_handle_t *zr)
    image = nk_font_atlas_bake(&atlas, &w, &h, NK_FONT_ATLAS_RGBA32);
    device_upload_atlas(&device, image, w, h);
    nk_font_atlas_end(&atlas, nk_handle_id((int)device.font_tex), &device.null);
-   nk_init_default(&zr->ctx, &font->handle);
+   nk_init_default(&nk->ctx, &font->handle);
 
-   //nk_init(&zr->ctx, &nk_alloc, &usrfnt);
+   //nk_init(&nk->ctx, &nk_alloc, &usrfnt);
    nk_common_device_init(&device);
 
-   fill_pathname_join(buf, zr->assets_directory, "folder.png", sizeof(buf));
-   zr->icons.folder = nk_common_image_load(buf);
-   fill_pathname_join(buf, zr->assets_directory, "speaker.png", sizeof(buf));
-   zr->icons.speaker = nk_common_image_load(buf);
-   fill_pathname_join(buf, zr->assets_directory, "gamepad.png", sizeof(buf));
-   zr->icons.gamepad = nk_common_image_load(buf);
-   fill_pathname_join(buf, zr->assets_directory, "monitor.png", sizeof(buf));
-   zr->icons.monitor = nk_common_image_load(buf);
-   fill_pathname_join(buf, zr->assets_directory, "settings.png", sizeof(buf));
-   zr->icons.settings = nk_common_image_load(buf);
-   fill_pathname_join(buf, zr->assets_directory, "invader.png", sizeof(buf));
-   zr->icons.invader = nk_common_image_load(buf);
-   fill_pathname_join(buf, zr->assets_directory, "page_on.png", sizeof(buf));
-   zr->icons.page_on = nk_common_image_load(buf);
-   fill_pathname_join(buf, zr->assets_directory, "page_off.png", sizeof(buf));
-   zr->icons.page_off = nk_common_image_load(buf);
+   fill_pathname_join(buf, nk->assets_directory, "folder.png", sizeof(buf));
+   nk->icons.folder = nk_common_image_load(buf);
+   fill_pathname_join(buf, nk->assets_directory, "speaker.png", sizeof(buf));
+   nk->icons.speaker = nk_common_image_load(buf);
+   fill_pathname_join(buf, nk->assets_directory, "gamepad.png", sizeof(buf));
+   nk->icons.gamepad = nk_common_image_load(buf);
+   fill_pathname_join(buf, nk->assets_directory, "monitor.png", sizeof(buf));
+   nk->icons.monitor = nk_common_image_load(buf);
+   fill_pathname_join(buf, nk->assets_directory, "settings.png", sizeof(buf));
+   nk->icons.settings = nk_common_image_load(buf);
+   fill_pathname_join(buf, nk->assets_directory, "invader.png", sizeof(buf));
+   nk->icons.invader = nk_common_image_load(buf);
+   fill_pathname_join(buf, nk->assets_directory, "page_on.png", sizeof(buf));
+   nk->icons.page_on = nk_common_image_load(buf);
+   fill_pathname_join(buf, nk->assets_directory, "page_off.png", sizeof(buf));
+   nk->icons.page_off = nk_common_image_load(buf);
 
-   zr->size_changed = true;
+   nk->size_changed = true;
 }
 
-static void *zrmenu_init(void **userdata)
+static void *nk_menu_init(void **userdata)
 {
    settings_t *settings = config_get_ptr();
-   zrmenu_handle_t   *zr = NULL;
+   nk_menu_handle_t   *nk = NULL;
    menu_handle_t *menu = (menu_handle_t*)
       calloc(1, sizeof(*menu));
    unsigned width, height = 0;
@@ -317,16 +317,16 @@ static void *zrmenu_init(void **userdata)
    if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT_FIRST_DRIVER, NULL))
       goto error;
 
-   zr = (zrmenu_handle_t*)calloc(1, sizeof(zrmenu_handle_t));
+   nk = (nk_menu_handle_t*)calloc(1, sizeof(nk_menu_handle_t));
 
-   if (!zr)
+   if (!nk)
       goto error;
 
-   *userdata = zr;
+   *userdata = nk;
 
-   fill_pathname_join(zr->assets_directory, settings->assets_directory,
-         "zahnrad", sizeof(zr->assets_directory));
-   zrmenu_init_device(zr);
+   fill_pathname_join(nk->assets_directory, settings->assets_directory,
+         "zahnrad", sizeof(nk->assets_directory));
+   nk_menu_init_device(nk);
 
    return menu;
 error:
@@ -335,71 +335,71 @@ error:
    return NULL;
 }
 
-static void zrmenu_free(void *data)
+static void nk_menu_free(void *data)
 {
-   zrmenu_handle_t *zr   = (zrmenu_handle_t*)data;
+   nk_menu_handle_t *nk   = (nk_menu_handle_t*)data;
 
-   if (!zr)
+   if (!nk)
       return;
    free(font);
-   nk_free(&zr->ctx);
+   nk_free(&nk->ctx);
    nk_buffer_free(&device.cmds);
    nk_common_device_shutdown(&device);
 
-   gfx_coord_array_free(&zr->list_block.carr);
+   gfx_coord_array_free(&nk->list_block.carr);
    font_driver_bind_block(NULL, NULL);
 }
 
-static void wimp_context_bg_destroy(zrmenu_handle_t *zr)
+static void wimp_context_bg_destroy(nk_menu_handle_t *nk)
 {
-   if (!zr)
+   if (!nk)
       return;
 
 }
 
-static void zrmenu_context_destroy(void *data)
+static void nk_menu_context_destroy(void *data)
 {
    unsigned i;
-   zrmenu_handle_t *zr   = (zrmenu_handle_t*)data;
+   nk_menu_handle_t *nk   = (nk_menu_handle_t*)data;
 
-   if (!zr)
+   if (!nk)
       return;
 
    for (i = 0; i < NK_TEXTURE_LAST; i++)
-      video_driver_texture_unload((uintptr_t*)&zr->textures.list[i]);
+      video_driver_texture_unload((uintptr_t*)&nk->textures.list[i]);
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
 
-   wimp_context_bg_destroy(zr);
+   wimp_context_bg_destroy(nk);
 }
 
-static void zrmenu_context_reset(void *data)
+static void nk_menu_context_reset(void *data)
 {
    char iconpath[PATH_MAX_LENGTH] = {0};
-   zrmenu_handle_t *zr              = (zrmenu_handle_t*)data;
+   nk_menu_handle_t *nk              = (nk_menu_handle_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned width, height = 0;
 
    video_driver_get_size(&width, &height);
 
-   if (!zr || !settings)
+   if (!nk || !settings)
       return;
 
    fill_pathname_join(iconpath, settings->assets_directory,
          "zahnrad", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
-   zrmenu_layout(zr);
-   zrmenu_init_device(zr);
+   nk_menu_layout(nk);
+   nk_menu_init_device(nk);
 
-   wimp_context_bg_destroy(zr);
-   zrmenu_context_reset_textures(zr, iconpath);
+   wimp_context_bg_destroy(nk);
+   nk_menu_context_reset_textures(nk, iconpath);
 
    rarch_task_push_image_load(settings->menu.wallpaper, "cb_menu_wallpaper",
          menu_display_handle_wallpaper_upload, NULL);
 }
 
-static int zrmenu_environ(enum menu_environ_cb type, void *data, void *userdata)
+static int nk_menu_environ(enum menu_environ_cb type, void *data, void *userdata)
 {
    switch (type)
    {
@@ -411,7 +411,7 @@ static int zrmenu_environ(enum menu_environ_cb type, void *data, void *userdata)
    return -1;
 }
 
-static bool zrmenu_init_list(void *data)
+static bool nk_menu_init_list(void *data)
 {
    menu_displaylist_info_t info = {0};
    file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
@@ -436,21 +436,21 @@ static bool zrmenu_init_list(void *data)
    return false;
 }
 
-static int zrmenu_iterate(void *data, void *userdata, enum menu_action action)
+static int nk_menu_iterate(void *data, void *userdata, enum menu_action action)
 {
    int ret;
    size_t selection;
    menu_entry_t entry;
-   zrmenu_handle_t *zr   = (zrmenu_handle_t*)userdata;
+   nk_menu_handle_t *nk   = (nk_menu_handle_t*)userdata;
 
-   if (!zr)
+   if (!nk)
       return -1;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return 0;
 
    menu_entry_get(&entry, 0, selection, NULL, false);
 
-   zr->action       = action;
+   nk->action       = action;
 
    ret = menu_entry_action(&entry, selection, action);
    if (ret)
@@ -460,16 +460,14 @@ static int zrmenu_iterate(void *data, void *userdata, enum menu_action action)
 
 menu_ctx_driver_t menu_ctx_nuklear = {
    NULL,
-   zrmenu_get_message,
-   zrmenu_iterate,
+   nk_menu_get_message,
+   nk_menu_iterate,
    NULL,
-   zrmenu_frame,
-   zrmenu_init,
-   zrmenu_free,
-   zrmenu_context_reset,
-   zrmenu_context_destroy,
-   NULL,
-   NULL,
+   nk_menu_frame,
+   nk_menu_init,
+   nk_menu_free,
+   nk_menu_context_reset,
+   nk_menu_context_destroy,
    NULL,
    NULL,
    NULL,
@@ -477,7 +475,9 @@ menu_ctx_driver_t menu_ctx_nuklear = {
    NULL,
    NULL,
    NULL,
-   zrmenu_init_list,
+   NULL,
+   NULL,
+   nk_menu_init_list,
    NULL,
    NULL,
    NULL,
@@ -491,6 +491,6 @@ menu_ctx_driver_t menu_ctx_nuklear = {
    NULL,
    NULL,
    "nuklear",
-   zrmenu_environ,
+   nk_menu_environ,
    NULL,
 };

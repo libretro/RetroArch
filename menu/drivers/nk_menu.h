@@ -32,7 +32,7 @@ enum
    ZRMENU_WND_TEST,
 };
 
-enum zrmenu_theme
+enum nk_menu_theme
 {
    THEME_DARK = 0,
    THEME_LIGHT
@@ -55,7 +55,7 @@ struct window {
    struct nk_vec2 size;
 };
 
-typedef struct zrmenu_handle
+typedef struct nk_menu_handle
 {
    /* zahnrad mandatory */
    void *memory;
@@ -74,7 +74,7 @@ typedef struct zrmenu_handle
    /* image & theme related variables */
    char assets_directory[PATH_MAX_LENGTH];
    struct icons icons;
-   enum zrmenu_theme theme;
+   enum nk_menu_theme theme;
 
 
    struct
@@ -84,9 +84,9 @@ typedef struct zrmenu_handle
    } textures;
 
    gfx_font_raster_block_t list_block;
-} zrmenu_handle_t;
+} nk_menu_handle_t;
 
-void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr);
-void zrmenu_wnd_test(zrmenu_handle_t *zr);
-void zrmenu_wnd_main(zrmenu_handle_t *zr);
+void nk_menu_wnd_shader_parameters(nk_menu_handle_t *zr);
+void nk_menu_wnd_test(nk_menu_handle_t *zr);
+void nk_menu_wnd_main(nk_menu_handle_t *zr);
 

@@ -281,21 +281,21 @@ float nk_checkbox_float(struct nk_context* cx, const char* text, float *active)
     va_end(args);
 }*/
 
-void zrmenu_set_state(zrmenu_handle_t *zr, const int id,
+void nk_menu_set_state(nk_menu_handle_t *zr, const int id,
    struct nk_vec2 pos, struct nk_vec2 size)
 {
    zr->window[id].position = pos;
    zr->window[id].size = size;
 }
 
-void zrmenu_get_state(zrmenu_handle_t *zr, const int id,
+void nk_menu_get_state(nk_menu_handle_t *zr, const int id,
    struct nk_vec2 *pos, struct nk_vec2 *size)
 {
    *pos = zr->window[id].position;
    *size = zr->window[id].size;
 }
 
-void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr)
+void nk_menu_wnd_shader_parameters(nk_menu_handle_t *zr)
 {
    unsigned i;
    video_shader_ctx_t shader_info;
@@ -310,7 +310,7 @@ void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr)
    {
       struct nk_panel combo;
       static const char *themes[] = {"Dark", "Light"};
-      enum   zrmenu_theme old     = zr->theme;
+      enum   nk_menu_theme old     = zr->theme;
 
       nk_layout_row_dynamic(ctx, 30, 1);
 
@@ -338,11 +338,11 @@ void zrmenu_wnd_shader_parameters(zrmenu_handle_t *zr)
       }
    }
    /* save position and size to restore after context reset */
-   zrmenu_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
+   nk_menu_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);
 }
 
-void zrmenu_wnd_test(zrmenu_handle_t *zr)
+void nk_menu_wnd_test(nk_menu_handle_t *zr)
 {
    struct nk_panel layout;
    struct nk_context *ctx = &zr->ctx;
@@ -357,7 +357,7 @@ void zrmenu_wnd_test(zrmenu_handle_t *zr)
       struct nk_panel combo;
       menu_entry_t entry;
       static const char *themes[] = {"Dark", "Light"};
-      enum   zrmenu_theme old     = zr->theme;
+      enum   nk_menu_theme old     = zr->theme;
 
       nk_layout_row_dynamic(ctx, 30, 2);
 
@@ -379,11 +379,11 @@ void zrmenu_wnd_test(zrmenu_handle_t *zr)
       size = menu_entries_get_size();
    }
    /* save position and size to restore after context reset */
-   zrmenu_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
+   nk_menu_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);
 }
 
-void zrmenu_wnd_main(zrmenu_handle_t *zr)
+void nk_menu_wnd_main(nk_menu_handle_t *zr)
 {
    struct nk_panel layout;
    struct nk_context *ctx = &zr->ctx;
@@ -409,7 +409,7 @@ void zrmenu_wnd_main(zrmenu_handle_t *zr)
 
 
    /* save position and size to restore after context reset */
-   zrmenu_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
+   nk_menu_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    if (zr->size_changed)
       nk_window_set_size(ctx, nk_vec2(nk_window_get_size(ctx).x, zr->size.y));
 
