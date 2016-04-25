@@ -514,10 +514,13 @@ static void xmb_draw_icon(
 static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
       unsigned width, unsigned height)
 {
+   settings_t *settings = config_get_ptr();
+   unsigned i;
    menu_display_ctx_rotate_draw_t rotate_draw;
    menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
+   float shadow[16];
    float y = xmb->margins.screen.top + xmb->icon.size + xmb->thumbnail_height;
    float x = xmb->margins.screen.left + xmb->icon.spacing.horizontal +
       xmb->icon.spacing.horizontal*4 - xmb->icon.size / 4;
@@ -535,16 +538,33 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
    coords.vertex        = NULL;
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
-   coords.color         = (const float*)color;
 
-   draw.x           = x;
-   draw.y           = height - y;
    draw.width       = xmb->thumbnail_width;
    draw.height      = xmb->thumbnail_height;
    draw.coords      = &coords;
    draw.matrix_data = &mymat;
    draw.texture     = xmb->thumbnail;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+
+   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
+
+   if (settings->menu.xmb_shadows_enable)
+   {
+      for (i = 0; i < 16; i++)
+         shadow[i]      = 0;
+
+      menu_display_set_alpha(shadow, color[3] * 0.35f);
+
+      coords.color      = shadow;
+      draw.x            = x + 2;
+      draw.y            = height - y - 2;
+
+      menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
+   }
+
+   coords.color         = (const float*)color;
+   draw.x               = x;
+   draw.y               = height - y;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 }
