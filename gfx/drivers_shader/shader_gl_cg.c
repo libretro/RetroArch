@@ -1166,6 +1166,8 @@ static void *gl_cg_init(void *data, const char *path)
          &cg_data->prg[VIDEO_SHADER_MENU_SEC],
          &shader_prog_info);
 
+   gl_cg_reset_attrib(cg_data);
+
    return cg_data;
 
 error:
