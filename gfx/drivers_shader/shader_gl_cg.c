@@ -440,16 +440,6 @@ static void gl_cg_set_params(void *data, void *shader_data,
    for (i = 0; i < uniform_count; i++)
       gl_cg_set_uniform_parameter(cg, &uniform_params[i], &uniform_data[i]);
 
-   /* Set orig texture. */
-   gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].orig, info);
-
-   /* Set feedback texture. */
-   gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].feedback, feedback_info);
-
-   /* Set previous textures. */
-   for (i = 0; i < PREV_TEXTURES; i++)
-      gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].prev[i], &prev_info[i]);
-
    /* Set lookup textures. */
    for (i = 0; i < cg->shader->luts; i++)
    {
@@ -462,12 +452,22 @@ static void gl_cg_set_params(void *data, void *shader_data,
       cg_gl_set_texture_parameter(vparam, cg->lut_textures[i]);
    }
 
-   /* Set FBO textures. */
    if (cg->active_idx)
    {
+      /* Set original texture. */
+      gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].orig, info);
+
+      /* Set feedback texture. */
+      gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].feedback, feedback_info);
+
+      /* Bind FBO textures. */
       for (i = 0; i < fbo_info_cnt; i++)
          gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].fbo[i], &fbo_info[i]);
    }
+
+   /* Set previous textures. */
+   for (i = 0; i < PREV_TEXTURES; i++)
+      gl_cg_set_texture_info(cg, &cg->prg[cg->active_idx].prev[i], &prev_info[i]);
 
    /* #pragma parameters. */
    for (i = 0; i < cg->shader->num_parameters; i++)
