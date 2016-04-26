@@ -343,6 +343,8 @@ audio_driver_t audio_pulse = {
    pulse_free,
    pulse_use_float,
    "pulse",
+   NULL,
+   NULL,
    pulse_write_avail,
    pulse_buffer_size,
 };

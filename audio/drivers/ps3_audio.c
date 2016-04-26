@@ -247,6 +247,8 @@ audio_driver_t audio_ps3 = {
    ps3_audio_free,
    ps3_audio_use_float,
    "ps3",
+   NULL,
+   NULL,
    ps3_audio_write_avail,
    NULL
 };

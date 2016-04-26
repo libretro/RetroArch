@@ -85,6 +85,8 @@ audio_driver_t audio_null = {
    null_audio_free,
    null_audio_use_float,
    "null",
+   NULL,
+   NULL,
    null_audio_write_avail,
    NULL
 };

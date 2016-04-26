@@ -440,6 +440,17 @@ static size_t coreaudio_buffer_size(void *data)
    return dev->buffer_size;
 }
 
+static void *coreaudio_device_list_new(void *data)
+{
+   /* TODO/FIXME */
+   return NULL;
+}
+
+static void coreaudio_device_list_free(void *data, void *array_list_data)
+{
+   /* TODO/FIXME */
+}
+
 audio_driver_t audio_coreaudio = {
    coreaudio_init,
    coreaudio_write,
@@ -450,6 +461,8 @@ audio_driver_t audio_coreaudio = {
    coreaudio_free,
    coreaudio_use_float,
    "coreaudio",
+   coreaudio_device_list_new,
+   coreaudio_device_list_free,
    coreaudio_write_avail,
    coreaudio_buffer_size,
 };

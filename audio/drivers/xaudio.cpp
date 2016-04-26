@@ -347,6 +347,8 @@ audio_driver_t audio_xa = {
    xa_free,
    xa_use_float,
    "xaudio",
+   NULL,
+   NULL,
    xa_write_avail,
    xa_buffer_size,
 };

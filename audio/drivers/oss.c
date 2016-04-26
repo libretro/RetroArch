@@ -212,6 +212,8 @@ audio_driver_t audio_oss = {
    oss_free,
    oss_use_float,
    "oss",
+   NULL,
+   NULL,
    oss_write_avail,
    oss_buffer_size,
 };

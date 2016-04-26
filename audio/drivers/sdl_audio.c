@@ -253,6 +253,8 @@ audio_driver_t audio_sdl = {
 #else
    "sdl",
 #endif
+   NULL,
+   NULL,
    sdl_audio_write_avail,
    NULL
 };

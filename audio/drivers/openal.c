@@ -267,6 +267,8 @@ audio_driver_t audio_openal = {
    al_free,
    al_use_float,
    "openal",
+   NULL,
+   NULL,
    al_write_avail,
    al_buffer_size,
 };

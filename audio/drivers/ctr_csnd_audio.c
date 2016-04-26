@@ -300,6 +300,8 @@ audio_driver_t audio_ctr_csnd = {
    ctr_csnd_audio_free,
    ctr_csnd_audio_use_float,
    "csnd",
+   NULL,
+   NULL,
    ctr_csnd_audio_write_avail,
    ctr_csnd_audio_buffer_size
 };

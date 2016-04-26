@@ -313,6 +313,8 @@ audio_driver_t audio_opensl = {
    sl_free,
    sl_use_float,
    "opensl",
+   NULL,
+   NULL,
    sl_write_avail,
    sl_buffer_size,
 };

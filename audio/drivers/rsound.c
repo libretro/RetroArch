@@ -233,6 +233,8 @@ audio_driver_t audio_rsound = {
    rs_free,
    rs_use_float,
    "rsound",
+   NULL,
+   NULL,
    rs_write_avail,
    rs_buffer_size,
 };

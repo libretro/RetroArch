@@ -352,6 +352,8 @@ audio_driver_t audio_alsathread = {
    alsa_thread_free,
    alsa_thread_use_float,
    "alsathread",
+   NULL,
+   NULL,
    alsa_thread_write_avail,
    alsa_thread_buffer_size,
 };

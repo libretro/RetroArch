@@ -489,6 +489,8 @@ audio_driver_t audio_dsound = {
    dsound_free,
    dsound_use_float,
    "dsound",
+   NULL,
+   NULL,
    dsound_write_avail,
    dsound_buffer_size,
 };

@@ -142,6 +142,8 @@ audio_driver_t audio_roar = {
    ra_free,
    ra_use_float,
    "roar",
+   NULL,
+   NULL,
    ra_write_avail,
    NULL
 };

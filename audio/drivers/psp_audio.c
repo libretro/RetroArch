@@ -286,6 +286,8 @@ audio_driver_t audio_psp = {
 #else
    "psp",
 #endif
+   NULL,
+   NULL,
    psp_write_avail,
    psp_buffer_size,
 };

@@ -107,6 +107,12 @@ typedef struct audio_driver
    /* Human-readable identifier. */
    const char *ident;
 
+   /* Optional. Get audio device list (allocates, caller has to free this) */
+   void *(*device_list_new)(void *data);
+
+   /* Optional. Frees audio device list */
+   void (*device_list_free)(void *data, void *data2);
+
    /* Optional. */
    size_t (*write_avail)(void *data);
 

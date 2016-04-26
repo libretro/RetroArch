@@ -110,6 +110,8 @@ audio_driver_t audio_rwebaudio = {
    rwebaudio_free,
    rwebaudio_use_float,
    "rwebaudio",
+   NULL,
+   NULL,
    rwebaudio_write_avail,
    rwebaudio_buffer_size,
 };

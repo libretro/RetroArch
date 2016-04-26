@@ -15,6 +15,8 @@
 
 #include <stdlib.h>
 
+#include <lists/string_list.h>
+
 #include <alsa/asoundlib.h>
 
 #include "../audio_driver.h"
@@ -324,6 +326,64 @@ static size_t alsa_buffer_size(void *data)
    return alsa->buffer_size;
 }
 
+static void *alsa_device_list_new(void *data)
+{
+   void **hints, **n;
+   union string_list_elem_attr attr;
+   struct string_list *s = string_list_new();
+
+   if (!s)
+      return NULL;
+
+   attr.i = 0;
+
+   if (snd_device_name_hint(-1, "pcm", &hints) != 0)
+      goto error;
+
+   n      = hints;
+
+   while (*n != NULL)
+   {
+      char *name = snd_device_name_get_hint(*n, "NAME");
+      char *io   = snd_device_name_get_hint(*n, "IOID");
+      char *desc = snd_device_name_get_hint(*n, "DESC");
+
+      /* description of device IOID - input / output identifcation
+       * ("Input" or "Output"), NULL means both) */
+
+      if (io == NULL)
+         string_list_append(s, name, attr);
+
+      if (name)
+         free(name);
+      if (io)
+         free(io);
+      if (desc)
+         free(desc);
+
+      n++;
+   }
+
+   /* free hint buffer too */
+   snd_device_name_free_hint(hints);
+
+   return s;
+
+error:
+   string_list_free(s);
+   return NULL;
+}
+
+static void alsa_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *s = (struct string_list*)array_list_data;
+
+   if (!s)
+      return;
+
+   string_list_free(s);
+}
+
 audio_driver_t audio_alsa = {
    alsa_init,
    alsa_write,
@@ -334,6 +394,8 @@ audio_driver_t audio_alsa = {
    alsa_free,
    alsa_use_float,
    "alsa",
+   alsa_device_list_new,
+   alsa_device_list_free,
    alsa_write_avail,
    alsa_buffer_size,
 };
