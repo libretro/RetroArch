@@ -338,7 +338,10 @@ static void init_drivers(int flags)
    }
 
    if (flags & DRIVER_AUDIO)
+   {
       audio_driver_ctl(RARCH_AUDIO_CTL_INIT, NULL);
+      audio_driver_ctl(RARCH_AUDIO_CTL_DEVICES_LIST_NEW, NULL);
+   }
 
    /* Only initialize camera driver if we're ever going to use it. */
    if ((flags & DRIVER_CAMERA) && camera_driver_ctl(RARCH_CAMERA_CTL_IS_ACTIVE, NULL))
