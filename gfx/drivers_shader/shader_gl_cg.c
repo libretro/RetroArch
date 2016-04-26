@@ -1162,14 +1162,17 @@ static void *gl_cg_init(void *data, const char *path)
          VIDEO_SHADER_MENU,
          &cg->prg[VIDEO_SHADER_MENU],
          &shader_prog_info);
+   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU);
 
    shader_prog_info.combined = stock_xmb_simple;
+   shader_prog_info.is_file  = false;
 
    gl_cg_compile_program(
          cg,
          VIDEO_SHADER_MENU_SEC,
          &cg->prg[VIDEO_SHADER_MENU_SEC],
          &shader_prog_info);
+   gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_SEC);
 
    gl_cg_reset_attrib(cg);
 
