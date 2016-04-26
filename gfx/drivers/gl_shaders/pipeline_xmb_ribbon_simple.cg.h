@@ -23,7 +23,7 @@ static const char *stock_xmb_simple =
 
 "void main_vertex\n"
 "(\n"
-"	float4 position	: POSITION,\n"
+"	float2 position	: POSITION,\n"
 "	float4 color	: COLOR,\n"
 "	float2 texCoord : TEXCOORD0,\n"
 
@@ -34,7 +34,7 @@ static const char *stock_xmb_simple =
 "	out float2 otexCoord : TEXCOORD\n"
 ")\n"
 "{\n"
-"float3 v = position.xyz;\n"
+"float3 v = float3(position.x, 0.0, position.y);\n"
 "float3 v2 = v;\n"
 "v2.x = v2.x + IN.time / 2.0;\n"
 "v2.z = v.z * 3.0;\n"
