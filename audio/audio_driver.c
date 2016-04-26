@@ -18,6 +18,8 @@
 
 #include <retro_assert.h>
 
+#include <lists/string_list.h>
+
 #include "audio_driver.h"
 #include "audio_resampler_driver.h"
 #include "../record/record_driver.h"
@@ -777,6 +779,7 @@ static bool find_audio_driver(void)
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    static struct retro_audio_callback audio_callback;
+   static struct string_list *audio_driver_devices_list   = NULL;
    static struct retro_perf_counter resampler_proc        = {0};
    static const rarch_resampler_t *audio_driver_resampler = NULL;
    static void *audio_driver_resampler_data               = NULL;
@@ -789,6 +792,29 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
       case RARCH_AUDIO_CTL_RESAMPLER_DEINIT:
          rarch_resampler_freep(&audio_driver_resampler,
                &audio_driver_resampler_data);
+         break;
+      case RARCH_AUDIO_CTL_DEVICES_LIST_FREE:
+         if (!current_audio || !current_audio->device_list_free
+               || !audio_driver_context_audio_data)
+            return false;
+         current_audio->device_list_free(audio_driver_context_audio_data, audio_driver_devices_list);
+         audio_driver_devices_list = NULL;
+         break;
+      case RARCH_AUDIO_CTL_DEVICES_LIST_NEW:
+         if (!current_audio || !current_audio->device_list_new
+               || !audio_driver_context_audio_data)
+            return false;
+         audio_driver_devices_list = current_audio->device_list_new(audio_driver_context_audio_data);
+         if (!audio_driver_devices_list)
+            return false;
+         break;
+      case RARCH_AUDIO_CTL_DEVICES_LIST_GET:
+         {
+            struct string_list**ptr = (struct string_list**)data;
+            if (!ptr)
+               return false;
+            *ptr = audio_driver_devices_list;
+         }
          break;
       case RARCH_AUDIO_CTL_RESAMPLER_INIT:
          return rarch_resampler_realloc(
@@ -815,6 +841,7 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          audio_driver_context_audio_data = NULL;
          break;
       case RARCH_AUDIO_CTL_DEINIT:
+         audio_driver_ctl(RARCH_AUDIO_CTL_DEVICES_LIST_FREE, NULL);
          if (!uninit_audio())
             return false;
          break;
