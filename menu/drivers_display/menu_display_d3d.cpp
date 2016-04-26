@@ -208,7 +208,7 @@ static void menu_display_d3d_draw_pipeline(void *data)
          uniform_param.enabled           = true;
          uniform_param.lookup.enable     = true;
          uniform_param.lookup.add_prefix = true;
-         uniform_param.lookup.idx        = VIDEO_SHADER_MENU;
+         uniform_param.lookup.idx        = draw->pipeline.id;
          uniform_param.lookup.type       = SHADER_PROGRAM_VERTEX;
          uniform_param.type              = UNIFORM_1F;
          uniform_param.lookup.ident      = "time";
