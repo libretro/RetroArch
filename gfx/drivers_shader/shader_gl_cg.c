@@ -293,7 +293,7 @@ static void gl_cg_set_texture_info(
 {
    unsigned i;
    struct uniform_cg uniform_data[4];
-   struct uniform_info uniform_params[4] = {0};
+   struct uniform_info uniform_params[4] = {{0}};
    CGparameter param                     = params->tex;
 
    cg_gl_set_texture_parameter(param, info->tex);
@@ -346,7 +346,7 @@ static void gl_cg_set_params(void *data, void *shader_data,
 {
    unsigned i;
    struct uniform_cg uniform_data[10];
-   struct uniform_info uniform_params[10] = {0};
+   struct uniform_info uniform_params[10] = {{0}};
    unsigned uniform_count                   = 0;
    const struct gfx_tex_info *info          = (const struct gfx_tex_info*)_info;
    const struct gfx_tex_info *prev_info     = (const struct gfx_tex_info*)_prev_info;
