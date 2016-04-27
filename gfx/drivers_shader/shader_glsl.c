@@ -126,8 +126,10 @@ static const char *glsl_prefixes[] = {
 
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
+#if !defined(HAVE_OPENGLES2)
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
+#endif
 
 typedef struct glsl_shader_data
 {

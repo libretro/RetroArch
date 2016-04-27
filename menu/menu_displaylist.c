@@ -3031,7 +3031,6 @@ static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    const char *label            = NULL;
    unsigned type                = 0;
    menu_displaylist_info_t info = {0};
-   settings_t *settings         = config_get_ptr();
 
    if (!entry)
       return false;
