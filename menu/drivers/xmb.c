@@ -666,13 +666,12 @@ end:
 
 static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
-   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   menu_entry_t entry;
+   char         *tmp    = NULL;
+   settings_t *settings = config_get_ptr();
+   xmb_handle_t *xmb    = (xmb_handle_t*)data;
    if (!xmb)
       return;
-
-   menu_entry_t entry;
-   settings_t *settings       = config_get_ptr();
-   char *tmp = NULL;
 
    menu_entry_get(&entry, 0, i, NULL, true);
 

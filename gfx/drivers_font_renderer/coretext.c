@@ -80,12 +80,15 @@ static bool font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handl
    float ascent, descent;
    CGContextRef offscreen;
    CFDictionaryRef attr;
-   void *bitmapData = NULL;
-   bool ret = true;
-   size_t bitsPerComponent = 8;
+   CFTypeRef values[1];
+   CFStringRef keys[1];
+   void *bitmapData                  = NULL;
+   bool ret                          = true;
+   size_t bitsPerComponent           = 8;
    UniChar characters[CT_ATLAS_SIZE] = {0};
-   CFTypeRef values[] = { face };
-   CFStringRef keys[] = { kCTFontAttributeName };
+
+   values[0]                         = face;
+   keys[0]                           = kCTFontAttributeName;
 
    for (i = 0; i < CT_ATLAS_SIZE; i++)
       characters[i] = (UniChar)i;
