@@ -84,6 +84,22 @@ int action_scan_directory(const char *path,
 }
 #endif
 
+int action_switch_thumbnail(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return -1;
+
+   settings->menu.thumbnails++;
+
+   if (settings->menu.thumbnails > 3)
+      settings->menu.thumbnails = 0;
+
+   return 0;
+}
+
 static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
       unsigned type)
 {
@@ -98,6 +114,10 @@ static int menu_cbs_init_bind_scan_compare_type(menu_file_list_cbs_t *cbs,
          BIND_ACTION_SCAN(cbs, action_scan_file);
          return 0;
 #endif
+      case MENU_FILE_RPL_ENTRY:
+         BIND_ACTION_SCAN(cbs, action_switch_thumbnail);
+         break;
+
       case MENU_FILE_NONE:
       default:
          break;
