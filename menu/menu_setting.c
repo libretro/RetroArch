@@ -27,6 +27,7 @@
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <string/stdstring.h>
+#include <lists/string_list.h>
 
 #include "../frontend/frontend_driver.h"
 
@@ -744,6 +745,52 @@ static int setting_int_action_right_default(void *data, bool wraparound)
             *setting->value.target.integer = max;
       }
    }
+
+   return 0;
+}
+
+static int setting_string_action_left_audio_device(void *data, bool wraparound)
+{
+  rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   struct string_list *ptr = NULL;
+   audio_driver_ctl(RARCH_AUDIO_CTL_DEVICES_LIST_GET, &ptr);
+
+   if (!ptr)
+      return -1;
+
+   /* Get index in the string list */
+   int audio_device_index = string_list_find_elem(ptr,setting->value.target.string) - 1;
+   audio_device_index--;
+
+   /* Reset index if needed */
+   if (audio_device_index < 0)
+      audio_device_index = ptr->size - 1;
+
+   strlcpy(setting->value.target.string, ptr->elems[audio_device_index].data, setting->size);
+
+   return 0;
+}
+
+static int setting_string_action_right_audio_device(void *data, bool wraparound)
+{
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+
+   struct string_list *ptr = NULL;
+   audio_driver_ctl(RARCH_AUDIO_CTL_DEVICES_LIST_GET, &ptr);
+
+   if (!ptr)
+      return -1;
+
+   /* Get index in the string list */
+   int audio_device_index = string_list_find_elem(ptr,setting->value.target.string) -1;
+   audio_device_index++;
+
+   /* Reset index if needed */
+   if (audio_device_index == ptr->size)
+      audio_device_index = 0;
+
+   strlcpy(setting->value.target.string, ptr->elems[audio_device_index].data, setting->size);
 
    return 0;
 }
@@ -4905,6 +4952,8 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT | SD_FLAG_ADVANCED);
+         (*list)[list_info->index - 1].action_left   = &setting_string_action_left_audio_device;
+         (*list)[list_info->index - 1].action_right  = &setting_string_action_right_audio_device;
 
          CONFIG_UINT(
                list, list_info,
