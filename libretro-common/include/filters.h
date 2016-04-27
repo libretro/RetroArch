@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <retro_inline.h>
+#include <retro_miscellaneous.h>
 
 static INLINE double sinc(double val)
 {
