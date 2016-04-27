@@ -2574,13 +2574,10 @@ static int menu_displaylist_parse_generic(
    struct string_list *str_list = NULL;
    core_info_list_t *list       = NULL;
    unsigned items_found         = 0;
-   int                   device = 0;
    settings_t *settings         = config_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(info->label);
 
    core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
-
-   (void)device;
 
    if (!*info->path)
    {
@@ -2593,8 +2590,7 @@ static int menu_displaylist_parse_generic(
    path_is_compressed = path_is_compressed_file(info->path);
    push_dir           = 
       (menu_setting_get_browser_selection_type(info->setting) == ST_DIR);
-
-   filter_ext = 
+   filter_ext         = 
       settings->menu.navigation.browser.filter.supported_extensions_enable;
 
    if (hash_label == MENU_LABEL_SCAN_FILE)
@@ -3045,7 +3041,7 @@ static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    info.list      = entry->list;
    info.menu_list = entry->stack;
    info.type      = type;
-   strlcpy(info.path, path, sizeof(info.path));
+   strlcpy(info.path,  path,  sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
 
    if (!info.list)
