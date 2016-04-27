@@ -3076,9 +3076,12 @@ static void overlay_enable_toggle_change_handler(void *data)
 static void systemd_service_toggle(const char *path, char *unit, bool enable)
 {
    int pid = fork();
-   char* args[] = {"systemctl", NULL, NULL, NULL};
+   char* args[] = {(char*)"systemctl", NULL, NULL, NULL};
 
-   args[1] = enable ? "start" : "stop";
+   if (enable)
+      args[1] = (char*)"start";
+   else
+      args[1] = (char*)"stop";
    args[2] = unit;
 
    if (enable)
@@ -3086,33 +3089,43 @@ static void systemd_service_toggle(const char *path, char *unit, bool enable)
    else
       remove(path);
 
-   if (pid == 0) {
+   if (pid == 0)
       execvp(args[0], args);
-   }
 
    return;
 }
 
 static void ssh_enable_toggle_change_handler(void *data)
 {
+   bool enable           = false;
    settings_t *settings  = config_get_ptr();
-   systemd_service_toggle(LAKKA_SSH_PATH, "sshd.service",
-         settings && settings->ssh_enable);
-   return;
+   if (settings && settings->ssh_enable)
+      enable = true;
+
+   systemd_service_toggle(LAKKA_SSH_PATH, (char*)"sshd.service",
+         enable);
 }
+
 static void samba_enable_toggle_change_handler(void *data)
 {
+   bool enable           = false;
    settings_t *settings  = config_get_ptr();
-   systemd_service_toggle(LAKKA_SAMBA_PATH, "smbd.service",
-         settings && settings->samba_enable);
-   return;
+   if (settings && settings->ssh_enable)
+      enable = true;
+
+   systemd_service_toggle(LAKKA_SAMBA_PATH, (char*)"smbd.service",
+         enable);
 }
+
 static void bluetooth_enable_toggle_change_handler(void *data)
 {
+   bool enable           = false;
    settings_t *settings  = config_get_ptr();
-   systemd_service_toggle(LAKKA_BLUETOOTH_PATH, "bluetooth.service",
-         settings && settings->bluetooth_enable);
-   return;
+   if (settings && settings->ssh_enable)
+      enable = true;
+
+   systemd_service_toggle(LAKKA_BLUETOOTH_PATH, (char*)"bluetooth.service",
+         enable);
 }
 #endif
 

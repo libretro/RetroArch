@@ -797,14 +797,16 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          if (!current_audio || !current_audio->device_list_free
                || !audio_driver_context_audio_data)
             return false;
-         current_audio->device_list_free(audio_driver_context_audio_data, audio_driver_devices_list);
+         current_audio->device_list_free(audio_driver_context_audio_data, 
+               audio_driver_devices_list);
          audio_driver_devices_list = NULL;
          break;
       case RARCH_AUDIO_CTL_DEVICES_LIST_NEW:
          if (!current_audio || !current_audio->device_list_new
                || !audio_driver_context_audio_data)
             return false;
-         audio_driver_devices_list = current_audio->device_list_new(audio_driver_context_audio_data);
+         audio_driver_devices_list = (struct string_list*)
+            current_audio->device_list_new(audio_driver_context_audio_data);
          if (!audio_driver_devices_list)
             return false;
          break;
