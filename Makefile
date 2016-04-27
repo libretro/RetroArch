@@ -67,7 +67,9 @@ OBJCFLAGS :=  $(CFLAGS) -D__STDC_CONSTANT_MACROS
 
 ifeq ($(CXX_BUILD), 1)
    LINK = $(CXX)
-   CFLAGS := $(CXXFLAGS) -xc++
+   CFLAGS   := $(CXXFLAGS) -xc++
+	CFLAGS   += -DCXX_BUILD
+	CXXFLAGS += -DCXX_BUILD
 else
    ifeq ($(findstring Win32,$(OS)),)
       LINK = $(CC)
