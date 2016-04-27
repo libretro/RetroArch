@@ -2958,13 +2958,73 @@ static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
    return true;
 }
 
+static bool menu_displaylist_push_internal(
+      const char *label,
+      menu_displaylist_ctx_entry_t *entry,
+      menu_displaylist_info_t *info)
+{
+   settings_t *settings         = config_get_ptr();
+
+   switch (menu_hash_calculate(label))
+   {
+      case MENU_VALUE_MAIN_MENU:
+         if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, info))
+            break;
+         return true;
+      case MENU_VALUE_SETTINGS_TAB:
+         if (!menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info))
+            break;
+         return true;
+      case MENU_VALUE_HISTORY_TAB:
+         if (!menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
+            break;
+         return true;
+      case MENU_VALUE_ADD_TAB:
+         if (!menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info))
+            break;
+         return true;
+      case MENU_VALUE_PLAYLISTS_TAB:
+         info->type = 42;
+         strlcpy(info->exts, "lpl", sizeof(info->exts));
+         strlcpy(info->label,
+               menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
+               sizeof(info->label));
+
+         if (string_is_empty(settings->playlist_directory))
+         {
+            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+            menu_entries_add(info->list,
+                  menu_hash_to_str(
+                     MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+                  menu_hash_to_str(
+                     MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+                  MENU_INFO_MESSAGE, 0, 0);
+            info->need_refresh = true;
+            info->need_push    = true;
+         }
+         else
+         {
+            strlcpy(info->path, settings->playlist_directory,
+                  sizeof(info->path));
+            if (!menu_displaylist_ctl(
+                     DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, info))
+               break;
+         }
+         return true;
+      case MENU_VALUE_HORIZONTAL_MENU:
+         if (!menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info))
+            break;
+         return true;
+   }
+
+   return false;
+}
+
 static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
 {
-   bool push_list_process       = false;
    menu_file_list_cbs_t *cbs    = NULL;
    const char *path             = NULL;
    const char *label            = NULL;
-   uint32_t          hash_label = 0;
    unsigned type                = 0;
    menu_displaylist_info_t info = {0};
    settings_t *settings         = config_get_ptr();
@@ -2980,70 +3040,10 @@ static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
    strlcpy(info.path, path, sizeof(info.path));
    strlcpy(info.label, label, sizeof(info.label));
 
-   hash_label     = menu_hash_calculate(label);
-
    if (!info.list)
       return false;
 
-   switch (hash_label)
-   {
-      case MENU_VALUE_MAIN_MENU:
-         if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, &info))
-            return false;
-         push_list_process = true;
-         break;
-      case MENU_VALUE_SETTINGS_TAB:
-         if (!menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, &info))
-            return false;
-         push_list_process = true;
-         break;
-      case MENU_VALUE_HISTORY_TAB:
-         if (!menu_displaylist_ctl(DISPLAYLIST_HISTORY, &info))
-            return false;
-         push_list_process = true;
-         break;
-      case MENU_VALUE_ADD_TAB:
-         if (!menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, &info))
-            return false;
-         push_list_process = true;
-         break;
-      case MENU_VALUE_PLAYLISTS_TAB:
-         info.type = 42;
-         strlcpy(info.exts, "lpl", sizeof(info.exts));
-         strlcpy(info.label,
-               menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
-               sizeof(info.label));
-
-         if (string_is_empty(settings->playlist_directory))
-         {
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info.list);
-            menu_entries_add(info.list,
-                  menu_hash_to_str(
-                     MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
-                  menu_hash_to_str(
-                     MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
-                  MENU_INFO_MESSAGE, 0, 0);
-            info.need_refresh = true;
-            info.need_push    = true;
-         }
-         else
-         {
-            strlcpy(info.path, settings->playlist_directory,
-                  sizeof(info.path));
-            if (!menu_displaylist_ctl(
-                     DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
-               return false;
-         }
-         push_list_process = true;
-         break;
-      case MENU_VALUE_HORIZONTAL_MENU:
-         if (!menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, &info))
-            return false;
-         push_list_process = true;
-         break;
-   }
-
-   if (push_list_process)
+   if (menu_displaylist_push_internal(label, entry, &info))
       return menu_displaylist_push_list_process(&info);
 
    cbs = menu_entries_get_last_stack_actiondata();
