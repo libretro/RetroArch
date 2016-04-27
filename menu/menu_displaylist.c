@@ -2934,10 +2934,22 @@ static void menu_displaylist_parse_playlist_associations(
 
 static bool menu_displaylist_push_list_process(menu_displaylist_info_t *info)
 {
-   size_t idx = 0;
+   size_t idx   = 0;
 
    if (!info)
       return false;
+
+   if (info->need_navigation_clear)
+   {
+      bool pending_push = true;
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+   }
+
+   if (info->need_entries_refresh)
+   {
+      bool refresh = false;
+      menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+   }
 
    if (info->need_sort)
       file_list_sort_on_alt(info->list);
@@ -3177,8 +3189,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_GENERIC:
          {
             menu_ctx_list_t list_info;
-            bool refresh      = false;
-            bool pending_push = true;
 
             list_info.type    = MENU_LIST_PLAIN;
             list_info.action  = 0;
@@ -3187,14 +3197,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             menu_entries_add(info->list, info->path,
                   info->label, info->type, info->directory_ptr, 0);
-            menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-            menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+
+            info->need_navigation_clear = true;
+            info->need_entries_refresh  = true;
          }
          break;
       case DISPLAYLIST_PENDING_CLEAR:
          {
             menu_ctx_list_t list_info;
-            bool refresh      = false;
 
             list_info.type    = MENU_LIST_PLAIN;
             list_info.action  = 0;
@@ -3203,7 +3213,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             menu_entries_add(info->list, info->path,
                   info->label, info->type, info->directory_ptr, 0);
-            menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
+            info->need_entries_refresh = true;
          }
          break;
       case DISPLAYLIST_USER_BINDS_LIST:
@@ -4050,4 +4060,3 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
    return true;
 }
-
