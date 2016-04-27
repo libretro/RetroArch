@@ -2085,9 +2085,9 @@ static int menu_displaylist_parse_horizontal_list(
    char path_playlist[PATH_MAX_LENGTH], lpl_basename[PATH_MAX_LENGTH];
    bool is_historylist                 = false;
    content_playlist_t *playlist        = NULL;
-   settings_t      *settings           = config_get_ptr();
    menu_handle_t        *menu          = NULL;
    struct item_file *item              = NULL;
+   settings_t      *settings           = config_get_ptr();
 
    menu_driver_ctl(RARCH_MENU_CTL_LIST_GET_SELECTION, &list_info);
 
@@ -2234,7 +2234,6 @@ static int menu_displaylist_parse_horizontal_content_actions(
       menu_displaylist_info_t *info)
 {
    unsigned idx                    = rpl_entry_selection_ptr;
-   settings_t *settings            = NULL;
    menu_handle_t *menu             = NULL;
    const char *label               = NULL;
    const char *core_path           = NULL;
@@ -2242,11 +2241,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
    const char *db_name             = NULL;
    char *fullpath                  = NULL;
    content_playlist_t *playlist    = NULL;
+   settings_t *settings            = config_get_ptr();
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
-
-   settings = config_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
@@ -2501,14 +2499,12 @@ static int menu_displaylist_parse_options_remappings(
       menu_displaylist_info_t *info)
 {
    unsigned p, retro_id;
-   settings_t        *settings = NULL;
    rarch_system_info_t *system = NULL;
    menu_handle_t       *menu   = NULL;
+   settings_t        *settings = config_get_ptr();
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
-
-   settings = config_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
