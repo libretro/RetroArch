@@ -312,10 +312,14 @@ bool np_get_info(netplay_t *netplay)
 
 bool np_is_server(netplay_t* netplay)
 {
+   if (!netplay)
+      return false;
    return netplay->is_server;
 }
 
 bool np_is_spectate(netplay_t* netplay)
 {
+   if (!netplay)
+      return false;
    return netplay->spectate.enabled;
 }
