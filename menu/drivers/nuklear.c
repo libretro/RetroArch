@@ -493,4 +493,6 @@ menu_ctx_driver_t menu_ctx_nuklear = {
    "nuklear",
    nk_menu_environ,
    NULL,
+   NULL,
+   NULL
 };

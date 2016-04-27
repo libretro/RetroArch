@@ -723,4 +723,6 @@ menu_ctx_driver_t menu_ctx_xui = {
    "xui",
    xui_environ,
    NULL,
+   NULL,
+   NULL
 };

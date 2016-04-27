@@ -664,8 +664,12 @@ end:
    string_list_free(list);
 }
 
-static void xmb_update_thumbnail_path(xmb_handle_t *xmb, unsigned i)
+static void xmb_update_thumbnail_path(void *data, unsigned i)
 {
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   if (!xmb)
+      return;
+
    menu_entry_t entry;
    settings_t *settings       = config_get_ptr();
    char *tmp = NULL;
@@ -704,8 +708,12 @@ static void menu_display_handle_thumbnail_upload(void *task_data,
    free(img);
 }
 
-static void xmb_update_thumbnail_image(xmb_handle_t *xmb)
+static void xmb_update_thumbnail_image(void *data)
 {
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
+   if (!xmb)
+      return;
+
    if (path_file_exists(xmb->thumbnail_file_path))
       rarch_task_push_image_load(xmb->thumbnail_file_path, "cb_menu_thumbnail",
             menu_display_handle_thumbnail_upload, NULL);
@@ -3214,4 +3222,6 @@ menu_ctx_driver_t menu_ctx_xmb = {
    "xmb",
    xmb_environ,
    xmb_pointer_tap,
+   xmb_update_thumbnail_path,
+   xmb_update_thumbnail_image,
 };

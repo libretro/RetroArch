@@ -915,4 +915,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    "rgui",
    rgui_environ,
    rgui_pointer_tap,
+   NULL,
+   NULL
 };

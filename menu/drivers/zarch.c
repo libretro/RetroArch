@@ -1203,4 +1203,6 @@ menu_ctx_driver_t menu_ctx_zarch = {
    "zarch",
    NULL,
    NULL,
+   NULL,
+   NULL
 };

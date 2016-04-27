@@ -60,4 +60,6 @@ menu_ctx_driver_t menu_ctx_null = {
   "null",
   NULL,
   NULL,
+  NULL, /* update_thumbnail_path */
+  NULL, /* update_thumbnail_image */
 };

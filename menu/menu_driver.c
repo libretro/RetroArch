@@ -926,6 +926,24 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                   bind->menu_label_hash);
          }
          break;
+      case RARCH_MENU_CTL_UPDATE_THUMBNAIL_PATH:
+         {
+            size_t selection;
+            if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+               return false;
+
+            if (!menu_driver_ctx || !menu_driver_ctx->update_thumbnail_path)
+               return false;
+            menu_driver_ctx->update_thumbnail_path(menu_userdata, selection);
+         }
+         break;
+      case RARCH_MENU_CTL_UPDATE_THUMBNAIL_IMAGE:
+         {
+            if (!menu_driver_ctx || !menu_driver_ctx->update_thumbnail_image)
+               return false;
+            menu_driver_ctx->update_thumbnail_image(menu_userdata);
+         }
+         break;
       default:
       case RARCH_MENU_CTL_NONE:
          break;
