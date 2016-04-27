@@ -71,6 +71,8 @@ typedef __int64 ssize_t;
 typedef int ssize_t;
 #endif
 #endif
+#elif defined(__MACH__)
+#include <sys/types.h>
 #endif
 
 /*
