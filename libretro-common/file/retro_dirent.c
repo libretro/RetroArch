@@ -174,11 +174,12 @@ bool retro_dirent_is_dir(struct RDIR *rdir)
    CellFsDirent *entry = (CellFsDirent*)&rdir->entry;
    return (entry->d_type == CELL_FS_TYPE_DIRECTORY);
 #elif defined(DT_DIR)
+   const char          *path  = NULL;
    const struct dirent *entry = (const struct dirent*)rdir->entry;
    if (entry->d_type == DT_DIR)
       return true;
    /* This can happen on certain file systems. */
-   const char *path = retro_dirent_get_name(rdir);
+   path = retro_dirent_get_name(rdir);
    if (entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK)
       return path_is_directory(path);
    return false;
