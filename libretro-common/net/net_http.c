@@ -150,6 +150,7 @@ static void net_http_send(int fd, bool * error,
 
 static void net_http_send_str(int fd, bool *error, const char *text)
 {
+printf("%s",text);
    net_http_send(fd, error, text, strlen(text));
 }
 
@@ -174,9 +175,38 @@ static ssize_t net_http_recv(int fd, bool *error,
    return -1;
 }
 
+static char* urlencode(const char* url)
+{
+	int outlen = 0;
+	
+	int i;
+	for (i=0;url[i]!='\0';i++)
+	{
+		outlen++;
+		if (url[i]==' ') outlen+=2;
+	}
+	
+	char* ret = (char*)malloc(outlen+1);
+	if (!ret) return NULL;
+	
+	int outpos = 0;
+	for (i=0;url[i];i++)
+	{
+		if (url[i]==' ')
+		{
+			ret[outpos++] = '%';
+			ret[outpos++] = '2';
+			ret[outpos++] = '0';
+		}
+		else ret[outpos++] = url[i];
+	}
+	ret[outpos] = '\0';
+	
+	return ret;
+}
+
 struct http_connection_t *net_http_connection_new(const char *url)
 {
-   size_t length;
    char **domain = NULL;
    struct http_connection_t *conn = (struct http_connection_t*)calloc(1, 
          sizeof(struct http_connection_t));
@@ -184,13 +214,10 @@ struct http_connection_t *net_http_connection_new(const char *url)
    if (!conn)
       return NULL;
 
-   length             = strlen(url) + 1;
-   conn->urlcopy      = (char*)malloc(length);
+   conn->urlcopy      = urlencode(url);
 
    if (!conn->urlcopy)
       goto error;
-
-   strlcpy(conn->urlcopy, url, length);
 
    if (strncmp(url, "http://", strlen("http://")) != 0)
       goto error;
