@@ -751,16 +751,17 @@ static int setting_int_action_right_default(void *data, bool wraparound)
 
 static int setting_string_action_left_audio_device(void *data, bool wraparound)
 {
-  rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   struct string_list *ptr = NULL;
-   audio_driver_ctl(RARCH_AUDIO_CTL_DEVICES_LIST_GET, &ptr);
+   int audio_device_index;
+   struct string_list *ptr  = NULL;
+   rarch_setting_t *setting = (rarch_setting_t*)data;
+   if (!audio_driver_ctl(RARCH_AUDIO_CTL_DEVICES_LIST_GET, &ptr))
+      return -1;
 
    if (!ptr)
       return -1;
 
    /* Get index in the string list */
-   int audio_device_index = string_list_find_elem(ptr,setting->value.target.string) - 1;
+   audio_device_index = string_list_find_elem(ptr,setting->value.target.string) - 1;
    audio_device_index--;
 
    /* Reset index if needed */
@@ -774,16 +775,17 @@ static int setting_string_action_left_audio_device(void *data, bool wraparound)
 
 static int setting_string_action_right_audio_device(void *data, bool wraparound)
 {
+   int audio_device_index;
+   struct string_list *ptr  = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
-
-   struct string_list *ptr = NULL;
-   audio_driver_ctl(RARCH_AUDIO_CTL_DEVICES_LIST_GET, &ptr);
+   if (!audio_driver_ctl(RARCH_AUDIO_CTL_DEVICES_LIST_GET, &ptr))
+      return -1;
 
    if (!ptr)
       return -1;
 
    /* Get index in the string list */
-   int audio_device_index = string_list_find_elem(ptr,setting->value.target.string) -1;
+   audio_device_index = string_list_find_elem(ptr,setting->value.target.string) -1;
    audio_device_index++;
 
    /* Reset index if needed */
