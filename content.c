@@ -683,7 +683,7 @@ static void check_defaults_dir_create_dir(const char *path)
    fill_pathname_expand_special(new_path,
          path, sizeof(new_path));
 
-   if (path_is_directory(path))
+   if (path_is_directory(new_path))
       return;
    path_mkdir(new_path);
 }
