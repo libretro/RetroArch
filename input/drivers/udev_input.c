@@ -315,15 +315,13 @@ static void udev_input_remove_device(udev_input_t *udev, const char *devnode)
 
 static void udev_input_handle_hotplug(udev_input_t *udev)
 {
-   bool is_keyboard, is_mouse, is_touchpad;
-   struct udev_device *dev  = udev_monitor_receive_device(udev->monitor);
-   device_handle_cb cb      = NULL;
    const char *devtype      = NULL;
    const char *val_keyboard = NULL;
    const char *val_mouse    = NULL;
    const char *val_touchpad = NULL;
    const char *action       = NULL;
    const char *devnode      = NULL;
+   struct udev_device *dev  = udev_monitor_receive_device(udev->monitor);
 
    if (!dev)
       return;
@@ -334,31 +332,28 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    action        = udev_device_get_action(dev);
    devnode       = udev_device_get_devnode(dev);
 
-   is_keyboard   = val_keyboard && string_is_equal(val_keyboard, "1") && devnode;
-   is_mouse      = val_mouse && string_is_equal(val_mouse, "1") && devnode;
-   is_touchpad   = val_touchpad && string_is_equal(val_touchpad, "1") && devnode;
-
-   if (!is_keyboard && !is_mouse && !is_touchpad)
-      goto end;
-
-   if (is_keyboard)
-   {
-      cb = udev_handle_keyboard;
+   if (val_keyboard && string_is_equal(val_keyboard, "1") && devnode)
       devtype = "keyboard";
-   }
-   else if (is_touchpad)
-   {
-      cb = udev_handle_touchpad;
-      devtype = "touchpad";
-   }
-   else if (is_mouse)
-   {
-      cb = udev_handle_mouse;
+
+   if (val_mouse && string_is_equal(val_mouse, "1") && devnode)
       devtype = "mouse";
-   }
+
+   if (val_touchpad && string_is_equal(val_touchpad, "1") && devnode)
+      devtype = "touchpad";
+
+   if (!devtype)
+      goto end;
 
    if (string_is_equal(action, "add"))
    {
+      device_handle_cb cb      = NULL;
+      if (!strcmp(devtype, "keyboard"))
+         cb = udev_handle_keyboard;
+      else if (!strcmp(devtype, "touchpad"))
+         cb = udev_handle_touchpad;
+      else if (!strcmp(devtype, "mouse"))
+         cb = udev_handle_mouse;
+
       RARCH_LOG("[udev]: Hotplug add %s: %s.\n", devtype, devnode);
       add_device(udev, devnode, cb);
    }
