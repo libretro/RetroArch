@@ -2179,7 +2179,7 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
             settings_t *settings = config_get_ptr();
 
             fill_pathname_application_path(executable_path, sizeof(executable_path));
-            strlcpy(settings->libretro, executable_path, sizeof(settings->libretro));
+            strlcpy(settings->path.libretro, executable_path, sizeof(settings->path.libretro));
          }
          rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
          break;

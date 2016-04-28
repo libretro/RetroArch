@@ -382,8 +382,8 @@ static void frontend_gx_process_args(int *argc, char *argv[])
 
    /* A big hack: sometimes Salamander doesn't save the new core
     * it loads on first boot, so we make sure
-    * settings->libretro is set here. */
-   if (!settings->libretro[0] && *argc >= 1 && strrchr(argv[0], '/'))
+    * settings->path.libretro is set here. */
+   if (!settings->path.libretro[0] && *argc >= 1 && strrchr(argv[0], '/'))
    {
       strlcpy(path, strrchr(argv[0], '/') + 1, sizeof(path));
       if (path_file_exists(path))
