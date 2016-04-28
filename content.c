@@ -688,8 +688,13 @@ static void check_defaults_dir_create_dir(const char *path)
    path_mkdir(new_path);
 }
 
-static void check_defaults_dirs(void)
+static void check_default_dirs(void)
 {
+   /* early return for people with a custom folder setup
+      so it doesn't create unnecessary directories
+    */
+   if (path_file_exists("custom.ini"))
+      return;
    if (*g_defaults.dir.core_assets)
       check_defaults_dir_create_dir(g_defaults.dir.core_assets);
    if (*g_defaults.dir.remap)
@@ -892,7 +897,7 @@ static bool content_load(content_ctx_info_t *info)
    event_cmd_ctl(EVENT_CMD_RESUME, NULL);
    event_cmd_ctl(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
 
-   check_defaults_dirs();
+   check_default_dirs();
 
    frontend_driver_process_args(rarch_argc_ptr, rarch_argv_ptr);
    frontend_driver_content_loaded();
