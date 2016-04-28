@@ -1466,7 +1466,7 @@ static int action_ok_download_generic(const char *path,
       path = "shaders_cg.zip";
    else if (string_is_equal(type_msg, "cb_core_thumbnails_download"))
    {
-      strlcpy(s, "http://ia801501.us.archive.org/24/items/No-Intro_Thumbnails_2016-04-10", sizeof(s));
+      strlcpy(s, "http://thumbnailpacks.libretro.com", sizeof(s));
    }
    else
       strlcpy(s, settings->network.buildbot_url, sizeof(s));
@@ -1719,8 +1719,8 @@ static int generic_action_ok_network(const char *path,
          break;
       case ACTION_OK_NETWORK_THUMBNAILS_UPDATER_LIST:
          fill_pathname_join(url_path,
-               "http://ia801501.us.archive.org/24/items/No-Intro_Thumbnails_2016-04-10",
-               "index", sizeof(url_path));
+               "http://thumbnailpacks.libretro.com",
+               ".index", sizeof(url_path));
          url_label = "cb_thumbnails_updater_list";
          type_id2  = ACTION_OK_DL_THUMBNAILS_UPDATER_LIST;
          callback = cb_net_generic;
