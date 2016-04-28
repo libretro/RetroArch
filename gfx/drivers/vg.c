@@ -186,7 +186,7 @@ static void *vg_init(const video_info_t *video,
 
    if (     settings->video.font_enable 
          && font_renderer_create_default((const void**)&vg->font_driver, &vg->mFontRenderer,
-            *settings->video.font_path ? settings->video.font_path : NULL, settings->video.font_size))
+            *settings->path.font ? settings->path.font : NULL, settings->video.font_size))
    {
       vg->mFont            = vgCreateFont(0);
 

@@ -1118,7 +1118,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             bool ret                          = false;
             char buf[PATH_MAX_LENGTH]         = {0};
             global_t *global                  = global_get_ptr();
-            const char *options_path          = settings->core_options_path;
+            const char *options_path          = settings->path.core_options;
             const struct retro_variable *vars = 
                (const struct retro_variable*)data;
 

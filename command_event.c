@@ -1296,9 +1296,9 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             return false;
          RARCH_LOG("%s: [%s].\n",
                msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
-               settings->content_history_path);
+               settings->path.content_history);
          g_defaults.history = content_playlist_init(
-               settings->content_history_path,
+               settings->path.content_history,
                settings->content_history_size);
          break;
       case EVENT_CMD_CORE_INFO_DEINIT:

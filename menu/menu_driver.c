@@ -163,8 +163,8 @@ static bool menu_init(menu_handle_t *menu_data)
    }
 
    if (      settings->bundle_assets_extract_enable
-         && !string_is_empty(settings->bundle_assets_src_path) 
-         && !string_is_empty(settings->bundle_assets_dst_path)
+         && !string_is_empty(settings->path.bundle_assets_src) 
+         && !string_is_empty(settings->path.bundle_assets_dst)
 #ifdef IOS
          && menu_data->push_help_screen
 #else
@@ -176,9 +176,9 @@ static bool menu_init(menu_handle_t *menu_data)
       menu_data->help_screen_type           = MENU_HELP_EXTRACT;
       menu_data->push_help_screen           = true;
 #ifdef HAVE_ZLIB
-      rarch_task_push_decompress(settings->bundle_assets_src_path, 
-            settings->bundle_assets_dst_path,
-            NULL, settings->bundle_assets_dst_path_subdir,
+      rarch_task_push_decompress(settings->path.bundle_assets_src, 
+            settings->path.bundle_assets_dst,
+            NULL, settings->path.bundle_assets_dst_subdir,
             NULL, bundle_decompressed, NULL);
 #endif
    }

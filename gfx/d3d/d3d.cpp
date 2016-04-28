@@ -801,11 +801,11 @@ static bool d3d_initialize(d3d_video_t *d3d, const video_info_t *info)
 	   width, height, false, true);
 
 #if defined(_XBOX360)
-   strlcpy(settings->video.font_path, "game:\\media\\Arial_12.xpr",
-         sizeof(settings->video.font_path));
+   strlcpy(settings->path.font, "game:\\media\\Arial_12.xpr",
+         sizeof(settings->path.font));
 #endif
    if (!font_driver_init_first(NULL, NULL,
-            d3d, settings->video.font_path, 0, false, FONT_DRIVER_RENDER_DIRECT3D_API))
+            d3d, settings->path.font, 0, false, FONT_DRIVER_RENDER_DIRECT3D_API))
    {
       RARCH_ERR("[D3D]: Failed to initialize font renderer.\n");
       return false;
@@ -1054,9 +1054,9 @@ static bool d3d_construct(d3d_video_t *d3d,
     * to avoid set_shader() to be overridden
     * later. */
    enum rarch_shader_type type =
-      video_shader_parse_type(settings->video.shader_path, RARCH_SHADER_NONE);
+      video_shader_parse_type(settings->path.shader, RARCH_SHADER_NONE);
    if (settings->video.shader_enable && type == RARCH_SHADER_CG)
-      d3d->shader_path = settings->video.shader_path;
+      d3d->shader_path = settings->path.shader;
 
    if (!d3d_process_shader(d3d))
       return false;

@@ -238,7 +238,7 @@ static bool gl_shader_init(gl_t *gl)
    enum rarch_shader_type type;
    settings_t *settings            = config_get_ptr();
    const char *shader_path         = (settings->video.shader_enable 
-         && *settings->video.shader_path) ? settings->video.shader_path : NULL;
+         && *settings->path.shader) ? settings->path.shader : NULL;
 
    if (!gl)
    {
@@ -2879,8 +2879,8 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    
    if (settings->video.font_enable)
    {
-      if (!font_driver_init_first(NULL, NULL, gl, *settings->video.font_path 
-            ? settings->video.font_path : NULL, settings->video.font_size, false,
+      if (!font_driver_init_first(NULL, NULL, gl, *settings->path.font 
+            ? settings->path.font : NULL, settings->video.font_size, false,
             FONT_DRIVER_RENDER_OPENGL_API))
          RARCH_ERR("[GL]: Failed to initialize font renderer.\n");
    }

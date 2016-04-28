@@ -1108,7 +1108,7 @@ static void zarch_context_reset(void *data)
    font_info.size    = zui->font_size;
 
    if (settings->video.font_enable)
-      font_info.path = settings->video.font_path;
+      font_info.path = settings->path.font;
 
    if (!menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_INIT, &font_info))
       RARCH_WARN("Failed to load font.");

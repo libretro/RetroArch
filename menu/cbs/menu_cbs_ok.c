@@ -1320,7 +1320,7 @@ static void cb_generic_download(void *task_data,
          dir_path = settings->directory.core_assets;
          break;
       case CB_UPDATE_CORE_INFO_FILES:
-         dir_path = settings->libretro_info_path;
+         dir_path = settings->path.libretro_info;
          break;
       case CB_UPDATE_ASSETS:
          dir_path = settings->directory.assets;

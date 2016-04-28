@@ -325,7 +325,7 @@ static bool xdk_renderchain_init_shader(void *data, void *renderchain_data)
 
 #if defined(HAVE_HLSL)
    RARCH_LOG("D3D]: Using HLSL shader backend.\n");
-   shader_path = settings->video.shader_path;
+   shader_path = settings->path.shader;
    const shader_backend_t *shader = &hlsl_backend;
 
    return video_shader_driver_init(hlsl_backend, d3d, shader_path); 

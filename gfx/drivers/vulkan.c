@@ -636,8 +636,8 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 static bool vulkan_init_filter_chain(vk_t *vk)
 {
    settings_t *settings = config_get_ptr();
-   const char *shader_path = (settings->video.shader_enable && *settings->video.shader_path) ?
-      settings->video.shader_path : NULL;
+   const char *shader_path = (settings->video.shader_enable && *settings->path.shader) ?
+      settings->path.shader : NULL;
 
    enum rarch_shader_type type = video_shader_parse_type(shader_path, RARCH_SHADER_NONE);
 
@@ -997,8 +997,8 @@ static void *vulkan_init(const video_info_t *video,
 
    if (settings->video.font_enable)
    {
-      if (!font_driver_init_first(NULL, NULL, vk, *settings->video.font_path 
-            ? settings->video.font_path : NULL, settings->video.font_size, false,
+      if (!font_driver_init_first(NULL, NULL, vk, *settings->path.font 
+            ? settings->path.font : NULL, settings->video.font_size, false,
             FONT_DRIVER_RENDER_VULKAN_API))
          RARCH_ERR("[Vulkan]: Failed to initialize font renderer.\n");
    }

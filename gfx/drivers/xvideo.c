@@ -131,8 +131,8 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
       return;
 
    if (font_renderer_create_default((const void**)&xv->font_driver, 
-            &xv->font, *settings->video.font_path 
-            ? settings->video.font_path : NULL, settings->video.font_size))
+            &xv->font, *settings->path.font 
+            ? settings->path.font : NULL, settings->video.font_size))
    {
       int r, g, b;
       r = settings->video.msg_color_r * 255;
@@ -584,7 +584,7 @@ static void *xv_init(const video_info_t *video,
    }
 
    xv_init_yuv_tables(xv);
-   xv_init_font(xv, settings->video.font_path, settings->video.font_size);
+   xv_init_font(xv, settings->path.font, settings->video.font_size);
 
    if (!x11_input_ctx_new(true))
       goto error;

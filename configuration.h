@@ -72,7 +72,6 @@ typedef struct settings
       unsigned aspect_ratio_idx;
       unsigned rotation;
 
-      char shader_path[PATH_MAX_LENGTH];
       bool shader_enable;
 
       char softfilter_plugin[PATH_MAX_LENGTH];
@@ -82,7 +81,6 @@ typedef struct settings
       char filter_dir[PATH_MAX_LENGTH];
       char shader_dir[PATH_MAX_LENGTH];
 
-      char font_path[PATH_MAX_LENGTH];
       float font_size;
       bool font_enable;
       float msg_pos_x;
@@ -317,9 +315,19 @@ typedef struct settings
    bool bundle_assets_extract_enable;
    unsigned bundle_assets_extract_version_current;
    unsigned bundle_assets_extract_last_version;
-   char bundle_assets_src_path[PATH_MAX_LENGTH];
-   char bundle_assets_dst_path[PATH_MAX_LENGTH];
-   char bundle_assets_dst_path_subdir[PATH_MAX_LENGTH];
+
+   struct
+   {
+      char core_options[PATH_MAX_LENGTH];
+      char content_history[PATH_MAX_LENGTH];
+      char libretro_info[PATH_MAX_LENGTH];
+      char cheat_settings[PATH_MAX_LENGTH];
+      char bundle_assets_src[PATH_MAX_LENGTH];
+      char bundle_assets_dst[PATH_MAX_LENGTH];
+      char bundle_assets_dst_subdir[PATH_MAX_LENGTH];
+      char shader[PATH_MAX_LENGTH];
+      char font[PATH_MAX_LENGTH];
+   } path;
 
    struct
    {
@@ -341,16 +349,12 @@ typedef struct settings
       char menu_content[PATH_MAX_LENGTH];
    } directory;
 
-   char core_options_path[PATH_MAX_LENGTH];
-   char content_history_path[PATH_MAX_LENGTH];
    unsigned content_history_size;
 
    char libretro[PATH_MAX_LENGTH];
    unsigned libretro_log_level;
-   char libretro_info_path[PATH_MAX_LENGTH];
    char content_database[PATH_MAX_LENGTH];
    char cheat_database[PATH_MAX_LENGTH];
-   char cheat_settings_path[PATH_MAX_LENGTH];
 
    bool auto_screenshot_filename;
 

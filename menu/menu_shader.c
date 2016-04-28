@@ -84,7 +84,7 @@ void menu_shader_manager_init(menu_handle_t *menu)
             sizeof(menu->default_slangp));
    }
 
-   ext      = path_get_extension(settings->video.shader_path);
+   ext      = path_get_extension(settings->path.shader);
    ext_hash = menu_hash_calculate(ext);
 
    switch (ext_hash)
@@ -92,13 +92,13 @@ void menu_shader_manager_init(menu_handle_t *menu)
       case MENU_VALUE_GLSLP:
       case MENU_VALUE_CGP:
       case MENU_VALUE_SLANGP:
-         conf = config_file_new(settings->video.shader_path);
+         conf = config_file_new(settings->path.shader);
          if (conf)
          {
             if (video_shader_read_conf_cgp(conf, shader))
             {
                video_shader_resolve_relative(shader,
-                     settings->video.shader_path);
+                     settings->path.shader);
                video_shader_resolve_parameters(conf, shader);
             }
             config_file_free(conf);
@@ -107,7 +107,7 @@ void menu_shader_manager_init(menu_handle_t *menu)
       case MENU_VALUE_GLSL:
       case MENU_VALUE_CG:
       case MENU_VALUE_SLANG:
-         strlcpy(shader->pass[0].source.path, settings->video.shader_path,
+         strlcpy(shader->pass[0].source.path, settings->path.shader,
                sizeof(shader->pass[0].source.path));
          shader->passes = 1;
          break;
@@ -172,9 +172,9 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
 
    /* Makes sure that we use Menu Preset shader on driver reinit.
     * Only do this when the cgp actually works to avoid potential errors. */
-   strlcpy(settings->video.shader_path,
+   strlcpy(settings->path.shader,
          preset_path ? preset_path : "",
-         sizeof(settings->video.shader_path));
+         sizeof(settings->path.shader));
    settings->video.shader_enable = true;
 
    if (!preset_path || !shader)

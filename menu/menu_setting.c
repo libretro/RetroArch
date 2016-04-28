@@ -5466,8 +5466,8 @@ static bool setting_append_list(
 
          CONFIG_PATH(
                list, list_info,
-               settings->video.font_path,
-               sizeof(settings->video.font_path),
+               settings->path.font,
+               sizeof(settings->path.font),
                menu_hash_to_str(MENU_LABEL_VIDEO_FONT_PATH),
                menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FONT_PATH),
                "",
@@ -6930,8 +6930,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->libretro_info_path,
-               sizeof(settings->libretro_info_path),
+               settings->path.libretro_info,
+               sizeof(settings->path.libretro_info),
                menu_hash_to_str(MENU_LABEL_LIBRETRO_INFO_PATH),
                menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_INFO_PATH),
                g_defaults.dir.core_info,

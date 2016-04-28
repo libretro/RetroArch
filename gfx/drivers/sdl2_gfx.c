@@ -455,7 +455,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
       SDL_ShowCursor(SDL_DISABLE);
 
    sdl2_init_renderer(vid);
-   sdl2_init_font(vid, settings->video.font_path, settings->video.font_size);
+   sdl2_init_font(vid, settings->path.font, settings->video.font_size);
 
    sdl2_gfx_set_handles(vid);
 

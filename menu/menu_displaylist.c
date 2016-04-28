@@ -113,8 +113,11 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
                   char display_name[PATH_MAX_LENGTH];
                   char *last = NULL;
 
-                  fill_pathname_join(core_path, settings->libretro_info_path,
-                        line_start, sizeof(core_path));
+                  fill_pathname_join(
+                        core_path,
+                        settings->path.libretro_info,
+                        line_start,
+                        sizeof(core_path));
 
                   path_remove_extension(core_path);
                   path_remove_extension(core_path);
@@ -218,8 +221,11 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
                   char display_name[PATH_MAX_LENGTH];
                   char *last = NULL;
 
-                  fill_pathname_join(core_path, settings->libretro_info_path,
-                        core_pathname, sizeof(core_path));
+                  fill_pathname_join(
+                        core_path,
+                        settings->path.libretro_info,
+                        core_pathname,
+                        sizeof(core_path));
 
                   path_remove_extension(core_path);
                   path_remove_extension(core_path);
@@ -3763,7 +3769,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             ret = menu_displaylist_parse_playlist(info,
                   playlist, path_playlist, true);
 
-            strlcpy(menu->db_playlist_file, settings->content_history_path,
+            strlcpy(
+                  menu->db_playlist_file,
+                  settings->path.content_history,
                   sizeof(menu->db_playlist_file));
 
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);

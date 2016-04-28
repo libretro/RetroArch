@@ -181,8 +181,8 @@ static config_file_t *core_info_list_iterate(
 
    strlcat(info_path_base, ".info", sizeof(info_path_base));
 
-   fill_pathname_join(info_path, (*settings->libretro_info_path) ?
-         settings->libretro_info_path : settings->directory.libretro,
+   fill_pathname_join(info_path, (*settings->path.libretro_info) ?
+         settings->path.libretro_info : settings->directory.libretro,
          info_path_base, sizeof(info_path));
 
    return config_file_new(info_path);
