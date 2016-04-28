@@ -861,11 +861,11 @@ static void config_set_defaults(void)
       fill_pathname_expand_special(settings->directory.overlay,
             g_defaults.dir.overlay, sizeof(settings->directory.overlay));
 #ifdef RARCH_MOBILE
-      if (!*settings->input.overlay)
-            fill_pathname_join(settings->input.overlay,
+      if (!*settings->path.overlay)
+            fill_pathname_join(settings->path.overlay,
                   settings->directory.overlay,
                   "gamepads/retropad/retropad.cfg",
-                  sizeof(settings->input.overlay));
+                  sizeof(settings->path.overlay));
 #endif
    }
 
@@ -874,11 +874,11 @@ static void config_set_defaults(void)
       fill_pathname_expand_special(global->dir.osk_overlay,
             g_defaults.dir.osk_overlay, sizeof(global->dir.osk_overlay));
 #ifdef RARCH_MOBILE
-      if (!*settings->osk.overlay)
-            fill_pathname_join(settings->osk.overlay,
+      if (!*settings->path.osk_overlay)
+            fill_pathname_join(settings->path.osk_overlay,
                   global->dir.osk_overlay,
                   "keyboards/modular-keyboard/opaque/big.cfg",
-                  sizeof(settings->osk.overlay));
+                  sizeof(settings->path.osk_overlay));
 #endif
    }
    else
