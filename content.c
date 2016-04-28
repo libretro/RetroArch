@@ -1318,7 +1318,7 @@ static bool load_content_from_compressed_archive(
    RARCH_LOG("Compressed file in case of need_fullpath."
          " Now extracting to temporary directory.\n");
 
-   strlcpy(new_basedir, settings->cache_directory,
+   strlcpy(new_basedir, settings->directory.cache,
          sizeof(new_basedir));
 
    if (string_is_empty(new_basedir) || !path_is_directory(new_basedir))
@@ -1534,8 +1534,8 @@ static bool init_content_file_extract(
 
          if (!file_archive_extract_first_content_file(temp_content,
                   sizeof(temp_content), valid_ext,
-                  *settings->cache_directory ?
-                  settings->cache_directory : NULL,
+                  *settings->directory.cache ?
+                  settings->directory.cache : NULL,
                   new_path, sizeof(new_path)))
          {
             RARCH_ERR("Failed to extract content from zipped file: %s.\n",

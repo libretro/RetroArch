@@ -321,30 +321,38 @@ typedef struct settings
    char bundle_assets_dst_path[PATH_MAX_LENGTH];
    char bundle_assets_dst_path_subdir[PATH_MAX_LENGTH];
 
+   struct
+   {
+      char content_history[PATH_MAX_LENGTH];
+      char libretro[PATH_MAX_LENGTH];
+      char cursor[PATH_MAX_LENGTH];
+      char input_remapping[PATH_MAX_LENGTH];
+      char overlay[PATH_MAX_LENGTH];
+      char resampler[PATH_MAX_LENGTH];
+      char screenshot[PATH_MAX_LENGTH];
+      char system[PATH_MAX_LENGTH];
+      char cache[PATH_MAX_LENGTH];
+      char playlist[PATH_MAX_LENGTH];
+      char core_assets[PATH_MAX_LENGTH];
+      char assets[PATH_MAX_LENGTH];
+      char dynamic_wallpapers[PATH_MAX_LENGTH];
+      char thumbnails[PATH_MAX_LENGTH];
+      char menu_config[PATH_MAX_LENGTH];
+      char menu_content[PATH_MAX_LENGTH];
+   } directory;
+
    char core_options_path[PATH_MAX_LENGTH];
    char content_history_path[PATH_MAX_LENGTH];
-   char content_history_directory[PATH_MAX_LENGTH];
    unsigned content_history_size;
 
    char libretro[PATH_MAX_LENGTH];
-   char libretro_directory[PATH_MAX_LENGTH];
    unsigned libretro_log_level;
    char libretro_info_path[PATH_MAX_LENGTH];
    char content_database[PATH_MAX_LENGTH];
    char cheat_database[PATH_MAX_LENGTH];
-   char cursor_directory[PATH_MAX_LENGTH];
    char cheat_settings_path[PATH_MAX_LENGTH];
-   char input_remapping_directory[PATH_MAX_LENGTH];
-
-   char overlay_directory[PATH_MAX_LENGTH];
-   char resampler_directory[PATH_MAX_LENGTH];
-   char screenshot_directory[PATH_MAX_LENGTH];
-   char system_directory[PATH_MAX_LENGTH];
 
    bool auto_screenshot_filename;
-
-   char cache_directory[PATH_MAX_LENGTH];
-   char playlist_directory[PATH_MAX_LENGTH];
 
    bool history_list_enable;
    bool rewind_enable;
@@ -370,13 +378,7 @@ typedef struct settings
    unsigned network_remote_base_port;
    bool debug_panel_enable;
 
-   char core_assets_directory[PATH_MAX_LENGTH];
-   char assets_directory[PATH_MAX_LENGTH];
-   char dynamic_wallpapers_directory[PATH_MAX_LENGTH];
-   char thumbnails_directory[PATH_MAX_LENGTH];
-   char menu_config_directory[PATH_MAX_LENGTH];
 #if defined(HAVE_MENU)
-   char menu_content_directory[PATH_MAX_LENGTH];
    bool menu_show_start_screen;
 #endif
    bool fps_show;

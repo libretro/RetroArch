@@ -224,19 +224,19 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_DOWNLOADS_DIR:
          info.type          = MENU_FILE_DIRECTORY;
          info.directory_ptr = idx;
-         info_path          = settings->core_assets_directory;
+         info_path          = settings->directory.core_assets;
          info_label         = label;
          break;
       case ACTION_OK_DL_CONTENT_LIST:
          info.type          = MENU_FILE_DIRECTORY;
          info.directory_ptr = idx;
-         info_path          = settings->menu_content_directory;
+         info_path          = settings->directory.menu_content;
          info_label         = label;
          break;
       case ACTION_OK_DL_REMAP_FILE:
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->input_remapping_directory;
+         info_path          = settings->directory.input_remapping;
          info_label         = label;
          break;
       case ACTION_OK_DL_RECORD_CONFIGFILE:
@@ -248,7 +248,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_DISK_IMAGE_APPEND_LIST:
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->menu_content_directory;
+         info_path          = settings->directory.menu_content;
          info_label         = label;
          break;
       case ACTION_OK_DL_PLAYLIST_COLLECTION:
@@ -266,13 +266,13 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_CORE_LIST:
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->libretro_directory;
+         info_path          = settings->directory.libretro;
          info_label         = label;
          break;
       case ACTION_OK_DL_CONTENT_COLLECTION_LIST:
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->playlist_directory;
+         info_path          = settings->directory.playlist;
          info_label         = label;
          break;
       case ACTION_OK_DL_RDB_ENTRY:
@@ -292,10 +292,10 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_CONFIGURATIONS_LIST:
          info.type          = type;
          info.directory_ptr = idx;
-         if (string_is_empty(settings->menu_config_directory))
+         if (string_is_empty(settings->directory.menu_config))
             info_path        = label;
          else
-            info_path        = settings->menu_config_directory;
+            info_path        = settings->directory.menu_config;
          info_label = label;
          break;
       case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
@@ -349,7 +349,7 @@ int generic_action_ok_displaylist_push(const char *path,
                MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST);
          break;
       case ACTION_OK_DL_CURSOR_MANAGER_LIST:
-         fill_pathname_join(tmp, settings->cursor_directory,
+         fill_pathname_join(tmp, settings->directory.cursor,
                path, sizeof(tmp));
 
          info.directory_ptr = idx;
@@ -390,13 +390,13 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST:
          info.directory_ptr = idx;
-         info_path          = settings->libretro_directory;
+         info_path          = settings->directory.libretro;
          info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST);
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
          info.directory_ptr                 = idx;
          rdb_entry_start_game_selection_ptr = idx;
-         info_path                          = settings->libretro_directory;
+         info_path                          = settings->directory.libretro;
          info_label                         = menu_hash_to_str(
                MENU_LABEL_DEFERRED_CORE_LIST_SET);
          break;
@@ -1018,8 +1018,11 @@ static int generic_action_ok_remap_file_save(const char *path,
    if (info)
       core_name           = info->info.library_name;
 
-   fill_pathname_join(directory, settings->input_remapping_directory,
-         core_name, sizeof(directory));
+   fill_pathname_join(
+         directory,
+         settings->directory.input_remapping,
+         core_name,
+         sizeof(directory));
 
    switch (action_type)
    {
@@ -1308,19 +1311,19 @@ static void cb_generic_download(void *task_data,
    switch (transf->type_hash)
    {
       case CB_CORE_THUMBNAILS_DOWNLOAD:
-         dir_path = settings->thumbnails_directory;
+         dir_path = settings->directory.thumbnails;
          break;
       case CB_CORE_UPDATER_DOWNLOAD:
-         dir_path = settings->libretro_directory;
+         dir_path = settings->directory.libretro;
          break;
       case CB_CORE_CONTENT_DOWNLOAD:
-         dir_path = settings->core_assets_directory;
+         dir_path = settings->directory.core_assets;
          break;
       case CB_UPDATE_CORE_INFO_FILES:
          dir_path = settings->libretro_info_path;
          break;
       case CB_UPDATE_ASSETS:
-         dir_path = settings->assets_directory;
+         dir_path = settings->directory.assets;
          break;
       case CB_UPDATE_AUTOCONFIG_PROFILES:
          dir_path = settings->input.autoconfig_dir;
@@ -1329,7 +1332,7 @@ static void cb_generic_download(void *task_data,
          dir_path = settings->content_database;
          break;
       case CB_UPDATE_OVERLAYS:
-         dir_path = settings->overlay_directory;
+         dir_path = settings->directory.overlay;
          break;
       case CB_UPDATE_CHEATS:
          dir_path = settings->cheat_database;

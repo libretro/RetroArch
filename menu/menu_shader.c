@@ -115,7 +115,7 @@ void menu_shader_manager_init(menu_handle_t *menu)
          {
             char preset_path[PATH_MAX_LENGTH];
             const char *shader_dir = *settings->video.shader_dir ?
-               settings->video.shader_dir : settings->system_directory;
+               settings->video.shader_dir : settings->directory.system;
 
             fill_pathname_join(preset_path, shader_dir,
                   "menu.glslp", sizeof(preset_path));
@@ -214,8 +214,9 @@ void menu_shader_manager_save_preset(
       const char *basename, bool apply)
 {
 #ifdef HAVE_SHADER_MANAGER
-   char buffer[PATH_MAX_LENGTH], config_directory[PATH_MAX_LENGTH],
-        preset_path[PATH_MAX_LENGTH];
+   char buffer[PATH_MAX_LENGTH];
+   char config_directory[PATH_MAX_LENGTH];
+   char preset_path[PATH_MAX_LENGTH];
    unsigned d, type            = RARCH_SHADER_NONE;
    const char *dirs[3]         = {0};
    config_file_t *conf         = NULL;
@@ -290,11 +291,13 @@ void menu_shader_manager_save_preset(
    }
 
    if (*global->path.config)
-      fill_pathname_basedir(config_directory,
-            global->path.config, sizeof(config_directory));
+      fill_pathname_basedir(
+            config_directory,
+            global->path.config,
+            sizeof(config_directory));
 
    dirs[0] = settings->video.shader_dir;
-   dirs[1] = settings->menu_config_directory;
+   dirs[1] = settings->directory.menu_config;
    dirs[2] = config_directory;
 
    if (!(conf = (config_file_t*)config_file_new(NULL)))

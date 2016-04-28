@@ -89,7 +89,10 @@ typedef struct
 typedef struct core_info_ctx_firmware
 {
    const char *path;
-   const char *system_directory;
+   struct
+   {
+      const char *system;
+   } directory;
 } core_info_ctx_firmware_t;
 
 typedef struct core_info_ctx_find

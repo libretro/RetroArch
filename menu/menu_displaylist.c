@@ -393,7 +393,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       core_info_ctx_firmware_t firmware_info;
 
       firmware_info.path             = core_info->path;
-      firmware_info.system_directory = settings->system_directory;
+      firmware_info.directory.system = settings->directory.system;
 
       if (core_info_ctl(CORE_INFO_CTL_LIST_UPDATE_MISSING_FIRMWARE, &firmware_info))
       {
@@ -467,7 +467,7 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Assume libretro directory exists and check if stat works */
-   ret = path_is_directory(settings->libretro_directory);
+   ret = path_is_directory(settings->directory.libretro);
    snprintf(tmp, sizeof(tmp), "- stat directory... %s",
          ret ? "passed" : "failed");
    menu_entries_add(info->list, tmp, "",
@@ -475,7 +475,9 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
 
    /* Try to create a "test" subdirectory on top of libretro directory */
    fill_pathname_join(tmp,
-         settings->libretro_directory, ".retroarch", sizeof(tmp));
+         settings->directory.libretro,
+         ".retroarch",
+         sizeof(tmp));
    ret = path_mkdir(tmp);
    snprintf(tmp, sizeof(tmp), "- create a directory... %s",
          ret ? "passed" : "failed");
@@ -536,9 +538,9 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
    /* Check if system directory exists */
    menu_entries_add(info->list, "System Directory", "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   ret = path_is_directory(settings->system_directory);
+   ret = path_is_directory(settings->directory.system);
    snprintf(tmp, sizeof(tmp), "- directory name: %s",
-         settings->system_directory);
+         settings->directory.system);
    menu_entries_add(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    snprintf(tmp, sizeof(tmp), "- directory exists: %s",
@@ -547,7 +549,7 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory is writable */
-   fill_pathname_join(tmp, settings->system_directory, ".retroarch",
+   fill_pathname_join(tmp, settings->directory.system, ".retroarch",
          sizeof(tmp));
    ret = path_mkdir(tmp);
    snprintf(tmp, sizeof(tmp), "- directory writable: %s",
@@ -1527,7 +1529,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    path_remove_extension(path_base);
    strlcat(path_base, ".lpl", sizeof(path_base));
 
-   fill_pathname_join(path_playlist, settings->playlist_directory, path_base,
+   fill_pathname_join(path_playlist, settings->directory.playlist, path_base,
          sizeof(path_playlist));
 
    playlist = content_playlist_init(path_playlist, COLLECTION_SIZE);
@@ -2112,8 +2114,10 @@ static int menu_displaylist_parse_horizontal_list(
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
 
-   fill_pathname_join(path_playlist,
-         settings->playlist_directory, item->path,
+   fill_pathname_join(
+         path_playlist,
+         settings->directory.playlist,
+         item->path,
          sizeof(path_playlist));
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT, (void*)path_playlist);
@@ -2864,8 +2868,7 @@ static void menu_displaylist_parse_playlist_associations(
    settings_t      *settings    = config_get_ptr();
    struct string_list *stnames  = string_split(settings->playlist_names, ";");
    struct string_list *stcores  = string_split(settings->playlist_cores, ";");
-   struct string_list *str_list = 
-      dir_list_new_special(settings->playlist_directory,
+   struct string_list *str_list = dir_list_new_special(settings->directory.playlist,
             DIR_LIST_COLLECTIONS, NULL);
 
    if (str_list && str_list->size)
@@ -2994,7 +2997,7 @@ static bool menu_displaylist_push_internal(
                menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
                sizeof(info->label));
 
-         if (string_is_empty(settings->playlist_directory))
+         if (string_is_empty(settings->directory.playlist))
          {
             menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
             menu_entries_add(info->list,
@@ -3008,8 +3011,11 @@ static bool menu_displaylist_push_internal(
          }
          else
          {
-            strlcpy(info->path, settings->playlist_directory,
+            strlcpy(
+                  info->path,
+                  settings->directory.playlist,
                   sizeof(info->path));
+
             if (!menu_displaylist_ctl(
                      DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, info))
                break;
@@ -3714,8 +3720,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
 
-            fill_pathname_join(path_playlist,
-                  settings->playlist_directory, info->path,
+            fill_pathname_join(
+                  path_playlist,
+                  settings->directory.playlist,
+                  info->path,
                   sizeof(path_playlist));
 
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_INIT,
@@ -3943,7 +3951,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_DATABASE_CURSORS:
          info->type_default = MENU_FILE_CURSOR;
          strlcpy(info->exts, "dbc", sizeof(info->exts));
-         strlcpy(info->path, settings->cursor_directory, sizeof(info->path));
+         strlcpy(info->path, settings->directory.cursor, sizeof(info->path));
          break;
       case DISPLAYLIST_DATABASE_PLAYLISTS:
          info->type_default = MENU_FILE_PLAIN;

@@ -302,7 +302,7 @@ static int database_info_list_iterate_found_match(
    path_remove_extension(db_playlist_base_str);
 
    strlcat(db_playlist_base_str, ".lpl", sizeof(db_playlist_base_str));
-   fill_pathname_join(db_playlist_path, settings->playlist_directory,
+   fill_pathname_join(db_playlist_path, settings->directory.playlist,
          db_playlist_base_str, sizeof(db_playlist_path));
 
    playlist = content_playlist_init(db_playlist_path, COLLECTION_SIZE);

@@ -670,8 +670,8 @@ static bool event_save_core_config(void)
    global_t   *global                = global_get_ptr();
 
    *config_dir = '\0';
-   if (!string_is_empty(settings->menu_config_directory))
-      strlcpy(config_dir, settings->menu_config_directory,
+   if (!string_is_empty(settings->directory.menu_config))
+      strlcpy(config_dir, settings->directory.menu_config,
             sizeof(config_dir));
    else if (!string_is_empty(global->path.config)) /* Fallback */
       fill_pathname_basedir(config_dir, global->path.config,
@@ -1307,7 +1307,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
       case EVENT_CMD_CORE_INFO_INIT:
          event_cmd_ctl(EVENT_CMD_CORE_INFO_DEINIT, NULL);
 
-         if (*settings->libretro_directory)
+         if (*settings->directory.libretro)
             core_info_ctl(CORE_INFO_CTL_LIST_INIT, NULL);
          break;
       case EVENT_CMD_CORE_DEINIT:

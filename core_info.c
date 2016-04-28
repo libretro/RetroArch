@@ -182,7 +182,7 @@ static config_file_t *core_info_list_iterate(
    strlcat(info_path_base, ".info", sizeof(info_path_base));
 
    fill_pathname_join(info_path, (*settings->libretro_info_path) ?
-         settings->libretro_info_path : settings->libretro_directory,
+         settings->libretro_info_path : settings->directory.libretro,
          info_path_base, sizeof(info_path));
 
    return config_file_new(info_path);
@@ -702,7 +702,7 @@ bool core_info_ctl(enum core_info_state state, void *data)
                return false;
 
             return core_info_list_update_missing_firmware(core_info_curr_list,
-                  info->path, info->system_directory);
+                  info->path, info->directory.system);
          }
       case CORE_INFO_CTL_FIND:
          {

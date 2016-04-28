@@ -176,8 +176,11 @@ static void zarch_zui_font(void)
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
-   fill_pathname_join(mediapath,
-         settings->assets_directory, "zarch", sizeof(mediapath));
+   fill_pathname_join(
+         mediapath,
+         settings->directory.assets,
+         "zarch",
+         sizeof(mediapath));
    fill_pathname_join(fontpath,
          mediapath, "Roboto-Condensed.ttf", sizeof(fontpath));
 
@@ -597,7 +600,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui,
       unsigned cwd_offset;
 
       if (!zui->load_cwd)
-         zui->load_cwd = strdup(settings->menu_content_directory);
+         zui->load_cwd = strdup(settings->directory.menu_content);
 
       if (!zui->load_dlist)
       {

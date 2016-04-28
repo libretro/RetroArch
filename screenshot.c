@@ -165,9 +165,9 @@ static bool take_screenshot_viewport(void)
    if (!video_driver_ctl(RARCH_DISPLAY_CTL_READ_VIEWPORT, buffer))
       goto done;
 
-   screenshot_dir = settings->screenshot_directory;
+   screenshot_dir = settings->directory.screenshot;
 
-   if (!*settings->screenshot_directory)
+   if (!*settings->directory.screenshot)
    {
       fill_pathname_basedir(screenshot_path, global->name.base,
             sizeof(screenshot_path));
@@ -199,9 +199,9 @@ static bool take_screenshot_raw(void)
 
    video_driver_cached_frame_get(&data, &width, &height, &pitch);
 
-   screenshot_dir = settings->screenshot_directory;
+   screenshot_dir = settings->directory.screenshot;
 
-   if (!*settings->screenshot_directory)
+   if (!*settings->directory.screenshot)
    {
       fill_pathname_basedir(screenshot_path, global->name.base,
             sizeof(screenshot_path));
@@ -222,7 +222,7 @@ static bool take_screenshot_choice(void)
    settings_t *settings = config_get_ptr();
 
    /* No way to infer screenshot directory. */
-   if ((!*settings->screenshot_directory) && (!*global->name.base))
+   if ((!*settings->directory.screenshot) && (!*global->name.base))
       return false;
 
    if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_VIEWPORT_READ, NULL))

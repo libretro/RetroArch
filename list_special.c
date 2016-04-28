@@ -63,7 +63,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
    switch (type)
    {
       case DIR_LIST_CORES:
-         dir  = settings->libretro_directory;
+         dir  = settings->directory.libretro;
 
          if (!frontend_driver_get_core_extension(ext_name, sizeof(ext_name)))
             return NULL;
@@ -93,7 +93,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
          exts = ext_shaders;
          break;
       case DIR_LIST_COLLECTIONS:
-         dir  = settings->playlist_directory;
+         dir  = settings->directory.playlist;
          exts = "lpl";
          break;
       case DIR_LIST_DATABASES:

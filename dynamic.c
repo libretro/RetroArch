@@ -715,7 +715,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
-         if (string_is_empty(settings->system_directory))
+         if (string_is_empty(settings->directory.system))
          {
             char *fullpath = NULL;
             runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
@@ -731,9 +731,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          }
          else
          {
-            *(const char**)data = settings->system_directory;
+            *(const char**)data = settings->directory.system;
             RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
-               settings->system_directory);
+               settings->directory.system);
          }
 
          break;
@@ -1127,10 +1127,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       {
          const char **dir = (const char**)data;
 
-         *dir = *settings->core_assets_directory ?
-            settings->core_assets_directory : NULL;
+         *dir = *settings->directory.core_assets ?
+            settings->directory.core_assets : NULL;
          RARCH_LOG("Environ CORE_ASSETS_DIRECTORY: \"%s\".\n",
-               settings->core_assets_directory);
+               settings->directory.core_assets);
          break;
       }
 

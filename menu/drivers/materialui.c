@@ -1007,7 +1007,7 @@ static void mui_font(void)
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
-   fill_pathname_join(mediapath, settings->assets_directory,
+   fill_pathname_join(mediapath, settings->directory.assets,
          "glui", sizeof(mediapath));
    fill_pathname_join(fontpath, mediapath,
          "Roboto-Regular.ttf", sizeof(fontpath));
@@ -1243,8 +1243,11 @@ static void mui_context_reset(void *data)
    if (!mui || !settings)
       return;
 
-   fill_pathname_join(iconpath, settings->assets_directory,
-         "glui", sizeof(iconpath));
+   fill_pathname_join(
+         iconpath,
+         settings->directory.assets,
+         "glui",
+         sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    mui_layout(mui);

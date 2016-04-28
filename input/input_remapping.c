@@ -122,7 +122,7 @@ bool input_remapping_save_file(const char *path)
    config_file_t               *conf = NULL;
    settings_t              *settings = config_get_ptr();
 
-   fill_pathname_join(buf, settings->input_remapping_directory,
+   fill_pathname_join(buf, settings->directory.input_remapping,
          path, sizeof(buf));
 
    fill_pathname_noext(remap_file, buf, ".rmp", sizeof(remap_file));

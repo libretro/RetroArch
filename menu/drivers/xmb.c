@@ -365,7 +365,7 @@ static void xmb_fill_default_background_path(xmb_handle_t *xmb,
 
     strlcpy(xmb->icon.dir, "png", sizeof(xmb->icon.dir));
 
-    fill_pathname_join(mediapath, settings->assets_directory,
+    fill_pathname_join(mediapath, settings->directory.assets,
                        "xmb", sizeof(mediapath));
     fill_pathname_join(themepath, mediapath, xmb_theme_ident(), sizeof(themepath));
     fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
@@ -675,8 +675,11 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 
    menu_entry_get(&entry, 0, i, NULL, true);
 
-   fill_pathname_join(xmb->thumbnail_file_path, settings->thumbnails_directory,
-         xmb->title_name, sizeof(xmb->thumbnail_file_path));
+   fill_pathname_join(
+         xmb->thumbnail_file_path,
+         settings->directory.thumbnails,
+         xmb->title_name,
+         sizeof(xmb->thumbnail_file_path));
    fill_pathname_join(xmb->thumbnail_file_path, xmb->thumbnail_file_path,
          xmb_thumbnails_ident(), sizeof(xmb->thumbnail_file_path));
 
@@ -1039,8 +1042,11 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
 
       if (tmp)
       {
-         fill_pathname_join(path,
-               settings->dynamic_wallpapers_directory, tmp, sizeof(path));
+         fill_pathname_join(
+               path,
+               settings->directory.dynamic_wallpapers,
+               tmp,
+               sizeof(path));
          path_remove_extension(path);
          free(tmp);
       }
@@ -1279,7 +1285,9 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    strlcpy(info.label,
          menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
          sizeof(info.label));
-   strlcpy(info.path, settings->playlist_directory, sizeof(info.path));
+   strlcpy(info.path,
+         settings->directory.playlist,
+         sizeof(info.path));
    strlcpy(info.exts, "lpl", sizeof(info.exts));
 
    if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
@@ -1393,8 +1401,11 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 
    settings_t *settings = config_get_ptr();
 
-   fill_pathname_join(mediapath, settings->assets_directory,
-         "xmb", sizeof(mediapath));
+   fill_pathname_join(
+         mediapath,
+         settings->directory.assets,
+         "xmb",
+         sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, xmb_theme_ident(), sizeof(themepath));
 
    xmb_context_destroy_horizontal_list(xmb);
@@ -2250,8 +2261,11 @@ static void xmb_font(xmb_handle_t *xmb)
 
    menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
 
-   fill_pathname_join(mediapath,
-         settings->assets_directory, "xmb", sizeof(mediapath));
+   fill_pathname_join(
+         mediapath,
+         settings->directory.assets,
+         "xmb",
+         sizeof(mediapath));
    fill_pathname_join(themepath,
          mediapath, xmb_theme_ident(), sizeof(themepath));
    if (string_is_empty(settings->menu.xmb_font))
@@ -2700,8 +2714,11 @@ static void xmb_context_reset(void *data)
    xmb_fill_default_background_path(xmb,
          xmb->background_file_path, sizeof(xmb->background_file_path));
 
-   fill_pathname_join(mediapath, settings->assets_directory,
-         "xmb", sizeof(mediapath));
+   fill_pathname_join(
+         mediapath,
+         settings->directory.assets,
+         "xmb",
+         sizeof(mediapath));
    fill_pathname_join(themepath, mediapath, xmb_theme_ident(), sizeof(themepath));
    fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));

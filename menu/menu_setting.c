@@ -5598,7 +5598,7 @@ static bool setting_append_list(
                sizeof(settings->input.overlay),
                menu_hash_to_str(MENU_LABEL_OVERLAY_PRESET),
                menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_PRESET),
-               settings->overlay_directory,
+               settings->directory.overlay,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -6783,8 +6783,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->system_directory,
-               sizeof(settings->system_directory),
+               settings->directory.system,
+               sizeof(settings->directory.system),
                menu_hash_to_str(MENU_LABEL_SYSTEM_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_DIRECTORY),
                "",
@@ -6801,8 +6801,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->core_assets_directory,
-               sizeof(settings->core_assets_directory),
+               settings->directory.core_assets,
+               sizeof(settings->directory.core_assets),
                menu_hash_to_str(MENU_LABEL_CORE_ASSETS_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_ASSETS_DIRECTORY),
                "",
@@ -6819,8 +6819,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->assets_directory,
-               sizeof(settings->assets_directory),
+               settings->directory.assets,
+               sizeof(settings->directory.assets),
                menu_hash_to_str(MENU_LABEL_ASSETS_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_ASSETS_DIRECTORY),
                "",
@@ -6837,8 +6837,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->dynamic_wallpapers_directory,
-               sizeof(settings->dynamic_wallpapers_directory),
+               settings->directory.dynamic_wallpapers,
+               sizeof(settings->directory.dynamic_wallpapers),
                menu_hash_to_str(MENU_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY),
                "",
@@ -6855,8 +6855,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->thumbnails_directory,
-               sizeof(settings->thumbnails_directory),
+               settings->directory.thumbnails,
+               sizeof(settings->directory.thumbnails),
                menu_hash_to_str(MENU_LABEL_THUMBNAILS_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_THUMBNAILS_DIRECTORY),
                "",
@@ -6873,8 +6873,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->menu_content_directory,
-               sizeof(settings->menu_content_directory),
+               settings->directory.menu_content,
+               sizeof(settings->directory.menu_content),
                menu_hash_to_str(MENU_LABEL_RGUI_BROWSER_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_RGUI_BROWSER_DIRECTORY),
                "",
@@ -6892,8 +6892,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->menu_config_directory,
-               sizeof(settings->menu_config_directory),
+               settings->directory.menu_config,
+               sizeof(settings->directory.menu_config),
                menu_hash_to_str(MENU_LABEL_RGUI_CONFIG_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_RGUI_CONFIG_DIRECTORY),
                "",
@@ -6911,8 +6911,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->libretro_directory,
-               sizeof(settings->libretro_directory),
+               settings->directory.libretro,
+               sizeof(settings->directory.libretro),
                menu_hash_to_str(MENU_LABEL_LIBRETRO_DIR_PATH),
                menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH),
                g_defaults.dir.core,
@@ -6968,8 +6968,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->cursor_directory,
-               sizeof(settings->cursor_directory),
+               settings->directory.cursor,
+               sizeof(settings->directory.cursor),
                menu_hash_to_str(MENU_LABEL_CURSOR_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_CURSOR_DIRECTORY),
                "",
@@ -7098,8 +7098,8 @@ static bool setting_append_list(
 #ifdef HAVE_OVERLAY
          CONFIG_DIR(
                list, list_info,
-               settings->overlay_directory,
-               sizeof(settings->overlay_directory),
+               settings->directory.overlay,
+               sizeof(settings->directory.overlay),
                menu_hash_to_str(MENU_LABEL_OVERLAY_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_DIRECTORY),
                g_defaults.dir.overlay,
@@ -7135,8 +7135,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->screenshot_directory,
-               sizeof(settings->screenshot_directory),
+               settings->directory.screenshot,
+               sizeof(settings->directory.screenshot),
                menu_hash_to_str(MENU_LABEL_SCREENSHOT_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_SCREENSHOT_DIRECTORY),
                "",
@@ -7171,8 +7171,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->input_remapping_directory,
-               sizeof(settings->input_remapping_directory),
+               settings->directory.input_remapping,
+               sizeof(settings->directory.input_remapping),
                menu_hash_to_str(MENU_LABEL_INPUT_REMAPPING_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY),
                "",
@@ -7189,8 +7189,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->playlist_directory,
-               sizeof(settings->playlist_directory),
+               settings->directory.playlist,
+               sizeof(settings->directory.playlist),
                menu_hash_to_str(MENU_LABEL_PLAYLIST_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_DIRECTORY),
                "",
@@ -7243,8 +7243,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->cache_directory,
-               sizeof(settings->cache_directory),
+               settings->directory.cache,
+               sizeof(settings->directory.cache),
                menu_hash_to_str(MENU_LABEL_CACHE_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_CACHE_DIRECTORY),
                "",

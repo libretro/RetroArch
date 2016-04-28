@@ -380,7 +380,7 @@ static void set_special_paths(char **argv, unsigned num_content)
    /* If this is already set,
     * do not overwrite it as this was initialized before in
     * a menu or otherwise. */
-   if (!string_is_empty(settings->system_directory))
+   if (!string_is_empty(settings->directory.system))
       return;
 
    RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
@@ -822,8 +822,8 @@ static void parse_input(int argc, char *argv[])
             if (path_is_directory(optarg))
             {
                *settings->libretro = '\0';
-               strlcpy(settings->libretro_directory, optarg,
-                     sizeof(settings->libretro_directory));
+               strlcpy(settings->directory.libretro, optarg,
+                     sizeof(settings->directory.libretro));
                global->has_set.libretro = true;
                global->has_set.libretro_directory = true;
                RARCH_WARN("Using old --libretro behavior. "
@@ -1188,9 +1188,9 @@ bool rarch_game_options_validate(char *s, size_t len, bool mkdir)
    /* Config directory: config_directory.
    * Try config directory setting first,
    * fallback to the location of the current configuration file. */
-   if (!string_is_empty(settings->menu_config_directory))
+   if (!string_is_empty(settings->directory.menu_config))
       strlcpy(config_directory,
-            settings->menu_config_directory, sizeof(config_directory));
+            settings->directory.menu_config, sizeof(config_directory));
    else if (!string_is_empty(global->path.config))
       fill_pathname_basedir(config_directory,
             global->path.config, sizeof(config_directory));
