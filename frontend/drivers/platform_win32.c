@@ -234,6 +234,29 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
    gfx_set_dwm();
+
+   strlcpy(g_defaults.dir.assets,       ":\assets",            sizeof(g_defaults.dir.assets));
+   strlcpy(g_defaults.dir.audio_filter, ":\filters\audio",     sizeof(g_defaults.dir.audio_filter));
+   strlcpy(g_defaults.dir.video_filter, ":\filters\video",     sizeof(g_defaults.dir.video_filter));
+   strlcpy(g_defaults.dir.cheats,       ":\cheats",            sizeof(g_defaults.dir.cheats));
+   strlcpy(g_defaults.dir.database,     ":\database\rdb",      sizeof(g_defaults.dir.database));
+   strlcpy(g_defaults.dir.cursor,       ":\database\cursors",  sizeof(g_defaults.dir.cursor));
+   strlcpy(g_defaults.dir.playlist,     ":\playlists",         sizeof(g_defaults.dir.playlist));
+   strlcpy(g_defaults.dir.remap,        ":\config\remap",      sizeof(g_defaults.dir.remap));
+   strlcpy(g_defaults.dir.wallpapers,   ":\wallpapers",        sizeof(g_defaults.dir.wallpapers));
+   strlcpy(g_defaults.dir.thumbnails,   ":\thumbnails",        sizeof(g_defaults.dir.thumbnails));
+   strlcpy(g_defaults.dir.overlay,      ":\overlays",          sizeof(g_defaults.dir.overlay));
+   strlcpy(g_defaults.dir.osk_overlay,  ":\overlays",          sizeof(g_defaults.dir.osk_overlay));
+   strlcpy(g_defaults.dir.core,         ":\cores",             sizeof(g_defaults.dir.core));
+   strlcpy(g_defaults.dir.core_info,    ":\info",              sizeof(g_defaults.dir.core_info));
+   strlcpy(g_defaults.dir.autoconfig,   ":\autoconf",          sizeof(g_defaults.dir.autoconfig));
+   strlcpy(g_defaults.dir.system,       ":\system",            sizeof(g_defaults.dir.system));
+   strlcpy(g_defaults.dir.sram,         ":\saves",             sizeof(g_defaults.dir.sram));
+   strlcpy(g_defaults.dir.savestate,    ":\states",            sizeof(g_defaults.dir.savestate));
+   strlcpy(g_defaults.dir.menu_config,  ":\config",            sizeof(g_defaults.dir.menu_config));
+   strlcpy(g_defaults.dir.shader,       ":\shaders",           sizeof(g_defaults.dir.shader));
+   strlcpy(g_defaults.dir.core_assets,  ":\downloads",         sizeof(g_defaults.dir.core_assets));
+   strlcpy(g_defaults.dir.screenshot,   ":\screenshots",       sizeof(g_defaults.dir.screenshot));
 }
 
 frontend_ctx_driver_t frontend_ctx_win32 = {
