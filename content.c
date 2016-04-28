@@ -679,9 +679,13 @@ struct string_list *compressed_file_list_new(const char *path,
 
 static void check_defaults_dir_create_dir(const char *path)
 {
+   char new_path[PATH_MAX_LENGTH];
+   fill_pathname_expand_special(new_path,
+         path, sizeof(new_path));
+
    if (path_is_directory(path))
       return;
-   path_mkdir(path);
+   path_mkdir(new_path);
 }
 
 static void check_defaults_dirs(void)
