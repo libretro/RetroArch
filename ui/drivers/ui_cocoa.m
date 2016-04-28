@@ -357,7 +357,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 #endif
     NSOpenPanel* panel   = (NSOpenPanel*)[NSOpenPanel openPanel];
     settings_t *settings = config_get_ptr();
-    NSString *startdir   = BOXSTRING(settings->libretro_directory);
+    NSString *startdir   = BOXSTRING(settings->directory.libretro);
 	NSArray *filetypes    = [[NSArray alloc] initWithObjects:BOXSTRING("dylib"), BOXSTRING("Core"), nil];
 	[panel setAllowedFileTypes:filetypes];
 #if defined(MAC_OS_X_VERSION_10_6)
@@ -392,7 +392,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 #endif
    NSOpenPanel* panel    = (NSOpenPanel*)[NSOpenPanel openPanel];
    settings_t *settings  = config_get_ptr();
-   NSString *startdir    = BOXSTRING(settings->menu_content_directory);
+   NSString *startdir    = BOXSTRING(settings->directory.menu_content);
     
    if (!startdir.length)
       startdir           = BOXSTRING("/");
@@ -428,7 +428,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 - (IBAction)showCoresDirectory:(id)sender
 {
    settings_t *settings = config_get_ptr();
-   [[NSWorkspace sharedWorkspace] openFile:BOXSTRING(settings->libretro_directory)];
+   [[NSWorkspace sharedWorkspace] openFile:BOXSTRING(settings->directory.libretro)];
 }
 
 - (IBAction)showPreferences:(id)sender
