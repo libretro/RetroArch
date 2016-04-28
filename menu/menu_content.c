@@ -69,8 +69,8 @@ static void menu_content_environment_get(int *argc, char *argv[],
    if (*fullpath)
       wrap_args->content_path  = fullpath;
    if (!global->has_set.libretro)
-      wrap_args->libretro_path = *settings->libretro 
-         ? settings->libretro : NULL;
+      wrap_args->libretro_path = *settings->path.libretro 
+         ? settings->path.libretro : NULL;
 
 }
 

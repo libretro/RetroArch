@@ -130,7 +130,7 @@ bool cheat_manager_save(const char *path)
    settings_t              *settings = config_get_ptr();
    cheat_manager_t *handle = cheat_manager_state;
 
-   fill_pathname_join(buf, settings->cheat_database,
+   fill_pathname_join(buf, settings->path.cheat_database,
          path, sizeof(buf));
 
    fill_pathname_noext(cheats_file, buf, ".cht", sizeof(cheats_file));

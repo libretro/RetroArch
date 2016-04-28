@@ -286,7 +286,7 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
    unsigned i;
    settings_t *settings  = config_get_ptr();
 
-   if (!*settings->video.shader_dir)
+   if (!*settings->directory.video_shader)
       return false;
 
    dir_list->list = dir_list_new_special(NULL, DIR_LIST_SHADERS, NULL);
@@ -748,7 +748,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             const char *fullpath = (const char*)data;
             if (!fullpath)
                return false;
-            strlcpy(settings->libretro, fullpath, sizeof(settings->libretro));
+            strlcpy(
+                  settings->path.libretro,
+                  fullpath,
+                  sizeof(settings->path.libretro));
          }
          break;
       case RUNLOOP_CTL_CLEAR_CONTENT_PATH:

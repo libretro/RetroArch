@@ -114,8 +114,8 @@ void menu_shader_manager_init(menu_handle_t *menu)
       default:
          {
             char preset_path[PATH_MAX_LENGTH];
-            const char *shader_dir = *settings->video.shader_dir ?
-               settings->video.shader_dir : settings->directory.system;
+            const char *shader_dir = *settings->directory.video_shader ?
+               settings->directory.video_shader : settings->directory.system;
 
             fill_pathname_join(preset_path, shader_dir,
                   "menu.glslp", sizeof(preset_path));
@@ -296,7 +296,7 @@ void menu_shader_manager_save_preset(
             global->path.config,
             sizeof(config_directory));
 
-   dirs[0] = settings->video.shader_dir;
+   dirs[0] = settings->directory.video_shader;
    dirs[1] = settings->directory.menu_config;
    dirs[2] = config_directory;
 

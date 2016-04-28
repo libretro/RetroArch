@@ -3513,8 +3513,8 @@ static bool setting_append_list(
                      &group_info,
                      &subgroup_info,
                      parent_group);
-               (*list)[list_info->index - 1].size         = sizeof(settings->libretro);
-               (*list)[list_info->index - 1].value.target.string = settings->libretro;
+               (*list)[list_info->index - 1].size         = sizeof(settings->path.libretro);
+               (*list)[list_info->index - 1].value.target.string = settings->path.libretro;
                (*list)[list_info->index - 1].values       = ext_name;
                menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
@@ -4748,11 +4748,11 @@ static bool setting_append_list(
 
          CONFIG_PATH(
                list, list_info,
-               settings->video.softfilter_plugin,
-               sizeof(settings->video.softfilter_plugin),
+               settings->path.softfilter_plugin,
+               sizeof(settings->path.softfilter_plugin),
                menu_hash_to_str(MENU_LABEL_VIDEO_FILTER),
                menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER),
-               settings->video.filter_dir,
+               settings->directory.video_filter,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -4972,11 +4972,11 @@ static bool setting_append_list(
 
          CONFIG_PATH(
                list, list_info,
-               settings->audio.dsp_plugin,
-               sizeof(settings->audio.dsp_plugin),
+               settings->path.audio_dsp_plugin,
+               sizeof(settings->path.audio_dsp_plugin),
                menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN),
                menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_DSP_PLUGIN),
-               settings->audio.filter_dir,
+               settings->directory.audio_filter,
                &group_info,
                &subgroup_info,
                parent_group,
@@ -5594,8 +5594,8 @@ static bool setting_append_list(
 
          CONFIG_PATH(
                list, list_info,
-               settings->input.overlay,
-               sizeof(settings->input.overlay),
+               settings->path.overlay,
+               sizeof(settings->path.overlay),
                menu_hash_to_str(MENU_LABEL_OVERLAY_PRESET),
                menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_PRESET),
                settings->directory.overlay,
@@ -5646,8 +5646,8 @@ static bool setting_append_list(
 
          CONFIG_PATH(
                list, list_info,
-               settings->osk.overlay,
-               sizeof(settings->osk.overlay),
+               settings->path.osk_overlay,
+               sizeof(settings->path.osk_overlay),
                menu_hash_to_str(MENU_LABEL_KEYBOARD_OVERLAY_PRESET),
                menu_hash_to_str(MENU_LABEL_VALUE_KEYBOARD_OVERLAY_PRESET),
                global->dir.osk_overlay,
@@ -5674,8 +5674,8 @@ static bool setting_append_list(
 
          CONFIG_PATH(
                list, list_info,
-               settings->menu.wallpaper,
-               sizeof(settings->menu.wallpaper),
+               settings->path.menu_wallpaper,
+               sizeof(settings->path.menu_wallpaper),
                menu_hash_to_str(MENU_LABEL_MENU_WALLPAPER),
                menu_hash_to_str(MENU_LABEL_VALUE_MENU_WALLPAPER),
                "",
@@ -6950,8 +6950,8 @@ static bool setting_append_list(
 #ifdef HAVE_LIBRETRODB
          CONFIG_DIR(
                list, list_info,
-               settings->content_database,
-               sizeof(settings->content_database),
+               settings->path.content_database,
+               sizeof(settings->path.content_database),
                menu_hash_to_str(MENU_LABEL_CONTENT_DATABASE_DIRECTORY),
                menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY),
                "",
@@ -6987,8 +6987,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->cheat_database,
-               sizeof(settings->cheat_database),
+               settings->path.cheat_database,
+               sizeof(settings->path.cheat_database),
                menu_hash_to_str(MENU_LABEL_CHEAT_DATABASE_PATH),
                menu_hash_to_str(MENU_LABEL_VALUE_CHEAT_DATABASE_PATH),
                "",
@@ -7005,8 +7005,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->video.filter_dir,
-               sizeof(settings->video.filter_dir),
+               settings->directory.video_filter,
+               sizeof(settings->directory.video_filter),
                menu_hash_to_str(MENU_LABEL_VIDEO_FILTER_DIR),
                menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER_DIR),
                "",
@@ -7023,8 +7023,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->audio.filter_dir,
-               sizeof(settings->audio.filter_dir),
+               settings->directory.audio_filter,
+               sizeof(settings->directory.audio_filter),
                menu_hash_to_str(MENU_LABEL_AUDIO_FILTER_DIR),
                menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_FILTER_DIR),
                "",
@@ -7041,8 +7041,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->video.shader_dir,
-               sizeof(settings->video.shader_dir),
+               settings->directory.video_shader,
+               sizeof(settings->directory.video_shader),
                menu_hash_to_str(MENU_LABEL_VIDEO_SHADER_DIR),
                menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHADER_DIR),
                g_defaults.dir.shader,
@@ -7153,8 +7153,8 @@ static bool setting_append_list(
 
          CONFIG_DIR(
                list, list_info,
-               settings->input.autoconfig_dir,
-               sizeof(settings->input.autoconfig_dir),
+               settings->directory.autoconfig,
+               sizeof(settings->directory.autoconfig),
                menu_hash_to_str(MENU_LABEL_JOYPAD_AUTOCONFIG_DIR),
                menu_hash_to_str(MENU_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR),
                "",

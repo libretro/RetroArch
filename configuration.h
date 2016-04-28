@@ -74,12 +74,9 @@ typedef struct settings
 
       bool shader_enable;
 
-      char softfilter_plugin[PATH_MAX_LENGTH];
       float refresh_rate;
       bool threaded;
 
-      char filter_dir[PATH_MAX_LENGTH];
-      char shader_dir[PATH_MAX_LENGTH];
 
       float font_size;
       bool font_enable;
@@ -123,7 +120,6 @@ typedef struct settings
       bool dynamic_wallpaper_enable;
       unsigned thumbnails;
       bool throttle;
-      char wallpaper[PATH_MAX_LENGTH];
 
       struct
       {
@@ -198,22 +194,20 @@ typedef struct settings
    struct
    {
       char driver[32];
+      char resampler[32];
+      char device[PATH_MAX_LENGTH];
       bool enable;
       bool mute_enable;
       unsigned out_rate;
       unsigned block_frames;
-      char device[PATH_MAX_LENGTH];
       unsigned latency;
       bool sync;
 
-      char dsp_plugin[PATH_MAX_LENGTH];
-      char filter_dir[PATH_MAX_LENGTH];
 
       bool rate_control;
       float rate_control_delta;
       float max_timing_skew;
       float volume; /* dB scale. */
-      char resampler[32];
    } audio;
 
    struct
@@ -221,6 +215,7 @@ typedef struct settings
       char driver[32];
       char joypad_driver[32];
       char keyboard_layout[64];
+      char device_names[MAX_USERS][64];
 
       unsigned remap_ids[MAX_USERS][RARCH_BIND_LIST_END];
       struct retro_keybind binds[MAX_USERS][RARCH_BIND_LIST_END];
@@ -241,7 +236,6 @@ typedef struct settings
       float axis_threshold;
       unsigned joypad_map[MAX_USERS];
       unsigned device[MAX_USERS];
-      char device_names[MAX_USERS][64];
       unsigned device_name_index[MAX_USERS];
       bool autodetect_enable;
       bool netplay_client_swap_input;
@@ -252,11 +246,9 @@ typedef struct settings
       bool overlay_enable;
       bool overlay_enable_autopreferred;
       bool overlay_hide_in_menu;
-      char overlay[PATH_MAX_LENGTH];
       float overlay_opacity;
       float overlay_scale;
 
-      char autoconfig_dir[PATH_MAX_LENGTH];
       bool input_descriptor_label_show;
       bool input_descriptor_hide_unbound;
 
@@ -274,7 +266,6 @@ typedef struct settings
    struct
    {
       bool enable;
-      char overlay[PATH_MAX_LENGTH];
       float opacity;
       float scale;
    } osk;
@@ -318,6 +309,14 @@ typedef struct settings
 
    struct
    {
+      char cheat_database[PATH_MAX_LENGTH];
+      char content_database[PATH_MAX_LENGTH];
+      char libretro[PATH_MAX_LENGTH];
+      char osk_overlay[PATH_MAX_LENGTH];
+      char overlay[PATH_MAX_LENGTH];
+      char menu_wallpaper[PATH_MAX_LENGTH];
+      char audio_dsp_plugin[PATH_MAX_LENGTH];
+      char softfilter_plugin[PATH_MAX_LENGTH];
       char core_options[PATH_MAX_LENGTH];
       char content_history[PATH_MAX_LENGTH];
       char libretro_info[PATH_MAX_LENGTH];
@@ -331,6 +330,10 @@ typedef struct settings
 
    struct
    {
+      char audio_filter[PATH_MAX_LENGTH];
+      char autoconfig[PATH_MAX_LENGTH];
+      char video_filter[PATH_MAX_LENGTH];
+      char video_shader[PATH_MAX_LENGTH];
       char content_history[PATH_MAX_LENGTH];
       char libretro[PATH_MAX_LENGTH];
       char cursor[PATH_MAX_LENGTH];
@@ -351,10 +354,7 @@ typedef struct settings
 
    unsigned content_history_size;
 
-   char libretro[PATH_MAX_LENGTH];
    unsigned libretro_log_level;
-   char content_database[PATH_MAX_LENGTH];
-   char cheat_database[PATH_MAX_LENGTH];
 
    bool auto_screenshot_filename;
 

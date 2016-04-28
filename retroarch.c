@@ -821,7 +821,7 @@ static void parse_input(int argc, char *argv[])
          case 'L':
             if (path_is_directory(optarg))
             {
-               *settings->libretro = '\0';
+               *settings->path.libretro = '\0';
                strlcpy(settings->directory.libretro, optarg,
                      sizeof(settings->directory.libretro));
                global->has_set.libretro = true;
@@ -1503,7 +1503,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
             rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 
-            *settings->libretro = '\0'; /* Load core in new config. */
+            *settings->path.libretro = '\0'; /* Load core in new config. */
          }
          runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
          break;

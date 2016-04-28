@@ -755,7 +755,7 @@ void content_push_to_history_playlist(bool do_push,
    content_playlist_push(g_defaults.history,
          path,
          NULL,
-         settings->libretro,
+         settings->path.libretro,
          info->library_name,
          NULL,
          NULL);

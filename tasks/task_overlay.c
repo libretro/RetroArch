@@ -760,16 +760,16 @@ bool rarch_task_push_overlay_load_default(
 
    if (osk_enable)
    {
-      if (!*settings->osk.overlay)
+      if (!*settings->path.osk_overlay)
          return false;
    }
    else
    {
-      if (!*settings->input.overlay)
+      if (!*settings->path.overlay)
          return false;
    }
 
    return rarch_task_push_overlay_load(
-            osk_enable ? settings->osk.overlay : settings->input.overlay,
+            osk_enable ? settings->path.osk_overlay : settings->path.overlay,
             cb, user_data);
 }

@@ -356,7 +356,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
 
    deinit_video_filter();
 
-   if (!*settings->video.softfilter_plugin)
+   if (!*settings->path.softfilter_plugin)
       return;
 
    /* Deprecated format. Gets pre-converted. */
@@ -379,7 +379,7 @@ static void init_video_filter(enum retro_pixel_format colfmt)
    height  = geom->max_height;
 
    video_driver_state.filter.filter = rarch_softfilter_new(
-         settings->video.softfilter_plugin,
+         settings->path.softfilter_plugin,
          RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height);
 
    if (!video_driver_state.filter.filter)

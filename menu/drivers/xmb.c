@@ -373,8 +373,8 @@ static void xmb_fill_default_background_path(xmb_handle_t *xmb,
 
     fill_pathname_join(path, iconpath, "bg.png", size);
 
-    if (*settings->menu.wallpaper)
-        strlcpy(path, settings->menu.wallpaper, size);
+    if (*settings->path.menu_wallpaper)
+        strlcpy(path, settings->path.menu_wallpaper, size);
 }
 
 static size_t xmb_list_get_selection(void *data)
@@ -2692,8 +2692,8 @@ static void xmb_context_reset_background(const char *iconpath)
 
    fill_pathname_join(path, iconpath, "bg.png", sizeof(path));
 
-   if (*settings->menu.wallpaper)
-      strlcpy(path, settings->menu.wallpaper, sizeof(path));
+   if (*settings->path.menu_wallpaper)
+      strlcpy(path, settings->path.menu_wallpaper, sizeof(path));
 
    if (path_file_exists(path))
       rarch_task_push_image_load(path, "cb_menu_wallpaper",

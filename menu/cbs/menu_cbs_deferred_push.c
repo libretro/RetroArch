@@ -168,7 +168,7 @@ static int deferred_push_cursor_manager_list_deferred(
    if (!config_get_string(conf, "rdb", &rdb))
       goto end;
 
-   fill_pathname_join(rdb_path, settings->content_database,
+   fill_pathname_join(rdb_path, settings->path.content_database,
          rdb, sizeof(rdb_path));
 
    strlcpy(info->path_b, info->path, sizeof(info->path_b));

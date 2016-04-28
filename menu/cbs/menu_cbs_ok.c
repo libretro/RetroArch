@@ -186,13 +186,13 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
          info.directory_ptr = idx;
-         info_path          = settings->audio.filter_dir;
+         info_path          = settings->directory.audio_filter;
          info_label         = menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN);
          break;
       case ACTION_OK_DL_SHADER_PASS:
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->video.shader_dir;
+         info_path          = settings->directory.video_shader;
          info_label         = label;
          break;
       case ACTION_OK_DL_SHADER_PARAMETERS:
@@ -218,7 +218,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_SHADER_PRESET:
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->video.shader_dir; 
+         info_path          = settings->directory.video_shader; 
          info_label = label;
          break;
       case ACTION_OK_DL_DOWNLOADS_DIR:
@@ -260,7 +260,7 @@ int generic_action_ok_displaylist_push(const char *path,
       case ACTION_OK_DL_CHEAT_FILE:
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->cheat_database;
+         info_path          = settings->path.cheat_database;
          info_label         = label;
          break;
       case ACTION_OK_DL_CORE_LIST:
@@ -340,7 +340,8 @@ int generic_action_ok_displaylist_push(const char *path,
          info_label         = menu_label;
          break;
       case ACTION_OK_DL_DATABASE_MANAGER_LIST:
-         fill_pathname_join(tmp, settings->content_database,
+         fill_pathname_join(tmp,
+               settings->path.content_database,
                path, sizeof(tmp));
 
          info.directory_ptr = idx;
@@ -747,8 +748,8 @@ static int generic_action_ok(const char *path,
          {
             settings_t *settings = config_get_ptr();
 
-            strlcpy(settings->menu.wallpaper,
-                  action_path, sizeof(settings->menu.wallpaper));
+            strlcpy(settings->path.menu_wallpaper,
+                  action_path, sizeof(settings->path.menu_wallpaper));
             rarch_task_push_image_load(action_path, "cb_menu_wallpaper",
                   menu_display_handle_wallpaper_upload, NULL);
          }
@@ -1326,16 +1327,16 @@ static void cb_generic_download(void *task_data,
          dir_path = settings->directory.assets;
          break;
       case CB_UPDATE_AUTOCONFIG_PROFILES:
-         dir_path = settings->input.autoconfig_dir;
+         dir_path = settings->directory.autoconfig;
          break;
       case CB_UPDATE_DATABASES:
-         dir_path = settings->content_database;
+         dir_path = settings->path.content_database;
          break;
       case CB_UPDATE_OVERLAYS:
          dir_path = settings->directory.overlay;
          break;
       case CB_UPDATE_CHEATS:
-         dir_path = settings->cheat_database;
+         dir_path = settings->path.cheat_database;
          break;
       case CB_UPDATE_SHADERS_CG:
       case CB_UPDATE_SHADERS_GLSL:
@@ -1343,7 +1344,9 @@ static void cb_generic_download(void *task_data,
          const char *dirname = transf->type_hash == CB_UPDATE_SHADERS_CG ?
                   "shaders_cg" : "shaders_glsl";
 
-         fill_pathname_join(shaderdir, settings->video.shader_dir, dirname,
+         fill_pathname_join(shaderdir,
+               settings->directory.video_shader,
+               dirname,
                sizeof(shaderdir));
          if (!path_file_exists(shaderdir))
             if (!path_mkdir(shaderdir))

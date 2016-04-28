@@ -2274,7 +2274,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    {
       char db_path[PATH_MAX_LENGTH] = {0};
 
-      fill_pathname_join(db_path, settings->content_database,
+      fill_pathname_join(db_path, settings->path.content_database,
             db_name, sizeof(db_path));
       path_remove_extension(db_path);
       strlcat(db_path, ".rdb", sizeof(db_path));
@@ -3928,7 +3928,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_DATABASES:
          info->type_default = MENU_FILE_RDB;
          strlcpy(info->exts, "rdb", sizeof(info->exts));
-         strlcpy(info->path, settings->content_database, sizeof(info->path));
+         strlcpy(info->path, settings->path.content_database, sizeof(info->path));
          break;
       case DISPLAYLIST_ARCHIVE_ACTION:
 #ifdef HAVE_COMPRESSION

@@ -213,13 +213,13 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       return false;
 
    fill_pathname_join(path,
-         settings->input.autoconfig_dir,
+         settings->directory.autoconfig,
          settings->input.joypad_driver,
          sizeof(path));
    list = dir_list_new(path, "cfg", false, false);
 
    if (!list || !list->size)
-      list = dir_list_new(settings->input.autoconfig_dir,
+      list = dir_list_new(settings->directory.autoconfig,
             "cfg", false, false);
 
    if(!list)
