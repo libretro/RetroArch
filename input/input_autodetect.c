@@ -283,7 +283,7 @@ static bool input_autoconfigure_joypad_from_conf_internal(
          break;
    }
 
-   if (ret || !*settings->input.autoconfig_dir)
+   if (ret || !*settings->directory.autoconfig)
       return true;
    return false;
 }
