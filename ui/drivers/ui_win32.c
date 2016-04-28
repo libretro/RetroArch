@@ -547,7 +547,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 #else
                   title       = "Load Core";
 #endif
-                  initial_dir = settings->libretro_directory;
+                  initial_dir = settings->directory.libretro;
                   break;
                case ID_M_LOAD_CONTENT:
                   extensions  = "All Files\0*.*\0\0";
@@ -557,7 +557,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 #else
                   title       = "Load Content";
 #endif
-                  initial_dir = settings->menu_content_directory;
+                  initial_dir = settings->directory.menu_content;
                   break;
             }
 
