@@ -1445,7 +1445,7 @@ static int action_ok_download_generic(const char *path,
    else if (string_is_equal(type_msg, "cb_lakka_download"))
    {
       /* TODO unhardcode this path*/
-      fill_pathname_join(s, "http://sources.lakka.tv/nightly",
+      fill_pathname_join(s, "http://mirror.lakka.tv/nightly",
             LAKKA_PROJECT, sizeof(s));
    }
 #endif
@@ -1734,7 +1734,7 @@ static int generic_action_ok_network(const char *path,
 #ifdef HAVE_LAKKA
       case ACTION_OK_NETWORK_LAKKA_LIST:
          /* TODO unhardcode this path */
-         fill_pathname_join(url_path, "http://sources.lakka.tv/nightly",
+         fill_pathname_join(url_path, "http://mirror.lakka.tv/nightly",
                LAKKA_PROJECT, sizeof(url_path));
          fill_pathname_join(url_path, url_path,
                ".index", sizeof(url_path));
