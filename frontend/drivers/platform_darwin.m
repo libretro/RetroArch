@@ -365,6 +365,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.database, home_dir_buf, "database/rdb", sizeof(g_defaults.dir.database));
    fill_pathname_join(g_defaults.dir.cursor, home_dir_buf, "database/cursors", sizeof(g_defaults.dir.cursor));
    fill_pathname_join(g_defaults.dir.cheats, home_dir_buf, "cht", sizeof(g_defaults.dir.cheats));
+   fill_pathname_join(g_defaults.dir.thumbnails, home_dir_buf, "thumbnails", sizeof(g_defaults.dir.thumbnails));
    fill_pathname_join(g_defaults.dir.sram, home_dir_buf, "saves", sizeof(g_defaults.dir.sram));
    fill_pathname_join(g_defaults.dir.savestate, home_dir_buf, "states", sizeof(g_defaults.dir.savestate));
    fill_pathname_join(g_defaults.dir.remap, home_dir_buf, "remaps", sizeof(g_defaults.dir.remap));
@@ -390,6 +391,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
     fill_pathname_join(g_defaults.dir.database, bundle_path_buf, "Contents/Resources/database/rdb", sizeof(g_defaults.dir.database));
     fill_pathname_join(g_defaults.dir.cursor, bundle_path_buf, "Contents/Resources/database/cursors", sizeof(g_defaults.dir.cursor));
     fill_pathname_join(g_defaults.dir.cheats, bundle_path_buf, "Contents/Resources/cht", sizeof(g_defaults.dir.cheats));
+    fill_pathname_join(g_defaults.dir.thumbnails, bundle_path_buf, "Contents/Resources/thumbnails", sizeof(g_defaults.dir.thumbnails));
 #endif
 #endif
 
