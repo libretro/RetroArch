@@ -251,7 +251,7 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
    strlcpy(g_defaults.dir.osk_overlay,  ":\\overlays",          sizeof(g_defaults.dir.osk_overlay));
    strlcpy(g_defaults.dir.core,         ":\\cores",             sizeof(g_defaults.dir.core));
    strlcpy(g_defaults.dir.core_info,    ":\\info",              sizeof(g_defaults.dir.core_info));
-   strlcpy(g_defaults.dir.autoconfig,   ":\\autoconf",          sizeof(g_defaults.dir.autoconfig));
+   strlcpy(g_defaults.dir.autoconfig,   ":\\autoconfig",        sizeof(g_defaults.dir.autoconfig));
    strlcpy(g_defaults.dir.system,       ":\\system",            sizeof(g_defaults.dir.system));
    strlcpy(g_defaults.dir.sram,         ":\\saves",             sizeof(g_defaults.dir.sram));
    strlcpy(g_defaults.dir.savestate,    ":\\states",            sizeof(g_defaults.dir.savestate));
