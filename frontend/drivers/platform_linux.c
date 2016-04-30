@@ -1987,7 +1987,7 @@ static void frontend_linux_get_env(int *argc,
    fill_pathname_join(g_defaults.dir.core_info, base_path,
          "cores", sizeof(g_defaults.dir.core_info));
    fill_pathname_join(g_defaults.dir.autoconfig, base_path,
-         "autoconf", sizeof(g_defaults.dir.autoconfig));
+         "autoconfig", sizeof(g_defaults.dir.autoconfig));
    fill_pathname_join(g_defaults.dir.assets, base_path,
          "assets", sizeof(g_defaults.dir.assets));
    fill_pathname_join(g_defaults.dir.remap, base_path,
