@@ -1829,16 +1829,8 @@ static void frontend_linux_get_env(int *argc,
                   app_dir, "database/rdb", sizeof(g_defaults.dir.database));
             fill_pathname_join(g_defaults.dir.cursor,
                   app_dir, "database/cursors", sizeof(g_defaults.dir.cursor));
-            fill_pathname_join(g_defaults.dir.cheats,
-                  app_dir, "cheats", sizeof(g_defaults.dir.cheats));
-            fill_pathname_join(g_defaults.dir.playlist,
-                  app_dir, "playlists", sizeof(g_defaults.dir.playlist));
-            fill_pathname_join(g_defaults.dir.remap,
-                  app_dir, "remaps", sizeof(g_defaults.dir.remap));
             fill_pathname_join(g_defaults.dir.wallpapers,
-                  app_dir, "wallpapers", sizeof(g_defaults.dir.wallpapers));
-            fill_pathname_join(g_defaults.dir.thumbnails,
-                  app_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
+                  app_dir, "assets/wallpapers", sizeof(g_defaults.dir.wallpapers));
             if(*downloads_dir && test_permissions(downloads_dir))
             {
                fill_pathname_join(g_defaults.dir.core_assets,
@@ -1873,11 +1865,9 @@ static void frontend_linux_get_env(int *argc,
                   fill_pathname_join(g_defaults.dir.sram,
                         ext_dir, "saves", sizeof(g_defaults.dir.sram));
                   path_mkdir(g_defaults.dir.sram);
-
                   fill_pathname_join(g_defaults.dir.savestate,
                         ext_dir, "states", sizeof(g_defaults.dir.savestate));
                   path_mkdir(g_defaults.dir.savestate);
-
                   fill_pathname_join(g_defaults.dir.system,
                         ext_dir, "system", sizeof(g_defaults.dir.system));
                   path_mkdir(g_defaults.dir.system);
@@ -1885,7 +1875,18 @@ static void frontend_linux_get_env(int *argc,
                   fill_pathname_join(g_defaults.dir.menu_config,
                         ext_dir, "config", sizeof(g_defaults.dir.menu_config));
                   path_mkdir(g_defaults.dir.menu_config);
-
+                  fill_pathname_join(g_defaults.dir.remap,
+                        ext_dir, "config/remap", sizeof(g_defaults.dir.remap));
+                  path_mkdir(g_defaults.dir.remap);
+                  fill_pathname_join(g_defaults.dir.thumbnails,
+                        ext_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
+                  path_mkdir(g_defaults.dir.thumbnails);
+                  fill_pathname_join(g_defaults.dir.playlist,
+                        ext_dir, "playlists", sizeof(g_defaults.dir.playlist));
+                  path_mkdir(g_defaults.dir.playlist);
+                  fill_pathname_join(g_defaults.dir.cheats,
+                        ext_dir, "cheats", sizeof(g_defaults.dir.cheats));
+                  path_mkdir(g_defaults.dir.cheats);
                   break;
                case SDCARD_NOT_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
@@ -1901,8 +1902,35 @@ static void frontend_linux_get_env(int *argc,
                   fill_pathname_join(g_defaults.dir.menu_config,
                         app_dir, "config", sizeof(g_defaults.dir.menu_config));
                   path_mkdir(g_defaults.dir.menu_config);
+                  fill_pathname_join(g_defaults.dir.remap,
+                        app_dir, "config/remap", sizeof(g_defaults.dir.remap));
+                  path_mkdir(g_defaults.dir.remap);
+                  fill_pathname_join(g_defaults.dir.thumbnails,
+                        app_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
+                  path_mkdir(g_defaults.dir.thumbnails);
+                  fill_pathname_join(g_defaults.dir.playlist,
+                        app_dir, "playlists", sizeof(g_defaults.dir.playlist));
+                  path_mkdir(g_defaults.dir.playlist);
+                  fill_pathname_join(g_defaults.dir.cheats,
+                        app_dir, "cheats", sizeof(g_defaults.dir.cheats));
+                  path_mkdir(g_defaults.dir.cheats);
                   break;
                case SDCARD_ROOT_WRITABLE:
+                  fill_pathname_join(g_defaults.dir.menu_config,
+                        sdcard_dir, "config", sizeof(g_defaults.dir.menu_config));
+                  path_mkdir(g_defaults.dir.menu_config);
+                  fill_pathname_join(g_defaults.dir.remap,
+                        sdcard_dir, "config/remap", sizeof(g_defaults.dir.remap));
+                  path_mkdir(g_defaults.dir.remap);
+                  fill_pathname_join(g_defaults.dir.thumbnails,
+                        sdcard_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
+                  path_mkdir(g_defaults.dir.thumbnails);
+                  fill_pathname_join(g_defaults.dir.playlist,
+                        sdcard_dir, "playlists", sizeof(g_defaults.dir.playlist));
+                  path_mkdir(g_defaults.dir.playlist);
+                  fill_pathname_join(g_defaults.dir.cheats,
+                        sdcard_dir, "cheats", sizeof(g_defaults.dir.cheats));
+                  path_mkdir(g_defaults.dir.cheats);
                default:
                   break;
             }

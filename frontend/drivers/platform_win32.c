@@ -279,6 +279,16 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
    fill_pathname_expand_special(g_defaults.dir.screenshot,
       ":/screenshots", sizeof(g_defaults.dir.screenshot));
 
+/* don't force this in the driver anymore, these will be handled by
+   a dummy config file  so they can be reset to content dir
+
+   fill_pathname_expand_special(g_defaults.dir.sram,
+      ":/saves", sizeof(g_defaults.dir.sram));
+   fill_pathname_expand_special(g_defaults.dir.savestate,
+      ":/states", sizeof(g_defaults.dir.savestate));
+   fill_pathname_expand_special(g_defaults.dir.system,
+      ":/system", sizeof(g_defaults.dir.system));
+*/
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
