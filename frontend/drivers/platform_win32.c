@@ -259,6 +259,10 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
    strlcpy(g_defaults.dir.shader,       ":\\shaders",           sizeof(g_defaults.dir.shader));
    strlcpy(g_defaults.dir.core_assets,  ":\\downloads",         sizeof(g_defaults.dir.core_assets));
    strlcpy(g_defaults.dir.screenshot,   ":\\screenshots",       sizeof(g_defaults.dir.screenshot));
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+   snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
+#endif
 }
 
 frontend_ctx_driver_t frontend_ctx_win32 = {
