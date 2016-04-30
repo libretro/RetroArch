@@ -260,8 +260,10 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
    strlcpy(g_defaults.dir.core_assets,  ":\\downloads",         sizeof(g_defaults.dir.core_assets));
    strlcpy(g_defaults.dir.screenshot,   ":\\screenshots",       sizeof(g_defaults.dir.screenshot));
 
+#ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
+#endif
 #endif
 }
 
