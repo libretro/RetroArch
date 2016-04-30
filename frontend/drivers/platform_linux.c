@@ -56,7 +56,7 @@
  *
  * See http://www.kernel.org/doc/Documentation/cputopology.txt
  *
- * For now, we don't expect more than 32 cores on mobile devices, 
+ * For now, we don't expect more than 32 cores on mobile devices,
  * so keep everything simple.
  */
 typedef struct
@@ -100,7 +100,7 @@ static char *extract_cpuinfo_field(char* buffer,
    int  fieldlen = strlen(field);
    char* bufend  = buffer + length;
    char* result  = NULL;
-   /* Look for first field occurrence, 
+   /* Look for first field occurrence,
     * and ensures it starts the line. */
    const char *p = buffer;
 
@@ -140,7 +140,7 @@ static char *extract_cpuinfo_field(char* buffer,
    return result;
 }
 
-/* Checks that a space-separated list of items 
+/* Checks that a space-separated list of items
  * contains one given 'item'.
  * Returns 1 if found, 0 otherwise.
  */
@@ -484,19 +484,22 @@ error:
 }
 
 #ifdef ANDROID
-#define SDCARD_ROOT_WRITABLE     1
-#define SDCARD_EXT_DIR_WRITABLE  2
-#define SDCARD_NOT_WRITABLE      3
+/* Internal SDCARD writable */
+#define INT_SD_WRITABLE         1
+/* Internal SDCARD not writable but the private app dir is */
+#define INT_SD_APPDIR_WRITABLE  2
+/* Internal SDCARD not writable at all */
+#define INT_SD_NOT_WRITABLE     3
 
 struct android_app *g_android;
 static pthread_key_t thread_key;
 
 char screenshot_dir[PATH_MAX_LENGTH];
 char downloads_dir[PATH_MAX_LENGTH];
-char apk_path[PATH_MAX_LENGTH];
-char sdcard_dir[PATH_MAX_LENGTH];
+char apk_dir[PATH_MAX_LENGTH];
+char int_sd_dir[PATH_MAX_LENGTH];
 char app_dir[PATH_MAX_LENGTH];
-char ext_dir[PATH_MAX_LENGTH];
+char int_sd_app_dir[PATH_MAX_LENGTH];
 
 
 /* forward declaration */
@@ -753,7 +756,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
         void* savedState, size_t savedStateSize)
 {
    int msgpipe[2];
-   struct android_app *android_app = 
+   struct android_app *android_app =
       (struct android_app*)calloc(1, sizeof(*android_app));
 
    if (!android_app)
@@ -1671,15 +1674,15 @@ static void frontend_linux_get_env(int *argc,
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      *sdcard_dir = '\0';
+      *int_sd_dir = '\0';
 
       if (argv && *argv)
-         strlcpy(sdcard_dir, argv, sizeof(sdcard_dir));
+         strlcpy(int_sd_dir, argv, sizeof(int_sd_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*sdcard_dir)
+      if (*int_sd_dir)
       {
-         RARCH_LOG("External storage location [%s]\n", sdcard_dir);
+         RARCH_LOG("External storage location [%s]\n", int_sd_dir);
          /* TODO base dir handler */
       }
    }
@@ -1733,15 +1736,15 @@ static void frontend_linux_get_env(int *argc,
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      *apk_path = '\0';
+      *apk_dir = '\0';
 
       if (argv && *argv)
-         strlcpy(apk_path, argv, sizeof(apk_path));
+         strlcpy(apk_dir, argv, sizeof(apk_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*apk_path)
+      if (*apk_dir)
       {
-         RARCH_LOG("APK location [%s].\n", apk_path);
+         RARCH_LOG("APK location [%s].\n", apk_dir);
       }
    }
 
@@ -1752,15 +1755,15 @@ static void frontend_linux_get_env(int *argc,
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      *ext_dir = '\0';
+      *int_sd_app_dir = '\0';
 
       if (argv && *argv)
-         strlcpy(ext_dir, argv, sizeof(ext_dir));
+         strlcpy(int_sd_app_dir, argv, sizeof(int_sd_app_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*ext_dir)
+      if (*int_sd_app_dir)
       {
-         RARCH_LOG("External files location [%s]\n", ext_dir);
+         RARCH_LOG("External files location [%s]\n", int_sd_app_dir);
       }
    }
 
@@ -1779,20 +1782,20 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(app_dir, argv, sizeof(app_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      //set paths depending on the ability to write to sdcard_dir
+      //set paths depending on the ability to write to int_sd_dir
 
-      if(*sdcard_dir)
+      if(*int_sd_dir)
       {
-         if(test_permissions(sdcard_dir))
-            perms = SDCARD_ROOT_WRITABLE;
+         if(test_permissions(int_sd_dir))
+            perms = INT_SD_WRITABLE;
       }
-      else if(*ext_dir)
+      else if(*int_sd_app_dir)
       {
-         if(test_permissions(ext_dir))
-            perms = SDCARD_EXT_DIR_WRITABLE;
+         if(test_permissions(int_sd_app_dir))
+            perms = INT_SD_APPDIR_WRITABLE;
       }
       else
-         perms = SDCARD_NOT_WRITABLE;
+         perms = INT_SD_NOT_WRITABLE;
 
       RARCH_LOG("SD permissions: %d",perms);
 
@@ -1861,34 +1864,34 @@ static void frontend_linux_get_env(int *argc,
 
             switch (perms)
             {
-               case SDCARD_EXT_DIR_WRITABLE:
+               case INT_SD_APPDIR_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
-                        ext_dir, "saves", sizeof(g_defaults.dir.sram));
+                        int_sd_app_dir, "saves", sizeof(g_defaults.dir.sram));
                   path_mkdir(g_defaults.dir.sram);
                   fill_pathname_join(g_defaults.dir.savestate,
-                        ext_dir, "states", sizeof(g_defaults.dir.savestate));
+                        int_sd_app_dir, "states", sizeof(g_defaults.dir.savestate));
                   path_mkdir(g_defaults.dir.savestate);
                   fill_pathname_join(g_defaults.dir.system,
-                        ext_dir, "system", sizeof(g_defaults.dir.system));
+                        int_sd_app_dir, "system", sizeof(g_defaults.dir.system));
                   path_mkdir(g_defaults.dir.system);
 
                   fill_pathname_join(g_defaults.dir.menu_config,
-                        ext_dir, "config", sizeof(g_defaults.dir.menu_config));
+                        int_sd_app_dir, "config", sizeof(g_defaults.dir.menu_config));
                   path_mkdir(g_defaults.dir.menu_config);
                   fill_pathname_join(g_defaults.dir.remap,
-                        ext_dir, "config/remap", sizeof(g_defaults.dir.remap));
+                        int_sd_app_dir, "config/remap", sizeof(g_defaults.dir.remap));
                   path_mkdir(g_defaults.dir.remap);
                   fill_pathname_join(g_defaults.dir.thumbnails,
-                        ext_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
+                        int_sd_app_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
                   path_mkdir(g_defaults.dir.thumbnails);
                   fill_pathname_join(g_defaults.dir.playlist,
-                        ext_dir, "playlists", sizeof(g_defaults.dir.playlist));
+                        int_sd_app_dir, "playlists", sizeof(g_defaults.dir.playlist));
                   path_mkdir(g_defaults.dir.playlist);
                   fill_pathname_join(g_defaults.dir.cheats,
-                        ext_dir, "cheats", sizeof(g_defaults.dir.cheats));
+                        int_sd_app_dir, "cheats", sizeof(g_defaults.dir.cheats));
                   path_mkdir(g_defaults.dir.cheats);
                   break;
-               case SDCARD_NOT_WRITABLE:
+               case INT_SD_NOT_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
                         app_dir, "saves", sizeof(g_defaults.dir.sram));
                   path_mkdir(g_defaults.dir.sram);
@@ -1915,21 +1918,21 @@ static void frontend_linux_get_env(int *argc,
                         app_dir, "cheats", sizeof(g_defaults.dir.cheats));
                   path_mkdir(g_defaults.dir.cheats);
                   break;
-               case SDCARD_ROOT_WRITABLE:
+               case INT_SD_WRITABLE:
                   fill_pathname_join(g_defaults.dir.menu_config,
-                        sdcard_dir, "config", sizeof(g_defaults.dir.menu_config));
+                        int_sd_dir, "RetroArch/config", sizeof(g_defaults.dir.menu_config));
                   path_mkdir(g_defaults.dir.menu_config);
                   fill_pathname_join(g_defaults.dir.remap,
-                        sdcard_dir, "config/remap", sizeof(g_defaults.dir.remap));
+                        int_sd_dir, "RetroArch/config/remap", sizeof(g_defaults.dir.remap));
                   path_mkdir(g_defaults.dir.remap);
                   fill_pathname_join(g_defaults.dir.thumbnails,
-                        sdcard_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
+                        int_sd_dir, "RetroArch/thumbnails", sizeof(g_defaults.dir.thumbnails));
                   path_mkdir(g_defaults.dir.thumbnails);
                   fill_pathname_join(g_defaults.dir.playlist,
-                        sdcard_dir, "playlists", sizeof(g_defaults.dir.playlist));
+                        int_sd_dir, "RetroArch/playlists", sizeof(g_defaults.dir.playlist));
                   path_mkdir(g_defaults.dir.playlist);
                   fill_pathname_join(g_defaults.dir.cheats,
-                        sdcard_dir, "cheats", sizeof(g_defaults.dir.cheats));
+                        int_sd_dir, "RetroArch/cheats", sizeof(g_defaults.dir.cheats));
                   path_mkdir(g_defaults.dir.cheats);
                default:
                   break;
@@ -1950,15 +1953,15 @@ static void frontend_linux_get_env(int *argc,
 
             /* create save and system directories in the internal sd too */
             fill_pathname_join(buf,
-                  ext_dir, "saves", sizeof(buf));
+                  int_sd_app_dir, "saves", sizeof(buf));
             path_mkdir(buf);
 
             fill_pathname_join(buf,
-                  ext_dir, "states", sizeof(buf));
+                  int_sd_app_dir, "states", sizeof(buf));
             path_mkdir(buf);
 
             fill_pathname_join(buf,
-                  ext_dir, "system", sizeof(buf));
+                  int_sd_app_dir, "system", sizeof(buf));
             path_mkdir(buf);
 
             RARCH_LOG("Default savefile folder: [%s]",   g_defaults.dir.sram);
@@ -2170,9 +2173,9 @@ static int frontend_android_parse_drive_list(void *data)
    menu_entries_add(list,
          app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
    menu_entries_add(list,
-         ext_dir, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
+         int_sd_app_dir, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
    menu_entries_add(list,
-         sdcard_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
+         int_sd_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
 
    menu_entries_add(list, "/", "",
          MENU_FILE_DIRECTORY, 0, 0);
