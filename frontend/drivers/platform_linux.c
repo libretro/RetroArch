@@ -1964,9 +1964,7 @@ static void frontend_linux_get_env(int *argc,
     * for gamepad-like/console devices. */
 
    if (device_is_game_console(device_model))
-   {
       snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
-   }
 
 #else
    char base_path[PATH_MAX];
