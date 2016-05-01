@@ -2650,6 +2650,15 @@ static int menu_displaylist_parse_generic(
    dir_list_sort(str_list, true);
 
    list_size = str_list->size;
+    
+#ifdef HAVE_NETWORKING
+    if (hash_label == MENU_LABEL_CORE_LIST)
+       menu_entries_add(info->list,
+                     "Download Core...",
+                     menu_hash_to_str(MENU_LABEL_CORE_UPDATER_LIST),
+                     MENU_SETTING_ACTION, 0, 0);
+#endif
+    
 
    if (list_size == 0)
    {
