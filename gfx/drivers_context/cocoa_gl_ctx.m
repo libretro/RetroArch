@@ -48,6 +48,10 @@
 #define UIUserInterfaceIdiomTV 2
 #endif
 
+#ifndef UIUserInterfaceIdiomCarPlay
+#define UIUserInterfaceIdiomCarPlay 3
+#endif
+
 @interface EAGLContext (OSXCompat) @end
 @implementation EAGLContext (OSXCompat)
 + (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
@@ -464,6 +468,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
           dpi = 163 * scale;
           break;
        case UIUserInterfaceIdiomTV:
+       case UIUserInterfaceIdiomCarPlay:
           /* TODO */
           break;
     }
