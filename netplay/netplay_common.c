@@ -45,13 +45,13 @@ bool np_send_nickname(netplay_t *netplay, int fd)
 {
    uint8_t nick_size = strlen(netplay->nick);
 
-   if (!socket_send_all_blocking(fd, &nick_size, sizeof(nick_size)))
+   if (!socket_send_all_blocking(fd, &nick_size, sizeof(nick_size), false))
    {
       RARCH_ERR("Failed to send nick size.\n");
       return false;
    }
 
-   if (!socket_send_all_blocking(fd, netplay->nick, nick_size))
+   if (!socket_send_all_blocking(fd, netplay->nick, nick_size, false))
    {
       RARCH_ERR("Failed to send nick.\n");
       return false;
@@ -210,7 +210,7 @@ bool np_send_info(netplay_t *netplay)
    header[1] = htonl(np_impl_magic());
    header[2] = htonl(mem_info.size);
 
-   if (!socket_send_all_blocking(netplay->fd, header, sizeof(header)))
+   if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
       return false;
 
    if (!np_send_nickname(netplay, netplay->fd))
@@ -291,7 +291,7 @@ bool np_get_info(netplay_t *netplay)
    sram      = mem_info.data;
    sram_size = mem_info.size;
 
-   if (!socket_send_all_blocking(netplay->fd, sram, sram_size))
+   if (!socket_send_all_blocking(netplay->fd, sram, sram_size, false))
    {
       RARCH_ERR("Failed to send SRAM data to client.\n");
       return false;
