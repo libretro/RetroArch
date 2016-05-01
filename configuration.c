@@ -24,6 +24,7 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 
+#include "file_path_special.h"
 #include "audio/audio_driver.h"
 #include "configuration.h"
 #include "config.def.h"
@@ -950,19 +951,12 @@ static void config_set_defaults(void)
  **/
 static config_file_t *open_default_config_file(void)
 {
+   char application_data[PATH_MAX_LENGTH];
    char conf_path[PATH_MAX_LENGTH] = {0};
    char app_path[PATH_MAX_LENGTH]  = {0};
-   const char *xdg                 = NULL;
-   const char *home                = NULL;
    config_file_t *conf             = NULL;
    bool saved                      = false;
    global_t *global                = global_get_ptr();
-
-   (void)conf_path;
-   (void)app_path;
-   (void)saved;
-   (void)xdg;
-   (void)home;
 
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
@@ -973,11 +967,10 @@ static config_file_t *open_default_config_file(void)
 
    if (!conf)
    {
-      const char *appdata = getenv("APPDATA");
-
-      if (appdata)
+      if (fill_pathname_application_data(application_data,
+            sizeof(application_data)))
       {
-         fill_pathname_join(conf_path, appdata,
+         fill_pathname_join(conf_path, application_data,
                "retroarch.cfg", sizeof(conf_path));
          conf = config_file_new(conf_path);
       }
@@ -1010,13 +1003,12 @@ static config_file_t *open_default_config_file(void)
       RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
 #elif defined(OSX)
-   home = getenv("HOME");
-
-   if (!home)
+   if (!fill_pathname_application_data(application_data,
+            sizeof(application_data)))
       return NULL;
 
-   fill_pathname_join(conf_path, home,
-         "Library/Application Support/RetroArch", sizeof(conf_path));
+   fill_pathname_join(conf_path, application_data,
+         "RetroArch", sizeof(conf_path));
    path_mkdir(conf_path);
 
    fill_pathname_join(conf_path, conf_path,
@@ -1046,99 +1038,77 @@ static config_file_t *open_default_config_file(void)
       RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
 #elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
-   xdg  = getenv("XDG_CONFIG_HOME");
-   home = getenv("HOME");
+   bool has_application_data = fill_pathname_application_data(application_data,
+            sizeof(application_data));
 
-   /* XDG_CONFIG_HOME falls back to $HOME/.config. */
-   if (xdg)
-      fill_pathname_join(conf_path, xdg,
-            "retroarch/retroarch.cfg", sizeof(conf_path));
-   else if (home)
-#ifdef __HAIKU__
-      fill_pathname_join(conf_path, home,
-            "config/settings/retroarch/retroarch.cfg", sizeof(conf_path));
-#else
-      fill_pathname_join(conf_path, home,
-            ".config/retroarch/retroarch.cfg", sizeof(conf_path));
-#endif
-
-   if (xdg || home)
+   if (has_application_data)
    {
+      fill_pathname_join(conf_path, application_data,
+            "retroarch.cfg", sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new(conf_path);
    }
 
    /* Fallback to $HOME/.retroarch.cfg. */
-   if (!conf && home)
+   if (!conf && getenv("HOME"))
    {
-      fill_pathname_join(conf_path, home,
+      fill_pathname_join(conf_path, getenv("HOME"),
             ".retroarch.cfg", sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new(conf_path);
    }
 
-   if (!conf)
+   if (!conf && has_application_data)
    {
-      if (home || xdg)
+      char basedir[PATH_MAX_LENGTH] = {0};
+
+      /* Try to create a new config file. */
+
+      strlcpy(conf_path, application_data, sizeof(conf_path));
+      fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
+
+      if (path_mkdir(basedir))
       {
-         char basedir[PATH_MAX_LENGTH] = {0};
+         char skeleton_conf[PATH_MAX_LENGTH] = {0};
 
-         /* Try to create a new config file. */
+         fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
+               "retroarch.cfg", sizeof(skeleton_conf));
+         conf = config_file_new(skeleton_conf);
+         if (conf)
+            RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
+         else
+            conf = config_file_new(NULL);
 
-         /* XDG_CONFIG_HOME falls back to $HOME/.config. */
-         if (xdg)
-            fill_pathname_join(conf_path, xdg,
-                  "retroarch/retroarch.cfg", sizeof(conf_path));
-         else if (home)
-#ifdef __HAIKU__
-            fill_pathname_join(conf_path, home,
-                  "config/settings/retroarch/retroarch.cfg", sizeof(conf_path));
-#else
-         fill_pathname_join(conf_path, home,
-               ".config/retroarch/retroarch.cfg", sizeof(conf_path));
-#endif
-
-         fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
-
-         if (path_mkdir(basedir))
+         if (conf)
          {
-            char skeleton_conf[PATH_MAX_LENGTH] = {0};
-
-            fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
-                  "retroarch.cfg", sizeof(skeleton_conf));
-            conf = config_file_new(skeleton_conf);
-            if (conf)
-               RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
-            else
-               conf = config_file_new(NULL);
-
-            if (conf)
-            {
-               /* Since this is a clean config file, we can safely use config_save_on_exit. */
-               config_set_bool(conf, "config_save_on_exit", true);
-               saved = config_file_write(conf, conf_path);
-            }
-
-            if (!saved)
-            {
-               /* WARN here to make sure user has a good chance of seeing it. */
-               RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
-               config_file_free(conf);
-
-               return NULL;
-            }
-
-            RARCH_WARN("Config: Created new config file in: \"%s\".\n", conf_path);
+            /* Since this is a clean config file, we can safely use config_save_on_exit. */
+            config_set_bool(conf, "config_save_on_exit", true);
+            saved = config_file_write(conf, conf_path);
          }
+
+         if (!saved)
+         {
+            /* WARN here to make sure user has a good chance of seeing it. */
+            RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
+            config_file_free(conf);
+
+            return NULL;
+         }
+
+         RARCH_WARN("Config: Created new config file in: \"%s\".\n", conf_path);
       }
    }
 #endif
 
+   (void)application_data;
+   (void)conf_path;
+   (void)app_path;
+   (void)saved;
+
    if (!conf)
       return NULL;
 
-   strlcpy(global->path.config, conf_path,
-         sizeof(global->path.config));
+   strlcpy(global->path.config, conf_path, sizeof(global->path.config));
 
    return conf;
 }
