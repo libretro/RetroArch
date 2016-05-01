@@ -1437,27 +1437,18 @@ static int action_ok_download_generic(const char *path,
    fill_pathname_join(s, settings->network.buildbot_assets_url,
          "frontend", sizeof(s));
    if (string_is_equal(type_msg, "cb_core_content_download"))
-   {
       fill_pathname_join(s, settings->network.buildbot_assets_url,
             "cores/gw", sizeof(s));
-   }
 #ifdef HAVE_LAKKA
+   /* TODO unhardcode this path*/
    else if (string_is_equal(type_msg, "cb_lakka_download"))
-   {
-      /* TODO unhardcode this path*/
       fill_pathname_join(s, "http://mirror.lakka.tv/nightly",
             LAKKA_PROJECT, sizeof(s));
-   }
 #endif
    else if (string_is_equal(type_msg, "cb_update_assets"))
       path = "assets.zip";
    else if (string_is_equal(type_msg, "cb_update_autoconfig_profiles"))
-      path = "autoconf.zip";
-
-#ifdef HAVE_HID
-   else if (string_is_equal(type_msg, "cb_update_autoconfig_profiles_hid"))
-      path = "autoconf_hid.zip";
-#endif
+      path = "autoconfig.zip";
    else if (string_is_equal(type_msg, "cb_update_core_info_files"))
       path = "info.zip";
    else if (string_is_equal(type_msg, "cb_update_cheats"))
@@ -1471,9 +1462,7 @@ static int action_ok_download_generic(const char *path,
    else if (string_is_equal(type_msg, "cb_update_shaders_cg"))
       path = "shaders_cg.zip";
    else if (string_is_equal(type_msg, "cb_core_thumbnails_download"))
-   {
       strlcpy(s, "http://thumbnailpacks.libretro.com", sizeof(s));
-   }
    else
       strlcpy(s, settings->network.buildbot_url, sizeof(s));
 
