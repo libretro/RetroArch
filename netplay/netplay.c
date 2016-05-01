@@ -762,10 +762,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
    netplay->udp_fd = socket_init((void**)&netplay->addr, port, server, SOCKET_TYPE_DATAGRAM);
 
    if (netplay->udp_fd < 0)
-   {
-      RARCH_ERR("Failed to initialize socket.\n");
-      return false;
-   }
+      goto error;
 
    if (!server)
    {
@@ -782,6 +779,10 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
    }
 
    return true;
+
+error:
+   RARCH_ERR("Failed to initialize socket.\n");
+   return false;
 }
 
 static bool init_socket(netplay_t *netplay, const char *server, uint16_t port)
