@@ -54,15 +54,18 @@ static int network_interface_up(struct sockaddr_in *target, int index,
    if (sceNetShowNetstat() == PSP2_NET_ERROR_ENOTINIT)
    {
       SceNetInitParam initparam;
-      net_memory = malloc(NET_INIT_SIZE);
+      net_memory       = malloc(NET_INIT_SIZE);
 
       initparam.memory = net_memory;
-      initparam.size = NET_INIT_SIZE;
-      initparam.flags = 0;
+      initparam.size   = NET_INIT_SIZE;
+      initparam.flags  = 0;
 
       sceNetInit(&initparam);
    }
-   *s                 = sceNetSocket("RA_netlogger", PSP2_NET_AF_INET, PSP2_NET_SOCK_DGRAM, 0);
+
+   *s                 = sceNetSocket("RA_netlogger",
+         PSP2_NET_AF_INET, PSP2_NET_SOCK_DGRAM, 0);
+
    target->sin_family = PSP2_NET_AF_INET;
    target->sin_port   = sceNetHtons(udp_port);
    target->sin_addr   = inet_aton(ip_address);
@@ -111,18 +114,6 @@ static int network_interface_up(struct sockaddr_in *target, int index,
    return 0;
 }
 
-static int network_interface_down(struct sockaddr_in *target, int *s)
-{
-   int ret = socket_close(*s);
-
-   network_deinit();
-
-   if (net_memory)
-      free(net_memory);
-
-   return ret;
-}
-
 void logger_init (void)
 {
    if (network_interface_up(&target, 1,
@@ -132,7 +123,14 @@ void logger_init (void)
 
 void logger_shutdown (void)
 {
-   if (network_interface_down(&target, &g_sid) < 0)
+   int ret = socket_close(g_sid);
+
+   network_deinit();
+
+   if (net_memory)
+      free(net_memory);
+
+   if (ret < 0)
       printf("Could not deinitialize network logger interface.\n");
 }
 
@@ -150,5 +148,11 @@ void logger_send_v(const char *__format, va_list args)
    int len;
    vsnprintf(sendbuf,4000,__format, args);
    len = strlen(sendbuf);
-   sendto(g_sid,sendbuf,len,MSG_DONTWAIT,(struct sockaddr*)&target,sizeof(target));
+
+   sendto(g_sid,
+         sendbuf,
+         len,
+         MSG_DONTWAIT,
+         (struct sockaddr*)&target,
+         sizeof(target));
 }
