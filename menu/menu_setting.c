@@ -6019,7 +6019,7 @@ static bool setting_append_list(
                &settings->menu.thumbnails,
                menu_hash_to_str(MENU_LABEL_THUMBNAILS),
                menu_hash_to_str(MENU_LABEL_VALUE_THUMBNAILS),
-               0,
+               menu_thumbnails_default,
                &group_info,
                &subgroup_info,
                parent_group,

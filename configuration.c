@@ -622,7 +622,7 @@ static void config_set_defaults(void)
    settings->menu.timedate_enable              = true;
    settings->menu.core_enable                  = true;
    settings->menu.dynamic_wallpaper_enable     = false;
-   settings->menu.thumbnails                   = 0;
+   settings->menu.thumbnails                   = menu_thumbnails_default;
    settings->menu.show_advanced_settings       = show_advanced_settings;
    settings->menu.entry_normal_color           = menu_entry_normal_color;
    settings->menu.entry_hover_color            = menu_entry_hover_color;
