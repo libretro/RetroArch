@@ -706,9 +706,8 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    char port_buf[16]               = {0};
    bool ret                        = false;
    const struct addrinfo *tmp_info = NULL;
-   struct addrinfo hints, *res     = NULL;
-
-   memset(&hints, 0, sizeof(hints));
+   struct addrinfo *res            = NULL;
+   struct addrinfo hints           = {0};
 
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family = AF_INET;
