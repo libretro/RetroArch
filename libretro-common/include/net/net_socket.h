@@ -52,6 +52,8 @@ int socket_receive_all_blocking(int fd, void *data_, size_t size);
 
 bool socket_bind(int fd, void *data);
 
+int socket_connect(int fd, void *data, bool timeout_enable);
+
 RETRO_END_DECLS
 
 #endif

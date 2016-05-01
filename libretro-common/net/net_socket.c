@@ -172,3 +172,23 @@ bool socket_bind(int fd, void *data)
       return false;
    return true;
 }
+
+int socket_connect(int fd, void *data, bool timeout_enable)
+{
+   struct addrinfo *addr = (struct addrinfo*)data;
+
+#ifndef _WIN32
+#ifndef VITA
+   if (timeout_enable)
+   {
+      struct timeval timeout;
+      timeout.tv_sec  = 4;
+      timeout.tv_usec = 0;
+
+      setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
+   }
+#endif
+#endif
+
+   return connect(fd, addr->ai_addr, addr->ai_addrlen);
+}

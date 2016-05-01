@@ -74,25 +74,12 @@ struct http_connection_t
 static int net_http_new_socket(const char *domain, int port)
 {
    int ret;
-#ifndef _WIN32
-#ifndef VITA
-   struct timeval timeout;
-#endif
-#endif
    struct addrinfo *addr = NULL;
    int fd = socket_init((void**)&addr, port, domain, SOCKET_TYPE_STREAM);
    if (fd == -1)
       return -1;
 
-#ifndef _WIN32
-#ifndef VITA
-   timeout.tv_sec=4;
-   timeout.tv_usec=0;
-   setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
-#endif
-#endif
-
-   ret = connect(fd, addr->ai_addr, addr->ai_addrlen);
+   ret = socket_connect(fd, (void*)addr, true);
 
    freeaddrinfo_retro(addr);
 

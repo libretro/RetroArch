@@ -659,7 +659,7 @@ static int init_tcp_connection(const struct addrinfo *res,
 
    if (server)
    {
-      if (connect(fd, res->ai_addr, res->ai_addrlen) < 0)
+      if (socket_connect(fd, (void*)res, false) < 0)
       {
          ret = false;
          goto end;
