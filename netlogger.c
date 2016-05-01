@@ -65,8 +65,7 @@ static int network_interface_up(struct sockaddr_in *target, int index,
    *s                 = sceNetSocket("RA_netlogger", PSP2_NET_AF_INET, PSP2_NET_SOCK_DGRAM, 0);
    target->sin_family = PSP2_NET_AF_INET;
    target->sin_port   = sceNetHtons(udp_port);
-
-   sceNetInetPton(PSP2_NET_AF_INET, ip_address, &target->sin_addr);
+   target->sin_addr   = inet_aton(ip_address);
 #else
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
@@ -116,11 +115,7 @@ static int network_interface_down(struct sockaddr_in *target, int *s)
 {
    int ret = socket_close(*s);
 
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   cellNetCtlTerm();
-#elif defined(GEKKO) && !defined(HW_DOL)
-   net_deinit();
-#endif
+   network_deinit();
 
    if (net_memory)
       free(net_memory);

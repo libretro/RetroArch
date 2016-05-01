@@ -188,28 +188,21 @@ bool network_init(void)
    sys_net_initialize_network();
 #elif defined(VITA)
    SceNetInitParam initparam;
-   /* Init Net */
+
    if (sceNetShowNetstat() == PSP2_NET_ERROR_ENOTINIT)
    {
       _net_compat_net_memory = malloc(COMPAT_NET_INIT_SIZE);
 
-      initparam.memory = _net_compat_net_memory;
-      initparam.size = COMPAT_NET_INIT_SIZE;
-      initparam.flags = 0;
+      initparam.memory       = _net_compat_net_memory;
+      initparam.size         = COMPAT_NET_INIT_SIZE;
+      initparam.flags        = 0;
 
       sceNetInit(&initparam);
-      //printf("sceNetInit(): 0x%08X\n", ret);
 
-      /* Init NetCtl */
       sceNetCtlInit();
-   }
-   else
-   {
-      //printf("Net is already initialized.\n");
    }
    
    retro_epoll_fd = sceNetEpollCreate("epoll", 0);
-   //printf("Epoll %x\n",retro_epoll_fd);
 #else
    signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
 #endif
@@ -228,6 +221,7 @@ void network_deinit(void)
 #if defined(_WIN32)
    WSACleanup();
 #elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+   cellNetCtlTerm();
    sys_net_finalize_network();
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 #elif defined(VITA)
@@ -239,5 +233,7 @@ void network_deinit(void)
       free(_net_compat_net_memory);
       _net_compat_net_memory = NULL;
    }
+#elif defined(GEKKO) && !defined(HW_DOL)
+   net_deinit();
 #endif
 }
