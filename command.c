@@ -136,7 +136,7 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
    if (!socket_nonblock(handle->net_fd))
       goto error;
 
-   if (!socket_bind(handle->net_fd, res))
+   if (!socket_bind(handle->net_fd, (void*)res))
    {
       RARCH_ERR("Failed to bind socket.\n");
       goto error;

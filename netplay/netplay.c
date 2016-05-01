@@ -667,10 +667,7 @@ static int init_tcp_connection(const struct addrinfo *res,
    }
    else
    {
-      int yes = 1;
-      setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&yes, sizeof(int));
-
-      if (bind(fd, res->ai_addr, res->ai_addrlen) < 0 ||
+      if (  !socket_bind(fd, (void*)res) || 
             listen(fd, spectate ? MAX_SPECTATORS : 1) < 0)
       {
          ret = false;
