@@ -21,7 +21,10 @@
  * - Some sort of connection control, it only sends packets
  *   but there is no acknoledgement of a connection o keepalives
  * - Send player name
- * - Render something on-screen
+ * - Render something on-screen maybe a gui to configure IP and port
+     instead of the ridiculously long strings we're using now
+ * - Allow changing IP address and port in runtime
+ * - Support other platforms
 */
 
  #include <stdio.h>
@@ -39,15 +42,14 @@
 
 #include "../../libretro.h"
  
-#define SERVER "127.0.0.1"
-#define PORT 55400
-
 struct retro_log_callback logger;
 retro_log_printf_t log_cb;
 static uint16_t *frame_buf;
 struct sockaddr_in si_other;
 int s, slen=sizeof(si_other);
 char message[64];
+char server[64];
+int port;
 WSADATA wsa;
 int input_state = 0;
 
@@ -61,17 +63,6 @@ void retro_init(void)
       log_cb(RETRO_LOG_INFO, "Failed. Error Code : %d",WSAGetLastError());
    }
    log_cb(RETRO_LOG_INFO, "Sockets initialised.\n");
-
-   //create socket
-   if ( (s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_ERROR)
-   {
-      log_cb(RETRO_LOG_INFO, "socket() failed with error code : %d" , WSAGetLastError());
-   }
-   //setup address structure
-   memset((char *) &si_other, 0, sizeof(si_other));
-   si_other.sin_family = AF_INET;
-   si_other.sin_port = htons(PORT);
-   si_other.sin_addr.S_un.S_addr = inet_addr(SERVER);
 }
 
 void retro_deinit(void)
@@ -155,6 +146,17 @@ void update_input()
 
 void retro_set_environment(retro_environment_t cb)
 {
+   static const struct retro_variable vars[] = {
+      { "port", "Port; 55400|55401|55402|55403|55404|55405|55406|55407|55409|55409" },
+      { "ip_octet1", "IP address part 1; 0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|35|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|51|52|53|54|55|56|57|58|59|60|61|62|63|64|65|66|67|68|69|70|71|72|73|74|75|76|77|78|79|80|81|82|83|84|85|86|87|88|89|90|91|92|93|94|95|96|97|98|99|100|101|102|103|104|105|106|107|108|109|110|111|112|113|114|115|116|117|118|119|120|121|122|123|124|125|126|127|128|129|130|131|132|133|135|135|136|137|138|139|140|141|142|143|144|145|146|147|148|149|150|151|152|153|154|155|156|157|158|159|160|161|162|163|164|165|166|167|168|169|170|171|172|173|174|175|176|177|178|179|180|181|182|183|184|185|186|187|188|189|190|191|192|193|194|195|196|197|198|199|200|201|202|203|204|205|206|207|208|209|210|211|212|213|214|215|216|217|218|219|220|221|222|223|224|225|226|227|228|229|230|231|232|233|235|235|236|237|238|239|240|241|242|243|244|245|246|247|248|249|250|251|252|253|254|255" },
+      { "ip_octet2", "IP address part 2; 0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|35|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|51|52|53|54|55|56|57|58|59|60|61|62|63|64|65|66|67|68|69|70|71|72|73|74|75|76|77|78|79|80|81|82|83|84|85|86|87|88|89|90|91|92|93|94|95|96|97|98|99|100|101|102|103|104|105|106|107|108|109|110|111|112|113|114|115|116|117|118|119|120|121|122|123|124|125|126|127|128|129|130|131|132|133|135|135|136|137|138|139|140|141|142|143|144|145|146|147|148|149|150|151|152|153|154|155|156|157|158|159|160|161|162|163|164|165|166|167|168|169|170|171|172|173|174|175|176|177|178|179|180|181|182|183|184|185|186|187|188|189|190|191|192|193|194|195|196|197|198|199|200|201|202|203|204|205|206|207|208|209|210|211|212|213|214|215|216|217|218|219|220|221|222|223|224|225|226|227|228|229|230|231|232|233|235|235|236|237|238|239|240|241|242|243|244|245|246|247|248|249|250|251|252|253|254|255" },
+      { "ip_octet3", "IP address part 3; 0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|35|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|51|52|53|54|55|56|57|58|59|60|61|62|63|64|65|66|67|68|69|70|71|72|73|74|75|76|77|78|79|80|81|82|83|84|85|86|87|88|89|90|91|92|93|94|95|96|97|98|99|100|101|102|103|104|105|106|107|108|109|110|111|112|113|114|115|116|117|118|119|120|121|122|123|124|125|126|127|128|129|130|131|132|133|135|135|136|137|138|139|140|141|142|143|144|145|146|147|148|149|150|151|152|153|154|155|156|157|158|159|160|161|162|163|164|165|166|167|168|169|170|171|172|173|174|175|176|177|178|179|180|181|182|183|184|185|186|187|188|189|190|191|192|193|194|195|196|197|198|199|200|201|202|203|204|205|206|207|208|209|210|211|212|213|214|215|216|217|218|219|220|221|222|223|224|225|226|227|228|229|230|231|232|233|235|235|236|237|238|239|240|241|242|243|244|245|246|247|248|249|250|251|252|253|254|255" },
+      { "ip_octet4", "IP address part 4; 0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|35|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|51|52|53|54|55|56|57|58|59|60|61|62|63|64|65|66|67|68|69|70|71|72|73|74|75|76|77|78|79|80|81|82|83|84|85|86|87|88|89|90|91|92|93|94|95|96|97|98|99|100|101|102|103|104|105|106|107|108|109|110|111|112|113|114|115|116|117|118|119|120|121|122|123|124|125|126|127|128|129|130|131|132|133|135|135|136|137|138|139|140|141|142|143|144|145|146|147|148|149|150|151|152|153|154|155|156|157|158|159|160|161|162|163|164|165|166|167|168|169|170|171|172|173|174|175|176|177|178|179|180|181|182|183|184|185|186|187|188|189|190|191|192|193|194|195|196|197|198|199|200|201|202|203|204|205|206|207|208|209|210|211|212|213|214|215|216|217|218|219|220|221|222|223|224|225|226|227|228|229|230|231|232|233|235|235|236|237|238|239|240|241|242|243|244|245|246|247|248|249|250|251|252|253|254|255" },
+
+      { NULL, NULL },
+   };
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
 
    environ_cb = cb;
@@ -167,6 +169,30 @@ void retro_set_environment(retro_environment_t cb)
       log_cb = logger.log;
 }
 
+static void check_variables(void)
+{
+   struct retro_variable var;
+   var.key = "ip_octet1";
+   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
+   snprintf(server, sizeof(server), "%s", var.value);
+
+   var.key = "ip_octet2";
+   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
+   snprintf(server, sizeof(server), "%s.%s", server, var.value);
+
+   var.key = "ip_octet3";
+   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
+   snprintf(server, sizeof(server), "%s.%s", server, var.value);
+
+   var.key = "ip_octet4";
+   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
+   snprintf(server, sizeof(server), "%s.%s", server, var.value);
+
+   var.key = "port";
+   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
+   port = atoi(var.value);
+
+}
 void retro_set_audio_sample(retro_audio_sample_t cb)
 {
    audio_cb = cb;
@@ -214,6 +240,19 @@ void retro_run(void)
 bool retro_load_game(const struct retro_game_info *info)
 {
    (void)info;
+   check_variables();
+   //create socket
+   if ( (s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_ERROR)
+   {
+      log_cb(RETRO_LOG_INFO, "socket() failed with error code : %d" , WSAGetLastError());
+   }
+   //setup address structure
+   memset((char *) &si_other, 0, sizeof(si_other));
+   si_other.sin_family = AF_INET;
+   si_other.sin_port = htons(port);
+   si_other.sin_addr.S_un.S_addr = inet_addr(server);
+   log_cb(RETRO_LOG_INFO, "Server : %s" , server);
+
    return true;
 }
 
