@@ -523,6 +523,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_IMAGEVIEWER:
          case MENU_FILE_PLAYLIST_COLLECTION:
          case MENU_FILE_DOWNLOAD_CORE_CONTENT:
+         case MENU_FILE_DOWNLOAD_THUMBNAIL_CONTENT:
          case MENU_FILE_SCAN_DIRECTORY:
          case MENU_SETTING_GROUP:
             switch (menu_label_hash)
