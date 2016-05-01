@@ -200,13 +200,13 @@ static bool get_self_input_state(netplay_t *netplay)
 static bool netplay_cmd_ack(netplay_t *netplay)
 {
    uint32_t cmd = htonl(NETPLAY_CMD_ACK);
-   return socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd));
+   return socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd), false);
 }
 
 static bool netplay_cmd_nak(netplay_t *netplay)
 {
    uint32_t cmd = htonl(NETPLAY_CMD_NAK);
-   return socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd));
+   return socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd), false);
 }
 
 static bool netplay_get_response(netplay_t *netplay)
@@ -866,10 +866,10 @@ static bool netplay_send_raw_cmd(netplay_t *netplay, uint32_t cmd,
    cmd = (cmd << 16) | (size & 0xffff);
    cmd = htonl(cmd);
 
-   if (!socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd)))
+   if (!socket_send_all_blocking(netplay->fd, &cmd, sizeof(cmd), false))
       return false;
 
-   if (!socket_send_all_blocking(netplay->fd, data, size))
+   if (!socket_send_all_blocking(netplay->fd, data, size, false))
       return false;
 
    return true;

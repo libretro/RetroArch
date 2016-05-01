@@ -109,36 +109,16 @@ error:
    return -1;
 }
 
-static void net_http_send(int fd, bool * error,
-      const char * data, size_t len)
-{
-   if (*error)
-      return;
-
-   while (len)
-   {
-      ssize_t thislen = send(fd, data, len, MSG_NOSIGNAL);
-
-      if (thislen <= 0)
-      {
-         if (!isagain(thislen))
-            continue;
-
-         *error=true;
-         return;
-      }
-
-      data += thislen;
-      len  -= thislen;
-   }
-}
-
 static void net_http_send_str(int fd, bool *error, const char *text)
 {
 #if 0
    printf("%s",text);
 #endif
-   net_http_send(fd, error, text, strlen(text));
+   if (!*error)
+   {
+      if (!socket_send_all_blocking(fd, text, strlen(text), true))
+         *error = true;
+   }
 }
 
 static ssize_t net_http_recv(int fd, bool *error,
@@ -298,7 +278,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    if (fd == -1)
       goto error;
 
-   error=false;
+   error = false;
 
    /* This is a bit lazy, but it works. */
    net_http_send_str(fd, &error, "GET /");

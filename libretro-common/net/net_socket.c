@@ -138,15 +138,22 @@ int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
 #endif
 }
 
-int socket_send_all_blocking(int fd, const void *data_, size_t size)
+int socket_send_all_blocking(int fd, const void *data_, size_t size,
+      bool no_signal)
 {
    const uint8_t *data = (const uint8_t*)data_;
 
    while (size)
    {
-      ssize_t ret = send(fd, (const char*)data, size, 0);
+      ssize_t ret = send(fd, (const char*)data, size,
+            no_signal ? MSG_NOSIGNAL : 0);
       if (ret <= 0)
+      {
+         if (!isagain(ret))
+            continue;
+
          return false;
+      }
 
       data += ret;
       size -= ret;

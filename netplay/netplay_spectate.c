@@ -106,7 +106,7 @@ static void netplay_spectate_pre_frame(netplay_t *netplay)
    setsockopt(new_fd, SOL_SOCKET, SO_SNDBUF, (const char*)&bufsize,
          sizeof(int));
 
-   if (!socket_send_all_blocking(new_fd, header, header_size))
+   if (!socket_send_all_blocking(new_fd, header, header_size, false))
    {
       RARCH_ERR("Failed to send header to client.\n");
       socket_close(new_fd);
@@ -145,7 +145,8 @@ static void netplay_spectate_post_frame(netplay_t *netplay)
 
       if (socket_send_all_blocking(netplay->spectate.fds[i],
                netplay->spectate.input,
-               netplay->spectate.input_ptr * sizeof(int16_t)))
+               netplay->spectate.input_ptr * sizeof(int16_t),
+               false))
          continue;
 
       RARCH_LOG("Client (#%u) disconnected ...\n", i);
