@@ -23,6 +23,12 @@
 
 #endif
 
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
+
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
@@ -58,10 +64,9 @@
 
 #include "../tasks/tasks_internal.h"
 
-#ifdef _WIN32
-#include <direct.h>
-#else
-#include <unistd.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 struct rarch_setting_info
