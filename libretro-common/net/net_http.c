@@ -124,7 +124,6 @@ error:
    return -1;
 }
 
-#if 0
 static void net_http_send(int fd, bool * error,
       const char * data, size_t len)
 {
@@ -148,18 +147,13 @@ static void net_http_send(int fd, bool * error,
       len  -= thislen;
    }
 }
-#endif
 
 static void net_http_send_str(int fd, bool *error, const char *text)
 {
 #if 0
    printf("%s",text);
-   net_http_send(fd, error, text, strlen(text));
-#else
-   (void)fd;
-   (void)error;
-   (void)text;
 #endif
+   net_http_send(fd, error, text, strlen(text));
 }
 
 static ssize_t net_http_recv(int fd, bool *error,
