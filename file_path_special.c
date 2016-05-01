@@ -141,7 +141,6 @@ void fill_pathname_abbreviate_special(char *out_path,
    retro_assert(strlcpy(out_path, in_path, size) < size);
 }
 
-#if !defined(RARCH_CONSOLE)
 bool fill_pathname_application_data(char *s, size_t len)
 {
 #if defined(_WIN32) && !defined(_XBOX)
@@ -162,7 +161,7 @@ bool fill_pathname_application_data(char *s, size_t len)
             "Library/Application Support", len);
       return true;
    }
-#elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
+#elif !defined(RARCH_CONSOLE)
    const char *xdg     = getenv("XDG_CONFIG_HOME");
    const char *appdata = getenv("HOME");
 
@@ -189,6 +188,7 @@ bool fill_pathname_application_data(char *s, size_t len)
    return false;
 }
 
+#if !defined(RARCH_CONSOLE)
 void fill_pathname_application_path(char *s, size_t len)
 {
 #ifdef __APPLE__

@@ -22,8 +22,6 @@
 
 #include <boolean.h>
 
-#if !defined(RARCH_CONSOLE)
 bool fill_pathname_application_data(char *s, size_t len);
-#endif
 
 #endif
