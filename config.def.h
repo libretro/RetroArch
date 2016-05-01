@@ -512,7 +512,12 @@ static bool default_block_config_read = true;
 static unsigned xmb_scale_factor = 100;
 static unsigned xmb_alpha_factor = 75;
 static unsigned xmb_theme        = 0;
+
+#ifdef HAVE_LAKKA
 static bool xmb_shadows_enable   = false;
+#else
+static bool xmb_shadows_enable   = true;
+#endif
 
 static unsigned menu_background_gradient = 4;
 
