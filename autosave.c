@@ -56,28 +56,6 @@ struct autosave
 static struct autosave_st autosave_state;
 
 /**
- * autosave_lock:
- * @handle          : pointer to autosave object
- *
- * Locks autosave.
- **/
-static void autosave_lock(autosave_t *handle)
-{
-   slock_lock(handle->lock);
-}
-
-/**
- * autosave_unlock:
- * @handle          : pointer to autosave object
- *
- * Unlocks autosave.
- **/
-static void autosave_unlock(autosave_t *handle)
-{
-   slock_unlock(handle->lock);
-}
-
-/**
  * autosave_thread:
  * @data            : pointer to autosave object
  *
@@ -85,19 +63,19 @@ static void autosave_unlock(autosave_t *handle)
  **/
 static void autosave_thread(void *data)
 {
-   bool first_log = true;
+   bool first_log   = true;
    autosave_t *save = (autosave_t*)data;
 
    while (!save->quit)
    {
       bool differ;
 
-      autosave_lock(save);
+      slock_lock(save->lock);
       differ = memcmp(save->buffer, save->retro_buffer,
             save->bufsize) != 0;
       if (differ)
          memcpy(save->buffer, save->retro_buffer, save->bufsize);
-      autosave_unlock(save);
+      slock_unlock(save->lock);
 
       if (differ)
       {
@@ -153,7 +131,7 @@ static autosave_t *autosave_new(const char *path,
       const void *data, size_t size,
       unsigned interval)
 {
-   autosave_t *handle = (autosave_t*)calloc(1, sizeof(*handle));
+   autosave_t *handle   = (autosave_t*)calloc(1, sizeof(*handle));
    if (!handle)
       goto error;
 
@@ -219,7 +197,7 @@ void lock_autosave(void)
    for (i = 0; i < autosave_state.num; i++)
    {
       if (autosave_state.list[i])
-         autosave_lock(autosave_state.list[i]);
+         slock_lock(autosave_state.list[i]->lock);
    }
 }
 
@@ -235,7 +213,7 @@ void unlock_autosave(void)
    for (i = 0; i < autosave_state.num; i++)
    {
       if (autosave_state.list[i])
-         autosave_unlock(autosave_state.list[i]);
+         slock_unlock(autosave_state.list[i]->lock);
    }
 }
 
