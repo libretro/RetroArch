@@ -758,13 +758,18 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    return ret;
 }
 
-static bool init_udp_socket(netplay_t *netplay, const char *server,
-      uint16_t port)
+static int socket_init(void *address, int *fd, uint16_t port, const char *server)
 {
    char port_buf[16]     = {0};
    struct addrinfo hints = {0};
+   struct addrinfo *addr = (struct addrinfo*)address;
 
-   memset(&hints, 0, sizeof(hints));
+   if (!fd)
+      goto error;
+
+   if (!network_init())
+      goto error;
+
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints.ai_family = AF_INET;
 #else
@@ -776,16 +781,29 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
 
-   if (getaddrinfo_retro(server, port_buf, &hints, &netplay->addr) < 0)
+   if (getaddrinfo_retro(server, port_buf, &hints, &addr) < 0)
+      goto error;
+
+   if (!addr)
+      goto error;
+
+   *fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+
+   return true;
+
+error:
+   RARCH_ERR("Failed to initialize socket.\n");
+   return false;
+}
+
+static bool init_udp_socket(netplay_t *netplay, const char *server,
+      uint16_t port)
+{
+   int *file_desc = (int*)&netplay->udp_fd;
+   if (!socket_init(&netplay->addr, file_desc, port, server))
       return false;
 
-   if (!netplay->addr)
-      return false;
-
-   netplay->udp_fd = socket(netplay->addr->ai_family,
-         netplay->addr->ai_socktype, netplay->addr->ai_protocol);
-
-   if (netplay->udp_fd < 0)
+   if (*file_desc < 0)
    {
       RARCH_ERR("Failed to initialize socket.\n");
       return false;
