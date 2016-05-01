@@ -37,7 +37,9 @@ PPU_SRCS		= frontend/frontend_salamander.c \
 
 ifeq ($(HAVE_LOGGER), 1)
 PPU_CFLAGS		+= -DHAVE_LOGGER 
-PPU_SRCS		   += netlogger.c
+PPU_SRCS		   += netlogger.c \
+						libretro-common/net/net_compat.c \
+						libretro-common/net/net_socket.c
 endif
 
 PPU_TARGET		= retroarch-salamander_ps3.elf

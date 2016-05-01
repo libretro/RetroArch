@@ -25,6 +25,7 @@
 
 #include <retro_miscellaneous.h>
 #include <net/net_compat.h>
+#include <net/net_socket.h>
 
 #include "verbosity.h"
 
@@ -40,9 +41,9 @@ static int g_sid;
 static struct sockaddr_in target;
 static char sendbuf[4096];
 #ifdef VITA
-static void *net_memory = NULL;
 #define NET_INIT_SIZE 512*1024
 #endif
+static void *net_memory = NULL;
 
 static int network_interface_up(struct sockaddr_in *target, int index,
       const char *ip_address, unsigned udp_port, int *s)
@@ -113,24 +114,17 @@ static int network_interface_up(struct sockaddr_in *target, int index,
 
 static int network_interface_down(struct sockaddr_in *target, int *s)
 {
-   int ret = 0;
-#if defined(_WIN32) && !defined(_XBOX360)
-   /* WinSock has headers from the stone age. */
-   ret = closesocket(*s);
-#elif defined(__CELLOS_LV2__)
-   ret = socketclose(*s);
-#elif defined(VITA)
-   if (net_memory)
-      free(net_memory);
-   sceNetSocketClose(*s);
-#else
-   ret = close(*s);
-#endif
+   int ret = socket_close(*s);
+
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    cellNetCtlTerm();
 #elif defined(GEKKO) && !defined(HW_DOL)
    net_deinit();
 #endif
+
+   if (net_memory)
+      free(net_memory);
+
    return ret;
 }
 
