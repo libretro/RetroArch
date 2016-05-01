@@ -27,6 +27,7 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <net/net_compat.h>
+#include <net/net_socket.h>
 
 #include "remote.h"
 
