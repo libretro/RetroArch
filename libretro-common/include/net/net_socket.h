@@ -33,6 +33,17 @@ RETRO_BEGIN_DECLS
 
 bool socket_init(void *address, int *fd, uint16_t port, const char *server);
 
+int socket_close(int fd);
+
+bool socket_nonblock(int fd);
+
+int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
+      fd_set *errorfds, struct timeval *timeout);
+
+int socket_send_all_blocking(int fd, const void *data_, size_t size);
+
+int socket_receive_all_blocking(int fd, void *data_, size_t size);
+
 RETRO_END_DECLS
 
 #endif

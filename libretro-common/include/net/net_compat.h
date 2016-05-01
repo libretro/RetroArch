@@ -217,17 +217,6 @@ int getaddrinfo_retro(const char *node, const char *service,
 
 void freeaddrinfo_retro(struct addrinfo *res);
 
-bool socket_nonblock(int fd);
-
-int socket_close(int fd);
-
-int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
-      fd_set *errorfds, struct timeval *timeout);
-
-int socket_send_all_blocking(int fd, const void *data_, size_t size);
-
-int socket_receive_all_blocking(int fd, void *data_, size_t size);
-
 /**
  * network_init:
  *
