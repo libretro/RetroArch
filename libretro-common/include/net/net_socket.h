@@ -31,7 +31,13 @@
 
 RETRO_BEGIN_DECLS
 
-bool socket_init(void *address, int *fd, uint16_t port, const char *server);
+enum socket_type
+{
+   SOCKET_TYPE_DATAGRAM = 0,
+   SOCKET_TYPE_STREAM
+};
+
+bool socket_init(void *address, int *fd, uint16_t port, const char *server, enum socket_type type);
 
 int socket_close(int fd);
 

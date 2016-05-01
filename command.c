@@ -130,7 +130,7 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
    RARCH_LOG("Bringing up command interface on port %hu.\n",
          (unsigned short)port);
 
-   if (!socket_init(res, file_desc, port, NULL))
+   if (!socket_init(res, file_desc, port, NULL, SOCKET_TYPE_DATAGRAM))
       goto error;
 
    if (*file_desc < 0)

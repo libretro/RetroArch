@@ -763,7 +763,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
       uint16_t port)
 {
    int *file_desc = (int*)&netplay->udp_fd;
-   if (!socket_init(&netplay->addr, file_desc, port, server))
+   if (!socket_init(&netplay->addr, file_desc, port, server, SOCKET_TYPE_DATAGRAM))
       return false;
 
    if (*file_desc < 0)

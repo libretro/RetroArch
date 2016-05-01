@@ -24,7 +24,7 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 
-bool socket_init(void *address, int *fd, uint16_t port, const char *server)
+bool socket_init(void *address, int *fd, uint16_t port, const char *server, enum socket_type type)
 {
    char port_buf[16]     = {0};
    struct addrinfo hints = {0};
@@ -41,7 +41,16 @@ bool socket_init(void *address, int *fd, uint16_t port, const char *server)
 #else
    hints.ai_family = AF_UNSPEC;
 #endif
-   hints.ai_socktype = SOCK_DGRAM;
+
+   switch (type)
+   {
+      case SOCKET_TYPE_DATAGRAM:
+         hints.ai_socktype = SOCK_DGRAM;
+         break;
+      case SOCKET_TYPE_STREAM:
+         hints.ai_socktype = SOCK_STREAM;
+         break;
+   }
    if (!server)
       hints.ai_flags = AI_PASSIVE;
 
