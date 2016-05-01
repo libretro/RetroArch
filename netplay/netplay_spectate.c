@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <net/net_compat.h>
+#include <net/net_socket.h>
 #include <retro_endianness.h>
 
 #include "netplay_private.h"

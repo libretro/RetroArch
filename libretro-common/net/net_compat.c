@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <net/net_compat.h>
+#include <net/net_socket.h>
 #include <compat/strl.h>
 
 #if defined(VITA)
