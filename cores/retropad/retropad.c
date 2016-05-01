@@ -1,7 +1,7 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
  *  Copyright (C) 2011-2015 - Daniel De Matteis
- *  Copyright (C) 2012-2015 - Michael Lelli
+ *  Copyright (C) 2016 - Andrés Suárez
  * 
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -14,6 +14,15 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+
+/*
+ * To-do:
+ * - Analog support
+ * - Some sort of connection control, it only sends packets
+ *   but there is no acknoledgement of a connection o keepalives
+ * - Send player name
+ * - Render something on-screen
+*/
 
  #include <stdio.h>
  #include <stdint.h>
@@ -94,7 +103,6 @@ void retro_get_system_info(
    info->valid_extensions = ""; /* Nothing. */
 }
 
-/* Doesn't really matter, but need something sane. */
 void retro_get_system_av_info(
       struct retro_system_av_info *info)
 {
@@ -119,6 +127,14 @@ void update_input()
 {
    input_state = 0;
    input_poll_cb();
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B))
+      input_state += 1;
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A))
+      input_state += 2;
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT))
+      input_state += pow(2, 2);
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START))
+      input_state += pow(2, 3);
    if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP))
       input_state += pow(2, 4);
    if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN))
@@ -127,6 +143,14 @@ void update_input()
       input_state += pow(2, 6);
    if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       input_state += pow(2, 7);
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y))
+      input_state += pow(2, 8);
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X))
+      input_state += pow(2, 9);
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L))
+      input_state += pow(2, 10);
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R))
+      input_state += pow(2, 11);
 }
 
 void retro_set_environment(retro_environment_t cb)
@@ -187,7 +211,6 @@ void retro_run(void)
    video_cb(frame_buf, 320, 240, 640);
 }
 
-/* This should never be called, it's only used as a placeholder. */
 bool retro_load_game(const struct retro_game_info *info)
 {
    (void)info;
