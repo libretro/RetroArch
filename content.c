@@ -62,6 +62,7 @@
 #include "system.h"
 #include "retroarch.h"
 #include "command_event.h"
+#include "file_path_special.h"
 #include "libretro_version_1.h"
 #include "verbosity.h"
 
@@ -978,19 +979,15 @@ static bool dump_to_file_desperate(const void *data,
 {
    time_t time_;
    char timebuf[256];
+   char application_data[PATH_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
-#if defined(_WIN32) && !defined(_XBOX)
-   const char *base = getenv("APPDATA");
-#elif defined(__CELLOS_LV2__) || defined(_XBOX)
-   const char *base = NULL;
-#else
-   const char *base = getenv("HOME");
-#endif
 
-   if (!base)
+   if (!fill_pathname_application_data(application_data,
+            sizeof(application_data)))
       return false;
 
-   snprintf(path, sizeof(path), "%s/RetroArch-recovery-%u", base, type);
+   snprintf(path, sizeof(path), "%s/RetroArch-recovery-%u",
+      application_data, type);
 
    time(&time_);
 
