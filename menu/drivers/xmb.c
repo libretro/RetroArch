@@ -338,7 +338,7 @@ static float *xmb_gradient_ident(void)
 {
    settings_t *settings = config_get_ptr();
 
-   switch (settings->menu.xmb_gradient)
+   switch (settings->menu.background_gradient)
    {
       case 1:
          return &gradient_dark_purple[0];

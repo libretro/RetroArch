@@ -5983,10 +5983,10 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb_gradient,
+                  &settings->menu.background_gradient,
                   menu_hash_to_str(MENU_LABEL_XMB_GRADIENT),
                   menu_hash_to_str(MENU_LABEL_VALUE_XMB_GRADIENT),
-                  xmb_gradient,
+                  menu_background_gradient,
                   &group_info,
                   &subgroup_info,
                   parent_group,

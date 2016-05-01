@@ -666,7 +666,7 @@ static void menu_action_setting_disp_set_label_xmb_gradient(
 
    strlcpy(s2, path, len2);
    *w = 19;
-   switch (settings->menu.xmb_gradient)
+   switch (settings->menu.background_gradient)
    {
       case 0:
          snprintf(s, len, "%s", "Legacy Red");

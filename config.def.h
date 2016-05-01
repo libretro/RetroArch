@@ -511,9 +511,10 @@ static bool default_block_config_read = true;
 
 static unsigned xmb_scale_factor = 100;
 static unsigned xmb_alpha_factor = 75;
-static unsigned xmb_theme = 0;
-static unsigned xmb_gradient = 0;
-static bool xmb_shadows_enable = false;
+static unsigned xmb_theme        = 0;
+static bool xmb_shadows_enable   = false;
+
+static unsigned menu_background_gradient = 4;
 
 #if defined(HAVE_OPENGLES2)
 static unsigned menu_shader_pipeline = 1;
