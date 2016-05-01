@@ -770,13 +770,7 @@ static bool init_udp_socket(netplay_t *netplay, const char *server,
    if (!server)
    {
       /* Not sure if we have to do this for UDP, but hey :) */
-      int yes = 1;
-
-      setsockopt(netplay->udp_fd, SOL_SOCKET, SO_REUSEADDR,
-            (const char*)&yes, sizeof(int));
-
-      if (bind(netplay->udp_fd, netplay->addr->ai_addr,
-               netplay->addr->ai_addrlen) < 0)
+      if (!socket_bind(netplay->udp_fd, (void*)netplay->addr))
       {
          RARCH_ERR("Failed to bind socket.\n");
          socket_close(netplay->udp_fd);
