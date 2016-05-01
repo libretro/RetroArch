@@ -775,7 +775,7 @@ static const unsigned input_max_users = 5;
 
 static const unsigned input_poll_type_behavior = 2;
 
-static const unsigned menu_thumbnails_default = 1;
+static const unsigned menu_thumbnails_default = 3;
 
 #ifdef IOS
 static const bool ui_companion_start_on_boot = false;
