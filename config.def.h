@@ -516,9 +516,9 @@ static unsigned xmb_gradient = 0;
 static bool xmb_shadows_enable = false;
 
 #if defined(HAVE_OPENGLES2)
-static unsigned xmb_ribbon_enable = 1;
+static unsigned menu_shader_pipeline = 1;
 #else
-static unsigned xmb_ribbon_enable = 0;
+static unsigned menu_shader_pipeline = 2;
 #endif
 
 static bool show_advanced_settings    = true;

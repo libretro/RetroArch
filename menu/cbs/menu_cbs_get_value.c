@@ -180,7 +180,7 @@ static void menu_action_setting_disp_set_label_pipeline(
    *s = '\0';
    *w = 19;
 
-   switch (settings->menu.xmb_ribbon_enable)
+   switch (settings->menu.shader_pipeline)
    {
       case 0:
          snprintf(s, len, "%s", "OFF");

@@ -1947,7 +1947,7 @@ static void xmb_draw_bg(
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
 
-   if (settings->menu.xmb_ribbon_enable > 0)
+   if (settings->menu.shader_pipeline > 0)
    {
       draw.color = xmb_gradient_ident();
 
@@ -1957,7 +1957,7 @@ static void xmb_draw_bg(
          menu_display_set_alpha(draw.color, coord_white[3]);
 
       draw.pipeline.id = VIDEO_SHADER_MENU_SEC;
-      if (settings->menu.xmb_ribbon_enable == 2)
+      if (settings->menu.shader_pipeline == 2)
          draw.pipeline.id  = VIDEO_SHADER_MENU;
 
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, &draw);

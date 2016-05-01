@@ -5970,10 +5970,10 @@ static bool setting_append_list(
 
             CONFIG_UINT(
                   list, list_info,
-                  &settings->menu.xmb_ribbon_enable,
+                  &settings->menu.shader_pipeline,
                   menu_hash_to_str(MENU_LABEL_XMB_RIBBON_ENABLE),
                   menu_hash_to_str(MENU_LABEL_VALUE_XMB_RIBBON_ENABLE),
-                  xmb_ribbon_enable,
+                  menu_shader_pipeline,
                   &group_info,
                   &subgroup_info,
                   parent_group,
