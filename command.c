@@ -123,15 +123,18 @@ static const struct cmd_map map[] = {
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
 {
+   int fd;
    struct addrinfo *res  = NULL;
 
    RARCH_LOG("Bringing up command interface on port %hu.\n",
          (unsigned short)port);
 
-   handle->net_fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
+   fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
 
-   if (handle->net_fd < 0)
+   if (fd < 0)
       goto error;
+
+   handle->net_fd = fd;
 
    if (!socket_nonblock(handle->net_fd))
       goto error;
