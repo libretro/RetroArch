@@ -48,17 +48,17 @@ enum
 
 struct http_t
 {
-	int fd;
-	int status;
-	
-	char part;
-	char bodytype;
-	bool error;
-	
-	size_t pos;
-	size_t len;
-	size_t buflen;
-	char * data;
+   int fd;
+   int status;
+   
+   char part;
+   char bodytype;
+   bool error;
+   
+   size_t pos;
+   size_t len;
+   size_t buflen;
+   char * data;
 };
 
 struct http_connection_t
@@ -76,14 +76,14 @@ static int net_http_new_socket(const char *domain, int port)
    int ret;
    struct addrinfo *addr = NULL;
    int fd = socket_init((void**)&addr, port, domain, SOCKET_TYPE_STREAM);
-   if (fd == -1)
+   if (fd < 0)
       return -1;
 
    ret = socket_connect(fd, (void*)addr, true);
 
    freeaddrinfo_retro(addr);
 
-   if (ret != 0)
+   if (ret < 0)
       goto error;
 
    if (!socket_nonblock(fd))
@@ -98,9 +98,6 @@ error:
 
 static void net_http_send_str(int fd, bool *error, const char *text)
 {
-#if 0
-   printf("%s",text);
-#endif
    if (!*error)
    {
       if (!socket_send_all_blocking(fd, text, strlen(text), true))
@@ -131,36 +128,36 @@ static ssize_t net_http_recv(int fd, bool *error,
 
 static char* urlencode(const char* url)
 {
-	unsigned i;
-	int outpos = 0;
-	int outlen = 0;
+   unsigned i;
+   unsigned outpos = 0;
+   unsigned outlen = 0;
    char *ret  = NULL;
 
-	for (i = 0; url[i] != '\0'; i++)
-	{
-		outlen++;
-		if (url[i] == ' ')
+   for (i = 0; url[i] != '\0'; i++)
+   {
+      outlen++;
+      if (url[i] == ' ')
          outlen += 2;
-	}
-	
-	ret = (char*)malloc(outlen + 1);
-	if (!ret)
+   }
+   
+   ret = (char*)malloc(outlen + 1);
+   if (!ret)
       return NULL;
-	
-	for (i = 0; url[i]; i++)
-	{
-		if (url[i] == ' ')
-		{
-			ret[outpos++] = '%';
-			ret[outpos++] = '2';
-			ret[outpos++] = '0';
-		}
-		else
+   
+   for (i = 0; url[i]; i++)
+   {
+      if (url[i] == ' ')
+      {
+         ret[outpos++] = '%';
+         ret[outpos++] = '2';
+         ret[outpos++] = '0';
+      }
+      else
          ret[outpos++] = url[i];
-	}
-	ret[outpos] = '\0';
-	
-	return ret;
+   }
+   ret[outpos] = '\0';
+   
+   return ret;
 }
 
 struct http_connection_t *net_http_connection_new(const char *url)
@@ -262,7 +259,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       goto error;
 
    fd = net_http_new_socket(conn->domain, conn->port);
-   if (fd == -1)
+   if (fd < 0)
       goto error;
 
    error = false;
@@ -308,7 +305,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    return state;
 
 error:
-   if (fd != -1)
+   if (fd >= 0)
       socket_close(fd);
    return NULL;
 }
@@ -316,7 +313,7 @@ error:
 int net_http_fd(struct http_t *state)
 {
    if (!state)
-      return 0;
+      return -1;
    return state->fd;
 }
 
@@ -432,8 +429,8 @@ parse_again:
                 */
 
                char *fullend = state->data + state->pos;
-               char *end     = (char*)memchr(state->data + state->len + 2,
-                     '\n', state->pos - state->len - 2);
+               char *end     = (char*)memchr(state->data + state->len + 2, '\n',
+                                             state->pos - state->len - 2);
 
                if (end)
                {
@@ -520,9 +517,9 @@ fail:
 
 int net_http_status(struct http_t *state)
 {
-   if (state)
-      return state->status;
-   return -1;
+   if (!state)
+      return -1;
+   return state->status;
 }
 
 uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error)
@@ -548,7 +545,7 @@ void net_http_delete(struct http_t *state)
    if (!state)
       return;
 
-   if (state->fd != -1)
+   if (state->fd >= 0)
       socket_close(state->fd);
    free(state);
 }
