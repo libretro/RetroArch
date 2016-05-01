@@ -36,10 +36,10 @@ static void input_reindex_devices(void)
    unsigned i;
    settings_t      *settings = config_get_ptr();
 
-   for(i=0; i < settings->input.max_users; i++)
+   for(i = 0; i < settings->input.max_users; i++)
       settings->input.device_name_index[i]=0;
 
-   for(i=0; i < settings->input.max_users; i++)
+   for(i = 0; i < settings->input.max_users; i++)
    {
       unsigned j;
       const char *tmp = settings->input.device_names[i];
