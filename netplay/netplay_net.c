@@ -87,11 +87,11 @@ static void netplay_net_post_frame(netplay_t *netplay)
 
          core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
 
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+#if defined(HAVE_THREADS)
          lock_autosave();
 #endif
          core_ctl(CORE_CTL_RETRO_RUN, NULL);
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+#if defined(HAVE_THREADS)
          unlock_autosave();
 #endif
          netplay->tmp_ptr = NEXT_PTR(netplay->tmp_ptr);
