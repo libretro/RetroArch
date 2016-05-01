@@ -154,3 +154,14 @@ int socket_send_all_blocking(int fd, const void *data_, size_t size)
 
    return true;
 }
+
+bool socket_bind(int fd, void *data)
+{
+   int yes               = 1;
+   struct addrinfo *res  = (struct addrinfo*)data;
+   setsockopt(fd, SOL_SOCKET,
+         SO_REUSEADDR, (const char*)&yes, sizeof(int));
+   if (bind(fd, res->ai_addr, res->ai_addrlen) < 0)
+      return false;
+   return true;
+}

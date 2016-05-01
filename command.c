@@ -124,7 +124,6 @@ static const struct cmd_map map[] = {
 static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
 {
    struct addrinfo *res  = NULL;
-   int yes               = 1;
 
    RARCH_LOG("Bringing up command interface on port %hu.\n",
          (unsigned short)port);
@@ -137,9 +136,7 @@ static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
    if (!socket_nonblock(handle->net_fd))
       goto error;
 
-   setsockopt(handle->net_fd, SOL_SOCKET,
-         SO_REUSEADDR, (const char*)&yes, sizeof(int));
-   if (bind(handle->net_fd, res->ai_addr, res->ai_addrlen) < 0)
+   if (!socket_bind(handle->net_fd, res))
    {
       RARCH_ERR("Failed to bind socket.\n");
       goto error;

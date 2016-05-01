@@ -50,6 +50,8 @@ int socket_send_all_blocking(int fd, const void *data_, size_t size);
 
 int socket_receive_all_blocking(int fd, void *data_, size_t size);
 
+bool socket_bind(int fd, void *data);
+
 RETRO_END_DECLS
 
 #endif
