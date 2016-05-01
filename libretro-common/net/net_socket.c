@@ -24,14 +24,13 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 
-bool socket_init(void *address, int *fd, uint16_t port, const char *server, enum socket_type type)
+int socket_init(void **address, uint16_t port, const char *server, enum socket_type type)
 {
    char port_buf[16]     = {0};
    struct addrinfo hints = {0};
-   struct addrinfo *addr = (struct addrinfo*)address;
-
-   if (!fd)
-      goto error;
+   struct addrinfo **addrinfo = (struct addrinfo**)address;
+   struct addrinfo *addr = NULL;
+   
 
    if (!network_init())
       goto error;
@@ -51,23 +50,24 @@ bool socket_init(void *address, int *fd, uint16_t port, const char *server, enum
          hints.ai_socktype = SOCK_STREAM;
          break;
    }
+
    if (!server)
       hints.ai_flags = AI_PASSIVE;
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
 
-   if (getaddrinfo_retro(server, port_buf, &hints, &addr) < 0)
+   if (getaddrinfo_retro(server, port_buf, &hints, addrinfo) < 0)
       goto error;
+
+   addr = (struct addrinfo*)*addrinfo;
 
    if (!addr)
       goto error;
 
-   *fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-
-   return true;
+   return socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 
 error:
-   return false;
+   return -1;
 }
 
 int socket_receive_all_blocking(int fd, void *data_, size_t size)

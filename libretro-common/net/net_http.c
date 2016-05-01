@@ -26,6 +26,7 @@
 
 #include <net/net_http.h>
 #include <net/net_compat.h>
+#include <net/net_socket.h>
 #include <compat/strl.h>
 
 enum
@@ -72,33 +73,16 @@ struct http_connection_t
 
 static int net_http_new_socket(const char *domain, int port)
 {
-   int fd;
    int ret;
 #ifndef _WIN32
 #ifndef VITA
    struct timeval timeout;
 #endif
 #endif
-   struct addrinfo hints, *addr = NULL;
-   char portstr[16] = {0};
-   
-   /* Initialize the network. */
-   if (!network_init())
+   struct addrinfo *addr = NULL;
+   int fd = socket_init((void**)&addr, port, domain, SOCKET_TYPE_STREAM);
+   if (fd == -1)
       return -1;
-
-   snprintf(portstr, sizeof(portstr), "%i", port);
-
-   memset(&hints, 0, sizeof(hints));
-   hints.ai_family   = AF_UNSPEC;
-   hints.ai_socktype = SOCK_STREAM;
-   hints.ai_flags    = 0;
-   
-   if (getaddrinfo_retro(domain, portstr, &hints, &addr) < 0)
-      return -1;
-   if (!addr)
-      return -1;
-
-   fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 
 #ifndef _WIN32
 #ifndef VITA
@@ -107,6 +91,7 @@ static int net_http_new_socket(const char *domain, int port)
    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof timeout);
 #endif
 #endif
+
    ret = connect(fd, addr->ai_addr, addr->ai_addrlen);
 
    freeaddrinfo_retro(addr);
