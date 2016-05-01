@@ -26,6 +26,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <net/net_compat.h>
+#include <net/net_socket.h>
 #include <string/stdstring.h>
 
 #include "msg_hash.h"
@@ -122,41 +123,25 @@ static const struct cmd_map map[] = {
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
 {
-   struct addrinfo hints = {0};
-   char port_buf[16]     = {0};
+   int *file_desc        = (int*)&handle->net_fd;
    struct addrinfo *res  = NULL;
    int yes               = 1;
-
-   if (!network_init())
-      return false;
 
    RARCH_LOG("Bringing up command interface on port %hu.\n",
          (unsigned short)port);
 
-#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
-   hints.ai_family   = AF_INET;
-#else
-   hints.ai_family   = AF_UNSPEC;
-#endif
-   hints.ai_socktype = SOCK_DGRAM;
-   hints.ai_flags    = AI_PASSIVE;
-
-
-   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-   if (getaddrinfo_retro(NULL, port_buf, &hints, &res) < 0)
+   if (!socket_init(res, file_desc, port, NULL))
       goto error;
 
-   handle->net_fd = socket(res->ai_family,
-         res->ai_socktype, res->ai_protocol);
-   if (handle->net_fd < 0)
+   if (*file_desc < 0)
       goto error;
 
-   if (!socket_nonblock(handle->net_fd))
+   if (!socket_nonblock(*file_desc))
       goto error;
 
-   setsockopt(handle->net_fd, SOL_SOCKET,
+   setsockopt(*file_desc, SOL_SOCKET,
          SO_REUSEADDR, (const char*)&yes, sizeof(int));
-   if (bind(handle->net_fd, res->ai_addr, res->ai_addrlen) < 0)
+   if (bind(*file_desc, res->ai_addr, res->ai_addrlen) < 0)
    {
       RARCH_ERR("Failed to bind socket.\n");
       goto error;

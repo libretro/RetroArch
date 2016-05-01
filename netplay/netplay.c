@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include <net/net_compat.h>
+#include <net/net_socket.h>
 #include <retro_endianness.h>
 
 #include "netplay_private.h"
@@ -756,44 +757,6 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
       RARCH_ERR("Failed to set up netplay sockets.\n");
 
    return ret;
-}
-
-static int socket_init(void *address, int *fd, uint16_t port, const char *server)
-{
-   char port_buf[16]     = {0};
-   struct addrinfo hints = {0};
-   struct addrinfo *addr = (struct addrinfo*)address;
-
-   if (!fd)
-      goto error;
-
-   if (!network_init())
-      goto error;
-
-#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
-   hints.ai_family = AF_INET;
-#else
-   hints.ai_family = AF_UNSPEC;
-#endif
-   hints.ai_socktype = SOCK_DGRAM;
-   if (!server)
-      hints.ai_flags = AI_PASSIVE;
-
-   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-
-   if (getaddrinfo_retro(server, port_buf, &hints, &addr) < 0)
-      goto error;
-
-   if (!addr)
-      goto error;
-
-   *fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-
-   return true;
-
-error:
-   RARCH_ERR("Failed to initialize socket.\n");
-   return false;
 }
 
 static bool init_udp_socket(netplay_t *netplay, const char *server,

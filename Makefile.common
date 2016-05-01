@@ -952,6 +952,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    DEFINES += -DHAVE_NETWORKING
    OBJ += libretro-common/net/net_compat.o \
           libretro-common/net/net_http.o \
+			 libretro-common/net/net_socket.o \
           net_http_special.o \
           tasks/task_http.o
 
