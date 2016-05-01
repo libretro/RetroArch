@@ -955,8 +955,6 @@ static config_file_t *open_default_config_file(void)
    char conf_path[PATH_MAX_LENGTH] = {0};
    char app_path[PATH_MAX_LENGTH]  = {0};
    config_file_t *conf             = NULL;
-   bool saved                      = false;
-   global_t *global                = global_get_ptr();
 
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
@@ -978,6 +976,8 @@ static config_file_t *open_default_config_file(void)
 
    if (!conf)
    {
+      bool saved = false;
+
       /* Try to create a new config file. */
       conf = config_file_new(NULL);
 
@@ -1017,6 +1017,8 @@ static config_file_t *open_default_config_file(void)
 
    if (!conf)
    {
+      bool saved = false;
+
       conf = config_file_new(NULL);
 
       if (conf)
@@ -1069,6 +1071,7 @@ static config_file_t *open_default_config_file(void)
 
       if (path_mkdir(basedir))
       {
+         bool saved                          = false;
          char skeleton_conf[PATH_MAX_LENGTH] = {0};
 
          fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
@@ -1103,14 +1106,15 @@ static config_file_t *open_default_config_file(void)
    (void)application_data;
    (void)conf_path;
    (void)app_path;
-   (void)saved;
 
-   if (!conf)
-      return NULL;
+   if (conf)
+   {
+      global_t *global = global_get_ptr();
+      strlcpy(global->path.config, conf_path, sizeof(global->path.config));
+      return conf;
+   }
 
-   strlcpy(global->path.config, conf_path, sizeof(global->path.config));
-
-   return conf;
+   return NULL;
 }
 
 static void read_keybinds_keyboard(config_file_t *conf, unsigned user,
