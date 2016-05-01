@@ -759,10 +759,12 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
 static bool init_udp_socket(netplay_t *netplay, const char *server,
       uint16_t port)
 {
-   netplay->udp_fd = socket_init((void**)&netplay->addr, port, server, SOCKET_TYPE_DATAGRAM);
+   int fd = socket_init((void**)&netplay->addr, port, server, SOCKET_TYPE_DATAGRAM);
 
-   if (netplay->udp_fd < 0)
+   if (fd < 0)
       goto error;
+
+   netplay->udp_fd = fd;
 
    if (!server)
    {
