@@ -67,6 +67,7 @@ static input_remote_state_t *input_remote_get_state_ptr(void)
 static bool remote_init_network(rarch_remote_t *handle,
       uint16_t port, unsigned user)
 {
+   int fd;
    struct addrinfo *res  = NULL;
 
    port = port + user;
@@ -77,11 +78,12 @@ static bool remote_init_network(rarch_remote_t *handle,
    RARCH_LOG("Bringing up remote interface on port %hu.\n",
          (unsigned short)port);
 
-   handle->net_fd[user] = socket_init((void*)&res,
-         port, NULL, SOCKET_TYPE_DATAGRAM);
+   fd = socket_init((void*)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
 
-   if (handle->net_fd[user] < 0)
+   if (fd < 0)
       goto error;
+
+   handle->net_fd[user] = fd;
 
    if (!socket_nonblock(handle->net_fd[user]))
       goto error;
