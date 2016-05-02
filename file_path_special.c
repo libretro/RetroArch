@@ -158,7 +158,7 @@ bool fill_pathname_application_data(char *s, size_t len)
    if (appdata)
    {
       fill_pathname_join(s, appdata,
-            "Library/Application Support", len);
+            "Library/Application Support/RetroArch", len);
       return true;
    }
 #elif !defined(RARCH_CONSOLE)

@@ -1008,11 +1008,9 @@ static config_file_t *open_default_config_file(void)
             sizeof(application_data)))
       return NULL;
 
-   fill_pathname_join(conf_path, application_data,
-         "RetroArch", sizeof(conf_path));
-   path_mkdir(conf_path);
+   path_mkdir(application_data);
 
-   fill_pathname_join(conf_path, conf_path,
+   fill_pathname_join(conf_path, application_data,
          "retroarch.cfg", sizeof(conf_path));
    conf = config_file_new(conf_path);
 
