@@ -981,6 +981,7 @@ static config_file_t *open_default_config_file(void)
       /* Try to create a new config file. */
       conf = config_file_new(NULL);
 
+
       if (conf)
       {
          /* Since this is a clean config file, we can
@@ -1067,7 +1068,10 @@ static config_file_t *open_default_config_file(void)
       /* Try to create a new config file. */
 
       strlcpy(conf_path, application_data, sizeof(conf_path));
+
       fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
+
+      fill_pathname_join(conf_path, conf_path, "retroarch.cfg", sizeof(conf_path));
 
       if (path_mkdir(basedir))
       {
