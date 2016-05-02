@@ -63,8 +63,11 @@ static int network_interface_up(struct sockaddr_in *target, int index,
       sceNetInit(&initparam);
    }
 
-   *s                 = sceNetSocket("RA_netlogger",
-         PSP2_NET_AF_INET, PSP2_NET_SOCK_DGRAM, 0);
+   *s = socket_create(
+         "ra_netlogger",
+         SOCKET_DOMAIN_INET,
+         SOCKET_TYPE_DATAGRAM,
+         0);
 
    target->sin_family = PSP2_NET_AF_INET;
    target->sin_port   = sceNetHtons(udp_port);
@@ -101,7 +104,11 @@ static int network_interface_up(struct sockaddr_in *target, int index,
    if (ret < 0)
       return -1;
 
-   *s                 = socket(AF_INET, SOCK_DGRAM, 0);
+   *s                 = socket_create(
+         "ra_netlogger",
+         SOCKET_DOMAIN_INET,
+         SOCKET_TYPE_DATAGRAM,
+         0);
 
    target->sin_family = AF_INET;
    target->sin_port   = htons(udp_port);

@@ -31,10 +31,16 @@
 
 RETRO_BEGIN_DECLS
 
+enum socket_domain
+{
+   SOCKET_DOMAIN_INET = 0
+};
+
 enum socket_type
 {
    SOCKET_TYPE_DATAGRAM = 0,
-   SOCKET_TYPE_STREAM
+   SOCKET_TYPE_STREAM,
+   SOCKET_TYPE_SEQPACKET
 };
 
 int socket_init(void **address, uint16_t port, const char *server, enum socket_type type);
@@ -56,6 +62,8 @@ ssize_t socket_receive_all_nonblocking(int fd, bool *error,
 bool socket_bind(int fd, void *data);
 
 int socket_connect(int fd, void *data, bool timeout_enable);
+
+int socket_create(const char *name, enum socket_domain domain_type, enum socket_type socket_type, int protocol);
 
 RETRO_END_DECLS
 

@@ -49,6 +49,9 @@ int socket_init(void **address, uint16_t port, const char *server, enum socket_t
       case SOCKET_TYPE_STREAM:
          hints.ai_socktype = SOCK_STREAM;
          break;
+      case SOCKET_TYPE_SEQPACKET:
+         /* TODO/FIXME - implement? */
+         break;
    }
 
    if (!server)
@@ -210,4 +213,61 @@ int socket_connect(int fd, void *data, bool timeout_enable)
 #endif
 
    return connect(fd, addr->ai_addr, addr->ai_addrlen);
+}
+
+int socket_create(
+      const char *name,
+      enum socket_domain domain_type,
+      enum socket_type socket_type,
+      int protocol)
+{
+#ifdef VITA
+   int type   = 0;
+   int domain = 0;
+
+   switch (domain_type)
+   {
+      case SOCKET_DOMAIN_INET:
+         domain = PSP2_NET_AF_INET;
+         break;
+   }
+
+   switch (socket_type)
+   {
+      case SOCKET_TYPE_DATAGRAM:
+         type = PSP2_NET_SOCK_DGRAM;
+         break;
+      case SOCKET_TYPE_STREAM:
+         type = PSP2_NET_SOCK_STREAM;
+         break;
+      case SOCKET_TYPE_SEQPACKET:
+         /* TODO/FIXME - implement */
+         break;
+   }
+   return sceNetSocket(name, domain, type, protocol);
+#else
+   int type   = 0;
+   int domain = 0;
+
+   switch (domain_type)
+   {
+      case SOCKET_DOMAIN_INET:
+         domain = AF_INET;
+         break;
+   }
+
+   switch (socket_type)
+   {
+      case SOCKET_TYPE_DATAGRAM:
+         type = SOCK_DGRAM;
+         break;
+      case SOCKET_TYPE_STREAM:
+         type = SOCK_STREAM;
+         break;
+      case SOCKET_TYPE_SEQPACKET:
+         /* TODO/FIXME - implement */
+         break;
+   }
+   return socket(domain, type, protocol);
+#endif
 }
