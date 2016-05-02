@@ -176,10 +176,10 @@ bool fill_pathname_application_data(char *s, size_t len)
    {
 #ifdef __HAIKU__
       fill_pathname_join(s, appdata,
-            "config/settings/retroarch", len);
+            "config/settings/retroarch/", len);
 #else
       fill_pathname_join(s, appdata,
-            ".config/retroarch", len);
+            ".config/retroarch/", len);
 #endif
       return true;
    }
