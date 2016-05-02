@@ -74,8 +74,10 @@ static void frontend_ctr_get_environment_settings(int *argc, char *argv[],
          "system", sizeof(g_defaults.dir.system));
    fill_pathname_join(g_defaults.dir.playlist, g_defaults.dir.core,
          "playlists", sizeof(g_defaults.dir.playlist));
+   fill_pathname_join(g_defaults.dir.menu_config, g_defaults.dir.port,
+      "config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.port,
-         "remaps", sizeof(g_defaults.dir.remap));
+         "config/remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.dir.video_filter, g_defaults.dir.port,
          "filters", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.path.config, g_defaults.dir.port,

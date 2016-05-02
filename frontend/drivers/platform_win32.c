@@ -255,8 +255,10 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
    ":/database/cursors", sizeof(g_defaults.dir.cursor));
    fill_pathname_expand_special(g_defaults.dir.playlist,
       ":/playlists", sizeof(g_defaults.dir.assets));
+   fill_pathname_expand_special(g_defaults.dir.menu_config,
+      ":/config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_expand_special(g_defaults.dir.remap,
-      ":/config/remap", sizeof(g_defaults.dir.remap));
+      ":/config/remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_expand_special(g_defaults.dir.wallpapers,
       ":/assets/wallpapers", sizeof(g_defaults.dir.wallpapers));
    fill_pathname_expand_special(g_defaults.dir.thumbnails,
@@ -273,8 +275,6 @@ static void frontend_win32_environment_get(int *argc, char *argv[],
       ":/info", sizeof(g_defaults.dir.core_info));
    fill_pathname_expand_special(g_defaults.dir.autoconfig,
       ":/autoconfig", sizeof(g_defaults.dir.autoconfig));
-   fill_pathname_expand_special(g_defaults.dir.menu_config,
-      ":/config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_expand_special(g_defaults.dir.shader,
       ":/shaders", sizeof(g_defaults.dir.shader));
    fill_pathname_expand_special(g_defaults.dir.core_assets,
