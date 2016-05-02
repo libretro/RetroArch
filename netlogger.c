@@ -45,11 +45,11 @@ static char sendbuf[4096];
 #endif
 static void *net_memory = NULL;
 
-static int network_interface_up(struct sockaddr_in *target, int index,
-      const char *ip_address, unsigned udp_port, int *s)
+static int network_interface_up(struct sockaddr_in *target,
+      const char *server, unsigned port, int *s)
 {
-   (void)index;
-
+   int ret = 0;
+   
 #if defined(VITA)
    if (sceNetShowNetstat() == PSP2_NET_ERROR_ENOTINIT)
    {
@@ -62,45 +62,34 @@ static int network_interface_up(struct sockaddr_in *target, int index,
 
       sceNetInit(&initparam);
    }
-
-   *s = socket_create(
-         "ra_netlogger",
-         SOCKET_DOMAIN_INET,
-         SOCKET_TYPE_DATAGRAM,
-         SOCKET_PROTOCOL_NONE);
-
-   target->sin_family = PSP2_NET_AF_INET;
-   target->sin_port   = sceNetHtons(udp_port);
-   target->sin_addr   = inet_aton(ip_address);
-#else
-
-#if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    int state, timeout_count = 10;
    int ret = cellNetCtlInit();
    if (ret < 0)
-      return -1;
+      goto error;
 
    for (;;)
    {
       ret = cellNetCtlGetState(&state);
       if (ret < 0)
-         return -1;
+         goto error;
 
       if (state == CELL_NET_CTL_STATE_IPObtained)
          break;
 
       retro_sleep(500);
       timeout_count--;
-      if (index && timeout_count < 0)
+      if (timeout_count < 0)
          return 0;
    }
 #elif defined(GEKKO)
    char t[16];
    if (if_config(t, NULL, NULL, TRUE) < 0)
-      ret = -1;
+      goto error;
 #endif
+
    if (ret < 0)
-      return -1;
+      goto error;
 
    *s                 = socket_create(
          "ra_netlogger",
@@ -108,22 +97,31 @@ static int network_interface_up(struct sockaddr_in *target, int index,
          SOCKET_TYPE_DATAGRAM,
          SOCKET_PROTOCOL_NONE);
 
+#ifdef VITA
+   target->sin_family = PSP2_NET_AF_INET;
+   target->sin_port   = sceNetHtons(port);
+   target->sin_addr   = inet_aton(server);
+#else
    target->sin_family = AF_INET;
-   target->sin_port   = htons(udp_port);
+   target->sin_port   = htons(port);
 #ifdef GEKKO
    target->sin_len    = 8;
 #endif
 
-   inet_pton(AF_INET, ip_address, &target->sin_addr);
+   inet_pton(AF_INET, server, &target->sin_addr);
 #endif
    return 0;
+
+error:
+   printf("Could not initialize network logger interface.\n");
+
+   return -1;
 }
 
 void logger_init (void)
 {
-   if (network_interface_up(&target, 1,
-         PC_DEVELOPMENT_IP_ADDRESS,PC_DEVELOPMENT_UDP_PORT, &g_sid) < 0)
-      printf("Could not initialize network logger interface.\n");
+   network_interface_up(&target,
+         PC_DEVELOPMENT_IP_ADDRESS,PC_DEVELOPMENT_UDP_PORT, &g_sid);
 }
 
 void logger_shutdown (void)
