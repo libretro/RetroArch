@@ -212,8 +212,7 @@ struct addrinfo
 #endif
 
 int getaddrinfo_retro(const char *node, const char *service,
-      const struct addrinfo *hints,
-      struct addrinfo **res);
+      struct addrinfo *hints, struct addrinfo **res);
 
 void freeaddrinfo_retro(struct addrinfo *res);
 

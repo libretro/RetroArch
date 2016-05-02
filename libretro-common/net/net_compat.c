@@ -98,20 +98,24 @@ int retro_epoll_fd;
 #endif
 
 int getaddrinfo_retro(const char *node, const char *service,
-      const struct addrinfo *hints,
-      struct addrinfo **res)
+      struct addrinfo *hints, struct addrinfo **res)
 {
-#ifdef HAVE_SOCKET_LEGACY
    struct sockaddr_in *in_addr = NULL;
-   struct addrinfo *info = (struct addrinfo*)calloc(1, sizeof(*info));
-   if (!info)
-      goto error;
+   struct addrinfo *info       = NULL;
+
+   (void)in_addr;
+   (void)info;
 
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    hints->ai_family    = AF_INET;
 #else
    hints->ai_family    = AF_UNSPEC;
 #endif
+
+#ifdef HAVE_SOCKET_LEGACY
+   info = (struct addrinfo*)calloc(1, sizeof(*info));
+   if (!info)
+      goto error;
 
    info->ai_family     = AF_INET;
    info->ai_socktype   = hints->ai_socktype;
