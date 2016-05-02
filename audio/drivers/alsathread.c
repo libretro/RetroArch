@@ -369,7 +369,7 @@ static void *alsa_device_list_new(void *data)
       /* description of device IOID - input / output identifcation
        * ("Input" or "Output"), NULL means both) */
 
-      if (io == NULL)
+      if (!io || !strcmp(io,"Output"))
          string_list_append(s, name, attr);
 
       if (name)
