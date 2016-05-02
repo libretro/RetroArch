@@ -35,9 +35,8 @@
  #include <string.h>
  #include <math.h>
  
- #include <winsock2.h>
- #include <windows.h>
- #include <ws2tcpip.h>
+ #include <net/net_compat.h>
+ #include <net/net_socket.h>
 
  #include <retro_miscellaneous.h>
 
@@ -51,7 +50,6 @@ int s, slen=sizeof(si_other);
 char message[64];
 char server[64];
 int port;
-WSADATA wsa;
 int input_state = 0;
 
 void retro_init(void)
@@ -59,11 +57,7 @@ void retro_init(void)
    frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
    //Initialise winsock
    log_cb(RETRO_LOG_INFO, "Initialising sockets\n");
-   if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
-   {
-      log_cb(RETRO_LOG_INFO, "Failed. Error Code : %d",WSAGetLastError());
-   }
-   log_cb(RETRO_LOG_INFO, "Sockets initialised.\n");
+   network_init();
 }
 
 void retro_deinit(void)
@@ -245,14 +239,14 @@ bool retro_load_game(const struct retro_game_info *info)
    //create socket
    if ( (s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_ERROR)
    {
-      log_cb(RETRO_LOG_INFO, "socket() failed with error code : %d" , WSAGetLastError());
+      log_cb(RETRO_LOG_INFO, "socket failed");
    }
    //setup address structure
    memset((char *) &si_other, 0, sizeof(si_other));
    si_other.sin_family = AF_INET;
    si_other.sin_port = htons(port);
    si_other.sin_addr.S_un.S_addr = inet_addr(server);
-   log_cb(RETRO_LOG_INFO, "Server : %s" , server);
+   log_cb(RETRO_LOG_INFO, "Server IP Address: %s\n" , server);
 
    return true;
 }

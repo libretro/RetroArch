@@ -103,7 +103,12 @@ else
    SHARED := -shared -static-libgcc -static-libstdc++ -s -Wl,--version-script=link.T -Wl,--no-undefined
 endif
 
-LDFLAGS += $(LIBM) -lws2_32
+
+LDFLAGS += $(LIBM)
+
+ifeq ($(platform), win)
+LDFLAGS += -lws2_32
+endif
 
 ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g
@@ -111,7 +116,7 @@ else
    CFLAGS += -O3
 endif
 
-OBJECTS := retropad.o
+OBJECTS := ../../libretro-common/net/net_compat.o ../../libretro-common/net/net_socket.o retropad.o
 CFLAGS += -I../../libretro-common/include -Wall -pedantic $(fpic)
 
 ifneq (,$(findstring qnx,$(platform)))
