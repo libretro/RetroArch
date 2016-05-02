@@ -251,8 +251,11 @@ int socket_create(
       case SOCKET_PROTOCOL_NONE:
          protocol = 0;
          break;
+      case SOCKET_PROTOCOL_TCP:
+         protocol = PSP2_NET_IPPROTO_TCP;
+         break;
       case SOCKET_PROTOCOL_UDP:
-         /* TODO/FIXME - implement */
+         protocol = PSP2_NET_IPPROTO_UDP;
          break;
    }
 
@@ -286,6 +289,9 @@ int socket_create(
    {
       case SOCKET_PROTOCOL_NONE:
          protocol = 0;
+         break;
+      case SOCKET_PROTOCOL_TCP:
+         protocol = IPPROTO_TCP;
          break;
       case SOCKET_PROTOCOL_UDP:
          protocol = IPPROTO_UDP;

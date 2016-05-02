@@ -46,6 +46,7 @@ enum socket_type
 enum socket_protocol
 {
    SOCKET_PROTOCOL_NONE = 0,
+   SOCKET_PROTOCOL_TCP,
    SOCKET_PROTOCOL_UDP
 };
 
