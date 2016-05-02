@@ -1867,72 +1867,84 @@ static void frontend_linux_get_env(int *argc,
                case INT_SD_APPDIR_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
                         int_sd_app_dir, "saves", sizeof(g_defaults.dir.sram));
-                  path_mkdir(g_defaults.dir.sram);
                   fill_pathname_join(g_defaults.dir.savestate,
                         int_sd_app_dir, "states", sizeof(g_defaults.dir.savestate));
-                  path_mkdir(g_defaults.dir.savestate);
                   fill_pathname_join(g_defaults.dir.system,
                         int_sd_app_dir, "system", sizeof(g_defaults.dir.system));
-                  path_mkdir(g_defaults.dir.system);
 
                   fill_pathname_join(g_defaults.dir.menu_config,
                         int_sd_app_dir, "config", sizeof(g_defaults.dir.menu_config));
-                  path_mkdir(g_defaults.dir.menu_config);
                   fill_pathname_join(g_defaults.dir.remap,
-                        int_sd_app_dir, "config/remap", sizeof(g_defaults.dir.remap));
-                  path_mkdir(g_defaults.dir.remap);
+                        g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
                   fill_pathname_join(g_defaults.dir.thumbnails,
                         int_sd_app_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
-                  path_mkdir(g_defaults.dir.thumbnails);
                   fill_pathname_join(g_defaults.dir.playlist,
                         int_sd_app_dir, "playlists", sizeof(g_defaults.dir.playlist));
-                  path_mkdir(g_defaults.dir.playlist);
                   fill_pathname_join(g_defaults.dir.cheats,
                         int_sd_app_dir, "cheats", sizeof(g_defaults.dir.cheats));
+
+                  /* TODO/FIXME - Test if this is needed at all, as far as I know,
+                   * every directory we set in g_defaults already gets created if it
+                   * doesn't exist already */
+                  path_mkdir(g_defaults.dir.sram);
+                  path_mkdir(g_defaults.dir.savestate);
+                  path_mkdir(g_defaults.dir.system);
+                  path_mkdir(g_defaults.dir.menu_config);
+                  path_mkdir(g_defaults.dir.remap);
+                  path_mkdir(g_defaults.dir.thumbnails);
+                  path_mkdir(g_defaults.dir.playlist);
                   path_mkdir(g_defaults.dir.cheats);
                   break;
                case INT_SD_NOT_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
                         app_dir, "saves", sizeof(g_defaults.dir.sram));
-                  path_mkdir(g_defaults.dir.sram);
                   fill_pathname_join(g_defaults.dir.savestate,
                         app_dir, "states", sizeof(g_defaults.dir.savestate));
-                  path_mkdir(g_defaults.dir.savestate);
                   fill_pathname_join(g_defaults.dir.system,
                         app_dir, "system", sizeof(g_defaults.dir.system));
-                  path_mkdir(g_defaults.dir.system);
 
                   fill_pathname_join(g_defaults.dir.menu_config,
                         app_dir, "config", sizeof(g_defaults.dir.menu_config));
-                  path_mkdir(g_defaults.dir.menu_config);
                   fill_pathname_join(g_defaults.dir.remap,
-                        app_dir, "config/remap", sizeof(g_defaults.dir.remap));
-                  path_mkdir(g_defaults.dir.remap);
+                        g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
                   fill_pathname_join(g_defaults.dir.thumbnails,
                         app_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
-                  path_mkdir(g_defaults.dir.thumbnails);
                   fill_pathname_join(g_defaults.dir.playlist,
                         app_dir, "playlists", sizeof(g_defaults.dir.playlist));
-                  path_mkdir(g_defaults.dir.playlist);
                   fill_pathname_join(g_defaults.dir.cheats,
                         app_dir, "cheats", sizeof(g_defaults.dir.cheats));
+
+                  /* TODO/FIXME - Test if this is needed at all, as far as I know,
+                   * every directory we set in g_defaults already gets created if it
+                   * doesn't exist already */
+                  path_mkdir(g_defaults.dir.sram);
+                  path_mkdir(g_defaults.dir.savestate);
+                  path_mkdir(g_defaults.dir.system);
+                  path_mkdir(g_defaults.dir.menu_config);
+                  path_mkdir(g_defaults.dir.remap);
+                  path_mkdir(g_defaults.dir.thumbnails);
+                  path_mkdir(g_defaults.dir.playlist);
                   path_mkdir(g_defaults.dir.cheats);
                   break;
                case INT_SD_WRITABLE:
                   fill_pathname_join(g_defaults.dir.menu_config,
                         int_sd_dir, "RetroArch/config", sizeof(g_defaults.dir.menu_config));
-                  path_mkdir(g_defaults.dir.menu_config);
                   fill_pathname_join(g_defaults.dir.remap,
-                        int_sd_dir, "RetroArch/config/remap", sizeof(g_defaults.dir.remap));
-                  path_mkdir(g_defaults.dir.remap);
+                        g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
                   fill_pathname_join(g_defaults.dir.thumbnails,
                         int_sd_dir, "RetroArch/thumbnails", sizeof(g_defaults.dir.thumbnails));
-                  path_mkdir(g_defaults.dir.thumbnails);
                   fill_pathname_join(g_defaults.dir.playlist,
                         int_sd_dir, "RetroArch/playlists", sizeof(g_defaults.dir.playlist));
-                  path_mkdir(g_defaults.dir.playlist);
                   fill_pathname_join(g_defaults.dir.cheats,
                         int_sd_dir, "RetroArch/cheats", sizeof(g_defaults.dir.cheats));
+
+                  /* TODO/FIXME - Test if this is needed at all, as far as I know,
+                   * every directory we set in g_defaults already gets created if it
+                   * doesn't exist already */
+                  path_mkdir(g_defaults.dir.menu_config);
+                  path_mkdir(g_defaults.dir.remap);
+                  path_mkdir(g_defaults.dir.thumbnails);
+                  path_mkdir(g_defaults.dir.playlist);
                   path_mkdir(g_defaults.dir.cheats);
                default:
                   break;
