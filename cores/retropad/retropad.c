@@ -60,8 +60,8 @@ int input_state = 0;
 void retro_init(void)
 {
    frame_buf = (uint16_t*)calloc(320 * 240, sizeof(uint16_t));
-   //Initialise winsock
-   log_cb(RETRO_LOG_INFO, "Initialising sockets\n");
+
+   log_cb(RETRO_LOG_INFO, "Initialising sockets...\n");
    network_init();
 }
 
@@ -222,11 +222,11 @@ void retro_run(void)
    unsigned i;
    update_input();
    snprintf(message, sizeof(message), "%d", input_state);
-   //send the message
+
+   /* send the message */
    if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen)==-1)
-   {
        log_cb(RETRO_LOG_INFO, "Error sending data\n");
-   }
+
    for (i = 0; i < 320 * 240; i++)
       frame_buf[i] = 4 << 5;
    video_cb(frame_buf, 320, 240, 640);
@@ -248,14 +248,17 @@ bool retro_load_game(const struct retro_game_info *info)
 
    /* setup address structure */
    memset((char *) &si_other, 0, sizeof(si_other));
-   si_other.sin_family = AF_INET;
-   si_other.sin_port = htons(port);
+
+   si_other.sin_family           = AF_INET;
+   si_other.sin_port             = htons(port);
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    si_other.sin_addr.S_un.S_addr = inet_addr(server);
 #else
-   si_other.sin_addr.s_addr = inet_addr(server);
+   si_other.sin_addr.s_addr      = inet_addr(server);
+
    inet_aton(server , &si_other.sin_addr);
 #endif
+
    log_cb(RETRO_LOG_INFO, "Server IP Address: %s\n" , server);
 
    return true;

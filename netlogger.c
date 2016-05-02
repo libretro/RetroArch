@@ -75,10 +75,8 @@ static int network_interface_up(struct sockaddr_in *target, int index,
 #else
 
 #if defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   int ret = 0;
-
    int state, timeout_count = 10;
-   ret = cellNetCtlInit();
+   int ret = cellNetCtlInit();
    if (ret < 0)
       return -1;
 
