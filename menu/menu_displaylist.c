@@ -2708,10 +2708,13 @@ static int menu_displaylist_parse_generic(
 
       is_dir = (file_type == MENU_FILE_DIRECTORY);
 
-      if (push_dir && !is_dir)
-         continue;
-      if (hash_label == MENU_LABEL_SCAN_DIRECTORY && !is_dir)
-         continue;
+      if (!is_dir)
+      {
+         if (push_dir)
+            continue;
+         if (hash_label == MENU_LABEL_SCAN_DIRECTORY)
+            continue;
+      }
 
       /* Need to preserve slash first time. */
       path = str_list->elems[i].data;
@@ -3865,13 +3868,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             {
                for (i = 0; i < cores_names_size; i++)
                {
-                  if (type == DISPLAYLIST_CORES_COLLECTION_SUPPORTED)
-                     menu_entries_add(info->list, cores_paths->elems[i].data, "",
-                           MENU_FILE_CORE, 0, 0);
-                  else
-                     menu_entries_add(info->list, cores_paths->elems[i].data,
-                           menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST_OK),
-                           MENU_FILE_CORE, 0, 0);
+                  switch (type)
+                  {
+                     case DISPLAYLIST_CORES_COLLECTION_SUPPORTED:
+                        menu_entries_add(info->list, cores_paths->elems[i].data, "",
+                              MENU_FILE_CORE, 0, 0);
+                        break;
+                     default:
+                        menu_entries_add(info->list, cores_paths->elems[i].data,
+                              menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST_OK),
+                              MENU_FILE_CORE, 0, 0);
+                        break;
+                  }
+
                   menu_entries_set_alt_at_offset(info->list, i,
                         cores_names->elems[i].data);
                }
