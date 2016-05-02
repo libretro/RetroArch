@@ -288,7 +288,7 @@ int socket_create(
          protocol = 0;
          break;
       case SOCKET_PROTOCOL_UDP:
-         /* TODO/FIXME - implement */
+         protocol = IPPROTO_UDP;
          break;
    }
 

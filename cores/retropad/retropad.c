@@ -10,7 +10,7 @@
  *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
  *  PURPOSE.  See the GNU General Public License for more details.
- *
+ 
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -236,12 +236,17 @@ bool retro_load_game(const struct retro_game_info *info)
 {
    (void)info;
    check_variables();
-   //create socket
-   if ( (s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_ERROR)
-   {
+
+   s = socket_create(
+         "retropad",
+         SOCKET_DOMAIN_INET,
+         SOCKET_TYPE_DATAGRAM,
+         SOCKET_PROTOCOL_UDP);
+
+   if (s == SOCKET_ERROR)
       log_cb(RETRO_LOG_INFO, "socket failed");
-   }
-   //setup address structure
+
+   /* setup address structure */
    memset((char *) &si_other, 0, sizeof(si_other));
    si_other.sin_family = AF_INET;
    si_other.sin_port = htons(port);
