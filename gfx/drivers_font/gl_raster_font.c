@@ -60,23 +60,20 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
    uint8_t       *tmp                   = NULL;
    struct retro_hw_render_callback *hwr = NULL;
    bool ancient                         = false; /* add a check here if needed */
-   bool modern                          = font->gl->core_context;
    
    video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 
-   modern = modern ||
-         (hwr->context_type == RETRO_HW_CONTEXT_OPENGL &&
-          hwr->version_major >= 3);
-
    if (ancient)
    {
-      gl_internal = gl_format = GL_RGBA;
+      gl_internal = GL_RGBA;
+      gl_format   = GL_RGBA;
       ncomponents = 4;
    }
-#ifdef HAVE_OPENGLES
-   (void)modern;
-#elif defined(GL_VERSION_3_0)
-   else if (modern)
+    
+#if defined(GL_VERSION_3_0)
+    if (font->gl->core_context ||
+        (hwr->context_type == RETRO_HW_CONTEXT_OPENGL &&
+         hwr->version_major >= 3))
    {
       GLint swizzle[] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
       glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
