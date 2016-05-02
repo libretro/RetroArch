@@ -2025,8 +2025,10 @@ static void frontend_linux_get_env(int *argc,
          "autoconfig", sizeof(g_defaults.dir.autoconfig));
    fill_pathname_join(g_defaults.dir.assets, base_path,
          "assets", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.remap, base_path,
-         "remap", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.dir.menu_config, base_path,
+         "config", sizeof(g_defaults.dir.menu_config));
+   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,
+         "remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.dir.playlist, base_path,
          "playlists", sizeof(g_defaults.dir.playlist));
    fill_pathname_join(g_defaults.dir.cursor, base_path,
