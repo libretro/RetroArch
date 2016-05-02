@@ -171,28 +171,23 @@ void retro_set_environment(retro_environment_t cb)
 
 static void check_variables(void)
 {
-   struct retro_variable var;
-   var.key = "ip_octet1";
-   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
-   snprintf(server, sizeof(server), "%s", var.value);
+   struct retro_variable var, var2, var3, var4, port_var;
+   var.key      = "ip_octet1";
+   var2.key     = "ip_octet2";
+   var3.key     = "ip_octet3";
+   var4.key     = "ip_octet4";
+   port_var.key = "port";
 
-   var.key = "ip_octet2";
    environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
-   snprintf(server, sizeof(server), "%s.%s", server, var.value);
+   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var2);
+   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var3);
+   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var4);
+   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &port_var);
 
-   var.key = "ip_octet3";
-   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
-   snprintf(server, sizeof(server), "%s.%s", server, var.value);
-
-   var.key = "ip_octet4";
-   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
-   snprintf(server, sizeof(server), "%s.%s", server, var.value);
-
-   var.key = "port";
-   environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var);
-   port = atoi(var.value);
-
+   snprintf(server, sizeof(server), "%s.%s.%s.%s", var.value, var2.value, var3.value, var4.value);
+   port = atoi(port_var.value);
 }
+
 void retro_set_audio_sample(retro_audio_sample_t cb)
 {
    audio_cb = cb;
