@@ -341,6 +341,13 @@ static int action_get_online_updater_list(const char *path, const char *label,
    return 0;
 }
 
+static int action_get_online_thumbnails_updater_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_THUMBNAILS_UPDATER_LIST), len);
+   return 0;
+}
+
 static int action_get_core_updater_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
@@ -824,6 +831,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_ONLINE_UPDATER:
          BIND_ACTION_GET_TITLE(cbs, action_get_online_updater_list);
+         break;
+      case MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
+         BIND_ACTION_GET_TITLE(cbs, action_get_online_thumbnails_updater_list);
          break;
       case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
          BIND_ACTION_GET_TITLE(cbs, action_get_core_updater_list);
