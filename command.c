@@ -525,7 +525,7 @@ static bool send_udp_packet(const char *host,
          goto end;
       }
 
-      len = strlen(msg);
+      len     = strlen(msg);
       ret_len = sendto(fd, msg, len, 0, tmp->ai_addr, tmp->ai_addrlen);
 
       if (ret_len < len)
