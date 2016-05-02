@@ -105,33 +105,12 @@ static void net_http_send_str(int fd, bool *error, const char *text)
    }
 }
 
-static ssize_t net_http_recv(int fd, bool *error,
-      uint8_t *data, size_t maxlen)
-{
-   ssize_t bytes;
-
-   if (*error)
-      return -1;
-
-   bytes = recv(fd, (char*)data, maxlen, 0);
-
-   if (bytes > 0)
-      return bytes;
-   else if (bytes == 0)
-      return -1;
-   else if (isagain(bytes))
-      return 0;
-
-   *error=true;
-   return -1;
-}
-
 static char* urlencode(const char* url)
 {
    unsigned i;
    unsigned outpos = 0;
    unsigned outlen = 0;
-   char *ret  = NULL;
+   char *ret       = NULL;
 
    for (i = 0; url[i] != '\0'; i++)
    {
@@ -326,8 +305,11 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
    if (state->part < P_BODY)
    {
-      newlen = net_http_recv(state->fd, &state->error,
-            (uint8_t*)state->data + state->pos, state->buflen - state->pos);
+      if (state->error)
+         newlen = -1;
+      else
+         newlen = socket_receive_all_nonblocking(state->fd, &state->error,
+               (uint8_t*)state->data + state->pos, state->buflen - state->pos);
 
       if (newlen < 0)
          goto fail;
@@ -392,9 +374,14 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    {
       if (!newlen)
       {
-         newlen = net_http_recv(state->fd, &state->error,
-               (uint8_t*)state->data + state->pos,
-               state->buflen - state->pos);
+         if (state->error)
+            newlen = -1;
+         else
+            newlen = socket_receive_all_nonblocking(
+                  state->fd,
+                  &state->error,
+                  (uint8_t*)state->data + state->pos,
+                  state->buflen - state->pos);
 
          if (newlen < 0)
          {

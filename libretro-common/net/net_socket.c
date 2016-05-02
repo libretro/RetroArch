@@ -70,6 +70,25 @@ error:
    return -1;
 }
 
+ssize_t socket_receive_all_nonblocking(int fd, bool *error,
+      void *data_, size_t size)
+{
+   const uint8_t *data = (const uint8_t*)data_;
+   ssize_t         ret = recv(fd, (char*)data, size, 0);
+
+   if (ret > 0)
+      return ret;
+
+   if (ret == 0)
+      return -1;
+
+   if (isagain(ret))
+      return 0;
+
+   *error = true;
+   return -1;
+}
+
 int socket_receive_all_blocking(int fd, void *data_, size_t size)
 {
    const uint8_t *data = (const uint8_t*)data_;

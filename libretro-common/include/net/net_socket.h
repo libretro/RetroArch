@@ -50,6 +50,9 @@ int socket_send_all_blocking(int fd, const void *data_, size_t size, bool no_sig
 
 int socket_receive_all_blocking(int fd, void *data_, size_t size);
 
+ssize_t socket_receive_all_nonblocking(int fd, bool *error,
+      void *data_, size_t size);
+
 bool socket_bind(int fd, void *data);
 
 int socket_connect(int fd, void *data, bool timeout_enable);
