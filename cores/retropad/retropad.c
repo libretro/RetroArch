@@ -221,7 +221,7 @@ void retro_run(void)
 {
    unsigned i;
    update_input();
-   itoa(input_state, message, 10);
+   snprintf(message, sizeof(message), "%d", input_state);
    //send the message
    if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen)==-1)
    {
@@ -245,7 +245,11 @@ bool retro_load_game(const struct retro_game_info *info)
    memset((char *) &si_other, 0, sizeof(si_other));
    si_other.sin_family = AF_INET;
    si_other.sin_port = htons(port);
+#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    si_other.sin_addr.S_un.S_addr = inet_addr(server);
+#else
+   si_other.sin_addr.s_addr = inet_addr(server);
+#endif
    log_cb(RETRO_LOG_INFO, "Server IP Address: %s\n" , server);
 
    return true;
