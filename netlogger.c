@@ -61,15 +61,15 @@ static int network_interface_up(struct sockaddr_in *target,
       sceNetInit(&initparam);
    }
 #elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   int state, timeout_count = 10;
+   int timeout_count = 10;
 
    if (cellNetCtlInit() < 0)
       goto error;
 
    for (;;)
    {
-      int ret = cellNetCtlGetState(&state);
-      if (ret < 0)
+      int state;
+      if (cellNetCtlGetState(&state) < 0)
          goto error;
 
       if (state == CELL_NET_CTL_STATE_IPObtained)
