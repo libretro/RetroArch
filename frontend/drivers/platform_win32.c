@@ -111,6 +111,9 @@ static void frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
 
    switch (*major)
    {
+      case 10:
+         strlcpy(s, "Windows 10", len);
+         break;
       case 6:
          switch (*minor)
          {
