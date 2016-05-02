@@ -214,11 +214,10 @@ int socket_create(
       enum socket_type     socket_type,
       enum socket_protocol protocol_type)
 {
-#ifdef VITA
    int type     = 0;
    int domain   = 0;
    int protocol = 0;
-
+#ifdef VITA
    switch (domain_type)
    {
       case SOCKET_DOMAIN_INET:
@@ -254,10 +253,6 @@ int socket_create(
 
    return sceNetSocket(name, domain, type, protocol);
 #else
-   int type     = 0;
-   int domain   = 0;
-   int protocol = 0;
-
    switch (domain_type)
    {
       case SOCKET_DOMAIN_INET:
