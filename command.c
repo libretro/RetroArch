@@ -505,11 +505,6 @@ static bool send_udp_packet(const char *host,
    int fd                      = -1;
    bool ret                    = true;
 
-#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
-   hints.ai_family   = AF_INET;
-#else
-   hints.ai_family   = AF_UNSPEC;
-#endif
    hints.ai_socktype = SOCK_DGRAM;
 
    snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);

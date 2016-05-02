@@ -31,15 +31,8 @@ int socket_init(void **address, uint16_t port, const char *server, enum socket_t
    struct addrinfo **addrinfo = (struct addrinfo**)address;
    struct addrinfo *addr = NULL;
    
-
    if (!network_init())
       goto error;
-
-#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
-   hints.ai_family = AF_INET;
-#else
-   hints.ai_family = AF_UNSPEC;
-#endif
 
    switch (type)
    {

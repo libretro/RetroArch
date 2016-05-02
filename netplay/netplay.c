@@ -707,12 +707,6 @@ static bool init_tcp_socket(netplay_t *netplay, const char *server,
    struct addrinfo *res            = NULL;
    struct addrinfo hints           = {0};
 
-#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
-   hints.ai_family = AF_INET;
-#else
-   hints.ai_family = AF_UNSPEC;
-#endif
-
    hints.ai_socktype = SOCK_STREAM;
    if (!server)
       hints.ai_flags = AI_PASSIVE;

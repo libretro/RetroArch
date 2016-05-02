@@ -107,10 +107,16 @@ int getaddrinfo_retro(const char *node, const char *service,
    if (!info)
       goto error;
 
-   info->ai_family = AF_INET;
-   info->ai_socktype = hints->ai_socktype;
+#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
+   hints->ai_family    = AF_INET;
+#else
+   hints->ai_family    = AF_UNSPEC;
+#endif
 
-   in_addr = (struct sockaddr_in*)calloc(1, sizeof(*in_addr));
+   info->ai_family     = AF_INET;
+   info->ai_socktype   = hints->ai_socktype;
+   in_addr             = (struct sockaddr_in*)
+      calloc(1, sizeof(*in_addr));
 
    if (!in_addr)
       goto error;
@@ -136,7 +142,7 @@ int getaddrinfo_retro(const char *node, const char *service,
       goto error;
 
    info->ai_addr = (struct sockaddr*)in_addr;
-   *res = info;
+   *res          = info;
 
    return 0;
 
