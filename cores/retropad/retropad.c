@@ -28,19 +28,24 @@
  * - Input recording / Combos
 */
 
- #include <stdio.h>
- #include <stdint.h>
- #include <stdlib.h>
- #include <stdarg.h>
- #include <string.h>
- #include <math.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <math.h>
  
- #include <net/net_compat.h>
- #include <net/net_socket.h>
+#include <net/net_compat.h>
+#include <net/net_socket.h>
 
- #include <retro_miscellaneous.h>
+#include <retro_miscellaneous.h>
 
 #include "../../libretro.h"
+
+#ifndef SOCKET_ERROR
+#define SOCKET_ERROR -1
+#endif
+
  
 struct retro_log_callback logger;
 retro_log_printf_t log_cb;
@@ -225,7 +230,7 @@ void retro_run(void)
    //send the message
    if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen)==-1)
    {
-       log_cb(RETRO_LOG_INFO, "Error sending data");
+       log_cb(RETRO_LOG_INFO, "Error sending data\n");
    }
    for (i = 0; i < 320 * 240; i++)
       frame_buf[i] = 4 << 5;
@@ -249,6 +254,7 @@ bool retro_load_game(const struct retro_game_info *info)
    si_other.sin_addr.S_un.S_addr = inet_addr(server);
 #else
    si_other.sin_addr.s_addr = inet_addr(server);
+   inet_aton(server , &si_other.sin_addr);
 #endif
    log_cb(RETRO_LOG_INFO, "Server IP Address: %s\n" , server);
 
