@@ -1951,29 +1951,23 @@ static void frontend_linux_get_env(int *argc,
             }
 
             /* create save and system directories in the internal dir too */
-            fill_pathname_join(buf,
-                  app_dir, "saves", sizeof(buf));
+            fill_pathname_join(buf, app_dir, "saves", sizeof(buf));
             path_mkdir(buf);
 
-            fill_pathname_join(buf,
-                  app_dir, "states", sizeof(buf));
+            fill_pathname_join(buf, app_dir, "states", sizeof(buf));
             path_mkdir(buf);
 
-            fill_pathname_join(buf,
-                  app_dir, "system", sizeof(buf));
+            fill_pathname_join(buf, app_dir, "system", sizeof(buf));
             path_mkdir(buf);
 
             /* create save and system directories in the internal sd too */
-            fill_pathname_join(buf,
-                  int_sd_app_dir, "saves", sizeof(buf));
+            fill_pathname_join(buf, int_sd_app_dir, "saves", sizeof(buf));
             path_mkdir(buf);
 
-            fill_pathname_join(buf,
-                  int_sd_app_dir, "states", sizeof(buf));
+            fill_pathname_join(buf, int_sd_app_dir, "states", sizeof(buf));
             path_mkdir(buf);
 
-            fill_pathname_join(buf,
-                  int_sd_app_dir, "system", sizeof(buf));
+            fill_pathname_join(buf, int_sd_app_dir, "system", sizeof(buf));
             path_mkdir(buf);
 
             RARCH_LOG("Default savefile folder: [%s]",   g_defaults.dir.sram);
