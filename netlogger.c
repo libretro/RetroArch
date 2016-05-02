@@ -67,7 +67,7 @@ static int network_interface_up(struct sockaddr_in *target, int index,
          "ra_netlogger",
          SOCKET_DOMAIN_INET,
          SOCKET_TYPE_DATAGRAM,
-         0);
+         SOCKET_PROTOCOL_NONE);
 
    target->sin_family = PSP2_NET_AF_INET;
    target->sin_port   = sceNetHtons(udp_port);
@@ -108,7 +108,7 @@ static int network_interface_up(struct sockaddr_in *target, int index,
          "ra_netlogger",
          SOCKET_DOMAIN_INET,
          SOCKET_TYPE_DATAGRAM,
-         0);
+         SOCKET_PROTOCOL_NONE);
 
    target->sin_family = AF_INET;
    target->sin_port   = htons(udp_port);

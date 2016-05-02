@@ -43,6 +43,12 @@ enum socket_type
    SOCKET_TYPE_SEQPACKET
 };
 
+enum socket_protocol
+{
+   SOCKET_PROTOCOL_NONE = 0,
+   SOCKET_PROTOCOL_UDP
+};
+
 int socket_init(void **address, uint16_t port, const char *server, enum socket_type type);
 
 int socket_close(int fd);
@@ -63,7 +69,11 @@ bool socket_bind(int fd, void *data);
 
 int socket_connect(int fd, void *data, bool timeout_enable);
 
-int socket_create(const char *name, enum socket_domain domain_type, enum socket_type socket_type, int protocol);
+int socket_create(
+      const char *name,
+      enum socket_domain domain_type,
+      enum socket_type socket_type,
+      enum socket_protocol protocol_type);
 
 RETRO_END_DECLS
 

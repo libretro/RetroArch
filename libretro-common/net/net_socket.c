@@ -217,13 +217,14 @@ int socket_connect(int fd, void *data, bool timeout_enable)
 
 int socket_create(
       const char *name,
-      enum socket_domain domain_type,
-      enum socket_type socket_type,
-      int protocol)
+      enum socket_domain   domain_type,
+      enum socket_type     socket_type,
+      enum socket_protocol protocol_type)
 {
 #ifdef VITA
-   int type   = 0;
-   int domain = 0;
+   int type     = 0;
+   int domain   = 0;
+   int protocol = 0;
 
    switch (domain_type)
    {
@@ -244,10 +245,22 @@ int socket_create(
          /* TODO/FIXME - implement */
          break;
    }
+
+   switch (protocol_type)
+   {
+      case SOCKET_PROTOCOL_NONE:
+         protocol = 0;
+         break;
+      case SOCKET_PROTOCOL_UDP:
+         /* TODO/FIXME - implement */
+         break;
+   }
+
    return sceNetSocket(name, domain, type, protocol);
 #else
-   int type   = 0;
-   int domain = 0;
+   int type     = 0;
+   int domain   = 0;
+   int protocol = 0;
 
    switch (domain_type)
    {
@@ -268,6 +281,17 @@ int socket_create(
          /* TODO/FIXME - implement */
          break;
    }
+
+   switch (protocol_type)
+   {
+      case SOCKET_PROTOCOL_NONE:
+         protocol = 0;
+         break;
+      case SOCKET_PROTOCOL_UDP:
+         /* TODO/FIXME - implement */
+         break;
+   }
+
    return socket(domain, type, protocol);
 #endif
 }
