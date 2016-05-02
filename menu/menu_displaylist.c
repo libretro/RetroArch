@@ -2710,9 +2710,7 @@ static int menu_displaylist_parse_generic(
 
       if (!is_dir)
       {
-         if (push_dir)
-            continue;
-         if (hash_label == MENU_LABEL_SCAN_DIRECTORY)
+         if (push_dir || hash_label == MENU_LABEL_SCAN_DIRECTORY)
             continue;
       }
 
