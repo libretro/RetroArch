@@ -98,7 +98,6 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
       {
          case 1:
             memcpy(dst, src, atlas->width);
-            src += atlas->width;
             break;
          case 2:
             for (j = 0; j < atlas->width; ++j)
