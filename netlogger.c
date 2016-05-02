@@ -48,8 +48,6 @@ static void *net_memory = NULL;
 static int network_interface_up(struct sockaddr_in *target,
       const char *server, unsigned port, int *s)
 {
-   int ret = 0;
-   
 #if defined(VITA)
    if (sceNetShowNetstat() == PSP2_NET_ERROR_ENOTINIT)
    {
@@ -64,13 +62,13 @@ static int network_interface_up(struct sockaddr_in *target,
    }
 #elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
    int state, timeout_count = 10;
-   int ret = cellNetCtlInit();
-   if (ret < 0)
+
+   if (cellNetCtlInit() < 0)
       goto error;
 
    for (;;)
    {
-      ret = cellNetCtlGetState(&state);
+      int ret = cellNetCtlGetState(&state);
       if (ret < 0)
          goto error;
 
@@ -87,9 +85,6 @@ static int network_interface_up(struct sockaddr_in *target,
    if (if_config(t, NULL, NULL, TRUE) < 0)
       goto error;
 #endif
-
-   if (ret < 0)
-      goto error;
 
    *s                 = socket_create(
          "ra_netlogger",
@@ -110,6 +105,7 @@ static int network_interface_up(struct sockaddr_in *target,
 
    inet_pton(AF_INET, server, &target->sin_addr);
 #endif
+
    return 0;
 
 error:
