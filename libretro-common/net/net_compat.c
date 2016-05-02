@@ -21,15 +21,61 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <compat/strl.h>
 
-#if defined(VITA)
+#if defined(_XBOX)
+/* TODO - implement h_length and h_addrtype */
+struct hostent
+{
+   int h_addrtype;     /* host address type   */
+   int h_length;       /* length of addresses */
+   char **h_addr_list; /* list of addresses   */
+};
+
+struct hostent *gethostbyname(const char *name)
+{
+   WSAEVENT event;
+   static struct hostent he;
+   static struct in_addr addr;
+   static char *addr_ptr;
+   XNDNS *dns     = NULL;
+
+   he.h_addr_list = &addr_ptr;
+   addr_ptr       = (char*)&addr;
+
+   if (!name)
+      return NULL;
+
+   event = WSACreateEvent();
+   XNetDnsLookup(name, event, &dns);
+   if (!dns)
+      goto error;
+
+   WaitForSingleObject((HANDLE)event, INFINITE);
+   if (dns->iStatus)
+      goto error;
+
+   memcpy(&addr, dns->aina, sizeof(addr));
+
+   WSACloseEvent(event);
+   XNetDnsRelease(dns);
+
+   return &he;
+
+error:
+   if (event)
+      WSACloseEvent(event);
+   return NULL;
+}
+#elif defined(VITA)
 static void *_net_compat_net_memory = NULL;
 #define COMPAT_NET_INIT_SIZE 512*1024
 #define INET_ADDRSTRLEN sizeof(struct sockaddr_in)
