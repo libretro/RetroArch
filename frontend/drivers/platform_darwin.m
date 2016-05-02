@@ -385,10 +385,10 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.audio_filter, home_dir_buf, "audio_filters", sizeof(g_defaults.dir.audio_filter));
    fill_pathname_join(g_defaults.dir.video_filter, home_dir_buf, "video_filters", sizeof(g_defaults.dir.video_filter));
    fill_pathname_join(g_defaults.dir.playlist, application_data, "playlists", sizeof(g_defaults.dir.playlist));
-   fill_pathname_join(g_defaults.path.config, g_defaults.dir.menu_config, "retroarch.cfg", sizeof(g_defaults.path.config));
    fill_pathname_join(g_defaults.dir.thumbnails, application_data, "thumbnails", sizeof(g_defaults.dir.thumbnails));
    fill_pathname_join(g_defaults.dir.menu_config, application_data, "config", sizeof(g_defaults.dir.menu_config));
-   fill_pathname_join(g_defaults.dir.remap, application_data, "config/remaps", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.path.config, g_defaults.dir.menu_config, "retroarch.cfg", sizeof(g_defaults.path.config));
+   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.dir.core_assets, application_data, "downloads", sizeof(g_defaults.dir.core_assets));
    fill_pathname_join(g_defaults.dir.screenshot, application_data, "screenshots", sizeof(g_defaults.dir.screenshot));
 #if defined(RELEASE_BUILD)
