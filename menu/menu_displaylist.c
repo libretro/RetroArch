@@ -1299,14 +1299,11 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    {
       uint32_t core_name_hash;
       char fill_buf[PATH_MAX_LENGTH], path_copy[PATH_MAX_LENGTH];
-      bool core_detected              = false;
       const char *core_name           = NULL;
       const char *db_name             = NULL;
       const char *path                = NULL;
       const char *label               = NULL;
       const char *crc32               = NULL;
-
-      (void)core_detected;
 
       strlcpy(path_copy, info->path, sizeof(path_copy));
 
@@ -1335,7 +1332,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
                char tmp[PATH_MAX_LENGTH] = {0};
                snprintf(tmp, sizeof(tmp), " (%s)", core_name);
                strlcat(fill_buf, tmp, sizeof(fill_buf));
-               core_detected = true;
             }
          }
       }

@@ -162,7 +162,7 @@ static int dom_read_array_start(uint32_t len, void *data)
 	v->val.array.len = len;
 	v->val.array.items = NULL;
 
-	items = (struct rmsgpack_dom_value *)calloc(len, sizeof(struct rmsgpack_dom_pair));
+	items = (struct rmsgpack_dom_value *)calloc(len, sizeof(*items));
 
 	if (!items)
 		return -ENOMEM;
@@ -454,20 +454,14 @@ int rmsgpack_dom_read_into(RFILE *fd, ...)
    }
 
    if (map.type != RDT_MAP)
-   {
-      rv = -EINVAL;
       goto clean;
-   }
 
    while (1)
    {
       key_name = va_arg(ap, const char *);
 
       if (!key_name)
-      {
-         rv = 0;
          goto clean;
-      }
 
       key.type        = RDT_STRING;
       key.val.string.len  = strlen(key_name);
@@ -508,7 +502,6 @@ int rmsgpack_dom_read_into(RFILE *fd, ...)
             memcpy(buff_value, value->val.string.buff, (size_t)min_len);
             break;
          default:
-            rv = -1;
             goto clean;
       }
    }

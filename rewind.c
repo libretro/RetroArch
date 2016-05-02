@@ -302,8 +302,8 @@ static size_t state_manager_raw_compress(const void *src,
       if (skip >= num16s)
          break;
    
-      old16 += skip;
-      new16 += skip;
+      old16  += skip;
+      new16  += skip;
       num16s -= skip;
    
       if (skip > UINT16_MAX)
@@ -318,7 +318,6 @@ static size_t state_manager_raw_compress(const void *src,
          *compressed16++ = 0;
          *compressed16++ = skip;
          *compressed16++ = skip >> 16;
-         skip = 0;
          continue;
       }
    

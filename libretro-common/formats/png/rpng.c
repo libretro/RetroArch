@@ -1056,8 +1056,6 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
    if (!handle)
       goto end;
 
-   ptr  = nbio_get_ptr(handle, &file_len);
-
    nbio_begin_read(handle);
 
    while (!nbio_iterate(handle));

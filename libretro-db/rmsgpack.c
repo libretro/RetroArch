@@ -223,7 +223,6 @@ int rmsgpack_write_bin(RFILE *fd, const void *s, uint32_t len)
 {
    uint16_t tmp_i16;
    uint32_t tmp_i32;
-   int written = sizeof(int8_t);
 
    if (len == (uint8_t)len)
    {
@@ -231,7 +230,6 @@ int rmsgpack_write_bin(RFILE *fd, const void *s, uint32_t len)
          goto error;
       if (filestream_write(fd, &len, sizeof(uint8_t)) == -1)
          goto error;
-      written += sizeof(uint8_t);
    }
    else if (len == (uint16_t)len)
    {
@@ -240,7 +238,6 @@ int rmsgpack_write_bin(RFILE *fd, const void *s, uint32_t len)
       tmp_i16 = swap_if_little16(len);
       if (filestream_write(fd, &tmp_i16, sizeof(uint16_t)) == -1)
          goto error;
-      written += sizeof(uint16_t);
    }
    else
    {
@@ -249,12 +246,10 @@ int rmsgpack_write_bin(RFILE *fd, const void *s, uint32_t len)
       tmp_i32 = swap_if_little32(len);
       if (filestream_write(fd, &tmp_i32, sizeof(uint32_t)) == -1)
          goto error;
-      written += sizeof(uint32_t);
    }
+    
    if (filestream_write(fd, s, len) == -1)
       goto error;
-
-   written += len;
 
    return 0;
 
