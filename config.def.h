@@ -521,7 +521,7 @@ static bool xmb_shadows_enable   = true;
 
 static unsigned menu_background_gradient = 4;
 
-#if defined(HAVE_OPENGLES2)
+#if defined(HAVE_OPENGLES2) || defined(OSX_PPC)
 static unsigned menu_shader_pipeline = 1;
 #else
 static unsigned menu_shader_pipeline = 2;
