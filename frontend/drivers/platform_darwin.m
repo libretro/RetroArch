@@ -369,7 +369,7 @@ static void frontend_darwin_get_environment_settings(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dir.thumbnails, home_dir_buf, "thumbnails", sizeof(g_defaults.dir.thumbnails));
    fill_pathname_join(g_defaults.dir.sram, home_dir_buf, "saves", sizeof(g_defaults.dir.sram));
    fill_pathname_join(g_defaults.dir.savestate, home_dir_buf, "states", sizeof(g_defaults.dir.savestate));
-   fill_pathname_join(g_defaults.dir.menu_config, application_data, "config", sizeof(g_defaults.dir.menu_config));
+   fill_pathname_join(g_defaults.dir.menu_config, home_dir_buf, "config", sizeof(g_defaults.dir.menu_config));
    fill_pathname_join(g_defaults.dir.remap, home_dir_buf, "config/remaps", sizeof(g_defaults.dir.remap));
 #if defined(IOS)
    fill_pathname_join(g_defaults.dir.playlist, home_dir_buf, "playlists", sizeof(g_defaults.dir.playlist));
