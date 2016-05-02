@@ -659,6 +659,13 @@ static int action_get_title_input_settings(const char *path, const char *label,
    return 0;
 }
 
+static int action_get_title_input_binds_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "Input User %c Binds", path[0]);
+   return 0;
+}
+
 static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t label_hash, const char *elem1)
 {
@@ -867,6 +874,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_CORE_COUNTERS:
          BIND_ACTION_GET_TITLE(cbs, action_get_core_counters_list);
+         break;
+      case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_input_binds_list);
          break;
       case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
          BIND_ACTION_GET_TITLE(cbs, action_get_input_hotkey_binds_settings_list);
