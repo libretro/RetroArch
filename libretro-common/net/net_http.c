@@ -98,11 +98,11 @@ error:
 
 static void net_http_send_str(int fd, bool *error, const char *text)
 {
-   if (!*error)
-   {
-      if (!socket_send_all_blocking(fd, text, strlen(text), true))
-         *error = true;
-   }
+   if (*error)
+      return;
+
+   if (!socket_send_all_blocking(fd, text, strlen(text), true))
+      *error = true;
 }
 
 static char* urlencode(const char* url)
