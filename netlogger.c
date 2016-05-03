@@ -39,7 +39,6 @@
 
 static int g_sid;
 static struct sockaddr_in target;
-static char sendbuf[4096];
 
 void logger_init (void)
 {
@@ -93,7 +92,9 @@ void logger_send(const char *__format,...)
 
 void logger_send_v(const char *__format, va_list args)
 {
+   static char sendbuf[4096];
    int len;
+
    vsnprintf(sendbuf,4000,__format, args);
    len = strlen(sendbuf);
 
