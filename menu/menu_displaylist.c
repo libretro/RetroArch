@@ -2639,7 +2639,8 @@ static int menu_displaylist_parse_generic(
          ? menu_hash_to_str(MENU_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE)
          : menu_hash_to_str(MENU_LABEL_VALUE_DIRECTORY_NOT_FOUND);
 
-      menu_entries_add(info->list, str, "", 0, 0, 0);
+      if (! horizontal)
+         menu_entries_add(info->list, str, "", 0, 0, 0);
       return 0;
    }
 
