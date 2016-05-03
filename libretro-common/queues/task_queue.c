@@ -328,6 +328,8 @@ static void threaded_worker(void *userdata)
          else
             retro_task_threaded_push_running(task);
       }
+      
+      retro_sleep(10);
    }
 
    slock_unlock(running_lock);
