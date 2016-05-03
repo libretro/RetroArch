@@ -161,35 +161,6 @@ static void nk_menu_get_message(void *data, const char *message)
    strlcpy(nk->box_message, message, sizeof(nk->box_message));
 }
 
-static void nk_menu_draw_cursor(nk_menu_handle_t *nk,
-      float *color,
-      float x, float y, unsigned width, unsigned height)
-{
-   menu_display_ctx_draw_t draw;
-   struct gfx_coords coords;
-
-   coords.vertices      = 4;
-   coords.vertex        = NULL;
-   coords.tex_coord     = NULL;
-   coords.lut_tex_coord = NULL;
-   coords.color         = (const float*)color;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
-
-   draw.x           = x - 32;
-   draw.y           = (int)height - y - 32;
-   draw.width       = 64;
-   draw.height      = 64;
-   draw.coords      = &coords;
-   draw.matrix_data = NULL;
-   draw.texture     = nk->textures.list[NK_TEXTURE_POINTER];
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
-}
-
 static void nk_menu_frame(void *data)
 {
    float white_bg[16]=  {
@@ -232,14 +203,14 @@ static void nk_menu_frame(void *data)
       nk_menu_wnd_shader_parameters(nk);
    nk_common_device_draw(&device, &nk->ctx, width, height, NK_ANTI_ALIASING_ON);
 
-   if (settings->menu.mouse.enable && (settings->video.fullscreen
-            || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
-   {
-      int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-      int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
-
-      nk_menu_draw_cursor(nk, &white_bg[0], mouse_x, mouse_y, width, height);
-   }
+   menu_display_draw_cursor(
+         &white_bg[0],
+         64,
+         nk->textures.list[NK_TEXTURE_POINTER],
+         menu_input_mouse_state(MENU_MOUSE_X_AXIS),
+         menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+         width,
+         height);
 
    menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
