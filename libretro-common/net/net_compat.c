@@ -246,13 +246,13 @@ bool network_init(void)
    sys_net_initialize_network();
 
    if (cellNetCtlInit() < 0)
-      goto error;
+      return false;
 
    for (;;)
    {
       int state;
       if (cellNetCtlGetState(&state) < 0)
-         goto error;
+         return false;
 
       if (state == CELL_NET_CTL_STATE_IPObtained)
          break;
@@ -282,7 +282,7 @@ bool network_init(void)
 #elif defined(GEKKO)
    char t[16];
    if (if_config(t, NULL, NULL, TRUE) < 0)
-      goto error;
+      return false;
 #else
    signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
 #endif
