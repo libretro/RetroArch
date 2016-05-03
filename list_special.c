@@ -58,7 +58,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
    (void)input_dir;
    (void)settings;
-   (void)ext_shaders;
+   ext_shaders[0] = '\0';
 
    switch (type)
    {
