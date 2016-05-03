@@ -40,84 +40,37 @@
 static int g_sid;
 static struct sockaddr_in target;
 static char sendbuf[4096];
-#ifdef VITA
-#define NET_INIT_SIZE 512*1024
-#endif
-static void *net_memory = NULL;
 
-static int network_interface_up(struct sockaddr_in *target,
-      const char *server, unsigned port, int *s)
+void logger_init (void)
 {
-#if defined(VITA)
-   if (sceNetShowNetstat() == PSP2_NET_ERROR_ENOTINIT)
+   const char *server = PC_DEVELOPMENT_IP_ADDRESS;
+   unsigned      port = PC_DEVELOPMENT_UDP_PORT;
+
+   if (!network_init())
    {
-      SceNetInitParam initparam;
-      net_memory       = malloc(NET_INIT_SIZE);
-
-      initparam.memory = net_memory;
-      initparam.size   = NET_INIT_SIZE;
-      initparam.flags  = 0;
-
-      sceNetInit(&initparam);
+      printf("Could not initialize network logger interface.\n");
+      return;
    }
-#elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
-   int timeout_count = 10;
 
-   if (cellNetCtlInit() < 0)
-      goto error;
-
-   for (;;)
-   {
-      int state;
-      if (cellNetCtlGetState(&state) < 0)
-         goto error;
-
-      if (state == CELL_NET_CTL_STATE_IPObtained)
-         break;
-
-      retro_sleep(500);
-      timeout_count--;
-      if (timeout_count < 0)
-         return 0;
-   }
-#elif defined(GEKKO)
-   char t[16];
-   if (if_config(t, NULL, NULL, TRUE) < 0)
-      goto error;
-#endif
-
-   *s                 = socket_create(
+   g_sid  = socket_create(
          "ra_netlogger",
          SOCKET_DOMAIN_INET,
          SOCKET_TYPE_DATAGRAM,
          SOCKET_PROTOCOL_NONE);
 
 #ifdef VITA
-   target->sin_family = PSP2_NET_AF_INET;
-   target->sin_port   = sceNetHtons(port);
-   target->sin_addr   = inet_aton(server);
+   target.sin_family = PSP2_NET_AF_INET;
+   target.sin_port   = sceNetHtons(port);
+   target.sin_addr   = inet_aton(server);
 #else
-   target->sin_family = AF_INET;
-   target->sin_port   = htons(port);
+   target.sin_family = AF_INET;
+   target.sin_port   = htons(port);
 #ifdef GEKKO
-   target->sin_len    = 8;
+   target.sin_len    = 8;
 #endif
 
-   inet_pton(AF_INET, server, &target->sin_addr);
+   inet_pton(AF_INET, server, &target.sin_addr);
 #endif
-
-   return 0;
-
-error:
-   printf("Could not initialize network logger interface.\n");
-
-   return -1;
-}
-
-void logger_init (void)
-{
-   network_interface_up(&target,
-         PC_DEVELOPMENT_IP_ADDRESS,PC_DEVELOPMENT_UDP_PORT, &g_sid);
 }
 
 void logger_shutdown (void)
@@ -125,9 +78,6 @@ void logger_shutdown (void)
    int ret = socket_close(g_sid);
 
    network_deinit();
-
-   if (net_memory)
-      free(net_memory);
 
    if (ret < 0)
       printf("Could not deinitialize network logger interface.\n");

@@ -240,8 +240,28 @@ bool network_init(void)
       return false;
    }
 #elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+   int timeout_count = 10;
+
    cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
    sys_net_initialize_network();
+
+   if (cellNetCtlInit() < 0)
+      goto error;
+
+   for (;;)
+   {
+      int state;
+      if (cellNetCtlGetState(&state) < 0)
+         goto error;
+
+      if (state == CELL_NET_CTL_STATE_IPObtained)
+         break;
+
+      retro_sleep(500);
+      timeout_count--;
+      if (timeout_count < 0)
+         return 0;
+   }
 #elif defined(VITA)
    SceNetInitParam initparam;
 
@@ -259,6 +279,10 @@ bool network_init(void)
    }
    
    retro_epoll_fd = sceNetEpollCreate("epoll", 0);
+#elif defined(GEKKO)
+   char t[16];
+   if (if_config(t, NULL, NULL, TRUE) < 0)
+      goto error;
 #else
    signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
 #endif
