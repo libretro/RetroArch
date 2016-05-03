@@ -250,7 +250,7 @@ bool retro_load_game(const struct retro_game_info *info)
    memset((char *) &si_other, 0, sizeof(si_other));
 
    si_other.sin_family           = AF_INET;
-   si_other.sin_port             = htons(port);
+   si_other.sin_port             = inet_htons(port);
 #if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
    si_other.sin_addr.S_un.S_addr = inet_addr(server);
 #else

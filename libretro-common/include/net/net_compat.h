@@ -211,6 +211,8 @@ struct addrinfo
 
 #endif
 
+uint16_t inet_htons(uint16_t hostshort);
+
 int getaddrinfo_retro(const char *node, const char *service,
       struct addrinfo *hints, struct addrinfo **res);
 

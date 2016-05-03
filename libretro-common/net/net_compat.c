@@ -173,7 +173,7 @@ int getaddrinfo_retro(const char *node, const char *service,
 
    info->ai_addrlen    = sizeof(*in_addr);
    in_addr->sin_family = AF_INET;
-   in_addr->sin_port   = htons(strtoul(service, NULL, 0));
+   in_addr->sin_port   = inet_htons(strtoul(service, NULL, 0));
 
    if (!node && (hints->ai_flags & AI_PASSIVE))
       in_addr->sin_addr.s_addr = INADDR_ANY;
@@ -315,5 +315,14 @@ void network_deinit(void)
    }
 #elif defined(GEKKO) && !defined(HW_DOL)
    net_deinit();
+#endif
+}
+
+uint16_t inet_htons(uint16_t hostshort)
+{
+#ifdef VITA
+   return sceNetHtons(hostshort);
+#else
+   return htons(hostshort);
 #endif
 }

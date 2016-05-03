@@ -58,13 +58,12 @@ void logger_init (void)
          SOCKET_TYPE_DATAGRAM,
          SOCKET_PROTOCOL_NONE);
 
+   target.sin_port   = inet_htons(port);
 #ifdef VITA
    target.sin_family = PSP2_NET_AF_INET;
-   target.sin_port   = sceNetHtons(port);
    target.sin_addr   = inet_aton(server);
 #else
    target.sin_family = AF_INET;
-   target.sin_port   = htons(port);
 #ifdef GEKKO
    target.sin_len    = 8;
 #endif
