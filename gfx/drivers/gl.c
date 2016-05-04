@@ -3286,10 +3286,16 @@ void gl_load_texture_data(uint32_t id_data,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
     
 #if defined(HAVE_OPENGLES2) || defined(HAVE_PSGL) || defined(OSX_PPC)
-   if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
-       filter_type = TEXTURE_FILTER_LINEAR;
-   if (filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
-       filter_type = TEXTURE_FILTER_NEAREST;
+   /* Assume no mipmapping support. */
+   switch (filter_type)
+   {
+      case TEXTURE_FILTER_MIPMAP_LINEAR:
+         filter_type = TEXTURE_FILTER_LINEAR;
+         break;
+      case TEXTURE_FILTER_MIPMAP_NEAREST:
+         filter_type = TEXTURE_FILTER_NEAREST;
+         break;
+   }
 #endif
 
    switch (filter_type)
