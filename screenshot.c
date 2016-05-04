@@ -50,6 +50,33 @@
 #include "config.h"
 #endif
 
+static INLINE void convert_frame_to_bgr_24(
+      struct scaler_ctx *scaler,
+      void *output,
+      const void *input,
+      int width, int height,
+      int in_pitch, bool bgr24)
+{
+   scaler->in_width    = width;
+   scaler->in_height   = height;
+   scaler->out_width   = width;
+   scaler->out_height  = height;
+   if (bgr24)
+      scaler->in_fmt   = SCALER_FMT_BGR24;
+   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
+      scaler->in_fmt   = SCALER_FMT_ARGB8888;
+   else
+      scaler->in_fmt   = SCALER_FMT_RGB565;
+   scaler->out_fmt     = SCALER_FMT_BGR24;
+   scaler->scaler_type = SCALER_TYPE_POINT;
+   scaler_ctx_gen_filter(scaler);
+
+   scaler->in_stride   = in_pitch;
+   scaler->out_stride  = width * 3;
+
+   scaler_ctx_scale(scaler, output, input);
+}
+
 /* Take frame bottom-up. */
 static bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
@@ -93,25 +120,14 @@ static bool screenshot_dump(const char *folder, const void *frame,
    if (!out_buffer)
       return false;
 
-   scaler.in_width    = width;
-   scaler.in_height   = height;
-   scaler.out_width   = width;
-   scaler.out_height  = height;
-   scaler.in_stride   = -pitch;
-   scaler.out_stride  = width * 3;
-   scaler.out_fmt     = SCALER_FMT_BGR24;
-   scaler.scaler_type = SCALER_TYPE_POINT;
+   convert_frame_to_bgr_24(
+         &scaler,
+         out_buffer,
+         (const uint8_t*)frame + ((int)height - 1) * pitch,
+         width, height,
+         -pitch,
+         bgr24);
 
-   if (bgr24)
-      scaler.in_fmt = SCALER_FMT_BGR24;
-   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
-      scaler.in_fmt = SCALER_FMT_ARGB8888;
-   else
-      scaler.in_fmt = SCALER_FMT_RGB565;
-
-   scaler_ctx_gen_filter(&scaler);
-   scaler_ctx_scale(&scaler, out_buffer,
-         (const uint8_t*)frame + ((int)height - 1) * pitch);
    scaler_ctx_gen_reset(&scaler);
 
    RARCH_LOG("Using RPNG for PNG screenshots.\n");

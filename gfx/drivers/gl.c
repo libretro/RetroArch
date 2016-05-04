@@ -1341,7 +1341,7 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
  * to use a custom SIMD-optimized conversion routine 
  * than letting GL do it. */
 #if !defined(HAVE_PSGL) && !defined(HAVE_OPENGLES2)
-static INLINE void gl_convert_frame_rgb16_32(
+static INLINE void convert_frame_rgb16_32(
       struct scaler_ctx *scaler,
       void *output,
       const void *input,
@@ -1368,7 +1368,7 @@ static INLINE void gl_convert_frame_rgb16_32(
 #endif
 
 #ifdef HAVE_OPENGLES2
-static INLINE void gl_convert_frame_argb8888_abgr8888(
+static INLINE void convert_frame_argb8888_abgr8888(
       struct scaler_ctx *scaler,
       void *output, const void *input,
       int width, int height, int in_pitch)
@@ -1550,7 +1550,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       /* Fallback for GLES devices without GL_BGRA_EXT. */
       if (gl->base_size == 4 && use_rgba)
       {
-         gl_convert_frame_argb8888_abgr8888(
+         convert_frame_argb8888_abgr8888(
                &gl->scaler,
                gl->conv_buffer,
                frame, width, height, pitch);
@@ -1619,7 +1619,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       if (gl->base_size == 2 && !gl->have_es2_compat)
       {
          /* Convert to 32-bit textures on desktop GL. */
-         gl_convert_frame_rgb16_32(
+         convert_frame_rgb16_32(
                &gl->scaler,
                gl->conv_buffer,
                frame,
