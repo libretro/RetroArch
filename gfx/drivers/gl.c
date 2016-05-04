@@ -1011,10 +1011,38 @@ static INLINE void gl_start_frame_fbo(gl_t *gl)
 #endif
 }
 
+static bool gl_recreate_fbo(
+      struct gfx_fbo_rect *fbo_rect,
+      GLuint fbo,
+      GLuint texture
+      )
+{
+   glBindFramebuffer(RARCH_GL_FRAMEBUFFER, fbo);
+   glBindTexture(GL_TEXTURE_2D, texture);
+
+   glTexImage2D(GL_TEXTURE_2D,
+         0, RARCH_GL_INTERNAL_FORMAT32,
+         fbo_rect->width,
+         fbo_rect->height,
+         0, RARCH_GL_TEXTURE_TYPE32,
+         RARCH_GL_FORMAT32, NULL);
+
+   glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
+         RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+         texture, 0);
+
+   if (glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER) != RARCH_GL_FRAMEBUFFER_COMPLETE)
+   {
+      RARCH_WARN("Failed to reinitialize FBO texture.\n");
+      return false;
+   }
+
+   return true;
+}
+
 static void gl_check_fbo_dimension(gl_t *gl, unsigned i,
       GLuint fbo, GLuint texture, bool update_feedback)
 {
-   GLenum status;
    unsigned img_width, img_height, max, pow2_size;
    bool check_dimensions         = false;
    struct gfx_fbo_rect *fbo_rect = &gl->fbo_rect[i];
@@ -1038,56 +1066,19 @@ static void gl_check_fbo_dimension(gl_t *gl, unsigned i,
 
    fbo_rect->width = fbo_rect->height = pow2_size;
 
-   {
-      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, fbo);
-      glBindTexture(GL_TEXTURE_2D, texture);
-
-      glTexImage2D(GL_TEXTURE_2D,
-            0, RARCH_GL_INTERNAL_FORMAT32,
-            fbo_rect->width,
-            fbo_rect->height,
-            0, RARCH_GL_TEXTURE_TYPE32,
-            RARCH_GL_FORMAT32, NULL);
-
-      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
-            RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-            texture, 0);
-
-      status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
-      if (status != RARCH_GL_FRAMEBUFFER_COMPLETE)
-         RARCH_WARN("Failed to reinitialize FBO texture.\n");
-   }
+   gl_recreate_fbo(fbo_rect, fbo, texture);
 
    /* Update feedback texture in-place so we avoid having to 
     * juggle two different fbo_rect structs since they get updated here. */
    if (update_feedback)
    {
-      glBindFramebuffer(RARCH_GL_FRAMEBUFFER, gl->fbo_feedback);
-      glBindTexture(GL_TEXTURE_2D, gl->fbo_feedback_texture);
-
-      glTexImage2D(GL_TEXTURE_2D,
-            0, RARCH_GL_INTERNAL_FORMAT32,
-            fbo_rect->width,
-            fbo_rect->height,
-            0, RARCH_GL_TEXTURE_TYPE32,
-            RARCH_GL_FORMAT32, NULL);
-
-      glFramebufferTexture2D(RARCH_GL_FRAMEBUFFER,
-            RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-            gl->fbo_feedback_texture, 0);
-
-      status = glCheckFramebufferStatus(RARCH_GL_FRAMEBUFFER);
-
-      if (status == RARCH_GL_FRAMEBUFFER_COMPLETE)
+      if (gl_recreate_fbo(fbo_rect, gl->fbo_feedback,
+               gl->fbo_feedback_texture))
       {
          /* Make sure the feedback textures are cleared 
           * so we don't feedback noise. */
          glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
          glClear(GL_COLOR_BUFFER_BIT);
-      }
-      else
-      {
-         RARCH_WARN("Failed to reinitialize FBO texture.\n");
       }
    }
 
