@@ -3121,6 +3121,8 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    rarch_perf_init(&read_viewport, "read_viewport");
    retro_perf_start(&read_viewport);
 
+   num_pixels = gl->vp.width * gl->vp.height;
+
 #ifdef HAVE_GL_ASYNC_READBACK
    if (gl->pbo_readback_enable)
    {
@@ -3134,10 +3136,10 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       gl->pbo_readback_valid[gl->pbo_readback_index] = false;
       glBindBuffer(GL_PIXEL_PACK_BUFFER,
             gl->pbo_readback[gl->pbo_readback_index]);
+
 #ifdef HAVE_OPENGLES3
       /* Slower path, but should work on all implementations at least. */
-      num_pixels = gl->vp.width * gl->vp.height;
-      ptr = (const uint8_t*)glMapBufferRange(GL_PIXEL_PACK_BUFFER,
+      ptr        = (const uint8_t*)glMapBufferRange(GL_PIXEL_PACK_BUFFER,
             0, num_pixels * sizeof(uint32_t), GL_MAP_READ_BIT);
 
       if (ptr)
@@ -3151,21 +3153,18 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
                   gl->vp.width);
          }
       }
-      else
-      {
-         RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
-         goto error;
-      }
 #else
       ptr = (const uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+      if (ptr)
+         scaler_ctx_scale(&gl->pbo_readback_scaler, buffer, ptr);
+#endif
+
       if (!ptr)
       {
          RARCH_ERR("[GL]: Failed to map pixel unpack buffer.\n");
          goto error;
       }
 
-      scaler_ctx_scale(&gl->pbo_readback_scaler, buffer, ptr);
-#endif
       glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
       glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }
@@ -3182,10 +3181,8 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
        *
        * Keep codepath similar for GLES and desktop GL.
        */
-
-      num_pixels = gl->vp.width * gl->vp.height;
-
       gl->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
+
       if (!gl->readback_buffer_screenshot)
       {
          retro_perf_stop(&read_viewport);
