@@ -1043,9 +1043,9 @@ bool rpng_load_image_argb(const char *path, uint32_t **data,
 {
    int retval;
    size_t file_len;
-   bool ret = true;
-   rpng_t *rpng = NULL;
-   void *ptr = NULL;
+   bool              ret = true;
+   rpng_t          *rpng = NULL;
+   void             *ptr = NULL;
    struct nbio_t* handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
 
    if (!handle)
