@@ -41,6 +41,8 @@
 #include "../../retroarch.h"
 
 #include "../video_context_driver.h"
+#include "../video_frame.h"
+
 #include "../font_driver.h"
 
 typedef struct omapfb_page
@@ -1087,49 +1089,23 @@ static bool omap_gfx_read_viewport(void *data, uint8_t *buffer)
    return true;
 }
 
-static void update_scaler(
-      omap_video_t *vid,
-      const void *frame,
-      struct scaler_ctx *scaler,
-      enum scaler_pix_fmt format,
-      unsigned width,
-      unsigned height,
-      unsigned pitch)
-{
-   if (
-            width  != scaler->in_width
-         || height != scaler->in_height
-         || format != scaler->in_fmt
-         || pitch  != scaler->in_stride
-      )
-   {
-      scaler->in_fmt    = format;
-      scaler->in_width  = width;
-      scaler->in_height = height;
-      scaler->in_stride = pitch;
-
-      scaler->out_width  = vid->width;
-      scaler->out_height = vid->height;
-      scaler->out_stride = vid->width * vid->bytes_per_pixel;
-
-      if (!scaler_ctx_gen_filter(scaler))
-         RARCH_ERR("[video_omap]: scaler_ctx_gen_filter failed\n");
-   }
-
-   scaler_ctx_scale(scaler, vid->menu.frame, frame);
-}
-
 static void omap_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
    omap_video_t          *vid = (omap_video_t*)data;
    enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
 
-   (void) alpha;
-
-   update_scaler(vid, frame, &vid->menu.scaler, format, width, height,
+   video_frame_scale(
+         &vid->menu.scaler,
+         vid->menu.frame,
+         frame,
+         format,
+         vid->width,
+         vid->height,
+         vid->bytes_per_pixel,
+         width,
+         height,
          width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
-
 }
 
 static void omap_gfx_set_texture_enable(void *data, bool state, bool full_screen)

@@ -30,6 +30,40 @@ static INLINE void video_frame_convert_rgb16_to_rgb32(
    scaler_ctx_scale(scaler, output, input);
 }
 
+static INLINE void video_frame_scale(
+      struct scaler_ctx *scaler,
+      void *output,
+      const void *input,
+      enum scaler_pix_fmt format,
+      unsigned scaler_width,
+      unsigned scaler_height,
+      unsigned scaler_pitch,
+      unsigned width,
+      unsigned height,
+      unsigned pitch)
+{
+   if (
+            width  != scaler->in_width
+         || height != scaler->in_height
+         || format != scaler->in_fmt
+         || pitch  != scaler->in_stride
+      )
+   {
+      scaler->in_fmt    = format;
+      scaler->in_width  = width;
+      scaler->in_height = height;
+      scaler->in_stride = pitch;
+
+      scaler->out_width  = scaler_width;
+      scaler->out_height = scaler_height;
+      scaler->out_stride = scaler_width * scaler_pitch;
+
+      scaler_ctx_gen_filter(scaler);
+   }
+
+   scaler_ctx_scale(scaler, output, input);
+}
+
 static INLINE void video_frame_convert_argb8888_to_abgr8888(
       struct scaler_ctx *scaler,
       void *output, const void *input,
