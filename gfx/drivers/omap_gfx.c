@@ -1102,7 +1102,7 @@ static void omap_gfx_set_texture_frame(void *data, const void *frame, bool rgb32
          format,
          vid->width,
          vid->height,
-         vid->bytes_per_pixel,
+         vid->width * vid->bytes_per_pixel,
          width,
          height,
          width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));

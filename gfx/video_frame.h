@@ -43,10 +43,10 @@ static INLINE void video_frame_scale(
       unsigned pitch)
 {
    if (
-            width  != scaler->in_width
-         || height != scaler->in_height
+            width  != (unsigned)scaler->in_width
+         || height != (unsigned)scaler->in_height
          || format != scaler->in_fmt
-         || pitch  != scaler->in_stride
+         || pitch  != (unsigned)scaler->in_stride
       )
    {
       scaler->in_fmt    = format;
@@ -56,7 +56,7 @@ static INLINE void video_frame_scale(
 
       scaler->out_width  = scaler_width;
       scaler->out_height = scaler_height;
-      scaler->out_stride = scaler_width * scaler_pitch;
+      scaler->out_stride = scaler_pitch;
 
       scaler_ctx_gen_filter(scaler);
    }
