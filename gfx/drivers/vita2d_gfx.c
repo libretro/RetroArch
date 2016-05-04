@@ -121,7 +121,8 @@ static void *vita2d_gfx_init(const video_info_t *video,
    vita->vsync        = video->vsync;
    vita->rgb32        = video->rgb32;
 
-   vita->tex_filter = video->smooth? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
+   vita->tex_filter   = video->smooth 
+      ? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
 
    if (input && input_data)
    {
@@ -149,14 +150,12 @@ static void *vita2d_gfx_init(const video_info_t *video,
 static void vita2d_render_overlay(void *data);
 static void vita2d_free_overlay(vita_video_t *vita)
 {
-   for (unsigned i = 0; i < vita->overlays; i++)
-   {
+   unsigned i;
+   for (i = 0; i < vita->overlays; i++)
       vita2d_free_texture(vita->overlay[i].tex);
-   }
    free(vita->overlay);
    vita->overlay = NULL;
    vita->overlays = 0;
-   //GX_InvalidateTexAll();
 }
 #endif
 
@@ -327,8 +326,6 @@ static void vita2d_gfx_free(void *data)
 {
    vita_video_t *vita = (vita_video_t *)data;
 
-   RARCH_LOG("vita2d_gfx_free()\n");
-
    vita2d_fini();
 
    if (vita->menu.texture)
@@ -491,7 +488,7 @@ static void vita_set_filtering(void *data, unsigned index, bool smooth)
 
 static void vita_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   vita_video_t *vita = (vita_video_t*)data;
+   vita_video_t               *vita = (vita_video_t*)data;
    enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
 
    switch (aspect_ratio_idx)
@@ -557,11 +554,13 @@ static void vita_set_texture_frame(void *data, const void *frame, bool rgb32,
          vita->menu.texture = vita2d_create_empty_texture_format(width, height, SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA);
          RARCH_LOG("Creating Frame R5G6B5 texture: w: %i  h: %i\n", width, height);
       }
-      vita->menu.width = width;
+      vita->menu.width  = width;
       vita->menu.height = height;
    }
+
    vita2d_texture_set_filters(vita->menu.texture,SCE_GXM_TEXTURE_FILTER_LINEAR,SCE_GXM_TEXTURE_FILTER_LINEAR);
-   tex_p = vita2d_texture_get_datap(vita->menu.texture);
+
+   tex_p  = vita2d_texture_get_datap(vita->menu.texture);
    stride = vita2d_texture_get_stride(vita->menu.texture);
 
    if (rgb32)
@@ -669,10 +668,8 @@ static bool vita2d_overlay_load(void *data, const void *image_data, unsigned num
 static void vita2d_overlay_tex_geom(void *data, unsigned image,
       float x, float y, float w, float h)
 {
-   vita_video_t *vita = (vita_video_t*)data;
-   struct vita_overlay_data *o;
-   
-   o = NULL;
+   vita_video_t          *vita = (vita_video_t*)data;
+   struct vita_overlay_data *o = NULL;
 
    if (vita)
       o = (struct vita_overlay_data*)&vita->overlay[image];
@@ -689,10 +686,8 @@ static void vita2d_overlay_tex_geom(void *data, unsigned image,
 static void vita2d_overlay_vertex_geom(void *data, unsigned image,
          float x, float y, float w, float h)
 {
-   vita_video_t *vita = (vita_video_t*)data;
-   struct vita_overlay_data *o;
-   
-   o = NULL;
+   vita_video_t          *vita = (vita_video_t*)data;
+   struct vita_overlay_data *o = NULL;
    
    /* Flipped, so we preserve top-down semantics. */
    /*y = 1.0f - y;
@@ -731,20 +726,21 @@ static void vita2d_overlay_set_alpha(void *data, unsigned image, float mod)
 
 static void vita2d_render_overlay(void *data)
 {
+   unsigned i;
    vita_video_t *vita = (vita_video_t*)data;
-   for (unsigned i = 0; i < vita->overlays; i++)
+
+   for (i = 0; i < vita->overlays; i++)
    {
-    vita2d_draw_texture_tint_part_scale(vita->overlay[i].tex, 
-                                              vita->overlay[i].x, 
-                                              vita->overlay[i].y, 
-                                              vita->overlay[i].tex_x, 
-                                              vita->overlay[i].tex_y, 
-                                              vita->overlay[i].tex_w, 
-                                              vita->overlay[i].tex_h, 
-                                              vita->overlay[i].w, 
-                                              vita->overlay[i].h,
-                                              RGBA8(0xFF,0xFF,0xFF,(uint8_t)(vita->overlay[i].alpha_mod * 255.0f)));
-                                              //RGBA8(0x00, 0x00, 0x00, (uint8_t)(vita->overlay[i].alpha_mod * 255.0f)));
+      vita2d_draw_texture_tint_part_scale(vita->overlay[i].tex, 
+            vita->overlay[i].x, 
+            vita->overlay[i].y, 
+            vita->overlay[i].tex_x, 
+            vita->overlay[i].tex_y, 
+            vita->overlay[i].tex_w, 
+            vita->overlay[i].tex_h, 
+            vita->overlay[i].w, 
+            vita->overlay[i].h,
+            RGBA8(0xFF,0xFF,0xFF,(uint8_t)(vita->overlay[i].alpha_mod * 255.0f)));
    }
 }
 
