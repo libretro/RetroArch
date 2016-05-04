@@ -113,6 +113,35 @@ static retro_task_t *task_queue_get(task_queue_t *queue)
    return task;
 }
 
+static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
+{
+   retro_task_t *t;
+
+   /* Remove first element if needed */
+   if (task == queue->front)
+   {
+      queue->front = task->next;
+      task->next = NULL;
+      return;
+   }
+
+   /* Parse queue */
+   t = queue->front;
+   while (t && t->next)
+   {
+      /* Remove task and update queue */
+      if (t->next == task)
+      {
+         t->next = task->next;
+         task->next = NULL;
+         break;
+      }
+
+      /* Update iterator */
+      t = t->next;
+   }
+}
+
 static void retro_task_internal_gather(void)
 {
    retro_task_t *task = NULL;
