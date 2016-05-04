@@ -3101,14 +3101,9 @@ static void gl_viewport_info(void *data, struct video_viewport *vp)
    vp->y           = top_dist;
 }
 
-#ifdef NO_GL_READ_PIXELS
 static bool gl_read_viewport(void *data, uint8_t *buffer)
 {
-   return false;
-}
-#else
-static bool gl_read_viewport(void *data, uint8_t *buffer)
-{
+#ifndef NO_GL_READ_PIXELS
    static struct retro_perf_counter read_viewport = {0};
    unsigned                     num_pixels = 0;
    gl_t                                *gl = (gl_t*)data;
@@ -3206,9 +3201,10 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 
 error:
    context_bind_hw_render(gl, true);
+#endif
+
    return false;
 }
-#endif
 
 #if 0
 #define READ_RAW_GL_FRAME_TEST
