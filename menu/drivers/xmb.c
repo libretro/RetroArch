@@ -746,7 +746,7 @@ static void xmb_update_thumbnail_image(void *data)
 
    if (!xmb)
       return;
-   snprintf(buf, sizeof(buf), "http://bot.libretro.com/.test/%s/%s/%s", 
+   snprintf(buf, sizeof(buf), "http://thumbnails.libretro.com/%s/%s/%s", 
       xmb->title_name, xmb_thumbnails_ident(), 
       path_basename(xmb->thumbnail_file_path));
 
