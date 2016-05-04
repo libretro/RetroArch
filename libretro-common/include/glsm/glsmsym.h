@@ -125,6 +125,7 @@ RETRO_BEGIN_DECLS
 #define glBlendEquation             rglBlendEquation
 #define glBlendColor                rglBlendColor
 #define glBlendEquationSeparate     rglBlendEquationSeparate
+#define glCopyImageSubData          rglCopyImageSubData
 
 void rglBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void rglBlendEquation(GLenum mode);
@@ -244,6 +245,21 @@ void rglUniform2ui(GLint location, GLuint v0, GLuint v1);
 void rglUniform3ui(GLint location, GLuint v0, GLuint v1, GLuint v2);
 void rglUniform4ui(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3);
 void rglBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha);
+void rglCopyImageSubData( 	GLuint srcName,
+  	GLenum srcTarget,
+  	GLint srcLevel,
+  	GLint srcX,
+  	GLint srcY,
+  	GLint srcZ,
+  	GLuint dstName,
+  	GLenum dstTarget,
+  	GLint dstLevel,
+  	GLint dstX,
+  	GLint dstY,
+  	GLint dstZ,
+  	GLsizei srcWidth,
+  	GLsizei srcHeight,
+  	GLsizei srcDepth);
 
 RETRO_END_DECLS
 

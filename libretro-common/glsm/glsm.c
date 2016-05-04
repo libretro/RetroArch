@@ -1140,6 +1140,46 @@ void rglBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha)
 }
 
 /*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.2
+ */
+void rglCopyImageSubData( 	GLuint srcName,
+  	GLenum srcTarget,
+  	GLint srcLevel,
+  	GLint srcX,
+  	GLint srcY,
+  	GLint srcZ,
+  	GLuint dstName,
+  	GLenum dstTarget,
+  	GLint dstLevel,
+  	GLint dstX,
+  	GLint dstY,
+  	GLint dstZ,
+  	GLsizei srcWidth,
+  	GLsizei srcHeight,
+  	GLsizei srcDepth)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES32)
+   glCopyImageSubData(srcName,
+         srcTarget,
+         srcX,
+         srcY,
+         srcZ,
+         dstName,
+         dstTarget,
+         dstLevel,
+         dstX,
+         dstY,
+         dstZ,
+         srcWidth,
+         srcHeight,
+         srcDepth);
+#endif
+}
+
+/*
  * Category: VAO
  *
  * Core in:
