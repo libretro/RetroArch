@@ -361,10 +361,10 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    if (!frame)
       return true;
 
-   sdl_update_scaler(vid->screen, &vid->scaler, vid->scaler.in_fmt, width, height, pitch);
-
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
+
+   sdl_update_scaler(vid->screen, &vid->scaler, vid->scaler.in_fmt, width, height, pitch);
 
    rarch_perf_init(&sdl_scale, "sdl_scale");
    retro_perf_start(&sdl_scale);
