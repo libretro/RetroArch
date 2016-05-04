@@ -1341,47 +1341,53 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
  * to use a custom SIMD-optimized conversion routine 
  * than letting GL do it. */
 #if !defined(HAVE_PSGL) && !defined(HAVE_OPENGLES2)
-static INLINE void gl_convert_frame_rgb16_32(gl_t *gl, void *output,
-      const void *input, int width, int height, int in_pitch)
+static INLINE void gl_convert_frame_rgb16_32(
+      struct scaler_ctx *scaler,
+      void *output,
+      const void *input,
+      int width, int height,
+      int in_pitch)
 {
-   if (width != gl->scaler.in_width || height != gl->scaler.in_height)
+   if (width != scaler->in_width || height != scaler->in_height)
    {
-      gl->scaler.in_width    = width;
-      gl->scaler.in_height   = height;
-      gl->scaler.out_width   = width;
-      gl->scaler.out_height  = height;
-      gl->scaler.in_fmt      = SCALER_FMT_RGB565;
-      gl->scaler.out_fmt     = SCALER_FMT_ARGB8888;
-      gl->scaler.scaler_type = SCALER_TYPE_POINT;
-      scaler_ctx_gen_filter(&gl->scaler);
+      scaler->in_width    = width;
+      scaler->in_height   = height;
+      scaler->out_width   = width;
+      scaler->out_height  = height;
+      scaler->in_fmt      = SCALER_FMT_RGB565;
+      scaler->out_fmt     = SCALER_FMT_ARGB8888;
+      scaler->scaler_type = SCALER_TYPE_POINT;
+      scaler_ctx_gen_filter(scaler);
    }
 
-   gl->scaler.in_stride  = in_pitch;
-   gl->scaler.out_stride = width * sizeof(uint32_t);
-   scaler_ctx_scale(&gl->scaler, output, input);
+   scaler->in_stride  = in_pitch;
+   scaler->out_stride = width * sizeof(uint32_t);
+
+   scaler_ctx_scale(scaler, output, input);
 }
 #endif
 
 #ifdef HAVE_OPENGLES2
-static INLINE void gl_convert_frame_argb8888_abgr8888(gl_t *gl,
+static INLINE void gl_convert_frame_argb8888_abgr8888(
+      struct scaler_ctx *scaler,
       void *output, const void *input,
       int width, int height, int in_pitch)
 {
-   if (width != gl->scaler.in_width || height != gl->scaler.in_height)
+   if (width != scaler->in_width || height != scaler->in_height)
    {
-      gl->scaler.in_width    = width;
-      gl->scaler.in_height   = height;
-      gl->scaler.out_width   = width;
-      gl->scaler.out_height  = height;
-      gl->scaler.in_fmt      = SCALER_FMT_ARGB8888;
-      gl->scaler.out_fmt     = SCALER_FMT_ABGR8888;
-      gl->scaler.scaler_type = SCALER_TYPE_POINT;
-      scaler_ctx_gen_filter(&gl->scaler);
+      scaler->in_width    = width;
+      scaler->in_height   = height;
+      scaler->out_width   = width;
+      scaler->out_height  = height;
+      scaler->in_fmt      = SCALER_FMT_ARGB8888;
+      scaler->out_fmt     = SCALER_FMT_ABGR8888;
+      scaler->scaler_type = SCALER_TYPE_POINT;
+      scaler_ctx_gen_filter(scaler);
    }
 
-   gl->scaler.in_stride  = in_pitch;
-   gl->scaler.out_stride = width * sizeof(uint32_t);
-   scaler_ctx_scale(&gl->scaler, output, input);
+   scaler->in_stride  = in_pitch;
+   scaler->out_stride = width * sizeof(uint32_t);
+   scaler_ctx_scale(scaler, output, input);
 }
 #endif
 
@@ -1544,7 +1550,9 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       /* Fallback for GLES devices without GL_BGRA_EXT. */
       if (gl->base_size == 4 && use_rgba)
       {
-         gl_convert_frame_argb8888_abgr8888(gl, gl->conv_buffer,
+         gl_convert_frame_argb8888_abgr8888(
+               &gl->scaler,
+               gl->conv_buffer,
                frame, width, height, pitch);
          glTexSubImage2D(GL_TEXTURE_2D,
                0, 0, 0, width, height, gl->texture_type,
@@ -1611,8 +1619,13 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       if (gl->base_size == 2 && !gl->have_es2_compat)
       {
          /* Convert to 32-bit textures on desktop GL. */
-         gl_convert_frame_rgb16_32(gl, gl->conv_buffer,
-               frame, width, height, pitch);
+         gl_convert_frame_rgb16_32(
+               &gl->scaler,
+               gl->conv_buffer,
+               frame,
+               width,
+               height,
+               pitch);
          data_buf = gl->conv_buffer;
       }
       else
