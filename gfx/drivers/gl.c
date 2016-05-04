@@ -52,6 +52,7 @@
 
 #include "../font_driver.h"
 #include "../video_context_driver.h"
+#include "../video_frame.h"
 
 #ifdef HAVE_GLSL
 #include "../drivers_shader/shader_glsl.h"
@@ -1337,60 +1338,6 @@ static void gl_update_input_size(gl_t *gl, unsigned width,
    set_texture_coords(gl->tex_info.coord, xamt, yamt);
 }
 
-/* It is *much* faster (order of magnitude on my setup)
- * to use a custom SIMD-optimized conversion routine 
- * than letting GL do it. */
-#if !defined(HAVE_PSGL) && !defined(HAVE_OPENGLES2)
-static INLINE void convert_frame_rgb16_32(
-      struct scaler_ctx *scaler,
-      void *output,
-      const void *input,
-      int width, int height,
-      int in_pitch)
-{
-   if (width != scaler->in_width || height != scaler->in_height)
-   {
-      scaler->in_width    = width;
-      scaler->in_height   = height;
-      scaler->out_width   = width;
-      scaler->out_height  = height;
-      scaler->in_fmt      = SCALER_FMT_RGB565;
-      scaler->out_fmt     = SCALER_FMT_ARGB8888;
-      scaler->scaler_type = SCALER_TYPE_POINT;
-      scaler_ctx_gen_filter(scaler);
-   }
-
-   scaler->in_stride  = in_pitch;
-   scaler->out_stride = width * sizeof(uint32_t);
-
-   scaler_ctx_scale(scaler, output, input);
-}
-#endif
-
-#ifdef HAVE_OPENGLES2
-static INLINE void convert_frame_argb8888_abgr8888(
-      struct scaler_ctx *scaler,
-      void *output, const void *input,
-      int width, int height, int in_pitch)
-{
-   if (width != scaler->in_width || height != scaler->in_height)
-   {
-      scaler->in_width    = width;
-      scaler->in_height   = height;
-      scaler->out_width   = width;
-      scaler->out_height  = height;
-      scaler->in_fmt      = SCALER_FMT_ARGB8888;
-      scaler->out_fmt     = SCALER_FMT_ABGR8888;
-      scaler->scaler_type = SCALER_TYPE_POINT;
-      scaler_ctx_gen_filter(scaler);
-   }
-
-   scaler->in_stride  = in_pitch;
-   scaler->out_stride = width * sizeof(uint32_t);
-   scaler_ctx_scale(scaler, output, input);
-}
-#endif
-
 static void gl_init_textures_data(gl_t *gl)
 {
    unsigned i;
@@ -1550,7 +1497,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       /* Fallback for GLES devices without GL_BGRA_EXT. */
       if (gl->base_size == 4 && use_rgba)
       {
-         convert_frame_argb8888_abgr8888(
+         video_frame_convert_argb8888_to_abgr8888(
                &gl->scaler,
                gl->conv_buffer,
                frame, width, height, pitch);
@@ -1618,8 +1565,12 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
 
       if (gl->base_size == 2 && !gl->have_es2_compat)
       {
-         /* Convert to 32-bit textures on desktop GL. */
-         convert_frame_rgb16_32(
+         /* Convert to 32-bit textures on desktop GL.
+          *
+          * It is *much* faster (order of magnitude on my setup)
+          * to use a custom SIMD-optimized conversion routine 
+          * than letting GL do it. */
+         video_frame_convert_rgb16_to_rgb32(
                &gl->scaler,
                gl->conv_buffer,
                frame,
