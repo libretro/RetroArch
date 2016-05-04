@@ -640,12 +640,14 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)viewWillAppear:(BOOL)animated
 {
    char title_msg[256];
+   UIBarButtonItem *item = NULL;
+    
    [self reloadData];
 
    self.osdmessage = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 300, 44)];
    self.osdmessage.backgroundColor = [UIColor clearColor];
 
-   UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithCustomView:self.osdmessage];
+   item = [[UIBarButtonItem alloc] initWithCustomView:self.osdmessage];
    [self setToolbarItems: [NSArray arrayWithObject:item]];
 
    menu_entries_get_core_title(title_msg, sizeof(title_msg));
@@ -656,10 +658,8 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
    size_t i, end;
    char title[256], title_msg[256];
-   NSMutableArray *everything;
-   RAMainMenu* __weak weakSelf;
-   
-   everything = [NSMutableArray array];
+   RAMainMenu* __weak weakSelf = NULL;
+   NSMutableArray *everything  = [NSMutableArray array];
 
    menu_entries_get_core_title(title_msg, sizeof(title_msg));
    self.osdmessage.text = BOXSTRING(title_msg);
