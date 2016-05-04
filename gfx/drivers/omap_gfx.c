@@ -1087,12 +1087,17 @@ static bool omap_gfx_read_viewport(void *data, uint8_t *buffer)
    return true;
 }
 
-static void update_scaler(omap_video_t *vid, struct scaler_ctx *scaler,
-      enum scaler_pix_fmt format, unsigned width,
-      unsigned height, unsigned pitch)
+static void update_scaler(
+      omap_video_t *vid,
+      const void *frame,
+      struct scaler_ctx *scaler,
+      enum scaler_pix_fmt format,
+      unsigned width,
+      unsigned height,
+      unsigned pitch)
 {
    if (
-         width  != scaler->in_width
+            width  != scaler->in_width
          || height != scaler->in_height
          || format != scaler->in_fmt
          || pitch  != scaler->in_stride
@@ -1110,6 +1115,8 @@ static void update_scaler(omap_video_t *vid, struct scaler_ctx *scaler,
       if (!scaler_ctx_gen_filter(scaler))
          RARCH_ERR("[video_omap]: scaler_ctx_gen_filter failed\n");
    }
+
+   scaler_ctx_scale(scaler, vid->menu.frame, frame);
 }
 
 static void omap_gfx_set_texture_frame(void *data, const void *frame, bool rgb32,
@@ -1120,10 +1127,9 @@ static void omap_gfx_set_texture_frame(void *data, const void *frame, bool rgb32
 
    (void) alpha;
 
-   update_scaler(vid, &vid->menu.scaler, format, width, height,
+   update_scaler(vid, frame, &vid->menu.scaler, format, width, height,
          width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
 
-   scaler_ctx_scale(&vid->menu.scaler, vid->menu.frame, frame);
 }
 
 static void omap_gfx_set_texture_enable(void *data, bool state, bool full_screen)
