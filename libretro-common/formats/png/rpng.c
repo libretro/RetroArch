@@ -818,14 +818,10 @@ static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
    for (i = 0; i < 4; i++)
       dword[i] = buf[i];
 
-   buf += 4;
-
    chunk->size = dword_be(dword);
 
    for (i = 0; i < 4; i++)
-      chunk->type[i] = buf[i];
-
-   buf += 4;
+      chunk->type[i] = buf[i + 4];
 
    return true;
 }
@@ -852,13 +848,13 @@ static bool png_parse_ihdr(uint8_t *buf,
 bool rpng_nbio_load_image_argb_iterate(rpng_t *rpng)
 {
    unsigned i;
-   unsigned ret;
-   uint8_t *buf = (uint8_t*)rpng->buff_data;
-
    struct png_chunk chunk = {0};
+   uint8_t *buf           = (uint8_t*)rpng->buff_data;
 
    if (!read_chunk_header(buf, &chunk))
       return false;
+
+   *buf += 8;
 
 #if 0
    for (i = 0; i < 4; i++)
@@ -939,8 +935,7 @@ bool rpng_nbio_load_image_argb_iterate(rpng_t *rpng)
          goto error;
    }
 
-   ret = 4 + 4 + chunk.size + 4;
-   rpng->buff_data += ret; 
+   rpng->buff_data += chunk.size + 12; 
 
    return true;
 
