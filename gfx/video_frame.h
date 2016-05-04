@@ -161,4 +161,21 @@ static INLINE void video_frame_convert_to_bgr24(
    scaler_ctx_scale(scaler, output, input);
 }
 
+static INLINE void video_frame_convert_rgba_to_bgr(
+      const void *src_data,
+      void *dst_data,
+      unsigned width)
+{
+   unsigned x;
+   uint8_t      *dst  = (uint8_t*)dst_data;
+   const uint8_t *src = (const uint8_t*)src_data;
+
+   for (x = 0; x < width; x++, dst += 3, src += 4)
+   {
+      dst[0] = src[2];
+      dst[1] = src[1];
+      dst[2] = src[0];
+   }
+}
+
 #endif

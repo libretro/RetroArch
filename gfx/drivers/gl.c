@@ -3142,16 +3142,13 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 
       if (ptr)
       {
-         unsigned x, y;
-
+         unsigned y;
          for (y = 0; y < gl->vp.height; y++)
          {
-            for (x = 0; x < gl->vp.width; x++, buffer += 3, ptr += 4)
-            {
-               buffer[0] = ptr[2]; /* RGBA -> BGR. */
-               buffer[1] = ptr[1];
-               buffer[2] = ptr[0];
-            }
+            video_frame_convert_rgba_to_bgr(
+                  (const void*)ptr,
+                  buffer,
+                  gl->vp.width);
          }
       }
       else
@@ -3176,10 +3173,6 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
            as we don't really care about performance in this case. */
 #endif
    {
-      unsigned i;
-      uint8_t *dst = NULL;
-      const uint8_t *src = NULL;
-
       /* GLES2 only guarantees GL_RGBA/GL_UNSIGNED_BYTE 
        * readbacks so do just that.
        * GLES2 also doesn't support reading back data 
@@ -3201,15 +3194,10 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 
       video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
 
-      dst = buffer;
-      src = (const uint8_t*)gl->readback_buffer_screenshot;
-
-      for (i = 0; i < num_pixels; i++, dst += 3, src += 4)
-      {
-         dst[0] = src[2]; /* RGBA -> BGR. */
-         dst[1] = src[1];
-         dst[2] = src[0];
-      }
+      video_frame_convert_rgba_to_bgr(
+            (const void*)gl->readback_buffer_screenshot,
+            buffer,
+            num_pixels);
 
       free(gl->readback_buffer_screenshot);
       gl->readback_buffer_screenshot = NULL;
