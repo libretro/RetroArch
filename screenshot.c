@@ -50,6 +50,7 @@
 #include "config.h"
 #endif
 
+#if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
 static INLINE void convert_frame_to_bgr_24(
       struct scaler_ctx *scaler,
       void *output,
@@ -76,6 +77,7 @@ static INLINE void convert_frame_to_bgr_24(
 
    scaler_ctx_scale(scaler, output, input);
 }
+#endif
 
 /* Take frame bottom-up. */
 static bool screenshot_dump(const char *folder, const void *frame,
