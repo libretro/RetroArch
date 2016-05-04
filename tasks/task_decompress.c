@@ -226,6 +226,18 @@ static bool rarch_task_decompress_finder(
    return string_is_equal(dec->source_file, (const char*)user_data);
 }
 
+bool rarch_task_check_decompress(const char *source_file)
+{
+   task_finder_data_t find_data;
+
+   /* Prepare find parameters */
+   find_data.func = rarch_task_decompress_finder;
+   find_data.userdata = (void *)source_file;
+
+   /* Return whether decompressing is in progress or not */
+   return task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data);
+}
+
 bool rarch_task_push_decompress(
       const char *source_file,
       const char *target_dir,
