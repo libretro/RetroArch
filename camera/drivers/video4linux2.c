@@ -95,8 +95,8 @@ static bool init_mmap(void *data)
 
    memset(&req, 0, sizeof(req));
 
-   req.count = 4;
-   req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+   req.count  = 4;
+   req.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
    req.memory = V4L2_MEMORY_MMAP;
 
    if (xioctl(v4l->fd, (uint8_t)VIDIOC_REQBUFS, &req) == -1)
@@ -249,9 +249,9 @@ static void v4l_stop(void *data)
 
 static bool v4l_start(void *data)
 {
-   video4linux_t *v4l = (video4linux_t*)data;
    unsigned i;
    enum v4l2_buf_type type;
+   video4linux_t *v4l = (video4linux_t*)data;
 
    for (i = 0; i < v4l->n_buffers; i++)
    {
@@ -259,9 +259,9 @@ static bool v4l_start(void *data)
 
       memset(&buf, 0, sizeof(buf));
 
-      buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
       buf.memory = V4L2_MEMORY_MMAP;
-      buf.index = i;
+      buf.index  = i;
 
       if (xioctl(v4l->fd, (uint8_t)VIDIOC_QBUF, &buf) == -1)
       {
