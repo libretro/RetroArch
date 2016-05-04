@@ -56,11 +56,11 @@
 static bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
-   settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
    bool ret;
    char filename[PATH_MAX_LENGTH];
    char shotname[256];
+   settings_t *settings           = config_get_ptr();
+   global_t *global               = global_get_ptr();
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
    uint8_t *out_buffer            = NULL;
    struct scaler_ctx scaler       = {0};
@@ -79,9 +79,8 @@ static bool screenshot_dump(const char *folder, const void *frame,
 
 #ifdef _XBOX1
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(true);
-   settings_t *settings = config_get_ptr();
-
    D3DSurface *surf = NULL;
+
    d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
    ret = XGWriteSurfaceToFile(surf, filename);
    surf->Release();
@@ -184,13 +183,11 @@ static bool take_screenshot_raw(void)
    size_t pitch;
    char screenshot_path[PATH_MAX_LENGTH] = {0};
    const void *data                      = NULL;
-   const char *screenshot_dir            = NULL;
    global_t *global                      = global_get_ptr();
    settings_t *settings                  = config_get_ptr();
+   const char *screenshot_dir            = settings->directory.screenshot;
 
    video_driver_cached_frame_get(&data, &width, &height, &pitch);
-
-   screenshot_dir = settings->directory.screenshot;
 
    if (!*settings->directory.screenshot)
    {
