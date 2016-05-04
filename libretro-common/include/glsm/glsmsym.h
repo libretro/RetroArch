@@ -95,6 +95,11 @@ RETRO_BEGIN_DECLS
 #define glUniform3fv                rglUniform3fv
 #define glUniform4f                 rglUniform4f
 #define glUniform4fv                rglUniform4fv
+#define glUniform1ui                rglUniform1ui
+#define glUniform2ui                rglUniform2ui
+#define glUniform3ui                rglUniform3ui
+#define glUniform4ui                rglUniform4ui
+#define glGetActiveUniform          rglGetActiveUniform
 #define glBlendFunc                 rglBlendFunc
 #define glBlendFuncSeparate         rglBlendFuncSeparate
 #define glDepthFunc                 rglDepthFunc
@@ -230,6 +235,13 @@ void rglUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
 GLint rglGetAttribLocation(GLuint program, const GLchar *name);
 void rglDrawBuffers(GLsizei n, const GLenum *bufs);
 void rglBindVertexArray(GLuint array);
+
+void rglGetActiveUniform(GLuint program, GLuint index, GLsizei bufsize,
+      GLsizei *length, GLint *size, GLenum *type, GLchar *name);
+void rglUniform1ui(GLint location, GLuint v);
+void rglUniform2ui(GLint location, GLuint v0, GLuint v1);
+void rglUniform3ui(GLint location, GLuint v0, GLuint v1, GLuint v2);
+void rglUniform4ui(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3);
 
 RETRO_END_DECLS
 

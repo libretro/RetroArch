@@ -654,6 +654,42 @@ void rglGetProgramiv(GLuint shader, GLenum pname, GLint *params)
  * Core in:
  * OpenGL    : 2.0 
  */
+void rglGetActiveUniform(GLuint program, GLuint index, GLsizei bufsize,
+      GLsizei *length, GLint *size, GLenum *type, GLchar *name)
+{
+   glGetActiveUniform(program, index, bufsize, length, size, type, name);
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
+void rglUniform1ui(GLint location, GLuint v)
+{
+   glUniform1ui(location ,v);
+}
+
+void rglUniform2ui(GLint location, GLuint v0, GLuint v1)
+{
+   glUniform2ui(location, v0, v1);
+}
+
+void rglUniform3ui(GLint location, GLuint v0, GLuint v1, GLuint v2)
+{
+   glUniform3ui(location, v0, v1, v2);
+}
+
+void rglUniform4ui(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3)
+{
+   glUniform4ui(location, v0, v1, v2, v3);
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
       const GLfloat *value)
 {
