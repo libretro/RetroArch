@@ -47,6 +47,7 @@
 #include "../../system.h"
 
 #include "../../tasks/tasks_internal.h"
+#include <streams/file_stream.h>
 
 #define XMB_RIBBON_ROWS 64
 #define XMB_RIBBON_COLS 64
@@ -719,17 +720,54 @@ static void menu_display_handle_thumbnail_upload(void *task_data,
    free(img);
 }
 
+
+char* filename;
+
+static void cb_thumbnail_download(void *task_data, void *user_data, const char *error)
+{
+   char output_path[PATH_MAX_LENGTH];
+   http_transfer_data_t        *data     = (http_transfer_data_t*)task_data;
+
+   if (!data || !data->data)
+      return;
+   char* basedir = strdup (filename);
+   path_basedir (basedir);
+   path_mkdir(basedir);
+
+   if (!filestream_write_file(filename, data->data, data->len))
+      RARCH_LOG("Error writing file %s\n", filename);
+}
+
+
 static void xmb_update_thumbnail_image(void *data)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
+   char buf[PATH_MAX_LENGTH];
+
    if (!xmb)
       return;
+   snprintf(buf, sizeof(buf), "http://bot.libretro.com/.test/%s/%s/%s", 
+      xmb->title_name, xmb_thumbnails_ident(), 
+      path_basename(xmb->thumbnail_file_path));
 
+   filename = strdup(xmb->thumbnail_file_path);
+
+   RARCH_LOG ("URL: %s\n", buf);
+   bool rarch_task_push_http_transfer(const char *url, const char *type,
+         retro_task_callback_t cb, void *userdata);
+   
    if (path_file_exists(xmb->thumbnail_file_path))
       rarch_task_push_image_load(xmb->thumbnail_file_path, "cb_menu_thumbnail",
             menu_display_handle_thumbnail_upload, NULL);
-   else if (xmb->depth == 1)
-      xmb->thumbnail = 0;
+   else
+   {
+      rarch_task_push_http_transfer(buf, "", cb_thumbnail_download, NULL);
+      if (path_file_exists(xmb->thumbnail_file_path))
+         rarch_task_push_image_load(xmb->thumbnail_file_path, "cb_menu_thumbnail",
+               menu_display_handle_thumbnail_upload, NULL);
+      else if (xmb->depth == 1)
+         xmb->thumbnail = 0;
+   }
 }
 
 static void xmb_selection_pointer_changed(
