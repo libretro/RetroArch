@@ -1379,6 +1379,19 @@ static void cb_generic_download(void *task_data,
    fill_pathname_join(output_path, dir_path,
          transf->path, sizeof(output_path));
 
+#ifdef HAVE_ZLIB
+   file_ext = path_get_extension(output_path);
+
+   if (string_is_equal_noncase(file_ext, "zip"))
+   {
+      if (rarch_task_check_decompress(output_path))
+      {
+        err = "Decompression already in progress.";
+        goto finish;
+      }
+   }
+#endif
+
    if (!filestream_write_file(output_path, data->data, data->len))
    {
       err = "Write failed.";
@@ -1386,8 +1399,6 @@ static void cb_generic_download(void *task_data,
    }
 
 #ifdef HAVE_ZLIB
-   file_ext = path_get_extension(output_path);
-
    if (!settings->network.buildbot_auto_extract_archive)
       goto finish;
 
