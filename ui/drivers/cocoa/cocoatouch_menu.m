@@ -406,13 +406,13 @@ replacementString:(NSString *)string
 {
    char buffer[PATH_MAX_LENGTH];
    char label[PATH_MAX_LENGTH];
-   NSString *desc = BOXSTRING("N/A");
-   UIAlertView *alertView;
-   UITextField *field;
+   UIAlertView *alertView = NULL;
+   UITextField     *field = NULL;
+   NSString         *desc = NULL;
 
    menu_entry_get_path(self.i, label, sizeof(label));
 
-   desc = BOXSTRING(label);
+   desc      = BOXSTRING(label);
     
    alertView =
      [[UIAlertView alloc] initWithTitle:BOXSTRING("Enter new value")
@@ -422,8 +422,7 @@ replacementString:(NSString *)string
                       otherButtonTitles:BOXSTRING("OK"), nil];
    alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
 
-   field = [alertView textFieldAtIndex:0];
-   
+   field          = [alertView textFieldAtIndex:0];
    field.delegate = self.formatter;
 
    menu_entry_get_value(self.i, buffer, sizeof(buffer));

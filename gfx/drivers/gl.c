@@ -427,7 +427,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 {
    unsigned mip_level;
    video_shader_ctx_wrap_t wrap;
-   bool fp_fbo, srgb_fbo;
+   bool fp_fbo;
    GLenum min_filter, mag_filter, wrap_enum;
    video_shader_ctx_filter_t filter_type;
    bool mipmapped       = false;
@@ -465,21 +465,12 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_enum);
 
    fp_fbo   = gl->fbo_scale[i].fp_fbo;
-   srgb_fbo = gl->fbo_scale[i].srgb_fbo;
 
    if (fp_fbo)
    {
       if (!gl->has_fp_fbo)
          RARCH_ERR("[GL]: Floating-point FBO was requested, but is not supported. Falling back to UNORM. Result may band/clip/etc.!\n");
    }
-   else if (srgb_fbo)
-   {
-      if (!gl->has_srgb_fbo)
-         RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
-   }
-
-   if (settings->video.force_srgb_disable)
-      srgb_fbo = false;
 
 #ifndef HAVE_OPENGLES2
    if (fp_fbo && gl->has_fp_fbo)
@@ -493,6 +484,17 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 #endif
    {
 #ifndef HAVE_OPENGLES
+      bool srgb_fbo = gl->fbo_scale[i].srgb_fbo;
+       
+      if (!fp_fbo && srgb_fbo)
+      {
+         if (!gl->has_srgb_fbo)
+               RARCH_ERR("[GL]: sRGB FBO was requested, but it is not supported. Falling back to UNORM. Result may have banding!\n");
+      }
+       
+      if (settings->video.force_srgb_disable)
+         srgb_fbo = false;
+       
       if (srgb_fbo && gl->has_srgb_fbo)
       {
          RARCH_LOG("[GL]: FBO pass #%d is sRGB.\n", i);
