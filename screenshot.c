@@ -265,21 +265,14 @@ static bool take_screenshot_choice(void)
  **/
 bool take_screenshot(void)
 {
-   bool is_paused;
-   const char *msg_screenshot = NULL;
-   const char *msg            = NULL;
-   bool             ret = take_screenshot_choice();
-
-   if (ret)
-      msg_screenshot = msg_hash_to_str(MSG_TAKING_SCREENSHOT);
-   else
-      msg_screenshot = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
-
-   msg = msg_screenshot;
+   bool             ret       = take_screenshot_choice();
+   const char *msg_screenshot = ret 
+      ? msg_hash_to_str(MSG_TAKING_SCREENSHOT)  :
+        msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
+   const char *msg            = msg_screenshot;
+   bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 
    RARCH_LOG("%s.\n", msg);
-
-   is_paused = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 
    runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
 
