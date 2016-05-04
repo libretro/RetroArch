@@ -45,6 +45,7 @@ typedef struct http_handle
       struct http_connection_t *handle;
       transfer_cb_t  cb;
       char elem1[PATH_MAX_LENGTH];
+      char url[PATH_MAX_LENGTH];
    } connection;
    struct http_t *handle;
    transfer_cb_t  cb;
@@ -192,20 +193,19 @@ task_finished:
 
 static bool rarch_task_http_finder(retro_task_t *task, void *user_data)
 {
-   http_handle_t *http = (http_handle_t*)task->state;
-   const char *handle_url = NULL;
-   if (  !http || !user_data || 
-         !task || task->handler != rarch_task_http_transfer_handler)
-      return false;
-   if (!http->connection.handle)
+   http_handle_t *http;
+
+   if (!task || (task->handler != rarch_task_http_transfer_handler))
       return false;
 
-   handle_url = net_http_connection_url(http->connection.handle);
-
-   if (!handle_url)
+   if (!user_data)
       return false;
 
-   return string_is_equal(handle_url, (const char*)user_data);
+   http = (http_handle_t*)task->state;
+   if (!http)
+      return false;
+
+   return string_is_equal(http->connection.url, (const char*)user_data);
 }
 
 bool rarch_task_push_http_transfer(const char *url, const char *type,
@@ -245,6 +245,8 @@ bool rarch_task_push_http_transfer(const char *url, const char *type,
 
    if (type)
       strlcpy(http->connection.elem1, type, sizeof(http->connection.elem1));
+
+   strlcpy(http->connection.url, url, sizeof(http->connection.url));
 
    http->status            = HTTP_STATUS_CONNECTION_TRANSFER;
    t                       = (retro_task_t*)calloc(1, sizeof(*t));
