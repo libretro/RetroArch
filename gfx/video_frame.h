@@ -64,6 +64,40 @@ static INLINE void video_frame_scale(
    scaler_ctx_scale(scaler, output, input);
 }
 
+static INLINE void video_frame_record_scale(
+      struct scaler_ctx *scaler,
+      void *output,
+      const void *input,
+      unsigned scaler_width,
+      unsigned scaler_height,
+      unsigned scaler_pitch,
+      unsigned width,
+      unsigned height,
+      unsigned pitch,
+      bool bilinear)
+{
+   if (
+            width  != (unsigned)scaler->in_width
+         || height != (unsigned)scaler->in_height
+      )
+   {
+      scaler->in_width    = width;
+      scaler->in_height   = height;
+      scaler->in_stride   = pitch;
+
+      scaler->scaler_type = bilinear ?
+         SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
+
+      scaler->out_width  = scaler_width;
+      scaler->out_height = scaler_height;
+      scaler->out_stride = scaler_pitch;
+
+      scaler_ctx_gen_filter(scaler);
+   }
+
+   scaler_ctx_scale(scaler, output, input);
+}
+
 static INLINE void video_frame_convert_argb8888_to_abgr8888(
       struct scaler_ctx *scaler,
       void *output, const void *input,
