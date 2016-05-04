@@ -1393,8 +1393,12 @@ static void cb_generic_download(void *task_data,
 
    if (string_is_equal_noncase(file_ext, "zip"))
    {
-      rarch_task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
-            cb_decompressed, (void*)(uintptr_t)transf->type_hash);
+      if (!rarch_task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
+            cb_decompressed, (void*)(uintptr_t)transf->type_hash))
+      {
+        err = "Decompression failed.";
+        goto finish;
+      }
    }
 #else
    switch (transf->type_hash)
