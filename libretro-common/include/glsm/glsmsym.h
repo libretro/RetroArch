@@ -124,6 +124,7 @@ RETRO_BEGIN_DECLS
 #define glBindVertexArray           rglBindVertexArray
 #define glBlendEquation             rglBlendEquation
 #define glBlendColor                rglBlendColor
+#define glBlendEquationSeparate     rglBlendEquationSeparate
 
 void rglBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void rglBlendEquation(GLenum mode);
@@ -242,6 +243,7 @@ void rglUniform1ui(GLint location, GLuint v);
 void rglUniform2ui(GLint location, GLuint v0, GLuint v1);
 void rglUniform3ui(GLint location, GLuint v0, GLuint v1, GLuint v2);
 void rglUniform4ui(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3);
+void rglBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha);
 
 RETRO_END_DECLS
 

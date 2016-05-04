@@ -1129,6 +1129,15 @@ void rglBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
    glBlendColor(red, green, blue, alpha);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
+void rglBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha)
+{
+   glBlendEquationSeparate(modeRGB, modeAlpha);
+}
 
 /*
  * Category: VAO
