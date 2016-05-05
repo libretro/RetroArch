@@ -39,6 +39,7 @@
 #include "libretro_version_1.h"
 #include "performance.h"
 #include "system.h"
+#include "gfx/video_context_driver.h"
 
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
@@ -970,8 +971,15 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                break;
 
             case RETRO_HW_CONTEXT_OPENGL_CORE:
-               RARCH_LOG("Requesting core OpenGL context (%u.%u).\n",
-                     cb->version_major, cb->version_minor);
+               {
+                  gfx_ctx_flags_t flags;
+                  BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+
+                  gfx_ctx_ctl(GFX_CTL_SET_FLAGS, &flags);
+
+                  RARCH_LOG("Requesting core OpenGL context (%u.%u).\n",
+                        cb->version_major, cb->version_minor);
+               }
                break;
 #endif
 
