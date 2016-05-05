@@ -52,6 +52,12 @@ enum display_metric_types
    DISPLAY_METRIC_DPI
 };
 
+enum display_flags
+{
+   GFX_CTX_FLAGS_NONE = 0,
+   GFX_CTX_FLAGS_CORE_GL
+};
+
 enum gfx_ctx_ctl_state
 {
    GFX_CTL_NONE = 0,
@@ -181,6 +187,8 @@ typedef struct gfx_ctx_driver
 
    /* Human readable string. */
    const char *ident;
+
+   uint32_t (*get_flags)(void *data);
 
    /* Optional. Binds HW-render offscreen context. */
    void (*bind_hw_render)(void *data, bool enable);

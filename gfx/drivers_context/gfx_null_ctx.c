@@ -133,6 +133,12 @@ static void *gfx_ctx_null_init(void *video_driver)
    return (void*)"null";
 }
 
+static uint32_t gfx_ctx_null_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_null = {
    gfx_ctx_null_init,
    gfx_ctx_null_destroy,
@@ -158,6 +164,7 @@ const gfx_ctx_driver_t gfx_ctx_null = {
    NULL,
    gfx_ctx_null_show_mouse,
    "null",
-   gfx_ctx_null_bind_hw_render,
+   gfx_ctx_null_get_flags,
+   gfx_ctx_null_bind_hw_render
 };
 

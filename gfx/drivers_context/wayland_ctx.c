@@ -1138,6 +1138,12 @@ static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
    }
 }
 
+static uint32_t gfx_ctx_wl_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
@@ -1163,6 +1169,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL,
    NULL,
    "wayland",
+   gfx_ctx_wl_get_flags,
    gfx_ctx_wl_bind_hw_render,
 #ifdef HAVE_VULKAN
    gfx_ctx_wl_get_context_data

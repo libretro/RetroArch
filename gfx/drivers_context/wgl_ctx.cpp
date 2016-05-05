@@ -448,6 +448,12 @@ static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
       wglMakeCurrent(g_hdc, enable ? g_hw_hrc : g_hrc);
 }
 
+static uint32_t gfx_ctx_wgl_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_init,
    gfx_ctx_wgl_destroy,
@@ -473,6 +479,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    NULL,
    gfx_ctx_wgl_show_mouse,
    "wgl",
-   gfx_ctx_wgl_bind_hw_render,
+   gfx_ctx_wgl_get_flags,
+   gfx_ctx_wgl_bind_hw_render
 };
 

@@ -624,6 +624,12 @@ static gfx_ctx_proc_t gfx_ctx_vc_get_proc_address(const char *symbol)
 #endif
 }
 
+static uint32_t gfx_ctx_vc_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_init,
    gfx_ctx_vc_destroy,
@@ -649,5 +655,6 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_image_buffer_write,
    NULL,
    "videocore",
-   gfx_ctx_vc_bind_hw_render,
+   gfx_ctx_vc_get_flags,
+   gfx_ctx_vc_bind_hw_render
 };

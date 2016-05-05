@@ -340,6 +340,12 @@ error:
    return NULL;
 }
 
+static uint32_t gfx_ctx_cgl_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_cgl = {
    gfx_ctx_cgl_init,
    gfx_ctx_cgl_destroy,
@@ -365,5 +371,6 @@ const gfx_ctx_driver_t gfx_ctx_cgl = {
    NULL,
    gfx_ctx_cgl_show_mouse,
    "cgl",
+   gfx_ctx_cgl_get_flags,
    gfx_ctx_cgl_bind_hw_render,
 };

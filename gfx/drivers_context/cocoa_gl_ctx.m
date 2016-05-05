@@ -595,6 +595,12 @@ static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
         [g_context makeCurrentContext];
 }
 
+static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoagl_gfx_ctx_init,
    cocoagl_gfx_ctx_destroy,
@@ -620,5 +626,6 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL,
    NULL,
    "cocoagl",
+   cocoagl_gfx_ctx_get_flags,
    cocoagl_gfx_ctx_bind_hw_render,
 };

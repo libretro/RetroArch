@@ -302,6 +302,12 @@ static bool gfx_ctx_d3d_get_metrics(void *data,
    return win32_get_metrics(data, type, value);
 }
 
+static uint32_t gfx_ctx_d3d_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_init,
    gfx_ctx_d3d_destroy,
@@ -327,4 +333,5 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    NULL,
    gfx_ctx_d3d_show_mouse,
    "d3d",
+   gfx_ctx_d3d_get_flags,
 };

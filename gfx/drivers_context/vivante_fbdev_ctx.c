@@ -261,6 +261,12 @@ static void gfx_ctx_vivante_swap_buffers(void *data)
 #endif
 }
 
+static uint32_t gfx_ctx_vivante_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    gfx_ctx_vivante_init,
    gfx_ctx_vivante_destroy,
@@ -286,5 +292,6 @@ const gfx_ctx_driver_t gfx_ctx_vivante_fbdev = {
    NULL,
    NULL,
    "vivante-fbdev",
-   gfx_ctx_vivante_bind_hw_render,
+   gfx_ctx_vivante_get_flags,
+   gfx_ctx_vivante_bind_hw_render
 };

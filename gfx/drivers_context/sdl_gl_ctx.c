@@ -400,6 +400,12 @@ static void sdl_ctx_show_mouse(void *data, bool state)
    SDL_ShowCursor(state);
 }
 
+static uint32_t sdl_ctx_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_sdl_gl =
 {
    sdl_ctx_init,
@@ -426,5 +432,6 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    NULL,
    sdl_ctx_show_mouse,
    "sdl_gl",
+   sdl_ctx_get_flags,
    NULL /* bind_hw_render */
 };

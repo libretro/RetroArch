@@ -291,6 +291,12 @@ static void gfx_ctx_mali_fbdev_bind_hw_render(void *data, bool enable)
 #endif
 }
 
+static uint32_t gfx_ctx_mali_fbdev_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    gfx_ctx_mali_fbdev_init,
    gfx_ctx_mali_fbdev_destroy,
@@ -316,6 +322,7 @@ const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {
    NULL,
    NULL,
    "mali-fbdev",
+   gfx_ctx_mali_fbdev_get_flags,
    gfx_ctx_mali_fbdev_bind_hw_render
 };
 

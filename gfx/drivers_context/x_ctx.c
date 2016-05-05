@@ -886,6 +886,12 @@ static void *gfx_ctx_x_get_context_data(void *data)
 }
 #endif
 
+static uint32_t gfx_ctx_x_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_init,
    gfx_ctx_x_destroy,
@@ -911,6 +917,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    NULL,
    gfx_ctx_x_show_mouse,
    "x",
+   gfx_ctx_x_get_flags,
 
    gfx_ctx_x_bind_hw_render,
 #ifdef HAVE_VULKAN

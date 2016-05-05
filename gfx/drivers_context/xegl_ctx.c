@@ -574,6 +574,12 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
    return NULL;
 }
 
+static uint32_t gfx_ctx_xegl_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_x_egl =
 {
    gfx_ctx_xegl_init,
@@ -600,5 +606,6 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL,
    gfx_ctx_xegl_show_mouse,
    "x-egl",
-   gfx_ctx_xegl_bind_hw_render,
+   gfx_ctx_xegl_get_flags,
+   gfx_ctx_xegl_bind_hw_render
 };

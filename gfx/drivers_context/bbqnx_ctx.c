@@ -398,6 +398,12 @@ static void gfx_ctx_qnx_get_video_size(void *data,
 #endif
 }
 
+static uint32_t gfx_ctx_qnx_get_flags(void *data)
+{
+   (void)data;
+   return GFX_CTX_FLAGS_NONE;
+}
+
 const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    gfx_ctx_qnx_init,
    gfx_ctx_qnx_destroy,
@@ -423,5 +429,6 @@ const gfx_ctx_driver_t gfx_ctx_bbqnx = {
    NULL,
    NULL,
    "blackberry_qnx",
-   gfx_ctx_qnx_bind_hw_render,
+   gfx_ctx_qnx_get_flags,
+   gfx_ctx_qnx_bind_hw_render
 };
