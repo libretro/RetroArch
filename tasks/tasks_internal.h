@@ -34,7 +34,7 @@ typedef struct {
     size_t len;
 } http_transfer_data_t;
 
-bool rarch_task_push_http_transfer(const char *url, const char *type,
+void *rarch_task_push_http_transfer(const char *url, const char *type,
       retro_task_callback_t cb, void *userdata);
 #endif
 
