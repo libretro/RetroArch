@@ -1782,6 +1782,25 @@ static const char* thumbnail_folders[] =
    "Named_Snaps", "Named_Titles", "Named_Boxarts"
 };
 
+static void sanitize(char* dest, const char* source)
+{
+   const char* end = dest + PATH_MAX_LENGTH - 1;
+   
+   while (*source && dest < end)
+   {
+      const char* found = strchr("/<>&?|:*\\\"", *source);
+      
+      if (found || *source < 32 || *source == 127)
+         *dest = '_';
+      else
+         *dest = *source;
+      
+      dest++, source++;
+   }
+   
+   *dest = 0;
+}
+
 static bool get_next_entry(update_state_t* us)
 {
    settings_t *settings = config_get_ptr();
@@ -1796,6 +1815,7 @@ static bool get_next_entry(update_state_t* us)
    char *system_name;
    content_playlist_t *playlist;
    const char *entry_label;
+   char file_name[PATH_MAX_LENGTH];
    
    playlists = (file_list_t*)calloc(1, sizeof(*playlists));
    
@@ -1864,12 +1884,14 @@ again:
    content_playlist_get_index(playlist, us->j,
          NULL, &entry_label, NULL, NULL,
          NULL, NULL);
+   
+   sanitize(file_name, entry_label);
 
    snprintf(us->url, sizeof(us->url), "http://thumbnails.libretro.com/%s/%s/%s.png", 
-      system_name, thumbnail_folders[ us->k ], entry_label);
+      system_name, thumbnail_folders[ us->k ], file_name);
 
    snprintf(us->path, sizeof(us->path), "%s/%s/%s/%s.png", settings->directory.thumbnails,
-      system_name, thumbnail_folders[ us->k ], entry_label);
+      system_name, thumbnail_folders[ us->k ], file_name);
    
    if (++us->k >= sizeof(thumbnail_folders) / sizeof(thumbnail_folders[0]))
    {
