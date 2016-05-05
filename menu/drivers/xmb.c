@@ -770,8 +770,6 @@ static void xmb_update_thumbnail_image(void *data)
    xmb_handle_t *xmb = (xmb_handle_t*)data;
    download_t *ud;
    char buf[PATH_MAX_LENGTH];
-   unsigned selection = 0;
-   menu_entry_t entry;
 
    if (!xmb)
       return;
@@ -783,13 +781,6 @@ static void xmb_update_thumbnail_image(void *data)
             menu_display_handle_thumbnail_upload, NULL);
    else
    {
-      menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-
-      menu_entry_get(&entry, 0, selection, NULL, true);
-
-      if (entry.type != MENU_FILE_RPL_ENTRY)
-         return;
-
       ud = (download_t *)malloc(sizeof(*ud) + strlen(xmb->thumbnail_file_path));
       
       if (!ud)
@@ -2839,16 +2830,12 @@ static void xmb_navigation_set(void *data, bool scroll)
    xmb_handle_t  *xmb  = (xmb_handle_t*)data;
    xmb_selection_pointer_changed(xmb, true);
 
-   size_t depth, selection;
+   size_t selection;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return;
 
-   depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-   if (strcmp(xmb_thumbnails_ident(), "OFF") && depth == 1)
-   {
-      xmb_update_thumbnail_path(xmb, selection);
-      xmb_update_thumbnail_image(xmb);
-   }
+   xmb_update_thumbnail_path(xmb, selection);
+   xmb_update_thumbnail_image(xmb);
 }
 
 static void xmb_navigation_alphabet(void *data, size_t *unused)
