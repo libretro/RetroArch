@@ -597,8 +597,14 @@ static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
 
 static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
 {
-   (void)data;
-   return 1UL << GFX_CTX_FLAGS_NONE;
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   return flags;
+}
+
+static void cocoagl_gfx_ctx_set_flags(void *data, uint32_t flags)
+{
+   (void)flags;
 }
 
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
@@ -627,5 +633,6 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL,
    "cocoagl",
    cocoagl_gfx_ctx_get_flags,
+   cocoagl_gfx_ctx_set_flags,
    cocoagl_gfx_ctx_bind_hw_render,
 };

@@ -305,8 +305,14 @@ static void gfx_ctx_emscripten_bind_hw_render(void *data, bool enable)
 
 static uint32_t gfx_ctx_emscripten_get_flags(void *data)
 {
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   return flags;
+}
+
+static void gfx_ctx_emscripten_set_flags(void *data, uint32_t flags)
+{
    (void)data;
-   return 1UL << GFX_CTX_FLAGS_NONE;
 }
 
 const gfx_ctx_driver_t gfx_ctx_emscripten = {
@@ -335,5 +341,6 @@ const gfx_ctx_driver_t gfx_ctx_emscripten = {
    NULL,
    "emscripten",
    gfx_ctx_emscripten_get_flags,
+   gfx_ctx_emscripten_set_flags,
    gfx_ctx_emscripten_bind_hw_render
 };

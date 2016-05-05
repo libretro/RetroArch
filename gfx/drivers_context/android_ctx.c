@@ -539,8 +539,15 @@ static void *android_gfx_ctx_get_context_data(void *data)
 
 static uint32_t android_gfx_ctx_get_flags(void *data)
 {
-   (void)data;
-   return 1UL << GFX_CTX_FLAGS_NONE;
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   
+   return flags;
+}
+
+static void android_gfx_ctx_set_flags(void *data, uint32_t flags)
+{
+   (void)flags;
 }
 
 const gfx_ctx_driver_t gfx_ctx_android = {
@@ -569,6 +576,7 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL,
    "android",
    android_gfx_ctx_get_flags,
+   android_gfx_ctx_set_flags,
    android_gfx_ctx_bind_hw_render,
 #ifdef HAVE_VULKAN
    android_gfx_ctx_get_context_data

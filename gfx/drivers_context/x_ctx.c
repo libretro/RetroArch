@@ -44,6 +44,7 @@ typedef struct gfx_ctx_x_data
    bool g_debug;
    bool g_should_reset_mode;
    bool g_is_double;
+   bool core_hw_context_enable;
 
 #ifdef HAVE_OPENGL
    GLXWindow g_glx_win;
@@ -888,10 +889,24 @@ static void *gfx_ctx_x_get_context_data(void *data)
 
 static uint32_t gfx_ctx_x_get_flags(void *data)
 {
+   uint32_t flags = 0;
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-   if (x->g_core_es_core)
-      return (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-   return 1UL << GFX_CTX_FLAGS_NONE;
+   if (x->core_hw_context_enable)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   }
+   else
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   }
+   return flags;
+}
+
+static void gfx_ctx_x_set_flags(void *data, uint32_t flags)
+{
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+      x->core_hw_context_enable = true;
 }
 
 const gfx_ctx_driver_t gfx_ctx_x = {
@@ -920,10 +935,11 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_show_mouse,
    "x",
    gfx_ctx_x_get_flags,
+   gfx_ctx_x_set_flags,
 
    gfx_ctx_x_bind_hw_render,
 #ifdef HAVE_VULKAN
-   gfx_ctx_x_get_context_data,
+   gfx_ctx_x_get_context_data
 #else
    NULL
 #endif

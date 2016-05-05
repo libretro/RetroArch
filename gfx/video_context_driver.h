@@ -191,6 +191,8 @@ typedef struct gfx_ctx_driver
 
    uint32_t (*get_flags)(void *data);
 
+   void     (*set_flags)(void *data, uint32_t flags);
+
    /* Optional. Binds HW-render offscreen context. */
    void (*bind_hw_render)(void *data, bool enable);
 

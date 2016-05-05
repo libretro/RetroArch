@@ -304,8 +304,15 @@ static bool gfx_ctx_d3d_get_metrics(void *data,
 
 static uint32_t gfx_ctx_d3d_get_flags(void *data)
 {
-   (void)data;
-   return 1UL << GFX_CTX_FLAGS_NONE;
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
+   return flags;
+}
+
+static void gfx_ctx_d3d_set_flags(void *data, uint32_t flags)
+{
+   (void)flags;
 }
 
 const gfx_ctx_driver_t gfx_ctx_d3d = {
@@ -334,4 +341,5 @@ const gfx_ctx_driver_t gfx_ctx_d3d = {
    gfx_ctx_d3d_show_mouse,
    "d3d",
    gfx_ctx_d3d_get_flags,
+   gfx_ctx_d3d_set_flags
 };

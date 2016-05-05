@@ -576,11 +576,14 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 
 static uint32_t gfx_ctx_xegl_get_flags(void *data)
 {
-   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   return flags;
+}
 
-   if ((xegl->egl.major * 1000 + xegl->egl.minor) >= 3001)
-      return (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-   return 1UL << GFX_CTX_FLAGS_NONE;
+static void gfx_ctx_xegl_set_flags(void *data, uint32_t flags)
+{
+   (void)data;
 }
 
 const gfx_ctx_driver_t gfx_ctx_x_egl =
@@ -610,5 +613,6 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    gfx_ctx_xegl_show_mouse,
    "x-egl",
    gfx_ctx_xegl_get_flags,
+   gfx_ctx_xegl_set_flags,
    gfx_ctx_xegl_bind_hw_render
 };

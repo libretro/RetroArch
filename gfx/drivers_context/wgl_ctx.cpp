@@ -70,6 +70,7 @@ static bool g_use_hw_ctx;
 static HGLRC g_hrc;
 static HGLRC g_hw_hrc;
 static HDC g_hdc;
+static bool g_core_hw_context_enable;
 
 static unsigned g_major;
 static unsigned g_minor;
@@ -306,7 +307,7 @@ static void *gfx_ctx_wgl_init(void *video_driver)
 
    if (g_inited)
       return NULL;
-
+   
    win32_window_reset();
    win32_monitor_init();
 
@@ -353,12 +354,14 @@ static void gfx_ctx_wgl_destroy(void *data)
    if (g_restore_desktop)
    {
       win32_monitor_get_info();
-      g_restore_desktop = false;
+      g_restore_desktop     = false;
    }
 
-   g_inited = false;
-   g_major = g_minor = 0;
-   p_swap_interval = NULL;
+   g_core_hw_context_enable = false;
+   g_inited                 = false;
+   g_major                  = 0;
+   g_minor                  = 0;
+   p_swap_interval          = NULL;
 }
 
 static bool gfx_ctx_wgl_set_video_mode(void *data,
@@ -450,10 +453,23 @@ static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
 
 static uint32_t gfx_ctx_wgl_get_flags(void *data)
 {
-   (void)data;
-   if ((g_major * 1000 + g_minor) >= 3001)
-      return (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-   return (1UL << GFX_CTX_FLAGS_NONE);
+   uint32_t flags = 0;
+   if (g_core_hw_context_enable)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   }
+   else
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   }
+   return falgs;
+}
+
+static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
+{
+   uint32_t flags = 0;
+   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+      g_core_hw_context_enable = true;
 }
 
 const gfx_ctx_driver_t gfx_ctx_wgl = {
@@ -482,6 +498,7 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_show_mouse,
    "wgl",
    gfx_ctx_wgl_get_flags,
+   gfx_ctx_wgl_set_flags,
    gfx_ctx_wgl_bind_hw_render
 };
 

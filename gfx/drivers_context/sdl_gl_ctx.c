@@ -402,8 +402,14 @@ static void sdl_ctx_show_mouse(void *data, bool state)
 
 static uint32_t sdl_ctx_get_flags(void *data)
 {
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   return flags;
+}
+
+static void sdl_ctx_set_flags(void *data, uint32_t flags)
+{
    (void)data;
-   return 1UL << GFX_CTX_FLAGS_NONE;
 }
 
 const gfx_ctx_driver_t gfx_ctx_sdl_gl =
@@ -433,5 +439,6 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    sdl_ctx_show_mouse,
    "sdl_gl",
    sdl_ctx_get_flags,
+   sdl_ctx_set_flags,
    NULL /* bind_hw_render */
 };

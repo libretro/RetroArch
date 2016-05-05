@@ -80,6 +80,8 @@ typedef struct gfx_ctx_drm_data
    unsigned interval;
    unsigned fb_width;
    unsigned fb_height;
+
+   bool core_hw_context_enable; 
 } gfx_ctx_drm_data_t;
 
 struct drm_fb
@@ -872,10 +874,24 @@ static void gfx_ctx_drm_bind_hw_render(void *data, bool enable)
 
 static uint32_t gfx_ctx_drm_get_flags(void *data)
 {
+   uint32_t             flags = 0;
+   gfx_ctx_drm_data_t    *drm = (gfx_ctx_drm_data_t*)data;
+
+   if (drm->core_hw_context_enable)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   }
+   else
+      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
+   return flags;
+}
+
+static void gfx_ctx_drm_set_flags(void *data, uint32_t flags)
+{
    gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
-   if ((drm->egl.major * 1000 + drm->egl.minor) >= 3001)
-      return (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-   return 1UL << GFX_CTX_FLAGS_NONE;
+   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+      drm->core_hw_context_enable = true;
 }
 
 const gfx_ctx_driver_t gfx_ctx_drm = {
@@ -904,5 +920,6 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    NULL,
    "kms",
    gfx_ctx_drm_get_flags,
+   gfx_ctx_drm_set_flags,
    gfx_ctx_drm_bind_hw_render
 };

@@ -66,6 +66,7 @@ typedef struct gfx_ctx_wayland_data
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
    unsigned swap_interval;
+   bool core_hw_context_enable; 
 
    unsigned buffer_scale;
 
@@ -1140,10 +1141,24 @@ static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 
 static uint32_t gfx_ctx_wl_get_flags(void *data)
 {
+   uint32_t             flags = 0;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if ((wl->egl.major * 1000 + wl->egl.minor) >= 3001)
-      return (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT);
-   return 1UL << GFX_CTX_FLAGS_NONE;
+
+   if (wl->core_hw_context_enable)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   }
+   else
+      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
+   return flags;
+}
+
+static void gfx_ctx_wl_set_flags(void *data, uint32_t flags)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+      wl->core_hw_context_enable = true;
 }
 
 const gfx_ctx_driver_t gfx_ctx_wayland = {
@@ -1172,6 +1187,7 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL,
    "wayland",
    gfx_ctx_wl_get_flags,
+   gfx_ctx_wl_set_flags,
    gfx_ctx_wl_bind_hw_render,
 #ifdef HAVE_VULKAN
    gfx_ctx_wl_get_context_data
