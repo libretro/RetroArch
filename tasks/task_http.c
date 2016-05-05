@@ -208,6 +208,49 @@ static bool rarch_task_http_finder(retro_task_t *task, void *user_data)
    return string_is_equal(http->connection.url, (const char*)user_data);
 }
 
+static bool rarch_task_http_retriever(retro_task_t *task, void *user_data)
+{
+   http_handle_t *http;
+   http_transfer_info_t **list = user_data;
+   http_transfer_info_t *info;
+   http_transfer_info_t *link;
+
+   /* Check if task is valid and corresponding to an HTTP transfer */
+   if (!task || (task->handler != rarch_task_http_transfer_handler))
+      return false;
+
+   /* Check if user data argument is valid */
+   if (!list)
+      return false;
+
+   /* Extract HTTP handle and check if it is valid */
+   http = (http_handle_t*)task->state;
+   if (!http)
+      return false;
+
+   /* Create new HTTP info link */
+   info = malloc(sizeof(http_transfer_info_t));
+   strlcpy(info->url, http->connection.url, sizeof(info->url));
+   info->progress = task->progress;
+   info->next = NULL;
+
+   /* Add link to list */
+   if (*list == NULL)
+   {
+      /* Initialize list with info if required */
+      *list = info;
+   }
+   else
+   {
+      /* Cycle through list until end is reached and add info */
+      for (link = *list; link->next != NULL; link = link->next);
+      link->next = info;
+   }
+
+   /* Request task finder to continue searching in all cases */
+   return false;
+}
+
 bool rarch_task_push_http_transfer(const char *url, const char *type,
       retro_task_callback_t cb, void *user_data)
 {
@@ -279,3 +322,31 @@ error:
 
    return false;
 }
+
+http_transfer_info_t *http_task_get_transfer_list()
+{
+   http_transfer_info_t *list = NULL;
+   task_finder_data_t find_data;
+
+   /* Fill find data */
+   find_data.func = rarch_task_http_retriever;
+   find_data.userdata = &list;
+
+   /* Build list of current HTTP transfers and return it */
+   task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data);
+   return list;
+}
+
+void http_task_free_transfer_list(http_transfer_info_t *list)
+{
+   http_transfer_info_t *link;
+
+   /* Free list of transfers */
+   while (list)
+   {
+      link = list->next;
+      free(list);
+      list = link;
+   }
+}
+

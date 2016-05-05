@@ -34,8 +34,19 @@ typedef struct {
     size_t len;
 } http_transfer_data_t;
 
+typedef struct http_transfer_info
+{
+   char url[PATH_MAX_LENGTH];
+   int progress;
+   struct http_transfer_info *next;
+} http_transfer_info_t;
+
 bool rarch_task_push_http_transfer(const char *url, const char *type,
       retro_task_callback_t cb, void *userdata);
+
+http_transfer_info_t *http_task_get_transfer_list();
+
+void http_task_free_transfer_list(http_transfer_info_t *list);
 #endif
 
 bool rarch_task_push_image_load(const char *fullpath, const char *type,
