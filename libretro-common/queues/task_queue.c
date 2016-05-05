@@ -113,6 +113,35 @@ static retro_task_t *task_queue_get(task_queue_t *queue)
    return task;
 }
 
+static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
+{
+   retro_task_t *t;
+
+   /* Remove first element if needed */
+   if (task == queue->front)
+   {
+      queue->front = task->next;
+      task->next = NULL;
+      return;
+   }
+
+   /* Parse queue */
+   t = queue->front;
+   while (t && t->next)
+   {
+      /* Remove task and update queue */
+      if (t->next == task)
+      {
+         t->next = task->next;
+         task->next = NULL;
+         break;
+      }
+
+      /* Update iterator */
+      t = t->next;
+   }
+}
+
 static void retro_task_internal_gather(void)
 {
    retro_task_t *task = NULL;
@@ -292,24 +321,17 @@ static void threaded_worker(void *userdata)
 
    for (;;)
    {
-      retro_task_t *queue = NULL;
       retro_task_t *task  = NULL;
       retro_task_t *next  = NULL;
-
-      /* pop all into a local queue,
-       * tasks are in the reverse order here. */
-      slock_lock(running_lock);
 
       if (!worker_continue)
          break; /* should we keep running until all tasks finished? */
 
-      while ((task = task_queue_get(&tasks_running)) != NULL)
-      {
-         task->next = queue;
-         queue = task;
-      }
+      slock_lock(running_lock);
 
-      if (queue == NULL) /* no tasks running, lets wait a bit */
+      /* Get first task to run */
+      task = tasks_running.front;
+      if (task == NULL)
       {
          scond_wait(worker_cond, running_lock);
          slock_unlock(running_lock);
@@ -318,21 +340,26 @@ static void threaded_worker(void *userdata)
 
       slock_unlock(running_lock);
 
-      for (task = queue; task; task = next)
-      {
-         next = task->next;
-         task->handler(task);
+      task->handler(task);
 
-         if (task->finished)
-         {
-            slock_lock(finished_lock);
-            task_queue_put(&tasks_finished, task);
-            slock_unlock(finished_lock);
-         }
-         else
-            retro_task_threaded_push_running(task);
+      slock_lock(running_lock);
+      task_queue_remove(&tasks_running, task);
+      slock_unlock(running_lock);
+
+      /* Update queue */
+      if (!task->finished)
+      {
+         /* Re-add task to running queue */
+         retro_task_threaded_push_running(task);
       }
-      
+      else
+      {
+         /* Add task to finished queue */
+         slock_lock(finished_lock);
+         task_queue_put(&tasks_finished, task);
+         slock_unlock(finished_lock);
+      }
+
       retro_sleep(10);
    }
 

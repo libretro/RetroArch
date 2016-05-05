@@ -61,6 +61,8 @@ int detect_ps1_game(const char *track_path, char *game_id);
 
 int detect_psp_game(const char *track_path, char *game_id);
 
+bool rarch_task_check_decompress(const char *source_file);
+
 bool rarch_task_push_decompress(
       const char *source_file,
       const char *target_dir,
