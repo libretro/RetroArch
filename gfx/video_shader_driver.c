@@ -40,22 +40,27 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
    switch (type)
    {
       case RARCH_SHADER_CG:
+         {
+
 #ifdef HAVE_CG
-         if (core_context_inited)
-         {
-            RARCH_ERR("[Shader driver]: Cg cannot be used with core GL context. Trying to fall back to GLSL...\n");
+            gfx_ctx_flags_t flags;
+            gfx_ctx_ctl(GFX_CTL_GET_FLAGS, &flags);
+            if (flags.flags && (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+            {
+               RARCH_ERR("[Shader driver]: Cg cannot be used with core GL context. Trying to fall back to GLSL...\n");
 #ifdef HAVE_GLSL
-            return &gl_glsl_backend;
+               return &gl_glsl_backend;
 #endif
-         }
-         else
-         {
-            RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
-            return &gl_cg_backend;
-         }
+            }
+            else
+            {
+               RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
+               return &gl_cg_backend;
+            }
 #else
-         break;
+            break;
 #endif
+         }
       case RARCH_SHADER_GLSL:
 #ifdef HAVE_GLSL
          RARCH_LOG("[Shader driver]: Using GLSL shader backend.\n");
