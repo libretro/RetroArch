@@ -82,12 +82,7 @@ enum task_queue_ctl_state
 
    TASK_QUEUE_CTL_UNSET_THREADED,
 
-   TASK_QUEUE_CTL_IS_THREADED,
-   
-   /**
-    * Signals a task to end without waiting for
-    * it to complete. */
-   TASK_QUEUE_CTL_CANCEL,
+   TASK_QUEUE_CTL_IS_THREADED
 };
 
 typedef struct retro_task retro_task_t;
@@ -152,8 +147,6 @@ typedef struct task_finder_data
 void task_queue_push_progress(retro_task_t *task);
 
 bool task_queue_ctl(enum task_queue_ctl_state state, void *data);
-
-void task_queue_cancel_task(void *task);
 
 RETRO_END_DECLS
 

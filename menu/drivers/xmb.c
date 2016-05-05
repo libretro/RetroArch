@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2011-2016 - Daniel De Matteis
- *  Copyright (C) 2014-2015 - Jean-AndrÃ© Santoni
+ *  Copyright (C) 2014-2015 - Jean-André Santoni
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -47,7 +47,6 @@
 #include "../../system.h"
 
 #include "../../tasks/tasks_internal.h"
-#include <streams/file_stream.h>
 
 #define XMB_RIBBON_ROWS 64
 #define XMB_RIBBON_COLS 64
@@ -150,7 +149,6 @@ typedef struct xmb_handle
    uintptr_t thumbnail;
    float thumbnail_width;
    float thumbnail_height;
-   void *thumbnail_task;
    char background_file_path[PATH_MAX_LENGTH];
    char thumbnail_file_path[PATH_MAX_LENGTH];
 
@@ -721,91 +719,17 @@ static void menu_display_handle_thumbnail_upload(void *task_data,
    free(img);
 }
 
-
-typedef struct
-{
-   xmb_handle_t *xmb;
-   char file_path[1];
-}
-download_t;
-
-static void cb_thumbnail_download(void *task_data, void *user_data, const char *error)
-{
-   download_t *ud = user_data;
-   char output_path[PATH_MAX_LENGTH];
-   http_transfer_data_t        *data     = (http_transfer_data_t*)task_data;
-
-   if (!data || !data->data)
-      goto finished;
-    
-   ud->xmb->thumbnail_task = NULL;
-
-   strncpy(output_path, ud->file_path, sizeof(output_path));
-   output_path[sizeof(output_path) - 1] = 0;
-   path_basedir(output_path);
-   
-   if (!path_mkdir(output_path))
-   {
-      RARCH_ERR("Error creating folders for file %s\n", ud->file_path);
-      goto finished;
-   }
-   
-   if (!filestream_write_file(ud->file_path, data->data, data->len))
-   {
-      RARCH_ERR("Error writing file %s\n", ud->file_path);
-      goto finished;
-   }
-   
-   /* Only update the image on the menu if the user is still at the same entry */
-   if (!strcmp(ud->file_path, ud->xmb->thumbnail_file_path))
-      rarch_task_push_image_load(ud->file_path, "cb_menu_thumbnail",
-                  menu_display_handle_thumbnail_upload, NULL);
-   
-finished:
-   free(ud);
-}
-
 static void xmb_update_thumbnail_image(void *data)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
-   download_t *ud;
-   char buf[PATH_MAX_LENGTH];
-
    if (!xmb)
       return;
-
-   RARCH_LOG ("FILE: %s\n", xmb->thumbnail_file_path);
 
    if (path_file_exists(xmb->thumbnail_file_path))
       rarch_task_push_image_load(xmb->thumbnail_file_path, "cb_menu_thumbnail",
             menu_display_handle_thumbnail_upload, NULL);
-   else
-   {
-      ud = (download_t *)malloc(sizeof(*ud) + strlen(xmb->thumbnail_file_path));
-      
-      if (!ud)
-      {
-         RARCH_ERR("Error allocating memory for the thumbnail download userdata\n");
-         return;
-      }
-      
-      ud->xmb = xmb;
-      strcpy(ud->file_path, strdup(xmb->thumbnail_file_path));
-      
-      snprintf(buf, sizeof(buf), "http://thumbnails.libretro.com/%s/%s/%s", 
-         xmb->title_name, xmb_thumbnails_ident(), 
-         path_basename(xmb->thumbnail_file_path));
-
-      RARCH_LOG ("URL:  %s\n", buf);
-      
-      if (xmb->thumbnail_task)
-         task_queue_cancel_task(xmb->thumbnail_task);
-       
-      xmb->thumbnail_task = rarch_task_push_http_transfer(buf, "", cb_thumbnail_download, ud);
-
-      if (xmb->depth == 1)
-         xmb->thumbnail = 0;
-   }
+   else if (xmb->depth == 1)
+      xmb->thumbnail = 0;
 }
 
 static void xmb_selection_pointer_changed(
@@ -855,6 +779,13 @@ static void xmb_selection_pointer_changed(
       {
          ia = XMB_ITEM_ACTIVE_ALPHA;
          iz = XMB_ITEM_ACTIVE_ZOOM;
+
+         depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+         if (strcmp(xmb_thumbnails_ident(), "OFF") && depth == 1)
+         {
+            xmb_update_thumbnail_path(xmb, i);
+            xmb_update_thumbnail_image(xmb);
+         }
       }
 
       if (real_iy < -threshold)
@@ -2537,7 +2468,6 @@ static void *xmb_init(void **userdata)
    xmb->depth                   = 1;
    xmb->old_depth               = 1;
    xmb->alpha                   = 0;
-   xmb->thumbnail_task          = NULL;
    menu_driver_ctl(RARCH_MENU_CTL_UNSET_PREVENT_POPULATE, NULL);
 
    /* TODO/FIXME - we don't use framebuffer at all
@@ -2829,13 +2759,6 @@ static void xmb_navigation_set(void *data, bool scroll)
 {
    xmb_handle_t  *xmb  = (xmb_handle_t*)data;
    xmb_selection_pointer_changed(xmb, true);
-
-   size_t selection;
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
-
-   xmb_update_thumbnail_path(xmb, selection);
-   xmb_update_thumbnail_image(xmb);
 }
 
 static void xmb_navigation_alphabet(void *data, size_t *unused)
