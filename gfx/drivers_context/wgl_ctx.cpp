@@ -467,7 +467,6 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
 
 static void gfx_ctx_wgl_set_flags(void *data, uint32_t flags)
 {
-   uint32_t flags = 0;
    if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
       g_core_hw_context_enable = true;
 }
