@@ -45,7 +45,7 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
             gfx_ctx_flags_t flags;
             gfx_ctx_ctl(GFX_CTL_GET_FLAGS, &flags);
 
-            if (flags.flags && (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+            if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
             {
                RARCH_ERR("[Shader driver]: Cg cannot be used with core GL context. Trying to fall back to GLSL...\n");
                return video_shader_set_backend(RARCH_SHADER_GLSL);
