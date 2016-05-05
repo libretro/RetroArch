@@ -208,7 +208,7 @@ static bool rarch_task_http_finder(retro_task_t *task, void *user_data)
    return string_is_equal(http->connection.url, (const char*)user_data);
 }
 
-bool rarch_task_push_http_transfer(const char *url, const char *type,
+void *rarch_task_push_http_transfer(const char *url, const char *type,
       retro_task_callback_t cb, void *user_data)
 {
    char tmp[PATH_MAX_LENGTH];
@@ -218,7 +218,7 @@ bool rarch_task_push_http_transfer(const char *url, const char *type,
    http_handle_t *http            = NULL;
 
    if (string_is_empty(url))
-      return false;
+      return NULL;
 
    find_data.func     = rarch_task_http_finder;
    find_data.userdata = (void*)url;
@@ -227,13 +227,13 @@ bool rarch_task_push_http_transfer(const char *url, const char *type,
    if (task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data))
    {
       RARCH_LOG("[http] '%s'' is already being downloaded.\n", url);
-      return false;
+      return NULL;
    }
 
    conn = net_http_connection_new(url);
 
    if (!conn)
-      return false;
+      return NULL;
 
    http                    = (http_handle_t*)calloc(1, sizeof(*http));
 
@@ -267,7 +267,7 @@ bool rarch_task_push_http_transfer(const char *url, const char *type,
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
 
-   return true;
+   return t;
 
 error:
    if (conn)
@@ -277,5 +277,5 @@ error:
    if (http)
       free(http);
 
-   return false;
+   return NULL;
 }
