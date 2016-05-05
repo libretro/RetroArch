@@ -889,7 +889,7 @@ static void *gfx_ctx_x_get_context_data(void *data)
 static uint32_t gfx_ctx_x_get_flags(void *data)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-   if (x->g_core_es || x->g_core_es_core)
+   if (x->g_core_es_core)
       return (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT);
    return 1UL << GFX_CTX_FLAGS_NONE;
 }

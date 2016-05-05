@@ -43,8 +43,12 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
 
 #ifdef HAVE_CG
             gfx_ctx_flags_t flags;
+            struct retro_hw_render_callback *hwr = NULL;
             gfx_ctx_ctl(GFX_CTL_GET_FLAGS, &flags);
-            if (flags.flags && (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+            video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+
+#if 0
+            if ((flags.flags && (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT)) && hwr && hwr->context_type != RETRO_HW_CONTEXT_NONE)
             {
                RARCH_ERR("[Shader driver]: Cg cannot be used with core GL context. Trying to fall back to GLSL...\n");
 #ifdef HAVE_GLSL
@@ -52,6 +56,7 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
 #endif
             }
             else
+#endif
             {
                RARCH_LOG("[Shader driver]: Using Cg shader backend.\n");
                return &gl_cg_backend;
