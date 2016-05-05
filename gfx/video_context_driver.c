@@ -477,6 +477,16 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
       case GFX_CTL_SET_VIDEO_CONTEXT_DATA:
          video_context_data = data;
          break;
+      case GFX_CTL_GET_FLAGS:
+         {
+            gfx_ctx_flags_t *flags = (gfx_ctx_flags_t*)data;
+            if (!flags)
+               return false;
+            if (!current_video_context || !current_video_context->get_flags)
+               return false;
+            flags->flags = current_video_context->get_flags(video_context_data);
+         }
+         break;
       case GFX_CTL_NONE:
       default:
          break;

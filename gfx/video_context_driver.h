@@ -83,6 +83,7 @@ enum gfx_ctx_ctl_state
    GFX_CTL_SWAP_INTERVAL,
    GFX_CTL_PROC_ADDRESS_GET,
    GFX_CTL_TRANSLATE_ASPECT,
+   GFX_CTL_GET_FLAGS,
    GFX_CTL_GET_METRICS,
    GFX_CTL_INPUT_DRIVER,
    GFX_CTL_SUPPRESS_SCREENSAVER,
@@ -198,6 +199,11 @@ typedef struct gfx_ctx_driver
     * which do not have global context state. */
    void *(*get_context_data)(void *data);
 } gfx_ctx_driver_t;
+
+typedef struct gfx_ctx_flags
+{
+   uint32_t flags;
+} gfx_ctx_flags_t;
 
 typedef struct gfx_ctx_size
 {
