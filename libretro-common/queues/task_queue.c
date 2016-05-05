@@ -322,7 +322,6 @@ static void threaded_worker(void *userdata)
    for (;;)
    {
       retro_task_t *task  = NULL;
-      retro_task_t *next  = NULL;
 
       if (!worker_continue)
          break; /* should we keep running until all tasks finished? */
