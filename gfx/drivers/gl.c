@@ -3287,6 +3287,8 @@ void gl_load_texture_data(uint32_t id_data,
       case TEXTURE_FILTER_MIPMAP_NEAREST:
          filter_type = TEXTURE_FILTER_NEAREST;
          break;
+      default:
+         break;
    }
 #endif
 
