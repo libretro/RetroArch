@@ -872,8 +872,10 @@ static void gfx_ctx_drm_bind_hw_render(void *data, bool enable)
 
 static uint32_t gfx_ctx_drm_get_flags(void *data)
 {
-   (void)data;
-   return GFX_CTX_FLAGS_NONE;
+   gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
+   if ((drm->egl.major * 1000 + drm->egl.minor) >= 3001)
+      return (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   return 1UL << GFX_CTX_FLAGS_NONE;
 }
 
 const gfx_ctx_driver_t gfx_ctx_drm = {

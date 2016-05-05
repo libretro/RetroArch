@@ -294,7 +294,7 @@ static void gfx_ctx_mali_fbdev_bind_hw_render(void *data, bool enable)
 static uint32_t gfx_ctx_mali_fbdev_get_flags(void *data)
 {
    (void)data;
-   return GFX_CTX_FLAGS_NONE;
+   return 1UL << GFX_CTX_FLAGS_NONE;
 }
 
 const gfx_ctx_driver_t gfx_ctx_mali_fbdev = {

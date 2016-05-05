@@ -451,7 +451,9 @@ static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
 static uint32_t gfx_ctx_wgl_get_flags(void *data)
 {
    (void)data;
-   return GFX_CTX_FLAGS_NONE;
+   if ((g_major * 1000 + g_minor) >= 3001)
+      return (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   return (1UL << GFX_CTX_FLAGS_NONE);
 }
 
 const gfx_ctx_driver_t gfx_ctx_wgl = {

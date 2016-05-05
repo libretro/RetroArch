@@ -1140,8 +1140,10 @@ static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
 
 static uint32_t gfx_ctx_wl_get_flags(void *data)
 {
-   (void)data;
-   return GFX_CTX_FLAGS_NONE;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if ((wl->egl.major * 1000 + wl->egl.minor) >= 3001)
+      return (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   return 1UL << GFX_CTX_FLAGS_NONE;
 }
 
 const gfx_ctx_driver_t gfx_ctx_wayland = {

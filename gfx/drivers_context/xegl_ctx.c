@@ -576,8 +576,11 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 
 static uint32_t gfx_ctx_xegl_get_flags(void *data)
 {
-   (void)data;
-   return GFX_CTX_FLAGS_NONE;
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+
+   if ((xegl->egl.major * 1000 + xegl->egl.minor) >= 3001)
+      return (1UL << GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   return 1UL << GFX_CTX_FLAGS_NONE;
 }
 
 const gfx_ctx_driver_t gfx_ctx_x_egl =

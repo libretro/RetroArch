@@ -55,7 +55,7 @@ enum display_metric_types
 enum display_flags
 {
    GFX_CTX_FLAGS_NONE = 0,
-   GFX_CTX_FLAGS_CORE_GL
+   GFX_CTX_FLAGS_GL_CORE_CONTEXT
 };
 
 enum gfx_ctx_ctl_state
