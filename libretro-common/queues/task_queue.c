@@ -39,6 +39,7 @@ typedef struct
 struct retro_task_impl
 {
    void (*push_running)(retro_task_t *);
+   void (*cancel)(void *);
    void (*reset)(void);
    void (*wait)(void);
    void (*gather)(void);
@@ -167,6 +168,12 @@ static void retro_task_regular_push_running(retro_task_t *task)
    task_queue_put(&tasks_running, task);
 }
 
+static void retro_task_regular_cancel(void *task)
+{
+   retro_task_t *t = task;
+   t->cancelled = true;
+}
+ 
 static void retro_task_regular_gather(void)
 {
    retro_task_t *task  = NULL;
@@ -232,6 +239,7 @@ static bool retro_task_regular_find(retro_task_finder_t func, void *user_data)
 
 static struct retro_task_impl impl_regular = {
    retro_task_regular_push_running,
+   retro_task_regular_cancel,
    retro_task_regular_reset,
    retro_task_regular_wait,
    retro_task_regular_gather,
@@ -252,6 +260,24 @@ static void retro_task_threaded_push_running(retro_task_t *task)
    slock_lock(running_lock);
    task_queue_put(&tasks_running, task);
    scond_signal(worker_cond);
+   slock_unlock(running_lock);
+}
+
+static void retro_task_threaded_cancel(void *task)
+{
+   retro_task_t *t;
+
+   slock_lock(running_lock);
+   
+   for (t = tasks_running.front; t; t = t->next)
+   {
+      if (t == task)
+      {
+        t->cancelled = true;
+        break;
+      }
+   }
+
    slock_unlock(running_lock);
 }
 
@@ -399,6 +425,7 @@ static void retro_task_threaded_deinit(void)
 
 static struct retro_task_impl impl_threaded = {
    retro_task_threaded_push_running,
+   retro_task_threaded_cancel,
    retro_task_threaded_reset,
    retro_task_threaded_wait,
    retro_task_threaded_gather,
@@ -484,10 +511,18 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
       case TASK_QUEUE_CTL_WAIT:
          impl_current->wait();
          break;
+      case TASK_QUEUE_CTL_CANCEL:
+         impl_current->cancel(data);
+         break;
       case TASK_QUEUE_CTL_NONE:
       default:
          break;
    }
 
    return true;
+}
+
+void task_queue_cancel_task(void *task)
+{
+   task_queue_ctl(TASK_QUEUE_CTL_CANCEL, task);
 }
