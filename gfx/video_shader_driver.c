@@ -34,8 +34,7 @@ static const shader_backend_t *shader_ctx_drivers[] = {
    NULL
 };
 
-static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type type,
-      bool core_context_inited)
+static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type type)
 {
    switch (type)
    {
@@ -190,8 +189,7 @@ bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *dat
 
             if (!init->shader || !init->shader->init)
             {
-               init->shader = video_shader_set_backend(init->shader_type,
-                     init->gl.core_context_enabled);
+               init->shader = video_shader_set_backend(init->shader_type);
                
                if (!init->shader)
                   return false;
