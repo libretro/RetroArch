@@ -172,7 +172,6 @@ static void frontend_gx_get_environment_settings(
 #elif defined(HAVE_FILE_LOGGER)
    retro_main_log_file_init("/retroarch-log.txt");
 #endif
-#endif
 
    /* This situation can happen on some loaders so we really need some
       fake args or else retroarch will just crash on parsing NULL pointers */
@@ -191,6 +190,8 @@ static void frontend_gx_get_environment_settings(
          args->libretro_path  = NULL;
       }
    }
+#endif
+
 #ifdef HW_DOL
    chdir("carda:/retroarch");
 #endif
