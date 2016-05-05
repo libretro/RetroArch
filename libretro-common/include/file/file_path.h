@@ -212,6 +212,16 @@ void fill_pathname_noext(char *out_path, const char *in_path,
       const char *replace, size_t size);
 
 /**
+ * find_last_slash:
+ * @str : input path
+ *
+ * Gets a pointer to the last slash in the input path.
+ *
+ * Returns: a pointer to the last slash in the input path.
+ **/
+char *find_last_slash(const char *str);
+
+/**
  * fill_pathname_dir:
  * @in_dir             : input directory path
  * @in_basename        : input basename to be appended to @in_dir
