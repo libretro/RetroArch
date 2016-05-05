@@ -174,6 +174,23 @@ static void frontend_gx_get_environment_settings(
 #endif
 #endif
 
+   /* This situation can happen on some loaders so we really need some
+      fake args or else retroarch will just crash on parsing NULL pointers */
+   if(*argc == 0 || argv == NULL)
+   {
+      struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+      if (args)
+      {
+         args->touched        = true;
+         args->no_content     = false;
+         args->verbose        = false;
+         args->config_path    = NULL;
+         args->sram_path      = NULL;
+         args->state_path     = NULL;
+         args->content_path   = NULL;
+         args->libretro_path  = NULL;
+      }
+   }
 #ifdef HW_DOL
    chdir("carda:/retroarch");
 #endif
