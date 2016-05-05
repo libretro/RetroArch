@@ -2358,11 +2358,11 @@ static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 static void gl_init_pbo_readback(gl_t *gl)
 {
    unsigned i;
-   struct scaler_ctx *scaler = NULL;
    settings_t *settings      = config_get_ptr();
    bool *recording_enabled   = recording_is_enabled();
-
-   (void)scaler;
+#ifndef HAVE_OPENGLES3
+   struct scaler_ctx *scaler = NULL;
+#endif
 
    /* Only bother with this if we're doing GPU recording.
     * Check recording_is_enabled() and not 
@@ -2413,30 +2413,31 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
 {
    enum gfx_ctx_api api;
    unsigned major, minor;
-   const char *api_name = NULL;
+   const char                 *api_name = NULL;
    struct retro_hw_render_callback *hwr = NULL;
-   settings_t *settings = config_get_ptr();
+   settings_t                 *settings = config_get_ptr();
 
    video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 
    major       = hwr->version_major;
    minor       = hwr->version_minor;
 #ifdef HAVE_OPENGLES
-   api = GFX_CTX_OPENGL_ES_API;
-   api_name = "OpenGL ES 2.0";
+   api         = GFX_CTX_OPENGL_ES_API;
+   api_name    = "OpenGL ES 2.0";
+
 #ifdef HAVE_OPENGLES3
    if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES3)
    {
-      major = 3;
-      minor = 0;
+      major    = 3;
+      minor    = 0;
       api_name = "OpenGL ES 3.0";
    }
    else if (hwr->context_type == RETRO_HW_CONTEXT_OPENGLES_VERSION)
       api_name = "OpenGL ES 3.1+";
 #endif
 #else
-   api = GFX_CTX_OPENGL_API;
-   api_name = "OpenGL";
+   api         = GFX_CTX_OPENGL_API;
+   api_name    = "OpenGL";
 #endif
     
    (void)api_name;
