@@ -152,7 +152,7 @@ void x11_suspend_screensaver(Window wnd)
 
    RARCH_LOG("Suspending screensaver (X11).\n");
 
-   snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend %d", (int)wnd);
+   snprintf(cmd, sizeof(cmd), "xdg-screensaver suspend 0x%x", (int)wnd);
 
    ret = system(cmd);
    if (ret == -1)
@@ -551,8 +551,7 @@ void x11_update_window_title(void *data)
    char buf_fps[128]       = {0};
    settings_t *settings    = config_get_ptr();
 
-   if (video_monitor_get_fps(buf, sizeof(buf),
-            buf_fps, sizeof(buf_fps)))
+   if (video_monitor_get_fps(buf, sizeof(buf), NULL, 0))
       XStoreName(g_x11_dpy, g_x11_win, buf);
    if (settings->fps_show)
       runloop_msg_queue_push(buf_fps, 1, 1, false);
