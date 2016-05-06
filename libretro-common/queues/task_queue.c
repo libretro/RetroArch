@@ -382,8 +382,6 @@ static bool retro_task_threaded_find(
 
 static void retro_task_threaded_retrieve(task_retriever_data_t *data)
 {
-   retro_task_t *task;
-
    /* Protect access to running tasks */
    slock_lock(running_lock);
 
