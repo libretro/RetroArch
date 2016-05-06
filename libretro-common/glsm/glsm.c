@@ -206,10 +206,13 @@ void rglClear(GLbitfield mask)
  *
  * Core in:
  * OpenGL    : 1.0
+ * OpenGLES  : N/A
  */
 void rglPolygonMode(GLenum face, GLenum mode)
 {
+#ifndef HAVE_OPENGLES
    glPolygonMode(face, mode);
+#endif
 }
 
 void rglTexSubImage2D(
@@ -638,7 +641,7 @@ void rglFramebufferTexture2D(GLenum target, GLenum attachment,
 void rglFramebufferTexture(GLenum target, GLenum attachment,
   	GLuint texture, GLint level)
 {
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES32)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3_2)
    glFramebufferTexture(target, attachment, texture, level);
 #endif
 }
@@ -1138,7 +1141,7 @@ void rglVertexAttribLPointer(
       GLsizei stride,
       const GLvoid * pointer)
 {
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+#if defined(HAVE_OPENGL)
    glVertexAttribLPointer(index, size, type, stride, pointer);
 #endif
 }
@@ -1595,7 +1598,7 @@ void rglCopyImageSubData( 	GLuint srcName,
   	GLsizei srcHeight,
   	GLsizei srcDepth)
 {
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES32)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3_2)
    glCopyImageSubData(srcName,
          srcTarget,
          srcLevel,
