@@ -185,6 +185,46 @@ static struct gl_cached_state gl_state;
 /* GL wrapper-side */
 
 /*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
+GLenum GLenum rglGetError(void)
+{
+   return glGetError();
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
+void rglClear(GLbitfield mask)
+{
+   glClear(mask);
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
+void rglPolygonMode(GLenum face, GLenum mode)
+{
+   glPolygonMode(face, mode);
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
+void rglLineWidth(GLfloat width)
+{
+   glLineWidth(width);
+}
+
+/*
  * Category: FBO
  *
  * Core in:

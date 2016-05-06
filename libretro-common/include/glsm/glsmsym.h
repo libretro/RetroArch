@@ -137,6 +137,10 @@ RETRO_BEGIN_DECLS
 #define glBindBufferBase            rglBindBufferBase 
 #define glGetUniformIndices         rglGetUniformIndices
 #define glGetActiveUniformsiv       rglGetActiveUniformsiv
+#define glGetError                  rglGetError
+#define glClear                     rglClear
+#define glPolygonMode               rglPolygonMode
+#define glLineWidth                 rglLineWidth
 
 void rglGetActiveUniformsiv( 	GLuint program,
   	GLsizei uniformCount,
@@ -310,6 +314,10 @@ void rglVertexAttribLPointer(
 void rglUniformBlockBinding( 	GLuint program,
   	GLuint uniformBlockIndex,
   	GLuint uniformBlockBinding);
+GLenum rglGetError(void);
+void rglClear(GLbitfield mask);
+void rglPolygonMode(GLenum face, GLenum mode);
+void rglLineWidth(GLfloat width);
 
 RETRO_END_DECLS
 
