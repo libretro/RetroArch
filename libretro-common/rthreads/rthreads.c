@@ -237,7 +237,7 @@ slock_t *slock_new(void)
    return lock;
 
 error:
-   free(lock);
+   slock_free(lock);
    return NULL;
 }
 
