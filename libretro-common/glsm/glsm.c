@@ -20,9 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
 #include <glsym/glsym.h>
 #include <glsm/glsm.h>
-
 
 struct gl_cached_state
 {
@@ -177,8 +177,6 @@ struct gl_cached_state
 };
 
 static glsm_framebuffer_lock glsm_fb_lock = NULL;
-static glsm_imm_vbo_draw imm_vbo_draw     = NULL;
-static glsm_imm_vbo_draw imm_vbo_disable  = NULL;
 static struct retro_hw_render_callback hw_render;
 static struct gl_cached_state gl_state;
 
@@ -189,7 +187,7 @@ static struct gl_cached_state gl_state;
  * Core in:
  * OpenGL    : 1.0
  */
-GLenum GLenum rglGetError(void)
+GLenum rglGetError(void)
 {
    return glGetError();
 }
@@ -1600,6 +1598,7 @@ void rglCopyImageSubData( 	GLuint srcName,
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES32)
    glCopyImageSubData(srcName,
          srcTarget,
+         srcLevel,
          srcX,
          srcY,
          srcZ,
@@ -1901,20 +1900,9 @@ static bool glsm_state_ctx_init(void *data)
    hw_render.bottom_left_origin = true;
    hw_render.cache_context      = true;
 
-   imm_vbo_draw                 = NULL;
-   imm_vbo_disable              = NULL;
-
-   if (params->imm_vbo_draw != NULL)
-      imm_vbo_draw                 = params->imm_vbo_draw;
-   if (params->imm_vbo_disable != NULL)
-      imm_vbo_disable              = params->imm_vbo_disable;
-
    glsm_fb_lock                    = dummy_framebuffer_lock;
    if (params->framebuffer_lock != NULL)
       glsm_fb_lock                 = params->framebuffer_lock;
-
-   if (imm_vbo_draw != NULL && imm_vbo_disable != NULL)
-      glsm_ctl(GLSM_CTL_SET_IMM_VBO, NULL);
 
    if (!params->environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
       return false;
@@ -1929,29 +1917,19 @@ GLuint glsm_get_current_framebuffer(void)
 
 bool glsm_ctl(enum glsm_state_ctl state, void *data)
 {
-   static bool imm_vbo_enable        = false;
-
    switch (state)
    {
       case GLSM_CTL_IS_FRAMEBUFFER_LOCKED:
          return glsm_fb_lock(NULL);
       case GLSM_CTL_IMM_VBO_DRAW:
-         if (imm_vbo_draw == NULL || !imm_vbo_enable)
-            return false;
-         imm_vbo_draw(NULL);
-         break;
+         return false;
       case GLSM_CTL_IMM_VBO_DISABLE:
-         if (imm_vbo_disable == NULL || !imm_vbo_enable)
-            return false;
-         imm_vbo_disable(NULL);
-         break;
+         return false;
       case GLSM_CTL_IS_IMM_VBO:
-         return imm_vbo_enable;
+         return false;
       case GLSM_CTL_SET_IMM_VBO:
-         imm_vbo_enable = true;
          break;
       case GLSM_CTL_UNSET_IMM_VBO:
-         imm_vbo_enable = false;
          break;
       case GLSM_CTL_PROC_ADDRESS_GET:
          {
