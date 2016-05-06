@@ -211,47 +211,20 @@ static bool rarch_task_http_finder(retro_task_t *task, void *user_data)
    return string_is_equal(http->connection.url, (const char*)user_data);
 }
 
-static bool rarch_task_http_retriever(retro_task_t *task, void *user_data)
+static bool rarch_task_http_retriever(retro_task_t *task, void *data)
 {
    http_handle_t *http;
-   http_transfer_info_t **list = user_data;
-   http_transfer_info_t *info;
-   http_transfer_info_t *link;
+   http_transfer_info_t *info = data;
 
-   /* Check if task is valid and corresponding to an HTTP transfer */
-   if (!task || (task->handler != rarch_task_http_transfer_handler))
-      return false;
-
-   /* Check if user data argument is valid */
-   if (!list)
-      return false;
-
-   /* Extract HTTP handle and check if it is valid */
-   http = (http_handle_t*)task->state;
+   /* Extract HTTP handle and return already if invalid */
+   http = (http_handle_t *)task->state;
    if (!http)
       return false;
 
-   /* Create new HTTP info link */
-   info = malloc(sizeof(http_transfer_info_t));
+   /* Fill HTTP info link */
    strlcpy(info->url, http->connection.url, sizeof(info->url));
    info->progress = task->progress;
-   info->next = NULL;
-
-   /* Add link to list */
-   if (*list == NULL)
-   {
-      /* Initialize list with info if required */
-      *list = info;
-   }
-   else
-   {
-      /* Cycle through list until end is reached and add info */
-      for (link = *list; link->next != NULL; link = link->next);
-      link->next = info;
-   }
-
-   /* Request task finder to continue searching in all cases */
-   return false;
+   return true;
 }
 
 void *rarch_task_push_http_transfer(const char *url, const char *type,
@@ -326,30 +299,17 @@ error:
    return NULL;
 }
 
-http_transfer_info_t *http_task_get_transfer_list(void)
+task_retriever_info_t *http_task_get_transfer_list(void)
 {
-   http_transfer_info_t *list = NULL;
-   task_finder_data_t find_data;
+   task_retriever_data_t retrieve_data;
 
-   /* Fill find data */
-   find_data.func = rarch_task_http_retriever;
-   find_data.userdata = &list;
+   /* Fill retrieve data */
+   retrieve_data.handler = rarch_task_http_transfer_handler;
+   retrieve_data.element_size = sizeof(http_transfer_info_t);
+   retrieve_data.func = rarch_task_http_retriever;
 
    /* Build list of current HTTP transfers and return it */
-   task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data);
-   return list;
-}
-
-void http_task_free_transfer_list(http_transfer_info_t *list)
-{
-   http_transfer_info_t *link;
-
-   /* Free list of transfers */
-   while (list)
-   {
-      link = list->next;
-      free(list);
-      list = link;
-   }
+   task_queue_ctl(TASK_QUEUE_CTL_RETRIEVE, &retrieve_data);
+   return retrieve_data.list;
 }
 
