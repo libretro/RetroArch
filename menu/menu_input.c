@@ -1284,7 +1284,6 @@ unsigned menu_input_frame_retropad(retro_input_t input,
    bool set_scroll                         = false;
    size_t new_scroll_accel                 = 0;
    menu_input_t *menu_input                = menu_input_get_ptr();
-   settings_t *settings                    = config_get_ptr();
 
    if (!menu_input)
       return 0;
@@ -1347,6 +1346,8 @@ unsigned menu_input_frame_retropad(retro_input_t input,
 
    if (menu_input->keyboard.display)
    {
+      settings_t *settings = config_get_ptr();
+
       /* send return key to close keyboard input window */
       if (trigger_input & (UINT64_C(1) << settings->menu_cancel_btn))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
