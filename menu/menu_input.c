@@ -1281,15 +1281,6 @@ unsigned menu_input_frame_retropad(retro_input_t input,
    float delta_time;
    static bool initial_held                = true;
    static bool first_held                  = false;
-   static const retro_input_t input_repeat =
-        (1UL << RETRO_DEVICE_ID_JOYPAD_UP)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_DOWN)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_LEFT)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_B)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_A)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_L)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_R);
    bool set_scroll                         = false;
    size_t new_scroll_accel                 = 0;
    menu_input_t *menu_input                = menu_input_get_ptr();
@@ -1303,7 +1294,7 @@ unsigned menu_input_frame_retropad(retro_input_t input,
    /* don't run anything first frame, only capture held inputs
     * for old_input_state. */
 
-   if (input & input_repeat)
+   if (input)
    {
       if (!first_held)
       {
@@ -1314,6 +1305,16 @@ unsigned menu_input_frame_retropad(retro_input_t input,
 
       if (menu_input->delay.count >= menu_input->delay.timer)
       {
+         retro_input_t input_repeat = 0;
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_UP);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_DOWN);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_LEFT);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_B);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_A);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_L);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_R);
+
          set_scroll     = true;
          first_held     = false;
          trigger_input |= input & input_repeat;

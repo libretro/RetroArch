@@ -751,13 +751,13 @@ void input_poll_overlay(float opacity)
          analog_y = (float)ol_state->analog[analog_base + 1] / 0x7fff;
 
          if (analog_x <= -settings->input.axis_threshold)
-            ol_state->buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_LEFT);
+            BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
          if (analog_x >=  settings->input.axis_threshold)
-            ol_state->buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+            BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
          if (analog_y <= -settings->input.axis_threshold)
-            ol_state->buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_UP);
+            BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
          if (analog_y >=  settings->input.axis_threshold)
-            ol_state->buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_DOWN);
+            BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
          break;
       }
 
