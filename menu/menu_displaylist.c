@@ -2394,8 +2394,12 @@ static int menu_displaylist_parse_options(
          menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_LAKKA),
          menu_hash_to_str(MENU_LABEL_UPDATE_LAKKA),
          MENU_SETTING_ACTION, 0, 0);
-#endif
 
+   menu_entries_add(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
+         menu_hash_to_str(MENU_LABEL_THUMBNAILS_UPDATER_LIST),
+         MENU_SETTING_ACTION, 0, 0);
+#else
    menu_entries_add(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
          menu_hash_to_str(MENU_LABEL_CORE_UPDATER_LIST),
@@ -2450,6 +2454,8 @@ static int menu_displaylist_parse_options(
          menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_GLSL_SHADERS),
          menu_hash_to_str(MENU_LABEL_UPDATE_GLSL_SHADERS),
          MENU_SETTING_ACTION, 0, 0);
+#endif
+
 #endif
 
 #else
