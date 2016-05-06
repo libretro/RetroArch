@@ -16,6 +16,7 @@
 #include <retro_assert.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
+#include <retro_stat.h>
 #include <string/stdstring.h>
 
 #include "menu_content.h"
@@ -162,7 +163,7 @@ static bool menu_content_load_from_playlist(void *data)
    if (path && !string_is_empty(path))
    {
       unsigned i;
-      RFILE *fp           = NULL;
+      bool valid_path     = false;
       char *path_check    = NULL;
       char *path_tolower  = strdup(path);
 
@@ -179,16 +180,13 @@ static bool menu_content_load_from_playlist(void *data)
 
       strncpy(path_check, path, strlen(path_tolower));
 
+      valid_path = path_is_valid(path_check);
+
       free(path_tolower);
-
-      fp = filestream_open(path_check, RFILE_MODE_READ, -1);
-
       free(path_check);
 
-      if (!fp)
+      if (!valid_path)
          goto error;
-
-      filestream_close(fp);
    }
 
    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
