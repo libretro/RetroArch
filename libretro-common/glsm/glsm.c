@@ -189,6 +189,7 @@ static struct gl_cached_state gl_state;
  *
  * Core in:
  * OpenGL    : 3.0
+ * OpenGLES  : 3.0
  */
 void rglBlitFramebuffer(
       GLint srcX0, GLint srcY0,
@@ -197,21 +198,31 @@ void rglBlitFramebuffer(
       GLint dstX1, GLint dstY1,
       GLbitfield mask, GLenum filter)
 {
-#ifndef HAVE_OPENGLES2
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1,
          dstX0, dstY0, dstX1, dstY1,
          mask, filter);
 #endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 3.0
+ */
 void rglReadBuffer(GLenum mode)
 {
-#ifndef HAVE_OPENGLES2
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glReadBuffer(mode);
-#endif
    gl_state.readbuffer.mode = mode;
+#endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglClearDepth(GLdouble depth)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -224,6 +235,11 @@ void rglClearDepth(GLdouble depth)
    gl_state.cleardepth.depth = depth;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglPixelStorei(GLenum pname, GLint param)
 {
    glPixelStorei(pname, param);
@@ -231,6 +247,11 @@ void rglPixelStorei(GLenum pname, GLint param)
    gl_state.pixelstore_i.param = param;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglDepthRange(GLclampd zNear, GLclampd zFar)
 {
 #ifdef HAVE_OPENGLES
@@ -243,6 +264,11 @@ void rglDepthRange(GLclampd zNear, GLclampd zFar)
    gl_state.depthrange.zFar  = zFar;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglFrontFace(GLenum mode)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -251,6 +277,11 @@ void rglFrontFace(GLenum mode)
    gl_state.frontface.mode = mode; 
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglDepthFunc(GLenum func)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -259,6 +290,11 @@ void rglDepthFunc(GLenum func)
    glDepthFunc(func);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglColorMask(GLboolean red, GLboolean green,
       GLboolean blue, GLboolean alpha)
 {
@@ -271,6 +307,11 @@ void rglColorMask(GLboolean red, GLboolean green,
    gl_state.colormask.used  = true;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglCullFace(GLenum mode)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -279,6 +320,11 @@ void rglCullFace(GLenum mode)
    gl_state.cullface.mode = mode;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass)
 {
    glStencilOp(sfail, dpfail, dppass);
@@ -288,6 +334,11 @@ void rglStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass)
    gl_state.stencilop.dppass = dppass;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglStencilFunc(GLenum func, GLint ref, GLuint mask)
 {
    glStencilFunc(func, ref, mask);
@@ -323,6 +374,11 @@ void rglClearColor(GLclampf red, GLclampf green,
    gl_state.clear_color.a = alpha;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES    : 2.0 (maybe earlier?)
+ */
 void rglScissor(GLint x, GLint y, GLsizei width, GLsizei height)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -510,13 +566,26 @@ void rglLinkProgram(GLuint program)
  * Category: FBO
  *
  * Core in:
+ * OpenGL    : 3.0 
+ * OpenGLES  : 2.0
+ */
+void rglFramebufferTexture2D(GLenum target, GLenum attachment,
+      GLenum textarget, GLuint texture, GLint level)
+{
+   glFramebufferTexture2D(target, attachment, textarget, texture, level);
+}
+
+/*
+ * Category: FBO
+ *
+ * Core in:
  * OpenGL    : 3.0
+ * OpenGLES  : 3.2
  */
 void rglFramebufferTexture(GLenum target, GLenum attachment,
   	GLuint texture, GLint level)
 {
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES32)
-#else
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES32)
    glFramebufferTexture(target, attachment, texture, level);
 #endif
 }
@@ -561,28 +630,59 @@ void rglDeleteTextures(GLsizei n, const GLuint *textures)
    glDeleteTextures(n, textures);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES    : 2.0 
+ */
 void rglRenderbufferStorage(GLenum target, GLenum internalFormat,
       GLsizei width, GLsizei height)
 {
    glRenderbufferStorage(target, internalFormat, width, height);
 }
 
+/*
+ *
+ * Core in:
+ *
+ * OpenGL      : 3.0
+ * OpenGLES    : 2.0 
+ */
 void rglBindRenderbuffer(GLenum target, GLuint renderbuffer)
 {
    glBindRenderbuffer(target, renderbuffer);
 }
 
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES    : 2.0 
+ */
 void rglDeleteRenderbuffers(GLsizei n, GLuint *renderbuffers)
 {
    glDeleteRenderbuffers(n, renderbuffers);
 }
 
+/*
+ *
+ * Core in:
+ *
+ * OpenGL      : 3.0
+ * OpenGLES    : 2.0 
+ */
 void rglGenRenderbuffers(GLsizei n, GLuint *renderbuffers)
 {
    glGenRenderbuffers(n, renderbuffers);
 }
 
-
+/*
+ *
+ * Core in:
+ *
+ * OpenGL      : 3.0
+ * OpenGLES    : 2.0 
+ */
 void rglGenerateMipmap(GLenum target)
 {
    glGenerateMipmap(target);
@@ -604,23 +704,12 @@ GLenum rglCheckFramebufferStatus(GLenum target)
  *
  * Core in:
  * OpenGL    : 3.0 
+ * OpenGLES  : 2.0
  */
 void rglFramebufferRenderbuffer(GLenum target, GLenum attachment,
       GLenum renderbuffertarget, GLuint renderbuffer)
 {
    glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
-}
-
-/*
- * Category: FBO
- *
- * Core in:
- * OpenGL    : 3.0 
- */
-void rglFramebufferTexture2D(GLenum target, GLenum attachment,
-      GLenum textarget, GLuint texture, GLint level)
-{
-   glFramebufferTexture2D(target, attachment, textarget, texture, level);
 }
 
 /*
@@ -658,6 +747,117 @@ void rglGetActiveUniform(GLuint program, GLuint index, GLsizei bufsize,
       GLsizei *length, GLint *size, GLenum *type, GLchar *name)
 {
    glGetActiveUniform(program, index, bufsize, length, size, type, name);
+}
+
+/*
+ *
+ * Core in:
+ *
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
+ */
+void rglGetActiveUniformBlockiv(GLuint program,
+  	GLuint uniformBlockIndex,
+  	GLenum pname,
+  	GLint *params)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glGetActiveUniformBlockiv(program, uniformBlockIndex,
+         pname, params);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES  : 3.0
+ */
+void rglGetActiveUniformsiv( 	GLuint program,
+  	GLsizei uniformCount,
+  	const GLuint *uniformIndices,
+  	GLenum pname,
+  	GLint *params)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glGetActiveUniformsiv(program, uniformCount,
+         uniformIndices, pname, params);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES  : 3.0
+ */
+void rglGetUniformIndices(GLuint program,
+  	GLsizei uniformCount,
+  	const GLchar **uniformNames,
+  	GLuint *uniformIndices)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glGetUniformIndices(program, uniformCount,
+         uniformNames, uniformIndices);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES  : 3.0
+ */
+void rglBindBufferBase( 	GLenum target,
+  	GLuint index,
+  	GLuint buffer)
+{
+#if defined(HAVE_OPENG) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glBindBufferBase(target, index, buffer);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES  : 3.0
+ */
+GLuint rglGetUniformBlockIndex( 	GLuint program,
+  	const GLchar *uniformBlockName)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   return glGetUniformBlockIndex(program, uniformBlockName);
+#else
+   printf("WARNING! Not implemented.\n");
+   return 0;
+#endif
+}
+
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES  : 3.0
+ */
+void rglUniformBlockBinding( 	GLuint program,
+  	GLuint uniformBlockIndex,
+  	GLuint uniformBlockBinding)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glUniformBlockBinding(program, uniformBlockIndex,
+         uniformBlockBinding);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
 }
 
 /*
@@ -1134,12 +1334,50 @@ void rglBindFramebuffer(GLenum target, GLuint framebuffer)
  *
  * Core in:
  * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
  */
 void rglDrawBuffers(GLsizei n, const GLenum *bufs)
 {
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
-#else
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glDrawBuffers(n, bufs);
+#endif
+}
+
+/*
+ * Category: FBO
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
+ */
+void *rglMapBufferRange( 	GLenum target,
+  	GLintptr offset,
+  	GLsizeiptr length,
+  	GLbitfield access)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   return glMapBufferRange(target, offset, length, access);
+#else
+   printf("WARNING! Not implemented.\n");
+   return NULL;
+#endif
+}
+
+void * rglMapBuffer(	GLenum target, GLenum access)
+{
+#if defined(HAVE_OPENGLES)
+   return glMapBufferOES(target, access);
+#else
+   return glMapBuffer(target, access);
+#endif
+}
+
+GLboolean rglUnmapBuffer( 	GLenum target)
+{
+#if defined(HAVE_OPENGLES)
+   return glUnmapBufferOES(target);
+#else
+   return glUnmapBuffer(target);
 #endif
 }
 
@@ -1248,6 +1486,8 @@ static void glsm_state_setup(void)
 
 #ifndef HAVE_OPENGLES
    gl_state.cap_translate[SGL_COLOR_LOGIC_OP]       = GL_COLOR_LOGIC_OP;
+   gl_state.cap_translate[SGL_CLIP_DISTANCE0]       = GL_CLIP_DISTANCE0;
+   gl_state.cap_translate[SGL_DEPTH_CLAMP]          = GL_DEPTH_CLAMP;
 #endif
 
    for (i = 0; i < MAX_ATTRIB; i++)

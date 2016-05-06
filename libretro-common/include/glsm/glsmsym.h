@@ -128,7 +128,40 @@ RETRO_BEGIN_DECLS
 #define glBlendColor                rglBlendColor
 #define glBlendEquationSeparate     rglBlendEquationSeparate
 #define glCopyImageSubData          rglCopyImageSubData
+#define glMapBuffer                 rglMapBuffer
+#define glUnmapBuffer               rglUnmapBuffer
+#define glMapBufferRange            rglMapBufferRange
+#define glUniformBlockBinding       rglUniformBlockBinding
+#define glGetUniformBlockIndex      rglGetUniformBlockIndex
+#define glGetActiveUniformBlockiv   rglGetActiveUniformBlockiv
+#define glBindBufferBase            rglBindBufferBase 
+#define glGetUniformIndices         rglGetUniformIndices
+#define glGetActiveUniformsiv       rglGetActiveUniformsiv
 
+void rglGetActiveUniformsiv( 	GLuint program,
+  	GLsizei uniformCount,
+  	const GLuint *uniformIndices,
+  	GLenum pname,
+  	GLint *params);
+void rglGetUniformIndices( 	GLuint program,
+  	GLsizei uniformCount,
+  	const GLchar **uniformNames,
+  	GLuint *uniformIndices);
+void rglBindBufferBase( 	GLenum target,
+  	GLuint index,
+  	GLuint buffer);
+void rglGetActiveUniformBlockiv( 	GLuint program,
+  	GLuint uniformBlockIndex,
+  	GLenum pname,
+  	GLint *params);
+GLuint rglGetUniformBlockIndex( 	GLuint program,
+  	const GLchar *uniformBlockName);
+void * rglMapBuffer(	GLenum target, GLenum access);
+void *rglMapBufferRange( 	GLenum target,
+  	GLintptr offset,
+  	GLsizeiptr length,
+  	GLbitfield access);
+GLboolean rglUnmapBuffer( 	GLenum target);
 void rglBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void rglBlendEquation(GLenum mode);
 void rglGenVertexArrays(GLsizei n, GLuint *arrays);
@@ -274,6 +307,9 @@ void rglVertexAttribLPointer(
       GLenum type,
       GLsizei stride,
       const GLvoid * pointer);
+void rglUniformBlockBinding( 	GLuint program,
+  	GLuint uniformBlockIndex,
+  	GLuint uniformBlockBinding);
 
 RETRO_END_DECLS
 
