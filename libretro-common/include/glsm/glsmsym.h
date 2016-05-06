@@ -148,6 +148,7 @@ RETRO_BEGIN_DECLS
 #define glProgramBinary             rglProgramBinary
 #define glGetProgramBinary          rglGetProgramBinary
 #define glProgramParameteri         rglProgramParameteri
+#define glTexSubImage2D             rglTexSubImage2D
 
 void rglProgramParameteri( 	GLuint program,
   	GLenum pname,
@@ -354,6 +355,15 @@ void rglTexImage2DMultisample( 	GLenum target,
   	GLsizei height,
   	GLboolean fixedsamplelocations);
 void rglMemoryBarrier( 	GLbitfield barriers);
+void rglTexSubImage2D( 	GLenum target,
+  	GLint level,
+  	GLint xoffset,
+  	GLint yoffset,
+  	GLsizei width,
+  	GLsizei height,
+  	GLenum format,
+  	GLenum type,
+  	const GLvoid * pixels);
 
 RETRO_END_DECLS
 
