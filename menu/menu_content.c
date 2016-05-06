@@ -160,7 +160,7 @@ static bool menu_content_load_from_playlist(void *data)
    content_playlist_get_index(playlist,
          idx, &path, NULL, &core_path, NULL, NULL, NULL);
 
-   if (path && !string_is_empty(path))
+   if (!string_is_empty(path))
    {
       unsigned i;
       bool valid_path     = false;
