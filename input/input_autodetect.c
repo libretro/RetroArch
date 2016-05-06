@@ -320,10 +320,10 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
       goto error;
 
    if (input_autoconfigure_joypad_from_conf_dir(params))
-      goto success;
+      return true;
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
    if (input_autoconfigure_joypad_from_conf_internal(params))
-      goto success;
+      return true;
 #endif
 
    RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)\n",
@@ -334,9 +334,6 @@ bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
 
 error:
    return false;
-
-success:
-   return true;
 }
 
 const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)
