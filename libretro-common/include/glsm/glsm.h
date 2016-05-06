@@ -145,6 +145,8 @@ typedef struct glsm_ctx_params
    unsigned minor;
 } glsm_ctx_params_t;
 
+GLuint glsm_get_current_framebuffer(void);
+
 bool glsm_ctl(enum glsm_state_ctl state, void *data);
 
 RETRO_END_DECLS

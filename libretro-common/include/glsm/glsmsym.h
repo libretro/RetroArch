@@ -72,6 +72,8 @@ RETRO_BEGIN_DECLS
 #define glEnableVertexAttribArray   rglEnableVertexAttribArray
 #define glDisableVertexAttribArray  rglDisableVertexAttribArray
 #define glVertexAttribPointer       rglVertexAttribPointer
+#define glVertexAttribIPointer      rglVertexAttribIPointer
+#define glVertexAttribLPointer      rglVertexAttribLPointer
 #define glGetUniformLocation        rglGetUniformLocation
 #define glGenBuffers                rglGenBuffers
 #define glDisable(T)                rglDisable(S##T)
@@ -260,6 +262,18 @@ void rglCopyImageSubData( 	GLuint srcName,
   	GLsizei srcWidth,
   	GLsizei srcHeight,
   	GLsizei srcDepth);
+void rglVertexAttribIPointer(
+      GLuint index,
+      GLint size,
+      GLenum type,
+      GLsizei stride,
+      const GLvoid * pointer);
+void rglVertexAttribLPointer(
+      GLuint index,
+      GLint size,
+      GLenum type,
+      GLsizei stride,
+      const GLvoid * pointer);
 
 RETRO_END_DECLS
 
