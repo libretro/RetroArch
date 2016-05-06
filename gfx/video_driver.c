@@ -1300,6 +1300,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
 #endif
          break;
       case RARCH_DISPLAY_CTL_LOCK_NEW:
+         video_driver_ctl(RARCH_DISPLAY_CTL_LOCK_FREE, NULL);
 #ifdef HAVE_THREADS
          if (!display_lock)
             display_lock = slock_new();
