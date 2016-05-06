@@ -326,7 +326,7 @@ error:
    return NULL;
 }
 
-http_transfer_info_t *http_task_get_transfer_list()
+http_transfer_info_t *http_task_get_transfer_list(void)
 {
    http_transfer_info_t *list = NULL;
    task_finder_data_t find_data;

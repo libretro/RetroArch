@@ -44,7 +44,7 @@ typedef struct http_transfer_info
 void *rarch_task_push_http_transfer(const char *url, const char *type,
       retro_task_callback_t cb, void *userdata);
 
-http_transfer_info_t *http_task_get_transfer_list();
+http_transfer_info_t *http_task_get_transfer_list(void);
 
 void http_task_free_transfer_list(http_transfer_info_t *list);
 #endif
