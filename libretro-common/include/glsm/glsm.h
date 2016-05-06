@@ -80,6 +80,10 @@ typedef GLclampf GLclampd;
 #define GL_ALPHA_TEST 0x0BC0
 #endif
 
+#ifndef GL_CLIP_DISTANCE0
+#define GL_CLIP_DISTANCE0 0x3000
+#endif
+
 #define MAX_ATTRIB 8
 #define MAX_TEXTURE 32
 
