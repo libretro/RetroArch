@@ -219,20 +219,18 @@ bool sthread_isself(sthread_t *thread)
  **/
 slock_t *slock_new(void)
 {
-   bool mutex_created = false;
    slock_t      *lock = (slock_t*)calloc(1, sizeof(*lock));
    if (!lock)
       return NULL;
 
 #ifdef USE_WIN32_THREADS
    lock->lock         = CreateMutex(NULL, FALSE, NULL);
-   mutex_created      = !!lock->lock;
-#else
-   mutex_created      = (pthread_mutex_init(&lock->lock, NULL) == 0);
-#endif
-
-   if (!mutex_created)
+   if (!lock->lock)
       goto error;
+#else
+   if ((pthread_mutex_init(&lock->lock, NULL) < 0))
+      goto error;
+#endif
 
    return lock;
 
