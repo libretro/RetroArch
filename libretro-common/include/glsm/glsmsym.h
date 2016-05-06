@@ -141,7 +141,36 @@ RETRO_BEGIN_DECLS
 #define glClear                     rglClear
 #define glPolygonMode               rglPolygonMode
 #define glLineWidth                 rglLineWidth
+#define glTexImage2DMultisample     rglTexImage2DMultisample
+#define glTexStorage2DMultisample   rglTexStorage2DMultisample
+#define glMemoryBarrier             rglMemoryBarrier
+#define glBindImageTexture          rglBindImageTexture
+#define glProgramBinary             rglProgramBinary
+#define glGetProgramBinary          rglGetProgramBinary
+#define glProgramParameteri         rglProgramParameteri
 
+void rglProgramParameteri( 	GLuint program,
+  	GLenum pname,
+  	GLint value);
+void rglGetProgramBinary( 	GLuint program,
+  	GLsizei bufsize,
+  	GLsizei *length,
+  	GLenum *binaryFormat,
+  	void *binary);
+void rglProgramBinary(GLuint program,
+  	GLenum binaryFormat,
+  	const void *binary,
+  	GLsizei length);
+void rglBindImageTexture( 	GLuint unit,
+  	GLuint texture,
+  	GLint level,
+  	GLboolean layered,
+  	GLint layer,
+  	GLenum access,
+  	GLenum format);
+void rglTexStorage2DMultisample(GLenum target, GLsizei samples,
+      GLenum internalformat, GLsizei width, GLsizei height,
+      GLboolean fixedsamplelocations);
 void rglGetActiveUniformsiv( 	GLuint program,
   	GLsizei uniformCount,
   	const GLuint *uniformIndices,
@@ -318,6 +347,13 @@ GLenum rglGetError(void);
 void rglClear(GLbitfield mask);
 void rglPolygonMode(GLenum face, GLenum mode);
 void rglLineWidth(GLfloat width);
+void rglTexImage2DMultisample( 	GLenum target,
+  	GLsizei samples,
+  	GLenum internalformat,
+  	GLsizei width,
+  	GLsizei height,
+  	GLboolean fixedsamplelocations);
+void rglMemoryBarrier( 	GLbitfield barriers);
 
 RETRO_END_DECLS
 

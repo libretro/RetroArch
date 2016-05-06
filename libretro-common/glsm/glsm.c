@@ -779,6 +779,24 @@ void rglGetProgramiv(GLuint shader, GLenum pname, GLint *params)
 }
 
 /*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 4.1 
+ * OpenGLES  : 3.0
+ */
+void rglProgramParameteri( 	GLuint program,
+  	GLenum pname,
+  	GLint value)
+{
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && (defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES31))
+   glProgramParameteri(program, pname, value);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
  *
  * Core in:
  * OpenGL    : 2.0 
@@ -1400,6 +1418,107 @@ void *rglMapBufferRange( 	GLenum target,
 #else
    printf("WARNING! Not implemented.\n");
    return NULL;
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 4.3
+ * OpenGLES  : 3.1
+ */
+void rglTexStorage2DMultisample(GLenum target, GLsizei samples,
+      GLenum internalformat, GLsizei width, GLsizei height,
+      GLboolean fixedsamplelocations)
+{
+#if defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES31)
+   glTexStorage2DMultisample(target, samples, internalformat,
+         width, height, fixedsamplelocations);
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 4.2 
+ * OpenGLES  : 3.1
+ */
+void rglMemoryBarrier( 	GLbitfield barriers)
+{
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3) && defined(HAVE_OPENGLES31)
+   glMemoryBarrier(barriers);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 4.2 
+ * OpenGLES  : 3.1
+ */
+void rglBindImageTexture( 	GLuint unit,
+  	GLuint texture,
+  	GLint level,
+  	GLboolean layered,
+  	GLint layer,
+  	GLenum access,
+  	GLenum format)
+{
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3) && defined(HAVE_OPENGLES31)
+   glBindImageTexture(unit, texture, level, layered, layer, access, format);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 4.1
+ * OpenGLES  : 3.1
+ */
+void rglGetProgramBinary( 	GLuint program,
+  	GLsizei bufsize,
+  	GLsizei *length,
+  	GLenum *binaryFormat,
+  	void *binary)
+{
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glGetProgramBinary(program, bufsize, length, binaryFormat, binary);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 4.1
+ * OpenGLES  : 3.1
+ */
+void rglProgramBinary(GLuint program,
+  	GLenum binaryFormat,
+  	const void *binary,
+  	GLsizei length)
+{
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES31)
+   glProgramBinary(program, binaryFormat, binary, length);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+void rglTexImage2DMultisample( 	GLenum target,
+  	GLsizei samples,
+  	GLenum internalformat,
+  	GLsizei width,
+  	GLsizei height,
+  	GLboolean fixedsamplelocations)
+{
+#ifndef HAVE_OPENGLES
+   glTexImage2DMultisample(target, samples, internalformat, width, height, fixedsamplelocations);
 #endif
 }
 
