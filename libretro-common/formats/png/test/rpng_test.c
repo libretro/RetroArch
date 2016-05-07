@@ -31,6 +31,78 @@
 #include <file/nbio.h>
 #include <formats/rpng.h>
 
+static bool rpng_load_image_argb(const char *path, uint32_t **data,
+      unsigned *width, unsigned *height)
+{
+   int retval;
+   size_t file_len;
+   bool              ret = true;
+   rpng_t          *rpng = NULL;
+   void             *ptr = NULL;
+   struct nbio_t* handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
+
+   if (!handle)
+      goto end;
+
+   nbio_begin_read(handle);
+
+   while (!nbio_iterate(handle));
+
+   ptr = nbio_get_ptr(handle, &file_len);
+
+   if (!ptr)
+   {
+      ret = false;
+      goto end;
+   }
+
+   rpng = rpng_alloc();
+
+   if (!rpng)
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (!rpng_nbio_load_image_argb_start(rpng))
+   {
+      ret = false;
+      goto end;
+   }
+
+   while (rpng_nbio_load_image_argb_iterate(rpng));
+
+   if (!rpng_is_valid(rpng))
+   {
+      ret = false;
+      goto end;
+   }
+   
+   do
+   {
+      retval = rpng_nbio_load_image_argb_process(rpng, data, width, height);
+   }while(retval == PNG_PROCESS_NEXT);
+
+   if (retval == PNG_PROCESS_ERROR || retval == PNG_PROCESS_ERROR_END)
+      ret = false;
+
+end:
+   if (handle)
+      nbio_free(handle);
+   if (rpng)
+      rpng_nbio_load_image_free(rpng);
+   rpng = NULL;
+   if (!ret)
+      free(*data);
+   return ret;
+}
+
 static int test_rpng(const char *in_path)
 {
 #ifdef HAVE_IMLIB2
