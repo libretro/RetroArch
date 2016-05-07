@@ -365,7 +365,7 @@ void rglTexSubImage2D( 	GLenum target,
   	GLenum format,
   	GLenum type,
   	const GLvoid * pixels);
-void rglDeleteVertexArrays(GLuint array);
+void rglDeleteVertexArrays(GLsizei n, const GLuint *arrays);
 
 RETRO_END_DECLS
 

@@ -1687,10 +1687,10 @@ void rglGenVertexArrays(GLsizei n, GLuint *arrays)
  * OpenGL    : 3.0 
  * OpenGLES  : 3.0
  */
-void rglDeleteVertexArrays(GLuint array)
+void rglDeleteVertexArrays(GLsizei n, const GLuint *arrays)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
-   glDeleteVertexArrays(array);
+   glDeleteVertexArrays(n, arrays);
 #endif
 }
 
