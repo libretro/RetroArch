@@ -30,6 +30,7 @@
 
 #include <file/nbio.h>
 #include <formats/rpng.h>
+#include <formats/image.h>
 
 static bool rpng_load_image_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
@@ -87,9 +88,9 @@ static bool rpng_load_image_argb(const char *path, uint32_t **data,
    do
    {
       retval = rpng_nbio_load_image_argb_process(rpng, data, width, height);
-   }while(retval == PNG_PROCESS_NEXT);
+   }while(retval == IMAGE_PROCESS_NEXT);
 
-   if (retval == PNG_PROCESS_ERROR || retval == PNG_PROCESS_ERROR_END)
+   if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
       ret = false;
 
 end:

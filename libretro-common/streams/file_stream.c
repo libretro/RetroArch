@@ -477,11 +477,7 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
 
    if (!file)
    {
-#if __STDC_VERSION__ >= 199901L
-      fprintf(stderr, "%s: Failed to open %s: %s\n", __FUNCTION__, path, strerror(errno));
-#else
       fprintf(stderr, "Failed to open %s: %s\n", path, strerror(errno));
-#endif
       goto error;
    }
 
@@ -502,11 +498,7 @@ int filestream_read_file(const char *path, void **buf, ssize_t *len)
    ret = filestream_read(file, content_buf, content_buf_size);
    if (ret < 0)
    {
-#if __STDC_VERSION__ >= 199901L
-      fprintf(stderr, "%s: Failed to read %s: %s\n", __FUNCTION__, path, strerror(errno));
-#else
       fprintf(stderr, "Failed to read %s: %s\n", path, strerror(errno));
-#endif
       goto error;
    }
 
