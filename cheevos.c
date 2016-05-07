@@ -240,6 +240,9 @@ static cheevos_locals_t cheevos_locals =
    {0},
 };
 
+static int cheats_are_enabled  = 0;
+static int cheats_were_enabled = 0;
+
 /* forward declaration */
 
 int rarch_main_async_job_add(async_task_t task, void *payload);
@@ -953,7 +956,7 @@ static int cheevos_parse(const char *json)
 
    if (jsonsax_parse(json, &handlers, (void*)&ud) != JSONSAX_OK)
    {
-      cheevos_ctl(CHEEVOS_CTL_UNLOAD, NULL);
+      cheevos_unload();
       return -1;
    }
    
@@ -1917,8 +1920,7 @@ static unsigned cheevos_find_game_id_nes(
    return cheevos_get_game_id(hash, &to);
 }
 
-
-static bool cheevos_load(const void *data)
+bool cheevos_load(const void *data)
 {
    retro_ctx_memory_info_t mem_info;
 
@@ -2100,9 +2102,9 @@ static bool cheevos_load(const void *data)
    return false;
 }
 
-#ifdef HAVE_MENU
-static void cheevos_populate_menu(void *data)
+void cheevos_populate_menu(void *data)
 {
+#ifdef HAVE_MENU
    unsigned i;
    const cheevo_t *end           = NULL;
    cheevo_t *cheevo              = NULL;
@@ -2165,97 +2167,92 @@ static void cheevos_populate_menu(void *data)
                   cheevo->description, MENU_SETTINGS_CHEEVOS_START + i, 0, 0);
       }
    }
+#endif
 }
-#endif
 
-bool cheevos_ctl(enum cheevos_ctl_state state, void *data)
+bool cheevos_get_description(cheevos_ctx_desc_t *desc)
 {
-   static int cheats_are_enabled  = 0;
-   static int cheats_were_enabled = 0;
-   settings_t *settings = config_get_ptr();
+   cheevo_t *cheevos        = cheevos_locals.core.cheevos;
 
-   switch (state)
+   if (desc->idx >= cheevos_locals.core.count)
    {
-      case CHEEVOS_CTL_GET_DESCRIPTION:
-         {
-            cheevos_ctx_desc_t *desc = (cheevos_ctx_desc_t*)data;
-            cheevo_t *cheevos        = cheevos_locals.core.cheevos;
-
-            if (desc->idx >= cheevos_locals.core.count)
-            {
-               cheevos       = cheevos_locals.unofficial.cheevos;
-               desc->idx    -= cheevos_locals.unofficial.count;
-            }
-
-            strncpy(desc->s, cheevos[desc->idx].description, desc->len);
-            desc->s[desc->len - 1] = 0;
-         }
-         break;
-      case CHEEVOS_CTL_APPLY_CHEATS:
-         {
-            bool *data_bool      = (bool*)data;
-            cheats_are_enabled   = *data_bool;
-            cheats_were_enabled |= cheats_are_enabled;
-         }
-         break;
-      case CHEEVOS_CTL_LOAD:
-         if (!cheevos_load((const void*)data))
-            return false;
-
-         break;
-      case CHEEVOS_CTL_UNLOAD:
-         if (!cheevos_locals.loaded)
-            return false;
-
-         cheevos_free_cheevo_set(&cheevos_locals.core);
-         cheevos_free_cheevo_set(&cheevos_locals.unofficial);
-
-         cheevos_locals.loaded = 0;
-         break;
-      case CHEEVOS_CTL_TOGGLE_HARDCORE_MODE:
-         /* reset and deinit rewind to avoid cheat the score */
-         if (settings->cheevos.hardcore_mode_enable)
-         {
-            /* send reset core cmd to avoid any user savestate previusly loaded */
-            event_cmd_ctl(EVENT_CMD_RESET, NULL);
-            if (settings->rewind_enable)
-               event_cmd_ctl(EVENT_CMD_REWIND_DEINIT, NULL);
-
-            RARCH_LOG("%s\n", msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE));
-            runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE), 0, 3 * 60, true);
-         }
-         else
-         {
-            if (settings->rewind_enable)
-               event_cmd_ctl(EVENT_CMD_REWIND_INIT, NULL);
-         }
-         break;
-      case CHEEVOS_CTL_TEST:
-         if (!cheevos_locals.loaded)
-            return false;
-
-         if (!cheats_are_enabled && !cheats_were_enabled)
-         {
-            if (!settings->cheevos.enable)
-               return false;
-
-            cheevos_test_cheevo_set(&cheevos_locals.core);
-
-            if (settings->cheevos.test_unofficial)
-               cheevos_test_cheevo_set(&cheevos_locals.unofficial);
-         }
-         break;
-      case CHEEVOS_CTL_POPULATE_MENU:
-#ifdef HAVE_MENU
-         cheevos_populate_menu(data);
-#endif
-         break;
-      case CHEEVOS_CTL_SET_CHEATS:
-         cheats_were_enabled = cheats_are_enabled;
-         break;
-      case CHEEVOS_CTL_NONE:
-      default:
-         break;
+      cheevos       = cheevos_locals.unofficial.cheevos;
+      desc->idx    -= cheevos_locals.unofficial.count;
    }
+
+   strncpy(desc->s, cheevos[desc->idx].description, desc->len);
+   desc->s[desc->len - 1] = 0;
+
+   return true;
+}
+
+bool cheevos_apply_cheats(bool *data_bool)
+{
+   cheats_are_enabled   = *data_bool;
+   cheats_were_enabled |= cheats_are_enabled;
+
+   return true;
+}
+
+bool cheevos_unload(void)
+{
+   if (!cheevos_locals.loaded)
+      return false;
+
+   cheevos_free_cheevo_set(&cheevos_locals.core);
+   cheevos_free_cheevo_set(&cheevos_locals.unofficial);
+
+   cheevos_locals.loaded = 0;
+
+   return true;
+}
+
+bool cheevos_toggle_hardcore_mode(void)
+{
+   settings_t *settings = config_get_ptr();
+   /* reset and deinit rewind to avoid cheat the score */
+   if (settings->cheevos.hardcore_mode_enable)
+   {
+      /* send reset core cmd to avoid any user savestate previusly loaded */
+      event_cmd_ctl(EVENT_CMD_RESET, NULL);
+      if (settings->rewind_enable)
+         event_cmd_ctl(EVENT_CMD_REWIND_DEINIT, NULL);
+
+      RARCH_LOG("%s\n", msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE));
+      runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE), 0, 3 * 60, true);
+   }
+   else
+   {
+      if (settings->rewind_enable)
+         event_cmd_ctl(EVENT_CMD_REWIND_INIT, NULL);
+   }
+
+   return true;
+}
+
+bool cheevos_test(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (!cheevos_locals.loaded)
+      return false;
+
+   if (!cheats_are_enabled && !cheats_were_enabled)
+   {
+      if (!settings->cheevos.enable)
+         return false;
+
+      cheevos_test_cheevo_set(&cheevos_locals.core);
+
+      if (settings->cheevos.test_unofficial)
+         cheevos_test_cheevo_set(&cheevos_locals.unofficial);
+   }
+
+   return true;
+}
+
+bool cheevos_set_cheats(void)
+{
+   cheats_were_enabled = cheats_are_enabled;
+   
    return true;
 }

@@ -396,7 +396,7 @@ static void event_init_controllers(void)
 static void event_deinit_core(bool reinit)
 {
 #ifdef HAVE_CHEEVOS
-   cheevos_ctl(CHEEVOS_CTL_UNLOAD, NULL);
+   cheevos_unload();
 #endif
 
    core_ctl(CORE_CTL_RETRO_UNLOAD_GAME, NULL);
@@ -1089,7 +1089,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          runloop_msg_queue_push(msg_hash_to_str(MSG_RESET), 1, 120, true);
 
 #ifdef HAVE_CHEEVOS
-         cheevos_ctl(CHEEVOS_CTL_SET_CHEATS, NULL);
+         cheevos_set_cheats();
 #endif
          core_ctl(CORE_CTL_RETRO_RESET, NULL);
          break;
@@ -1125,7 +1125,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
-         cheevos_ctl(CHEEVOS_CTL_TOGGLE_HARDCORE_MODE, NULL);
+         cheevos_toggle_hardcore_mode();
 #endif
          break;
       case EVENT_CMD_REINIT:

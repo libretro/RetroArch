@@ -99,7 +99,7 @@ void cheat_manager_apply_cheats(void)
    
 #ifdef HAVE_CHEEVOS
    data_bool = idx != 0;
-   cheevos_ctl(CHEEVOS_CTL_APPLY_CHEATS, &data_bool);
+   cheevos_apply_cheats(&data_bool);
 #endif
 }
 

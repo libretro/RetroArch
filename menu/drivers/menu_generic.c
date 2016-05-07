@@ -178,7 +178,7 @@ static int action_iterate_help(menu_handle_t *menu,
          desc_info.idx = menu->help_screen_id;
          desc_info.s   = s;
          desc_info.len = len;
-         cheevos_ctl(CHEEVOS_CTL_GET_DESCRIPTION, &desc_info);
+         cheevos_get_description(&desc_info);
          break;
 #endif
 

@@ -1441,11 +1441,11 @@ static bool load_content(
    {
       const void *load_data = NULL;
 
-      cheevos_ctl(CHEEVOS_CTL_SET_CHEATS, NULL);
+      cheevos_set_cheats();
 
       if (*content->elems[0].data)
          load_data = info;
-      cheevos_ctl(CHEEVOS_CTL_LOAD, (void*)load_data);
+      cheevos_load(load_data);
    }
 #endif
 

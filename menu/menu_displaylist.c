@@ -3836,7 +3836,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
 #ifdef HAVE_CHEEVOS
       case DISPLAYLIST_ACHIEVEMENT_LIST:
-         cheevos_ctl(CHEEVOS_CTL_POPULATE_MENU, info);
+         cheevos_populate_menu(info);
          info->need_push    = true;
          info->need_refresh = true;
          break;
