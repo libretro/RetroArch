@@ -25,6 +25,7 @@
 
 #include <boolean.h>
 #include <formats/image.h>
+#include <file/nbio.h>
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>
 #endif
@@ -153,10 +154,8 @@ static bool video_texture_image_load_png(
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
 {
-   bool ret = rpng_load_image_argb(path,
-         &out_img->pixels, &out_img->width, &out_img->height);
-
-   if (!ret)
+   if (!rpng_load_image_argb(path,
+         &out_img->pixels, &out_img->width, &out_img->height))
    {
       out_img->pixels = NULL;
       out_img->width  = out_img->height = 0;
@@ -167,13 +166,10 @@ static bool video_texture_image_load_png(
          a_shift, out_img);
 
 #ifdef GEKKO
-   if (ret)
+   if (!video_texture_image_rpng_gx_convert_texture32(out_img))
    {
-      if (!video_texture_image_rpng_gx_convert_texture32(out_img))
-      {
-         video_texture_image_free(out_img);
-         return false;
-      }
+      video_texture_image_free(out_img);
+      return false;
    }
 #endif
 
