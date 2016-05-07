@@ -28,7 +28,7 @@ static void netplay_net_pre_frame(netplay_t *netplay)
    serial_info.data = netplay->buffer[netplay->self_ptr].state;
    serial_info.size = netplay->state_size;
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+   core_serialize(&serial_info);
 
    netplay->can_poll = true;
 
@@ -77,7 +77,7 @@ static void netplay_net_post_frame(netplay_t *netplay)
       serial_info.data_const = netplay->buffer[netplay->other_ptr].state;
       serial_info.size       = netplay->state_size;
 
-      core_ctl(CORE_CTL_RETRO_UNSERIALIZE, &serial_info);
+      core_unserialize(&serial_info);
 
       while (first || (netplay->tmp_ptr != netplay->self_ptr))
       {
@@ -85,12 +85,12 @@ static void netplay_net_post_frame(netplay_t *netplay)
          serial_info.size       = netplay->state_size;
          serial_info.data_const = NULL;
 
-         core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+         core_serialize(&serial_info);
 
 #if defined(HAVE_THREADS)
          lock_autosave();
 #endif
-         core_ctl(CORE_CTL_RETRO_RUN, NULL);
+         core_run();
 #if defined(HAVE_THREADS)
          unlock_autosave();
 #endif
@@ -118,7 +118,7 @@ static bool netplay_net_init_buffers(netplay_t *netplay)
    if (!netplay->buffer)
       return false;
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+   core_serialize_size(&info);
 
    netplay->state_size = info.size;
 

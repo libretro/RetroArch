@@ -243,7 +243,7 @@ void autosave_event_init(void)
 
       mem_info.id = type;
 
-      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+      core_get_memory(&mem_info);
 
       if (mem_info.size <= 0)
          continue;

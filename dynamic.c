@@ -514,7 +514,7 @@ void libretro_get_current_core_pathname(char *name, size_t size)
    if (size == 0)
       return;
 
-   core_ctl(CORE_CTL_RETRO_GET_SYSTEM_INFO, &info);
+   core_get_system_info(&info);
 
    if (info.library_name)
       id = info.library_name;
@@ -875,7 +875,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
          }
 
-         core_ctl(CORE_CTL_SET_INPUT_DESCRIPTORS, NULL);
+         core_set_input_descriptors();
 
          break;
       }

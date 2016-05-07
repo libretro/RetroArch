@@ -974,7 +974,7 @@ static const uint8_t *cheevos_get_memory(unsigned offset)
 
    mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    if (offset < mem_info.size)
    {
@@ -988,7 +988,7 @@ static const uint8_t *cheevos_get_memory(unsigned offset)
    mem_info.size = 0;
    mem_info.id   = RETRO_MEMORY_SAVE_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    if (offset < mem_info.size)
    {
@@ -1002,7 +1002,7 @@ static const uint8_t *cheevos_get_memory(unsigned offset)
    mem_info.size = 0;
    mem_info.id   = RETRO_MEMORY_VIDEO_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    if (offset < mem_info.size)
    {
@@ -1016,7 +1016,7 @@ static const uint8_t *cheevos_get_memory(unsigned offset)
    mem_info.size = 0;
    mem_info.id   = RETRO_MEMORY_RTC;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    if (offset < mem_info.size)
    {
@@ -1983,7 +1983,7 @@ bool cheevos_load(const void *data)
    mem_info.size = 0;
    mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
    
    memory  = mem_info.size;
 
@@ -1991,7 +1991,7 @@ bool cheevos_load(const void *data)
    mem_info.size = 0;
    mem_info.id   = RETRO_MEMORY_VIDEO_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    memory += mem_info.size;
 
@@ -1999,7 +1999,7 @@ bool cheevos_load(const void *data)
    mem_info.size = 0;
    mem_info.id   = RETRO_MEMORY_RTC;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    memory += mem_info.size;
 
@@ -2007,7 +2007,7 @@ bool cheevos_load(const void *data)
    mem_info.size = 0;
    mem_info.id   = RETRO_MEMORY_SAVE_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    memory += mem_info.size;
 
@@ -2020,7 +2020,7 @@ bool cheevos_load(const void *data)
    
    /* The the supported extensions as a hint to what method we should use. */
    
-   core_ctl(CORE_CTL_RETRO_GET_SYSTEM_INFO, &sysinfo);
+   core_get_system_info(&sysinfo);
    
    for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)
    {

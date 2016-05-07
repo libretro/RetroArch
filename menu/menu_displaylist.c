@@ -2197,7 +2197,7 @@ static int menu_displaylist_parse_load_content_settings(
             menu_hash_to_str(MENU_LABEL_CORE_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
 
-      if (core_ctl(CORE_CTL_HAS_SET_INPUT_DESCRIPTORS, NULL))
+      if (core_has_set_input_descriptor())
          menu_entries_add(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
                menu_hash_to_str(MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS),

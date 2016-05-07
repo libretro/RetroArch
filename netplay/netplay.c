@@ -1030,7 +1030,7 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
 
    input_info.cb = netplay->cbs.state_cb;
 
-   core_ctl(CORE_CTL_RETRO_SET_INPUT_STATE, &input_info);
+   core_set_input_state(&input_info);
 
    return netplay->cbs.state_cb(port, device, idx, id);
 }
@@ -1103,7 +1103,7 @@ bool init_netplay(void)
       return false;
    }
 
-   core_ctl(CORE_CTL_SET_CBS, &cbs);
+   core_set_default_callbacks(&cbs);
 
    if (*global->netplay.server)
    {

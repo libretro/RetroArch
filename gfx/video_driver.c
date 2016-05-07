@@ -1107,7 +1107,7 @@ static bool video_driver_cached_frame(void)
    if (video_driver_state.frame_cache.data != RETRO_HW_FRAME_BUFFER_VALID)
       info.data = video_driver_state.frame_cache.data;
 
-   core_ctl(CORE_CTL_RETRO_CTX_FRAME_CB, &info);
+   core_frame(&info);
 
    recording_driver_set_data_ptr(recording);
 
@@ -1804,7 +1804,7 @@ bool video_driver_ctl(enum rarch_display_ctl_state state, void *data)
       case RARCH_DISPLAY_CTL_SET_TITLE_BUF:
          {
             struct retro_system_info info;
-            core_ctl(CORE_CTL_RETRO_GET_SYSTEM_INFO, &info);
+            core_get_system_info(&info);
             strlcpy(video_driver_title_buf, 
                   msg_hash_to_str(MSG_PROGRAM),
                   sizeof(video_driver_title_buf));

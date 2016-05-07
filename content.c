@@ -1017,7 +1017,7 @@ static bool content_save_state(const char *path)
    bool ret    = false;
    void *data  = NULL;
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+   core_serialize_size(&info);
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_STATE),
@@ -1038,7 +1038,7 @@ static bool content_save_state(const char *path)
 
    serial_info.data = data;
    serial_info.size = info.size;
-   ret = core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+   ret              = core_serialize(&serial_info);
 
    if (ret)
       ret = filestream_write_file(path, data, info.size);
@@ -1108,7 +1108,7 @@ static bool content_load_state(const char *path)
       retro_ctx_memory_info_t    mem_info;
 
       mem_info.id = blocks[i].type;
-      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+      core_get_memory(&mem_info);
 
       blocks[i].size = mem_info.size;
    }
@@ -1127,7 +1127,7 @@ static bool content_load_state(const char *path)
 
          mem_info.id = blocks[i].type;
 
-         core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+         core_get_memory(&mem_info);
 
          ptr = mem_info.data;
          if (ptr)
@@ -1137,7 +1137,7 @@ static bool content_load_state(const char *path)
 
    serial_info.data_const = buf;
    serial_info.size       = size;
-   ret = core_ctl(CORE_CTL_RETRO_UNSERIALIZE, &serial_info);
+   ret                    = core_unserialize(&serial_info);
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
@@ -1149,7 +1149,7 @@ static bool content_load_state(const char *path)
 
          mem_info.id = blocks[i].type;
 
-         core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+         core_get_memory(&mem_info);
 
          ptr = mem_info.data;
          if (ptr)
@@ -1193,7 +1193,7 @@ static bool load_ram_file(void *data)
 
    mem_info.id  = ram->type;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    if (mem_info.size == 0 || !mem_info.data)
       return false;
@@ -1239,7 +1239,7 @@ static bool save_ram_file(ram_type_t *ram)
 
    mem_info.id = ram->type;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    if (!mem_info.data || mem_info.size == 0)
       return false;
@@ -1430,7 +1430,7 @@ static bool load_content(
    load_info.special = special;
    load_info.info    = info;
 
-   if (!core_ctl(CORE_CTL_RETRO_LOAD_GAME, &load_info))
+   if (!core_load_game(&load_info))
    {
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
       return false;

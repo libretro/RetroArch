@@ -561,7 +561,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_SHADER_DIR_INIT:
          return shader_dir_init(&runloop_shader_dir);
       case RUNLOOP_CTL_SYSTEM_INFO_INIT:
-         core_ctl(CORE_CTL_RETRO_GET_SYSTEM_INFO, &runloop_system.info);
+         core_get_system_info(&runloop_system.info);
 
          if (!runloop_system.info.library_name)
             runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
@@ -914,7 +914,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH,  NULL);
             runloop_overrides_active   = false;
 
-            core_ctl(CORE_CTL_UNSET_INPUT_DESCRIPTORS, NULL);
+            core_unset_input_descriptors();
 
             global = global_get_ptr();
             memset(global, 0, sizeof(struct global));
@@ -1428,7 +1428,7 @@ int runloop_iterate(unsigned *sleep_ms)
    if (!runloop_ctl(RUNLOOP_CTL_CHECK_STATE, &cmd))
    {
       /* RetroArch has been paused. */
-      core_ctl(CORE_CTL_RETRO_CTX_POLL_CB, NULL);
+      core_poll();
       *sleep_ms = 10;
       return 1;
    }
@@ -1462,7 +1462,7 @@ int runloop_iterate(unsigned *sleep_ms)
          !input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
       retro_sleep(settings->video.frame_delay);
 
-   core_ctl(CORE_CTL_RETRO_RUN, NULL);
+   core_run();
 
 #ifdef HAVE_CHEEVOS
    cheevos_test();

@@ -1288,7 +1288,7 @@ unsigned menu_input_frame_retropad(retro_input_t input,
    if (!menu_input)
       return 0;
 
-   core_ctl(CORE_CTL_RETRO_CTX_POLL_CB, NULL);
+   core_poll();
 
    /* don't run anything first frame, only capture held inputs
     * for old_input_state. */

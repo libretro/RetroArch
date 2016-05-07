@@ -282,7 +282,7 @@ bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
                input_driver_ctl(
                      RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED, NULL);
 
-            core_ctl(CORE_CTL_RETRO_RUN, NULL);
+            core_run();
 
             input_driver_ctl(
                   RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED, NULL);

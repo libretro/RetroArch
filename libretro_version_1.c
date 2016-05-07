@@ -64,44 +64,10 @@ static int16_t core_input_state_poll(unsigned port,
    return input_state(port, device, idx, id);
 }
 
-/**
- * core_set_default_callbacks:
- * @data           : pointer to retro_callbacks object
- *
- * Binds the libretro callbacks to default callback functions.
- **/
-static bool core_set_default_callbacks(void *data)
+void core_set_input_state(retro_ctx_input_state_info_t *info)
 {
-   struct retro_callbacks *cbs = (struct retro_callbacks*)data;
-
-   if (!cbs)
-      return false;
-
-   cbs->frame_cb        = video_driver_frame;
-   cbs->sample_cb       = audio_driver_sample;
-   cbs->sample_batch_cb = audio_driver_sample_batch;
-   cbs->state_cb        = core_input_state_poll;
-   cbs->poll_cb         = input_poll;
-
-   return true;
+   core.retro_set_input_state(info->cb);
 }
-
-static bool core_uninit_libretro_cbs(void *data)
-{
-   struct retro_callbacks *cbs = (struct retro_callbacks*)data;
-
-   if (!cbs)
-      return false;
-
-   cbs->frame_cb        = NULL;
-   cbs->sample_cb       = NULL;
-   cbs->sample_batch_cb = NULL;
-   cbs->state_cb        = NULL;
-   cbs->poll_cb         = NULL;
-
-   return true;
-}
-
 
 /**
  * core_init_libretro_cbs:
@@ -126,7 +92,7 @@ static bool core_init_libretro_cbs(void *data)
    core.retro_set_input_state(core_input_state_poll);
    core.retro_set_input_poll(core_input_state_poll_maybe);
 
-   core_ctl(CORE_CTL_SET_CBS, cbs);
+   core_set_default_callbacks(cbs);
 
 #ifdef HAVE_NETPLAY
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
@@ -155,12 +121,56 @@ static bool core_init_libretro_cbs(void *data)
 }
 
 /**
+ * core_set_default_callbacks:
+ * @data           : pointer to retro_callbacks object
+ *
+ * Binds the libretro callbacks to default callback functions.
+ **/
+bool core_set_default_callbacks(void *data)
+{
+   struct retro_callbacks *cbs = (struct retro_callbacks*)data;
+
+   if (!cbs)
+      return false;
+
+   cbs->frame_cb        = video_driver_frame;
+   cbs->sample_cb       = audio_driver_sample;
+   cbs->sample_batch_cb = audio_driver_sample_batch;
+   cbs->state_cb        = core_input_state_poll;
+   cbs->poll_cb         = input_poll;
+
+   return true;
+}
+
+
+bool core_deinit(void *data)
+{
+   struct retro_callbacks *cbs = (struct retro_callbacks*)data;
+
+   if (!cbs)
+      return false;
+
+   cbs->frame_cb        = NULL;
+   cbs->sample_cb       = NULL;
+   cbs->sample_batch_cb = NULL;
+   cbs->state_cb        = NULL;
+   cbs->poll_cb         = NULL;
+
+   return true;
+}
+
+bool core_uninit_libretro_callbacks(void)
+{
+   return core_deinit(&retro_ctx);
+}
+
+/**
  * core_set_rewind_callbacks:
  *
  * Sets the audio sampling callbacks based on whether or not
  * rewinding is currently activated.
  **/
-static void core_set_rewind_callbacks(void)
+bool core_set_rewind_callbacks(void)
 {
    if (state_manager_frame_is_reversed())
    {
@@ -172,211 +182,224 @@ static void core_set_rewind_callbacks(void)
       core.retro_set_audio_sample(audio_driver_sample);
       core.retro_set_audio_sample_batch(audio_driver_sample_batch);
    }
+   return true;
 }
 
-bool core_ctl(enum core_ctl_state state, void *data)
+bool core_set_cheat(retro_ctx_cheat_info_t *info)
 {
+   core.retro_cheat_set(info->index, info->enabled, info->code);
+   return true;
+}
 
-   switch (state)
+bool core_reset_cheat(void)
+{
+   core.retro_cheat_reset();
+   return true;
+}
+
+bool core_api_version(retro_ctx_api_info_t *api)
+{
+   if (!api)
+      return false;
+   api->version = core.retro_api_version();
+   return true;
+}
+
+bool core_set_poll_type(unsigned *type)
+{
+   core_poll_type = *type;
+   return true;
+}
+
+bool core_init_symbols(enum rarch_core_type *type)
+{
+   if (!type)
+      return false;
+   init_libretro_sym(*type, &core);
+   return true;
+}
+
+bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
+{
+   if (!pad)
+      return false;
+   core.retro_set_controller_port_device(pad->port, pad->device);
+   return true;
+}
+
+bool core_get_memory(retro_ctx_memory_info_t *info)
+{
+   if (!info)
+      return false;
+   info->size  = core.retro_get_memory_size(info->id);
+   info->data  = core.retro_get_memory_data(info->id);
+   return true;
+}
+
+bool core_load_game(retro_ctx_load_content_info_t *load_info)
+{
+   if (!load_info)
+      return false;
+
+   if (load_info->special)
+      return core.retro_load_game_special(load_info->special->id, load_info->info, load_info->content->size);
+   return core.retro_load_game(*load_info->content->elems[0].data ? load_info->info : NULL);
+}
+
+bool core_get_system_info(struct retro_system_info *system)
+{
+   if (!system)
+      return false;
+   core.retro_get_system_info(system);
+   return true;
+}
+
+bool core_unserialize(retro_ctx_serialize_info_t *info)
+{
+   if (!info)
+      return false;
+   if (!core.retro_unserialize(info->data_const, info->size))
+      return false;
+   return true;
+}
+
+bool core_serialize(retro_ctx_serialize_info_t *info)
+{
+   if (!info)
+      return false;
+   if (!core.retro_serialize(info->data, info->size))
+      return false;
+   return true;
+}
+
+bool core_serialize_size(retro_ctx_size_info_t *info)
+{
+   if (!info)
+      return false;
+   info->size = core.retro_serialize_size();
+   return true;
+}
+
+bool core_frame(retro_ctx_frame_info_t *info)
+{
+   if (!info || !retro_ctx.frame_cb)
+      return false;
+
+   retro_ctx.frame_cb(
+         info->data, info->width, info->height, info->pitch);
+   return true;
+}
+
+bool core_poll(void)
+{
+   if (!retro_ctx.poll_cb)
+      return false;
+   retro_ctx.poll_cb();
+   return true;
+}
+
+bool core_set_environment(retro_ctx_environ_info_t *info)
+{
+   if (!info)
+      return false;
+   core.retro_set_environment(info->env);
+   return true;
+}
+
+bool core_get_system_av_info(struct retro_system_av_info *av_info)
+{
+   if (!av_info)
+      return false;
+   core.retro_get_system_av_info(av_info);
+   return true;
+}
+
+bool core_reset(void)
+{
+   core.retro_reset();
+   return true;
+}
+
+bool core_init(void)
+{
+   core.retro_init();
+   return true;
+}
+
+bool core_unload(void)
+{
+   core.retro_deinit();
+   uninit_libretro_sym(&core);
+   return true;
+}
+
+bool core_unload_game(void)
+{
+   video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT_HW_CONTEXT, NULL);
+   audio_driver_ctl(RARCH_AUDIO_CTL_STOP, NULL);
+   core.retro_unload_game();
+   return true;
+}
+
+bool core_run(void)
+{
+   switch (core_poll_type)
    {
-      case CORE_CTL_RETRO_CHEAT_SET:
-         {
-            retro_ctx_cheat_info_t *info = (retro_ctx_cheat_info_t*)data;
-            core.retro_cheat_set(info->index, info->enabled, info->code);
-         }
+      case POLL_TYPE_EARLY:
+         input_poll();
          break;
-      case CORE_CTL_RETRO_CHEAT_RESET:
-         core.retro_cheat_reset();
-         break;
-      case CORE_CTL_RETRO_API_VERSION:
-         {
-            retro_ctx_api_info_t *api = (retro_ctx_api_info_t*)data;
-            api->version = core.retro_api_version();
-         }
-         break;
-      case CORE_CTL_SET_POLL_TYPE:
-         {
-            unsigned *poll_type = (unsigned*)data;
-            core_poll_type = *poll_type;
-         }
-         break;
-      case CORE_CTL_RETRO_SYMBOLS_INIT:
-         {
-            enum rarch_core_type *core_type = (enum rarch_core_type*)data;
-
-            if (!core_type)
-               return false;
-            init_libretro_sym(*core_type, &core);
-         }
-         break;
-      case CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE:
-         {
-            retro_ctx_controller_info_t *pad = (retro_ctx_controller_info_t*)data;
-            if (!pad)
-               return false;
-            core.retro_set_controller_port_device(pad->port, pad->device);
-         }
-         break;
-      case CORE_CTL_RETRO_GET_MEMORY:
-         {
-            retro_ctx_memory_info_t *info = (retro_ctx_memory_info_t*)data;
-            if (!info)
-               return false;
-            info->size  = core.retro_get_memory_size(info->id);
-            info->data  = core.retro_get_memory_data(info->id);
-         }
-         break;
-      case CORE_CTL_RETRO_LOAD_GAME:
-         {
-            retro_ctx_load_content_info_t *load_info = 
-               (retro_ctx_load_content_info_t*)data;
-            if (!load_info)
-               return false;
-
-            if (load_info->special)
-               return core.retro_load_game_special(load_info->special->id, load_info->info, load_info->content->size);
-            return core.retro_load_game(*load_info->content->elems[0].data ? load_info->info : NULL);
-         }
-      case CORE_CTL_RETRO_GET_SYSTEM_INFO:
-         {
-            struct retro_system_info *system = (struct retro_system_info*)data;
-            if (!system)
-               return false;
-            core.retro_get_system_info(system);
-         }
-         break;
-      case CORE_CTL_RETRO_UNSERIALIZE:
-         {
-            retro_ctx_serialize_info_t *info = (retro_ctx_serialize_info_t*)data;
-            if (!info)
-               return false;
-            if (!core.retro_unserialize(info->data_const, info->size))
-               return false;
-         }
-         break;
-      case CORE_CTL_RETRO_SERIALIZE:
-         {
-            retro_ctx_serialize_info_t *info = (retro_ctx_serialize_info_t*)data;
-            if (!info)
-               return false;
-            if (!core.retro_serialize(info->data, info->size))
-               return false;
-         }
-         break;
-      case CORE_CTL_RETRO_SERIALIZE_SIZE:
-         {
-            retro_ctx_size_info_t *info = (retro_ctx_size_info_t *)data;
-            if (!info)
-               return false;
-            info->size = core.retro_serialize_size();
-         }
-         break;
-      case CORE_CTL_RETRO_CTX_FRAME_CB:
-         {
-            retro_ctx_frame_info_t *info = (retro_ctx_frame_info_t*)data;
-            if (!info || !retro_ctx.frame_cb)
-               return false;
-
-            retro_ctx.frame_cb(
-                  info->data, info->width, info->height, info->pitch);
-         }
-         break;
-      case CORE_CTL_RETRO_CTX_POLL_CB:
-         if (!retro_ctx.poll_cb)
-            return false;
-         retro_ctx.poll_cb();
-         break;
-      case CORE_CTL_RETRO_SET_ENVIRONMENT:
-         {
-            retro_ctx_environ_info_t *info = (retro_ctx_environ_info_t*)data;
-            if (!info)
-               return false;
-            core.retro_set_environment(info->env);
-         }
-         break;
-      case CORE_CTL_RETRO_GET_SYSTEM_AV_INFO:
-         {
-            struct retro_system_av_info *av_info = (struct retro_system_av_info*)data;
-            if (!av_info)
-               return false;
-            core.retro_get_system_av_info(av_info);
-         }
-         break;
-      case CORE_CTL_RETRO_RESET:
-         core.retro_reset();
-         break;
-      case CORE_CTL_RETRO_INIT:
-         core.retro_init();
-         break;
-      case CORE_CTL_RETRO_DEINIT:
-         core.retro_deinit();
-         uninit_libretro_sym(&core);
-         break;
-      case CORE_CTL_RETRO_UNLOAD_GAME:
-         video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT_HW_CONTEXT, NULL);
-         audio_driver_ctl(RARCH_AUDIO_CTL_STOP, NULL);
-         core.retro_unload_game();
-         break;
-      case CORE_CTL_RETRO_RUN:
-         switch (core_poll_type)
-         {
-            case POLL_TYPE_EARLY:
-               input_poll();
-               break;
-            case POLL_TYPE_LATE:
-               core_input_polled = false;
-               break;
-         }
-         if (core.retro_run)
-            core.retro_run();
-         if (core_poll_type == POLL_TYPE_LATE && !core_input_polled)
-            input_poll();
-         break;
-      case CORE_CTL_SET_CBS:
-         return core_set_default_callbacks(data);
-      case CORE_CTL_SET_CBS_REWIND:
-         core_set_rewind_callbacks();
-         break;
-      case CORE_CTL_INIT:
-         {
-            settings_t *settings = config_get_ptr();
-            core_poll_type = settings->input.poll_type_behavior;
-            if (!core_ctl(CORE_CTL_VERIFY_API_VERSION, NULL))
-               return false;
-            if (!core_init_libretro_cbs(&retro_ctx))
-               return false;
-            core_ctl(CORE_CTL_RETRO_GET_SYSTEM_AV_INFO,
-                  video_viewport_get_system_av_info());
-            runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
-         }
-         break;
-      case CORE_CTL_DEINIT:
-         return core_uninit_libretro_cbs(&retro_ctx);
-      case CORE_CTL_VERIFY_API_VERSION:
-         {
-            unsigned api_version = core.retro_api_version();
-            RARCH_LOG("Version of libretro API: %u\n", api_version);
-            RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
-
-            if (api_version != RETRO_API_VERSION)
-            {
-               RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
-               return false;
-            }
-         }
-         break;
-      case CORE_CTL_HAS_SET_INPUT_DESCRIPTORS:
-         return core_has_set_input_descriptors;
-      case CORE_CTL_SET_INPUT_DESCRIPTORS:
-         core_has_set_input_descriptors = true;
-         break;
-      case CORE_CTL_UNSET_INPUT_DESCRIPTORS:
-         core_has_set_input_descriptors = false;
-         break;
-      case CORE_CTL_NONE:
-      default:
+      case POLL_TYPE_LATE:
+         core_input_polled = false;
          break;
    }
+   if (core.retro_run)
+      core.retro_run();
+   if (core_poll_type == POLL_TYPE_LATE && !core_input_polled)
+      input_poll();
+   return true;
+}
+
+bool core_load(void)
+{
+   settings_t *settings = config_get_ptr();
+   core_poll_type = settings->input.poll_type_behavior;
+
+   if (!core_verify_api_version())
+      return false;
+   if (!core_init_libretro_cbs(&retro_ctx))
+      return false;
+
+   core_get_system_av_info(video_viewport_get_system_av_info());
+   runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
 
    return true;
+}
+
+bool core_verify_api_version(void)
+{
+   unsigned api_version = core.retro_api_version();
+   RARCH_LOG("Version of libretro API: %u\n", api_version);
+   RARCH_LOG("Compiled against API: %u\n",    RETRO_API_VERSION);
+
+   if (api_version != RETRO_API_VERSION)
+   {
+      RARCH_WARN("%s\n", msg_hash_to_str(MSG_LIBRETRO_ABI_BREAK));
+      return false;
+   }
+   return true;
+}
+
+bool core_has_set_input_descriptor(void)
+{
+   return core_has_set_input_descriptors;
+}
+
+void core_set_input_descriptors(void)
+{
+   core_has_set_input_descriptors = true;
+}
+
+void core_unset_input_descriptors(void)
+{
+   core_has_set_input_descriptors = false;
 }

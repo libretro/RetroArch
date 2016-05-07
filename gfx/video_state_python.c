@@ -40,7 +40,7 @@ static PyObject* py_read_wram(PyObject *self, PyObject *args)
 
    mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    data = (const uint8_t*)mem_info.data;
 
@@ -75,7 +75,7 @@ static PyObject* py_read_vram(PyObject *self, PyObject *args)
 
    mem_info.id = RETRO_MEMORY_VIDEO_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
    
    data = (const uint8_t*)mem_info.data;
 

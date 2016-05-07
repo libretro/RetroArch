@@ -24,6 +24,7 @@ extern "C" {
 
 #include <boolean.h>
 
+#include "core_type.h"
 #include "libretro.h"
 
 enum
@@ -38,83 +39,6 @@ enum
    /* Polling is performed on first call to 
     * retro_input_state per frame. */
    POLL_TYPE_LATE
-};
-
-enum core_ctl_state
-{
-   CORE_CTL_NONE = 0,
-
-   CORE_CTL_INIT,
-
-   CORE_CTL_DEINIT,
-
-
-   CORE_CTL_SET_CBS,
-
-   CORE_CTL_SET_CBS_REWIND,
-
-   CORE_CTL_SET_POLL_TYPE,
-
-   /* Runs the core for one frame. */
-   CORE_CTL_RETRO_RUN,
-
-   CORE_CTL_RETRO_INIT,
-
-   CORE_CTL_RETRO_DEINIT,
-
-   CORE_CTL_RETRO_UNLOAD_GAME,
-
-   CORE_CTL_RETRO_RESET,
-
-   CORE_CTL_RETRO_GET_SYSTEM_AV_INFO,
-
-   CORE_CTL_RETRO_CTX_FRAME_CB,
-
-   CORE_CTL_RETRO_CTX_POLL_CB,
-   
-   CORE_CTL_RETRO_SET_ENVIRONMENT,
-
-   CORE_CTL_RETRO_SERIALIZE_SIZE,
-
-   CORE_CTL_RETRO_SERIALIZE,
-
-   CORE_CTL_RETRO_UNSERIALIZE,
-
-   CORE_CTL_RETRO_SYMBOLS_INIT,
-
-   CORE_CTL_RETRO_CHEAT_SET,
-
-   CORE_CTL_RETRO_CHEAT_RESET,
-
-   CORE_CTL_RETRO_SET_INPUT_STATE,
-
-   CORE_CTL_RETRO_API_VERSION,
-
-   /* Compare libretro core API version against API version
-    * used by RetroArch.
-    *
-    * TODO - when libretro v2 gets added, allow for switching
-    * between libretro version backend dynamically.
-    */
-   CORE_CTL_VERIFY_API_VERSION,
-
-   CORE_CTL_RETRO_GET_MEMORY,
-
-   /* Initialize system A/V information. */
-   CORE_CTL_INIT_SYSTEM_AV_INFO,
-
-   /* Get system A/V information. */
-   CORE_CTL_RETRO_GET_SYSTEM_INFO,
-
-   CORE_CTL_RETRO_LOAD_GAME,
-
-   CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE,
-
-   CORE_CTL_HAS_SET_INPUT_DESCRIPTORS,
-
-   CORE_CTL_SET_INPUT_DESCRIPTORS,
-
-   CORE_CTL_UNSET_INPUT_DESCRIPTORS
 };
 
 typedef struct retro_ctx_input_state_info
@@ -188,7 +112,76 @@ typedef struct retro_callbacks
    retro_input_poll_t poll_cb;
 } retro_callbacks_t;
 
-bool core_ctl(enum core_ctl_state state, void *data);
+bool core_load(void);
+
+bool core_unload(void);
+
+bool core_set_default_callbacks(void *data);
+
+bool core_set_rewind_callbacks(void);
+
+bool core_set_poll_type(unsigned *type);
+
+/* Runs the core for one frame. */
+bool core_run(void);
+
+bool core_init(void);
+
+bool core_deinit(void *data);
+
+bool core_unload_game(void);
+
+bool core_reset(void);
+
+bool core_frame(retro_ctx_frame_info_t *info);
+
+bool core_poll(void);
+
+bool core_set_environment(retro_ctx_environ_info_t *info);
+
+bool core_serialize_size(retro_ctx_size_info_t *info);
+
+bool core_serialize(retro_ctx_serialize_info_t *info);
+
+bool core_unserialize(retro_ctx_serialize_info_t *info);
+
+bool core_init_symbols(enum rarch_core_type *type);
+
+bool core_set_cheat(retro_ctx_cheat_info_t *info);
+
+bool core_reset_cheat(void);
+
+bool core_api_version(retro_ctx_api_info_t *api);
+
+/* Compare libretro core API version against API version
+ * used by RetroArch.
+ *
+ * TODO - when libretro v2 gets added, allow for switching
+ * between libretro version backend dynamically.
+ */
+bool core_verify_api_version(void);
+
+bool core_get_memory(retro_ctx_memory_info_t *info);
+
+/* Initialize system A/V information. */
+bool core_get_system_av_info(struct retro_system_av_info *av_info);
+
+/* Get system A/V information. */
+bool core_get_system_info(struct retro_system_info *system);
+
+bool core_load_game(retro_ctx_load_content_info_t *load_info);
+
+bool core_set_controller_port_device(retro_ctx_controller_info_t *pad);
+
+bool core_has_set_input_descriptor(void);
+
+void core_set_input_descriptors(void);
+
+void core_unset_input_descriptors(void);
+
+bool core_uninit_libretro_callbacks(void);
+
+void core_set_input_state(retro_ctx_input_state_info_t *info);
 
 #ifdef __cplusplus
 }

@@ -637,7 +637,7 @@ void init_rewind(void)
       return;
    }
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+   core_serialize_size(&info);
 
    rewind_state.size = info.size;
 
@@ -663,7 +663,7 @@ void init_rewind(void)
    serial_info.data = state;
    serial_info.size = rewind_state.size;
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+   core_serialize(&serial_info);
 
    state_manager_push_do(rewind_state.state);
 }
@@ -732,7 +732,7 @@ void state_manager_check_rewind(bool pressed)
          serial_info.data_const = buf;
          serial_info.size       = rewind_state.size;
 
-         core_ctl(CORE_CTL_RETRO_UNSERIALIZE, &serial_info);
+         core_unserialize(&serial_info);
 
          if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             bsv_movie_ctl(BSV_MOVIE_CTL_FRAME_REWIND, NULL);
@@ -763,7 +763,7 @@ void state_manager_check_rewind(bool pressed)
          serial_info.data = state;
          serial_info.size = rewind_state.size;
 
-         core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+         core_serialize(&serial_info);
 
          retro_perf_stop(&rewind_serialize);
 
@@ -771,5 +771,5 @@ void state_manager_check_rewind(bool pressed)
       }
    }
 
-   core_ctl(CORE_CTL_SET_CBS_REWIND, NULL);
+   core_set_rewind_callbacks();
 }

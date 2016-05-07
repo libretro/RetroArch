@@ -120,13 +120,13 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
          return false;
       }
 
-      core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+      core_serialize_size( &info);
 
       if (info.size == state_size)
       {
          serial_info.data_const = handle->state;
          serial_info.size       = state_size;
-         core_ctl(CORE_CTL_RETRO_UNSERIALIZE, &serial_info);
+         core_unserialize(&serial_info);
       }
       else
          RARCH_WARN("Movie format seems to have a different serializer version. Will most likely fail.\n");
@@ -158,7 +158,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
    header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
    header[CRC_INDEX]        = swap_if_big32(*content_crc_ptr);
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+   core_serialize_size(&info);
 
    state_size               = info.size;
 
@@ -180,7 +180,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
       serial_info.data = handle->state;
       serial_info.size = state_size;
 
-      core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+      core_serialize(&serial_info);
 
       fwrite(handle->state, 1, state_size, handle->file);
    }
@@ -289,7 +289,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
          serial_info.data = handle->state;
          serial_info.size = handle->state_size;
 
-         core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+         core_serialize(&serial_info);
 
          fwrite(handle->state, 1, handle->state_size, handle->file);
       }

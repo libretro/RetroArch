@@ -388,7 +388,7 @@ static void event_init_controllers(void)
       {
          pad.device     = device;
          pad.port       = i;
-         core_ctl(CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE, &pad);
+         core_set_controller_port_device(&pad);
       }
    }
 }
@@ -399,8 +399,8 @@ static void event_deinit_core(bool reinit)
    cheevos_unload();
 #endif
 
-   core_ctl(CORE_CTL_RETRO_UNLOAD_GAME, NULL);
-   core_ctl(CORE_CTL_RETRO_DEINIT, NULL);
+   core_unload_game();
+   core_unload();
 
    if (reinit)
    {
@@ -581,7 +581,7 @@ static bool event_init_core(void *data)
    retro_ctx_environ_info_t info;
    settings_t *settings            = config_get_ptr();
 
-   if (!core_ctl(CORE_CTL_RETRO_SYMBOLS_INIT, data))
+   if (!core_init_symbols(data))
       return false;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
@@ -599,7 +599,7 @@ static bool event_init_core(void *data)
    video_driver_set_pixel_format(RETRO_PIXEL_FORMAT_0RGB1555);
 
    info.env = rarch_environment_cb;
-   core_ctl(CORE_CTL_RETRO_SET_ENVIRONMENT, &info);
+   core_set_environment(&info);
 
    /* Auto-remap: apply remap files */
    if(settings->auto_remaps_enable)
@@ -608,13 +608,13 @@ static bool event_init_core(void *data)
    /* Per-core saves: reset redirection paths */
    rarch_ctl(RARCH_CTL_SET_PATHS_REDIRECT, NULL);
 
-   if (!core_ctl(CORE_CTL_RETRO_INIT, NULL))
+   if (!core_init())
       return false;
 
    if (!event_init_content())
       return false;
 
-   if (!core_ctl(CORE_CTL_INIT, NULL))
+   if (!core_load())
       return false;
 
    return true;
@@ -874,7 +874,7 @@ static void event_main_state(unsigned cmd)
    else
       strlcpy(path, global->name.savestate, sizeof(path));
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+   core_serialize_size(&info);
 
    if (info.size)
    {
@@ -1091,7 +1091,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #ifdef HAVE_CHEEVOS
          cheevos_set_cheats();
 #endif
-         core_ctl(CORE_CTL_RETRO_RESET, NULL);
+         core_reset();
          break;
       case EVENT_CMD_SAVE_STATE:
 #ifdef HAVE_CHEEVOS

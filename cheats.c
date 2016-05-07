@@ -81,7 +81,7 @@ void cheat_manager_apply_cheats(void)
    if (!handle)
       return;
 
-   core_ctl(CORE_CTL_RETRO_CHEAT_RESET, NULL);
+   core_reset_cheat();
 
    for (i = 0; i < handle->size; i++)
    {
@@ -93,7 +93,7 @@ void cheat_manager_apply_cheats(void)
          cheat_info.enabled = true;
          cheat_info.code    = handle->cheats[i].code;
 
-         core_ctl(CORE_CTL_RETRO_CHEAT_SET, &cheat_info);
+         core_set_cheat(&cheat_info);
       }
    }
    

@@ -853,7 +853,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
       mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
 
-      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+      core_get_memory(&mem_info);
 
       info.wram      = (uint8_t*)mem_info.data;
       info.info      = glsl->shader->variable;

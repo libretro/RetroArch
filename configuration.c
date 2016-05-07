@@ -2420,7 +2420,7 @@ void config_load(void)
       config_save_file(global->path.core_specific_config);
 
    /* Flush out some states that could have been set by core environment variables */
-   core_ctl(CORE_CTL_UNSET_INPUT_DESCRIPTORS, NULL);
+   core_unset_input_descriptors();
 
    if (!rarch_ctl(RARCH_CTL_IS_BLOCK_CONFIG_READ, NULL))
    {

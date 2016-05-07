@@ -2327,7 +2327,7 @@ static int setting_action_start_libretro_device_type(void *data)
 
    pad.port   = port;
    pad.device = current_device;
-   core_ctl(CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE, &pad);
+   core_set_controller_port_device(&pad);
 
    return 0;
 }
@@ -2488,7 +2488,7 @@ static int setting_action_left_libretro_device_type(
    pad.port   = port;
    pad.device = current_device;
 
-   core_ctl(CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE, &pad);
+   core_set_controller_port_device(&pad);
 
    return 0;
 }
@@ -2553,7 +2553,7 @@ static int setting_action_right_libretro_device_type(
    pad.port   = port;
    pad.device = current_device;
 
-   core_ctl(CORE_CTL_RETRO_SET_CONTROLLER_PORT_DEVICE, &pad);
+   core_set_controller_port_device(&pad);
 
    return 0;
 }
@@ -2915,7 +2915,7 @@ void general_write_handler(void *data)
          }
          break;
       case MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
-         core_ctl(CORE_CTL_SET_POLL_TYPE, setting->value.target.integer);
+         core_set_poll_type((unsigned int*)setting->value.target.integer);
          break;
       case MENU_LABEL_VIDEO_SCALE_INTEGER:
          {
@@ -3408,7 +3408,7 @@ static bool setting_append_list_input_player_options(
       if (
             settings->input.input_descriptor_label_show
             && (i < RARCH_FIRST_META_KEY)
-            && (core_ctl(CORE_CTL_HAS_SET_INPUT_DESCRIPTORS, NULL))
+            && core_has_set_input_descriptor()
             && (i != RARCH_TURBO_ENABLE)
          )
       {
