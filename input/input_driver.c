@@ -274,7 +274,7 @@ static retro_input_t input_driver_keys_pressed(void)
          handle.handle = input_driver_command;
          handle.id     = key;
 
-         state |= rarch_cmd_ctl(RARCH_CMD_CTL_GET, &handle);
+         state |= rarch_cmd_get(&handle);
       }
 #endif
 
@@ -430,7 +430,7 @@ void input_poll(void)
 
 #ifdef HAVE_COMMAND
    if (input_driver_command)
-      rarch_cmd_ctl(RARCH_CMD_CTL_POLL, input_driver_command);
+      rarch_cmd_poll(input_driver_command);
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
@@ -803,7 +803,7 @@ bool input_driver_ctl(enum rarch_input_ctl_state state, void *data)
       case RARCH_INPUT_CTL_COMMAND_DEINIT:
 #ifdef HAVE_COMMAND
          if (input_driver_command)
-            rarch_cmd_ctl(RARCH_CMD_CTL_FREE, input_driver_command);
+            rarch_cmd_free(input_driver_command);
          input_driver_command = NULL;
 #endif
          break;
