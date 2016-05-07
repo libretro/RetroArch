@@ -231,6 +231,7 @@ VIDEO IMAGE
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
 #endif
+#include "../libretro-common/formats/jpeg/rjpeg.c"
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 
 /*============================================================
