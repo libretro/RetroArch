@@ -184,6 +184,7 @@ static void rjpeg_decode_dht(struct rjpeg_data *ctx)
          counts[codelen - 1] = ctx->pos[codelen];
       rjpeg_skip(ctx, 17);
       vlc = &ctx->vlctab[i][0];
+
       for (codelen = 1;  codelen <= 16;  ++codelen)
       {
          int currcnt;
@@ -241,10 +242,11 @@ static int rjpeg_show_bits(struct rjpeg_data *ctx, int bits)
          continue;
       }
 
-      newbyte = *ctx->pos++;
+      newbyte       = *ctx->pos++;
       ctx->size--;
       ctx->bufbits += 8;
-      ctx->buf = (ctx->buf << 8) | newbyte;
+      ctx->buf      = (ctx->buf << 8) | newbyte;
+
       if (newbyte == 0xFF)
       {
          if (ctx->size)
@@ -263,7 +265,7 @@ static int rjpeg_show_bits(struct rjpeg_data *ctx, int bits)
                      ctx->error = RJPEG_SYNTAX_ERROR;
                   else
                   {
-                     ctx->buf = (ctx->buf << 8) | marker;
+                     ctx->buf      = (ctx->buf << 8) | marker;
                      ctx->bufbits += 8;
                   }
             }

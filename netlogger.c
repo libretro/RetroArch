@@ -73,12 +73,10 @@ void logger_init (void)
 
 void logger_shutdown (void)
 {
-   int ret = socket_close(g_sid);
+   if (socket_close(g_sid) < 0)
+      printf("Could not close socket.\n");
 
    network_deinit();
-
-   if (ret < 0)
-      printf("Could not deinitialize network logger interface.\n");
 }
 
 void logger_send(const char *__format,...)
