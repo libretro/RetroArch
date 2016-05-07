@@ -162,21 +162,22 @@ static bool video_texture_image_load_png(
       unsigned g_shift, unsigned b_shift)
 {
    int ret;
+   bool success = false;
    rpng_t *rpng = rpng_alloc();
 
    if (!rpng)
-      goto error;
+      goto end;
 
    if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
-      goto error;
+      goto end;
 
    if (!rpng_nbio_load_image_argb_start(rpng))
-      goto error;
+      goto end;
 
    while (rpng_nbio_load_image_argb_iterate(rpng));
 
    if (!rpng_is_valid(rpng))
-      goto error;
+      goto end;
 
    do
    {
@@ -185,7 +186,7 @@ static bool video_texture_image_load_png(
    }while(ret == IMAGE_PROCESS_NEXT);
 
    if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
-      goto error;
+      goto end;
 
    video_texture_image_color_convert(r_shift, g_shift, b_shift,
          a_shift, out_img);
@@ -194,21 +195,17 @@ static bool video_texture_image_load_png(
    if (!video_texture_image_rpng_gx_convert_texture32(out_img))
    {
       video_texture_image_free(out_img);
-      goto error;
+      goto end;
    }
 #endif
 
-   rpng_nbio_load_image_free(rpng);
+   success = true;
 
-   return true;
-
-error:
-   out_img->pixels = NULL;
-   out_img->width  = 0;
-   out_img->height = 0;
+end:
    if (rpng)
       rpng_nbio_load_image_free(rpng);
-   return false;
+
+   return success;
 }
 #endif
 
@@ -283,6 +280,9 @@ bool video_texture_image_load(struct texture_image *out_img,
    }
 
 error:
+   out_img->pixels = NULL;
+   out_img->width  = 0;
+   out_img->height = 0;
    if (handle)
       nbio_free(handle);
 
