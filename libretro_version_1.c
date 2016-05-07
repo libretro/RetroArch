@@ -42,8 +42,16 @@
 static struct retro_core_t core;
 static unsigned            core_poll_type;
 static bool                core_input_polled;
+static bool   core_has_set_input_descriptors = false;
+static struct retro_callbacks retro_ctx;
 
-static int16_t input_state_poll(unsigned port,
+static void core_input_state_poll_maybe(void)
+{
+   if (core_poll_type == POLL_TYPE_NORMAL)
+      input_poll();
+}
+
+static int16_t core_input_state_poll(unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
    if (core_poll_type == POLL_TYPE_LATE)
@@ -57,12 +65,12 @@ static int16_t input_state_poll(unsigned port,
 }
 
 /**
- * retro_set_default_callbacks:
+ * core_set_default_callbacks:
  * @data           : pointer to retro_callbacks object
  *
  * Binds the libretro callbacks to default callback functions.
  **/
-static bool retro_set_default_callbacks(void *data)
+static bool core_set_default_callbacks(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
 
@@ -72,13 +80,13 @@ static bool retro_set_default_callbacks(void *data)
    cbs->frame_cb        = video_driver_frame;
    cbs->sample_cb       = audio_driver_sample;
    cbs->sample_batch_cb = audio_driver_sample_batch;
-   cbs->state_cb        = input_state_poll;
+   cbs->state_cb        = core_input_state_poll;
    cbs->poll_cb         = input_poll;
 
    return true;
 }
 
-static bool retro_uninit_libretro_cbs(void *data)
+static bool core_uninit_libretro_cbs(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
 
@@ -94,20 +102,15 @@ static bool retro_uninit_libretro_cbs(void *data)
    return true;
 }
 
-static void input_poll_maybe(void)
-{
-   if (core_poll_type == POLL_TYPE_NORMAL)
-      input_poll();
-}
 
 /**
- * retro_init_libretro_cbs:
+ * core_init_libretro_cbs:
  * @data           : pointer to retro_callbacks object
  *
  * Initializes libretro callbacks, and binds the libretro callbacks 
  * to default callback functions.
  **/
-static bool retro_init_libretro_cbs(void *data)
+static bool core_init_libretro_cbs(void *data)
 {
    struct retro_callbacks *cbs = (struct retro_callbacks*)data;
 #ifdef HAVE_NETPLAY
@@ -120,8 +123,8 @@ static bool retro_init_libretro_cbs(void *data)
    core.retro_set_video_refresh(video_driver_frame);
    core.retro_set_audio_sample(audio_driver_sample);
    core.retro_set_audio_sample_batch(audio_driver_sample_batch);
-   core.retro_set_input_state(input_state_poll);
-   core.retro_set_input_poll(input_poll_maybe);
+   core.retro_set_input_state(core_input_state_poll);
+   core.retro_set_input_poll(core_input_state_poll_maybe);
 
    core_ctl(CORE_CTL_SET_CBS, cbs);
 
@@ -152,12 +155,12 @@ static bool retro_init_libretro_cbs(void *data)
 }
 
 /**
- * retro_set_rewind_callbacks:
+ * core_set_rewind_callbacks:
  *
  * Sets the audio sampling callbacks based on whether or not
  * rewinding is currently activated.
  **/
-static void retro_set_rewind_callbacks(void)
+static void core_set_rewind_callbacks(void)
 {
    if (state_manager_frame_is_reversed())
    {
@@ -173,8 +176,6 @@ static void retro_set_rewind_callbacks(void)
 
 bool core_ctl(enum core_ctl_state state, void *data)
 {
-   static bool   has_set_input_descriptors = false;
-   static struct retro_callbacks retro_ctx;
 
    switch (state)
    {
@@ -332,9 +333,9 @@ bool core_ctl(enum core_ctl_state state, void *data)
             input_poll();
          break;
       case CORE_CTL_SET_CBS:
-         return retro_set_default_callbacks(data);
+         return core_set_default_callbacks(data);
       case CORE_CTL_SET_CBS_REWIND:
-         retro_set_rewind_callbacks();
+         core_set_rewind_callbacks();
          break;
       case CORE_CTL_INIT:
          {
@@ -342,7 +343,7 @@ bool core_ctl(enum core_ctl_state state, void *data)
             core_poll_type = settings->input.poll_type_behavior;
             if (!core_ctl(CORE_CTL_VERIFY_API_VERSION, NULL))
                return false;
-            if (!retro_init_libretro_cbs(&retro_ctx))
+            if (!core_init_libretro_cbs(&retro_ctx))
                return false;
             core_ctl(CORE_CTL_RETRO_GET_SYSTEM_AV_INFO,
                   video_viewport_get_system_av_info());
@@ -350,7 +351,7 @@ bool core_ctl(enum core_ctl_state state, void *data)
          }
          break;
       case CORE_CTL_DEINIT:
-         return retro_uninit_libretro_cbs(&retro_ctx);
+         return core_uninit_libretro_cbs(&retro_ctx);
       case CORE_CTL_VERIFY_API_VERSION:
          {
             unsigned api_version = core.retro_api_version();
@@ -365,12 +366,12 @@ bool core_ctl(enum core_ctl_state state, void *data)
          }
          break;
       case CORE_CTL_HAS_SET_INPUT_DESCRIPTORS:
-         return has_set_input_descriptors;
+         return core_has_set_input_descriptors;
       case CORE_CTL_SET_INPUT_DESCRIPTORS:
-         has_set_input_descriptors = true;
+         core_has_set_input_descriptors = true;
          break;
       case CORE_CTL_UNSET_INPUT_DESCRIPTORS:
-         has_set_input_descriptors = false;
+         core_has_set_input_descriptors = false;
          break;
       case CORE_CTL_NONE:
       default:
