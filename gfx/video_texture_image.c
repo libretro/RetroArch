@@ -29,6 +29,7 @@
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>
 #endif
+#include <formats/rjpeg.h>
 #include <formats/tga.h>
 
 #include "../general.h"
@@ -37,7 +38,8 @@ enum video_image_format
 {
    IMAGE_FORMAT_NONE = 0,
    IMAGE_FORMAT_TGA,
-   IMAGE_FORMAT_PNG
+   IMAGE_FORMAT_PNG,
+   IMAGE_FORMAT_JPEG
 };
 
 bool video_texture_image_set_color_shifts(
@@ -225,6 +227,8 @@ static enum video_image_format video_texture_image_get_type(const char *path)
       return IMAGE_FORMAT_TGA;
    if (strstr(path, ".png"))
       return IMAGE_FORMAT_PNG;
+   if (strstr(path, ".jpg") || strstr(path, ".jpeg"))
+      return IMAGE_FORMAT_JPEG;
    return IMAGE_FORMAT_NONE;
 }
 
@@ -272,6 +276,10 @@ bool video_texture_image_load(struct texture_image *out_img,
                a_shift, r_shift, g_shift, b_shift))
             goto success;
 #endif
+         break;
+      case IMAGE_FORMAT_JPEG:
+         if (rjpeg_image_load(ptr, out_img, file_len))
+            goto success;
          break;
       default:
       case IMAGE_FORMAT_NONE:

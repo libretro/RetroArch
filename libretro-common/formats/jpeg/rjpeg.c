@@ -867,4 +867,3 @@ error:
       rjpeg_free(rjpg);
    return false;
 }
-
