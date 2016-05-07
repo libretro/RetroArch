@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -851,15 +852,26 @@ bool rjpeg_image_load(uint8_t *buf, void *data, size_t size)
    if (!rjpg)
       goto error;
 
-   out_img->pixels  = (uint32_t*)buf;
    out_img->width   = rjpg->width;
    out_img->height  = rjpg->height;
+   out_img->pixels  = (uint32_t*)malloc(rjpg->width * rjpg->height * rjpg->ncomp);
+
+   if (!out_img->pixels)
+   {
+      fprintf(stderr, "Failed to allocate JPEG pixels.\n");
+      goto error;
+   }
+
+   memcpy(out_img->pixels, rjpg->rgb, rjpg->width * rjpg->height * rjpg->ncomp);
 
    rjpeg_free(rjpg);
 
    return true;
 
 error:
+   if (out_img->pixels)
+      free(out_img->pixels);
+
    out_img->pixels = NULL;
    out_img->width = out_img->height = 0;
 
