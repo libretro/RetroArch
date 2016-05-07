@@ -33,6 +33,13 @@
 
 #include "../general.h"
 
+enum video_image_format
+{
+   IMAGE_FORMAT_NONE = 0,
+   IMAGE_FORMAT_TGA,
+   IMAGE_FORMAT_PNG
+};
+
 bool video_texture_image_set_color_shifts(
       unsigned *r_shift, unsigned *g_shift, unsigned *b_shift,
       unsigned *a_shift)
@@ -213,24 +220,40 @@ static bool video_texture_image_load_tga(
    return ret;
 }
 
+enum video_image_format video_texture_image_get_type(const char *path)
+{
+   if (strstr(path, ".tga"))
+      return IMAGE_FORMAT_TGA;
+   if (strstr(path, ".png"))
+      return IMAGE_FORMAT_PNG;
+   return IMAGE_FORMAT_NONE;
+}
 
 bool video_texture_image_load(struct texture_image *out_img, 
       const char *path)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;
+   enum video_image_format fmt = video_texture_image_get_type(path);
 
    video_texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift);
 
-   if (strstr(path, ".tga"))
-      return video_texture_image_load_tga(path, out_img,
-            a_shift, r_shift, g_shift, b_shift);
-
+   switch (fmt)
+   {
+      case IMAGE_FORMAT_TGA:
+         return video_texture_image_load_tga(path, out_img,
+               a_shift, r_shift, g_shift, b_shift);
+      case IMAGE_FORMAT_PNG:
 #ifdef HAVE_RPNG
-   if (strstr(path, ".png"))
-      return video_texture_image_load_png(path, out_img,
-            a_shift, r_shift, g_shift, b_shift);
+         return video_texture_image_load_png(path, out_img,
+               a_shift, r_shift, g_shift, b_shift);
+#else
+         break;
 #endif
+      default:
+      case IMAGE_FORMAT_NONE:
+         break;
+   }
 
    return false;
 }
