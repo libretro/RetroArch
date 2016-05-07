@@ -857,12 +857,33 @@ bool rjpeg_image_load(uint8_t *buf, void *data, size_t size)
    out_img->pixels  = (uint32_t*)malloc(rjpg->width * rjpg->height * rjpg->ncomp);
 
    if (!out_img->pixels)
-   {
-      fprintf(stderr, "Failed to allocate JPEG pixels.\n");
       goto error;
-   }
 
-   memcpy(out_img->pixels, rjpg->rgb, rjpg->width * rjpg->height * rjpg->ncomp);
+   if (rjpg->ncomp == 3)
+   {
+      /* convert to RGB */
+      int x, yy;
+      uint32_t *prgb      = (uint32_t*)out_img->pixels;
+      const unsigned char *py  = rjpg->comp[0].pixels;
+      const unsigned char *pcb = rjpg->comp[1].pixels;
+      const unsigned char *pcr = rjpg->comp[2].pixels;
+
+      for (yy = rjpg->height;  yy;  --yy)
+      {
+         for (x = 0;  x < rjpg->width;  ++x)
+         {
+            register int y  = py[x] << 8;
+            register int cb = pcb[x] - 128;
+            register int cr = pcr[x] - 128;
+            *prgb++         = rjpeg_clip((y            + 359 * cr + 128) >> 8);
+            *prgb++         = rjpeg_clip((y -  88 * cb - 183 * cr + 128) >> 8);
+            *prgb++         = rjpeg_clip((y + 454 * cb            + 128) >> 8);
+         }
+         py  += rjpg->comp[0].stride;
+         pcb += rjpg->comp[1].stride;
+         pcr += rjpg->comp[2].stride;
+      }
+   }
 
    rjpeg_free(rjpg);
 
