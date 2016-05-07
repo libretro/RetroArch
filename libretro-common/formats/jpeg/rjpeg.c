@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <boolean.h>
 #include <retro_inline.h>
+#include <formats/image.h>
 
 #define RJPEG_DECODE_SOF         0xC0
 #define RJPEG_DECODE_DHT         0xC4
@@ -830,7 +832,7 @@ struct rjpeg_data *rjpeg_new(const uint8_t* data, size_t size)
     return ctx;
 }
 
-void rjpeg_free(struct rjpeg_data *ctx)
+static void rjpeg_free(struct rjpeg_data *ctx)
 {
     int i;
 
@@ -840,3 +842,29 @@ void rjpeg_free(struct rjpeg_data *ctx)
     if (ctx->rgb)
        free((void*)ctx->rgb);
 }
+
+bool rjpeg_image_load(uint8_t *buf, void *data, size_t size)
+{
+   struct rjpeg_data       *rjpg = rjpeg_new(buf, size);
+   struct texture_image *out_img = (struct texture_image*)data;
+
+   if (!rjpg)
+      goto error;
+
+   out_img->pixels  = (uint32_t*)buf;
+   out_img->width   = rjpg->width;
+   out_img->height  = rjpg->height;
+
+   rjpeg_free(rjpg);
+
+   return true;
+
+error:
+   out_img->pixels = NULL;
+   out_img->width = out_img->height = 0;
+
+   if (rjpg)
+      rjpeg_free(rjpg);
+   return false;
+}
+
