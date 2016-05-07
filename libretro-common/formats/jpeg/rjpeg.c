@@ -844,7 +844,9 @@ static void rjpeg_free(struct rjpeg_data *ctx)
        free((void*)ctx->rgb);
 }
 
-bool rjpeg_image_load(uint8_t *buf, void *data, size_t size)
+bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
+      unsigned a_shift, unsigned r_shift,
+      unsigned g_shift, unsigned b_shift)
 {
    struct rjpeg_data       *rjpg = rjpeg_new(buf, size);
    struct texture_image *out_img = (struct texture_image*)data;
