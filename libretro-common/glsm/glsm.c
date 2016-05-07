@@ -805,7 +805,7 @@ void rglProgramParameteri( 	GLuint program,
   	GLenum pname,
   	GLint value)
 {
-#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && (defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES31))
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && (defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1))
    glProgramParameteri(program, pname, value);
 #else
    printf("WARNING! Not implemented.\n");
@@ -938,25 +938,52 @@ void rglUniformBlockBinding( 	GLuint program,
  *
  * Core in:
  * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
  */
 void rglUniform1ui(GLint location, GLuint v)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glUniform1ui(location ,v);
+#endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
+ */
 void rglUniform2ui(GLint location, GLuint v0, GLuint v1)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glUniform2ui(location, v0, v1);
+#endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
+ */
 void rglUniform3ui(GLint location, GLuint v0, GLuint v1, GLuint v2)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glUniform3ui(location, v0, v1, v2);
+#endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
+ */
 void rglUniform4ui(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glUniform4ui(location, v0, v1, v2, v3);
+#endif
 }
 
 /*
@@ -1356,11 +1383,6 @@ void rglUniform4fv(GLint location, GLsizei count, const GLfloat *value)
    glUniform4fv(location, count, value);
 }
 
-void rglTexStorage2D(GLenum target, GLsizei levels, GLenum internalFormat,
-      GLsizei width, GLsizei height)
-{
-   glTexStorage2D(target, levels, internalFormat, width, height);
-}
 
 /*
  *
@@ -1447,9 +1469,22 @@ void rglTexStorage2DMultisample(GLenum target, GLsizei samples,
       GLenum internalformat, GLsizei width, GLsizei height,
       GLboolean fixedsamplelocations)
 {
-#if defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES31)
+#if defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3_1)
    glTexStorage2DMultisample(target, samples, internalformat,
          width, height, fixedsamplelocations);
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGLES  : 3.0
+ */
+void rglTexStorage2D(GLenum target, GLsizei levels, GLenum internalFormat,
+      GLsizei width, GLsizei height)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glTexStorage2D(target, levels, internalFormat, width, height);
 #endif
 }
 
@@ -1461,7 +1496,7 @@ void rglTexStorage2DMultisample(GLenum target, GLsizei samples,
  */
 void rglMemoryBarrier( 	GLbitfield barriers)
 {
-#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3) && defined(HAVE_OPENGLES31)
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3) && defined(HAVE_OPENGLES_3_1)
    glMemoryBarrier(barriers);
 #else
    printf("WARNING! Not implemented.\n");
@@ -1482,7 +1517,7 @@ void rglBindImageTexture( 	GLuint unit,
   	GLenum access,
   	GLenum format)
 {
-#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3) && defined(HAVE_OPENGLES31)
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3) && defined(HAVE_OPENGLES_3_1)
    glBindImageTexture(unit, texture, level, layered, layer, access, format);
 #else
    printf("WARNING! Not implemented.\n");
@@ -1519,7 +1554,7 @@ void rglProgramBinary(GLuint program,
   	const void *binary,
   	GLsizei length)
 {
-#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES31)
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3_1)
    glProgramBinary(program, binaryFormat, binary, length);
 #else
    printf("WARNING! Not implemented.\n");
@@ -1622,11 +1657,11 @@ void rglCopyImageSubData( 	GLuint srcName,
  *
  * Core in:
  * OpenGL    : 3.0 
+ * OpenGLES  : 3.0
  */
 void rglBindVertexArray(GLuint array)
 {
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
-#else
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glBindVertexArray(array);
 #endif
 }
@@ -1636,12 +1671,26 @@ void rglBindVertexArray(GLuint array)
  *
  * Core in:
  * OpenGL    : 3.0 
+ * OpenGLES  : 3.0
  */
 void rglGenVertexArrays(GLsizei n, GLuint *arrays)
 {
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
-#else
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glGenVertexArrays(n, arrays);
+#endif
+}
+
+/*
+ * Category: VAO
+ *
+ * Core in:
+ * OpenGL    : 3.0 
+ * OpenGLES  : 3.0
+ */
+void rglDeleteVertexArrays(GLuint array)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glDeleteVertexArrays(array);
 #endif
 }
 
@@ -1878,7 +1927,7 @@ static bool glsm_state_ctx_init(void *data)
       return false;
 
 #ifdef HAVE_OPENGLES
-#if defined(HAVE_OPENGLES31)
+#if defined(HAVE_OPENGLES_3_1)
    hw_render.context_type       = RETRO_HW_CONTEXT_OPENGLES_VERSION;
    hw_render.version_major      = 3;
    hw_render.version_minor      = 1;

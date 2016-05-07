@@ -149,6 +149,7 @@ RETRO_BEGIN_DECLS
 #define glGetProgramBinary          rglGetProgramBinary
 #define glProgramParameteri         rglProgramParameteri
 #define glTexSubImage2D             rglTexSubImage2D
+#define glDeleteVertexArrays        rglDeleteVertexArrays
 
 void rglProgramParameteri( 	GLuint program,
   	GLenum pname,
@@ -364,6 +365,7 @@ void rglTexSubImage2D( 	GLenum target,
   	GLenum format,
   	GLenum type,
   	const GLvoid * pixels);
+void rglDeleteVertexArrays(GLuint array);
 
 RETRO_END_DECLS
 
