@@ -30,7 +30,6 @@
 #include <formats/rpng.h>
 #endif
 #include <formats/tga.h>
-#include <streams/file_stream.h>
 
 #include "../general.h"
 
