@@ -140,7 +140,19 @@ struct hostent *gethostbyname(const char *name)
 }
 
 int retro_epoll_fd;
+#elif defined(_WIN32)
+int inet_aton(const char *cp, struct in_addr *inp)
+{
+	uint32_t addr = 0;
+	if (cp == 0 || inp == 0)
+		return -1;
 
+	addr = inet_addr(cp);
+	if (addr == INADDR_NONE || addr == INADDR_ANY)
+		return -1;
+
+	inp->s_addr = addr;
+}
 #endif
 
 int getaddrinfo_retro(const char *node, const char *service,
@@ -333,7 +345,7 @@ int inet_ptrton(int af, const char *src, void *dst)
    return sceNetInetPton(af, src, dst);	
 #elif defined(GEKKO) || defined(_WIN32)
    /* TODO/FIXME - should use InetPton on Vista and later */
-   return inet_aton(src, dst);
+   return inet_aton(src, (struct in_addr*)dst);
 #else
    return inet_pton(af, src, dst);
 #endif
