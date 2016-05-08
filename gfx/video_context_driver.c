@@ -85,6 +85,8 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
    NULL
 };
 
+static const gfx_ctx_driver_t *current_video_context = NULL;
+static void *video_context_data                      = NULL;
 
 /**
  * find_gfx_ctx_driver_index:
@@ -257,8 +259,6 @@ const gfx_ctx_driver_t *gfx_ctx_init_first(void *data,
 
 bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
 {
-   static const gfx_ctx_driver_t *current_video_context = NULL;
-   static void *video_context_data                      = NULL;
 
    switch (state)
    {
