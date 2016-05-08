@@ -63,11 +63,8 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_SET_ACTIVE,
    RARCH_AUDIO_CTL_UNSET_ACTIVE,
    RARCH_AUDIO_CTL_IS_ACTIVE,
-   RARCH_AUDIO_CTL_RESAMPLER_DEINIT,
    RARCH_AUDIO_CTL_RESAMPLER_INIT,
    RARCH_AUDIO_CTL_RESAMPLER_PROCESS,
-   RARCH_AUDIO_CTL_DEVICES_LIST_NEW,
-   RARCH_AUDIO_CTL_DEVICES_LIST_FREE,
    RARCH_AUDIO_CTL_DEVICES_LIST_GET
 };
 
@@ -124,6 +121,12 @@ typedef struct audio_driver
 
 
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data);
+
+void audio_driver_deinit_resampler(void);
+
+bool audio_driver_free_devices_list(void);
+
+bool audio_driver_new_devices_list(void);
 
 /**
  * audio_driver_find_handle:
