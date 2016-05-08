@@ -2444,7 +2444,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    gl->shared_context_use = settings->video.shared_context
       && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
-   return gfx_ctx_init_first(gl, settings->video.context_driver,
+   return video_driver_context_init_first(gl, settings->video.context_driver,
          api, major, minor, gl->shared_context_use);
 }
 

@@ -89,7 +89,7 @@ static const gfx_ctx_driver_t *current_video_context = NULL;
 static void *video_context_data                      = NULL;
 
 /**
- * find_gfx_ctx_driver_index:
+ * find_video_driver_context_driver_index:
  * @ident                      : Identifier of resampler driver to find.
  *
  * Finds graphics context driver index by @ident name.
@@ -97,7 +97,7 @@ static void *video_context_data                      = NULL;
  * Returns: graphics context driver index if driver was found, otherwise
  * -1.
  **/
-static int find_gfx_ctx_driver_index(const char *ident)
+static int find_video_driver_context_index(const char *ident)
 {
    unsigned i;
    for (i = 0; gfx_ctx_drivers[i]; i++)
@@ -111,10 +111,10 @@ static int find_gfx_ctx_driver_index(const char *ident)
  *
  * Finds previous driver in graphics context driver array.
  **/
-static bool gfx_ctl_find_prev_driver(void)
+static bool video_driver_context_find_prev_driver(void)
 {
    settings_t *settings = config_get_ptr();
-   int                i = find_gfx_ctx_driver_index(
+   int                i = find_video_driver_context_index(
          settings->video.context_driver);
    
    if (i > 0)
@@ -134,10 +134,10 @@ static bool gfx_ctl_find_prev_driver(void)
  *
  * Finds next driver in graphics context driver array.
  **/
-static bool gfx_ctl_find_next_driver(void)
+static bool video_driver_context_find_next_driver(void)
 {
    settings_t *settings = config_get_ptr();
-   int i = find_gfx_ctx_driver_index(settings->video.context_driver);
+   int i = find_video_driver_context_index(settings->video.context_driver);
 
    if (i >= 0 && gfx_ctx_drivers[i + 1])
    {
@@ -152,7 +152,7 @@ static bool gfx_ctl_find_next_driver(void)
 }
 
 /**
- * gfx_ctx_init:
+ * video_driver_context_init:
  * @data                    : Input data.
  * @ctx                     : Graphics context driver to initialize.
  * @ident                   : Identifier of graphics context driver to find.
@@ -166,7 +166,8 @@ static bool gfx_ctl_find_next_driver(void)
  *
  * Returns: graphics context driver if successfully initialized, otherwise NULL.
  **/
-static const gfx_ctx_driver_t *gfx_ctx_init(void *data,
+static const gfx_ctx_driver_t *video_driver_context_init(
+      void *data,
       const gfx_ctx_driver_t *ctx,
       const char *ident,
       enum gfx_ctx_api api, unsigned major,
@@ -198,7 +199,7 @@ static const gfx_ctx_driver_t *gfx_ctx_init(void *data,
 }
 
 /**
- * gfx_ctx_find_driver:
+ * video_driver_context_find_driver:
  * @data                    : Input data.
  * @ident                   : Identifier of graphics context driver to find.
  * @api                     : API of higher-level graphics API.
@@ -211,21 +212,21 @@ static const gfx_ctx_driver_t *gfx_ctx_init(void *data,
  *
  * Returns: graphics context driver if found, otherwise NULL.
  **/
-static const gfx_ctx_driver_t *gfx_ctx_find_driver(void *data,
+static const gfx_ctx_driver_t *video_driver_context_find_driver(void *data,
       const char *ident,
       enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
-   int i = find_gfx_ctx_driver_index(ident);
+   int i = find_video_driver_context_index(ident);
 
    if (i >= 0)
-      return gfx_ctx_init(data, gfx_ctx_drivers[i], ident,
+      return video_driver_context_init(data, gfx_ctx_drivers[i], ident,
             api, major, minor, hw_render_ctx);
 
    for (i = 0; gfx_ctx_drivers[i]; i++)
    {
       const gfx_ctx_driver_t *ctx = 
-         gfx_ctx_init(data, gfx_ctx_drivers[i], ident,
+         video_driver_context_init(data, gfx_ctx_drivers[i], ident,
             api, major, minor, hw_render_ctx);
 
       if (ctx)
@@ -236,7 +237,7 @@ static const gfx_ctx_driver_t *gfx_ctx_find_driver(void *data,
 }
 
 /**
- * gfx_ctx_init_first:
+ * video_driver_context_init_first:
  * @data                    : Input data.
  * @ident                   : Identifier of graphics context driver to find.
  * @api                     : API of higher-level graphics API.
@@ -249,11 +250,11 @@ static const gfx_ctx_driver_t *gfx_ctx_find_driver(void *data,
  *
  * Returns: graphics context driver if found, otherwise NULL.
  **/
-const gfx_ctx_driver_t *gfx_ctx_init_first(void *data,
+const gfx_ctx_driver_t *video_driver_context_init_first(void *data,
       const char *ident, enum gfx_ctx_api api, unsigned major,
       unsigned minor, bool hw_render_ctx)
 {
-   return gfx_ctx_find_driver(data, ident, api,
+   return video_driver_context_find_driver(data, ident, api,
          major, minor, hw_render_ctx);
 }
 
@@ -281,11 +282,11 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
          }
          break;
       case GFX_CTL_FIND_PREV_DRIVER:
-         if (!gfx_ctl_find_prev_driver())
+         if (!video_driver_context_find_prev_driver())
             return false;
          break;
       case GFX_CTL_FIND_NEXT_DRIVER:
-         if (!gfx_ctl_find_next_driver())
+         if (!video_driver_context_find_next_driver())
             return false;
          break;
       case GFX_CTL_IMAGE_BUFFER_INIT:

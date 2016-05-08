@@ -1100,7 +1100,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    unsigned major       = 9;
    enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
 #endif
-   return gfx_ctx_init_first(data,
+   return video_driver_context_init_first(data,
          settings->video.context_driver,
          api, major, minor, false);
 }

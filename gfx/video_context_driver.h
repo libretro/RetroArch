@@ -284,7 +284,7 @@ extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
 /**
- * gfx_ctx_init_first:
+ * video_driver_context_init_first:
  * @data                    : Input data.
  * @ident                   : Identifier of graphics context driver to find.
  * @api                     : API of higher-level graphics API.
@@ -297,7 +297,7 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
  *
  * Returns: graphics context driver if found, otherwise NULL.
  **/
-const gfx_ctx_driver_t *gfx_ctx_init_first(void *data, const char *ident,
+const gfx_ctx_driver_t *video_driver_context_init_first(void *data, const char *ident,
       enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx);
 
 bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data);
