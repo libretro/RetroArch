@@ -296,7 +296,7 @@ static void menu_action_setting_disp_set_label_shader_parameter(
    strlcpy(s2, path, len2);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    if (!shader_info.data)
       return;

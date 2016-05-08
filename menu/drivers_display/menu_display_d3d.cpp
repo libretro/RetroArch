@@ -201,7 +201,7 @@ static void menu_display_d3d_draw_pipeline(void *data)
          shader_info.idx        = draw->pipeline.id;
          shader_info.set_active = true;
 
-         video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+         video_shader_driver_use(&shader_info);
 
          t += 0.01;
 
@@ -214,7 +214,7 @@ static void menu_display_d3d_draw_pipeline(void *data)
          uniform_param.lookup.ident      = "time";
          uniform_param.result.f.v0       = t;
 
-         video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
+         video_shader_driver_set_parameter(&uniform_param);
          break;
    }
 #endif

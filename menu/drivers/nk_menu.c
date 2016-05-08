@@ -314,7 +314,7 @@ void nk_menu_wnd_shader_parameters(nk_menu_handle_t *zr)
 
       nk_layout_row_dynamic(ctx, 30, 1);
 
-      video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+      video_shader_driver_get_current_shader(&shader_info);
 
       if (shader_info.data)
       {

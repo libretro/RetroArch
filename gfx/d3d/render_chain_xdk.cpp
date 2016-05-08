@@ -50,7 +50,7 @@ static void renderchain_set_mvp(void *data, unsigned vp_width,
    mvp.data   = d3d;
    mvp.matrix = NULL;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
+   video_shadser_driver_set_mvp(&mvp);
 #elif defined(HAVE_D3D8)
    D3DXMATRIX p_out, p_rotate, mat;
    D3DXMatrixOrthoOffCenterLH(&mat, 0, vp_width,  vp_height, 0, 0.0f, 1.0f);
@@ -224,7 +224,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
    shader_info.idx  = pass;
    shader_info.set_active = true;
 
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 
    params.data          = d3d;
    params.width         = vert_width;
@@ -240,7 +240,7 @@ static void renderchain_set_vertices(void *data, unsigned pass,
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
+   video_shader_driver_set_parameters(&params);
 #endif
 #endif
 }

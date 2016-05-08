@@ -190,7 +190,7 @@ void nk_common_device_draw(struct nk_device *dev,
    shader_info.data       = NULL;
    shader_info.idx        = dev->prog;
    shader_info.set_active = false;
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glUniformMatrix4fv(dev->uniform_proj, 1, GL_FALSE, &ortho[0][0]);
@@ -253,7 +253,7 @@ void nk_common_device_draw(struct nk_device *dev,
    shader_info.data       = NULL;
    shader_info.idx        = (GLint)last_prog;
    shader_info.set_active = false;
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glBindTexture(GL_TEXTURE_2D, (GLuint)last_tex);

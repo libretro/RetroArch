@@ -121,7 +121,7 @@ static void shader_dlg_refresh_trackbar_label(int index)
    video_shader_ctx_t shader_info;
    char val_buffer[32]         = {0};
 
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    if (floorf(shader_info.data->parameters[index].current) 
          == shader_info.data->parameters[index].current)
@@ -141,7 +141,7 @@ static void shader_dlg_params_refresh(void)
    int i;
    video_shader_ctx_t shader_info;
 
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    for (i = 0; i < GFX_MAX_PARAMETERS; i++)
    {
@@ -218,7 +218,7 @@ void shader_dlg_params_reload(void)
    int i, pos_x, pos_y;
    video_shader_ctx_t shader_info;
 
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    shader_dlg_params_clear();
 
@@ -353,7 +353,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
    int i, pos;
    video_shader_ctx_t shader_info;
 
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    switch (message)
    {

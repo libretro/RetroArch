@@ -275,7 +275,7 @@ static bool gl_shader_init(gl_t *gl)
    init_data.data                    = gl;
    init_data.path                    = shader_path;
 
-   if (video_shader_driver_ctl(SHADER_CTL_INIT, &init_data))
+   if (video_shader_driver_init(&init_data))
       return true;
 
    RARCH_ERR("[GL]: Failed to initialize shader, falling back to stock.\n");
@@ -283,12 +283,7 @@ static bool gl_shader_init(gl_t *gl)
    init_data.shader = NULL;
    init_data.path   = NULL;
 
-   return video_shader_driver_ctl(SHADER_CTL_INIT, &init_data);
-}
-
-static void gl_shader_deinit(gl_t *gl)
-{
-   video_shader_driver_ctl(SHADER_CTL_DEINIT, NULL);
+   return video_shader_driver_init(&init_data);
 }
 
 #ifndef NO_GL_FF_VERTEX
@@ -441,12 +436,12 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
    glBindTexture(GL_TEXTURE_2D, texture);
 
    mip_level          = i + 2;
-   mipmapped          = video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT, &mip_level);
+   mipmapped          = video_shader_driver_mipmap_input(&mip_level);
    min_filter         = mipmapped ? base_mip_filt : base_filt;
    filter_type.index  = i + 2;
    filter_type.smooth = &smooth;
 
-   if (video_shader_driver_ctl(SHADER_CTL_FILTER_TYPE, &filter_type))
+   if (video_shader_driver_filter_type(&filter_type))
    {
       min_filter = mipmapped ? (smooth ? 
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST)
@@ -456,7 +451,7 @@ static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
    mag_filter = min_filter_to_mag(min_filter);
    wrap.idx   = i + 2;
 
-   video_shader_driver_ctl(SHADER_CTL_WRAP_TYPE, &wrap);
+   video_shader_driver_wrap_type(&wrap);
 
    wrap_enum  = gl_wrap_type_to_enum(wrap.type);
 
@@ -635,7 +630,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
    video_shader_ctx_info_t shader_info;
    struct gfx_fbo_scale scale, scale_last;
 
-   if (!video_shader_driver_ctl(SHADER_CTL_INFO, &shader_info))
+   if (!video_shader_driver_info(&shader_info))
       return;
 
    if (!gl || shader_info.num == 0)
@@ -646,12 +641,12 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
    scaler.idx   = 1;
    scaler.scale = &scale;
 
-   video_shader_driver_ctl(SHADER_CTL_SCALE, &scaler);
+   video_shader_driver_scale(&scaler);
 
    scaler.idx   = shader_info.num;
    scaler.scale = &scale_last;
 
-   video_shader_driver_ctl(SHADER_CTL_SCALE, &scaler);
+   video_shader_driver_scale(&scaler);
 
    /* we always want FBO to be at least initialized on startup for consoles */
    if (shader_info.num == 1 && !scale.valid)
@@ -682,7 +677,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
       scaler.idx   = i + 1;
       scaler.scale = &gl->fbo_scale[i];
 
-      video_shader_driver_ctl(SHADER_CTL_SCALE, &scaler);
+      video_shader_driver_scale(&scaler);
 
       if (!gl->fbo_scale[i].valid)
       {
@@ -703,8 +698,8 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
             gl->fbo_rect[i].width, gl->fbo_rect[i].height);
    }
 
-   gl->fbo_feedback_enable = video_shader_driver_ctl(
-         SHADER_CTL_GET_FEEDBACK_PASS, &gl->fbo_feedback_pass);
+   gl->fbo_feedback_enable = video_shader_driver_get_feedback_pass(
+         &gl->fbo_feedback_pass);
 
    if (gl->fbo_feedback_enable && gl->fbo_feedback_pass 
          < (unsigned)gl->fbo_pass)
@@ -1157,12 +1152,12 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       shader_info.idx        = i + 1;
       shader_info.set_active = true;
 
-      video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+      video_shader_driver_use(&shader_info);
       glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[i - 1]);
 
       mip_level = i + 1;
 
-      if (video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT, &mip_level))
+      if (video_shader_driver_mipmap_input(&mip_level))
          glGenerateMipmap(GL_TEXTURE_2D);
 
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1184,19 +1179,19 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       params.fbo_info      = fbo_tex_info;
       params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-      video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
+      video_shader_driver_set_parameters(&params);
 
       gl->coords.vertices = 4;
 
       coords.handle_data  = NULL;
       coords.data         = &gl->coords;
 
-      video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
+      video_shader_driver_set_coords(&coords);
 
       mvp.data = gl;
       mvp.matrix = &gl->mvp;
 
-      video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
+      video_shader_driver_set_mvp(&mvp);
 
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    }
@@ -1231,13 +1226,13 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    shader_info.idx        = gl->fbo_pass + 1;
    shader_info.set_active = true;
 
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 
    glBindTexture(GL_TEXTURE_2D, gl->fbo_texture[gl->fbo_pass - 1]);
 
    mip_level = gl->fbo_pass + 1;
 
-   if (video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT, &mip_level))
+   if (video_shader_driver_mipmap_input(&mip_level))
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
@@ -1257,7 +1252,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    params.fbo_info      = fbo_tex_info;
    params.fbo_info_cnt  = fbo_tex_info_cnt;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
+   video_shader_driver_set_parameters(&params);
 
    gl->coords.vertex    = gl->vertex_ptr;
 
@@ -1266,12 +1261,12 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
+   video_shader_driver_set_coords(&coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
+   video_shader_driver_set_mvp(&mvp);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->coords.tex_coord = gl->tex_info.coord;
@@ -1617,7 +1612,7 @@ static INLINE void gl_set_shader_viewport(gl_t *gl, unsigned idx)
    shader_info.idx        = idx;
    shader_info.set_active = true;
 
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
    gl_set_viewport(gl, width, height, false, true);
 }
 
@@ -1696,19 +1691,19 @@ static INLINE void gl_draw_texture(gl_t *gl)
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 
    gl->coords.vertices  = 4;
 
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
+   video_shader_driver_set_coords(&coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp_no_rot;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
+   video_shader_driver_set_mvp(&mvp);
 
    glEnable(GL_BLEND);
 
@@ -1767,7 +1762,7 @@ static bool gl_frame(void *data, const void *frame,
    shader_info.idx        = 1;
    shader_info.set_active = true;
 
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 
 #ifdef IOS
    /* Apparently the viewport is lost each frame, thanks Apple. */
@@ -1899,18 +1894,18 @@ static bool gl_frame(void *data, const void *frame,
    params.fbo_info      = NULL;
    params.fbo_info_cnt  = 0;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_PARAMS, &params);
+   video_shader_driver_set_parameters(&params);
 
    gl->coords.vertices = 4;
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
+   video_shader_driver_set_coords(&coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
+   video_shader_driver_set_mvp(&mvp);
 
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -1950,7 +1945,7 @@ static bool gl_frame(void *data, const void *frame,
       shader_info.idx        = 0;
       shader_info.set_active = true;
 
-      video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+      video_shader_driver_use(&shader_info);
 
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
@@ -2076,7 +2071,7 @@ static void gl_free(void *data)
 
    if (font_driver_has_render_msg())
       font_driver_free(NULL);
-   gl_shader_deinit(gl);
+   video_shader_driver_deinit();
 
 #ifndef NO_GL_FF_VERTEX
    gl_disable_client_arrays(gl);
@@ -2727,10 +2722,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
          hwr->version_major, hwr->version_minor);
 #endif
 
-   if (!video_shader_driver_ctl(SHADER_CTL_INIT_FIRST, NULL))
+   if (!video_shader_driver_init_first())
       goto error;
 
-   video_shader_driver_ctl(SHADER_CTL_GET_IDENT, &ident_info);
+   video_shader_driver_get_ident(&ident_info);
 
    RARCH_LOG("[GL]: Default shader backend found: %s.\n", ident_info.ident);
 
@@ -2744,13 +2739,13 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
       unsigned minimum;
       video_shader_ctx_texture_t texture_info;
 
-      video_shader_driver_ctl(SHADER_CTL_GET_PREV_TEXTURES, &texture_info);
+      video_shader_driver_get_prev_textures(&texture_info);
 
       minimum          = texture_info.id;
       gl->textures     = MAX(minimum + 1, gl->textures);
    }
 
-   if (!video_shader_driver_ctl(SHADER_CTL_INFO, &shader_info))
+   if (!video_shader_driver_info(&shader_info))
       goto error;
 
    RARCH_LOG("[GL]: Using %u textures.\n", gl->textures);
@@ -2766,13 +2761,11 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_set_shader_viewport(gl, 1);
 
    mip_level            = 1;
-   gl->tex_mipmap       = video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT,
-         &mip_level);
-
+   gl->tex_mipmap       = video_shader_driver_mipmap_input(&mip_level);
    shader_filter.index  = 1;
    shader_filter.smooth = &force_smooth;
 
-   if (video_shader_driver_ctl(SHADER_CTL_FILTER_TYPE, &shader_filter))
+   if (video_shader_driver_filter_type(&shader_filter))
       gl->tex_min_filter = gl->tex_mipmap ? (force_smooth ? 
             GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) 
          : (force_smooth ? GL_LINEAR : GL_NEAREST);
@@ -2785,7 +2778,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    wrap_info.idx      = 1;
 
-   video_shader_driver_ctl(SHADER_CTL_WRAP_TYPE, &wrap_info);
+   video_shader_driver_wrap_type(&wrap_info);
 
    gl->wrap_mode      = gl_wrap_type_to_enum(wrap_info.type);
 
@@ -2926,18 +2919,16 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    shader_filter.index  = 1;
    shader_filter.smooth = &smooth;
 
-   if (!video_shader_driver_ctl(SHADER_CTL_FILTER_TYPE, &shader_filter))
+   if (!video_shader_driver_filter_type(&shader_filter))
       smooth = settings->video.smooth;
 
    mip_level             = 1;
    wrap_info.idx         = 1;
 
-   video_shader_driver_ctl(SHADER_CTL_WRAP_TYPE, &wrap_info);
+   video_shader_driver_wrap_type(&wrap_info);
 
-   wrap_mode             =  gl_wrap_type_to_enum(wrap_info.type);
-
-   gl->tex_mipmap        = video_shader_driver_ctl(SHADER_CTL_MIPMAP_INPUT,
-         &mip_level);
+   wrap_mode             = gl_wrap_type_to_enum(wrap_info.type);
+   gl->tex_mipmap        = video_shader_driver_mipmap_input(&mip_level);
 
    gl->video_info.smooth = smooth;
    new_filt = gl->tex_mipmap ? (smooth ? 
@@ -2984,7 +2975,7 @@ static bool gl_set_shader(void *data,
    if (type == RARCH_SHADER_NONE)
       return false;
 
-   gl_shader_deinit(gl);
+   video_shader_driver_deinit();
 
    switch (type)
    {
@@ -3013,11 +3004,11 @@ static bool gl_set_shader(void *data,
    init_data.data        = gl;
    init_data.path        = path;
 
-   if (!video_shader_driver_ctl(SHADER_CTL_INIT, &init_data))
+   if (!video_shader_driver_init(&init_data))
    {
       init_data.path = NULL;
 
-      video_shader_driver_ctl(SHADER_CTL_INIT, &init_data);
+      video_shader_driver_init(&init_data);
 
       RARCH_WARN("[GL]: Failed to set multipass shader. Falling back to stock.\n");
 
@@ -3026,7 +3017,7 @@ static bool gl_set_shader(void *data,
 
    gl_update_tex_filter_frame(gl);
 
-   video_shader_driver_ctl(SHADER_CTL_GET_PREV_TEXTURES, &texture_info);
+   video_shader_driver_get_prev_textures(&texture_info);
 
    textures = texture_info.id + 1;
 
@@ -3514,7 +3505,7 @@ static void gl_render_overlay(gl_t *gl)
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 
    gl->coords.vertex    = gl->overlay_vertex_coord;
    gl->coords.tex_coord = gl->overlay_tex_coord;
@@ -3524,12 +3515,12 @@ static void gl_render_overlay(gl_t *gl)
    coords.handle_data   = NULL;
    coords.data          = &gl->coords;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
+   video_shader_driver_set_coords(&coords);
 
    mvp.data             = gl;
    mvp.matrix           = &gl->mvp_no_rot;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
+   video_shader_driver_set_mvp(&mvp);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -3684,7 +3675,7 @@ static struct video_shader *gl_get_current_shader(void *data)
 {
    video_shader_ctx_t shader_info;
 
-   video_shader_driver_ctl(SHADER_CTL_DIRECT_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_direct_get_current_shader(&shader_info);
 
    return shader_info.data;
 }

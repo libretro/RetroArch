@@ -119,7 +119,7 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
    video_shader_ctx_t shader_info;
    struct video_shader_parameter *param = NULL;
 
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    if (!shader_info.data)
       return 0;

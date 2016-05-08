@@ -3620,7 +3620,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
 #ifdef HAVE_SHADER_MANAGER
-         video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+         video_shader_driver_get_current_shader(&shader_info);
 
          if (shader_info.data)
             ret = deferred_push_video_shader_parameters_common(

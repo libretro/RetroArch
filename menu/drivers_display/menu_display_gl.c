@@ -86,7 +86,7 @@ static void menu_display_gl_blend_begin(void)
    shader_info.idx  = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 }
 
 static void menu_display_gl_blend_end(void)
@@ -137,13 +137,13 @@ static void menu_display_gl_draw(void *data)
    coords.handle_data = gl;
    coords.data        = draw->coords;
    
-   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords);
+   video_shader_driver_set_coords(&coords);
 
    mvp.data   = gl;
    mvp.matrix = draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data 
       : (math_matrix_4x4*)menu_display_gl_get_default_mvp();
 
-   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
+   video_shader_driver_set_mvp(&mvp);
 
    glDrawArrays(menu_display_prim_to_gl_enum(
             draw->prim_type), 0, draw->coords->vertices);
@@ -175,7 +175,7 @@ static void menu_display_gl_draw_pipeline(void *data)
          shader_info.idx        = draw->pipeline.id;
          shader_info.set_active = true;
 
-         video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+         video_shader_driver_use(&shader_info);
 
          t += 0.01;
 
@@ -188,7 +188,7 @@ static void menu_display_gl_draw_pipeline(void *data)
          uniform_param.lookup.ident      = "time";
          uniform_param.result.f.v0       = t;
 
-         video_shader_driver_ctl(SHADER_CTL_SET_PARAMETER, &uniform_param);
+         video_shader_driver_set_parameter(&uniform_param);
          break;
    }
 #endif
