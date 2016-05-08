@@ -174,7 +174,7 @@ bool audio_driver_get_devices_list(void **ptr);
 
 void audio_driver_setup_rewind(void);
 
-void audio_driver_adjust_system_rates(void);
+void audio_driver_monitor_adjust_system_rates(void);
 
 bool audio_driver_set_callback(const void *data);
 

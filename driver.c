@@ -200,7 +200,7 @@ bool driver_find_next(const char *label, char *s, size_t len)
 
 static void driver_adjust_system_rates(void)
 {
-   audio_driver_adjust_system_rates();
+   audio_driver_monitor_adjust_system_rates();
    video_driver_monitor_adjust_system_rates();
 
    if (!video_driver_get_ptr(false))

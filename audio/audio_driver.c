@@ -705,7 +705,7 @@ void audio_driver_set_buffer_size(size_t bufsize)
    audio_driver_data.driver_buffer_size = bufsize;
 }
 
-void audio_driver_adjust_system_rates(void)
+void audio_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew;
    settings_t                   *settings = config_get_ptr();
