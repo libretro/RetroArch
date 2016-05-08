@@ -1218,7 +1218,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             return false;
          break;
       case EVENT_CMD_AUDIO_START:
-         if (!audio_driver_alive())
+         if (audio_driver_alive())
             return false;
 
          if (!settings->audio.mute_enable && !audio_driver_start())
