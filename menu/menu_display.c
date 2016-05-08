@@ -92,11 +92,9 @@ static bool menu_display_check_compatibility(
    return false;
 }
 
-static void menu_display_timedate(void *data)
+void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
 {
    time_t time_;
-   menu_display_ctx_datetime_t *datetime =
-      (menu_display_ctx_datetime_t *)data;
 
    if (!datetime)
       return;
@@ -128,459 +126,419 @@ static void menu_display_timedate(void *data)
    }
 }
 
+static gfx_coord_array_t menu_disp_ca;
+static unsigned menu_display_framebuf_width      = 0;
+static unsigned menu_display_framebuf_height     = 0;
+static size_t menu_display_framebuf_pitch        = 0;
+static int menu_display_font_size                = 0;
+static unsigned menu_display_header_height       = 0;
+static bool menu_display_msg_force               = false;
+static bool menu_display_font_alloc_framebuf     = false;
+static bool menu_display_framebuf_dirty          = false;
+static const uint8_t *menu_display_font_framebuf = NULL;
+static void *menu_display_font_buf               = NULL;
+static msg_queue_t *menu_display_msg_queue       = NULL;
+static menu_display_ctx_driver_t *menu_disp      = NULL;
 
-bool menu_display_ctl(enum menu_display_ctl_state state, void *data)
+void menu_display_blend_begin(void)
 {
-   unsigned width, height;
-   static gfx_coord_array_t menu_disp_ca;
-   static unsigned menu_display_framebuf_width      = 0;
-   static unsigned menu_display_framebuf_height     = 0;
-   static size_t menu_display_framebuf_pitch        = 0;
-   static int menu_display_font_size                = 0;
-   static unsigned menu_display_header_height       = 0;
-   static bool menu_display_msg_force               = false;
-   static bool menu_display_font_alloc_framebuf     = false;
-   static bool menu_display_framebuf_dirty          = false;
-   static const uint8_t *menu_display_font_framebuf = NULL;
-   static void *menu_display_font_buf               = NULL;
-   static msg_queue_t *menu_display_msg_queue       = NULL;
-   static menu_display_ctx_driver_t *menu_disp      = NULL;
-   settings_t *settings                             = config_get_ptr();
+   if (!menu_disp || !menu_disp->blend_begin)
+      return;
+   menu_disp->blend_begin();
+}
 
-   switch (state)
+void menu_display_blend_end(void)
+{
+   if (!menu_disp || !menu_disp->blend_end)
+      return;
+   menu_disp->blend_end();
+}
+
+void menu_display_font_main_deinit(void)
+{
+   if (menu_display_font_buf)
+      font_driver_free(menu_display_font_buf);
+   menu_display_font_buf  = NULL;
+   menu_display_font_size = 0;
+}
+
+bool menu_display_font_main_init(menu_display_ctx_font_t *font)
+{
+   menu_display_font_main_deinit();
+   if (!font || !menu_disp)
+      return false;
+
+   if (!menu_disp->font_init_first)
+      return false;
+
+   if (!menu_disp->font_init_first(&menu_display_font_buf,
+            video_driver_get_ptr(false),
+            font->path, font->size))
+      return false;
+
+   menu_display_font_size = font->size;
+   return true;
+}
+
+void menu_display_font_bind_block(void *block)
+{
+   font_driver_bind_block(menu_display_font_buf, block);
+}
+
+bool menu_display_font_flush_block(void)
+{
+   if (!menu_display_font_buf)
+      return false;
+
+   font_driver_flush(menu_display_font_buf);
+   font_driver_bind_block(menu_display_font_buf, NULL);
+   return true;
+}
+
+void menu_display_framebuffer_deinit(void)
+{
+   menu_display_framebuf_width  = 0;
+   menu_display_framebuf_height = 0;
+   menu_display_framebuf_pitch  = 0;
+}
+
+void menu_display_deinit(void)
+{
+   if (menu_display_msg_queue)
+      msg_queue_free(menu_display_msg_queue);
+   gfx_coord_array_free(&menu_disp_ca);
+   menu_display_msg_queue       = NULL;
+   menu_display_msg_force       = false;
+   menu_display_header_height   = 0;
+   menu_disp                    = NULL;
+
+   menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
+   menu_display_framebuffer_deinit();
+}
+
+bool menu_display_init(void)
+{
+   retro_assert(menu_display_msg_queue = msg_queue_new(8));
+   menu_disp_ca.allocated              =  0;
+   return true;
+}
+
+void menu_display_coords_array_reset(void)
+{
+   menu_disp_ca.coords.vertices = 0;
+}
+
+gfx_coord_array_t *menu_display_get_coords_array(void)
+{
+   return &menu_disp_ca;
+}
+
+void *menu_display_get_font_buffer(void)
+{
+   return menu_display_font_buf;
+}
+
+void menu_display_set_font_buffer(void *buffer)
+{
+   menu_display_font_buf = buffer;
+}
+
+const uint8_t *menu_display_get_font_framebuffer(void)
+{
+   return menu_display_font_framebuf;
+}
+
+void menu_display_set_font_framebuffer(const uint8_t *buffer)
+{
+   menu_display_font_framebuf = buffer;
+}
+
+bool menu_display_libretro_running(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (!settings->menu.pause_libretro)
    {
-      case MENU_DISPLAY_CTL_BLEND_BEGIN:
-         if (!menu_disp || !menu_disp->blend_begin)
-            return false;
-         menu_disp->blend_begin();
-         break;
-      case MENU_DISPLAY_CTL_BLEND_END:
-         if (!menu_disp || !menu_disp->blend_end)
-            return false;
-         menu_disp->blend_end();
-         break;
-      case MENU_DISPLAY_CTL_FONT_MAIN_DEINIT:
-         if (menu_display_font_buf)
-            font_driver_free(menu_display_font_buf);
-         menu_display_font_buf  = NULL;
-         menu_display_font_size = 0;
-         break;
-      case MENU_DISPLAY_CTL_FONT_MAIN_INIT:
-         {
-            menu_display_ctx_font_t *font = (menu_display_ctx_font_t*)data;
-
-            menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
-
-            if (!font || !menu_disp)
-               return false;
-
-            if (!menu_disp->font_init_first)
-               return false;
-
-            if (!menu_disp->font_init_first(&menu_display_font_buf,
-                     video_driver_get_ptr(false),
-                     font->path, font->size))
-               return false;
-
-            menu_display_font_size = font->size;
-         }
-         break;
-      case MENU_DISPLAY_CTL_FONT_BIND_BLOCK:
-         font_driver_bind_block(menu_display_font_buf, data);
-         break;
-      case MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK:
-         if (!menu_display_font_buf)
-            return false;
-
-         font_driver_flush(menu_display_font_buf);
-         font_driver_bind_block(menu_display_font_buf, NULL);
-         break;
-      case MENU_DISPLAY_CTL_FRAMEBUF_DEINIT:
-         menu_display_framebuf_width  = 0;
-         menu_display_framebuf_height = 0;
-         menu_display_framebuf_pitch  = 0;
-         break;
-      case MENU_DISPLAY_CTL_DEINIT:
-         if (menu_display_msg_queue)
-            msg_queue_free(menu_display_msg_queue);
-         gfx_coord_array_free(&menu_disp_ca);
-         menu_display_msg_queue       = NULL;
-         menu_display_msg_force       = false;
-         menu_display_header_height   = 0;
-         menu_disp                    = NULL;
-
-         menu_animation_ctl(MENU_ANIMATION_CTL_DEINIT, NULL);
-         menu_display_ctl(MENU_DISPLAY_CTL_FRAMEBUF_DEINIT, NULL);
-         break;
-      case MENU_DISPLAY_CTL_INIT:
-         retro_assert(menu_display_msg_queue = msg_queue_new(8));
-         menu_disp_ca.allocated     =  0;
-         break;
-      case MENU_DISPLAY_CTL_COORDS_ARRAY_RESET:
-         menu_disp_ca.coords.vertices = 0;
-         break;
-      case MENU_DISPLAY_CTL_COORDS_ARRAY_GET:
-         {
-            void **ptr = (void**)data;
-            if (!ptr)
-               return false;
-            *ptr = &menu_disp_ca;
-         }
-         break;
-      case MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME:
-         break;
-      case MENU_DISPLAY_CTL_UNSET_STUB_DRAW_FRAME:
-         break;
-      case MENU_DISPLAY_CTL_FONT_BUF:
-         {
-            void **ptr = (void**)data;
-            if (!ptr)
-               return false;
-            *ptr = menu_display_font_buf;
-         }
-         break;
-      case MENU_DISPLAY_CTL_SET_FONT_BUF:
-         {
-            void **ptr = (void**)data;
-            if (!ptr)
-               return false;
-            menu_display_font_buf = *ptr;
-         }
-         break;
-      case MENU_DISPLAY_CTL_FONT_FB:
-         {
-            uint8_t **ptr = (uint8_t**)data;
-            if (!ptr)
-               return false;
-            *ptr = (uint8_t*)menu_display_font_framebuf;
-         }
-         break;
-      case MENU_DISPLAY_CTL_SET_FONT_FB:
-         {
-            uint8_t **ptr = (uint8_t**)data;
-            if (!ptr)
-               return false;
-            menu_display_font_framebuf = *ptr;
-         }
-         break;
-      case MENU_DISPLAY_CTL_LIBRETRO_RUNNING:
-         if (!settings->menu.pause_libretro)
-            if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
-                  && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
-               return true;
-         return false;
-      case MENU_DISPLAY_CTL_LIBRETRO:
-         video_driver_set_texture_enable(true, false);
-
-         if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
-         {
-            bool libretro_input_is_blocked = 
-               input_driver_ctl(
-                     RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL);
-
-            if (!libretro_input_is_blocked)
-               input_driver_ctl(
-                     RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED, NULL);
-
-            core_run();
-
-            input_driver_ctl(
-                  RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED, NULL);
-            return true;
-         }
-
-         return video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
-      case MENU_DISPLAY_CTL_SET_WIDTH:
-         {
-            unsigned *ptr = (unsigned*)data;
-            if (!ptr)
-               return false;
-            menu_display_framebuf_width = *ptr;
-         }
-         break;
-      case MENU_DISPLAY_CTL_WIDTH:
-         {
-            unsigned *ptr = (unsigned*)data;
-            if (!ptr)
-               return false;
-            *ptr = menu_display_framebuf_width;
-         }
-         break;
-      case MENU_DISPLAY_CTL_HEIGHT:
-         {
-            unsigned *ptr = (unsigned*)data;
-            if (!ptr)
-               return false;
-            *ptr = menu_display_framebuf_height;
-         }
-         break;
-      case MENU_DISPLAY_CTL_HEADER_HEIGHT:
-         {
-            unsigned *ptr = (unsigned*)data;
-            if (!ptr)
-               return false;
-            *ptr = menu_display_header_height;
-         }
-         break;
-      case MENU_DISPLAY_CTL_SET_HEADER_HEIGHT:
-         {
-            unsigned *ptr = (unsigned*)data;
-            if (!ptr)
-               return false;
-            menu_display_header_height = *ptr;
-         }
-         break;
-      case MENU_DISPLAY_CTL_FONT_SIZE:
-         {
-            unsigned *ptr = (unsigned*)data;
-            if (!ptr)
-               return false;
-            *ptr = menu_display_font_size;
-         }
-         break;
-      case MENU_DISPLAY_CTL_SET_FONT_SIZE:
-         {
-            unsigned *ptr = (unsigned*)data;
-            if (!ptr)
-               return false;
-            menu_display_font_size = *ptr;
-         }
-         break;
-      case MENU_DISPLAY_CTL_SET_HEIGHT:
-         {
-            unsigned *ptr = (unsigned*)data;
-            if (!ptr)
-               return false;
-            menu_display_framebuf_height = *ptr;
-         }
-         break;
-      case MENU_DISPLAY_CTL_FB_PITCH:
-         {
-            size_t *ptr = (size_t*)data;
-            if (!ptr)
-               return false;
-            *ptr = menu_display_framebuf_pitch;
-         }
-         break;
-      case MENU_DISPLAY_CTL_SET_FB_PITCH:
-         {
-            size_t *ptr = (size_t*)data;
-            if (!ptr)
-               return false;
-            menu_display_framebuf_pitch = *ptr;
-         }
-         break;
-      case MENU_DISPLAY_CTL_MSG_FORCE:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            *ptr = menu_display_msg_force;
-         }
-         break;
-      case MENU_DISPLAY_CTL_SET_MSG_FORCE:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            menu_display_msg_force = *ptr;
-         }
-         break;
-      case MENU_DISPLAY_CTL_FONT_DATA_INIT:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            *ptr = menu_display_font_alloc_framebuf;
-         }
+      if (rarch_ctl(RARCH_CTL_IS_INITED, NULL) 
+            && !rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          return true;
-      case MENU_DISPLAY_CTL_SET_FONT_DATA_INIT:
-         {
-            bool *ptr = (bool*)data;
-            if (!ptr)
-               return false;
-            menu_display_font_alloc_framebuf = *ptr;
-         }
-         break;
-      case MENU_DISPLAY_CTL_UPDATE_PENDING:
-         {
-            if (menu_animation_ctl(MENU_ANIMATION_CTL_IS_ACTIVE, NULL))
-               return true;
-            if (menu_display_ctl(
-                  MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG, NULL))
-               return true;
-         }
-         return false;
-      case MENU_DISPLAY_CTL_SET_VIEWPORT:
-         video_driver_get_size(&width, &height);
-         video_driver_set_viewport(width,
-               height, true, false);
-         break;
-      case MENU_DISPLAY_CTL_UNSET_VIEWPORT:
-         video_driver_get_size(&width, &height);
-         video_driver_set_viewport(width,
-               height, false, true);
-         break;
-      case MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG:
-         return menu_display_framebuf_dirty;
-      case MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG:
-         menu_display_framebuf_dirty = true;
-         break;
-      case MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG:
-         menu_display_framebuf_dirty = false;
-         break;
-      case MENU_DISPLAY_CTL_GET_DPI:
-         {
-            gfx_ctx_metrics_t metrics;
-            float           *dpi = (float*)data;
-            *dpi                 = menu_dpi_override_value;
+   }
+   return false;
+}
 
-            if (!settings)
-               return true;
+bool menu_display_libretro(void)
+{
+   video_driver_set_texture_enable(true, false);
 
-            metrics.type  = DISPLAY_METRIC_DPI;
-            metrics.value = dpi; 
+   if (menu_display_libretro_running())
+   {
+      bool libretro_input_is_blocked = 
+         input_driver_ctl(
+               RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL);
 
-            if (settings->menu.dpi.override_enable)
-               *dpi = settings->menu.dpi.override_value;
-            else if (!gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics) || !*dpi)
-               *dpi = menu_dpi_override_value;
-         }
-         break;
-      case MENU_DISPLAY_CTL_INIT_FIRST_DRIVER:
-         {
-            unsigned i;
+      if (!libretro_input_is_blocked)
+         input_driver_ctl(
+               RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED, NULL);
 
-            for (i = 0; menu_display_ctx_drivers[i]; i++)
-            {
-               if (!menu_display_check_compatibility(
-                        menu_display_ctx_drivers[i]->type))
-                  continue;
+      core_run();
 
-               RARCH_LOG("Found menu display driver: \"%s\".\n",
-                     menu_display_ctx_drivers[i]->ident);
-               menu_disp = menu_display_ctx_drivers[i];
-               return true;
-            }
-         }
-         return false;
-      case MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR:
-         if (!menu_disp || !menu_disp->restore_clear_color)
-            return false;
-         menu_disp->restore_clear_color();
-         break;
-      case MENU_DISPLAY_CTL_CLEAR_COLOR:
-         if (!menu_disp || !menu_disp->clear_color)
-            return false;
-         menu_disp->clear_color((menu_display_ctx_clearcolor_t*)data);
-         break;
-      case MENU_DISPLAY_CTL_DRAW:
-         {
-            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-            if (!menu_disp || !draw || !menu_disp->draw)
-               return false;
-            /* TODO - edge case */
-            if (draw->height <= 0)
-               draw->height = 1;
-
-            menu_disp->draw(draw);
-         }
-         break;
-      case MENU_DISPLAY_CTL_DRAW_PIPELINE:
-         {
-            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-            if (!menu_disp || !draw || !menu_disp->draw_pipeline)
-               return false;
-            menu_disp->draw_pipeline(draw);
-         }
-         break;
-      case MENU_DISPLAY_CTL_DRAW_BG:
-         {
-            struct gfx_coords coords;
-            const float *new_vertex       = NULL;
-            const float *new_tex_coord    = NULL;
-            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-            if (!menu_disp || !draw)
-               return false;
-
-            new_vertex           = draw->vertex;
-            new_tex_coord        = draw->tex_coord;
-
-            if (!new_vertex)
-               new_vertex        = menu_disp->get_default_vertices();
-            if (!new_tex_coord)
-               new_tex_coord     = menu_disp->get_default_tex_coords();
-
-            coords.vertices      = draw->vertex_count;
-            coords.vertex        = new_vertex;
-            coords.tex_coord     = new_tex_coord;
-            coords.lut_tex_coord = new_tex_coord;
-            coords.color         = (const float*)draw->color;
-
-            draw->coords      = &coords;
-
-            if (!draw->texture)
-               draw->texture     = menu_display_white_texture;
-
-            draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp();
-         }
-         break;
-      case MENU_DISPLAY_CTL_DRAW_GRADIENT:
-         {
-            menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
-
-            draw->texture = 0;
-            draw->x       = 0;
-            draw->y       = 0;
-
-            menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG, draw);
-            menu_display_ctl(MENU_DISPLAY_CTL_DRAW,    draw);
-         }
-         break;
-      case MENU_DISPLAY_CTL_ROTATE_Z:
-         {
-            math_matrix_4x4 matrix_rotated, matrix_scaled;
-            math_matrix_4x4 *b                   = NULL;
-            menu_display_ctx_rotate_draw_t *draw = 
-               (menu_display_ctx_rotate_draw_t*)data;
-
-            if (!draw || !menu_disp || !menu_disp->get_default_mvp)
-               return false;
-
-            b = (math_matrix_4x4*)menu_disp->get_default_mvp();
-
-            matrix_4x4_rotate_z(&matrix_rotated, draw->rotation);
-            matrix_4x4_multiply(draw->matrix, &matrix_rotated, b);
-
-            if (!draw->scale_enable)
-               return false;
-
-            matrix_4x4_scale(&matrix_scaled,
-                  draw->scale_x, draw->scale_y, draw->scale_z);
-            matrix_4x4_multiply(draw->matrix, &matrix_scaled, draw->matrix);
-         }
-         break;
-      case MENU_DISPLAY_CTL_TEX_COORDS_GET:
-         {
-            menu_display_ctx_coord_draw_t *draw = 
-               (menu_display_ctx_coord_draw_t*)data;
-            if (!draw)
-               return false;
-
-            if (!menu_disp || !menu_disp->get_default_tex_coords)
-               return false;
-
-            draw->ptr = menu_disp->get_default_tex_coords();
-         }
-         break;
-      case MENU_DISPLAY_CTL_TIMEDATE:
-         menu_display_timedate(data);
-         break;
-      case MENU_DISPLAY_CTL_NONE:
-      default:
-         break;
+      input_driver_ctl(
+            RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED, NULL);
+      return true;
    }
 
+   return video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+}
+
+void menu_display_set_width(unsigned width)
+{
+   menu_display_framebuf_width = width;
+}
+
+unsigned menu_display_get_width(void)
+{
+   return menu_display_framebuf_width;
+}
+
+void menu_display_set_height(unsigned height)
+{
+   menu_display_framebuf_height = height;
+}
+
+unsigned menu_display_get_height(void)
+{
+   return menu_display_framebuf_height;
+}
+
+void menu_display_set_header_height(unsigned height)
+{
+   menu_display_header_height = height;
+}
+
+unsigned menu_display_get_header_height(void)
+{
+   return menu_display_header_height;
+}
+
+unsigned menu_display_get_font_size(void)
+{
+   return menu_display_font_size;
+}
+
+void menu_display_set_font_size(unsigned size)
+{
+   menu_display_font_size = size;
+}
+
+size_t menu_display_get_framebuffer_pitch(void)
+{
+   return menu_display_framebuf_pitch;
+}
+
+void menu_display_set_framebuffer_pitch(size_t pitch)
+{
+   menu_display_framebuf_pitch = pitch;
+}
+
+bool menu_display_get_msg_force(void)
+{
+   return menu_display_msg_force;
+}
+
+void menu_display_set_msg_force(bool state)
+{
+   menu_display_msg_force = state;
+}
+
+bool menu_display_get_font_data_init(void)
+{
+   return menu_display_font_alloc_framebuf;
+}
+
+void menu_display_set_font_data_init(bool state)
+{
+   menu_display_font_alloc_framebuf = state;
+}
+
+bool menu_display_get_update_pending(void)
+{
+   if (menu_animation_ctl(MENU_ANIMATION_CTL_IS_ACTIVE, NULL))
+      return true;
+   if (menu_display_get_framebuffer_dirty_flag())
+      return true;
+   return false;
+}
+
+void menu_display_set_viewport(void)
+{
+   unsigned width, height;
+   video_driver_get_size(&width, &height);
+   video_driver_set_viewport(width, height, true, false);
+}
+
+void menu_display_unset_viewport(void)
+{
+   unsigned width, height;
+   video_driver_get_size(&width, &height);
+   video_driver_set_viewport(width, height, false, true);
+}
+
+bool menu_display_get_framebuffer_dirty_flag(void)
+{
+   return menu_display_framebuf_dirty;
+}
+
+void menu_display_set_framebuffer_dirty_flag(void)
+{
+   menu_display_framebuf_dirty = true;
+}
+
+void menu_display_unset_framebuffer_dirty_flag(void)
+{
+   menu_display_framebuf_dirty = false;
+}
+
+float menu_display_get_dpi(void)
+{
+   settings_t *settings = config_get_ptr();
+   gfx_ctx_metrics_t metrics;
+   float dpi = menu_dpi_override_value;
+
+   if (!settings)
+      return true;
+
+   metrics.type  = DISPLAY_METRIC_DPI;
+   metrics.value = &dpi; 
+
+   if (settings->menu.dpi.override_enable)
+      return settings->menu.dpi.override_value;
+   else if (!gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics) || !dpi)
+      return menu_dpi_override_value;
+
+   return dpi;
+}
+
+bool menu_display_init_first_driver(void)
+{
+   unsigned i;
+
+   for (i = 0; menu_display_ctx_drivers[i]; i++)
+   {
+      if (!menu_display_check_compatibility(
+               menu_display_ctx_drivers[i]->type))
+         continue;
+
+      RARCH_LOG("Found menu display driver: \"%s\".\n",
+            menu_display_ctx_drivers[i]->ident);
+      menu_disp = menu_display_ctx_drivers[i];
+      return true;
+   }
+   return false;
+}
+
+bool menu_display_restore_clear_color(void)
+{
+   if (!menu_disp || !menu_disp->restore_clear_color)
+      return false;
+   menu_disp->restore_clear_color();
+   return true;
+}
+
+void menu_display_clear_color(menu_display_ctx_clearcolor_t *color)
+{
+   if (!menu_disp || !menu_disp->clear_color)
+      return;
+   menu_disp->clear_color(color);
+}
+
+void menu_display_draw(menu_display_ctx_draw_t *draw)
+{
+   if (!menu_disp || !draw || !menu_disp->draw)
+      return;
+
+   /* TODO - edge case */
+   if (draw->height <= 0)
+      draw->height = 1;
+
+   menu_disp->draw(draw);
+}
+
+void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
+{
+   if (!menu_disp || !draw || !menu_disp->draw_pipeline)
+      return;
+   menu_disp->draw_pipeline(draw);
+}
+
+void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
+{
+   struct gfx_coords coords;
+   const float *new_vertex       = NULL;
+   const float *new_tex_coord    = NULL;
+   if (!menu_disp || !draw)
+      return;
+
+   new_vertex           = draw->vertex;
+   new_tex_coord        = draw->tex_coord;
+
+   if (!new_vertex)
+      new_vertex        = menu_disp->get_default_vertices();
+   if (!new_tex_coord)
+      new_tex_coord     = menu_disp->get_default_tex_coords();
+
+   coords.vertices      = draw->vertex_count;
+   coords.vertex        = new_vertex;
+   coords.tex_coord     = new_tex_coord;
+   coords.lut_tex_coord = new_tex_coord;
+   coords.color         = (const float*)draw->color;
+
+   draw->coords      = &coords;
+
+   if (!draw->texture)
+      draw->texture     = menu_display_white_texture;
+
+   draw->matrix_data = (math_matrix_4x4*)menu_disp->get_default_mvp();
+}
+
+void menu_display_draw_gradient(menu_display_ctx_draw_t *draw)
+{
+   draw->texture = 0;
+   draw->x       = 0;
+   draw->y       = 0;
+
+   menu_display_draw_bg(draw);
+   menu_display_draw(draw);
+}
+
+void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw)
+{
+   math_matrix_4x4 matrix_rotated, matrix_scaled;
+   math_matrix_4x4 *b = NULL;
+
+   if (!draw || !menu_disp || !menu_disp->get_default_mvp)
+      return;
+
+   b = (math_matrix_4x4*)menu_disp->get_default_mvp();
+
+   matrix_4x4_rotate_z(&matrix_rotated, draw->rotation);
+   matrix_4x4_multiply(draw->matrix, &matrix_rotated, b);
+
+   if (!draw->scale_enable)
+      return;
+
+   matrix_4x4_scale(&matrix_scaled,
+         draw->scale_x, draw->scale_y, draw->scale_z);
+   matrix_4x4_multiply(draw->matrix, &matrix_scaled, draw->matrix);
+}
+
+bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw)
+{
+   if (!draw)
+      return false;
+
+   if (!menu_disp || !menu_disp->get_default_tex_coords)
+      return false;
+
+   draw->ptr = menu_disp->get_default_tex_coords();
    return true;
 }
 
@@ -621,7 +579,7 @@ void menu_display_draw_cursor(
    bool cursor_visible  = settings->video.fullscreen ||
        !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL);
 
-   if ( !settings->menu.mouse.enable)
+   if (!settings->menu.mouse.enable)
       return;
    if (!cursor_visible)
       return;
@@ -632,7 +590,7 @@ void menu_display_draw_cursor(
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_blend_begin();
 
    draw.x               = x - (cursor_size / 2);
    draw.y               = (int)height - y - (cursor_size / 2);
@@ -643,8 +601,8 @@ void menu_display_draw_cursor(
    draw.texture         = texture;
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+   menu_display_draw(&draw);
+   menu_display_blend_end();
 }
 
 static INLINE float menu_display_scalef(float val,
@@ -668,7 +626,7 @@ void menu_display_push_quad(
    float vertex[8];
    gfx_coord_array_t *ca   = NULL;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
+   ca = menu_display_get_coords_array();
 
    vertex[0]             = x1 / (float)width;
    vertex[1]             = y1 / (float)height;
@@ -681,7 +639,7 @@ void menu_display_push_quad(
 
    coord_draw.ptr        = NULL;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_TEX_COORDS_GET, &coord_draw);
+   menu_display_get_tex_coords(&coord_draw);
 
    coords.color          = colors;
    coords.vertex         = vertex;
@@ -794,8 +752,7 @@ void menu_display_draw_text(const char *msg,
    params->x           = params->x;
    params->y           = params->y;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
-
+   fb_buf = menu_display_get_font_buffer();
    video_driver_set_osd_msg(msg, params, fb_buf);
 }
 

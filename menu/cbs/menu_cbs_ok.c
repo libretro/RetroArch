@@ -768,10 +768,9 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_CONFIG_FILE:
          {
-            bool msg_force  = true;
             flush_char      = NULL;
             flush_type      = MENU_SETTINGS;
-            menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
+            menu_display_set_msg_force(true);
 
             if (rarch_ctl(RARCH_CTL_REPLACE_CONFIG, action_path))
             {

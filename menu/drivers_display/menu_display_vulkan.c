@@ -102,7 +102,7 @@ static void menu_display_vk_draw_pipeline(void *data)
    if (!vk || !draw)
       return;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
+   ca = menu_display_get_coords_array();
    draw->x                     = 0;
    draw->y                     = 0;
    draw->coords                = (struct gfx_coords*)&ca->coords;

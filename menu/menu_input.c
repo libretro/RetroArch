@@ -825,8 +825,8 @@ static int menu_input_pointer(unsigned *action)
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input                     = menu_input_get_ptr();
 
-   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &fb_width);
-   menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
+   fb_width  = menu_display_get_width();
+   fb_height = menu_display_get_height();
 
    pointer_device = menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
@@ -940,7 +940,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
          menu_input_t *menu_input = menu_input_get_ptr();
 
          menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-         menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+         header_height = menu_display_get_header_height();
 
          BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L);
 
@@ -1068,7 +1068,6 @@ static int menu_input_pointer_post_iterate(
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   unsigned header_height;
    size_t selection;
    static bool pointer_oldpressed[2];
    static bool pointer_oldback  = false;
@@ -1088,7 +1087,6 @@ static int menu_input_pointer_post_iterate(
       return -1;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
-   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
 #ifdef HAVE_OVERLAY
    check_overlay = check_overlay || 

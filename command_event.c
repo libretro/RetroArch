@@ -1151,9 +1151,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             input_driver_ctl(RARCH_INPUT_CTL_POLL, NULL);
 
 #ifdef HAVE_MENU
-            menu_display_ctl(
-                  MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
-
+            menu_display_set_framebuffer_dirty_flag();
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
                event_cmd_ctl(EVENT_CMD_VIDEO_SET_BLOCKING_STATE, NULL);
 #endif
