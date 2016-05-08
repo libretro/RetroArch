@@ -737,7 +737,6 @@ static void xmb_update_thumbnail_image(void *data)
 static void xmb_selection_pointer_changed(
       xmb_handle_t *xmb, bool allow_animations)
 {
-   size_t skip;
    unsigned i, end, height, depth;
    menu_animation_ctx_tag_t tag;
    size_t selection, num      = 0;
@@ -761,7 +760,6 @@ static void xmb_selection_pointer_changed(
 
    menu_animation_ctl(MENU_ANIMATION_CTL_KILL_BY_TAG, &tag);
    menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &num);
-   skip = 0;
 
    for (i = 0; i < end; i++)
    {
@@ -789,9 +787,6 @@ static void xmb_selection_pointer_changed(
             xmb_update_thumbnail_image(xmb);
          }
       }
-
-      if (real_iy < -threshold)
-         skip++;
 
       if (     (!allow_animations)
             || (real_iy < -threshold
@@ -829,8 +824,6 @@ static void xmb_selection_pointer_changed(
          menu_animation_ctl(MENU_ANIMATION_CTL_PUSH, &entry);
       }
    }
-
-   menu_entries_ctl(MENU_ENTRIES_CTL_SET_START, &skip);
 }
 
 static void xmb_list_open_old(xmb_handle_t *xmb,
