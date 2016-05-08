@@ -170,12 +170,6 @@ typedef struct xmb_handle
    float active_item_factor;
    float under_item_offset;
 
-   float item_active_zoom;
-   float item_passive_zoom;
-
-   float item_active_alpha;
-   float item_passive_alpha;
-
    float shadow_offset;
 
    char title_name[256];
@@ -228,6 +222,21 @@ typedef struct xmb_handle
       size_t selection_ptr_old;
       size_t selection_ptr;
    } categories;
+
+   struct
+   {
+      struct
+      {
+         float alpha;
+         float zoom;
+      } active;
+
+      struct
+      {
+         float alpha;
+         float zoom;
+      } passive;
+   } items;
 
    xmb_node_t main_menu_node;
    xmb_node_t settings_tab_node;
@@ -773,8 +782,8 @@ static void xmb_selection_pointer_changed(
    for (i = 0; i < end; i++)
    {
       float iy, real_iy;
-      float ia         = xmb->item_passive_alpha;
-      float iz         = xmb->item_passive_zoom;
+      float ia         = xmb->items.passive.alpha;
+      float iz         = xmb->items.passive.zoom;
       xmb_node_t *node = (xmb_node_t*)
          menu_entries_get_userdata_at_offset(selection_buf, i);
 
@@ -786,8 +795,8 @@ static void xmb_selection_pointer_changed(
 
       if (i == selection)
       {
-         ia = xmb->item_active_alpha;
-         iz = xmb->item_active_zoom;
+         ia = xmb->items.active.alpha;
+         iz = xmb->items.active.zoom;
 
          depth = xmb_list_get_size(xmb, MENU_LIST_PLAIN);
          if (strcmp(xmb_thumbnails_ident(), "OFF") && depth == 1)
@@ -857,7 +866,7 @@ static void xmb_list_open_old(xmb_handle_t *xmb,
          continue;
 
       if (i == current)
-         ia = xmb->item_active_alpha;
+         ia = xmb->items.active.alpha;
       if (dir == -1)
          ia = 0;
 
@@ -930,9 +939,9 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       if (i == current)
          node->zoom = xmb->categories.active.zoom;
 
-      ia    = xmb->item_passive_alpha;
+      ia    = xmb->items.passive.alpha;
       if (i == current)
-         ia = xmb->item_active_alpha;
+         ia = xmb->items.active.alpha;
 
       if (real_y < -threshold || real_y > height+threshold)
       {
@@ -1087,7 +1096,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
    {
       xmb_node_t *node = (xmb_node_t*)
          menu_entries_get_userdata_at_offset(list, i);
-      float ia         = xmb->item_passive_alpha;
+      float ia         = xmb->items.passive.alpha;
 
       if (!node)
          continue;
@@ -1097,7 +1106,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       node->label_alpha = 0;
 
       if (i == current)
-         ia = xmb->item_active_alpha;
+         ia = xmb->items.active.alpha;
 
       xmb_push_animations(node, ia, 0);
    }
@@ -2336,13 +2345,13 @@ static void xmb_layout(xmb_handle_t *xmb)
 
    xmb->categories.active.zoom  = 1.0;
    xmb->categories.passive.zoom = 0.5;
-   xmb->item_active_zoom        = 1.0;
-   xmb->item_passive_zoom       = 0.5;
+   xmb->items.active.zoom        = 1.0;
+   xmb->items.passive.zoom       = 0.5;
 
    xmb->categories.active.alpha  = 1.0;
    xmb->categories.passive.alpha = 0.85;
-   xmb->item_active_alpha        = 1.0;
-   xmb->item_passive_alpha       = 0.85;
+   xmb->items.active.alpha        = 1.0;
+   xmb->items.passive.alpha       = 0.85;
 
    /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
    if (width <= 640)
@@ -2378,8 +2387,8 @@ static void xmb_layout(xmb_handle_t *xmb)
 
    for (i = 0; i < end; i++)
    {
-      float ia = xmb->item_passive_alpha;
-      float iz = xmb->item_passive_zoom;
+      float ia = xmb->items.passive.alpha;
+      float iz = xmb->items.passive.zoom;
       xmb_node_t *node = (xmb_node_t*)menu_entries_get_userdata_at_offset(
             selection_buf, i);
 
@@ -2388,8 +2397,8 @@ static void xmb_layout(xmb_handle_t *xmb)
 
       if (i == current)
       {
-         ia = xmb->item_active_alpha;
-         iz = xmb->item_active_alpha;
+         ia = xmb->items.active.alpha;
+         iz = xmb->items.active.alpha;
       }
 
       node->alpha       = ia;
@@ -2407,7 +2416,7 @@ static void xmb_layout(xmb_handle_t *xmb)
    for (i = 0; i < end; i++)
    {
       float ia = 0;
-      float iz = xmb->item_passive_zoom;
+      float iz = xmb->items.passive.zoom;
       xmb_node_t *node = (xmb_node_t*)menu_entries_get_userdata_at_offset(
             xmb->selection_buf_old, i);
 
@@ -2416,8 +2425,8 @@ static void xmb_layout(xmb_handle_t *xmb)
 
       if (i == current)
       {
-         ia = xmb->item_active_alpha;
-         iz = xmb->item_active_alpha;
+         ia = xmb->items.active.alpha;
+         iz = xmb->items.active.alpha;
       }
 
       node->alpha       = ia;
@@ -2832,17 +2841,17 @@ static void xmb_list_insert(void *userdata,
    }
 
    current           = selection;
-   node->alpha       = xmb->item_passive_alpha;
-   node->zoom        = xmb->item_passive_zoom;
+   node->alpha       = xmb->items.passive.alpha;
+   node->zoom        = xmb->items.passive.zoom;
    node->label_alpha = node->alpha;
    node->y           = xmb_item_y(xmb, i, current);
    node->x           = 0;
 
    if (i == current)
    {
-      node->alpha       = xmb->item_active_alpha;
-      node->label_alpha = xmb->item_active_alpha;
-      node->zoom        = xmb->item_active_alpha;
+      node->alpha       = xmb->items.active.alpha;
+      node->label_alpha = xmb->items.active.alpha;
+      node->zoom        = xmb->items.active.alpha;
    }
 
    file_list_set_userdata(list, i, node);
