@@ -170,13 +170,9 @@ typedef struct xmb_handle
    float active_item_factor;
    float under_item_offset;
 
-   float categories_active_zoom;
-   float categories_passive_zoom;
    float item_active_zoom;
    float item_passive_zoom;
 
-   float categories_active_alpha;
-   float categories_passive_alpha;
    float item_active_alpha;
    float item_passive_alpha;
 
@@ -218,7 +214,15 @@ typedef struct xmb_handle
       {
          unsigned idx;
          unsigned idx_old;
+         float alpha;
+         float zoom;
       } active;
+
+      struct
+      {
+         float alpha;
+         float zoom;
+      } passive;
 
       float x_pos;
       size_t selection_ptr_old;
@@ -919,12 +923,12 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
       node->x = xmb->icon.size * dir * 2;
       node->y = xmb_item_y(xmb, i, current);
-      node->zoom = xmb->categories_passive_zoom;
+      node->zoom = xmb->categories.passive.zoom;
 
       real_y = node->y + xmb->margins.screen.top;
 
       if (i == current)
-         node->zoom = xmb->categories_active_zoom;;
+         node->zoom = xmb->categories.active.zoom;
 
       ia    = xmb->item_passive_alpha;
       if (i == current)
@@ -973,13 +977,13 @@ static xmb_node_t *xmb_node_allocate_userdata(xmb_handle_t *xmb, unsigned i)
       return NULL;
    }
 
-   node->alpha = xmb->categories_passive_alpha;
-   node->zoom  = xmb->categories_passive_zoom;
+   node->alpha = xmb->categories.passive.alpha;
+   node->zoom  = xmb->categories.passive.zoom;
 
    if ((i + XMB_SYSTEM_TAB_END) == xmb->categories.active.idx)
    {
-      node->alpha = xmb->categories_active_alpha;
-      node->zoom  = xmb->categories_active_zoom;;
+      node->alpha = xmb->categories.active.alpha;
+      node->zoom  = xmb->categories.active.zoom;
    }
 
    file_list_free_actiondata(xmb->horizontal_list, i);
@@ -1150,8 +1154,8 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
    for (j = 0; j <= list_size; j++)
    {
       menu_animation_ctx_entry_t entry;
-      float ia                    = xmb->categories_passive_alpha;
-      float iz                    = xmb->categories_passive_zoom;
+      float ia                    = xmb->categories.passive.alpha;
+      float iz                    = xmb->categories.passive.zoom;
       xmb_node_t *node            = xmb_get_node(xmb, j);
 
       if (!node)
@@ -1159,8 +1163,8 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb)
 
       if (j == xmb->categories.active.idx)
       {
-         ia = xmb->categories_active_alpha;
-         iz = xmb->categories_active_zoom;;
+         ia = xmb->categories.active.alpha;
+         iz = xmb->categories.active.zoom;
       }
 
       entry.duration     = XMB_DELAY;
@@ -1237,9 +1241,9 @@ static void xmb_list_open_horizontal_list(xmb_handle_t *xmb)
          continue;
 
       if (j == xmb->categories.active.idx)
-         ia = xmb->categories_active_alpha;
+         ia = xmb->categories.active.alpha;
       else if (xmb->depth <= 1)
-         ia = xmb->categories_passive_alpha;
+         ia = xmb->categories.passive.alpha;
 
       entry.duration     = XMB_DELAY;
       entry.target_value = ia;
@@ -1317,15 +1321,15 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb)
          continue;
 
       node->alpha = 0;
-      node->zoom  = xmb->categories_passive_zoom;
+      node->zoom  = xmb->categories.passive.zoom;
 
       if (i == xmb->categories.active.idx)
       {
-         node->alpha = xmb->categories_active_alpha;
-         node->zoom  = xmb->categories_active_zoom;;
+         node->alpha = xmb->categories.active.alpha;
+         node->zoom  = xmb->categories.active.zoom;
       }
       else if (xmb->depth <= 1)
-         node->alpha = xmb->categories_passive_alpha;
+         node->alpha = xmb->categories.passive.alpha;
    }
 }
 
@@ -2330,13 +2334,13 @@ static void xmb_layout(xmb_handle_t *xmb)
    xmb->active_item_factor      =   3.0;
    xmb->under_item_offset       =   5.0;
 
-   xmb->categories_active_zoom  = 1.0;
-   xmb->categories_passive_zoom = 0.5;
+   xmb->categories.active.zoom  = 1.0;
+   xmb->categories.passive.zoom = 0.5;
    xmb->item_active_zoom        = 1.0;
    xmb->item_passive_zoom       = 0.5;
 
-   xmb->categories_active_alpha  = 1.0;
-   xmb->categories_passive_alpha = 0.85;
+   xmb->categories.active.alpha  = 1.0;
+   xmb->categories.passive.alpha = 0.85;
    xmb->item_active_alpha        = 1.0;
    xmb->item_passive_alpha       = 0.85;
 
@@ -2712,20 +2716,20 @@ static void xmb_context_reset_textures(
    menu_display_allocate_white_texture();
 
    xmb->main_menu_node.icon     = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];
-   xmb->main_menu_node.alpha    = xmb->categories_active_alpha;
-   xmb->main_menu_node.zoom     = xmb->categories_active_zoom;;
+   xmb->main_menu_node.alpha    = xmb->categories.active.alpha;
+   xmb->main_menu_node.zoom     = xmb->categories.active.zoom;
 
    xmb->settings_tab_node.icon  = xmb->textures.list[XMB_TEXTURE_SETTINGS];
-   xmb->settings_tab_node.alpha = xmb->categories_active_alpha;
-   xmb->settings_tab_node.zoom  = xmb->categories_active_zoom;;
+   xmb->settings_tab_node.alpha = xmb->categories.active.alpha;
+   xmb->settings_tab_node.zoom  = xmb->categories.active.zoom;
 
    xmb->history_tab_node.icon   = xmb->textures.list[XMB_TEXTURE_HISTORY];
-   xmb->history_tab_node.alpha  = xmb->categories_active_alpha;
-   xmb->history_tab_node.zoom   = xmb->categories_active_zoom;;
+   xmb->history_tab_node.alpha  = xmb->categories.active.alpha;
+   xmb->history_tab_node.zoom   = xmb->categories.active.zoom;
 
    xmb->add_tab_node.icon       = xmb->textures.list[XMB_TEXTURE_ADD];
-   xmb->add_tab_node.alpha      = xmb->categories_active_alpha;
-   xmb->add_tab_node.zoom       = xmb->categories_active_zoom;;
+   xmb->add_tab_node.alpha      = xmb->categories.active.alpha;
+   xmb->add_tab_node.zoom       = xmb->categories.active.zoom;
 }
 
 static void xmb_context_reset_background(const char *iconpath)
