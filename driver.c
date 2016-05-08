@@ -201,7 +201,7 @@ bool driver_find_next(const char *label, char *s, size_t len)
 static void driver_adjust_system_rates(void)
 {
    audio_driver_ctl(RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,   NULL);
-   video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_ADJUST_SYSTEM_RATES, NULL);
+   video_driver_monitor_adjust_system_rates();
 
    if (!video_driver_get_ptr(false))
       return;
@@ -227,15 +227,14 @@ static void driver_set_nonblock_state(void)
          RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL);
 
    /* Only apply non-block-state for video if we're using vsync. */
-   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_ACTIVE, NULL) 
-         && video_driver_get_ptr(false))
+   if (video_driver_is_active() && video_driver_get_ptr(false))
    {
       bool video_nonblock = enable;
 
       if (     !settings->video.vsync 
             || runloop_ctl(RUNLOOP_CTL_IS_NONBLOCK_FORCED, NULL))
          video_nonblock = true;
-      video_driver_ctl(RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE, &video_nonblock);
+      video_driver_set_nonblock_state(video_nonblock);
    }
 
    audio_driver_set_nonblocking_state(enable);
@@ -303,7 +302,7 @@ static void menu_update_libretro_info(void)
 static void init_drivers(int flags)
 {
    if (flags & DRIVER_VIDEO)
-      video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_OWN_DRIVER, NULL);
+      video_driver_unset_own_driver();
    if (flags & DRIVER_AUDIO)
       audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_INPUT)
@@ -323,16 +322,16 @@ static void init_drivers(int flags)
 
    if (flags & DRIVER_VIDEO)
    {
-      struct retro_hw_render_callback *hwr = NULL;
-      video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+      struct retro_hw_render_callback *hwr =
+         video_driver_get_hw_context();
 
-      video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_RESET, NULL);
-      video_driver_ctl(RARCH_DISPLAY_CTL_INIT, NULL);
+      video_driver_monitor_reset();
+      video_driver_init();
 
-      if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT_ACK, NULL)
+      if (!video_driver_is_video_cache_context_ack()
             && hwr->context_reset)
          hwr->context_reset();
-      video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+      video_driver_unset_video_cache_context_ack();
 
       runloop_ctl(RUNLOOP_CTL_SET_FRAME_TIME_LAST, NULL);
    }
@@ -411,10 +410,10 @@ static void uninit_drivers(int flags)
       audio_driver_ctl(RARCH_AUDIO_CTL_DEINIT, NULL);
 
    if (flags & DRIVERS_VIDEO_INPUT)
-      video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT, NULL);
+      video_driver_deinit();
 
-   if ((flags & DRIVER_VIDEO) && !video_driver_ctl(RARCH_DISPLAY_CTL_OWNS_DRIVER, NULL))
-      video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY_DATA, NULL);
+   if ((flags & DRIVER_VIDEO) && !video_driver_owns_driver())
+      video_driver_destroy_data();
 
    if ((flags & DRIVER_INPUT) && !input_driver_ctl(RARCH_INPUT_CTL_OWNS_DRIVER, NULL))
       input_driver_ctl(RARCH_INPUT_CTL_DESTROY_DATA, NULL);
@@ -428,7 +427,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
    switch (state)
    {
       case RARCH_DRIVER_CTL_DEINIT:
-         video_driver_ctl(RARCH_DISPLAY_CTL_DESTROY, NULL);
+         video_driver_destroy();
          audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY, NULL);
          input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
 #ifdef HAVE_MENU
@@ -466,7 +465,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          }
       case RARCH_DRIVER_CTL_INIT_PRE:
          audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
-         video_driver_ctl(RARCH_DISPLAY_CTL_FIND_DRIVER, NULL);
+         video_driver_find_driver();
          input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
          camera_driver_ctl(RARCH_CAMERA_CTL_FIND_DRIVER, NULL);
          find_location_driver();

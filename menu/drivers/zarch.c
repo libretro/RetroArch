@@ -348,8 +348,7 @@ static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int 
    int                y2 = y1 + 50;
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
    const float       *bg = zui_bg_panel;
-
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   frame_count           = video_driver_get_frame_count_ptr();
 
    if (tab->active_id != tab->prev_id)
    {

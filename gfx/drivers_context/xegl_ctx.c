@@ -194,7 +194,7 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
             bool core        = version >= 3001;
             struct retro_hw_render_callback *hwr = NULL;
 
-            video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+            hwr = video_driver_get_hw_context();
 #ifdef GL_DEBUG
             debug = true;
 #else

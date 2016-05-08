@@ -1373,7 +1373,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       vk->context.device = cached_device;
       cached_device      = NULL;
 
-      video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+      video_driver_set_video_cache_context_ack();
       RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
    }
    else if (VKFUNC(vkCreateDevice)(vk->context.gpu, &device_info,
@@ -1614,7 +1614,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
                vk->context.swapchain_fences[i], NULL);
    }
 
-   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
+   if (video_driver_is_video_cache_context())
    {
       cached_device   = vk->context.device;
       cached_instance = vk->context.instance;

@@ -222,7 +222,7 @@ static bool runloop_check_slowmotion(bool *ptr)
       return false;
 
    if (settings->video.black_frame_insertion)
-      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_cached_frame_render();
 
    if (state_manager_frame_is_reversed())
       runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 0, 30, true);
@@ -612,7 +612,7 @@ static bool runloop_check_pause_state(event_cmd_state_t *cmd)
    if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
       event_cmd_ctl(EVENT_CMD_FULLSCREEN_TOGGLE, NULL);
-      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_cached_frame_render();
    }
 
    if (!check_is_oneshot)
@@ -630,14 +630,14 @@ static bool runloop_is_focused(void)
 {
    settings_t *settings                             = config_get_ptr();
    if (settings->pause_nonactive)
-      return video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL);
+      return video_driver_is_focused();
    return true;
 }
 
 static bool runloop_is_frame_count_end(void)
 {
-   uint64_t *frame_count         = NULL;
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   uint64_t *frame_count =
+      video_driver_get_frame_count_ptr();
    return runloop_max_frames && (*frame_count >= runloop_max_frames);
 }
 
@@ -660,7 +660,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (!runloop_system.info.library_version)
             runloop_system.info.library_version = "v0";
 
-         video_driver_ctl(RARCH_DISPLAY_CTL_SET_TITLE_BUF, NULL);
+         video_driver_set_title_buf();
 
          strlcpy(runloop_system.valid_extensions,
                runloop_system.info.valid_extensions ?
@@ -1257,7 +1257,7 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    settings_t *settings          = NULL;
    bool time_to_exit             = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL);
    time_to_exit                  = time_to_exit || quit_key_pressed;
-   time_to_exit                  = time_to_exit || !video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL);
+   time_to_exit                  = time_to_exit || !video_driver_is_alive();
    time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
    time_to_exit                  = time_to_exit || runloop_is_frame_count_end();
    time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL);

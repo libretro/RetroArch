@@ -1640,8 +1640,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
    uint64_t *frame_count       = NULL;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
-
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   frame_count                 = video_driver_get_frame_count_ptr();
 
    if (!list || !list->size)
       return;

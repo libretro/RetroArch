@@ -266,8 +266,7 @@ bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data)
          {
             uint64_t       *frame_count = NULL;
             gfx_ctx_size_t *size_data   = (gfx_ctx_size_t*)data;
-
-            video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+            frame_count                 = video_driver_get_frame_count_ptr();
 
             if (!video_context_data || !size_data)
                return false;

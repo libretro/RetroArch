@@ -286,7 +286,7 @@ bool menu_display_libretro(void)
       return true;
    }
 
-   return video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+   return video_driver_cached_frame_render();
 }
 
 void menu_display_set_width(unsigned width)
@@ -577,7 +577,7 @@ void menu_display_draw_cursor(
    struct gfx_coords coords;
    settings_t *settings = config_get_ptr();
    bool cursor_visible  = settings->video.fullscreen ||
-       !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL);
+       !video_driver_has_windowed();
 
    if (!settings->menu.mouse.enable)
       return;

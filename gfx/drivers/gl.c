@@ -755,8 +755,8 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    bool stencil                         = false;
    GLint max_fbo_size                   = 0;
    GLint max_renderbuffer_size          = 0;
-   struct retro_hw_render_callback *hwr = NULL;
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   struct retro_hw_render_callback *hwr =
+      video_driver_get_hw_context();
 
    /* We can only share texture objects through contexts.
     * FBOs are "abstract" objects and are not shared. */
@@ -2157,8 +2157,8 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #if defined(HAVE_GL_SYNC) || defined(HAVE_FBO)
    settings_t *settings = config_get_ptr();
 #endif
-   struct retro_hw_render_callback *hwr = NULL;
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   struct retro_hw_render_callback *hwr =
+      video_driver_get_hw_context();
     
    (void)vendor;
    (void)renderer;
@@ -2222,7 +2222,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_RGBA, NULL);
+   video_driver_unset_rgba();
 #if defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES2)
    bool gles3          = false;
 
@@ -2329,8 +2329,7 @@ static INLINE void gl_set_texture_fmts(gl_t *gl, bool rgb32)
 
    if (rgb32)
    {
-      bool use_rgba    = 
-         video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
+      bool use_rgba    = video_driver_supports_rgba();
 
       gl->internal_fmt = RARCH_GL_INTERNAL_FORMAT32;
       gl->texture_type = RARCH_GL_TEXTURE_TYPE32;
@@ -2417,7 +2416,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    struct retro_hw_render_callback *hwr = NULL;
    settings_t                 *settings = config_get_ptr();
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   hwr = video_driver_get_hw_context();
 
    major       = hwr->version_major;
    minor       = hwr->version_minor;
@@ -2695,7 +2694,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    RARCH_LOG("GL: Using resolution %ux%u\n", temp_width, temp_height);
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   hwr = video_driver_get_hw_context();
 
    gl->vertex_ptr    = hwr->bottom_left_origin 
       ? vertexes : vertexes_flipped;
@@ -3176,7 +3175,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
          goto error;
       }
 
-      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_cached_frame_render();
 
       video_frame_convert_rgba_to_bgr(
             (const void*)gl->readback_buffer_screenshot,
@@ -3268,7 +3267,7 @@ void gl_load_texture_data(uint32_t id_data,
 {
    GLint mag_filter, min_filter;
    bool want_mipmap = false;
-   bool use_rgba    = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
+   bool use_rgba    = video_driver_supports_rgba();
    bool rgb32       = (base_size == (sizeof(uint32_t)));
    GLenum wrap      = gl_wrap_type_to_enum(wrap_type);
    GLuint id        = (GLuint)id_data;
@@ -3588,28 +3587,24 @@ static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 static void gl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gl_t *gl         = (gl_t*)data;
-   enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL;
+         video_driver_set_viewport_square_pixel();
          break;
 
       case ASPECT_RATIO_CORE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE;
+         video_driver_set_viewport_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG;
+         video_driver_set_viewport_config();
          break;
 
       default:
          break;
    }
-
-   if (cmd != RARCH_DISPLAY_CTL_NONE)
-      video_driver_ctl(cmd, NULL);
 
    video_driver_set_aspect_ratio_value(
          aspectratio_lut[aspect_ratio_idx].value);

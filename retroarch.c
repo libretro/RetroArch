@@ -1157,7 +1157,7 @@ static void rarch_init_savefile_paths(void)
 
 static bool init_state(void)
 {
-   video_driver_ctl(RARCH_DISPLAY_CTL_SET_ACTIVE, NULL);
+   video_driver_set_active();
    audio_driver_ctl(RARCH_AUDIO_CTL_SET_ACTIVE, NULL);
 
    rarch_ctl(RARCH_CTL_UNSET_FORCE_FULLSCREEN, NULL);

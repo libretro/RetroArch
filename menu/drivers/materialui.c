@@ -618,7 +618,7 @@ static void mui_render_menu_list(mui_handle_t *mui,
    uint64_t *frame_count;
    size_t i                = 0;
    size_t          end     = menu_entries_get_end();
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   frame_count             = video_driver_get_frame_count_ptr();
 
    if (!menu_display_get_update_pending())
       return;
@@ -788,8 +788,7 @@ static void mui_frame(void *data)
    const uint32_t passivetab_color = 0x9e9e9eff;
    bool background_rendered        = false;
    bool libretro_running           = menu_display_libretro_running();
-
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   frame_count                     = video_driver_get_frame_count_ptr();
 
    (void)passivetab_color;
    (void)activetab_color;

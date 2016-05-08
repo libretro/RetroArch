@@ -911,7 +911,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_hw_render_callback *cb =
             (struct retro_hw_render_callback*)data;
 
-         video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+         hwr = video_driver_get_hw_context();
 
          RARCH_LOG("Environ SET_HW_RENDER.\n");
 
@@ -1253,13 +1253,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
-         return video_driver_ctl(
-               RARCH_DISPLAY_CTL_GET_CURRENT_SOFTWARE_FRAMEBUFFER,
+         return video_driver_get_current_software_framebuffer(
                (struct retro_framebuffer*)data);
 
       case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
-         return video_driver_ctl(
-               RARCH_DISPLAY_CTL_GET_HW_RENDER_INTERFACE,
+         return video_driver_get_hw_render_interface(
                (const struct retro_hw_render_interface**)data);
 
       /* Private extensions for internal use, not part of libretro API. */

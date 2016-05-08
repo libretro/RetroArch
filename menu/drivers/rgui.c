@@ -422,7 +422,7 @@ static void rgui_render(void *data)
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   frame_count = video_driver_get_frame_count_ptr();
 
    msg[0]       = '\0';
    title[0]     = '\0';
@@ -658,7 +658,7 @@ static void rgui_render(void *data)
 
    if (settings->menu.mouse.enable 
          && (settings->video.fullscreen 
-            || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
+            || !video_driver_has_windowed())
          )
       rgui_blit_cursor();
 }

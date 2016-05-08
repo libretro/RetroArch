@@ -896,8 +896,8 @@ static void vulkan_init_hw_render(vk_t *vk)
 {
    struct retro_hw_render_interface_vulkan *iface   =
       &vk->hw.iface;
-   struct retro_hw_render_callback *hwr = NULL;
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   struct retro_hw_render_callback *hwr =
+      video_driver_get_hw_context();
 
    if (hwr->context_type != RETRO_HW_CONTEXT_VULKAN)
       return;
@@ -1770,28 +1770,24 @@ static bool vulkan_frame(void *data, const void *frame,
 static void vulkan_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    vk_t *vk = (vk_t*)data;
-   enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL;
+         video_driver_set_viewport_square_pixel();
          break;
 
       case ASPECT_RATIO_CORE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE;
+         video_driver_set_viewport_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG;
+         video_driver_set_viewport_config();
          break;
 
       default:
          break;
    }
-
-   if (cmd != RARCH_DISPLAY_CTL_NONE)
-      video_driver_ctl(cmd, NULL);
 
    video_driver_set_aspect_ratio_value(
          aspectratio_lut[aspect_ratio_idx].value);
@@ -2081,7 +2077,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
        * with conversion. */
 
       vk->readback.pending = true;
-      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_cached_frame_render();
       VKFUNC(vkQueueWaitIdle)(vk->context->queue);
 
       if (!staging->mapped)
