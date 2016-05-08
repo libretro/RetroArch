@@ -544,7 +544,7 @@ void d3d_make_d3dpp(void *data,
       unsigned width          = 0;
       unsigned height         = 0;
 
-      gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+      video_context_driver_get_video_size(&mode);
 
       width                   = mode.width;
       height                  = mode.height;
@@ -664,7 +664,7 @@ static void d3d_calculate_rect(void *data,
    aspect_data.width    = *width;
    aspect_data.height   = *height;
 
-   gfx_ctx_ctl(GFX_CTL_TRANSLATE_ASPECT, &aspect_data);
+   video_context_driver_translate_aspect(&aspect_data);
 
    *x = 0;
    *y = 0;
@@ -845,7 +845,7 @@ static void d3d_set_nonblock_state(void *data, bool state)
 
    d3d->video_info.vsync = !state;
 
-   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
+   video_context_driver_swap_interval(&interval);
 #ifndef _XBOX
    d3d->needs_restore = true;
    d3d_restore(d3d);
@@ -867,7 +867,7 @@ static bool d3d_alive(void *data)
    size_data.width      = &temp_width;
    size_data.height     = &temp_height;
 
-   if (gfx_ctx_ctl(GFX_CTL_CHECK_WINDOW, &size_data))
+   if (video_context_driver_check_window(&size_data))
    {
       if (quit)
          d3d->quitting = quit;
@@ -881,7 +881,7 @@ static bool d3d_alive(void *data)
          mode.width  = temp_width;
          mode.height = temp_height;
 
-         gfx_ctx_ctl(GFX_CTL_SET_RESIZE, &mode);
+         video_context_driver_set_resize(&mode);
          d3d_restore(d3d);
       }
 
@@ -896,18 +896,18 @@ static bool d3d_alive(void *data)
 
 static bool d3d_focus(void *data)
 {
-   return gfx_ctx_ctl(GFX_CTL_FOCUS, NULL);
+   return video_context_driver_focus();
 }
 
 static bool d3d_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
-   return gfx_ctx_ctl(GFX_CTL_SUPPRESS_SCREENSAVER, &enabled);
+   return video_context_driver_suppress_screensaver(&enabled);
 }
 
 static bool d3d_has_windowed(void *data)
 {
-   return gfx_ctx_ctl(GFX_CTL_HAS_WINDOWED, NULL);
+   return video_context_driver_has_windowed();
 }
 
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -1017,7 +1017,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    {
       gfx_ctx_mode_t mode;
 
-      gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+      video_context_driver_get_video_size(&mode);
 
       full_x   = mode.width;
       full_y   = mode.height;
@@ -1065,7 +1065,7 @@ static bool d3d_construct(d3d_video_t *d3d,
    inp.input      = input;
    inp.input_data = input_data;
 
-   gfx_ctx_ctl(GFX_CTL_INPUT_DRIVER, &inp);
+   video_context_driver_input_driver(&inp);
 
    RARCH_LOG("[D3D]: Init complete.\n");
    return true;
@@ -1084,7 +1084,7 @@ static void d3d_set_rotation(void *data, unsigned rot)
 
 static void d3d_show_mouse(void *data, bool state)
 {
-   gfx_ctx_ctl(GFX_CTL_SHOW_MOUSE, &state);
+   video_context_driver_show_mouse(&state);
 }
 
 static const gfx_ctx_driver_t *d3d_get_context(void *data)
@@ -1100,7 +1100,7 @@ static const gfx_ctx_driver_t *d3d_get_context(void *data)
    unsigned major       = 9;
    enum gfx_ctx_api api = GFX_CTX_DIRECT3D9_API;
 #endif
-   return video_driver_context_init_first(data,
+   return video_context_driver_init_first(data,
          settings->video.context_driver,
          api, major, minor, false);
 }
@@ -1154,7 +1154,7 @@ static void *d3d_init(const video_info_t *info,
 #endif
 #endif
 
-   gfx_ctx_ctl(GFX_CTL_SET, (void*)ctx_driver);
+   video_context_driver_set((void*)ctx_driver);
 
    if (!d3d_construct(d3d, info, input, input_data))
    {
@@ -1171,7 +1171,7 @@ static void *d3d_init(const video_info_t *info,
    return d3d;
 
 error:
-   gfx_ctx_ctl(GFX_CTL_DESTROY, NULL);
+   video_context_driver_destroy();
    if (d3d)
       delete d3d;
    return NULL;
@@ -1204,7 +1204,7 @@ static void d3d_free(void *data)
    d3d_free_overlays(d3d);
 #endif
 
-   gfx_ctx_ctl(GFX_CTL_FREE, NULL);
+   video_context_driver_free();
 
 #ifndef _XBOX
 #ifdef HAVE_MENU
@@ -1392,7 +1392,7 @@ static void d3d_overlay_enable(void *data, bool state)
    for (i = 0; i < d3d->overlays.size(); i++)
       d3d->overlays_enabled = state;
 
-   gfx_ctx_ctl(GFX_CTL_SHOW_MOUSE, &state);
+   video_context_driver_show_mouse(&state);
 }
 
 static void d3d_overlay_full_screen(void *data, bool enable)
@@ -1537,11 +1537,11 @@ static bool d3d_frame(void *data, const void *frame,
    }
 #endif
 
-   gfx_ctx_ctl(GFX_CTL_UPDATE_WINDOW_TITLE, NULL);
+   video_context_driver_update_window_title();
 
    retro_perf_stop(&d3d_frame);
 
-   gfx_ctx_ctl(GFX_CTL_SWAP_BUFFERS, NULL);
+   video_context_driver_swap_buffers();
 
    return true;
 }

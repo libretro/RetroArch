@@ -1108,7 +1108,7 @@ static int menu_input_pointer_post_iterate(
       metrics.type  = DISPLAY_METRIC_DPI;
       metrics.value = &dpi; 
 
-      gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics);
+      video_context_driver_get_metrics(&metrics);
 
       if (!pointer_oldpressed[0])
       {

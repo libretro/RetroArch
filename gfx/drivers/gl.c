@@ -115,7 +115,7 @@ static const GLfloat white_color[] = {
 static INLINE void context_bind_hw_render(gl_t *gl, bool enable)
 {
    if (gl && gl->shared_context_use)
-      gfx_ctx_ctl(GFX_CTL_BIND_HW_RENDER, &enable);
+      video_context_driver_bind_hw_render(&enable);
 }
 
 static INLINE bool gl_query_extension(gl_t *gl, const char *ext)
@@ -882,7 +882,7 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
    aspect_data.width    = viewport_width;
    aspect_data.height   = viewport_height;
 
-   gfx_ctx_ctl(GFX_CTL_TRANSLATE_ASPECT, &aspect_data);
+   video_context_driver_translate_aspect(&aspect_data);
 
    if (settings->video.scale_integer && !force_full)
    {
@@ -987,7 +987,7 @@ static void gl_set_video_mode(void *data, unsigned width, unsigned height,
    mode.height     = height;
    mode.fullscreen = fullscreen;
 
-   gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode);
+   video_context_driver_set_video_mode(&mode);
 }
 
 #ifdef HAVE_FBO
@@ -1387,7 +1387,7 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 #if defined(HAVE_EGL) && defined(HAVE_OPENGLES2)
    /* Use regular textures if we use HW render. */
    gl->egl_images = !gl->hw_render_use && gl_check_eglimage_proc() &&
-      gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_INIT, (void*)video);
+      video_context_driver_init_image_buffer((void*)video);
 #else
    (void)video;
 #endif
@@ -1466,7 +1466,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       img_info.rgb32  = (gl->base_size == 4);
       img_info.handle = &img;
 
-      new_egl = gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_WRITE, &img_info);
+      new_egl = video_context_driver_write_to_image_buffer(&img_info);
 
       if (img == EGL_NO_IMAGE_KHR)
       {
@@ -1793,7 +1793,7 @@ static bool gl_frame(void *data, const void *frame,
       mode.width        = width;
       mode.height       = height;
 
-      gfx_ctx_ctl(GFX_CTL_SET_RESIZE, &mode);
+      video_context_driver_set_resize(&mode);
 
 #ifdef HAVE_FBO
       if (gl->fbo_inited)
@@ -1938,7 +1938,7 @@ static bool gl_frame(void *data, const void *frame,
    gl_render_overlay(gl);
 #endif
 
-   gfx_ctx_ctl(GFX_CTL_UPDATE_WINDOW_TITLE, NULL);
+   video_context_driver_update_window_title();
 
    retro_perf_stop(&frame_run);
 
@@ -1989,11 +1989,11 @@ static bool gl_frame(void *data, const void *frame,
          && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
          && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
    {
-      gfx_ctx_ctl(GFX_CTL_SWAP_BUFFERS, NULL);
+      video_context_driver_swap_buffers();
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
-   gfx_ctx_ctl(GFX_CTL_SWAP_BUFFERS, NULL);
+   video_context_driver_swap_buffers();
 
 #ifdef HAVE_GL_SYNC
    if (settings->video.hard_sync && gl->have_sync)
@@ -2121,7 +2121,7 @@ static void gl_free(void *data)
    }
 #endif
 
-   gfx_ctx_ctl(GFX_CTL_FREE, NULL);
+   video_context_driver_free();
 
    free(gl->empty_buf);
    free(gl->conv_buffer);
@@ -2144,7 +2144,7 @@ static void gl_set_nonblock_state(void *data, bool state)
    if (!state)
       interval = settings->video.swap_interval;
 
-   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
+   video_context_driver_swap_interval(&interval);
    context_bind_hw_render(gl, true);
 }
 
@@ -2444,7 +2444,7 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
    gl->shared_context_use = settings->video.shared_context
       && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
-   return video_driver_context_init_first(gl, settings->video.context_driver,
+   return video_context_driver_init_first(gl, settings->video.context_driver,
          api, major, minor, gl->shared_context_use);
 }
 
@@ -2610,13 +2610,13 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl || !ctx_driver)
       goto error;
 
-   gfx_ctx_ctl(GFX_CTL_SET, (void*)ctx_driver);
+   video_context_driver_set((void*)ctx_driver);
 
    gl->video_info        = *video;
 
    RARCH_LOG("Found GL context: %s\n", ctx_driver->ident);
 
-   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+   video_context_driver_get_video_size(&mode);
 
    full_x  = mode.width;
    full_y  = mode.height;
@@ -2627,7 +2627,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
    interval = video->vsync ? settings->video.swap_interval : 0;
 
-   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
+   video_context_driver_swap_interval(&interval);
 
    win_width  = video->width;
    win_height = video->height;
@@ -2642,7 +2642,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    mode.height     = win_height;
    mode.fullscreen = video->fullscreen;
 
-   if (!gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode))
+   if (!video_context_driver_set_video_mode(&mode))
       goto error;
 
    /* Clear out potential error flags in case we use cached context. */
@@ -2678,7 +2678,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    mode.width     = 0;
    mode.height    = 0;
 
-   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+   video_context_driver_get_video_size(&mode);
 
    temp_width     = mode.width;
    temp_height    = mode.height;
@@ -2832,7 +2832,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    inp.input      = input;
    inp.input_data = input_data;
 
-   gfx_ctx_ctl(GFX_CTL_INPUT_DRIVER, &inp);
+   video_context_driver_input_driver(&inp);
    
    if (settings->video.font_enable)
    {
@@ -2853,7 +2853,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    return gl;
 
 error:
-   gfx_ctx_ctl(GFX_CTL_DESTROY, NULL);
+   video_context_driver_destroy();
    free(gl);
    return NULL;
 }
@@ -2876,7 +2876,7 @@ static bool gl_alive(void *data)
    size_data.width      = &temp_width;
    size_data.height     = &temp_height;
 
-   if (gfx_ctx_ctl(GFX_CTL_CHECK_WINDOW, &size_data))
+   if (video_context_driver_check_window(&size_data))
    {
       if (quit)
          gl->quitting = true;
@@ -2894,18 +2894,18 @@ static bool gl_alive(void *data)
 
 static bool gl_focus(void *data)
 {
-   return gfx_ctx_ctl(GFX_CTL_FOCUS, NULL);
+   return video_context_driver_focus();
 }
 
 static bool gl_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
-   return gfx_ctx_ctl(GFX_CTL_SUPPRESS_SCREENSAVER, &enabled);
+   return video_context_driver_suppress_screensaver(&enabled);
 }
 
 static bool gl_has_windowed(void *data)
 {
-   return gfx_ctx_ctl(GFX_CTL_HAS_WINDOWED, NULL);
+   return video_context_driver_has_windowed();
 }
 
 static void gl_update_tex_filter_frame(gl_t *gl)
@@ -3463,7 +3463,7 @@ static void gl_overlay_enable(void *data, bool state)
    gl->overlay_enable = state;
 
    if (gl->fullscreen)
-      gfx_ctx_ctl(GFX_CTL_SHOW_MOUSE, &state);
+      video_context_driver_show_mouse(&state);
 }
 
 static void gl_overlay_full_screen(void *data, bool enable)
@@ -3579,7 +3579,7 @@ static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 
    proc_address.sym = sym;
 
-   gfx_ctx_ctl(GFX_CTL_PROC_ADDRESS_GET, &proc_address);
+   video_context_driver_get_proc_address(&proc_address);
 
    return proc_address.addr;
 }
@@ -3677,7 +3677,7 @@ static void gl_set_osd_msg(void *data, const char *msg,
 
 static void gl_show_mouse(void *data, bool state)
 {
-   gfx_ctx_ctl(GFX_CTL_SHOW_MOUSE, &state);
+   video_context_driver_show_mouse(&state);
 }
 
 static struct video_shader *gl_get_current_shader(void *data)
@@ -3696,19 +3696,18 @@ static void gl_get_video_output_size(void *data,
    gfx_ctx_size_t size_data;
    size_data.width  = width;
    size_data.height = height;
-   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_OUTPUT_SIZE, &size_data);
+   video_context_driver_get_video_output_size(&size_data);
 }
 
 static void gl_get_video_output_prev(void *data)
 {
-   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_OUTPUT_PREV, NULL);
+   video_context_driver_get_video_output_prev();
 }
 
 static void gl_get_video_output_next(void *data)
 {
-   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_OUTPUT_NEXT, NULL);
+   video_context_driver_get_video_output_next();
 }
-
 
 static void video_texture_load_gl(
       struct texture_image *ti,

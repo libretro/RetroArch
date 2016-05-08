@@ -776,7 +776,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    }
 
 #if defined(HAVE_OPENGL) || defined(HAVE_GLES)
-   gfx_ctx_ctl(GFX_CTL_IDENT_GET, &ident_info);
+   video_context_driver_get_ident(&ident_info);
    tmp_string = ident_info.ident;
 
    strlcpy(tmp,
@@ -797,7 +797,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       metrics.type  = DISPLAY_METRIC_MM_WIDTH;
       metrics.value = &val; 
 
-      if (gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics))
+      if (video_context_driver_get_metrics(&metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                menu_hash_to_str(
@@ -809,7 +809,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
       metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
 
-      if (gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics))
+      if (video_context_driver_get_metrics(&metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                menu_hash_to_str(
@@ -821,7 +821,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
       metrics.type  = DISPLAY_METRIC_DPI;
 
-      if (gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics))
+      if (video_context_driver_get_metrics(&metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                menu_hash_to_str(

@@ -43,7 +43,7 @@ static const shader_backend_t *video_shader_set_backend(enum rarch_shader_type t
 
 #ifdef HAVE_CG
             gfx_ctx_flags_t flags;
-            gfx_ctx_ctl(GFX_CTL_GET_FLAGS, &flags);
+            video_context_driver_get_flags(&flags);
 
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
             {

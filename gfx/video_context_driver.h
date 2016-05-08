@@ -58,44 +58,6 @@ enum display_flags
    GFX_CTX_FLAGS_GL_CORE_CONTEXT
 };
 
-enum gfx_ctx_ctl_state
-{
-   GFX_CTL_NONE = 0,
-   GFX_CTL_CHECK_WINDOW,
-   GFX_CTL_FOCUS,
-   GFX_CTL_DESTROY,
-   GFX_CTL_FREE,
-   GFX_CTL_SWAP_BUFFERS,
-   GFX_CTL_HAS_WINDOWED,
-   GFX_CTL_UPDATE_WINDOW_TITLE,
-   GFX_CTL_SHOW_MOUSE,
-   GFX_CTL_SET,
-   GFX_CTL_BIND_HW_RENDER,
-   GFX_CTL_GET_VIDEO_OUTPUT_PREV,
-   GFX_CTL_GET_VIDEO_OUTPUT_NEXT,
-   GFX_CTL_IMAGE_BUFFER_INIT,
-   GFX_CTL_IMAGE_BUFFER_WRITE,
-   /* Finds next driver in graphics context driver array. */
-   GFX_CTL_FIND_NEXT_DRIVER,
-   /* Finds previous driver in graphics context driver array. */
-   GFX_CTL_FIND_PREV_DRIVER,
-   GFX_CTL_GET_VIDEO_OUTPUT_SIZE,
-   GFX_CTL_SWAP_INTERVAL,
-   GFX_CTL_PROC_ADDRESS_GET,
-   GFX_CTL_TRANSLATE_ASPECT,
-   GFX_CTL_GET_FLAGS,
-   GFX_CTL_SET_FLAGS,
-   GFX_CTL_GET_METRICS,
-   GFX_CTL_INPUT_DRIVER,
-   GFX_CTL_SUPPRESS_SCREENSAVER,
-   GFX_CTL_IDENT_GET,
-   GFX_CTL_SET_VIDEO_MODE,
-   GFX_CTL_SET_RESIZE,
-   GFX_CTL_GET_VIDEO_SIZE,
-   GFX_CTL_SET_VIDEO_CONTEXT_DATA,
-   GFX_CTL_GET_CONTEXT_DATA
-};
-
 typedef void (*gfx_ctx_proc_t)(void);
 
 typedef struct gfx_ctx_driver
@@ -284,7 +246,7 @@ extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_null;
 
 /**
- * video_driver_context_init_first:
+ * video_context_driver_init_first:
  * @data                    : Input data.
  * @ident                   : Identifier of graphics context driver to find.
  * @api                     : API of higher-level graphics API.
@@ -297,10 +259,70 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
  *
  * Returns: graphics context driver if found, otherwise NULL.
  **/
-const gfx_ctx_driver_t *video_driver_context_init_first(void *data, const char *ident,
+const gfx_ctx_driver_t *video_context_driver_init_first(void *data, const char *ident,
       enum gfx_ctx_api api, unsigned major, unsigned minor, bool hw_render_ctx);
 
-bool gfx_ctx_ctl(enum gfx_ctx_ctl_state state, void *data);
+bool video_context_driver_check_window(gfx_ctx_size_t *size_data);
+
+bool video_context_driver_find_prev_driver(void);
+
+bool video_context_driver_find_next_driver(void);
+
+bool video_context_driver_init_image_buffer(const video_info_t *data);
+
+bool video_context_driver_write_to_image_buffer(gfx_ctx_image_t *img);
+
+bool video_context_driver_get_video_output_prev(void);
+
+bool video_context_driver_get_video_output_next(void);
+
+bool video_context_driver_bind_hw_render(bool *enable);
+
+bool video_context_driver_set(const gfx_ctx_driver_t *data);
+
+void video_context_driver_destroy(void);
+
+bool video_context_driver_update_window_title(void);
+
+bool video_context_driver_swap_buffers(void);
+
+bool video_context_driver_focus(void);
+
+bool video_context_driver_get_video_output_size(gfx_ctx_size_t *size_data);
+
+bool video_context_driver_swap_interval(unsigned *interval);
+
+bool video_context_driver_get_proc_address(gfx_ctx_proc_address_t *proc);
+
+bool video_context_driver_suppress_screensaver(bool *bool_data);
+
+bool video_context_driver_get_ident(gfx_ctx_ident_t *ident);
+
+bool video_context_driver_set_video_mode(gfx_ctx_mode_t *mode_info);
+
+bool video_context_driver_set_resize(gfx_ctx_mode_t *mode_info);
+
+bool video_context_driver_get_video_size(gfx_ctx_mode_t *mode_info);
+
+bool video_context_driver_get_context_data(void *data);
+
+bool video_context_driver_show_mouse(bool *bool_data);
+
+void video_context_driver_set_data(void *data);
+
+bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
+
+bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
+
+bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics);
+
+bool video_context_driver_translate_aspect(gfx_ctx_aspect_t *aspect);
+
+bool video_context_driver_input_driver(gfx_ctx_input_t *inp);
+
+bool video_context_driver_has_windowed(void);
+
+void video_context_driver_free(void);
 
 #ifdef __cplusplus
 }

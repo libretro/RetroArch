@@ -411,7 +411,7 @@ float menu_display_get_dpi(void)
 
    if (settings->menu.dpi.override_enable)
       return settings->menu.dpi.override_value;
-   else if (!gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics) || !dpi)
+   else if (!video_context_driver_get_metrics(&metrics) || !dpi)
       return menu_dpi_override_value;
 
    return dpi;

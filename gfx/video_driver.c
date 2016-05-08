@@ -792,7 +792,7 @@ bool video_driver_set_video_mode(unsigned width,
    mode.height     = height;
    mode.fullscreen = fullscreen;
 
-   return gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode);
+   return video_context_driver_set_video_mode(&mode);
 }
 
 bool video_driver_get_video_output_size(unsigned *width, unsigned *height)
@@ -1496,7 +1496,7 @@ bool video_driver_get_next_video_out(void)
       return false;
 
    if (!video_driver_poke->get_video_output_next)
-      return gfx_ctx_ctl(GFX_CTL_GET_VIDEO_OUTPUT_NEXT, NULL);
+      return video_context_driver_get_video_output_next();
    video_driver_poke->get_video_output_next(video_driver_data);
    return true;
 }
@@ -1507,7 +1507,7 @@ bool video_driver_get_prev_video_out(void)
       return false;
 
    if (!video_driver_poke->get_video_output_prev)
-      return gfx_ctx_ctl(GFX_CTL_GET_VIDEO_OUTPUT_NEXT, NULL);
+      return video_context_driver_get_video_output_prev();
    video_driver_poke->get_video_output_prev(video_driver_data);
    return true;
 }
