@@ -960,10 +960,11 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
    stream_info.b = ret_buf;
    stream_info.c = *length;
 
-   content_ctl(CONTENT_CTL_STREAM_CRC_CALCULATE, &stream_info);
-
+   if (!stream_backend)
+      stream_backend = file_archive_get_default_file_backend();
+   stream_info.crc = stream_backend->stream_crc_calculate(
+         stream_info.a, stream_info.b, stream_info.c);
    *content_crc_ptr = stream_info.crc;
-
 
    RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
 #endif
@@ -1740,21 +1741,6 @@ bool content_ctl(enum content_ctl_state state, void *data)
          }
          content_ctl(CONTENT_CTL_DEINIT, NULL);
          return false;
-      case CONTENT_CTL_STREAM_CRC_CALCULATE:
-         {
-            content_stream_t *stream = NULL;
-#ifdef HAVE_ZLIB
-            if (!stream_backend)
-               stream_backend = file_archive_get_default_file_backend();
-#endif
-
-            stream = (content_stream_t*)data;
-#ifdef HAVE_ZLIB
-            stream->crc = stream_backend->stream_crc_calculate(
-                  stream->a, stream->b, stream->c);
-#endif
-         }
-         break;
       case CONTENT_CTL_NONE:
       default:
          break;

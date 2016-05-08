@@ -49,8 +49,6 @@ enum content_ctl_state
    CONTENT_CTL_DEINIT,
 
    CONTENT_CTL_GET_CRC,
-
-   CONTENT_CTL_STREAM_CRC_CALCULATE
 };
 
 typedef struct ram_type
