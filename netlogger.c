@@ -42,6 +42,7 @@ static struct sockaddr_in target;
 
 void logger_init (void)
 {
+   socket_target_t in_target;
    const char *server = PC_DEVELOPMENT_IP_ADDRESS;
    unsigned      port = PC_DEVELOPMENT_UDP_PORT;
 
@@ -57,18 +58,11 @@ void logger_init (void)
          SOCKET_TYPE_DATAGRAM,
          SOCKET_PROTOCOL_NONE);
 
-   target.sin_port   = inet_htons(port);
-#ifdef VITA
-   target.sin_family = PSP2_NET_AF_INET;
-   target.sin_addr   = inet_aton(server);
-#else
-   target.sin_family = AF_INET;
-#ifdef GEKKO
-   target.sin_len    = 8;
-#endif
+   in_target.port   = port;
+   in_target.server = server;
+   in_target.domain = SOCKET_DOMAIN_INET;
 
-   inet_pton(AF_INET, server, &target.sin_addr);
-#endif
+   socket_set_target(&target, &in_target); 
 }
 
 void logger_shutdown (void)
