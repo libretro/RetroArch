@@ -426,9 +426,6 @@ static void init_video_input(const input_driver_t *tmp)
    if (*input)
       return;
 
-   /* Reset video frame count */
-   video_driver_frame_count = 0;
-
    /* Video driver didn't provide an input driver,
     * so we use configured one. */
    RARCH_LOG("Graphics driver did not initialize an input driver. Attempting to pick a suitable driver.\n");
@@ -688,6 +685,9 @@ static bool init_video(void)
    video.rgb32        = video_driver_state.filter.filter ?
       video_driver_state.filter.out_rgb32 :
       (video_driver_state.pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+
+   /* Reset video frame count */
+   video_driver_frame_count = 0;
 
    tmp = input_get_ptr();
    /* Need to grab the "real" video driver interface on a reinit. */
