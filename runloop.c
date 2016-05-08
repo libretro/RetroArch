@@ -571,6 +571,14 @@ void runloop_iterate_data(void)
    task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
 }
 
+static bool runloop_is_focused(void)
+{
+   settings_t *settings                             = config_get_ptr();
+   if (settings->pause_nonactive)
+      return video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL);
+   return true;
+}
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    settings_t *settings                             = config_get_ptr();
@@ -766,15 +774,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             strlcpy(runloop_fullpath, fullpath, sizeof(runloop_fullpath));
          }
          break;
-      case RUNLOOP_CTL_CHECK_FOCUS:
-         if (settings->pause_nonactive)
-            return video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL);
-         break;
       case RUNLOOP_CTL_CHECK_IDLE_STATE:
          {
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
-            bool focused              = 
-               runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL);
+            bool focused              =  runloop_is_focused();
 
             check_pause(settings, focused,
                   runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
@@ -1403,8 +1406,8 @@ int runloop_iterate(unsigned *sleep_ms)
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       menu_ctx_iterate_t iter;
-      bool focused            = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL) 
-         && !ui_companion_is_on_foreground();
+      bool focused            = runloop_is_focused() &&
+                                !ui_companion_is_on_foreground();
       bool is_idle            = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
       enum menu_action action = (enum menu_action)
                menu_input_frame_retropad(cmd.state[0], cmd.state[2]);
