@@ -705,8 +705,7 @@ void audio_driver_set_buffer_size(size_t bufsize)
    audio_driver_data.driver_buffer_size = bufsize;
 }
 
-
-static void audio_monitor_adjust_system_rates(void)
+void audio_driver_adjust_system_rates(void)
 {
    float timing_skew;
    settings_t                   *settings = config_get_ptr();
@@ -935,9 +934,6 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
       case RARCH_AUDIO_CTL_UNSET_CALLBACK:
          audio_callback.callback  = NULL;
          audio_callback.set_state = NULL;
-         break;
-      case RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES:
-         audio_monitor_adjust_system_rates();
          break;
       case RARCH_AUDIO_CTL_MUTE_TOGGLE:
          if (!audio_driver_context_audio_data)
