@@ -1934,14 +1934,19 @@ static void cb_thumbnail_downloaded(void *task_data, void *user_data, const char
    }
    
 finished:
-   if (get_next_entry(us))
+   while (get_next_entry(us))
    {
-      snprintf(output_path, sizeof(output_path), "Updating thumbnail %d", ++us->count);
-      runloop_msg_queue_push(output_path, 1, 60, true);
-      rarch_task_push_http_transfer(us->url, "", cb_thumbnail_downloaded, 1, us);
+      if (!path_file_exists(us->path))
+      {
+         snprintf(output_path, sizeof(output_path), "Updating thumbnail %d", ++us->count);
+         runloop_msg_queue_push(output_path, 1, 60, true);
+         rarch_task_push_http_transfer(us->url, "", cb_thumbnail_downloaded, 1, us);
+         return;
+      }
    }
-   else
-      free(us);
+   
+   runloop_msg_queue_push("Updating thumbnails finished", 1, 60, true);
+   free(us);
 }
 
 static int action_ok_thumbnails_updater_list(const char *path,
@@ -1951,12 +1956,18 @@ static int action_ok_thumbnails_updater_list(const char *path,
    us->i = us->j = us->k = 0;
    us->count = 0;
    
-   if (get_next_entry(us))
+   while (get_next_entry(us))
    {
-      runloop_msg_queue_push("Updating thumbnails", 1, 60, true);
-      rarch_task_push_http_transfer(us->url, "", cb_thumbnail_downloaded, 1, us);
+      if (!path_file_exists(us->path))
+      {
+         runloop_msg_queue_push("Updating thumbnails", 1, 60, true);
+         rarch_task_push_http_transfer(us->url, "", cb_thumbnail_downloaded, 1, us);
+         return 0;
+      }
    }
    
+   runloop_msg_queue_push("Updating thumbnails finished", 1, 60, true);
+   free(us);
    return 0;
 }
 
