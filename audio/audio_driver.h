@@ -48,8 +48,6 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,
    RARCH_AUDIO_CTL_MUTE_TOGGLE,
    RARCH_AUDIO_CTL_UNSET_CALLBACK,
-   RARCH_AUDIO_CTL_CALLBACK,
-   RARCH_AUDIO_CTL_HAS_CALLBACK,
    RARCH_AUDIO_CTL_ALIVE,
    RARCH_AUDIO_CTL_FRAME_IS_REVERSE,
    RARCH_AUDIO_CTL_SET_OWN_DRIVER,
@@ -178,6 +176,10 @@ bool audio_driver_get_devices_list(void **ptr);
 void audio_driver_setup_rewind(void);
 
 bool audio_driver_set_callback(const void *data);
+
+bool audio_driver_callback(void);
+
+bool audio_driver_has_callback(void);
 
 /* Sets audio monitor rate to new value. */
 void audio_driver_monitor_set_rate(void);

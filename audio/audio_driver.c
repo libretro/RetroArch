@@ -874,7 +874,7 @@ bool audio_driver_set_callback(const void *data)
 
 bool audio_driver_enable_callback(void)
 {
-   if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
+   if (!audio_driver_has_callback())
       return false; 
    if (audio_callback.set_state)
       audio_callback.set_state(true);
@@ -883,7 +883,7 @@ bool audio_driver_enable_callback(void)
 
 bool audio_driver_disable_callback(void)
 {
-   if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
+   if (!audio_driver_has_callback())
       return false;
 
    if (audio_callback.set_state)
@@ -902,6 +902,22 @@ void audio_driver_monitor_set_rate(void)
    audio_driver_data.audio_rate.source_ratio.current  = new_src_ratio;
 }
 
+bool audio_driver_callback(void)
+{
+   if (!audio_driver_has_callback())
+      return false;
+
+   if (audio_callback.callback)
+      audio_callback.callback();
+
+   return true;
+}
+
+bool audio_driver_has_callback(void)
+{
+   return audio_callback.callback;
+}
+
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    settings_t        *settings                            = config_get_ptr();
@@ -915,15 +931,6 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          break;
       case RARCH_AUDIO_CTL_DESTROY_DATA:
          audio_driver_context_audio_data = NULL;
-         break;
-      case RARCH_AUDIO_CTL_HAS_CALLBACK:
-         return audio_callback.callback;
-      case RARCH_AUDIO_CTL_CALLBACK:
-         if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
-            return false;
-
-         if (audio_callback.callback)
-            audio_callback.callback();
          break;
       case RARCH_AUDIO_CTL_UNSET_CALLBACK:
          audio_callback.callback  = NULL;
