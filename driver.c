@@ -407,7 +407,7 @@ static void uninit_drivers(int flags)
       camera_driver_ctl(RARCH_CAMERA_CTL_DEINIT, NULL);
 
    if (flags & DRIVER_AUDIO)
-      audio_driver_ctl(RARCH_AUDIO_CTL_DEINIT, NULL);
+      audio_driver_deinit();
 
    if (flags & DRIVERS_VIDEO_INPUT)
       video_driver_deinit();

@@ -939,8 +939,6 @@ bool audio_driver_toggle_mute(void)
 
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
-   settings_t        *settings                            = config_get_ptr();
-
    switch (state)
    {
       case RARCH_AUDIO_CTL_DESTROY:

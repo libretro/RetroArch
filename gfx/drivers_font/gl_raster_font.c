@@ -58,10 +58,10 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
    GLenum gl_format                     = GL_LUMINANCE_ALPHA;
    size_t ncomponents                   = 2;
    uint8_t       *tmp                   = NULL;
-   struct retro_hw_render_callback *hwr = NULL;
    bool ancient                         = false; /* add a check here if needed */
-   
-   hwr = video_driver_get_hw_context();
+#if defined(GL_VERSION_3_0)
+   struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+#endif
 
    if (ancient)
    {
