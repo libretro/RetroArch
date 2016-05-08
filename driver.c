@@ -464,7 +464,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
             return driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
          }
       case RARCH_DRIVER_CTL_INIT_PRE:
-         audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
+         audio_driver_find_driver();
          video_driver_find_driver();
          input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
          camera_driver_ctl(RARCH_CAMERA_CTL_FIND_DRIVER, NULL);

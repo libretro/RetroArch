@@ -45,13 +45,10 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_DESTROY_DATA,
    RARCH_AUDIO_CTL_START,
    RARCH_AUDIO_CTL_STOP,
-   RARCH_AUDIO_CTL_FIND_DRIVER,
    /* Sets audio monitor refresh rate to new value. */
    RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE,
    RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,
    RARCH_AUDIO_CTL_MUTE_TOGGLE,
-   RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE,
-   RARCH_AUDIO_CTL_SET_CALLBACK_DISABLE,
    RARCH_AUDIO_CTL_UNSET_CALLBACK,
    RARCH_AUDIO_CTL_CALLBACK,
    RARCH_AUDIO_CTL_HAS_CALLBACK,
@@ -129,6 +126,10 @@ bool audio_driver_free_devices_list(void);
 
 bool audio_driver_new_devices_list(void);
 
+bool audio_driver_enable_callback(void);
+
+bool audio_driver_disable_callback(void);
+
 /**
  * audio_driver_find_handle:
  * @index              : index of driver to get handle to.
@@ -179,6 +180,8 @@ bool audio_driver_get_devices_list(void **ptr);
 void audio_driver_setup_rewind(void);
 
 bool audio_driver_set_callback(const void *data);
+
+bool audio_driver_find_driver(void);
 
 bool audio_driver_deinit(void);
 
