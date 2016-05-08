@@ -1014,7 +1014,7 @@ ifeq ($(HAVE_FFMPEG), 1)
           cores/libretro-ffmpeg/ffmpeg_core.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
-   DEFINES += -DHAVE_FFMPEG -Iffmpeg
+   DEFINES += -Wno-deprecated-declarations -DHAVE_FFMPEG -Iffmpeg
 endif
 
 ifeq ($(HAVE_COMPRESSION), 1)
