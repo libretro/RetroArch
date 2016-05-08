@@ -105,7 +105,7 @@ static bool menu_content_load(void)
    content_info.args        = NULL;
    content_info.environ_get = menu_content_environment_get;
 
-   if (!content_ctl(CONTENT_CTL_LOAD, &content_info))
+   if (!content_load(&content_info))
       goto error;
 
    if (*fullpath)

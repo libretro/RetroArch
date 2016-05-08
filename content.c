@@ -857,7 +857,7 @@ static void content_load_init_wrap(
  *
  * Returns: false (0) if rarch_main_init failed, otherwise true (1).
  **/
-static bool content_load(content_ctx_info_t *info)
+bool content_load(content_ctx_info_t *info)
 {
    unsigned i;
    bool retval                       = true;
@@ -1761,8 +1761,6 @@ bool content_ctl(enum content_ctl_state state, void *data)
 #endif
          }
          break;
-      case CONTENT_CTL_LOAD:
-         return content_load((content_ctx_info_t*)data);
       case CONTENT_CTL_NONE:
       default:
          break;

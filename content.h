@@ -48,10 +48,6 @@ enum content_ctl_state
 
    CONTENT_CTL_DEINIT,
 
-   /* Loads content file and starts up RetroArch.
-    * If no content file can be loaded, will start up RetroArch
-    * as-is. */
-   CONTENT_CTL_LOAD,
 
    CONTENT_CTL_GET_CRC,
 
@@ -102,6 +98,11 @@ bool content_load_state(const char *path);
 
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path);
+
+/* Loads content file and starts up RetroArch.
+ * If no content file can be loaded, will start up RetroArch
+ * as-is. */
+bool content_load(content_ctx_info_t *info);
 
 bool content_ctl(enum content_ctl_state state, void *data);
 

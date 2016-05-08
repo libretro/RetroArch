@@ -126,7 +126,7 @@ int rarch_main(int argc, char *argv[], void *data)
       info.args            = args;
       info.environ_get     = frontend_driver_environment_get_ptr();
 
-      if (!content_ctl(CONTENT_CTL_LOAD, &info))
+      if (!content_load(&info))
          return 0;
    }
 
