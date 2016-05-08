@@ -97,7 +97,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    if (swap_if_big32(header[CRC_INDEX]) != *content_crc_ptr)
       RARCH_WARN("CRC32 checksum mismatch between content file and saved content checksum in replay file header; replay highly likely to desync on playback.\n");
@@ -151,7 +151,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    /* This value is supposed to show up as
     * BSV1 in a HEX editor, big-endian. */

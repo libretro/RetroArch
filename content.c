@@ -92,7 +92,7 @@ struct sram_block
 
 static const struct file_archive_file_backend *stream_backend = NULL;
 static struct string_list *temporary_content                  = NULL;
-static bool content_is_inited                                 = false;
+static bool _content_is_inited                                = false;
 static bool core_does_not_need_content                        = false;
 static uint32_t content_crc                                   = 0;
 
@@ -954,7 +954,7 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
       patch_content(&ret_buf, length);
 
 #ifdef HAVE_ZLIB
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    stream_info.a = 0;
    stream_info.b = ret_buf;
@@ -1597,9 +1597,9 @@ static bool init_content_file_set_attribs(
 
       attr.i               = system->info.block_extract;
       attr.i              |= system->info.need_fullpath << 1;
-      attr.i              |= (!content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))  << 2;
+      attr.i              |= (!content_does_not_need_content())  << 2;
 
-      if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL)
+      if (content_does_not_need_content()
             && settings->set_supports_no_game_enable)
          string_list_append(content, "", attr);
       else
@@ -1700,51 +1700,58 @@ static bool content_file_free(struct string_list *temporary_content)
    return true;
 }
 
-bool content_ctl(enum content_ctl_state state, void *data)
+bool content_does_not_need_content(void)
 {
-   switch(state)
-   {
-      case CONTENT_CTL_DOES_NOT_NEED_CONTENT:
-         return core_does_not_need_content;
-      case CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT:
-         core_does_not_need_content = true;
-         break;
-      case CONTENT_CTL_UNSET_DOES_NOT_NEED_CONTENT:
-         core_does_not_need_content = false;
-         break;
-      case CONTENT_CTL_GET_CRC:
-         {
-            uint32_t **content_crc_ptr = (uint32_t**)data;
-            if (!content_crc_ptr)
-               return false;
-            *content_crc_ptr = &content_crc;
-         }
-         break;
-      case CONTENT_CTL_IS_INITED:
-         return content_is_inited;
-      case CONTENT_CTL_DEINIT:
-         content_file_free(temporary_content);
-         temporary_content          = NULL;
-         content_crc                = 0;
-         content_is_inited          = false;
-         core_does_not_need_content = false;
-         break;
-      case CONTENT_CTL_INIT:
-         content_is_inited = false;
-         temporary_content = string_list_new();
-         if (!temporary_content)
-            return false;
-         if (content_file_init(temporary_content))
-         {
-            content_is_inited = true;
-            return true;
-         }
-         content_ctl(CONTENT_CTL_DEINIT, NULL);
-         return false;
-      case CONTENT_CTL_NONE:
-      default:
-         break;
-   }
+   return core_does_not_need_content;
+}
 
+void content_set_does_not_need_content(void)
+{
+   core_does_not_need_content = true;
+}
+
+void content_unset_does_not_need_content(void)
+{
+   core_does_not_need_content = false;
+}
+
+bool content_get_crc(uint32_t **content_crc_ptr)
+{
+   if (!content_crc_ptr)
+      return false;
+   *content_crc_ptr = &content_crc;
    return true;
+}
+
+bool content_is_inited(void)
+{
+   return _content_is_inited;
+}
+
+void content_deinit(void)
+{
+   content_file_free(temporary_content);
+   temporary_content          = NULL;
+   content_crc                = 0;
+   _content_is_inited         = false;
+   core_does_not_need_content = false;
+}
+
+/* Initializes and loads a content file for the currently
+ * selected libretro core. */
+bool content_init(void)
+{
+   temporary_content = string_list_new();
+   if (!temporary_content)
+      goto error;
+
+   if (!content_file_init(temporary_content))
+      goto error;
+
+   _content_is_inited = true;
+   return true;
+
+error:
+   content_deinit();
+   return false;
 }

@@ -555,13 +555,13 @@ static bool event_init_content(void)
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return true;
 
-   if (!content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
+   if (!content_does_not_need_content())
       rarch_ctl(RARCH_CTL_FILL_PATHNAMES, NULL);
 
-   if (!content_ctl(CONTENT_CTL_INIT, NULL))
+   if (!content_init())
       return false;
 
-   if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
+   if (content_does_not_need_content())
       return true;
 
    event_set_savestate_auto_index();
@@ -632,7 +632,7 @@ static bool event_save_auto_state(void)
       return false;
    if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
       return false;
-   if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
+   if (content_does_not_need_content())
       return false;
 
 #ifdef HAVE_CHEEVOS
@@ -1588,7 +1588,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          input_driver_ctl(RARCH_INPUT_CTL_REMOTE_INIT, NULL);
          break;
       case EVENT_CMD_TEMPORARY_CONTENT_DEINIT:
-         content_ctl(CONTENT_CTL_DEINIT, NULL);
+         content_deinit();
          break;
       case EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT:
          {

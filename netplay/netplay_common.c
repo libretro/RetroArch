@@ -78,7 +78,7 @@ uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
    if (!header)
       goto error;
 
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    bsv_header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
    bsv_header[SERIALIZER_INDEX] = swap_if_big32(magic);
@@ -123,7 +123,7 @@ bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
 
    in_crc = swap_if_big32(header[CRC_INDEX]);
 
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    if (in_crc != *content_crc_ptr)
    {
@@ -205,7 +205,7 @@ bool np_send_info(netplay_t *netplay)
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
 
    core_get_memory(&mem_info);
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
    
    header[0] = htonl(*content_crc_ptr);
    header[1] = htonl(np_impl_magic());
@@ -257,7 +257,7 @@ bool np_get_info(netplay_t *netplay)
       return false;
    }
 
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    if (*content_crc_ptr != ntohl(header[0]))
    {

@@ -30,27 +30,6 @@
 extern "C" {
 #endif
 
-enum content_ctl_state
-{
-   CONTENT_CTL_NONE = 0,
-
-   CONTENT_CTL_IS_INITED,
-
-   CONTENT_CTL_DOES_NOT_NEED_CONTENT,
-
-   CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT,
-
-   CONTENT_CTL_UNSET_DOES_NOT_NEED_CONTENT,
-
-   /* Initializes and loads a content file for the currently
-    * selected libretro core. */
-   CONTENT_CTL_INIT,
-
-   CONTENT_CTL_DEINIT,
-
-   CONTENT_CTL_GET_CRC,
-};
-
 typedef struct ram_type
 {
    const char *path;
@@ -93,7 +72,21 @@ bool content_save_state(const char *path);
  * as-is. */
 bool content_load(content_ctx_info_t *info);
 
-bool content_ctl(enum content_ctl_state state, void *data);
+bool content_does_not_need_content(void);
+
+void content_set_does_not_need_content(void);
+
+void content_unset_does_not_need_content(void);
+
+bool content_get_crc(uint32_t **content_crc_ptr);
+
+bool content_is_inited(void);
+
+void content_deinit(void);
+
+/* Initializes and loads a content file for the currently
+ * selected libretro core. */
+bool content_init(void);
 
 #ifdef __cplusplus
 }

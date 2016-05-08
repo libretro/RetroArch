@@ -1050,7 +1050,7 @@ static void parse_input(int argc, char *argv[])
       set_special_paths(argv + optind, argc - optind);
    }
    else
-      content_ctl(CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT, NULL);
+      content_set_does_not_need_content();
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (global->has_set.save_path &&
@@ -1451,14 +1451,14 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_SET_PATHS_REDIRECT:
          if(settings->sort_savestates_enable || settings->sort_savefiles_enable)
          {
-            if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
+            if (content_does_not_need_content())
                return false;
             set_paths_redirect(global->name.base);
          }
          break;
       case RARCH_CTL_SET_SRAM_ENABLE:
          global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
-            && !content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL);
+            && !content_does_not_need_content();
          break;
       case RARCH_CTL_SET_ERROR_ON_INIT:
          rarch_error_on_init = true;

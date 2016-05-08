@@ -1005,9 +1005,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SET_SUPPORT_NO_GAME: %s.\n", state ? "yes" : "no");
 
          if (state)
-            content_ctl(CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT, NULL);
+            content_set_does_not_need_content();
          else
-            content_ctl(CONTENT_CTL_UNSET_DOES_NOT_NEED_CONTENT, NULL);
+            content_unset_does_not_need_content();
          break;
       }
 
