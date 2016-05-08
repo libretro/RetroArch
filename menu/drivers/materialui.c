@@ -205,6 +205,7 @@ static void mui_draw_icon(
    draw.matrix_data     = &mymat;
    draw.texture         = texture;
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id     = 0;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 
@@ -294,6 +295,7 @@ static void mui_render_quad(mui_handle_t *mui,
    draw.matrix_data = NULL;
    draw.texture     = menu_display_white_texture;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id = 0;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 
@@ -712,6 +714,7 @@ static void mui_draw_bg(menu_display_ctx_draw_t *draw)
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    draw->x              = 0;
    draw->y              = 0;
+   draw->pipeline.id    = 0;
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG,   draw);
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW,      draw);
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);

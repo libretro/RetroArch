@@ -954,6 +954,7 @@ static void zarch_frame(void *data)
    draw.matrix_data = &zui->mvp;
    draw.texture     = menu_display_white_texture;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLES;
+   draw.pipeline.id = 0;
 
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
 

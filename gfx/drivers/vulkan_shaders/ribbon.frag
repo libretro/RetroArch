@@ -1,7 +1,7 @@
 #version 310 es
-precision mediump float;
+precision highp float;
 
-layout(std430, push_constant) uniform PushConstants
+layout(std140, set = 0, binding = 0) uniform UBO
 {
    float time;
 } constants;

@@ -523,13 +523,8 @@ static void vulkan_write_quad_descriptors(
       const struct vk_texture *texture,
       VkSampler sampler)
 {
-   VkDescriptorImageInfo image_info;
    VkDescriptorBufferInfo buffer_info;
    VkWriteDescriptorSet write      = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-
-   image_info.sampler              = sampler;
-   image_info.imageView            = texture->view;
-   image_info.imageLayout          = texture->layout;
 
    buffer_info.buffer              = buffer;
    buffer_info.offset              = offset;
@@ -542,12 +537,21 @@ static void vulkan_write_quad_descriptors(
    write.pBufferInfo               = &buffer_info;
    VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
 
-   write.dstSet                    = set;
-   write.dstBinding                = 1;
-   write.descriptorCount           = 1;
-   write.descriptorType            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-   write.pImageInfo                = &image_info;
-   VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
+   if (texture)
+   {
+      VkDescriptorImageInfo image_info;
+
+      image_info.sampler              = sampler;
+      image_info.imageView            = texture->view;
+      image_info.imageLayout          = texture->layout;
+
+      write.dstSet                    = set;
+      write.dstBinding                = 1;
+      write.descriptorCount           = 1;
+      write.descriptorType            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      write.pImageInfo                = &image_info;
+      VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
+   }
 }
 
 void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
@@ -606,7 +610,8 @@ static void vulkan_check_dynamic_state(
 
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 {
-   vulkan_transition_texture(vk, call->texture);
+   if (call->texture)
+      vulkan_transition_texture(vk, call->texture);
 
    if (call->pipeline != vk->tracker.pipeline)
    {
@@ -624,37 +629,34 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
    {
       VkDescriptorSet set;
 
-      if (memcmp(call->mvp, &vk->tracker.mvp, sizeof(*call->mvp)) 
-            || (call->texture->view != vk->tracker.view)
-            || (call->sampler != vk->tracker.sampler))
-      {
-         /* Upload UBO */
-         struct vk_buffer_range range;
-         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
-                  sizeof(*call->mvp), &range))
-            return;
-         memcpy(range.data, call->mvp, sizeof(*call->mvp));
+      /* Upload UBO */
+      struct vk_buffer_range range;
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+               call->uniform_size, &range))
+         return;
 
-         set = vulkan_descriptor_manager_alloc(
-               vk->context->device,
-               &vk->chain->descriptor_manager);
-         vulkan_write_quad_descriptors(
-               vk->context->device,
-               set,
-               range.buffer,
-               range.offset,
-               sizeof(*call->mvp),
-               call->texture,
-               call->sampler);
+      memcpy(range.data, call->uniform, call->uniform_size);
 
-         VKFUNC(vkCmdBindDescriptorSets)(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-               vk->pipelines.layout, 0,
-               1, &set, 0, NULL);
+      set = vulkan_descriptor_manager_alloc(
+            vk->context->device,
+            &vk->chain->descriptor_manager);
 
-         vk->tracker.view = call->texture->view;
-         vk->tracker.sampler = call->sampler;
-         vk->tracker.mvp = *call->mvp;
-      }
+      vulkan_write_quad_descriptors(
+            vk->context->device,
+            set,
+            range.buffer,
+            range.offset,
+            call->uniform_size,
+            call->texture,
+            call->sampler);
+
+      VKFUNC(vkCmdBindDescriptorSets)(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vk->pipelines.layout, 0,
+            1, &set, 0, NULL);
+
+      vk->tracker.view = VK_NULL_HANDLE;
+      vk->tracker.sampler = VK_NULL_HANDLE;
+      memset(&vk->tracker.mvp, 0, sizeof(vk->tracker.mvp));
    }
 
    /* VBO is already uploaded. */

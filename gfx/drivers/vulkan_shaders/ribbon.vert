@@ -3,7 +3,7 @@
 layout(location = 0) in vec3 VertexCoord;
 layout(location = 0) out vec3 vEC;
 
-layout(std430, push_constant) uniform PushConstants
+layout(std140, set = 0, binding = 0) uniform UBO
 {
    float time;
 } constants;
@@ -47,6 +47,7 @@ void main()
    v.z += noise(v3 * 7.0) / 15.0;
    v.y += noise(v3 * 7.0) / 15.0 + cos(v.x * 2.0 - constants.time / 5.0) / 5.0 - 0.3;
 
+   v.y = -v.y;
    vEC = v;
    gl_Position = vec4(v, 1.0);
 }

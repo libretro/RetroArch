@@ -498,6 +498,7 @@ static void xmb_draw_icon(
    draw.matrix_data     = mymat;
    draw.texture         = texture;
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id     = 0;
 
    if (settings->menu.xmb_shadows_enable)
    {
@@ -554,6 +555,7 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
    draw.matrix_data = &mymat;
    draw.texture     = xmb->thumbnail;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id = 0;
 
    if (settings->menu.xmb_shadows_enable)
    {
@@ -1943,6 +1945,7 @@ static void xmb_draw_bg(
    draw.tex_coord            = NULL;
    draw.vertex_count         = 4;
    draw.prim_type            = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id          = 0;
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
@@ -1956,11 +1959,12 @@ static void xmb_draw_bg(
       else
          menu_display_set_alpha(draw.color, coord_white[3]);
 
+      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, &draw);
+
       draw.pipeline.id = VIDEO_SHADER_MENU_SEC;
       if (settings->menu.shader_pipeline == 2)
          draw.pipeline.id  = VIDEO_SHADER_MENU;
 
-      menu_display_ctl(MENU_DISPLAY_CTL_DRAW_GRADIENT, &draw);
       menu_display_ctl(MENU_DISPLAY_CTL_DRAW_PIPELINE, &draw);
    }
    else
@@ -1981,7 +1985,6 @@ static void xmb_draw_dark_layer(
       unsigned width,
       unsigned height)
 {
-
    menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
    float black[16] = {
@@ -2007,6 +2010,7 @@ static void xmb_draw_dark_layer(
    draw.matrix_data = NULL;
    draw.texture     = menu_display_white_texture;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id = 0;
 
    menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
    menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);

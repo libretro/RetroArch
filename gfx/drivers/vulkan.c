@@ -17,6 +17,10 @@
 #include "vulkan_shaders/alpha_blend.vert.inc"
 #include "vulkan_shaders/alpha_blend.frag.inc"
 #include "vulkan_shaders/font.frag.inc"
+#include "vulkan_shaders/ribbon.vert.inc"
+#include "vulkan_shaders/ribbon.frag.inc"
+#include "vulkan_shaders/ribbon_simple.vert.inc"
+#include "vulkan_shaders/ribbon_simple.frag.inc"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -172,7 +176,7 @@ static void vulkan_init_pipeline_layout(
    bindings[0].binding            = 0;
    bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
    bindings[0].descriptorCount    = 1;
-   bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
+   bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
    bindings[0].pImmutableSamplers = NULL;
 
    bindings[1].binding            = 1;
@@ -360,6 +364,49 @@ static void vulkan_init_pipelines(
 
    VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[0].module, NULL);
    VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[1].module, NULL);
+
+   /* Other menu pipelines. */
+   for (i = 0; i < 4; i++)
+   {
+      if (i & 2)
+      {
+         module_info.codeSize   = ribbon_simple_vert_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_simple_vert_spv;
+      }
+      else
+      {
+         module_info.codeSize   = ribbon_vert_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_vert_spv;
+      }
+
+      shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+      shader_stages[0].pName = "main";
+      VKFUNC(vkCreateShaderModule)(vk->context->device,
+            &module_info, NULL, &shader_stages[0].module);
+
+      if (i & 2)
+      {
+         module_info.codeSize   = ribbon_simple_frag_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_simple_frag_spv;
+      }
+      else
+      {
+         module_info.codeSize   = ribbon_frag_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_frag_spv;
+      }
+
+      shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      shader_stages[1].pName = "main";
+      VKFUNC(vkCreateShaderModule)(vk->context->device,
+            &module_info, NULL, &shader_stages[1].module);
+
+      input_assembly.topology = i & 1 ?
+         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP :
+         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+      VKFUNC(vkCreateGraphicsPipelines)(vk->context->device, vk->pipelines.cache,
+            1, &pipe, NULL, &vk->display.pipelines[4 + i]);
+   }
 }
 
 static void vulkan_init_command_buffers(vk_t *vk)
@@ -550,7 +597,7 @@ static void vulkan_deinit_pipelines(vk_t *vk)
    VKFUNC(vkDestroyPipeline)(vk->context->device,
          vk->pipelines.font, NULL);
 
-   for (i = 0; i < 4; i++)
+   for (i = 0; i < 8; i++)
       VKFUNC(vkDestroyPipeline)(vk->context->device,
             vk->display.pipelines[i], NULL);
 }
@@ -2146,12 +2193,13 @@ static void vulkan_render_overlay(vk_t *vk)
             4 * sizeof(struct vk_vertex));
 
       memset(&call, 0, sizeof(call));
-      call.pipeline = vk->display.pipelines[3]; /* Strip with blend */
-      call.texture  = &vk->overlay.images[i];
-      call.sampler  = vk->samplers.linear;
-      call.mvp      = &vk->mvp;
-      call.vbo      = &range;
-      call.vertices = 4;
+      call.pipeline     = vk->display.pipelines[3]; /* Strip with blend */
+      call.texture      = &vk->overlay.images[i];
+      call.sampler      = vk->samplers.linear;
+      call.uniform      = &vk->mvp;
+      call.uniform_size = sizeof(vk->mvp);
+      call.vbo          = &range;
+      call.vertices     = 4;
       vulkan_draw_triangles(vk, &call);
    }
 

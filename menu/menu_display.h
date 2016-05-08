@@ -124,6 +124,7 @@ typedef struct menu_display_ctx_draw
    struct
    {
       unsigned id;
+      const void *backend_data;
    } pipeline;
 } menu_display_ctx_draw_t;
 
