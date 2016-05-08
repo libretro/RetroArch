@@ -722,7 +722,8 @@ void state_manager_check_rewind(bool pressed)
          retro_ctx_serialize_info_t serial_info;
 
          state_manager_set_frame_is_reversed(true);
-         audio_driver_ctl(RARCH_AUDIO_CTL_SETUP_REWIND, NULL);
+
+         audio_driver_setup_rewind();
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REWINDING), 0,

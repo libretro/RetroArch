@@ -729,7 +729,7 @@ static void audio_monitor_adjust_system_rates(void)
          audio_driver_data.audio_rate.input);
 }
 
-static void audio_driver_setup_rewind(void)
+void audio_driver_setup_rewind(void)
 {
    unsigned i;
 
@@ -862,9 +862,6 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          audio_driver_free_devices_list();
          if (!uninit_audio())
             return false;
-         break;
-      case RARCH_AUDIO_CTL_SETUP_REWIND:
-         audio_driver_setup_rewind();
          break;
       case RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE:
          if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
