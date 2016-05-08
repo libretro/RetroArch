@@ -56,11 +56,6 @@
 #define XMB_DELAY 10
 #endif
 
-#define XMB_ABOVE_OFFSET_SUBITEM     1.5
-#define XMB_ABOVE_OFFSET_ITEM       -1.0
-#define XMB_ITEM_ACTIVE_FACTOR       3.0
-#define XMB_UNDER_OFFSET_ITEM        5.0
-
 #define XMB_CATEGORIES_ACTIVE_ZOOM   1.0
 #define XMB_CATEGORIES_PASSIVE_ZOOM  0.5
 #define XMB_ITEM_ACTIVE_ZOOM         1.0
@@ -180,6 +175,10 @@ typedef struct xmb_handle
       } label;
    } margins;
 
+   float above_subitem_offset;
+   float above_item_offset;
+   float active_item_factor;
+   float under_item_offset;
    float shadow_offset;
 
    char title_name[256];
@@ -453,14 +452,14 @@ static float xmb_item_y(xmb_handle_t *xmb, int i, size_t current)
 
    if (i < (int)current)
       if (xmb->depth > 1)
-         iy *= (i - (int)current + XMB_ABOVE_OFFSET_SUBITEM);
+         iy *= (i - (int)current + xmb->above_subitem_offset);
       else
-         iy *= (i - (int)current + XMB_ABOVE_OFFSET_ITEM);
+         iy *= (i - (int)current + xmb->above_item_offset);
    else
-      iy    *= (i - (int)current + XMB_UNDER_OFFSET_ITEM);
+      iy    *= (i - (int)current + xmb->under_item_offset);
 
    if (i == (int)current)
-      iy = xmb->icon.spacing.vertical * XMB_ITEM_ACTIVE_FACTOR;
+      iy = xmb->icon.spacing.vertical * xmb->active_item_factor;
 
    return iy;
 }
@@ -2143,7 +2142,7 @@ static void xmb_frame(void *data)
             xmb->icon.spacing.horizontal - xmb->icon.size / 2.0 + xmb->icon.size,
             xmb->margins.screen.top +
             xmb->icon.size / 2.0 + xmb->icon.spacing.vertical
-            * XMB_ITEM_ACTIVE_FACTOR,
+            * xmb->active_item_factor,
             width,
             height,
             xmb->textures.arrow.alpha,
@@ -2324,6 +2323,11 @@ static void xmb_layout(xmb_handle_t *xmb)
    new_font_size                = 32.0  * scale_factor;
    xmb->margins.screen.left     = 336.0 * scale_factor;
    xmb->shadow_offset           = 2.0;
+
+   xmb->above_subitem_offset    =   1.5;
+   xmb->above_item_offset       =  -1.0;
+   xmb->active_item_factor      =   3.0;
+   xmb->under_item_offset       =   5.0;
 
    /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
    if (width <= 640)
