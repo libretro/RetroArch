@@ -40,7 +40,7 @@
 #include "../general.h"
 #include "../cheats.h"
 #include "../performance.h"
-#include "../libretro_version_1.h"
+#include "../core.h"
 #include "../input/input_joypad_driver.h"
 #include "../input/input_remapping.h"
 #include "../input/input_config.h"

@@ -33,7 +33,7 @@
 #include "input/input_remapping.h"
 #include "defaults.h"
 #include "general.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "retroarch.h"
 #include "system.h"
 #include "verbosity.h"

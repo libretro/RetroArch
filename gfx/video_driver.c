@@ -35,7 +35,7 @@
 #include "../runloop.h"
 #include "../performance.h"
 #include "../list_special.h"
-#include "../libretro_version_1.h"
+#include "../core.h"
 #include "../system.h"
 #include "../command_event.h"
 #include "../msg_hash.h"

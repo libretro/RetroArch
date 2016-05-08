@@ -735,7 +735,7 @@ GIT
 /*============================================================
 RETROARCH
 ============================================================ */
-#include "../libretro_version_1.c"
+#include "../core_impl.c"
 #include "../retroarch.c"
 #include "../runloop.c"
 #include "../libretro-common/queues/task_queue.c"

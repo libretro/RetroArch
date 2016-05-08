@@ -26,7 +26,7 @@
 #include "video_state_python.h"
 #include "../dynamic.h"
 #include "../libretro.h"
-#include "../libretro_version_1.h"
+#include "../core.h"
 #include "../general.h"
 #include "../verbosity.h"
 #include "../input/input_config.h"

@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RETRO_IMPLEMENTATION_V1_H
-#define _RETRO_IMPLEMENTATION_V1_H
+#ifndef _LIBRETRO_CORE_IMPL_H
+#define _LIBRETRO_CORE_IMPL_H
 
 #ifdef __cplusplus
 extern "C" {

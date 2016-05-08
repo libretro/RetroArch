@@ -28,7 +28,7 @@
 #include "../video_state_tracker.h"
 #include "../../dynamic.h"
 #include "../../rewind.h"
-#include "../../libretro_version_1.h"
+#include "../../core.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"

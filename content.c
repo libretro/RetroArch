@@ -63,7 +63,7 @@
 #include "retroarch.h"
 #include "command_event.h"
 #include "file_path_special.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "verbosity.h"
 
 #ifdef HAVE_7ZIP

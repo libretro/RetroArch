@@ -29,7 +29,7 @@
 #include "performance.h"
 #include "msg_hash.h"
 #include "runloop.h"
-#include "libretro_version_1.h"
+#include "core.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"

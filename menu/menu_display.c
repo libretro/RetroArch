@@ -25,7 +25,7 @@
 #include "../retroarch.h"
 #include "../configuration.h"
 #include "../runloop.h"
-#include "../libretro_version_1.h"
+#include "../core.h"
 #include "../gfx/video_thread_wrapper.h"
 #include "../verbosity.h"
 

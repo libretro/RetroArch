@@ -49,7 +49,7 @@
 #include "../driver.h"
 #include "../general.h"
 #include "../system.h"
-#include "../libretro_version_1.h"
+#include "../core.h"
 #include "../dynamic.h"
 #include "../camera/camera_driver.h"
 #include "../location/location_driver.h"

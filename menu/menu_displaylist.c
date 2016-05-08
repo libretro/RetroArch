@@ -35,7 +35,7 @@
 #include "../general.h"
 #include "../retroarch.h"
 #include "../system.h"
-#include "../libretro_version_1.h"
+#include "../core.h"
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_shader_driver.h"

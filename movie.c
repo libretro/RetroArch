@@ -23,7 +23,7 @@
 
 #include "configuration.h"
 #include "movie.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "content.h"
 #include "retroarch.h"
 #include "runloop.h"

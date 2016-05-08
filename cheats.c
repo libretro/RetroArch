@@ -26,7 +26,7 @@
 #include "cheats.h"
 #include "runloop.h"
 #include "dynamic.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "verbosity.h"
 
 #ifdef HAVE_CONFIG_H

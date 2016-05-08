@@ -54,7 +54,7 @@
 #include "frontend/frontend_driver.h"
 #include "audio/audio_driver.h"
 #include "record/record_driver.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "configuration.h"
 #include "general.h"
 #include "runloop.h"

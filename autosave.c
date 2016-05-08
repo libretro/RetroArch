@@ -27,7 +27,7 @@
 #include "configuration.h"
 #include "msg_hash.h"
 #include "runloop.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "verbosity.h"
 
 /* Autosave support. */

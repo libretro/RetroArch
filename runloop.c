@@ -52,7 +52,7 @@
 #include "record/record_driver.h"
 #include "input/input_driver.h"
 #include "ui/ui_companion_driver.h"
-#include "libretro_version_1.h"
+#include "core.h"
 
 #include "msg_hash.h"
 
