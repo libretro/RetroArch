@@ -396,7 +396,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
       audio_driver_data.audio_rate.source_ratio.current =
       (double)settings->audio.out_rate / audio_driver_data.audio_rate.input;
 
-   if (!audio_driver_ctl(RARCH_AUDIO_CTL_RESAMPLER_INIT, NULL))
+   if (!audio_driver_init_resampler())
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
             settings->audio.resampler);
@@ -572,7 +572,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
       src_data.ratio *= settings->slowmotion_ratio;
 
-   audio_driver_ctl(RARCH_AUDIO_CTL_RESAMPLER_PROCESS, &src_data);
+   audio_driver_process_resampler(&src_data);
 
    output_data   = audio_driver_data.output_samples.buf;
    output_frames = src_data.output_frames;
@@ -825,26 +825,31 @@ bool audio_driver_get_devices_list(void **data)
    return true;
 }
 
+bool audio_driver_init_resampler(void)
+{
+   settings_t *settings = config_get_ptr();
+   return rarch_resampler_realloc(
+         &audio_driver_resampler_data,
+         &audio_driver_resampler,
+         settings->audio.resampler,
+         audio_driver_data.audio_rate.source_ratio.original);
+}
+
+void audio_driver_process_resampler(struct resampler_data *data)
+{
+   rarch_perf_init(&resampler_proc, "resampler_proc");
+   retro_perf_start(&resampler_proc);
+   rarch_resampler_process(audio_driver_resampler, 
+         audio_driver_resampler_data, data);
+   retro_perf_stop(&resampler_proc);
+}
+
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    settings_t        *settings                            = config_get_ptr();
 
    switch (state)
    {
-      case RARCH_AUDIO_CTL_RESAMPLER_INIT:
-         return rarch_resampler_realloc(
-               &audio_driver_resampler_data,
-               &audio_driver_resampler,
-               settings->audio.resampler,
-               audio_driver_data.audio_rate.source_ratio.original);
-      case RARCH_AUDIO_CTL_RESAMPLER_PROCESS:
-         rarch_perf_init(&resampler_proc, "resampler_proc");
-         retro_perf_start(&resampler_proc);
-         rarch_resampler_process(audio_driver_resampler, 
-               audio_driver_resampler_data,
-               (struct resampler_data*)data);
-         retro_perf_stop(&resampler_proc);
-         break;
       case RARCH_AUDIO_CTL_DESTROY:
          audio_driver_active   = false;
          audio_driver_data_own = false;
