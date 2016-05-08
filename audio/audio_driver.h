@@ -42,8 +42,6 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_NONE = 0,
    RARCH_AUDIO_CTL_DESTROY,
    RARCH_AUDIO_CTL_DESTROY_DATA,
-   RARCH_AUDIO_CTL_UNSET_CALLBACK,
-   RARCH_AUDIO_CTL_ALIVE,
    RARCH_AUDIO_CTL_FRAME_IS_REVERSE,
    RARCH_AUDIO_CTL_SET_OWN_DRIVER,
    RARCH_AUDIO_CTL_UNSET_OWN_DRIVER,
@@ -188,6 +186,10 @@ bool audio_driver_toggle_mute(void);
 bool audio_driver_start(void);
 
 bool audio_driver_stop(void);
+
+void audio_driver_unset_callback(void);
+
+bool audio_driver_alive(void);
 
 bool audio_driver_deinit(void);
 

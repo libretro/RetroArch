@@ -953,6 +953,20 @@ bool audio_driver_stop(void)
    return current_audio->stop(audio_driver_context_audio_data);
 }
 
+void audio_driver_unset_callback(void)
+{
+   audio_callback.callback  = NULL;
+   audio_callback.set_state = NULL;
+}
+
+bool audio_driver_alive(void)
+{
+   if (!current_audio || !current_audio->alive 
+         || !audio_driver_context_audio_data)
+      return false;
+   return current_audio->alive(audio_driver_context_audio_data);
+}
+
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    switch (state)
@@ -965,15 +979,6 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
       case RARCH_AUDIO_CTL_DESTROY_DATA:
          audio_driver_context_audio_data = NULL;
          break;
-      case RARCH_AUDIO_CTL_UNSET_CALLBACK:
-         audio_callback.callback  = NULL;
-         audio_callback.set_state = NULL;
-         break;
-      case RARCH_AUDIO_CTL_ALIVE:
-         if (!current_audio || !current_audio->alive 
-               || !audio_driver_context_audio_data)
-            return false;
-         return current_audio->alive(audio_driver_context_audio_data);
       case RARCH_AUDIO_CTL_SET_OWN_DRIVER:
          audio_driver_data_own = true;
          break;

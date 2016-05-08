@@ -1211,14 +1211,14 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          event_save_auto_state();
          break;
       case EVENT_CMD_AUDIO_STOP:
-         if (!audio_driver_ctl(RARCH_AUDIO_CTL_ALIVE, NULL))
+         if (!audio_driver_alive())
             return false;
 
          if (!audio_driver_stop())
             return false;
          break;
       case EVENT_CMD_AUDIO_START:
-         if (audio_driver_ctl(RARCH_AUDIO_CTL_ALIVE, NULL))
+         if (!audio_driver_alive())
             return false;
 
          if (!settings->audio.mute_enable && !audio_driver_start())

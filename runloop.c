@@ -707,7 +707,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_key_event             = NULL;
          runloop_frontend_key_event    = NULL;
 
-         audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_CALLBACK, NULL);
+         audio_driver_unset_callback();
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
       case RUNLOOP_CTL_SET_FRAME_TIME_LAST:
