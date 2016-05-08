@@ -28,6 +28,7 @@
 #include "record/record_driver.h"
 #include "autosave.h"
 #include "core_info.h"
+#include "core_type.h"
 #include "cheats.h"
 #include "performance.h"
 #include "dynamic.h"
@@ -576,12 +577,12 @@ static bool event_init_content(void)
    return true;
 }
 
-static bool event_init_core(void *data)
+static bool event_init_core(enum rarch_core_type *data)
 {
    retro_ctx_environ_info_t info;
    settings_t *settings            = config_get_ptr();
 
-   if (!core_init_symbols((rarch_core_type*)data))
+   if (!core_init_symbols(data))
       return false;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
@@ -1328,7 +1329,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             break;
          }
       case EVENT_CMD_CORE_INIT:
-         if (!event_init_core(data))
+         if (!event_init_core((enum rarch_core_type*)data))
             return false;
          break;
       case EVENT_CMD_VIDEO_APPLY_STATE_CHANGES:

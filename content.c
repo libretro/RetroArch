@@ -90,6 +90,12 @@ struct sram_block
    size_t size;
 };
 
+static const struct file_archive_file_backend *stream_backend = NULL;
+static struct string_list *temporary_content                  = NULL;
+static bool content_is_inited                                 = false;
+static bool core_does_not_need_content                        = false;
+static uint32_t content_crc                                   = 0;
+
 #ifdef HAVE_COMPRESSION
 
 #ifdef HAVE_7ZIP
@@ -1696,11 +1702,6 @@ static bool content_file_free(struct string_list *temporary_content)
 
 bool content_ctl(enum content_ctl_state state, void *data)
 {
-   static const struct file_archive_file_backend *stream_backend = NULL;
-   static struct string_list *temporary_content                  = NULL;
-   static bool content_is_inited                                 = false;
-   static bool core_does_not_need_content                        = false;
-   static uint32_t content_crc                                   = 0;
 
    switch(state)
    {
