@@ -70,7 +70,7 @@ static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
 static void vg_set_nonblock_state(void *data, bool state)
 {
    unsigned interval = state ? 0 : 1;
-   video_context_driver_set_swap_interval(&interval);
+   video_context_driver_swap_interval(&interval);
 }
 
 static INLINE bool vg_query_extension(const char *ext)
@@ -137,7 +137,7 @@ static void *vg_init(const video_info_t *video,
    mode.height     = win_height;
    mode.fullscreen = video->fullscreen;
 
-   if (!vidoe_context_driver_set_video_mode(&mode))
+   if (!video_context_driver_set_video_mode(&mode))
       goto error;
 
    video_driver_get_size(&temp_width, &temp_height);
