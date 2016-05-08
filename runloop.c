@@ -579,6 +579,13 @@ static bool runloop_is_focused(void)
    return true;
 }
 
+static bool runloop_is_frame_count_end(void)
+{
+   uint64_t *frame_count         = NULL;
+   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   return runloop_max_frames && (*frame_count >= runloop_max_frames);
+}
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    settings_t *settings                             = config_get_ptr();
@@ -648,12 +655,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_CALLBACK, NULL);
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
-      case RUNLOOP_CTL_IS_FRAME_COUNT_END:
-         {
-            uint64_t *frame_count         = NULL;
-            video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
-            return runloop_max_frames && (*frame_count >= runloop_max_frames);
-         }
       case RUNLOOP_CTL_SET_FRAME_TIME_LAST:
          runloop_frame_time_last_enable = true;
          break;
@@ -1251,7 +1252,7 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    time_to_exit                  = time_to_exit || quit_key_pressed;
    time_to_exit                  = time_to_exit || !video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL);
    time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
-   time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_FRAME_COUNT_END, NULL);
+   time_to_exit                  = time_to_exit || runloop_is_frame_count_end();
    time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL);
 
    if (!time_to_exit)
