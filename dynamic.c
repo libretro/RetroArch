@@ -973,6 +973,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             case RETRO_HW_CONTEXT_OPENGL_CORE:
                {
                   gfx_ctx_flags_t flags;
+                  flags.flags = 0;
                   BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
                   gfx_ctx_ctl(GFX_CTL_SET_FLAGS, &flags);
