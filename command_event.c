@@ -1144,7 +1144,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             video_driver_unset_video_cache_context();
 
             /* Poll input to avoid possibly stale data to corrupt things. */
-            input_driver_ctl(RARCH_INPUT_CTL_POLL, NULL);
+            input_driver_poll();
 
 #ifdef HAVE_MENU
             menu_display_set_framebuffer_dirty_flag();
@@ -1566,18 +1566,18 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          event_cmd_ctl(EVENT_CMD_REINIT, NULL);
          break;
       case EVENT_CMD_COMMAND_DEINIT:
-         input_driver_ctl(RARCH_INPUT_CTL_COMMAND_DEINIT, NULL);
+         input_driver_deinit_command();
          break;
       case EVENT_CMD_COMMAND_INIT:
          event_cmd_ctl(EVENT_CMD_COMMAND_DEINIT, NULL);
-         input_driver_ctl(RARCH_INPUT_CTL_COMMAND_INIT, NULL);
+         input_driver_init_command();
          break;
       case EVENT_CMD_REMOTE_DEINIT:
-         input_driver_ctl(RARCH_INPUT_CTL_REMOTE_DEINIT, NULL);
+         input_driver_deinit_remote();
          break;
       case EVENT_CMD_REMOTE_INIT:
          event_cmd_ctl(EVENT_CMD_REMOTE_DEINIT, NULL);
-         input_driver_ctl(RARCH_INPUT_CTL_REMOTE_INIT, NULL);
+         input_driver_init_remote();
          break;
       case EVENT_CMD_TEMPORARY_CONTENT_DEINIT:
          content_deinit();
@@ -1676,9 +1676,9 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             grab_mouse_state = !grab_mouse_state;
 
             if (grab_mouse_state)
-               ret = input_driver_ctl(RARCH_INPUT_CTL_GRAB_MOUSE, NULL);
+               ret = input_driver_grab_mouse();
             else
-               ret = input_driver_ctl(RARCH_INPUT_CTL_UNGRAB_MOUSE, NULL);
+               ret = input_driver_ungrab_mouse();
 
             if (!ret)
                return false;

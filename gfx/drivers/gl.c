@@ -1980,7 +1980,7 @@ static bool gl_frame(void *data, const void *frame,
     * and pause to prevent flicker. */
    if (
          settings->video.black_frame_insertion
-         && !input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)
+         && !input_driver_is_nonblock_state()
          && !runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL)
          && !runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
    {

@@ -271,18 +271,14 @@ bool menu_display_libretro(void)
 
    if (menu_display_libretro_running())
    {
-      bool libretro_input_is_blocked = 
-         input_driver_ctl(
-               RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL);
+      bool libretro_input_is_blocked = input_driver_is_libretro_input_blocked();
 
       if (!libretro_input_is_blocked)
-         input_driver_ctl(
-               RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED, NULL);
+         input_driver_set_libretro_input_blocked();
 
       core_run();
 
-      input_driver_ctl(
-            RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED, NULL);
+      input_driver_unset_libretro_input_blocked();
       return true;
    }
 

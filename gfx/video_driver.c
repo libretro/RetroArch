@@ -433,7 +433,7 @@ static void init_video_input(const input_driver_t *tmp)
    if (tmp)
       *input = tmp;
    else
-      input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
+      input_driver_find_driver();
 
    /* This should never really happen as tmp (driver.input) is always
     * found before this in find_driver_input(), or we have aborted
@@ -441,7 +441,7 @@ static void init_video_input(const input_driver_t *tmp)
    if (!input_get_ptr())
       goto error;
 
-   if (input_driver_ctl(RARCH_INPUT_CTL_INIT, NULL))
+   if (input_driver_init())
       return;
 
 error:
@@ -511,10 +511,10 @@ static bool uninit_video_input(void)
       video_driver_deinit_hw_context();
 
    if (
-         !input_driver_ctl(RARCH_INPUT_CTL_OWNS_DRIVER, NULL) &&
-         !input_driver_ctl(RARCH_INPUT_CTL_IS_DATA_PTR_SAME, video_driver_data)
+         !input_driver_owns_driver() &&
+         !input_driver_is_data_ptr_same(video_driver_data)
       )
-      input_driver_ctl(RARCH_INPUT_CTL_DEINIT, NULL);
+      input_driver_deinit();
 
    if (
          !video_driver_owns_driver()

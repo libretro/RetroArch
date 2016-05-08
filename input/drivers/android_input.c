@@ -1041,7 +1041,7 @@ static void android_input_poll(void *data)
    struct android_app *android_app = (struct android_app*)g_android;
 
    while ((ident =
-            ALooper_pollAll((input_driver_ctl(RARCH_INPUT_CTL_KEY_PRESSED, &key))
+            ALooper_pollAll((input_driver_key_pressed(&key))
                ? -1 : 1,
                NULL, NULL, NULL)) >= 0)
    {

@@ -289,7 +289,7 @@ static void state_tracker_update_input(state_tracker_t *tracker)
       input_push_analog_dpad(settings->input.autoconf_binds[i],
             settings->input.analog_dpad_mode[i]);
 
-   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL))
+   if (!input_driver_is_libretro_input_blocked())
    {
       for (i = 4; i < 16; i++)
       {

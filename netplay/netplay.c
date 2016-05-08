@@ -135,12 +135,11 @@ static bool get_self_input_state(netplay_t *netplay)
 {
    uint32_t state[UDP_WORDS_PER_FRAME - 1] = {0};
    struct delta_frame *ptr                 = &netplay->buffer[netplay->self_ptr];
-   settings_t *settings                    = config_get_ptr();
 
-   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL) 
-         && netplay->frame_count > 0)
+   if (!input_driver_is_libretro_input_blocked() && netplay->frame_count > 0)
    {
       unsigned i;
+      settings_t *settings = config_get_ptr();
 
       /* First frame we always give zero input since relying on 
        * input from first frame screws up when we use -F 0. */

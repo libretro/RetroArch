@@ -223,8 +223,7 @@ static void driver_adjust_system_rates(void)
 static void driver_set_nonblock_state(void)
 {
    settings_t        *settings = config_get_ptr();
-   bool                 enable = input_driver_ctl(
-         RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL);
+   bool                 enable = input_driver_is_nonblock_state();
 
    /* Only apply non-block-state for video if we're using vsync. */
    if (video_driver_is_active() && video_driver_get_ptr(false))
@@ -306,7 +305,7 @@ static void init_drivers(int flags)
    if (flags & DRIVER_AUDIO)
       audio_driver_unset_own_driver();
    if (flags & DRIVER_INPUT)
-      input_driver_ctl(RARCH_INPUT_CTL_UNSET_OWN_DRIVER, NULL);
+      input_driver_unset_own_driver();
    if (flags & DRIVER_CAMERA)
       camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_LOCATION)
@@ -363,7 +362,7 @@ static void init_drivers(int flags)
    if (flags & (DRIVER_VIDEO | DRIVER_AUDIO))
    {
       /* Keep non-throttled state as good as possible. */
-      if (input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
+      if (input_driver_is_nonblock_state())
          driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
    }
 }
@@ -415,8 +414,8 @@ static void uninit_drivers(int flags)
    if ((flags & DRIVER_VIDEO) && !video_driver_owns_driver())
       video_driver_destroy_data();
 
-   if ((flags & DRIVER_INPUT) && !input_driver_ctl(RARCH_INPUT_CTL_OWNS_DRIVER, NULL))
-      input_driver_ctl(RARCH_INPUT_CTL_DESTROY_DATA, NULL);
+   if ((flags & DRIVER_INPUT) && !input_driver_owns_driver())
+      input_driver_destroy_data();
 
    if ((flags & DRIVER_AUDIO) && !audio_driver_owns_driver())
       audio_driver_destroy_data();
@@ -429,7 +428,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
       case RARCH_DRIVER_CTL_DEINIT:
          video_driver_destroy();
          audio_driver_destroy();
-         input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
+         input_driver_destroy();
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_DESTROY, NULL);
 #endif
@@ -466,7 +465,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
       case RARCH_DRIVER_CTL_INIT_PRE:
          audio_driver_find_driver();
          video_driver_find_driver();
-         input_driver_ctl(RARCH_INPUT_CTL_FIND_DRIVER, NULL);
+         input_driver_find_driver();
          camera_driver_ctl(RARCH_CAMERA_CTL_FIND_DRIVER, NULL);
          find_location_driver();
 #ifdef HAVE_MENU

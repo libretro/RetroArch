@@ -259,7 +259,7 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
          break;
    }
 
-   input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
+   input_driver_set_flushing_input();
    return true;
 }
 #endif
@@ -321,17 +321,17 @@ static void check_fast_forward_button(bool fastforward_pressed,
     */
    if (fastforward_pressed)
    {
-      if (input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
-         input_driver_ctl(RARCH_INPUT_CTL_UNSET_NONBLOCK_STATE, NULL);
+      if (input_driver_is_nonblock_state())
+         input_driver_unset_nonblock_state();
       else
-         input_driver_ctl(RARCH_INPUT_CTL_SET_NONBLOCK_STATE, NULL);
+         input_driver_set_nonblock_state();
    }
    else if (old_hold_pressed != hold_pressed)
    {
       if (hold_pressed)
-         input_driver_ctl(RARCH_INPUT_CTL_SET_NONBLOCK_STATE, NULL);
+         input_driver_set_nonblock_state();
       else
-         input_driver_ctl(RARCH_INPUT_CTL_UNSET_NONBLOCK_STATE, NULL);
+         input_driver_unset_nonblock_state();
    }
    else
       return;
@@ -1205,19 +1205,19 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 static void runloop_iterate_linefeed_overlay(settings_t *settings)
 {
    static char prev_overlay_restore = false;
-   bool osk_enable = input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL);
+   bool osk_enable = input_driver_is_onscreen_keyboard_enabled();
 
    if (osk_enable && !input_keyboard_ctl(
             RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
    {
-      input_driver_ctl(RARCH_INPUT_CTL_UNSET_OSK_ENABLED, NULL);
+      input_driver_unset_onscreen_keyboard_enabled();
       prev_overlay_restore  = true;
       event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
    }
    else if (!osk_enable && input_keyboard_ctl(
             RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
    {
-      input_driver_ctl(RARCH_INPUT_CTL_SET_OSK_ENABLED, NULL);
+      input_driver_set_onscreen_keyboard_enabled();
       prev_overlay_restore  = false;
       event_cmd_ctl(EVENT_CMD_OVERLAY_INIT, NULL);
    }
@@ -1322,9 +1322,9 @@ int runloop_iterate(unsigned *sleep_ms)
       runloop_ctl(RUNLOOP_CTL_UNSET_FRAME_LIMIT, NULL);
    }
 
-   if (input_driver_ctl(RARCH_INPUT_CTL_IS_FLUSHING_INPUT, NULL))
+   if (input_driver_is_flushing_input())
    {
-      input_driver_ctl(RARCH_INPUT_CTL_UNSET_FLUSHING_INPUT, NULL);
+      input_driver_unset_flushing_input();
       if (cmd.state[0])
       {
          cmd.state[0] = 0;
@@ -1333,7 +1333,7 @@ int runloop_iterate(unsigned *sleep_ms)
           * pause toggle to wake it up. */
          if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
             BIT64_SET(cmd.state[0], RARCH_PAUSE_TOGGLE);
-         input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
+         input_driver_set_flushing_input();
       }
    }
    
@@ -1345,8 +1345,8 @@ int runloop_iterate(unsigned *sleep_ms)
       retro_time_t current     = retro_get_time_usec();
       retro_time_t delta       = current - runloop_frame_time_last;
       bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
-            input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
-         !!recording_driver_get_data_ptr();
+                                  input_driver_is_nonblock_state()) |
+                                  !!recording_driver_get_data_ptr();
 
 
       if (!runloop_frame_time_last || is_locked_fps)
@@ -1477,7 +1477,7 @@ int runloop_iterate(unsigned *sleep_ms)
    }
 
    if ((settings->video.frame_delay > 0) && 
-         !input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
+         !input_driver_is_nonblock_state())
       retro_sleep(settings->video.frame_delay);
 
    core_run();
