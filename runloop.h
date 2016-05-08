@@ -126,7 +126,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_SYSTEM_INFO_GET,
    RUNLOOP_CTL_SYSTEM_INFO_INIT,
    RUNLOOP_CTL_SYSTEM_INFO_FREE,
-   RUNLOOP_CTL_DATA_ITERATE,
    RUNLOOP_CTL_PREPARE_DUMMY
 };
 
@@ -316,6 +315,8 @@ global_t *global_get_ptr(void);
  * RetroArch iteration loop. 
  **/
 int runloop_iterate(unsigned *sleep_ms);
+
+void runloop_iterate_data(void);
 
 void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);

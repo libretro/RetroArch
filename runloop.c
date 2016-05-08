@@ -566,15 +566,17 @@ static bool runloop_check_pause_state(event_cmd_state_t *cmd)
    return true;
 }
 
+void runloop_iterate_data(void)
+{
+   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+}
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    settings_t *settings                             = config_get_ptr();
 
    switch (state)
    {
-      case RUNLOOP_CTL_DATA_ITERATE:
-         task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
-         break;
       case RUNLOOP_CTL_SHADER_DIR_DEINIT:
          shader_dir_free(&runloop_shader_dir);
          break;

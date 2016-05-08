@@ -34,7 +34,7 @@ static void emscripten_mainloop(void)
    int ret = runloop_iterate(&sleep_ms);
    if (ret == 1 && sleep_ms > 0)
       retro_sleep(sleep_ms);
-   runloop_ctl(RUNLOOP_CTL_DATA_ITERATE, NULL);
+   runloop_iterate_data();
    if (ret != -1)
       return;
 
