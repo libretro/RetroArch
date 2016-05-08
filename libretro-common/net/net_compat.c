@@ -102,7 +102,7 @@ struct SceNetInAddr inet_aton(const char *ip_addr)
 {
    SceNetInAddr inaddr;
 
-   sceNetInetPton(AF_INET, ip_addr, &inaddr);	
+   inet_ptrton(AF_INET, ip_addr, &inaddr);
    return inaddr;
 }
 
@@ -329,8 +329,10 @@ uint16_t inet_htons(uint16_t hostshort)
 
 int inet_ptrton(int af, const char *src, void *dst)
 {
+#if defined(VITA)
+   return sceNetInetPton(af, src, dst);	
+#elif defined(GEKKO) || defined(_WIN32)
    /* TODO/FIXME - should use InetPton on Vista and later */
-#if defined(GEKKO) || defined(_WIN32) || defined(VITA)
    return inet_aton(src, dst);
 #else
    return inet_pton(af, src, dst);
