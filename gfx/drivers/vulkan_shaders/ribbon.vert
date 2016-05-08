@@ -38,16 +38,15 @@ void main()
 
    v.y = xmb_noise2(v2) / 6.0;
 
-   v3.x += constants.time / 5.0;
+   v3.x -= constants.time / 5.0;
    v3.x /= 2.0;
 
-   v3.z += constants.time / 10.0;
-   v3.y += constants.time / 100.0;
+   v3.z -= constants.time / 10.0;
+   v3.y -= constants.time / 100.0;
 
-   v.z += noise(v3 * 7.0) / 15.0;
-   v.y += noise(v3 * 7.0) / 15.0 + cos(v.x * 2.0 - constants.time / 5.0) / 5.0 - 0.3;
+   v.z -= noise(v3 * 7.0) / 15.0;
+   v.y -= noise(v3 * 7.0) / 15.0 + cos(v.x * 2.0 - constants.time / 5.0) / 5.0 - 0.3;
 
-   v.y = -v.y;
    vEC = v;
    gl_Position = vec4(v, 1.0);
 }
