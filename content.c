@@ -1016,7 +1016,7 @@ static bool dump_to_file_desperate(const void *data,
  *
  * Returns: true if successful, false otherwise.
  **/
-static bool content_save_state(const char *path)
+bool content_save_state(const char *path)
 {
    retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
@@ -1068,7 +1068,7 @@ static bool content_save_state(const char *path)
  *
  * Returns: true if successful, false otherwise.
  **/
-static bool content_load_state(const char *path)
+bool content_load_state(const char *path)
 {
    unsigned i;
    ssize_t size;
@@ -1181,18 +1181,17 @@ error:
 }
 
 /**
- * load_ram_file:
+ * content_load_ram_file:
  * @path             : path of RAM state that will be loaded from.
  * @type             : type of memory
  *
  * Load a RAM state from disk to memory.
  */
-static bool load_ram_file(void *data)
+bool content_load_ram_file(ram_type_t *ram)
 {
    ssize_t rc;
    retro_ctx_memory_info_t mem_info;
    void *buf       = NULL;
-   ram_type_t *ram = (ram_type_t*)data;
 
    if (!ram)
       return false;
@@ -1229,14 +1228,14 @@ static bool load_ram_file(void *data)
 }
 
 /**
- * save_ram_file:
+ * content_save_ram_file:
  * @path             : path of RAM state that shall be written to.
  * @type             : type of memory
  *
  * Save a RAM state from memory to disk.
  *
  */
-static bool save_ram_file(ram_type_t *ram)
+bool content_save_ram_file(ram_type_t *ram)
 {
    retro_ctx_memory_info_t mem_info;
 
@@ -1702,13 +1701,8 @@ static bool content_file_free(struct string_list *temporary_content)
 
 bool content_ctl(enum content_ctl_state state, void *data)
 {
-
    switch(state)
    {
-      case CONTENT_CTL_LOAD_RAM_FILE:
-         return load_ram_file(data);
-      case CONTENT_CTL_SAVE_RAM_FILE:
-         return save_ram_file((ram_type_t*)data);
       case CONTENT_CTL_DOES_NOT_NEED_CONTENT:
          return core_does_not_need_content;
       case CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT:
@@ -1725,20 +1719,6 @@ bool content_ctl(enum content_ctl_state state, void *data)
             *content_crc_ptr = &content_crc;
          }
          break;
-      case CONTENT_CTL_LOAD_STATE:
-         {
-            const char *path = (const char*)data;
-            if (!path)
-               return false;
-            return content_load_state(path);
-         }
-      case CONTENT_CTL_SAVE_STATE:
-         {
-            const char *path = (const char*)data;
-            if (!path)
-               return false;
-            return content_save_state(path);
-         }
       case CONTENT_CTL_IS_INITED:
          return content_is_inited;
       case CONTENT_CTL_DEINIT:
