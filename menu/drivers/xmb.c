@@ -71,6 +71,8 @@
 #define XMB_ITEM_ACTIVE_ALPHA        1.0
 #define XMB_ITEM_PASSIVE_ALPHA       0.85
 
+#define XMB_SHADOW_OFFSET            2.0
+
 typedef struct
 {
    float alpha;
@@ -508,8 +510,8 @@ static void xmb_draw_icon(
       menu_display_set_alpha(shadow, color[3] * 0.35f);
 
       coords.color      = shadow;
-      draw.x            = x + 2;
-      draw.y            = height - y - 2;
+      draw.x            = x + XMB_SHADOW_OFFSET;
+      draw.y            = height - y - XMB_SHADOW_OFFSET;
 
       menu_display_draw(&draw);
    }
@@ -565,8 +567,8 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
       menu_display_set_alpha(shadow, color[3] * 0.35f);
 
       coords.color      = shadow;
-      draw.x            = x + 2;
-      draw.y            = height - y - 2;
+      draw.x            = x + XMB_SHADOW_OFFSET;
+      draw.y            = height - y - XMB_SHADOW_OFFSET;
 
       menu_display_draw(&draw);
    }
@@ -612,8 +614,8 @@ static void xmb_draw_text(xmb_handle_t *xmb,
 
    if (settings->menu.xmb_shadows_enable)
    {
-      params.drop_x      = 2.0f;
-      params.drop_y      = -2.0f;
+      params.drop_x      = XMB_SHADOW_OFFSET;
+      params.drop_y      = -XMB_SHADOW_OFFSET;
       params.drop_alpha  = 0.35f;
    }
 
