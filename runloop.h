@@ -107,10 +107,6 @@ enum runloop_ctl_state
    /* Deinitializes message queue. */
    RUNLOOP_CTL_MSG_QUEUE_DEINIT,
 
-   /* Initializes dummy core. */
-   RUNLOOP_CTL_MSG_QUEUE_LOCK,
-
-   RUNLOOP_CTL_MSG_QUEUE_UNLOCK,
    RUNLOOP_CTL_MSG_QUEUE_FREE,
    RUNLOOP_CTL_MSG_QUEUE_PULL,
    RUNLOOP_CTL_MSG_QUEUE_PUSH,

@@ -120,7 +120,7 @@ static bool runloop_overrides_active             = false;
 static bool runloop_game_options_active          = false;
 static core_option_manager_t *runloop_core_options = NULL;
 #ifdef HAVE_THREADS
-static slock_t *runloop_msg_queue_lock           = NULL;
+static slock_t *_runloop_msg_queue_lock           = NULL;
 #endif
 static msg_queue_t *runloop_msg_queue            = NULL;
 
@@ -128,6 +128,20 @@ global_t *global_get_ptr(void)
 {
    static struct global g_extern;
    return &g_extern;
+}
+
+static void runloop_msg_queue_lock(void)
+{
+#ifdef HAVE_THREADS
+   slock_lock(_runloop_msg_queue_lock);
+#endif
+}
+
+static void runloop_msg_queue_unlock(void)
+{
+#ifdef HAVE_THREADS
+   slock_unlock(_runloop_msg_queue_lock);
+#endif
 }
 
 void runloop_msg_queue_push(const char *msg,
@@ -139,7 +153,7 @@ void runloop_msg_queue_push(const char *msg,
    if(!settings->video.font_enable)
       return;
 
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
+   runloop_msg_queue_lock();
 
    if (flush)
       runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_CLEAR, NULL);
@@ -151,8 +165,7 @@ void runloop_msg_queue_push(const char *msg,
 
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PUSH, &msg_info);
 
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
-
+   runloop_msg_queue_unlock();
 }
 
 char* runloop_msg_queue_pull(void)
@@ -988,19 +1001,19 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_MSG_QUEUE_PULL:
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
+         runloop_msg_queue_lock();
          {
             const char **ret = (const char**)data;
             if (!ret)
                return false;
             *ret = msg_queue_pull(runloop_msg_queue);
          }
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
+         runloop_msg_queue_unlock();
          break;
       case RUNLOOP_CTL_MSG_QUEUE_FREE:
 #ifdef HAVE_THREADS
-         slock_free(runloop_msg_queue_lock);
-         runloop_msg_queue_lock = NULL;
+         slock_free(_runloop_msg_queue_lock);
+         _runloop_msg_queue_lock = NULL;
 #endif
          break;
       case RUNLOOP_CTL_MSG_QUEUE_CLEAR:
@@ -1010,11 +1023,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (!runloop_msg_queue)
             return true;
 
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
+         runloop_msg_queue_lock();
 
          msg_queue_free(runloop_msg_queue);
 
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
+         runloop_msg_queue_unlock();
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_FREE, NULL);
 
          runloop_msg_queue = NULL;
@@ -1025,18 +1038,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          retro_assert(runloop_msg_queue);
 
 #ifdef HAVE_THREADS
-         runloop_msg_queue_lock = slock_new();
-         retro_assert(runloop_msg_queue_lock);
-#endif
-         break;
-      case RUNLOOP_CTL_MSG_QUEUE_LOCK:
-#ifdef HAVE_THREADS
-         slock_lock(runloop_msg_queue_lock);
-#endif
-         break;
-      case RUNLOOP_CTL_MSG_QUEUE_UNLOCK:
-#ifdef HAVE_THREADS
-         slock_unlock(runloop_msg_queue_lock);
+         _runloop_msg_queue_lock = slock_new();
+         retro_assert(_runloop_msg_queue_lock);
 #endif
          break;
       case RUNLOOP_CTL_TASK_INIT:
