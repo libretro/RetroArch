@@ -255,7 +255,7 @@ static bool rarch_task_http_retriever(retro_task_t *task, void *user_data)
 }
 
 void *rarch_task_push_http_transfer(const char *url, const char *type,
-      retro_task_callback_t cb, void *user_data)
+      retro_task_callback_t cb, int mute, void *user_data)
 {
    char tmp[PATH_MAX_LENGTH];
    task_finder_data_t find_data;
@@ -305,6 +305,7 @@ void *rarch_task_push_http_transfer(const char *url, const char *type,
    t->callback             = cb;
    t->user_data            = user_data;
    t->progress             = -1;
+   t->mute                 = mute;
 
    snprintf(tmp, sizeof(tmp), "%s '%s'",
          msg_hash_to_str(MSG_DOWNLOADING), path_basename(url));

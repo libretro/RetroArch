@@ -67,7 +67,7 @@ static void task_queue_msg_push(unsigned prio, unsigned duration,
 
 void task_queue_push_progress(retro_task_t *task)
 {
-   if (task->title)
+   if (task->title && !task->mute)
    {
       if (task->finished)
       {

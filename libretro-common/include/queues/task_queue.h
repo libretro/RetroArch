@@ -134,6 +134,9 @@ struct retro_task
 
    /* -1 = unmettered, 0-100 progress value */
    int8_t progress;
+   
+   /* 1 = don't push task progress to the osd. */
+   int mute;
 
    /* handler can modify but will be 
     * free()d automatically if non-NULL. */

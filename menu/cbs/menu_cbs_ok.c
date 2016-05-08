@@ -1487,7 +1487,7 @@ static int action_ok_download_generic(const char *path,
    transf->type_hash = menu_hash_calculate(type_msg);
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   rarch_task_push_http_transfer(s3, type_msg, cb_generic_download, transf);
+   rarch_task_push_http_transfer(s3, type_msg, cb_generic_download, 0, transf);
 #endif
    return 0;
 }
@@ -1749,7 +1749,7 @@ static int generic_action_ok_network(const char *path,
 #endif
    }
 
-   rarch_task_push_http_transfer(url_path, url_label, callback, NULL);
+   rarch_task_push_http_transfer(url_path, url_label, callback, 0, NULL);
 
    return generic_action_ok_displaylist_push(path,
          label, type, idx, entry_idx, type_id2);
@@ -1772,6 +1772,7 @@ static int action_ok_core_updater_list(const char *path,
 typedef struct
 {
    size_t i, j, k;
+   int count;
    char url[PATH_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
 }
@@ -1934,7 +1935,11 @@ static void cb_thumbnail_downloaded(void *task_data, void *user_data, const char
    
 finished:
    if (get_next_entry(us))
-      rarch_task_push_http_transfer(us->url, "", cb_thumbnail_downloaded, us);
+   {
+      snprintf(output_path, sizeof(output_path), "Updating thumbnail %d", ++us->count);
+      runloop_msg_queue_push(output_path, 1, 60, true);
+      rarch_task_push_http_transfer(us->url, "", cb_thumbnail_downloaded, 1, us);
+   }
    else
       free(us);
 }
@@ -1944,9 +1949,13 @@ static int action_ok_thumbnails_updater_list(const char *path,
 {
    update_state_t *us = malloc(sizeof(*us));
    us->i = us->j = us->k = 0;
+   us->count = 0;
    
    if (get_next_entry(us))
-      rarch_task_push_http_transfer(us->url, "", cb_thumbnail_downloaded, us);
+   {
+      runloop_msg_queue_push("Updating thumbnails", 1, 60, true);
+      rarch_task_push_http_transfer(us->url, "", cb_thumbnail_downloaded, 1, us);
+   }
    
    return 0;
 }
