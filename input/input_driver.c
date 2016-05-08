@@ -902,7 +902,7 @@ bool input_driver_init_remote(void)
 
    return true;
 #else
-   return false
+   return false;
 #endif
 }
 
