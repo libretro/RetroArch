@@ -95,7 +95,7 @@ enum task_queue_ctl_state
    /**
     * Signals a task to end without waiting for
     * it to complete. */
-   TASK_QUEUE_CTL_CANCEL,
+   TASK_QUEUE_CTL_CANCEL
  };
 
 typedef struct retro_task retro_task_t;
