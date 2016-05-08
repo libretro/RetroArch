@@ -57,8 +57,6 @@ enum content_ctl_state
    /* Frees temporary content handle. */
    CONTENT_CTL_TEMPORARY_FREE,
 
-   CONTENT_CTL_STREAM_INIT,
-
    CONTENT_CTL_STREAM_CRC_CALCULATE
 };
 

@@ -1743,16 +1743,13 @@ bool content_ctl(enum content_ctl_state state, void *data)
          content_file_free(temporary_content);
          temporary_content = NULL;
          break;
-      case CONTENT_CTL_STREAM_INIT:
-#ifdef HAVE_ZLIB
-         if (!stream_backend)
-            stream_backend = file_archive_get_default_file_backend();
-#endif
-         break;
       case CONTENT_CTL_STREAM_CRC_CALCULATE:
          {
             content_stream_t *stream = NULL;
-            content_ctl(CONTENT_CTL_STREAM_INIT, NULL);
+#ifdef HAVE_ZLIB
+            if (!stream_backend)
+               stream_backend = file_archive_get_default_file_backend();
+#endif
 
             stream = (content_stream_t*)data;
 #ifdef HAVE_ZLIB
