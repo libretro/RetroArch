@@ -645,6 +645,9 @@ static void menu_action_setting_disp_set_label_xmb_theme(
          snprintf(s, len, "%s", "RetroActive");
          break;
       case 3:
+         snprintf(s, len, "%s", "Pixel");
+         break;
+      case 4:
          snprintf(s, len, "%s", "Custom");
          break;
    }

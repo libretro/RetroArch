@@ -307,6 +307,8 @@ static const char *xmb_theme_ident(void)
       case 2:
          return "retroactive";
       case 3:
+         return "pixel";
+      case 4:
          return "custom";
       case 0:
       default:
