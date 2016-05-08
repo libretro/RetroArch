@@ -116,7 +116,6 @@ bool video_texture_image_color_convert(unsigned r_shift,
 static bool video_texture_image_rpng_gx_convert_texture32(
       struct texture_image *image)
 {
-   int ret;
    unsigned tmp_pitch, width2, i;
    const uint16_t *src = NULL;
    uint16_t *dst       = NULL;
