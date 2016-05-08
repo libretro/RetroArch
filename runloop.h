@@ -84,19 +84,7 @@ enum runloop_ctl_state
 
    RUNLOOP_CTL_CHECK_MOVIE,
 
-   /* Checks if movie is being played. */
-   RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK,
-
    RUNLOOP_CTL_CHECK_MOVIE_INIT,
-
-   /* Checks if movie is being recorded. */
-   RUNLOOP_CTL_CHECK_MOVIE_RECORD,
-
-   /* Checks if slowmotion toggle/hold 
-    * was being pressed and/or held. */
-   RUNLOOP_CTL_CHECK_SLOWMOTION,
-
-   RUNLOOP_CTL_CHECK_PAUSE_STATE,
 
    /* Initializes message queue. */
    RUNLOOP_CTL_MSG_QUEUE_INIT,

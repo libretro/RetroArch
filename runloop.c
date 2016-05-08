@@ -176,6 +176,61 @@ char* runloop_msg_queue_pull(void)
    return strdup(msg_info.msg);
 }
 
+/* Checks if movie is being played back. */
+static bool runloop_check_movie_playback(void)
+{
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL))
+      return false;
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 1, 180, false);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
+
+   event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
+
+   bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_END, NULL);
+   bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
+
+   return true;
+}
+
+/* Checks if movie is being recorded. */
+static bool runloop_check_movie_record(void)
+{
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return false;
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
+
+   event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
+
+   return true;
+}
+
+/* Checks if slowmotion toggle/hold was being pressed and/or held. */
+static bool runloop_check_slowmotion(bool *ptr)
+{
+   settings_t *settings  = config_get_ptr();
+   if (!ptr)
+      return false;
+
+   runloop_slowmotion   = *ptr;
+
+   if (!runloop_slowmotion)
+      return false;
+
+   if (settings->video.black_frame_insertion)
+      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+
+   if (state_manager_frame_is_reversed())
+      runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 0, 30, true);
+   else
+      runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 0, 30, true);
+   return true;
+}
+
 #ifdef HAVE_MENU
 static bool runloop_cmd_get_state_menu_toggle_button_combo(
       settings_t *settings,
@@ -513,7 +568,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
 
    tmp = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
 
-   runloop_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &tmp);
+   runloop_check_slowmotion(&tmp);
 
    if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
       runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
@@ -784,51 +839,18 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                   runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
                   runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
 
-            if (!runloop_ctl(RUNLOOP_CTL_CHECK_PAUSE_STATE, cmd) || !focused)
+            if (!runloop_check_pause_state(cmd) || !focused)
                return false;
          }
          break;
       case RUNLOOP_CTL_CHECK_STATE:
          return runloop_check_state((event_cmd_state_t*)data, &runloop_shader_dir);
-      case RUNLOOP_CTL_CHECK_PAUSE_STATE:
-         return runloop_check_pause_state((event_cmd_state_t*)data);
-      case RUNLOOP_CTL_CHECK_SLOWMOTION:
-         {
-            bool *ptr            = (bool*)data;
-
-            if (!ptr)
-               return false;
-
-            runloop_slowmotion   = *ptr;
-
-            if (!runloop_slowmotion)
-               return false;
-
-            if (settings->video.black_frame_insertion)
-               video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
-
-            if (state_manager_frame_is_reversed())
-               runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 0, 30, true);
-            else
-               runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 0, 30, true);
-         }
-         break;
       case RUNLOOP_CTL_CHECK_MOVIE:
          if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
-            return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK, NULL);
+            return runloop_check_movie_playback();
          if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_INIT, NULL);
-         return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_RECORD, NULL);
-      case RUNLOOP_CTL_CHECK_MOVIE_RECORD:
-         if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-            return false;
-
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true);
-         RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
-
-         event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
-         break;
+         return runloop_check_movie_record();
       case RUNLOOP_CTL_CHECK_MOVIE_INIT:
          if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return false;
@@ -870,19 +892,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                      msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
             }
          }
-         break;
-      case RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK:
-         if (!bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL))
-            return false;
-
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 1, 180, false);
-         RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
-
-         event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
-
-         bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_END, NULL);
-         bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
          break;
       case RUNLOOP_CTL_FRAME_TIME_FREE:
          memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
