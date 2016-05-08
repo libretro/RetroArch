@@ -52,7 +52,6 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_MUTE_TOGGLE,
    RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE,
    RARCH_AUDIO_CTL_SET_CALLBACK_DISABLE,
-   RARCH_AUDIO_CTL_SET_CALLBACK,
    RARCH_AUDIO_CTL_UNSET_CALLBACK,
    RARCH_AUDIO_CTL_CALLBACK,
    RARCH_AUDIO_CTL_HAS_CALLBACK,
@@ -178,6 +177,10 @@ void audio_driver_set_buffer_size(size_t bufsize);
 bool audio_driver_get_devices_list(void **ptr);
 
 void audio_driver_setup_rewind(void);
+
+bool audio_driver_set_callback(const void *data);
+
+bool audio_driver_deinit(void);
 
 bool audio_driver_init(void);
 

@@ -1029,7 +1029,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
       {
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
-         audio_driver_ctl(RARCH_AUDIO_CTL_SET_CALLBACK, data);
+         audio_driver_set_callback(data);
          break;
       }
 #endif

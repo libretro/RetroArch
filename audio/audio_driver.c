@@ -453,7 +453,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    return true;
 
 error:
-   return audio_driver_ctl(RARCH_AUDIO_CTL_DEINIT, NULL);
+   return audio_driver_deinit();
 }
 
 /*
@@ -844,6 +844,34 @@ void audio_driver_process_resampler(struct resampler_data *data)
    retro_perf_stop(&resampler_proc);
 }
 
+bool audio_driver_deinit(void)
+{
+   audio_driver_free_devices_list();
+   if (!uninit_audio())
+      return false;
+   return true;
+}
+
+bool audio_driver_set_callback(const void *data)
+{
+   const struct retro_audio_callback *cb = (const struct retro_audio_callback*)data;
+#ifdef HAVE_NETPLAY
+   global_t *global = global_get_ptr();
+#endif
+
+   if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
+      return false;
+
+#ifdef HAVE_NETPLAY
+   if (global->netplay.enable)
+      return false;
+#endif
+   if (cb)
+      audio_callback = *cb;
+
+   return true;
+}
+
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    settings_t        *settings                            = config_get_ptr();
@@ -857,11 +885,6 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          break;
       case RARCH_AUDIO_CTL_DESTROY_DATA:
          audio_driver_context_audio_data = NULL;
-         break;
-      case RARCH_AUDIO_CTL_DEINIT:
-         audio_driver_free_devices_list();
-         if (!uninit_audio())
-            return false;
          break;
       case RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE:
          if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
@@ -888,25 +911,6 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
       case RARCH_AUDIO_CTL_UNSET_CALLBACK:
          audio_callback.callback  = NULL;
          audio_callback.set_state = NULL;
-         break;
-      case RARCH_AUDIO_CTL_SET_CALLBACK:
-         {
-            const struct retro_audio_callback *cb = 
-               (const struct retro_audio_callback*)data;
-#ifdef HAVE_NETPLAY
-            global_t *global = global_get_ptr();
-#endif
-
-            if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
-               return false;
-
-#ifdef HAVE_NETPLAY
-            if (global->netplay.enable)
-               return false;
-#endif
-            if (cb)
-               audio_callback = *cb;
-         }
          break;
       case RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES:
          audio_monitor_adjust_system_rates();
