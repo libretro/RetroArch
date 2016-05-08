@@ -174,7 +174,7 @@ static void zarch_zui_font(void)
    menu_display_ctx_font_t font_info;
    settings_t *settings = config_get_ptr();
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
+   font_size = menu_display_get_font_size();
 
    fill_pathname_join(
          mediapath,
@@ -187,7 +187,7 @@ static void zarch_zui_font(void)
    font_info.path = fontpath;
    font_info.size = font_size;
 
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_INIT, &font_info))
+   if (!menu_display_font_main_init(&font_info))
       RARCH_WARN("Failed to load font.");
 }
 
@@ -348,8 +348,7 @@ static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int 
    int                y2 = y1 + 50;
    bool           active = zarch_zui_check_button_up(zui, id, x1, y1, x2, y2);
    const float       *bg = zui_bg_panel;
-
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   frame_count           = video_driver_get_frame_count_ptr();
 
    if (tab->active_id != tab->prev_id)
    {
@@ -874,15 +873,15 @@ static void zarch_frame(void *data)
    zui_t *zui              = (zui_t*)data;
    gfx_coord_array_t *ca   = NULL;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
+   ca = menu_display_get_coords_array();
    
    if (!zui)
       return;
 
    video_driver_get_size(&zui->width, &zui->height);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &zui->fb_buf);
+   menu_display_set_viewport();
+   zui->fb_buf = menu_display_get_font_buffer();
 
    for (i = 0; i < 16; i++)
    {
@@ -904,11 +903,11 @@ static void zarch_frame(void *data)
    zui->mouse.wheel = menu_input_mouse_state(MENU_MOUSE_WHEEL_DOWN) - 
       menu_input_mouse_state(MENU_MOUSE_WHEEL_UP);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_RESET, NULL);
+   menu_display_coords_array_reset();
 
    zui->tmp_block.carr.coords.vertices = 0;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BIND_BLOCK, &zui->tmp_block);
+   menu_display_font_bind_block(&zui->tmp_block);
 
    menu_display_push_quad(zui->width, zui->height, zui_bg_screen,
          0, 0, zui->width, zui->height);
@@ -944,7 +943,7 @@ static void zarch_frame(void *data)
    else if (zui->item.active == 0)
       zui->item.active = -1;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_blend_begin();
    
    draw.x           = 0;
    draw.y           = 0;
@@ -954,16 +953,16 @@ static void zarch_frame(void *data)
    draw.matrix_data = &zui->mvp;
    draw.texture     = menu_display_white_texture;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLES;
+   draw.pipeline.id = 0;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+   menu_display_draw(&draw);
+   menu_display_blend_end();
 
    memset(&draw, 0, sizeof(menu_display_ctx_draw_t));
 
    coord_draw.ptr       = NULL;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_TEX_COORDS_GET, &coord_draw);
+   menu_display_get_tex_coords(&coord_draw);
 
    draw.width              = zui->width;
    draw.height             = zui->height;
@@ -974,21 +973,20 @@ static void zarch_frame(void *data)
    draw.vertex_count       = 4;
    draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
-         && draw.texture)
+   if (!menu_display_libretro_running() && draw.texture)
       draw.color             = &coord_color2[0];
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_blend_begin();
    draw.x              = 0;
    draw.y              = 0;
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG,   &draw);
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW,      &draw);
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+   menu_display_draw_bg(&draw);
+   menu_display_draw(&draw);
+   menu_display_blend_end();
 
    zui->rendering = false;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
+   menu_display_font_flush_block();
+   menu_display_unset_viewport();
 }
 
 static void *zarch_init(void **userdata)
@@ -1002,7 +1000,7 @@ static void *zarch_init(void **userdata)
    if (!menu)
       goto error;
 
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT_FIRST_DRIVER, NULL))
+   if (!menu_display_init_first_driver())
       goto error;
 
    zui       = (zui_t*)calloc(1, sizeof(zui_t));
@@ -1019,10 +1017,10 @@ static void *zarch_init(void **userdata)
    }
 
    unused = 1000;
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT, &unused);
+   menu_display_set_header_height(unused);
 
    unused = 28;
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE, &unused);
+   menu_display_set_font_size(unused);
 
    (void)unused;
 
@@ -1066,7 +1064,7 @@ static void zarch_context_bg_destroy(void *data)
 
 static void zarch_context_destroy(void *data)
 {
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
+   menu_display_font_main_deinit();
    zarch_context_bg_destroy(data);
 }
 
@@ -1110,7 +1108,7 @@ static void zarch_context_reset(void *data)
    if (settings->video.font_enable)
       font_info.path = settings->path.font;
 
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_INIT, &font_info))
+   if (!menu_display_font_main_init(&font_info))
       RARCH_WARN("Failed to load font.");
 
    zarch_context_bg_destroy(zui);
@@ -1120,7 +1118,7 @@ static void zarch_context_reset(void *data)
 
    menu_display_allocate_white_texture();
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE, &zui->font_size);
+   menu_display_set_font_size(zui->font_size);
    zarch_zui_font();
 }
 

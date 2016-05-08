@@ -752,7 +752,7 @@ ifeq ($(HAVE_VULKAN), 1)
 		$(wildcard deps/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
 		$(wildcard deps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
 
-	SPIR2CROSS_SOURCES := deps/spir2cross/spir2cross.cpp
+	SPIRV_CROSS_SOURCES := deps/SPIRV-Cross/spirv_cross.cpp
 
 	DEFINES += \
 			  -Ideps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
@@ -761,13 +761,13 @@ ifeq ($(HAVE_VULKAN), 1)
 			  -Ideps/glslang/glslang/glslang/Public \
 			  -Ideps/glslang/glslang/SPIRV \
 			  -Ideps/glslang \
-			  -Ideps/spir2cross
+			  -Ideps/SPIRV-Cross
 
 	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -I./gfx/include/vulkan
    CFLAGS  += -I./gfx/include/vulkan
 
 	GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
-	SPIR2CROSS_OBJ := $(SPIR2CROSS_SOURCES:.cpp=.o)
+	SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)
 
 	OBJ += gfx/drivers/vulkan.o \
 			 gfx/common/vulkan_common.o \
@@ -776,7 +776,7 @@ ifeq ($(HAVE_VULKAN), 1)
 			 gfx/drivers_shader/glslang_util.o \
 			 gfx/drivers_shader/slang_reflection.o \
 			 $(GLSLANG_OBJ) \
-			 $(SPIR2CROSS_OBJ)
+			 $(SPIRV_CROSS_OBJ)
 	ifeq ($(HAVE_MENU_COMMON), 1)
 		OBJ += menu/drivers_display/menu_display_vulkan.o
 	endif
@@ -1014,7 +1014,7 @@ ifeq ($(HAVE_FFMPEG), 1)
           cores/libretro-ffmpeg/ffmpeg_core.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
-   DEFINES += -DHAVE_FFMPEG -Iffmpeg
+   DEFINES += -Wno-deprecated-declarations -DHAVE_FFMPEG -Iffmpeg
 endif
 
 ifeq ($(HAVE_COMPRESSION), 1)

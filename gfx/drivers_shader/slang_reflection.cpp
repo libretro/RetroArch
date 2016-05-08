@@ -13,14 +13,14 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "spir2cross.hpp"
+#include "spirv_cross.hpp"
 #include "slang_reflection.hpp"
 #include <vector>
 #include <stdio.h>
 #include "../../verbosity.h"
 
 using namespace std;
-using namespace spir2cross;
+using namespace spirv_cross;
 
 static bool slang_texture_semantic_is_array(slang_texture_semantic sem)
 {

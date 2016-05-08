@@ -89,12 +89,11 @@ static bool menu_content_load(void)
    content_ctx_info_t content_info;
    char name[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
-   bool msg_force       = true;
    char *fullpath       = NULL;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
    /* redraw menu frame */
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
+   menu_display_set_msg_force(true);
    menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
    if (*fullpath)

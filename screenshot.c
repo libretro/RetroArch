@@ -144,7 +144,7 @@ static bool take_screenshot_viewport(void)
    settings_t *settings                  = config_get_ptr();
    global_t *global                      = global_get_ptr();
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
+   video_driver_get_viewport_info(&vp);
 
    if (!vp.width || !vp.height)
       return false;
@@ -152,7 +152,7 @@ static bool take_screenshot_viewport(void)
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (!video_driver_ctl(RARCH_DISPLAY_CTL_READ_VIEWPORT, buffer))
+   if (!video_driver_read_viewport(buffer))
       goto done;
 
    screenshot_dir = settings->directory.screenshot;
@@ -213,18 +213,18 @@ static bool take_screenshot_choice(void)
    if ((!*settings->directory.screenshot) && (!*global->name.base))
       return false;
 
-   if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_VIEWPORT_READ, NULL))
+   if (video_driver_supports_viewport_read())
    {
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
-      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_cached_frame_render();
       return take_screenshot_viewport();
    }
 
-   if (!video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB, NULL))
+   if (!video_driver_cached_frame_has_valid_framebuffer())
       return take_screenshot_raw();
 
-   if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_READ_FRAME_RAW, NULL))
+   if (video_driver_supports_read_frame_raw())
    {
       unsigned old_width, old_height;
       size_t old_pitch;
@@ -243,7 +243,7 @@ static bool take_screenshot_choice(void)
 
       if (frame_data)
       {
-         video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_SET_PTR, (void*)frame_data);
+         video_driver_set_cached_frame_ptr(frame_data);
          if (take_screenshot_raw())
             ret = true;
          free(frame_data);
@@ -274,7 +274,7 @@ bool take_screenshot(void)
    runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
 
    if (is_paused)
-      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_cached_frame_render();
 
    return ret;
 }

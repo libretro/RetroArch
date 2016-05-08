@@ -639,8 +639,8 @@ static EGLint *egl_fill_attribs(gfx_ctx_wayland_data_t *wl, EGLint *attr)
 #ifdef GL_DEBUG
          debug = true;
 #else
-         struct retro_hw_render_callback *hwr = NULL;
-         video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+         struct retro_hw_render_callback *hwr =
+            video_driver_get_hw_context();
          debug = hwr->debug_context;
 #endif
 

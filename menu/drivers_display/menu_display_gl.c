@@ -160,7 +160,7 @@ static void menu_display_gl_draw_pipeline(void *data)
    static float t                    = 0;
    gfx_coord_array_t *ca             = NULL;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_COORDS_ARRAY_GET, &ca);
+   ca = menu_display_get_coords_array();
 
    draw->x           = 0;
    draw->y           = 0;

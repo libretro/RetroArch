@@ -20,6 +20,7 @@
 #include "../../gfx/font_driver.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/common/vulkan_common.h"
+#include "../../gfx/video_shader_driver.h"
 
 #include "../menu_display.h"
 
@@ -61,6 +62,20 @@ static unsigned to_display_pipeline(
    return ((type == MENU_DISPLAY_PRIM_TRIANGLESTRIP) << 1) | (blend << 0);
 }
 
+static unsigned to_menu_pipeline(
+      enum menu_display_prim_type type, unsigned pipeline)
+{
+   switch (pipeline)
+   {
+      case VIDEO_SHADER_MENU:
+         return 4 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+      case VIDEO_SHADER_MENU_SEC:
+         return 6 + (type == MENU_DISPLAY_PRIM_TRIANGLESTRIP);
+      default:
+         return 0;
+   }
+}
+
 static void menu_display_vk_viewport(void *data)
 {
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
@@ -81,14 +96,20 @@ static void menu_display_vk_draw_pipeline(void *data)
 {
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
+   gfx_coord_array_t *ca         = NULL;
+   static float t                = 0.0f;
 
    if (!vk || !draw)
       return;
 
-   (void)draw;
-   (void)vk;
+   ca = menu_display_get_coords_array();
+   draw->x                     = 0;
+   draw->y                     = 0;
+   draw->coords                = (struct gfx_coords*)&ca->coords;
+   draw->matrix_data           = NULL;
+   draw->pipeline.backend_data = &t;
 
-   /* TODO/FIXME - to implement */
+   t += 0.01;
 }
 
 static void menu_display_vk_draw(void *data)
@@ -142,19 +163,42 @@ static void menu_display_vk_draw(void *data)
       pv->color.a = *color++;
    }
 
+   switch (draw->pipeline.id)
    {
-      const struct vk_draw_triangles call = {
-         vk->display.pipelines[
-            to_display_pipeline(draw->prim_type, vk->display.blend)],
-         texture,
-         texture->default_smooth 
-            ? vk->samplers.linear : vk->samplers.nearest,
-         draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data 
-            : (math_matrix_4x4*)menu_display_vk_get_default_mvp(),
-         &range,
-         draw->coords->vertices,
-      };
-      vulkan_draw_triangles(vk, &call);
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_SEC:
+      {
+         const struct vk_draw_triangles call = {
+            vk->display.pipelines[
+               to_menu_pipeline(draw->prim_type, draw->pipeline.id)],
+               NULL,
+               VK_NULL_HANDLE,
+               draw->pipeline.backend_data,
+               sizeof(float),
+               &range,
+               draw->coords->vertices,
+         };
+         vulkan_draw_triangles(vk, &call);
+         break;
+      }
+
+      default:
+      {
+         const struct vk_draw_triangles call = {
+            vk->display.pipelines[
+               to_display_pipeline(draw->prim_type, vk->display.blend)],
+               texture,
+               texture->default_smooth 
+                  ? vk->samplers.linear : vk->samplers.nearest,
+               draw->matrix_data
+                  ? draw->matrix_data : menu_display_vk_get_default_mvp(),
+               sizeof(math_matrix_4x4),
+               &range,
+               draw->coords->vertices,
+         };
+         vulkan_draw_triangles(vk, &call);
+         break;
+      }
    }
 }
 

@@ -17,6 +17,10 @@
 #include "vulkan_shaders/alpha_blend.vert.inc"
 #include "vulkan_shaders/alpha_blend.frag.inc"
 #include "vulkan_shaders/font.frag.inc"
+#include "vulkan_shaders/ribbon.vert.inc"
+#include "vulkan_shaders/ribbon.frag.inc"
+#include "vulkan_shaders/ribbon_simple.vert.inc"
+#include "vulkan_shaders/ribbon_simple.frag.inc"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -172,7 +176,7 @@ static void vulkan_init_pipeline_layout(
    bindings[0].binding            = 0;
    bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
    bindings[0].descriptorCount    = 1;
-   bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
+   bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
    bindings[0].pImmutableSamplers = NULL;
 
    bindings[1].binding            = 1;
@@ -360,6 +364,49 @@ static void vulkan_init_pipelines(
 
    VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[0].module, NULL);
    VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[1].module, NULL);
+
+   /* Other menu pipelines. */
+   for (i = 0; i < 4; i++)
+   {
+      if (i & 2)
+      {
+         module_info.codeSize   = ribbon_simple_vert_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_simple_vert_spv;
+      }
+      else
+      {
+         module_info.codeSize   = ribbon_vert_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_vert_spv;
+      }
+
+      shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+      shader_stages[0].pName = "main";
+      VKFUNC(vkCreateShaderModule)(vk->context->device,
+            &module_info, NULL, &shader_stages[0].module);
+
+      if (i & 2)
+      {
+         module_info.codeSize   = ribbon_simple_frag_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_simple_frag_spv;
+      }
+      else
+      {
+         module_info.codeSize   = ribbon_frag_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_frag_spv;
+      }
+
+      shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      shader_stages[1].pName = "main";
+      VKFUNC(vkCreateShaderModule)(vk->context->device,
+            &module_info, NULL, &shader_stages[1].module);
+
+      input_assembly.topology = i & 1 ?
+         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP :
+         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+      VKFUNC(vkCreateGraphicsPipelines)(vk->context->device, vk->pipelines.cache,
+            1, &pipe, NULL, &vk->display.pipelines[4 + i]);
+   }
 }
 
 static void vulkan_init_command_buffers(vk_t *vk)
@@ -550,7 +597,7 @@ static void vulkan_deinit_pipelines(vk_t *vk)
    VKFUNC(vkDestroyPipeline)(vk->context->device,
          vk->pipelines.font, NULL);
 
-   for (i = 0; i < 4; i++)
+   for (i = 0; i < 8; i++)
       VKFUNC(vkDestroyPipeline)(vk->context->device,
             vk->display.pipelines[i], NULL);
 }
@@ -849,8 +896,8 @@ static void vulkan_init_hw_render(vk_t *vk)
 {
    struct retro_hw_render_interface_vulkan *iface   =
       &vk->hw.iface;
-   struct retro_hw_render_callback *hwr = NULL;
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   struct retro_hw_render_callback *hwr =
+      video_driver_get_hw_context();
 
    if (hwr->context_type != RETRO_HW_CONTEXT_VULKAN)
       return;
@@ -1723,28 +1770,24 @@ static bool vulkan_frame(void *data, const void *frame,
 static void vulkan_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    vk_t *vk = (vk_t*)data;
-   enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL;
+         video_driver_set_viewport_square_pixel();
          break;
 
       case ASPECT_RATIO_CORE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE;
+         video_driver_set_viewport_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG;
+         video_driver_set_viewport_config();
          break;
 
       default:
          break;
    }
-
-   if (cmd != RARCH_DISPLAY_CTL_NONE)
-      video_driver_ctl(cmd, NULL);
 
    video_driver_set_aspect_ratio_value(
          aspectratio_lut[aspect_ratio_idx].value);
@@ -2034,7 +2077,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
        * with conversion. */
 
       vk->readback.pending = true;
-      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_cached_frame_render();
       VKFUNC(vkQueueWaitIdle)(vk->context->queue);
 
       if (!staging->mapped)
@@ -2146,12 +2189,13 @@ static void vulkan_render_overlay(vk_t *vk)
             4 * sizeof(struct vk_vertex));
 
       memset(&call, 0, sizeof(call));
-      call.pipeline = vk->display.pipelines[3]; /* Strip with blend */
-      call.texture  = &vk->overlay.images[i];
-      call.sampler  = vk->samplers.linear;
-      call.mvp      = &vk->mvp;
-      call.vbo      = &range;
-      call.vertices = 4;
+      call.pipeline     = vk->display.pipelines[3]; /* Strip with blend */
+      call.texture      = &vk->overlay.images[i];
+      call.sampler      = vk->samplers.linear;
+      call.uniform      = &vk->mvp;
+      call.uniform_size = sizeof(vk->mvp);
+      call.vbo          = &range;
+      call.vertices     = 4;
       vulkan_draw_triangles(vk, &call);
    }
 

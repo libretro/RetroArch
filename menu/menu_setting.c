@@ -584,7 +584,7 @@ static int setting_uint_action_left_custom_viewport_width(void *data, bool wrapa
    if (!settings || !av_info)
       return -1;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
+   video_driver_get_viewport_info(&vp);
 
    if (custom->width <= 1)
       custom->width = 1;
@@ -611,7 +611,7 @@ static int setting_uint_action_right_custom_viewport_width(void *data, bool wrap
    if (!settings || !av_info)
       return -1;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
+   video_driver_get_viewport_info(&vp);
 
    if (settings->video.scale_integer)
       custom->width += geom->base_width;
@@ -636,7 +636,7 @@ static int setting_uint_action_left_custom_viewport_height(void *data, bool wrap
    if (!settings || !av_info)
       return -1;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
+   video_driver_get_viewport_info(&vp);
 
    if (custom->height <= 1)
       custom->height = 1;
@@ -663,7 +663,7 @@ static int setting_uint_action_right_custom_viewport_height(void *data, bool wra
    if (!settings || !av_info)
       return -1;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
+   video_driver_get_viewport_info(&vp);
 
    if (settings->video.scale_integer)
       custom->height += geom->base_height;
@@ -2224,7 +2224,7 @@ static int setting_action_start_custom_viewport_width(void *data)
    if (!settings || !av_info)
       return -1;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
+   video_driver_get_viewport_info(&vp);
 
    if (settings->video.scale_integer)
       custom->width = ((custom->width + geom->base_width - 1) /
@@ -2250,7 +2250,7 @@ static int setting_action_start_custom_viewport_height(void *data)
    if (!settings || !av_info)
       return -1;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
+   video_driver_get_viewport_info(&vp);
 
    if (settings->video.scale_integer)
       custom->height = ((custom->height + geom->base_height - 1) /
@@ -2335,8 +2335,7 @@ static int setting_action_start_libretro_device_type(void *data)
 static int setting_action_start_video_refresh_rate_auto(
       void *data)
 {
-   video_driver_ctl(RARCH_DISPLAY_CTL_MONITOR_RESET, NULL);
-
+   video_driver_monitor_reset();
    return 0;
 }
 
@@ -2925,7 +2924,7 @@ void general_write_handler(void *data)
             struct retro_game_geometry     *geom = (struct retro_game_geometry*)
                &av_info->geometry;
 
-            video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
+            video_driver_get_viewport_info(&vp);
 
             if (*setting->value.target.boolean)
             {
@@ -4297,7 +4296,7 @@ static bool setting_append_list(
             &setting_get_string_representation_uint_video_monitor_index;
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
 
-         if (video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
+         if (video_driver_has_windowed())
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -4315,7 +4314,7 @@ static bool setting_append_list(
             menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
          }
-         if (video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
+         if (video_driver_has_windowed())
          {
             CONFIG_BOOL(
                   list, list_info,
@@ -4489,7 +4488,7 @@ static bool setting_append_list(
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Scaling", &group_info, &subgroup_info, parent_group);
 
-         if (video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
+         if (video_driver_has_windowed())
          {
             CONFIG_FLOAT(
                   list, list_info,

@@ -51,8 +51,7 @@ bool video_texture_image_set_color_shifts(
    *g_shift             = 8;
    *b_shift             = 0;
 
-   if (video_driver_ctl(
-         RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL))
+   if (video_driver_supports_rgba())
    {
       *r_shift = 0;
       *b_shift = 16;

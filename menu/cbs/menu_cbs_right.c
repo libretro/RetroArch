@@ -322,8 +322,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
 static int action_right_video_resolution(unsigned type, const char *label,
       bool wraparound)
 {
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT, NULL);
-
+   video_driver_get_next_video_out();
    return 0;
 }
 

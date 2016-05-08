@@ -180,7 +180,7 @@ static void mui_draw_icon(
    struct gfx_coords coords;
    math_matrix_4x4 mymat;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_blend_begin();
 
    rotate_draw.matrix       = &mymat;
    rotate_draw.rotation     = rotation;
@@ -189,7 +189,7 @@ static void mui_draw_icon(
    rotate_draw.scale_z      = 1;
    rotate_draw.scale_enable = true;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_ROTATE_Z, &rotate_draw);
+   menu_display_rotate_z(&rotate_draw);
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -205,12 +205,11 @@ static void mui_draw_icon(
    draw.matrix_data     = &mymat;
    draw.texture         = texture;
    draw.prim_type       = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id     = 0;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+   menu_display_draw(&draw);
+   menu_display_blend_end();
 }
-
 
 static void mui_draw_tab(mui_handle_t *mui,
       unsigned i,
@@ -255,7 +254,7 @@ static void mui_draw_text(float x, float y, unsigned width, unsigned height,
    int font_size;
    struct font_params params;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
+   font_size = menu_display_get_font_size();
 
    params.x           = x / width;
    params.y           = 1.0f - (y + font_size / 3) / height;
@@ -284,7 +283,7 @@ static void mui_render_quad(mui_handle_t *mui,
    coords.lut_tex_coord = NULL;
    coords.color         = coord_color;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_blend_begin();
 
    draw.x           = x;
    draw.y           = (int)height - y - (int)h;
@@ -294,18 +293,17 @@ static void mui_render_quad(mui_handle_t *mui,
    draw.matrix_data = NULL;
    draw.texture     = menu_display_white_texture;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
+   draw.pipeline.id = 0;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+   menu_display_draw(&draw);
+   menu_display_blend_end();
 }
 
 static void mui_draw_tab_begin(mui_handle_t *mui,
       unsigned width, unsigned height,
       float *white_bg, float *grey_bg)
 {
-   float scale_factor;
-   menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
+   float scale_factor = menu_display_get_dpi();
 
    mui->tabs_height = scale_factor / 3;
 
@@ -348,7 +346,7 @@ static void mui_draw_scrollbar(mui_handle_t *mui,
    if (!mui)
       return;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+   header_height    = menu_display_get_header_height();
 
    content_height   = menu_entries_get_end() * mui->line_height;
    total_height     = height - header_height - mui->tabs_height;
@@ -402,7 +400,7 @@ static void mui_render_messagebox(const char *message)
 
    video_driver_get_size(&width, &height);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
+   font_size = menu_display_get_font_size();
 
    x = width  / 2;
    y = height / 2 - list->size * font_size / 2;
@@ -443,9 +441,9 @@ static void mui_render(void *data)
    if (menu_animation_ctl(MENU_ANIMATION_CTL_IDEAL_DELTA_TIME_GET, &delta))
       menu_animation_ctl(MENU_ANIMATION_CTL_UPDATE, &delta.ideal);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &width);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &height);
-   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+   menu_display_set_width(width);
+   menu_display_set_height(height);
+   header_height = menu_display_get_header_height();
 
    if (settings->menu.pointer.enable)
    {
@@ -620,12 +618,12 @@ static void mui_render_menu_list(mui_handle_t *mui,
    uint64_t *frame_count;
    size_t i                = 0;
    size_t          end     = menu_entries_get_end();
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   frame_count             = video_driver_get_frame_count_ptr();
 
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
+   if (!menu_display_get_update_pending())
       return;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+   header_height = menu_display_get_header_height();
 
    mui->list_block.carr.coords.vertices = 0;
 
@@ -709,12 +707,15 @@ static int mui_get_core_title(char *s, size_t len)
 
 static void mui_draw_bg(menu_display_ctx_draw_t *draw)
 {
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_blend_begin();
+
    draw->x              = 0;
    draw->y              = 0;
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW_BG,   draw);
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW,      draw);
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+   draw->pipeline.id    = 0;
+
+   menu_display_draw_bg(draw);
+   menu_display_draw(draw);
+   menu_display_blend_end();
 }
 
 static void mui_frame(void *data)
@@ -786,10 +787,8 @@ static void mui_frame(void *data)
    const uint32_t activetab_color  = 0x0096f2ff;
    const uint32_t passivetab_color = 0x9e9e9eff;
    bool background_rendered        = false;
-   bool libretro_running           = menu_display_ctl(
-         MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
-
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   bool libretro_running           = menu_display_libretro_running();
+   frame_count                     = video_driver_get_frame_count_ptr();
 
    (void)passivetab_color;
    (void)activetab_color;
@@ -799,8 +798,8 @@ static void mui_frame(void *data)
 
    video_driver_get_size(&width, &height);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+   menu_display_set_viewport();
+   header_height = menu_display_get_header_height();
 
    if (libretro_running)
    {
@@ -815,8 +814,7 @@ static void mui_frame(void *data)
       draw.vertex_count       = 4;
       draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-      if (!menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
-            && draw.texture)
+      if (!menu_display_libretro_running() && draw.texture)
          draw.color             = &white_bg[0];
 
       mui_draw_bg(&draw);
@@ -830,7 +828,7 @@ static void mui_frame(void *data)
       clearcolor.b = 1.0f;
       clearcolor.a = 0.75f;
 
-      menu_display_ctl(MENU_DISPLAY_CTL_CLEAR_COLOR, &clearcolor);
+      menu_display_clear_color(&clearcolor);
 
       if (mui->textures.bg)
       {
@@ -849,8 +847,7 @@ static void mui_frame(void *data)
          draw.vertex_count       = 4;
          draw.prim_type          = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
 
-         if (!menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL)
-               && draw.texture)
+         if (!menu_display_libretro_running() && draw.texture)
             draw.color             = &white_bg[0];
 
          mui_draw_bg(&draw);
@@ -877,12 +874,12 @@ static void mui_frame(void *data)
          width, height,
          &lightblue_bg[0]);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BIND_BLOCK, &mui->list_block);
+   menu_display_font_bind_block(&mui->list_block);
 
    mui_render_menu_list(mui, width, height,
          normal_color, hover_color, &pure_white[0]);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK, NULL);
+   menu_display_font_flush_block();
    menu_animation_ctl(MENU_ANIMATION_CTL_SET_ACTIVE, NULL);
 
    /* header */
@@ -994,8 +991,8 @@ static void mui_frame(void *data)
          width,
          height);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
+   menu_display_restore_clear_color();
+   menu_display_unset_viewport();
 }
 
 static void mui_font(void)
@@ -1005,7 +1002,7 @@ static void mui_font(void)
    menu_display_ctx_font_t font_info;
    settings_t *settings = config_get_ptr();
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_SIZE, &font_size);
+   font_size = menu_display_get_font_size();
 
    fill_pathname_join(mediapath, settings->directory.assets,
          "glui", sizeof(mediapath));
@@ -1015,7 +1012,7 @@ static void mui_font(void)
    font_info.path = fontpath;
    font_info.size = font_size;
 
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_INIT, &font_info))
+   if (!menu_display_font_main_init(&font_info))
       RARCH_WARN("Failed to load font.");
 }
 
@@ -1034,7 +1031,7 @@ static void mui_layout(mui_handle_t *mui)
     *
     * On desktops, we just care about readability, with every widget
     * size proportional to the display width. */
-   menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
+   scale_factor = menu_display_get_dpi();
 
    new_header_height    = scale_factor / 3;
    new_font_size        = scale_factor / 9;
@@ -1046,17 +1043,15 @@ static void mui_layout(mui_handle_t *mui)
    mui->margin          = scale_factor / 9;
    mui->icon_size       = scale_factor / 3;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT,
-         &new_header_height);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FONT_SIZE,
-         &new_font_size);
+   menu_display_set_header_height(new_header_height);
+   menu_display_set_font_size(new_font_size);
 
    /* we assume the average glyph aspect ratio is close to 3:4 */
    mui->glyph_width = new_font_size * 3/4;
 
    mui_font();
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_BUF, &fb_buf);
+   fb_buf = menu_display_get_font_buffer();
 
    if (fb_buf) /* calculate a more realistic ticker_limit */
    {
@@ -1077,7 +1072,7 @@ static void *mui_init(void **userdata)
    if (!menu)
       goto error;
 
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT_FIRST_DRIVER, NULL))
+   if (!menu_display_init_first_driver())
       goto error;
 
    mui = (mui_handle_t*)calloc(1, sizeof(mui_handle_t));
@@ -1131,7 +1126,7 @@ static void mui_context_destroy(void *data)
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
       video_driver_texture_unload(&mui->textures.list[i]);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
+   menu_display_font_main_deinit();
 
    mui_context_bg_destroy(mui);
 }
@@ -1495,7 +1490,7 @@ static int mui_pointer_tap(void *userdata,
    video_driver_get_size(&width, &height);
 
    menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+   header_height = menu_display_get_header_height();
 
    if (y < header_height)
    {

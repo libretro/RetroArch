@@ -335,7 +335,7 @@ bool core_unload(void)
 
 bool core_unload_game(void)
 {
-   video_driver_ctl(RARCH_DISPLAY_CTL_DEINIT_HW_CONTEXT, NULL);
+   video_driver_deinit_hw_context();
    audio_driver_ctl(RARCH_AUDIO_CTL_STOP, NULL);
    core.retro_unload_game();
    return true;

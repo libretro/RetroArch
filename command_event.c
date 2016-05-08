@@ -1131,29 +1131,23 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_REINIT:
          {
-            struct retro_hw_render_callback *hwr = NULL;
-            video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+            struct retro_hw_render_callback *hwr =
+               video_driver_get_hw_context();
 
             if (hwr->cache_context)
-               video_driver_ctl(
-                     RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT, NULL);
+               video_driver_set_video_cache_context();
             else
-               video_driver_ctl(
-                     RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT, NULL);
+               video_driver_unset_video_cache_context();
 
-            video_driver_ctl(
-                  RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+            video_driver_unset_video_cache_context_ack();
             event_cmd_ctl(EVENT_CMD_RESET_CONTEXT, NULL);
-            video_driver_ctl(
-                  RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT, NULL);
+            video_driver_unset_video_cache_context();
 
             /* Poll input to avoid possibly stale data to corrupt things. */
             input_driver_ctl(RARCH_INPUT_CTL_POLL, NULL);
 
 #ifdef HAVE_MENU
-            menu_display_ctl(
-                  MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
-
+            menu_display_set_framebuffer_dirty_flag();
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
                event_cmd_ctl(EVENT_CMD_VIDEO_SET_BLOCKING_STATE, NULL);
 #endif
@@ -1278,7 +1272,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          audio_driver_dsp_filter_init(settings->path.audio_dsp_plugin);
          break;
       case EVENT_CMD_GPU_RECORD_DEINIT:
-         video_driver_ctl(RARCH_DISPLAY_CTL_GPU_RECORD_DEINIT, NULL);
+         video_driver_gpu_record_deinit();
          break;
       case EVENT_CMD_RECORD_DEINIT:
          if (!recording_deinit())
@@ -1319,8 +1313,8 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_CORE_DEINIT:
          {
-            struct retro_hw_render_callback *hwr = NULL;
-            video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+            struct retro_hw_render_callback *hwr =
+               hwr = video_driver_get_hw_context();
             event_deinit_core(true);
 
             if (hwr)
@@ -1333,15 +1327,15 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             return false;
          break;
       case EVENT_CMD_VIDEO_APPLY_STATE_CHANGES:
-         video_driver_ctl(RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES, NULL);
+         video_driver_apply_state_changes();
          break;
       case EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */
       case EVENT_CMD_VIDEO_SET_BLOCKING_STATE:
-         video_driver_ctl(RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE, &boolean);
+         video_driver_set_nonblock_state(boolean);
          break;
       case EVENT_CMD_VIDEO_SET_ASPECT_RATIO:
-         video_driver_ctl(RARCH_DISPLAY_CTL_SET_ASPECT_RATIO, NULL);
+         video_driver_set_aspect_ratio();
          break;
       case EVENT_CMD_AUDIO_SET_NONBLOCKING_STATE:
          boolean = true; /* fall-through */
@@ -1373,8 +1367,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             struct retro_hw_render_callback hwr_copy;
             int flags = DRIVERS_CMD_ALL;
 
-            video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
-
+            hwr = video_driver_get_hw_context();
             memcpy(&hwr_copy, hwr, sizeof(hwr_copy));
 
             driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
@@ -1429,7 +1422,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             event_cmd_ctl(EVENT_CMD_AUDIO_STOP, NULL);
 
             if (settings->video.black_frame_insertion)
-               video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+               video_driver_cached_frame_render();
          }
          else
          {
@@ -1565,7 +1558,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #endif
          break;
       case EVENT_CMD_FULLSCREEN_TOGGLE:
-         if (!video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL))
+         if (!video_driver_has_windowed())
             return false;
 
          /* If we go fullscreen we drop all drivers and
@@ -1696,9 +1689,9 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
                   grab_mouse_state ? "yes" : "no");
 
             if (grab_mouse_state)
-               video_driver_ctl(RARCH_DISPLAY_CTL_HIDE_MOUSE, NULL);
+               video_driver_hide_mouse();
             else
-               video_driver_ctl(RARCH_DISPLAY_CTL_SHOW_MOUSE, NULL);
+               video_driver_show_mouse();
          }
          break;
       case EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG:

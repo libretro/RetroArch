@@ -429,7 +429,7 @@ static INLINE void rjpeg_decode_block(
       struct rjpeg_component *c,
       unsigned char* out)
 {
-   unsigned char code;
+   unsigned char code = 0;
    int coef = 0;
 
    memset(ctx->block, 0, sizeof(ctx->block));

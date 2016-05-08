@@ -61,7 +61,7 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
    struct retro_hw_render_callback *hwr = NULL;
    bool ancient                         = false; /* add a check here if needed */
    
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   hwr = video_driver_get_hw_context();
 
    if (ancient)
    {
