@@ -448,7 +448,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          && !settings->audio.mute_enable
          && audio_cb_inited
          )
-      audio_driver_ctl(RARCH_AUDIO_CTL_START, NULL);
+      audio_driver_start();
 
    return true;
 
@@ -937,6 +937,22 @@ bool audio_driver_toggle_mute(void)
    return true;
 }
 
+bool audio_driver_start(void)
+{
+   if (!current_audio || !current_audio->start 
+         || !audio_driver_context_audio_data)
+      return false;
+   return current_audio->start(audio_driver_context_audio_data);
+}
+
+bool audio_driver_stop(void)
+{
+   if (!current_audio || !current_audio->stop 
+         || !audio_driver_context_audio_data)
+      return false;
+   return current_audio->stop(audio_driver_context_audio_data);
+}
+
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    switch (state)
@@ -958,16 +974,6 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
                || !audio_driver_context_audio_data)
             return false;
          return current_audio->alive(audio_driver_context_audio_data);
-      case RARCH_AUDIO_CTL_START:
-         if (!current_audio || !current_audio->start 
-               || !audio_driver_context_audio_data)
-            return false;
-         return current_audio->start(audio_driver_context_audio_data);
-      case RARCH_AUDIO_CTL_STOP:
-         if (!current_audio || !current_audio->stop 
-               || !audio_driver_context_audio_data)
-            return false;
-         return current_audio->stop(audio_driver_context_audio_data);
       case RARCH_AUDIO_CTL_SET_OWN_DRIVER:
          audio_driver_data_own = true;
          break;

@@ -1214,15 +1214,14 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          if (!audio_driver_ctl(RARCH_AUDIO_CTL_ALIVE, NULL))
             return false;
 
-         if (!audio_driver_ctl(RARCH_AUDIO_CTL_STOP, NULL))
+         if (!audio_driver_stop())
             return false;
          break;
       case EVENT_CMD_AUDIO_START:
          if (audio_driver_ctl(RARCH_AUDIO_CTL_ALIVE, NULL))
             return false;
 
-         if (!settings->audio.mute_enable && 
-               !audio_driver_ctl(RARCH_AUDIO_CTL_START, NULL))
+         if (!settings->audio.mute_enable && !audio_driver_start())
          {
             RARCH_ERR("Failed to start audio driver. "
                   "Will continue without audio.\n");
