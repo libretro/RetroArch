@@ -141,11 +141,14 @@ void x11_set_window_attr(Display *dpy, Window win)
    x11_set_window_class(dpy, win);
 }
 
-void x11_suspend_screensaver(Window wnd)
+void x11_suspend_screensaver(Window wnd, bool enable)
 {
    int ret;
    char cmd[64] = {0};
    static bool screensaver_na = false;
+
+   if (!enable)
+       return;
 
    if (screensaver_na)
       return;

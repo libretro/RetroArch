@@ -444,12 +444,11 @@ static bool gfx_ctx_xegl_has_focus(void *data)
 static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
-   (void)enable;
 
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
 
-   x11_suspend_screensaver(video_driver_window_get());
+   x11_suspend_screensaver(video_driver_window_get(), enable);
 
    return true;
 }

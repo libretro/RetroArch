@@ -569,7 +569,7 @@ static bool sdl2_gfx_suppress_screensaver(void *data, bool enable)
    if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
    {
 #ifdef HAVE_X11
-      x11_suspend_screensaver(video_driver_window_get());
+      x11_suspend_screensaver(video_driver_window_get(), enable);
 #endif
       return true;
    }
