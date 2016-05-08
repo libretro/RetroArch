@@ -48,14 +48,7 @@ enum content_ctl_state
 
    CONTENT_CTL_DEINIT,
 
-
    CONTENT_CTL_GET_CRC,
-
-
-
-
-   /* Frees temporary content handle. */
-   CONTENT_CTL_TEMPORARY_FREE,
 
    CONTENT_CTL_STREAM_CRC_CALCULATE
 };

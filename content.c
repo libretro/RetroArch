@@ -1722,7 +1722,8 @@ bool content_ctl(enum content_ctl_state state, void *data)
       case CONTENT_CTL_IS_INITED:
          return content_is_inited;
       case CONTENT_CTL_DEINIT:
-         content_ctl(CONTENT_CTL_TEMPORARY_FREE, NULL);
+         content_file_free(temporary_content);
+         temporary_content          = NULL;
          content_crc                = 0;
          content_is_inited          = false;
          core_does_not_need_content = false;
@@ -1739,10 +1740,6 @@ bool content_ctl(enum content_ctl_state state, void *data)
          }
          content_ctl(CONTENT_CTL_DEINIT, NULL);
          return false;
-      case CONTENT_CTL_TEMPORARY_FREE:
-         content_file_free(temporary_content);
-         temporary_content = NULL;
-         break;
       case CONTENT_CTL_STREAM_CRC_CALCULATE:
          {
             content_stream_t *stream = NULL;
