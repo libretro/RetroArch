@@ -37,20 +37,6 @@ extern "C" {
 
 #define AUDIO_MAX_RATIO                16
 
-enum rarch_audio_ctl_state
-{
-   RARCH_AUDIO_CTL_NONE = 0,
-   RARCH_AUDIO_CTL_DESTROY,
-   RARCH_AUDIO_CTL_DESTROY_DATA,
-   RARCH_AUDIO_CTL_FRAME_IS_REVERSE,
-   RARCH_AUDIO_CTL_SET_OWN_DRIVER,
-   RARCH_AUDIO_CTL_UNSET_OWN_DRIVER,
-   RARCH_AUDIO_CTL_OWNS_DRIVER,
-   RARCH_AUDIO_CTL_SET_ACTIVE,
-   RARCH_AUDIO_CTL_UNSET_ACTIVE,
-   RARCH_AUDIO_CTL_IS_ACTIVE
-};
-
 typedef struct audio_driver
 {
    /* Creates and initializes handle to audio driver.
@@ -102,8 +88,19 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
+void audio_driver_destroy_data(void);
 
-bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data);
+void audio_driver_set_own_driver(void);
+
+void audio_driver_unset_own_driver(void);
+
+void audio_driver_set_active(void);
+
+void audio_driver_unset_active(void);
+
+bool audio_driver_is_active(void);
+
+void audio_driver_destroy(void);
 
 void audio_driver_deinit_resampler(void);
 
@@ -187,7 +184,11 @@ bool audio_driver_start(void);
 
 bool audio_driver_stop(void);
 
+bool audio_driver_owns_driver(void);
+
 void audio_driver_unset_callback(void);
+
+void audio_driver_frame_is_reverse(void);
 
 bool audio_driver_alive(void);
 

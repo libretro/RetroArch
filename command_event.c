@@ -1225,7 +1225,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          {
             RARCH_ERR("Failed to start audio driver. "
                   "Will continue without audio.\n");
-            audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
+            audio_driver_unset_active();
          }
          break;
       case EVENT_CMD_AUDIO_MUTE_TOGGLE:

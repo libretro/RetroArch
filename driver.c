@@ -304,7 +304,7 @@ static void init_drivers(int flags)
    if (flags & DRIVER_VIDEO)
       video_driver_unset_own_driver();
    if (flags & DRIVER_AUDIO)
-      audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_OWN_DRIVER, NULL);
+      audio_driver_unset_own_driver();
    if (flags & DRIVER_INPUT)
       input_driver_ctl(RARCH_INPUT_CTL_UNSET_OWN_DRIVER, NULL);
    if (flags & DRIVER_CAMERA)
@@ -418,8 +418,8 @@ static void uninit_drivers(int flags)
    if ((flags & DRIVER_INPUT) && !input_driver_ctl(RARCH_INPUT_CTL_OWNS_DRIVER, NULL))
       input_driver_ctl(RARCH_INPUT_CTL_DESTROY_DATA, NULL);
 
-   if ((flags & DRIVER_AUDIO) && !audio_driver_ctl(RARCH_AUDIO_CTL_OWNS_DRIVER, NULL))
-      audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY_DATA, NULL);
+   if ((flags & DRIVER_AUDIO) && !audio_driver_owns_driver())
+      audio_driver_destroy_data();
 }
 
 bool driver_ctl(enum driver_ctl_state state, void *data)
@@ -428,7 +428,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
    {
       case RARCH_DRIVER_CTL_DEINIT:
          video_driver_destroy();
-         audio_driver_ctl(RARCH_AUDIO_CTL_DESTROY, NULL);
+         audio_driver_destroy();
          input_driver_ctl(RARCH_INPUT_CTL_DESTROY, NULL);
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_DESTROY, NULL);
