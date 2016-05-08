@@ -765,10 +765,12 @@ static void gfx_ctx_x_input_driver(void *data,
 
 static bool gfx_ctx_x_suppress_screensaver(void *data, bool enable)
 {
+   (void)data;
+
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
 
-   x11_suspend_screensaver(video_driver_window_get());
+   x11_suspend_screensaver(video_driver_window_get(), enable);
 
    return true;
 }
