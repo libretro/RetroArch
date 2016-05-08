@@ -1839,8 +1839,8 @@ static bool get_next_entry(update_state_t* us)
          
    strlcpy(info.exts, "lpl", sizeof(info.exts));
 
-   if (menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
-      menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
+   if (!menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
+      return false;
 
    list_size = file_list_get_size(playlists);
    
