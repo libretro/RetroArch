@@ -338,7 +338,7 @@ static void init_drivers(int flags)
 
    if (flags & DRIVER_AUDIO)
    {
-      audio_driver_ctl(RARCH_AUDIO_CTL_INIT, NULL);
+      audio_driver_init();
       audio_driver_new_devices_list();
    }
 

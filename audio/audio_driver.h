@@ -20,7 +20,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
+
 #include <boolean.h>
+
 #include "audio_dsp_filter.h"
 
 #ifdef __cplusplus
@@ -37,7 +39,6 @@ extern "C" {
 enum rarch_audio_ctl_state
 {
    RARCH_AUDIO_CTL_NONE = 0,
-   RARCH_AUDIO_CTL_INIT,
    RARCH_AUDIO_CTL_DEINIT,
    RARCH_AUDIO_CTL_DESTROY,
    RARCH_AUDIO_CTL_DESTROY_DATA,
@@ -64,8 +65,7 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_UNSET_ACTIVE,
    RARCH_AUDIO_CTL_IS_ACTIVE,
    RARCH_AUDIO_CTL_RESAMPLER_INIT,
-   RARCH_AUDIO_CTL_RESAMPLER_PROCESS,
-   RARCH_AUDIO_CTL_DEVICES_LIST_GET
+   RARCH_AUDIO_CTL_RESAMPLER_PROCESS
 };
 
 typedef struct audio_driver
@@ -172,6 +172,10 @@ void audio_driver_dsp_filter_free(void);
 void audio_driver_dsp_filter_init(const char *device);
 
 void audio_driver_set_buffer_size(size_t bufsize);
+
+bool audio_driver_get_devices_list(void **ptr);
+
+bool audio_driver_init(void);
 
 extern audio_driver_t audio_rsound;
 extern audio_driver_t audio_oss;

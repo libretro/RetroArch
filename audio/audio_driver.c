@@ -260,7 +260,6 @@ const char *config_get_audio_driver_options(void)
    return char_list_new_special(STRING_LIST_AUDIO_DRIVERS, NULL);
 }
 
-
 static bool uninit_audio(void)
 {
    settings_t *settings = config_get_ptr();
@@ -305,7 +304,7 @@ static bool uninit_audio(void)
    return true;
 }
 
-static bool init_audio(bool audio_cb_inited)
+static bool audio_driver_init_internal(bool audio_cb_inited)
 {
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings = config_get_ptr();
@@ -356,7 +355,7 @@ static bool init_audio(bool audio_cb_inited)
                current_audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
-         retro_fail(1, "init_audio()");
+         retro_fail(1, "audio_driver_init_internal()");
       }
    }
    else
@@ -812,20 +811,26 @@ bool audio_driver_new_devices_list(void)
    return true;
 }
 
+bool audio_driver_init(void)
+{
+   return audio_driver_init_internal(audio_callback.callback != NULL);
+}
+
+bool audio_driver_get_devices_list(void **data)
+{
+   struct string_list**ptr = (struct string_list**)data;
+   if (!ptr)
+      return false;
+   *ptr = audio_driver_devices_list;
+   return true;
+}
+
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    settings_t        *settings                            = config_get_ptr();
 
    switch (state)
    {
-      case RARCH_AUDIO_CTL_DEVICES_LIST_GET:
-         {
-            struct string_list**ptr = (struct string_list**)data;
-            if (!ptr)
-               return false;
-            *ptr = audio_driver_devices_list;
-         }
-         break;
       case RARCH_AUDIO_CTL_RESAMPLER_INIT:
          return rarch_resampler_realloc(
                &audio_driver_resampler_data,
@@ -840,8 +845,6 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
                (struct resampler_data*)data);
          retro_perf_stop(&resampler_proc);
          break;
-      case RARCH_AUDIO_CTL_INIT:
-         return init_audio(audio_callback.callback != NULL);
       case RARCH_AUDIO_CTL_DESTROY:
          audio_driver_active   = false;
          audio_driver_data_own = false;

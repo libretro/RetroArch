@@ -759,7 +759,8 @@ static int setting_string_action_left_audio_device(void *data, bool wraparound)
    int audio_device_index;
    struct string_list *ptr  = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   if (!audio_driver_ctl(RARCH_AUDIO_CTL_DEVICES_LIST_GET, &ptr))
+
+   if (!audio_driver_get_devices_list((void**)&ptr))
       return -1;
 
    if (!ptr)
@@ -783,7 +784,8 @@ static int setting_string_action_right_audio_device(void *data, bool wraparound)
    int audio_device_index;
    struct string_list *ptr  = NULL;
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   if (!audio_driver_ctl(RARCH_AUDIO_CTL_DEVICES_LIST_GET, &ptr))
+
+   if (!audio_driver_get_devices_list((void**)&ptr))
       return -1;
 
    if (!ptr)
