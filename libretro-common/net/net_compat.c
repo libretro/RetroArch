@@ -326,3 +326,16 @@ uint16_t inet_htons(uint16_t hostshort)
    return htons(hostshort);
 #endif
 }
+
+int inet_ptrton(int af, const char *src, void *dst)
+{
+   /* TODO/FIXME - should use InetPton on Vista and later */
+#if defined(GEKKO) || defined(_WIN32)
+   if (af != AF_INET)
+      return -1;
+
+   return inet_aton(src, dst);
+#else
+   return inet_pton(af, src, dst);
+#endif
+}

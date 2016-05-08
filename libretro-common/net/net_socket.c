@@ -307,7 +307,7 @@ void socket_set_target(void *data, socket_target_t *in_addr)
    out_target->sin_len    = 8;
 #endif
 
-   inet_pton(AF_INET, in_addr->server, &out_target->sin_addr);
+   inet_ptrton(AF_INET, in_addr->server, &out_target->sin_addr);
 
 #endif
 }
