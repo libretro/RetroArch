@@ -78,7 +78,7 @@ static bool remote_init_network(rarch_remote_t *handle,
    RARCH_LOG("Bringing up remote interface on port %hu.\n",
          (unsigned short)port);
 
-   fd = socket_init((void*)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
+   fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
 
    if (fd < 0)
       goto error;
