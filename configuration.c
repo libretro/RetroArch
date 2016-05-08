@@ -1406,7 +1406,7 @@ static bool config_load_file(const char *path, bool set_defaults)
     * important that it works for consoles right now */
    config_get_bool(conf, "custom_bgm_enable",
          &global->console.sound.system_bgm_enable);
-   video_driver_ctl(RARCH_DISPLAY_CTL_LOAD_SETTINGS, conf);
+   video_driver_load_settings(conf);
 #endif
    CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
 

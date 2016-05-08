@@ -102,7 +102,7 @@ void create_gl_context(HWND hwnd, bool *quit)
    struct retro_hw_render_callback *hwr = NULL;
    bool debug                           = false;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   hwr = video_driver_get_hw_context();
 
    debug            = hwr->debug_context;
 #ifdef _WIN32
@@ -119,7 +119,7 @@ void create_gl_context(HWND hwnd, bool *quit)
    if (g_hrc)
    {
       RARCH_LOG("[WGL]: Using cached GL context.\n");
-      video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+      video_driver_set_video_cache_context_ack();
    }
    else
    {
@@ -329,7 +329,7 @@ static void gfx_ctx_wgl_destroy(void *data)
       glFinish();
       wglMakeCurrent(NULL, NULL);
 
-      if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
+      if (!video_driver_is_video_cache_context())
       {
          if (g_hw_hrc)
             wglDeleteContext(g_hw_hrc);

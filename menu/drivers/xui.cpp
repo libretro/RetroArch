@@ -534,7 +534,7 @@ static void xui_render(void *data)
    const char *label           = NULL;
 	unsigned menu_type          = 0;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   frame_count = video_driver_get_frame_count_ptr();
 
    menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,     &fb_width);
    menu_display_ctl(MENU_DISPLAY_CTL_MSG_FORCE, &msg_force);

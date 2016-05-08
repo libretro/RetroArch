@@ -1480,7 +1480,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
    else
 #endif
    {
-      bool use_rgba = video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
+      bool use_rgba = video_driver_supports_rgba();
 
       glPixelStorei(GL_UNPACK_ALIGNMENT, 
             video_pixel_get_alignment(width * gl->base_size));
@@ -2253,7 +2253,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
    else
    {
-      video_driver_ctl(RARCH_DISPLAY_CTL_SET_RGBA, NULL);
+      video_driver_set_rgba();
       RARCH_WARN("[GL]: GLES implementation does not have BGRA8888 extension.\n"
                  "32-bit path will require conversion.\n");
    }

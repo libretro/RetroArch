@@ -913,28 +913,24 @@ static bool d3d_has_windowed(void *data)
 static void d3d_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL;
+         video_driver_set_viewport_square_pixel();
          break;
 
       case ASPECT_RATIO_CORE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE;
+         video_driver_set_viewport_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG;
+         video_driver_set_viewport_config();
          break;
 
       default:
          break;
    }
-
-   if (cmd != RARCH_DISPLAY_CTL_NONE)
-      video_driver_ctl(cmd, NULL);
 
    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 
@@ -1129,7 +1125,7 @@ static void *d3d_init(const video_info_t *info,
 
          input_driver_set(input, input_data);
 
-         video_driver_ctl(RARCH_DISPLAY_CTL_SET_OWN_DRIVER, NULL);
+         video_driver_set_own_driver();
          return d3d;
       }
    }
@@ -1168,8 +1164,8 @@ static void *d3d_init(const video_info_t *info,
 
    d3d->keep_aspect       = info->force_aspect;
 #ifdef _XBOX
-   video_driver_ctl(RARCH_DISPLAY_CTL_SET_OWN_DRIVER, NULL);
-   video_driver_ctl(RARCH_INPUT_CTL_SET_OWN_DRIVER, NULL);
+   video_driver_set_own_driver();
+   video_input_ctl(RARCH_INPUT_CTL_SET_OWN_DRIVER, NULL);
 #endif
 
    return d3d;

@@ -398,7 +398,7 @@ static bool xdk_renderchain_render(void *data, const void *frame,
    settings_t *settings     = config_get_ptr();
    xdk_renderchain_t *chain = (xdk_renderchain_t*)d3d->renderchain_data;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   frame_count = video_driver_get_frame_count_ptr();
 
    video_driver_get_size(&width, &height);
 
