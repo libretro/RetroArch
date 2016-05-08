@@ -1154,7 +1154,7 @@ static void *d3d_init(const video_info_t *info,
 #endif
 #endif
 
-   video_context_driver_set((void*)ctx_driver);
+   video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
    if (!d3d_construct(d3d, info, input, input_data))
    {
