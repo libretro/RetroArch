@@ -477,7 +477,7 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
          {
             float *hz = (float*)data;
             video_monitor_set_refresh_rate(*hz);
-            audio_driver_ctl(RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE,   NULL);
+            audio_driver_monitor_set_rate();
             driver_adjust_system_rates();
          }
          break;

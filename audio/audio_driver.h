@@ -45,8 +45,6 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_DESTROY_DATA,
    RARCH_AUDIO_CTL_START,
    RARCH_AUDIO_CTL_STOP,
-   /* Sets audio monitor refresh rate to new value. */
-   RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE,
    RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,
    RARCH_AUDIO_CTL_MUTE_TOGGLE,
    RARCH_AUDIO_CTL_UNSET_CALLBACK,
@@ -180,6 +178,9 @@ bool audio_driver_get_devices_list(void **ptr);
 void audio_driver_setup_rewind(void);
 
 bool audio_driver_set_callback(const void *data);
+
+/* Sets audio monitor rate to new value. */
+void audio_driver_monitor_set_rate(void);
 
 bool audio_driver_find_driver(void);
 

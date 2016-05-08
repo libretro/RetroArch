@@ -891,6 +891,17 @@ bool audio_driver_disable_callback(void)
    return true;
 }
 
+/* Sets audio monitor rate to new value. */
+void audio_driver_monitor_set_rate(void)
+{
+   settings_t *settings = config_get_ptr();
+   double new_src_ratio = (double)settings->audio.out_rate / 
+      audio_driver_data.audio_rate.input;
+
+   audio_driver_data.audio_rate.source_ratio.original = new_src_ratio;
+   audio_driver_data.audio_rate.source_ratio.current  = new_src_ratio;
+}
+
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    settings_t        *settings                            = config_get_ptr();
@@ -920,15 +931,6 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
          break;
       case RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES:
          audio_monitor_adjust_system_rates();
-         break;
-      case RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE:
-         {
-            double new_src_ratio = (double)settings->audio.out_rate / 
-               audio_driver_data.audio_rate.input;
-
-            audio_driver_data.audio_rate.source_ratio.original = new_src_ratio;
-            audio_driver_data.audio_rate.source_ratio.current  = new_src_ratio;
-         }
          break;
       case RARCH_AUDIO_CTL_MUTE_TOGGLE:
          if (!audio_driver_context_audio_data)
