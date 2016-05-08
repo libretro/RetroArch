@@ -71,8 +71,6 @@
 #define XMB_ITEM_ACTIVE_ALPHA        1.0
 #define XMB_ITEM_PASSIVE_ALPHA       0.85
 
-#define XMB_SHADOW_OFFSET            2.0
-
 typedef struct
 {
    float alpha;
@@ -181,6 +179,8 @@ typedef struct xmb_handle
          float top;
       } label;
    } margins;
+
+   float shadow_offset;
 
    char title_name[256];
 
@@ -476,7 +476,8 @@ static void xmb_draw_icon(
       float alpha,
       float rotation,
       float scale_factor,
-      float *color)
+      float *color,
+      float shadow_offset)
 {
    menu_display_ctx_draw_t draw;
    struct gfx_coords coords;
@@ -512,8 +513,8 @@ static void xmb_draw_icon(
       menu_display_set_alpha(shadow, color[3] * 0.35f);
 
       coords.color      = shadow;
-      draw.x            = x + XMB_SHADOW_OFFSET;
-      draw.y            = height - y - XMB_SHADOW_OFFSET;
+      draw.x            = x + shadow_offset;
+      draw.y            = height - y - shadow_offset;
 
       menu_display_draw(&draw);
    }
@@ -569,8 +570,8 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
       menu_display_set_alpha(shadow, color[3] * 0.35f);
 
       coords.color      = shadow;
-      draw.x            = x + XMB_SHADOW_OFFSET;
-      draw.y            = height - y - XMB_SHADOW_OFFSET;
+      draw.x            = x + xmb->shadow_offset;
+      draw.y            = height - y - xmb->shadow_offset;
 
       menu_display_draw(&draw);
    }
@@ -616,8 +617,8 @@ static void xmb_draw_text(xmb_handle_t *xmb,
 
    if (settings->menu.xmb_shadows_enable)
    {
-      params.drop_x      = XMB_SHADOW_OFFSET;
-      params.drop_y      = -XMB_SHADOW_OFFSET;
+      params.drop_x      = xmb->shadow_offset;
+      params.drop_y      = -xmb->shadow_offset;
       params.drop_alpha  = 0.35f;
    }
 
@@ -1835,7 +1836,8 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                1.0,
                rotation,
                scale_factor,
-               &color[0]);
+               &color[0],
+               xmb->shadow_offset);
       }
 
       menu_display_set_alpha(color, MIN(node->alpha, xmb->alpha));
@@ -1852,7 +1854,9 @@ static void xmb_draw_items(xmb_handle_t *xmb,
                width, height,
                node->alpha,
                0,
-               1, &color[0]);
+               1,
+               &color[0],
+               xmb->shadow_offset);
    }
 
    menu_display_blend_end();
@@ -2107,7 +2111,8 @@ static void xmb_frame(void *data)
             1,
             0,
             1,
-            &coord_white[0]);
+            &coord_white[0],
+            xmb->shadow_offset);
 
    if (settings->menu.timedate_enable)
    {
@@ -2143,7 +2148,9 @@ static void xmb_frame(void *data)
             height,
             xmb->textures.arrow.alpha,
             0,
-            1, &coord_white[0]);
+            1,
+            &coord_white[0],
+            xmb->shadow_offset);
 
    menu_display_blend_begin();
 
@@ -2190,7 +2197,8 @@ static void xmb_frame(void *data)
                1.0,
                rotation,
                scale_factor,
-               &item_color[0]);
+               &item_color[0],
+               xmb->shadow_offset);
       }
    }
 
@@ -2315,6 +2323,7 @@ static void xmb_layout(xmb_handle_t *xmb)
    scale_factor                 = (settings->menu.xmb_scale_factor * width) / (1920.0 * 100);
    new_font_size                = 32.0  * scale_factor;
    xmb->margins.screen.left     = 336.0 * scale_factor;
+   xmb->shadow_offset           = 2.0;
 
    /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
    if (width <= 640)
@@ -2322,6 +2331,7 @@ static void xmb_layout(xmb_handle_t *xmb)
       scale_factor              = scale_factor * 1.5;
       xmb->margins.screen.left  = 136.0 * scale_factor;
       new_font_size             = 42.0  * scale_factor;
+      xmb->shadow_offset        = 1.0;
    }
 
    new_header_height            = 128.0 * scale_factor;
