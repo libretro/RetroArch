@@ -2319,24 +2319,13 @@ static void xmb_font(xmb_handle_t *xmb)
       RARCH_WARN("Failed to load font.");
 }
 
-static void xmb_layout(xmb_handle_t *xmb)
+static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 {
-   int new_font_size;
-   size_t selection;
+   unsigned new_font_size, new_header_height;
    float scale_factor;
-   unsigned width, height, i, current, end, new_header_height;
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
    settings_t *settings = config_get_ptr();
 
-   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
-      return;
-
-   video_driver_get_size(&width, &height);
-
-   scale_factor                 = (settings->menu.xmb_scale_factor * width) / (1920.0 * 100);
-   new_font_size                = 32.0  * scale_factor;
-   xmb->margins.screen.left     = 336.0 * scale_factor;
-   xmb->shadow_offset           = 2.0;
+   scale_factor = (settings->menu.xmb_scale_factor * width) / (1920.0 * 100);
 
    xmb->above_subitem_offset    =   1.5;
    xmb->above_item_offset       =  -1.0;
@@ -2350,37 +2339,98 @@ static void xmb_layout(xmb_handle_t *xmb)
 
    xmb->categories.active.alpha  = 1.0;
    xmb->categories.passive.alpha = 0.85;
-   xmb->items.active.alpha        = 1.0;
-   xmb->items.passive.alpha       = 0.85;
+   xmb->items.active.alpha       = 1.0;
+   xmb->items.passive.alpha      = 0.85;
 
-   /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
-   if (width <= 640)
-   {
-      scale_factor              = scale_factor * 1.5;
-      xmb->margins.screen.left  = 136.0 * scale_factor;
-      new_font_size             = 42.0  * scale_factor;
-      xmb->shadow_offset        = 1.0;
-   }
+   xmb->shadow_offset            = 2.0;
 
-   new_header_height            = 128.0 * scale_factor;
-   xmb->margins.screen.top      = (256+32) * scale_factor;
+   new_font_size                 = 32.0  * scale_factor;
+   new_header_height             = 128.0 * scale_factor;
+   xmb->margins.screen.top       = (256+32) * scale_factor;
 
-   xmb->thumbnail_width         = 460.0 * scale_factor;
-   xmb->cursor.size             = 64.0;
+   xmb->thumbnail_width          = 460.0 * scale_factor;
+   xmb->cursor.size              = 64.0;
 
-   xmb->icon.spacing.horizontal = 200.0 * scale_factor;
-   xmb->icon.spacing.vertical   = 64.0 * scale_factor;
+   xmb->icon.spacing.horizontal  = 200.0 * scale_factor;
+   xmb->icon.spacing.vertical    = 64.0 * scale_factor;
 
-   xmb->margins.title.left      = 60 * scale_factor;
-   xmb->margins.title.top       = 60 * scale_factor + new_font_size / 3;
-   xmb->margins.title.bottom    = 60 * scale_factor - new_font_size / 3;
-   xmb->margins.label.left      = 85.0 * scale_factor;
-   xmb->margins.label.top       = new_font_size / 3.0;
-   xmb->margins.setting.left    = 600.0 * scale_factor;
-   xmb->icon.size               = 128.0 * scale_factor;
+   xmb->margins.screen.left      = 336.0 * scale_factor;
+   xmb->margins.title.left       = 60 * scale_factor;
+   xmb->margins.title.top        = 60 * scale_factor + new_font_size / 3;
+   xmb->margins.title.bottom     = 60 * scale_factor - new_font_size / 3;
+   xmb->margins.label.left       = 85.0 * scale_factor;
+   xmb->margins.label.top        = new_font_size / 3.0;
+   xmb->margins.setting.left     = 600.0 * scale_factor;
+   xmb->icon.size                = 128.0 * scale_factor;
 
    menu_display_set_font_size(new_font_size);
    menu_display_set_header_height(new_header_height);
+}
+
+static void xmb_layout_psp(xmb_handle_t *xmb, int width)
+{
+   unsigned new_font_size, new_header_height;
+   float scale_factor;
+   settings_t *settings = config_get_ptr();
+
+   scale_factor = ((settings->menu.xmb_scale_factor * width) / (1920.0 * 100)) * 1.5;
+
+   xmb->above_subitem_offset     =  1.5;
+   xmb->above_item_offset        = -1.0;
+   xmb->active_item_factor       =  2.0;
+   xmb->under_item_offset        =  3.0;
+
+   xmb->categories.active.zoom   = 1.0;
+   xmb->categories.passive.zoom  = 1.0;
+   xmb->items.active.zoom        = 1.0;
+   xmb->items.passive.zoom       = 1.0;
+
+   xmb->categories.active.alpha  = 1.0;
+   xmb->categories.passive.alpha = 0.85;
+   xmb->items.active.alpha       = 1.0;
+   xmb->items.passive.alpha      = 0.85;
+
+   xmb->shadow_offset            = 1.0;
+
+   new_font_size                 = 32.0  * scale_factor;
+   new_header_height             = 128.0 * scale_factor;
+   xmb->margins.screen.top       = (256+32) * scale_factor;
+
+   xmb->thumbnail_width          = 460.0 * scale_factor;
+   xmb->cursor.size              = 64.0;
+
+   xmb->icon.spacing.horizontal  = 250.0 * scale_factor;
+   xmb->icon.spacing.vertical    = 108.0 * scale_factor;
+
+   xmb->margins.screen.left      = 136.0 * scale_factor;
+   xmb->margins.title.left       = 60 * scale_factor;
+   xmb->margins.title.top        = 60 * scale_factor + new_font_size / 3;
+   xmb->margins.title.bottom     = 60 * scale_factor - new_font_size / 3;
+   xmb->margins.label.left       = 85.0 * scale_factor;
+   xmb->margins.label.top        = new_font_size / 3.0;
+   xmb->margins.setting.left     = 600.0 * scale_factor;
+   xmb->icon.size                = 128.0 * scale_factor;
+
+   menu_display_set_font_size(new_font_size);
+   menu_display_set_header_height(new_header_height);
+}
+
+static void xmb_layout(xmb_handle_t *xmb)
+{
+   size_t selection;
+   unsigned width, height, i, current, end;
+   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return;
+
+   video_driver_get_size(&width, &height);
+
+   /* Mimic the layout of the PSP instead of the PS3 on tiny screens */
+   if (width > 320)
+      xmb_layout_ps3(xmb, width);
+   else
+      xmb_layout_psp(xmb, width);
 
    current = selection;
    end     = menu_entries_get_end();
