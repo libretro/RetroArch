@@ -180,7 +180,7 @@ void nk_common_device_draw(struct nk_device *dev,
    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vbo);
 #endif
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_blend_begin();
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glActiveTexture(GL_TEXTURE0);
@@ -262,7 +262,7 @@ void nk_common_device_draw(struct nk_device *dev,
    glBindVertexArray((GLuint)last_vao);
 #endif
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+   menu_display_blend_end();
 }
 
 //void nk_mem_alloc(nk_handle a, void *old, nk_size b);

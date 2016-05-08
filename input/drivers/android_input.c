@@ -340,7 +340,6 @@ static void android_input_poll_main_cmd(void)
             runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
             runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
 #ifdef HAVE_MENU
-            menu_display_ctl(MENU_DISPLAY_CTL_UNSET_STUB_DRAW_FRAME, NULL);
             video_driver_unset_stub_frame();
 #endif
 
@@ -363,7 +362,6 @@ static void android_input_poll_main_cmd(void)
             runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
             runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
 #ifdef HAVE_MENU
-            menu_display_ctl(MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME, NULL);
             video_driver_set_stub_frame();
 #endif
 
