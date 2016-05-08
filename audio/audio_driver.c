@@ -154,8 +154,15 @@ static const audio_driver_t *audio_drivers[] = {
 };
 
 static audio_driver_input_data_t audio_driver_data;
-static const audio_driver_t *current_audio   = NULL;
-static void *audio_driver_context_audio_data = NULL;
+static struct retro_audio_callback audio_callback;
+static struct string_list *audio_driver_devices_list   = NULL;
+static struct retro_perf_counter resampler_proc        = {0};
+static const rarch_resampler_t *audio_driver_resampler = NULL;
+static void *audio_driver_resampler_data               = NULL;
+static bool audio_driver_active                        = false;
+static bool audio_driver_data_own                      = false;
+static const audio_driver_t *current_audio             = NULL;
+static void *audio_driver_context_audio_data           = NULL;
 
 /**
  * compute_audio_buffer_statistics:
@@ -778,13 +785,6 @@ static bool find_audio_driver(void)
 
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
-   static struct retro_audio_callback audio_callback;
-   static struct string_list *audio_driver_devices_list   = NULL;
-   static struct retro_perf_counter resampler_proc        = {0};
-   static const rarch_resampler_t *audio_driver_resampler = NULL;
-   static void *audio_driver_resampler_data               = NULL;
-   static bool audio_driver_active                        = false;
-   static bool audio_driver_data_own                      = false;
    settings_t        *settings                            = config_get_ptr();
 
    switch (state)
