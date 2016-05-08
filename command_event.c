@@ -1235,7 +1235,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
                msg_hash_to_str(MSG_AUDIO_MUTED):
                msg_hash_to_str(MSG_AUDIO_UNMUTED);
 
-            if (!audio_driver_ctl(RARCH_AUDIO_CTL_MUTE_TOGGLE, NULL))
+            if (!audio_driver_toggle_mute())
             {
                RARCH_ERR("%s.\n",
                      msg_hash_to_str(MSG_FAILED_TO_UNMUTE_AUDIO));

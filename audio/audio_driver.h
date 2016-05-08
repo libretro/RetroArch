@@ -45,7 +45,6 @@ enum rarch_audio_ctl_state
    RARCH_AUDIO_CTL_DESTROY_DATA,
    RARCH_AUDIO_CTL_START,
    RARCH_AUDIO_CTL_STOP,
-   RARCH_AUDIO_CTL_MUTE_TOGGLE,
    RARCH_AUDIO_CTL_UNSET_CALLBACK,
    RARCH_AUDIO_CTL_ALIVE,
    RARCH_AUDIO_CTL_FRAME_IS_REVERSE,
@@ -186,6 +185,8 @@ bool audio_driver_has_callback(void);
 void audio_driver_monitor_set_rate(void);
 
 bool audio_driver_find_driver(void);
+
+bool audio_driver_toggle_mute(void);
 
 bool audio_driver_deinit(void);
 

@@ -917,6 +917,26 @@ bool audio_driver_has_callback(void)
    return audio_callback.callback;
 }
 
+bool audio_driver_toggle_mute(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (!audio_driver_context_audio_data)
+      return false;
+   if (!audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL))
+      return false;
+
+   settings->audio.mute_enable = !settings->audio.mute_enable;
+
+   if (settings->audio.mute_enable)
+      event_cmd_ctl(EVENT_CMD_AUDIO_STOP, NULL);
+   else if (!event_cmd_ctl(EVENT_CMD_AUDIO_START, NULL))
+   {
+      audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
+      return false;
+   }
+   return true;
+}
+
 bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
 {
    settings_t        *settings                            = config_get_ptr();
@@ -934,22 +954,6 @@ bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
       case RARCH_AUDIO_CTL_UNSET_CALLBACK:
          audio_callback.callback  = NULL;
          audio_callback.set_state = NULL;
-         break;
-      case RARCH_AUDIO_CTL_MUTE_TOGGLE:
-         if (!audio_driver_context_audio_data)
-            return false;
-         if (!audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL))
-            return false;
-
-         settings->audio.mute_enable = !settings->audio.mute_enable;
-
-         if (settings->audio.mute_enable)
-            event_cmd_ctl(EVENT_CMD_AUDIO_STOP, NULL);
-         else if (!event_cmd_ctl(EVENT_CMD_AUDIO_START, NULL))
-         {
-            audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
-            return false;
-         }
          break;
       case RARCH_AUDIO_CTL_ALIVE:
          if (!current_audio || !current_audio->alive 
