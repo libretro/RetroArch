@@ -155,7 +155,7 @@ void runloop_msg_queue_push(const char *msg,
 
 }
 
-char* runloop_msg_queue_pull()
+char* runloop_msg_queue_pull(void)
 {
    runloop_ctx_msg_info_t msg_info;
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &msg_info);
