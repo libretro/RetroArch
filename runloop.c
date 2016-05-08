@@ -720,35 +720,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_frame_time = *info;
          }
          break;
-      case RUNLOOP_CTL_FRAME_TIME:
-         if (!runloop_frame_time.callback)
-            return false;
-
-         {
-            /* Updates frame timing if frame timing callback is in use by the core.
-             * Limits frame time if fast forward ratio throttle is enabled. */
-
-            retro_time_t current     = retro_get_time_usec();
-            retro_time_t delta       = current - runloop_frame_time_last;
-            bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
-                  input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
-               !!recording_driver_get_data_ptr();
-
-
-            if (!runloop_frame_time_last || is_locked_fps)
-               delta = runloop_frame_time.reference;
-
-            if (!is_locked_fps && runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
-               delta /= settings->slowmotion_ratio;
-
-            runloop_frame_time_last = current;
-
-            if (is_locked_fps)
-               runloop_frame_time_last = 0;
-
-            runloop_frame_time.callback(delta);
-         }
-         break;
       case RUNLOOP_CTL_GET_WINDOWED_SCALE:
          {
             unsigned **scale = (unsigned**)data;
@@ -1355,7 +1326,31 @@ int runloop_iterate(unsigned *sleep_ms)
       }
    }
    
-   runloop_ctl(RUNLOOP_CTL_FRAME_TIME, NULL);
+   if (runloop_frame_time.callback)
+   {
+      /* Updates frame timing if frame timing callback is in use by the core.
+       * Limits frame time if fast forward ratio throttle is enabled. */
+
+      retro_time_t current     = retro_get_time_usec();
+      retro_time_t delta       = current - runloop_frame_time_last;
+      bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
+            input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
+         !!recording_driver_get_data_ptr();
+
+
+      if (!runloop_frame_time_last || is_locked_fps)
+         delta = runloop_frame_time.reference;
+
+      if (!is_locked_fps && runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
+         delta /= settings->slowmotion_ratio;
+
+      runloop_frame_time_last = current;
+
+      if (is_locked_fps)
+         runloop_frame_time_last = 0;
+
+      runloop_frame_time.callback(delta);
+   }
 
    cmd.state[2]      = cmd.state[0] & ~cmd.state[1];  /* trigger  */
 
