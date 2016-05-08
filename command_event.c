@@ -581,7 +581,7 @@ static bool event_init_core(void *data)
    retro_ctx_environ_info_t info;
    settings_t *settings            = config_get_ptr();
 
-   if (!core_init_symbols(data))
+   if (!core_init_symbols((rarch_core_type*)data))
       return false;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);

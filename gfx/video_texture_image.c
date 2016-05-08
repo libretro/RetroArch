@@ -266,7 +266,7 @@ bool video_texture_image_load(struct texture_image *out_img,
    switch (fmt)
    {
       case IMAGE_FORMAT_TGA:
-         if (rtga_image_load_shift(ptr, out_img,
+         if (rtga_image_load_shift((uint8_t*)ptr, out_img,
                   a_shift, r_shift, g_shift, b_shift))
             goto success;
          break;
@@ -278,7 +278,7 @@ bool video_texture_image_load(struct texture_image *out_img,
 #endif
          break;
       case IMAGE_FORMAT_JPEG:
-         if (rjpeg_image_load(ptr, out_img, file_len,
+         if (rjpeg_image_load((uint8_t*)ptr, out_img, file_len,
                   a_shift, r_shift, g_shift, b_shift))
             goto success;
          break;

@@ -213,11 +213,10 @@ static bool rarch_task_http_finder(retro_task_t *task, void *user_data)
 
 static bool rarch_task_http_retriever(retro_task_t *task, void *data)
 {
-   http_handle_t *http;
-   http_transfer_info_t *info = data;
+   http_transfer_info_t *info = (http_transfer_info_t*)data;
 
    /* Extract HTTP handle and return already if invalid */
-   http = (http_handle_t *)task->state;
+   http_handle_t        *http = (http_handle_t *)task->state;
    if (!http)
       return false;
 

@@ -171,8 +171,8 @@ static void retro_task_regular_push_running(retro_task_t *task)
 
 static void retro_task_regular_cancel(void *task)
 {
-   retro_task_t *t = task;
-   t->cancelled = true;
+   retro_task_t *t = (retro_task_t*)task;
+   t->cancelled    = true;
 }
  
 static void retro_task_regular_gather(void)
@@ -249,7 +249,7 @@ static void retro_task_regular_retrieve(task_retriever_data_t *data)
       if (task->handler == data->handler)
       {
          /* Create new link */
-         info = malloc(sizeof(task_retriever_info_t));
+         info       = (task_retriever_info_t*)malloc(sizeof(task_retriever_info_t));
          info->data = malloc(data->element_size);
          info->next = NULL;
 
@@ -533,7 +533,7 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
          }
          break;
       case TASK_QUEUE_CTL_RETRIEVE:
-         impl_current->retrieve(data);
+         impl_current->retrieve((task_retriever_data_t*)data);
          break;
       case TASK_QUEUE_CTL_CHECK:
          {

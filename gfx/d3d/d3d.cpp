@@ -103,7 +103,7 @@ static bool d3d_init_imports(d3d_video_t *d3d)
 
    mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    tracker_info.wram      = (uint8_t*)mem_info.data;
    tracker_info.info      = d3d->shader.variable;
