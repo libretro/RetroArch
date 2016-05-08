@@ -79,9 +79,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_KEY_EVENT_GET,
    RUNLOOP_CTL_DATA_DEINIT,
 
-   /* Checks for state changes in this frame. */
-   RUNLOOP_CTL_CHECK_STATE,
-
    RUNLOOP_CTL_CHECK_MOVIE,
 
    RUNLOOP_CTL_CHECK_MOVIE_INIT,

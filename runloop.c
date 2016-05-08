@@ -843,8 +843,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
          }
          break;
-      case RUNLOOP_CTL_CHECK_STATE:
-         return runloop_check_state((event_cmd_state_t*)data, &runloop_shader_dir);
       case RUNLOOP_CTL_CHECK_MOVIE:
          if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
             return runloop_check_movie_playback();
@@ -1445,7 +1443,7 @@ int runloop_iterate(unsigned *sleep_ms)
    }
 #endif
 
-   if (!runloop_ctl(RUNLOOP_CTL_CHECK_STATE, &cmd))
+   if (!runloop_check_state(&cmd, &runloop_shader_dir))
    {
       /* RetroArch has been paused. */
       core_poll();
