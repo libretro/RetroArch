@@ -471,7 +471,7 @@ void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
 
 void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
 {
-   struct gfx_coords coords;
+   static struct gfx_coords coords;
    const float *new_vertex       = NULL;
    const float *new_tex_coord    = NULL;
    if (!menu_disp || !draw)
@@ -501,9 +501,9 @@ void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
 
 void menu_display_draw_gradient(menu_display_ctx_draw_t *draw)
 {
-   draw->texture = 0;
-   draw->x       = 0;
-   draw->y       = 0;
+   draw->texture       = 0;
+   draw->x             = 0;
+   draw->y             = 0;
 
    menu_display_draw_bg(draw);
    menu_display_draw(draw);

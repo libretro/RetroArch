@@ -24,18 +24,19 @@
 
 #include "../menu_display.h"
 
+/* Will do Y-flip later, but try to make it similar to GL. */
 static const float vk_vertexes[] = {
    0, 0,
-   0, 1,
    1, 0,
+   0, 1,
    1, 1
 };
 
 static const float vk_tex_coords[] = {
-   0, 0,
    0, 1,
-   1, 0,
-   1, 1
+   1, 1,
+   0, 0,
+   1, 0
 };
 
 static void *menu_display_vk_get_default_mvp(void)
@@ -154,7 +155,7 @@ static void menu_display_vk_draw(void *data)
    for (i = 0; i < draw->coords->vertices; i++, pv++)
    {
       pv->x       = *vertex++;
-      pv->y       = *vertex++;
+      pv->y       = 1.0f - (*vertex++); /* Y-flip. Vulkan is top-left clip space */
       pv->tex_x   = *tex_coord++;
       pv->tex_y   = *tex_coord++;
       pv->color.r = *color++;
@@ -215,6 +216,7 @@ static void menu_display_vk_clear_color(menu_display_ctx_clearcolor_t *clearcolo
    if (!vk || !clearcolor)
       return;
 
+   memset(&attachment, 0, sizeof(attachment));
    attachment.aspectMask                  = VK_IMAGE_ASPECT_COLOR_BIT;
    attachment.clearValue.color.float32[0] = clearcolor->r;
    attachment.clearValue.color.float32[1] = clearcolor->g;
