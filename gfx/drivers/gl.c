@@ -182,9 +182,19 @@ static bool gl_check_sync_proc(gl_t *gl)
 }
 #endif
 
-static bool gl_check_mipmap(gl_t *gl)
+static bool gl_check_mipmap(void)
 {
-   if (!gl_query_extension(gl, "ARB_framebuffer_object"))
+   static bool extension_queried = false;
+   static bool extension         = false;
+
+   if (!extension_queried)
+   {
+      gl_t *gl          = (gl_t*)video_driver_get_ptr(false);
+      extension         = gl_query_extension(gl, "ARB_framebuffer_object");
+      extension_queried = true;
+   }
+
+   if (!extension)
       return false;
 
    return glGenerateMipmap;
@@ -1166,7 +1176,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       mip_level = i + 1;
 
       if (video_shader_driver_mipmap_input(&mip_level)
-            && gl_check_mipmap(gl))
+            && gl_check_mipmap())
          glGenerateMipmap(GL_TEXTURE_2D);
 
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1242,7 +1252,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    mip_level = gl->fbo_pass + 1;
 
    if (video_shader_driver_mipmap_input(&mip_level)
-         && gl_check_mipmap(gl))
+         && gl_check_mipmap())
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
@@ -1832,7 +1842,7 @@ static bool gl_frame(void *data, const void *frame,
 
       /* No point regenerating mipmaps 
        * if there are no new frames. */
-      if (gl->tex_mipmap && gl_check_mipmap(gl))
+      if (gl->tex_mipmap && gl_check_mipmap())
          glGenerateMipmap(GL_TEXTURE_2D);
    }
 
@@ -3278,20 +3288,23 @@ static void gl_load_texture_data(
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
     
-#if defined(HAVE_OPENGLES2) || defined(HAVE_PSGL) || defined(OSX_PPC)
-   /* Assume no mipmapping support. */
-   switch (filter_type)
+   if (!gl_check_mipmap())
    {
-      case TEXTURE_FILTER_MIPMAP_LINEAR:
-         filter_type = TEXTURE_FILTER_LINEAR;
-         break;
-      case TEXTURE_FILTER_MIPMAP_NEAREST:
-         filter_type = TEXTURE_FILTER_NEAREST;
-         break;
-      default:
-         break;
-   }
+#if defined(HAVE_OPENGLES2) || defined(HAVE_PSGL) || defined(OSX_PPC)
+      /* Assume no mipmapping support. */
+      switch (filter_type)
+      {
+         case TEXTURE_FILTER_MIPMAP_LINEAR:
+            filter_type = TEXTURE_FILTER_LINEAR;
+            break;
+         case TEXTURE_FILTER_MIPMAP_NEAREST:
+            filter_type = TEXTURE_FILTER_NEAREST;
+            break;
+         default:
+            break;
+      }
 #endif
+   }
 
    switch (filter_type)
    {
@@ -3327,7 +3340,7 @@ static void gl_load_texture_data(
          (use_rgba || !rgb32) ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
          (rgb32) ? RARCH_GL_FORMAT32 : GL_UNSIGNED_SHORT_4_4_4_4, frame);
 
-   if (want_mipmap)
+   if (want_mipmap && gl_check_mipmap())
       glGenerateMipmap(GL_TEXTURE_2D);
 }
 
