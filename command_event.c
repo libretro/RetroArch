@@ -1313,7 +1313,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
       case EVENT_CMD_CORE_DEINIT:
          {
             struct retro_hw_render_callback *hwr =
-               hwr = video_driver_get_hw_context();
+               video_driver_get_hw_context();
             event_deinit_core(true);
 
             if (hwr)

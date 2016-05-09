@@ -980,7 +980,7 @@ static void *vulkan_init(const video_info_t *video,
    if (!ctx_driver)
       goto error;
 
-   video_context_driver_set((void*)ctx_driver);
+   video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
    video_context_driver_get_video_size(&mode);
    full_x = mode.width;
