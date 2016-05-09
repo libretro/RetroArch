@@ -29,7 +29,7 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 
-#include "remote.h"
+#include "input_remote.h"
 
 #include "msg_hash.h"
 #include "runloop.h"

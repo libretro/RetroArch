@@ -914,7 +914,7 @@ MENU
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
-#include "../remote.c"
+#include "../input/input_remote.c"
 #endif
 
 #include "../command_event.c"

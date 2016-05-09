@@ -31,7 +31,7 @@
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
-#include "../remote.h"
+#include "input_remote.h"
 #endif
 
 static const input_driver_t *input_drivers[] = {
