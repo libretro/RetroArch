@@ -54,7 +54,7 @@
 #define SYMBOL(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
    memcpy(&current_core->x, &func, sizeof(func)); \
-   if (current_core->x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retro_fail(1, "init_libretro_sym()"); } \
+   if (current_core->x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_sym()"); } \
 } while (0)
 
 static dylib_t lib_handle;
@@ -307,14 +307,14 @@ static void load_dynamic_core(void)
       RARCH_ERR("This could happen if other modules RetroArch depends on "
             "link against libretro directly.\n");
       RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
-      retro_fail(1, "init_libretro_sym()");
+      retroarch_fail(1, "init_libretro_sym()");
    }
 
    if (!*settings->path.libretro)
    {
       RARCH_ERR("RetroArch is built for dynamic libretro cores, but "
             "libretro_path is not set. Cannot continue.\n");
-      retro_fail(1, "init_libretro_sym()");
+      retroarch_fail(1, "init_libretro_sym()");
    }
 
    /* Need to use absolute path for this setting. It can be
@@ -330,7 +330,7 @@ static void load_dynamic_core(void)
       RARCH_ERR("Failed to open libretro core: \"%s\"\n",
             settings->path.libretro);
       RARCH_ERR("Error(s): %s\n", dylib_error());
-      retro_fail(1, "load_dynamic()");
+      retroarch_fail(1, "load_dynamic()");
    }
 }
 #endif
@@ -740,7 +740,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = rarch_get_current_savefile_dir();
+         *(const char**)data = retroarch_get_current_savefile_dir();
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:

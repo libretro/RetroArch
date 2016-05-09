@@ -738,7 +738,7 @@ bool input_driver_find_driver(void)
 
       if (current_input)
          return true;
-      retro_fail(1, "find_input_driver()");
+      retroarch_fail(1, "find_input_driver()");
       return false;
    }
 

@@ -153,7 +153,7 @@ bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data)
                camera_driver = (const camera_driver_t*)camera_driver_find_handle(0);
 
                if (!camera_driver)
-                  retro_fail(1, "find_camera_driver()");
+                  retroarch_fail(1, "find_camera_driver()");
             }
          }
          break;

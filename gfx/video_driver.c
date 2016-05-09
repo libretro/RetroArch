@@ -446,7 +446,7 @@ static void init_video_input(const input_driver_t *tmp)
 
 error:
    RARCH_ERR("Cannot initialize input driver. Exiting ...\n");
-   retro_fail(1, "init_video_input()");
+   retroarch_fail(1, "init_video_input()");
 }
 
 /**
@@ -754,7 +754,7 @@ static bool init_video(void)
    return true;
 
 error:
-   retro_fail(1, "init_video()");
+   retroarch_fail(1, "init_video()");
    return false;
 }
 
@@ -1629,7 +1629,7 @@ bool video_driver_find_driver(void)
       current_video = (video_driver_t*)video_driver_find_handle(0);
 
       if (!current_video)
-         retro_fail(1, "find_video_driver()");
+         retroarch_fail(1, "find_video_driver()");
    }
    return true;
 }

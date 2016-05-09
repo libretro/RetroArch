@@ -168,7 +168,7 @@ static void print_features(void)
 }
 #undef _PSUPP
 
-static void print_version(void)
+static void retroarch_print_version(void)
 {
    char str[PATH_MAX_LENGTH] = {0};
 
@@ -177,20 +177,20 @@ static void print_version(void)
 #ifdef HAVE_GIT_VERSION
    printf(" -- %s --\n", rarch_git_version);
 #endif
-   rarch_info_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
+   retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
    fprintf(stdout, "%s", str);
    fprintf(stdout, "Built: %s\n", __DATE__);
 }
 
 /**
- * print_help:
+ * retroarch_print_help:
  *
  * Prints help message explaining the program's commandline switches.
  **/
-static void print_help(const char *arg0)
+static void retroarch_print_help(const char *arg0)
 {
    puts("===================================================================");
-   print_version();
+   retroarch_print_version();
    puts("===================================================================");
 
    printf("Usage: %s [OPTIONS]... [FILE]\n", arg0);
@@ -386,7 +386,7 @@ static void set_special_paths(char **argv, unsigned num_content)
    RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
 }
 
-const char *rarch_get_current_savefile_dir(void)
+const char *retroarch_get_current_savefile_dir(void)
 {
    global_t *global = global_get_ptr();
 
@@ -533,7 +533,7 @@ static void set_paths_redirect(const char *path)
 
 
 
-enum rarch_content_type rarch_path_is_media_type(const char *path)
+enum rarch_content_type retroarch_path_is_media_type(const char *path)
 {
    uint32_t hash_ext = msg_hash_calculate(path_get_extension(path));
 
@@ -724,7 +724,7 @@ static void parse_input(int argc, char *argv[])
       switch (c)
       {
          case 'h':
-            print_help(argv[0]);
+            retroarch_print_help(argv[0]);
             exit(0);
 
          case 'd':
@@ -744,8 +744,8 @@ static void parse_input(int argc, char *argv[])
             if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Connect device to a valid port.\n");
-               print_help(argv[0]);
-               retro_fail(1, "parse_input()");
+               retroarch_print_help(argv[0]);
+               retroarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = id;
             global->has_set.libretro_device[port - 1] = true;
@@ -757,8 +757,8 @@ static void parse_input(int argc, char *argv[])
             if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Connect dualanalog to a valid port.\n");
-               print_help(argv[0]);
-               retro_fail(1, "parse_input()");
+               retroarch_print_help(argv[0]);
+               retroarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
             global->has_set.libretro_device[port - 1] = true;
@@ -794,8 +794,8 @@ static void parse_input(int argc, char *argv[])
             if (port < 1 || port > MAX_USERS)
             {
                RARCH_ERR("Disconnect device from a valid port.\n");
-               print_help(argv[0]);
-               retro_fail(1, "parse_input()");
+               retroarch_print_help(argv[0]);
+               retroarch_fail(1, "parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
             global->has_set.libretro_device[port - 1] = true;
@@ -874,8 +874,8 @@ static void parse_input(int argc, char *argv[])
             else if (!string_is_equal(optarg, "load-save"))
             {
                RARCH_ERR("Invalid argument in --sram-mode.\n");
-               print_help(argv[0]);
-               retro_fail(1, "parse_input()");
+               retroarch_print_help(argv[0]);
+               retroarch_fail(1, "parse_input()");
             }
             break;
 
@@ -957,7 +957,7 @@ static void parse_input(int argc, char *argv[])
             if (rarch_cmd_send((const char*)optarg))
                exit(0);
             else
-               retro_fail(1, "network_cmd_send()");
+               retroarch_fail(1, "network_cmd_send()");
             break;
 #endif
 
@@ -972,8 +972,8 @@ static void parse_input(int argc, char *argv[])
                      &global->record.height) != 2)
             {
                RARCH_ERR("Wrong format for --size.\n");
-               print_help(argv[0]);
-               retro_fail(1, "parse_input()");
+               retroarch_print_help(argv[0]);
+               retroarch_fail(1, "parse_input()");
             }
             break;
          }
@@ -1003,7 +1003,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_VERSION:
-            print_version();
+            retroarch_print_version();
             exit(0);
 
 #ifdef HAVE_FILE_LOGGER
@@ -1013,12 +1013,12 @@ static void parse_input(int argc, char *argv[])
 #endif
 
          case '?':
-            print_help(argv[0]);
-            retro_fail(1, "parse_input()");
+            retroarch_print_help(argv[0]);
+            retroarch_fail(1, "parse_input()");
 
          default:
             RARCH_ERR("Error parsing arguments.\n");
-            retro_fail(1, "parse_input()");
+            retroarch_fail(1, "parse_input()");
       }
    }
 
@@ -1027,7 +1027,7 @@ static void parse_input(int argc, char *argv[])
       if (optind < argc)
       {
          RARCH_ERR("--menu was used, but content file was passed as well.\n");
-         retro_fail(1, "parse_input()");
+         retroarch_fail(1, "parse_input()");
       }
       else
       {
@@ -1155,7 +1155,7 @@ static void rarch_init_savefile_paths(void)
    }
 }
 
-static bool init_state(void)
+static bool retroarch_init_state(void)
 {
    video_driver_set_active();
    audio_driver_set_active();
@@ -1165,7 +1165,7 @@ static bool init_state(void)
    return true;
 }
 
-bool rarch_game_options_validate(char *s, size_t len, bool mkdir)
+bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
    char core_path[PATH_MAX_LENGTH];
    char config_directory[PATH_MAX_LENGTH];
@@ -1213,7 +1213,7 @@ bool rarch_game_options_validate(char *s, size_t len, bool mkdir)
 }
 
 /**
- * rarch_main_init:
+ * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.
  * @argv                 : (Commandline) arguments.
  *
@@ -1221,12 +1221,12 @@ bool rarch_game_options_validate(char *s, size_t len, bool mkdir)
  *
  * Returns: 0 on success, otherwise 1 if there was an error.
  **/
-static int rarch_main_init(int argc, char *argv[])
+static int retroarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
    bool *verbosity   = NULL;
 
-   init_state();
+   retroarch_init_state();
 
    if ((sjlj_ret = setjmp(error_sjlj_context)) > 0)
    {
@@ -1245,7 +1245,7 @@ static int rarch_main_init(int argc, char *argv[])
       char str[PATH_MAX_LENGTH] = {0};
 
       RARCH_LOG_OUTPUT("=== Build =======================================");
-      rarch_info_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
+      retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
       fprintf(stderr, "%s", str);
       fprintf(stderr, "Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
@@ -1273,7 +1273,7 @@ static int rarch_main_init(int argc, char *argv[])
 
          runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-         switch (rarch_path_is_media_type(fullpath))
+         switch (retroarch_path_is_media_type(fullpath))
          {
             case RARCH_CONTENT_MOVIE:
             case RARCH_CONTENT_MUSIC:
@@ -1326,7 +1326,7 @@ error:
 
 #define FAIL_CPU(simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   retro_fail(1, "validate_cpu_features()"); \
+   retroarch_fail(1, "validate_cpu_features()"); \
 } while(0)
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
@@ -1434,13 +1434,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_MAIN_INIT:
          {
             struct rarch_main_wrap *wrap = (struct rarch_main_wrap*)data;
-            if (rarch_main_init(wrap->argc, wrap->argv))
+            if (retroarch_main_init(wrap->argc, wrap->argv))
                return false;
          }
          break;
       case RARCH_CTL_INIT:
          rarch_ctl(RARCH_CTL_DEINIT, NULL);
-         init_state();
+         retroarch_init_state();
          {
             unsigned i;
             for (i = 0; i < MAX_USERS; i++)
@@ -1589,8 +1589,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    return true;
 }
 
-
-int rarch_info_get_capabilities(enum rarch_capabilities type,
+int retroarch_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len)
 {
    switch (type)
@@ -1665,15 +1664,15 @@ int rarch_info_get_capabilities(enum rarch_capabilities type,
 }
 
 /**
- * retro_fail:
+ * retroarch_fail:
  * @error_code  : Error code.
  * @error       : Error message to show.
  *
  * Sanely kills the program.
  **/
-void retro_fail(int error_code, const char *error)
+void retroarch_fail(int error_code, const char *error)
 {
-   /* We cannot longjmp unless we're in rarch_main_init().
+   /* We cannot longjmp unless we're in retroarch_main_init().
     * If not, something went very wrong, and we should
     * just exit right away. */
    retro_assert(rarch_ctl(RARCH_CTL_IS_ERROR_ON_INIT, NULL));

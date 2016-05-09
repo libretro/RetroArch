@@ -116,7 +116,7 @@ void find_record_driver(void)
       recording_driver = (const record_driver_t*)record_driver_find_handle(0);
 
       if (!recording_driver)
-         retro_fail(1, "find_record_driver()");
+         retroarch_fail(1, "find_record_driver()");
    }
 }
 

@@ -1602,7 +1602,7 @@ static int action_ok_option_create(const char *path,
    char game_path[PATH_MAX_LENGTH];
    config_file_t *conf                    = NULL;
 
-   if (!rarch_game_options_validate(game_path, sizeof(game_path), true))
+   if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
    {
       runloop_msg_queue_push("Error saving core options file",
             1, 100, true);

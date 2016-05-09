@@ -855,7 +855,8 @@ static void content_load_init_wrap(
  * If no content file can be loaded, will start up RetroArch
  * as-is.
  *
- * Returns: false (0) if rarch_main_init failed, otherwise true (1).
+ * Returns: false (0) if retroarch_main_init failed, 
+ * otherwise true (1).
  **/
 bool content_load(content_ctx_info_t *info)
 {

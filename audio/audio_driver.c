@@ -355,7 +355,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
                current_audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
-         retro_fail(1, "audio_driver_init_internal()");
+         retroarch_fail(1, "audio_driver_init_internal()");
       }
    }
    else
@@ -775,7 +775,7 @@ bool audio_driver_find_driver(void)
       current_audio = (const audio_driver_t*)audio_driver_find_handle(0);
 
       if (!current_audio)
-         retro_fail(1, "audio_driver_find()");
+         retroarch_fail(1, "audio_driver_find()");
    }
 
    return true;

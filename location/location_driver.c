@@ -114,7 +114,7 @@ void find_location_driver(void)
       location_driver = (const location_driver_t*)location_driver_find_handle(0);
 
       if (!location_driver)
-         retro_fail(1, "find_location_driver()");
+         retroarch_fail(1, "find_location_driver()");
    }
 }
 

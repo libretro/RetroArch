@@ -493,7 +493,7 @@ static bool rarch_game_specific_options(char **output)
    char game_path[PATH_MAX_LENGTH];
    config_file_t *option_file = NULL;
    
-   if (!rarch_game_options_validate(game_path, sizeof(game_path), false))
+   if (!retroarch_validate_game_options(game_path, sizeof(game_path), false))
          return false;
 
    option_file = config_file_new(game_path);

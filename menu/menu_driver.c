@@ -391,7 +391,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
                if (!menu_driver_ctx)
                {
-                  retro_fail(1, "find_menu_driver()");
+                  retroarch_fail(1, "find_menu_driver()");
                   return false;
                }
             }
@@ -583,7 +583,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
          if (!menu_driver_data || !menu_init(menu_driver_data))
          {
-            retro_fail(1, "init_menu()");
+            retroarch_fail(1, "init_menu()");
             return false;
          }
 
@@ -594,7 +594,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          {
             if (!menu_driver_ctx->lists_init(menu_driver_data))
             {
-               retro_fail(1, "init_menu()");
+               retroarch_fail(1, "init_menu()");
                return false;
             }
          }

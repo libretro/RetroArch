@@ -624,7 +624,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 #endif
 
-   rarch_info_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp));
+   retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp));
    menu_entries_add(info->list, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
 #ifdef ANDROID
@@ -644,7 +644,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             sizeof(cpu_str));
       strlcat(cpu_str, ": ", sizeof(cpu_str));
 
-      rarch_info_get_capabilities(RARCH_CAPABILITIES_CPU,
+      retroarch_get_capabilities(RARCH_CAPABILITIES_CPU,
             cpu_str, sizeof(cpu_str));
       menu_entries_add(info->list, cpu_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -2767,7 +2767,7 @@ static int menu_displaylist_parse_generic(
       if (settings->multimedia.builtin_mediaplayer_enable ||
             settings->multimedia.builtin_imageviewer_enable)
       {
-         switch (rarch_path_is_media_type(path))
+         switch (retroarch_path_is_media_type(path))
          {
             case RARCH_CONTENT_MOVIE:
 #ifdef HAVE_FFMPEG

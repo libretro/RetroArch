@@ -310,7 +310,7 @@ static void bsv_movie_init_state(void)
          RARCH_ERR("%s: \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
                bsv_movie_state.movie_start_path);
-         retro_fail(1, "event_init_movie()");
+         retroarch_fail(1, "event_init_movie()");
       }
 
       bsv_movie_state.movie_playback = true;
