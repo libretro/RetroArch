@@ -437,7 +437,9 @@ static void threaded_worker(void *userdata)
          slock_unlock(finished_lock);
       }
 
+#if 0
       retro_sleep(10);
+#endif
    }
 
    slock_unlock(running_lock);
