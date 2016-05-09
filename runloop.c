@@ -282,7 +282,7 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
 #endif
 
 /**
- * check_pause:
+ * runloop_check_pause:
  * @pressed              : was libretro pause key pressed?
  * @frameadvance_pressed : was frameadvance key pressed?
  *
@@ -291,7 +291,7 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
  *
  * Returns: true if libretro pause key was toggled, otherwise false.
  **/
-static bool check_pause(settings_t *settings,
+static bool runloop_check_pause(settings_t *settings,
       bool focus, bool pause_pressed,
       bool frameadvance_pressed)
 {
@@ -321,7 +321,7 @@ static bool check_pause(settings_t *settings,
 }
 
 /**
- * check_fast_forward_button:
+ * runloop_check_fast_forward_button:
  * @fastforward_pressed  : is fastforward key pressed?
  * @hold_pressed         : is fastforward key pressed and held?
  * @old_hold_pressed     : was fastforward key pressed and held the last frame?
@@ -329,7 +329,7 @@ static bool check_pause(settings_t *settings,
  * Checks if the fast forward key has been pressed for this frame.
  *
  **/
-static void check_fast_forward_button(bool fastforward_pressed,
+static void runloop_check_fast_forward_button(bool fastforward_pressed,
       bool hold_pressed, bool old_hold_pressed)
 {
    /* To avoid continous switching if we hold the button down, we require
@@ -357,14 +357,14 @@ static void check_fast_forward_button(bool fastforward_pressed,
 }
 
 /**
- * check_stateslots:
+ * runloop_check_stateslots:
  * @pressed_increase     : is state slot increase key pressed?
  * @pressed_decrease     : is state slot decrease key pressed?
  *
  * Checks if the state increase/decrease keys have been pressed
  * for this frame.
  **/
-static void check_stateslots(settings_t *settings,
+static void runloop_check_stateslots(settings_t *settings,
       bool pressed_increase, bool pressed_decrease)
 {
    char msg[128];
@@ -426,7 +426,7 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
 }
 
 /**
- * check_shader_dir:
+ * runloop_check_shader_dir:
  * @pressed_next         : was next shader key pressed?
  * @pressed_previous     : was previous shader key pressed?
  *
@@ -436,7 +436,7 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
  *
  * Will also immediately apply the shader.
  **/
-static void check_shader_dir(rarch_dir_list_t *dir_list,
+static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
       bool pressed_next, bool pressed_prev)
 {
    uint32_t ext_hash;
@@ -564,11 +564,11 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    if (!runloop_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, cmd))
       return false;
 
-   check_fast_forward_button(
+   runloop_check_fast_forward_button(
          runloop_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY),
          runloop_cmd_press    (cmd, RARCH_FAST_FORWARD_HOLD_KEY),
          runloop_cmd_pressed  (cmd, RARCH_FAST_FORWARD_HOLD_KEY));
-   check_stateslots(settings,
+   runloop_check_stateslots(settings,
          runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS),
          runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS)
          );
@@ -590,7 +590,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
       runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
 
-   check_shader_dir(shader_dir,
+   runloop_check_shader_dir(shader_dir,
          runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
          runloop_cmd_triggered(cmd, RARCH_SHADER_PREV));
 
@@ -853,7 +853,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
             bool focused              =  runloop_is_focused();
 
-            check_pause(settings, focused,
+            runloop_check_pause(settings, focused,
                   runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
                   runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
 
