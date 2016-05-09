@@ -26,7 +26,7 @@
 #include "../menu_navigation.h"
 
 #include "../../core_info.h"
-#include "../../cheats.h"
+#include "../../managers/cheat_manager.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../system.h"

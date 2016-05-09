@@ -40,7 +40,7 @@
 #include "../video_shader_parse.h"
 #include "../../core.h"
 #include "../../dynamic.h"
-#include "../../state_manager.h"
+#include "../../managers/state_manager.h"
 #include "../video_state_tracker.h"
 
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"

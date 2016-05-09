@@ -59,7 +59,7 @@
 #include "general.h"
 #include "runloop.h"
 #include "performance.h"
-#include "cheats.h"
+#include "managers/cheat_manager.h"
 #include "system.h"
 
 #include "git_version.h"

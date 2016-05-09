@@ -157,7 +157,7 @@ OBJ += frontend/frontend.o \
        dynamic.o \
        cores/dynamic_dummy.o \
        libretro-common/queues/message_queue.o \
-       state_manager.o \
+       managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        input/input_autodetect.o \
        input/input_joypad_driver.o \
@@ -171,7 +171,7 @@ OBJ += frontend/frontend.o \
        core_options.o \
        libretro-common/compat/compat_fnmatch.o \
        libretro-common/compat/compat_posix_string.o \
-       cheats.o \
+       managers/cheat_manager.o \
        core_info.o \
        libretro-common/file/config_file.o \
        config_file_userdata.o \

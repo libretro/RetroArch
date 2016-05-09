@@ -30,7 +30,7 @@
 #include "core.h"
 #include "general.h"
 #include "msg_hash.h"
-#include "state_manager.h"
+#include "managers/state_manager.h"
 #include "system.h"
 #include "gfx/video_driver.h"
 #include "audio/audio_driver.h"

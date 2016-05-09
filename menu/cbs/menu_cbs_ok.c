@@ -32,7 +32,7 @@
 #include "../../core_info.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
-#include "../../cheats.h"
+#include "../../managers/cheat_manager.h"
 #include "../../general.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"

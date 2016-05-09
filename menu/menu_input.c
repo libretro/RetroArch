@@ -38,7 +38,7 @@
 #include "menu_hash.h"
 
 #include "../general.h"
-#include "../cheats.h"
+#include "../managers/cheat_manager.h"
 #include "../performance.h"
 #include "../core.h"
 #include "../input/input_joypad_driver.h"

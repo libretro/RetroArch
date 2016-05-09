@@ -23,18 +23,18 @@
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
-#include "cheats.h"
-#include "runloop.h"
-#include "dynamic.h"
-#include "core.h"
-#include "verbosity.h"
+#include "cheat_manager.h"
+#include "../runloop.h"
+#include "../dynamic.h"
+#include "../core.h"
+#include "../verbosity.h"
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../config.h"
 #endif
 
 #ifdef HAVE_CHEEVOS
-#include "cheevos.h"
+#include "../cheevos.h"
 #endif
 
 struct item_cheat

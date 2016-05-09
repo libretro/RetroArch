@@ -28,7 +28,7 @@
 
 #include "../../core_info.h"
 #include "../../core_options.h"
-#include "../../cheats.h"
+#include "../../managers/cheat_manager.h"
 #include "../../general.h"
 #include "../../performance.h"
 #include "../../system.h"

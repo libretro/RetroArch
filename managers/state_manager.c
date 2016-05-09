@@ -19,17 +19,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if __SSE2__
+#include <emmintrin.h>
+#endif
+
 #include <retro_inline.h>
 
 #include "state_manager.h"
-#include "configuration.h"
-#include "msg_hash.h"
-#include "movie.h"
-#include "core.h"
-#include "runloop.h"
-#include "performance.h"
-#include "verbosity.h"
-#include "audio/audio_driver.h"
+#include "../configuration.h"
+#include "../msg_hash.h"
+#include "../movie.h"
+#include "../core.h"
+#include "../runloop.h"
+#include "../performance.h"
+#include "../verbosity.h"
+#include "../audio/audio_driver.h"
 
 /* This makes Valgrind throw errors if a core overflows its savestate size. */
 /* Keep it off unless you're chasing a core bug, it slows things down. */
@@ -175,7 +179,6 @@ static INLINE int compat_ctz(unsigned x)
 }
 #endif
 
-#include <emmintrin.h>
 /* There's no equivalent in libc, you'd think so ...
  * std::mismatch exists, but it's not optimized at all. */
 
