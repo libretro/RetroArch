@@ -24,7 +24,7 @@
 #include "cheevos.h"
 #include "dynamic.h"
 #include "libretro.h"
-#include "net_http_special.h"
+#include "network/net_http_special.h"
 #include "configuration.h"
 #include "performance.h"
 #include "msg_hash.h"

@@ -113,7 +113,7 @@ ACHIEVEMENTS
 
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../libretro-common/utils/md5.c"
-#include "../net_http_special.c"
+#include "../network/net_http_special.c"
 #include "../cheevos.c"
 #endif
 
