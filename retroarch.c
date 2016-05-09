@@ -112,7 +112,7 @@ static jmp_buf error_sjlj_context;
 
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
 
-static void print_features(void)
+static void retroarch_print_features(void)
 {
    puts("");
    puts("Features:");
@@ -307,7 +307,7 @@ static void retroarch_print_help(const char *arg0)
         "then exits.\n");
 }
 
-static void set_basename(const char *path)
+static void retroarch_set_basename(const char *path)
 {
    char *dst          = NULL;
    global_t *global   = global_get_ptr();
@@ -343,7 +343,7 @@ static void set_basename(const char *path)
       *dst = '\0';
 }
 
-static void set_special_paths(char **argv, unsigned num_content)
+static void retroarch_set_special_paths(char **argv, unsigned num_content)
 {
    unsigned i;
    union string_list_elem_attr attr;
@@ -351,7 +351,7 @@ static void set_special_paths(char **argv, unsigned num_content)
    settings_t *settings = config_get_ptr();
 
    /* First content file is the significant one. */
-   set_basename(argv[0]);
+   retroarch_set_basename(argv[0]);
 
    global->subsystem_fullpaths = string_list_new();
    retro_assert(global->subsystem_fullpaths);
@@ -402,7 +402,7 @@ const char *retroarch_get_current_savefile_dir(void)
    return ret;
 }
 
-static void set_paths_redirect(const char *path)
+static void retroarch_set_paths_redirect(const char *path)
 {
    char current_savestate_dir[PATH_MAX_LENGTH];
    uint32_t global_library_name_hash   = 0;
@@ -414,7 +414,7 @@ static void set_paths_redirect(const char *path)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
    if (!global)
    {
-    RARCH_WARN("set_paths_redirect was sent a NULL \"global\" pointer.");
+    RARCH_WARN("retroarch_set_paths_redirect was sent a NULL \"global\" pointer.");
     return;
    }
    if (info->info.library_name &&
@@ -531,8 +531,6 @@ static void set_paths_redirect(const char *path)
    }
 }
 
-
-
 enum rarch_content_type retroarch_path_is_media_type(const char *path)
 {
    uint32_t hash_ext = msg_hash_calculate(path_get_extension(path));
@@ -596,14 +594,14 @@ enum rarch_content_type retroarch_path_is_media_type(const char *path)
 #define BSV_MOVIE_ARG "P:R:M:"
 
 /**
- * parse_input:
+ * retroarch_parse_input:
  * @argc                 : Count of (commandline) arguments.
  * @argv                 : (Commandline) arguments.
  *
  * Parses (commandline) arguments passed to program.
  *
  **/
-static void parse_input(int argc, char *argv[])
+static void retroarch_parse_input(int argc, char *argv[])
 {
    const char *optstring = NULL;
    global_t  *global     = global_get_ptr();
@@ -708,7 +706,7 @@ static void parse_input(int argc, char *argv[])
 
    runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
 
-   /* Make sure we can call parse_input several times ... */
+   /* Make sure we can call retroarch_parse_input several times ... */
    optind    = 0;
    optstring = "hs:fvS:A:c:U:DN:d:"
       BSV_MOVIE_ARG NETPLAY_ARG DYNAMIC_ARG FFMPEG_RECORD_ARG;
@@ -745,7 +743,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Connect device to a valid port.\n");
                retroarch_print_help(argv[0]);
-               retroarch_fail(1, "parse_input()");
+               retroarch_fail(1, "retroarch_parse_input()");
             }
             settings->input.libretro_device[port - 1] = id;
             global->has_set.libretro_device[port - 1] = true;
@@ -758,7 +756,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Connect dualanalog to a valid port.\n");
                retroarch_print_help(argv[0]);
-               retroarch_fail(1, "parse_input()");
+               retroarch_fail(1, "retroarch_parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_ANALOG;
             global->has_set.libretro_device[port - 1] = true;
@@ -795,7 +793,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Disconnect device from a valid port.\n");
                retroarch_print_help(argv[0]);
-               retroarch_fail(1, "parse_input()");
+               retroarch_fail(1, "retroarch_parse_input()");
             }
             settings->input.libretro_device[port - 1] = RETRO_DEVICE_NONE;
             global->has_set.libretro_device[port - 1] = true;
@@ -875,7 +873,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Invalid argument in --sram-mode.\n");
                retroarch_print_help(argv[0]);
-               retroarch_fail(1, "parse_input()");
+               retroarch_fail(1, "retroarch_parse_input()");
             }
             break;
 
@@ -973,7 +971,7 @@ static void parse_input(int argc, char *argv[])
             {
                RARCH_ERR("Wrong format for --size.\n");
                retroarch_print_help(argv[0]);
-               retroarch_fail(1, "parse_input()");
+               retroarch_fail(1, "retroarch_parse_input()");
             }
             break;
          }
@@ -995,7 +993,7 @@ static void parse_input(int argc, char *argv[])
             break;
 
          case RA_OPT_FEATURES:
-            print_features();
+            retroarch_print_features();
             exit(0);
 
          case RA_OPT_EOF_EXIT:
@@ -1014,11 +1012,11 @@ static void parse_input(int argc, char *argv[])
 
          case '?':
             retroarch_print_help(argv[0]);
-            retroarch_fail(1, "parse_input()");
+            retroarch_fail(1, "retroarch_parse_input()");
 
          default:
             RARCH_ERR("Error parsing arguments.\n");
-            retroarch_fail(1, "parse_input()");
+            retroarch_fail(1, "retroarch_parse_input()");
       }
    }
 
@@ -1027,7 +1025,7 @@ static void parse_input(int argc, char *argv[])
       if (optind < argc)
       {
          RARCH_ERR("--menu was used, but content file was passed as well.\n");
-         retroarch_fail(1, "parse_input()");
+         retroarch_fail(1, "retroarch_parse_input()");
       }
       else
       {
@@ -1047,7 +1045,7 @@ static void parse_input(int argc, char *argv[])
    {
       /* We requested explicit ROM, so use PLAIN core type. */
       current_core_type = CORE_TYPE_PLAIN;
-      set_special_paths(argv + optind, argc - optind);
+      retroarch_set_special_paths(argv + optind, argc - optind);
    }
    else
       content_set_does_not_need_content();
@@ -1064,7 +1062,7 @@ static void parse_input(int argc, char *argv[])
             sizeof(global->dir.savestate));
 }
 
-static void rarch_init_savefile_paths(void)
+static void retroarch_init_savefile_paths(void)
 {
    global_t            *global = global_get_ptr();
    rarch_system_info_t *system = NULL;
@@ -1236,7 +1234,7 @@ static int retroarch_main_init(int argc, char *argv[])
 
    rarch_ctl(RARCH_CTL_SET_ERROR_ON_INIT, NULL);
    retro_main_log_file_init(NULL);
-   parse_input(argc, argv);
+   retroarch_parse_input(argc, argv);
 
    verbosity = retro_main_verbosity();
 
@@ -1342,7 +1340,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    switch(state)
    {
       case RARCH_CTL_SET_PATHS:
-         set_basename((const char*)data);
+         retroarch_set_basename((const char*)data);
 
          if (!global->has_set.save_path)
             fill_pathname_noext(global->name.savefile, global->name.base,
@@ -1353,7 +1351,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          fill_pathname_noext(global->name.cheatfile, global->name.base,
                ".cht", sizeof(global->name.cheatfile));
 
-         set_paths_redirect((const char*)data);
+         retroarch_set_paths_redirect((const char*)data);
          break;
       case RARCH_CTL_IS_PLAIN_CORE:
          return (current_core_type == CORE_TYPE_PLAIN);
@@ -1453,7 +1451,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          {
             if (content_does_not_need_content())
                return false;
-            set_paths_redirect(global->name.base);
+            retroarch_set_paths_redirect(global->name.base);
          }
          break;
       case RARCH_CTL_SET_SRAM_ENABLE:
@@ -1565,7 +1563,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          }
          break;
       case RARCH_CTL_FILL_PATHNAMES:
-         rarch_init_savefile_paths();
+         retroarch_init_savefile_paths();
          bsv_movie_set_path(global->name.savefile);
 
          if (!*global->name.base)
