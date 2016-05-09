@@ -31,7 +31,7 @@
 #include "../verbosity.c"
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
-#include "../netlogger.c"
+#include "../network/netlogger.c"
 #endif
 
 /*============================================================
