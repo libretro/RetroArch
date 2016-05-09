@@ -702,7 +702,7 @@ bool command_get(command_handle_t *handle)
 #endif
 
 /**
- * event_disk_control_set_eject:
+ * command_event_disk_control_set_eject:
  * @new_state            : Eject or close the virtual drive tray.
  *                         false (0) : Close
  *                         true  (1) : Eject
@@ -710,7 +710,7 @@ bool command_get(command_handle_t *handle)
  *
  * Ejects/closes of the virtual drive tray.
  **/
-static void event_disk_control_set_eject(bool new_state, bool print_log)
+static void command_event_disk_control_set_eject(bool new_state, bool print_log)
 {
    char msg[128]                                     = {0};
    bool error                                        = false;
@@ -752,12 +752,12 @@ static void event_disk_control_set_eject(bool new_state, bool print_log)
 }
 
 /**
- * event_disk_control_set_index:
+ * command_event_disk_control_set_index:
  * @idx                : Index of disk to set as current.
  *
  * Sets current disk to @index.
  **/
-static void event_disk_control_set_index(unsigned idx)
+static void command_event_disk_control_set_index(unsigned idx)
 {
    unsigned num_disks;
    bool error                                        = false;
@@ -808,12 +808,12 @@ static void event_disk_control_set_index(unsigned idx)
 }
 
 /**
- * event_disk_control_append_image:
+ * command_event_disk_control_append_image:
  * @path                 : Path to disk image.
  *
  * Appends disk image to disk image list.
  **/
-static bool event_disk_control_append_image(const char *path)
+static bool command_event_disk_control_append_image(const char *path)
 {
    unsigned new_idx;
    char msg[128]                                      = {0};
@@ -831,7 +831,7 @@ static bool event_disk_control_append_image(const char *path)
    if (!control)
       return false;
 
-   event_disk_control_set_eject(true, false);
+   command_event_disk_control_set_eject(true, false);
 
    control->add_image_index();
    new_idx = control->get_num_images();
@@ -861,19 +861,19 @@ static bool event_disk_control_append_image(const char *path)
    }
 
    command_event(EVENT_CMD_AUTOSAVE_INIT, NULL);
-   event_disk_control_set_index(new_idx);
-   event_disk_control_set_eject(false, false);
+   command_event_disk_control_set_index(new_idx);
+   command_event_disk_control_set_eject(false, false);
 
    return true;
 }
 
 /**
- * event_check_disk_prev:
+ * command_event_check_disk_prev:
  * @control              : Handle to disk control handle.
  *
  * Perform disk cycle to previous index action (Core Disk Options).
  **/
-static void event_check_disk_prev(
+static void command_event_check_disk_prev(
       const struct retro_disk_control_callback *control)
 {
    unsigned num_disks    = 0;
@@ -897,16 +897,16 @@ static void event_check_disk_prev(
 
    if (current > 0)
       current--;
-   event_disk_control_set_index(current);
+   command_event_disk_control_set_index(current);
 }
 
 /**
- * event_check_disk_next:
+ * command_event_check_disk_next:
  * @control              : Handle to disk control handle.
  *
  * Perform disk cycle to next index action (Core Disk Options).
  **/
-static void event_check_disk_next(
+static void command_event_check_disk_next(
       const struct retro_disk_control_callback *control)
 {
    unsigned num_disks        = 0;
@@ -930,7 +930,7 @@ static void event_check_disk_next(
 
    if (current < num_disks - 1)
       current++;
-   event_disk_control_set_index(current);
+   command_event_disk_control_set_index(current);
 }
 
 /**
@@ -940,7 +940,7 @@ static void event_check_disk_next(
  * Adjusts the current audio volume level.
  *
  **/
-static void event_set_volume(float gain)
+static void command_event_set_volume(float gain)
 {
    char msg[128];
    settings_t *settings      = config_get_ptr();
@@ -957,11 +957,11 @@ static void event_set_volume(float gain)
 }
 
 /**
- * event_init_controllers:
+ * command_event_init_controllers:
  *
  * Initialize libretro controllers.
  **/
-static void event_init_controllers(void)
+static void command_event_init_controllers(void)
 {
    unsigned i;
    settings_t      *settings = config_get_ptr();
@@ -1029,7 +1029,7 @@ static void event_init_controllers(void)
    }
 }
 
-static void event_deinit_core(bool reinit)
+static void command_event_deinit_core(bool reinit)
 {
 #ifdef HAVE_CHEEVOS
    cheevos_unload();
@@ -1052,7 +1052,7 @@ static void event_deinit_core(bool reinit)
    }
 }
 
-static void event_init_cheats(void)
+static void command_event_init_cheats(void)
 {
    bool allow_cheats = true;
 #ifdef HAVE_NETPLAY
@@ -1089,7 +1089,7 @@ static bool event_load_save_files(void)
    return true;
 }
 
-static void event_load_auto_state(void)
+static void command_event_load_auto_state(void)
 {
    bool ret;
    char msg[128]                             = {0};
@@ -1126,7 +1126,7 @@ static void event_load_auto_state(void)
    RARCH_LOG("%s\n", msg);
 }
 
-static void event_set_savestate_auto_index(void)
+static void command_event_set_savestate_auto_index(void)
 {
    size_t i;
    char state_dir[PATH_MAX_LENGTH]  = {0};
@@ -1199,13 +1199,13 @@ static bool event_init_content(void)
    if (content_does_not_need_content())
       return true;
 
-   event_set_savestate_auto_index();
+   command_event_set_savestate_auto_index();
 
    if (event_load_save_files())
       RARCH_LOG("%s.\n",
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
-   event_load_auto_state();
+   command_event_load_auto_state();
    command_event(EVENT_CMD_BSV_MOVIE_INIT, NULL);
    command_event(EVENT_CMD_NETPLAY_INIT, NULL);
 
@@ -1286,14 +1286,14 @@ static bool event_save_auto_state(void)
 }
 
 /**
- * event_save_core_config:
+ * command_event_save_core_config:
  *
  * Saves a new (core) configuration to a file. Filename is based
  * on heuristics to avoid typing.
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-static bool event_save_core_config(void)
+static bool command_event_save_core_config(void)
 {
    char config_dir[PATH_MAX_LENGTH]  = {0};
    char config_name[PATH_MAX_LENGTH] = {0};
@@ -1399,7 +1399,7 @@ static bool event_save_core_config(void)
  * Saves current configuration file to disk, and (optionally)
  * autosave state.
  **/
-void event_save_current_config(void)
+void command_event_save_current_config(void)
 {
    char msg[128];
    settings_t *settings = config_get_ptr();
@@ -1444,7 +1444,7 @@ void event_save_current_config(void)
  *
  * Saves a state with path being @path.
  **/
-static void event_save_state(const char *path,
+static void command_event_save_state(const char *path,
       char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
@@ -1473,7 +1473,7 @@ static void event_save_state(const char *path,
  *
  * Loads a state with path being @path.
  **/
-static void event_load_state(const char *path, char *s, size_t len)
+static void command_event_load_state(const char *path, char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
 
@@ -1493,7 +1493,7 @@ static void event_load_state(const char *path, char *s, size_t len)
             settings->state_slot);
 }
 
-static void event_main_state(unsigned cmd)
+static void command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
    char path[PATH_MAX_LENGTH] = {0};
@@ -1517,10 +1517,10 @@ static void event_main_state(unsigned cmd)
       switch (cmd)
       {
          case EVENT_CMD_SAVE_STATE:
-            event_save_state(path, msg, sizeof(msg));
+            command_event_save_state(path, msg, sizeof(msg));
             break;
          case EVENT_CMD_LOAD_STATE:
-            event_load_state(path, msg, sizeof(msg));
+            command_event_load_state(path, msg, sizeof(msg));
             break;
       }
    }
@@ -1532,7 +1532,7 @@ static void event_main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
-static bool event_cmd_exec(void *data)
+static bool command_event_cmd_exec(void *data)
 {
    char *fullpath = NULL;
 
@@ -1689,7 +1689,7 @@ bool command_event(enum event_command cmd, void *data)
             return false;
 #endif
 
-         event_main_state(cmd);
+         command_event_main_state(cmd);
          break;
       case EVENT_CMD_RESIZE_WINDOWED_SCALE:
          {
@@ -1718,7 +1718,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case EVENT_CMD_CONTROLLERS_INIT:
-         event_init_controllers();
+         command_event_init_controllers();
          break;
       case EVENT_CMD_RESET:
          RARCH_LOG("%s.\n", msg_hash_to_str(MSG_RESET));
@@ -1738,7 +1738,7 @@ bool command_event(enum event_command cmd, void *data)
          if (settings->savestate_auto_index)
             settings->state_slot++;
 
-         event_main_state(cmd);
+         command_event_main_state(cmd);
          break;
       case EVENT_CMD_SAVE_STATE_DECREMENT:
          /* Slot -1 is (auto) slot. */
@@ -1793,7 +1793,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_CHEATS_INIT:
          command_event(EVENT_CMD_CHEATS_DEINIT, NULL);
-         event_init_cheats();
+         command_event_init_cheats();
          break;
       case EVENT_CMD_CHEATS_APPLY:
          cheat_manager_apply_cheats();
@@ -1949,7 +1949,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             struct retro_hw_render_callback *hwr =
                video_driver_get_hw_context();
-            event_deinit_core(true);
+            command_event_deinit_core(true);
 
             if (hwr)
                memset(hwr, 0, sizeof(*hwr));
@@ -2038,10 +2038,10 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case EVENT_CMD_MENU_SAVE_CURRENT_CONFIG:
-         event_save_current_config();
+         command_event_save_current_config();
          break;
       case EVENT_CMD_MENU_SAVE_CONFIG:
-         if (!event_save_core_config())
+         if (!command_event_save_core_config())
             return false;
          break;
       case EVENT_CMD_SHADERS_APPLY_CHANGES:
@@ -2236,7 +2236,7 @@ bool command_event(enum event_command cmd, void *data)
             const char *path = (const char*)data;
             if (string_is_empty(path))
                return false;
-            return event_disk_control_append_image(path);
+            return command_event_disk_control_append_image(path);
          }
       case EVENT_CMD_DISK_EJECT_TOGGLE:
          if (info && info->disk_control_cb.get_num_images)
@@ -2248,7 +2248,7 @@ bool command_event(enum event_command cmd, void *data)
             if (control)
             {
                bool new_state = !control->get_eject_state();
-               event_disk_control_set_eject(new_state, true);
+               command_event_disk_control_set_eject(new_state, true);
             }
          }
          else
@@ -2269,7 +2269,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!control->get_eject_state())
                return false;
 
-            event_check_disk_next(control);
+            command_event_check_disk_next(control);
          }
          else
             runloop_msg_queue_push(
@@ -2289,7 +2289,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!control->get_eject_state())
                return false;
 
-            event_check_disk_prev(control);
+            command_event_check_disk_prev(control);
          }
          else
             runloop_msg_queue_push(
@@ -2332,16 +2332,16 @@ bool command_event(enum event_command cmd, void *data)
          rarch_perf_log();
          break;
       case EVENT_CMD_VOLUME_UP:
-         event_set_volume(0.5f);
+         command_event_set_volume(0.5f);
          break;
       case EVENT_CMD_VOLUME_DOWN:
-         event_set_volume(-0.5f);
+         command_event_set_volume(-0.5f);
          break;
       case EVENT_CMD_SET_FRAME_LIMIT:
          runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
          break;
       case EVENT_CMD_EXEC:
-         return event_cmd_exec(data);
+         return command_event_cmd_exec(data);
       case EVENT_CMD_NONE:
       default:
          return false;
