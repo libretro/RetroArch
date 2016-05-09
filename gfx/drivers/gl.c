@@ -197,7 +197,7 @@ static bool gl_check_mipmap(void)
    if (!extension)
       return false;
 
-   return glGenerateMipmap;
+   return true;
 }
 
 #ifndef HAVE_OPENGLES
