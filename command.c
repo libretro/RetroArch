@@ -122,7 +122,7 @@ struct cmd_action_map
 #define COMMAND_EXT_SLANG        0x105ce63aU
 #define COMMAND_EXT_SLANGP       0x1bf9adeaU
 
-static bool cmd_set_shader(const char *arg)
+static bool command_set_shader(const char *arg)
 {
    char msg[256];
    enum rarch_shader_type type = RARCH_SHADER_NONE;
@@ -157,7 +157,7 @@ static bool cmd_set_shader(const char *arg)
 }
 
 static const struct cmd_action_map action_map[] = {
-   { "SET_SHADER", cmd_set_shader, "<shader path>" },
+   { "SET_SHADER", command_set_shader, "<shader path>" },
 };
 
 static const struct cmd_map map[] = {
@@ -233,6 +233,226 @@ error:
       freeaddrinfo_retro(res);
    return false;
 }
+
+static bool command_get_arg(const char *tok,
+      const char **arg, unsigned *index)
+{
+   unsigned i;
+
+   for (i = 0; i < ARRAY_SIZE(map); i++)
+   {
+      if (string_is_equal(tok, map[i].str))
+      {
+         if (arg)
+            *arg = NULL;
+
+         if (index)
+            *index = i;
+
+         return true;
+      }
+   }
+
+   for (i = 0; i < ARRAY_SIZE(action_map); i++)
+   {
+      const char *str = strstr(tok, action_map[i].str);
+      if (str == tok)
+      {
+         const char *argument = str + strlen(action_map[i].str);
+         if (*argument != ' ')
+            return false;
+
+         if (arg)
+            *arg = argument + 1;
+
+         if (index)
+            *index = i;
+
+         return true;
+      }
+   }
+
+   return false;
+}
+
+
+static bool send_udp_packet(const char *host,
+      uint16_t port, const char *msg)
+{
+   char port_buf[16]           = {0};
+   struct addrinfo hints       = {0};
+   struct addrinfo *res        = NULL;
+   const struct addrinfo *tmp  = NULL;
+   int fd                      = -1;
+   bool ret                    = true;
+
+   hints.ai_socktype = SOCK_DGRAM;
+
+   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
+   if (getaddrinfo_retro(host, port_buf, &hints, &res) < 0)
+      return false;
+
+   /* Send to all possible targets.
+    * "localhost" might resolve to several different IPs. */
+   tmp = (const struct addrinfo*)res;
+   while (tmp)
+   {
+      ssize_t len, ret_len;
+
+      fd = socket(tmp->ai_family, tmp->ai_socktype, tmp->ai_protocol);
+      if (fd < 0)
+      {
+         ret = false;
+         goto end;
+      }
+
+      len     = strlen(msg);
+      ret_len = sendto(fd, msg, len, 0, tmp->ai_addr, tmp->ai_addrlen);
+
+      if (ret_len < len)
+      {
+         ret = false;
+         goto end;
+      }
+
+      socket_close(fd);
+      fd = -1;
+      tmp = tmp->ai_next;
+   }
+
+end:
+   freeaddrinfo_retro(res);
+   if (fd >= 0)
+      socket_close(fd);
+   return ret;
+}
+
+static bool command_verify(const char *cmd)
+{
+   unsigned i;
+
+   if (command_get_arg(cmd, NULL, NULL))
+      return true;
+
+   RARCH_ERR("Command \"%s\" is not recognized by the program.\n", cmd);
+   RARCH_ERR("\tValid commands:\n");
+   for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
+      RARCH_ERR("\t\t%s\n", map[i].str);
+
+   for (i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
+      RARCH_ERR("\t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
+
+   return false;
+}
+
+bool command_network_send(const char *cmd_)
+{
+   bool ret;
+   char *command       = NULL;
+   char *save          = NULL;
+   const char *cmd     = NULL;
+   const char *host    = NULL;
+   const char *port_   = NULL;
+   uint16_t port       = DEFAULT_NETWORK_CMD_PORT;
+
+   if (!network_init())
+      return false;
+
+   if (!(command = strdup(cmd_)))
+      return false;
+
+   cmd = strtok_r(command, ";", &save);
+   if (cmd)
+      host = strtok_r(NULL, ";", &save);
+   if (host)
+      port_ = strtok_r(NULL, ";", &save);
+
+   if (!host)
+   {
+#ifdef _WIN32
+      host = "127.0.0.1";
+#else
+      host = "localhost";
+#endif
+   }
+
+   if (port_)
+      port = strtoul(port_, NULL, 0);
+
+   RARCH_LOG("%s: \"%s\" to %s:%hu\n",
+         msg_hash_to_str(MSG_SENDING_COMMAND),
+         cmd, host, (unsigned short)port);
+
+   ret = command_verify(cmd) && send_udp_packet(host, port, cmd);
+   free(command);
+
+   return ret;
+}
+
+static void command_parse_sub_msg(command_t *handle, const char *tok)
+{
+   const char *arg = NULL;
+   unsigned index  = 0;
+
+   if (command_get_arg(tok, &arg, &index))
+   {
+      if (arg)
+      {
+         if (!action_map[index].action(arg))
+            RARCH_ERR("Command \"%s\" failed.\n", arg);
+      }
+      else
+         handle->state[map[index].id] = true;
+   }
+   else
+      RARCH_WARN("%s \"%s\" %s.\n",
+            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
+            tok,
+            msg_hash_to_str(MSG_RECEIVED));
+}
+
+static void command_parse_msg(command_t *handle, char *buf)
+{
+   char *save      = NULL;
+   const char *tok = strtok_r(buf, "\n", &save);
+
+   while (tok)
+   {
+      command_parse_sub_msg(handle, tok);
+      tok = strtok_r(NULL, "\n", &save);
+   }
+}
+
+static void command_network_poll(command_t *handle)
+{
+   fd_set fds;
+   struct timeval tmp_tv = {0};
+
+   if (handle->net_fd < 0)
+      return;
+
+   FD_ZERO(&fds);
+   FD_SET(handle->net_fd, &fds);
+
+   if (socket_select(handle->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
+      return;
+
+   if (!FD_ISSET(handle->net_fd, &fds))
+      return;
+
+   for (;;)
+   {
+      char buf[1024];
+      ssize_t ret = recvfrom(handle->net_fd, buf,
+            sizeof(buf) - 1, 0, NULL, NULL);
+
+      if (ret <= 0)
+         break;
+
+      buf[ret] = '\0';
+      command_parse_msg(handle, buf);
+   }
+}
 #endif
 
 #ifdef HAVE_STDIN_CMD
@@ -290,114 +510,6 @@ error:
    return false;
 #endif
 }
-
-static bool command_get_arg(const char *tok,
-      const char **arg, unsigned *index)
-{
-   unsigned i;
-
-   for (i = 0; i < ARRAY_SIZE(map); i++)
-   {
-      if (string_is_equal(tok, map[i].str))
-      {
-         if (arg)
-            *arg = NULL;
-
-         if (index)
-            *index = i;
-
-         return true;
-      }
-   }
-
-   for (i = 0; i < ARRAY_SIZE(action_map); i++)
-   {
-      const char *str = strstr(tok, action_map[i].str);
-      if (str == tok)
-      {
-         const char *argument = str + strlen(action_map[i].str);
-         if (*argument != ' ')
-            return false;
-
-         if (arg)
-            *arg = argument + 1;
-
-         if (index)
-            *index = i;
-
-         return true;
-      }
-   }
-
-   return false;
-}
-
-static void command_parse_sub_msg(command_t *handle, const char *tok)
-{
-   const char *arg = NULL;
-   unsigned index  = 0;
-
-   if (command_get_arg(tok, &arg, &index))
-   {
-      if (arg)
-      {
-         if (!action_map[index].action(arg))
-            RARCH_ERR("Command \"%s\" failed.\n", arg);
-      }
-      else
-         handle->state[map[index].id] = true;
-   }
-   else
-      RARCH_WARN("%s \"%s\" %s.\n",
-            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
-            tok,
-            msg_hash_to_str(MSG_RECEIVED));
-}
-
-static void command_parse_msg(command_t *handle, char *buf)
-{
-   char *save      = NULL;
-   const char *tok = strtok_r(buf, "\n", &save);
-
-   while (tok)
-   {
-      command_parse_sub_msg(handle, tok);
-      tok = strtok_r(NULL, "\n", &save);
-   }
-}
-
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-static void command_network_poll(command_t *handle)
-{
-   fd_set fds;
-   struct timeval tmp_tv = {0};
-
-   if (handle->net_fd < 0)
-      return;
-
-   FD_ZERO(&fds);
-   FD_SET(handle->net_fd, &fds);
-
-   if (socket_select(handle->net_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
-      return;
-
-   if (!FD_ISSET(handle->net_fd, &fds))
-      return;
-
-   for (;;)
-   {
-      char buf[1024];
-      ssize_t ret = recvfrom(handle->net_fd, buf,
-            sizeof(buf) - 1, 0, NULL, NULL);
-
-      if (ret <= 0)
-         break;
-
-      buf[ret] = '\0';
-      command_parse_msg(handle, buf);
-   }
-}
-#endif
 
 #ifdef HAVE_STDIN_CMD
 
@@ -548,123 +660,13 @@ static void command_stdin_poll(command_t *handle)
    handle->stdin_buf_ptr -= msg_len;
 }
 #endif
-
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-static bool send_udp_packet(const char *host,
-      uint16_t port, const char *msg)
-{
-   char port_buf[16]           = {0};
-   struct addrinfo hints       = {0};
-   struct addrinfo *res        = NULL;
-   const struct addrinfo *tmp  = NULL;
-   int fd                      = -1;
-   bool ret                    = true;
-
-   hints.ai_socktype = SOCK_DGRAM;
-
-   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-   if (getaddrinfo_retro(host, port_buf, &hints, &res) < 0)
-      return false;
-
-   /* Send to all possible targets.
-    * "localhost" might resolve to several different IPs. */
-   tmp = (const struct addrinfo*)res;
-   while (tmp)
-   {
-      ssize_t len, ret_len;
-
-      fd = socket(tmp->ai_family, tmp->ai_socktype, tmp->ai_protocol);
-      if (fd < 0)
-      {
-         ret = false;
-         goto end;
-      }
-
-      len     = strlen(msg);
-      ret_len = sendto(fd, msg, len, 0, tmp->ai_addr, tmp->ai_addrlen);
-
-      if (ret_len < len)
-      {
-         ret = false;
-         goto end;
-      }
-
-      socket_close(fd);
-      fd = -1;
-      tmp = tmp->ai_next;
-   }
-
-end:
-   freeaddrinfo_retro(res);
-   if (fd >= 0)
-      socket_close(fd);
-   return ret;
-}
-
-static bool verify_command(const char *cmd)
-{
-   unsigned i;
-
-   if (command_get_arg(cmd, NULL, NULL))
-      return true;
-
-   RARCH_ERR("Command \"%s\" is not recognized by the program.\n", cmd);
-   RARCH_ERR("\tValid commands:\n");
-   for (i = 0; i < sizeof(map) / sizeof(map[0]); i++)
-      RARCH_ERR("\t\t%s\n", map[i].str);
-
-   for (i = 0; i < sizeof(action_map) / sizeof(action_map[0]); i++)
-      RARCH_ERR("\t\t%s %s\n", action_map[i].str, action_map[i].arg_desc);
-
-   return false;
-}
-
-bool command_network_send(const char *cmd_)
-{
-   bool ret;
-   char *command       = NULL;
-   char *save          = NULL;
-   const char *cmd     = NULL;
-   const char *host    = NULL;
-   const char *port_   = NULL;
-   uint16_t port       = DEFAULT_NETWORK_CMD_PORT;
-
-   if (!network_init())
-      return false;
-
-   if (!(command = strdup(cmd_)))
-      return false;
-
-   cmd = strtok_r(command, ";", &save);
-   if (cmd)
-      host = strtok_r(NULL, ";", &save);
-   if (host)
-      port_ = strtok_r(NULL, ";", &save);
-
-   if (!host)
-   {
-#ifdef _WIN32
-      host = "127.0.0.1";
-#else
-      host = "localhost";
-#endif
-   }
-
-   if (port_)
-      port = strtoul(port_, NULL, 0);
-
-   RARCH_LOG("%s: \"%s\" to %s:%hu\n",
-         msg_hash_to_str(MSG_SENDING_COMMAND),
-         cmd, host, (unsigned short)port);
-
-   ret = verify_command(cmd) && send_udp_packet(host, port, cmd);
-   free(command);
-
-   return ret;
-}
 #endif
 
-#endif
+static void command_local_poll(command_t *handle)
+{
+   if (!handle->local_enable)
+      return;
+}
 
 bool command_poll(command_t *handle)
 {
@@ -677,6 +679,8 @@ bool command_poll(command_t *handle)
 #ifdef HAVE_STDIN_CMD
    command_stdin_poll(handle);
 #endif
+
+   command_local_poll(handle);
 
    return true;
 }
@@ -1221,7 +1225,7 @@ static bool event_init_content(void)
    return true;
 }
 
-static bool event_init_core(enum rarch_core_type *data)
+static bool command_event_init_core(enum rarch_core_type *data)
 {
    retro_ctx_environ_info_t info;
    settings_t *settings            = config_get_ptr();
@@ -1265,7 +1269,7 @@ static bool event_init_core(enum rarch_core_type *data)
    return true;
 }
 
-static bool event_save_auto_state(void)
+static bool command_event_save_auto_state(void)
 {
    bool ret;
    char savestate_name_auto[PATH_MAX_LENGTH] = {0};
@@ -1852,7 +1856,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_AUTOSAVE_STATE:
-         event_save_auto_state();
+         command_event_save_auto_state();
          break;
       case CMD_EVENT_AUDIO_STOP:
          if (!audio_driver_alive())
@@ -1966,7 +1970,7 @@ bool command_event(enum event_command cmd, void *data)
             break;
          }
       case CMD_EVENT_CORE_INIT:
-         if (!event_init_core((enum rarch_core_type*)data))
+         if (!command_event_init_core((enum rarch_core_type*)data))
             return false;
          break;
       case CMD_EVENT_VIDEO_APPLY_STATE_CHANGES:

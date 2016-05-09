@@ -25,10 +25,7 @@
 #include "../movie.h"
 #include "../list_special.h"
 #include "../verbosity.h"
-
-#ifdef HAVE_COMMAND
 #include "../command.h"
-#endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
 #include "input_remote.h"
