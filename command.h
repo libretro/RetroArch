@@ -233,7 +233,7 @@ bool command_network_new(
       bool network_enable,
       uint16_t port);
 
-command_t *command_new(void);
+command_t *command_new(bool local_enable);
 
 bool command_poll(command_t *handle);
 
