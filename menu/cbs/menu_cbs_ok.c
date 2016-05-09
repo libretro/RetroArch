@@ -1486,7 +1486,7 @@ static int action_ok_download_generic(const char *path,
    transf->type_hash = menu_hash_calculate(type_msg);
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   rarch_task_push_http_transfer(s3, type_msg, cb_generic_download, transf);
+   rarch_task_push_http_transfer(s3, type_msg, cb_generic_download, 0, transf);
 #endif
    return 0;
 }
@@ -1748,7 +1748,7 @@ static int generic_action_ok_network(const char *path,
 #endif
    }
 
-   rarch_task_push_http_transfer(url_path, url_label, callback, NULL);
+   rarch_task_push_http_transfer(url_path, url_label, callback, 0, NULL);
 
    return generic_action_ok_displaylist_push(path,
          label, type, idx, entry_idx, type_id2);
@@ -1768,11 +1768,206 @@ static int action_ok_core_updater_list(const char *path,
          ACTION_OK_NETWORK_CORE_UPDATER_LIST);
 }
 
+typedef struct
+{
+   size_t i, j, k;
+   int count;
+   char url[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+}
+update_state_t;
+
+static const char* thumbnail_folders[] =
+{
+   "Named_Snaps", "Named_Titles", "Named_Boxarts"
+};
+
+static void sanitize(char* dest, const char* source)
+{
+   const char* end = dest + PATH_MAX_LENGTH - 1;
+   
+   while (*source && dest < end)
+   {
+      const char* found = strchr("/<>&?|:*\\\"", *source);
+      
+      if (found || *source < 32 || *source == 127)
+         *dest = '_';
+      else
+         *dest = *source;
+      
+      dest++, source++;
+   }
+   
+   *dest = 0;
+}
+
+static bool get_next_entry(update_state_t* us)
+{
+   settings_t *settings = config_get_ptr();
+   
+   file_list_t *playlists;
+   menu_displaylist_info_t info = {0};
+   size_t list_size;
+   
+   menu_entry_t entry;
+   char path_playlist[PATH_MAX_LENGTH];
+   char folder_name[PATH_MAX_LENGTH];
+   char *system_name;
+   content_playlist_t *playlist;
+   const char *entry_label;
+   char file_name[PATH_MAX_LENGTH];
+   
+   playlists = (file_list_t*)calloc(1, sizeof(*playlists));
+   
+   if (!playlists)
+      return false;
+   
+   info.list         = playlists;
+   info.menu_list    = NULL;
+   info.type         = 0;
+   info.type_default = MENU_FILE_PLAIN;
+   info.flags        = SL_FLAG_ALLOW_EMPTY_LIST;
+   
+   strlcpy(info.label,
+         menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
+         sizeof(info.label));
+         
+   strlcpy(info.path,
+         settings->directory.playlist,
+         sizeof(info.path));
+         
+   strlcpy(info.exts, "lpl", sizeof(info.exts));
+
+   if (!menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, &info))
+      return false;
+
+   list_size = file_list_get_size(playlists);
+   
+again:
+   if (us->i >= list_size)
+   {
+      free(playlists);
+      return false;
+   }
+   
+   menu_entry_get(&entry, 0, us->i, playlists, true);
+   
+   fill_pathname_join(path_playlist, settings->directory.playlist, entry.path,
+         sizeof(path_playlist));
+
+   strlcpy(folder_name, path_playlist, sizeof(folder_name));
+   path_remove_extension(folder_name);
+   system_name = find_last_slash(folder_name);
+   
+   if (!system_name++)
+   {
+      free(playlists);
+      return false;
+   }
+   
+   playlist = content_playlist_init(path_playlist, COLLECTION_SIZE);
+   
+   if (!playlist)
+   {
+      free(playlists);
+      return false;
+   }
+   
+   if (us->j >= content_playlist_size(playlist))
+   {
+      content_playlist_free(playlist);
+      us->j = 0;
+      us->i++;
+      goto again;
+   }
+   
+   content_playlist_get_index(playlist, us->j,
+         NULL, &entry_label, NULL, NULL,
+         NULL, NULL);
+   
+   sanitize(file_name, entry_label);
+
+   snprintf(us->url, sizeof(us->url), "http://thumbnails.libretro.com/%s/%s/%s.png", 
+      system_name, thumbnail_folders[ us->k ], file_name);
+
+   snprintf(us->path, sizeof(us->path), "%s/%s/%s/%s.png", settings->directory.thumbnails,
+      system_name, thumbnail_folders[ us->k ], file_name);
+   
+   if (++us->k >= sizeof(thumbnail_folders) / sizeof(thumbnail_folders[0]))
+   {
+      us->k = 0;
+      us->j++;
+   }
+   
+   content_playlist_free(playlist);
+   free(playlists);
+   return true;
+}
+
+static void cb_thumbnail_downloaded(void *task_data, void *user_data, const char *error)
+{
+   update_state_t *us = user_data;
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   char output_path[PATH_MAX_LENGTH];
+   
+   if (!data || !data->data)
+   {
+      RARCH_ERR("Error during download of %s: %s\n", us->url, error);
+      goto finished;
+   }
+   
+   strncpy(output_path, us->path, sizeof(output_path));
+   output_path[sizeof(output_path) - 1] = 0;
+   path_basedir(output_path);
+   
+   if (!path_mkdir(output_path))
+   {
+      RARCH_ERR("Error creating folders for file %s\n", us->path);
+      goto finished;
+   }
+   
+   if (!filestream_write_file(us->path, data->data, data->len))
+   {
+      RARCH_ERR("Error writing file %s\n", us->path);
+      goto finished;
+   }
+   
+finished:
+   while (get_next_entry(us))
+   {
+      if (!path_file_exists(us->path))
+      {
+         snprintf(output_path, sizeof(output_path), "Updating thumbnail %d", ++us->count);
+         runloop_msg_queue_push(output_path, 1, 60, true);
+         rarch_task_push_http_transfer(us->url, "", cb_thumbnail_downloaded, 1, us);
+         return;
+      }
+   }
+   
+   runloop_msg_queue_push("Updating thumbnails finished", 1, 60, true);
+   free(us);
+}
+
 static int action_ok_thumbnails_updater_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_network(path, label, type, idx, entry_idx,
-         ACTION_OK_NETWORK_THUMBNAILS_UPDATER_LIST);
+   update_state_t *us = malloc(sizeof(*us));
+   us->i = us->j = us->k = 0;
+   us->count = 0;
+   
+   while (get_next_entry(us))
+   {
+      if (!path_file_exists(us->path))
+      {
+         runloop_msg_queue_push("Updating thumbnails", 1, 60, true);
+         rarch_task_push_http_transfer(us->url, "", cb_thumbnail_downloaded, 1, us);
+         return 0;
+      }
+   }
+   
+   runloop_msg_queue_push("Updating thumbnails finished", 1, 60, true);
+   free(us);
+   return 0;
 }
 
 static int action_ok_lakka_list(const char *path,
