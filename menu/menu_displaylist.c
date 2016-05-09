@@ -3934,7 +3934,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
                for (i = 0; i < opts; i++)
                   menu_entries_add(info->list,
-                        core_option_get_desc(coreopts, i), "",
+                        core_option_manager_get_desc(coreopts, i), "",
                         MENU_SETTINGS_CORE_OPTION_START + i, 0, 0);
             }
          }

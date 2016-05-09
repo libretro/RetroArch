@@ -259,7 +259,7 @@ static int action_start_core_setting(unsigned type,
    core_option_manager_t *coreopts = NULL;
    
    if (runloop_ctl(RUNLOOP_CTL_COREOPTS_GET, &coreopts))
-      core_option_set_default(coreopts, idx);
+      core_option_manager_set_default(coreopts, idx);
 
    return 0;
 }
