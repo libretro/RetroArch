@@ -27,7 +27,7 @@
 #include "../../input/input_config.h"
 
 #include "../../core_info.h"
-#include "../../core_options.h"
+#include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
 #include "../../general.h"
 #include "../../performance.h"

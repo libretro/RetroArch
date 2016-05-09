@@ -168,7 +168,7 @@ OBJ += frontend/frontend.o \
        input/input_overlay.o \
        patch.o \
        libretro-common/queues/fifo_queue.o \
-       core_options.o \
+       managers/core_option_manager.o \
        libretro-common/compat/compat_fnmatch.o \
        libretro-common/compat/compat_posix_string.o \
        managers/cheat_manager.o \

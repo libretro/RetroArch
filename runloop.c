@@ -37,12 +37,12 @@
 #endif
 #include "autosave.h"
 #include "core_info.h"
-#include "core_options.h"
 #include "configuration.h"
 #include "performance.h"
 #include "movie.h"
 #include "retroarch.h"
 #include "runloop.h"
+#include "managers/core_option_manager.h"
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
 #include "system.h"

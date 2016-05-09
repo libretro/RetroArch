@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CORE_OPTIONS_H__
-#define CORE_OPTIONS_H__
+#ifndef CORE_OPTION_MANAGER_H__
+#define CORE_OPTION_MANAGER_H__
 
 #include <stddef.h>
 

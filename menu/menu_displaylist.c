@@ -32,6 +32,7 @@
 
 #include "../defaults.h"
 #include "../managers/cheat_manager.h"
+#include "../managers/core_option_manager.h"
 #include "../general.h"
 #include "../retroarch.h"
 #include "../system.h"
@@ -45,7 +46,6 @@
 #include "../list_special.h"
 #include "../performance.h"
 #include "../core_info.h"
-#include "../core_options.h"
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos.h"

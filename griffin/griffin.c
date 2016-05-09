@@ -101,7 +101,7 @@ CONFIG FILE
 
 #include "../libretro-common/file/config_file.c"
 #include "../config_file_userdata.c"
-#include "../core_options.c"
+#include "../managers/core_option_manager.c"
 
 /*============================================================
 ACHIEVEMENTS
