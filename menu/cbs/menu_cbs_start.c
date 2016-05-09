@@ -274,7 +274,7 @@ static int action_start_playlist_association(unsigned type, const char *label)
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
 
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+   core_info_get_list(&list);
    if (!list)
       return -1;
 

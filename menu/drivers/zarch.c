@@ -604,7 +604,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui,
       if (!zui->load_dlist)
       {
          core_info_t *core_info = NULL;
-         core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, &core_info);
+         core_info_get_current_core(&core_info);
 
          zui->load_dlist = dir_list_new(zui->load_cwd,
                core_info->supported_extensions, true, true);
@@ -686,7 +686,7 @@ static int zarch_zui_render_lay_root_load(zui_t *zui,
                   strlcpy(zui->pick_content,
                         path, sizeof(zui->pick_content));
 
-                  core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+                  core_info_get_list(&list);
 
                   core_info_list_get_supported_cores(list, path,
                         &zui->pick_cores, &zui->pick_supported);

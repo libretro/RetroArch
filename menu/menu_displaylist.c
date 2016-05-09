@@ -286,7 +286,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    settings_t *settings      = config_get_ptr();
    core_info_t *core_info    = NULL;
 
-   core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, &core_info);
+   core_info_get_current_core(&core_info);
 
    if (!core_info || !core_info->config_data)
    {
@@ -401,7 +401,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
       firmware_info.path             = core_info->path;
       firmware_info.directory.system = settings->directory.system;
 
-      if (core_info_ctl(CORE_INFO_CTL_LIST_UPDATE_MISSING_FIRMWARE, &firmware_info))
+      if (core_info_list_update_missing_firmware(&firmware_info))
       {
          strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_FIRMWARE),
                sizeof(tmp));
@@ -2589,7 +2589,7 @@ static int menu_displaylist_parse_generic(
    settings_t *settings         = config_get_ptr();
    uint32_t hash_label          = menu_hash_calculate(info->label);
 
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+   core_info_get_list(&list);
 
    if (!*info->path)
    {
@@ -3115,7 +3115,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
    settings = config_get_ptr();
 
-   core_info_ctl(CORE_INFO_CTL_LIST_GET,    &list);
+   core_info_get_list(&list);
 
    disp_list.info = info;
    disp_list.type = type;

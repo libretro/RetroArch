@@ -1026,7 +1026,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #endif
                info_find.path = settings->path.libretro;
 
-               if (!core_info_ctl(CORE_INFO_CTL_LOAD, &info_find))
+               if (!core_info_load(&info_find))
                   return false;
             }
 #endif
@@ -1302,13 +1302,13 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
                settings->content_history_size);
          break;
       case EVENT_CMD_CORE_INFO_DEINIT:
-         core_info_ctl(CORE_INFO_CTL_LIST_DEINIT, NULL);
+         core_info_deinit_list();
          break;
       case EVENT_CMD_CORE_INFO_INIT:
          event_cmd_ctl(EVENT_CMD_CORE_INFO_DEINIT, NULL);
 
          if (*settings->directory.libretro)
-            core_info_ctl(CORE_INFO_CTL_LIST_INIT, NULL);
+            core_info_init_list();
          break;
       case EVENT_CMD_CORE_DEINIT:
          {

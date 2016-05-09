@@ -482,7 +482,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
 
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+   core_info_get_list(&list);
 
    def_info.data       = list;
    def_info.dir        = menu_path_new;
@@ -641,7 +641,7 @@ static int action_ok_playlist_entry(const char *path,
       core_info.inf  = NULL;
       core_info.path = new_core_path;
 
-      if (!core_info_ctl(CORE_INFO_CTL_FIND, &core_info))
+      if (!core_info_find(&core_info))
          found_associated_core = false;
 
       if (!found_associated_core)
@@ -2135,7 +2135,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    menu_path    = menu->scratch2_buf;
    content_path = menu->scratch_buf;
 
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+   core_info_get_list(&list);
 
    def_info.data       = list;
    def_info.dir        = menu_path;

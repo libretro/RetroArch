@@ -317,7 +317,7 @@ static int playlist_association_left(unsigned type, const char *label,
    const char *path                 = path_basename(label);
    core_info_list_t           *list = NULL;
    
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+   core_info_get_list(&list);
 
    if (!list)
       return menu_cbs_exit();

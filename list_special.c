@@ -73,7 +73,7 @@ struct string_list *dir_list_new_special(const char *input_dir,
       case DIR_LIST_CORE_INFO:
          {
             core_info_list_t *list = NULL;
-            core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+            core_info_get_list(&list);
 
             dir  = input_dir;
             exts = list->all_ext;
@@ -225,7 +225,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_SUPPORTED_CORES_PATHS:
-         core_info_ctl(CORE_INFO_CTL_LIST_GET, &core_info_list);
+         core_info_get_list(&core_info_list);
 
          core_info_list_get_supported_cores(core_info_list,
                (const char*)data, &core_info, list_size);
@@ -247,7 +247,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_SUPPORTED_CORES_NAMES:
-         core_info_ctl(CORE_INFO_CTL_LIST_GET, &core_info_list);
+         core_info_get_list(&core_info_list);
          core_info_list_get_supported_cores(core_info_list,
                (const char*)data, &core_info, list_size);
 

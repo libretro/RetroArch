@@ -26,20 +26,6 @@
 extern "C" {
 #endif
 
-enum core_info_state
-{
-   CORE_INFO_CTL_NONE = 0,
-   CORE_INFO_CTL_LIST_DEINIT,
-   CORE_INFO_CTL_LIST_INIT,
-   CORE_INFO_CTL_LIST_GET,
-   CORE_INFO_CTL_LIST_UPDATE_MISSING_FIRMWARE,
-   CORE_INFO_CTL_CURRENT_CORE_FREE,
-   CORE_INFO_CTL_CURRENT_CORE_INIT,
-   CORE_INFO_CTL_CURRENT_CORE_GET,
-   CORE_INFO_CTL_LOAD,
-   CORE_INFO_CTL_FIND
-};
-
 typedef struct
 {
    char *path;
@@ -116,7 +102,23 @@ void core_info_get_name(const char *path, char *s, size_t len);
 
 core_info_t *core_info_get(core_info_list_t *list, size_t i);
 
-bool core_info_ctl(enum core_info_state action, void *data);
+void core_info_free_current_core(void);
+
+bool core_info_init_current_core(void);
+
+bool core_info_get_current_core(core_info_t **core);
+
+void core_info_deinit_list(void);
+
+bool core_info_init_list(void);
+
+bool core_info_get_list(core_info_list_t **core);
+
+bool core_info_list_update_missing_firmware(core_info_ctx_firmware_t *info);
+
+bool core_info_find(core_info_ctx_find_t *info);
+
+bool core_info_load(core_info_ctx_find_t *info);
 
 #ifdef __cplusplus
 }

@@ -1245,7 +1245,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
          char buf[PATH_MAX_LENGTH];
          core_info_list_t *list = NULL;
 
-         core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+         core_info_get_list(&list);
 
          if (core_info_list_get_display_name(list, s, buf, sizeof(buf)))
             strlcpy(s, buf, len);
