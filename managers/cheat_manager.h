@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_CHEATS_H
-#define __RARCH_CHEATS_H
+#ifndef __CHEAT_MANAGER_H
+#define __CHEAT_MANAGER_H
 
 #include <boolean.h>
 
