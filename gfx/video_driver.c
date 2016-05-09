@@ -990,6 +990,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
    {
       static float last_fps;
       bool ret             = false;
+      settings_t *settings = config_get_ptr();
       unsigned write_index = video_driver_state.frame_time.count++ &
          (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
 
@@ -999,7 +1000,6 @@ bool video_monitor_get_fps(char *buf, size_t size,
       if ((video_driver_frame_count % FPS_UPDATE_INTERVAL) == 0)
       {
          char frames_text[64];
-         settings_t *settings = config_get_ptr();
 
          last_fps = TIME_TO_FPS(curr_time, new_time, FPS_UPDATE_INTERVAL);
          curr_time = new_time;
@@ -1024,7 +1024,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
          ret = true;
       }
 
-      if (buf_fps)
+      if (buf_fps && settings->fps_show)
          snprintf(buf_fps, size_fps, "FPS: %6.1f || Frames: " U64_SIGN,
                last_fps, (unsigned long long)video_driver_frame_count);
 
