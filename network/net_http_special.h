@@ -17,7 +17,7 @@
 #ifndef __NET_HTTP_SPECIAL_H
 #define __NET_HTTP_SPECIAL_H
 
-#include "libretro.h"
+#include "../libretro.h"
 
 enum
 {
