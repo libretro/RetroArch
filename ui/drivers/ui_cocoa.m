@@ -568,7 +568,7 @@ static void *ui_companion_cocoa_init(void)
 static void ui_companion_cocoa_event_command(void *data, enum event_command cmd)
 {
    (void)data;
-   event_cmd_ctl(cmd, NULL);
+   command_event(cmd, NULL);
 }
 
 static void ui_companion_cocoa_notify_list_pushed(void *data,

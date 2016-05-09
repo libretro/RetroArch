@@ -216,7 +216,7 @@ enum event_command
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool event_cmd_ctl(enum event_command action, void *data);
+bool command_event(enum event_command action, void *data);
 
 #ifdef __cplusplus
 }

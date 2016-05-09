@@ -506,7 +506,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    switch (ret)
    {
       case -1:
-         event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+         command_event(EVENT_CMD_LOAD_CORE, NULL);
 
          rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL);
@@ -695,7 +695,7 @@ static int action_ok_playlist_entry(const char *path,
 static int action_ok_cheat_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   event_cmd_ctl(EVENT_CMD_CHEATS_APPLY, NULL);
+   command_event(EVENT_CMD_CHEATS_APPLY, NULL);
 
    return 0;
 }
@@ -758,7 +758,7 @@ static int generic_action_ok(const char *path,
          flush_char = NULL;
          flush_type = MENU_SETTINGS;
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, action_path);
-         if (event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL))
+         if (command_event(EVENT_CMD_LOAD_CORE, NULL))
          {
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_set_fork(FRONTEND_FORK_CORE))
@@ -818,8 +818,8 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_APPEND_DISK_IMAGE:
          flush_char = NULL;
          flush_type = 49;
-         event_cmd_ctl(EVENT_CMD_DISK_APPEND_IMAGE, action_path);
-         event_cmd_ctl(EVENT_CMD_RESUME, NULL);
+         command_event(EVENT_CMD_DISK_APPEND_IMAGE, action_path);
+         command_event(EVENT_CMD_RESUME, NULL);
          break;
       case ACTION_OK_SET_PATH:
          flush_char = NULL;
@@ -1236,7 +1236,7 @@ static int action_ok_file_load(const char *path,
 
 static int generic_action_ok_command(enum event_command cmd)
 {
-   if (!event_cmd_ctl(cmd, NULL))
+   if (!command_event(cmd, NULL))
       return menu_cbs_exit();
    return 0;
 }
@@ -1269,10 +1269,10 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
       switch (type_hash)
       {
          case CB_CORE_UPDATER_DOWNLOAD:
-            event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
+            command_event(EVENT_CMD_CORE_INFO_INIT, NULL);
             break;
          case CB_UPDATE_ASSETS:
-            event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+            command_event(EVENT_CMD_REINIT, NULL);
             break;
       }
    }
@@ -1414,7 +1414,7 @@ static void cb_generic_download(void *task_data,
    switch (transf->type_hash)
    {
       case CB_CORE_UPDATER_DOWNLOAD:
-         event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
+         command_event(EVENT_CMD_CORE_INFO_INIT, NULL);
          break;
    }
 #endif
@@ -1708,7 +1708,7 @@ static int generic_action_ok_network(const char *path,
    if (string_is_empty(settings->network.buildbot_url))
       return menu_cbs_exit();
 
-   event_cmd_ctl(EVENT_CMD_NETWORK_INIT, NULL);
+   command_event(EVENT_CMD_NETWORK_INIT, NULL);
 
    switch (type_id)
    {
@@ -2109,7 +2109,7 @@ static int action_ok_load_archive(const char *path,
    fill_pathname_join(detect_content_path, menu_path, content_path,
          sizeof(detect_content_path));
 
-   event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+   command_event(EVENT_CMD_LOAD_CORE, NULL);
    rarch_task_push_content_load_default(
             NULL, detect_content_path, false, CORE_TYPE_PLAIN, NULL, NULL);
 
@@ -2153,7 +2153,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    switch (ret)
    {
       case -1:
-         event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+         command_event(EVENT_CMD_LOAD_CORE, NULL);
          rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL);
          return 0;
@@ -2228,7 +2228,7 @@ static int action_ok_video_resolution(const char *path,
    {
       char msg[PATH_MAX_LENGTH] = {0};
 #ifdef __CELLOS_LV2__
-      event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+      command_event(EVENT_CMD_REINIT, NULL);
 #endif
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO

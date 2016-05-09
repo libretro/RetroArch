@@ -62,7 +62,7 @@ static int action_start_video_filter_file_load(unsigned type, const char *label)
       return -1;
 
    settings->path.softfilter_plugin[0] = '\0';
-   event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+   command_event(EVENT_CMD_REINIT, NULL);
    return 0;
 }
 

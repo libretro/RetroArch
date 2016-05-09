@@ -2214,9 +2214,9 @@ bool cheevos_toggle_hardcore_mode(void)
    if (settings->cheevos.hardcore_mode_enable)
    {
       /* send reset core cmd to avoid any user savestate previusly loaded */
-      event_cmd_ctl(EVENT_CMD_RESET, NULL);
+      command_event(EVENT_CMD_RESET, NULL);
       if (settings->rewind_enable)
-         event_cmd_ctl(EVENT_CMD_REWIND_DEINIT, NULL);
+         command_event(EVENT_CMD_REWIND_DEINIT, NULL);
 
       RARCH_LOG("%s\n", msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE));
       runloop_msg_queue_push(msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_ENABLE), 0, 3 * 60, true);
@@ -2224,7 +2224,7 @@ bool cheevos_toggle_hardcore_mode(void)
    else
    {
       if (settings->rewind_enable)
-         event_cmd_ctl(EVENT_CMD_REWIND_INIT, NULL);
+         command_event(EVENT_CMD_REWIND_INIT, NULL);
    }
 
    return true;

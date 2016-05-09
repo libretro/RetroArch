@@ -76,7 +76,7 @@ static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd)
 {
     (void)data;
-    event_cmd_ctl(cmd, NULL);
+    command_event(cmd, NULL);
 }
 
 static void rarch_draw_observer(CFRunLoopObserverRef observer,

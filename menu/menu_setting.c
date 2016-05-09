@@ -2690,7 +2690,7 @@ static int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound
       float video_refresh_rate_float = (float)video_refresh_rate;
       driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &video_refresh_rate_float);
       /* Incase refresh rate update forced non-block video. */
-      event_cmd_ctl(EVENT_CMD_VIDEO_SET_BLOCKING_STATE, NULL);
+      command_event(EVENT_CMD_VIDEO_SET_BLOCKING_STATE, NULL);
    }
 
    if (setting_generic_action_ok_default(setting, wraparound) != 0)
@@ -2750,7 +2750,7 @@ static int setting_action_action_ok(void *data, bool wraparound)
    (void)wraparound;
 
    if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
-      event_cmd_ctl(setting->cmd_trigger.idx, NULL);
+      command_event(setting->cmd_trigger.idx, NULL);
 
    return 0;
 }
@@ -3063,7 +3063,7 @@ void general_write_handler(void *data)
    }
 
    if (rarch_cmd || setting->cmd_trigger.triggered)
-      event_cmd_ctl(rarch_cmd, NULL);
+      command_event(rarch_cmd, NULL);
 }
 
 static void setting_add_special_callbacks(
@@ -3116,14 +3116,14 @@ static void overlay_enable_toggle_change_handler(void *data)
 
    if (settings && settings->input.overlay_hide_in_menu)
    {
-      event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
+      command_event(EVENT_CMD_OVERLAY_DEINIT, NULL);
       return;
    }
 
    if (setting->value.target.boolean)
-      event_cmd_ctl(EVENT_CMD_OVERLAY_INIT, NULL);
+      command_event(EVENT_CMD_OVERLAY_INIT, NULL);
    else
-      event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
+      command_event(EVENT_CMD_OVERLAY_DEINIT, NULL);
 }
 #endif
 

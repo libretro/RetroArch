@@ -186,7 +186,7 @@ static bool runloop_check_movie_playback(void)
          msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 1, 180, false);
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
 
-   event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
+   command_event(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
 
    bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_END, NULL);
    bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
@@ -204,7 +204,7 @@ static bool runloop_check_movie_record(void)
          msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true);
    RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
 
-   event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
+   command_event(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
 
    return true;
 }
@@ -295,7 +295,7 @@ static bool check_pause(settings_t *settings,
    old_focus = focus;
 
    if (cmd != EVENT_CMD_NONE)
-      event_cmd_ctl(cmd, NULL);
+      command_event(cmd, NULL);
 
    if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) == old_is_paused)
       return false;
@@ -394,7 +394,7 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
 
    if (!dir_list->list || dir_list->list->size == 0)
    {
-      event_cmd_ctl(EVENT_CMD_SHADER_DIR_DEINIT, NULL);
+      command_event(EVENT_CMD_SHADER_DIR_DEINIT, NULL);
       return false;
    }
 
@@ -517,10 +517,10 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
       return false;
 
    if (runloop_cmd_triggered(cmd, RARCH_SCREENSHOT))
-      event_cmd_ctl(EVENT_CMD_TAKE_SCREENSHOT, NULL);
+      command_event(EVENT_CMD_TAKE_SCREENSHOT, NULL);
 
    if (runloop_cmd_triggered(cmd, RARCH_MUTE))
-      event_cmd_ctl(EVENT_CMD_AUDIO_MUTE_TOGGLE, NULL);
+      command_event(EVENT_CMD_AUDIO_MUTE_TOGGLE, NULL);
 
    if (runloop_cmd_triggered(cmd, RARCH_OSK))
    {
@@ -534,9 +534,9 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    }
 
    if (runloop_cmd_press(cmd, RARCH_VOLUME_UP))
-      event_cmd_ctl(EVENT_CMD_VOLUME_UP, NULL);
+      command_event(EVENT_CMD_VOLUME_UP, NULL);
    else if (runloop_cmd_press(cmd, RARCH_VOLUME_DOWN))
-      event_cmd_ctl(EVENT_CMD_VOLUME_DOWN, NULL);
+      command_event(EVENT_CMD_VOLUME_DOWN, NULL);
 
 #ifdef HAVE_NETPLAY
    tmp = runloop_cmd_triggered(cmd, RARCH_NETPLAY_FLIP);
@@ -557,9 +557,9 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
          );
 
    if (runloop_cmd_triggered(cmd, RARCH_SAVE_STATE_KEY))
-      event_cmd_ctl(EVENT_CMD_SAVE_STATE, NULL);
+      command_event(EVENT_CMD_SAVE_STATE, NULL);
    else if (runloop_cmd_triggered(cmd, RARCH_LOAD_STATE_KEY))
-      event_cmd_ctl(EVENT_CMD_LOAD_STATE, NULL);
+      command_event(EVENT_CMD_LOAD_STATE, NULL);
 
 #ifdef HAVE_CHEEVOS
    if(!settings->cheevos.hardcore_mode_enable)
@@ -578,14 +578,14 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
          runloop_cmd_triggered(cmd, RARCH_SHADER_PREV));
 
    if (runloop_cmd_triggered(cmd, RARCH_DISK_EJECT_TOGGLE))
-      event_cmd_ctl(EVENT_CMD_DISK_EJECT_TOGGLE, NULL);
+      command_event(EVENT_CMD_DISK_EJECT_TOGGLE, NULL);
    else if (runloop_cmd_triggered(cmd, RARCH_DISK_NEXT))
-      event_cmd_ctl(EVENT_CMD_DISK_NEXT, NULL);
+      command_event(EVENT_CMD_DISK_NEXT, NULL);
    else if (runloop_cmd_triggered(cmd, RARCH_DISK_PREV))
-      event_cmd_ctl(EVENT_CMD_DISK_PREV, NULL);
+      command_event(EVENT_CMD_DISK_PREV, NULL);
 
    if (runloop_cmd_triggered(cmd, RARCH_RESET))
-      event_cmd_ctl(EVENT_CMD_RESET, NULL);
+      command_event(EVENT_CMD_RESET, NULL);
 
    cheat_manager_state_checks(
          runloop_cmd_triggered(cmd, RARCH_CHEAT_INDEX_PLUS),
@@ -611,7 +611,7 @@ static bool runloop_check_pause_state(event_cmd_state_t *cmd)
 
    if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
-      event_cmd_ctl(EVENT_CMD_FULLSCREEN_TOGGLE, NULL);
+      command_event(EVENT_CMD_FULLSCREEN_TOGGLE, NULL);
       video_driver_cached_frame_render();
    }
 
@@ -909,10 +909,10 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_GLOBAL_FREE:
          {
             global_t *global = NULL;
-            event_cmd_ctl(EVENT_CMD_TEMPORARY_CONTENT_DEINIT, NULL);
-            event_cmd_ctl(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT, NULL);
-            event_cmd_ctl(EVENT_CMD_RECORD_DEINIT, NULL);
-            event_cmd_ctl(EVENT_CMD_LOG_FILE_DEINIT, NULL);
+            command_event(EVENT_CMD_TEMPORARY_CONTENT_DEINIT, NULL);
+            command_event(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT, NULL);
+            command_event(EVENT_CMD_RECORD_DEINIT, NULL);
+            command_event(EVENT_CMD_LOG_FILE_DEINIT, NULL);
 
             rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
             runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH,  NULL);
@@ -1212,19 +1212,19 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
    {
       input_driver_unset_onscreen_keyboard_enabled();
       prev_overlay_restore  = true;
-      event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
+      command_event(EVENT_CMD_OVERLAY_DEINIT, NULL);
    }
    else if (!osk_enable && input_keyboard_ctl(
             RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
    {
       input_driver_set_onscreen_keyboard_enabled();
       prev_overlay_restore  = false;
-      event_cmd_ctl(EVENT_CMD_OVERLAY_INIT, NULL);
+      command_event(EVENT_CMD_OVERLAY_INIT, NULL);
    }
    else if (prev_overlay_restore)
    {
       if (!settings->input.overlay_hide_in_menu)
-         event_cmd_ctl(EVENT_CMD_OVERLAY_INIT, NULL);
+         command_event(EVENT_CMD_OVERLAY_INIT, NULL);
       prev_overlay_restore = false;
    }
 }
@@ -1366,7 +1366,7 @@ int runloop_iterate(unsigned *sleep_ms)
    cmd.state[2]      = cmd.state[0] & ~cmd.state[1];  /* trigger  */
 
    if (runloop_cmd_triggered(cmd_ptr, RARCH_OVERLAY_NEXT))
-      event_cmd_ctl(EVENT_CMD_OVERLAY_NEXT, NULL);
+      command_event(EVENT_CMD_OVERLAY_NEXT, NULL);
 
    if (runloop_cmd_triggered(cmd_ptr, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
@@ -1377,11 +1377,11 @@ int runloop_iterate(unsigned *sleep_ms)
 #endif
 
       if (fullscreen_toggled)
-         event_cmd_ctl(EVENT_CMD_FULLSCREEN_TOGGLE, NULL);
+         command_event(EVENT_CMD_FULLSCREEN_TOGGLE, NULL);
    }
 
    if (runloop_cmd_triggered(cmd_ptr, RARCH_GRAB_MOUSE_TOGGLE))
-      event_cmd_ctl(EVENT_CMD_GRAB_MOUSE_TOGGLE, NULL);
+      command_event(EVENT_CMD_GRAB_MOUSE_TOGGLE, NULL);
 
 #ifdef HAVE_MENU
    if (runloop_cmd_menu_press(cmd_ptr) || 

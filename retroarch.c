@@ -1069,7 +1069,7 @@ static void retroarch_init_savefile_paths(void)
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   event_cmd_ctl(EVENT_CMD_SAVEFILES_DEINIT, NULL);
+   command_event(EVENT_CMD_SAVEFILES_DEINIT, NULL);
 
    global->savefiles = string_list_new();
    retro_assert(global->savefiles);
@@ -1299,25 +1299,25 @@ static int retroarch_main_init(int argc, char *argv[])
    }
 
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
-   if (!event_cmd_ctl(EVENT_CMD_CORE_INIT, &current_core_type))
+   if (!command_event(EVENT_CMD_CORE_INIT, &current_core_type))
       goto error;
 
    driver_ctl(RARCH_DRIVER_CTL_INIT_ALL, NULL);
-   event_cmd_ctl(EVENT_CMD_COMMAND_INIT, NULL);
-   event_cmd_ctl(EVENT_CMD_REMOTE_INIT, NULL);
-   event_cmd_ctl(EVENT_CMD_REWIND_INIT, NULL);
-   event_cmd_ctl(EVENT_CMD_CONTROLLERS_INIT, NULL);
-   event_cmd_ctl(EVENT_CMD_RECORD_INIT, NULL);
-   event_cmd_ctl(EVENT_CMD_CHEATS_INIT, NULL);
-   event_cmd_ctl(EVENT_CMD_SAVEFILES_INIT, NULL);
-   event_cmd_ctl(EVENT_CMD_SET_PER_GAME_RESOLUTION, NULL);
+   command_event(EVENT_CMD_COMMAND_INIT, NULL);
+   command_event(EVENT_CMD_REMOTE_INIT, NULL);
+   command_event(EVENT_CMD_REWIND_INIT, NULL);
+   command_event(EVENT_CMD_CONTROLLERS_INIT, NULL);
+   command_event(EVENT_CMD_RECORD_INIT, NULL);
+   command_event(EVENT_CMD_CHEATS_INIT, NULL);
+   command_event(EVENT_CMD_SAVEFILES_INIT, NULL);
+   command_event(EVENT_CMD_SET_PER_GAME_RESOLUTION, NULL);
 
    rarch_ctl(RARCH_CTL_UNSET_ERROR_ON_INIT, NULL);
    rarch_ctl(RARCH_CTL_SET_INITED, NULL);
    return 0;
 
 error:
-   event_cmd_ctl(EVENT_CMD_CORE_DEINIT, NULL);
+   command_event(EVENT_CMD_CORE_DEINIT, NULL);
    rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
    return 1;
 }
@@ -1382,7 +1382,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_DEINIT, NULL);
          driver_ctl(RARCH_DRIVER_CTL_UNINIT_ALL, NULL);
-         event_cmd_ctl(EVENT_CMD_LOG_FILE_DEINIT, NULL);
+         command_event(EVENT_CMD_LOG_FILE_DEINIT, NULL);
 
          runloop_ctl(RUNLOOP_CTL_STATE_FREE,  NULL);
          runloop_ctl(RUNLOOP_CTL_GLOBAL_FREE, NULL);
@@ -1399,33 +1399,33 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          if (!config_realloc())
             return false;
 
-         event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
+         command_event(EVENT_CMD_HISTORY_DEINIT, NULL);
 
          runloop_ctl(RUNLOOP_CTL_CLEAR_STATE, NULL);
          break;
       case RARCH_CTL_MAIN_DEINIT:
          if (!rarch_ctl(RARCH_CTL_IS_INITED, NULL))
             return false;
-         event_cmd_ctl(EVENT_CMD_NETPLAY_DEINIT, NULL);
-         event_cmd_ctl(EVENT_CMD_COMMAND_DEINIT, NULL);
-         event_cmd_ctl(EVENT_CMD_REMOTE_DEINIT, NULL);
+         command_event(EVENT_CMD_NETPLAY_DEINIT, NULL);
+         command_event(EVENT_CMD_COMMAND_DEINIT, NULL);
+         command_event(EVENT_CMD_REMOTE_DEINIT, NULL);
 
-         event_cmd_ctl(EVENT_CMD_AUTOSAVE_DEINIT, NULL);
+         command_event(EVENT_CMD_AUTOSAVE_DEINIT, NULL);
 
-         event_cmd_ctl(EVENT_CMD_RECORD_DEINIT, NULL);
-         event_cmd_ctl(EVENT_CMD_SAVEFILES, NULL);
+         command_event(EVENT_CMD_RECORD_DEINIT, NULL);
+         command_event(EVENT_CMD_SAVEFILES, NULL);
 
-         event_cmd_ctl(EVENT_CMD_REWIND_DEINIT, NULL);
-         event_cmd_ctl(EVENT_CMD_CHEATS_DEINIT, NULL);
-         event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
+         command_event(EVENT_CMD_REWIND_DEINIT, NULL);
+         command_event(EVENT_CMD_CHEATS_DEINIT, NULL);
+         command_event(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
 
-         event_cmd_ctl(EVENT_CMD_AUTOSAVE_STATE, NULL);
+         command_event(EVENT_CMD_AUTOSAVE_STATE, NULL);
 
-         event_cmd_ctl(EVENT_CMD_CORE_DEINIT, NULL);
+         command_event(EVENT_CMD_CORE_DEINIT, NULL);
 
-         event_cmd_ctl(EVENT_CMD_TEMPORARY_CONTENT_DEINIT, NULL);
-         event_cmd_ctl(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT, NULL);
-         event_cmd_ctl(EVENT_CMD_SAVEFILES_DEINIT, NULL);
+         command_event(EVENT_CMD_TEMPORARY_CONTENT_DEINIT, NULL);
+         command_event(EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT, NULL);
+         command_event(EVENT_CMD_SAVEFILES_DEINIT, NULL);
 
          rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
          break;
@@ -1511,7 +1511,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
 #ifdef HAVE_OVERLAY
          if (settings->input.overlay_hide_in_menu)
-            event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
+            command_event(EVENT_CMD_OVERLAY_DEINIT, NULL);
 #endif
          break;
       case RARCH_CTL_LOAD_CONTENT:
@@ -1533,7 +1533,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          video_driver_set_texture_enable(false, false);
 #ifdef HAVE_OVERLAY
          if (settings && settings->input.overlay_hide_in_menu)
-            event_cmd_ctl(EVENT_CMD_OVERLAY_INIT, NULL);
+            command_event(EVENT_CMD_OVERLAY_INIT, NULL);
 #endif
          break;
       case RARCH_CTL_QUIT:

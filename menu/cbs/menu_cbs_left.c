@@ -369,7 +369,7 @@ static int core_setting_left(unsigned type, const char *label,
 static int disk_options_disk_idx_left(unsigned type, const char *label,
       bool wraparound)
 {
-   event_cmd_ctl(EVENT_CMD_DISK_PREV, NULL);
+   command_event(EVENT_CMD_DISK_PREV, NULL);
    return 0;
 }
 

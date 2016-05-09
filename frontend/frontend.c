@@ -59,7 +59,7 @@ void main_exit(void *args)
 {
    settings_t *settings                  = config_get_ptr();
 
-   event_cmd_ctl(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
+   command_event(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
 
 #ifdef HAVE_MENU
    /* Do not want menu context to live any more. */
@@ -67,7 +67,7 @@ void main_exit(void *args)
 #endif
    rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
-   event_cmd_ctl(EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG, NULL);
+   command_event(EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG, NULL);
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();

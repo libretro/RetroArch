@@ -389,7 +389,7 @@ static bool nk_menu_init_list(void *data)
    menu_entries_add(menu_stack,
          info.path, info.label, info.type, info.flags, 0);
 
-   event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
+   command_event(EVENT_CMD_HISTORY_INIT, NULL);
 
    info.list  = selection_buf;
 

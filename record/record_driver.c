@@ -198,7 +198,7 @@ void recording_dump_frame(const void *data, unsigned width,
       {
          RARCH_WARN("%s \n",
                msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
-         event_cmd_ctl(EVENT_CMD_GPU_RECORD_DEINIT, NULL);
+         command_event(EVENT_CMD_GPU_RECORD_DEINIT, NULL);
 
          recording_dump_frame(data, width, height, pitch);
          return;
@@ -213,7 +213,7 @@ void recording_dump_frame(const void *data, unsigned width,
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE),
                1, 180, true);
-         event_cmd_ctl(EVENT_CMD_RECORD_DEINIT, NULL);
+         command_event(EVENT_CMD_RECORD_DEINIT, NULL);
          return;
       }
 
@@ -256,7 +256,7 @@ bool recording_deinit(void)
    recording_data            = NULL;
    recording_driver          = NULL;
 
-   event_cmd_ctl(EVENT_CMD_GPU_RECORD_DEINIT, NULL);
+   command_event(EVENT_CMD_GPU_RECORD_DEINIT, NULL);
 
    return true;
 }
@@ -425,7 +425,7 @@ bool recording_init(void)
    if (!record_driver_init_first(&recording_driver, &recording_data, &params))
    {
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
-      event_cmd_ctl(EVENT_CMD_GPU_RECORD_DEINIT, NULL);
+      command_event(EVENT_CMD_GPU_RECORD_DEINIT, NULL);
 
       return false;
    }

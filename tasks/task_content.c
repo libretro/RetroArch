@@ -35,7 +35,7 @@ bool rarch_task_push_content_load_default(
    if (core_path)
    {
       runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-      event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+      command_event(EVENT_CMD_LOAD_CORE, NULL);
    }
 
    if (fullpath)
@@ -60,7 +60,7 @@ bool rarch_task_push_content_load_default(
    }
 
    if (cmd != EVENT_CMD_NONE)
-      event_cmd_ctl(cmd, NULL);
+      command_event(cmd, NULL);
 
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT,       NULL);

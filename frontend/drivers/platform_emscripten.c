@@ -44,22 +44,22 @@ static void emscripten_mainloop(void)
 
 void cmd_savefiles(void)
 {
-   event_cmd_ctl(EVENT_CMD_SAVEFILES, NULL);
+   command_event(EVENT_CMD_SAVEFILES, NULL);
 }
 
 void cmd_save_state(void)
 {
-   event_cmd_ctl(EVENT_CMD_SAVE_STATE, NULL);
+   command_event(EVENT_CMD_SAVE_STATE, NULL);
 }
 
 void cmd_load_state(void)
 {
-   event_cmd_ctl(EVENT_CMD_LOAD_STATE, NULL);
+   command_event(EVENT_CMD_LOAD_STATE, NULL);
 }
 
 void cmd_take_screenshot(void)
 {
-   event_cmd_ctl(EVENT_CMD_TAKE_SCREENSHOT, NULL);
+   command_event(EVENT_CMD_TAKE_SCREENSHOT, NULL);
 }
 
 

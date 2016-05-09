@@ -901,9 +901,9 @@ bool content_load(content_ctx_info_t *info)
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
 #endif
-   event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
-   event_cmd_ctl(EVENT_CMD_RESUME, NULL);
-   event_cmd_ctl(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
+   command_event(EVENT_CMD_HISTORY_INIT, NULL);
+   command_event(EVENT_CMD_RESUME, NULL);
+   command_event(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
 
    check_default_dirs();
 

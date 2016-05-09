@@ -212,7 +212,7 @@ static bool event_disk_control_append_image(const char *path)
    RARCH_LOG("%s\n", msg);
    runloop_msg_queue_push(msg, 0, 180, true);
 
-   event_cmd_ctl(EVENT_CMD_AUTOSAVE_DEINIT, NULL);
+   command_event(EVENT_CMD_AUTOSAVE_DEINIT, NULL);
 
    /* TODO: Need to figure out what to do with subsystems case. */
    if (!*global->subsystem)
@@ -225,7 +225,7 @@ static bool event_disk_control_append_image(const char *path)
       rarch_ctl(RARCH_CTL_FILL_PATHNAMES, NULL);
    }
 
-   event_cmd_ctl(EVENT_CMD_AUTOSAVE_INIT, NULL);
+   command_event(EVENT_CMD_AUTOSAVE_INIT, NULL);
    event_disk_control_set_index(new_idx);
    event_disk_control_set_eject(false, false);
 
@@ -571,8 +571,8 @@ static bool event_init_content(void)
             msg_hash_to_str(MSG_SKIPPING_SRAM_LOAD));
 
    event_load_auto_state();
-   event_cmd_ctl(EVENT_CMD_BSV_MOVIE_INIT, NULL);
-   event_cmd_ctl(EVENT_CMD_NETPLAY_INIT, NULL);
+   command_event(EVENT_CMD_BSV_MOVIE_INIT, NULL);
+   command_event(EVENT_CMD_NETPLAY_INIT, NULL);
 
    return true;
 }
@@ -921,14 +921,14 @@ static bool event_cmd_exec(void *data)
 }
 
 /**
- * event_cmd_ctl:
+ * command_event:
  * @cmd                  : Event command index.
  *
  * Performs program event command with index @cmd.
  *
  * Returns: true (1) on success, otherwise false (0).
  **/
-bool event_cmd_ctl(enum event_command cmd, void *data)
+bool command_event(enum event_command cmd, void *data)
 {
    unsigned i                = 0;
    bool boolean              = false;
@@ -951,7 +951,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          {
             unsigned width = 0, height = 0;
 
-            event_cmd_ctl(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
+            command_event(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
 
             if (video_driver_get_video_output_size(&width, &height))
             {
@@ -970,7 +970,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_LOAD_CONTENT_PERSIST:
 #ifdef HAVE_DYNAMIC
-         event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+         command_event(EVENT_CMD_LOAD_CORE, NULL);
 #endif
          rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
          break;
@@ -985,13 +985,13 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
       case EVENT_CMD_LOAD_CONTENT:
          {
 #ifdef HAVE_DYNAMIC
-            event_cmd_ctl(EVENT_CMD_LOAD_CONTENT_PERSIST, NULL);
+            command_event(EVENT_CMD_LOAD_CONTENT_PERSIST, NULL);
 #else
             char *fullpath = NULL;
             runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
             runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, settings->path.libretro);
-            event_cmd_ctl(EVENT_CMD_EXEC, (void*)fullpath);
-            event_cmd_ctl(EVENT_CMD_QUIT, NULL);
+            command_event(EVENT_CMD_EXEC, (void*)fullpath);
+            command_event(EVENT_CMD_QUIT, NULL);
 #endif
          }
          break;
@@ -1001,7 +1001,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #endif
          break;
       case EVENT_CMD_LOAD_CORE_PERSIST:
-         event_cmd_ctl(EVENT_CMD_LOAD_CORE_DEINIT, NULL);
+         command_event(EVENT_CMD_LOAD_CORE_DEINIT, NULL);
          {
 #ifdef HAVE_MENU
             bool *ptr = NULL;
@@ -1033,9 +1033,9 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          }
          break;
       case EVENT_CMD_LOAD_CORE:
-         event_cmd_ctl(EVENT_CMD_LOAD_CORE_PERSIST, NULL);
+         command_event(EVENT_CMD_LOAD_CORE_PERSIST, NULL);
 #ifndef HAVE_DYNAMIC
-         event_cmd_ctl(EVENT_CMD_QUIT, NULL);
+         command_event(EVENT_CMD_QUIT, NULL);
 #endif
          break;
       case EVENT_CMD_LOAD_STATE:
@@ -1069,7 +1069,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             settings->video.scale = *window_scale;
 
             if (!settings->video.fullscreen)
-               event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+               command_event(EVENT_CMD_REINIT, NULL);
 
             runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
          }
@@ -1119,7 +1119,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_UNLOAD_CORE:
          runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
-         event_cmd_ctl(EVENT_CMD_LOAD_CORE_DEINIT, NULL);
+         command_event(EVENT_CMD_LOAD_CORE_DEINIT, NULL);
          break;
       case EVENT_CMD_QUIT:
          rarch_ctl(RARCH_CTL_QUIT, NULL);
@@ -1140,7 +1140,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
                video_driver_unset_video_cache_context();
 
             video_driver_unset_video_cache_context_ack();
-            event_cmd_ctl(EVENT_CMD_RESET_CONTEXT, NULL);
+            command_event(EVENT_CMD_RESET_CONTEXT, NULL);
             video_driver_unset_video_cache_context();
 
             /* Poll input to avoid possibly stale data to corrupt things. */
@@ -1149,7 +1149,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
             menu_display_set_framebuffer_dirty_flag();
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
-               event_cmd_ctl(EVENT_CMD_VIDEO_SET_BLOCKING_STATE, NULL);
+               command_event(EVENT_CMD_VIDEO_SET_BLOCKING_STATE, NULL);
 #endif
          }
          break;
@@ -1157,7 +1157,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          cheat_manager_state_free();
          break;
       case EVENT_CMD_CHEATS_INIT:
-         event_cmd_ctl(EVENT_CMD_CHEATS_DEINIT, NULL);
+         command_event(EVENT_CMD_CHEATS_DEINIT, NULL);
          event_init_cheats();
          break;
       case EVENT_CMD_CHEATS_APPLY:
@@ -1187,9 +1187,9 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          break;
       case EVENT_CMD_REWIND_TOGGLE:
          if (settings->rewind_enable)
-            event_cmd_ctl(EVENT_CMD_REWIND_INIT, NULL);
+            command_event(EVENT_CMD_REWIND_INIT, NULL);
          else
-            event_cmd_ctl(EVENT_CMD_REWIND_DEINIT, NULL);
+            command_event(EVENT_CMD_REWIND_DEINIT, NULL);
          break;
       case EVENT_CMD_AUTOSAVE_DEINIT:
 #ifdef HAVE_THREADS
@@ -1202,7 +1202,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #endif
          break;
       case EVENT_CMD_AUTOSAVE_INIT:
-         event_cmd_ctl(EVENT_CMD_AUTOSAVE_DEINIT, NULL);
+         command_event(EVENT_CMD_AUTOSAVE_DEINIT, NULL);
 #ifdef HAVE_THREADS
          autosave_init();
 #endif
@@ -1251,7 +1251,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #endif
          break;
       case EVENT_CMD_OVERLAY_INIT:
-         event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
+         command_event(EVENT_CMD_OVERLAY_DEINIT, NULL);
 #ifdef HAVE_OVERLAY
          input_overlay_init();
 #endif
@@ -1265,7 +1265,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          audio_driver_dsp_filter_free();
          break;
       case EVENT_CMD_DSP_FILTER_INIT:
-         event_cmd_ctl(EVENT_CMD_DSP_FILTER_DEINIT, NULL);
+         command_event(EVENT_CMD_DSP_FILTER_DEINIT, NULL);
          if (!*settings->path.audio_dsp_plugin)
             break;
          audio_driver_dsp_filter_init(settings->path.audio_dsp_plugin);
@@ -1278,7 +1278,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             return false;
          break;
       case EVENT_CMD_RECORD_INIT:
-         event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
+         command_event(EVENT_CMD_HISTORY_DEINIT, NULL);
          if (!recording_init())
             return false;
          break;
@@ -1291,7 +1291,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          g_defaults.history = NULL;
          break;
       case EVENT_CMD_HISTORY_INIT:
-         event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
+         command_event(EVENT_CMD_HISTORY_DEINIT, NULL);
          if (!settings->history_list_enable)
             return false;
          RARCH_LOG("%s: [%s].\n",
@@ -1305,7 +1305,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          core_info_deinit_list();
          break;
       case EVENT_CMD_CORE_INFO_INIT:
-         event_cmd_ctl(EVENT_CMD_CORE_INFO_DEINIT, NULL);
+         command_event(EVENT_CMD_CORE_INFO_DEINIT, NULL);
 
          if (*settings->directory.libretro)
             core_info_init_list();
@@ -1418,7 +1418,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
          {
             RARCH_LOG("%s\n", msg_hash_to_str(MSG_PAUSED));
-            event_cmd_ctl(EVENT_CMD_AUDIO_STOP, NULL);
+            command_event(EVENT_CMD_AUDIO_STOP, NULL);
 
             if (settings->video.black_frame_insertion)
                video_driver_cached_frame_render();
@@ -1426,40 +1426,40 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          else
          {
             RARCH_LOG("%s\n", msg_hash_to_str(MSG_UNPAUSED));
-            event_cmd_ctl(EVENT_CMD_AUDIO_START, NULL);
+            command_event(EVENT_CMD_AUDIO_START, NULL);
          }
          break;
       case EVENT_CMD_PAUSE_TOGGLE:
          boolean = runloop_ctl(RUNLOOP_CTL_IS_PAUSED,  NULL);
          boolean = !boolean;
          runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-         event_cmd_ctl(EVENT_CMD_PAUSE_CHECKS, NULL);
+         command_event(EVENT_CMD_PAUSE_CHECKS, NULL);
          break;
       case EVENT_CMD_UNPAUSE:
          boolean = false;
 
          runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-         event_cmd_ctl(EVENT_CMD_PAUSE_CHECKS, NULL);
+         command_event(EVENT_CMD_PAUSE_CHECKS, NULL);
          break;
       case EVENT_CMD_PAUSE:
          boolean = true;
 
          runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
-         event_cmd_ctl(EVENT_CMD_PAUSE_CHECKS, NULL);
+         command_event(EVENT_CMD_PAUSE_CHECKS, NULL);
          break;
       case EVENT_CMD_MENU_PAUSE_LIBRETRO:
 #ifdef HAVE_MENU
          if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
          {
             if (settings->menu.pause_libretro)
-               event_cmd_ctl(EVENT_CMD_AUDIO_STOP, NULL);
+               command_event(EVENT_CMD_AUDIO_STOP, NULL);
             else
-               event_cmd_ctl(EVENT_CMD_AUDIO_START, NULL);
+               command_event(EVENT_CMD_AUDIO_START, NULL);
          }
          else
          {
             if (settings->menu.pause_libretro)
-               event_cmd_ctl(EVENT_CMD_AUDIO_START, NULL);
+               command_event(EVENT_CMD_AUDIO_START, NULL);
          }
 #endif
          break;
@@ -1467,7 +1467,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          runloop_ctl(RUNLOOP_CTL_SHADER_DIR_DEINIT, NULL);
          break;
       case EVENT_CMD_SHADER_DIR_INIT:
-         event_cmd_ctl(EVENT_CMD_SHADER_DIR_DEINIT, NULL);
+         command_event(EVENT_CMD_SHADER_DIR_DEINIT, NULL);
 
          if (!runloop_ctl(RUNLOOP_CTL_SHADER_DIR_INIT, NULL))
             return false;
@@ -1519,14 +1519,14 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
                      msg_hash_to_str(MSG_SRAM_WILL_NOT_BE_SAVED));
 
             if (global->sram.use)
-               event_cmd_ctl(EVENT_CMD_AUTOSAVE_INIT, NULL);
+               command_event(EVENT_CMD_AUTOSAVE_INIT, NULL);
          }
          break;
       case EVENT_CMD_BSV_MOVIE_DEINIT:
          bsv_movie_ctl(BSV_MOVIE_CTL_DEINIT, NULL);
          break;
       case EVENT_CMD_BSV_MOVIE_INIT:
-         event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
+         command_event(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
          bsv_movie_ctl(BSV_MOVIE_CTL_INIT, NULL);
          break;
       case EVENT_CMD_NETPLAY_DEINIT:
@@ -1545,7 +1545,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #endif
          break;
       case EVENT_CMD_NETPLAY_INIT:
-         event_cmd_ctl(EVENT_CMD_NETPLAY_DEINIT, NULL);
+         command_event(EVENT_CMD_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_NETPLAY
          if (!init_netplay())
             return false;
@@ -1563,20 +1563,20 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
          /* If we go fullscreen we drop all drivers and
           * reinitialize to be safe. */
          settings->video.fullscreen = !settings->video.fullscreen;
-         event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+         command_event(EVENT_CMD_REINIT, NULL);
          break;
       case EVENT_CMD_COMMAND_DEINIT:
          input_driver_deinit_command();
          break;
       case EVENT_CMD_COMMAND_INIT:
-         event_cmd_ctl(EVENT_CMD_COMMAND_DEINIT, NULL);
+         command_event(EVENT_CMD_COMMAND_DEINIT, NULL);
          input_driver_init_command();
          break;
       case EVENT_CMD_REMOTE_DEINIT:
          input_driver_deinit_remote();
          break;
       case EVENT_CMD_REMOTE_INIT:
-         event_cmd_ctl(EVENT_CMD_REMOTE_DEINIT, NULL);
+         command_event(EVENT_CMD_REMOTE_DEINIT, NULL);
          input_driver_init_remote();
          break;
       case EVENT_CMD_TEMPORARY_CONTENT_DEINIT:
