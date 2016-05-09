@@ -785,10 +785,10 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETPLAY
-#include "../netplay/netplay_net.c"
-#include "../netplay/netplay_spectate.c"
-#include "../netplay/netplay_common.c"
-#include "../netplay/netplay.c"
+#include "../network/netplay_net.c"
+#include "../network/netplay_spectate.c"
+#include "../network/netplay_common.c"
+#include "../network/netplay.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"

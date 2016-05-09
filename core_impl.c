@@ -36,7 +36,7 @@
 #include "audio/audio_driver.h"
 
 #ifdef HAVE_NETPLAY
-#include "netplay/netplay.h"
+#include "network/netplay.h"
 #endif
 
 static struct retro_core_t core;
