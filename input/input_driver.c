@@ -839,7 +839,8 @@ bool input_driver_init_command(void)
 {
 #ifdef HAVE_COMMAND
    settings_t *settings = config_get_ptr();
-   if (!settings->stdin_cmd_enable && !settings->network_cmd_enable)
+   if (     !settings->stdin_cmd_enable 
+         && !settings->network_cmd_enable)
       return false;
 
    if (settings->stdin_cmd_enable 
@@ -849,11 +850,14 @@ bool input_driver_init_command(void)
             "Cannot use this command interface.\n");
    }
 
-   input_driver_command = command_new(settings->stdin_cmd_enable
-         && !input_driver_grab_stdin(),
-         settings->network_cmd_enable, settings->network_cmd_port);
-
-   if (!input_driver_command)
+   input_driver_command = command_new();
+   
+   if (!command_network_new(
+            input_driver_command,
+            settings->stdin_cmd_enable
+            && !input_driver_grab_stdin(),
+            settings->network_cmd_enable,
+            settings->network_cmd_port))
    {
       RARCH_ERR("Failed to initialize command interface.\n");
       return false;

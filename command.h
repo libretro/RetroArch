@@ -30,6 +30,12 @@ extern "C" {
 
 typedef struct command command_t;
 
+typedef struct command_handle
+{
+   command_t *handle;
+   unsigned id;
+} command_handle_t;
+
 enum event_command
 {
    CMD_EVENT_NONE = 0,
@@ -215,28 +221,27 @@ enum event_command
    CMD_EVENT_EXEC
 };
 
-typedef struct command_handle
-{
-   command_t *handle;
-   unsigned id;
-} command_handle_t;
-
 #ifdef HAVE_COMMAND
-command_t *command_new(bool stdin_enable,
-      bool network_enable, uint16_t port);
-
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-bool command_send(const char *cmd_);
+bool command_network_send(const char *cmd_);
 #endif
+#endif
+
+bool command_network_new(
+      command_t *handle,
+      bool stdin_enable,
+      bool network_enable,
+      uint16_t port);
+
+command_t *command_new(void);
 
 bool command_poll(command_t *handle);
 
-bool command_set(command_handle_t *handle);
-
 bool command_get(command_handle_t *handle);
 
+bool command_set(command_handle_t *handle);
+
 bool command_free(command_t *handle);
-#endif
 
 /**
  * command_event:

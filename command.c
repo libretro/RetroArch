@@ -82,16 +82,8 @@
 #include <net/net_compat.h>
 #endif
 
-#ifdef HAVE_COMMAND
 #define DEFAULT_NETWORK_CMD_PORT 55355
 #define STDIN_BUF_SIZE           4096
-
-#define COMMAND_EXT_GLSL         0x7c976537U
-#define COMMAND_EXT_GLSLP        0x0f840c87U
-#define COMMAND_EXT_CG           0x0059776fU
-#define COMMAND_EXT_CGP          0x0b8865bfU
-#define COMMAND_EXT_SLANG        0x105ce63aU
-#define COMMAND_EXT_SLANGP       0x1bf9adeaU
 
 struct command
 {
@@ -121,7 +113,47 @@ struct cmd_action_map
    const char *arg_desc;
 };
 
-static bool cmd_set_shader(const char *arg);
+#ifdef HAVE_COMMAND
+#define COMMAND_EXT_GLSL         0x7c976537U
+#define COMMAND_EXT_GLSLP        0x0f840c87U
+#define COMMAND_EXT_CG           0x0059776fU
+#define COMMAND_EXT_CGP          0x0b8865bfU
+#define COMMAND_EXT_SLANG        0x105ce63aU
+#define COMMAND_EXT_SLANGP       0x1bf9adeaU
+
+static bool cmd_set_shader(const char *arg)
+{
+   char msg[256];
+   enum rarch_shader_type type = RARCH_SHADER_NONE;
+   const char             *ext = path_get_extension(arg);
+   uint32_t ext_hash           = msg_hash_calculate(ext);
+
+   switch (ext_hash)
+   {
+      case COMMAND_EXT_GLSL:
+      case COMMAND_EXT_GLSLP:
+         type = RARCH_SHADER_GLSL;
+         break;
+      case COMMAND_EXT_CG:
+      case COMMAND_EXT_CGP:
+         type = RARCH_SHADER_CG;
+         break;
+      case COMMAND_EXT_SLANG:
+      case COMMAND_EXT_SLANGP:
+         type = RARCH_SHADER_SLANG;
+         break;
+      default:
+         return false;
+   }
+
+   snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
+   runloop_msg_queue_push(msg, 1, 120, true);
+   RARCH_LOG("%s \"%s\".\n",
+         msg_hash_to_str(MSG_APPLYING_SHADER),
+         arg);
+
+   return video_driver_set_shader(type, arg);
+}
 
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER", cmd_set_shader, "<shader path>" },
@@ -168,7 +200,7 @@ static const struct cmd_map map[] = {
 };
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-static bool cmd_init_network(command_t *handle, uint16_t port)
+static bool command_network_init(command_t *handle, uint16_t port)
 {
    int fd;
    struct addrinfo *res  = NULL;
@@ -203,7 +235,7 @@ error:
 #endif
 
 #ifdef HAVE_STDIN_CMD
-static bool cmd_init_stdin(command_t *handle)
+static bool command_stdin_init(command_t *handle)
 {
 #ifndef _WIN32
 #ifdef HAVE_NETPLAY
@@ -217,70 +249,43 @@ static bool cmd_init_stdin(command_t *handle)
 }
 #endif
 
-command_t *command_new(bool stdin_enable,
-      bool network_enable, uint16_t port)
+command_t *command_new(void)
 {
    command_t *handle = (command_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
 
-   (void)network_enable;
-   (void)port;
-   (void)stdin_enable;
+   return handle;
+}
+
+bool command_network_new(
+      command_t *handle,
+      bool stdin_enable,
+      bool network_enable,
+      uint16_t port)
+{
+   if (!handle)
+      return false;
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
    handle->net_fd = -1;
-   if (network_enable && !cmd_init_network(handle, port))
+   if (network_enable && !command_network_init(handle, port))
       goto error;
 #endif
 
 #ifdef HAVE_STDIN_CMD
    handle->stdin_enable = stdin_enable;
-   if (stdin_enable && !cmd_init_stdin(handle))
+   if (stdin_enable && !command_stdin_init(handle))
       goto error;
 #endif
 
-   return handle;
+   return true;
 
 #if (defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)) || defined(HAVE_STDIN_CMD)
 error:
    command_free(handle);
-   return NULL;
+   return false;
 #endif
-}
-
-static bool cmd_set_shader(const char *arg)
-{
-   char msg[256];
-   enum rarch_shader_type type = RARCH_SHADER_NONE;
-   const char             *ext = path_get_extension(arg);
-   uint32_t ext_hash           = msg_hash_calculate(ext);
-
-   switch (ext_hash)
-   {
-      case COMMAND_EXT_GLSL:
-      case COMMAND_EXT_GLSLP:
-         type = RARCH_SHADER_GLSL;
-         break;
-      case COMMAND_EXT_CG:
-      case COMMAND_EXT_CGP:
-         type = RARCH_SHADER_CG;
-         break;
-      case COMMAND_EXT_SLANG:
-      case COMMAND_EXT_SLANGP:
-         type = RARCH_SHADER_SLANG;
-         break;
-      default:
-         return false;
-   }
-
-   snprintf(msg, sizeof(msg), "Shader: \"%s\"", arg);
-   runloop_msg_queue_push(msg, 1, 120, true);
-   RARCH_LOG("%s \"%s\".\n",
-         msg_hash_to_str(MSG_APPLYING_SHADER),
-         arg);
-
-   return video_driver_set_shader(type, arg);
 }
 
 static bool command_get_arg(const char *tok,
@@ -324,7 +329,7 @@ static bool command_get_arg(const char *tok,
    return false;
 }
 
-static void parse_sub_msg(command_t *handle, const char *tok)
+static void command_parse_sub_msg(command_t *handle, const char *tok)
 {
    const char *arg = NULL;
    unsigned index  = 0;
@@ -346,20 +351,20 @@ static void parse_sub_msg(command_t *handle, const char *tok)
             msg_hash_to_str(MSG_RECEIVED));
 }
 
-static void parse_msg(command_t *handle, char *buf)
+static void command_parse_msg(command_t *handle, char *buf)
 {
    char *save      = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
 
    while (tok)
    {
-      parse_sub_msg(handle, tok);
+      command_parse_sub_msg(handle, tok);
       tok = strtok_r(NULL, "\n", &save);
    }
 }
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-static void network_cmd_poll(command_t *handle)
+static void command_network_poll(command_t *handle)
 {
    fd_set fds;
    struct timeval tmp_tv = {0};
@@ -386,7 +391,7 @@ static void network_cmd_poll(command_t *handle)
          break;
 
       buf[ret] = '\0';
-      parse_msg(handle, buf);
+      command_parse_msg(handle, buf);
    }
 }
 #endif
@@ -498,7 +503,7 @@ static size_t read_stdin(char *buf, size_t size)
 }
 #endif
 
-static void stdin_cmd_poll(command_t *handle)
+static void command_stdin_poll(command_t *handle)
 {
    char *last_newline;
    ssize_t ret;
@@ -533,7 +538,7 @@ static void stdin_cmd_poll(command_t *handle)
    *last_newline++ = '\0';
    msg_len = last_newline - handle->stdin_buf;
 
-   parse_msg(handle, handle->stdin_buf);
+   command_parse_msg(handle, handle->stdin_buf);
 
    memmove(handle->stdin_buf, last_newline,
          handle->stdin_buf_ptr - msg_len);
@@ -611,7 +616,7 @@ static bool verify_command(const char *cmd)
    return false;
 }
 
-bool command_send(const char *cmd_)
+bool command_network_send(const char *cmd_)
 {
    bool ret;
    char *command       = NULL;
@@ -656,19 +661,29 @@ bool command_send(const char *cmd_)
 }
 #endif
 
+#endif
+
 bool command_poll(command_t *handle)
 {
    memset(handle->state, 0, sizeof(handle->state));
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   network_cmd_poll(handle);
+   command_network_poll(handle);
 #endif
 
 #ifdef HAVE_STDIN_CMD
-   stdin_cmd_poll(handle);
+   command_stdin_poll(handle);
 #endif
 
    return true;
+}
+
+bool command_get(command_handle_t *handle)
+{
+   if (!handle || !handle->handle)
+      return false;
+   return handle->id < RARCH_BIND_LIST_END 
+      && handle->handle->state[handle->id];
 }
 
 bool command_set(command_handle_t *handle)
@@ -691,15 +706,6 @@ bool command_free(command_t *handle)
 
    return true;
 }
-
-bool command_get(command_handle_t *handle)
-{
-   if (!handle || !handle->handle)
-      return false;
-   return handle->id < RARCH_BIND_LIST_END 
-      && handle->handle->state[handle->id];
-}
-#endif
 
 /**
  * command_event_disk_control_set_eject:
