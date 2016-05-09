@@ -26,22 +26,22 @@ extern "C" {
 typedef struct autosave autosave_t;
 
 /**
- * lock_autosave:
+ * autosave_lock:
  *
  * Lock autosave.
  **/
-void lock_autosave(void);
+void autosave_lock(void);
 
 /**
- * unlock_autosave:
+ * autosave_unlock:
  *
  * Unlocks autosave.
  **/
-void unlock_autosave(void);
+void autosave_unlock(void);
 
-void autosave_event_init(void);
+void autosave_init(void);
 
-void autosave_event_deinit(void);
+void autosave_deinit(void);
 
 #ifdef __cplusplus
 }

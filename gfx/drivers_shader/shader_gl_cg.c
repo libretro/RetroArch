@@ -38,9 +38,9 @@
 
 #include "../video_shader_driver.h"
 #include "../video_shader_parse.h"
-#include "../../libretro_version_1.h"
+#include "../../core.h"
 #include "../../dynamic.h"
-#include "../../rewind.h"
+#include "../../state_manager.h"
 #include "../video_state_tracker.h"
 
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
@@ -811,7 +811,7 @@ static bool gl_cg_load_imports(void *data)
 
       mem_info.id = memtype;
 
-      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+      core_get_memory(&mem_info);
 
       if ((memtype != -1u) && 
             (cg->shader->variable[i].addr >= mem_info.size))
@@ -825,7 +825,7 @@ static bool gl_cg_load_imports(void *data)
    mem_info.size = 0;
    mem_info.id   = RETRO_MEMORY_SYSTEM_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    tracker_info.wram      = (uint8_t*)mem_info.data;
    tracker_info.info      = cg->shader->variable;

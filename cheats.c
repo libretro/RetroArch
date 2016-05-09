@@ -26,7 +26,7 @@
 #include "cheats.h"
 #include "runloop.h"
 #include "dynamic.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "verbosity.h"
 
 #ifdef HAVE_CONFIG_H
@@ -81,7 +81,7 @@ void cheat_manager_apply_cheats(void)
    if (!handle)
       return;
 
-   core_ctl(CORE_CTL_RETRO_CHEAT_RESET, NULL);
+   core_reset_cheat();
 
    for (i = 0; i < handle->size; i++)
    {
@@ -93,13 +93,13 @@ void cheat_manager_apply_cheats(void)
          cheat_info.enabled = true;
          cheat_info.code    = handle->cheats[i].code;
 
-         core_ctl(CORE_CTL_RETRO_CHEAT_SET, &cheat_info);
+         core_set_cheat(&cheat_info);
       }
    }
    
 #ifdef HAVE_CHEEVOS
    data_bool = idx != 0;
-   cheevos_ctl(CHEEVOS_CTL_APPLY_CHEATS, &data_bool);
+   cheevos_apply_cheats(&data_bool);
 #endif
 }
 

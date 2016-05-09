@@ -46,15 +46,16 @@
 #define SOCKET_ERROR -1
 #endif
 
+int s;
+int port;
+char message[64];
+char server[64];
+struct sockaddr_in si_other;
  
 struct retro_log_callback logger;
 retro_log_printf_t log_cb;
 static uint16_t *frame_buf;
-struct sockaddr_in si_other;
-int s, slen=sizeof(si_other);
-char message[64];
-char server[64];
-int port;
+
 int input_state = 0;
 
 void retro_init(void)
@@ -224,7 +225,7 @@ void retro_run(void)
    snprintf(message, sizeof(message), "%d", input_state);
 
    /* send the message */
-   if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen)==-1)
+   if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, sizeof(si_other))==-1)
        log_cb(RETRO_LOG_INFO, "Error sending data\n");
 
    for (i = 0; i < 320 * 240; i++)
@@ -234,7 +235,8 @@ void retro_run(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-   (void)info;
+   socket_target_t in_target;
+
    check_variables();
 
    s = socket_create(
@@ -249,15 +251,11 @@ bool retro_load_game(const struct retro_game_info *info)
    /* setup address structure */
    memset((char *) &si_other, 0, sizeof(si_other));
 
-   si_other.sin_family           = AF_INET;
-   si_other.sin_port             = inet_htons(port);
-#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
-   si_other.sin_addr.S_un.S_addr = inet_addr(server);
-#else
-   si_other.sin_addr.s_addr      = inet_addr(server);
+   in_target.port   = port;
+   in_target.server = server;
+   in_target.domain = SOCKET_DOMAIN_INET;
 
-   inet_aton(server , &si_other.sin_addr);
-#endif
+   socket_set_target(&si_other, &in_target); 
 
    log_cb(RETRO_LOG_INFO, "Server IP Address: %s\n" , server);
 

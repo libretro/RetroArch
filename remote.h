@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef REMOTE_H__
-#define REMOTE_H__
+#ifndef INPUT_REMOTE_H__
+#define INPUT_REMOTE_H__
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -28,18 +28,21 @@
 extern "C" {
 #endif
 
-typedef struct rarch_remote rarch_remote_t;
+typedef struct input_remote input_remote_t;
 
-rarch_remote_t *rarch_remote_new(uint16_t port);
+input_remote_t *input_remote_new(uint16_t port);
 
-void rarch_remote_free(rarch_remote_t *handle);
+void input_remote_free(input_remote_t *handle);
 
-void rarch_remote_poll(rarch_remote_t *handle);
+void input_remote_poll(input_remote_t *handle);
 
 bool input_remote_key_pressed(int key, unsigned port);
 
-void input_state_remote(int16_t *ret,
-      unsigned port, unsigned device, unsigned idx,
+void input_remote_state(
+      int16_t *ret,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
       unsigned id);
 
 #ifdef __cplusplus

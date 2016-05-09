@@ -35,12 +35,10 @@ enum runloop_ctl_state
    RUNLOOP_CTL_UNSET_FRAME_TIME_LAST,
    RUNLOOP_CTL_TASK_INIT,
    RUNLOOP_CTL_IS_FRAME_TIME_LAST,
-   RUNLOOP_CTL_IS_FRAME_COUNT_END,
    RUNLOOP_CTL_IS_IDLE,
    RUNLOOP_CTL_GET_WINDOWED_SCALE,
    RUNLOOP_CTL_SET_WINDOWED_SCALE,
    RUNLOOP_CTL_SET_IDLE,
-   RUNLOOP_CTL_FRAME_TIME,
    RUNLOOP_CTL_SET_FRAME_TIME,
    RUNLOOP_CTL_IS_OVERRIDES_ACTIVE,
    RUNLOOP_CTL_SET_OVERRIDES_ACTIVE,
@@ -64,7 +62,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_CLEAR_STATE,
    RUNLOOP_CTL_STATE_FREE,
    RUNLOOP_CTL_GLOBAL_FREE,
-   RUNLOOP_CTL_CHECK_FOCUS,
    RUNLOOP_CTL_SET_CORE_SHUTDOWN,
    RUNLOOP_CTL_UNSET_CORE_SHUTDOWN,
    RUNLOOP_CTL_IS_CORE_SHUTDOWN,
@@ -82,24 +79,9 @@ enum runloop_ctl_state
    RUNLOOP_CTL_KEY_EVENT_GET,
    RUNLOOP_CTL_DATA_DEINIT,
 
-   /* Checks for state changes in this frame. */
-   RUNLOOP_CTL_CHECK_STATE,
-
    RUNLOOP_CTL_CHECK_MOVIE,
 
-   /* Checks if movie is being played. */
-   RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK,
-
    RUNLOOP_CTL_CHECK_MOVIE_INIT,
-
-   /* Checks if movie is being recorded. */
-   RUNLOOP_CTL_CHECK_MOVIE_RECORD,
-
-   /* Checks if slowmotion toggle/hold 
-    * was being pressed and/or held. */
-   RUNLOOP_CTL_CHECK_SLOWMOTION,
-
-   RUNLOOP_CTL_CHECK_PAUSE_STATE,
 
    /* Initializes message queue. */
    RUNLOOP_CTL_MSG_QUEUE_INIT,
@@ -107,10 +89,6 @@ enum runloop_ctl_state
    /* Deinitializes message queue. */
    RUNLOOP_CTL_MSG_QUEUE_DEINIT,
 
-   /* Initializes dummy core. */
-   RUNLOOP_CTL_MSG_QUEUE_LOCK,
-
-   RUNLOOP_CTL_MSG_QUEUE_UNLOCK,
    RUNLOOP_CTL_MSG_QUEUE_FREE,
    RUNLOOP_CTL_MSG_QUEUE_PULL,
    RUNLOOP_CTL_MSG_QUEUE_PUSH,
@@ -130,7 +108,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_SYSTEM_INFO_GET,
    RUNLOOP_CTL_SYSTEM_INFO_INIT,
    RUNLOOP_CTL_SYSTEM_INFO_FREE,
-   RUNLOOP_CTL_DATA_ITERATE,
    RUNLOOP_CTL_PREPARE_DUMMY
 };
 
@@ -321,8 +298,12 @@ global_t *global_get_ptr(void);
  **/
 int runloop_iterate(unsigned *sleep_ms);
 
+void runloop_iterate_data(void);
+
 void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
+
+char* runloop_msg_queue_pull(void);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 

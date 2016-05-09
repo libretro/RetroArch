@@ -69,7 +69,7 @@ uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
    size_t serialize_size, header_size;
    uint32_t *header, bsv_header[4] = {0};
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+   core_serialize_size(&info);
    
    serialize_size = info.size;
    header_size    = sizeof(bsv_header) + serialize_size;
@@ -78,7 +78,7 @@ uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
    if (!header)
       goto error;
 
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    bsv_header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
    bsv_header[SERIALIZER_INDEX] = swap_if_big32(magic);
@@ -88,7 +88,7 @@ uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
    serial_info.data             = header + 4;
    serial_info.size             = serialize_size;
 
-   if (serialize_size && !core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info))
+   if (serialize_size && !core_serialize(&serial_info))
       goto error;
 
    memcpy(header, bsv_header, sizeof(bsv_header));
@@ -123,7 +123,7 @@ bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
 
    in_crc = swap_if_big32(header[CRC_INDEX]);
 
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    if (in_crc != *content_crc_ptr)
    {
@@ -132,7 +132,7 @@ bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
       return false;
    }
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+   core_serialize_size(&info);
 
    in_state_size = swap_if_big32(header[STATE_SIZE_INDEX]);
    if (in_state_size != info.size)
@@ -165,7 +165,7 @@ uint32_t np_impl_magic(void)
    const char *lib                     = NULL;
    const char *ver                     = PACKAGE_VERSION;
 
-   core_ctl(CORE_CTL_RETRO_API_VERSION, &api_info);
+   core_api_version(&api_info);
 
    api                                 = api_info.version;
    
@@ -204,8 +204,8 @@ bool np_send_info(netplay_t *netplay)
 
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   core_get_memory(&mem_info);
+   content_get_crc(&content_crc_ptr);
    
    header[0] = htonl(*content_crc_ptr);
    header[1] = htonl(np_impl_magic());
@@ -257,7 +257,7 @@ bool np_get_info(netplay_t *netplay)
       return false;
    }
 
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    if (*content_crc_ptr != ntohl(header[0]))
    {
@@ -274,7 +274,7 @@ bool np_get_info(netplay_t *netplay)
 
    mem_info.id = RETRO_MEMORY_SAVE_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    if (mem_info.size != ntohl(header[2]))
    {

@@ -27,7 +27,7 @@
 #include "configuration.h"
 #include "msg_hash.h"
 #include "runloop.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "verbosity.h"
 
 /* Autosave support. */
@@ -186,11 +186,11 @@ static void autosave_free(autosave_t *handle)
 }
 
 /**
- * lock_autosave:
+ * autosave_lock:
  *
  * Lock autosave.
  **/
-void lock_autosave(void)
+void autosave_lock(void)
 {
    unsigned i;
 
@@ -202,11 +202,11 @@ void lock_autosave(void)
 }
 
 /**
- * unlock_autosave:
+ * autosave_unlock:
  *
  * Unlocks autosave.
  **/
-void unlock_autosave(void)
+void autosave_unlock(void)
 {
    unsigned i;
 
@@ -217,7 +217,7 @@ void unlock_autosave(void)
    }
 }
 
-void autosave_event_init(void)
+void autosave_init(void)
 {
    unsigned i;
    autosave_t **list    = NULL;
@@ -243,7 +243,7 @@ void autosave_event_init(void)
 
       mem_info.id = type;
 
-      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+      core_get_memory(&mem_info);
 
       if (mem_info.size <= 0)
          continue;
@@ -258,7 +258,7 @@ void autosave_event_init(void)
    }
 }
 
-void autosave_event_deinit(void)
+void autosave_deinit(void)
 {
    unsigned i;
 

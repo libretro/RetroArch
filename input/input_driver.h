@@ -45,46 +45,6 @@ enum input_device_type
    INPUT_DEVICE_TYPE_JOYPAD
 };
 
-enum rarch_input_ctl_state
-{
-   RARCH_INPUT_CTL_NONE = 0,
-   RARCH_INPUT_CTL_INIT,
-   RARCH_INPUT_CTL_DEINIT,
-   RARCH_INPUT_CTL_DESTROY,
-   RARCH_INPUT_CTL_DESTROY_DATA,
-   RARCH_INPUT_CTL_HAS_CAPABILITIES,
-   RARCH_INPUT_CTL_POLL,
-   RARCH_INPUT_CTL_FIND_DRIVER,
-   RARCH_INPUT_CTL_GRAB_STDIN,
-   RARCH_INPUT_CTL_KB_MAPPING_IS_BLOCKED,
-   RARCH_INPUT_CTL_SET_FLUSHING_INPUT,
-   RARCH_INPUT_CTL_UNSET_FLUSHING_INPUT,
-   RARCH_INPUT_CTL_IS_FLUSHING_INPUT,
-   RARCH_INPUT_CTL_SET_HOTKEY_BLOCK,
-   RARCH_INPUT_CTL_UNSET_HOTKEY_BLOCK,
-   RARCH_INPUT_CTL_IS_HOTKEY_BLOCKED,
-   RARCH_INPUT_CTL_SET_LIBRETRO_INPUT_BLOCKED,
-   RARCH_INPUT_CTL_UNSET_LIBRETRO_INPUT_BLOCKED,
-   RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED,
-   RARCH_INPUT_CTL_SET_NONBLOCK_STATE,
-   RARCH_INPUT_CTL_UNSET_NONBLOCK_STATE,
-   RARCH_INPUT_CTL_IS_NONBLOCK_STATE,
-   RARCH_INPUT_CTL_SET_OWN_DRIVER,
-   RARCH_INPUT_CTL_UNSET_OWN_DRIVER,
-   RARCH_INPUT_CTL_OWNS_DRIVER,
-   RARCH_INPUT_CTL_SET_OSK_ENABLED,
-   RARCH_INPUT_CTL_UNSET_OSK_ENABLED,
-   RARCH_INPUT_CTL_IS_OSK_ENABLED,
-   RARCH_INPUT_CTL_COMMAND_INIT,
-   RARCH_INPUT_CTL_COMMAND_DEINIT,
-   RARCH_INPUT_CTL_REMOTE_INIT,
-   RARCH_INPUT_CTL_REMOTE_DEINIT,
-   RARCH_INPUT_CTL_KEY_PRESSED,
-   RARCH_INPUT_CTL_GRAB_MOUSE,
-   RARCH_INPUT_CTL_UNGRAB_MOUSE,
-   RARCH_INPUT_CTL_IS_DATA_PTR_SAME
-};
-
 struct retro_keybind
 {
    bool valid;
@@ -131,24 +91,6 @@ typedef struct input_driver
    bool (*keyboard_mapping_is_blocked)(void *data);
    void (*keyboard_mapping_set_block)(void *data, bool value);
 } input_driver_t;
-
-extern input_driver_t input_android;
-extern input_driver_t input_sdl;
-extern input_driver_t input_dinput;
-extern input_driver_t input_x;
-extern input_driver_t input_wayland;
-extern input_driver_t input_ps3;
-extern input_driver_t input_psp;
-extern input_driver_t input_ctr;
-extern input_driver_t input_xenon360;
-extern input_driver_t input_gx;
-extern input_driver_t input_xinput;
-extern input_driver_t input_linuxraw;
-extern input_driver_t input_udev;
-extern input_driver_t input_cocoa;
-extern input_driver_t input_qnx;
-extern input_driver_t input_rwebinput;
-extern input_driver_t input_null;
 
 /**
  * input_driver_find_handle:
@@ -279,8 +221,6 @@ int16_t input_state(unsigned port, unsigned device,
 
 retro_input_t input_keys_pressed(void);
 
-bool input_driver_ctl(enum rarch_input_ctl_state state, void *data);
-
 void *input_driver_get_data(void);
 
 const input_driver_t *input_get_ptr(void);
@@ -289,7 +229,95 @@ const input_driver_t **input_get_double_ptr(void);
 
 void **input_driver_get_data_ptr(void);
 
+bool input_driver_key_pressed(unsigned *key);
+
+bool input_driver_has_capabilities(void);
+
+void input_driver_poll(void);
+
+bool input_driver_init(void);
+
+void input_driver_deinit(void);
+
+void input_driver_destroy_data(void);
+
+void input_driver_destroy(void);
+
+bool input_driver_grab_stdin(void);
+
+bool input_driver_keyboard_mapping_is_blocked(void);
+
+bool input_driver_find_driver(void);
+
+void input_driver_set_flushing_input(void);
+
+void input_driver_unset_flushing_input(void);
+
+bool input_driver_is_flushing_input(void);
+
+void input_driver_set_hotkey_block(void);
+
+void input_driver_unset_hotkey_block(void);
+
+bool input_driver_is_hotkey_blocked(void);
+
+void input_driver_set_libretro_input_blocked(void);
+
+void input_driver_unset_libretro_input_blocked(void);
+
+bool input_driver_is_libretro_input_blocked(void);
+
+void input_driver_set_nonblock_state(void);
+
+void input_driver_unset_nonblock_state(void);
+
+bool input_driver_is_nonblock_state(void);
+
+void input_driver_set_own_driver(void);
+
+void input_driver_unset_own_driver(void);
+
+bool input_driver_owns_driver(void);
+
+void input_driver_set_onscreen_keyboard_enabled(void);
+
+void input_driver_unset_onscreen_keyboard_enabled(void);
+
+bool input_driver_is_onscreen_keyboard_enabled(void);
+
+void input_driver_deinit_command(void);
+
+bool input_driver_init_command(void);
+
+void input_driver_deinit_remote(void);
+
+bool input_driver_init_remote(void);
+
+bool input_driver_grab_mouse(void);
+
+bool input_driver_ungrab_mouse(void);
+
+bool input_driver_is_data_ptr_same(void *data);
+
 extern const struct retro_keybind *libretro_input_binds[MAX_USERS];
+
+extern input_driver_t input_android;
+extern input_driver_t input_sdl;
+extern input_driver_t input_dinput;
+extern input_driver_t input_x;
+extern input_driver_t input_wayland;
+extern input_driver_t input_ps3;
+extern input_driver_t input_psp;
+extern input_driver_t input_ctr;
+extern input_driver_t input_xenon360;
+extern input_driver_t input_gx;
+extern input_driver_t input_xinput;
+extern input_driver_t input_linuxraw;
+extern input_driver_t input_udev;
+extern input_driver_t input_cocoa;
+extern input_driver_t input_qnx;
+extern input_driver_t input_rwebinput;
+extern input_driver_t input_null;
 
 #ifdef __cplusplus
 }

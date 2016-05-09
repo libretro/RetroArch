@@ -20,9 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
 #include <glsym/glsym.h>
 #include <glsm/glsm.h>
-
 
 struct gl_cached_state
 {
@@ -177,18 +177,75 @@ struct gl_cached_state
 };
 
 static glsm_framebuffer_lock glsm_fb_lock = NULL;
-static glsm_imm_vbo_draw imm_vbo_draw     = NULL;
-static glsm_imm_vbo_draw imm_vbo_disable  = NULL;
 static struct retro_hw_render_callback hw_render;
 static struct gl_cached_state gl_state;
 
 /* GL wrapper-side */
 
 /*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
+GLenum rglGetError(void)
+{
+   return glGetError();
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
+void rglClear(GLbitfield mask)
+{
+   glClear(mask);
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ * OpenGLES  : N/A
+ */
+void rglPolygonMode(GLenum face, GLenum mode)
+{
+#ifndef HAVE_OPENGLES
+   glPolygonMode(face, mode);
+#endif
+}
+
+void rglTexSubImage2D(
+      GLenum target,
+  	GLint level,
+  	GLint xoffset,
+  	GLint yoffset,
+  	GLsizei width,
+  	GLsizei height,
+  	GLenum format,
+  	GLenum type,
+  	const GLvoid * pixels)
+{
+   glTexSubImage2D(target, level, xoffset, yoffset,
+         width, height, format, type, pixels);
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.0
+ */
+void rglLineWidth(GLfloat width)
+{
+   glLineWidth(width);
+}
+
+/*
  * Category: FBO
  *
  * Core in:
  * OpenGL    : 3.0
+ * OpenGLES  : 3.0
  */
 void rglBlitFramebuffer(
       GLint srcX0, GLint srcY0,
@@ -197,21 +254,31 @@ void rglBlitFramebuffer(
       GLint dstX1, GLint dstY1,
       GLbitfield mask, GLenum filter)
 {
-#ifndef HAVE_OPENGLES2
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1,
          dstX0, dstY0, dstX1, dstY1,
          mask, filter);
 #endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 3.0
+ */
 void rglReadBuffer(GLenum mode)
 {
-#ifndef HAVE_OPENGLES2
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glReadBuffer(mode);
-#endif
    gl_state.readbuffer.mode = mode;
+#endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglClearDepth(GLdouble depth)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -224,6 +291,11 @@ void rglClearDepth(GLdouble depth)
    gl_state.cleardepth.depth = depth;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglPixelStorei(GLenum pname, GLint param)
 {
    glPixelStorei(pname, param);
@@ -231,6 +303,11 @@ void rglPixelStorei(GLenum pname, GLint param)
    gl_state.pixelstore_i.param = param;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglDepthRange(GLclampd zNear, GLclampd zFar)
 {
 #ifdef HAVE_OPENGLES
@@ -243,6 +320,11 @@ void rglDepthRange(GLclampd zNear, GLclampd zFar)
    gl_state.depthrange.zFar  = zFar;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglFrontFace(GLenum mode)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -251,6 +333,11 @@ void rglFrontFace(GLenum mode)
    gl_state.frontface.mode = mode; 
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglDepthFunc(GLenum func)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -259,6 +346,11 @@ void rglDepthFunc(GLenum func)
    glDepthFunc(func);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglColorMask(GLboolean red, GLboolean green,
       GLboolean blue, GLboolean alpha)
 {
@@ -271,6 +363,11 @@ void rglColorMask(GLboolean red, GLboolean green,
    gl_state.colormask.used  = true;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglCullFace(GLenum mode)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -279,6 +376,11 @@ void rglCullFace(GLenum mode)
    gl_state.cullface.mode = mode;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass)
 {
    glStencilOp(sfail, dpfail, dppass);
@@ -288,6 +390,11 @@ void rglStencilOp(GLenum sfail, GLenum dpfail, GLenum dppass)
    gl_state.stencilop.dppass = dppass;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES  : 2.0
+ */
 void rglStencilFunc(GLenum func, GLint ref, GLuint mask)
 {
    glStencilFunc(func, ref, mask);
@@ -323,6 +430,11 @@ void rglClearColor(GLclampf red, GLclampf green,
    gl_state.clear_color.a = alpha;
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES    : 2.0 (maybe earlier?)
+ */
 void rglScissor(GLint x, GLint y, GLsizei width, GLsizei height)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
@@ -510,13 +622,26 @@ void rglLinkProgram(GLuint program)
  * Category: FBO
  *
  * Core in:
+ * OpenGL    : 3.0 
+ * OpenGLES  : 2.0
+ */
+void rglFramebufferTexture2D(GLenum target, GLenum attachment,
+      GLenum textarget, GLuint texture, GLint level)
+{
+   glFramebufferTexture2D(target, attachment, textarget, texture, level);
+}
+
+/*
+ * Category: FBO
+ *
+ * Core in:
  * OpenGL    : 3.0
+ * OpenGLES  : 3.2
  */
 void rglFramebufferTexture(GLenum target, GLenum attachment,
   	GLuint texture, GLint level)
 {
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES32)
-#else
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3_2)
    glFramebufferTexture(target, attachment, texture, level);
 #endif
 }
@@ -561,28 +686,59 @@ void rglDeleteTextures(GLsizei n, const GLuint *textures)
    glDeleteTextures(n, textures);
 }
 
+/*
+ *
+ * Core in:
+ * OpenGLES    : 2.0 
+ */
 void rglRenderbufferStorage(GLenum target, GLenum internalFormat,
       GLsizei width, GLsizei height)
 {
    glRenderbufferStorage(target, internalFormat, width, height);
 }
 
+/*
+ *
+ * Core in:
+ *
+ * OpenGL      : 3.0
+ * OpenGLES    : 2.0 
+ */
 void rglBindRenderbuffer(GLenum target, GLuint renderbuffer)
 {
    glBindRenderbuffer(target, renderbuffer);
 }
 
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES    : 2.0 
+ */
 void rglDeleteRenderbuffers(GLsizei n, GLuint *renderbuffers)
 {
    glDeleteRenderbuffers(n, renderbuffers);
 }
 
+/*
+ *
+ * Core in:
+ *
+ * OpenGL      : 3.0
+ * OpenGLES    : 2.0 
+ */
 void rglGenRenderbuffers(GLsizei n, GLuint *renderbuffers)
 {
    glGenRenderbuffers(n, renderbuffers);
 }
 
-
+/*
+ *
+ * Core in:
+ *
+ * OpenGL      : 3.0
+ * OpenGLES    : 2.0 
+ */
 void rglGenerateMipmap(GLenum target)
 {
    glGenerateMipmap(target);
@@ -604,23 +760,12 @@ GLenum rglCheckFramebufferStatus(GLenum target)
  *
  * Core in:
  * OpenGL    : 3.0 
+ * OpenGLES  : 2.0
  */
 void rglFramebufferRenderbuffer(GLenum target, GLenum attachment,
       GLenum renderbuffertarget, GLuint renderbuffer)
 {
    glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
-}
-
-/*
- * Category: FBO
- *
- * Core in:
- * OpenGL    : 3.0 
- */
-void rglFramebufferTexture2D(GLenum target, GLenum attachment,
-      GLenum textarget, GLuint texture, GLint level)
-{
-   glFramebufferTexture2D(target, attachment, textarget, texture, level);
 }
 
 /*
@@ -650,6 +795,24 @@ void rglGetProgramiv(GLuint shader, GLenum pname, GLint *params)
 }
 
 /*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 4.1 
+ * OpenGLES  : 3.0
+ */
+void rglProgramParameteri( 	GLuint program,
+  	GLenum pname,
+  	GLint value)
+{
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && (defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES_3_1))
+   glProgramParameteri(program, pname, value);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
  *
  * Core in:
  * OpenGL    : 2.0 
@@ -663,26 +826,164 @@ void rglGetActiveUniform(GLuint program, GLuint index, GLsizei bufsize,
 /*
  *
  * Core in:
+ *
  * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
+ */
+void rglGetActiveUniformBlockiv(GLuint program,
+  	GLuint uniformBlockIndex,
+  	GLenum pname,
+  	GLint *params)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glGetActiveUniformBlockiv(program, uniformBlockIndex,
+         pname, params);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES  : 3.0
+ */
+void rglGetActiveUniformsiv( 	GLuint program,
+  	GLsizei uniformCount,
+  	const GLuint *uniformIndices,
+  	GLenum pname,
+  	GLint *params)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glGetActiveUniformsiv(program, uniformCount,
+         uniformIndices, pname, params);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES  : 3.0
+ */
+void rglGetUniformIndices(GLuint program,
+  	GLsizei uniformCount,
+  	const GLchar **uniformNames,
+  	GLuint *uniformIndices)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glGetUniformIndices(program, uniformCount,
+         uniformNames, uniformIndices);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES  : 3.0
+ */
+void rglBindBufferBase( 	GLenum target,
+  	GLuint index,
+  	GLuint buffer)
+{
+#if defined(HAVE_OPENG) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glBindBufferBase(target, index, buffer);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES  : 3.0
+ */
+GLuint rglGetUniformBlockIndex( 	GLuint program,
+  	const GLchar *uniformBlockName)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   return glGetUniformBlockIndex(program, uniformBlockName);
+#else
+   printf("WARNING! Not implemented.\n");
+   return 0;
+#endif
+}
+
+/*
+ *
+ * Core in:
+ *
+ * OpenGLES  : 3.0
+ */
+void rglUniformBlockBinding( 	GLuint program,
+  	GLuint uniformBlockIndex,
+  	GLuint uniformBlockBinding)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glUniformBlockBinding(program, uniformBlockIndex,
+         uniformBlockBinding);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
  */
 void rglUniform1ui(GLint location, GLuint v)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glUniform1ui(location ,v);
+#endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
+ */
 void rglUniform2ui(GLint location, GLuint v0, GLuint v1)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glUniform2ui(location, v0, v1);
+#endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
+ */
 void rglUniform3ui(GLint location, GLuint v0, GLuint v1, GLuint v2)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glUniform3ui(location, v0, v1, v2);
+#endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
+ */
 void rglUniform4ui(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glUniform4ui(location, v0, v1, v2, v3);
+#endif
 }
 
 /*
@@ -846,6 +1147,30 @@ void rglEnableVertexAttribArray(GLuint index)
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
    gl_state.vertex_attrib_pointer.enabled[index] = 1;
    glEnableVertexAttribArray(index);
+}
+
+void rglVertexAttribIPointer(
+      GLuint index,
+      GLint size,
+      GLenum type,
+      GLsizei stride,
+      const GLvoid * pointer)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glVertexAttribIPointer(index, size, type, stride, pointer);
+#endif
+}
+
+void rglVertexAttribLPointer(
+      GLuint index,
+      GLint size,
+      GLenum type,
+      GLsizei stride,
+      const GLvoid * pointer)
+{
+#if defined(HAVE_OPENGL)
+   glVertexAttribLPointer(index, size, type, stride, pointer);
+#endif
 }
 
 /*
@@ -1058,11 +1383,6 @@ void rglUniform4fv(GLint location, GLsizei count, const GLfloat *value)
    glUniform4fv(location, count, value);
 }
 
-void rglTexStorage2D(GLenum target, GLsizei levels, GLenum internalFormat,
-      GLsizei width, GLsizei height)
-{
-   glTexStorage2D(target, levels, internalFormat, width, height);
-}
 
 /*
  *
@@ -1110,12 +1430,164 @@ void rglBindFramebuffer(GLenum target, GLuint framebuffer)
  *
  * Core in:
  * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
  */
 void rglDrawBuffers(GLsizei n, const GLenum *bufs)
 {
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
-#else
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glDrawBuffers(n, bufs);
+#endif
+}
+
+/*
+ * Category: FBO
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
+ */
+void *rglMapBufferRange( 	GLenum target,
+  	GLintptr offset,
+  	GLsizeiptr length,
+  	GLbitfield access)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   return glMapBufferRange(target, offset, length, access);
+#else
+   printf("WARNING! Not implemented.\n");
+   return NULL;
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 4.3
+ * OpenGLES  : 3.1
+ */
+void rglTexStorage2DMultisample(GLenum target, GLsizei samples,
+      GLenum internalformat, GLsizei width, GLsizei height,
+      GLboolean fixedsamplelocations)
+{
+#if defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3_1)
+   glTexStorage2DMultisample(target, samples, internalformat,
+         width, height, fixedsamplelocations);
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGLES  : 3.0
+ */
+void rglTexStorage2D(GLenum target, GLsizei levels, GLenum internalFormat,
+      GLsizei width, GLsizei height)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glTexStorage2D(target, levels, internalFormat, width, height);
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 4.2 
+ * OpenGLES  : 3.1
+ */
+void rglMemoryBarrier( 	GLbitfield barriers)
+{
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3) && defined(HAVE_OPENGLES_3_1)
+   glMemoryBarrier(barriers);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 4.2 
+ * OpenGLES  : 3.1
+ */
+void rglBindImageTexture( 	GLuint unit,
+  	GLuint texture,
+  	GLint level,
+  	GLboolean layered,
+  	GLint layer,
+  	GLenum access,
+  	GLenum format)
+{
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3) && defined(HAVE_OPENGLES_3_1)
+   glBindImageTexture(unit, texture, level, layered, layer, access, format);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 4.1
+ * OpenGLES  : 3.1
+ */
+void rglGetProgramBinary( 	GLuint program,
+  	GLsizei bufsize,
+  	GLsizei *length,
+  	GLenum *binaryFormat,
+  	void *binary)
+{
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glGetProgramBinary(program, bufsize, length, binaryFormat, binary);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 4.1
+ * OpenGLES  : 3.1
+ */
+void rglProgramBinary(GLuint program,
+  	GLenum binaryFormat,
+  	const void *binary,
+  	GLsizei length)
+{
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3_1)
+   glProgramBinary(program, binaryFormat, binary, length);
+#else
+   printf("WARNING! Not implemented.\n");
+#endif
+}
+
+void rglTexImage2DMultisample( 	GLenum target,
+  	GLsizei samples,
+  	GLenum internalformat,
+  	GLsizei width,
+  	GLsizei height,
+  	GLboolean fixedsamplelocations)
+{
+#ifndef HAVE_OPENGLES
+   glTexImage2DMultisample(target, samples, internalformat, width, height, fixedsamplelocations);
+#endif
+}
+
+void * rglMapBuffer(	GLenum target, GLenum access)
+{
+#if defined(HAVE_OPENGLES)
+   return glMapBufferOES(target, access);
+#else
+   return glMapBuffer(target, access);
+#endif
+}
+
+GLboolean rglUnmapBuffer( 	GLenum target)
+{
+#if defined(HAVE_OPENGLES)
+   return glUnmapBufferOES(target);
+#else
+   return glUnmapBuffer(target);
 #endif
 }
 
@@ -1161,9 +1633,10 @@ void rglCopyImageSubData( 	GLuint srcName,
   	GLsizei srcHeight,
   	GLsizei srcDepth)
 {
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES32)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3_2)
    glCopyImageSubData(srcName,
          srcTarget,
+         srcLevel,
          srcX,
          srcY,
          srcZ,
@@ -1184,11 +1657,11 @@ void rglCopyImageSubData( 	GLuint srcName,
  *
  * Core in:
  * OpenGL    : 3.0 
+ * OpenGLES  : 3.0
  */
 void rglBindVertexArray(GLuint array)
 {
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
-#else
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glBindVertexArray(array);
 #endif
 }
@@ -1198,12 +1671,26 @@ void rglBindVertexArray(GLuint array)
  *
  * Core in:
  * OpenGL    : 3.0 
+ * OpenGLES  : 3.0
  */
 void rglGenVertexArrays(GLsizei n, GLuint *arrays)
 {
-#if defined(HAVE_OPENGLES) && !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES31)
-#else
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glGenVertexArrays(n, arrays);
+#endif
+}
+
+/*
+ * Category: VAO
+ *
+ * Core in:
+ * OpenGL    : 3.0 
+ * OpenGLES  : 3.0
+ */
+void rglDeleteVertexArrays(GLsizei n, const GLuint *arrays)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+   glDeleteVertexArrays(n, arrays);
 #endif
 }
 
@@ -1224,6 +1711,8 @@ static void glsm_state_setup(void)
 
 #ifndef HAVE_OPENGLES
    gl_state.cap_translate[SGL_COLOR_LOGIC_OP]       = GL_COLOR_LOGIC_OP;
+   gl_state.cap_translate[SGL_CLIP_DISTANCE0]       = GL_CLIP_DISTANCE0;
+   gl_state.cap_translate[SGL_DEPTH_CLAMP]          = GL_DEPTH_CLAMP;
 #endif
 
    for (i = 0; i < MAX_ATTRIB; i++)
@@ -1438,7 +1927,7 @@ static bool glsm_state_ctx_init(void *data)
       return false;
 
 #ifdef HAVE_OPENGLES
-#if defined(HAVE_OPENGLES31)
+#if defined(HAVE_OPENGLES_3_1)
    hw_render.context_type       = RETRO_HW_CONTEXT_OPENGLES_VERSION;
    hw_render.version_major      = 3;
    hw_render.version_minor      = 1;
@@ -1463,20 +1952,9 @@ static bool glsm_state_ctx_init(void *data)
    hw_render.bottom_left_origin = true;
    hw_render.cache_context      = true;
 
-   imm_vbo_draw                 = NULL;
-   imm_vbo_disable              = NULL;
-
-   if (params->imm_vbo_draw != NULL)
-      imm_vbo_draw                 = params->imm_vbo_draw;
-   if (params->imm_vbo_disable != NULL)
-      imm_vbo_disable              = params->imm_vbo_disable;
-
    glsm_fb_lock                    = dummy_framebuffer_lock;
    if (params->framebuffer_lock != NULL)
       glsm_fb_lock                 = params->framebuffer_lock;
-
-   if (imm_vbo_draw != NULL && imm_vbo_disable != NULL)
-      glsm_ctl(GLSM_CTL_SET_IMM_VBO, NULL);
 
    if (!params->environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
       return false;
@@ -1484,31 +1962,26 @@ static bool glsm_state_ctx_init(void *data)
    return true;
 }
 
+GLuint glsm_get_current_framebuffer(void)
+{
+   return hw_render.get_current_framebuffer();
+}
+
 bool glsm_ctl(enum glsm_state_ctl state, void *data)
 {
-   static bool imm_vbo_enable        = false;
-
    switch (state)
    {
       case GLSM_CTL_IS_FRAMEBUFFER_LOCKED:
          return glsm_fb_lock(NULL);
       case GLSM_CTL_IMM_VBO_DRAW:
-         if (imm_vbo_draw == NULL || !imm_vbo_enable)
-            return false;
-         imm_vbo_draw(NULL);
-         break;
+         return false;
       case GLSM_CTL_IMM_VBO_DISABLE:
-         if (imm_vbo_disable == NULL || !imm_vbo_enable)
-            return false;
-         imm_vbo_disable(NULL);
-         break;
+         return false;
       case GLSM_CTL_IS_IMM_VBO:
-         return imm_vbo_enable;
+         return false;
       case GLSM_CTL_SET_IMM_VBO:
-         imm_vbo_enable = true;
          break;
       case GLSM_CTL_UNSET_IMM_VBO:
-         imm_vbo_enable = false;
          break;
       case GLSM_CTL_PROC_ADDRESS_GET:
          {

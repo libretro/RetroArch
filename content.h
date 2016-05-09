@@ -30,51 +30,6 @@
 extern "C" {
 #endif
 
-enum content_ctl_state
-{
-   CONTENT_CTL_NONE = 0,
-
-   CONTENT_CTL_IS_INITED,
-
-   CONTENT_CTL_DOES_NOT_NEED_CONTENT,
-
-   CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT,
-
-   CONTENT_CTL_UNSET_DOES_NOT_NEED_CONTENT,
-
-   /* Initializes and loads a content file for the currently
-    * selected libretro core. */
-   CONTENT_CTL_INIT,
-
-   CONTENT_CTL_DEINIT,
-
-   /* Loads content file and starts up RetroArch.
-    * If no content file can be loaded, will start up RetroArch
-    * as-is. */
-   CONTENT_CTL_LOAD,
-
-   CONTENT_CTL_GET_CRC,
-
-   /* Load a RAM state from disk to memory. */
-   CONTENT_CTL_LOAD_RAM_FILE,
-
-   /* Save a RAM state from memory to disk. */
-   CONTENT_CTL_SAVE_RAM_FILE,
-
-   /* Load a state from disk to memory. */
-   CONTENT_CTL_LOAD_STATE,
-
-   /* Save a state from memory to disk. */
-   CONTENT_CTL_SAVE_STATE,
-
-   /* Frees temporary content handle. */
-   CONTENT_CTL_TEMPORARY_FREE,
-
-   CONTENT_CTL_STREAM_INIT,
-
-   CONTENT_CTL_STREAM_CRC_CALCULATE
-};
-
 typedef struct ram_type
 {
    const char *path;
@@ -100,7 +55,38 @@ typedef struct content_ctx_info
 void content_push_to_history_playlist(bool do_push,
       const char *path, void *data);
 
-bool content_ctl(enum content_ctl_state state, void *data);
+/* Load a RAM state from disk to memory. */
+bool content_load_ram_file(ram_type_t *ram);
+
+/* Save a RAM state from memory to disk. */
+bool content_save_ram_file(ram_type_t *ram);
+
+/* Load a state from disk to memory. */
+bool content_load_state(const char *path);
+
+/* Save a state from memory to disk. */
+bool content_save_state(const char *path);
+
+/* Loads content file and starts up RetroArch.
+ * If no content file can be loaded, will start up RetroArch
+ * as-is. */
+bool content_load(content_ctx_info_t *info);
+
+bool content_does_not_need_content(void);
+
+void content_set_does_not_need_content(void);
+
+void content_unset_does_not_need_content(void);
+
+bool content_get_crc(uint32_t **content_crc_ptr);
+
+bool content_is_inited(void);
+
+void content_deinit(void);
+
+/* Initializes and loads a content file for the currently
+ * selected libretro core. */
+bool content_init(void);
 
 #ifdef __cplusplus
 }

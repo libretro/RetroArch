@@ -1,11 +1,6 @@
-static const char *stock_vertex_xmb_simple =
-   "#if __VERSION__ >= 130\n"
-   "#define COMPAT_VARYING out\n"
-   "#define COMPAT_ATTRIBUTE in\n"
-   "#else\n"
+static const char *stock_vertex_xmb_simple_legacy =
    "#define COMPAT_VARYING varying\n"
    "#define COMPAT_ATTRIBUTE attribute\n"
-   "#endif\n"
    "COMPAT_ATTRIBUTE vec3 VertexCoord;\n"
    "uniform float time;\n"
    "float iqhash( float n )\n"

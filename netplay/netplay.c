@@ -135,12 +135,11 @@ static bool get_self_input_state(netplay_t *netplay)
 {
    uint32_t state[UDP_WORDS_PER_FRAME - 1] = {0};
    struct delta_frame *ptr                 = &netplay->buffer[netplay->self_ptr];
-   settings_t *settings                    = config_get_ptr();
 
-   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL) 
-         && netplay->frame_count > 0)
+   if (!input_driver_is_libretro_input_blocked() && netplay->frame_count > 0)
    {
       unsigned i;
+      settings_t *settings = config_get_ptr();
 
       /* First frame we always give zero input since relying on 
        * input from first frame screws up when we use -F 0. */
@@ -605,31 +604,38 @@ void np_log_connection(const struct sockaddr_storage *their_addr,
 
    u.storage = their_addr;
 
-   if (their_addr->ss_family == AF_INET)
+   switch (their_addr->ss_family)
    {
-      struct sockaddr_in in;
+      case AF_INET:
+         {
+            struct sockaddr_in in;
 
-      str = buf_v4;
+            memset(&in, 0, sizeof(in));
 
-      memset(&in, 0, sizeof(in));
-      in.sin_family = AF_INET;
-      memcpy(&in.sin_addr, &u.v4->sin_addr, sizeof(struct in_addr));
+            str           = buf_v4;
+            in.sin_family = AF_INET;
+            memcpy(&in.sin_addr, &u.v4->sin_addr, sizeof(struct in_addr));
 
-      getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in),
-            buf_v4, sizeof(buf_v4),
-            NULL, 0, NI_NUMERICHOST);
-   }
-   else if (their_addr->ss_family == AF_INET6)
-   {
-      struct sockaddr_in6 in;
+            getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in),
+                  buf_v4, sizeof(buf_v4),
+                  NULL, 0, NI_NUMERICHOST);
+         }
+         break;
+      case AF_INET6:
+         {
+            struct sockaddr_in6 in;
+            memset(&in, 0, sizeof(in));
 
-      str = buf_v6;
-      memset(&in, 0, sizeof(in));
-      in.sin6_family = AF_INET6;
-      memcpy(&in.sin6_addr, &u.v6->sin6_addr, sizeof(struct in6_addr));
+            str            = buf_v6;
+            in.sin6_family = AF_INET6;
+            memcpy(&in.sin6_addr, &u.v6->sin6_addr, sizeof(struct in6_addr));
 
-      getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in6),
-            buf_v6, sizeof(buf_v6), NULL, 0, NI_NUMERICHOST);
+            getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in6),
+                  buf_v6, sizeof(buf_v6), NULL, 0, NI_NUMERICHOST);
+         }
+         break;
+      default:
+         break;
    }
 
    if (str)
@@ -1030,7 +1036,7 @@ static int16_t netplay_get_spectate_input(netplay_t *netplay, bool port,
 
    input_info.cb = netplay->cbs.state_cb;
 
-   core_ctl(CORE_CTL_RETRO_SET_INPUT_STATE, &input_info);
+   core_set_input_state(&input_info);
 
    return netplay->cbs.state_cb(port, device, idx, id);
 }
@@ -1103,7 +1109,7 @@ bool init_netplay(void)
       return false;
    }
 
-   core_ctl(CORE_CTL_SET_CBS, &cbs);
+   core_set_default_callbacks(&cbs);
 
    if (*global->netplay.server)
    {

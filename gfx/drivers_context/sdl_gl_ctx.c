@@ -200,7 +200,7 @@ static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
 
 #ifdef HAVE_SDL2
    if (sdl->g_ctx)
-      video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+      video_driver_set_video_cache_context_ack();
    else
    {
       sdl->g_ctx = SDL_GL_CreateContext(sdl->g_win);

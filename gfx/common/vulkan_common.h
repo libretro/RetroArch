@@ -249,7 +249,9 @@ struct vk_draw_triangles
    VkPipeline pipeline;
    struct vk_texture *texture;
    VkSampler sampler;
-   const math_matrix_4x4 *mvp;
+
+   const void *uniform;
+   size_t uniform_size;
 
    const struct vk_buffer_range *vbo;
    unsigned vertices;
@@ -312,7 +314,7 @@ typedef struct vk
    struct
    {
       bool blend;
-      VkPipeline pipelines[4];
+      VkPipeline pipelines[8];
       struct vk_texture blank_texture;
    } display;
 

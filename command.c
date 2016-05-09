@@ -197,7 +197,7 @@ rarch_cmd_t *rarch_cmd_new(bool stdin_enable,
 
 #if (defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)) || defined(HAVE_STDIN_CMD)
 error:
-   rarch_cmd_ctl(RARCH_CMD_CTL_FREE, handle);
+   rarch_cmd_free(handle);
    return NULL;
 #endif
 }
@@ -564,7 +564,7 @@ static bool verify_command(const char *cmd)
    return false;
 }
 
-static bool network_cmd_send(const char *cmd_)
+bool rarch_cmd_send(const char *cmd_)
 {
    bool ret;
    char *command       = NULL;
@@ -609,61 +609,46 @@ static bool network_cmd_send(const char *cmd_)
 }
 #endif
 
-bool rarch_cmd_ctl(enum rarch_cmd_ctl_state state, void *data)
+bool rarch_cmd_poll(rarch_cmd_t *handle)
 {
-   switch (state)
-   {
-      case RARCH_CMD_CTL_NETWORK_SEND:
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-         network_cmd_send((const char*)data);
-#endif
-         break;
-      case RARCH_CMD_CTL_POLL:
-         {
-            rarch_cmd_t *handle = (rarch_cmd_t*)data;
-            memset(handle->state, 0, sizeof(handle->state));
+   memset(handle->state, 0, sizeof(handle->state));
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-            network_cmd_poll(handle);
+   network_cmd_poll(handle);
 #endif
 
 #ifdef HAVE_STDIN_CMD
-            stdin_cmd_poll(handle);
+   stdin_cmd_poll(handle);
 #endif
-         }
-         break;
-      case RARCH_CMD_CTL_SET:
-         {
-            rarch_cmd_handle_t *handle = (rarch_cmd_handle_t*)data;
-            if (!handle || !handle->handle)
-               return false;
-            if (handle->id < RARCH_BIND_LIST_END)
-               handle->handle->state[handle->id] = true;
-         }
-         break;
-      case RARCH_CMD_CTL_GET:
-         {
-            rarch_cmd_handle_t *handle = (rarch_cmd_handle_t*)data;
-            if (!handle || !handle->handle)
-               return false;
-            return handle->id < RARCH_BIND_LIST_END 
-               && handle->handle->state[handle->id];
-         }
-      case RARCH_CMD_CTL_FREE:
-         {
-            rarch_cmd_t *handle = (rarch_cmd_t*)data;
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-            if (handle && handle->net_fd >= 0)
-               socket_close(handle->net_fd);
-#endif
-
-            free(handle);
-         }
-         break;
-      case RARCH_CMD_CTL_NONE:
-      default:
-         break;
-   }
 
    return true;
+}
+
+bool rarch_cmd_set(rarch_cmd_handle_t *handle)
+{
+   if (!handle || !handle->handle)
+      return false;
+   if (handle->id < RARCH_BIND_LIST_END)
+      handle->handle->state[handle->id] = true;
+   return true;
+}
+
+bool rarch_cmd_free(rarch_cmd_t *handle)
+{
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+   if (handle && handle->net_fd >= 0)
+      socket_close(handle->net_fd);
+#endif
+
+   free(handle);
+
+   return true;
+}
+
+bool rarch_cmd_get(rarch_cmd_handle_t *handle)
+{
+   if (!handle || !handle->handle)
+      return false;
+   return handle->id < RARCH_BIND_LIST_END 
+      && handle->handle->state[handle->id];
 }

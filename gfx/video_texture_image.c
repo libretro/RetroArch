@@ -25,26 +25,40 @@
 
 #include <boolean.h>
 #include <formats/image.h>
+#include <file/nbio.h>
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>
 #endif
+#include <formats/rjpeg.h>
 #include <formats/tga.h>
-#include <streams/file_stream.h>
 
 #include "../general.h"
+
+enum video_image_format
+{
+   IMAGE_FORMAT_NONE = 0,
+   IMAGE_FORMAT_TGA,
+   IMAGE_FORMAT_PNG,
+   IMAGE_FORMAT_JPEG
+};
 
 bool video_texture_image_set_color_shifts(
       unsigned *r_shift, unsigned *g_shift, unsigned *b_shift,
       unsigned *a_shift)
 {
-   bool use_rgba        = video_driver_ctl(
-         RARCH_DISPLAY_CTL_SUPPORTS_RGBA, NULL);
    *a_shift             = 24;
-   *r_shift             = use_rgba ? 0 : 16;
+   *r_shift             = 16;
    *g_shift             = 8;
-   *b_shift             = use_rgba ? 16 : 0;
+   *b_shift             = 0;
 
-   return use_rgba;
+   if (video_driver_supports_rgba())
+   {
+      *r_shift = 0;
+      *b_shift = 16;
+      return true;
+   }
+
+   return false;
 }
 
 bool video_texture_image_color_convert(unsigned r_shift,
@@ -141,36 +155,56 @@ static bool video_texture_image_rpng_gx_convert_texture32(
 #endif
 
 static bool video_texture_image_load_png(
-      const char *path,
+      void *ptr,
       struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
 {
-   bool ret = rpng_load_image_argb(path,
-         &out_img->pixels, &out_img->width, &out_img->height);
+   int ret;
+   bool success = false;
+   rpng_t *rpng = rpng_alloc();
 
-   if (!ret)
+   if (!rpng)
+      goto end;
+
+   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
+      goto end;
+
+   if (!rpng_nbio_load_image_argb_start(rpng))
+      goto end;
+
+   while (rpng_nbio_load_image_argb_iterate(rpng));
+
+   if (!rpng_is_valid(rpng))
+      goto end;
+
+   do
    {
-      out_img->pixels = NULL;
-      out_img->width  = out_img->height = 0;
-      return false;
-   }
+      ret = rpng_nbio_load_image_argb_process(rpng, &out_img->pixels, &out_img->width,
+            &out_img->height);
+   }while(ret == IMAGE_PROCESS_NEXT);
+
+   if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
+      goto end;
 
    video_texture_image_color_convert(r_shift, g_shift, b_shift,
          a_shift, out_img);
 
 #ifdef GEKKO
-   if (ret)
+   if (!video_texture_image_rpng_gx_convert_texture32(out_img))
    {
-      if (!video_texture_image_rpng_gx_convert_texture32(out_img))
-      {
-         video_texture_image_free(out_img);
-         return false;
-      }
+      video_texture_image_free(out_img);
+      goto end;
    }
 #endif
 
-   return true;
+   success = true;
+
+end:
+   if (rpng)
+      rpng_nbio_load_image_free(rpng);
+
+   return success;
 }
 #endif
 
@@ -185,52 +219,84 @@ void video_texture_image_free(struct texture_image *img)
    memset(img, 0, sizeof(*img));
 }
 
-static bool video_texture_image_load_tga(
-      const char *path,
-      struct texture_image *out_img,
-      unsigned a_shift, unsigned r_shift,
-      unsigned g_shift, unsigned b_shift)
+static enum video_image_format video_texture_image_get_type(const char *path)
 {
-   ssize_t len;
-   void *raw_buf = NULL;
-   uint8_t *buf  = NULL;
-   bool      ret = filestream_read_file(path, &raw_buf, &len);
-
-   if (!ret || len < 0)
-   {
-      RARCH_ERR("Failed to read image: %s.\n", path);
-      return false;
-   }
-
-   buf = (uint8_t*)raw_buf;
-
-   ret = rtga_image_load_shift(buf, out_img,
-         a_shift, r_shift, g_shift, b_shift);
-
-   if (buf)
-      free(buf);
-
-   return ret;
+   if (strstr(path, ".tga"))
+      return IMAGE_FORMAT_TGA;
+   if (strstr(path, ".png"))
+      return IMAGE_FORMAT_PNG;
+   if (strstr(path, ".jpg") || strstr(path, ".jpeg"))
+      return IMAGE_FORMAT_JPEG;
+   return IMAGE_FORMAT_NONE;
 }
-
 
 bool video_texture_image_load(struct texture_image *out_img, 
       const char *path)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;
+   size_t file_len             = 0;
+   struct nbio_t      *handle  = NULL;
+   void                   *ptr = NULL;
+   enum video_image_format fmt = video_texture_image_get_type(path);
 
    video_texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift);
 
-   if (strstr(path, ".tga"))
-      return video_texture_image_load_tga(path, out_img,
-            a_shift, r_shift, g_shift, b_shift);
+   switch (fmt)
+   {
+      case IMAGE_FORMAT_NONE:
+         break;
+      default:
+         handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
+         if (!handle)
+            goto error;
+         nbio_begin_read(handle);
 
+         while (!nbio_iterate(handle));
+
+         ptr = nbio_get_ptr(handle, &file_len);
+
+         if (!ptr)
+            goto error;
+         break;
+   }
+
+   switch (fmt)
+   {
+      case IMAGE_FORMAT_TGA:
+         if (rtga_image_load_shift((uint8_t*)ptr, out_img,
+                  a_shift, r_shift, g_shift, b_shift))
+            goto success;
+         break;
+      case IMAGE_FORMAT_PNG:
 #ifdef HAVE_RPNG
-   if (strstr(path, ".png"))
-      return video_texture_image_load_png(path, out_img,
-            a_shift, r_shift, g_shift, b_shift);
+         if (video_texture_image_load_png(ptr, out_img,
+               a_shift, r_shift, g_shift, b_shift))
+            goto success;
 #endif
+         break;
+      case IMAGE_FORMAT_JPEG:
+         if (rjpeg_image_load((uint8_t*)ptr, out_img, file_len,
+                  a_shift, r_shift, g_shift, b_shift))
+            goto success;
+         break;
+      default:
+      case IMAGE_FORMAT_NONE:
+         break;
+   }
+
+error:
+   out_img->pixels = NULL;
+   out_img->width  = 0;
+   out_img->height = 0;
+   if (handle)
+      nbio_free(handle);
 
    return false;
+
+success:
+   if (handle)
+      nbio_free(handle);
+
+   return true;
 }

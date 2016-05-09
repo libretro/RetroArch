@@ -312,7 +312,7 @@ bool font_driver_init_first(
 
    if (threading_hint 
          && settings->video.threaded 
-         && !video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
+         && !video_driver_is_hw_context())
       return rarch_threaded_video_font_init(new_font_driver, new_font_handle,
             data, font_path, font_size, api, font_init_first);
 #endif

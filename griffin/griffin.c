@@ -231,6 +231,7 @@ VIDEO IMAGE
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
 #endif
+#include "../libretro-common/formats/jpeg/rjpeg.c"
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 
 /*============================================================
@@ -667,9 +668,9 @@ CONFIGURATION
 #include "../configuration.c"
 
 /*============================================================
-REWIND
+STATE MANAGER
 ============================================================ */
-#include "../rewind.c"
+#include "../state_manager.c"
 
 /*============================================================
 FRONTEND
@@ -734,7 +735,7 @@ GIT
 /*============================================================
 RETROARCH
 ============================================================ */
-#include "../libretro_version_1.c"
+#include "../core_impl.c"
 #include "../retroarch.c"
 #include "../runloop.c"
 #include "../libretro-common/queues/task_queue.c"

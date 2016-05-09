@@ -20,8 +20,11 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
+
 #include <boolean.h>
+
 #include "audio_dsp_filter.h"
+#include "audio_resampler_driver.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,43 +36,6 @@ extern "C" {
 #define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
 
 #define AUDIO_MAX_RATIO                16
-
-enum rarch_audio_ctl_state
-{
-   RARCH_AUDIO_CTL_NONE = 0,
-   RARCH_AUDIO_CTL_INIT,
-   RARCH_AUDIO_CTL_DEINIT,
-   RARCH_AUDIO_CTL_DESTROY,
-   RARCH_AUDIO_CTL_DESTROY_DATA,
-   RARCH_AUDIO_CTL_START,
-   RARCH_AUDIO_CTL_STOP,
-   RARCH_AUDIO_CTL_FIND_DRIVER,
-   RARCH_AUDIO_CTL_SETUP_REWIND,
-   /* Sets audio monitor refresh rate to new value. */
-   RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE,
-   RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES,
-   RARCH_AUDIO_CTL_MUTE_TOGGLE,
-   RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE,
-   RARCH_AUDIO_CTL_SET_CALLBACK_DISABLE,
-   RARCH_AUDIO_CTL_SET_CALLBACK,
-   RARCH_AUDIO_CTL_UNSET_CALLBACK,
-   RARCH_AUDIO_CTL_CALLBACK,
-   RARCH_AUDIO_CTL_HAS_CALLBACK,
-   RARCH_AUDIO_CTL_ALIVE,
-   RARCH_AUDIO_CTL_FRAME_IS_REVERSE,
-   RARCH_AUDIO_CTL_SET_OWN_DRIVER,
-   RARCH_AUDIO_CTL_UNSET_OWN_DRIVER,
-   RARCH_AUDIO_CTL_OWNS_DRIVER,
-   RARCH_AUDIO_CTL_SET_ACTIVE,
-   RARCH_AUDIO_CTL_UNSET_ACTIVE,
-   RARCH_AUDIO_CTL_IS_ACTIVE,
-   RARCH_AUDIO_CTL_RESAMPLER_DEINIT,
-   RARCH_AUDIO_CTL_RESAMPLER_INIT,
-   RARCH_AUDIO_CTL_RESAMPLER_PROCESS,
-   RARCH_AUDIO_CTL_DEVICES_LIST_NEW,
-   RARCH_AUDIO_CTL_DEVICES_LIST_FREE,
-   RARCH_AUDIO_CTL_DEVICES_LIST_GET
-};
 
 typedef struct audio_driver
 {
@@ -122,8 +88,33 @@ typedef struct audio_driver
    size_t (*buffer_size)(void *data);
 } audio_driver_t;
 
+void audio_driver_destroy_data(void);
 
-bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data);
+void audio_driver_set_own_driver(void);
+
+void audio_driver_unset_own_driver(void);
+
+void audio_driver_set_active(void);
+
+void audio_driver_unset_active(void);
+
+bool audio_driver_is_active(void);
+
+void audio_driver_destroy(void);
+
+void audio_driver_deinit_resampler(void);
+
+bool audio_driver_init_resampler(void);
+
+void audio_driver_process_resampler(struct resampler_data *data);
+
+bool audio_driver_free_devices_list(void);
+
+bool audio_driver_new_devices_list(void);
+
+bool audio_driver_enable_callback(void);
+
+bool audio_driver_disable_callback(void);
 
 /**
  * audio_driver_find_handle:
@@ -169,6 +160,41 @@ void audio_driver_dsp_filter_free(void);
 void audio_driver_dsp_filter_init(const char *device);
 
 void audio_driver_set_buffer_size(size_t bufsize);
+
+bool audio_driver_get_devices_list(void **ptr);
+
+void audio_driver_setup_rewind(void);
+
+void audio_driver_monitor_adjust_system_rates(void);
+
+bool audio_driver_set_callback(const void *data);
+
+bool audio_driver_callback(void);
+
+bool audio_driver_has_callback(void);
+
+/* Sets audio monitor rate to new value. */
+void audio_driver_monitor_set_rate(void);
+
+bool audio_driver_find_driver(void);
+
+bool audio_driver_toggle_mute(void);
+
+bool audio_driver_start(void);
+
+bool audio_driver_stop(void);
+
+bool audio_driver_owns_driver(void);
+
+void audio_driver_unset_callback(void);
+
+void audio_driver_frame_is_reverse(void);
+
+bool audio_driver_alive(void);
+
+bool audio_driver_deinit(void);
+
+bool audio_driver_init(void);
 
 extern audio_driver_t audio_rsound;
 extern audio_driver_t audio_oss;

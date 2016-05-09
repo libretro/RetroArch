@@ -178,7 +178,7 @@ static int action_iterate_help(menu_handle_t *menu,
          desc_info.idx = menu->help_screen_id;
          desc_info.s   = s;
          desc_info.len = len;
-         cheevos_ctl(CHEEVOS_CTL_GET_DESCRIPTION, &desc_info);
+         cheevos_get_description(&desc_info);
          break;
 #endif
 
@@ -289,7 +289,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
    if (     action != MENU_ACTION_NOOP
          || menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL) 
-         || menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
+         || menu_display_get_update_pending())
    {
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    }

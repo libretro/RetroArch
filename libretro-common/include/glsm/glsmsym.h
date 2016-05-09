@@ -72,6 +72,8 @@ RETRO_BEGIN_DECLS
 #define glEnableVertexAttribArray   rglEnableVertexAttribArray
 #define glDisableVertexAttribArray  rglDisableVertexAttribArray
 #define glVertexAttribPointer       rglVertexAttribPointer
+#define glVertexAttribIPointer      rglVertexAttribIPointer
+#define glVertexAttribLPointer      rglVertexAttribLPointer
 #define glGetUniformLocation        rglGetUniformLocation
 #define glGenBuffers                rglGenBuffers
 #define glDisable(T)                rglDisable(S##T)
@@ -126,7 +128,75 @@ RETRO_BEGIN_DECLS
 #define glBlendColor                rglBlendColor
 #define glBlendEquationSeparate     rglBlendEquationSeparate
 #define glCopyImageSubData          rglCopyImageSubData
+#define glMapBuffer                 rglMapBuffer
+#define glUnmapBuffer               rglUnmapBuffer
+#define glMapBufferRange            rglMapBufferRange
+#define glUniformBlockBinding       rglUniformBlockBinding
+#define glGetUniformBlockIndex      rglGetUniformBlockIndex
+#define glGetActiveUniformBlockiv   rglGetActiveUniformBlockiv
+#define glBindBufferBase            rglBindBufferBase 
+#define glGetUniformIndices         rglGetUniformIndices
+#define glGetActiveUniformsiv       rglGetActiveUniformsiv
+#define glGetError                  rglGetError
+#define glClear                     rglClear
+#define glPolygonMode               rglPolygonMode
+#define glLineWidth                 rglLineWidth
+#define glTexImage2DMultisample     rglTexImage2DMultisample
+#define glTexStorage2DMultisample   rglTexStorage2DMultisample
+#define glMemoryBarrier             rglMemoryBarrier
+#define glBindImageTexture          rglBindImageTexture
+#define glProgramBinary             rglProgramBinary
+#define glGetProgramBinary          rglGetProgramBinary
+#define glProgramParameteri         rglProgramParameteri
+#define glTexSubImage2D             rglTexSubImage2D
+#define glDeleteVertexArrays        rglDeleteVertexArrays
 
+void rglProgramParameteri( 	GLuint program,
+  	GLenum pname,
+  	GLint value);
+void rglGetProgramBinary( 	GLuint program,
+  	GLsizei bufsize,
+  	GLsizei *length,
+  	GLenum *binaryFormat,
+  	void *binary);
+void rglProgramBinary(GLuint program,
+  	GLenum binaryFormat,
+  	const void *binary,
+  	GLsizei length);
+void rglBindImageTexture( 	GLuint unit,
+  	GLuint texture,
+  	GLint level,
+  	GLboolean layered,
+  	GLint layer,
+  	GLenum access,
+  	GLenum format);
+void rglTexStorage2DMultisample(GLenum target, GLsizei samples,
+      GLenum internalformat, GLsizei width, GLsizei height,
+      GLboolean fixedsamplelocations);
+void rglGetActiveUniformsiv( 	GLuint program,
+  	GLsizei uniformCount,
+  	const GLuint *uniformIndices,
+  	GLenum pname,
+  	GLint *params);
+void rglGetUniformIndices( 	GLuint program,
+  	GLsizei uniformCount,
+  	const GLchar **uniformNames,
+  	GLuint *uniformIndices);
+void rglBindBufferBase( 	GLenum target,
+  	GLuint index,
+  	GLuint buffer);
+void rglGetActiveUniformBlockiv( 	GLuint program,
+  	GLuint uniformBlockIndex,
+  	GLenum pname,
+  	GLint *params);
+GLuint rglGetUniformBlockIndex( 	GLuint program,
+  	const GLchar *uniformBlockName);
+void * rglMapBuffer(	GLenum target, GLenum access);
+void *rglMapBufferRange( 	GLenum target,
+  	GLintptr offset,
+  	GLsizeiptr length,
+  	GLbitfield access);
+GLboolean rglUnmapBuffer( 	GLenum target);
 void rglBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 void rglBlendEquation(GLenum mode);
 void rglGenVertexArrays(GLsizei n, GLuint *arrays);
@@ -260,6 +330,42 @@ void rglCopyImageSubData( 	GLuint srcName,
   	GLsizei srcWidth,
   	GLsizei srcHeight,
   	GLsizei srcDepth);
+void rglVertexAttribIPointer(
+      GLuint index,
+      GLint size,
+      GLenum type,
+      GLsizei stride,
+      const GLvoid * pointer);
+void rglVertexAttribLPointer(
+      GLuint index,
+      GLint size,
+      GLenum type,
+      GLsizei stride,
+      const GLvoid * pointer);
+void rglUniformBlockBinding( 	GLuint program,
+  	GLuint uniformBlockIndex,
+  	GLuint uniformBlockBinding);
+GLenum rglGetError(void);
+void rglClear(GLbitfield mask);
+void rglPolygonMode(GLenum face, GLenum mode);
+void rglLineWidth(GLfloat width);
+void rglTexImage2DMultisample( 	GLenum target,
+  	GLsizei samples,
+  	GLenum internalformat,
+  	GLsizei width,
+  	GLsizei height,
+  	GLboolean fixedsamplelocations);
+void rglMemoryBarrier( 	GLbitfield barriers);
+void rglTexSubImage2D( 	GLenum target,
+  	GLint level,
+  	GLint xoffset,
+  	GLint yoffset,
+  	GLsizei width,
+  	GLsizei height,
+  	GLenum format,
+  	GLenum type,
+  	const GLvoid * pixels);
+void rglDeleteVertexArrays(GLsizei n, const GLuint *arrays);
 
 RETRO_END_DECLS
 

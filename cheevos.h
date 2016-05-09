@@ -19,29 +19,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-enum cheevos_ctl_state
-{
-   CHEEVOS_CTL_NONE = 0,
-   CHEEVOS_CTL_TEST,
-   CHEEVOS_CTL_LOAD,
-
-   CHEEVOS_CTL_APPLY_CHEATS,
-
-   /* Unload the achievements from memory. */
-   CHEEVOS_CTL_UNLOAD,
-
-   /* Toggle Hardcore Mode */
-   CHEEVOS_CTL_TOGGLE_HARDCORE_MODE,
-
-   /* Load the achievements into memory if 
-    * the game has content. */
-   CHEEVOS_CTL_SET_CHEATS,
-
-   CHEEVOS_CTL_GET_DESCRIPTION,
-
-   CHEEVOS_CTL_POPULATE_MENU
-};
-
 typedef struct cheevos_ctx_desc
 {
    unsigned idx;
@@ -49,6 +26,20 @@ typedef struct cheevos_ctx_desc
    size_t len;
 } cheevos_ctx_desc_t;
 
-bool cheevos_ctl(enum cheevos_ctl_state state, void *data);
+bool cheevos_load(const void *data);
+
+void cheevos_populate_menu(void *data);
+
+bool cheevos_get_description(cheevos_ctx_desc_t *desc);
+
+bool cheevos_apply_cheats(bool *data_bool);
+
+bool cheevos_unload(void);
+
+bool cheevos_toggle_hardcore_mode(void);
+
+bool cheevos_test(void);
+
+bool cheevos_set_cheats(void);
 
 #endif /* __RARCH_CHEEVOS_H */

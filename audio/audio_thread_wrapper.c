@@ -102,7 +102,7 @@ static void audio_thread_loop(void *data)
       }
 
       slock_unlock(thr->lock);
-      audio_driver_ctl(RARCH_AUDIO_CTL_CALLBACK, NULL);
+      audio_driver_callback();
    }
 
    RARCH_LOG("[Audio Thread]: Tearing down driver.\n");
@@ -190,7 +190,7 @@ static bool audio_thread_stop(void *data)
    audio_thread_block(thr);
    thr->is_paused = true;
 
-   audio_driver_ctl(RARCH_AUDIO_CTL_SET_CALLBACK_DISABLE, NULL);
+   audio_driver_disable_callback();
 
    return true;
 }
@@ -202,7 +202,7 @@ static bool audio_thread_start(void *data)
    if (!thr)
       return false;
 
-   audio_driver_ctl(RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE, NULL);
+   audio_driver_enable_callback();
 
    thr->is_paused = false;
    audio_thread_unblock(thr);

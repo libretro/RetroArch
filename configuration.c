@@ -33,7 +33,7 @@
 #include "input/input_remapping.h"
 #include "defaults.h"
 #include "general.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "retroarch.h"
 #include "system.h"
 #include "verbosity.h"
@@ -720,7 +720,7 @@ static void config_set_defaults(void)
 
    settings->set_supports_no_game_enable        = true;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_RESET_CUSTOM_VIEWPORT, NULL);
+   video_driver_reset_custom_viewport();
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
@@ -803,7 +803,7 @@ static void config_set_defaults(void)
 
    global->console.sound.system_bgm_enable = false;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_DEFAULT_SETTINGS, NULL);
+   video_driver_default_settings();
 
    if (*g_defaults.dir.wallpapers)
       strlcpy(settings->directory.dynamic_wallpapers,
@@ -1406,7 +1406,7 @@ static bool config_load_file(const char *path, bool set_defaults)
     * important that it works for consoles right now */
    config_get_bool(conf, "custom_bgm_enable",
          &global->console.sound.system_bgm_enable);
-   video_driver_ctl(RARCH_DISPLAY_CTL_LOAD_SETTINGS, conf);
+   video_driver_load_settings(conf);
 #endif
    CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
 
@@ -2420,7 +2420,7 @@ void config_load(void)
       config_save_file(global->path.core_specific_config);
 
    /* Flush out some states that could have been set by core environment variables */
-   core_ctl(CORE_CTL_UNSET_INPUT_DESCRIPTORS, NULL);
+   core_unset_input_descriptors();
 
    if (!rarch_ctl(RARCH_CTL_IS_BLOCK_CONFIG_READ, NULL))
    {
@@ -2846,7 +2846,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "custom_viewport_y",
          settings->video_viewport_custom.y);
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_SAVE_SETTINGS, conf);
+   video_driver_save_settings(conf);
 
    config_set_float(conf, "video_font_size", settings->video.font_size);
 

@@ -17,6 +17,10 @@
 #include "vulkan_shaders/alpha_blend.vert.inc"
 #include "vulkan_shaders/alpha_blend.frag.inc"
 #include "vulkan_shaders/font.frag.inc"
+#include "vulkan_shaders/ribbon.vert.inc"
+#include "vulkan_shaders/ribbon.frag.inc"
+#include "vulkan_shaders/ribbon_simple.vert.inc"
+#include "vulkan_shaders/ribbon_simple.frag.inc"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -66,7 +70,8 @@ static const gfx_ctx_driver_t *vulkan_get_context(vk_t *vk)
    settings_t *settings = config_get_ptr();
    enum gfx_ctx_api api = GFX_CTX_VULKAN_API;
 
-   return gfx_ctx_init_first(vk, settings->video.context_driver,
+   return video_context_driver_init_first(
+         vk, settings->video.context_driver,
          api, major, minor, false);
 }
 
@@ -172,7 +177,7 @@ static void vulkan_init_pipeline_layout(
    bindings[0].binding            = 0;
    bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
    bindings[0].descriptorCount    = 1;
-   bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
+   bindings[0].stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
    bindings[0].pImmutableSamplers = NULL;
 
    bindings[1].binding            = 1;
@@ -360,6 +365,49 @@ static void vulkan_init_pipelines(
 
    VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[0].module, NULL);
    VKFUNC(vkDestroyShaderModule)(vk->context->device, shader_stages[1].module, NULL);
+
+   /* Other menu pipelines. */
+   for (i = 0; i < 4; i++)
+   {
+      if (i & 2)
+      {
+         module_info.codeSize   = ribbon_simple_vert_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_simple_vert_spv;
+      }
+      else
+      {
+         module_info.codeSize   = ribbon_vert_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_vert_spv;
+      }
+
+      shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+      shader_stages[0].pName = "main";
+      VKFUNC(vkCreateShaderModule)(vk->context->device,
+            &module_info, NULL, &shader_stages[0].module);
+
+      if (i & 2)
+      {
+         module_info.codeSize   = ribbon_simple_frag_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_simple_frag_spv;
+      }
+      else
+      {
+         module_info.codeSize   = ribbon_frag_spv_len;
+         module_info.pCode      = (const uint32_t*)ribbon_frag_spv;
+      }
+
+      shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+      shader_stages[1].pName = "main";
+      VKFUNC(vkCreateShaderModule)(vk->context->device,
+            &module_info, NULL, &shader_stages[1].module);
+
+      input_assembly.topology = i & 1 ?
+         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP :
+         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+      VKFUNC(vkCreateGraphicsPipelines)(vk->context->device, vk->pipelines.cache,
+            1, &pipe, NULL, &vk->display.pipelines[4 + i]);
+   }
 }
 
 static void vulkan_init_command_buffers(vk_t *vk)
@@ -550,7 +598,7 @@ static void vulkan_deinit_pipelines(vk_t *vk)
    VKFUNC(vkDestroyPipeline)(vk->context->device,
          vk->pipelines.font, NULL);
 
-   for (i = 0; i < 4; i++)
+   for (i = 0; i < 8; i++)
       VKFUNC(vkDestroyPipeline)(vk->context->device,
             vk->display.pipelines[i], NULL);
 }
@@ -762,7 +810,7 @@ static void vulkan_free(void *data)
       if (vk->filter_chain)
          vulkan_filter_chain_free(vk->filter_chain);
 
-      gfx_ctx_ctl(GFX_CTL_FREE, NULL);
+      video_context_driver_free();
    }
 
    scaler_ctx_gen_reset(&vk->readback.scaler);
@@ -849,8 +897,8 @@ static void vulkan_init_hw_render(vk_t *vk)
 {
    struct retro_hw_render_interface_vulkan *iface   =
       &vk->hw.iface;
-   struct retro_hw_render_callback *hwr = NULL;
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   struct retro_hw_render_callback *hwr =
+      video_driver_get_hw_context();
 
    if (hwr->context_type != RETRO_HW_CONTEXT_VULKAN)
       return;
@@ -932,9 +980,9 @@ static void *vulkan_init(const video_info_t *video,
    if (!ctx_driver)
       goto error;
 
-   gfx_ctx_ctl(GFX_CTL_SET, (void*)ctx_driver);
+   video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
-   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+   video_context_driver_get_video_size(&mode);
    full_x = mode.width;
    full_y = mode.height;
    mode.width  = 0;
@@ -942,7 +990,7 @@ static void *vulkan_init(const video_info_t *video,
 
    RARCH_LOG("Detecting screen resolution %ux%u.\n", full_x, full_y);
    interval = video->vsync ? settings->video.swap_interval : 0;
-   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
+   video_context_driver_swap_interval(&interval);
 
    win_width  = video->width;
    win_height = video->height;
@@ -956,10 +1004,10 @@ static void *vulkan_init(const video_info_t *video,
    mode.width      = win_width;
    mode.height     = win_height;
    mode.fullscreen = video->fullscreen;
-   if (!gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode))
+   if (!video_context_driver_set_video_mode(&mode))
       goto error;
 
-   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+   video_context_driver_get_video_size(&mode);
    temp_width  = mode.width;
    temp_height = mode.height;
 
@@ -969,7 +1017,7 @@ static void *vulkan_init(const video_info_t *video,
 
    RARCH_LOG("Vulkan: Using resolution %ux%u\n", temp_width, temp_height);
 
-   gfx_ctx_ctl(GFX_CTL_GET_CONTEXT_DATA, &vk->context);
+   video_context_driver_get_context_data(&vk->context);
 
    vk->vsync             = video->vsync;
    vk->fullscreen        = video->fullscreen;
@@ -993,7 +1041,7 @@ static void *vulkan_init(const video_info_t *video,
 
    inp.input      = input;
    inp.input_data = input_data;
-   gfx_ctx_ctl(GFX_CTL_INPUT_DRIVER, &inp);
+   video_context_driver_input_driver(&inp);
 
    if (settings->video.font_enable)
    {
@@ -1050,7 +1098,7 @@ static void vulkan_set_nonblock_state(void *data, bool state)
    RARCH_LOG("[Vulkan]: VSync => %s\n", state ? "off" : "on");
 
    interval = state ? 0 : settings->video.swap_interval;
-   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
+   video_context_driver_swap_interval(&interval);
 
    /* Changing vsync might require recreating the swapchain, which means new VkImages
     * to render into. */
@@ -1074,7 +1122,7 @@ static bool vulkan_alive(void *data)
    size_data.width      = &temp_width;
    size_data.height     = &temp_height;
 
-   if (gfx_ctx_ctl(GFX_CTL_CHECK_WINDOW, &size_data))
+   if (video_context_driver_check_window(&size_data))
    {
       if (quit)
          vk->quitting      = true;
@@ -1093,20 +1141,20 @@ static bool vulkan_alive(void *data)
 static bool vulkan_focus(void *data)
 {
    (void)data;
-   return gfx_ctx_ctl(GFX_CTL_FOCUS, NULL);
+   return video_context_driver_focus();
 }
 
 static bool vulkan_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
    bool enabled = enable;
-   return gfx_ctx_ctl(GFX_CTL_SUPPRESS_SCREENSAVER, &enabled);
+   return video_context_driver_suppress_screensaver(&enabled);
 }
 
 static bool vulkan_has_windowed(void *data)
 {
    (void)data;
-   return gfx_ctx_ctl(GFX_CTL_HAS_WINDOWED, NULL);
+   return video_context_driver_has_windowed();
 }
 
 static bool vulkan_set_shader(void *data,
@@ -1184,7 +1232,7 @@ static void vulkan_set_video_mode(void *data,
    mode.height     = height;
    mode.fullscreen = fullscreen;
 
-   gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode);
+   video_context_driver_set_video_mode(&mode);
 }
 
 static void vulkan_set_viewport(void *data, unsigned viewport_width,
@@ -1205,7 +1253,7 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
    aspect_data.width      = viewport_width;
    aspect_data.height     = viewport_height;
 
-   gfx_ctx_ctl(GFX_CTL_TRANSLATE_ASPECT, &aspect_data);
+   video_context_driver_translate_aspect(&aspect_data);
 
    if (settings->video.scale_integer && !force_full)
    {
@@ -1699,10 +1747,10 @@ static bool vulkan_frame(void *data, const void *frame,
    retro_perf_stop(&queue_submit);
 
    retro_perf_start(&swapbuffers);
-   gfx_ctx_ctl(GFX_CTL_SWAP_BUFFERS, NULL);
+   video_context_driver_swap_buffers();
    retro_perf_stop(&swapbuffers);
 
-   gfx_ctx_ctl(GFX_CTL_UPDATE_WINDOW_TITLE, NULL);
+   video_context_driver_update_window_title();
 
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */
@@ -1711,7 +1759,7 @@ static bool vulkan_frame(void *data, const void *frame,
       gfx_ctx_mode_t mode;
       mode.width  = width;
       mode.height = height;
-      gfx_ctx_ctl(GFX_CTL_SET_RESIZE, &mode);
+      video_context_driver_set_resize(&mode);
 
       vk->should_resize = false;
    }
@@ -1723,28 +1771,24 @@ static bool vulkan_frame(void *data, const void *frame,
 static void vulkan_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    vk_t *vk = (vk_t*)data;
-   enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL;
+         video_driver_set_viewport_square_pixel();
          break;
 
       case ASPECT_RATIO_CORE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE;
+         video_driver_set_viewport_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG;
+         video_driver_set_viewport_config();
          break;
 
       default:
          break;
    }
-
-   if (cmd != RARCH_DISPLAY_CTL_NONE)
-      video_driver_ctl(cmd, NULL);
 
    video_driver_set_aspect_ratio_value(
          aspectratio_lut[aspect_ratio_idx].value);
@@ -1766,7 +1810,7 @@ static void vulkan_apply_state_changes(void *data)
 static void vulkan_show_mouse(void *data, bool state)
 {
    (void)data;
-   gfx_ctx_ctl(GFX_CTL_SHOW_MOUSE, &state);
+   video_context_driver_show_mouse(&state);
 }
 
 static struct video_shader *vulkan_get_current_shader(void *data)
@@ -2034,7 +2078,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
        * with conversion. */
 
       vk->readback.pending = true;
-      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_cached_frame_render();
       VKFUNC(vkQueueWaitIdle)(vk->context->queue);
 
       if (!staging->mapped)
@@ -2073,7 +2117,7 @@ static void vulkan_overlay_enable(void *data, bool enable)
 
    vk->overlay.enable = enable;
    if (vk->fullscreen)
-      gfx_ctx_ctl(GFX_CTL_SHOW_MOUSE, &enable);
+      video_context_driver_show_mouse(&enable);
 }
 
 static void vulkan_overlay_full_screen(void *data, bool enable)
@@ -2146,12 +2190,13 @@ static void vulkan_render_overlay(vk_t *vk)
             4 * sizeof(struct vk_vertex));
 
       memset(&call, 0, sizeof(call));
-      call.pipeline = vk->display.pipelines[3]; /* Strip with blend */
-      call.texture  = &vk->overlay.images[i];
-      call.sampler  = vk->samplers.linear;
-      call.mvp      = &vk->mvp;
-      call.vbo      = &range;
-      call.vertices = 4;
+      call.pipeline     = vk->display.pipelines[3]; /* Strip with blend */
+      call.texture      = &vk->overlay.images[i];
+      call.sampler      = vk->samplers.linear;
+      call.uniform      = &vk->mvp;
+      call.uniform_size = sizeof(vk->mvp);
+      call.vbo          = &range;
+      call.vertices     = 4;
       vulkan_draw_triangles(vk, &call);
    }
 

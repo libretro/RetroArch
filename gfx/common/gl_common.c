@@ -16,13 +16,6 @@
 
 #include "gl_common.h"
 
-extern void gl_load_texture_data(uint32_t id_data,
-      enum gfx_wrap_type wrap_type,
-      enum texture_filter_type filter_type,
-      unsigned alignment,
-      unsigned width, unsigned height,
-      const void *frame, unsigned base_size);
-
 void gl_ff_vertex(const struct gfx_coords *coords)
 {
 #ifndef NO_GL_FF_VERTEX
@@ -52,53 +45,4 @@ void gl_ff_matrix(const math_matrix_4x4 *mat)
    matrix_4x4_identity(&ident);
    glLoadMatrixf(ident.data);
 #endif
-}
-
-bool gl_load_luts(const struct video_shader *shader,
-      GLuint *textures_lut)
-{
-   unsigned i;
-   unsigned num_luts = MIN(shader->luts, GFX_MAX_TEXTURES);
-
-   if (!shader->luts)
-      return true;
-
-   glGenTextures(num_luts, textures_lut);
-
-   for (i = 0; i < num_luts; i++)
-   {
-      struct texture_image img = {0};
-      enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
-
-      RARCH_LOG("Loading texture image from: \"%s\" ...\n",
-            shader->lut[i].path);
-
-      if (!video_texture_image_load(&img, shader->lut[i].path))
-      {
-         RARCH_ERR("Failed to load texture image from: \"%s\"\n",
-               shader->lut[i].path);
-         return false;
-      }
-
-      if (shader->lut[i].filter == RARCH_FILTER_NEAREST)
-         filter_type = TEXTURE_FILTER_NEAREST;
-
-      if (shader->lut[i].mipmap)
-      {
-         if (filter_type == TEXTURE_FILTER_NEAREST)
-            filter_type = TEXTURE_FILTER_MIPMAP_NEAREST;
-         else
-            filter_type = TEXTURE_FILTER_MIPMAP_LINEAR;
-      }
-
-      gl_load_texture_data(textures_lut[i],
-            shader->lut[i].wrap,
-            filter_type, 4,
-            img.width, img.height,
-            img.pixels, sizeof(uint32_t));
-      video_texture_image_free(&img);
-   }
-
-   glBindTexture(GL_TEXTURE_2D, 0);
-   return true;
 }

@@ -569,7 +569,7 @@ static bool sdl2_gfx_suppress_screensaver(void *data, bool enable)
    if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
    {
 #ifdef HAVE_X11
-      x11_suspend_screensaver(video_driver_window_get());
+      x11_suspend_screensaver(video_driver_window_get(), enable);
 #endif
       return true;
    }
@@ -629,7 +629,7 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
    rarch_perf_init(&sdl2_gfx_read_viewport, "sdl2_gfx_read_viewport");
    retro_perf_start(&sdl2_gfx_read_viewport);
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+   video_driver_cached_frame_render();
 
    surf  = SDL_GetWindowSurface(vid->window);
    bgr24 = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_BGR24, 0);
@@ -658,28 +658,24 @@ static void sdl2_poke_set_filtering(void *data, unsigned index, bool smooth)
 static void sdl2_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    sdl2_video_t *vid    = (sdl2_video_t*)data;
-   enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL;
+         video_driver_set_viewport_square_pixel();
          break;
 
       case ASPECT_RATIO_CORE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE;
+         video_driver_set_viewport_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG;
+         video_driver_set_viewport_config();
          break;
 
       default:
          break;
    }
-
-   if (cmd != RARCH_DISPLAY_CTL_NONE)
-      video_driver_ctl(cmd, NULL);
 
    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 

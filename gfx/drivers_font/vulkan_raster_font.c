@@ -243,6 +243,7 @@ static void vulkan_raster_font_flush(vulkan_raster_t *font)
       &font->texture,
       font->vk->samplers.nearest,
       &font->vk->mvp,
+      sizeof(font->vk->mvp),
       &font->range,
       font->vertices,
    };

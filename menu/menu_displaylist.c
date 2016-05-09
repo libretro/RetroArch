@@ -35,7 +35,7 @@
 #include "../general.h"
 #include "../retroarch.h"
 #include "../system.h"
-#include "../libretro_version_1.h"
+#include "../core.h"
 #include "../frontend/frontend_driver.h"
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_shader_driver.h"
@@ -624,7 +624,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 #endif
 
-   rarch_info_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp));
+   retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, tmp, sizeof(tmp));
    menu_entries_add(info->list, tmp, "", MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
 #ifdef ANDROID
@@ -644,7 +644,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             sizeof(cpu_str));
       strlcat(cpu_str, ": ", sizeof(cpu_str));
 
-      rarch_info_get_capabilities(RARCH_CAPABILITIES_CPU,
+      retroarch_get_capabilities(RARCH_CAPABILITIES_CPU,
             cpu_str, sizeof(cpu_str));
       menu_entries_add(info->list, cpu_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -776,7 +776,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    }
 
 #if defined(HAVE_OPENGL) || defined(HAVE_GLES)
-   gfx_ctx_ctl(GFX_CTL_IDENT_GET, &ident_info);
+   video_context_driver_get_ident(&ident_info);
    tmp_string = ident_info.ident;
 
    strlcpy(tmp,
@@ -797,7 +797,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       metrics.type  = DISPLAY_METRIC_MM_WIDTH;
       metrics.value = &val; 
 
-      if (gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics))
+      if (video_context_driver_get_metrics(&metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                menu_hash_to_str(
@@ -809,7 +809,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
       metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
 
-      if (gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics))
+      if (video_context_driver_get_metrics(&metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                menu_hash_to_str(
@@ -821,7 +821,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
       metrics.type  = DISPLAY_METRIC_DPI;
 
-      if (gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics))
+      if (video_context_driver_get_metrics(&metrics))
       {
          snprintf(tmp, sizeof(tmp), "%s: %.2f",
                menu_hash_to_str(
@@ -2197,7 +2197,7 @@ static int menu_displaylist_parse_load_content_settings(
             menu_hash_to_str(MENU_LABEL_CORE_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
 
-      if (core_ctl(CORE_CTL_HAS_SET_INPUT_DESCRIPTORS, NULL))
+      if (core_has_set_input_descriptor())
          menu_entries_add(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
                menu_hash_to_str(MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS),
@@ -2394,8 +2394,12 @@ static int menu_displaylist_parse_options(
          menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_LAKKA),
          menu_hash_to_str(MENU_LABEL_UPDATE_LAKKA),
          MENU_SETTING_ACTION, 0, 0);
-#endif
 
+   menu_entries_add(info->list,
+         menu_hash_to_str(MENU_LABEL_VALUE_THUMBNAILS_UPDATER_LIST),
+         menu_hash_to_str(MENU_LABEL_THUMBNAILS_UPDATER_LIST),
+         MENU_SETTING_ACTION, 0, 0);
+#else
    menu_entries_add(info->list,
          menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST),
          menu_hash_to_str(MENU_LABEL_CORE_UPDATER_LIST),
@@ -2450,6 +2454,8 @@ static int menu_displaylist_parse_options(
          menu_hash_to_str(MENU_LABEL_VALUE_UPDATE_GLSL_SHADERS),
          menu_hash_to_str(MENU_LABEL_UPDATE_GLSL_SHADERS),
          MENU_SETTING_ACTION, 0, 0);
+#endif
+
 #endif
 
 #else
@@ -2761,7 +2767,7 @@ static int menu_displaylist_parse_generic(
       if (settings->multimedia.builtin_mediaplayer_enable ||
             settings->multimedia.builtin_imageviewer_enable)
       {
-         switch (rarch_path_is_media_type(path))
+         switch (retroarch_path_is_media_type(path))
          {
             case RARCH_CONTENT_MOVIE:
 #ifdef HAVE_FFMPEG
@@ -3614,7 +3620,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_SHADER_PARAMETERS:
       case DISPLAYLIST_SHADER_PARAMETERS_PRESET:
 #ifdef HAVE_SHADER_MANAGER
-         video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+         video_shader_driver_get_current_shader(&shader_info);
 
          if (shader_info.data)
             ret = deferred_push_video_shader_parameters_common(
@@ -3830,7 +3836,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
 #ifdef HAVE_CHEEVOS
       case DISPLAYLIST_ACHIEVEMENT_LIST:
-         cheevos_ctl(CHEEVOS_CTL_POPULATE_MENU, info);
+         cheevos_populate_menu(info);
          info->need_push    = true;
          info->need_refresh = true;
          break;

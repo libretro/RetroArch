@@ -15,8 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_REWIND_H
-#define __RARCH_REWIND_H
+#ifndef __STATE_MANAGER_H
+#define __STATE_MANAGER_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,11 +28,11 @@ extern "C" {
 
 typedef struct state_manager state_manager_t;
 
-void init_rewind(void);
-
 bool state_manager_frame_is_reversed(void);
 
 void state_manager_event_deinit(void);
+
+void state_manager_event_init(void);
 
 /**
  * check_rewind:

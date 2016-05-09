@@ -112,6 +112,7 @@ void async_job_free(async_job_t *ajob)
    ajob->finish = 1;
    ssem_signal(ajob->sem);
    sthread_join(ajob->thread);
+   slock_free(ajob->lock);
    ssem_free(ajob->sem);
 
    free((void*)ajob);

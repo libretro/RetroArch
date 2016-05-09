@@ -806,10 +806,12 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 
 static bool xv_suppress_screensaver(void *data, bool enable)
 {
+   (void)data;
+
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
 
-   x11_suspend_screensaver(video_driver_window_get());
+   x11_suspend_screensaver(video_driver_window_get(), enable);
    return true;
 }
 

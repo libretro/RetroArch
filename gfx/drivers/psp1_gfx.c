@@ -793,28 +793,24 @@ static void psp_set_filtering(void *data, unsigned index, bool smooth)
 static void psp_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
-   enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL;
+         video_driver_set_viewport_square_pixel();
          break;
 
       case ASPECT_RATIO_CORE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE;
+         video_driver_set_viewport_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG;
+         video_driver_set_viewport_config();
          break;
 
       default:
          break;
    }
-
-   if (cmd != RARCH_DISPLAY_CTL_NONE)
-      video_driver_ctl(cmd, NULL);
 
    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 

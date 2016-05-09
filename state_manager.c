@@ -21,11 +21,11 @@
 
 #include <retro_inline.h>
 
-#include "rewind.h"
+#include "state_manager.h"
 #include "configuration.h"
 #include "msg_hash.h"
 #include "movie.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "runloop.h"
 #include "performance.h"
 #include "verbosity.h"
@@ -132,7 +132,6 @@ static size_t state_manager_raw_maxsize(size_t uncomp)
 static void *state_manager_raw_alloc(size_t len, uint16_t uniq)
 {
    size_t  len16 = (len + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
-
    uint16_t *ret = (uint16_t*)calloc(len16 + sizeof(uint16_t) * 4 + 16, 1);
 
    /* Force in a different byte at the end, so we don't need to check 
@@ -621,7 +620,7 @@ static void state_manager_capacity(state_manager_t *state,
 }
 #endif
 
-void init_rewind(void)
+void state_manager_event_init(void)
 {
    retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
@@ -631,13 +630,13 @@ void init_rewind(void)
    if (!settings->rewind_enable || rewind_state.state)
       return;
 
-   if (audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
+   if (audio_driver_has_callback())
    {
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_REWIND_INIT_FAILED));
       return;
    }
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+   core_serialize_size(&info);
 
    rewind_state.size = info.size;
 
@@ -663,7 +662,7 @@ void init_rewind(void)
    serial_info.data = state;
    serial_info.size = rewind_state.size;
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+   core_serialize(&serial_info);
 
    state_manager_push_do(rewind_state.state);
 }
@@ -700,7 +699,7 @@ void state_manager_check_rewind(bool pressed)
 
    if (state_manager_frame_is_reversed())
    {
-      audio_driver_ctl(RARCH_AUDIO_CTL_FRAME_IS_REVERSE, NULL);
+      audio_driver_frame_is_reverse();
       state_manager_set_frame_is_reversed(false);
    }
 
@@ -722,7 +721,8 @@ void state_manager_check_rewind(bool pressed)
          retro_ctx_serialize_info_t serial_info;
 
          state_manager_set_frame_is_reversed(true);
-         audio_driver_ctl(RARCH_AUDIO_CTL_SETUP_REWIND, NULL);
+
+         audio_driver_setup_rewind();
 
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_REWINDING), 0,
@@ -732,7 +732,7 @@ void state_manager_check_rewind(bool pressed)
          serial_info.data_const = buf;
          serial_info.size       = rewind_state.size;
 
-         core_ctl(CORE_CTL_RETRO_UNSERIALIZE, &serial_info);
+         core_unserialize(&serial_info);
 
          if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             bsv_movie_ctl(BSV_MOVIE_CTL_FRAME_REWIND, NULL);
@@ -763,7 +763,7 @@ void state_manager_check_rewind(bool pressed)
          serial_info.data = state;
          serial_info.size = rewind_state.size;
 
-         core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+         core_serialize(&serial_info);
 
          retro_perf_stop(&rewind_serialize);
 
@@ -771,5 +771,5 @@ void state_manager_check_rewind(bool pressed)
       }
    }
 
-   core_ctl(CORE_CTL_SET_CBS_REWIND, NULL);
+   core_set_rewind_callbacks();
 }

@@ -768,10 +768,9 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_CONFIG_FILE:
          {
-            bool msg_force  = true;
             flush_char      = NULL;
             flush_type      = MENU_SETTINGS;
-            menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
+            menu_display_set_msg_force(true);
 
             if (rarch_ctl(RARCH_CTL_REPLACE_CONFIG, action_path))
             {
@@ -1603,7 +1602,7 @@ static int action_ok_option_create(const char *path,
    char game_path[PATH_MAX_LENGTH];
    config_file_t *conf                    = NULL;
 
-   if (!rarch_game_options_validate(game_path, sizeof(game_path), true))
+   if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
    {
       runloop_msg_queue_push("Error saving core options file",
             1, 100, true);

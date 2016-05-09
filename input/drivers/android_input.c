@@ -340,8 +340,7 @@ static void android_input_poll_main_cmd(void)
             runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
             runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
 #ifdef HAVE_MENU
-            menu_display_ctl(MENU_DISPLAY_CTL_UNSET_STUB_DRAW_FRAME, NULL);
-            video_driver_ctl(RARCH_DISPLAY_CTL_UNSET_STUB_FRAME, NULL);
+            video_driver_unset_stub_frame();
 #endif
 
             if ((android_app->sensor_state_mask
@@ -363,8 +362,7 @@ static void android_input_poll_main_cmd(void)
             runloop_ctl(RUNLOOP_CTL_SET_PAUSED, &boolean);
             runloop_ctl(RUNLOOP_CTL_SET_IDLE,   &boolean);
 #ifdef HAVE_MENU
-            menu_display_ctl(MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME, NULL);
-            video_driver_ctl(RARCH_DISPLAY_CTL_SET_STUB_FRAME, NULL);
+            video_driver_set_stub_frame();
 #endif
 
             /* Avoid draining battery while app is not being used. */
@@ -1043,7 +1041,7 @@ static void android_input_poll(void *data)
    struct android_app *android_app = (struct android_app*)g_android;
 
    while ((ident =
-            ALooper_pollAll((input_driver_ctl(RARCH_INPUT_CTL_KEY_PRESSED, &key))
+            ALooper_pollAll((input_driver_key_pressed(&key))
                ? -1 : 1,
                NULL, NULL, NULL)) >= 0)
    {

@@ -194,7 +194,7 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
             bool core        = version >= 3001;
             struct retro_hw_render_callback *hwr = NULL;
 
-            video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+            hwr = video_driver_get_hw_context();
 #ifdef GL_DEBUG
             debug = true;
 #else
@@ -352,6 +352,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       goto error;
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
+   x11_update_window_title(NULL);
 
    if (fullscreen)
       x11_show_mouse(g_x11_dpy, g_x11_win, false);
@@ -443,12 +444,11 @@ static bool gfx_ctx_xegl_has_focus(void *data)
 static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
-   (void)enable;
 
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
 
-   x11_suspend_screensaver(video_driver_window_get());
+   x11_suspend_screensaver(video_driver_window_get(), enable);
 
    return true;
 }

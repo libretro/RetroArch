@@ -36,7 +36,7 @@
 #include "camera/camera_driver.h"
 #include "location/location_driver.h"
 #include "record/record_driver.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "performance.h"
 #include "system.h"
 #include "gfx/video_context_driver.h"
@@ -54,7 +54,7 @@
 #define SYMBOL(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
    memcpy(&current_core->x, &func, sizeof(func)); \
-   if (current_core->x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retro_fail(1, "init_libretro_sym()"); } \
+   if (current_core->x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_sym()"); } \
 } while (0)
 
 static dylib_t lib_handle;
@@ -307,14 +307,14 @@ static void load_dynamic_core(void)
       RARCH_ERR("This could happen if other modules RetroArch depends on "
             "link against libretro directly.\n");
       RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
-      retro_fail(1, "init_libretro_sym()");
+      retroarch_fail(1, "init_libretro_sym()");
    }
 
    if (!*settings->path.libretro)
    {
       RARCH_ERR("RetroArch is built for dynamic libretro cores, but "
             "libretro_path is not set. Cannot continue.\n");
-      retro_fail(1, "init_libretro_sym()");
+      retroarch_fail(1, "init_libretro_sym()");
    }
 
    /* Need to use absolute path for this setting. It can be
@@ -330,7 +330,7 @@ static void load_dynamic_core(void)
       RARCH_ERR("Failed to open libretro core: \"%s\"\n",
             settings->path.libretro);
       RARCH_ERR("Error(s): %s\n", dylib_error());
-      retro_fail(1, "load_dynamic()");
+      retroarch_fail(1, "load_dynamic()");
    }
 }
 #endif
@@ -514,7 +514,7 @@ void libretro_get_current_core_pathname(char *name, size_t size)
    if (size == 0)
       return;
 
-   core_ctl(CORE_CTL_RETRO_GET_SYSTEM_INFO, &info);
+   core_get_system_info(&info);
 
    if (info.library_name)
       id = info.library_name;
@@ -740,7 +740,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = rarch_get_current_savefile_dir();
+         *(const char**)data = retroarch_get_current_savefile_dir();
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -875,7 +875,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
          }
 
-         core_ctl(CORE_CTL_SET_INPUT_DESCRIPTORS, NULL);
+         core_set_input_descriptors();
 
          break;
       }
@@ -911,7 +911,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_hw_render_callback *cb =
             (struct retro_hw_render_callback*)data;
 
-         video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+         hwr = video_driver_get_hw_context();
 
          RARCH_LOG("Environ SET_HW_RENDER.\n");
 
@@ -973,9 +973,10 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             case RETRO_HW_CONTEXT_OPENGL_CORE:
                {
                   gfx_ctx_flags_t flags;
+                  flags.flags = 0;
                   BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
-                  gfx_ctx_ctl(GFX_CTL_SET_FLAGS, &flags);
+                  video_context_driver_set_flags(&flags);
 
                   RARCH_LOG("Requesting core OpenGL context (%u.%u).\n",
                         cb->version_major, cb->version_minor);
@@ -1005,9 +1006,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SET_SUPPORT_NO_GAME: %s.\n", state ? "yes" : "no");
 
          if (state)
-            content_ctl(CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT, NULL);
+            content_set_does_not_need_content();
          else
-            content_ctl(CONTENT_CTL_UNSET_DOES_NOT_NEED_CONTENT, NULL);
+            content_unset_does_not_need_content();
          break;
       }
 
@@ -1028,7 +1029,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
       {
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
-         audio_driver_ctl(RARCH_AUDIO_CTL_SET_CALLBACK, data);
+         audio_driver_set_callback(data);
          break;
       }
 #endif
@@ -1055,7 +1056,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          uint64_t *mask = (uint64_t*)data;
 
          RARCH_LOG("Environ GET_INPUT_DEVICE_CAPABILITIES.\n");
-         if (input_driver_ctl(RARCH_INPUT_CTL_HAS_CAPABILITIES, NULL))
+         if (input_driver_has_capabilities())
             *mask = input_driver_get_capabilities();
          else
             return false;
@@ -1252,13 +1253,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
-         return video_driver_ctl(
-               RARCH_DISPLAY_CTL_GET_CURRENT_SOFTWARE_FRAMEBUFFER,
+         return video_driver_get_current_software_framebuffer(
                (struct retro_framebuffer*)data);
 
       case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
-         return video_driver_ctl(
-               RARCH_DISPLAY_CTL_GET_HW_RENDER_INTERFACE,
+         return video_driver_get_hw_render_interface(
                (const struct retro_hw_render_interface**)data);
 
       /* Private extensions for internal use, not part of libretro API. */

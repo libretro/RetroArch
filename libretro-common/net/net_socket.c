@@ -208,6 +208,23 @@ int socket_connect(int fd, void *data, bool timeout_enable)
    return connect(fd, addr->ai_addr, addr->ai_addrlen);
 }
 
+static int domain_get(enum socket_domain type)
+{
+   switch (type)
+   {
+      case SOCKET_DOMAIN_INET:
+#ifdef VITA
+         return PSP2_NET_AF_INET;
+#else
+         return AF_INET;
+#endif
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 int socket_create(
       const char *name,
       enum socket_domain   domain_type,
@@ -215,15 +232,9 @@ int socket_create(
       enum socket_protocol protocol_type)
 {
    int type     = 0;
-   int domain   = 0;
    int protocol = 0;
+   int domain   = domain_get(domain_type);
 #ifdef VITA
-   switch (domain_type)
-   {
-      case SOCKET_DOMAIN_INET:
-         domain = PSP2_NET_AF_INET;
-         break;
-   }
 
    switch (socket_type)
    {
@@ -253,13 +264,6 @@ int socket_create(
 
    return sceNetSocket(name, domain, type, protocol);
 #else
-   switch (domain_type)
-   {
-      case SOCKET_DOMAIN_INET:
-         domain = AF_INET;
-         break;
-   }
-
    switch (socket_type)
    {
       case SOCKET_TYPE_DATAGRAM:
@@ -287,5 +291,23 @@ int socket_create(
    }
 
    return socket(domain, type, protocol);
+#endif
+}
+
+void socket_set_target(void *data, socket_target_t *in_addr)
+{
+   struct sockaddr_in *out_target = (struct sockaddr_in*)data;
+
+   out_target->sin_port   = inet_htons(in_addr->port);
+   out_target->sin_family = domain_get(in_addr->domain);
+#ifdef VITA
+   out_target->sin_addr   = inet_aton(in_addr->server);
+#else
+#ifdef GEKKO
+   out_target->sin_len    = 8;
+#endif
+
+   inet_ptrton(AF_INET, in_addr->server, &out_target->sin_addr);
+
 #endif
 }

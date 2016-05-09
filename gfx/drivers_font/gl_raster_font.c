@@ -58,10 +58,10 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
    GLenum gl_format                     = GL_LUMINANCE_ALPHA;
    size_t ncomponents                   = 2;
    uint8_t       *tmp                   = NULL;
-   struct retro_hw_render_callback *hwr = NULL;
    bool ancient                         = false; /* add a check here if needed */
-   
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+#if defined(GL_VERSION_3_0)
+   struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+#endif
 
    if (ancient)
    {
@@ -237,12 +237,12 @@ static void gl_raster_font_draw_vertices(gl_t *gl, const gfx_coords_t *coords)
    coords_data.handle_data = NULL;
    coords_data.data        = coords;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords_data);
+   video_shader_driver_set_coords(&coords_data);
 
    mvp.data = gl;
    mvp.matrix = &gl->mvp_no_rot;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
+   video_shader_driver_set_mvp(&mvp);
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
@@ -406,7 +406,7 @@ static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 }
 
 static void gl_raster_font_restore_viewport(gl_t *gl)

@@ -50,6 +50,14 @@ enum socket_protocol
    SOCKET_PROTOCOL_UDP
 };
 
+typedef struct socket_target
+{
+   unsigned port;
+   const char *server;
+   enum socket_domain domain;
+   enum socket_protocol prot;
+} socket_target_t;
+
 int socket_init(void **address, uint16_t port, const char *server, enum socket_type type);
 
 int socket_close(int fd);
@@ -75,6 +83,8 @@ int socket_create(
       enum socket_domain domain_type,
       enum socket_type socket_type,
       enum socket_protocol protocol_type);
+
+void socket_set_target(void *data, socket_target_t *in_addr);
 
 RETRO_END_DECLS
 

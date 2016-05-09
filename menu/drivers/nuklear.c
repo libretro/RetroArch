@@ -174,15 +174,14 @@ static void nk_menu_frame(void *data)
    nk_menu_handle_t *nk = (nk_menu_handle_t*)data;
    settings_t *settings  = config_get_ptr();
 
-   bool libretro_running = menu_display_ctl(
-         MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
+   bool libretro_running = menu_display_libretro_running();
 
    if (!nk)
       return;
 
    video_driver_get_size(&width, &height);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+   menu_display_set_viewport();
 
    nk_input_begin(&nk->ctx);
    nk_menu_input_gamepad(nk);
@@ -212,22 +211,19 @@ static void nk_menu_frame(void *data)
          width,
          height);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
+   menu_display_restore_clear_color();
+   menu_display_unset_viewport();
 }
 
 static void nk_menu_layout(nk_menu_handle_t *nk)
 {
-   void *fb_buf;
    float scale_factor;
    unsigned width, height, new_header_height;
 
    video_driver_get_size(&width, &height);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT,
-         &new_header_height);
-
+   scale_factor = menu_display_get_dpi();
+   menu_display_set_header_height(new_header_height);
 }
 
 static void nk_menu_init_device(nk_menu_handle_t *nk)
@@ -285,7 +281,7 @@ static void *nk_menu_init(void **userdata)
    if (!menu)
       goto error;
 
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT_FIRST_DRIVER, NULL))
+   if (!menu_display_init_first_driver())
       goto error;
 
    nk = (nk_menu_handle_t*)calloc(1, sizeof(nk_menu_handle_t));
@@ -339,8 +335,7 @@ static void nk_menu_context_destroy(void *data)
    for (i = 0; i < NK_TEXTURE_LAST; i++)
       video_driver_texture_unload((uintptr_t*)&nk->textures.list[i]);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
-
+   menu_display_font_main_deinit();
    wimp_context_bg_destroy(nk);
 }
 

@@ -20,7 +20,7 @@
 
 #include "../video_shader_parse.h"
 #include "../d3d/d3d.h"
-#include "../../rewind.h"
+#include "../../state_manager.h"
 
 #include "../drivers/d3d_shaders/opaque.hlsl.d3d9.h"
 

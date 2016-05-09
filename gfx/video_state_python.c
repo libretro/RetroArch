@@ -26,7 +26,7 @@
 #include "video_state_python.h"
 #include "../dynamic.h"
 #include "../libretro.h"
-#include "../libretro_version_1.h"
+#include "../core.h"
 #include "../general.h"
 #include "../verbosity.h"
 #include "../input/input_config.h"
@@ -40,7 +40,7 @@ static PyObject* py_read_wram(PyObject *self, PyObject *args)
 
    mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    data = (const uint8_t*)mem_info.data;
 
@@ -75,7 +75,7 @@ static PyObject* py_read_vram(PyObject *self, PyObject *args)
 
    mem_info.id = RETRO_MEMORY_VIDEO_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
    
    data = (const uint8_t*)mem_info.data;
 
@@ -120,7 +120,7 @@ static PyObject *py_read_input(PyObject *self, PyObject *args)
    if (user > MAX_USERS || user < 1 || key >= RARCH_FIRST_META_KEY)
       return NULL;
 
-   if (!input_driver_ctl(RARCH_INPUT_CTL_IS_LIBRETRO_INPUT_BLOCKED, NULL))
+   if (!input_driver_is_libretro_input_blocked())
       res = input_driver_state(py_binds, user - 1, RETRO_DEVICE_JOYPAD, 0, key);
    return PyBool_FromLong(res);
 }

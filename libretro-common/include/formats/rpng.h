@@ -35,9 +35,6 @@ RETRO_BEGIN_DECLS
 
 typedef struct rpng rpng_t;
 
-bool rpng_load_image_argb(const char *path, uint32_t **data,
-      unsigned *width, unsigned *height);
-
 rpng_t *rpng_nbio_load_image_argb_init(const char *path);
 
 bool rpng_is_valid(rpng_t *rpng);

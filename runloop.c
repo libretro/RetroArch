@@ -44,7 +44,7 @@
 #include "movie.h"
 #include "retroarch.h"
 #include "runloop.h"
-#include "rewind.h"
+#include "state_manager.h"
 #include "system.h"
 #include "list_special.h"
 #include "audio/audio_driver.h"
@@ -52,7 +52,7 @@
 #include "record/record_driver.h"
 #include "input/input_driver.h"
 #include "ui/ui_companion_driver.h"
-#include "libretro_version_1.h"
+#include "core.h"
 
 #include "msg_hash.h"
 
@@ -97,12 +97,51 @@ typedef struct event_cmd_state
    retro_input_t state[3];
 } event_cmd_state_t;
 
-
+static rarch_dir_list_t runloop_shader_dir;
+static char runloop_fullpath[PATH_MAX_LENGTH];
+static rarch_system_info_t runloop_system;
+static unsigned runloop_pending_windowed_scale;
+static struct retro_frame_time_callback runloop_frame_time;
+static retro_keyboard_event_t runloop_key_event          = NULL;
+static retro_keyboard_event_t runloop_frontend_key_event = NULL;
+static retro_usec_t runloop_frame_time_last      = 0;
+static unsigned runloop_max_frames               = false;
+static bool runloop_force_nonblock               = false;
+static bool runloop_frame_time_last_enable       = false;
+static bool runloop_set_frame_limit              = false;
+static bool runloop_paused                       = false;
+static bool runloop_idle                         = false;
+static bool runloop_exec                         = false;
+static bool runloop_slowmotion                   = false;
+static bool runloop_shutdown_initiated           = false;
+static bool runloop_core_shutdown_initiated      = false;
+static bool runloop_perfcnt_enable               = false;
+static bool runloop_overrides_active             = false;
+static bool runloop_game_options_active          = false;
+static core_option_manager_t *runloop_core_options = NULL;
+#ifdef HAVE_THREADS
+static slock_t *_runloop_msg_queue_lock           = NULL;
+#endif
+static msg_queue_t *runloop_msg_queue            = NULL;
 
 global_t *global_get_ptr(void)
 {
    static struct global g_extern;
    return &g_extern;
+}
+
+static void runloop_msg_queue_lock(void)
+{
+#ifdef HAVE_THREADS
+   slock_lock(_runloop_msg_queue_lock);
+#endif
+}
+
+static void runloop_msg_queue_unlock(void)
+{
+#ifdef HAVE_THREADS
+   slock_unlock(_runloop_msg_queue_lock);
+#endif
 }
 
 void runloop_msg_queue_push(const char *msg,
@@ -114,7 +153,7 @@ void runloop_msg_queue_push(const char *msg,
    if(!settings->video.font_enable)
       return;
 
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
+   runloop_msg_queue_lock();
 
    if (flush)
       runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_CLEAR, NULL);
@@ -126,8 +165,70 @@ void runloop_msg_queue_push(const char *msg,
 
    runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PUSH, &msg_info);
 
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
+   runloop_msg_queue_unlock();
+}
 
+char* runloop_msg_queue_pull(void)
+{
+   runloop_ctx_msg_info_t msg_info;
+   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PULL, &msg_info);
+
+   return strdup(msg_info.msg);
+}
+
+/* Checks if movie is being played back. */
+static bool runloop_check_movie_playback(void)
+{
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL))
+      return false;
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 1, 180, false);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
+
+   event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
+
+   bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_END, NULL);
+   bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
+
+   return true;
+}
+
+/* Checks if movie is being recorded. */
+static bool runloop_check_movie_record(void)
+{
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return false;
+
+   runloop_msg_queue_push(
+         msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true);
+   RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
+
+   event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
+
+   return true;
+}
+
+/* Checks if slowmotion toggle/hold was being pressed and/or held. */
+static bool runloop_check_slowmotion(bool *ptr)
+{
+   settings_t *settings  = config_get_ptr();
+   if (!ptr)
+      return false;
+
+   runloop_slowmotion   = *ptr;
+
+   if (!runloop_slowmotion)
+      return false;
+
+   if (settings->video.black_frame_insertion)
+      video_driver_cached_frame_render();
+
+   if (state_manager_frame_is_reversed())
+      runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 0, 30, true);
+   else
+      runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 0, 30, true);
+   return true;
 }
 
 #ifdef HAVE_MENU
@@ -158,7 +259,7 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
          break;
    }
 
-   input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
+   input_driver_set_flushing_input();
    return true;
 }
 #endif
@@ -220,17 +321,17 @@ static void check_fast_forward_button(bool fastforward_pressed,
     */
    if (fastforward_pressed)
    {
-      if (input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
-         input_driver_ctl(RARCH_INPUT_CTL_UNSET_NONBLOCK_STATE, NULL);
+      if (input_driver_is_nonblock_state())
+         input_driver_unset_nonblock_state();
       else
-         input_driver_ctl(RARCH_INPUT_CTL_SET_NONBLOCK_STATE, NULL);
+         input_driver_set_nonblock_state();
    }
    else if (old_hold_pressed != hold_pressed)
    {
       if (hold_pressed)
-         input_driver_ctl(RARCH_INPUT_CTL_SET_NONBLOCK_STATE, NULL);
+         input_driver_set_nonblock_state();
       else
-         input_driver_ctl(RARCH_INPUT_CTL_UNSET_NONBLOCK_STATE, NULL);
+         input_driver_unset_nonblock_state();
    }
    else
       return;
@@ -392,7 +493,7 @@ static bool rarch_game_specific_options(char **output)
    char game_path[PATH_MAX_LENGTH];
    config_file_t *option_file = NULL;
    
-   if (!rarch_game_options_validate(game_path, sizeof(game_path), false))
+   if (!retroarch_validate_game_options(game_path, sizeof(game_path), false))
          return false;
 
    option_file = config_file_new(game_path);
@@ -467,7 +568,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
 
    tmp = runloop_cmd_press(cmd, RARCH_SLOWMOTION);
 
-   runloop_ctl(RUNLOOP_CTL_CHECK_SLOWMOTION, &tmp);
+   runloop_check_slowmotion(&tmp);
 
    if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
       runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
@@ -511,7 +612,7 @@ static bool runloop_check_pause_state(event_cmd_state_t *cmd)
    if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
    {
       event_cmd_ctl(EVENT_CMD_FULLSCREEN_TOGGLE, NULL);
-      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_cached_frame_render();
    }
 
    if (!check_is_oneshot)
@@ -520,55 +621,46 @@ static bool runloop_check_pause_state(event_cmd_state_t *cmd)
    return true;
 }
 
+void runloop_iterate_data(void)
+{
+   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
+}
+
+static bool runloop_is_focused(void)
+{
+   settings_t *settings                             = config_get_ptr();
+   if (settings->pause_nonactive)
+      return video_driver_is_focused();
+   return true;
+}
+
+static bool runloop_is_frame_count_end(void)
+{
+   uint64_t *frame_count =
+      video_driver_get_frame_count_ptr();
+   return runloop_max_frames && (*frame_count >= runloop_max_frames);
+}
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
-   static rarch_dir_list_t runloop_shader_dir;
-   static char runloop_fullpath[PATH_MAX_LENGTH];
-   static rarch_system_info_t runloop_system;
-   static unsigned runloop_pending_windowed_scale;
-   static struct retro_frame_time_callback runloop_frame_time;
-   static retro_keyboard_event_t runloop_key_event          = NULL;
-   static retro_keyboard_event_t runloop_frontend_key_event = NULL;
-   static retro_usec_t runloop_frame_time_last      = 0;
-   static unsigned runloop_max_frames               = false;
-   static bool runloop_force_nonblock               = false;
-   static bool runloop_frame_time_last_enable       = false;
-   static bool runloop_set_frame_limit              = false;
-   static bool runloop_paused                       = false;
-   static bool runloop_idle                         = false;
-   static bool runloop_exec                         = false;
-   static bool runloop_slowmotion                   = false;
-   static bool runloop_shutdown_initiated           = false;
-   static bool runloop_core_shutdown_initiated      = false;
-   static bool runloop_perfcnt_enable               = false;
-   static bool runloop_overrides_active             = false;
-   static bool runloop_game_options_active          = false;
-   static core_option_manager_t *runloop_core_options = NULL;
-#ifdef HAVE_THREADS
-   static slock_t *runloop_msg_queue_lock           = NULL;
-#endif
-   static msg_queue_t *runloop_msg_queue            = NULL;
    settings_t *settings                             = config_get_ptr();
 
    switch (state)
    {
-      case RUNLOOP_CTL_DATA_ITERATE:
-         task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
-         break;
       case RUNLOOP_CTL_SHADER_DIR_DEINIT:
          shader_dir_free(&runloop_shader_dir);
          break;
       case RUNLOOP_CTL_SHADER_DIR_INIT:
          return shader_dir_init(&runloop_shader_dir);
       case RUNLOOP_CTL_SYSTEM_INFO_INIT:
-         core_ctl(CORE_CTL_RETRO_GET_SYSTEM_INFO, &runloop_system.info);
+         core_get_system_info(&runloop_system.info);
 
          if (!runloop_system.info.library_name)
             runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
          if (!runloop_system.info.library_version)
             runloop_system.info.library_version = "v0";
 
-         video_driver_ctl(RARCH_DISPLAY_CTL_SET_TITLE_BUF, NULL);
+         video_driver_set_title_buf();
 
          strlcpy(runloop_system.valid_extensions,
                runloop_system.info.valid_extensions ?
@@ -615,15 +707,9 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_key_event             = NULL;
          runloop_frontend_key_event    = NULL;
 
-         audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_CALLBACK, NULL);
+         audio_driver_unset_callback();
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
-      case RUNLOOP_CTL_IS_FRAME_COUNT_END:
-         {
-            uint64_t *frame_count         = NULL;
-            video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
-            return runloop_max_frames && (*frame_count >= runloop_max_frames);
-         }
       case RUNLOOP_CTL_SET_FRAME_TIME_LAST:
          runloop_frame_time_last_enable = true;
          break;
@@ -698,35 +784,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_frame_time = *info;
          }
          break;
-      case RUNLOOP_CTL_FRAME_TIME:
-         if (!runloop_frame_time.callback)
-            return false;
-
-         {
-            /* Updates frame timing if frame timing callback is in use by the core.
-             * Limits frame time if fast forward ratio throttle is enabled. */
-
-            retro_time_t current     = retro_get_time_usec();
-            retro_time_t delta       = current - runloop_frame_time_last;
-            bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
-                  input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL)) |
-               !!recording_driver_get_data_ptr();
-
-
-            if (!runloop_frame_time_last || is_locked_fps)
-               delta = runloop_frame_time.reference;
-
-            if (!is_locked_fps && runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
-               delta /= settings->slowmotion_ratio;
-
-            runloop_frame_time_last = current;
-
-            if (is_locked_fps)
-               runloop_frame_time_last = 0;
-
-            runloop_frame_time.callback(delta);
-         }
-         break;
       case RUNLOOP_CTL_GET_WINDOWED_SCALE:
          {
             unsigned **scale = (unsigned**)data;
@@ -773,65 +830,25 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             strlcpy(runloop_fullpath, fullpath, sizeof(runloop_fullpath));
          }
          break;
-      case RUNLOOP_CTL_CHECK_FOCUS:
-         if (settings->pause_nonactive)
-            return video_driver_ctl(RARCH_DISPLAY_CTL_IS_FOCUSED, NULL);
-         break;
       case RUNLOOP_CTL_CHECK_IDLE_STATE:
          {
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
-            bool focused              = 
-               runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL);
+            bool focused              =  runloop_is_focused();
 
             check_pause(settings, focused,
                   runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
                   runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
 
-            if (!runloop_ctl(RUNLOOP_CTL_CHECK_PAUSE_STATE, cmd) || !focused)
+            if (!runloop_check_pause_state(cmd) || !focused)
                return false;
-         }
-         break;
-      case RUNLOOP_CTL_CHECK_STATE:
-         return runloop_check_state((event_cmd_state_t*)data, &runloop_shader_dir);
-      case RUNLOOP_CTL_CHECK_PAUSE_STATE:
-         return runloop_check_pause_state((event_cmd_state_t*)data);
-      case RUNLOOP_CTL_CHECK_SLOWMOTION:
-         {
-            bool *ptr            = (bool*)data;
-
-            if (!ptr)
-               return false;
-
-            runloop_slowmotion   = *ptr;
-
-            if (!runloop_slowmotion)
-               return false;
-
-            if (settings->video.black_frame_insertion)
-               video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
-
-            if (state_manager_frame_is_reversed())
-               runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION_REWIND), 0, 30, true);
-            else
-               runloop_msg_queue_push(msg_hash_to_str(MSG_SLOW_MOTION), 0, 30, true);
          }
          break;
       case RUNLOOP_CTL_CHECK_MOVIE:
          if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
-            return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK, NULL);
+            return runloop_check_movie_playback();
          if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_INIT, NULL);
-         return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_RECORD, NULL);
-      case RUNLOOP_CTL_CHECK_MOVIE_RECORD:
-         if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-            return false;
-
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED), 2, 180, true);
-         RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED));
-
-         event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
-         break;
+         return runloop_check_movie_record();
       case RUNLOOP_CTL_CHECK_MOVIE_INIT:
          if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
             return false;
@@ -874,19 +891,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             }
          }
          break;
-      case RUNLOOP_CTL_CHECK_MOVIE_PLAYBACK:
-         if (!bsv_movie_ctl(BSV_MOVIE_CTL_END, NULL))
-            return false;
-
-         runloop_msg_queue_push(
-               msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED), 1, 180, false);
-         RARCH_LOG("%s\n", msg_hash_to_str(MSG_MOVIE_PLAYBACK_ENDED));
-
-         event_cmd_ctl(EVENT_CMD_BSV_MOVIE_DEINIT, NULL);
-
-         bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_END, NULL);
-         bsv_movie_ctl(BSV_MOVIE_CTL_UNSET_PLAYBACK, NULL);
-         break;
       case RUNLOOP_CTL_FRAME_TIME_FREE:
          memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
          runloop_frame_time_last           = 0;
@@ -914,7 +918,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH,  NULL);
             runloop_overrides_active   = false;
 
-            core_ctl(CORE_CTL_UNSET_INPUT_DESCRIPTORS, NULL);
+            core_unset_input_descriptors();
 
             global = global_get_ptr();
             memset(global, 0, sizeof(struct global));
@@ -981,19 +985,19 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          }
          break;
       case RUNLOOP_CTL_MSG_QUEUE_PULL:
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
+         runloop_msg_queue_lock();
          {
             const char **ret = (const char**)data;
             if (!ret)
                return false;
             *ret = msg_queue_pull(runloop_msg_queue);
          }
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
+         runloop_msg_queue_unlock();
          break;
       case RUNLOOP_CTL_MSG_QUEUE_FREE:
 #ifdef HAVE_THREADS
-         slock_free(runloop_msg_queue_lock);
-         runloop_msg_queue_lock = NULL;
+         slock_free(_runloop_msg_queue_lock);
+         _runloop_msg_queue_lock = NULL;
 #endif
          break;
       case RUNLOOP_CTL_MSG_QUEUE_CLEAR:
@@ -1003,11 +1007,11 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (!runloop_msg_queue)
             return true;
 
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_LOCK, NULL);
+         runloop_msg_queue_lock();
 
          msg_queue_free(runloop_msg_queue);
 
-         runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_UNLOCK, NULL);
+         runloop_msg_queue_unlock();
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_FREE, NULL);
 
          runloop_msg_queue = NULL;
@@ -1018,18 +1022,8 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          retro_assert(runloop_msg_queue);
 
 #ifdef HAVE_THREADS
-         runloop_msg_queue_lock = slock_new();
-         retro_assert(runloop_msg_queue_lock);
-#endif
-         break;
-      case RUNLOOP_CTL_MSG_QUEUE_LOCK:
-#ifdef HAVE_THREADS
-         slock_lock(runloop_msg_queue_lock);
-#endif
-         break;
-      case RUNLOOP_CTL_MSG_QUEUE_UNLOCK:
-#ifdef HAVE_THREADS
-         slock_unlock(runloop_msg_queue_lock);
+         _runloop_msg_queue_lock = slock_new();
+         retro_assert(_runloop_msg_queue_lock);
 #endif
          break;
       case RUNLOOP_CTL_TASK_INIT:
@@ -1211,19 +1205,19 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 static void runloop_iterate_linefeed_overlay(settings_t *settings)
 {
    static char prev_overlay_restore = false;
-   bool osk_enable = input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL);
+   bool osk_enable = input_driver_is_onscreen_keyboard_enabled();
 
    if (osk_enable && !input_keyboard_ctl(
             RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
    {
-      input_driver_ctl(RARCH_INPUT_CTL_UNSET_OSK_ENABLED, NULL);
+      input_driver_unset_onscreen_keyboard_enabled();
       prev_overlay_restore  = true;
       event_cmd_ctl(EVENT_CMD_OVERLAY_DEINIT, NULL);
    }
    else if (!osk_enable && input_keyboard_ctl(
             RARCH_INPUT_KEYBOARD_CTL_IS_LINEFEED_ENABLED, NULL))
    {
-      input_driver_ctl(RARCH_INPUT_CTL_SET_OSK_ENABLED, NULL);
+      input_driver_set_onscreen_keyboard_enabled();
       prev_overlay_restore  = false;
       event_cmd_ctl(EVENT_CMD_OVERLAY_INIT, NULL);
    }
@@ -1263,9 +1257,9 @@ static INLINE int runloop_iterate_time_to_exit(bool quit_key_pressed)
    settings_t *settings          = NULL;
    bool time_to_exit             = runloop_ctl(RUNLOOP_CTL_IS_SHUTDOWN, NULL);
    time_to_exit                  = time_to_exit || quit_key_pressed;
-   time_to_exit                  = time_to_exit || !video_driver_ctl(RARCH_DISPLAY_CTL_IS_ALIVE, NULL);
+   time_to_exit                  = time_to_exit || !video_driver_is_alive();
    time_to_exit                  = time_to_exit || bsv_movie_ctl(BSV_MOVIE_CTL_END_EOF, NULL);
-   time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_FRAME_COUNT_END, NULL);
+   time_to_exit                  = time_to_exit || runloop_is_frame_count_end();
    time_to_exit                  = time_to_exit || runloop_ctl(RUNLOOP_CTL_IS_EXEC, NULL);
 
    if (!time_to_exit)
@@ -1328,9 +1322,9 @@ int runloop_iterate(unsigned *sleep_ms)
       runloop_ctl(RUNLOOP_CTL_UNSET_FRAME_LIMIT, NULL);
    }
 
-   if (input_driver_ctl(RARCH_INPUT_CTL_IS_FLUSHING_INPUT, NULL))
+   if (input_driver_is_flushing_input())
    {
-      input_driver_ctl(RARCH_INPUT_CTL_UNSET_FLUSHING_INPUT, NULL);
+      input_driver_unset_flushing_input();
       if (cmd.state[0])
       {
          cmd.state[0] = 0;
@@ -1339,11 +1333,35 @@ int runloop_iterate(unsigned *sleep_ms)
           * pause toggle to wake it up. */
          if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
             BIT64_SET(cmd.state[0], RARCH_PAUSE_TOGGLE);
-         input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
+         input_driver_set_flushing_input();
       }
    }
    
-   runloop_ctl(RUNLOOP_CTL_FRAME_TIME, NULL);
+   if (runloop_frame_time.callback)
+   {
+      /* Updates frame timing if frame timing callback is in use by the core.
+       * Limits frame time if fast forward ratio throttle is enabled. */
+
+      retro_time_t current     = retro_get_time_usec();
+      retro_time_t delta       = current - runloop_frame_time_last;
+      bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
+                                  input_driver_is_nonblock_state()) |
+                                  !!recording_driver_get_data_ptr();
+
+
+      if (!runloop_frame_time_last || is_locked_fps)
+         delta = runloop_frame_time.reference;
+
+      if (!is_locked_fps && runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
+         delta /= settings->slowmotion_ratio;
+
+      runloop_frame_time_last = current;
+
+      if (is_locked_fps)
+         runloop_frame_time_last = 0;
+
+      runloop_frame_time.callback(delta);
+   }
 
    cmd.state[2]      = cmd.state[0] & ~cmd.state[1];  /* trigger  */
 
@@ -1396,8 +1414,8 @@ int runloop_iterate(unsigned *sleep_ms)
    if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
       menu_ctx_iterate_t iter;
-      bool focused            = runloop_ctl(RUNLOOP_CTL_CHECK_FOCUS, NULL) 
-         && !ui_companion_is_on_foreground();
+      bool focused            = runloop_is_focused() &&
+                                !ui_companion_is_on_foreground();
       bool is_idle            = runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL);
       enum menu_action action = (enum menu_action)
                menu_input_frame_retropad(cmd.state[0], cmd.state[2]);
@@ -1425,16 +1443,16 @@ int runloop_iterate(unsigned *sleep_ms)
    }
 #endif
 
-   if (!runloop_ctl(RUNLOOP_CTL_CHECK_STATE, &cmd))
+   if (!runloop_check_state(&cmd, &runloop_shader_dir))
    {
       /* RetroArch has been paused. */
-      core_ctl(CORE_CTL_RETRO_CTX_POLL_CB, NULL);
+      core_poll();
       *sleep_ms = 10;
       return 1;
    }
 
 #if defined(HAVE_THREADS)
-   lock_autosave();
+   autosave_lock();
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -1459,13 +1477,13 @@ int runloop_iterate(unsigned *sleep_ms)
    }
 
    if ((settings->video.frame_delay > 0) && 
-         !input_driver_ctl(RARCH_INPUT_CTL_IS_NONBLOCK_STATE, NULL))
+         !input_driver_is_nonblock_state())
       retro_sleep(settings->video.frame_delay);
 
-   core_ctl(CORE_CTL_RETRO_RUN, NULL);
+   core_run();
 
 #ifdef HAVE_CHEEVOS
-   cheevos_ctl(CHEEVOS_CTL_TEST, NULL);
+   cheevos_test();
 #endif
 
    for (i = 0; i < settings->input.max_users; i++)
@@ -1485,7 +1503,7 @@ int runloop_iterate(unsigned *sleep_ms)
 #endif
 
 #if defined(HAVE_THREADS)
-   unlock_autosave();
+   autosave_unlock();
 #endif
 
    if (!settings->fastforward_ratio)

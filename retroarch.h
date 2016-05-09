@@ -170,23 +170,23 @@ struct rarch_main_wrap
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data);
 
-int rarch_info_get_capabilities(enum rarch_capabilities type,
+int retroarch_get_capabilities(enum rarch_capabilities type,
       char *s, size_t len);
 
-enum rarch_content_type rarch_path_is_media_type(const char *path);
+enum rarch_content_type retroarch_path_is_media_type(const char *path);
 
-const char *rarch_get_current_savefile_dir(void);
+const char *retroarch_get_current_savefile_dir(void);
 
-bool rarch_game_options_validate(char *s, size_t len, bool mkdir);
+bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
 
 /**
- * retro_fail:
+ * retroarch_fail:
  * @error_code  : Error code.
  * @error       : Error message to show.
  *
  * Sanely kills the program.
  **/
-void retro_fail(int error_code, const char *error);
+void retroarch_fail(int error_code, const char *error);
 
 #ifdef __cplusplus
 }
