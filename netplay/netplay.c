@@ -604,31 +604,38 @@ void np_log_connection(const struct sockaddr_storage *their_addr,
 
    u.storage = their_addr;
 
-   if (their_addr->ss_family == AF_INET)
+   switch (their_addr->ss_family)
    {
-      struct sockaddr_in in;
+      case AF_INET:
+         {
+            struct sockaddr_in in;
 
-      str = buf_v4;
+            memset(&in, 0, sizeof(in));
 
-      memset(&in, 0, sizeof(in));
-      in.sin_family = AF_INET;
-      memcpy(&in.sin_addr, &u.v4->sin_addr, sizeof(struct in_addr));
+            str           = buf_v4;
+            in.sin_family = AF_INET;
+            memcpy(&in.sin_addr, &u.v4->sin_addr, sizeof(struct in_addr));
 
-      getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in),
-            buf_v4, sizeof(buf_v4),
-            NULL, 0, NI_NUMERICHOST);
-   }
-   else if (their_addr->ss_family == AF_INET6)
-   {
-      struct sockaddr_in6 in;
+            getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in),
+                  buf_v4, sizeof(buf_v4),
+                  NULL, 0, NI_NUMERICHOST);
+         }
+         break;
+      case AF_INET6:
+         {
+            struct sockaddr_in6 in;
+            memset(&in, 0, sizeof(in));
 
-      str = buf_v6;
-      memset(&in, 0, sizeof(in));
-      in.sin6_family = AF_INET6;
-      memcpy(&in.sin6_addr, &u.v6->sin6_addr, sizeof(struct in6_addr));
+            str            = buf_v6;
+            in.sin6_family = AF_INET6;
+            memcpy(&in.sin6_addr, &u.v6->sin6_addr, sizeof(struct in6_addr));
 
-      getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in6),
-            buf_v6, sizeof(buf_v6), NULL, 0, NI_NUMERICHOST);
+            getnameinfo((struct sockaddr*)&in, sizeof(struct sockaddr_in6),
+                  buf_v6, sizeof(buf_v6), NULL, 0, NI_NUMERICHOST);
+         }
+         break;
+      default:
+         break;
    }
 
    if (str)
