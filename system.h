@@ -54,6 +54,8 @@ typedef struct rarch_system_info
       struct retro_controller_info *data;
       unsigned size;
    } ports;
+   
+   struct retro_memory_map mmaps;
 } rarch_system_info_t;
 
 #ifdef __cplusplus
