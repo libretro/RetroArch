@@ -234,7 +234,8 @@ void retro_run(void)
 
 bool retro_load_game(const struct retro_game_info *info)
 {
-   (void)info;
+   socket_target_t in_target;
+
    check_variables();
 
    s = socket_create(
@@ -249,15 +250,11 @@ bool retro_load_game(const struct retro_game_info *info)
    /* setup address structure */
    memset((char *) &si_other, 0, sizeof(si_other));
 
-   si_other.sin_family           = AF_INET;
-   si_other.sin_port             = inet_htons(port);
-#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
-   si_other.sin_addr.S_un.S_addr = inet_addr(server);
-#else
-   si_other.sin_addr.s_addr      = inet_addr(server);
+   in_target.port   = port;
+   in_target.server = server;
+   in_target.domain = SOCKET_DOMAIN_INET;
 
-   inet_aton(server , &si_other.sin_addr);
-#endif
+   socket_set_target(&si_other, &in_target); 
 
    log_cb(RETRO_LOG_INFO, "Server IP Address: %s\n" , server);
 

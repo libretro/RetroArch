@@ -84,6 +84,8 @@ int socket_create(
       enum socket_type socket_type,
       enum socket_protocol protocol_type);
 
+void socket_set_target(void *data, socket_target_t *in_addr);
+
 RETRO_END_DECLS
 
 #endif
