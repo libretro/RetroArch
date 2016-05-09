@@ -182,6 +182,14 @@ static bool gl_check_sync_proc(gl_t *gl)
 }
 #endif
 
+static bool gl_check_mipmap(gl_t *gl)
+{
+   if (!gl_query_extension(gl, "ARB_framebuffer_object"))
+      return false;
+
+   return glGenerateMipmap;
+}
+
 #ifndef HAVE_OPENGLES
 static bool gl_init_vao(gl_t *gl)
 {
@@ -1157,7 +1165,8 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
       mip_level = i + 1;
 
-      if (video_shader_driver_mipmap_input(&mip_level))
+      if (video_shader_driver_mipmap_input(&mip_level)
+            && gl_check_mipmap(gl))
          glGenerateMipmap(GL_TEXTURE_2D);
 
       glClear(GL_COLOR_BUFFER_BIT);
@@ -1232,7 +1241,8 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
 
    mip_level = gl->fbo_pass + 1;
 
-   if (video_shader_driver_mipmap_input(&mip_level))
+   if (video_shader_driver_mipmap_input(&mip_level)
+         && gl_check_mipmap(gl))
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
@@ -1822,7 +1832,7 @@ static bool gl_frame(void *data, const void *frame,
 
       /* No point regenerating mipmaps 
        * if there are no new frames. */
-      if (gl->tex_mipmap)
+      if (gl->tex_mipmap && gl_check_mipmap(gl))
          glGenerateMipmap(GL_TEXTURE_2D);
    }
 
