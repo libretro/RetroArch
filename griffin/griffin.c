@@ -909,15 +909,11 @@ MENU
 
 #endif
 
-#ifdef HAVE_COMMAND
-#include "../command.c"
-#endif
-
 #ifdef HAVE_NETWORK_GAMEPAD
 #include "../input/input_remote.c"
 #endif
 
-#include "../command_event.c"
+#include "../command.c"
 
 #ifdef __cplusplus
 extern "C" {

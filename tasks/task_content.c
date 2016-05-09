@@ -21,7 +21,7 @@
 
 #include "tasks_internal.h"
 
-#include "../command_event.h"
+#include "../command.h"
 
 /* TODO/FIXME - turn this into actual task */
 

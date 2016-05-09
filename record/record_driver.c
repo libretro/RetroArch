@@ -21,7 +21,7 @@
 
 #include "record_driver.h"
 
-#include "../command_event.h"
+#include "../command.h"
 #include "../general.h"
 #include "../retroarch.h"
 #include "../verbosity.h"

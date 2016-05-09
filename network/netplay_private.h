@@ -17,9 +17,11 @@
 #ifndef __RARCH_NETPLAY_PRIVATE_H
 #define __RARCH_NETPLAY_PRIVATE_H
 #include "netplay.h"
+
 #include <net/net_compat.h>
 #include <retro_endianness.h>
-#include "../command_event.h"
+
+#include "../command.h"
 #include "../general.h"
 #include "../autosave.h"
 #include "../dynamic.h"

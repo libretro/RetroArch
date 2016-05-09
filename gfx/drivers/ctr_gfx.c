@@ -23,7 +23,7 @@
 
 #include "ctr_gu.h"
 
-#include "../../command_event.h"
+#include "../../command.h"
 #include "../../general.h"
 #include "../../driver.h"
 

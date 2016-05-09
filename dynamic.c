@@ -30,7 +30,7 @@
 #endif
 
 #include "dynamic.h"
-#include "command_event.h"
+#include "command.h"
 
 #include "audio/audio_driver.h"
 #include "camera/camera_driver.h"

@@ -77,7 +77,7 @@
 #endif
 
 #include "config.features.h"
-#include "command_event.h"
+#include "command.h"
 
 /* Descriptive names for options without short variant.
  *

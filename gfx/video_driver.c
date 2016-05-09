@@ -37,7 +37,7 @@
 #include "../list_special.h"
 #include "../core.h"
 #include "../system.h"
-#include "../command_event.h"
+#include "../command.h"
 #include "../msg_hash.h"
 
 #ifdef HAVE_MENU

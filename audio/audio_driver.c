@@ -26,7 +26,7 @@
 #include "audio_utils.h"
 #include "audio_thread_wrapper.h"
 
-#include "../command_event.h"
+#include "../command.h"
 #include "../configuration.h"
 #include "../retroarch.h"
 #include "../runloop.h"

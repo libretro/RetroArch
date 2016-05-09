@@ -61,7 +61,7 @@
 #include "patch.h"
 #include "system.h"
 #include "retroarch.h"
-#include "command_event.h"
+#include "command.h"
 #include "file_path_special.h"
 #include "core.h"
 #include "verbosity.h"

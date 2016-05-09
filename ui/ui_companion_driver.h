@@ -26,7 +26,7 @@
 #include "../config.h"
 #endif
 
-#include "../command_event.h"
+#include "../command.h"
 
 #ifdef __cplusplus
 extern "C" {

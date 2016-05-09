@@ -111,7 +111,7 @@ OBJ += frontend/frontend.o \
        core_impl.o \
        retroarch.o \
        input/input_keyboard.o \
-       command_event.o \
+       command.o \
        msg_hash.o \
        intl/msg_hash_de.o \
        intl/msg_hash_eo.o \
@@ -507,10 +507,6 @@ ifeq ($(HAVE_THREADS), 1)
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += -lpthread
    endif
-endif
-
-ifeq ($(HAVE_COMMAND), 1)
-   OBJ += command.o
 endif
 
 ifeq ($(HAVE_WAYLAND), 1)
