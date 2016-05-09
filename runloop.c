@@ -1452,7 +1452,7 @@ int runloop_iterate(unsigned *sleep_ms)
    }
 
 #if defined(HAVE_THREADS)
-   lock_autosave();
+   autosave_lock();
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -1503,7 +1503,7 @@ int runloop_iterate(unsigned *sleep_ms)
 #endif
 
 #if defined(HAVE_THREADS)
-   unlock_autosave();
+   autosave_unlock();
 #endif
 
    if (!settings->fastforward_ratio)

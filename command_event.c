@@ -1197,14 +1197,14 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
             global_t  *global         = global_get_ptr();
             if (!global->sram.use)
                return false;
-            autosave_event_deinit();
+            autosave_deinit();
          }
 #endif
          break;
       case EVENT_CMD_AUTOSAVE_INIT:
          event_cmd_ctl(EVENT_CMD_AUTOSAVE_DEINIT, NULL);
 #ifdef HAVE_THREADS
-         autosave_event_init();
+         autosave_init();
 #endif
          break;
       case EVENT_CMD_AUTOSAVE_STATE:

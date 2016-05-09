@@ -88,11 +88,11 @@ static void netplay_net_post_frame(netplay_t *netplay)
          core_serialize(&serial_info);
 
 #if defined(HAVE_THREADS)
-         lock_autosave();
+         autosave_lock();
 #endif
          core_run();
 #if defined(HAVE_THREADS)
-         unlock_autosave();
+         autosave_unlock();
 #endif
          netplay->tmp_ptr = NEXT_PTR(netplay->tmp_ptr);
          netplay->tmp_frame_count++;

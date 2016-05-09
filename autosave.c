@@ -186,11 +186,11 @@ static void autosave_free(autosave_t *handle)
 }
 
 /**
- * lock_autosave:
+ * autosave_lock:
  *
  * Lock autosave.
  **/
-void lock_autosave(void)
+void autosave_lock(void)
 {
    unsigned i;
 
@@ -202,11 +202,11 @@ void lock_autosave(void)
 }
 
 /**
- * unlock_autosave:
+ * autosave_unlock:
  *
  * Unlocks autosave.
  **/
-void unlock_autosave(void)
+void autosave_unlock(void)
 {
    unsigned i;
 
@@ -217,7 +217,7 @@ void unlock_autosave(void)
    }
 }
 
-void autosave_event_init(void)
+void autosave_init(void)
 {
    unsigned i;
    autosave_t **list    = NULL;
@@ -258,7 +258,7 @@ void autosave_event_init(void)
    }
 }
 
-void autosave_event_deinit(void)
+void autosave_deinit(void)
 {
    unsigned i;
 
