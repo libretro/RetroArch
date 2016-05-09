@@ -233,8 +233,8 @@ static enum video_image_format video_texture_image_get_type(const char *path)
 bool video_texture_image_load(struct texture_image *out_img, 
       const char *path)
 {
-   size_t file_len;
    unsigned r_shift, g_shift, b_shift, a_shift;
+   size_t file_len             = 0;
    struct nbio_t      *handle  = NULL;
    void                   *ptr = NULL;
    enum video_image_format fmt = video_texture_image_get_type(path);
