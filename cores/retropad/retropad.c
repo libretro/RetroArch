@@ -46,15 +46,16 @@
 #define SOCKET_ERROR -1
 #endif
 
+int s;
+int port;
+char message[64];
+char server[64];
+struct sockaddr_in si_other;
  
 struct retro_log_callback logger;
 retro_log_printf_t log_cb;
 static uint16_t *frame_buf;
-struct sockaddr_in si_other;
-int s, slen=sizeof(si_other);
-char message[64];
-char server[64];
-int port;
+
 int input_state = 0;
 
 void retro_init(void)
@@ -224,7 +225,7 @@ void retro_run(void)
    snprintf(message, sizeof(message), "%d", input_state);
 
    /* send the message */
-   if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, slen)==-1)
+   if (sendto(s, message, strlen(message) , 0 , (struct sockaddr *) &si_other, sizeof(si_other))==-1)
        log_cb(RETRO_LOG_INFO, "Error sending data\n");
 
    for (i = 0; i < 320 * 240; i++)
