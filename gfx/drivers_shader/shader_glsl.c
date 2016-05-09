@@ -124,10 +124,12 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/core_alpha_blend.glsl.vert.h"
 #include "../drivers/gl_shaders/core_alpha_blend.glsl.frag.h"
 
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.vert.h"
+#include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon_simple.glsl.vert.h"
+#include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
 #if !defined(HAVE_OPENGLES2)
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.vert.h"
+#include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon.glsl.vert.h"
+#include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
 #endif
 
@@ -900,10 +902,10 @@ static void *gl_glsl_init(void *data, const char *path)
    }
 
 #if defined(HAVE_OPENGLES2)
-   shader_prog_info.vertex   = stock_vertex_xmb_simple;
+   shader_prog_info.vertex   = stock_vertex_xmb_simple_legacy;
    shader_prog_info.fragment = stock_fragment_xmb_simple;
 #else
-   shader_prog_info.vertex   = stock_vertex_xmb;
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_modern : stock_vertex_xmb_legacy;
    shader_prog_info.fragment = stock_fragment_xmb;
 #endif
    shader_prog_info.is_file  = false;
@@ -916,7 +918,7 @@ static void *gl_glsl_init(void *data, const char *path)
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU].id,
          &glsl->uniforms[VIDEO_SHADER_MENU]);
 
-   shader_prog_info.vertex   = stock_vertex_xmb_simple;
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_simple_modern : stock_vertex_xmb_simple_legacy;
    shader_prog_info.fragment = stock_fragment_xmb_simple;
 
    gl_glsl_compile_program(

@@ -1,11 +1,6 @@
-static const char *stock_vertex_xmb =
-   "#if __VERSION__ >= 130\n"
+static const char *stock_vertex_xmb_modern =
    "#define COMPAT_VARYING out\n"
    "#define COMPAT_ATTRIBUTE in\n"
-   "#else\n"
-   "#define COMPAT_VARYING varying\n"
-   "#define COMPAT_ATTRIBUTE attribute\n"
-   "#endif\n"
    "COMPAT_ATTRIBUTE vec3 VertexCoord;\n"
    "uniform float time;\n"
    "COMPAT_VARYING vec3 fragVertexEc;\n"
