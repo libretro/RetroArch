@@ -96,7 +96,7 @@ struct turbo_buttons
 
 static turbo_buttons_t input_driver_turbo_btns;
 #ifdef HAVE_COMMAND
-static rarch_cmd_t *input_driver_command          = NULL;
+static command_t *input_driver_command          = NULL;
 #endif
 #ifdef HAVE_NETWORK_GAMEPAD
 static input_remote_t *input_driver_remote        = NULL;
@@ -275,12 +275,12 @@ static retro_input_t input_driver_keys_pressed(void)
 #ifdef HAVE_COMMAND
       if (input_driver_command)
       {
-         rarch_cmd_handle_t handle;
+         command_handle_t handle;
 
          handle.handle = input_driver_command;
          handle.id     = key;
 
-         state |= rarch_cmd_get(&handle);
+         state |= command_get(&handle);
       }
 #endif
 
@@ -436,7 +436,7 @@ void input_poll(void)
 
 #ifdef HAVE_COMMAND
    if (input_driver_command)
-      rarch_cmd_poll(input_driver_command);
+      command_poll(input_driver_command);
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
@@ -849,7 +849,7 @@ bool input_driver_init_command(void)
             "Cannot use this command interface.\n");
    }
 
-   input_driver_command = rarch_cmd_new(settings->stdin_cmd_enable
+   input_driver_command = command_new(settings->stdin_cmd_enable
          && !input_driver_grab_stdin(),
          settings->network_cmd_enable, settings->network_cmd_port);
 
@@ -869,7 +869,7 @@ void input_driver_deinit_command(void)
 {
 #ifdef HAVE_COMMAND
    if (input_driver_command)
-      rarch_cmd_free(input_driver_command);
+      command_free(input_driver_command);
    input_driver_command = NULL;
 #endif
 }

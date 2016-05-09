@@ -46,7 +46,7 @@
 #define COMMAND_EXT_SLANG        0x105ce63aU
 #define COMMAND_EXT_SLANGP       0x1bf9adeaU
 
-struct rarch_cmd
+struct command
 {
 #ifdef HAVE_STDIN_CMD
    bool stdin_enable;
@@ -121,7 +121,7 @@ static const struct cmd_map map[] = {
 };
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-static bool cmd_init_network(rarch_cmd_t *handle, uint16_t port)
+static bool cmd_init_network(command_t *handle, uint16_t port)
 {
    int fd;
    struct addrinfo *res  = NULL;
@@ -156,7 +156,7 @@ error:
 #endif
 
 #ifdef HAVE_STDIN_CMD
-static bool cmd_init_stdin(rarch_cmd_t *handle)
+static bool cmd_init_stdin(command_t *handle)
 {
 #ifndef _WIN32
 #ifdef HAVE_NETPLAY
@@ -170,10 +170,10 @@ static bool cmd_init_stdin(rarch_cmd_t *handle)
 }
 #endif
 
-rarch_cmd_t *rarch_cmd_new(bool stdin_enable,
+command_t *command_new(bool stdin_enable,
       bool network_enable, uint16_t port)
 {
-   rarch_cmd_t *handle = (rarch_cmd_t*)calloc(1, sizeof(*handle));
+   command_t *handle = (command_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
 
@@ -197,7 +197,7 @@ rarch_cmd_t *rarch_cmd_new(bool stdin_enable,
 
 #if (defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)) || defined(HAVE_STDIN_CMD)
 error:
-   rarch_cmd_free(handle);
+   command_free(handle);
    return NULL;
 #endif
 }
@@ -277,7 +277,7 @@ static bool command_get_arg(const char *tok,
    return false;
 }
 
-static void parse_sub_msg(rarch_cmd_t *handle, const char *tok)
+static void parse_sub_msg(command_t *handle, const char *tok)
 {
    const char *arg = NULL;
    unsigned index  = 0;
@@ -299,7 +299,7 @@ static void parse_sub_msg(rarch_cmd_t *handle, const char *tok)
             msg_hash_to_str(MSG_RECEIVED));
 }
 
-static void parse_msg(rarch_cmd_t *handle, char *buf)
+static void parse_msg(command_t *handle, char *buf)
 {
    char *save      = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
@@ -312,7 +312,7 @@ static void parse_msg(rarch_cmd_t *handle, char *buf)
 }
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-static void network_cmd_poll(rarch_cmd_t *handle)
+static void network_cmd_poll(command_t *handle)
 {
    fd_set fds;
    struct timeval tmp_tv = {0};
@@ -451,7 +451,7 @@ static size_t read_stdin(char *buf, size_t size)
 }
 #endif
 
-static void stdin_cmd_poll(rarch_cmd_t *handle)
+static void stdin_cmd_poll(command_t *handle)
 {
    char *last_newline;
    ssize_t ret;
@@ -564,7 +564,7 @@ static bool verify_command(const char *cmd)
    return false;
 }
 
-bool rarch_cmd_send(const char *cmd_)
+bool command_send(const char *cmd_)
 {
    bool ret;
    char *command       = NULL;
@@ -609,7 +609,7 @@ bool rarch_cmd_send(const char *cmd_)
 }
 #endif
 
-bool rarch_cmd_poll(rarch_cmd_t *handle)
+bool command_poll(command_t *handle)
 {
    memset(handle->state, 0, sizeof(handle->state));
 
@@ -624,7 +624,7 @@ bool rarch_cmd_poll(rarch_cmd_t *handle)
    return true;
 }
 
-bool rarch_cmd_set(rarch_cmd_handle_t *handle)
+bool command_set(command_handle_t *handle)
 {
    if (!handle || !handle->handle)
       return false;
@@ -633,7 +633,7 @@ bool rarch_cmd_set(rarch_cmd_handle_t *handle)
    return true;
 }
 
-bool rarch_cmd_free(rarch_cmd_t *handle)
+bool command_free(command_t *handle)
 {
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
    if (handle && handle->net_fd >= 0)
@@ -645,7 +645,7 @@ bool rarch_cmd_free(rarch_cmd_t *handle)
    return true;
 }
 
-bool rarch_cmd_get(rarch_cmd_handle_t *handle)
+bool command_get(command_handle_t *handle)
 {
    if (!handle || !handle->handle)
       return false;

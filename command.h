@@ -28,28 +28,28 @@
 extern "C" {
 #endif
 
-typedef struct rarch_cmd rarch_cmd_t;
+typedef struct command command_t;
 
-typedef struct rarch_cmd_handle
+typedef struct command_handle
 {
-   rarch_cmd_t *handle;
+   command_t *handle;
    unsigned id;
-} rarch_cmd_handle_t;
+} command_handle_t;
 
-rarch_cmd_t *rarch_cmd_new(bool stdin_enable,
+command_t *command_new(bool stdin_enable,
       bool network_enable, uint16_t port);
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-bool rarch_cmd_send(const char *cmd_);
+bool command_send(const char *cmd_);
 #endif
 
-bool rarch_cmd_poll(rarch_cmd_t *handle);
+bool command_poll(command_t *handle);
 
-bool rarch_cmd_set(rarch_cmd_handle_t *handle);
+bool command_set(command_handle_t *handle);
 
-bool rarch_cmd_get(rarch_cmd_handle_t *handle);
+bool command_get(command_handle_t *handle);
 
-bool rarch_cmd_free(rarch_cmd_t *handle);
+bool command_free(command_t *handle);
 
 #ifdef __cplusplus
 }
