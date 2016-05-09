@@ -3290,7 +3290,6 @@ static void gl_load_texture_data(
     
    if (!gl_check_mipmap())
    {
-#if defined(HAVE_OPENGLES2) || defined(HAVE_PSGL) || defined(OSX_PPC)
       /* Assume no mipmapping support. */
       switch (filter_type)
       {
@@ -3303,7 +3302,6 @@ static void gl_load_texture_data(
          default:
             break;
       }
-#endif
    }
 
    switch (filter_type)
