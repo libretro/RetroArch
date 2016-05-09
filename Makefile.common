@@ -157,7 +157,7 @@ OBJ += frontend/frontend.o \
        dynamic.o \
        cores/dynamic_dummy.o \
        libretro-common/queues/message_queue.o \
-       rewind.o \
+       state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        input/input_autodetect.o \
        input/input_joypad_driver.o \

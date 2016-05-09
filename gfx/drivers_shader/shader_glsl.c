@@ -27,7 +27,7 @@
 #include "shader_glsl.h"
 #include "../video_state_tracker.h"
 #include "../../dynamic.h"
-#include "../../rewind.h"
+#include "../../state_manager.h"
 #include "../../core.h"
 
 #ifdef HAVE_CONFIG_H

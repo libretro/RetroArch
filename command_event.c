@@ -37,7 +37,7 @@
 #include "screenshot.h"
 #include "msg_hash.h"
 #include "retroarch.h"
-#include "rewind.h"
+#include "state_manager.h"
 #include "system.h"
 #include "ui/ui_companion_driver.h"
 #include "list_special.h"
@@ -1183,7 +1183,7 @@ bool event_cmd_ctl(enum event_command cmd, void *data)
 #ifdef HAVE_NETPLAY
          if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL))
 #endif
-            init_rewind();
+            state_manager_event_init();
          break;
       case EVENT_CMD_REWIND_TOGGLE:
          if (settings->rewind_enable)

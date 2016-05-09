@@ -44,7 +44,7 @@
 #include "movie.h"
 #include "retroarch.h"
 #include "runloop.h"
-#include "rewind.h"
+#include "state_manager.h"
 #include "system.h"
 #include "list_special.h"
 #include "audio/audio_driver.h"

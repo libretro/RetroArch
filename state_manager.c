@@ -21,7 +21,7 @@
 
 #include <retro_inline.h>
 
-#include "rewind.h"
+#include "state_manager.h"
 #include "configuration.h"
 #include "msg_hash.h"
 #include "movie.h"
@@ -132,7 +132,6 @@ static size_t state_manager_raw_maxsize(size_t uncomp)
 static void *state_manager_raw_alloc(size_t len, uint16_t uniq)
 {
    size_t  len16 = (len + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
-
    uint16_t *ret = (uint16_t*)calloc(len16 + sizeof(uint16_t) * 4 + 16, 1);
 
    /* Force in a different byte at the end, so we don't need to check 
@@ -621,7 +620,7 @@ static void state_manager_capacity(state_manager_t *state,
 }
 #endif
 
-void init_rewind(void)
+void state_manager_event_init(void)
 {
    retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
