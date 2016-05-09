@@ -99,7 +99,7 @@ static turbo_buttons_t input_driver_turbo_btns;
 static rarch_cmd_t *input_driver_command          = NULL;
 #endif
 #ifdef HAVE_NETWORK_GAMEPAD
-static rarch_remote_t *input_driver_remote        = NULL;
+static input_remote_t *input_driver_remote        = NULL;
 #endif
 static const input_driver_t *current_input        = NULL;
 static void *current_input_data                   = NULL;
@@ -441,7 +441,7 @@ void input_poll(void)
 
 #ifdef HAVE_NETWORK_GAMEPAD
    if (input_driver_remote)
-      rarch_remote_poll(input_driver_remote);
+      input_remote_poll(input_driver_remote);
 #endif
 }
 
@@ -490,7 +490,7 @@ int16_t input_state(unsigned port, unsigned device,
 #endif
 
 #ifdef HAVE_NETWORK_GAMEPAD
-      input_state_remote(&res, port, device, idx, id);
+      input_remote_state(&res, port, device, idx, id);
 #endif
    }
 
@@ -878,7 +878,7 @@ void input_driver_deinit_remote(void)
 {
 #ifdef HAVE_NETWORK_GAMEPAD
    if (input_driver_remote)
-      rarch_remote_free(input_driver_remote);
+      input_remote_free(input_driver_remote);
    input_driver_remote = NULL;
 #endif
 }
@@ -891,8 +891,7 @@ bool input_driver_init_remote(void)
    if (!settings->network_remote_enable)
       return false;
 
-   input_driver_remote 
-      = rarch_remote_new(settings->network_remote_base_port);
+   input_driver_remote = input_remote_new(settings->network_remote_base_port);
 
    if (!input_driver_remote)
    {

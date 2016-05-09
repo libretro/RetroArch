@@ -38,7 +38,7 @@
 #define DEFAULT_NETWORK_GAMEPAD_PORT 55400
 #define UDP_FRAME_PACKETS 16
 
-struct rarch_remote
+struct input_remote
 {
 
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
@@ -64,7 +64,7 @@ static input_remote_state_t *input_remote_get_state_ptr(void)
 }
 
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
-static bool remote_init_network(rarch_remote_t *handle,
+static bool input_remote_init_network(input_remote_t *handle,
       uint16_t port, unsigned user)
 {
    int fd;
@@ -104,13 +104,13 @@ error:
 }
 #endif
 
-rarch_remote_t *rarch_remote_new(uint16_t port)
+input_remote_t *input_remote_new(uint16_t port)
 {
    unsigned user;
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
    settings_t   *settings = config_get_ptr();
 #endif
-   rarch_remote_t *handle = (rarch_remote_t*)
+   input_remote_t *handle = (input_remote_t*)
       calloc(1, sizeof(*handle));
 
    if (!handle)
@@ -123,7 +123,7 @@ rarch_remote_t *rarch_remote_new(uint16_t port)
    {
       handle->net_fd[user] = -1;
       if(settings->network_remote_enable_user[user])
-         if (!remote_init_network(handle, port, user))
+         if (!input_remote_init_network(handle, port, user))
             goto error;
    }
 #endif
@@ -132,12 +132,12 @@ rarch_remote_t *rarch_remote_new(uint16_t port)
 
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
 error:
-   rarch_remote_free(handle);
+   input_remote_free(handle);
    return NULL;
 #endif
 }
 
-void rarch_remote_free(rarch_remote_t *handle)
+void input_remote_free(input_remote_t *handle)
 {
    unsigned user;
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
@@ -151,7 +151,7 @@ void rarch_remote_free(rarch_remote_t *handle)
 }
 
 #if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
-static void parse_packet(char *buffer, unsigned size, unsigned user)
+static void input_remote_parse_packet(char *buffer, unsigned size, unsigned user)
 {
    input_remote_state_t *ol_state  = input_remote_get_state_ptr();
    /* todo implement parsing of input_state from the packet */
@@ -159,8 +159,11 @@ static void parse_packet(char *buffer, unsigned size, unsigned user)
 }
 #endif
 
-void input_state_remote(int16_t *ret,
-      unsigned port, unsigned device, unsigned idx,
+void input_remote_state(
+      int16_t *ret,
+      unsigned port,
+      unsigned device,
+      unsigned idx,
       unsigned id)
 {
    input_remote_state_t *ol_state  = input_remote_get_state_ptr();
@@ -199,7 +202,7 @@ bool input_remote_key_pressed(int key, unsigned port)
    return (ol_state->buttons[port] & (UINT64_C(1) << key));
 }
 
-void rarch_remote_poll(rarch_remote_t *handle)
+void input_remote_poll(input_remote_t *handle)
 {
    unsigned user;
    settings_t *settings            = config_get_ptr();
@@ -225,7 +228,7 @@ void rarch_remote_poll(rarch_remote_t *handle)
                sizeof(buf) - 1, 0, NULL, NULL);
 
          if (ret > 0)
-            parse_packet(buf, sizeof(buf), user);
+            input_remote_parse_packet(buf, sizeof(buf), user);
          else
 #endif
             ol_state->buttons[user] = 0;
