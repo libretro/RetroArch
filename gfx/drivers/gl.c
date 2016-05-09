@@ -440,15 +440,15 @@ static void gl_compute_fbo_geometry(gl_t *gl,
 static void gl_create_fbo_texture(gl_t *gl, unsigned i, GLuint texture)
 {
    unsigned mip_level;
-   video_shader_ctx_wrap_t wrap;
    bool fp_fbo;
    GLenum min_filter, mag_filter, wrap_enum;
    video_shader_ctx_filter_t filter_type;
-   bool mipmapped       = false;
-   bool smooth          = false;
-   settings_t *settings = config_get_ptr();
-   GLuint base_filt     = settings->video.smooth ? GL_LINEAR : GL_NEAREST;
-   GLuint base_mip_filt = settings->video.smooth ? 
+   video_shader_ctx_wrap_t wrap = {0};
+   bool mipmapped               = false;
+   bool smooth                  = false;
+   settings_t *settings         = config_get_ptr();
+   GLuint base_filt             = settings->video.smooth ? GL_LINEAR : GL_NEAREST;
+   GLuint base_mip_filt         = settings->video.smooth ? 
       GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST;
 
    glBindTexture(GL_TEXTURE_2D, texture);
@@ -2606,10 +2606,10 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gfx_ctx_input_t inp;
    unsigned interval, mip_level;
    unsigned full_x, full_y;
-   video_shader_ctx_wrap_t wrap_info;
    video_shader_ctx_filter_t shader_filter;
    video_shader_ctx_info_t shader_info;
    video_shader_ctx_ident_t ident_info;
+   video_shader_ctx_wrap_t wrap_info    = {0};
    unsigned win_width                   = 0;
    unsigned win_height                  = 0;
    unsigned temp_width                  = 0;
@@ -2923,13 +2923,13 @@ static bool gl_has_windowed(void *data)
 
 static void gl_update_tex_filter_frame(gl_t *gl)
 {
-   video_shader_ctx_wrap_t wrap_info;
    video_shader_ctx_filter_t shader_filter;
    unsigned i, mip_level;
    GLenum wrap_mode;
    GLuint new_filt;
-   bool smooth          = false;
-   settings_t *settings = config_get_ptr();
+   video_shader_ctx_wrap_t wrap_info = {0};
+   bool smooth                       = false;
+   settings_t *settings              = config_get_ptr();
 
    if (!gl)
       return;
@@ -3637,7 +3637,7 @@ static uintptr_t gl_get_current_framebuffer(void *data)
 
 static retro_proc_address_t gl_get_proc_address(void *data, const char *sym)
 {
-   gfx_ctx_proc_address_t proc_address;
+   gfx_ctx_proc_address_t proc_address = {0};
 
    proc_address.sym = sym;
 
