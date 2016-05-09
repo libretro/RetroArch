@@ -144,6 +144,23 @@ static void runloop_msg_queue_unlock(void)
 #endif
 }
 
+static bool runloop_msg_queue_push_internal(runloop_ctx_msg_info_t *msg_info)
+{
+   if (!msg_info || !runloop_msg_queue)
+      return false;
+   msg_queue_push(runloop_msg_queue, msg_info->msg,
+         msg_info->prio, msg_info->duration);
+
+   if (ui_companion_is_on_foreground())
+   {
+      const ui_companion_driver_t *ui = ui_companion_get_ptr();
+      if (ui->msg_queue_push)
+         ui->msg_queue_push(msg_info->msg,
+               msg_info->prio, msg_info->duration, msg_info->flush);
+   }
+   return true;
+}
+
 void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,
       bool flush)
@@ -163,7 +180,7 @@ void runloop_msg_queue_push(const char *msg,
    msg_info.duration = duration;
    msg_info.flush    = flush;
 
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PUSH, &msg_info);
+   runloop_msg_queue_push_internal(&msg_info);
 
    runloop_msg_queue_unlock();
 }
@@ -641,6 +658,7 @@ static bool runloop_is_frame_count_end(void)
    return runloop_max_frames && (*frame_count >= runloop_max_frames);
 }
 
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    settings_t *settings                             = config_get_ptr();
@@ -967,23 +985,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_PAUSED:
          return runloop_paused;
-      case RUNLOOP_CTL_MSG_QUEUE_PUSH:
-         {
-            runloop_ctx_msg_info_t *msg_info = (runloop_ctx_msg_info_t*)data;
-            if (!msg_info || !runloop_msg_queue)
-               return false;
-            msg_queue_push(runloop_msg_queue, msg_info->msg,
-                  msg_info->prio, msg_info->duration);
-
-            if (ui_companion_is_on_foreground())
-            {
-               const ui_companion_driver_t *ui = ui_companion_get_ptr();
-               if (ui->msg_queue_push)
-                  ui->msg_queue_push(msg_info->msg,
-                        msg_info->prio, msg_info->duration, msg_info->flush);
-            }
-         }
-         break;
       case RUNLOOP_CTL_MSG_QUEUE_PULL:
          runloop_msg_queue_lock();
          {
