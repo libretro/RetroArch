@@ -258,7 +258,7 @@ static void poll_iteration(void)
    if (rarch_ctl(RARCH_CTL_IS_INITED, NULL))
       reply = NSTerminateCancel;
 
-   ui_companion_event_command(EVENT_CMD_QUIT);
+   ui_companion_event_command(CMD_EVENT_QUIT);
 
    return reply;
 }
@@ -280,7 +280,7 @@ static void poll_iteration(void)
       runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
       if (core_name)
-         ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
+         ui_companion_event_command(CMD_EVENT_LOAD_CONTENT);
 
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
@@ -306,7 +306,7 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
                     return;
                 
                 runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
-                ui_companion_event_command(EVENT_CMD_LOAD_CORE);
+                ui_companion_event_command(CMD_EVENT_LOAD_CORE);
                 
                 if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) 
                       && settings->set_supports_no_game_enable)
@@ -343,7 +343,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
                 runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
                 
                 if (core_name)
-                    ui_companion_event_command(EVENT_CMD_LOAD_CONTENT);
+                    ui_companion_event_command(CMD_EVENT_LOAD_CONTENT);
             }
             break;
         case 0: /* NSCancelButton/NSModalResponseCancel */
@@ -443,37 +443,37 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
    switch (sender_tag)
    {
       case 1:
-         cmd = EVENT_CMD_RESET;
+         cmd = CMD_EVENT_RESET;
          break;
       case 2:
-         cmd = EVENT_CMD_LOAD_STATE;
+         cmd = CMD_EVENT_LOAD_STATE;
          break;
       case 3:
-         cmd = EVENT_CMD_SAVE_STATE;
+         cmd = CMD_EVENT_SAVE_STATE;
          break;
       case 4:
-         cmd = EVENT_CMD_DISK_EJECT_TOGGLE;
+         cmd = CMD_EVENT_DISK_EJECT_TOGGLE;
          break;
       case 5:
-         cmd = EVENT_CMD_DISK_PREV;
+         cmd = CMD_EVENT_DISK_PREV;
          break;
       case 6:
-         cmd = EVENT_CMD_DISK_NEXT;
+         cmd = CMD_EVENT_DISK_NEXT;
          break;
       case 7:
-         cmd = EVENT_CMD_GRAB_MOUSE_TOGGLE;
+         cmd = CMD_EVENT_GRAB_MOUSE_TOGGLE;
          break;
       case 8:
-         cmd = EVENT_CMD_MENU_TOGGLE;
+         cmd = CMD_EVENT_MENU_TOGGLE;
          break;
       case 9:
-         cmd = EVENT_CMD_PAUSE_TOGGLE;
+         cmd = CMD_EVENT_PAUSE_TOGGLE;
          break;
       case 20:
-         cmd = EVENT_CMD_FULLSCREEN_TOGGLE;
+         cmd = CMD_EVENT_FULLSCREEN_TOGGLE;
          break;
       default:
-         cmd = EVENT_CMD_NONE;
+         cmd = CMD_EVENT_NONE;
          break;
    }
    
@@ -481,7 +481,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
    {
       unsigned idx = (sender_tag - (10-1));
       runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
-      cmd = EVENT_CMD_RESIZE_WINDOWED_SCALE;
+      cmd = CMD_EVENT_RESIZE_WINDOWED_SCALE;
    }
 
    ui_companion_event_command(cmd);

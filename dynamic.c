@@ -1245,7 +1245,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
             /* Forces recomputation of aspect ratios if
              * using core-dependent aspect ratios. */
-            command_event(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
+            command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
             /* TODO: Figure out what to do, if anything, with recording. */
          }

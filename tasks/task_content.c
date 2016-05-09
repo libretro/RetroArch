@@ -30,12 +30,12 @@ bool rarch_task_push_content_load_default(
       bool persist, enum rarch_core_type type,
       retro_task_callback_t cb, void *user_data)
 {
-   enum event_command cmd       = EVENT_CMD_NONE;
+   enum event_command cmd       = CMD_EVENT_NONE;
 
    if (core_path)
    {
       runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-      command_event(EVENT_CMD_LOAD_CORE, NULL);
+      command_event(CMD_EVENT_LOAD_CORE, NULL);
    }
 
    if (fullpath)
@@ -45,21 +45,21 @@ bool rarch_task_push_content_load_default(
    {
       case CORE_TYPE_PLAIN:
       case CORE_TYPE_DUMMY:
-         cmd = persist ? EVENT_CMD_LOAD_CONTENT_PERSIST : EVENT_CMD_LOAD_CONTENT;
+         cmd = persist ? CMD_EVENT_LOAD_CONTENT_PERSIST : CMD_EVENT_LOAD_CONTENT;
          break;
       case CORE_TYPE_FFMPEG:
 #ifdef HAVE_FFMPEG
-         cmd = EVENT_CMD_LOAD_CONTENT_FFMPEG;
+         cmd = CMD_EVENT_LOAD_CONTENT_FFMPEG;
 #endif
          break;
       case CORE_TYPE_IMAGEVIEWER:
 #ifdef HAVE_IMAGEVIEWER
-         cmd = EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER;
+         cmd = CMD_EVENT_LOAD_CONTENT_IMAGEVIEWER;
 #endif
          break;
    }
 
-   if (cmd != EVENT_CMD_NONE)
+   if (cmd != CMD_EVENT_NONE)
       command_event(cmd, NULL);
 
 #ifdef HAVE_MENU

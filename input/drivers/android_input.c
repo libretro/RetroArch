@@ -1067,7 +1067,7 @@ static void android_input_poll(void *data)
       if (android_app->reinitRequested != 0)
       {
          if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
-            command_event(EVENT_CMD_REINIT, NULL);
+            command_event(CMD_EVENT_REINIT, NULL);
          android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
          return;
       }
@@ -1094,7 +1094,7 @@ bool android_run_events(void *data)
    if (android_app->reinitRequested != 0)
    {
       if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
-         command_event(EVENT_CMD_REINIT, NULL);
+         command_event(CMD_EVENT_REINIT, NULL);
       android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
    }
 

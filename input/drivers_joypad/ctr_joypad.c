@@ -170,7 +170,7 @@ static void ctr_joypad_poll(void)
       (state_tmp & KEY_SELECT) &&
       (state_tmp & KEY_L) &&
       (state_tmp & KEY_R))
-      command_event(EVENT_CMD_QUIT, NULL);
+      command_event(CMD_EVENT_QUIT, NULL);
 
 }
 

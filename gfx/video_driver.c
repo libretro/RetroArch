@@ -505,7 +505,7 @@ static void deinit_pixel_converter(void)
 
 static bool uninit_video_input(void)
 {
-   command_event(EVENT_CMD_OVERLAY_DEINIT, NULL);
+   command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 
    if (!video_driver_is_video_cache_context())
       video_driver_deinit_hw_context();
@@ -526,7 +526,7 @@ static bool uninit_video_input(void)
    deinit_pixel_converter();
    deinit_video_filter();
 
-   command_event(EVENT_CMD_SHADER_DIR_DEINIT, NULL);
+   command_event(CMD_EVENT_SHADER_DIR_DEINIT, NULL);
    video_monitor_compute_fps_statistics();
 
    return true;
@@ -600,7 +600,7 @@ static bool init_video(void)
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    init_video_filter(video_driver_state.pix_fmt);
-   command_event(EVENT_CMD_SHADER_DIR_INIT, NULL);
+   command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);
 
    if (av_info)
       geom      = (const struct retro_game_geometry*)&av_info->geometry;
@@ -742,8 +742,8 @@ static bool init_video(void)
 
    init_video_input(tmp);
 
-   command_event(EVENT_CMD_OVERLAY_DEINIT, NULL);
-   command_event(EVENT_CMD_OVERLAY_INIT, NULL);
+   command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
+   command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 
    video_driver_cached_frame_set(&dummy_pixels, 4, 4, 8);
 
@@ -1221,7 +1221,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
    menu_settings_list_current_add_cmd(
          list,
          list_info,
-         EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
+         CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
    menu_settings_list_current_add_range(
          list,
          list_info,
@@ -1250,7 +1250,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
    menu_settings_list_current_add_cmd(
          list,
          list_info,
-         EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
+         CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 #endif
 #ifdef _XBOX1
    CONFIG_UINT(

@@ -276,11 +276,11 @@ static bool netplay_get_cmd(netplay_t *netplay)
          return netplay_cmd_nak(netplay);
 
       case NETPLAY_CMD_PAUSE:
-         command_event(EVENT_CMD_PAUSE, NULL);
+         command_event(CMD_EVENT_PAUSE, NULL);
          return netplay_cmd_ack(netplay);
 
       case NETPLAY_CMD_RESUME:
-         command_event(EVENT_CMD_UNPAUSE, NULL);
+         command_event(CMD_EVENT_UNPAUSE, NULL);
          return netplay_cmd_ack(netplay);
 
       default: break;
@@ -1163,7 +1163,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          {
             bool *state = (bool*)data;
             if (*state)
-               command_event(EVENT_CMD_FULLSCREEN_TOGGLE, NULL);
+               command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
          }
          break;
       default:

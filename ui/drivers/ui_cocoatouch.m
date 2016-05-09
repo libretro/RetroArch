@@ -91,7 +91,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 
    if (ret == -1)
    {
-      ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
+      ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
       main_exit(NULL);
       return;
    }
@@ -408,7 +408,7 @@ enum
 #endif
    dispatch_async(dispatch_get_main_queue(),
                   ^{
-                  ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
+                  ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
                   });
    [self showPauseMenu: self];
 }
@@ -444,14 +444,14 @@ enum
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
-   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_START);
+   ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_AUDIO_START);
    rarch_disable_ui();
 }
 
 - (IBAction)showPauseMenu:(id)sender
 {
 #ifndef HAVE_AVFOUNDATION
-   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_STOP);
+   ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_AUDIO_STOP);
 #endif
    rarch_enable_ui();
 

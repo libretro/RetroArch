@@ -195,10 +195,10 @@ static bool menu_content_load_from_playlist(void *data)
    else
       menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
 
-   if (!command_event(EVENT_CMD_EXEC, (void*)path))
+   if (!command_event(CMD_EVENT_EXEC, (void*)path))
       return false;
 
-   command_event(EVENT_CMD_LOAD_CORE, NULL);
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
 
    return true;
 

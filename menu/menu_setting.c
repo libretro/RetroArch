@@ -1336,7 +1336,7 @@ static int setting_generic_action_ok_default(void *data, bool wraparound)
 
    (void)wraparound;
 
-   if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
+   if (setting->cmd_trigger.idx != CMD_EVENT_NONE)
       setting->cmd_trigger.triggered = true;
 
    return 0;
@@ -2690,7 +2690,7 @@ static int setting_action_ok_video_refresh_rate_auto(void *data, bool wraparound
       float video_refresh_rate_float = (float)video_refresh_rate;
       driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &video_refresh_rate_float);
       /* Incase refresh rate update forced non-block video. */
-      command_event(EVENT_CMD_VIDEO_SET_BLOCKING_STATE, NULL);
+      command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
    }
 
    if (setting_generic_action_ok_default(setting, wraparound) != 0)
@@ -2749,7 +2749,7 @@ static int setting_action_action_ok(void *data, bool wraparound)
 
    (void)wraparound;
 
-   if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
+   if (setting->cmd_trigger.idx != CMD_EVENT_NONE)
       command_event(setting->cmd_trigger.idx, NULL);
 
    return 0;
@@ -2878,7 +2878,7 @@ void general_read_handler(void *data)
 
 void general_write_handler(void *data)
 {
-   enum event_command rarch_cmd = EVENT_CMD_NONE;
+   enum event_command rarch_cmd = CMD_EVENT_NONE;
    menu_displaylist_info_t info = {0};
    rarch_setting_t *setting     = (rarch_setting_t*)data;
    settings_t *settings         = config_get_ptr();
@@ -2893,7 +2893,7 @@ void general_write_handler(void *data)
    if (!setting)
       return;
 
-   if (setting->cmd_trigger.idx != EVENT_CMD_NONE)
+   if (setting->cmd_trigger.idx != CMD_EVENT_NONE)
    {
       if (flags & SD_FLAG_EXIT)
       {
@@ -2972,13 +2972,13 @@ void general_write_handler(void *data)
          driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, setting->value.target.fraction);
 
          /* In case refresh rate update forced non-block video. */
-         rarch_cmd = EVENT_CMD_VIDEO_SET_BLOCKING_STATE;
+         rarch_cmd = CMD_EVENT_VIDEO_SET_BLOCKING_STATE;
          break;
       case MENU_LABEL_VIDEO_SCALE:
          settings->video.scale = roundf(*setting->value.target.fraction);
 
          if (!settings->video.fullscreen)
-            rarch_cmd = EVENT_CMD_REINIT;
+            rarch_cmd = CMD_EVENT_REINIT;
          break;
       case MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
          settings->input.joypad_map[0] = *setting->value.target.integer;
@@ -3015,11 +3015,11 @@ void general_write_handler(void *data)
          audio_driver_set_volume_gain(db_to_gain(*setting->value.target.fraction));
          break;
       case MENU_LABEL_AUDIO_LATENCY:
-         rarch_cmd = EVENT_CMD_AUDIO_REINIT;
+         rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
       case MENU_LABEL_PAL60_ENABLE:
          if (*setting->value.target.boolean && global->console.screen.pal_enable)
-            rarch_cmd = EVENT_CMD_REINIT;
+            rarch_cmd = CMD_EVENT_REINIT;
          else
             menu_setting_set_with_string_representation(setting, "false");
          break;
@@ -3116,14 +3116,14 @@ static void overlay_enable_toggle_change_handler(void *data)
 
    if (settings && settings->input.overlay_hide_in_menu)
    {
-      command_event(EVENT_CMD_OVERLAY_DEINIT, NULL);
+      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
       return;
    }
 
    if (setting->value.target.boolean)
-      command_event(EVENT_CMD_OVERLAY_INIT, NULL);
+      command_event(CMD_EVENT_OVERLAY_INIT, NULL);
    else
-      command_event(EVENT_CMD_OVERLAY_DEINIT, NULL);
+      command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 }
 #endif
 
@@ -3522,7 +3522,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].size         = sizeof(settings->path.libretro);
                (*list)[list_info->index - 1].value.target.string = settings->path.libretro;
                (*list)[list_info->index - 1].values       = ext_name;
-               menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_LOAD_CORE);
+               menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_LOAD_CORE);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_BROWSER_ACTION);
             }
          }
@@ -3592,7 +3592,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_RESTART_RETROARCH);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_RESTART_RETROARCH);
 #endif
 
          CONFIG_ACTION(
@@ -3610,7 +3610,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
 
          CONFIG_ACTION(
                list, list_info,
@@ -3619,7 +3619,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_SAVE_CONFIG);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_SAVE_CONFIG);
 
          CONFIG_ACTION(
                list, list_info,
@@ -3638,7 +3638,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_QUIT_RETROARCH);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT_RETROARCH);
 #endif
 
 #if defined(HAVE_LAKKA)
@@ -3649,7 +3649,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_SHUTDOWN);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_SHUTDOWN);
 
          CONFIG_ACTION(
                list, list_info,
@@ -3658,7 +3658,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REBOOT);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REBOOT);
 #endif
 
          CONFIG_ACTION(
@@ -4131,7 +4131,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_AUTOSAVE_INIT);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_AUTOSAVE_INIT);
          menu_settings_list_current_add_range(list, list_info, 0, 0, 10, true, false);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
          (*list)[list_info->index - 1].get_string_representation = 
@@ -4204,7 +4204,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REWIND_TOGGLE);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REWIND_TOGGLE);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
 #if 0
@@ -4292,7 +4292,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
          menu_settings_list_current_add_range(list, list_info, 0, 1, 1, true, false);
          (*list)[list_info->index - 1].get_string_representation = 
             &setting_get_string_representation_uint_video_monitor_index;
@@ -4313,7 +4313,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
          }
          if (video_driver_has_windowed())
@@ -4380,7 +4380,7 @@ static bool setting_append_list(
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
+            menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
             settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
          }
 
@@ -4400,7 +4400,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(
                list,
                list_info,
-               EVENT_CMD_VIDEO_SET_ASPECT_RATIO);
+               CMD_EVENT_VIDEO_SET_ASPECT_RATIO);
          menu_settings_list_current_add_range(
                list,
                list_info,
@@ -4428,7 +4428,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(
                list,
                list_info,
-               EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
+               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
          CONFIG_INT(
                list, list_info,
@@ -4445,7 +4445,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(
                list,
                list_info,
-               EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
+               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
          CONFIG_UINT(
                list, list_info,
@@ -4465,7 +4465,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(
                list,
                list_info,
-               EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
+               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
          CONFIG_UINT(
                list, list_info,
@@ -4485,7 +4485,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(
                list,
                list_info,
-               EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
+               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Scaling", &group_info, &subgroup_info, parent_group);
@@ -4523,7 +4523,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(
                list,
                list_info,
-               EVENT_CMD_VIDEO_APPLY_STATE_CHANGES);
+               CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
 
 #ifdef GEKKO
          CONFIG_UINT(
@@ -4608,7 +4608,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
 #endif
 
@@ -4637,7 +4637,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_VIDEO_SET_BLOCKING_STATE);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_VIDEO_SET_BLOCKING_STATE);
          menu_settings_list_current_add_range(list, list_info, 1, 4, 1, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
 
@@ -4765,7 +4765,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_values(list, list_info, "filt");
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -4989,7 +4989,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_values(list, list_info, "dsp");
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_DSP_FILTER_INIT);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_DSP_FILTER_INIT);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
          END_SUB_GROUP(list, list_info, parent_group);
@@ -5408,7 +5408,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_SET_FRAME_LIMIT);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_SET_FRAME_LIMIT);
          menu_settings_list_current_add_range(list, list_info, 0, 10, 1.0, true, true);
 
          CONFIG_FLOAT(
@@ -5611,7 +5611,7 @@ static bool setting_append_list(
                general_write_handler,
                general_read_handler);
          menu_settings_list_current_add_values(list, list_info, "cfg");
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_OVERLAY_INIT);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_OVERLAY_INIT);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_EMPTY);
 
          CONFIG_FLOAT(
@@ -5626,7 +5626,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_OVERLAY_SET_ALPHA_MOD);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_OVERLAY_SET_ALPHA_MOD);
          menu_settings_list_current_add_range(list, list_info, 0, 1, 0.01, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
@@ -5642,7 +5642,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_OVERLAY_SET_SCALE_FACTOR);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_OVERLAY_SET_SCALE_FACTOR);
          menu_settings_list_current_add_range(list, list_info, 0, 2, 0.01, true, true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
@@ -5721,7 +5721,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_PAUSE_LIBRETRO);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_PAUSE_LIBRETRO);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
          CONFIG_BOOL(
@@ -6152,7 +6152,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_REINIT);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
 
          CONFIG_BOOL(
@@ -6308,7 +6308,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_CHEEVOS_HARDCORE_MODE_TOGGLE);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE);
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
@@ -6707,7 +6707,7 @@ static bool setting_append_list(
                true,
                true);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_MENU_REFRESH);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_REFRESH);
          (*list)[list_info->index - 1].get_string_representation = 
             &setting_get_string_representation_uint_user_language;
 
@@ -6928,7 +6928,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_CORE_INFO_INIT);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_CORE_INFO_INIT);
          settings_data_list_current_add_flags(
                list,
                list_info,
@@ -6947,7 +6947,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-         menu_settings_list_current_add_cmd(list, list_info, EVENT_CMD_CORE_INFO_INIT);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_CORE_INFO_INIT);
          settings_data_list_current_add_flags(
                list,
                list_info,

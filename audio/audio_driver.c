@@ -297,7 +297,7 @@ static bool uninit_audio(void)
       free(audio_driver_data.output_samples.buf);
    audio_driver_data.output_samples.buf = NULL;
 
-   command_event(EVENT_CMD_DSP_FILTER_DEINIT, NULL);
+   command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
 
    compute_audio_buffer_statistics();
 
@@ -380,7 +380,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
 
    if (!settings->audio.sync && audio_driver_is_active())
    {
-      command_event(EVENT_CMD_AUDIO_SET_NONBLOCKING_STATE, NULL);
+      command_event(CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE, NULL);
       audio_driver_data.chunk.size = audio_driver_data.chunk.nonblock_size;
    }
 
@@ -438,7 +438,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
-   command_event(EVENT_CMD_DSP_FILTER_INIT, NULL);
+   command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
    audio_driver_data.free_samples.count = 0;
 
@@ -928,8 +928,8 @@ bool audio_driver_toggle_mute(void)
    settings->audio.mute_enable = !settings->audio.mute_enable;
 
    if (settings->audio.mute_enable)
-      command_event(EVENT_CMD_AUDIO_STOP, NULL);
-   else if (!command_event(EVENT_CMD_AUDIO_START, NULL))
+      command_event(CMD_EVENT_AUDIO_STOP, NULL);
+   else if (!command_event(CMD_EVENT_AUDIO_START, NULL))
    {
       audio_driver_unset_active();
       return false;

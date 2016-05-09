@@ -506,7 +506,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    switch (ret)
    {
       case -1:
-         command_event(EVENT_CMD_LOAD_CORE, NULL);
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
 
          rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL);
@@ -695,7 +695,7 @@ static int action_ok_playlist_entry(const char *path,
 static int action_ok_cheat_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   command_event(EVENT_CMD_CHEATS_APPLY, NULL);
+   command_event(CMD_EVENT_CHEATS_APPLY, NULL);
 
    return 0;
 }
@@ -758,7 +758,7 @@ static int generic_action_ok(const char *path,
          flush_char = NULL;
          flush_type = MENU_SETTINGS;
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, action_path);
-         if (command_event(EVENT_CMD_LOAD_CORE, NULL))
+         if (command_event(CMD_EVENT_LOAD_CORE, NULL))
          {
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_set_fork(FRONTEND_FORK_CORE))
@@ -818,8 +818,8 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_APPEND_DISK_IMAGE:
          flush_char = NULL;
          flush_type = 49;
-         command_event(EVENT_CMD_DISK_APPEND_IMAGE, action_path);
-         command_event(EVENT_CMD_RESUME, NULL);
+         command_event(CMD_EVENT_DISK_APPEND_IMAGE, action_path);
+         command_event(CMD_EVENT_RESUME, NULL);
          break;
       case ACTION_OK_SET_PATH:
          flush_char = NULL;
@@ -1244,18 +1244,18 @@ static int generic_action_ok_command(enum event_command cmd)
 static int action_ok_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   if (generic_action_ok_command(EVENT_CMD_LOAD_STATE) == -1)
+   if (generic_action_ok_command(CMD_EVENT_LOAD_STATE) == -1)
       return menu_cbs_exit();
-   return generic_action_ok_command(EVENT_CMD_RESUME);
+   return generic_action_ok_command(CMD_EVENT_RESUME);
  }
 
 
 static int action_ok_save_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   if (generic_action_ok_command(EVENT_CMD_SAVE_STATE) == -1)
+   if (generic_action_ok_command(CMD_EVENT_SAVE_STATE) == -1)
       return menu_cbs_exit();
-   return generic_action_ok_command(EVENT_CMD_RESUME);
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 #ifdef HAVE_NETWORKING
@@ -1269,10 +1269,10 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
       switch (type_hash)
       {
          case CB_CORE_UPDATER_DOWNLOAD:
-            command_event(EVENT_CMD_CORE_INFO_INIT, NULL);
+            command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
             break;
          case CB_UPDATE_ASSETS:
-            command_event(EVENT_CMD_REINIT, NULL);
+            command_event(CMD_EVENT_REINIT, NULL);
             break;
       }
    }
@@ -1414,7 +1414,7 @@ static void cb_generic_download(void *task_data,
    switch (transf->type_hash)
    {
       case CB_CORE_UPDATER_DOWNLOAD:
-         command_event(EVENT_CMD_CORE_INFO_INIT, NULL);
+         command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
          break;
    }
 #endif
@@ -1592,7 +1592,7 @@ static int action_ok_update_autoconfig_profiles_hid(const char *path,
 static int action_ok_disk_cycle_tray_status(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_DISK_EJECT_TOGGLE);
+   return generic_action_ok_command(CMD_EVENT_DISK_EJECT_TOGGLE);
 }
 
 /* creates folder and core options stub file for subsequent runs */
@@ -1637,43 +1637,43 @@ static int action_ok_option_create(const char *path,
 static int action_ok_close_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_UNLOAD_CORE);
+   return generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 }
 
 static int action_ok_quit(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_QUIT);
+   return generic_action_ok_command(CMD_EVENT_QUIT);
 }
 
 static int action_ok_save_new_config(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_MENU_SAVE_CONFIG);
+   return generic_action_ok_command(CMD_EVENT_MENU_SAVE_CONFIG);
 }
 
 static int action_ok_resume_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_RESUME);
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 static int action_ok_restart_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_RESET);
+   return generic_action_ok_command(CMD_EVENT_RESET);
 }
 
 static int action_ok_screenshot(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_TAKE_SCREENSHOT);
+   return generic_action_ok_command(CMD_EVENT_TAKE_SCREENSHOT);
 }
 
 static int action_ok_shader_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_SHADERS_APPLY_CHANGES);
+   return generic_action_ok_command(CMD_EVENT_SHADERS_APPLY_CHANGES);
 }
 
 static int action_ok_lookup_setting(const char *path,
@@ -1708,7 +1708,7 @@ static int generic_action_ok_network(const char *path,
    if (string_is_empty(settings->network.buildbot_url))
       return menu_cbs_exit();
 
-   command_event(EVENT_CMD_NETWORK_INIT, NULL);
+   command_event(CMD_EVENT_NETWORK_INIT, NULL);
 
    switch (type_id)
    {
@@ -2109,7 +2109,7 @@ static int action_ok_load_archive(const char *path,
    fill_pathname_join(detect_content_path, menu_path, content_path,
          sizeof(detect_content_path));
 
-   command_event(EVENT_CMD_LOAD_CORE, NULL);
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
    rarch_task_push_content_load_default(
             NULL, detect_content_path, false, CORE_TYPE_PLAIN, NULL, NULL);
 
@@ -2153,7 +2153,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    switch (ret)
    {
       case -1:
-         command_event(EVENT_CMD_LOAD_CORE, NULL);
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
          rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL);
          return 0;
@@ -2228,7 +2228,7 @@ static int action_ok_video_resolution(const char *path,
    {
       char msg[PATH_MAX_LENGTH] = {0};
 #ifdef __CELLOS_LV2__
-      command_event(EVENT_CMD_REINIT, NULL);
+      command_event(CMD_EVENT_REINIT, NULL);
 #endif
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO

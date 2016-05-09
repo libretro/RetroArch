@@ -3775,7 +3775,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             content_playlist_t *playlist        = g_defaults.history;
 
             if (!playlist)
-               command_event(EVENT_CMD_HISTORY_INIT, NULL);
+               command_event(CMD_EVENT_HISTORY_INIT, NULL);
 
             strlcpy(path_playlist, "history", sizeof(path_playlist));
 

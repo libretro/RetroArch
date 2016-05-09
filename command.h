@@ -32,187 +32,187 @@ typedef struct command command_t;
 
 enum event_command
 {
-   EVENT_CMD_NONE = 0,
+   CMD_EVENT_NONE = 0,
    /* Resets RetroArch. */
-   EVENT_CMD_RESET,
+   CMD_EVENT_RESET,
    /* Loads content file. */
-   EVENT_CMD_LOAD_CONTENT,
-   EVENT_CMD_LOAD_CONTENT_PERSIST,
+   CMD_EVENT_LOAD_CONTENT,
+   CMD_EVENT_LOAD_CONTENT_PERSIST,
 #ifdef HAVE_FFMPEG
-   EVENT_CMD_LOAD_CONTENT_FFMPEG,
+   CMD_EVENT_LOAD_CONTENT_FFMPEG,
 #endif
-   EVENT_CMD_LOAD_CONTENT_IMAGEVIEWER,
-   EVENT_CMD_SET_PER_GAME_RESOLUTION,
-   EVENT_CMD_SET_FRAME_LIMIT,
+   CMD_EVENT_LOAD_CONTENT_IMAGEVIEWER,
+   CMD_EVENT_SET_PER_GAME_RESOLUTION,
+   CMD_EVENT_SET_FRAME_LIMIT,
    /* Loads core. */
-   EVENT_CMD_LOAD_CORE_DEINIT,
-   EVENT_CMD_LOAD_CORE,
-   EVENT_CMD_LOAD_CORE_PERSIST,
-   EVENT_CMD_UNLOAD_CORE,
-   EVENT_CMD_LOAD_STATE,
-   EVENT_CMD_SAVE_STATE,
-   EVENT_CMD_SAVE_STATE_DECREMENT,
-   EVENT_CMD_SAVE_STATE_INCREMENT,
+   CMD_EVENT_LOAD_CORE_DEINIT,
+   CMD_EVENT_LOAD_CORE,
+   CMD_EVENT_LOAD_CORE_PERSIST,
+   CMD_EVENT_UNLOAD_CORE,
+   CMD_EVENT_LOAD_STATE,
+   CMD_EVENT_SAVE_STATE,
+   CMD_EVENT_SAVE_STATE_DECREMENT,
+   CMD_EVENT_SAVE_STATE_INCREMENT,
    /* Takes screenshot. */
-   EVENT_CMD_TAKE_SCREENSHOT,
+   CMD_EVENT_TAKE_SCREENSHOT,
    /* Quits RetroArch. */
-   EVENT_CMD_QUIT,
+   CMD_EVENT_QUIT,
    /* Reinitialize all drivers. */
-   EVENT_CMD_REINIT,
+   CMD_EVENT_REINIT,
    /* Toggles cheevos hardcore mode. */
-   EVENT_CMD_CHEEVOS_HARDCORE_MODE_TOGGLE,
+   CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE,
    /* Deinitialize rewind. */
-   EVENT_CMD_REWIND_DEINIT,
+   CMD_EVENT_REWIND_DEINIT,
    /* Initializes rewind. */
-   EVENT_CMD_REWIND_INIT,
+   CMD_EVENT_REWIND_INIT,
    /* Toggles rewind. */
-   EVENT_CMD_REWIND_TOGGLE,
+   CMD_EVENT_REWIND_TOGGLE,
    /* Deinitializes autosave. */
-   EVENT_CMD_AUTOSAVE_DEINIT,
+   CMD_EVENT_AUTOSAVE_DEINIT,
    /* Initializes autosave. */
-   EVENT_CMD_AUTOSAVE_INIT,
-   EVENT_CMD_AUTOSAVE_STATE,
+   CMD_EVENT_AUTOSAVE_INIT,
+   CMD_EVENT_AUTOSAVE_STATE,
    /* Stops audio. */
-   EVENT_CMD_AUDIO_STOP,
+   CMD_EVENT_AUDIO_STOP,
    /* Starts audio. */
-   EVENT_CMD_AUDIO_START,
+   CMD_EVENT_AUDIO_START,
    /* Mutes audio. */
-   EVENT_CMD_AUDIO_MUTE_TOGGLE,
+   CMD_EVENT_AUDIO_MUTE_TOGGLE,
    /* Initializes overlay. */
-   EVENT_CMD_OVERLAY_INIT,
+   CMD_EVENT_OVERLAY_INIT,
    /* Deinitializes overlay. */
-   EVENT_CMD_OVERLAY_DEINIT,
+   CMD_EVENT_OVERLAY_DEINIT,
    /* Sets current scale factor for overlay. */
-   EVENT_CMD_OVERLAY_SET_SCALE_FACTOR,
+   CMD_EVENT_OVERLAY_SET_SCALE_FACTOR,
    /* Sets current alpha modulation for overlay. */
-   EVENT_CMD_OVERLAY_SET_ALPHA_MOD,
+   CMD_EVENT_OVERLAY_SET_ALPHA_MOD,
    /* Cycle to next overlay. */
-   EVENT_CMD_OVERLAY_NEXT,
+   CMD_EVENT_OVERLAY_NEXT,
    /* Deinitializes overlay. */
-   EVENT_CMD_DSP_FILTER_INIT,
+   CMD_EVENT_DSP_FILTER_INIT,
    /* Deinitializes graphics filter. */
-   EVENT_CMD_DSP_FILTER_DEINIT,
+   CMD_EVENT_DSP_FILTER_DEINIT,
    /* Deinitializes GPU recoring. */
-   EVENT_CMD_GPU_RECORD_DEINIT,
+   CMD_EVENT_GPU_RECORD_DEINIT,
    /* Initializes recording system. */
-   EVENT_CMD_RECORD_INIT,
+   CMD_EVENT_RECORD_INIT,
    /* Deinitializes recording system. */
-   EVENT_CMD_RECORD_DEINIT,
+   CMD_EVENT_RECORD_DEINIT,
    /* Deinitializes history playlist. */
-   EVENT_CMD_HISTORY_DEINIT,
+   CMD_EVENT_HISTORY_DEINIT,
    /* Initializes history playlist. */
-   EVENT_CMD_HISTORY_INIT,
+   CMD_EVENT_HISTORY_INIT,
    /* Deinitializes core information. */
-   EVENT_CMD_CORE_INFO_DEINIT,
+   CMD_EVENT_CORE_INFO_DEINIT,
    /* Initializes core information. */
-   EVENT_CMD_CORE_INFO_INIT,
+   CMD_EVENT_CORE_INFO_INIT,
    /* Deinitializes core. */
-   EVENT_CMD_CORE_DEINIT,
+   CMD_EVENT_CORE_DEINIT,
    /* Initializes core. */
-   EVENT_CMD_CORE_INIT,
+   CMD_EVENT_CORE_INIT,
    /* Set audio blocking state. */
-   EVENT_CMD_AUDIO_SET_BLOCKING_STATE,
+   CMD_EVENT_AUDIO_SET_BLOCKING_STATE,
    /* Set audio nonblocking state. */
-   EVENT_CMD_AUDIO_SET_NONBLOCKING_STATE,
+   CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE,
    /* Apply video state changes. */
-   EVENT_CMD_VIDEO_APPLY_STATE_CHANGES,
+   CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
    /* Set video blocking state. */
-   EVENT_CMD_VIDEO_SET_BLOCKING_STATE,
+   CMD_EVENT_VIDEO_SET_BLOCKING_STATE,
    /* Set video nonblocking state. */
-   EVENT_CMD_VIDEO_SET_NONBLOCKING_STATE,
+   CMD_EVENT_VIDEO_SET_NONBLOCKING_STATE,
    /* Sets current aspect ratio index. */
-   EVENT_CMD_VIDEO_SET_ASPECT_RATIO,
-   EVENT_CMD_RESET_CONTEXT,
+   CMD_EVENT_VIDEO_SET_ASPECT_RATIO,
+   CMD_EVENT_RESET_CONTEXT,
    /* Restarts RetroArch. */
-   EVENT_CMD_RESTART_RETROARCH,
+   CMD_EVENT_RESTART_RETROARCH,
    /* Force-quit RetroArch. */
-   EVENT_CMD_QUIT_RETROARCH,
+   CMD_EVENT_QUIT_RETROARCH,
    /* Shutdown the OS */
-   EVENT_CMD_SHUTDOWN,
+   CMD_EVENT_SHUTDOWN,
    /* Reboot the OS */
-   EVENT_CMD_REBOOT,
+   CMD_EVENT_REBOOT,
    /* Resume RetroArch when in menu. */
-   EVENT_CMD_RESUME,
+   CMD_EVENT_RESUME,
    /* Toggles pause. */
-   EVENT_CMD_PAUSE_TOGGLE,
+   CMD_EVENT_PAUSE_TOGGLE,
    /* Pauses RetroArch. */
-   EVENT_CMD_UNPAUSE,
+   CMD_EVENT_UNPAUSE,
    /* Unpauses retroArch. */
-   EVENT_CMD_PAUSE,
-   EVENT_CMD_PAUSE_CHECKS,
-   EVENT_CMD_MENU_SAVE_CURRENT_CONFIG,
-   EVENT_CMD_MENU_SAVE_CONFIG,
-   EVENT_CMD_MENU_PAUSE_LIBRETRO,
+   CMD_EVENT_PAUSE,
+   CMD_EVENT_PAUSE_CHECKS,
+   CMD_EVENT_MENU_SAVE_CURRENT_CONFIG,
+   CMD_EVENT_MENU_SAVE_CONFIG,
+   CMD_EVENT_MENU_PAUSE_LIBRETRO,
    /* Toggles menu on/off. */
-   EVENT_CMD_MENU_TOGGLE,
-   EVENT_CMD_MENU_REFRESH,
+   CMD_EVENT_MENU_TOGGLE,
+   CMD_EVENT_MENU_REFRESH,
    /* Applies shader changes. */
-   EVENT_CMD_SHADERS_APPLY_CHANGES,
+   CMD_EVENT_SHADERS_APPLY_CHANGES,
    /* Initializes shader directory. */
-   EVENT_CMD_SHADER_DIR_INIT,
+   CMD_EVENT_SHADER_DIR_INIT,
    /* Deinitializes shader directory. */
-   EVENT_CMD_SHADER_DIR_DEINIT,
+   CMD_EVENT_SHADER_DIR_DEINIT,
    /* Initializes controllers. */
-   EVENT_CMD_CONTROLLERS_INIT,
-   EVENT_CMD_SAVEFILES,
+   CMD_EVENT_CONTROLLERS_INIT,
+   CMD_EVENT_SAVEFILES,
    /* Initializes savefiles. */
-   EVENT_CMD_SAVEFILES_INIT,
+   CMD_EVENT_SAVEFILES_INIT,
    /* Deinitializes savefiles. */
-   EVENT_CMD_SAVEFILES_DEINIT,
+   CMD_EVENT_SAVEFILES_DEINIT,
    /* Initializes cheats. */
-   EVENT_CMD_CHEATS_INIT,
+   CMD_EVENT_CHEATS_INIT,
    /* Deinitializes cheats. */
-   EVENT_CMD_CHEATS_DEINIT,
+   CMD_EVENT_CHEATS_DEINIT,
    /* Apply cheats. */
-   EVENT_CMD_CHEATS_APPLY,
+   CMD_EVENT_CHEATS_APPLY,
    /* Deinitializes network system. */
-   EVENT_CMD_NETWORK_DEINIT,
+   CMD_EVENT_NETWORK_DEINIT,
    /* Initializes network system. */
-   EVENT_CMD_NETWORK_INIT,
+   CMD_EVENT_NETWORK_INIT,
    /* Initializes netplay system. */
-   EVENT_CMD_NETPLAY_INIT,
+   CMD_EVENT_NETPLAY_INIT,
    /* Deinitializes netplay system. */
-   EVENT_CMD_NETPLAY_DEINIT,
+   CMD_EVENT_NETPLAY_DEINIT,
    /* Flip netplay players. */
-   EVENT_CMD_NETPLAY_FLIP_PLAYERS,
+   CMD_EVENT_NETPLAY_FLIP_PLAYERS,
    /* Initializes BSV movie. */
-   EVENT_CMD_BSV_MOVIE_INIT,
+   CMD_EVENT_BSV_MOVIE_INIT,
    /* Deinitializes BSV movie. */
-   EVENT_CMD_BSV_MOVIE_DEINIT,
+   CMD_EVENT_BSV_MOVIE_DEINIT,
    /* Initializes command interface. */
-   EVENT_CMD_COMMAND_INIT,
+   CMD_EVENT_COMMAND_INIT,
    /* Deinitialize command interface. */
-   EVENT_CMD_COMMAND_DEINIT,
+   CMD_EVENT_COMMAND_DEINIT,
    /* Initializes remote gamepad interface. */
-   EVENT_CMD_REMOTE_INIT,
+   CMD_EVENT_REMOTE_INIT,
    /* Deinitializes remote gamepad interface. */
-   EVENT_CMD_REMOTE_DEINIT,
+   CMD_EVENT_REMOTE_DEINIT,
    /* Reinitializes audio driver. */
-   EVENT_CMD_AUDIO_REINIT,
+   CMD_EVENT_AUDIO_REINIT,
    /* Resizes windowed scale. Will reinitialize video driver. */
-   EVENT_CMD_RESIZE_WINDOWED_SCALE,
+   CMD_EVENT_RESIZE_WINDOWED_SCALE,
    /* Deinitializes temporary content. */
-   EVENT_CMD_TEMPORARY_CONTENT_DEINIT,
-   EVENT_CMD_SUBSYSTEM_FULLPATHS_DEINIT,
-   EVENT_CMD_LOG_FILE_DEINIT,
+   CMD_EVENT_TEMPORARY_CONTENT_DEINIT,
+   CMD_EVENT_SUBSYSTEM_FULLPATHS_DEINIT,
+   CMD_EVENT_LOG_FILE_DEINIT,
    /* Toggles disk eject. */
-   EVENT_CMD_DISK_EJECT_TOGGLE,
+   CMD_EVENT_DISK_EJECT_TOGGLE,
    /* Cycle to next disk. */
-   EVENT_CMD_DISK_NEXT,
+   CMD_EVENT_DISK_NEXT,
    /* Cycle to previous disk. */
-   EVENT_CMD_DISK_PREV,
+   CMD_EVENT_DISK_PREV,
    /* Appends disk image to disk image list. */
-   EVENT_CMD_DISK_APPEND_IMAGE,
+   CMD_EVENT_DISK_APPEND_IMAGE,
    /* Stops rumbling. */
-   EVENT_CMD_RUMBLE_STOP,
+   CMD_EVENT_RUMBLE_STOP,
    /* Toggles mouse grab. */
-   EVENT_CMD_GRAB_MOUSE_TOGGLE,
+   CMD_EVENT_GRAB_MOUSE_TOGGLE,
    /* Toggles fullscreen mode. */
-   EVENT_CMD_FULLSCREEN_TOGGLE,
-   EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG,
-   EVENT_CMD_VOLUME_UP,
-   EVENT_CMD_VOLUME_DOWN,
-   EVENT_CMD_EXEC
+   CMD_EVENT_FULLSCREEN_TOGGLE,
+   CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG,
+   CMD_EVENT_VOLUME_UP,
+   CMD_EVENT_VOLUME_DOWN,
+   CMD_EVENT_EXEC
 };
 
 typedef struct command_handle
@@ -239,7 +239,7 @@ bool command_free(command_t *handle);
 #endif
 
 /**
- * event_command:
+ * command_event:
  * @cmd                  : Command index.
  *
  * Performs RetroArch command with index @cmd.

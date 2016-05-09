@@ -115,7 +115,7 @@ static void bundle_decompressed(void *task_data,
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
    if (dec && !err)
-      command_event(EVENT_CMD_REINIT, NULL);
+      command_event(CMD_EVENT_REINIT, NULL);
 
    if (err)
       RARCH_ERR("%s", err);
@@ -159,7 +159,7 @@ static bool menu_init(menu_handle_t *menu_data)
       menu_data->push_help_screen = true;
       menu_data->help_screen_type = MENU_HELP_WELCOME;
       settings->menu_show_start_screen   = false;
-      command_event(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
+      command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
    }
 
    if (      settings->bundle_assets_extract_enable
@@ -245,12 +245,12 @@ static void menu_driver_toggle(bool latch)
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
       /* Menu should always run with vsync on. */
-      command_event(EVENT_CMD_VIDEO_SET_BLOCKING_STATE, NULL);
+      command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
       /* Stop all rumbling before entering the menu. */
-      command_event(EVENT_CMD_RUMBLE_STOP, NULL);
+      command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
       if (settings->menu.pause_libretro)
-         command_event(EVENT_CMD_AUDIO_STOP, NULL);
+         command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
@@ -269,7 +269,7 @@ static void menu_driver_toggle(bool latch)
          driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
 
       if (settings && settings->menu.pause_libretro)
-         command_event(EVENT_CMD_AUDIO_START, NULL);
+         command_event(CMD_EVENT_AUDIO_START, NULL);
 
       /* Prevent stray input from going to libretro core */
       input_driver_set_flushing_input();
@@ -565,7 +565,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_display_deinit();
             menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
 
-            command_event(EVENT_CMD_HISTORY_DEINIT, NULL);
+            command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
             core_info_deinit_list();
             core_info_free_current_core();
@@ -860,7 +860,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_SHUTDOWN, NULL))
             {
                menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_SHUTDOWN, NULL);
-               if (!command_event(EVENT_CMD_QUIT, NULL))
+               if (!command_event(CMD_EVENT_QUIT, NULL))
                   return false;
                return true;
             }
