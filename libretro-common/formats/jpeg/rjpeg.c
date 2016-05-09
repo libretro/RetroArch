@@ -41,7 +41,7 @@ enum
    CF3Y = (27),
    CF3Z = (-3),
    CF2A = (139),
-   CF2B = (-11),
+   CF2B = (-11)
 };
 
 enum
@@ -51,7 +51,7 @@ enum
    W3 = 2408,
    W5 = 1609,
    W6 = 1108,
-   W7 = 565,
+   W7 = 565
 };
 
 struct rjpeg_vlc_code
