@@ -11,6 +11,7 @@
 #include <retro_inline.h>
 #include <boolean.h>
 #include <formats/image.h>
+#include <features/features_cpu.h>
 
 enum
 {
@@ -88,50 +89,18 @@ typedef struct
 #include <emmintrin.h>
 
 #ifdef _MSC_VER
-
-#if _MSC_VER >= 1400  /* not VC6 */
-#include <intrin.h> /* __cpuid */
-static int rjpeg__cpuid3(void)
-{
-   int info[4];
-   __cpuid(info,1);
-   return info[3];
-}
-#else
-static int rjpeg__cpuid3(void)
-{
-   int res;
-   __asm {
-      mov  eax,1
-      cpuid
-      mov  res,edx
-   }
-   return res;
-}
-#endif
-
 #define RJPEG_SIMD_ALIGN(type, name) __declspec(align(16)) type name
-
-static int rjpeg__sse2_available(void)
-{
-   int info3 = rjpeg__cpuid3();
-   return ((info3 >> 26) & 1) != 0;
-}
-#else /* assume GCC-style if not VC++ */
-#define RJPEG_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
-
-static int rjpeg__sse2_available(void)
-{
-#if defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__) >= 408 /* GCC 4.8 or later */
-   /* GCC 4.8+ has a nice way to do this */
-   return __builtin_cpu_supports("sse2");
 #else
-   /* portable way to do this, preferably without using GCC inline ASM?
-    * just bail for now. */
+#define RJPEG_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
+#endif
+
+static int rjpeg__sse2_available(void)
+{
+   uint64_t mask = cpu_features_get();
+   if (mask & RETRO_SIMD_SSE2)
+      return 1;
    return 0;
-#endif
 }
-#endif
 #endif
 
 /* ARM NEON */
