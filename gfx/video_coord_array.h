@@ -65,7 +65,7 @@ typedef struct video_coords
    unsigned indexes;
 } video_coords_t;
 
-typedef struct gfx_mut_coords
+typedef struct video_mut_coords
 {
    float *vertex;
    float *color;
@@ -74,11 +74,11 @@ typedef struct gfx_mut_coords
    unsigned vertices;
    unsigned *index;
    unsigned indexes;
-} gfx_mut_coords_t;
+} video_mut_coords_t;
 
 typedef struct video_coord_array
 {
-   gfx_mut_coords_t coords;
+   video_mut_coords_t coords;
    unsigned allocated;
 } video_coord_array_t;
 
