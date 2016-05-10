@@ -22,7 +22,7 @@
 #include "audio_driver.h"
 
 /**
- * audio_thread_init:
+ * audio_init_thread:
  * @out_driver                : output driver
  * @out_data                  : output audio data
  * @device                    : audio device (optional)

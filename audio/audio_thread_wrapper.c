@@ -260,7 +260,7 @@ static const audio_driver_t audio_thread = {
 };
 
 /**
- * audio_thread_init:
+ * audio_init_thread:
  * @out_driver                : output driver
  * @out_data                  : output audio data
  * @device                    : audio device (optional)
