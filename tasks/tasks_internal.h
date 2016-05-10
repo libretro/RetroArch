@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <boolean.h>
 
+#include <queues/message_queue.h>
 #include <queues/task_queue.h>
 
 #include "../core_type.h"
@@ -27,6 +28,17 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define CB_MENU_WALLPAPER     0xb476e505U
+#define CB_MENU_THUMBNAIL     0x82f93a21U
+
+enum nbio_status_enum
+{
+   NBIO_STATUS_POLL = 0,
+   NBIO_STATUS_TRANSFER,
+   NBIO_STATUS_TRANSFER_PARSE,
+   NBIO_STATUS_TRANSFER_PARSE_FREE
+};
 
 #ifdef HAVE_NETWORKING
 typedef struct {
@@ -39,6 +51,33 @@ typedef struct http_transfer_info
    char url[PATH_MAX_LENGTH];
    int progress;
 } http_transfer_info_t;
+
+typedef struct nbio_image_handle
+{
+   struct texture_image ti;
+   bool is_blocking;
+   bool is_blocking_on_processing;
+   bool is_finished;
+   transfer_cb_t  cb;
+   void *handle;
+   unsigned processing_pos_increment;
+   unsigned pos_increment;
+   uint64_t frame_count;
+   int processing_final_state;
+   unsigned status;
+} nbio_image_handle_t;
+
+typedef struct nbio_handle
+{
+   nbio_image_handle_t image;
+   bool is_finished;
+   transfer_cb_t  cb;
+   struct nbio_t *handle;
+   unsigned pos_increment;
+   uint64_t frame_count;
+   msg_queue_t *msg_queue;
+   unsigned status;
+} nbio_handle_t;
 
 void *rarch_task_push_http_transfer(const char *url, const char *type,
       retro_task_callback_t cb, void *userdata);
@@ -71,6 +110,8 @@ int detect_psp_game(const char *track_path, char *game_id);
 
 bool rarch_task_check_decompress(const char *source_file);
 
+bool rarch_task_image_load_handler(retro_task_t *task);
+
 bool rarch_task_push_decompress(
       const char *source_file,
       const char *target_dir,
@@ -87,6 +128,10 @@ bool rarch_task_push_content_load_default(
       enum rarch_core_type type,
       retro_task_callback_t cb,
       void *user_data);
+
+void rarch_task_image_load_free(retro_task_t *task);
+
+void rarch_task_file_load_handler(retro_task_t *task);;
 
 #ifdef __cplusplus
 }
