@@ -1,3 +1,6 @@
+/* Modified version of stb_image's JPEG sources. 
+ */
+
 #include <stdint.h>
 #include <stdarg.h>
 #include <stddef.h> /* ptrdiff_t on osx */
@@ -399,6 +402,31 @@ typedef struct
    void (*YCbCr_to_RGB_kernel)(uint8_t *out, const uint8_t *y, const uint8_t *pcb, const uint8_t *pcr, int count, int step);
    uint8_t *(*resample_row_hv_2_kernel)(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs);
 } rjpeg__jpeg;
+
+#define rjpeg__f2f(x)  ((int) (((x) * 4096 + 0.5)))
+#define rjpeg__fsh(x)  ((x) << 12)
+
+#define RJPEG__MARKER_none  0xff
+/* if there's a pending marker from the entropy stream, return that
+ * otherwise, fetch from the stream and get a marker. if there's no
+ * marker, return 0xff, which is never a valid marker value
+ */
+
+/* in each scan, we'll have scan_n components, and the order
+ * of the components is specified by order[]
+ */
+#define RJPEG__RESTART(x)     ((x) >= 0xd0 && (x) <= 0xd7)
+
+// use comparisons since in some cases we handle more than one case (e.g. SOF)
+#define rjpeg__DNL(x)         ((x) == 0xdc)
+#define rjpeg__SOI(x)         ((x) == 0xd8)
+#define rjpeg__EOI(x)         ((x) == 0xd9)
+#define rjpeg__SOF(x)         ((x) == 0xc0 || (x) == 0xc1 || (x) == 0xc2)
+#define rjpeg__SOS(x)         ((x) == 0xda)
+
+#define rjpeg__SOF_progressive(x)   ((x) == 0xc2)
+#define rjpeg__div4(x) ((uint8_t) ((x) >> 2))
+#define rjpeg__div16(x) ((uint8_t) ((x) >> 4))
 
 static int rjpeg__build_huffman(rjpeg__huffman *h, int *count)
 {
@@ -837,8 +865,6 @@ static INLINE uint8_t rjpeg__clamp(int x)
    return (uint8_t) x;
 }
 
-#define rjpeg__f2f(x)  ((int) (((x) * 4096 + 0.5)))
-#define rjpeg__fsh(x)  ((x) << 12)
 
 /* derived from jidctint -- DCT_ISLOW */
 #define RJPEG__IDCT_1D(s0,s1,s2,s3,s4,s5,s6,s7) \
@@ -1330,11 +1356,6 @@ static void rjpeg__idct_simd(uint8_t *out, int out_stride, short data[64])
 
 #endif /* RJPEG_NEON */
 
-#define RJPEG__MARKER_none  0xff
-/* if there's a pending marker from the entropy stream, return that
- * otherwise, fetch from the stream and get a marker. if there's no
- * marker, return 0xff, which is never a valid marker value
- */
 static uint8_t rjpeg__get_marker(rjpeg__jpeg *j)
 {
    uint8_t x;
@@ -1346,10 +1367,6 @@ static uint8_t rjpeg__get_marker(rjpeg__jpeg *j)
    return x;
 }
 
-/* in each scan, we'll have scan_n components, and the order
- * of the components is specified by order[]
- */
-#define RJPEG__RESTART(x)     ((x) >= 0xd0 && (x) <= 0xd7)
 
 /* after a restart interval, rjpeg__jpeg_reset the entropy decoder and
  * the dc prediction
@@ -1755,14 +1772,6 @@ static int rjpeg__process_frame_header(rjpeg__jpeg *z, int scan)
    return 1;
 }
 
-// use comparisons since in some cases we handle more than one case (e.g. SOF)
-#define rjpeg__DNL(x)         ((x) == 0xdc)
-#define rjpeg__SOI(x)         ((x) == 0xd8)
-#define rjpeg__EOI(x)         ((x) == 0xd9)
-#define rjpeg__SOF(x)         ((x) == 0xc0 || (x) == 0xc1 || (x) == 0xc2)
-#define rjpeg__SOS(x)         ((x) == 0xda)
-
-#define rjpeg__SOF_progressive(x)   ((x) == 0xc2)
 
 static int rjpeg__decode_jpeg_header(rjpeg__jpeg *z, int scan)
 {
@@ -1841,7 +1850,6 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
 /* static jfif-centered resampling (across block boundaries) */
 
 
-#define rjpeg__div4(x) ((uint8_t) ((x) >> 2))
 
 static uint8_t *rjpeg_resample_row_1(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
 {
@@ -1891,7 +1899,6 @@ static uint8_t*  rjpeg__resample_row_h_2(uint8_t *out, uint8_t *in_near, uint8_t
    return out;
 }
 
-#define rjpeg__div16(x) ((uint8_t) ((x) >> 4))
 
 static uint8_t *rjpeg__resample_row_hv_2(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
 {
@@ -2278,7 +2285,6 @@ static void rjpeg__cleanup_jpeg(rjpeg__jpeg *j)
    }
 }
 
-
 static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, int *out_x, int *out_y, int *comp, int req_comp)
 {
    int n, decode_n;
@@ -2325,18 +2331,22 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, int *out_x, int *out_y, in
              return rjpeg__errpuc("outofmem", "Out of memory");
          }
 
-         r->hs      = z->img_h_max / z->img_comp[k].h;
-         r->vs      = z->img_v_max / z->img_comp[k].v;
-         r->ystep   = r->vs >> 1;
-         r->w_lores = (z->s->img_x + r->hs-1) / r->hs;
-         r->ypos    = 0;
-         r->line0   = r->line1 = z->img_comp[k].data;
+         r->hs       = z->img_h_max / z->img_comp[k].h;
+         r->vs       = z->img_v_max / z->img_comp[k].v;
+         r->ystep    = r->vs >> 1;
+         r->w_lores  = (z->s->img_x + r->hs-1) / r->hs;
+         r->ypos     = 0;
+         r->line0    = r->line1 = z->img_comp[k].data;
+         r->resample = rjpeg__resample_row_generic;
 
-         if      (r->hs == 1 && r->vs == 1) r->resample = rjpeg_resample_row_1;
-         else if (r->hs == 1 && r->vs == 2) r->resample = rjpeg__resample_row_v_2;
-         else if (r->hs == 2 && r->vs == 1) r->resample = rjpeg__resample_row_h_2;
-         else if (r->hs == 2 && r->vs == 2) r->resample = z->resample_row_hv_2_kernel;
-         else                               r->resample = rjpeg__resample_row_generic;
+         if      (r->hs == 1 && r->vs == 1)
+            r->resample = rjpeg_resample_row_1;
+         else if (r->hs == 1 && r->vs == 2)
+            r->resample = rjpeg__resample_row_v_2;
+         else if (r->hs == 2 && r->vs == 1)
+            r->resample = rjpeg__resample_row_h_2;
+         else if (r->hs == 2 && r->vs == 2)
+            r->resample = z->resample_row_hv_2_kernel;
       }
 
       /* can't error after this so, this is safe */
