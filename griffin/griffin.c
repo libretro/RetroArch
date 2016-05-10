@@ -803,7 +803,7 @@ NETPLAY
 DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_content.c"
-#include "../tasks/image.c"
+#include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
