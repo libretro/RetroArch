@@ -11,11 +11,11 @@
 
 enum
 {
-   STBI_default    = 0, /* only used for req_comp */
-   STBI_grey       = 1,
-   STBI_grey_alpha = 2,
-   STBI_rgb        = 3,
-   STBI_rgb_alpha  = 4
+   RJPEG_DEFAULT = 0, /* only used for req_comp */
+   RJPEG_GREY,
+   RJPEG_GREY_ALPHA,
+   RJPEG_RGB,
+   RJPEG_RGB_ALPHA
 };
 
 typedef struct
@@ -23,7 +23,7 @@ typedef struct
    int      (*read)  (void *user,char *data,int size);   /* fill 'data' with 'size' bytes.  return number of bytes actually read */
    void     (*skip)  (void *user,int n);                 /* skip the next 'n' bytes, or 'unget' the last -n bytes if negative */
    int      (*eof)   (void *user);                       /* returns nonzero if we are at end of file/data */
-} stbi_io_callbacks;
+} rjpeg_io_callbacks;
 
 typedef uint8_t *(*resample_row_func)(uint8_t *out, uint8_t *in0, uint8_t *in1,
                                     int w, int hs);
@@ -36,10 +36,7 @@ typedef struct
    int w_lores; /* horizontal pixels pre-expansion */
    int ystep;   /* how far through vertical expansion we are */
    int ypos;    /* which pre-expansion row we're on */
-} stbi__resample;
-
-/* should produce compiler error if size is wrong */
-typedef unsigned char validate_uint32[sizeof(uint32_t)==4 ? 1 : -1];
+} rjpeg__resample;
 
 #ifdef _MSC_VER
 #define STBI_HAS_LROTL
@@ -118,7 +115,7 @@ static int stbi__sse2_available(void)
    return ((info3 >> 26) & 1) != 0;
 }
 #else /* assume GCC-style if not VC++ */
-#define STBI_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
+#define RJPEG_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
 
 static int stbi__sse2_available(void)
 {
@@ -163,10 +160,10 @@ typedef struct
 
    uint8_t *img_buffer, *img_buffer_end;
    uint8_t *img_buffer_original;
-} stbi__context;
+} rjpeg__context;
 
 /* initialize a memory-decode context */
-static void stbi__start_mem(stbi__context *s, const uint8_t *buffer, int len)
+static void rjpeg__start_mem(stbi__context *s, const uint8_t *buffer, int len)
 {
    s->io.read = NULL;
    s->read_from_callbacks = 0;
@@ -174,7 +171,7 @@ static void stbi__start_mem(stbi__context *s, const uint8_t *buffer, int len)
    s->img_buffer_end = (uint8_t *) buffer+len;
 }
 
-static void stbi__rewind(stbi__context *s)
+static void rjpeg__rewind(stbi__context *s)
 {
    /* conceptually rewind SHOULD rewind to the beginning of the stream,
     * but we just rewind to the beginning of the initial buffer, because
@@ -189,11 +186,11 @@ static uint8_t *stbi__jpeg_load(stbi__context *s, int *x, int *y, int *comp, int
 #endif
 
 /* this is not threadsafe */
-static const char *stbi__g_failure_reason;
+static const char *rjpeg__g_failure_reason;
 
-static int stbi__err(const char *str)
+static INLINE int rjpeg__err(const char *str)
 {
-   stbi__g_failure_reason = str;
+   rjpeg__g_failure_reason = str;
    return 0;
 }
 
@@ -208,9 +205,9 @@ static int stbi__err(const char *str)
 #define stbi__errpf(x,y)   ((float *) (stbi__err(x,y)?NULL:NULL))
 #define stbi__errpuc(x,y)  ((unsigned char *) (stbi__err(x,y)?NULL:NULL))
 
-static int stbi__vertically_flip_on_load = 0;
+static int rjpeg__vertically_flip_on_load = 0;
 
-static unsigned char *stbi__load_main(stbi__context *s, int *x, int *y, int *comp, int req_comp)
+static unsigned char *rjpeg__load_main(stbi__context *s, int *x, int *y, int *comp, int req_comp)
 {
    #ifndef STBI_NO_JPEG
    if (stbi__jpeg_test(s)) return stbi__jpeg_load(s,x,y,comp,req_comp);
@@ -219,7 +216,7 @@ static unsigned char *stbi__load_main(stbi__context *s, int *x, int *y, int *com
    return stbi__errpuc("unknown image type", "Image not of any known type, or corrupt");
 }
 
-static unsigned char *stbi__load_flip(stbi__context *s, int *x, int *y, int *comp, int req_comp)
+static unsigned char *rjpeg__load_flip(stbi__context *s, int *x, int *y, int *comp, int req_comp)
 {
    unsigned char *result = stbi__load_main(s, x, y, comp, req_comp);
 
@@ -247,7 +244,7 @@ static unsigned char *stbi__load_flip(stbi__context *s, int *x, int *y, int *com
    return result;
 }
 
-static uint8_t *stbi_load_from_memory(const uint8_t *buffer, int len, int *x, int *y, int *comp, int req_comp)
+static uint8_t *rjpeg_load_from_memory(const uint8_t *buffer, int len, int *x, int *y, int *comp, int req_comp)
 {
    stbi__context s;
    stbi__start_mem(&s,buffer,len);
@@ -256,12 +253,12 @@ static uint8_t *stbi_load_from_memory(const uint8_t *buffer, int len, int *x, in
 
 enum
 {
-   STBI__SCAN_load=0,
-   STBI__SCAN_type,
-   STBI__SCAN_header
+   RJPEG_SCAN_LOAD = 0,
+   RJPEG_SCAN_TYPE,
+   RJPEG_SCAN_HEADER
 };
 
-static void stbi__refill_buffer(stbi__context *s)
+static void rjpeg__refill_buffer(stbi__context *s)
 {
    int n = (s->io.read)(s->io_user_data,(char*)s->buffer_start,s->buflen);
 
@@ -281,7 +278,7 @@ static void stbi__refill_buffer(stbi__context *s)
    }
 }
 
-static INLINE uint8_t stbi__get8(stbi__context *s)
+static INLINE uint8_t rjpeg__get8(stbi__context *s)
 {
    if (s->img_buffer < s->img_buffer_end)
       return *s->img_buffer++;
@@ -295,7 +292,7 @@ static INLINE uint8_t stbi__get8(stbi__context *s)
    return 0;
 }
 
-static INLINE int stbi__at_eof(stbi__context *s)
+static INLINE int rjpeg__at_eof(stbi__context *s)
 {
    if (s->io.read)
    {
@@ -313,7 +310,7 @@ static INLINE int stbi__at_eof(stbi__context *s)
    return s->img_buffer >= s->img_buffer_end;
 }
 
-static void stbi__skip(stbi__context *s, int n)
+static void rjpeg__skip(stbi__context *s, int n)
 {
    if (n < 0) {
       s->img_buffer = s->img_buffer_end;
@@ -330,13 +327,13 @@ static void stbi__skip(stbi__context *s, int n)
    s->img_buffer += n;
 }
 
-static int stbi__get16be(stbi__context *s)
+static int rjpeg__get16be(stbi__context *s)
 {
    int z = stbi__get8(s);
    return (z << 8) + stbi__get8(s);
 }
 
-#define STBI__BYTECAST(x)  ((uint8_t) ((x) & 255))  /* truncate int to byte without warnings */
+#define RJPEG__BYTECAST(x)  ((uint8_t) ((x) & 255))  /* truncate int to byte without warnings */
 
 /* huffman decoding acceleration */
 #define FAST_BITS   9  /* larger handles more cases; smaller stomps less cache */
@@ -350,7 +347,7 @@ typedef struct
    uint8_t  size[257];
    unsigned int maxcode[18];
    int    delta[17];   /* old 'firstsymbol' - old 'firstcode' */
-} stbi__huffman;
+} rjpeg__huffman;
 
 typedef struct
 {
@@ -401,9 +398,9 @@ typedef struct
    void (*idct_block_kernel)(uint8_t *out, int out_stride, short data[64]);
    void (*YCbCr_to_RGB_kernel)(uint8_t *out, const uint8_t *y, const uint8_t *pcb, const uint8_t *pcr, int count, int step);
    uint8_t *(*resample_row_hv_2_kernel)(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs);
-} stbi__jpeg;
+} rjpeg__jpeg;
 
-static int stbi__build_huffman(stbi__huffman *h, int *count)
+static int rjpeg__build_huffman(stbi__huffman *h, int *count)
 {
    int i,j,k=0,code;
    /* build size list for each symbol (from JPEG spec) */
@@ -450,7 +447,7 @@ static int stbi__build_huffman(stbi__huffman *h, int *count)
 
 /* build a table that decodes both magnitude and value of small ACs in
  * one go. */
-static void stbi__build_fast_ac(int16_t *fast_ac, stbi__huffman *h)
+static void rjpeg__build_fast_ac(int16_t *fast_ac, rjpeg__huffman *h)
 {
    int i;
 
@@ -480,14 +477,14 @@ static void stbi__build_fast_ac(int16_t *fast_ac, stbi__huffman *h)
    }
 }
 
-static void stbi__grow_buffer_unsafe(stbi__jpeg *j)
+static void rjpeg__grow_buffer_unsafe(rjpeg__jpeg *j)
 {
    do
    {
-      int b = j->nomore ? 0 : stbi__get8(j->s);
+      int b = j->nomore ? 0 : rjpeg__get8(j->s);
       if (b == 0xff)
       {
-         int c = stbi__get8(j->s);
+         int c = rjpeg__get8(j->s);
 
          if (c != 0)
          {
@@ -502,16 +499,16 @@ static void stbi__grow_buffer_unsafe(stbi__jpeg *j)
 }
 
 /* (1 << n) - 1 */
-static uint32_t stbi__bmask[17]={0,1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,16383,32767,65535};
+static uint32_t rjpeg__bmask[17]={0,1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,16383,32767,65535};
 
 /* decode a JPEG huffman value from the bitstream */
-static INLINE int stbi__jpeg_huff_decode(stbi__jpeg *j, stbi__huffman *h)
+static INLINE int rjpeg__jpeg_huff_decode(rjpeg__jpeg *j, rjpeg__huffman *h)
 {
    unsigned int temp;
    int c,k;
 
    if (j->code_bits < 16)
-      stbi__grow_buffer_unsafe(j);
+      rjpeg__grow_buffer_unsafe(j);
 
    /* look at the top FAST_BITS and determine what symbol ID it is,
     * if the code is <= FAST_BITS */
@@ -549,8 +546,8 @@ static INLINE int stbi__jpeg_huff_decode(stbi__jpeg *j, stbi__huffman *h)
       return -1;
 
    /* convert the huffman code to the symbol id */
-   c = ((j->code_buffer >> (32 - k)) & stbi__bmask[k]) + h->delta[k];
-   assert((((j->code_buffer) >> (32 - h->size[c])) & stbi__bmask[h->size[c]]) == h->code[c]);
+   c = ((j->code_buffer >> (32 - k)) & rjpeg__bmask[k]) + h->delta[k];
+   assert((((j->code_buffer) >> (32 - h->size[c])) & rjpeg__bmask[h->size[c]]) == h->code[c]);
 
    /* convert the id to a symbol */
    j->code_bits -= k;
@@ -559,11 +556,11 @@ static INLINE int stbi__jpeg_huff_decode(stbi__jpeg *j, stbi__huffman *h)
 }
 
 /* bias[n] = (-1<<n) + 1 */
-static int const stbi__jbias[16] = {0,-1,-3,-7,-15,-31,-63,-127,-255,-511,-1023,-2047,-4095,-8191,-16383,-32767};
+static int const rjpeg__jbias[16] = {0,-1,-3,-7,-15,-31,-63,-127,-255,-511,-1023,-2047,-4095,-8191,-16383,-32767};
 
 /* combined JPEG 'receive' and JPEG 'extend', since baseline
  * always extends everything it receives. */
-static INLINE int stbi__extend_receive(stbi__jpeg *j, int n)
+static INLINE int rjpeg__extend_receive(stbi__jpeg *j, int n)
 {
    unsigned int k;
    int sgn;
@@ -1844,9 +1841,9 @@ static int stbi__decode_jpeg_image(stbi__jpeg *j)
 /* static jfif-centered resampling (across block boundaries) */
 
 
-#define stbi__div4(x) ((uint8_t) ((x) >> 2))
+#define rjpeg__div4(x) ((uint8_t) ((x) >> 2))
 
-static uint8_t *resample_row_1(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t *rjpeg_resample_row_1(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
 {
    (void)out;
    (void)in_far;
@@ -1855,17 +1852,17 @@ static uint8_t *resample_row_1(uint8_t *out, uint8_t *in_near, uint8_t *in_far, 
    return in_near;
 }
 
-static uint8_t* stbi__resample_row_v_2(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t* rjpeg__resample_row_v_2(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
 {
    /* need to generate two samples vertically for every one in input */
    int i;
    (void)hs;
    for (i=0; i < w; ++i)
-      out[i] = stbi__div4(3*in_near[i] + in_far[i] + 2);
+      out[i] = rjpeg__div4(3*in_near[i] + in_far[i] + 2);
    return out;
 }
 
-static uint8_t*  stbi__resample_row_h_2(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t*  rjpeg__resample_row_h_2(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
 {
    /* need to generate two samples horizontally for every one in input */
    int i;
@@ -1894,26 +1891,28 @@ static uint8_t*  stbi__resample_row_h_2(uint8_t *out, uint8_t *in_near, uint8_t 
    return out;
 }
 
-#define stbi__div16(x) ((uint8_t) ((x) >> 4))
+#define rjpeg__div16(x) ((uint8_t) ((x) >> 4))
 
-static uint8_t *stbi__resample_row_hv_2(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t *rjpeg__resample_row_hv_2(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
 {
    /* need to generate 2x2 samples for every one in input */
    int i,t0,t1;
-   if (w == 1) {
-      out[0] = out[1] = stbi__div4(3*in_near[0] + in_far[0] + 2);
+   if (w == 1)
+   {
+      out[0] = out[1] = rjpeg__div4(3*in_near[0] + in_far[0] + 2);
       return out;
    }
 
-   t1 = 3*in_near[0] + in_far[0];
-   out[0] = stbi__div4(t1+2);
-   for (i=1; i < w; ++i) {
+   t1     = 3*in_near[0] + in_far[0];
+   out[0] = rjpeg__div4(t1+2);
+   for (i=1; i < w; ++i)
+   {
       t0 = t1;
       t1 = 3*in_near[i]+in_far[i];
-      out[i*2-1] = stbi__div16(3*t0 + t1 + 8);
-      out[i*2  ] = stbi__div16(3*t1 + t0 + 8);
+      out[i*2-1] = rjpeg__div16(3*t0 + t1 + 8);
+      out[i*2  ] = rjpeg__div16(3*t1 + t0 + 8);
    }
-   out[w*2-1] = stbi__div4(t1+2);
+   out[w*2-1] = rjpeg__div4(t1+2);
 
    (void)hs;
 
@@ -1921,13 +1920,14 @@ static uint8_t *stbi__resample_row_hv_2(uint8_t *out, uint8_t *in_near, uint8_t 
 }
 
 #if defined(__SSE2__) || defined(STBI_NEON)
-static uint8_t *stbi__resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t *rjpeg__resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
 {
    /* need to generate 2x2 samples for every one in input */
    int i=0,t0,t1;
 
-   if (w == 1) {
-      out[0] = out[1] = stbi__div4(3*in_near[0] + in_far[0] + 2);
+   if (w == 1)
+   {
+      out[0] = out[1] = rjpeg__div4(3*in_near[0] + in_far[0] + 2);
       return out;
    }
 
@@ -2023,13 +2023,14 @@ static uint8_t *stbi__resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near, uin
       t1 = 3*in_near[i+7] + in_far[i+7];
    }
 
-   t0 = t1;
-   t1 = 3*in_near[i] + in_far[i];
-   out[i*2] = stbi__div16(3*t1 + t0 + 8);
+   t0       = t1;
+   t1       = 3*in_near[i] + in_far[i];
+   out[i*2] = rjpeg__div16(3*t1 + t0 + 8);
 
-   for (++i; i < w; ++i) {
-      t0 = t1;
-      t1 = 3*in_near[i]+in_far[i];
+   for (++i; i < w; ++i)
+   {
+      t0         = t1;
+      t1         = 3*in_near[i]+in_far[i];
       out[i*2-1] = stbi__div16(3*t0 + t1 + 8);
       out[i*2  ] = stbi__div16(3*t1 + t0 + 8);
    }
@@ -2041,7 +2042,7 @@ static uint8_t *stbi__resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near, uin
 }
 #endif
 
-static uint8_t *stbi__resample_row_generic(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
+static uint8_t *rjpeg__resample_row_generic(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
 {
    /* resample with nearest-neighbor */
    int i,j;
@@ -2055,8 +2056,11 @@ static uint8_t *stbi__resample_row_generic(uint8_t *out, uint8_t *in_near, uint8
 
 /* this is a reduced-precision calculation of YCbCr-to-RGB introduced
  * to make sure the code produces the same results in both SIMD and scalar */
+#ifndef float2fixed
 #define float2fixed(x)  (((int) ((x) * 4096.0f + 0.5f)) << 8)
-static void stbi__YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y, const uint8_t *pcb, const uint8_t *pcr, int count, int step)
+#endif
+
+static void rjpeg__YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y, const uint8_t *pcb, const uint8_t *pcr, int count, int step)
 {
    int i;
    for (i=0; i < count; ++i) {
@@ -2082,7 +2086,7 @@ static void stbi__YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y, const uint8_t
 }
 
 #if defined(__SSE2__) || defined(STBI_NEON)
-static void stbi__YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y, const uint8_t *pcb, const uint8_t *pcr, int count, int step)
+static void rjpeg__YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y, const uint8_t *pcb, const uint8_t *pcr, int count, int step)
 {
    int i = 0;
 
@@ -2223,31 +2227,31 @@ static void stbi__YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y, const uint8_
 #endif
 
 /* set up the kernels */
-static void stbi__setup_jpeg(stbi__jpeg *j)
+static void rjpeg__setup_jpeg(rjpeg__jpeg *j)
 {
-   j->idct_block_kernel = stbi__idct_block;
-   j->YCbCr_to_RGB_kernel = stbi__YCbCr_to_RGB_row;
-   j->resample_row_hv_2_kernel = stbi__resample_row_hv_2;
+   j->idct_block_kernel        = rjpeg__idct_block;
+   j->YCbCr_to_RGB_kernel      = rjpeg__YCbCr_to_RGB_row;
+   j->resample_row_hv_2_kernel = rjpeg__resample_row_hv_2;
 
 
 #if defined(__SSE2__)
-   if (stbi__sse2_available())
+   if (rjpeg__sse2_available())
    {
-      j->idct_block_kernel = stbi__idct_simd;
-      j->YCbCr_to_RGB_kernel = stbi__YCbCr_to_RGB_simd;
-      j->resample_row_hv_2_kernel = stbi__resample_row_hv_2_simd;
+      j->idct_block_kernel        = rjpeg__idct_simd;
+      j->YCbCr_to_RGB_kernel      = rjpeg__YCbCr_to_RGB_simd;
+      j->resample_row_hv_2_kernel = rjpeg__resample_row_hv_2_simd;
    }
 #endif
 
 #ifdef STBI_NEON
-   j->idct_block_kernel = stbi__idct_simd;
-   j->YCbCr_to_RGB_kernel = stbi__YCbCr_to_RGB_simd;
-   j->resample_row_hv_2_kernel = stbi__resample_row_hv_2_simd;
+   j->idct_block_kernel           = rjpeg__idct_simd;
+   j->YCbCr_to_RGB_kernel         = rjpeg__YCbCr_to_RGB_simd;
+   j->resample_row_hv_2_kernel    = rjpeg__resample_row_hv_2_simd;
 #endif
 }
 
 /* clean up the temporary component buffers */
-static void stbi__cleanup_jpeg(stbi__jpeg *j)
+static void rjpeg__cleanup_jpeg(rjpeg__jpeg *j)
 {
    int i;
    for (i=0; i < j->s->img_n; ++i)
@@ -2275,16 +2279,21 @@ static void stbi__cleanup_jpeg(stbi__jpeg *j)
 }
 
 
-static uint8_t *load_jpeg_image(stbi__jpeg *z, int *out_x, int *out_y, int *comp, int req_comp)
+static uint8_t *load_jpeg_image(rjpeg__jpeg *z, int *out_x, int *out_y, int *comp, int req_comp)
 {
    int n, decode_n;
-   z->s->img_n = 0; /* make stbi__cleanup_jpeg safe */
+   z->s->img_n = 0; /* make rjpeg__cleanup_jpeg safe */
 
    /* validate req_comp */
-   if (req_comp < 0 || req_comp > 4) return stbi__errpuc("bad req_comp", "Internal error");
+   if (req_comp < 0 || req_comp > 4)
+       return rjpeg__errpuc("bad req_comp", "Internal error");
 
    /* load a jpeg image from whichever source, but leave in YCbCr format */
-   if (!stbi__decode_jpeg_image(z)) { stbi__cleanup_jpeg(z); return NULL; }
+   if (!stbi__decode_jpeg_image(z))
+   {
+       rjpeg__cleanup_jpeg(z);
+       return NULL;
+   }
 
    /* determine actual number of components to generate */
    n = req_comp ? req_comp : z->s->img_n;
@@ -2301,16 +2310,20 @@ static uint8_t *load_jpeg_image(stbi__jpeg *z, int *out_x, int *out_y, int *comp
       uint8_t *output;
       uint8_t *coutput[4];
 
-      stbi__resample res_comp[4];
+      rjpeg__resample res_comp[4];
 
       for (k=0; k < decode_n; ++k)
       {
-         stbi__resample *r = &res_comp[k];
+         rjpeg__resample *r = &res_comp[k];
 
          /* allocate line buffer big enough for upsampling off the edges
           * with upsample factor of 4 */
          z->img_comp[k].linebuf = (uint8_t *) malloc(z->s->img_x + 3);
-         if (!z->img_comp[k].linebuf) { stbi__cleanup_jpeg(z); return stbi__errpuc("outofmem", "Out of memory"); }
+         if (!z->img_comp[k].linebuf)
+         {
+             rjpeg__cleanup_jpeg(z);
+             return rjpeg__errpuc("outofmem", "Out of memory");
+         }
 
          r->hs      = z->img_h_max / z->img_comp[k].h;
          r->vs      = z->img_v_max / z->img_comp[k].v;
@@ -2319,11 +2332,11 @@ static uint8_t *load_jpeg_image(stbi__jpeg *z, int *out_x, int *out_y, int *comp
          r->ypos    = 0;
          r->line0   = r->line1 = z->img_comp[k].data;
 
-         if      (r->hs == 1 && r->vs == 1) r->resample = resample_row_1;
-         else if (r->hs == 1 && r->vs == 2) r->resample = stbi__resample_row_v_2;
-         else if (r->hs == 2 && r->vs == 1) r->resample = stbi__resample_row_h_2;
+         if      (r->hs == 1 && r->vs == 1) r->resample = rjpeg_resample_row_1;
+         else if (r->hs == 1 && r->vs == 2) r->resample = rjpeg__resample_row_v_2;
+         else if (r->hs == 2 && r->vs == 1) r->resample = rjpeg__resample_row_h_2;
          else if (r->hs == 2 && r->vs == 2) r->resample = z->resample_row_hv_2_kernel;
-         else                               r->resample = stbi__resample_row_generic;
+         else                               r->resample = rjpeg__resample_row_generic;
       }
 
       /* can't error after this so, this is safe */
@@ -2331,8 +2344,8 @@ static uint8_t *load_jpeg_image(stbi__jpeg *z, int *out_x, int *out_y, int *comp
 
       if (!output)
       {
-         stbi__cleanup_jpeg(z);
-         return stbi__errpuc("outofmem", "Out of memory");
+         rjpeg__cleanup_jpeg(z);
+         return rjpeg__errpuc("outofmem", "Out of memory");
       }
 
       /* now go ahead and resample */
