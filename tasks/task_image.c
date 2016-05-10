@@ -108,25 +108,38 @@ static int cb_nbio_default(void *data, size_t len)
    return 0;
 }
 
+static int rarch_main_data_image_iterate(
+      nbio_handle_t *nbio,
+      unsigned *width,
+      unsigned *height,
+      int *retval)
+{
+#ifdef HAVE_RPNG
+   *retval = rpng_nbio_load_image_argb_process(
+         (rpng_t*)nbio->image.handle,
+         &nbio->image.ti.pixels,
+         width, height);
+#endif
+
+   nbio->image.ti.width  = *width;
+   nbio->image.ti.height = *height;
+
+   return *retval;
+}
+
 #ifdef HAVE_RPNG
 static int cb_image_menu_generic_rpng(nbio_handle_t *nbio)
 {
+   int retval     = 0;
    unsigned width = 0, height = 0;
-   int retval;
    if (!nbio)
       return -1;
 
    if (!rpng_is_valid((rpng_t*)nbio->image.handle))
       return -1;
 
-   retval = rpng_nbio_load_image_argb_process(
-         (rpng_t*)nbio->image.handle,
-         &nbio->image.ti.pixels, &width, &height);
-
-   nbio->image.ti.width  = width;
-   nbio->image.ti.height = height;
-
-   switch (retval)
+   switch (rarch_main_data_image_iterate(nbio,
+         &width, &height, &retval))
    {
       case IMAGE_PROCESS_ERROR:
       case IMAGE_PROCESS_ERROR_END:
@@ -189,6 +202,7 @@ error:
    return -1;
 }
 
+
 static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
    unsigned i, width = 0, height = 0;
@@ -199,16 +213,8 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->image.processing_pos_increment; i++)
    {
-      /* TODO/FIXME -add JPEG equivalents as well */
-      retval = rpng_nbio_load_image_argb_process(
-            (rpng_t*)nbio->image.handle,
-            &nbio->image.ti.pixels,
-            &width, &height);
-
-      nbio->image.ti.width  = width;
-      nbio->image.ti.height = height;
-
-      if (retval != IMAGE_PROCESS_NEXT)
+      if (rarch_main_data_image_iterate(nbio,
+               &width, &height, &retval) != IMAGE_PROCESS_NEXT)
          break;
    }
 
