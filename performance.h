@@ -19,12 +19,7 @@
 
 #include <stdint.h>
 
-#ifdef RARCH_INTERNAL
-#include "libretro.h"
-#else
-typedef uint64_t retro_perf_tick_t;
-typedef uint64_t retro_time_t;
-#endif
+#include <libretro.h>
 
 #ifdef __cplusplus
 extern "C" {

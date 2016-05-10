@@ -23,7 +23,7 @@
 #ifndef LIBRETRO_VULKAN_H__
 #define LIBRETRO_VULKAN_H__
 
-#include "libretro.h"
+#include <libretro.h>
 #include <vulkan/vulkan.h>
 
 #define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 2

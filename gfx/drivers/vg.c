@@ -24,9 +24,9 @@
 #include <retro_inline.h>
 #include <retro_assert.h>
 #include <gfx/math/matrix_3x3.h>
+#include <libretro.h>
 
 #include "../video_context_driver.h"
-#include "../../libretro.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../driver.h"

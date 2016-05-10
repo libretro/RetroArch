@@ -20,10 +20,10 @@
 #include <streams/file_stream.h>
 #include <rhash.h>
 #include <rthreads/async_job.h>
+#include <libretro.h>
 
 #include "cheevos.h"
 #include "dynamic.h"
-#include "libretro.h"
 #include "network/net_http_special.h"
 #include "configuration.h"
 #include "performance_counters.h"

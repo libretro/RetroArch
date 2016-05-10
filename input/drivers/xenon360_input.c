@@ -18,11 +18,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../../driver.h"
-#include "../../libretro.h"
-
 #include <input/input.h>
 #include <usb/usbmain.h>
+
+#include <libretro.h>
+
+#include "../../driver.h"
 
 #define MAX_PADS 4
 

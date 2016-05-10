@@ -17,8 +17,9 @@
 #ifndef RARCH_FILTER_H__
 #define RARCH_FILTER_H__
 
-#include "../libretro.h"
 #include <stddef.h>
+
+#include <libretro.h>
 
 #define RARCH_SOFTFILTER_THREADS_AUTO 0
 typedef struct rarch_softfilter rarch_softfilter_t;

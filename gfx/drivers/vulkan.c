@@ -13,6 +13,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <stdint.h>
+#include <math.h>
+#include <string.h>
+
+
+#include <compat/strl.h>
+#include <gfx/scaler/scaler.h>
+#include <formats/image.h>
+#include <retro_inline.h>
+#include <retro_miscellaneous.h>
+#include <retro_assert.h>
+#include <libretro.h>
+
 #include "../common/vulkan_common.h"
 #include "vulkan_shaders/alpha_blend.vert.inc"
 #include "vulkan_shaders/alpha_blend.frag.inc"
@@ -22,23 +36,10 @@
 #include "vulkan_shaders/ribbon_simple.vert.inc"
 #include "vulkan_shaders/ribbon_simple.frag.inc"
 
-#include <stdio.h>
-#include <stdint.h>
-#include <math.h>
-#include <string.h>
-
-#include <compat/strl.h>
-#include <gfx/scaler/scaler.h>
-#include <formats/image.h>
-#include <retro_inline.h>
-#include <retro_miscellaneous.h>
-#include <retro_assert.h>
-
 #include "../../driver.h"
 #include "../../record/record_driver.h"
 #include "../../performance_counters.h"
 
-#include "../../libretro.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 

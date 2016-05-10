@@ -17,15 +17,15 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <boolean.h>
-
 #ifdef _XBOX
 #include <xtl.h>
 #endif
 
+#include <boolean.h>
+#include <libretro.h>
+
 #include "../../driver.h"
 #include "../../general.h"
-#include "../../libretro.h"
 
 #define MAX_PADS 4
 

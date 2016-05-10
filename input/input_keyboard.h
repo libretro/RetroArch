@@ -24,8 +24,7 @@ extern "C" {
 #include <stdint.h>
 
 #include <boolean.h>
-
-#include "../libretro.h"
+#include <libretro.h>
 
 enum rarch_input_keyboard_ctl_state
 {

@@ -19,6 +19,7 @@
 
 #include <boolean.h>
 #include <string/stdstring.h>
+#include <libretro.h>
 
 #include "../../driver.h"
 
@@ -26,7 +27,6 @@
 #include "../../gfx/video_context_driver.h"
 #include "../../general.h"
 #include "../../verbosity.h"
-#include "../../libretro.h"
 #include "../input_autodetect.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"

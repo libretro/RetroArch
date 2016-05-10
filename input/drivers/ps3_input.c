@@ -17,14 +17,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <boolean.h>
-
 #include <sdk_version.h>
+
+#include <boolean.h>
+#include <libretro.h>
 
 #include "../../defines/ps3_defines.h"
 
 #include "../../driver.h"
-#include "../../libretro.h"
 #include "../../general.h"
 
 #ifdef HAVE_MOUSE

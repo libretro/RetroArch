@@ -15,7 +15,7 @@
  */
 
 #include <stdio.h>
-#include "libretro.h"
+
 
 #if defined(_WIN32)
 #include <direct.h>
@@ -24,6 +24,7 @@
 #endif
 
 #include <compat/strl.h>
+#include <libretro.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>

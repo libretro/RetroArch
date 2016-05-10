@@ -24,7 +24,7 @@
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
-#include "../libretro.h"
+#include <libretro.h>
 
 #include "core_option_manager.h"
 

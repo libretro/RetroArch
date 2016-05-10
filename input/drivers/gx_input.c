@@ -23,8 +23,9 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 
+#include <libretro.h>
+
 #include "../../driver.h"
-#include "../../libretro.h"
 
 #ifndef MAX_PADS
 #define MAX_PADS 4

@@ -14,18 +14,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <Python.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+
+#include <Python.h>
 
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <streams/file_stream.h>
 
+#include <libretro.h>
+
 #include "video_state_python.h"
 #include "../dynamic.h"
-#include "../libretro.h"
 #include "../core.h"
 #include "../general.h"
 #include "../verbosity.h"

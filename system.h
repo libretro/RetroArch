@@ -17,9 +17,9 @@
 #define __RARCH_SYSTEM_H
 
 #include <retro_miscellaneous.h>
+#include <libretro.h>
 
 #include "driver.h"
-#include "libretro.h"
 
 #ifndef MAX_USERS
 #define MAX_USERS 16

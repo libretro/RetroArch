@@ -38,13 +38,14 @@
 #include <rthreads/rthreads.h>
 #include <formats/image.h>
 
+#include <libretro.h>
+#include <libretro_vulkan.h>
+
 #include "../../driver.h"
-#include "../../libretro.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../font_driver.h"
 #include "../video_context_driver.h"
-#include "../../libretro_vulkan.h"
 #include "../drivers_shader/shader_vulkan.h"
 
 typedef struct vulkan_filter_chain vulkan_filter_chain_t;

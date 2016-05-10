@@ -17,8 +17,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <boolean.h>
-
 #if defined(SN_TARGET_PSP2)
 #include <sceerror.h>
 #include <kernel.h>
@@ -29,10 +27,12 @@
 #include <pspctrl.h>
 #endif
 
+#include <boolean.h>
+#include <libretro.h>
+
 #include "../../defines/psp_defines.h"
 
 #include "../../driver.h"
-#include "../../libretro.h"
 #include "../../general.h"
 #include "../input_config.h"
 #ifdef HAVE_KERNEL_PRX
