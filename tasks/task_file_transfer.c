@@ -82,8 +82,8 @@ typedef struct nbio_handle
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 
-#ifdef HAVE_RPNG
 static void rarch_task_file_load_handler(retro_task_t *task);
+
 static int cb_image_menu_upload_generic(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data;
@@ -110,7 +110,8 @@ static int cb_image_menu_upload_generic(void *data, size_t len)
    return 0;
 }
 
-static int cb_image_menu_generic(nbio_handle_t *nbio)
+#ifdef HAVE_RPNG
+static int cb_image_menu_generic_rpng(nbio_handle_t *nbio)
 {
    unsigned width = 0, height = 0;
    int retval;
@@ -137,11 +138,11 @@ static int cb_image_menu_generic(nbio_handle_t *nbio)
    return 0;
 }
 
-static int cb_image_menu_wallpaper(void *data, size_t len)
+static int cb_image_menu_wallpaper_rpng(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
-   if (cb_image_menu_generic(nbio) != 0)
+   if (cb_image_menu_generic_rpng(nbio) != 0)
       return -1;
 
    nbio->image.cb = &cb_image_menu_upload_generic;
@@ -153,7 +154,7 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
-   if (cb_image_menu_generic(nbio) != 0)
+   if (cb_image_menu_generic_rpng(nbio) != 0)
       return -1;
 
    nbio->image.cb = &cb_image_menu_upload_generic;
@@ -173,6 +174,7 @@ static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->image.pos_increment; i++)
    {
+      /* TODO/FIXME - add JPEG equivalents as well */
       if (!rpng_nbio_load_image_argb_iterate(nbio->image.handle))
          goto error;
    }
@@ -194,6 +196,7 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->image.processing_pos_increment; i++)
    {
+      /* TODO/FIXME -add JPEG equivalents as well */
       retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
             &nbio->image.ti.pixels, &width, &height);
 
@@ -248,7 +251,7 @@ static int cb_nbio_default(void *data, size_t len)
    return 0;
 }
 
-static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
+static int cb_nbio_generic_rpng(nbio_handle_t *nbio, size_t *len)
 {
    void *ptr           = NULL;
 
@@ -286,7 +289,7 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
    return 0;
 }
 
-static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
+static int cb_nbio_image_menu_wallpaper_rpng(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
@@ -294,12 +297,12 @@ static int cb_nbio_image_menu_wallpaper(void *data, size_t len)
       return -1;
    
    nbio->image.handle = rpng_alloc();
-   nbio->image.cb     = &cb_image_menu_wallpaper;
+   nbio->image.cb     = &cb_image_menu_wallpaper_rpng;
 
-   return cb_nbio_generic(nbio, &len);
+   return cb_nbio_generic_rpng(nbio, &len);
 }
 
-static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
+static int cb_nbio_image_menu_thumbnail_rpng(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
@@ -309,7 +312,7 @@ static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
    nbio->image.handle = rpng_alloc();
    nbio->image.cb     = &cb_image_menu_thumbnail;
 
-   return cb_nbio_generic(nbio, &len);
+   return cb_nbio_generic_rpng(nbio, &len);
 }
 #endif
 #endif
@@ -345,10 +348,19 @@ bool rarch_task_push_image_load(const char *fullpath,
    nbio->status       = NBIO_STATUS_TRANSFER;
    nbio->image.status = NBIO_IMAGE_STATUS_TRANSFER;
 
-   if (cb_type_hash == CB_MENU_WALLPAPER)
-      nbio->cb = &cb_nbio_image_menu_wallpaper;
-   else if (cb_type_hash == CB_MENU_THUMBNAIL)
-      nbio->cb = &cb_nbio_image_menu_thumbnail;
+   if (strstr(fullpath, ".png"))
+   {
+#ifdef HAVE_RPNG
+      if (cb_type_hash == CB_MENU_WALLPAPER)
+         nbio->cb = &cb_nbio_image_menu_wallpaper_rpng;
+      else if (cb_type_hash == CB_MENU_THUMBNAIL)
+         nbio->cb = &cb_nbio_image_menu_thumbnail_rpng;
+#endif
+   }
+   else if (strstr(fullpath, ".jpeg") || strstr(fullpath, ".jpg"))
+   {
+      /* TODO/FIXME */
+   }
 
    nbio_begin_read(handle);
 
@@ -370,7 +382,7 @@ bool rarch_task_push_image_load(const char *fullpath,
    return true;
 }
 
-/* guarded for rpng/menu use but good for generic use */
+/* Guarded for RPNG/menu use but good for generic reuse */
 #if defined(HAVE_RPNG) && defined(HAVE_MENU)
 static int rarch_main_data_nbio_iterate_transfer(nbio_handle_t *nbio)
 {
@@ -487,6 +499,7 @@ task_finished:
 
    if (image->handle)
    {
+      /* TODO/FIXME - add JPEG equivalents as well */
       rpng_nbio_load_image_free(image->handle);
 
       image->handle                 = NULL;
