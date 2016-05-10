@@ -212,9 +212,8 @@ static int rjpeg__vertically_flip_on_load = 0;
 
 static unsigned char *rjpeg__load_main(rjpeg__context *s, int *x, int *y, int *comp, int req_comp)
 {
-   #ifndef RJPEG_NO_JPEG
-   if (rjpeg__jpeg_test(s)) return rjpeg__jpeg_load(s,x,y,comp,req_comp);
-   #endif
+   if (rjpeg__jpeg_test(s))
+      return rjpeg__jpeg_load(s,x,y,comp,req_comp);
 
    return rjpeg__errpuc("unknown image type", "Image not of any known type, or corrupt");
 }
