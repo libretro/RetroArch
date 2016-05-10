@@ -19,12 +19,12 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <dynamic/dylib.h>
-#include <features/cpu_features.h>
 
 #include "../frontend/frontend_driver.h"
 #include "../config_file_userdata.h"
 #include "../dynamic.h"
 #include "../general.h"
+#include "../performance.h"
 #include "../performance_counters.h"
 #include "../verbosity.h"
 #include "video_filter.h"

@@ -17,11 +17,11 @@
 #include <string.h>
 
 #include <string/stdstring.h>
-#include <features/cpu_features.h>
 
 #include "audio_resampler_driver.h"
 #include "../config_file_userdata.h"
 #ifdef RARCH_INTERNAL
+#include "../performance.h"
 #include "../performance_counters.h"
 #endif
 #ifndef DONT_HAVE_STRING_LIST

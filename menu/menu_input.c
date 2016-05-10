@@ -27,8 +27,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <features/cpu_features.h>
-
 #include "menu_driver.h"
 #include "menu_input.h"
 #include "menu_animation.h"
@@ -41,6 +39,7 @@
 
 #include "../general.h"
 #include "../managers/cheat_manager.h"
+#include "../performance.h"
 #include "../performance_counters.h"
 #include "../core.h"
 #include "../input/input_joypad_driver.h"

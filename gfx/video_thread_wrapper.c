@@ -19,11 +19,11 @@
 #include <limits.h>
 
 #include <rthreads/rthreads.h>
-#include <features/cpu_features.h>
 
 #include "video_thread_wrapper.h"
 #include "font_driver.h"
 #include "video_shader_driver.h"
+#include "../performance.h"
 #include "../performance_counters.h"
 #include "../runloop.h"
 #include "../verbosity.h"

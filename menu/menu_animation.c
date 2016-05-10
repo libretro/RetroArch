@@ -16,14 +16,13 @@
 
 #include <math.h>
 #include <string.h>
-
 #include <compat/strl.h>
 #include <encodings/utf.h>
 #include <retro_miscellaneous.h>
-#include <features/cpu_features.h>
 
 #include "menu_animation.h"
 #include "../configuration.h"
+#include "../performance.h"
 #include "../performance_counters.h"
 
 #define IDEAL_DELTA_TIME (1.0 / 60.0 * 1000000.0)

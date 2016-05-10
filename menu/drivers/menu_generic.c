@@ -18,8 +18,6 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
-#include <features/cpu_features.h>
-
 #include "menu_generic.h"
 
 #include "../menu_driver.h"
@@ -30,6 +28,7 @@
 #include "../menu_entries.h"
 
 #include "../../configuration.h"
+#include "../../performance.h"
 #include "../../performance_counters.h"
 #include "../../input/input_autodetect.h"
 #include "../../input/input_config.h"
