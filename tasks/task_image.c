@@ -115,6 +115,9 @@ static int rarch_main_data_image_iterate(
       int *retval)
 {
 #ifdef HAVE_RPNG
+   if (!rpng_is_valid((rpng_t*)nbio->image.handle))
+      return IMAGE_PROCESS_ERROR;
+
    *retval = rpng_nbio_load_image_argb_process(
          (rpng_t*)nbio->image.handle,
          &nbio->image.ti.pixels,
@@ -133,9 +136,6 @@ static int cb_image_menu_generic_rpng(nbio_handle_t *nbio)
    int retval     = 0;
    unsigned width = 0, height = 0;
    if (!nbio)
-      return -1;
-
-   if (!rpng_is_valid((rpng_t*)nbio->image.handle))
       return -1;
 
    switch (rarch_main_data_image_iterate(nbio,
