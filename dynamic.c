@@ -1213,6 +1213,42 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          system->ports.size = i;
          break;
       }
+      
+      case RETRO_ENVIRONMENT_SET_MEMORY_MAPS:
+      {
+         unsigned i;
+         const struct retro_memory_map *mmaps =
+            (const struct retro_memory_map*)data;
+         
+         RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
+         RARCH_LOG("   flags    ptr              offset   start    select   disconn  len      addrspace\n");
+         
+         for (i = 0; i < mmaps->num_descriptors; i++)
+         {
+            const struct retro_memory_descriptor *desc =
+               &mmaps->descriptors[i];
+            
+            RARCH_LOG("Memory map: %u\n", i + 1);
+            RARCH_LOG("   %08X %p %08X %08X %08X %08X %08X %s\n",
+               desc->flags, desc->ptr, desc->offset, desc->start,
+               desc->select, desc->disconnect, desc->len,
+               desc->addrspace ? desc->addrspace : "");
+         }
+         
+         free((void*)system->mmaps.descriptors);
+         system->mmaps.num_descriptors = 0;
+         
+         system->mmaps.descriptors = (struct retro_memory_descriptor*)
+            calloc(mmaps->num_descriptors, sizeof(*system->mmaps.descriptors));
+         
+         if (!system->mmaps.descriptors)
+            return false;
+         
+         memcpy((void*)system->mmaps.descriptors, mmaps->descriptors,
+            mmaps->num_descriptors * sizeof(*system->mmaps.descriptors));
+         system->mmaps.num_descriptors = mmaps->num_descriptors;
+         break;
+      }
 
       case RETRO_ENVIRONMENT_SET_GEOMETRY:
       {

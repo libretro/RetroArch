@@ -717,13 +717,20 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          if (runloop_system.subsystem.data)
             free(runloop_system.subsystem.data);
          runloop_system.subsystem.data = NULL;
+         runloop_system.subsystem.size = 0;
+         
          if (runloop_system.ports.data)
             free(runloop_system.ports.data);
-         runloop_system.subsystem.size = 0;
-         runloop_system.ports.data     = NULL;
-         runloop_system.ports.size     = 0;
-         runloop_key_event             = NULL;
-         runloop_frontend_key_event    = NULL;
+         runloop_system.ports.data = NULL;
+         runloop_system.ports.size = 0;
+         
+         if (runloop_system.mmaps.descriptors)
+            free((void *)runloop_system.mmaps.descriptors);
+         runloop_system.mmaps.descriptors     = NULL;
+         runloop_system.mmaps.num_descriptors = 0;
+         
+         runloop_key_event          = NULL;
+         runloop_frontend_key_event = NULL;
 
          audio_driver_unset_callback();
          memset(&runloop_system, 0, sizeof(rarch_system_info_t));
