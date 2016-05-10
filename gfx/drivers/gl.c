@@ -364,8 +364,8 @@ static void gl_compute_fbo_geometry(gl_t *gl,
    /* Calculate viewports for FBOs. */
    for (i = 0; i < gl->fbo_pass; i++)
    {
-      struct gfx_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
-      struct gfx_fbo_scale *fbo_scale  = &gl->fbo_scale[i];
+      struct video_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
+      struct gfx_fbo_scale *fbo_scale    = &gl->fbo_scale[i];
 
       switch (gl->fbo_scale[i].type_x)
       {
@@ -1025,7 +1025,7 @@ static INLINE void gl_start_frame_fbo(gl_t *gl)
 }
 
 static bool gl_recreate_fbo(
-      struct gfx_fbo_rect *fbo_rect,
+      struct video_fbo_rect *fbo_rect,
       GLuint fbo,
       GLuint texture
       )
@@ -1058,7 +1058,7 @@ static void gl_check_fbo_dimension(gl_t *gl, unsigned i,
 {
    unsigned img_width, img_height, max, pow2_size;
    bool check_dimensions         = false;
-   struct gfx_fbo_rect *fbo_rect = &gl->fbo_rect[i];
+   struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
 
    if (!fbo_rect)
       return;
@@ -1126,7 +1126,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
    unsigned width, height;
-   const struct gfx_fbo_rect *prev_rect;
+   const struct video_fbo_rect *prev_rect;
    struct gfx_tex_info *fbo_info;
    struct gfx_tex_info fbo_tex_info[GFX_MAX_SHADERS];
    int i;
@@ -1146,7 +1146,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       video_shader_ctx_mvp_t mvp;
       video_shader_ctx_coords_t coords;
       video_shader_ctx_params_t params;
-      const struct gfx_fbo_rect *rect = &gl->fbo_rect[i];
+      const struct video_fbo_rect *rect = &gl->fbo_rect[i];
 
       prev_rect = &gl->fbo_rect[i - 1];
       fbo_info  = &fbo_tex_info[i - 1];
@@ -1884,7 +1884,7 @@ static bool gl_frame(void *data, const void *frame,
 #ifdef HAVE_FBO
    if (gl->fbo_feedback_enable)
    {
-      const struct gfx_fbo_rect *rect = &gl->fbo_rect[gl->fbo_feedback_pass];
+      const struct video_fbo_rect *rect = &gl->fbo_rect[gl->fbo_feedback_pass];
       GLfloat xamt                    = (GLfloat)rect->img_width / rect->width;
       GLfloat yamt                    = (GLfloat)rect->img_height / rect->height;
 

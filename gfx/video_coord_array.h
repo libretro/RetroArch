@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-struct gfx_fbo_rect
+struct video_fbo_rect
 {
    unsigned img_width;
    unsigned img_height;
