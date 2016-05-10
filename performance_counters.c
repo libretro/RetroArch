@@ -17,6 +17,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <unistd.h>
+#endif
+
 #include <features/features_cpu.h>
 
 #include "performance_counters.h"
@@ -29,10 +35,6 @@
 #define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
 #else
 #define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
-#endif
-
-#if !defined(_WIN32) && !defined(RARCH_CONSOLE)
-#include <unistd.h>
 #endif
 
 static struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
