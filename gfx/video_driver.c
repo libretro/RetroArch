@@ -983,7 +983,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
 {
    static retro_time_t curr_time;
    static retro_time_t fps_time;
-   retro_time_t        new_time  = retro_get_time_usec();
+   retro_time_t        new_time  = cpu_features_get_time_usec();
 
    *buf = '\0';
 

@@ -560,7 +560,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             static retro_time_t last_clock_update = 0;
             settings_t *settings     = config_get_ptr();
 
-            cur_time                 = retro_get_time_usec();
+            cur_time                 = cpu_features_get_time_usec();
             delta_time               = cur_time - old_time;
 
             if (delta_time >= IDEAL_DELTA_TIME* 4)

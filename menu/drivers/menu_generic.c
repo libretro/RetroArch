@@ -53,11 +53,11 @@ static int action_iterate_help(menu_handle_t *menu,
             int64_t timeout;
             static bool timer_begin = false;
             static bool timer_end   = false;
-            int64_t current         = retro_get_time_usec();
+            int64_t current         = cpu_features_get_time_usec();
 
             if (!timer_begin)
             {
-               timeout_end = retro_get_time_usec() +
+               timeout_end = cpu_features_get_time_usec() +
                   3 /* seconds */ * 1000000;
                timer_begin = true;
                timer_end   = false;

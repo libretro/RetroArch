@@ -147,7 +147,7 @@ static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
 static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 {
    unsigned i;
-   dspfilter_simd_mask_t mask = retro_get_cpu_features();
+   dspfilter_simd_mask_t mask = cpu_features_get();
 
    (void)list;
 
@@ -171,7 +171,7 @@ static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 static bool append_plugs(rarch_dsp_filter_t *dsp, struct string_list *list)
 {
    unsigned i;
-   dspfilter_simd_mask_t mask = retro_get_cpu_features();
+   dspfilter_simd_mask_t mask = cpu_features_get();
 
    for (i = 0; i < list->size; i++)
    {

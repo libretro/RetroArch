@@ -692,7 +692,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       /* Ideally, use absolute time, but that is only a good idea on POSIX. */
       while (thr->frame.updated)
       {
-         retro_time_t current = retro_get_time_usec();
+         retro_time_t current = cpu_features_get_time_usec();
          retro_time_t delta   = target - current;
 
          if (delta <= 0)
@@ -743,7 +743,7 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    retro_perf_stop(&thr_frame);
 
-   thr->last_time = retro_get_time_usec();
+   thr->last_time = cpu_features_get_time_usec();
    return true;
 }
 
@@ -783,7 +783,7 @@ static bool video_thread_init(thread_video_t *thr, const video_info_t *info,
 
    memset(thr->frame.buffer, 0x80, max_size);
 
-   thr->last_time            = retro_get_time_usec();
+   thr->last_time            = cpu_features_get_time_usec();
    thr->thread               = sthread_create(video_thread_loop, thr);
 
    if (!thr->thread)

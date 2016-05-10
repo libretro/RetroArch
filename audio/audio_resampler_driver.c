@@ -143,7 +143,7 @@ retro_get_cpu_features_t perf_get_cpu_features_cb;
 static resampler_simd_mask_t resampler_get_cpu_features(void)
 {
 #ifdef RARCH_INTERNAL
-   return retro_get_cpu_features();
+   return cpu_features_get();
 #else
    return perf_get_cpu_features_cb();
 #endif

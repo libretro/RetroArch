@@ -1316,7 +1316,7 @@ int runloop_iterate(unsigned *sleep_ms)
          (settings->fastforward_ratio == 0.0f) 
          ? 1.0f : settings->fastforward_ratio;
 
-      frame_limit_last_time    = retro_get_time_usec();
+      frame_limit_last_time    = cpu_features_get_time_usec();
       frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f 
             / (av_info->timing.fps * fastforward_ratio));
 
@@ -1343,7 +1343,7 @@ int runloop_iterate(unsigned *sleep_ms)
       /* Updates frame timing if frame timing callback is in use by the core.
        * Limits frame time if fast forward ratio throttle is enabled. */
 
-      retro_time_t current     = retro_get_time_usec();
+      retro_time_t current     = cpu_features_get_time_usec();
       retro_time_t delta       = current - runloop_frame_time_last;
       bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
                                   input_driver_is_nonblock_state()) |
@@ -1513,7 +1513,7 @@ int runloop_iterate(unsigned *sleep_ms)
 end:
 #endif
 
-   current                        = retro_get_time_usec();
+   current                        = cpu_features_get_time_usec();
    target                         = frame_limit_last_time + 
       frame_limit_minimum_time;
    to_sleep_ms                    = (target - current) / 1000;
@@ -1526,7 +1526,7 @@ end:
       return 1;
    }
 
-   frame_limit_last_time  = retro_get_time_usec();
+   frame_limit_last_time  = cpu_features_get_time_usec();
 
    return 0;
 }

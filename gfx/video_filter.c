@@ -204,7 +204,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    filt->impl_data = filt->impl->create(
          &softfilter_config, input_fmt, input_fmt, max_width, max_height,
          threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads : 
-         retro_get_cpu_cores(), cpu_features,
+         cpu_features_get_core_amount(), cpu_features,
          &userdata);
    if (!filt->impl_data)
    {
@@ -262,7 +262,7 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
       struct string_list *list)
 {
    unsigned i;
-   softfilter_simd_mask_t mask = retro_get_cpu_features();
+   softfilter_simd_mask_t mask = cpu_features_get();
 
    for (i = 0; i < list->size; i++)
    {
@@ -345,7 +345,7 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
       struct string_list *list)
 {
    unsigned i;
-   softfilter_simd_mask_t mask = retro_get_cpu_features();
+   softfilter_simd_mask_t mask = cpu_features_get();
 
    (void)list;
 
@@ -382,7 +382,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       enum retro_pixel_format in_pixel_format,
       unsigned max_width, unsigned max_height)
 {
-   softfilter_simd_mask_t cpu_features = retro_get_cpu_features();
+   softfilter_simd_mask_t cpu_features = cpu_features_get();
    char basedir[PATH_MAX_LENGTH];
 #ifdef HAVE_DYLIB
    char ext_name[PATH_MAX_LENGTH];

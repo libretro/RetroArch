@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "performance.h"
 #include "performance_counters.h"
 
 #include "general.h"
@@ -133,7 +134,7 @@ void retro_perf_start(struct retro_perf_counter *perf)
       return;
 
    perf->call_cnt++;
-   perf->start = retro_get_perf_counter();
+   perf->start = cpu_features_get_perf_counter();
 }
 
 void retro_perf_stop(struct retro_perf_counter *perf)
@@ -141,5 +142,5 @@ void retro_perf_stop(struct retro_perf_counter *perf)
    if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL) || !perf)
       return;
 
-   perf->total += retro_get_perf_counter() - perf->start;
+   perf->total += cpu_features_get_perf_counter() - perf->start;
 }

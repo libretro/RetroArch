@@ -27,7 +27,9 @@
 #define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
 #endif
 
-#if !defined(_WIN32) && !defined(RARCH_CONSOLE)
+#if defined(_WIN32)
+#include <direct.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -110,13 +112,13 @@ static int clock_gettime(int clk_ik, struct timespec *t)
 #endif
 
 /**
- * retro_get_perf_counter:
+ * cpu_features_get_perf_counter:
  *
  * Gets performance counter.
  *
  * Returns: performance counter.
  **/
-retro_perf_tick_t retro_get_perf_counter(void)
+retro_perf_tick_t cpu_features_get_perf_counter(void)
 {
    retro_perf_tick_t time_ticks = 0;
 #if defined(__linux__) || defined(__QNX__) || defined(__MACH__)
@@ -125,16 +127,12 @@ retro_perf_tick_t retro_get_perf_counter(void)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
          (retro_perf_tick_t)tv.tv_nsec;
 
-#elif defined(__GNUC__) && !defined(RARCH_CONSOLE)
-
-#if defined(__i386__) || defined(__i486__) || defined(__i686__)
+#elif defined(__GNUC__) && defined(__i386__) || defined(__i486__) || defined(__i686__)
    __asm__ volatile ("rdtsc" : "=A" (time_ticks));
-#elif defined(__x86_64__)
+#elif defined(__GNUC__) && defined(__x86_64__)
    unsigned a, d;
    __asm__ volatile ("rdtsc" : "=a" (a), "=d" (d));
    time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
-#endif
-
 #elif defined(__ARM_ARCH_6__)
    __asm__ volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
 #elif defined(__CELLOS_LV2__) || defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__)
@@ -171,13 +169,13 @@ retro_perf_tick_t retro_get_perf_counter(void)
 }
 
 /**
- * retro_get_time_usec:
+ * cpu_features_get_time_usec:
  *
  * Gets time in microseconds.
  *
  * Returns: time in microseconds.
  **/
-retro_time_t retro_get_time_usec(void)
+retro_time_t cpu_features_get_time_usec(void)
 {
 #if defined(_WIN32)
    static LARGE_INTEGER freq;
@@ -210,7 +208,7 @@ retro_time_t retro_get_time_usec(void)
 #elif defined(VITA)
    return sceKernelGetProcessTimeWide();
 #else
-#error "Your platform does not have a timer function implemented in retro_get_time_usec(). Cannot continue."
+#error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif
 }
 
@@ -245,7 +243,7 @@ void x86_cpuid(int func, int flags[4])
 #elif defined(_MSC_VER)
    __cpuid(flags, func);
 #else
-   RARCH_WARN("Unknown compiler. Cannot check CPUID with inline assembly.\n");
+   printf("Unknown compiler. Cannot check CPUID with inline assembly.\n");
    memset(flags, 0, 4 * sizeof(int));
 #endif
 }
@@ -267,7 +265,7 @@ static uint64_t xgetbv_x86(uint32_t idx)
    /* Intrinsic only works on 2010 SP1 and above. */
    return _xgetbv(idx);
 #else
-   RARCH_WARN("Unknown compiler. Cannot check xgetbv bits.\n");
+   printf("Unknown compiler. Cannot check xgetbv bits.\n");
    return 0;
 #endif
 }
@@ -293,13 +291,13 @@ static void arm_enable_runfast_mode(void)
 #endif
 
 /**
- * retro_get_cpu_cores:
+ * cpu_features_get_core_amount:
  *
  * Gets the amount of available CPU cores.
  *
  * Returns: amount of CPU cores available.
  **/
-unsigned retro_get_cpu_cores(void)
+unsigned cpu_features_get_core_amount(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
    /* Win32 */
@@ -354,13 +352,13 @@ unsigned retro_get_cpu_cores(void)
 #define VENDOR_INTEL_d  0x49656e69
 
 /**
- * retro_get_cpu_features:
+ * cpu_features_get:
  *
  * Gets CPU features..
  *
  * Returns: bitmask of all CPU features available.
  **/
-uint64_t retro_get_cpu_features(void)
+uint64_t cpu_features_get(void)
 {
    int flags[4];
    int vendor_shuffle[3];
@@ -389,53 +387,53 @@ uint64_t retro_get_cpu_features(void)
    len     = sizeof(size_t);
    if (sysctlbyname("hw.optional.mmx", NULL, &len, NULL, 0) == 0)
    {
-      cpu |= RETRO_SIMD_MMX;
-      cpu |= RETRO_SIMD_MMXEXT;
+      cpu |= CPU_FEATURE_MMX;
+      cpu |= CPU_FEATURE_MMXEXT;
    }
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_SSE;
+      cpu |= CPU_FEATURE_SSE;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse2", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_SSE2;
+      cpu |= CPU_FEATURE_SSE2;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse3", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_SSE3;
+      cpu |= CPU_FEATURE_SSE3;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.supplementalsse3", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_SSSE3;
+      cpu |= CPU_FEATURE_SSSE3;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse4_1", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_SSE4;
+      cpu |= CPU_FEATURE_SSE4;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse4_2", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_SSE42;
+      cpu |= CPU_FEATURE_SSE42;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.aes", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_AES;
+      cpu |= CPU_FEATURE_AES;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.avx1_0", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_AVX;
+      cpu |= CPU_FEATURE_AVX;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.avx2_0", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_AVX2;
+      cpu |= CPU_FEATURE_AVX2;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.altivec", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_VMX;
+      cpu |= CPU_FEATURE_VMX;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.neon", NULL, &len, NULL, 0) == 0)
-      cpu |= RETRO_SIMD_NEON;
+      cpu |= CPU_FEATURE_NEON;
 
 #elif defined(CPU_X86)
    (void)avx_flags;
@@ -446,7 +444,7 @@ uint64_t retro_get_cpu_features(void)
    vendor_shuffle[2] = flags[2];
    memcpy(vendor, vendor_shuffle, sizeof(vendor_shuffle));
 
-   RARCH_LOG("[CPUID]: Vendor: %s\n", vendor);
+   printf("[CPUID]: Vendor: %s\n", vendor);
 
    vendor_is_intel = (
          flags[1] == VENDOR_INTEL_b &&
@@ -460,52 +458,52 @@ uint64_t retro_get_cpu_features(void)
    x86_cpuid(1, flags);
 
    if (flags[3] & (1 << 23))
-      cpu |= RETRO_SIMD_MMX;
+      cpu |= CPU_FEATURE_MMX;
 
    if (flags[3] & (1 << 25))
    {
       /* SSE also implies MMXEXT (according to FFmpeg source). */
-      cpu |= RETRO_SIMD_SSE;
-      cpu |= RETRO_SIMD_MMXEXT;
+      cpu |= CPU_FEATURE_SSE;
+      cpu |= CPU_FEATURE_MMXEXT;
    }
 
 
    if (flags[3] & (1 << 26))
-      cpu |= RETRO_SIMD_SSE2;
+      cpu |= CPU_FEATURE_SSE2;
 
    if (flags[2] & (1 << 0))
-      cpu |= RETRO_SIMD_SSE3;
+      cpu |= CPU_FEATURE_SSE3;
 
    if (flags[2] & (1 << 9))
-      cpu |= RETRO_SIMD_SSSE3;
+      cpu |= CPU_FEATURE_SSSE3;
 
    if (flags[2] & (1 << 19))
-      cpu |= RETRO_SIMD_SSE4;
+      cpu |= CPU_FEATURE_SSE4;
 
    if (flags[2] & (1 << 20))
-      cpu |= RETRO_SIMD_SSE42;
+      cpu |= CPU_FEATURE_SSE42;
 
    if ((flags[2] & (1 << 23)))
-      cpu |= RETRO_SIMD_POPCNT;
+      cpu |= CPU_FEATURE_POPCNT;
 
    if (vendor_is_intel && (flags[2] & (1 << 22)))
-      cpu |= RETRO_SIMD_MOVBE;
+      cpu |= CPU_FEATURE_MOVBE;
 
    if (flags[2] & (1 << 25))
-      cpu |= RETRO_SIMD_AES;
+      cpu |= CPU_FEATURE_AES;
 
 
    /* Must only perform xgetbv check if we have
     * AVX CPU support (guaranteed to have at least i686). */
    if (((flags[2] & avx_flags) == avx_flags)
          && ((xgetbv_x86(0) & 0x6) == 0x6))
-      cpu |= RETRO_SIMD_AVX;
+      cpu |= CPU_FEATURE_AVX;
 
    if (max_flag >= 7)
    {
       x86_cpuid(7, flags);
       if (flags[1] & (1 << 5))
-         cpu |= RETRO_SIMD_AVX2;
+         cpu |= CPU_FEATURE_AVX2;
    }
 
    x86_cpuid(0x80000000, flags);
@@ -514,55 +512,55 @@ uint64_t retro_get_cpu_features(void)
    {
       x86_cpuid(0x80000001, flags);
       if (flags[3] & (1 << 23))
-         cpu |= RETRO_SIMD_MMX;
+         cpu |= CPU_FEATURE_MMX;
       if (flags[3] & (1 << 22))
-         cpu |= RETRO_SIMD_MMXEXT;
+         cpu |= CPU_FEATURE_MMXEXT;
    }
 #elif defined(__linux__)
    cpu_flags = linux_get_cpu_features();
 
    if (cpu_flags & CPU_ARM_FEATURE_NEON)
    {
-      cpu |= RETRO_SIMD_NEON;
+      cpu |= CPU_FEATURE_NEON;
 #ifdef __ARM_NEON__
       arm_enable_runfast_mode();
 #endif
    }
 
    if (cpu_flags & CPU_ARM_FEATURE_VFPv3)
-      cpu |= RETRO_SIMD_VFPV3;
+      cpu |= CPU_FEATURE_VFPV3;
 
 #elif defined(__ARM_NEON__)
-   cpu |= RETRO_SIMD_NEON;
+   cpu |= CPU_FEATURE_NEON;
    arm_enable_runfast_mode();
 #elif defined(__ALTIVEC__)
-   cpu |= RETRO_SIMD_VMX;
+   cpu |= CPU_FEATURE_VMX;
 #elif defined(XBOX360)
-   cpu |= RETRO_SIMD_VMX128;
+   cpu |= CPU_FEATURE_VMX128;
 #elif defined(PSP)
-   cpu |= RETRO_SIMD_VFPU;
+   cpu |= CPU_FEATURE_VFPU;
 #elif defined(GEKKO)
-   cpu |= RETRO_SIMD_PS;
+   cpu |= CPU_FEATURE_PS;
 #endif
 
-   if (cpu & RETRO_SIMD_MMX)    strlcat(buf, " MMX", sizeof(buf));
-   if (cpu & RETRO_SIMD_MMXEXT) strlcat(buf, " MMXEXT", sizeof(buf));
-   if (cpu & RETRO_SIMD_SSE)    strlcat(buf, " SSE", sizeof(buf));
-   if (cpu & RETRO_SIMD_SSE2)   strlcat(buf, " SSE2", sizeof(buf));
-   if (cpu & RETRO_SIMD_SSE3)   strlcat(buf, " SSE3", sizeof(buf));
-   if (cpu & RETRO_SIMD_SSSE3)  strlcat(buf, " SSSE3", sizeof(buf));
-   if (cpu & RETRO_SIMD_SSE4)   strlcat(buf, " SSE4", sizeof(buf));
-   if (cpu & RETRO_SIMD_SSE42)  strlcat(buf, " SSE4.2", sizeof(buf));
-   if (cpu & RETRO_SIMD_AES)    strlcat(buf, " AES", sizeof(buf));
-   if (cpu & RETRO_SIMD_AVX)    strlcat(buf, " AVX", sizeof(buf));
-   if (cpu & RETRO_SIMD_AVX2)   strlcat(buf, " AVX2", sizeof(buf));
-   if (cpu & RETRO_SIMD_NEON)   strlcat(buf, " NEON", sizeof(buf));
-   if (cpu & RETRO_SIMD_VFPV3)  strlcat(buf, " VFPv3", sizeof(buf));
-   if (cpu & RETRO_SIMD_VFPV4)  strlcat(buf, " VFPv4", sizeof(buf));
-   if (cpu & RETRO_SIMD_VMX)    strlcat(buf, " VMX", sizeof(buf));
-   if (cpu & RETRO_SIMD_VMX128) strlcat(buf, " VMX128", sizeof(buf));
-   if (cpu & RETRO_SIMD_VFPU)   strlcat(buf, " VFPU", sizeof(buf));
-   if (cpu & RETRO_SIMD_PS)     strlcat(buf, " PS", sizeof(buf));
+   if (cpu & CPU_FEATURE_MMX)    strlcat(buf, " MMX", sizeof(buf));
+   if (cpu & CPU_FEATURE_MMXEXT) strlcat(buf, " MMXEXT", sizeof(buf));
+   if (cpu & CPU_FEATURE_SSE)    strlcat(buf, " SSE", sizeof(buf));
+   if (cpu & CPU_FEATURE_SSE2)   strlcat(buf, " SSE2", sizeof(buf));
+   if (cpu & CPU_FEATURE_SSE3)   strlcat(buf, " SSE3", sizeof(buf));
+   if (cpu & CPU_FEATURE_SSSE3)  strlcat(buf, " SSSE3", sizeof(buf));
+   if (cpu & CPU_FEATURE_SSE4)   strlcat(buf, " SSE4", sizeof(buf));
+   if (cpu & CPU_FEATURE_SSE42)  strlcat(buf, " SSE4.2", sizeof(buf));
+   if (cpu & CPU_FEATURE_AES)    strlcat(buf, " AES", sizeof(buf));
+   if (cpu & CPU_FEATURE_AVX)    strlcat(buf, " AVX", sizeof(buf));
+   if (cpu & CPU_FEATURE_AVX2)   strlcat(buf, " AVX2", sizeof(buf));
+   if (cpu & CPU_FEATURE_NEON)   strlcat(buf, " NEON", sizeof(buf));
+   if (cpu & CPU_FEATURE_VFPV3)  strlcat(buf, " VFPv3", sizeof(buf));
+   if (cpu & CPU_FEATURE_VFPV4)  strlcat(buf, " VFPv4", sizeof(buf));
+   if (cpu & CPU_FEATURE_VMX)    strlcat(buf, " VMX", sizeof(buf));
+   if (cpu & CPU_FEATURE_VMX128) strlcat(buf, " VMX128", sizeof(buf));
+   if (cpu & CPU_FEATURE_VFPU)   strlcat(buf, " VFPU", sizeof(buf));
+   if (cpu & CPU_FEATURE_PS)     strlcat(buf, " PS", sizeof(buf));
 
    return cpu;
 }
