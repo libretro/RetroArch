@@ -15,7 +15,7 @@
  */
 
 #include <stdio.h>
-
+#include <stdlib.h>
 
 #if defined(_WIN32)
 #include <direct.h>
@@ -24,6 +24,7 @@
 #endif
 
 #include <compat/strl.h>
+#include <streams/file_stream.h>
 #include <libretro.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -99,10 +100,6 @@ static int clock_gettime(int clk_ik, struct timespec *t)
 #endif
 
 #include <string.h>
-
-#if defined(__linux__)
-#include "frontend/drivers/platform_linux.h"
-#endif
 
 /**
  * cpu_features_get_perf_counter:
@@ -283,6 +280,214 @@ static void arm_enable_runfast_mode(void)
 }
 #endif
 
+#if defined(__linux__)
+
+#ifdef __ARM_ARCH__
+/* Extract the content of a the first occurrence of a given field in
+ * the content of /proc/cpuinfo and return it as a heap-allocated
+ * string that must be freed by the caller.
+ *
+ * Return NULL if not found
+ */
+static char *extract_cpuinfo_field(char* buffer,
+      ssize_t length, const char* field)
+{
+   int len;
+   const char *q;
+   int  fieldlen = strlen(field);
+   char* bufend  = buffer + length;
+   char* result  = NULL;
+   /* Look for first field occurrence,
+    * and ensures it starts the line. */
+   const char *p = buffer;
+
+   for (;;)
+   {
+      p = memmem(p, bufend-p, field, fieldlen);
+      if (p == NULL)
+         return result;
+
+      if (p == buffer || p[-1] == '\n')
+         break;
+
+      p += fieldlen;
+   }
+
+   /* Skip to the first column followed by a space */
+   p += fieldlen;
+   p  = memchr(p, ':', bufend-p);
+   if (p == NULL || p[1] != ' ')
+      return result;
+
+   /* Find the end of the line */
+   p += 2;
+   q  = memchr(p, '\n', bufend-p);
+   if (q == NULL)
+      q = bufend;
+
+   /* Copy the line into a heap-allocated buffer */
+   len    = q-p;
+   result = malloc(len+1);
+   if (result == NULL)
+      return result;
+
+   memcpy(result, p, len);
+   result[len] = '\0';
+
+   return result;
+}
+
+/* Checks that a space-separated list of items
+ * contains one given 'item'.
+ * Returns 1 if found, 0 otherwise.
+ */
+static int has_list_item(const char* list, const char* item)
+{
+    const char*  p = list;
+    int    itemlen = strlen(item);
+
+    if (list == NULL)
+        return 0;
+
+    while (*p)
+    {
+        const char*  q;
+
+        /* skip spaces */
+        while (*p == ' ' || *p == '\t')
+            p++;
+
+        /* find end of current list item */
+        q = p;
+        while (*q && *q != ' ' && *q != '\t')
+            q++;
+
+        if (itemlen == q-p && !memcmp(p, item, itemlen))
+            return 1;
+
+        /* skip to next item */
+        p = q;
+    }
+    return 0;
+}
+#endif
+
+typedef struct
+{
+    uint32_t mask;
+} CpuList;
+
+
+#if !defined(_SC_NPROCESSORS_ONLN)
+/* Parse an decimal integer starting from 'input', but not going further
+ * than 'limit'. Return the value into '*result'.
+ *
+ * NOTE: Does not skip over leading spaces, or deal with sign characters.
+ * NOTE: Ignores overflows.
+ *
+ * The function returns NULL in case of error (bad format), or the new
+ * position after the decimal number in case of success (which will always
+ * be <= 'limit').
+ */
+static const char *parse_decimal(const char* input,
+      const char* limit, int* result)
+{
+    const char* p = input;
+    int       val = 0;
+
+    while (p < limit)
+    {
+        int d = (*p - '0');
+        if ((unsigned)d >= 10U)
+            break;
+        val = val*10 + d;
+        p++;
+    }
+    if (p == input)
+        return NULL;
+
+    *result = val;
+    return p;
+}
+
+/* Parse a textual list of cpus and store the result inside a CpuList object.
+ * Input format is the following:
+ * - comma-separated list of items (no spaces)
+ * - each item is either a single decimal number (cpu index), or a range made
+ *   of two numbers separated by a single dash (-). Ranges are inclusive.
+ *
+ * Examples:   0
+ *             2,4-127,128-143
+ *             0-1
+ */
+static void cpulist_parse(CpuList* list, char **buf, ssize_t length)
+{
+   const char* p   = (const char*)buf;
+   const char* end = p + length;
+
+   /* NOTE: the input line coming from sysfs typically contains a
+    * trailing newline, so take care of it in the code below
+    */
+   while (p < end && *p != '\n')
+   {
+      int val, start_value, end_value;
+      /* Find the end of current item, and put it into 'q' */
+      const char *q = (const char*)memchr(p, ',', end-p);
+
+      if (!q)
+         q = end;
+
+      /* Get first value */
+      p = parse_decimal(p, q, &start_value);
+      if (p == NULL)
+         return;
+
+      end_value = start_value;
+
+      /* If we're not at the end of the item, expect a dash and
+       * and integer; extract end value.
+       */
+      if (p < q && *p == '-')
+      {
+         p = parse_decimal(p+1, q, &end_value);
+         if (p == NULL)
+            return;
+      }
+
+      /* Set bits CPU list bits */
+      for (val = start_value; val <= end_value; val++)
+      {
+         if ((unsigned)val < 32)
+            list->mask |= (uint32_t)(1U << val);
+      }
+
+      /* Jump to next item */
+      p = q;
+      if (p < end)
+         p++;
+   }
+}
+
+/* Read a CPU list from one sysfs file */
+static void cpulist_read_from(CpuList* list, const char* filename)
+{
+   ssize_t length;
+   char *buf  = NULL;
+
+   list->mask = 0;
+
+   if (filestream_read_file(filename, (void**)&buf, &length) != 1)
+      return;
+
+   cpulist_parse(list, &buf, length);
+   if (buf)
+      free(buf);
+   buf = NULL;
+}
+#endif
+
+#endif
+
 /**
  * cpu_features_get_core_amount:
  *
@@ -330,7 +535,22 @@ unsigned cpu_features_get_core_amount(void)
    }
    return num_cpu;
 #elif defined(__linux__)
-   return linux_get_cpu_count();
+   CpuList  cpus_present[1];
+   CpuList  cpus_possible[1];
+   int amount = 0;
+
+   cpulist_read_from(cpus_present, "/sys/devices/system/cpu/present");
+   cpulist_read_from(cpus_possible, "/sys/devices/system/cpu/possible");
+
+   /* Compute the intersection of both sets to get the actual number of
+    * CPU cores that can be used on this device by the kernel.
+    */
+   cpus_present->mask &= cpus_possible->mask;
+   amount              = __builtin_popcount(cpus_present->mask);
+
+   if (amount == 0)
+      return 1;
+   return amount;
 #elif defined(_XBOX360)
    return 3;
 #else
@@ -510,7 +730,123 @@ uint64_t cpu_features_get(void)
          cpu |= RETRO_SIMD_MMXEXT;
    }
 #elif defined(__linux__)
-   cpu_flags = linux_get_cpu_features();
+
+   static bool cpu_inited_once = false;
+   static  uint64_t g_cpuFeatures;
+
+   enum
+   {
+      CPU_ARM_FEATURE_ARMv7       = (1 << 0),
+      CPU_ARM_FEATURE_VFPv3       = (1 << 1),
+      CPU_ARM_FEATURE_NEON        = (1 << 2),
+      CPU_ARM_FEATURE_LDREX_STREX = (1 << 3)
+   };
+
+   if (!cpu_inited_once)
+   {
+      ssize_t  length;
+      void *buf = NULL;
+
+      g_cpuFeatures = 0;
+
+      if (filestream_read_file("/proc/cpuinfo", &buf, &length) == 1)
+      {
+#ifdef __ARM_ARCH__
+         /* Extract architecture from the "CPU Architecture" field.
+          * The list is well-known, unlike the the output of
+          * the 'Processor' field which can vary greatly.
+          *
+          * See the definition of the 'proc_arch' array in
+          * $KERNEL/arch/arm/kernel/setup.c and the 'c_show' function in
+          * same file.
+          */
+         char* cpu_arch = extract_cpuinfo_field(buf, length, "CPU architecture");
+
+         if (cpu_arch)
+         {
+            char*  end;
+            int    has_armv7 = 0;
+            /* read the initial decimal number, ignore the rest */
+            long   arch_number = strtol(cpu_arch, &end, 10);
+
+            RARCH_LOG("Found CPU architecture = '%s'\n", cpu_arch);
+
+            /* Here we assume that ARMv8 will be upwards compatible with v7
+             * in the future. Unfortunately, there is no 'Features' field to
+             * indicate that Thumb-2 is supported.
+             */
+            if (end > cpu_arch && arch_number >= 7)
+               has_armv7 = 1;
+
+            /* Unfortunately, it seems that certain ARMv6-based CPUs
+             * report an incorrect architecture number of 7!
+             *
+             * See http://code.google.com/p/android/issues/detail?id=10812
+             *
+             * We try to correct this by looking at the 'elf_format'
+             * field reported by the 'Processor' field, which is of the
+             * form of "(v7l)" for an ARMv7-based CPU, and "(v6l)" for
+             * an ARMv6-one.
+             */
+            if (has_armv7)
+            {
+               char *cpu_proc = extract_cpuinfo_field(buf, length,
+                     "Processor");
+
+               if (cpu_proc != NULL)
+               {
+                  RARCH_LOG("found cpu_proc = '%s'\n", cpu_proc);
+                  if (has_list_item(cpu_proc, "(v6l)"))
+                  {
+                     /* CPU processor and architecture mismatch. */
+                     has_armv7 = 0;
+                  }
+                  free(cpu_proc);
+               }
+            }
+
+            if (has_armv7)
+               g_cpuFeatures |= CPU_ARM_FEATURE_ARMv7;
+
+            /* The LDREX / STREX instructions are available from ARMv6 */
+            if (arch_number >= 6)
+               g_cpuFeatures |= CPU_ARM_FEATURE_LDREX_STREX;
+
+            free(cpu_arch);
+         }
+
+         /* Extract the list of CPU features from 'Features' field */
+         char* cpu_features = extract_cpuinfo_field(buf, length, "Features");
+
+         if (cpu_features)
+         {
+            RARCH_LOG("found cpu_features = '%s'\n", cpu_features);
+
+            if (has_list_item(cpu_features, "vfpv3"))
+               g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
+
+            else if (has_list_item(cpu_features, "vfpv3d16"))
+               g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
+
+            /* Note: Certain kernels only report NEON but not VFPv3
+             * in their features list. However, ARM mandates
+             * that if NEON is implemented, so must be VFPv3
+             * so always set the flag.
+             */
+            if (has_list_item(cpu_features, "neon"))
+               g_cpuFeatures |= CPU_ARM_FEATURE_NEON | CPU_ARM_FEATURE_VFPv3;
+            free(cpu_features);
+         }
+#endif /* __ARM_ARCH__ */
+
+         if (buf)
+            free(buf);
+         buf = NULL;
+      }
+      cpu_inited_once = true;
+   }
+
+   cpu_flags = g_cpuFeatures;
 
    if (cpu_flags & CPU_ARM_FEATURE_NEON)
    {
