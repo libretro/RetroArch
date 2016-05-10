@@ -107,7 +107,7 @@ typedef struct zarch_handle
    math_matrix_4x4 mvp;
    unsigned width;
    unsigned height;
-   gfx_font_raster_block_t tmp_block;
+   video_font_raster_block_t tmp_block;
    unsigned hash;
 
    struct {

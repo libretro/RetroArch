@@ -243,7 +243,7 @@ typedef struct xmb_handle
    xmb_node_t history_tab_node;
    xmb_node_t add_tab_node;
 
-   gfx_font_raster_block_t raster_block;
+   video_font_raster_block_t raster_block;
 } xmb_handle_t;
 
 float gradient_dark_purple[16] = {

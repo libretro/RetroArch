@@ -82,11 +82,11 @@ typedef struct video_coord_array
    unsigned allocated;
 } video_coord_array_t;
 
-typedef struct gfx_raster_block
+typedef struct video_font_raster_block
 {
    bool fullscreen;
    video_coord_array_t carr;
-} gfx_font_raster_block_t;
+} video_font_raster_block_t;
 
 bool video_coord_array_append(video_coord_array_t *ca,
       const video_coords_t *coords, unsigned count);

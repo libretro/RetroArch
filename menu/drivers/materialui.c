@@ -109,7 +109,7 @@ typedef struct mui_handle
       size_t selection_ptr;
    } categories;
 
-   gfx_font_raster_block_t list_block;
+   video_font_raster_block_t list_block;
    float scroll_y;
 } mui_handle_t;
 
