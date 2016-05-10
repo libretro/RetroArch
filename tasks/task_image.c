@@ -116,19 +116,24 @@ static int cb_image_menu_generic_rpng(nbio_handle_t *nbio)
    if (!nbio)
       return -1;
 
-   if (!rpng_is_valid(nbio->image.handle))
+   if (!rpng_is_valid((rpng_t*)nbio->image.handle))
       return -1;
 
-   retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
+   retval = rpng_nbio_load_image_argb_process(
+         (rpng_t*)nbio->image.handle,
          &nbio->image.ti.pixels, &width, &height);
 
    nbio->image.ti.width  = width;
    nbio->image.ti.height = height;
 
-   if (retval == IMAGE_PROCESS_ERROR)
-      return -1;
-   if (retval == IMAGE_PROCESS_ERROR_END)
-      return -1;
+   switch (retval)
+   {
+      case IMAGE_PROCESS_ERROR:
+      case IMAGE_PROCESS_ERROR_END:
+         return -1;
+      default:
+         break;
+   }
 
    nbio->image.is_blocking_on_processing         = true;
    nbio->image.is_finished                       = false;
@@ -173,7 +178,7 @@ static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
    for (i = 0; i < nbio->image.pos_increment; i++)
    {
       /* TODO/FIXME - add JPEG equivalents as well */
-      if (!rpng_nbio_load_image_argb_iterate(nbio->image.handle))
+      if (!rpng_nbio_load_image_argb_iterate((rpng_t*)nbio->image.handle))
          goto error;
    }
 
@@ -195,8 +200,10 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
    for (i = 0; i < nbio->image.processing_pos_increment; i++)
    {
       /* TODO/FIXME -add JPEG equivalents as well */
-      retval = rpng_nbio_load_image_argb_process(nbio->image.handle,
-            &nbio->image.ti.pixels, &width, &height);
+      retval = rpng_nbio_load_image_argb_process(
+            (rpng_t*)nbio->image.handle,
+            &nbio->image.ti.pixels,
+            &width, &height);
 
       nbio->image.ti.width  = width;
       nbio->image.ti.height = height;
@@ -226,20 +233,20 @@ static int cb_nbio_generic_rpng(nbio_handle_t *nbio, size_t *len)
 
    if (!ptr)
    {
-      rpng_nbio_load_image_free(nbio->image.handle);
+      rpng_nbio_load_image_free((rpng_t*)nbio->image.handle);
       nbio->image.handle = NULL;
       nbio->image.cb     = NULL;
 
       return -1;
    }
 
-   rpng_set_buf_ptr(nbio->image.handle, (uint8_t*)ptr);
+   rpng_set_buf_ptr((rpng_t*)nbio->image.handle, (uint8_t*)ptr);
    nbio->image.pos_increment            = (*len / 2) ? (*len / 2) : 1;
    nbio->image.processing_pos_increment = (*len / 4) ?  (*len / 4) : 1;
 
-   if (!rpng_nbio_load_image_argb_start(nbio->image.handle))
+   if (!rpng_nbio_load_image_argb_start((rpng_t*)nbio->image.handle))
    {
-      rpng_nbio_load_image_free(nbio->image.handle);
+      rpng_nbio_load_image_free((rpng_t*)nbio->image.handle);
       return -1;
    }
 
@@ -395,7 +402,7 @@ void rarch_task_image_load_free(retro_task_t *task)
 
 #ifdef HAVE_RPNG
    /* TODO/FIXME - add JPEG equivalents as well */
-   rpng_nbio_load_image_free(image->handle);
+   rpng_nbio_load_image_free((rpng_t*)image->handle);
 #endif
 
    image->handle                 = NULL;
