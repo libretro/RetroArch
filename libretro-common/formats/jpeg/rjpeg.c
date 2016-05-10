@@ -39,10 +39,10 @@ typedef struct
 } rjpeg__resample;
 
 #ifdef _MSC_VER
-#define STBI_HAS_LROTL
+#define RJPEG_HAS_LROTL
 #endif
 
-#ifdef STBI_HAS_LROTL
+#ifdef RJPEG_HAS_LROTL
    #define rjpeg_lrot(x,y)  _lrotl(x,y)
 #else
    #define rjpeg_lrot(x,y)  (((x) << (y)) | ((x) >> (32 - (y))))
@@ -55,17 +55,17 @@ typedef struct
 #define RJPEG__X86_TARGET
 #endif
 
-#if defined(__GNUC__) && (defined(RJPEG__X86_TARGET) || defined(RJPEG__X64_TARGET)) && !defined(__SSE2__) && !defined(STBI_NO_SIMD)
+#if defined(__GNUC__) && (defined(RJPEG__X86_TARGET) || defined(RJPEG__X64_TARGET)) && !defined(__SSE2__) && !defined(RJPEG_NO_SIMD)
 /* NOTE: not clear do we actually need this for the 64-bit path?
  * gcc doesn't support sse2 intrinsics unless you compile with -msse2,
  * (but compiling with -msse2 allows the compiler to use SSE2 everywhere;
  * this is just broken and gcc are jerks for not fixing it properly
  * http://www.virtualdub.org/blog/pivot/entry.php?id=363 )
  */
-#define STBI_NO_SIMD
+#define RJPEG_NO_SIMD
 #endif
 
-#if defined(__MINGW32__) && defined(RJPEG__X86_TARGET) && !defined(STBI_MINGW_ENABLE_SSE2) && !defined(STBI_NO_SIMD)
+#if defined(__MINGW32__) && defined(RJPEG__X86_TARGET) && !defined(RJPEG_MINGW_ENABLE_SSE2) && !defined(RJPEG_NO_SIMD)
 /* Note that __MINGW32__ doesn't actually mean 32-bit, so we have to avoid RJPEG__X64_TARGET
  *
  * 32-bit MinGW wants ESP to be 16-byte aligned, but this is not in the
@@ -76,9 +76,9 @@ typedef struct
  * See https://github.com/nothings/stb/issues/81 for more information.
  *
  * So default to no SSE2 on 32-bit MinGW. If you've read this far and added
- * -mstackrealign to your build settings, feel free to #define STBI_MINGW_ENABLE_SSE2.
+ * -mstackrealign to your build settings, feel free to #define RJPEG_MINGW_ENABLE_SSE2.
  */
-#define STBI_NO_SIMD
+#define RJPEG_NO_SIMD
 #endif
 
 #if defined(__SSE2__)
@@ -107,7 +107,7 @@ static int rjpeg__cpuid3(void)
 }
 #endif
 
-#define STBI_SIMD_ALIGN(type, name) __declspec(align(16)) type name
+#define RJPEG_SIMD_ALIGN(type, name) __declspec(align(16)) type name
 
 static int rjpeg__sse2_available(void)
 {
@@ -132,18 +132,18 @@ static int rjpeg__sse2_available(void)
 #endif
 
 /* ARM NEON */
-#if defined(STBI_NO_SIMD) && defined(STBI_NEON)
-#undef STBI_NEON
+#if defined(RJPEG_NO_SIMD) && defined(RJPEG_NEON)
+#undef RJPEG_NEON
 #endif
 
-#ifdef STBI_NEON
+#ifdef RJPEG_NEON
 #include <arm_neon.h>
 /* assume GCC or Clang on ARM targets */
-#define STBI_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
+#define RJPEG_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
 #endif
 
-#ifndef STBI_SIMD_ALIGN
-#define STBI_SIMD_ALIGN(type, name) type name
+#ifndef RJPEG_SIMD_ALIGN
+#define RJPEG_SIMD_ALIGN(type, name) type name
 #endif
 
 typedef struct
@@ -180,7 +180,7 @@ static void rjpeg__rewind(rjpeg__context *s)
    s->img_buffer = s->img_buffer_original;
 }
 
-#ifndef STBI_NO_JPEG
+#ifndef RJPEG_NO_JPEG
 static int      rjpeg__jpeg_test(rjpeg__context *s);
 static uint8_t *rjpeg__jpeg_load(rjpeg__context *s, int *x, int *y, int *comp, int req_comp);
 #endif
@@ -194,9 +194,9 @@ static INLINE int rjpeg__err(const char *str)
    return 0;
 }
 
-#ifdef STBI_NO_FAILURE_STRINGS
+#ifdef RJPEG_NO_FAILURE_STRINGS
    #define rjpeg__err(x,y)  0
-#elif defined(STBI_FAILURE_USERMSG)
+#elif defined(RJPEG_FAILURE_USERMSG)
    #define rjpeg__err(x,y)  rjpeg__err(y)
 #else
    #define rjpeg__err(x,y)  rjpeg__err(x)
@@ -209,7 +209,7 @@ static int rjpeg__vertically_flip_on_load = 0;
 
 static unsigned char *rjpeg__load_main(rjpeg__context *s, int *x, int *y, int *comp, int req_comp)
 {
-   #ifndef STBI_NO_JPEG
+   #ifndef RJPEG_NO_JPEG
    if (rjpeg__jpeg_test(s)) return rjpeg__jpeg_load(s,x,y,comp,req_comp);
    #endif
 
@@ -1122,7 +1122,7 @@ static void rjpeg__idct_simd(uint8_t *out, int out_stride, short data[64])
 
 #endif
 
-#ifdef STBI_NEON
+#ifdef RJPEG_NEON
 
 /* NEON integer IDCT. should produce bit-identical
  * results to the generic C version. */
@@ -1328,7 +1328,7 @@ static void rjpeg__idct_simd(uint8_t *out, int out_stride, short data[64])
 #undef dct_pass
 }
 
-#endif /* STBI_NEON */
+#endif /* RJPEG_NEON */
 
 #define RJPEG__MARKER_none  0xff
 /* if there's a pending marker from the entropy stream, return that
@@ -1373,7 +1373,7 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
    if (!z->progressive) {
       if (z->scan_n == 1) {
          int i,j;
-         STBI_SIMD_ALIGN(short, data[64]);
+         RJPEG_SIMD_ALIGN(short, data[64]);
          int n = z->order[0];
          /* non-interleaved data, we just need to process one block at a time,
           * in trivial scanline order
@@ -1400,7 +1400,7 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
          return 1;
       } else { // interleaved
          int i,j,k,x,y;
-         STBI_SIMD_ALIGN(short, data[64]);
+         RJPEG_SIMD_ALIGN(short, data[64]);
          for (j=0; j < z->img_mcu_y; ++j) {
             for (i=0; i < z->img_mcu_x; ++i) {
                // scan an interleaved mcu... process scan_n components in order
@@ -1919,7 +1919,7 @@ static uint8_t *rjpeg__resample_row_hv_2(uint8_t *out, uint8_t *in_near, uint8_t
    return out;
 }
 
-#if defined(__SSE2__) || defined(STBI_NEON)
+#if defined(__SSE2__) || defined(RJPEG_NEON)
 static uint8_t *rjpeg__resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
 {
    /* need to generate 2x2 samples for every one in input */
@@ -1982,7 +1982,7 @@ static uint8_t *rjpeg__resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near, ui
       /* pack and write output */
       __m128i outv = _mm_packus_epi16(de0, de1);
       _mm_storeu_si128((__m128i *) (out + i*2), outv);
-#elif defined(STBI_NEON)
+#elif defined(RJPEG_NEON)
       /* load and perform the vertical filtering pass
        * this uses 3*x + y = 4*x + (y - x) */
       uint8x8_t farb  = vld1_u8(in_far + i);
@@ -2085,7 +2085,7 @@ static void rjpeg__YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y, const uint8_
    }
 }
 
-#if defined(__SSE2__) || defined(STBI_NEON)
+#if defined(__SSE2__) || defined(RJPEG_NEON)
 static void rjpeg__YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y, const uint8_t *pcb, const uint8_t *pcr, int count, int step)
 {
    int i = 0;
@@ -2154,7 +2154,7 @@ static void rjpeg__YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y, const uint8
    }
 #endif
 
-#ifdef STBI_NEON
+#ifdef RJPEG_NEON
    /* in this version, step=3 support would be easy to add. but is there demand? */
    if (step == 4)
    {
@@ -2243,7 +2243,7 @@ static void rjpeg__setup_jpeg(rjpeg__jpeg *j)
    }
 #endif
 
-#ifdef STBI_NEON
+#ifdef RJPEG_NEON
    j->idct_block_kernel           = rjpeg__idct_simd;
    j->YCbCr_to_RGB_kernel         = rjpeg__YCbCr_to_RGB_simd;
    j->resample_row_hv_2_kernel    = rjpeg__resample_row_hv_2_simd;
