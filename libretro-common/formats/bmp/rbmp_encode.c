@@ -197,6 +197,8 @@ static void dump_content(RFILE *file, const void *frame,
       }
    }
 
+   /* Free allocated line buffer */
+   free(line);
 }
 
 bool rbmp_save_image(const char *filename, const void *frame,
