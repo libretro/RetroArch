@@ -108,7 +108,7 @@ static int cb_nbio_default(void *data, size_t len)
    return 0;
 }
 
-static int rarch_main_data_image_iterate(
+static int rarch_main_data_image_process(
       nbio_handle_t *nbio,
       unsigned *width,
       unsigned *height,
@@ -138,7 +138,7 @@ static int cb_image_menu_generic_rpng(nbio_handle_t *nbio)
    if (!nbio)
       return -1;
 
-   switch (rarch_main_data_image_iterate(nbio,
+   switch (rarch_main_data_image_process(nbio,
          &width, &height, &retval))
    {
       case IMAGE_PROCESS_ERROR:
@@ -213,7 +213,7 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->image.processing_pos_increment; i++)
    {
-      if (rarch_main_data_image_iterate(nbio,
+      if (rarch_main_data_image_process(nbio,
                &width, &height, &retval) != IMAGE_PROCESS_NEXT)
          break;
    }
@@ -403,7 +403,6 @@ error:
          fullpath, strerror(errno));
    return false;
 }
-
 
 void rarch_task_image_load_free(retro_task_t *task)
 {
