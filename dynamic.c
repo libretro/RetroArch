@@ -1220,6 +1220,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             (const struct retro_memory_map*)data;
          
          RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
+         RARCH_LOG("   flags    ptr              offset   start    select   disconn  len      addrspace\n");
          
          for (i = 0; i < mmaps->num_descriptors; i++)
          {
