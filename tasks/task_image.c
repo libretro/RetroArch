@@ -345,27 +345,18 @@ bool rarch_task_image_load_handler(retro_task_t *task)
 bool rarch_task_push_image_load(const char *fullpath,
       const char *type, retro_task_callback_t cb, void *user_data)
 {
-#if defined(HAVE_RPNG) && defined(HAVE_MENU)
-   nbio_handle_t *nbio          = NULL;
-   retro_task_t *t              = NULL;
-   uint32_t cb_type_hash        = 0;
-   struct nbio_t* handle        = NULL;
-
-   cb_type_hash = djb2_calculate(type);
-
-   handle = nbio_open(fullpath, NBIO_READ);
+   nbio_handle_t *nbio   = NULL;
+   retro_task_t *t       = NULL;
+   uint32_t cb_type_hash = djb2_calculate(type);
+   struct nbio_t *handle = nbio_open(fullpath, NBIO_READ);
 
    if (!handle)
-   {
-      RARCH_ERR("[image load] Failed to open '%s': %s.\n",
-            fullpath, strerror(errno));
-      return false;
-   }
+      goto error;
 
    nbio = (nbio_handle_t*)calloc(1, sizeof(*nbio));
 
    if (!nbio)
-      return false;
+      goto error;
 
    nbio->handle       = handle;
    nbio->is_finished  = false;
@@ -392,10 +383,7 @@ bool rarch_task_push_image_load(const char *fullpath,
    t = (retro_task_t*)calloc(1, sizeof(*t));
 
    if (!t)
-   {
-      free(nbio);
-      return false;
-   }
+      goto error;
 
    t->state     = nbio;
    t->handler   = rarch_task_file_load_handler;
@@ -403,8 +391,17 @@ bool rarch_task_push_image_load(const char *fullpath,
    t->user_data = user_data;
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
-#endif
+
    return true;
+
+error:
+   if (t)
+      free(t);
+   if (nbio)
+      free(nbio);
+   RARCH_ERR("[image load] Failed to open '%s': %s.\n",
+         fullpath, strerror(errno));
+   return false;
 }
 
 
