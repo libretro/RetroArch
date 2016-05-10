@@ -36,7 +36,7 @@ struct video_fbo_rect
    unsigned height;
 };
 
-struct gfx_ortho
+struct video_ortho
 {
    float left;
    float right;
@@ -46,7 +46,7 @@ struct gfx_ortho
    float zfar;
 };
 
-struct gfx_tex_info
+struct video_tex_info
 {
    unsigned int tex;
    float input_size[2];

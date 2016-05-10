@@ -289,7 +289,7 @@ fallback:
 static void gl_cg_set_texture_info(
       cg_shader_data_t *cg, 
       const struct cg_fbo_params *params,
-      const struct gfx_tex_info *info)
+      const struct video_tex_info *info)
 {
    unsigned i;
    struct uniform_cg uniform_data[4];
@@ -348,10 +348,10 @@ static void gl_cg_set_params(void *data, void *shader_data,
    struct uniform_cg uniform_data[10];
    struct uniform_info uniform_params[10] = {{0}};
    unsigned uniform_count                   = 0;
-   const struct gfx_tex_info *info          = (const struct gfx_tex_info*)_info;
-   const struct gfx_tex_info *prev_info     = (const struct gfx_tex_info*)_prev_info;
-   const struct gfx_tex_info *feedback_info = (const struct gfx_tex_info*)_feedback_info;
-   const struct gfx_tex_info *fbo_info      = (const struct gfx_tex_info*)_fbo_info;
+   const struct video_tex_info *info          = (const struct video_tex_info*)_info;
+   const struct video_tex_info *prev_info     = (const struct video_tex_info*)_prev_info;
+   const struct video_tex_info *feedback_info = (const struct video_tex_info*)_feedback_info;
+   const struct video_tex_info *fbo_info      = (const struct video_tex_info*)_fbo_info;
    cg_shader_data_t *cg                = (cg_shader_data_t*)shader_data;
 
    if (!cg || (cg->active_idx == 0))

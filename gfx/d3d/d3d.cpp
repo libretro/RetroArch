@@ -1074,7 +1074,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 static void d3d_set_rotation(void *data, unsigned rot)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!d3d)
       return;

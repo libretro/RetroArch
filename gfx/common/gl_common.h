@@ -181,8 +181,8 @@ typedef struct gl
    GLuint texture[GFX_MAX_TEXTURES];
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
-   struct gfx_tex_info tex_info;
-   struct gfx_tex_info prev_info[GFX_MAX_TEXTURES];
+   struct video_tex_info tex_info;
+   struct video_tex_info prev_info[GFX_MAX_TEXTURES];
    GLuint tex_mag_filter;
    GLuint tex_min_filter;
    bool tex_mipmap;
