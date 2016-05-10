@@ -986,7 +986,6 @@ static const uint8_t *cheevos_get_memory(unsigned offset)
 {
    retro_ctx_memory_info_t mem_info;
    uint8_t *memory = NULL;
-   unsigned i;
    
    mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
 
