@@ -219,42 +219,48 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
    return -1;
 }
 
+static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
+{
+   nbio_image_handle_t *image = nbio ? &nbio->image : NULL;
+
+#ifdef HAVE_RPNG
+   /* TODO/FIXME - add JPEG equivalents as well */
+   rpng_nbio_load_image_free((rpng_t*)image->handle);
+#endif
+
+   image->handle                 = NULL;
+   image->cb                     = NULL;
+   image->frame_count            = 0;
+}
+
 static int cb_nbio_generic_rpng(nbio_handle_t *nbio, size_t *len)
 {
    void *ptr           = NULL;
 
    if (!nbio->image.handle)
-   {
-      nbio->image.cb = NULL;
-      return -1;
-   }
+      goto error;
 
    ptr = nbio_get_ptr(nbio->handle, len);
 
    if (!ptr)
-   {
-      rpng_nbio_load_image_free((rpng_t*)nbio->image.handle);
-      nbio->image.handle = NULL;
-      nbio->image.cb     = NULL;
-
-      return -1;
-   }
+      goto error;
 
    rpng_set_buf_ptr((rpng_t*)nbio->image.handle, (uint8_t*)ptr);
    nbio->image.pos_increment            = (*len / 2) ? (*len / 2) : 1;
    nbio->image.processing_pos_increment = (*len / 4) ?  (*len / 4) : 1;
 
    if (!rpng_nbio_load_image_argb_start((rpng_t*)nbio->image.handle))
-   {
-      rpng_nbio_load_image_free((rpng_t*)nbio->image.handle);
-      return -1;
-   }
+      goto error;
 
    nbio->image.is_blocking   = false;
    nbio->image.is_finished   = false;
    nbio->is_finished         = true;
 
    return 0;
+
+error:
+   rarch_task_image_load_free_internal(nbio);
+   return -1;
 }
 
 static int cb_nbio_image_menu_wallpaper_rpng(void *data, size_t len)
@@ -395,16 +401,10 @@ bool rarch_task_push_image_load(const char *fullpath,
    return true;
 }
 
+
 void rarch_task_image_load_free(retro_task_t *task)
 {
    nbio_handle_t       *nbio  = (nbio_handle_t*)task->state;
-   nbio_image_handle_t *image = nbio ? &nbio->image : NULL;
-
-#ifdef HAVE_RPNG
-   /* TODO/FIXME - add JPEG equivalents as well */
-   rpng_nbio_load_image_free((rpng_t*)image->handle);
-#endif
-
-   image->handle                 = NULL;
-   image->frame_count            = 0;
+   rarch_task_image_load_free_internal(nbio);
 }
+
