@@ -2279,7 +2279,7 @@ static void rjpeg__cleanup_jpeg(rjpeg__jpeg *j)
 }
 
 
-static uint8_t *load_jpeg_image(rjpeg__jpeg *z, int *out_x, int *out_y, int *comp, int req_comp)
+static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, int *out_x, int *out_y, int *comp, int req_comp)
 {
    int n, decode_n;
    z->s->img_n = 0; /* make rjpeg__cleanup_jpeg safe */
@@ -2410,7 +2410,7 @@ static unsigned char *rjpeg__jpeg_load(rjpeg__context *s, int *x, int *y, int *c
    rjpeg__jpeg j;
    j.s = s;
    rjpeg__setup_jpeg(&j);
-   return load_jpeg_image(&j, x,y,comp,req_comp);
+   return rjpeg_load_jpeg_image(&j, x,y,comp,req_comp);
 }
 
 static int rjpeg__jpeg_test(rjpeg__context *s)
@@ -2446,7 +2446,6 @@ bool rjpeg_image_load(uint8_t *_buf, void *data, size_t size,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
 {
-   unsigned i;
    int x, y, comp;
    struct texture_image *out_img = (struct texture_image*)data;
 
