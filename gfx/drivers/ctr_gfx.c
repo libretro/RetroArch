@@ -28,7 +28,7 @@
 #include "../../driver.h"
 
 #include "../../retroarch.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 
 #define CTR_TOP_FRAMEBUFFER_WIDTH   400
 #define CTR_TOP_FRAMEBUFFER_HEIGHT  240

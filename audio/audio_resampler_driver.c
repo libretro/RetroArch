@@ -22,6 +22,7 @@
 #include "../config_file_userdata.h"
 #ifdef RARCH_INTERNAL
 #include "../performance.h"
+#include "../performance_counters.h"
 #endif
 #ifndef DONT_HAVE_STRING_LIST
 #include "../list_special.h"

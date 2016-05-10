@@ -26,7 +26,7 @@
 #include "libretro.h"
 #include "network/net_http_special.h"
 #include "configuration.h"
-#include "performance.h"
+#include "performance_counters.h"
 #include "msg_hash.h"
 #include "runloop.h"
 #include "core.h"

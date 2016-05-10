@@ -31,7 +31,7 @@
 #include "../movie.h"
 #include "../core.h"
 #include "../runloop.h"
-#include "../performance.h"
+#include "../performance_counters.h"
 #include "../verbosity.h"
 #include "../audio/audio_driver.h"
 

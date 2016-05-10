@@ -25,6 +25,7 @@
 
 #ifdef RARCH_INTERNAL
 #include "../performance.h"
+#include "../performance_counters.h"
 #endif
 
 /**

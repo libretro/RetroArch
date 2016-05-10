@@ -44,7 +44,7 @@
 #include "autosave.h"
 #include "core_info.h"
 #include "core_type.h"
-#include "performance.h"
+#include "performance_counters.h"
 #include "dynamic.h"
 #include "content.h"
 #include "movie.h"

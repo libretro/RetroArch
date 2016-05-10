@@ -37,6 +37,7 @@
 #include "location/location_driver.h"
 #include "record/record_driver.h"
 #include "core.h"
+#include "performance_counters.h"
 #include "performance.h"
 #include "system.h"
 #include "gfx/video_context_driver.h"

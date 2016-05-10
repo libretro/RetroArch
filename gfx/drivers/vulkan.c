@@ -36,7 +36,7 @@
 
 #include "../../driver.h"
 #include "../../record/record_driver.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 
 #include "../../libretro.h"
 #include "../../general.h"

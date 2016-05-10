@@ -25,7 +25,7 @@
 
 #include "../../driver.h"
 #include "../../general.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 
 #include "../video_frame.h"
 #include "../video_context_driver.h"

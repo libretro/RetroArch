@@ -30,7 +30,7 @@
 #include "../input_config.h"
 #include "../input_joypad_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 #include "../../general.h"
 #include "../../driver.h"
 

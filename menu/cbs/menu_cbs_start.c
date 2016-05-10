@@ -30,7 +30,7 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../system.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 
 #include "../../gfx/video_shader_driver.h"
 

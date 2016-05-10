@@ -25,6 +25,7 @@
 #include "../dynamic.h"
 #include "../general.h"
 #include "../performance.h"
+#include "../performance_counters.h"
 #include "../verbosity.h"
 #include "video_filter.h"
 #include "video_filters/softfilter.h"

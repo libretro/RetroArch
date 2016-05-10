@@ -59,7 +59,7 @@
 #include "../input/input_config.h"
 #include "../input/input_autodetect.h"
 #include "../config.def.h"
-#include "../performance.h"
+#include "../performance_counters.h"
 #include "../lakka.h"
 
 #include "../tasks/tasks_internal.h"

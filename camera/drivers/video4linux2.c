@@ -41,7 +41,7 @@
 #include <compat/strl.h>
 
 #include "../camera_driver.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 #include "../../verbosity.h"
 
 struct buffer

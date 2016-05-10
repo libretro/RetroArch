@@ -47,7 +47,7 @@
 #endif
 
 #include "../../core.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 
 #include "../../defines/d3d_defines.h"
 #include "../../verbosity.h"

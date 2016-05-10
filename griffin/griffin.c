@@ -63,6 +63,7 @@ ENCODINGS
 PERFORMANCE
 ============================================================ */
 #include "../performance.c"
+#include "../performance_counters.c"
 
 /*============================================================
 COMPATIBILITY

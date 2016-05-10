@@ -30,7 +30,7 @@
 #include "../configuration.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../performance.h"
+#include "../performance_counters.h"
 #include "../verbosity.h"
 #include "../list_special.h"
 

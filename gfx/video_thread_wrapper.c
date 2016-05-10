@@ -24,6 +24,7 @@
 #include "font_driver.h"
 #include "video_shader_driver.h"
 #include "../performance.h"
+#include "../performance_counters.h"
 #include "../runloop.h"
 #include "../verbosity.h"
 

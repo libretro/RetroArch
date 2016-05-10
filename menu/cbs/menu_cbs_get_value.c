@@ -30,7 +30,7 @@
 #include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
 #include "../../general.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 #include "../../system.h"
 #include "../../intl/intl.h"
 

@@ -21,7 +21,7 @@
 #include <rthreads/rthreads.h>
 
 #include "audio_thread_wrapper.h"
-#include "../performance.h"
+#include "../performance_counters.h"
 #include "../verbosity.h"
 
 typedef struct audio_thread

@@ -30,6 +30,7 @@
 #include "../config_file_userdata.h"
 #include "../frontend/frontend_driver.h"
 #include "../performance.h"
+#include "../performance_counters.h"
 #include "../dynamic.h"
 
 struct rarch_dsp_plug

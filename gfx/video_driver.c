@@ -34,6 +34,7 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../performance.h"
+#include "../performance_counters.h"
 #include "../list_special.h"
 #include "../core.h"
 #include "../system.h"

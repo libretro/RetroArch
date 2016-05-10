@@ -44,7 +44,7 @@
 #include "../git_version.h"
 #include "../input/input_config.h"
 #include "../list_special.h"
-#include "../performance.h"
+#include "../performance_counters.h"
 #include "../core_info.h"
 
 #ifdef HAVE_CHEEVOS

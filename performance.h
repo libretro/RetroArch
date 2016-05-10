@@ -25,27 +25,6 @@
 extern "C" {
 #endif
 
-#ifndef MAX_COUNTERS
-#define MAX_COUNTERS 64
-#endif
-
-struct retro_perf_counter **retro_get_perf_counter_rarch(void);
-
-struct retro_perf_counter **retro_get_perf_counter_libretro(void);
-
-unsigned retro_get_perf_count_rarch(void);
-
-unsigned retro_get_perf_count_libretro(void);
-
-/*
- * retro_get_perf_counter:
- *
- * Gets performance counter.
- *
- * Returns: performance counter.
- **/
-retro_perf_tick_t retro_get_perf_counter(void);
-
 /**
  * retro_get_time_usec:
  *
@@ -53,35 +32,6 @@ retro_perf_tick_t retro_get_perf_counter(void);
  * Returns: time in microseconds.
  **/
 retro_time_t retro_get_time_usec(void);
-
-void retro_perf_register(struct retro_perf_counter *perf);
-
-/* Same as retro_perf_register, just for libretro cores. */
-void retro_perf_register(struct retro_perf_counter *perf);
-
-void retro_perf_clear(void);
-
-void retro_perf_log(void);
-
-void rarch_perf_log(void);
-
-int rarch_perf_init(struct retro_perf_counter *perf, const char *name);
-
-/**
- * retro_perf_start:
- * @perf               : pointer to performance counter
- *
- * Start performance counter. 
- **/
-void retro_perf_start(struct retro_perf_counter *perf);
-
-/**
- * retro_perf_stop:
- * @perf               : pointer to performance counter
- *
- * Stop performance counter. 
- **/
-void retro_perf_stop(struct retro_perf_counter *perf);
 
 /**
  * retro_get_cpu_features:

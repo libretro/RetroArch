@@ -40,6 +40,7 @@
 #include "../general.h"
 #include "../managers/cheat_manager.h"
 #include "../performance.h"
+#include "../performance_counters.h"
 #include "../core.h"
 #include "../input/input_joypad_driver.h"
 #include "../input/input_remapping.h"

@@ -29,6 +29,7 @@
 
 #include "../../configuration.h"
 #include "../../performance.h"
+#include "../../performance_counters.h"
 #include "../../input/input_autodetect.h"
 #include "../../input/input_config.h"
 #include "../../cheevos.h"
