@@ -622,7 +622,7 @@ static void rarch_log_libretro(enum retro_log_level level,
    va_end(vp);
 }
 
-static size_t add_bits_down(size_t n)
+static size_t mmap_add_bits_down(size_t n)
 {
    n |= n >>  1;
    n |= n >>  2;
@@ -637,7 +637,7 @@ static size_t add_bits_down(size_t n)
    return n;
 }
 
-static size_t inflate(size_t addr, size_t mask)
+static size_t mmap_inflate(size_t addr, size_t mask)
 {
     while (mask)
    {
@@ -650,7 +650,7 @@ static size_t inflate(size_t addr, size_t mask)
    return addr;
 }
 
-static size_t reduce(size_t addr, size_t mask)
+static size_t mmap_reduce(size_t addr, size_t mask)
 {
    while (mask)
    {
@@ -662,13 +662,13 @@ static size_t reduce(size_t addr, size_t mask)
    return addr;
 }
 
-static size_t highest_bit(size_t n)
+static size_t mmap_highest_bit(size_t n)
 {
-   n = add_bits_down(n);
+   n = mmap_add_bits_down(n);
    return n ^ (n >> 1);
 }
 
-static bool preprocess_descriptors(struct retro_memory_descriptor *first, unsigned count)
+static bool mmap_preprocess_descriptors(struct retro_memory_descriptor *first, unsigned count)
 {
    struct retro_memory_descriptor *desc;
    const struct retro_memory_descriptor *end;
@@ -685,7 +685,7 @@ static bool preprocess_descriptors(struct retro_memory_descriptor *first, unsign
          top_addr |= desc->start + desc->len - 1;
    }
    
-   top_addr = add_bits_down(top_addr);
+   top_addr = mmap_add_bits_down(top_addr);
    
    for (desc = first; desc < end; desc++)
    {
@@ -697,19 +697,19 @@ static bool preprocess_descriptors(struct retro_memory_descriptor *first, unsign
          if ((desc->len & (desc->len - 1)) != 0)
             return false;
          
-         desc->select = top_addr & ~inflate(add_bits_down(desc->len - 1), desc->disconnect);
+         desc->select = top_addr & ~mmap_inflate(mmap_add_bits_down(desc->len - 1), desc->disconnect);
       }
       
       if (desc->len == 0)
-         desc->len = add_bits_down(reduce(top_addr & ~desc->select, desc->disconnect)) + 1;
+         desc->len = mmap_add_bits_down(mmap_reduce(top_addr & ~desc->select, desc->disconnect)) + 1;
       
       if (desc->start & ~desc->select)
          return false;
        
-      while (reduce(top_addr & ~desc->select, desc->disconnect) >> 1 > desc->len - 1)
-         desc->disconnect |= highest_bit(top_addr & ~desc->select & ~desc->disconnect);
+      while (mmap_reduce(top_addr & ~desc->select, desc->disconnect) >> 1 > desc->len - 1)
+         desc->disconnect |= mmap_highest_bit(top_addr & ~desc->select & ~desc->disconnect);
       
-      disconnect_mask = add_bits_down(desc->len - 1);
+      disconnect_mask = mmap_add_bits_down(desc->len - 1);
       desc->disconnect &= disconnect_mask;
       
       while ((~disconnect_mask) >> 1 & desc->disconnect)
@@ -1334,7 +1334,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          memcpy((void*)system->mmaps.descriptors, mmaps->descriptors,
             mmaps->num_descriptors * sizeof(*system->mmaps.descriptors));
          system->mmaps.num_descriptors = mmaps->num_descriptors;
-         preprocess_descriptors(descriptors, mmaps->num_descriptors);
+         mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
          
          RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
          
