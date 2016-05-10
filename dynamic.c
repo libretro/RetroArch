@@ -622,6 +622,106 @@ static void rarch_log_libretro(enum retro_log_level level,
    va_end(vp);
 }
 
+static size_t add_bits_down(size_t n)
+{
+	 n |= n >>  1;
+	 n |= n >>  2;
+	 n |= n >>  4;
+	 n |= n >>  8;
+	 n |= n >> 16;
+   
+   /* double shift to avoid warnings on 32bit (it's dead code, but compilers suck) */
+	 if (sizeof(size_t) > 4)
+      n |= n >> 16 >> 16;
+   
+	 return n;
+}
+
+static size_t inflate(size_t addr, size_t mask)
+{
+ 	 while (mask)
+   {
+      size_t tmp = (mask - 1) & ~mask;
+      /* to put in an 1 bit instead, OR in tmp+1 */
+      addr = ((addr & ~tmp) << 1) | (addr & tmp);
+      mask = mask & (mask - 1);
+   }
+   
+   return addr;
+}
+
+static size_t reduce(size_t addr, size_t mask)
+{
+   while (mask)
+   {
+      size_t tmp = (mask - 1) & ~mask;
+      addr = (addr & tmp) | ((addr >> 1) & ~tmp);
+      mask = (mask & (mask - 1)) >> 1;
+   }
+   
+   return addr;
+}
+
+static size_t highest_bit(size_t n)
+{
+   n = add_bits_down(n);
+   return n ^ (n >> 1);
+}
+
+static bool preprocess_descriptors(struct retro_memory_descriptor *first, unsigned count)
+{
+   struct retro_memory_descriptor *desc;
+   const struct retro_memory_descriptor *end;
+   size_t top_addr, disconnect_mask;
+   
+   end = first + count;
+   top_addr = 1;
+   
+   for (desc = first; desc < end; desc++)
+   {
+      if (desc->select != 0)
+         top_addr |= desc->select;
+      else
+         top_addr |= desc->start + desc->len - 1;
+   }
+   
+   top_addr = add_bits_down(top_addr);
+   
+   for (desc = first; desc < end; desc++)
+   {
+      if (desc->select == 0)
+      {
+         if (desc->len == 0)
+            return false;
+         
+         if ((desc->len & (desc->len - 1)) != 0)
+            return false;
+         
+         desc->select = top_addr & ~inflate(add_bits_down(desc->len - 1), desc->disconnect);
+      }
+      
+      if (desc->len == 0)
+         desc->len = add_bits_down(reduce(top_addr & ~desc->select, desc->disconnect)) + 1;
+      
+      if (desc->start & ~desc->select)
+         return false;
+       
+      while (reduce(top_addr & ~desc->select, desc->disconnect) >> 1 > desc->len - 1)
+         desc->disconnect |= highest_bit(top_addr & ~desc->select & ~desc->disconnect);
+      
+      disconnect_mask = add_bits_down(desc->len - 1);
+      desc->disconnect &= disconnect_mask;
+      
+      while ((~disconnect_mask) >> 1 & desc->disconnect)
+      {
+         disconnect_mask >>= 1;
+         desc->disconnect &= disconnect_mask;
+      }
+   }
+   
+   return true;
+}
+
 /**
  * rarch_environment_cb:
  * @cmd                          : Identifier of command.
@@ -1217,20 +1317,36 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_MEMORY_MAPS:
       {
          unsigned i;
+         struct retro_memory_descriptor *descriptors;
          const struct retro_memory_map *mmaps =
             (const struct retro_memory_map*)data;
+         
+         free((void*)system->mmaps.descriptors);
+         system->mmaps.num_descriptors = 0;
+         
+         descriptors = (struct retro_memory_descriptor*)
+            calloc(mmaps->num_descriptors, sizeof(*system->mmaps.descriptors));
+         
+         if (!descriptors)
+            return false;
+         
+         system->mmaps.descriptors = descriptors;
+         memcpy((void*)system->mmaps.descriptors, mmaps->descriptors,
+            mmaps->num_descriptors * sizeof(*system->mmaps.descriptors));
+         system->mmaps.num_descriptors = mmaps->num_descriptors;
+         preprocess_descriptors(descriptors, mmaps->num_descriptors);
          
          RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
          
          if (sizeof(void *) == 8)
-            RARCH_LOG("    flags  ptr              offset   start    select   disconn  len      addrspace\n");
+            RARCH_LOG("   ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");
          else
-            RARCH_LOG("    flags  ptr          offset   start    select   disconn  len      addrspace\n");
+            RARCH_LOG("   ndx flags  ptr          offset   start    select   disconn  len      addrspace\n");
          
-         for (i = 0; i < mmaps->num_descriptors; i++)
+         for (i = 0; i < system->mmaps.num_descriptors; i++)
          {
             const struct retro_memory_descriptor *desc =
-               &mmaps->descriptors[i];
+               &system->mmaps.descriptors[i];
             char flags[7];
             
             flags[0] = 'M';
@@ -1257,25 +1373,12 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             flags[5] = (desc->flags & RETRO_MEMDESC_CONST) ? 'C' : 'c';
             flags[6] = 0;
             
-            RARCH_LOG("Memory map: %u\n", i + 1);
-            RARCH_LOG("    %s %p %08X %08X %08X %08X %08X %s\n",
-               flags, desc->ptr, desc->offset, desc->start,
+            RARCH_LOG("   %03u %s %p %08X %08X %08X %08X %08X %s\n",
+               i + 1, flags, desc->ptr, desc->offset, desc->start,
                desc->select, desc->disconnect, desc->len,
                desc->addrspace ? desc->addrspace : "");
          }
          
-         free((void*)system->mmaps.descriptors);
-         system->mmaps.num_descriptors = 0;
-         
-         system->mmaps.descriptors = (struct retro_memory_descriptor*)
-            calloc(mmaps->num_descriptors, sizeof(*system->mmaps.descriptors));
-         
-         if (!system->mmaps.descriptors)
-            return false;
-         
-         memcpy((void*)system->mmaps.descriptors, mmaps->descriptors,
-            mmaps->num_descriptors * sizeof(*system->mmaps.descriptors));
-         system->mmaps.num_descriptors = mmaps->num_descriptors;
          break;
       }
 
