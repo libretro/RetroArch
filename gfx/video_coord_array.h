@@ -54,7 +54,7 @@ struct gfx_tex_info
    float coord[8];
 };
 
-typedef struct gfx_coords
+typedef struct video_coords
 {
    const float *vertex;
    const float *color;
@@ -63,7 +63,7 @@ typedef struct gfx_coords
    unsigned vertices;
    const unsigned *index;
    unsigned indexes;
-} gfx_coords_t;
+} video_coords_t;
 
 typedef struct gfx_mut_coords
 {
@@ -76,22 +76,22 @@ typedef struct gfx_mut_coords
    unsigned indexes;
 } gfx_mut_coords_t;
 
-typedef struct gfx_coord_array
+typedef struct video_coord_array
 {
    gfx_mut_coords_t coords;
    unsigned allocated;
-} gfx_coord_array_t;
+} video_coord_array_t;
 
 typedef struct gfx_raster_block
 {
    bool fullscreen;
-   gfx_coord_array_t carr;
+   video_coord_array_t carr;
 } gfx_font_raster_block_t;
 
-bool gfx_coord_array_append(gfx_coord_array_t *ca,
-      const gfx_coords_t *coords, unsigned count);
+bool video_coord_array_append(video_coord_array_t *ca,
+      const video_coords_t *coords, unsigned count);
 
-void gfx_coord_array_free(gfx_coord_array_t *ca);
+void video_coord_array_free(video_coord_array_t *ca);
 
 #ifdef __cplusplus
 }

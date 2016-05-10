@@ -313,7 +313,7 @@ static void nk_menu_free(void *data)
    nk_buffer_free(&device.cmds);
    nk_common_device_shutdown(&device);
 
-   gfx_coord_array_free(&nk->list_block.carr);
+   video_coord_array_free(&nk->list_block.carr);
    font_driver_bind_block(NULL, NULL);
 }
 

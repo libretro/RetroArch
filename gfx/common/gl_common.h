@@ -231,7 +231,7 @@ typedef struct gl
    unsigned tex_w, tex_h;
    math_matrix_4x4 mvp, mvp_no_rot;
 
-   struct gfx_coords coords;
+   struct video_coords coords;
    const float *vertex_ptr;
    const float *white_color_ptr;
 
@@ -339,7 +339,7 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-void gl_ff_vertex(const struct gfx_coords *coords);
+void gl_ff_vertex(const struct video_coords *coords);
 void gl_ff_matrix(const math_matrix_4x4 *mat);
 
 #endif

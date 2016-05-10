@@ -177,7 +177,7 @@ static void mui_draw_icon(
 {
    menu_display_ctx_rotate_draw_t rotate_draw;
    menu_display_ctx_draw_t draw;
-   struct gfx_coords coords;
+   struct video_coords coords;
    math_matrix_4x4 mymat;
 
    menu_display_blend_begin();
@@ -275,7 +275,7 @@ static void mui_render_quad(mui_handle_t *mui,
       float *coord_color)
 {
    menu_display_ctx_draw_t draw;
-   struct gfx_coords coords;
+   struct video_coords coords;
 
    coords.vertices      = 4;
    coords.vertex        = NULL;
@@ -1101,7 +1101,7 @@ static void mui_free(void *data)
    if (!mui)
       return;
 
-   gfx_coord_array_free(&mui->list_block.carr);
+   video_coord_array_free(&mui->list_block.carr);
 
    font_driver_bind_block(NULL, NULL);
 }

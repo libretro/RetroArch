@@ -222,7 +222,7 @@ bool video_shader_driver_set_coords(video_shader_ctx_coords_t *coords)
    if (!current_shader || !current_shader->set_coords)
       return false;
    if (!current_shader->set_coords(coords->handle_data,
-            shader_data, (const struct gfx_coords*)coords->data))
+            shader_data, (const struct video_coords*)coords->data))
       return false;
    return true;
 }

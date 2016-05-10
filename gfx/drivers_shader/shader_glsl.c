@@ -1407,7 +1407,7 @@ fallback:
       size += multiplier * coords->vertices; \
 }
 
-static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struct gfx_coords *coords)
+static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struct video_coords *coords)
 {
    /* Avoid hitting malloc on every single regular quad draw. */
    GLfloat short_buffer[4 * (2 + 2 + 4 + 2)];

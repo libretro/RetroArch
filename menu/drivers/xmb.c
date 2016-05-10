@@ -493,7 +493,7 @@ static void xmb_draw_icon(
       float shadow_offset)
 {
    menu_display_ctx_draw_t draw;
-   struct gfx_coords coords;
+   struct video_coords coords;
    float shadow[16];
    unsigned i;
    settings_t *settings = config_get_ptr();
@@ -546,7 +546,7 @@ static void xmb_draw_thumbnail(xmb_handle_t *xmb, float *color,
    unsigned i;
    menu_display_ctx_rotate_draw_t rotate_draw;
    menu_display_ctx_draw_t draw;
-   struct gfx_coords coords;
+   struct video_coords coords;
    math_matrix_4x4 mymat;
    float shadow[16];
    float y = xmb->margins.screen.top + xmb->icon.size + xmb->thumbnail_height;
@@ -1999,7 +1999,7 @@ static void xmb_draw_dark_layer(
       unsigned height)
 {
    menu_display_ctx_draw_t draw;
-   struct gfx_coords coords;
+   struct video_coords coords;
    float black[16] = {
       0, 0, 0, 1,
       0, 0, 0, 1,
@@ -2495,11 +2495,11 @@ static void xmb_ribbon_set_vertex(float *ribbon_verts, unsigned idx, unsigned ro
 
 static void xmb_init_ribbon(xmb_handle_t * xmb)
 {
-   gfx_coords_t coords;
+   video_coords_t coords;
    float ribbon_verts[2 * XMB_RIBBON_VERTICES];
    float dummy[4 * XMB_RIBBON_VERTICES];
    unsigned i, r, c, col;
-   gfx_coord_array_t *ca   = NULL;
+   video_coord_array_t *ca   = NULL;
 
    memset(&dummy[0], 0, 4 * XMB_RIBBON_VERTICES * sizeof(float));
    ca = menu_display_get_coords_array();
@@ -2523,7 +2523,7 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    coords.lut_tex_coord = dummy;
    coords.vertices      = XMB_RIBBON_VERTICES;
 
-   gfx_coord_array_append(ca, &coords, XMB_RIBBON_VERTICES);
+   video_coord_array_append(ca, &coords, XMB_RIBBON_VERTICES);
 }
 
 static void *xmb_init(void **userdata)
@@ -2618,7 +2618,7 @@ static void xmb_free(void *data)
          file_list_free(xmb->horizontal_list);
       xmb->horizontal_list = NULL;
 
-      gfx_coord_array_free(&xmb->raster_block.carr);
+      video_coord_array_free(&xmb->raster_block.carr);
    }
 
    font_driver_bind_block(NULL, NULL);

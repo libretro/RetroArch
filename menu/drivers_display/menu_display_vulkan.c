@@ -97,7 +97,7 @@ static void menu_display_vk_draw_pipeline(void *data)
 {
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
-   gfx_coord_array_t *ca         = NULL;
+   video_coord_array_t *ca         = NULL;
    static float t                = 0.0f;
 
    if (!vk || !draw)
@@ -106,7 +106,7 @@ static void menu_display_vk_draw_pipeline(void *data)
    ca = menu_display_get_coords_array();
    draw->x                     = 0;
    draw->y                     = 0;
-   draw->coords                = (struct gfx_coords*)&ca->coords;
+   draw->coords                = (struct video_coords*)&ca->coords;
    draw->matrix_data           = NULL;
    draw->pipeline.backend_data = &t;
 
