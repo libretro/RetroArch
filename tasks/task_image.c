@@ -35,14 +35,14 @@
 #include "tasks_internal.h"
 #include "../verbosity.h"
 
-enum nbio_image_status_enum
+enum image_status_enum
 {
-   NBIO_IMAGE_STATUS_POLL = 0,
-   NBIO_IMAGE_STATUS_TRANSFER,
-   NBIO_IMAGE_STATUS_TRANSFER_PARSE,
-   NBIO_IMAGE_STATUS_PROCESS_TRANSFER,
-   NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE,
-   NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE
+   IMAGE_STATUS_POLL = 0,
+   IMAGE_STATUS_TRANSFER,
+   IMAGE_STATUS_TRANSFER_PARSE,
+   IMAGE_STATUS_PROCESS_TRANSFER,
+   IMAGE_STATUS_PROCESS_TRANSFER_PARSE,
+   IMAGE_STATUS_TRANSFER_PARSE_FREE
 };
 
 static int cb_image_menu_upload_generic(void *data, size_t len)
@@ -284,26 +284,26 @@ bool rarch_task_image_load_handler(retro_task_t *task)
 
    switch (image->status)
    {
-      case NBIO_IMAGE_STATUS_PROCESS_TRANSFER:
+      case IMAGE_STATUS_PROCESS_TRANSFER:
          if (rarch_main_data_image_iterate_process_transfer(nbio) == -1)
-            image->status = NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE;
+            image->status = IMAGE_STATUS_PROCESS_TRANSFER_PARSE;
          break;
-      case NBIO_IMAGE_STATUS_TRANSFER_PARSE:
+      case IMAGE_STATUS_TRANSFER_PARSE:
          rarch_main_data_image_iterate_transfer_parse(nbio);
          if (image->is_blocking_on_processing)
-            image->status = NBIO_IMAGE_STATUS_PROCESS_TRANSFER;
+            image->status = IMAGE_STATUS_PROCESS_TRANSFER;
          break;
-      case NBIO_IMAGE_STATUS_TRANSFER:
+      case IMAGE_STATUS_TRANSFER:
          if (!image->is_blocking)
             if (rarch_main_data_image_iterate_transfer(nbio) == -1)
-               image->status = NBIO_IMAGE_STATUS_TRANSFER_PARSE;
+               image->status = IMAGE_STATUS_TRANSFER_PARSE;
          break;
-      case NBIO_IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
+      case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
          rarch_main_data_image_iterate_process_transfer_parse(nbio);
          if (!image->is_finished)
             break;
-      case NBIO_IMAGE_STATUS_TRANSFER_PARSE_FREE:
-      case NBIO_IMAGE_STATUS_POLL:
+      case IMAGE_STATUS_TRANSFER_PARSE_FREE:
+      case IMAGE_STATUS_POLL:
       default:
          break;
    }
@@ -352,7 +352,7 @@ bool rarch_task_push_image_load(const char *fullpath,
    nbio->is_finished  = false;
    nbio->cb           = &cb_nbio_default;
    nbio->status       = NBIO_STATUS_TRANSFER;
-   nbio->image.status = NBIO_IMAGE_STATUS_TRANSFER;
+   nbio->image.status = IMAGE_STATUS_TRANSFER;
 
    if (strstr(fullpath, ".png"))
    {
