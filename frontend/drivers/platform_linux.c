@@ -65,9 +65,7 @@ typedef struct
 } CpuList;
 
 static bool                cpu_inited_once;
-static enum cpu_family     g_cpuFamily;
 static  uint64_t           g_cpuFeatures;
-static  int                g_cpuCount;
 
 #ifndef HAVE_DYNAMIC
 static enum frontend_fork linux_fork_mode = FRONTEND_FORK_NONE;
@@ -207,125 +205,21 @@ static const char *parse_decimal(const char* input,
     return p;
 }
 
-
-/* Parse a textual list of cpus and store the result inside a CpuList object.
- * Input format is the following:
- * - comma-separated list of items (no spaces)
- * - each item is either a single decimal number (cpu index), or a range made
- *   of two numbers separated by a single dash (-). Ranges are inclusive.
- *
- * Examples:   0
- *             2,4-127,128-143
- *             0-1
- */
-static void cpulist_parse(CpuList* list, char **buf, ssize_t length)
-{
-   const char* p   = (const char*)buf;
-   const char* end = p + length;
-
-   /* NOTE: the input line coming from sysfs typically contains a
-    * trailing newline, so take care of it in the code below
-    */
-   while (p < end && *p != '\n')
-   {
-      int val, start_value, end_value;
-      /* Find the end of current item, and put it into 'q' */
-      const char *q = (const char*)memchr(p, ',', end-p);
-
-      if (!q)
-         q = end;
-
-      /* Get first value */
-      p = parse_decimal(p, q, &start_value);
-      if (p == NULL)
-         return;
-
-      end_value = start_value;
-
-      /* If we're not at the end of the item, expect a dash and
-       * and integer; extract end value.
-       */
-      if (p < q && *p == '-')
-      {
-         p = parse_decimal(p+1, q, &end_value);
-         if (p == NULL)
-            return;
-      }
-
-      /* Set bits CPU list bits */
-      for (val = start_value; val <= end_value; val++)
-      {
-         if ((unsigned)val < 32)
-            list->mask |= (uint32_t)(1U << val);
-      }
-
-      /* Jump to next item */
-      p = q;
-      if (p < end)
-         p++;
-   }
-}
-
-/* Read a CPU list from one sysfs file */
-static void cpulist_read_from(CpuList* list, const char* filename)
-{
-   ssize_t length;
-   char *buf  = NULL;
-
-   list->mask = 0;
-
-   if (filestream_read_file(filename, (void**)&buf, &length) != 1)
-   {
-      RARCH_ERR("Could not read %s: %s\n", filename, strerror(errno));
-      return;
-   }
-
-   cpulist_parse(list, &buf, length);
-   if (buf)
-      free(buf);
-   buf = NULL;
-}
-
-/* Return the number of cpus present on a given device.
+/* Return the number of cores present on a given CPU.
  *
  * To handle all weird kernel configurations, we need to compute the
  * intersection of the 'present' and 'possible' CPU lists and count
  * the result.
  */
-static int get_cpu_count(void)
-{
-   CpuList  cpus_present[1];
-   CpuList cpus_possible[1];
-
-   cpulist_read_from(cpus_present, "/sys/devices/system/cpu/present");
-   cpulist_read_from(cpus_possible, "/sys/devices/system/cpu/possible");
-
-   /* Compute the intersection of both sets to get the actual number of
-    * CPU cores that can be used on this device by the kernel.
-    */
-   cpus_present->mask &= cpus_possible->mask;
-
-   return __builtin_popcount(cpus_present->mask);
-}
-
 static void linux_cpu_init(void)
 {
    ssize_t  length;
    void *buf = NULL;
 
-   g_cpuFamily   = DEFAULT_CPU_FAMILY;
    g_cpuFeatures = 0;
-   g_cpuCount    = 1;
 
    if (filestream_read_file("/proc/cpuinfo", &buf, &length) != 1)
       return;
-
-   /* Count the CPU cores, the value may be 0 for single-core CPUs */
-   g_cpuCount = get_cpu_count();
-   if (g_cpuCount == 0)
-      g_cpuCount = 1;
-
-   RARCH_LOG("found cpuCount = %d\n", g_cpuCount);
 
 #ifdef __ARM_ARCH__
    /* Extract architecture from the "CPU Architecture" field.
@@ -415,20 +309,9 @@ static void linux_cpu_init(void)
    }
 #endif /* __ARM_ARCH__ */
 
-#ifdef __i386__
-   g_cpuFamily = CPU_FAMILY_X86;
-#elif defined(_MIPS_ARCH)
-   g_cpuFamily = CPU_FAMILY_MIPS;
-#endif
-
    if (buf)
       free(buf);
    buf = NULL;
-}
-
-enum cpu_family linux_get_cpu_platform(void)
-{
-    return g_cpuFamily;
 }
 
 uint64_t linux_get_cpu_features(void)
@@ -436,9 +319,102 @@ uint64_t linux_get_cpu_features(void)
     return g_cpuFeatures;
 }
 
+/* Parse a textual list of cpus and store the result inside a CpuList object.
+ * Input format is the following:
+ * - comma-separated list of items (no spaces)
+ * - each item is either a single decimal number (cpu index), or a range made
+ *   of two numbers separated by a single dash (-). Ranges are inclusive.
+ *
+ * Examples:   0
+ *             2,4-127,128-143
+ *             0-1
+ */
+static void cpulist_parse(CpuList* list, char **buf, ssize_t length)
+{
+   const char* p   = (const char*)buf;
+   const char* end = p + length;
+
+   /* NOTE: the input line coming from sysfs typically contains a
+    * trailing newline, so take care of it in the code below
+    */
+   while (p < end && *p != '\n')
+   {
+      int val, start_value, end_value;
+      /* Find the end of current item, and put it into 'q' */
+      const char *q = (const char*)memchr(p, ',', end-p);
+
+      if (!q)
+         q = end;
+
+      /* Get first value */
+      p = parse_decimal(p, q, &start_value);
+      if (p == NULL)
+         return;
+
+      end_value = start_value;
+
+      /* If we're not at the end of the item, expect a dash and
+       * and integer; extract end value.
+       */
+      if (p < q && *p == '-')
+      {
+         p = parse_decimal(p+1, q, &end_value);
+         if (p == NULL)
+            return;
+      }
+
+      /* Set bits CPU list bits */
+      for (val = start_value; val <= end_value; val++)
+      {
+         if ((unsigned)val < 32)
+            list->mask |= (uint32_t)(1U << val);
+      }
+
+      /* Jump to next item */
+      p = q;
+      if (p < end)
+         p++;
+   }
+}
+
+/* Read a CPU list from one sysfs file */
+static void cpulist_read_from(CpuList* list, const char* filename)
+{
+   ssize_t length;
+   char *buf  = NULL;
+
+   list->mask = 0;
+
+   if (filestream_read_file(filename, (void**)&buf, &length) != 1)
+   {
+      RARCH_ERR("Could not read %s: %s\n", filename, strerror(errno));
+      return;
+   }
+
+   cpulist_parse(list, &buf, length);
+   if (buf)
+      free(buf);
+   buf = NULL;
+}
+
 int linux_get_cpu_count(void)
 {
-    return g_cpuCount;
+   int amount = 0;
+   CpuList  cpus_present[1];
+   CpuList cpus_possible[1];
+
+   cpulist_read_from(cpus_present, "/sys/devices/system/cpu/present");
+   cpulist_read_from(cpus_possible, "/sys/devices/system/cpu/possible");
+
+   /* Compute the intersection of both sets to get the actual number of
+    * CPU cores that can be used on this device by the kernel.
+    */
+   cpus_present->mask &= cpus_possible->mask;
+   amount              = __builtin_popcount(cpus_present->mask);
+
+   if (amount == 0)
+      return 1;
+   return amount;
 }
 
 int system_property_get(const char *command,
