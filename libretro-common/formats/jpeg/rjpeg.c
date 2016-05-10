@@ -204,7 +204,7 @@ static void rjpeg_decode_dht(struct rjpeg_data *ctx)
          for (i = 0;  i < currcnt;  ++i)
          {
             int j;
-            register unsigned char code = ctx->pos[i];
+            unsigned char code = ctx->pos[i];
 
             for (j = spread;  j;  --j)
             {
@@ -730,12 +730,12 @@ static void rjpeg_convert(struct rjpeg_data *ctx)
       {
          for (x = 0;  x < ctx->width;  ++x)
          {
-            register int y  = py[x] << 8;
-            register int cb = pcb[x] - 128;
-            register int cr = pcr[x] - 128;
-            *prgb++         = rjpeg_clip((y            + 359 * cr + 128) >> 8);
-            *prgb++         = rjpeg_clip((y -  88 * cb - 183 * cr + 128) >> 8);
-            *prgb++         = rjpeg_clip((y + 454 * cb            + 128) >> 8);
+            int y   = py[x] << 8;
+            int cb  = pcb[x] - 128;
+            int cr  = pcr[x] - 128;
+            *prgb++ = rjpeg_clip((y            + 359 * cr + 128) >> 8);
+            *prgb++ = rjpeg_clip((y -  88 * cb - 183 * cr + 128) >> 8);
+            *prgb++ = rjpeg_clip((y + 454 * cb            + 128) >> 8);
          }
          py  += ctx->comp[0].stride;
          pcb += ctx->comp[1].stride;
@@ -876,12 +876,12 @@ bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
       {
          for (x = 0;  x < rjpg->width;  ++x)
          {
-            register int y  = py[x] << 8;
-            register int cb = pcb[x] - 128;
-            register int cr = pcr[x] - 128;
-            *prgb++         = rjpeg_clip((y            + 359 * cr + 128) >> 8);
-            *prgb++         = rjpeg_clip((y -  88 * cb - 183 * cr + 128) >> 8);
-            *prgb++         = rjpeg_clip((y + 454 * cb            + 128) >> 8);
+            int y   = py[x] << 8;
+            int cb  = pcb[x] - 128;
+            int cr  = pcr[x] - 128;
+            *prgb++ = rjpeg_clip((y            + 359 * cr + 128) >> 8);
+            *prgb++ = rjpeg_clip((y -  88 * cb - 183 * cr + 128) >> 8);
+            *prgb++ = rjpeg_clip((y + 454 * cb            + 128) >> 8);
          }
          py  += rjpg->comp[0].stride;
          pcb += rjpg->comp[1].stride;
