@@ -51,6 +51,7 @@ typedef struct http_transfer_info
    char url[PATH_MAX_LENGTH];
    int progress;
 } http_transfer_info_t;
+#endif
 
 typedef struct nbio_image_handle
 {
@@ -79,6 +80,7 @@ typedef struct nbio_handle
    unsigned status;
 } nbio_handle_t;
 
+#ifdef HAVE_NETWORKING
 void *rarch_task_push_http_transfer(const char *url, const char *type,
       retro_task_callback_t cb, void *userdata);
 
