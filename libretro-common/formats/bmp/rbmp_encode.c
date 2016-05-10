@@ -151,7 +151,7 @@ static void dump_content(RFILE *file, const void *frame,
       const uint32_t *u32;
    } u;
 
-   u.u8      = (const uint8_t*)frame + (height-1) * pitch;
+   u.u8      = (const uint8_t*)frame;
    line_size = (width * bytes_per_pixel + 3) & ~3;
 
    if (type == RBMP_SOURCE_TYPE_BGR24)
@@ -159,7 +159,7 @@ static void dump_content(RFILE *file, const void *frame,
       /* BGR24 byte order input matches output. Can directly copy, but... need to make sure we pad it. */
       uint32_t zeros = 0;
       int pad = line_size-pitch;
-      for (j = height-1; j >= 0; j--, u.u8 -= pitch)
+      for (j = 0; j < height; j++, u.u8 += pitch)
       {
          filestream_write(file, u.u8, pitch);
          if(pad != 0)
@@ -170,7 +170,7 @@ static void dump_content(RFILE *file, const void *frame,
    else if(type == RBMP_SOURCE_TYPE_ARGB8888)
    {
       /* ARGB8888 byte order input matches output. Can directly copy. */
-      for (j = height-1; j >= 0; j--, u.u8 -= pitch)
+      for (j = 0; j < height; j++, u.u8 += pitch)
          filestream_write(file, u.u8, line_size);
       return;
    }
@@ -182,7 +182,7 @@ static void dump_content(RFILE *file, const void *frame,
 
    if (type == RBMP_SOURCE_TYPE_XRGB888)
    {
-      for (j = height-1; j >= 0; j--, u.u8 -= pitch)
+      for (j = 0; j < height; j++, u.u8 += pitch)
       {
          dump_line_32_to_24(line, u.u32, width);
          filestream_write(file, line, line_size);
@@ -190,7 +190,7 @@ static void dump_content(RFILE *file, const void *frame,
    }
    else /* type == RBMP_SOURCE_TYPE_RGB565 */
    {
-      for (j = height-1; j >= 0; j--, u.u8 -= pitch)
+      for (j = 0; j < height; j++, u.u8 += pitch)
       {
          dump_line_565_to_24(line, u.u16, width);
          filestream_write(file, line, line_size);
