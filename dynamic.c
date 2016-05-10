@@ -624,22 +624,22 @@ static void rarch_log_libretro(enum retro_log_level level,
 
 static size_t add_bits_down(size_t n)
 {
-	 n |= n >>  1;
-	 n |= n >>  2;
-	 n |= n >>  4;
-	 n |= n >>  8;
-	 n |= n >> 16;
+   n |= n >>  1;
+   n |= n >>  2;
+   n |= n >>  4;
+   n |= n >>  8;
+   n |= n >> 16;
    
    /* double shift to avoid warnings on 32bit (it's dead code, but compilers suck) */
-	 if (sizeof(size_t) > 4)
+   if (sizeof(size_t) > 4)
       n |= n >> 16 >> 16;
    
-	 return n;
+   return n;
 }
 
 static size_t inflate(size_t addr, size_t mask)
 {
- 	 while (mask)
+    while (mask)
    {
       size_t tmp = (mask - 1) & ~mask;
       /* to put in an 1 bit instead, OR in tmp+1 */
