@@ -62,7 +62,7 @@ ENCODINGS
 /*============================================================
 PERFORMANCE
 ============================================================ */
-#include "../performance.c"
+#include "../libretro-common/features/features_cpu.c"
 #include "../performance_counters.c"
 
 /*============================================================

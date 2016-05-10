@@ -41,6 +41,7 @@
 #include <compat/strl.h>
 #include <rhash.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #include "../frontend.h"

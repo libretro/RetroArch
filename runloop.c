@@ -29,6 +29,7 @@
 #endif
 #include <queues/task_queue.h>
 #include <string/stdstring.h>
+#include <features/features_cpu.h>
 
 #include <compat/strl.h>
 
@@ -38,7 +39,6 @@
 #include "autosave.h"
 #include "core_info.h"
 #include "configuration.h"
-#include "performance.h"
 #include "movie.h"
 #include "retroarch.h"
 #include "runloop.h"

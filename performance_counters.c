@@ -17,7 +17,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "performance.h"
+#include <features/features_cpu.h>
+
 #include "performance_counters.h"
 
 #include "general.h"

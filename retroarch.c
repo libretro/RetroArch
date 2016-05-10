@@ -43,6 +43,8 @@
 #include <retro_stat.h>
 #include <retro_assert.h>
 
+#include <features/features_cpu.h>
+
 #include "content.h"
 #include "core_type.h"
 #include "core_info.h"
@@ -58,7 +60,6 @@
 #include "configuration.h"
 #include "general.h"
 #include "runloop.h"
-#include "performance.h"
 #include "managers/cheat_manager.h"
 #include "system.h"
 

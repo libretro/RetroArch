@@ -1,17 +1,23 @@
-/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (features_cpu.c).
+ * ---------------------------------------------------------------------------------------
  *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <stdio.h>
@@ -769,8 +775,6 @@ uint64_t cpu_features_get(void)
             /* read the initial decimal number, ignore the rest */
             long   arch_number = strtol(cpu_arch, &end, 10);
 
-            RARCH_LOG("Found CPU architecture = '%s'\n", cpu_arch);
-
             /* Here we assume that ARMv8 will be upwards compatible with v7
              * in the future. Unfortunately, there is no 'Features' field to
              * indicate that Thumb-2 is supported.
@@ -795,7 +799,6 @@ uint64_t cpu_features_get(void)
 
                if (cpu_proc != NULL)
                {
-                  RARCH_LOG("found cpu_proc = '%s'\n", cpu_proc);
                   if (has_list_item(cpu_proc, "(v6l)"))
                   {
                      /* CPU processor and architecture mismatch. */
@@ -820,8 +823,6 @@ uint64_t cpu_features_get(void)
 
          if (cpu_features)
          {
-            RARCH_LOG("found cpu_features = '%s'\n", cpu_features);
-
             if (has_list_item(cpu_features, "vfpv3"))
                g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
 
