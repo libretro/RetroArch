@@ -36,7 +36,7 @@
 
 #include "../../driver.h"
 #include "../../record/record_driver.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 
 #include "../../libretro.h"
 #include "../../general.h"
@@ -1191,7 +1191,7 @@ static bool vulkan_set_shader(void *data,
 }
 
 static void vulkan_set_projection(vk_t *vk,
-      struct gfx_ortho *ortho, bool allow_rotate)
+      struct video_ortho *ortho, bool allow_rotate)
 {
    math_matrix_4x4 rot;
 
@@ -1212,7 +1212,7 @@ static void vulkan_set_projection(vk_t *vk,
 static void vulkan_set_rotation(void *data, unsigned rotation)
 {
    vk_t *vk               = (vk_t*)data;
-   struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!vk)
       return;
@@ -1243,7 +1243,7 @@ static void vulkan_set_viewport(void *data, unsigned viewport_width,
    int x                  = 0;
    int y                  = 0;
    float device_aspect    = (float)viewport_width / viewport_height;
-   struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
    settings_t *settings   = config_get_ptr();
    vk_t *vk               = (vk_t*)data;
 

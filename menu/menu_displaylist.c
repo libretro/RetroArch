@@ -32,6 +32,7 @@
 
 #include "../defaults.h"
 #include "../managers/cheat_manager.h"
+#include "../managers/core_option_manager.h"
 #include "../general.h"
 #include "../retroarch.h"
 #include "../system.h"
@@ -43,9 +44,8 @@
 #include "../git_version.h"
 #include "../input/input_config.h"
 #include "../list_special.h"
-#include "../performance.h"
+#include "../performance_counters.h"
 #include "../core_info.h"
-#include "../core_options.h"
 
 #ifdef HAVE_CHEEVOS
 #include "../cheevos.h"
@@ -3934,7 +3934,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
                for (i = 0; i < opts; i++)
                   menu_entries_add(info->list,
-                        core_option_get_desc(coreopts, i), "",
+                        core_option_manager_get_desc(coreopts, i), "",
                         MENU_SETTINGS_CORE_OPTION_START + i, 0, 0);
             }
          }

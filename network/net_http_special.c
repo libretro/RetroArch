@@ -19,16 +19,17 @@
 #include <net/net_http.h>
 
 #include "../performance.h"
+#include "../performance_counters.h"
 #include "net_http_special.h"
 
 int net_http_get(const char **result, size_t *size, const char *url, retro_time_t *timeout)
 {
-   uint8_t* data;
    size_t length;
-   char* res;
-   int ret = NET_HTTP_GET_OK;
-   struct http_t* http = NULL;
-   retro_time_t t0 = retro_get_time_usec();
+   uint8_t* data                  = NULL;
+   char* res                      = NULL;
+   int ret                        = NET_HTTP_GET_OK;
+   struct http_t* http            = NULL;
+   retro_time_t t0                = cpu_features_get_time_usec();
    struct http_connection_t *conn = net_http_connection_new(url);
 
    *result = NULL;
@@ -59,7 +60,7 @@ int net_http_get(const char **result, size_t *size, const char *url, retro_time_
    while (!net_http_update(http, NULL, NULL))
    {
       /* Timeout error. */
-      if (timeout && (retro_get_time_usec() - t0) > *timeout)
+      if (timeout && (cpu_features_get_time_usec() - t0) > *timeout)
       {
          ret = NET_HTTP_GET_TIMEOUT;
          goto error;
@@ -98,7 +99,7 @@ error:
 
    if (timeout)
    {
-      t0 = retro_get_time_usec() - t0;
+      t0 = cpu_features_get_time_usec() - t0;
 
       if (t0 < *timeout)
          *timeout -= t0;

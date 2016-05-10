@@ -21,7 +21,7 @@
 #include <rthreads/rthreads.h>
 
 #include "audio_thread_wrapper.h"
-#include "../performance.h"
+#include "../performance_counters.h"
 #include "../verbosity.h"
 
 typedef struct audio_thread
@@ -260,7 +260,7 @@ static const audio_driver_t audio_thread = {
 };
 
 /**
- * rarch_threaded_audio_init:
+ * audio_init_thread:
  * @out_driver                : output driver
  * @out_data                  : output audio data
  * @device                    : audio device (optional)
@@ -275,7 +275,7 @@ static const audio_driver_t audio_thread = {
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool rarch_threaded_audio_init(const audio_driver_t **out_driver,
+bool audio_init_thread(const audio_driver_t **out_driver,
       void **out_data, const char *device, unsigned audio_out_rate,
       unsigned latency, const audio_driver_t *drv)
 {

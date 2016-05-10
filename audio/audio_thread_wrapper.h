@@ -22,7 +22,7 @@
 #include "audio_driver.h"
 
 /**
- * rarch_threaded_audio_init:
+ * audio_init_thread:
  * @out_driver                : output driver
  * @out_data                  : output audio data
  * @device                    : audio device (optional)
@@ -36,7 +36,7 @@
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool rarch_threaded_audio_init(const audio_driver_t **out_driver, void **out_data,
+bool audio_init_thread(const audio_driver_t **out_driver, void **out_data,
       const char *device, unsigned out_rate, unsigned latency,
       const audio_driver_t *driver);
 

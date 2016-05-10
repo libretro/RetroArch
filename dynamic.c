@@ -37,6 +37,7 @@
 #include "location/location_driver.h"
 #include "record/record_driver.h"
 #include "core.h"
+#include "performance_counters.h"
 #include "performance.h"
 #include "system.h"
 #include "gfx/video_context_driver.h"
@@ -1121,9 +1122,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_perf_callback *cb = (struct retro_perf_callback*)data;
 
          RARCH_LOG("Environ GET_PERF_INTERFACE.\n");
-         cb->get_time_usec    = retro_get_time_usec;
-         cb->get_cpu_features = retro_get_cpu_features;
-         cb->get_perf_counter = retro_get_perf_counter;
+         cb->get_time_usec    = cpu_features_get_time_usec;
+         cb->get_cpu_features = cpu_features_get;
+         cb->get_perf_counter = cpu_features_get_perf_counter;
 
          cb->perf_register    = retro_perf_register; 
          cb->perf_start       = retro_perf_start;

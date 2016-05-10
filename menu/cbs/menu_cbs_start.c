@@ -25,12 +25,12 @@
 #include "../menu_hash.h"
 
 #include "../../core_info.h"
-#include "../../core_options.h"
+#include "../../managers/core_option_manager.h"
 #include "../../managers/cheat_manager.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../system.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 
 #include "../../gfx/video_shader_driver.h"
 
@@ -259,7 +259,7 @@ static int action_start_core_setting(unsigned type,
    core_option_manager_t *coreopts = NULL;
    
    if (runloop_ctl(RUNLOOP_CTL_COREOPTS_GET, &coreopts))
-      core_option_set_default(coreopts, idx);
+      core_option_manager_set_default(coreopts, idx);
 
    return 0;
 }

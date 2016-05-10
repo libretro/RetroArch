@@ -16,7 +16,7 @@
 
 #include "gl_common.h"
 
-void gl_ff_vertex(const struct gfx_coords *coords)
+void gl_ff_vertex(const struct video_coords *coords)
 {
 #ifndef NO_GL_FF_VERTEX
    /* Fall back to fixed function-style if needed and possible. */

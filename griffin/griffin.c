@@ -63,6 +63,7 @@ ENCODINGS
 PERFORMANCE
 ============================================================ */
 #include "../performance.c"
+#include "../performance_counters.c"
 
 /*============================================================
 COMPATIBILITY
@@ -101,7 +102,7 @@ CONFIG FILE
 
 #include "../libretro-common/file/config_file.c"
 #include "../config_file_userdata.c"
-#include "../core_options.c"
+#include "../managers/core_option_manager.c"
 
 /*============================================================
 ACHIEVEMENTS
@@ -802,6 +803,7 @@ NETPLAY
 DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_content.c"
+#include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"

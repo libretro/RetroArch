@@ -25,7 +25,7 @@
 #include "../../driver.h"
 #include "../../general.h"
 #include "../../retroarch.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 #include "../../verbosity.h"
 #include "../video_context_driver.h"
 #include "../font_driver.h"

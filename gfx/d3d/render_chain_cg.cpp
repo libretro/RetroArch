@@ -30,7 +30,7 @@
 #include "render_chain_driver.h"
 #include "../video_driver.h"
 #include "../../general.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 #include "../../verbosity.h"
 #include "d3d.h"
 

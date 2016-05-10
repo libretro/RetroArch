@@ -34,7 +34,7 @@
 
 #include "../../driver.h"
 #include "../../record/record_driver.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 
 #include "../../libretro.h"
 #include "../../general.h"
@@ -364,8 +364,8 @@ static void gl_compute_fbo_geometry(gl_t *gl,
    /* Calculate viewports for FBOs. */
    for (i = 0; i < gl->fbo_pass; i++)
    {
-      struct gfx_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
-      struct gfx_fbo_scale *fbo_scale  = &gl->fbo_scale[i];
+      struct video_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
+      struct gfx_fbo_scale *fbo_scale    = &gl->fbo_scale[i];
 
       switch (gl->fbo_scale[i].type_x)
       {
@@ -859,7 +859,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 #endif
 
 static void gl_set_projection(gl_t *gl,
-      struct gfx_ortho *ortho, bool allow_rotate)
+      struct video_ortho *ortho, bool allow_rotate)
 {
    math_matrix_4x4 rot;
 
@@ -885,7 +885,7 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
    int x                  = 0;
    int y                  = 0;
    float device_aspect    = (float)viewport_width / viewport_height;
-   struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
    settings_t *settings   = config_get_ptr();
    gl_t           *gl     = (gl_t*)data;
 
@@ -982,7 +982,7 @@ static void gl_set_viewport(void *data, unsigned viewport_width,
 static void gl_set_rotation(void *data, unsigned rotation)
 {
    gl_t               *gl = (gl_t*)data;
-   struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!gl)
       return;
@@ -1025,7 +1025,7 @@ static INLINE void gl_start_frame_fbo(gl_t *gl)
 }
 
 static bool gl_recreate_fbo(
-      struct gfx_fbo_rect *fbo_rect,
+      struct video_fbo_rect *fbo_rect,
       GLuint fbo,
       GLuint texture
       )
@@ -1058,7 +1058,7 @@ static void gl_check_fbo_dimension(gl_t *gl, unsigned i,
 {
    unsigned img_width, img_height, max, pow2_size;
    bool check_dimensions         = false;
-   struct gfx_fbo_rect *fbo_rect = &gl->fbo_rect[i];
+   struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
 
    if (!fbo_rect)
       return;
@@ -1117,8 +1117,8 @@ static void gl_check_fbo_dimensions(gl_t *gl)
 }
 
 static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
-      const struct gfx_tex_info *tex_info,
-      const struct gfx_tex_info *feedback_info)
+      const struct video_tex_info *tex_info,
+      const struct video_tex_info *feedback_info)
 {
    unsigned mip_level;
    video_shader_ctx_mvp_t mvp;
@@ -1126,9 +1126,9 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
    video_shader_ctx_params_t params;
    video_shader_ctx_info_t shader_info;
    unsigned width, height;
-   const struct gfx_fbo_rect *prev_rect;
-   struct gfx_tex_info *fbo_info;
-   struct gfx_tex_info fbo_tex_info[GFX_MAX_SHADERS];
+   const struct video_fbo_rect *prev_rect;
+   struct video_tex_info *fbo_info;
+   struct video_tex_info fbo_tex_info[GFX_MAX_SHADERS];
    int i;
    GLfloat xamt, yamt;
    unsigned fbo_tex_info_cnt = 0;
@@ -1146,7 +1146,7 @@ static void gl_frame_fbo(gl_t *gl, uint64_t frame_count,
       video_shader_ctx_mvp_t mvp;
       video_shader_ctx_coords_t coords;
       video_shader_ctx_params_t params;
-      const struct gfx_fbo_rect *rect = &gl->fbo_rect[i];
+      const struct video_fbo_rect *rect = &gl->fbo_rect[i];
 
       prev_rect = &gl->fbo_rect[i - 1];
       fbo_info  = &fbo_tex_info[i - 1];
@@ -1599,7 +1599,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
 }
 
 static INLINE void gl_set_prev_texture(gl_t *gl,
-      const struct gfx_tex_info *tex_info)
+      const struct video_tex_info *tex_info)
 {
    memmove(gl->prev_info + 1, gl->prev_info,
          sizeof(*tex_info) * (gl->textures - 1));
@@ -1757,7 +1757,7 @@ static bool gl_frame(void *data, const void *frame,
    video_shader_ctx_coords_t coords;
    video_shader_ctx_params_t params;
    unsigned width, height;
-   struct gfx_tex_info feedback_info;
+   struct video_tex_info feedback_info;
    video_shader_ctx_info_t shader_info;
    static struct retro_perf_counter frame_run = {0};
    gl_t                            *gl = (gl_t*)data;
@@ -1884,7 +1884,7 @@ static bool gl_frame(void *data, const void *frame,
 #ifdef HAVE_FBO
    if (gl->fbo_feedback_enable)
    {
-      const struct gfx_fbo_rect *rect = &gl->fbo_rect[gl->fbo_feedback_pass];
+      const struct video_fbo_rect *rect = &gl->fbo_rect[gl->fbo_feedback_pass];
       GLfloat xamt                    = (GLfloat)rect->img_width / rect->width;
       GLfloat yamt                    = (GLfloat)rect->img_height / rect->height;
 
@@ -3827,7 +3827,7 @@ static uintptr_t gl_load_texture(void *video_data, void *data,
          default:
             break;
       }
-      return rarch_threaded_video_texture_load(data, func);
+      return video_thread_texture_load(data, func);
    }
 #endif
 

@@ -44,7 +44,7 @@ typedef struct
    const font_renderer_driver_t *font_driver;
    void *font_data;
 
-   gfx_font_raster_block_t *block;
+   video_font_raster_block_t *block;
 } gl_raster_t;
 
 static void gl_raster_font_free_font(void *data);
@@ -229,7 +229,7 @@ static int gl_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
-static void gl_raster_font_draw_vertices(gl_t *gl, const gfx_coords_t *coords)
+static void gl_raster_font_draw_vertices(gl_t *gl, const video_coords_t *coords)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords_data;
@@ -255,7 +255,7 @@ static void gl_raster_font_render_line(
    int x, y, delta_x, delta_y;
    float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
    unsigned i, msg_len;
-   struct gfx_coords coords;
+   struct video_coords coords;
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK]; 
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
@@ -326,7 +326,7 @@ static void gl_raster_font_render_line(
       coords.lut_tex_coord = font_lut_tex_coord;
 
       if (font->block)
-         gfx_coord_array_append(&font->block->carr, &coords, coords.vertices);
+         video_coord_array_append(&font->block->carr, &coords, coords.vertices);
       else
          gl_raster_font_draw_vertices(gl, &coords);
 
@@ -520,20 +520,20 @@ static const struct font_glyph *gl_raster_font_get_glyph(
 static void gl_raster_font_flush_block(void *data)
 {
    gl_raster_t       *font       = (gl_raster_t*)data;
-   gfx_font_raster_block_t *block = font ? font->block : NULL;
+   video_font_raster_block_t *block = font ? font->block : NULL;
 
    if (!font || !block || !block->carr.coords.vertices)
       return;
 
    gl_raster_font_setup_viewport(font, block->fullscreen);
-   gl_raster_font_draw_vertices(font->gl, (gfx_coords_t*)&block->carr.coords);
+   gl_raster_font_draw_vertices(font->gl, (video_coords_t*)&block->carr.coords);
    gl_raster_font_restore_viewport(font->gl);
 }
 
 static void gl_raster_font_bind_block(void *data, void *userdata)
 {
    gl_raster_t              *font = (gl_raster_t*)data;
-   gfx_font_raster_block_t *block = (gfx_font_raster_block_t*)userdata;
+   video_font_raster_block_t *block = (video_font_raster_block_t*)userdata;
 
    if (font)
       font->block = block;

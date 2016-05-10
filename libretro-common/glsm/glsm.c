@@ -892,7 +892,7 @@ void rglBindBufferBase( 	GLenum target,
   	GLuint index,
   	GLuint buffer)
 {
-#if defined(HAVE_OPENG) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
    glBindBufferBase(target, index, buffer);
 #else
    printf("WARNING! Not implemented.\n");

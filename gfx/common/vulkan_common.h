@@ -39,7 +39,6 @@
 #include <formats/image.h>
 
 #include "../../driver.h"
-#include "../../performance.h"
 #include "../../libretro.h"
 #include "../../general.h"
 #include "../../retroarch.h"

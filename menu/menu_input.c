@@ -40,6 +40,7 @@
 #include "../general.h"
 #include "../managers/cheat_manager.h"
 #include "../performance.h"
+#include "../performance_counters.h"
 #include "../core.h"
 #include "../input/input_joypad_driver.h"
 #include "../input/input_remapping.h"
@@ -266,7 +267,7 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    menu_input->binds.target->key = (enum retro_key)code;
    menu_input->binds.begin++;
    menu_input->binds.target++;
-   menu_input->binds.timeout_end = retro_get_time_usec() +
+   menu_input->binds.timeout_end = cpu_features_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
 
    return (menu_input->binds.begin <= menu_input->binds.last);
@@ -454,7 +455,7 @@ static bool menu_input_key_bind_set_mode(
    menu_input_key_bind_poll_bind_state(
          &menu_input->binds, bind_port, false);
 
-   menu_input->binds.timeout_end   = retro_get_time_usec() +
+   menu_input->binds.timeout_end   = cpu_features_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
 
    keys.userdata = menu;
@@ -573,7 +574,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
    struct menu_bind_state binds;
    bool               timed_out = false;
    menu_input_t *menu_input     = menu_input_get_ptr();
-   int64_t current              = retro_get_time_usec();
+   int64_t current              = cpu_features_get_time_usec();
    int timeout                  = 
       (menu_input->binds.timeout_end - current) / 1000000;
 
@@ -583,7 +584,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
 
       menu_input->binds.begin++;
       menu_input->binds.target++;
-      menu_input->binds.timeout_end = retro_get_time_usec() +
+      menu_input->binds.timeout_end = cpu_features_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
       timed_out = true;
    }
@@ -630,7 +631,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
       }
 
       binds.target++;
-      binds.timeout_end = retro_get_time_usec() +
+      binds.timeout_end = cpu_features_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
    }
    menu_input->binds = binds;

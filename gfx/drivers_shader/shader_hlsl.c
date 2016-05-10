@@ -124,10 +124,9 @@ static void hlsl_set_params(void *data, void *shader_data,
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
    LPDIRECT3DDEVICE d3d_device_ptr = (LPDIRECT3DDEVICE)d3d->dev;
-   const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
-   const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
-   (void)_feedback_info;
-   const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
+   const struct video_tex_info *info = (const struct video_tex_info*)_info;
+   const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
+   const struct video_tex_info *fbo_info = (const struct video_tex_info*)_fbo_info;
    hlsl_shader_data_t *hlsl = (hlsl_shader_data_t*)shader_data;
 
    if (!hlsl)

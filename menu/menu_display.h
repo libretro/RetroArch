@@ -58,7 +58,7 @@ typedef struct menu_display_ctx_draw
    float y;
    unsigned width;
    unsigned height;
-   struct gfx_coords *coords;
+   struct video_coords *coords;
    void *matrix_data;
    uintptr_t texture;
    enum menu_display_prim_type prim_type;
@@ -136,7 +136,7 @@ void menu_display_deinit(void);
 bool menu_display_init(void);
 
 void menu_display_coords_array_reset(void);
-gfx_coord_array_t *menu_display_get_coords_array(void);
+video_coord_array_t *menu_display_get_coords_array(void);
 void *menu_display_get_font_buffer(void);
 void menu_display_set_font_buffer(void *buffer);
 const uint8_t *menu_display_get_font_framebuffer(void);

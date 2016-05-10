@@ -184,13 +184,13 @@ static void menu_display_d3d_draw_pipeline(void *data)
    menu_display_ctx_draw_t *draw     = (menu_display_ctx_draw_t*)data;
    struct uniform_info uniform_param = {0};
    static float t                    = 0;
-   gfx_coord_array_t *ca             = NULL;
+   video_coord_array_t *ca             = NULL;
 
    ca = menu_display_get_coords_array();
 
    draw->x           = 0;
    draw->y           = 0;
-   draw->coords      = (struct gfx_coords*)(&ca->coords);
+   draw->coords      = (struct video_coords*)(&ca->coords);
    draw->matrix_data = NULL;
 
    switch (draw->pipeline.id)

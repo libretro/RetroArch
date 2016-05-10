@@ -60,7 +60,7 @@ static const char *menu_video_get_ident(void)
    settings_t *settings = config_get_ptr();
 
    if (settings->video.threaded)
-      return rarch_threaded_video_get_ident();
+      return video_thread_get_ident();
 #endif
 
    return video_driver_get_ident();
@@ -126,7 +126,7 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime)
    }
 }
 
-static gfx_coord_array_t menu_disp_ca;
+static video_coord_array_t menu_disp_ca;
 static unsigned menu_display_framebuf_width      = 0;
 static unsigned menu_display_framebuf_height     = 0;
 static size_t menu_display_framebuf_pitch        = 0;
@@ -206,7 +206,7 @@ void menu_display_deinit(void)
 {
    if (menu_display_msg_queue)
       msg_queue_free(menu_display_msg_queue);
-   gfx_coord_array_free(&menu_disp_ca);
+   video_coord_array_free(&menu_disp_ca);
    menu_display_msg_queue       = NULL;
    menu_display_msg_force       = false;
    menu_display_header_height   = 0;
@@ -228,7 +228,7 @@ void menu_display_coords_array_reset(void)
    menu_disp_ca.coords.vertices = 0;
 }
 
-gfx_coord_array_t *menu_display_get_coords_array(void)
+video_coord_array_t *menu_display_get_coords_array(void)
 {
    return &menu_disp_ca;
 }
@@ -467,7 +467,7 @@ void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw)
 
 void menu_display_draw_bg(menu_display_ctx_draw_t *draw)
 {
-   static struct gfx_coords coords;
+   static struct video_coords coords;
    const float *new_vertex       = NULL;
    const float *new_tex_coord    = NULL;
    if (!menu_disp || !draw)
@@ -570,7 +570,7 @@ void menu_display_draw_cursor(
       float x, float y, unsigned width, unsigned height)
 {
    menu_display_ctx_draw_t draw;
-   struct gfx_coords coords;
+   struct video_coords coords;
    settings_t *settings = config_get_ptr();
    bool cursor_visible  = settings->video.fullscreen ||
        !video_driver_has_windowed();
@@ -618,9 +618,9 @@ void menu_display_push_quad(
       int x2, int y2)
 {
    menu_display_ctx_coord_draw_t coord_draw;
-   gfx_coords_t coords;
    float vertex[8];
-   gfx_coord_array_t *ca   = NULL;
+   video_coords_t coords;
+   video_coord_array_t *ca   = NULL;
 
    ca = menu_display_get_coords_array();
 
@@ -643,14 +643,14 @@ void menu_display_push_quad(
    coords.lut_tex_coord  = coord_draw.ptr;
    coords.vertices       = 3;
 
-   gfx_coord_array_append(ca, &coords, 3);
+   video_coord_array_append(ca, &coords, 3);
 
    coords.color         += 4;
    coords.vertex        += 2;
    coords.tex_coord     += 2;
    coords.lut_tex_coord += 2;
 
-   gfx_coord_array_append(ca, &coords, 3);
+   video_coord_array_append(ca, &coords, 3);
 }
 
 #define PARTICLES_COUNT            100

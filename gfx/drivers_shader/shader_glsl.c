@@ -1019,10 +1019,10 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    unsigned texunit = 1;
    const struct shader_uniforms *uni = NULL;
    size_t size = 0, attribs_size = 0;
-   const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
-   const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
-   const struct gfx_tex_info *feedback_info = (const struct gfx_tex_info*)_feedback_info;
-   const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
+   const struct video_tex_info *info = (const struct video_tex_info*)_info;
+   const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
+   const struct video_tex_info *feedback_info = (const struct video_tex_info*)_feedback_info;
+   const struct video_tex_info *fbo_info = (const struct video_tex_info*)_fbo_info;
    struct glsl_attrib *attr = (struct glsl_attrib*)attribs;
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
 
@@ -1407,7 +1407,7 @@ fallback:
       size += multiplier * coords->vertices; \
 }
 
-static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struct gfx_coords *coords)
+static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struct video_coords *coords)
 {
    /* Avoid hitting malloc on every single regular quad draw. */
    GLfloat short_buffer[4 * (2 + 2 + 4 + 2)];

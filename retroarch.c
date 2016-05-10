@@ -1545,7 +1545,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_VALIDATE_CPU_FEATURES:
          {
-            uint64_t cpu = retro_get_cpu_features();
+            uint64_t cpu = cpu_features_get();
             (void)cpu;
 
 #ifdef __SSE__
@@ -1594,7 +1594,7 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
    {
       case RARCH_CAPABILITIES_CPU:
          {
-            uint64_t cpu = retro_get_cpu_features();
+            uint64_t cpu = cpu_features_get();
 
             if (cpu & RETRO_SIMD_MMX)
                strlcat(s, "MMX ", len);

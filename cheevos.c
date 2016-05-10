@@ -26,7 +26,7 @@
 #include "libretro.h"
 #include "network/net_http_special.h"
 #include "configuration.h"
-#include "performance.h"
+#include "performance_counters.h"
 #include "msg_hash.h"
 #include "runloop.h"
 #include "core.h"
@@ -986,7 +986,6 @@ static const uint8_t *cheevos_get_memory(unsigned offset)
 {
    retro_ctx_memory_info_t mem_info;
    uint8_t *memory = NULL;
-   unsigned i;
    
    mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
 

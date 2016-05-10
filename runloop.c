@@ -37,12 +37,12 @@
 #endif
 #include "autosave.h"
 #include "core_info.h"
-#include "core_options.h"
 #include "configuration.h"
 #include "performance.h"
 #include "movie.h"
 #include "retroarch.h"
 #include "runloop.h"
+#include "managers/core_option_manager.h"
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
 #include "system.h"
@@ -144,6 +144,23 @@ static void runloop_msg_queue_unlock(void)
 #endif
 }
 
+static bool runloop_msg_queue_push_internal(runloop_ctx_msg_info_t *msg_info)
+{
+   if (!msg_info || !runloop_msg_queue)
+      return false;
+   msg_queue_push(runloop_msg_queue, msg_info->msg,
+         msg_info->prio, msg_info->duration);
+
+   if (ui_companion_is_on_foreground())
+   {
+      const ui_companion_driver_t *ui = ui_companion_get_ptr();
+      if (ui->msg_queue_push)
+         ui->msg_queue_push(msg_info->msg,
+               msg_info->prio, msg_info->duration, msg_info->flush);
+   }
+   return true;
+}
+
 void runloop_msg_queue_push(const char *msg,
       unsigned prio, unsigned duration,
       bool flush)
@@ -163,7 +180,7 @@ void runloop_msg_queue_push(const char *msg,
    msg_info.duration = duration;
    msg_info.flush    = flush;
 
-   runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_PUSH, &msg_info);
+   runloop_msg_queue_push_internal(&msg_info);
 
    runloop_msg_queue_unlock();
 }
@@ -265,7 +282,7 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
 #endif
 
 /**
- * check_pause:
+ * runloop_check_pause:
  * @pressed              : was libretro pause key pressed?
  * @frameadvance_pressed : was frameadvance key pressed?
  *
@@ -274,7 +291,7 @@ static bool runloop_cmd_get_state_menu_toggle_button_combo(
  *
  * Returns: true if libretro pause key was toggled, otherwise false.
  **/
-static bool check_pause(settings_t *settings,
+static bool runloop_check_pause(settings_t *settings,
       bool focus, bool pause_pressed,
       bool frameadvance_pressed)
 {
@@ -304,7 +321,7 @@ static bool check_pause(settings_t *settings,
 }
 
 /**
- * check_fast_forward_button:
+ * runloop_check_fast_forward_button:
  * @fastforward_pressed  : is fastforward key pressed?
  * @hold_pressed         : is fastforward key pressed and held?
  * @old_hold_pressed     : was fastforward key pressed and held the last frame?
@@ -312,7 +329,7 @@ static bool check_pause(settings_t *settings,
  * Checks if the fast forward key has been pressed for this frame.
  *
  **/
-static void check_fast_forward_button(bool fastforward_pressed,
+static void runloop_check_fast_forward_button(bool fastforward_pressed,
       bool hold_pressed, bool old_hold_pressed)
 {
    /* To avoid continous switching if we hold the button down, we require
@@ -340,14 +357,14 @@ static void check_fast_forward_button(bool fastforward_pressed,
 }
 
 /**
- * check_stateslots:
+ * runloop_check_stateslots:
  * @pressed_increase     : is state slot increase key pressed?
  * @pressed_decrease     : is state slot decrease key pressed?
  *
  * Checks if the state increase/decrease keys have been pressed
  * for this frame.
  **/
-static void check_stateslots(settings_t *settings,
+static void runloop_check_stateslots(settings_t *settings,
       bool pressed_increase, bool pressed_decrease)
 {
    char msg[128];
@@ -409,7 +426,7 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
 }
 
 /**
- * check_shader_dir:
+ * runloop_check_shader_dir:
  * @pressed_next         : was next shader key pressed?
  * @pressed_previous     : was previous shader key pressed?
  *
@@ -419,7 +436,7 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
  *
  * Will also immediately apply the shader.
  **/
-static void check_shader_dir(rarch_dir_list_t *dir_list,
+static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
       bool pressed_next, bool pressed_prev)
 {
    uint32_t ext_hash;
@@ -547,11 +564,11 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    if (!runloop_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, cmd))
       return false;
 
-   check_fast_forward_button(
+   runloop_check_fast_forward_button(
          runloop_cmd_triggered(cmd, RARCH_FAST_FORWARD_KEY),
          runloop_cmd_press    (cmd, RARCH_FAST_FORWARD_HOLD_KEY),
          runloop_cmd_pressed  (cmd, RARCH_FAST_FORWARD_HOLD_KEY));
-   check_stateslots(settings,
+   runloop_check_stateslots(settings,
          runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_PLUS),
          runloop_cmd_triggered(cmd, RARCH_STATE_SLOT_MINUS)
          );
@@ -573,7 +590,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
       runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
 
-   check_shader_dir(shader_dir,
+   runloop_check_shader_dir(shader_dir,
          runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
          runloop_cmd_triggered(cmd, RARCH_SHADER_PREV));
 
@@ -641,6 +658,7 @@ static bool runloop_is_frame_count_end(void)
    return runloop_max_frames && (*frame_count >= runloop_max_frames);
 }
 
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    settings_t *settings                             = config_get_ptr();
@@ -672,7 +690,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            *idx = core_option_size(runloop_core_options);
+            *idx = core_option_manager_size(runloop_core_options);
          }
          break;
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:
@@ -835,7 +853,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
             bool focused              =  runloop_is_focused();
 
-            check_pause(settings, focused,
+            runloop_check_pause(settings, focused,
                   runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
                   runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
 
@@ -967,23 +985,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_IS_PAUSED:
          return runloop_paused;
-      case RUNLOOP_CTL_MSG_QUEUE_PUSH:
-         {
-            runloop_ctx_msg_info_t *msg_info = (runloop_ctx_msg_info_t*)data;
-            if (!msg_info || !runloop_msg_queue)
-               return false;
-            msg_queue_push(runloop_msg_queue, msg_info->msg,
-                  msg_info->prio, msg_info->duration);
-
-            if (ui_companion_is_on_foreground())
-            {
-               const ui_companion_driver_t *ui = ui_companion_get_ptr();
-               if (ui->msg_queue_push)
-                  ui->msg_queue_push(msg_info->msg,
-                        msg_info->prio, msg_info->duration, msg_info->flush);
-            }
-         }
-         break;
       case RUNLOOP_CTL_MSG_QUEUE_PULL:
          runloop_msg_queue_lock();
          {
@@ -1076,13 +1077,13 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
       case RUNLOOP_CTL_IS_CORE_OPTION_UPDATED:
          if (!runloop_core_options)
             return false;
-         return  core_option_updated(runloop_core_options);
+         return  core_option_manager_updated(runloop_core_options);
       case RUNLOOP_CTL_CORE_OPTION_PREV:
          {
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            core_option_prev(runloop_core_options, *idx);
+            core_option_manager_prev(runloop_core_options, *idx);
             if (ui_companion_is_on_foreground())
                ui_companion_driver_notify_refresh();
          }
@@ -1092,7 +1093,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             unsigned *idx = (unsigned*)data;
             if (!idx)
                return false;
-            core_option_next(runloop_core_options, *idx);
+            core_option_manager_next(runloop_core_options, *idx);
             if (ui_companion_is_on_foreground())
                ui_companion_driver_notify_refresh();
          }
@@ -1105,7 +1106,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
 
             RARCH_LOG("Environ GET_VARIABLE %s:\n", var->key);
-            core_option_get(runloop_core_options, var);
+            core_option_manager_get(runloop_core_options, var);
             RARCH_LOG("\t%s\n", var->value ? var->value : "N/A");
          }
          break;
@@ -1134,21 +1135,21 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             {
                runloop_ctl(RUNLOOP_CTL_SET_GAME_OPTIONS_ACTIVE, NULL);
                runloop_core_options = 
-                  core_option_new(game_options_path, vars);
+                  core_option_manager_new(game_options_path, vars);
                free(game_options_path);
             }
             else
             {
                runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
                runloop_core_options = 
-                  core_option_new(options_path, vars);
+                  core_option_manager_new(options_path, vars);
             }
 
          }
          break;
       case RUNLOOP_CTL_CORE_OPTIONS_FREE:
          if (runloop_core_options)
-            core_option_free(runloop_core_options);
+            core_option_manager_free(runloop_core_options);
          runloop_core_options          = NULL;
          break;
       case RUNLOOP_CTL_CORE_OPTIONS_DEINIT:
@@ -1161,12 +1162,12 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                to that file instead */
             if(global && !string_is_empty(global->path.core_options_path))
             {
-               core_option_flush_game_specific(runloop_core_options,
+               core_option_manager_flush_game_specific(runloop_core_options,
                      global->path.core_options_path);
                global->path.core_options_path[0] = '\0';
             }
             else
-               core_option_flush(runloop_core_options);
+               core_option_manager_flush(runloop_core_options);
 
             if (runloop_ctl(RUNLOOP_CTL_IS_GAME_OPTIONS_ACTIVE, NULL))
                runloop_ctl(RUNLOOP_CTL_UNSET_GAME_OPTIONS_ACTIVE, NULL);
@@ -1315,7 +1316,7 @@ int runloop_iterate(unsigned *sleep_ms)
          (settings->fastforward_ratio == 0.0f) 
          ? 1.0f : settings->fastforward_ratio;
 
-      frame_limit_last_time    = retro_get_time_usec();
+      frame_limit_last_time    = cpu_features_get_time_usec();
       frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f 
             / (av_info->timing.fps * fastforward_ratio));
 
@@ -1342,7 +1343,7 @@ int runloop_iterate(unsigned *sleep_ms)
       /* Updates frame timing if frame timing callback is in use by the core.
        * Limits frame time if fast forward ratio throttle is enabled. */
 
-      retro_time_t current     = retro_get_time_usec();
+      retro_time_t current     = cpu_features_get_time_usec();
       retro_time_t delta       = current - runloop_frame_time_last;
       bool is_locked_fps       = (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) ||
                                   input_driver_is_nonblock_state()) |
@@ -1512,7 +1513,7 @@ int runloop_iterate(unsigned *sleep_ms)
 end:
 #endif
 
-   current                        = retro_get_time_usec();
+   current                        = cpu_features_get_time_usec();
    target                         = frame_limit_last_time + 
       frame_limit_minimum_time;
    to_sleep_ms                    = (target - current) / 1000;
@@ -1525,7 +1526,7 @@ end:
       return 1;
    }
 
-   frame_limit_last_time  = retro_get_time_usec();
+   frame_limit_last_time  = cpu_features_get_time_usec();
 
    return 0;
 }

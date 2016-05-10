@@ -107,7 +107,7 @@ typedef struct zarch_handle
    math_matrix_4x4 mvp;
    unsigned width;
    unsigned height;
-   gfx_font_raster_block_t tmp_block;
+   video_font_raster_block_t tmp_block;
    unsigned hash;
 
    struct {
@@ -871,7 +871,7 @@ static void zarch_frame(void *data)
    menu_display_ctx_coord_draw_t coord_draw;
    settings_t *settings    = config_get_ptr();
    zui_t *zui              = (zui_t*)data;
-   gfx_coord_array_t *ca   = NULL;
+   video_coord_array_t *ca   = NULL;
 
    ca = menu_display_get_coords_array();
    
@@ -949,7 +949,7 @@ static void zarch_frame(void *data)
    draw.y           = 0;
    draw.width       = zui->width;
    draw.height      = zui->height;
-   draw.coords      = (struct gfx_coords*)ca;
+   draw.coords      = (struct video_coords*)ca;
    draw.matrix_data = &zui->mvp;
    draw.texture     = menu_display_white_texture;
    draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLES;
@@ -1048,7 +1048,7 @@ static void zarch_free(void *data)
    zui_t        *zui                       = (zui_t*)data;
 
    if (zui)
-      gfx_coord_array_free(&zui->tmp_block.carr);
+      video_coord_array_free(&zui->tmp_block.carr);
 
    font_driver_bind_block(NULL, NULL);
 }

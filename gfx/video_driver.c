@@ -34,6 +34,7 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../performance.h"
+#include "../performance_counters.h"
 #include "../list_special.h"
 #include "../core.h"
 #include "../system.h"
@@ -288,7 +289,7 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
    if (settings->video.threaded
          && !video_driver_is_hw_context()
          && !force_nonthreaded_data)
-      return rarch_threaded_video_get_ptr(NULL);
+      return video_thread_get_ptr(NULL);
 #endif
 
    return video_driver_data;
@@ -700,7 +701,7 @@ static bool init_video(void)
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
 
-      if (!rarch_threaded_video_init((const video_driver_t**)&current_video,
+      if (!video_init_thread((const video_driver_t**)&current_video,
                &video_driver_data,
                input_get_double_ptr(), input_driver_get_data_ptr(),
                current_video, &video))
@@ -982,7 +983,7 @@ bool video_monitor_get_fps(char *buf, size_t size,
 {
    static retro_time_t curr_time;
    static retro_time_t fps_time;
-   retro_time_t        new_time  = retro_get_time_usec();
+   retro_time_t        new_time  = cpu_features_get_time_usec();
 
    *buf = '\0';
 

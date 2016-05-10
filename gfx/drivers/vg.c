@@ -30,7 +30,7 @@
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../driver.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 #include "../font_driver.h"
 #include "../../content.h"
 #include "../../runloop.h"

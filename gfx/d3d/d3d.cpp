@@ -47,7 +47,7 @@
 #endif
 
 #include "../../core.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 
 #include "../../defines/d3d_defines.h"
 #include "../../verbosity.h"
@@ -1074,7 +1074,7 @@ static bool d3d_construct(d3d_video_t *d3d,
 static void d3d_set_rotation(void *data, unsigned rot)
 {
    d3d_video_t *d3d = (d3d_video_t*)data;
-   struct gfx_ortho ortho = {0, 1, 0, 1, -1, 1};
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    if (!d3d)
       return;
@@ -1731,7 +1731,7 @@ static uintptr_t d3d_load_texture(void *video_data, void *data,
             break;
       }
 
-      return rarch_threaded_video_texture_load(data, func);
+      return video_thread_texture_load(data, func);
    }
 
    video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(false), (struct texture_image*)data, filter_type, &id);
