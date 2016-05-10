@@ -16,22 +16,14 @@
 
 #include <stdio.h>
 #include "libretro.h"
-#include "performance.h"
-#include "general.h"
-#include "compat/strl.h"
-#include "verbosity.h"
-
-#ifdef _WIN32
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %I64u ticks, %I64u runs.\n"
-#else
-#define PERF_LOG_FMT "[PERF]: Avg (%s): %llu ticks, %llu runs.\n"
-#endif
 
 #if defined(_WIN32)
 #include <direct.h>
 #else
 #include <unistd.h>
 #endif
+
+#include <compat/strl.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
@@ -387,53 +379,53 @@ uint64_t cpu_features_get(void)
    len     = sizeof(size_t);
    if (sysctlbyname("hw.optional.mmx", NULL, &len, NULL, 0) == 0)
    {
-      cpu |= CPU_FEATURE_MMX;
-      cpu |= CPU_FEATURE_MMXEXT;
+      cpu |= RETRO_SIMD_MMX;
+      cpu |= RETRO_SIMD_MMXEXT;
    }
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse", NULL, &len, NULL, 0) == 0)
-      cpu |= CPU_FEATURE_SSE;
+      cpu |= RETRO_SIMD_SSE;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse2", NULL, &len, NULL, 0) == 0)
-      cpu |= CPU_FEATURE_SSE2;
+      cpu |= RETRO_SIMD_SSE2;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse3", NULL, &len, NULL, 0) == 0)
-      cpu |= CPU_FEATURE_SSE3;
+      cpu |= RETRO_SIMD_SSE3;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.supplementalsse3", NULL, &len, NULL, 0) == 0)
-      cpu |= CPU_FEATURE_SSSE3;
+      cpu |= RETRO_SIMD_SSSE3;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse4_1", NULL, &len, NULL, 0) == 0)
-      cpu |= CPU_FEATURE_SSE4;
+      cpu |= RETRO_SIMD_SSE4;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.sse4_2", NULL, &len, NULL, 0) == 0)
-      cpu |= CPU_FEATURE_SSE42;
+      cpu |= RETRO_SIMD_SSE42;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.aes", NULL, &len, NULL, 0) == 0)
-      cpu |= CPU_FEATURE_AES;
+      cpu |= RETRO_SIMD_AES;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.avx1_0", NULL, &len, NULL, 0) == 0)
-      cpu |= CPU_FEATURE_AVX;
+      cpu |= RETRO_SIMD_AVX;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.avx2_0", NULL, &len, NULL, 0) == 0)
-      cpu |= CPU_FEATURE_AVX2;
+      cpu |= RETRO_SIMD_AVX2;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.altivec", NULL, &len, NULL, 0) == 0)
-      cpu |= CPU_FEATURE_VMX;
+      cpu |= RETRO_SIMD_VMX;
 
    len            = sizeof(size_t);
    if (sysctlbyname("hw.optional.neon", NULL, &len, NULL, 0) == 0)
-      cpu |= CPU_FEATURE_NEON;
+      cpu |= RETRO_SIMD_NEON;
 
 #elif defined(CPU_X86)
    (void)avx_flags;
@@ -458,52 +450,52 @@ uint64_t cpu_features_get(void)
    x86_cpuid(1, flags);
 
    if (flags[3] & (1 << 23))
-      cpu |= CPU_FEATURE_MMX;
+      cpu |= RETRO_SIMD_MMX;
 
    if (flags[3] & (1 << 25))
    {
       /* SSE also implies MMXEXT (according to FFmpeg source). */
-      cpu |= CPU_FEATURE_SSE;
-      cpu |= CPU_FEATURE_MMXEXT;
+      cpu |= RETRO_SIMD_SSE;
+      cpu |= RETRO_SIMD_MMXEXT;
    }
 
 
    if (flags[3] & (1 << 26))
-      cpu |= CPU_FEATURE_SSE2;
+      cpu |= RETRO_SIMD_SSE2;
 
    if (flags[2] & (1 << 0))
-      cpu |= CPU_FEATURE_SSE3;
+      cpu |= RETRO_SIMD_SSE3;
 
    if (flags[2] & (1 << 9))
-      cpu |= CPU_FEATURE_SSSE3;
+      cpu |= RETRO_SIMD_SSSE3;
 
    if (flags[2] & (1 << 19))
-      cpu |= CPU_FEATURE_SSE4;
+      cpu |= RETRO_SIMD_SSE4;
 
    if (flags[2] & (1 << 20))
-      cpu |= CPU_FEATURE_SSE42;
+      cpu |= RETRO_SIMD_SSE42;
 
    if ((flags[2] & (1 << 23)))
-      cpu |= CPU_FEATURE_POPCNT;
+      cpu |= RETRO_SIMD_POPCNT;
 
    if (vendor_is_intel && (flags[2] & (1 << 22)))
-      cpu |= CPU_FEATURE_MOVBE;
+      cpu |= RETRO_SIMD_MOVBE;
 
    if (flags[2] & (1 << 25))
-      cpu |= CPU_FEATURE_AES;
+      cpu |= RETRO_SIMD_AES;
 
 
    /* Must only perform xgetbv check if we have
     * AVX CPU support (guaranteed to have at least i686). */
    if (((flags[2] & avx_flags) == avx_flags)
          && ((xgetbv_x86(0) & 0x6) == 0x6))
-      cpu |= CPU_FEATURE_AVX;
+      cpu |= RETRO_SIMD_AVX;
 
    if (max_flag >= 7)
    {
       x86_cpuid(7, flags);
       if (flags[1] & (1 << 5))
-         cpu |= CPU_FEATURE_AVX2;
+         cpu |= RETRO_SIMD_AVX2;
    }
 
    x86_cpuid(0x80000000, flags);
@@ -512,55 +504,55 @@ uint64_t cpu_features_get(void)
    {
       x86_cpuid(0x80000001, flags);
       if (flags[3] & (1 << 23))
-         cpu |= CPU_FEATURE_MMX;
+         cpu |= RETRO_SIMD_MMX;
       if (flags[3] & (1 << 22))
-         cpu |= CPU_FEATURE_MMXEXT;
+         cpu |= RETRO_SIMD_MMXEXT;
    }
 #elif defined(__linux__)
    cpu_flags = linux_get_cpu_features();
 
    if (cpu_flags & CPU_ARM_FEATURE_NEON)
    {
-      cpu |= CPU_FEATURE_NEON;
+      cpu |= RETRO_SIMD_NEON;
 #ifdef __ARM_NEON__
       arm_enable_runfast_mode();
 #endif
    }
 
    if (cpu_flags & CPU_ARM_FEATURE_VFPv3)
-      cpu |= CPU_FEATURE_VFPV3;
+      cpu |= RETRO_SIMD_VFPV3;
 
 #elif defined(__ARM_NEON__)
-   cpu |= CPU_FEATURE_NEON;
+   cpu |= RETRO_SIMD_NEON;
    arm_enable_runfast_mode();
 #elif defined(__ALTIVEC__)
-   cpu |= CPU_FEATURE_VMX;
+   cpu |= RETRO_SIMD_VMX;
 #elif defined(XBOX360)
-   cpu |= CPU_FEATURE_VMX128;
+   cpu |= RETRO_SIMD_VMX128;
 #elif defined(PSP)
-   cpu |= CPU_FEATURE_VFPU;
+   cpu |= RETRO_SIMD_VFPU;
 #elif defined(GEKKO)
-   cpu |= CPU_FEATURE_PS;
+   cpu |= RETRO_SIMD_PS;
 #endif
 
-   if (cpu & CPU_FEATURE_MMX)    strlcat(buf, " MMX", sizeof(buf));
-   if (cpu & CPU_FEATURE_MMXEXT) strlcat(buf, " MMXEXT", sizeof(buf));
-   if (cpu & CPU_FEATURE_SSE)    strlcat(buf, " SSE", sizeof(buf));
-   if (cpu & CPU_FEATURE_SSE2)   strlcat(buf, " SSE2", sizeof(buf));
-   if (cpu & CPU_FEATURE_SSE3)   strlcat(buf, " SSE3", sizeof(buf));
-   if (cpu & CPU_FEATURE_SSSE3)  strlcat(buf, " SSSE3", sizeof(buf));
-   if (cpu & CPU_FEATURE_SSE4)   strlcat(buf, " SSE4", sizeof(buf));
-   if (cpu & CPU_FEATURE_SSE42)  strlcat(buf, " SSE4.2", sizeof(buf));
-   if (cpu & CPU_FEATURE_AES)    strlcat(buf, " AES", sizeof(buf));
-   if (cpu & CPU_FEATURE_AVX)    strlcat(buf, " AVX", sizeof(buf));
-   if (cpu & CPU_FEATURE_AVX2)   strlcat(buf, " AVX2", sizeof(buf));
-   if (cpu & CPU_FEATURE_NEON)   strlcat(buf, " NEON", sizeof(buf));
-   if (cpu & CPU_FEATURE_VFPV3)  strlcat(buf, " VFPv3", sizeof(buf));
-   if (cpu & CPU_FEATURE_VFPV4)  strlcat(buf, " VFPv4", sizeof(buf));
-   if (cpu & CPU_FEATURE_VMX)    strlcat(buf, " VMX", sizeof(buf));
-   if (cpu & CPU_FEATURE_VMX128) strlcat(buf, " VMX128", sizeof(buf));
-   if (cpu & CPU_FEATURE_VFPU)   strlcat(buf, " VFPU", sizeof(buf));
-   if (cpu & CPU_FEATURE_PS)     strlcat(buf, " PS", sizeof(buf));
+   if (cpu & RETRO_SIMD_MMX)    strlcat(buf, " MMX", sizeof(buf));
+   if (cpu & RETRO_SIMD_MMXEXT) strlcat(buf, " MMXEXT", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSE)    strlcat(buf, " SSE", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSE2)   strlcat(buf, " SSE2", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSE3)   strlcat(buf, " SSE3", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSSE3)  strlcat(buf, " SSSE3", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSE4)   strlcat(buf, " SSE4", sizeof(buf));
+   if (cpu & RETRO_SIMD_SSE42)  strlcat(buf, " SSE4.2", sizeof(buf));
+   if (cpu & RETRO_SIMD_AES)    strlcat(buf, " AES", sizeof(buf));
+   if (cpu & RETRO_SIMD_AVX)    strlcat(buf, " AVX", sizeof(buf));
+   if (cpu & RETRO_SIMD_AVX2)   strlcat(buf, " AVX2", sizeof(buf));
+   if (cpu & RETRO_SIMD_NEON)   strlcat(buf, " NEON", sizeof(buf));
+   if (cpu & RETRO_SIMD_VFPV3)  strlcat(buf, " VFPv3", sizeof(buf));
+   if (cpu & RETRO_SIMD_VFPV4)  strlcat(buf, " VFPv4", sizeof(buf));
+   if (cpu & RETRO_SIMD_VMX)    strlcat(buf, " VMX", sizeof(buf));
+   if (cpu & RETRO_SIMD_VMX128) strlcat(buf, " VMX128", sizeof(buf));
+   if (cpu & RETRO_SIMD_VFPU)   strlcat(buf, " VFPU", sizeof(buf));
+   if (cpu & RETRO_SIMD_PS)     strlcat(buf, " PS", sizeof(buf));
 
    return cpu;
 }
