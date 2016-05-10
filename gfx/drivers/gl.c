@@ -3827,7 +3827,7 @@ static uintptr_t gl_load_texture(void *video_data, void *data,
          default:
             break;
       }
-      return rarch_threaded_video_texture_load(data, func);
+      return video_thread_texture_load(data, func);
    }
 #endif
 

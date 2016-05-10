@@ -60,7 +60,7 @@ static const char *menu_video_get_ident(void)
    settings_t *settings = config_get_ptr();
 
    if (settings->video.threaded)
-      return rarch_threaded_video_get_ident();
+      return video_thread_get_ident();
 #endif
 
    return video_driver_get_ident();

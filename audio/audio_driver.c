@@ -347,7 +347,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    if (audio_cb_inited)
    {
       RARCH_LOG("Starting threaded audio driver ...\n");
-      if (!rarch_threaded_audio_init(
+      if (!audio_init_thread(
                &current_audio,
                &audio_driver_context_audio_data,
                *settings->audio.device ? settings->audio.device : NULL,

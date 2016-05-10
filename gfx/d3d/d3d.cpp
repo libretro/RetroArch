@@ -1731,7 +1731,7 @@ static uintptr_t d3d_load_texture(void *video_data, void *data,
             break;
       }
 
-      return rarch_threaded_video_texture_load(data, func);
+      return video_thread_texture_load(data, func);
    }
 
    video_texture_load_d3d((d3d_video_t*)video_driver_get_ptr(false), (struct texture_image*)data, filter_type, &id);

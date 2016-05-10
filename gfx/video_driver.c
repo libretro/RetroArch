@@ -288,7 +288,7 @@ void *video_driver_get_ptr(bool force_nonthreaded_data)
    if (settings->video.threaded
          && !video_driver_is_hw_context()
          && !force_nonthreaded_data)
-      return rarch_threaded_video_get_ptr(NULL);
+      return video_thread_get_ptr(NULL);
 #endif
 
    return video_driver_data;
@@ -700,7 +700,7 @@ static bool init_video(void)
       /* Can't do hardware rendering with threaded driver currently. */
       RARCH_LOG("Starting threaded video driver ...\n");
 
-      if (!rarch_threaded_video_init((const video_driver_t**)&current_video,
+      if (!video_init_thread((const video_driver_t**)&current_video,
                &video_driver_data,
                input_get_double_ptr(), input_driver_get_data_ptr(),
                current_video, &video))
