@@ -564,7 +564,5 @@ uint64_t retro_get_cpu_features(void)
    if (cpu & RETRO_SIMD_VFPU)   strlcat(buf, " VFPU", sizeof(buf));
    if (cpu & RETRO_SIMD_PS)     strlcat(buf, " PS", sizeof(buf));
 
-   RARCH_LOG("[CPUID]: Features:%s\n", buf);
-
    return cpu;
 }
