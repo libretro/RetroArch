@@ -2361,6 +2361,24 @@ static int stbi__jpeg_test(stbi__context *s)
 }
 #endif
 
+static INLINE void video_frame_convert_rgba_to_bgra(
+      const void *src_data,
+      void *dst_data,
+      unsigned width)
+{
+   unsigned x;
+   uint8_t      *dst  = (uint8_t*)dst_data;
+   const uint8_t *src = (const uint8_t*)src_data;
+
+   for (x = 0; x < width; x++, dst += 4, src += 4)
+   {
+      dst[3] = src[3];
+      dst[0] = src[2];
+      dst[1] = src[1];
+      dst[2] = src[0];
+   }
+}
+
 bool rjpeg_image_load(uint8_t *_buf, void *data, size_t size,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
@@ -2369,25 +2387,14 @@ bool rjpeg_image_load(uint8_t *_buf, void *data, size_t size,
    int x, y, comp;
    struct texture_image *out_img = (struct texture_image*)data;
 
-   out_img->pixels = stbi_load_from_memory(_buf, size, &x, &y, &comp, 4);
+   out_img->pixels = (uint32_t*)stbi_load_from_memory(_buf, size, &x, &y, &comp, 4);
 
    out_img->width   = x;
    out_img->height  = y;
 
-#if 0
-   for (i = 0; i < (x * y); i++)
-   {
-      uint32_t r =  (_buf[i] & 0xff00ff00);
-      uint32_t g = ((_buf[i] << 16) & 0x00ff0000);
-      uint32_t b = ((_buf[i] >> 16) & 0xff);
-
-      if (r_shift == 0 && b_shift == 16)
-         out_img->pixels[i] = _buf[i];
-      else
-         out_img->pixels[i] = r | g | b;
-      //out_img->pixels[i] = (r << r_shift) | (g << g_shift) || (b << b_shift);
-   }
-#endif
+   if (r_shift == 0 && b_shift == 16) { } /* RGBA, doesn't need conversion */
+   else
+      video_frame_convert_rgba_to_bgra(_buf, out_img->pixels, x);
 
    return true;
 }
