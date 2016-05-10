@@ -183,10 +183,8 @@ static void rjpeg__rewind(rjpeg__context *s)
    s->img_buffer = s->img_buffer_original;
 }
 
-#ifndef RJPEG_NO_JPEG
 static int      rjpeg__jpeg_test(rjpeg__context *s);
 static uint8_t *rjpeg__jpeg_load(rjpeg__context *s, int *x, int *y, int *comp, int req_comp);
-#endif
 
 /* this is not threadsafe */
 static const char *rjpeg__g_failure_reason;
