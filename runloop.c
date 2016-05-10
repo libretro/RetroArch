@@ -23,6 +23,7 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 #include <retro_assert.h>
+#include <features/cpu_features.h>
 #include <queues/message_queue.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -38,7 +39,6 @@
 #include "autosave.h"
 #include "core_info.h"
 #include "configuration.h"
-#include "performance.h"
 #include "movie.h"
 #include "retroarch.h"
 #include "runloop.h"

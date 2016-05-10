@@ -25,6 +25,7 @@
 #endif
 
 #include <file/config_file.h>
+#include <features/cpu_features.h>
 
 #include "video_thread_wrapper.h"
 #include "../frontend/frontend_driver.h"
@@ -33,7 +34,6 @@
 #include "../config.def.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../performance.h"
 #include "../performance_counters.h"
 #include "../list_special.h"
 #include "../core.h"

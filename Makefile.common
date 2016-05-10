@@ -204,7 +204,7 @@ OBJ += frontend/frontend.o \
        movie.o \
        record/record_driver.o \
        record/drivers/record_null.o \
-       performance.o \
+       libretro-common/features/cpu_features.o \
        performance_counters.o \
        verbosity.o
 
