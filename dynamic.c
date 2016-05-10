@@ -1221,16 +1221,45 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             (const struct retro_memory_map*)data;
          
          RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
-         RARCH_LOG("   flags    ptr              offset   start    select   disconn  len      addrspace\n");
+         
+         if (sizeof(void *) == 8)
+            RARCH_LOG("    flags  ptr              offset   start    select   disconn  len      addrspace\n");
+         else
+            RARCH_LOG("    flags  ptr          offset   start    select   disconn  len      addrspace\n");
          
          for (i = 0; i < mmaps->num_descriptors; i++)
          {
             const struct retro_memory_descriptor *desc =
                &mmaps->descriptors[i];
+            char flags[7];
+            
+            flags[0] = 'M';
+            if ((desc->flags & RETRO_MEMDESC_MINSIZE_8) == RETRO_MEMDESC_MINSIZE_8)
+               flags[1] = '8';
+            else if ((desc->flags & RETRO_MEMDESC_MINSIZE_4) == RETRO_MEMDESC_MINSIZE_4)
+               flags[1] = '4';
+            else if ((desc->flags & RETRO_MEMDESC_MINSIZE_2) == RETRO_MEMDESC_MINSIZE_2)
+               flags[1] = '2';
+            else
+               flags[1] = '1';
+            
+            flags[2] = 'A';
+            if ((desc->flags & RETRO_MEMDESC_ALIGN_8) == RETRO_MEMDESC_ALIGN_8)
+               flags[3] = '8';
+            else if ((desc->flags & RETRO_MEMDESC_ALIGN_4) == RETRO_MEMDESC_ALIGN_4)
+               flags[3] = '4';
+            else if ((desc->flags & RETRO_MEMDESC_ALIGN_2) == RETRO_MEMDESC_ALIGN_2)
+               flags[3] = '2';
+            else
+               flags[3] = '1';
+            
+            flags[4] = (desc->flags & RETRO_MEMDESC_BIGENDIAN) ? 'B' : 'b';
+            flags[5] = (desc->flags & RETRO_MEMDESC_CONST) ? 'C' : 'c';
+            flags[6] = 0;
             
             RARCH_LOG("Memory map: %u\n", i + 1);
-            RARCH_LOG("   %08X %p %08X %08X %08X %08X %08X %s\n",
-               desc->flags, desc->ptr, desc->offset, desc->start,
+            RARCH_LOG("    %s %p %08X %08X %08X %08X %08X %s\n",
+               flags, desc->ptr, desc->offset, desc->start,
                desc->select, desc->disconnect, desc->len,
                desc->addrspace ? desc->addrspace : "");
          }
