@@ -761,7 +761,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!latch)
                return false;
 
-            if (menu_driver_ctx->toggle)
+            if (menu_driver_ctx && menu_driver_ctx->toggle)
                menu_driver_ctx->toggle(menu_userdata, *latch);
          }
          break;
