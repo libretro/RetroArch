@@ -871,7 +871,7 @@ static bool command_event_disk_control_append_image(const char *path)
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
       rarch_ctl(RARCH_CTL_SET_PATHS, (void*)path);
-      rarch_ctl(RARCH_CTL_FILL_PATHNAMES, NULL);
+      retroarch_fill_pathnames();
    }
 
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
@@ -1205,7 +1205,7 @@ static bool event_init_content(void)
       return true;
 
    if (!content_does_not_need_content())
-      rarch_ctl(RARCH_CTL_FILL_PATHNAMES, NULL);
+      retroarch_fill_pathnames();
 
    if (!content_init())
       return false;

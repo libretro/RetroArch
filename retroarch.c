@@ -1548,29 +1548,33 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #endif
          }
          break;
-      case RARCH_CTL_FILL_PATHNAMES:
-         retroarch_init_savefile_paths();
-         bsv_movie_set_path(global->name.savefile);
-
-         if (!*global->name.base)
-            return false;
-
-         if (!*global->name.ups)
-            fill_pathname_noext(global->name.ups, global->name.base, ".ups",
-                  sizeof(global->name.ups));
-         if (!*global->name.bps)
-            fill_pathname_noext(global->name.bps, global->name.base, ".bps",
-                  sizeof(global->name.bps));
-         if (!*global->name.ips)
-            fill_pathname_noext(global->name.ips, global->name.base, ".ips",
-                  sizeof(global->name.ips));
-         break;
       case RARCH_CTL_NONE:
       default:
          return false;
    }
 
    return true;
+}
+
+void retroarch_fill_pathnames(void)
+{
+   global_t *global = global_get_ptr();
+
+   retroarch_init_savefile_paths();
+   bsv_movie_set_path(global->name.savefile);
+
+   if (!*global->name.base)
+      return;
+
+   if (!*global->name.ups)
+      fill_pathname_noext(global->name.ups, global->name.base, ".ups",
+            sizeof(global->name.ups));
+   if (!*global->name.bps)
+      fill_pathname_noext(global->name.bps, global->name.base, ".bps",
+            sizeof(global->name.bps));
+   if (!*global->name.ips)
+      fill_pathname_noext(global->name.ips, global->name.base, ".ips",
+            sizeof(global->name.ips));
 }
 
 int retroarch_get_capabilities(enum rarch_capabilities type,

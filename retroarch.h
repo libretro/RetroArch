@@ -97,8 +97,6 @@ enum rarch_ctl_state
     * but this will do for now. */
    RARCH_CTL_VALIDATE_CPU_FEATURES,
 
-   RARCH_CTL_FILL_PATHNAMES,
-
    RARCH_CTL_SET_PATHS_REDIRECT,
 
    RARCH_CTL_SET_SRAM_ENABLE,
@@ -170,6 +168,8 @@ enum rarch_content_type retroarch_path_is_media_type(const char *path);
 const char *retroarch_get_current_savefile_dir(void);
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
+
+void retroarch_fill_pathnames(void);
 
 /**
  * retroarch_fail:
