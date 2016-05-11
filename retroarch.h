@@ -60,9 +60,6 @@ enum rarch_ctl_state
    /* Initialize all drivers. */
    RARCH_CTL_INIT,
 
-   /* Initializes RetroArch. */
-   RARCH_CTL_MAIN_INIT,
-
    /* Deinitializes RetroArch. */
    RARCH_CTL_MAIN_DEINIT,
 
@@ -179,6 +176,17 @@ void retroarch_fill_pathnames(void);
  * Sanely kills the program.
  **/
 void retroarch_fail(int error_code, const char *error);
+
+/**
+ * retroarch_main_init:
+ * @argc                 : Count of (commandline) arguments.
+ * @argv                 : (Commandline) arguments.
+ *
+ * Initializes the program.
+ *
+ * Returns: 1 (true) on success, otherwise false (0) if there was an error.
+ **/
+bool retroarch_main_init(int argc, char *argv[]);
 
 #ifdef __cplusplus
 }

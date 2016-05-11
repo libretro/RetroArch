@@ -1220,7 +1220,7 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
  *
  * Returns: 0 on success, otherwise 1 if there was an error.
  **/
-static int retroarch_main_init(int argc, char *argv[])
+bool retroarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
    bool *verbosity   = NULL;
@@ -1230,7 +1230,7 @@ static int retroarch_main_init(int argc, char *argv[])
    if ((sjlj_ret = setjmp(error_sjlj_context)) > 0)
    {
       RARCH_ERR("Fatal error received in: \"%s\"\n", error_string);
-      return sjlj_ret;
+      return false;
    }
 
    rarch_ctl(RARCH_CTL_SET_ERROR_ON_INIT, NULL);
@@ -1315,12 +1315,13 @@ static int retroarch_main_init(int argc, char *argv[])
 
    rarch_ctl(RARCH_CTL_UNSET_ERROR_ON_INIT, NULL);
    rarch_ctl(RARCH_CTL_SET_INITED, NULL);
-   return 0;
+
+   return true;
 
 error:
    command_event(CMD_EVENT_CORE_DEINIT, NULL);
    rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
-   return 1;
+   return false;
 }
 
 #define FAIL_CPU(simd_type) do { \
@@ -1415,13 +1416,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          command_event(CMD_EVENT_SAVEFILES_DEINIT, NULL);
 
          rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
-         break;
-      case RARCH_CTL_MAIN_INIT:
-         {
-            struct rarch_main_wrap *wrap = (struct rarch_main_wrap*)data;
-            if (retroarch_main_init(wrap->argc, wrap->argv))
-               return false;
-         }
          break;
       case RARCH_CTL_INIT:
          rarch_ctl(RARCH_CTL_DEINIT, NULL);

@@ -892,7 +892,7 @@ bool content_load(content_ctx_info_t *info)
    wrap_args->argc = *rarch_argc_ptr;
    wrap_args->argv = rarch_argv_ptr;
 
-   if (!rarch_ctl(RARCH_CTL_MAIN_INIT, wrap_args))
+   if (!retroarch_main_init(wrap_args->argc, wrap_args->argv))
    {
       retval = false;
       goto error;
