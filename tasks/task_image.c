@@ -163,7 +163,29 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
    return 0;
 }
 
-#ifdef HAVE_RPNG
+static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
+{
+   unsigned i, width = 0, height = 0;
+   int retval = 0;
+
+   if (!nbio)
+      return -1;
+
+   for (i = 0; i < nbio->image.processing_pos_increment; i++)
+   {
+      retval = rarch_main_data_image_process(nbio,
+               &width, &height);
+      if (retval != IMAGE_PROCESS_NEXT)
+         break;
+   }
+
+   if (retval == IMAGE_PROCESS_NEXT)
+      return 0;
+
+   nbio->image.processing_final_state = retval;
+   return -1;
+}
+
 static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
 {
    unsigned i;
@@ -192,32 +214,10 @@ static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
    nbio->image.frame_count++;
    return 0;
 
+#ifdef HAVE_RPNG
 error:
    return -1;
-}
-
-
-static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
-{
-   unsigned i, width = 0, height = 0;
-   int retval = 0;
-
-   if (!nbio)
-      return -1;
-
-   for (i = 0; i < nbio->image.processing_pos_increment; i++)
-   {
-      retval = rarch_main_data_image_process(nbio,
-               &width, &height);
-      if (retval != IMAGE_PROCESS_NEXT)
-         break;
-   }
-
-   if (retval == IMAGE_PROCESS_NEXT)
-      return 0;
-
-   nbio->image.processing_final_state = retval;
-   return -1;
+#endif
 }
 
 static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
@@ -311,7 +311,6 @@ static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 
    return cb_nbio_generic(nbio, &len);
 }
-#endif
 
 bool rarch_task_image_load_handler(retro_task_t *task)
 {

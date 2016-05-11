@@ -890,7 +890,6 @@ ifeq ($(HAVE_ZLIB), 1)
           tasks/task_decompress.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
-   HAVE_RPNG = 1
    HAVE_COMPRESSION = 1
    ifeq ($(WANT_ZLIB), 1)
       DEFINES += -DWANT_ZLIB
@@ -900,11 +899,8 @@ ifeq ($(HAVE_ZLIB), 1)
    endif
 endif
 
-ifdef HAVE_RPNG
-   DEFINES += -DHAVE_RPNG
-endif
-
 ifeq ($(HAVE_RPNG), 1)
+	DEFINES += -DHAVE_RPNG
    OBJ += libretro-common/formats/png/rpng.o \
           libretro-common/formats/png/rpng_encode.o
 endif

@@ -425,9 +425,15 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
 	fi
 fi
 
+
 check_macro NEON __ARM_NEON__
 
 add_define_make OS "$OS"
+
+if [ "$HAVE_ZLIB" = 'no' ] && [ "HAVE_RPNG" != 'no' ]; then
+   HAVE_RPNG=no
+   echo "Notice: zlib is not available, RPNG will also be disabled."
+fi
 
 if [ "$HAVE_THREADS" = 'no' ] && [ "HAVE_CHEEVOS" != 'no' ]; then
    HAVE_CHEEVOS=no
