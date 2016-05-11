@@ -1463,29 +1463,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_BLOCK_CONFIG_READ:
          return rarch_block_config_read;
-      case RARCH_CTL_REPLACE_CONFIG:
-         {
-            char *path = (char*)data;
-
-            if (!path)
-               return false;
-
-            /* If config file to be replaced is the same as the
-             * current config file, exit. */
-            if (string_is_equal(path, global->path.config))
-               return false;
-
-            if (settings->config_save_on_exit && *global->path.config)
-               config_save_file(global->path.config);
-
-            strlcpy(global->path.config, path, sizeof(global->path.config));
-
-            rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
-
-            *settings->path.libretro = '\0'; /* Load core in new config. */
-         }
-         runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
-         break;
       case RARCH_CTL_MENU_RUNNING:
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
@@ -1528,6 +1505,36 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
       default:
          return false;
    }
+
+   return true;
+}
+
+/* Replaces currently loaded configuration file with
+ * another one. Will load a dummy core to flush state
+ * properly. */
+bool retroarch_replace_config(char *path)
+{
+   settings_t *settings = config_get_ptr();
+   global_t     *global = global_get_ptr();
+
+   if (!path)
+      return false;
+
+   /* If config file to be replaced is the same as the
+    * current config file, exit. */
+   if (string_is_equal(path, global->path.config))
+      return false;
+
+   if (settings->config_save_on_exit && *global->path.config)
+      config_save_file(global->path.config);
+
+   strlcpy(global->path.config, path, sizeof(global->path.config));
+
+   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+
+   *settings->path.libretro = '\0'; /* Load core in new config. */
+
+   runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
 
    return true;
 }

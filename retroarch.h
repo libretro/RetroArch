@@ -81,10 +81,6 @@ enum rarch_ctl_state
 
    RARCH_CTL_MENU_RUNNING_FINISHED,
 
-   /* Replaces currently loaded configuration file with
-    * another one. Will load a dummy core to flush state
-    * properly. */
-   RARCH_CTL_REPLACE_CONFIG,
 
    /* Validates CPU features for given processor architecture.
     * Make sure we haven't compiled for something we cannot run.
@@ -165,6 +161,11 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
 void retroarch_set_pathnames(const char *path);
 
 void retroarch_fill_pathnames(void);
+
+/* Replaces currently loaded configuration file with
+ * another one. Will load a dummy core to flush state
+ * properly. */
+bool retroarch_replace_config(char *path);
 
 /**
  * retroarch_fail:
