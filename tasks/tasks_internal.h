@@ -40,8 +40,15 @@ enum nbio_status_enum
    NBIO_STATUS_TRANSFER_PARSE_FREE
 };
 
+enum image_type_enum
+{
+   IMAGE_TYPE_PNG = 0,
+   IMAGE_TYPE_JPEG
+};
+
 #ifdef HAVE_NETWORKING
-typedef struct {
+typedef struct
+{
     char *data;
     size_t len;
 } http_transfer_data_t;
@@ -70,6 +77,7 @@ typedef struct nbio_image_handle
 
 typedef struct nbio_handle
 {
+   enum image_type_enum image_type;
    nbio_image_handle_t image;
    bool is_finished;
    transfer_cb_t  cb;

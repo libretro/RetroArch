@@ -102,15 +102,22 @@ static int rarch_main_data_image_process(
       unsigned *height,
       int *retval)
 {
+   switch (nbio->image_type)
+   {
+      case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-   if (!rpng_is_valid((rpng_t*)nbio->image.handle))
-      return IMAGE_PROCESS_ERROR;
+         if (!rpng_is_valid((rpng_t*)nbio->image.handle))
+            return IMAGE_PROCESS_ERROR;
 
-   *retval = rpng_nbio_load_image_argb_process(
-         (rpng_t*)nbio->image.handle,
-         &nbio->image.ti.pixels,
-         width, height);
+         *retval = rpng_nbio_load_image_argb_process(
+               (rpng_t*)nbio->image.handle,
+               &nbio->image.ti.pixels,
+               width, height);
 #endif
+         break;
+      case IMAGE_TYPE_JPEG:
+         break;
+   }
 
    nbio->image.ti.width  = *width;
    nbio->image.ti.height = *height;
@@ -166,11 +173,17 @@ static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->image.pos_increment; i++)
    {
+      switch (nbio->image_type)
+      {
+         case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-      /* TODO/FIXME - add JPEG equivalents as well */
-      if (!rpng_nbio_load_image_argb_iterate((rpng_t*)nbio->image.handle))
-         goto error;
+            if (!rpng_nbio_load_image_argb_iterate((rpng_t*)nbio->image.handle))
+               goto error;
 #endif
+            break;
+         case IMAGE_TYPE_JPEG:
+            break;
+      }
    }
 
    nbio->image.frame_count++;
@@ -207,10 +220,16 @@ static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
 {
    nbio_image_handle_t *image = nbio ? &nbio->image : NULL;
 
+   switch (nbio->image_type)
+   {
+      case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-   /* TODO/FIXME - add JPEG equivalents as well */
-   rpng_nbio_load_image_free((rpng_t*)image->handle);
+         rpng_nbio_load_image_free((rpng_t*)image->handle);
 #endif
+         break;
+      case IMAGE_TYPE_JPEG:
+         break;
+   }
 
    image->handle                 = NULL;
    image->cb                     = NULL;
@@ -229,17 +248,31 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
    if (!ptr)
       goto error;
 
+   switch (nbio->image_type)
+   {
+      case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-   rpng_set_buf_ptr((rpng_t*)nbio->image.handle, (uint8_t*)ptr);
+         rpng_set_buf_ptr((rpng_t*)nbio->image.handle, (uint8_t*)ptr);
 #endif
+         break;
+      case IMAGE_TYPE_JPEG:
+         break;
+   }
 
    nbio->image.pos_increment            = (*len / 2) ? (*len / 2) : 1;
    nbio->image.processing_pos_increment = (*len / 4) ?  (*len / 4) : 1;
 
+   switch (nbio->image_type)
+   {
+      case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-   if (!rpng_nbio_load_image_argb_start((rpng_t*)nbio->image.handle))
-      goto error;
+         if (!rpng_nbio_load_image_argb_start((rpng_t*)nbio->image.handle))
+            goto error;
 #endif
+         break;
+      case IMAGE_TYPE_JPEG:
+         break;
+   }
 
    nbio->image.is_blocking   = false;
    nbio->image.is_finished   = false;
@@ -259,9 +292,16 @@ static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
    if (!nbio || !data)
       return -1;
    
+   switch (nbio->image_type)
+   {
+      case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-   nbio->image.handle = rpng_alloc();
+         nbio->image.handle = rpng_alloc();
 #endif
+         break;
+      case IMAGE_TYPE_JPEG:
+         break;
+   }
 
    nbio->image.cb     = &cb_image_menu_thumbnail;
 
@@ -338,22 +378,18 @@ bool rarch_task_push_image_load(const char *fullpath,
    nbio->image.status = IMAGE_STATUS_TRANSFER;
 
    if (strstr(fullpath, ".png"))
-   {
-#ifdef HAVE_RPNG
-      switch (cb_type_hash)
-      {
-         case CB_MENU_WALLPAPER:
-         case CB_MENU_THUMBNAIL:
-            nbio->cb = &cb_nbio_image_menu_thumbnail;
-            break;
-         default:
-            break;
-      }
-#endif
-   }
+      nbio->image_type = IMAGE_TYPE_PNG;
    else if (strstr(fullpath, ".jpeg") || strstr(fullpath, ".jpg"))
+      nbio->image_type = IMAGE_TYPE_JPEG;
+
+   switch (cb_type_hash)
    {
-      /* TODO/FIXME */
+      case CB_MENU_WALLPAPER:
+      case CB_MENU_THUMBNAIL:
+         nbio->cb = &cb_nbio_image_menu_thumbnail;
+         break;
+      default:
+         break;
    }
 
    nbio_begin_read(handle);
