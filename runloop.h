@@ -112,11 +112,7 @@ enum runloop_ctl_state
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
 
-typedef struct rarch_dir_list
-{
-   struct string_list *list;
-   size_t ptr;
-} rarch_dir_list_t;
+typedef struct rarch_dir_list rarch_dir_list_t;
 
 typedef struct rarch_dir
 {
@@ -127,7 +123,6 @@ typedef struct rarch_dir
 #ifdef HAVE_OVERLAY
    char osk_overlay[PATH_MAX_LENGTH];
 #endif
-   rarch_dir_list_t filter_dir;
 } rarch_dir_t;
 
 typedef struct rarch_path

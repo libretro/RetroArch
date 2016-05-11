@@ -93,6 +93,12 @@
                                             cmd->state[1], cmd->state[2]))
 #endif
 
+struct rarch_dir_list
+{
+   struct string_list *list;
+   size_t ptr;
+};
+
 typedef struct event_cmd_state
 {
    retro_input_t state[3];
