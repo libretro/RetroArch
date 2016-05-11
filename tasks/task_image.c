@@ -99,9 +99,10 @@ static int cb_nbio_default(void *data, size_t len)
 static int rarch_main_data_image_process(
       nbio_handle_t *nbio,
       unsigned *width,
-      unsigned *height,
-      int *retval)
+      unsigned *height)
 {
+   int retval = 0;
+
    switch (nbio->image_type)
    {
       case IMAGE_TYPE_PNG:
@@ -109,7 +110,7 @@ static int rarch_main_data_image_process(
          if (!rpng_is_valid((rpng_t*)nbio->image.handle))
             return IMAGE_PROCESS_ERROR;
 
-         *retval = rpng_nbio_load_image_argb_process(
+         retval = rpng_nbio_load_image_argb_process(
                (rpng_t*)nbio->image.handle,
                &nbio->image.ti.pixels,
                width, height);
@@ -122,7 +123,7 @@ static int rarch_main_data_image_process(
    nbio->image.ti.width  = *width;
    nbio->image.ti.height = *height;
 
-   return *retval;
+   return retval;
 }
 
 static int cb_image_menu_generic(nbio_handle_t *nbio)
@@ -132,8 +133,10 @@ static int cb_image_menu_generic(nbio_handle_t *nbio)
    if (!nbio)
       return -1;
 
-   switch (rarch_main_data_image_process(nbio,
-         &width, &height, &retval))
+   retval = rarch_main_data_image_process(nbio,
+         &width, &height);
+
+   switch (retval)
    {
       case IMAGE_PROCESS_ERROR:
       case IMAGE_PROCESS_ERROR_END:
@@ -204,8 +207,9 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->image.processing_pos_increment; i++)
    {
-      if (rarch_main_data_image_process(nbio,
-               &width, &height, &retval) != IMAGE_PROCESS_NEXT)
+      retval = rarch_main_data_image_process(nbio,
+               &width, &height);
+      if (retval != IMAGE_PROCESS_NEXT)
          break;
    }
 
