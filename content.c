@@ -90,6 +90,14 @@ struct sram_block
    size_t size;
 };
 
+typedef struct content_stream
+{
+   uint32_t a;
+   const uint8_t *b;
+   size_t c;
+   uint32_t crc;
+} content_stream_t;
+
 static const struct file_archive_file_backend *stream_backend = NULL;
 static struct string_list *temporary_content                  = NULL;
 static bool _content_is_inited                                = false;

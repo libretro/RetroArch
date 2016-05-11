@@ -36,14 +36,6 @@ typedef struct ram_type
    int type;
 } ram_type_t;
 
-typedef struct content_stream
-{
-   uint32_t a;
-   const uint8_t *b;
-   size_t c;
-   uint32_t crc;
-} content_stream_t;
-
 typedef struct content_ctx_info
 {
    int argc;                       /* Argument count. */
