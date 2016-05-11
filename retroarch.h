@@ -101,8 +101,6 @@ enum rarch_ctl_state
 
    RARCH_CTL_SET_SRAM_ENABLE,
 
-   RARCH_CTL_SET_PATHS,
-
    RARCH_CTL_SET_FORCE_FULLSCREEN,
 
    RARCH_CTL_UNSET_FORCE_FULLSCREEN,
@@ -168,6 +166,8 @@ enum rarch_content_type retroarch_path_is_media_type(const char *path);
 const char *retroarch_get_current_savefile_dir(void);
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
+
+void retroarch_set_pathnames(const char *path);
 
 void retroarch_fill_pathnames(void);
 

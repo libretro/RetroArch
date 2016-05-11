@@ -1040,7 +1040,7 @@ static void retroarch_parse_input(int argc, char *argv[])
    {
       /* We requested explicit ROM, so use PLAIN core type. */
       current_core_type = CORE_TYPE_PLAIN;
-      rarch_ctl(RARCH_CTL_SET_PATHS, (void*)argv[optind]);
+      retroarch_set_pathnames((const char*)argv[optind]);
    }
    else if (*global->subsystem && optind < argc)
    {
@@ -1340,20 +1340,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
-      case RARCH_CTL_SET_PATHS:
-         retroarch_set_basename((const char*)data);
-
-         if (!global->has_set.save_path)
-            fill_pathname_noext(global->name.savefile, global->name.base,
-                  ".srm", sizeof(global->name.savefile));
-         if (!global->has_set.state_path)
-            fill_pathname_noext(global->name.savestate, global->name.base,
-                  ".state", sizeof(global->name.savestate));
-         fill_pathname_noext(global->name.cheatfile, global->name.base,
-               ".cht", sizeof(global->name.cheatfile));
-
-         retroarch_set_paths_redirect((const char*)data);
-         break;
       case RARCH_CTL_IS_PLAIN_CORE:
          return (current_core_type == CORE_TYPE_PLAIN);
       case RARCH_CTL_IS_DUMMY_CORE:
@@ -1554,6 +1540,24 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    }
 
    return true;
+}
+
+void retroarch_set_pathnames(const char *path)
+{
+   global_t *global = global_get_ptr();
+
+   retroarch_set_basename(path);
+
+   if (!global->has_set.save_path)
+      fill_pathname_noext(global->name.savefile, global->name.base,
+            ".srm", sizeof(global->name.savefile));
+   if (!global->has_set.state_path)
+      fill_pathname_noext(global->name.savestate, global->name.base,
+            ".state", sizeof(global->name.savestate));
+   fill_pathname_noext(global->name.cheatfile, global->name.base,
+         ".cht", sizeof(global->name.cheatfile));
+
+   retroarch_set_paths_redirect(path);
 }
 
 void retroarch_fill_pathnames(void)
