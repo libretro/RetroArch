@@ -2033,9 +2033,6 @@ bool command_event(enum event_command cmd, void *data)
             driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
          }
          break;
-      case CMD_EVENT_QUIT_RETROARCH:
-         command_event(CMD_EVENT_QUIT, NULL);
-         break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
          runloop_msg_queue_push("Shutting down...", 1, 180, true);

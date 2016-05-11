@@ -129,8 +129,6 @@ enum event_command
    CMD_EVENT_RESET_CONTEXT,
    /* Restarts RetroArch. */
    CMD_EVENT_RESTART_RETROARCH,
-   /* Force-quit RetroArch. */
-   CMD_EVENT_QUIT_RETROARCH,
    /* Shutdown the OS */
    CMD_EVENT_SHUTDOWN,
    /* Reboot the OS */

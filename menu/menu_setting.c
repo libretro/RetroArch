@@ -3638,7 +3638,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT_RETROARCH);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT);
 #endif
 
 #if defined(HAVE_LAKKA)
