@@ -29,7 +29,9 @@
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>
 #endif
+#ifdef HAVE_RJPEG
 #include <formats/rjpeg.h>
+#endif
 #include <formats/tga.h>
 
 #include "../general.h"
@@ -276,9 +278,11 @@ bool video_texture_image_load(struct texture_image *out_img,
 #endif
          break;
       case IMAGE_FORMAT_JPEG:
+#ifdef HAVE_RJPEG
          if (rjpeg_image_load((uint8_t*)ptr, out_img, file_len,
                   a_shift, r_shift, g_shift, b_shift))
             goto success;
+#endif
          break;
       default:
       case IMAGE_FORMAT_NONE:

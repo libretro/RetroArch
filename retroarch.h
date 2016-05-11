@@ -81,13 +81,6 @@ enum rarch_ctl_state
 
    RARCH_CTL_MENU_RUNNING_FINISHED,
 
-
-   /* Validates CPU features for given processor architecture.
-    * Make sure we haven't compiled for something we cannot run.
-    * Ideally, code would get swapped out depending on CPU support,
-    * but this will do for now. */
-   RARCH_CTL_VALIDATE_CPU_FEATURES,
-
    RARCH_CTL_SET_PATHS_REDIRECT,
 
    RARCH_CTL_SET_SRAM_ENABLE,

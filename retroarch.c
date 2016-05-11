@@ -1211,6 +1211,34 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    return true;
 }
 
+#define FAIL_CPU(simd_type) do { \
+   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
+   retroarch_fail(1, "validate_cpu_features()"); \
+} while(0)
+
+/* Validates CPU features for given processor architecture.
+ * Make sure we haven't compiled for something we cannot run.
+ * Ideally, code would get swapped out depending on CPU support,
+ * but this will do for now. */
+static void retroarch_validate_cpu_features(void)
+{
+   uint64_t cpu = cpu_features_get();
+   (void)cpu;
+
+#ifdef __SSE__
+   if (!(cpu & RETRO_SIMD_SSE))
+      FAIL_CPU("SSE");
+#endif
+#ifdef __SSE2__
+   if (!(cpu & RETRO_SIMD_SSE2))
+      FAIL_CPU("SSE2");
+#endif
+#ifdef __AVX__
+   if (!(cpu & RETRO_SIMD_AVX))
+      FAIL_CPU("AVX");
+#endif
+}
+
 /**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.
@@ -1254,7 +1282,7 @@ bool retroarch_main_init(int argc, char *argv[])
       RARCH_LOG_OUTPUT("=================================================\n");
    }
 
-   rarch_ctl(RARCH_CTL_VALIDATE_CPU_FEATURES, NULL);
+   retroarch_validate_cpu_features();
    config_load();
 
    runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
@@ -1324,10 +1352,6 @@ error:
    return false;
 }
 
-#define FAIL_CPU(simd_type) do { \
-   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   retroarch_fail(1, "validate_cpu_features()"); \
-} while(0)
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
@@ -1481,25 +1505,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          if (settings && settings->input.overlay_hide_in_menu)
             command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 #endif
-         break;
-      case RARCH_CTL_VALIDATE_CPU_FEATURES:
-         {
-            uint64_t cpu = cpu_features_get();
-            (void)cpu;
-
-#ifdef __SSE__
-            if (!(cpu & RETRO_SIMD_SSE))
-               FAIL_CPU("SSE");
-#endif
-#ifdef __SSE2__
-            if (!(cpu & RETRO_SIMD_SSE2))
-               FAIL_CPU("SSE2");
-#endif
-#ifdef __AVX__
-            if (!(cpu & RETRO_SIMD_AVX))
-               FAIL_CPU("AVX");
-#endif
-         }
          break;
       case RARCH_CTL_NONE:
       default:
