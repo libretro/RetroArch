@@ -190,8 +190,7 @@ static bool gl_check_mipmap(void)
    if (!extension_queried)
    {
       gl_t *gl          = (gl_t*)video_driver_get_ptr(false);
-      extension         = gl_query_extension(gl, "ARB_framebuffer_object") ||
-                          gl_query_extension(gl, "EXT_framebuffer_object");
+      extension         = gl_query_extension(gl, "ARB_framebuffer_object");
       extension_queried = true;
    }
 
