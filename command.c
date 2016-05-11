@@ -2032,19 +2032,19 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_QUIT_RETROARCH:
-         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+         rarch_ctl(RARCH_CTL_QUIT, NULL);
          break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
          runloop_msg_queue_push("Shutting down...", 1, 180, true);
-         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+         rarch_ctl(RARCH_CTL_QUIT, NULL);
          system("shutdown -P now");
 #endif
          break;
       case CMD_EVENT_REBOOT:
 #if defined(__linux__) && !defined(ANDROID)
          runloop_msg_queue_push("Rebooting...", 1, 180, true);
-         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+         rarch_ctl(RARCH_CTL_QUIT, NULL);
          system("shutdown -r now");
 #endif
          break;

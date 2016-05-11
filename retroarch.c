@@ -1529,9 +1529,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
          rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
          break;
-      case RARCH_CTL_FORCE_QUIT:
-         rarch_ctl(RARCH_CTL_QUIT, NULL);
-         break;
       case RARCH_CTL_VALIDATE_CPU_FEATURES:
          {
             uint64_t cpu = cpu_features_get();

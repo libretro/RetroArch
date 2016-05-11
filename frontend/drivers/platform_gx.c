@@ -426,7 +426,7 @@ static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
       case FRONTEND_FORK_RESTART:
          RARCH_LOG("FRONTEND_FORK_RESTART\n");
          gx_fork_mode  = fork_mode;
-         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+         command_event(CMD_EVENT_QUIT_RETROARCH, NULL);
          break;
       case FRONTEND_FORK_NONE:
       default:

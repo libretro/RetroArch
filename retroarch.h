@@ -91,8 +91,6 @@ enum rarch_ctl_state
 
    RARCH_CTL_QUIT,
 
-   RARCH_CTL_FORCE_QUIT,
-
    /* Validates CPU features for given processor architecture.
     * Make sure we haven't compiled for something we cannot run.
     * Ideally, code would get swapped out depending on CPU support,

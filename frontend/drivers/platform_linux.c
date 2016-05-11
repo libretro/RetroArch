@@ -1827,7 +1827,7 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
             fill_pathname_application_path(executable_path, sizeof(executable_path));
             strlcpy(settings->path.libretro, executable_path, sizeof(settings->path.libretro));
          }
-         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+         command_event(CMD_EVENT_QUIT_RETROARCH, NULL);
          break;
       case FRONTEND_FORK_NONE:
       default:
