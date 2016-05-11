@@ -2008,7 +2008,9 @@ static const video_poke_interface_t vulkan_poke_interface = {
    NULL,
    NULL,
 #endif
+#ifdef HAVE_MENU
    vulkan_set_osd_msg,
+#endif
    vulkan_show_mouse,
    NULL,
    vulkan_get_current_shader,

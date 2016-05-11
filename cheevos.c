@@ -23,6 +23,7 @@
 #include <libretro.h>
 
 #include "cheevos.h"
+#include "command.h"
 #include "dynamic.h"
 #include "network/net_http_special.h"
 #include "configuration.h"
