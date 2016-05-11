@@ -27,6 +27,9 @@
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>
 #endif
+#ifdef HAVE_RJPEG
+#include <formats/rjpeg.h>
+#endif
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
