@@ -201,40 +201,6 @@ static const struct cmd_map map[] = {
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
 
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-static bool command_network_init(command_t *handle, uint16_t port)
-{
-   int fd;
-   struct addrinfo *res  = NULL;
-
-   RARCH_LOG("Bringing up command interface on port %hu.\n",
-         (unsigned short)port);
-
-   fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
-
-   if (fd < 0)
-      goto error;
-
-   handle->net_fd = fd;
-
-   if (!socket_nonblock(handle->net_fd))
-      goto error;
-
-   if (!socket_bind(handle->net_fd, (void*)res))
-   {
-      RARCH_ERR("Failed to bind socket.\n");
-      goto error;
-   }
-
-   freeaddrinfo_retro(res);
-   return true;
-
-error:
-   if (res)
-      freeaddrinfo_retro(res);
-   return false;
-}
-
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
 {
@@ -275,6 +241,75 @@ static bool command_get_arg(const char *tok,
 
    return false;
 }
+
+static void command_parse_sub_msg(command_t *handle, const char *tok)
+{
+   const char *arg = NULL;
+   unsigned index  = 0;
+
+   if (command_get_arg(tok, &arg, &index))
+   {
+      if (arg)
+      {
+         if (!action_map[index].action(arg))
+            RARCH_ERR("Command \"%s\" failed.\n", arg);
+      }
+      else
+         handle->state[map[index].id] = true;
+   }
+   else
+      RARCH_WARN("%s \"%s\" %s.\n",
+            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
+            tok,
+            msg_hash_to_str(MSG_RECEIVED));
+}
+
+static void command_parse_msg(command_t *handle, char *buf)
+{
+   char *save      = NULL;
+   const char *tok = strtok_r(buf, "\n", &save);
+
+   while (tok)
+   {
+      command_parse_sub_msg(handle, tok);
+      tok = strtok_r(NULL, "\n", &save);
+   }
+}
+
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+static bool command_network_init(command_t *handle, uint16_t port)
+{
+   int fd;
+   struct addrinfo *res  = NULL;
+
+   RARCH_LOG("Bringing up command interface on port %hu.\n",
+         (unsigned short)port);
+
+   fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
+
+   if (fd < 0)
+      goto error;
+
+   handle->net_fd = fd;
+
+   if (!socket_nonblock(handle->net_fd))
+      goto error;
+
+   if (!socket_bind(handle->net_fd, (void*)res))
+   {
+      RARCH_ERR("Failed to bind socket.\n");
+      goto error;
+   }
+
+   freeaddrinfo_retro(res);
+   return true;
+
+error:
+   if (res)
+      freeaddrinfo_retro(res);
+   return false;
+}
+
 
 
 static bool send_udp_packet(const char *host,
@@ -390,39 +425,6 @@ bool command_network_send(const char *cmd_)
    return ret;
 }
 
-static void command_parse_sub_msg(command_t *handle, const char *tok)
-{
-   const char *arg = NULL;
-   unsigned index  = 0;
-
-   if (command_get_arg(tok, &arg, &index))
-   {
-      if (arg)
-      {
-         if (!action_map[index].action(arg))
-            RARCH_ERR("Command \"%s\" failed.\n", arg);
-      }
-      else
-         handle->state[map[index].id] = true;
-   }
-   else
-      RARCH_WARN("%s \"%s\" %s.\n",
-            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
-            tok,
-            msg_hash_to_str(MSG_RECEIVED));
-}
-
-static void command_parse_msg(command_t *handle, char *buf)
-{
-   char *save      = NULL;
-   const char *tok = strtok_r(buf, "\n", &save);
-
-   while (tok)
-   {
-      command_parse_sub_msg(handle, tok);
-      tok = strtok_r(NULL, "\n", &save);
-   }
-}
 
 static void command_network_poll(command_t *handle)
 {
