@@ -176,7 +176,7 @@ static void retroarch_print_version(void)
    fprintf(stderr, "%s: Frontend for libretro -- v%s",
          msg_hash_to_str(MSG_PROGRAM), PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
-   printf(" -- %s --\n", rarch_git_version);
+   printf(" -- %s --\n", retroarch_git_version);
 #endif
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
    fprintf(stdout, "%s", str);
@@ -1249,7 +1249,7 @@ static int retroarch_main_init(int argc, char *argv[])
       fprintf(stderr, "Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
-      RARCH_LOG_OUTPUT("Git: %s\n", rarch_git_version);
+      RARCH_LOG_OUTPUT("Git: %s\n", retroarch_git_version);
 #endif
       RARCH_LOG_OUTPUT("=================================================\n");
    }

@@ -23,7 +23,7 @@ extern "C" {
 
 /* Put this in a separate file so we don't have to rebuilt 
  * retroarch.c every single build. */
-extern const char rarch_git_version[];
+extern const char retroarch_git_version[];
 
 #ifdef __cplusplus
 }

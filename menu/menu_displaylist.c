@@ -619,7 +619,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION),
          sizeof(tmp));
    strlcat(tmp, ": ", sizeof(tmp));
-   strlcat(tmp, rarch_git_version, sizeof(tmp));
+   strlcat(tmp, retroarch_git_version, sizeof(tmp));
    menu_entries_add(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 #endif
