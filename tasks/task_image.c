@@ -252,7 +252,7 @@ error:
    return -1;
 }
 
-static int cb_nbio_image_menu_thumbnail_rpng(void *data, size_t len)
+static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
@@ -344,7 +344,7 @@ bool rarch_task_push_image_load(const char *fullpath,
       {
          case CB_MENU_WALLPAPER:
          case CB_MENU_THUMBNAIL:
-            nbio->cb = &cb_nbio_image_menu_thumbnail_rpng;
+            nbio->cb = &cb_nbio_image_menu_thumbnail;
             break;
          default:
             break;
