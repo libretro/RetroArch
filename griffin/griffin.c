@@ -222,7 +222,9 @@ VIDEO IMAGE
 
 #include "../gfx/video_texture_image.c"
 
+#ifdef HAVE_RTGA
 #include "../libretro-common/formats/tga/rtga.c"
+#endif
 
 #ifdef HAVE_IMAGEVIEWER
 #include "../cores/libretro-imageviewer/image_core.c"

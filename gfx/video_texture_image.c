@@ -32,7 +32,9 @@
 #ifdef HAVE_RJPEG
 #include <formats/rjpeg.h>
 #endif
+#ifdef HAVE_RTGA
 #include <formats/tga.h>
+#endif
 
 #include "../general.h"
 
@@ -266,9 +268,11 @@ bool video_texture_image_load(struct texture_image *out_img,
    switch (fmt)
    {
       case IMAGE_FORMAT_TGA:
+#ifdef HAVE_RTGA
          if (rtga_image_load_shift((uint8_t*)ptr, out_img,
                   a_shift, r_shift, g_shift, b_shift))
             goto success;
+#endif
          break;
       case IMAGE_FORMAT_PNG:
 #ifdef HAVE_RPNG

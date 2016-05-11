@@ -911,8 +911,11 @@ ifeq ($(HAVE_RJPEG), 1)
 endif
 
 OBJ += libretro-common/formats/bmp/rbmp_encode.o \
-       libretro-common/formats/tga/rtga.o \
        libretro-common/formats/json/jsonsax.o
+
+ifeq ($(HAVE_RTGA), 1)
+OBJ += libretro-common/formats/tga/rtga.o
+endif
 
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
