@@ -154,18 +154,6 @@ static int cb_image_menu_generic_rpng(nbio_handle_t *nbio)
    return 0;
 }
 
-static int cb_image_menu_wallpaper_rpng(void *data, size_t len)
-{
-   nbio_handle_t *nbio = (nbio_handle_t*)data; 
-
-   if (cb_image_menu_generic_rpng(nbio) != 0)
-      return -1;
-
-   nbio->image.cb = &cb_image_menu_upload_generic;
-
-   return 0;
-}
-
 static int cb_image_menu_thumbnail(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
@@ -190,9 +178,11 @@ static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->image.pos_increment; i++)
    {
+#ifdef HAVE_RPNG
       /* TODO/FIXME - add JPEG equivalents as well */
       if (!rpng_nbio_load_image_argb_iterate((rpng_t*)nbio->image.handle))
          goto error;
+#endif
    }
 
    nbio->image.frame_count++;
@@ -251,12 +241,17 @@ static int cb_nbio_generic_rpng(nbio_handle_t *nbio, size_t *len)
    if (!ptr)
       goto error;
 
+#ifdef HAVE_RPNG
    rpng_set_buf_ptr((rpng_t*)nbio->image.handle, (uint8_t*)ptr);
+#endif
+
    nbio->image.pos_increment            = (*len / 2) ? (*len / 2) : 1;
    nbio->image.processing_pos_increment = (*len / 4) ?  (*len / 4) : 1;
 
+#ifdef HAVE_RPNG
    if (!rpng_nbio_load_image_argb_start((rpng_t*)nbio->image.handle))
       goto error;
+#endif
 
    nbio->image.is_blocking   = false;
    nbio->image.is_finished   = false;
@@ -276,8 +271,11 @@ static int cb_nbio_image_menu_wallpaper_rpng(void *data, size_t len)
    if (!nbio || !data)
       return -1;
    
+#ifdef HAVE_RPNG
    nbio->image.handle = rpng_alloc();
-   nbio->image.cb     = &cb_image_menu_wallpaper_rpng;
+#endif
+
+   nbio->image.cb     = &cb_image_menu_thumbnail;
 
    return cb_nbio_generic_rpng(nbio, &len);
 }
@@ -289,7 +287,10 @@ static int cb_nbio_image_menu_thumbnail_rpng(void *data, size_t len)
    if (!nbio || !data)
       return -1;
    
+#ifdef HAVE_RPNG
    nbio->image.handle = rpng_alloc();
+#endif
+
    nbio->image.cb     = &cb_image_menu_thumbnail;
 
    return cb_nbio_generic_rpng(nbio, &len);
