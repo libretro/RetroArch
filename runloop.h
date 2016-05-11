@@ -79,10 +79,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_KEY_EVENT_GET,
    RUNLOOP_CTL_DATA_DEINIT,
 
-   RUNLOOP_CTL_CHECK_MOVIE,
-
-   RUNLOOP_CTL_CHECK_MOVIE_INIT,
-
    /* Initializes message queue. */
    RUNLOOP_CTL_MSG_QUEUE_INIT,
 

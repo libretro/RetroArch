@@ -233,6 +233,60 @@ static bool runloop_check_movie_record(void)
    return true;
 }
 
+static bool runloop_check_movie_init(void)
+{
+   char msg[128], path[PATH_MAX_LENGTH];
+   settings_t *settings  = config_get_ptr();
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return false;
+
+   settings->rewind_granularity = 1;
+
+   if (settings->state_slot > 0)
+      snprintf(path, sizeof(path), "%s%d",
+            bsv_movie_get_path(), settings->state_slot);
+   else
+      strlcpy(path, bsv_movie_get_path(), sizeof(path));
+
+   strlcat(path, ".bsv", sizeof(path));
+
+   snprintf(msg, sizeof(msg), "%s \"%s\".",
+         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+         path);
+
+   bsv_movie_init_handle(path, RARCH_MOVIE_RECORD);
+
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return false;
+
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+   {
+      runloop_msg_queue_push(msg, 1, 180, true);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+            path);
+   }
+   else
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
+            1, 180, true);
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+   }
+
+   return true;
+}
+
+static bool runloop_check_movie(void)
+{
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
+      return runloop_check_movie_playback();
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return runloop_check_movie_init();
+   return runloop_check_movie_record();
+}
+
 /* Checks if slowmotion toggle/hold was being pressed and/or held. */
 static bool runloop_check_slowmotion(bool *ptr)
 {
@@ -595,7 +649,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    runloop_check_slowmotion(&tmp);
 
    if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
-      runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
+      runloop_check_movie();
 
    runloop_check_shader_dir(shader_dir,
          runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
@@ -873,54 +927,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 
             if (!runloop_check_pause_state(cmd) || !focused)
                return false;
-         }
-         break;
-      case RUNLOOP_CTL_CHECK_MOVIE:
-         if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
-            return runloop_check_movie_playback();
-         if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-            return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_INIT, NULL);
-         return runloop_check_movie_record();
-      case RUNLOOP_CTL_CHECK_MOVIE_INIT:
-         if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-            return false;
-         {
-            char msg[128];
-            char path[PATH_MAX_LENGTH];
-
-            settings->rewind_granularity = 1;
-
-            if (settings->state_slot > 0)
-               snprintf(path, sizeof(path), "%s%d",
-                     bsv_movie_get_path(), settings->state_slot);
-            else
-               strlcpy(path, bsv_movie_get_path(), sizeof(path));
-
-            strlcat(path, ".bsv", sizeof(path));
-
-            snprintf(msg, sizeof(msg), "%s \"%s\".",
-                  msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-                  path);
-
-            bsv_movie_init_handle(path, RARCH_MOVIE_RECORD);
-
-            if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-               return false;
-            else if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-            {
-               runloop_msg_queue_push(msg, 1, 180, true);
-               RARCH_LOG("%s \"%s\".\n",
-                     msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-                     path);
-            }
-            else
-            {
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
-                     1, 180, true);
-               RARCH_ERR("%s\n",
-                     msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
-            }
          }
          break;
       case RUNLOOP_CTL_FRAME_TIME_FREE:
