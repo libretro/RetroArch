@@ -416,18 +416,28 @@ if [ "$HAVE_MATERIALUI" != 'no' ] || [ "$HAVE_XMB" != 'no' ] || [ "$HAVE_ZARCH" 
 		HAVE_MATERIALUI=no
 		HAVE_XMB=no
       HAVE_ZARCH=no
-		echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will be disabled."
+		echo "Notice: RGUI not available, MaterialUI, XMB and ZARCH will also be disabled."
 	elif [ "$HAVE_OPENGL" = 'no' ] && [ "$HAVE_GLES" = 'no' ] && [ "$HAVE_VULKAN" = 'no' ]; then
 		HAVE_MATERIALUI=no
 		HAVE_XMB=no
       HAVE_ZARCH=no
-		echo "Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will be disabled."
+		echo "Notice: Hardware rendering context not available, XMB, MaterialUI and ZARCH will also be disabled."
 	fi
 fi
 
 check_macro NEON __ARM_NEON__
 
 add_define_make OS "$OS"
+
+if [ "$HAVE_THREADS" = 'no' ] && [ "HAVE_CHEEVOS" != 'no' ]; then
+   HAVE_CHEEVOS=no
+   echo "Notice: Threads are not available, Cheevos will also be disabled."
+fi
+
+if [ "$HAVE_THREADS" = 'no' ] && [ "HAVE_LIBUSB" != 'no' ]; then
+   HAVE_LIBUSB=no
+   echo "Notice: Threads are not available, libusb will also be disabled."
+fi
 
 # Creates config.mk and config.h.
 add_define_make GLOBAL_CONFIG_DIR "$GLOBAL_CONFIG_DIR"
