@@ -885,13 +885,17 @@ static void vulkan_set_command_buffers(void *handle, uint32_t num_cmd,
 static void vulkan_lock_queue(void *handle)
 {
    vk_t *vk = (vk_t*)handle;
+#ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
+#endif
 }
 
 static void vulkan_unlock_queue(void *handle)
 {
    vk_t *vk = (vk_t*)handle;
+#ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
+#endif
 }
 
 static void vulkan_init_hw_render(vk_t *vk)
@@ -1741,10 +1745,14 @@ static bool vulkan_frame(void *data, const void *frame,
 
    retro_perf_start(&queue_submit);
 
+#ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
+#endif
    VKFUNC(vkQueueSubmit)(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]);
+#ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
+#endif
    retro_perf_stop(&queue_submit);
 
    retro_perf_start(&swapbuffers);
@@ -2263,9 +2271,13 @@ static bool vulkan_overlay_load(void *data,
    if (!vk)
       return false;
 
+#ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
+#endif
    VKFUNC(vkQueueWaitIdle)(vk->context->queue);
+#ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
+#endif
    vulkan_overlay_free(vk);
 
    vk->overlay.images = (struct vk_texture*)

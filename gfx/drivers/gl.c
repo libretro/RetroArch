@@ -3786,6 +3786,7 @@ static void video_texture_load_gl(
          );
 }
 
+#ifdef HAVE_THREADS
 static int video_texture_load_wrap_gl_mipmap(void *data)
 {
    uintptr_t id = 0;
@@ -3807,6 +3808,7 @@ static int video_texture_load_wrap_gl(void *data)
          TEXTURE_FILTER_LINEAR, &id);
    return id;
 }
+#endif
 
 static uintptr_t gl_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
