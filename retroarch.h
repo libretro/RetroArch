@@ -86,8 +86,6 @@ enum rarch_ctl_state
     * properly. */
    RARCH_CTL_REPLACE_CONFIG,
 
-   RARCH_CTL_QUIT,
-
    /* Validates CPU features for given processor architecture.
     * Make sure we haven't compiled for something we cannot run.
     * Ideally, code would get swapped out depending on CPU support,
@@ -187,6 +185,8 @@ void retroarch_fail(int error_code, const char *error);
  * Returns: 1 (true) on success, otherwise false (0) if there was an error.
  **/
 bool retroarch_main_init(int argc, char *argv[]);
+
+void retroarch_main_quit(void);
 
 #ifdef __cplusplus
 }

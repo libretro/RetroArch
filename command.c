@@ -1779,7 +1779,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
          break;
       case CMD_EVENT_QUIT:
-         rarch_ctl(RARCH_CTL_QUIT, NULL);
+         retroarch_main_quit();
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
@@ -2034,19 +2034,19 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_QUIT_RETROARCH:
-         rarch_ctl(RARCH_CTL_QUIT, NULL);
+         command_event(CMD_EVENT_QUIT, NULL);
          break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
          runloop_msg_queue_push("Shutting down...", 1, 180, true);
-         rarch_ctl(RARCH_CTL_QUIT, NULL);
+         command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -P now");
 #endif
          break;
       case CMD_EVENT_REBOOT:
 #if defined(__linux__) && !defined(ANDROID)
          runloop_msg_queue_push("Rebooting...", 1, 180, true);
-         rarch_ctl(RARCH_CTL_QUIT, NULL);
+         command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -r now");
 #endif
          break;
