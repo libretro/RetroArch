@@ -904,8 +904,13 @@ ifeq ($(HAVE_RPNG), 1)
    OBJ += libretro-common/formats/png/rpng.o \
           libretro-common/formats/png/rpng_encode.o
 endif
-OBJ += libretro-common/formats/jpeg/rjpeg.o \
-		 libretro-common/formats/bmp/rbmp_encode.o \
+
+ifeq ($(HAVE_RJPEG), 1)
+	DEFINES += -DHAVE_RJPEG
+	OBJ += libretro-common/formats/jpeg/rjpeg.o
+endif
+
+OBJ += libretro-common/formats/bmp/rbmp_encode.o \
        libretro-common/formats/tga/rtga.o \
        libretro-common/formats/json/jsonsax.o
 

@@ -78,3 +78,4 @@ HAVE_CHEEVOS=yes           # Retro Achievements
 HAVE_VULKAN=auto           # Vulkan support
 C89_VULKAN=no
 HAVE_RPNG=yes              # RPNG support
+HAVE_RJPEG=yes             # RJPEG support

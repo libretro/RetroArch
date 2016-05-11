@@ -232,7 +232,9 @@ VIDEO IMAGE
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
 #endif
+#ifdef HAVE_RJPEG
 #include "../libretro-common/formats/jpeg/rjpeg.c"
+#endif
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 
 /*============================================================

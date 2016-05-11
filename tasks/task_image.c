@@ -117,6 +117,8 @@ static int rarch_main_data_image_process(
 #endif
          break;
       case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+#endif
          break;
    }
 
@@ -207,6 +209,8 @@ static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
 #endif
             break;
          case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+#endif
             break;
       }
    }
@@ -232,6 +236,8 @@ static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
 #endif
          break;
       case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+#endif
          break;
    }
 
@@ -260,6 +266,8 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 #endif
          break;
       case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+#endif
          break;
    }
 
@@ -275,6 +283,8 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 #endif
          break;
       case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+#endif
          break;
    }
 
@@ -304,6 +314,8 @@ static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 #endif
          break;
       case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+#endif
          break;
    }
 
