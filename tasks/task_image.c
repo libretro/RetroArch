@@ -217,7 +217,7 @@ static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
    image->frame_count            = 0;
 }
 
-static int cb_nbio_generic_rpng(nbio_handle_t *nbio, size_t *len)
+static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 {
    void *ptr           = NULL;
 
@@ -265,7 +265,7 @@ static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 
    nbio->image.cb     = &cb_image_menu_thumbnail;
 
-   return cb_nbio_generic_rpng(nbio, &len);
+   return cb_nbio_generic(nbio, &len);
 }
 #endif
 
