@@ -93,7 +93,7 @@ typedef struct audio_driver_input_data
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
    &audio_alsa,
-#ifndef __QNX__
+#if !defined(__QNX__) && defined(HAVE_THREADS)
    &audio_alsathread,
 #endif
 #endif

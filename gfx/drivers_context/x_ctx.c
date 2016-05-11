@@ -167,7 +167,7 @@ static void gfx_ctx_x_destroy(void *data)
    switch (x_api)
    {
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
+#if defined(HAVE_VULKAN) && defined(HAVE_THREADS)
          if (x->vk.context.queue_lock)
             slock_free(x->vk.context.queue_lock);
 #endif

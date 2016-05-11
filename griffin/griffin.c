@@ -430,7 +430,7 @@ INPUT (HID)
 
 #include "../input/drivers_hid/null_hid.c"
 
-#if defined(HAVE_LIBUSB)
+#if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
 #include "../input/drivers_hid/libusb_hid.c"
 #endif
 

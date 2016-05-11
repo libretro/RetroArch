@@ -291,8 +291,11 @@ ifeq ($(HAVE_OSS_BSD), 1)
 endif
 
 ifeq ($(HAVE_ALSA), 1)
-   OBJ += audio/drivers/alsa.o \
-          audio/drivers/alsathread.o
+   OBJ += audio/drivers/alsa.o
+
+ifeq ($(HAVE_THREADS), 1)
+	OBJ += audio/drivers/alsathread.o
+endif
    LIBS += $(ALSA_LIBS)
    DEFINES += $(ALSA_CFLAGS)
 endif
@@ -575,10 +578,12 @@ ifeq ($(HAVE_UDEV), 1)
 endif
 
 ifeq ($(HAVE_LIBUSB), 1)
+ifeq ($(HAVE_THREADS), 1)
    DEFINES += -DHAVE_LIBUSB
    OBJ += input/drivers_hid/libusb_hid.o
    LIBS += -lusb-1.0
    HAVE_HID = 1
+endif
 endif
 
 ifeq ($(HAVE_IOHIDMANAGER), 1)
