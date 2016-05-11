@@ -60,6 +60,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_content.h"
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -1052,7 +1053,13 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 
-         rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
+#ifdef HAVE_MENU
+         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+         {
+            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+            return false;
+         }
+#endif
          break;
       case RUNLOOP_CTL_SET_CORE_SHUTDOWN:
          runloop_core_shutdown_initiated = true;

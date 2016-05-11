@@ -70,6 +70,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_content.h"
 #include "menu/menu_display.h"
 #include "menu/menu_shader.h"
 #endif
@@ -1559,8 +1560,13 @@ static bool command_event_cmd_exec(void *data)
    }
 
 #if defined(HAVE_DYNAMIC)
-   if (!rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL))
+#ifdef HAVE_MENU
+   if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+   {
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
       return false;
+   }
+#endif
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif
@@ -1620,15 +1626,16 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
-         rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
-         break;
-#ifdef HAVE_FFMPEG
+         /* fall-through */
       case CMD_EVENT_LOAD_CONTENT_FFMPEG:
-         rarch_ctl(RARCH_CTL_LOAD_CONTENT_FFMPEG, NULL);
-         break;
-#endif
       case CMD_EVENT_LOAD_CONTENT_IMAGEVIEWER:
-         rarch_ctl(RARCH_CTL_LOAD_CONTENT_IMAGEVIEWER, NULL);
+#ifdef HAVE_MENU
+         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+         {
+            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+            return false;
+         }
+#endif
          break;
       case CMD_EVENT_LOAD_CONTENT:
          {

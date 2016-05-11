@@ -1515,18 +1515,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #endif
          break;
-      case RARCH_CTL_LOAD_CONTENT:
-      case RARCH_CTL_LOAD_CONTENT_FFMPEG:
-      case RARCH_CTL_LOAD_CONTENT_IMAGEVIEWER:
-#ifdef HAVE_MENU
-         /* If content loading fails, we go back to menu. */
-         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
-         {
-            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-            return false;
-         }
-#endif
-         break;
       case RARCH_CTL_MENU_RUNNING_FINISHED:
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_UNSET_TOGGLE, NULL);
