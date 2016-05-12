@@ -288,7 +288,6 @@ static void arm_enable_runfast_mode(void)
 
 #if defined(__linux__)
 
-#ifdef __ARM_ARCH__
 /* Extract the content of a the first occurrence of a given field in
  * the content of /proc/cpuinfo and return it as a heap-allocated
  * string that must be freed by the caller.
@@ -376,7 +375,6 @@ static int has_list_item(const char* list, const char* item)
     }
     return 0;
 }
-#endif
 
 typedef struct
 {
@@ -737,8 +735,8 @@ uint64_t cpu_features_get(void)
    }
 #elif defined(__linux__)
 
-   static bool cpu_inited_once = false;
-   static  uint64_t g_cpuFeatures;
+   static bool cpu_inited_once    = false;
+   static  uint64_t g_cpuFeatures = 0;
 
    enum
    {
@@ -753,11 +751,8 @@ uint64_t cpu_features_get(void)
       ssize_t  length;
       void *buf = NULL;
 
-      g_cpuFeatures = 0;
-
       if (filestream_read_file("/proc/cpuinfo", &buf, &length) == 1)
       {
-#ifdef __ARM_ARCH__
          /* Extract architecture from the "CPU Architecture" field.
           * The list is well-known, unlike the the output of
           * the 'Processor' field which can vary greatly.
@@ -838,7 +833,6 @@ uint64_t cpu_features_get(void)
                g_cpuFeatures |= CPU_ARM_FEATURE_NEON | CPU_ARM_FEATURE_VFPv3;
             free(cpu_features);
          }
-#endif /* __ARM_ARCH__ */
 
          if (buf)
             free(buf);
