@@ -137,7 +137,7 @@ static bool netplay_net_init_buffers(netplay_t *netplay)
 
 static bool netplay_net_info_cb(netplay_t* netplay, unsigned frames)
 {
-   if (np_is_server(netplay))
+   if (netplay_is_server(netplay))
    {
       if (!np_send_info(netplay))
          return false;

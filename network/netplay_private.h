@@ -16,6 +16,7 @@
 
 #ifndef __RARCH_NETPLAY_PRIVATE_H
 #define __RARCH_NETPLAY_PRIVATE_H
+
 #include "netplay.h"
 
 #include <net/net_compat.h>
@@ -149,6 +150,7 @@ bool np_bsv_parse_header(const uint32_t *header, uint32_t magic);
 uint32_t np_impl_magic(void);
 bool np_send_info(netplay_t *netplay);
 bool np_get_info(netplay_t *netplay);
-bool np_is_server(netplay_t* netplay);
+bool netplay_is_server(netplay_t* netplay);
 bool np_is_spectate(netplay_t* netplay);
+
 #endif

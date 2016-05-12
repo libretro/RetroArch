@@ -41,7 +41,7 @@ static void netplay_spectate_pre_frame(netplay_t *netplay)
    fd_set fds;
    struct timeval tmp_tv = {0};
 
-   if (!np_is_server(netplay))
+   if (!netplay_is_server(netplay))
       return;
 
    FD_ZERO(&fds);
@@ -133,7 +133,7 @@ static void netplay_spectate_post_frame(netplay_t *netplay)
 {
    unsigned i;
 
-   if (!np_is_server(netplay))
+   if (!netplay_is_server(netplay))
       return;
 
    for (i = 0; i < MAX_SPECTATORS; i++)
@@ -165,7 +165,7 @@ static void netplay_spectate_post_frame(netplay_t *netplay)
 static bool netplay_spectate_info_cb(netplay_t *netplay, unsigned frames)
 {
    unsigned i;
-   if(np_is_server(netplay))
+   if(netplay_is_server(netplay))
    {
       if(!np_get_info(netplay))
          return false;

@@ -311,7 +311,7 @@ bool np_get_info(netplay_t *netplay)
    return true;
 }
 
-bool np_is_server(netplay_t* netplay)
+bool netplay_is_server(netplay_t* netplay)
 {
    if (!netplay)
       return false;
