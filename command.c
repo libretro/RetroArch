@@ -733,7 +733,7 @@ static void command_event_disk_control_set_eject(bool new_state, bool print_log)
    rarch_system_info_t *info                         = NULL;
    const struct retro_disk_control_callback *control = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+   runloop_get_system_info((void**)&info);
 
    if (info)
       control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
@@ -781,7 +781,7 @@ static void command_event_disk_control_set_index(unsigned idx)
    rarch_system_info_t                      *info    = NULL;
    const struct retro_disk_control_callback *control = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+   runloop_get_system_info((void**)&info);
 
    if (info)
       control = (const struct retro_disk_control_callback*)&info->disk_control_cb;
@@ -838,7 +838,7 @@ static bool command_event_disk_control_append_image(const char *path)
    const struct retro_disk_control_callback *control  = NULL;
    rarch_system_info_t                       *sysinfo = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sysinfo);
+   runloop_get_system_info((void**)&info);
 
    if (sysinfo)
       control = (const struct retro_disk_control_callback*)
@@ -983,7 +983,7 @@ static void command_event_init_controllers(void)
    settings_t      *settings = config_get_ptr();
    rarch_system_info_t *info = NULL;
    
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+   runloop_get_system_info((void**)&info);
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -1236,7 +1236,7 @@ static bool command_event_init_core(enum rarch_core_type *data)
    if (!core_init_symbols(data))
       return false;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_INIT, NULL);
+   runloop_get_system_info((void**)&info);
 
    /* auto overrides: apply overrides */
    if(settings->auto_overrides_enable)
@@ -1591,7 +1591,7 @@ bool command_event(enum event_command cmd, void *data)
    settings_t *settings      = config_get_ptr();
    rarch_system_info_t *info = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+   runloop_get_system_info((void**)&info);
 
    (void)i;
 

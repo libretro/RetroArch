@@ -598,7 +598,7 @@ static bool init_video(void)
    struct retro_system_av_info *av_info   =
       video_viewport_get_system_av_info();
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   runloop_get_system_info((void**)&system);
 
    init_video_filter(video_driver_state.pix_fmt);
    command_event(CMD_EVENT_SHADER_DIR_INIT, NULL);

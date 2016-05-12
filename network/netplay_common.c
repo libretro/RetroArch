@@ -169,7 +169,7 @@ uint32_t np_impl_magic(void)
 
    api                                 = api_info.version;
    
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+   runloop_get_system_info((void**)&info);
    
    if (info)
       lib = info->info.library_name;

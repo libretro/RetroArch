@@ -1965,7 +1965,7 @@ bool config_load_override(void)
    settings_t *settings                   = config_get_ptr();
    rarch_system_info_t *system            = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   runloop_get_system_info((void**)&system);
 
    if (system)
       core_name = system->info.library_name;
@@ -2143,7 +2143,7 @@ bool config_load_remap(void)
    settings_t *settings                    = config_get_ptr();
    rarch_system_info_t *system             = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   runloop_get_system_info((void**)&system);
 
    if (system)
       core_name = system->info.library_name;

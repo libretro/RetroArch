@@ -740,6 +740,57 @@ bool runloop_prepare_dummy(void)
    return true;
 }
 
+bool runloop_get_system_info(void **data)
+{
+   rarch_system_info_t **system = (rarch_system_info_t**)data;
+   if (!system)
+      return false;
+   *system = &runloop_system;
+   return true;
+}
+
+void runloop_init_system_info(void)
+{
+   core_get_system_info(&runloop_system.info);
+
+   if (!runloop_system.info.library_name)
+      runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
+   if (!runloop_system.info.library_version)
+      runloop_system.info.library_version = "v0";
+
+   video_driver_set_title_buf();
+
+   strlcpy(runloop_system.valid_extensions,
+         runloop_system.info.valid_extensions ?
+         runloop_system.info.valid_extensions : DEFAULT_EXT,
+         sizeof(runloop_system.valid_extensions));
+}
+
+void runloop_free_system_info(void)
+{
+   /* No longer valid. */
+   if (runloop_system.subsystem.data)
+      free(runloop_system.subsystem.data);
+   runloop_system.subsystem.data = NULL;
+   runloop_system.subsystem.size = 0;
+
+   if (runloop_system.ports.data)
+      free(runloop_system.ports.data);
+   runloop_system.ports.data = NULL;
+   runloop_system.ports.size = 0;
+
+   if (runloop_system.mmaps.descriptors)
+      free((void *)runloop_system.mmaps.descriptors);
+   runloop_system.mmaps.descriptors     = NULL;
+   runloop_system.mmaps.num_descriptors = 0;
+
+   runloop_key_event          = NULL;
+   runloop_frontend_key_event = NULL;
+
+   audio_driver_unset_callback();
+   memset(&runloop_system, 0, sizeof(rarch_system_info_t));
+}
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    settings_t *settings                             = config_get_ptr();
@@ -751,21 +802,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_SHADER_DIR_INIT:
          return shader_dir_init(&runloop_shader_dir);
-      case RUNLOOP_CTL_SYSTEM_INFO_INIT:
-         core_get_system_info(&runloop_system.info);
-
-         if (!runloop_system.info.library_name)
-            runloop_system.info.library_name = msg_hash_to_str(MSG_UNKNOWN);
-         if (!runloop_system.info.library_version)
-            runloop_system.info.library_version = "v0";
-
-         video_driver_set_title_buf();
-
-         strlcpy(runloop_system.valid_extensions,
-               runloop_system.info.valid_extensions ?
-               runloop_system.info.valid_extensions : DEFAULT_EXT,
-               sizeof(runloop_system.valid_extensions));
-         break;
       case RUNLOOP_CTL_GET_CORE_OPTION_SIZE:
          {
             unsigned *idx = (unsigned*)data;
@@ -783,38 +819,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
             *coreopts = runloop_core_options;
          }
-         break;
-      case RUNLOOP_CTL_SYSTEM_INFO_GET:
-         {
-            rarch_system_info_t **system = (rarch_system_info_t**)data;
-            if (!system)
-               return false;
-            *system = &runloop_system;
-         }
-         break;
-      case RUNLOOP_CTL_SYSTEM_INFO_FREE:
-
-         /* No longer valid. */
-         if (runloop_system.subsystem.data)
-            free(runloop_system.subsystem.data);
-         runloop_system.subsystem.data = NULL;
-         runloop_system.subsystem.size = 0;
-         
-         if (runloop_system.ports.data)
-            free(runloop_system.ports.data);
-         runloop_system.ports.data = NULL;
-         runloop_system.ports.size = 0;
-         
-         if (runloop_system.mmaps.descriptors)
-            free((void *)runloop_system.mmaps.descriptors);
-         runloop_system.mmaps.descriptors     = NULL;
-         runloop_system.mmaps.num_descriptors = 0;
-         
-         runloop_key_event          = NULL;
-         runloop_frontend_key_event = NULL;
-
-         audio_driver_unset_callback();
-         memset(&runloop_system, 0, sizeof(rarch_system_info_t));
          break;
       case RUNLOOP_CTL_SET_FRAME_TIME_LAST:
          runloop_frame_time_last_enable = true;

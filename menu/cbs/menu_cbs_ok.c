@@ -1013,7 +1013,7 @@ static int generic_action_ok_remap_file_save(const char *path,
    const char *game_name           = NULL;
    const char *core_name           = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+   runloop_get_system_info((void**)&info);
 
    if (info)
       core_name           = info->info.library_name;

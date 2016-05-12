@@ -345,7 +345,8 @@ static int general_push(menu_displaylist_info_t *info,
    core_info_get_list(&list);
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system_menu);
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+
+   runloop_get_system_info((void**)&system);
 
    switch (id)
    {
