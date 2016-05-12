@@ -102,8 +102,7 @@ enum runloop_ctl_state
    RUNLOOP_CTL_SHADER_DIR_INIT,
    RUNLOOP_CTL_SYSTEM_INFO_GET,
    RUNLOOP_CTL_SYSTEM_INFO_INIT,
-   RUNLOOP_CTL_SYSTEM_INFO_FREE,
-   RUNLOOP_CTL_PREPARE_DUMMY
+   RUNLOOP_CTL_SYSTEM_INFO_FREE
 };
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
@@ -294,6 +293,8 @@ void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
 
 char* runloop_msg_queue_pull(void);
+
+bool runloop_prepare_dummy(void);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 

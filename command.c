@@ -1775,7 +1775,7 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
-         runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
+         runloop_prepare_dummy();
          command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
          break;
       case CMD_EVENT_QUIT:

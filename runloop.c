@@ -720,6 +720,26 @@ static bool runloop_is_frame_count_end(void)
 }
 
 
+bool runloop_prepare_dummy(void)
+{
+   memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+#endif
+   runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
+   runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
+   runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+
+#ifdef HAVE_MENU
+   if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+   {
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+      return false;
+   }
+#endif
+   return true;
+}
+
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
    settings_t *settings                             = config_get_ptr();
@@ -1056,23 +1076,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             task_queue_ctl(TASK_QUEUE_CTL_INIT, &threaded_enable);
          }
          break;
-      case RUNLOOP_CTL_PREPARE_DUMMY:
-         memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
-#ifdef HAVE_MENU
-         menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
-#endif
-         runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
-         runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
-         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-
-#ifdef HAVE_MENU
-         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
-         {
-            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-            return false;
-         }
-#endif
-         break;
       case RUNLOOP_CTL_SET_CORE_SHUTDOWN:
          runloop_core_shutdown_initiated = true;
          break;
@@ -1262,7 +1265,7 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
  * Aborts core shutdown if invoked. */
 static int runloop_iterate_time_to_exit_load_dummy(void)
 {
-   if (!runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
+   if (!runloop_prepare_dummy())
       return -1;
 
    runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);

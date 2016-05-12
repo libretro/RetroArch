@@ -1539,7 +1539,7 @@ bool retroarch_replace_config(char *path)
 
    *settings->path.libretro = '\0'; /* Load core in new config. */
 
-   runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
+   runloop_prepare_dummy();
 
    return true;
 }
