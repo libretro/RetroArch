@@ -18,7 +18,7 @@
 #include <net/net_socket.h>
 #include "../content.h"
 
-bool np_get_nickname(netplay_t *netplay, int fd)
+bool netplay_get_nickname(netplay_t *netplay, int fd)
 {
    uint8_t nick_size;
 
@@ -42,7 +42,7 @@ bool np_get_nickname(netplay_t *netplay, int fd)
 
    return true;
 }
-bool np_send_nickname(netplay_t *netplay, int fd)
+bool netplay_send_nickname(netplay_t *netplay, int fd)
 {
    uint8_t nick_size = strlen(netplay->nick);
 
@@ -61,7 +61,7 @@ bool np_send_nickname(netplay_t *netplay, int fd)
    return true;
 }
 
-uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic)
+uint32_t *netplay_bsv_header_generate(size_t *size, uint32_t magic)
 {
    retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
@@ -100,7 +100,7 @@ error:
    return NULL;
 }
 
-bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
+bool netplay_bsv_parse_header(const uint32_t *header, uint32_t magic)
 {
    retro_ctx_size_info_t info;
    uint32_t *content_crc_ptr;
@@ -146,7 +146,7 @@ bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
 }
 
 /**
- * np_impl_magic:
+ * netplay_impl_magic:
  *
  * Not really a hash, but should be enough to differentiate 
  * implementations from each other.
@@ -155,7 +155,7 @@ bool np_bsv_parse_header(const uint32_t *header, uint32_t magic)
  * The alternative would have been checking serialization sizes, but it 
  * was troublesome for cross platform compat.
  **/
-uint32_t np_impl_magic(void)
+uint32_t netplay_impl_magic(void)
 {
    size_t i, len;
    retro_ctx_api_info_t api_info;
@@ -193,7 +193,7 @@ uint32_t np_impl_magic(void)
    return res;
 }
 
-bool np_send_info(netplay_t *netplay)
+bool netplay_send_info(netplay_t *netplay)
 {
    unsigned sram_size;
    retro_ctx_memory_info_t mem_info;
@@ -208,13 +208,13 @@ bool np_send_info(netplay_t *netplay)
    content_get_crc(&content_crc_ptr);
    
    header[0] = htonl(*content_crc_ptr);
-   header[1] = htonl(np_impl_magic());
+   header[1] = htonl(netplay_impl_magic());
    header[2] = htonl(mem_info.size);
 
    if (!socket_send_all_blocking(netplay->fd, header, sizeof(header), false))
       return false;
 
-   if (!np_send_nickname(netplay, netplay->fd))
+   if (!netplay_send_nickname(netplay, netplay->fd))
    {
       RARCH_ERR("Failed to send nick to host.\n");
       return false;
@@ -230,7 +230,7 @@ bool np_send_info(netplay_t *netplay)
       return false;
    }
 
-   if (!np_get_nickname(netplay, netplay->fd))
+   if (!netplay_get_nickname(netplay, netplay->fd))
    {
       RARCH_ERR("Failed to receive nick from host.\n");
       return false;
@@ -243,7 +243,7 @@ bool np_send_info(netplay_t *netplay)
    return true;
 }
 
-bool np_get_info(netplay_t *netplay)
+bool netplay_get_info(netplay_t *netplay)
 {
    unsigned sram_size;
    uint32_t header[3];
@@ -265,7 +265,7 @@ bool np_get_info(netplay_t *netplay)
       return false;
    }
 
-   if (np_impl_magic() != ntohl(header[1]))
+   if (netplay_impl_magic() != ntohl(header[1]))
    {
       RARCH_ERR("Implementations differ, make sure you're using exact same "
             "libretro implementations and RetroArch version.\n");
@@ -282,7 +282,7 @@ bool np_get_info(netplay_t *netplay)
       return false;
    }
 
-   if (!np_get_nickname(netplay, netplay->fd))
+   if (!netplay_get_nickname(netplay, netplay->fd))
    {
       RARCH_ERR("Failed to get nickname from client.\n");
       return false;
@@ -298,14 +298,14 @@ bool np_get_info(netplay_t *netplay)
       return false;
    }
 
-   if (!np_send_nickname(netplay, netplay->fd))
+   if (!netplay_send_nickname(netplay, netplay->fd))
    {
       RARCH_ERR("Failed to send nickname to client.\n");
       return false;
    }
 
 #ifndef HAVE_SOCKET_LEGACY
-   np_log_connection(&netplay->other_addr, 0, netplay->other_nick);
+   netplay_log_connection(&netplay->other_addr, 0, netplay->other_nick);
 #endif
 
    return true;
@@ -318,7 +318,7 @@ bool netplay_is_server(netplay_t* netplay)
    return netplay->is_server;
 }
 
-bool np_is_spectate(netplay_t* netplay)
+bool netplay_is_spectate(netplay_t* netplay)
 {
    if (!netplay)
       return false;

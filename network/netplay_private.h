@@ -139,18 +139,18 @@ extern void *netplay_data;
 
 struct netplay_callbacks* netplay_get_cbs_net(void);
 struct netplay_callbacks* netplay_get_cbs_spectate(void);
-void np_log_connection(const struct sockaddr_storage *their_addr,
+void   netplay_log_connection(const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick);
 
-bool np_get_nickname(netplay_t *netplay, int fd);
-bool np_send_nickname(netplay_t *netplay, int fd);
-bool np_send_info(netplay_t *netplay);
-uint32_t *np_bsv_header_generate(size_t *size, uint32_t magic);
-bool np_bsv_parse_header(const uint32_t *header, uint32_t magic);
-uint32_t np_impl_magic(void);
-bool np_send_info(netplay_t *netplay);
-bool np_get_info(netplay_t *netplay);
+bool netplay_get_nickname(netplay_t *netplay, int fd);
+bool netplay_send_nickname(netplay_t *netplay, int fd);
+bool netplay_send_info(netplay_t *netplay);
+uint32_t *netplay_bsv_header_generate(size_t *size, uint32_t magic);
+bool netplay_bsv_parse_header(const uint32_t *header, uint32_t magic);
+uint32_t netplay_impl_magic(void);
+bool netplay_send_info(netplay_t *netplay);
+bool netplay_get_info(netplay_t *netplay);
 bool netplay_is_server(netplay_t* netplay);
-bool np_is_spectate(netplay_t* netplay);
+bool netplay_is_spectate(netplay_t* netplay);
 
 #endif
