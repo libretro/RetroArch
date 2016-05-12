@@ -23,13 +23,13 @@
 #ifndef _LIBRETRO_SDK_CPU_INFO_H
 #define _LIBRETRO_SDK_CPU_INFO_H
 
+#include <retro_common_api.h>
+
 #include <stdint.h>
 
 #include <libretro.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 /**
  * cpu_features_get_perf_counter:
@@ -66,10 +66,7 @@ uint64_t cpu_features_get(void);
  **/
 unsigned cpu_features_get_core_amount(void);
 
-
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 
