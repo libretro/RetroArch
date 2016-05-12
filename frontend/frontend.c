@@ -130,7 +130,7 @@ int rarch_main(int argc, char *argv[], void *data)
          return 0;
    }
 
-   runloop_get_system_info((void**)&system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET,  &system);
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    if (content_is_inited() || content_does_not_need_content())

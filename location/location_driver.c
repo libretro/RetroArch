@@ -203,7 +203,7 @@ void init_location(void)
 {
    rarch_system_info_t *system = NULL;
    
-   runloop_get_system_info((void**)&system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    /* Resource leaks will follow if location interface is initialized twice. */
    if (location_data)
@@ -227,7 +227,7 @@ static void uninit_location(void)
 {
    rarch_system_info_t *system = NULL;
 
-   runloop_get_system_info((void**)&system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (location_data && location_driver)
    {

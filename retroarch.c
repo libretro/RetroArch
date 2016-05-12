@@ -412,8 +412,7 @@ static void retroarch_set_paths_redirect(const char *path)
    settings_t              *settings   = config_get_ptr();
    rarch_system_info_t      *info      = NULL;
 
-   runloop_get_system_info((void**)&info);
-
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
    if (!global)
    {
     RARCH_WARN("retroarch_set_paths_redirect was sent a NULL \"global\" pointer.");
@@ -1067,9 +1066,9 @@ static void retroarch_parse_input(int argc, char *argv[])
 static void retroarch_init_savefile_paths(void)
 {
    global_t            *global = global_get_ptr();
-   rarch_system_info_t   *info = NULL;
+   rarch_system_info_t *system = NULL;
 
-   runloop_get_system_info((void**)&info);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    command_event(CMD_EVENT_SAVEFILES_DEINIT, NULL);
 
@@ -1081,15 +1080,14 @@ static void retroarch_init_savefile_paths(void)
       /* For subsystems, we know exactly which RAM types are supported. */
 
       unsigned i, j;
-      const struct retro_subsystem_info *subsystem_info =
+      const struct retro_subsystem_info *info =
          libretro_find_subsystem_info(
-               info->subsystem.data,
-               info->subsystem.size,
+               system->subsystem.data,
+               system->subsystem.size,
                global->subsystem);
 
       /* We'll handle this error gracefully later. */
-      unsigned num_content = MIN(info 
-            ? subsystem_info->num_roms : 0,
+      unsigned num_content = MIN(info ? info->num_roms : 0,
             global->subsystem_fullpaths ?
             global->subsystem_fullpaths->size : 0);
 
@@ -1097,14 +1095,14 @@ static void retroarch_init_savefile_paths(void)
 
       for (i = 0; i < num_content; i++)
       {
-         for (j = 0; j < subsystem_info->roms[i].num_memory; j++)
+         for (j = 0; j < info->roms[i].num_memory; j++)
          {
             union string_list_elem_attr attr;
             char path[PATH_MAX_LENGTH] = {0};
             char ext[32] = {0};
             const struct retro_subsystem_memory_info *mem =
                (const struct retro_subsystem_memory_info*)
-               &subsystem_info->roms[i].memory[j];
+               &info->roms[i].memory[j];
 
             snprintf(ext, sizeof(ext), ".%s", mem->extension);
 
@@ -1174,12 +1172,12 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    const char *game_name       = NULL;
    global_t *global            = global_get_ptr();
    settings_t *settings        = config_get_ptr();
-   rarch_system_info_t *info   = NULL;
+   rarch_system_info_t *system = NULL;
 
-   runloop_get_system_info((void**)&info);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   if (info)
-      core_name = info->info.library_name;
+   if (system)
+      core_name = system->info.library_name;
    if (global)
       game_name = path_basename(global->name.base);
 

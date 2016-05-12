@@ -778,8 +778,7 @@ static void menu_action_setting_disp_set_label_menu_disk_index(
    rarch_system_info_t *system                 = NULL;
    struct retro_disk_control_callback *control = NULL;
 
-   runloop_get_system_info((void**)&system);
-
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    if (!system)
       return;
 
@@ -1165,8 +1164,7 @@ static void menu_action_setting_disp_set_label_core_option_create(
    rarch_system_info_t *system = NULL;
    global_t            *global = global_get_ptr();
 
-   runloop_get_system_info((void**)&system);
-
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
    if (!system)
       return;
 

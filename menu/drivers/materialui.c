@@ -685,7 +685,7 @@ static int mui_get_core_title(char *s, size_t len)
    core_name    = system->library_name;
    core_version = system->library_version;
 
-   runloop_get_system_info((void**)&info);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
    if (!settings->menu.core_enable)
       return -1; 

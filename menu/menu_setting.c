@@ -1068,7 +1068,7 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
    
-   runloop_get_system_info((void**)&system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!setting)
       return;
@@ -2290,7 +2290,7 @@ static int setting_action_start_libretro_device_type(void *data)
    settings_t        *settings = config_get_ptr();
    rarch_system_info_t *system = NULL;
 
-   runloop_get_system_info((void**)&system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (setting_generic_action_start_default(setting) != 0)
       return -1;
@@ -2440,7 +2440,7 @@ static int setting_action_left_libretro_device_type(
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
 
-   runloop_get_system_info((void**)&system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!setting)
       return -1;
@@ -2505,7 +2505,7 @@ static int setting_action_right_libretro_device_type(
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
 
-   runloop_get_system_info((void**)&system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!setting)
       return -1;
@@ -2888,7 +2888,7 @@ void general_write_handler(void *data)
    uint32_t hash                = setting ? menu_hash_calculate(setting->name) : 0;
    uint64_t flags               = menu_setting_get_flags(setting);
 
-   runloop_get_system_info((void**)&system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!setting)
       return;
@@ -3238,7 +3238,7 @@ static bool setting_append_list_input_player_options(
       (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
    rarch_system_info_t *system = NULL;
 
-   runloop_get_system_info((void**)&system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    snprintf(buffer[user],    sizeof(buffer[user]),
          "%s %u", menu_hash_to_str(MENU_VALUE_USER), user + 1);

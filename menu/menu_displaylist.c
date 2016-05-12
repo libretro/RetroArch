@@ -2157,7 +2157,7 @@ static int menu_displaylist_parse_load_content_settings(
    {
       rarch_system_info_t *system = NULL;
 
-      runloop_get_system_info((void**)&system);
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
       menu_entries_add(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_RESUME_CONTENT),
@@ -2518,7 +2518,7 @@ static int menu_displaylist_parse_options_remappings(
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return -1;
 
-   runloop_get_system_info((void**)&system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    for (p = 0; p < settings->input.max_users; p++)
    {
@@ -3326,7 +3326,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_MAIN_MENU:
          {
             rarch_system_info_t *system   = NULL;
-            runloop_get_system_info((void**)&system);
+            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
             if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
                menu_displaylist_parse_settings(menu, info,

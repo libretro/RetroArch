@@ -578,9 +578,7 @@ void uninit_libretro_sym(struct retro_core_t *current_core)
    memset(current_core, 0, sizeof(struct retro_core_t));
 
    runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_DEINIT, NULL);
-
-   runloop_free_system_info();
-
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_FREE, NULL);
    runloop_ctl(RUNLOOP_CTL_FRAME_TIME_FREE, NULL);
    camera_driver_ctl(RARCH_CAMERA_CTL_UNSET_ACTIVE, NULL);
    location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
@@ -742,7 +740,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
    global_t         *global     = global_get_ptr();
    rarch_system_info_t *system  = NULL;
    
-   runloop_get_system_info((void**)&system);
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (ignore_environment_cb)
       return false;
