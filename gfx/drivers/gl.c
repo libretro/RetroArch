@@ -2494,7 +2494,7 @@ static void DEBUG_CALLBACK_TYPE gl_debug_cb(GLenum source, GLenum type,
       const GLchar *message, void *userParam)
 {
    const char      *src = NULL;
-   const char **typestr = NULL;
+   const char *typestr  = NULL;
    gl_t             *gl = (gl_t*)userParam; /* Useful for debugger. */
 
    (void)gl;
