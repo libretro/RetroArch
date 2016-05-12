@@ -286,7 +286,7 @@ static void arm_enable_runfast_mode(void)
 }
 #endif
 
-#if defined(__linux__)
+#if defined(__linux__) && !defined(CPU_X86)
 
 /* Extract the content of a the first occurrence of a given field in
  * the content of /proc/cpuinfo and return it as a heap-allocated
@@ -753,6 +753,7 @@ uint64_t cpu_features_get(void)
 
       if (filestream_read_file("/proc/cpuinfo", &buf, &length) == 1)
       {
+         char* cpu_features = NULL;
          /* Extract architecture from the "CPU Architecture" field.
           * The list is well-known, unlike the the output of
           * the 'Processor' field which can vary greatly.
@@ -765,9 +766,9 @@ uint64_t cpu_features_get(void)
 
          if (cpu_arch)
          {
-            char*  end;
-            int    has_armv7 = 0;
-            /* read the initial decimal number, ignore the rest */
+            char*  end         = NULL;
+            int    has_armv7   = 0;
+            /* Read the initial decimal number, ignore the rest */
             long   arch_number = strtol(cpu_arch, &end, 10);
 
             /* Here we assume that ARMv8 will be upwards compatible with v7
@@ -792,13 +793,11 @@ uint64_t cpu_features_get(void)
                char *cpu_proc = extract_cpuinfo_field(buf, length,
                      "Processor");
 
-               if (cpu_proc != NULL)
+               if (cpu_proc)
                {
+                  /* CPU processor and architecture mismatch. */
                   if (has_list_item(cpu_proc, "(v6l)"))
-                  {
-                     /* CPU processor and architecture mismatch. */
                      has_armv7 = 0;
-                  }
                   free(cpu_proc);
                }
             }
@@ -810,17 +809,15 @@ uint64_t cpu_features_get(void)
             if (arch_number >= 6)
                g_cpuFeatures |= CPU_ARM_FEATURE_LDREX_STREX;
 
-            free(cpu_arch);
          }
 
          /* Extract the list of CPU features from 'Features' field */
-         char* cpu_features = extract_cpuinfo_field(buf, length, "Features");
+         cpu_features = extract_cpuinfo_field(buf, length, "Features");
 
          if (cpu_features)
          {
             if (has_list_item(cpu_features, "vfpv3"))
                g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
-
             else if (has_list_item(cpu_features, "vfpv3d16"))
                g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
 
@@ -831,12 +828,17 @@ uint64_t cpu_features_get(void)
              */
             if (has_list_item(cpu_features, "neon"))
                g_cpuFeatures |= CPU_ARM_FEATURE_NEON | CPU_ARM_FEATURE_VFPv3;
-            free(cpu_features);
          }
 
+         if (cpu_features)
+            free(cpu_features);
+         if (cpu_arch)
+            free(cpu_arch);
          if (buf)
             free(buf);
-         buf = NULL;
+         cpu_features = NULL;
+         cpu_arch     = NULL;
+         buf          = NULL;
       }
       cpu_inited_once = true;
    }
