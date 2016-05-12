@@ -99,23 +99,22 @@ static int cb_nbio_default(void *data, size_t len)
    return 0;
 }
 
-static int rarch_main_data_image_process(
-      nbio_handle_t *nbio,
-      unsigned *width,
-      unsigned *height)
+static int image_transfer_process(
+      void *data,
+      enum image_type_enum type,
+      uint32_t **buf,
+      unsigned *width, unsigned *height)
 {
-   int retval = 0;
-
-   switch (nbio->image_type)
+   switch (type)
    {
       case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-         if (!rpng_is_valid((rpng_t*)nbio->image.handle))
+         if (!rpng_is_valid((rpng_t*)data))
             return IMAGE_PROCESS_ERROR;
 
-         retval = rpng_nbio_load_image_argb_process(
-               (rpng_t*)nbio->image.handle,
-               &nbio->image.ti.pixels,
+         return rpng_nbio_load_image_argb_process(
+               (rpng_t*)data,
+               buf,
                width, height);
 #endif
          break;
@@ -124,6 +123,41 @@ static int rarch_main_data_image_process(
 #endif
          break;
    }
+
+   return 0;
+}
+
+static bool image_transfer_iterate(void *data, enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         if (!rpng_nbio_load_image_argb_iterate((rpng_t*)data))
+            return false;
+#endif
+         break;
+      case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+#endif
+         break;
+   }
+
+   return true;
+}
+
+static int rarch_main_data_image_process(
+      nbio_handle_t *nbio,
+      unsigned *width,
+      unsigned *height)
+{
+   int retval = image_transfer_process(
+         (rpng_t*)nbio->image.handle,
+         nbio->image_type,
+         &nbio->image.ti.pixels, width, height);
+
+   if (retval == IMAGE_PROCESS_ERROR)
+      return IMAGE_PROCESS_ERROR;
 
    nbio->image.ti.width  = *width;
    nbio->image.ti.height = *height;
@@ -191,40 +225,28 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
    return -1;
 }
 
+
 static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
 {
    unsigned i;
 
    if (!nbio)
-      return -1;
+      goto error;
 
    if (nbio->image.is_finished)
       return 0;
 
    for (i = 0; i < nbio->image.pos_increment; i++)
    {
-      switch (nbio->image_type)
-      {
-         case IMAGE_TYPE_PNG:
-#ifdef HAVE_RPNG
-            if (!rpng_nbio_load_image_argb_iterate((rpng_t*)nbio->image.handle))
-               goto error;
-#endif
-            break;
-         case IMAGE_TYPE_JPEG:
-#ifdef HAVE_RJPEG
-#endif
-            break;
-      }
+      if (!image_transfer_iterate(nbio->image.handle, nbio->image_type))
+         goto error;
    }
 
    nbio->image.frame_count++;
    return 0;
 
-#ifdef HAVE_RPNG
 error:
    return -1;
-#endif
 }
 
 static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
