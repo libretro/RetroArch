@@ -79,7 +79,8 @@ LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/glslang/Public \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/SPIRV \
-						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/spir2cross
+						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/spir2cross \
+						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/SPIRV-Cross
 
 LOCAL_SRC_FILES += $(RARCH_DIR)/deps/glslang/glslang.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/SpvBuilder.cpp \
