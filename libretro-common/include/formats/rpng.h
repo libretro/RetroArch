@@ -35,7 +35,7 @@ RETRO_BEGIN_DECLS
 
 typedef struct rpng rpng_t;
 
-rpng_t *rpng_nbio_load_image_argb_init(const char *path);
+rpng_t *rpng_init(const char *path);
 
 bool rpng_is_valid(rpng_t *rpng);
 
@@ -43,14 +43,14 @@ bool rpng_set_buf_ptr(rpng_t *rpng, void *data);
 
 rpng_t *rpng_alloc(void);
 
-void rpng_nbio_load_image_free(rpng_t *rpng);
+void rpng_free(rpng_t *rpng);
 
-bool rpng_nbio_load_image_argb_iterate(rpng_t *rpng);
+bool rpng_iterate_image(rpng_t *rpng);
 
-int rpng_nbio_load_image_argb_process(rpng_t *rpng,
-      void **data, unsigned *width, unsigned *height);
+int rpng_process_image(rpng_t *rpng,
+      void **data, size_t size, unsigned *width, unsigned *height);
 
-bool rpng_nbio_load_image_argb_start(rpng_t *rpng);
+bool rpng_start(rpng_t *rpng);
 
 #ifdef HAVE_ZLIB_DEFLATE
 bool rpng_save_image_argb(const char *path, const uint32_t *data,

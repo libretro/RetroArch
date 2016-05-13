@@ -174,18 +174,18 @@ static bool video_texture_image_load_png(
    if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
       goto end;
 
-   if (!rpng_nbio_load_image_argb_start(rpng))
+   if (!rpng_start(rpng))
       goto end;
 
-   while (rpng_nbio_load_image_argb_iterate(rpng));
+   while (rpng_iterate_image(rpng));
 
    if (!rpng_is_valid(rpng))
       goto end;
 
    do
    {
-      ret = rpng_nbio_load_image_argb_process(rpng,
-            (void**)&out_img->pixels, &out_img->width,
+      ret = rpng_process_image(rpng,
+            (void**)&out_img->pixels, 0, &out_img->width,
             &out_img->height);
    }while(ret == IMAGE_PROCESS_NEXT);
 
@@ -207,7 +207,7 @@ static bool video_texture_image_load_png(
 
 end:
    if (rpng)
-      rpng_nbio_load_image_free(rpng);
+      rpng_free(rpng);
 
    return success;
 }

@@ -25,7 +25,7 @@ void image_transfer_free(void *data, enum image_type_enum type)
    {
       case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-         rpng_nbio_load_image_free((rpng_t*)data);
+         rpng_free((rpng_t*)data);
 #endif
          break;
       case IMAGE_TYPE_JPEG:
@@ -73,7 +73,7 @@ bool image_transfer_start(void *data, enum image_type_enum type)
    {
       case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-         if (!rpng_nbio_load_image_argb_start((rpng_t*)data))
+         if (!rpng_start((rpng_t*)data))
             return false;
 #endif
          break;
@@ -123,9 +123,9 @@ int image_transfer_process(
          if (!rpng_is_valid((rpng_t*)data))
             return IMAGE_PROCESS_ERROR;
 
-         return rpng_nbio_load_image_argb_process(
+         return rpng_process_image(
                (rpng_t*)data,
-               (void**)buf, width, height);
+               (void**)buf, len, width, height);
 #else
          break;
 #endif
@@ -154,7 +154,7 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
    {
       case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
-         if (!rpng_nbio_load_image_argb_iterate((rpng_t*)data))
+         if (!rpng_iterate_image((rpng_t*)data))
             return false;
 #endif
          break;
