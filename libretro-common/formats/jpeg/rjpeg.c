@@ -2468,10 +2468,14 @@ bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
    unsigned height = 0;
    struct texture_image *out_img = (struct texture_image*)data;
 
-   if (rjpeg_process_image(out_img, (void**)&buf, size, &width, &height) == IMAGE_PROCESS_END)
-      return true;
+   if (rjpeg_process_image(out_img, (void**)&buf, size, &width, &height) != IMAGE_PROCESS_END)
+      return false;
 
-   return false;
+    if (r_shift == 0 && b_shift == 16) { } /* RGBA, doesn't need conversion */
+    else
+       video_frame_convert_rgba_to_bgra(buf, out_img->pixels, width);
+
+   return true;
 }
 
 void rjpeg_free(rjpeg_t *rjpeg)
