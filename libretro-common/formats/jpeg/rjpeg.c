@@ -2467,7 +2467,15 @@ bool rjpeg_image_load(uint8_t *_buf, void *data, size_t size,
    return true;
 }
 
-void *rjpeg_alloc(void)
+void rjpeg_free(rjpeg_t *rjpeg)
+{
+   if (!rjpeg)
+      return;
+
+   free(rjpeg);
+}
+
+rjpeg_t *rjpeg_alloc(void)
 {
    rjpeg_t *rjpeg = (rjpeg_t*)calloc(1, sizeof(*rjpeg));
    if (!rjpeg)

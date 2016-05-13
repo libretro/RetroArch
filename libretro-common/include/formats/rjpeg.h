@@ -37,7 +37,9 @@ typedef struct rjpeg rjpeg_t;
 bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
       unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift);
 
-void *rjpeg_alloc(void);
+void rjpeg_free(rjpeg_t *rjpeg);
+
+rjpeg_t *rjpeg_alloc(void);
 
 RETRO_END_DECLS
 

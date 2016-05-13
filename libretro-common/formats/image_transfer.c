@@ -22,6 +22,7 @@ void image_transfer_free(void *data, enum image_type_enum type)
          break;
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
+         rjpeg_free((rjpeg_t*)data);
 #endif
          break;
    }
@@ -34,12 +35,16 @@ void *image_transfer_new(enum image_type_enum type)
       case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
          return rpng_alloc();
-#endif
+#else
          break;
+#endif
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
          return rjpeg_alloc();
+#else
+         break;
 #endif
+      default:
          break;
    }
 
