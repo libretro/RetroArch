@@ -53,14 +53,14 @@ typedef struct http_handle
    bool error;
 } http_handle_t;
 
-static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
+static int task_http_con_iterate_transfer(http_handle_t *http)
 {
    if (!net_http_connection_iterate(http->connection.handle))
       return -1;
    return 0;
 }
 
-static int rarch_main_data_http_conn_iterate_transfer_parse(
+static int task_http_conn_iterate_transfer_parse(
       http_handle_t *http)
 {
    if (net_http_connection_done(http->connection.handle))
@@ -101,14 +101,14 @@ static int cb_http_conn_default(void *data_, size_t len)
 }
 
 /**
- * rarch_main_data_http_iterate_transfer:
+ * task_http_iterate_transfer:
  *
  * Resumes HTTP transfer update.
  *
  * Returns: 0 when finished, -1 when we should continue
  * with the transfer on the next frame.
  **/
-static int rarch_main_data_http_iterate_transfer(retro_task_t *task)
+static int task_http_iterate_transfer(retro_task_t *task)
 {
    http_handle_t *http  = (http_handle_t*)task->state;
    size_t pos  = 0, tot = 0;
@@ -133,15 +133,15 @@ static void rarch_task_http_transfer_handler(retro_task_t *task)
    switch (http->status)
    {
       case HTTP_STATUS_CONNECTION_TRANSFER_PARSE:
-         rarch_main_data_http_conn_iterate_transfer_parse(http);
+         task_http_conn_iterate_transfer_parse(http);
          http->status = HTTP_STATUS_TRANSFER;
          break;
       case HTTP_STATUS_CONNECTION_TRANSFER:
-         if (!rarch_main_data_http_con_iterate_transfer(http))
+         if (!task_http_con_iterate_transfer(http))
             http->status = HTTP_STATUS_CONNECTION_TRANSFER_PARSE;
          break;
       case HTTP_STATUS_TRANSFER:
-         if (!rarch_main_data_http_iterate_transfer(task))
+         if (!task_http_iterate_transfer(task))
             goto task_finished;
          break;
       case HTTP_STATUS_TRANSFER_PARSE:
@@ -311,4 +311,3 @@ task_retriever_info_t *http_task_get_transfer_list(void)
    task_queue_ctl(TASK_QUEUE_CTL_RETRIEVE, &retrieve_data);
    return retrieve_data.list;
 }
-

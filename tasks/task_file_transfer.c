@@ -26,7 +26,7 @@
 #include "tasks_internal.h"
 #include "../verbosity.h"
 
-static int rarch_main_data_nbio_iterate_transfer(nbio_handle_t *nbio)
+static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
 {
    size_t i;
 
@@ -47,7 +47,7 @@ static int rarch_main_data_nbio_iterate_transfer(nbio_handle_t *nbio)
    return 0;
 }
 
-static int rarch_main_data_nbio_iterate_parse(nbio_handle_t *nbio)
+static int task_file_transfer_iterate_parse(nbio_handle_t *nbio)
 {
    if (!nbio)
       return -1;
@@ -68,11 +68,11 @@ void rarch_task_file_load_handler(retro_task_t *task)
    switch (nbio->status)
    {
       case NBIO_STATUS_TRANSFER_PARSE:
-         rarch_main_data_nbio_iterate_parse(nbio);
+         task_file_transfer_iterate_parse(nbio);
          nbio->status = NBIO_STATUS_TRANSFER_PARSE_FREE;
          break;
       case NBIO_STATUS_TRANSFER:
-         if (rarch_main_data_nbio_iterate_transfer(nbio) == -1)
+         if (task_file_transfer_iterate_transfer(nbio) == -1)
             nbio->status = NBIO_STATUS_TRANSFER_PARSE;
          break;
       case NBIO_STATUS_TRANSFER_PARSE_FREE:

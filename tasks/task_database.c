@@ -88,7 +88,7 @@ static int zlib_compare_crc32(const char *name, const char *valid_exts,
 }
 #endif
 
-static int database_info_iterate_start(database_info_handle_t *db,
+static int task_database_iterate_start(database_info_handle_t *db,
       const char *name)
 {
    char msg[128] = {0};
@@ -196,7 +196,7 @@ static bool file_get_crc(database_state_handle_t *db_state,
    return 1;
 }
 
-static int database_info_iterate_playlist(
+static int task_database_iterate_playlist(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
@@ -254,7 +254,7 @@ static int database_info_list_iterate_end_no_match(
    return 0;
 }
 
-static int database_info_iterate_next(database_info_handle_t *db)
+static int task_database_iterate_next(database_info_handle_t *db)
 {
    db->list_ptr++;
 
@@ -361,7 +361,7 @@ static int database_info_list_iterate_next(
    return 1;
 }
 
-static int database_info_iterate_crc_lookup(
+static int task_database_iterate_crc_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db,
       const char *zip_entry)
@@ -418,14 +418,14 @@ static int database_info_iterate_crc_lookup(
    return 0;
 }
 
-static int database_info_iterate_playlist_zip(
+static int task_database_iterate_playlist_zip(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
    bool returnerr = true;
 #ifdef HAVE_ZLIB
    if (db_state->crc != 0)
-      return database_info_iterate_crc_lookup(
+      return task_database_iterate_crc_lookup(
             db_state, db, db_state->zip_name);
 
    if (file_archive_parse_file_iterate(&db->state,
@@ -440,7 +440,7 @@ static int database_info_iterate_playlist_zip(
    return 1;
 }
 
-static int database_info_iterate_serial_lookup(
+static int task_database_iterate_serial_lookup(
       database_state_handle_t *db_state,
       database_info_handle_t *db, const char *name)
 {
@@ -497,7 +497,7 @@ static int database_info_iterate_serial_lookup(
    return 0;
 }
 
-static int database_info_iterate(database_state_handle_t *db_state,
+static int task_database_iterate(database_state_handle_t *db_state,
       database_info_handle_t *db)
 {
    const char *name = db ? db->list->elems[db->list_ptr].data : NULL;
@@ -511,13 +511,13 @@ static int database_info_iterate(database_state_handle_t *db_state,
    switch (db->type)
    {
       case DATABASE_TYPE_ITERATE:
-         return database_info_iterate_playlist(db_state, db, name);
+         return task_database_iterate_playlist(db_state, db, name);
       case DATABASE_TYPE_ITERATE_ZIP:
-         return database_info_iterate_playlist_zip(db_state, db, name);
+         return task_database_iterate_playlist_zip(db_state, db, name);
       case DATABASE_TYPE_SERIAL_LOOKUP:
-         return database_info_iterate_serial_lookup(db_state, db, name);
+         return task_database_iterate_serial_lookup(db_state, db, name);
       case DATABASE_TYPE_CRC_LOOKUP:
-         return database_info_iterate_crc_lookup(db_state, db, NULL);
+         return task_database_iterate_crc_lookup(db_state, db, NULL);
       case DATABASE_TYPE_NONE:
       default:
          break;
@@ -526,7 +526,7 @@ static int database_info_iterate(database_state_handle_t *db_state,
    return 0;
 }
 
-static void rarch_main_data_db_cleanup_state(
+static void task_database_cleanup_state(
       database_state_handle_t *db_state)
 {
    if (!db_state)
@@ -537,7 +537,7 @@ static void rarch_main_data_db_cleanup_state(
    db_state->buf = NULL;
 }
 
-static void rarch_dbscan_task_handler(retro_task_t *task)
+static void task_database_handler(retro_task_t *task)
 {
    db_handle_t *db                  = (db_handle_t*)task->state;
    database_info_handle_t  *dbinfo  = db->handle;
@@ -557,20 +557,20 @@ static void rarch_dbscan_task_handler(retro_task_t *task)
          dbinfo->status = DATABASE_STATUS_ITERATE_START;
          break;
       case DATABASE_STATUS_ITERATE_START:
-         rarch_main_data_db_cleanup_state(dbstate);
+         task_database_cleanup_state(dbstate);
          dbstate->list_index  = 0;
          dbstate->entry_index = 0;
-         database_info_iterate_start(dbinfo, name);
+         task_database_iterate_start(dbinfo, name);
          break;
       case DATABASE_STATUS_ITERATE:
-         if (database_info_iterate(&db->state, dbinfo) == 0)
+         if (task_database_iterate(&db->state, dbinfo) == 0)
          {
             dbinfo->status = DATABASE_STATUS_ITERATE_NEXT;
             dbinfo->type   = DATABASE_TYPE_ITERATE;
          }
          break;
       case DATABASE_STATUS_ITERATE_NEXT:
-         if (database_info_iterate_next(dbinfo) == 0)
+         if (task_database_iterate_next(dbinfo) == 0)
          {
             dbinfo->status = DATABASE_STATUS_ITERATE_START;
             dbinfo->type   = DATABASE_TYPE_ITERATE;
@@ -615,7 +615,7 @@ bool rarch_task_push_dbscan(const char *fullpath,
    if (!t || !db)
       goto error;
 
-   t->handler        = rarch_dbscan_task_handler;
+   t->handler        = task_database_handler;
    t->state          = db;
    t->callback       = cb;
 
