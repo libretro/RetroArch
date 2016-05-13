@@ -102,9 +102,6 @@ void rarch_task_file_load_handler(retro_task_t *task)
 task_finished:
    task->finished = true;
 
-   if (nbio->image != NULL)
-      rarch_task_image_load_free(task);
-
    nbio_free(nbio->handle);
    nbio->handle      = NULL;
    nbio->is_finished = false;

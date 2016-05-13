@@ -32,6 +32,7 @@
 #include <compat/strl.h>
 #include <streams/file_stream.h>
 #include <libretro.h>
+#include <features/features_cpu.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
