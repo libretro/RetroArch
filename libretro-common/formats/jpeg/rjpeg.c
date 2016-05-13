@@ -173,6 +173,16 @@ static void rjpeg__start_mem(rjpeg__context *s, const uint8_t *buffer, int len)
    s->img_buffer_end = (uint8_t *) buffer+len;
 }
 
+static void rjpeg__rewind(rjpeg__context *s)
+{
+   /* conceptually rewind SHOULD rewind to the beginning of the stream,
+    * but we just rewind to the beginning of the initial buffer, because
+    * we only use it after doing 'test', which only ever looks at at most 92 bytes
+    */
+   s->img_buffer = s->img_buffer_original;
+}
+
+static int      rjpeg__jpeg_test(rjpeg__context *s);
 static uint8_t *rjpeg__jpeg_load(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp);
 
 /* this is not threadsafe */
@@ -199,7 +209,10 @@ static int rjpeg__vertically_flip_on_load = 0;
 
 static unsigned char *rjpeg__load_main(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp)
 {
-   return rjpeg__jpeg_load(s,x,y,comp,req_comp);
+   if (rjpeg__jpeg_test(s))
+      return rjpeg__jpeg_load(s,x,y,comp,req_comp);
+
+   return rjpeg__errpuc("unknown image type", "Image not of any known type, or corrupt");
 }
 
 static unsigned char *rjpeg__load_flip(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp)
@@ -2404,6 +2417,17 @@ static unsigned char *rjpeg__jpeg_load(rjpeg__context *s, unsigned *x, unsigned 
    j.s = s;
    rjpeg__setup_jpeg(&j);
    return rjpeg_load_jpeg_image(&j, x,y,comp,req_comp);
+}
+
+static int rjpeg__jpeg_test(rjpeg__context *s)
+{
+   int r;
+   rjpeg__jpeg j;
+   j.s = s;
+   rjpeg__setup_jpeg(&j);
+   r = rjpeg__decode_jpeg_header(&j, RJPEG_SCAN_TYPE);
+   rjpeg__rewind(s);
+   return r;
 }
 
 static INLINE void video_frame_convert_rgba_to_bgra(
