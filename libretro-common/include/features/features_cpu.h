@@ -69,4 +69,3 @@ unsigned cpu_features_get_core_amount(void);
 RETRO_END_DECLS
 
 #endif
-

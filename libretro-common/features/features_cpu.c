@@ -117,7 +117,23 @@ static int clock_gettime(int clk_ik, struct timespec *t)
 retro_perf_tick_t cpu_features_get_perf_counter(void)
 {
    retro_perf_tick_t time_ticks = 0;
-#if defined(__linux__) || defined(__QNX__) || defined(__MACH__)
+#if defined(_WIN32)
+   long tv_sec, tv_usec;
+   static const unsigned __int64 epoch = 11644473600000000Ui64;
+   FILETIME file_time;
+   SYSTEMTIME system_time;
+   ULARGE_INTEGER ularge;
+
+   GetSystemTime(&system_time);
+   SystemTimeToFileTime(&system_time, &file_time);
+   ularge.LowPart = file_time.dwLowDateTime;
+   ularge.HighPart = file_time.dwHighDateTime;
+
+   tv_sec = (long)((ularge.QuadPart - epoch) / 10000000L);
+   tv_usec = (long)(system_time.wMilliseconds * 1000);
+
+   time_ticks = (1000000 * tv_sec + tv_usec);
+#elif defined(__linux__) || defined(__QNX__) || defined(__MACH__)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
       time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
@@ -143,22 +159,6 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    struct timeval tv;
    gettimeofday(&tv,NULL);
    time_ticks = (1000000 * tv.tv_sec + tv.tv_usec);
-#elif defined(_WIN32)
-   long tv_sec, tv_usec;
-   static const unsigned __int64 epoch = 11644473600000000Ui64;
-   FILETIME file_time;
-   SYSTEMTIME system_time;
-   ULARGE_INTEGER ularge;
-
-   GetSystemTime(&system_time);
-   SystemTimeToFileTime(&system_time, &file_time);
-   ularge.LowPart = file_time.dwLowDateTime;
-   ularge.HighPart = file_time.dwHighDateTime;
-
-   tv_sec = (long)((ularge.QuadPart - epoch) / 10000000L);
-   tv_usec = (long)(system_time.wMilliseconds * 1000);
-
-   time_ticks = (1000000 * tv_sec + tv_usec);
 #endif
 
    return time_ticks;
