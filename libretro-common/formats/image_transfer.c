@@ -38,6 +38,7 @@ void *image_transfer_new(enum image_type_enum type)
          break;
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
+         return rjpeg_alloc();
 #endif
          break;
    }

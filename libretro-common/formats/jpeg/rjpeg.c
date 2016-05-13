@@ -33,6 +33,7 @@
 #include <retro_inline.h>
 #include <boolean.h>
 #include <formats/image.h>
+#include <formats/rjpeg.h>
 #include <features/features_cpu.h>
 
 enum
@@ -63,6 +64,11 @@ typedef struct
    int ystep;   /* how far through vertical expansion we are */
    int ypos;    /* which pre-expansion row we're on */
 } rjpeg__resample;
+
+struct rjpeg
+{
+   void *empty;
+};
 
 #ifdef _MSC_VER
 #define RJPEG_HAS_LROTL
@@ -2459,4 +2465,12 @@ bool rjpeg_image_load(uint8_t *_buf, void *data, size_t size,
       video_frame_convert_rgba_to_bgra(_buf, out_img->pixels, x);
 
    return true;
+}
+
+void *rjpeg_alloc(void)
+{
+   rjpeg_t *rjpeg = (rjpeg_t*)calloc(1, sizeof(*rjpeg));
+   if (!rjpeg)
+      return NULL;
+   return rjpeg;
 }
