@@ -54,25 +54,12 @@ typedef struct http_transfer_info
 } http_transfer_info_t;
 #endif
 
-typedef struct nbio_image_handle
-{
-   struct texture_image ti;
-   bool is_blocking;
-   bool is_blocking_on_processing;
-   bool is_finished;
-   transfer_cb_t  cb;
-   void *handle;
-   size_t size;
-   unsigned processing_pos_increment;
-   unsigned pos_increment;
-   int processing_final_state;
-   unsigned status;
-} nbio_image_handle_t;
+typedef struct nbio_image_handle nbio_image_handle_t;
 
 typedef struct nbio_handle
 {
    enum image_type_enum image_type;
-   nbio_image_handle_t image;
+   nbio_image_handle_t *image;
    bool is_finished;
    transfer_cb_t  cb;
    struct nbio_t *handle;
