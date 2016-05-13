@@ -34,7 +34,7 @@ RETRO_BEGIN_DECLS
 
 typedef struct rjpeg rjpeg_t;
 
-int rjpeg_process_image(void *data, uint8_t *buf,
+int rjpeg_process_image(void *data, void **buf,
       size_t size, unsigned *width, unsigned *height);
 
 bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,

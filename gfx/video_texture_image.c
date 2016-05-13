@@ -184,7 +184,8 @@ static bool video_texture_image_load_png(
 
    do
    {
-      ret = rpng_nbio_load_image_argb_process(rpng, &out_img->pixels, &out_img->width,
+      ret = rpng_nbio_load_image_argb_process(rpng,
+            (void**)&out_img->pixels, &out_img->width,
             &out_img->height);
    }while(ret == IMAGE_PROCESS_NEXT);
 

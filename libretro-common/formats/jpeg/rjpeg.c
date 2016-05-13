@@ -2446,17 +2446,18 @@ static INLINE void video_frame_convert_rgba_to_bgra(
    }
 }
 
-int rjpeg_process_image(void *data, uint8_t *buf,
+int rjpeg_process_image(void *data, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
    int comp;
    struct texture_image *out_img = (struct texture_image*)data;
+   uint8_t **buf                 = (uint8_t**)buf_data;
 
-   out_img->pixels = (uint32_t*)rjpeg_load_from_memory(buf, size, width, height, &comp, 4);
+   out_img->pixels = (uint32_t*)rjpeg_load_from_memory(*buf, size, width, height, &comp, 4);
    out_img->width   = *width;
    out_img->height  = *height;
 
-   return 1;
+   return IMAGE_PROCESS_END;
 }
 
 bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
@@ -2467,7 +2468,7 @@ bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
    unsigned height = 0;
    struct texture_image *out_img = (struct texture_image*)data;
 
-   if (rjpeg_process_image(out_img, buf, size, &width, &height))
+   if (rjpeg_process_image(out_img, (void**)&buf, size, &width, &height) == IMAGE_PROCESS_END)
       return true;
 
    return false;

@@ -11,8 +11,16 @@
 
 #include <formats/image.h>
 
+#if 0
+#define DEBUG
+#endif
+
 void image_transfer_free(void *data, enum image_type_enum type)
 {
+#ifdef DEBUG
+   printf("image_transfer_free\n");
+#endif
+
    switch (type)
    {
       case IMAGE_TYPE_PNG:
@@ -30,6 +38,10 @@ void image_transfer_free(void *data, enum image_type_enum type)
 
 void *image_transfer_new(enum image_type_enum type)
 {
+#ifdef DEBUG
+   printf("image_transfer_new\n");
+#endif
+
    switch (type)
    {
       case IMAGE_TYPE_PNG:
@@ -53,6 +65,10 @@ void *image_transfer_new(enum image_type_enum type)
 
 bool image_transfer_start(void *data, enum image_type_enum type)
 {
+#ifdef DEBUG
+   printf("image_transfer_start\n");
+#endif
+
    switch (type)
    {
       case IMAGE_TYPE_PNG:
@@ -95,6 +111,10 @@ int image_transfer_process(
       uint32_t **buf, size_t len,
       unsigned *width, unsigned *height)
 {
+#ifdef DEBUG
+   printf("image_transfer_process\n");
+#endif
+
    switch (type)
    {
       case IMAGE_TYPE_PNG:
@@ -104,14 +124,17 @@ int image_transfer_process(
 
          return rpng_nbio_load_image_argb_process(
                (rpng_t*)data,
-               buf, width, height);
+               (void**)buf, width, height);
 #else
          break;
 #endif
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
+#ifdef DEBUG
+         printf("len is: %d\n", len);
+#endif
          return rjpeg_process_image((rjpeg_t*)data,
-               buf, len, width, height);
+               (void**)buf, len, width, height);
 #else
          break;
 #endif
@@ -122,6 +145,10 @@ int image_transfer_process(
 
 bool image_transfer_iterate(void *data, enum image_type_enum type)
 {
+#ifdef DEBUG
+   printf("image_transfer_iterate\n");
+#endif
+   
    switch (type)
    {
       case IMAGE_TYPE_PNG:
@@ -132,8 +159,10 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
          break;
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
-#endif
+         return false;
+#else
          break;
+#endif
    }
 
    return true;

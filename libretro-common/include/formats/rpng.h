@@ -48,7 +48,7 @@ void rpng_nbio_load_image_free(rpng_t *rpng);
 bool rpng_nbio_load_image_argb_iterate(rpng_t *rpng);
 
 int rpng_nbio_load_image_argb_process(rpng_t *rpng,
-      uint32_t **data, unsigned *width, unsigned *height);
+      void **data, unsigned *width, unsigned *height);
 
 bool rpng_nbio_load_image_argb_start(rpng_t *rpng);
 

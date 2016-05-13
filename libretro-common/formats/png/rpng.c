@@ -943,8 +943,10 @@ error:
 }
 
 int rpng_nbio_load_image_argb_process(rpng_t *rpng,
-      uint32_t **data, unsigned *width, unsigned *height)
+      void **_data, unsigned *width, unsigned *height)
 {
+   uint32_t **data = (uint32_t**)_data;
+
    if (!rpng->process.initialized)
    {
       if (!rpng->process.stream_backend)
