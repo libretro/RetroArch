@@ -1127,17 +1127,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
-      /* FIXME - PS3 audio driver needs to be fixed so that threaded
-       * audio works correctly (audio is already on a thread for PS3
-       * audio driver so that's probably the problem) */
-#if defined(HAVE_THREADS) && !defined(__CELLOS_LV2__)
       case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
+#if defined(HAVE_THREADS) && !defined(__CELLOS_LV2__)
       {
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
          audio_driver_set_callback(data);
-         break;
       }
 #endif
+      break;
 
       case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
       {
@@ -1435,17 +1432,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       
       case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
 #ifdef HAVE_CHEEVOS
-      {
-         bool state = *(const bool*)data;
-         RARCH_LOG("Environ SET_SUPPORT_ACHIEVEMENTS: %s.\n", state ? "yes" : "no");
-         cheevos_set_support_cheevos(state);
-         break;
-      }
+         {
+            bool state = *(const bool*)data;
+            RARCH_LOG("Environ SET_SUPPORT_ACHIEVEMENTS: %s.\n", state ? "yes" : "no");
+            cheevos_set_support_cheevos(state);
+         }
 #endif
+      break;
 
-      /* Private extensions for internal use, not part of libretro API. */
-      /* None yet. */
-       
       /* Default */
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);
