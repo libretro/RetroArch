@@ -44,7 +44,6 @@ static int rarch_main_data_nbio_iterate_transfer(nbio_handle_t *nbio)
          return -1;
    }
 
-   nbio->frame_count++;
    return 0;
 }
 
@@ -109,6 +108,5 @@ task_finished:
    nbio_free(nbio->handle);
    nbio->handle      = NULL;
    nbio->is_finished = false;
-   nbio->frame_count = 0;
    free(nbio);
 }

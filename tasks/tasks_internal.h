@@ -77,7 +77,6 @@ typedef struct nbio_handle
    transfer_cb_t  cb;
    struct nbio_t *handle;
    unsigned pos_increment;
-   uint64_t frame_count;
    msg_queue_t *msg_queue;
    unsigned status;
 } nbio_handle_t;
