@@ -68,7 +68,7 @@ typedef struct
 struct rjpeg
 {
    uint8_t *buff_data;
-   struct texture_image *out_img;
+   uint32_t *output_image;
    void *empty;
 };
 
@@ -2452,10 +2452,8 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
    int comp;
-   struct texture_image *out_img = (struct texture_image*)rjpeg->out_img;
-   uint8_t **buf                 = (uint8_t**)rjpeg->buff_data;
-
-   out_img->pixels = (uint32_t*)rjpeg_load_from_memory(*buf, size, width, height, &comp, 4);
+   uint8_t **buf                 = (uint8_t**)buf_data;
+   rjpeg->output_image           = (uint32_t*)rjpeg_load_from_memory(*buf, size, width, height, &comp, 4);
 
    return IMAGE_PROCESS_END;
 }
@@ -2475,11 +2473,10 @@ bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
    if (!rjpeg_set_buf_ptr(rjpeg, &buf))
       goto error;
 
-   rjpeg->out_img = out_img;
-
    if (rjpeg_process_image(rjpeg, (void**)&buf, size, &width, &height) != IMAGE_PROCESS_END)
       goto error;
 
+   out_img->pixels = (uint32_t*)rjpeg->output_image;
    out_img->width   = width;
    out_img->height  = height;
 
@@ -2518,6 +2515,5 @@ rjpeg_t *rjpeg_alloc(void)
    rjpeg_t *rjpeg = (rjpeg_t*)calloc(1, sizeof(*rjpeg));
    if (!rjpeg)
       return NULL;
-   rjpeg->out_img = (struct texture_image*)calloc(1, sizeof(*rjpeg->out_img));
    return rjpeg;
 }
