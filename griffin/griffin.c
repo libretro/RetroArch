@@ -230,6 +230,7 @@ VIDEO IMAGE
 #include "../cores/libretro-imageviewer/image_core.c"
 #endif
 
+#include "../libretro-common/formats/image_transfer.c"
 #ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"

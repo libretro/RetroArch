@@ -911,7 +911,8 @@ ifeq ($(HAVE_RJPEG), 1)
 endif
 
 OBJ += libretro-common/formats/bmp/rbmp_encode.o \
-       libretro-common/formats/json/jsonsax.o
+       libretro-common/formats/json/jsonsax.o \
+		 libretro-common/formats/image_transfer.o
 
 ifeq ($(HAVE_RTGA), 1)
 OBJ += libretro-common/formats/tga/rtga.o

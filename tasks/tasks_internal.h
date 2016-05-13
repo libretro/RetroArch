@@ -40,12 +40,6 @@ enum nbio_status_enum
    NBIO_STATUS_TRANSFER_PARSE_FREE
 };
 
-enum image_type_enum
-{
-   IMAGE_TYPE_PNG = 0,
-   IMAGE_TYPE_JPEG
-};
-
 #ifdef HAVE_NETWORKING
 typedef struct
 {
