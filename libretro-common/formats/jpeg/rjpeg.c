@@ -67,6 +67,7 @@ typedef struct
 
 struct rjpeg
 {
+   uint8_t *buff_data;
    void *empty;
 };
 
@@ -2475,6 +2476,16 @@ bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
     if (r_shift == 0 && b_shift == 16) { } /* RGBA, doesn't need conversion */
     else
        video_frame_convert_rgba_to_bgra(buf, out_img->pixels, width);
+
+   return true;
+}
+
+bool rjpeg_set_buf_ptr(rjpeg_t *rjpeg, void *data)
+{
+   if (!rjpeg)
+      return false;
+
+   rjpeg->buff_data = (uint8_t*)data;
 
    return true;
 }

@@ -100,6 +100,7 @@ void image_transfer_set_buffer_ptr(
          break;
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
+         rjpeg_set_buf_ptr((rjpeg_t*)data, (uint8_t*)ptr);
 #endif
          break;
    }

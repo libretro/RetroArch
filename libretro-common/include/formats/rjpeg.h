@@ -40,6 +40,8 @@ int rjpeg_process_image(void *data, void **buf,
 bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
       unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift);
 
+bool rjpeg_set_buf_ptr(rjpeg_t *rpng, void *data);
+
 void rjpeg_free(rjpeg_t *rjpeg);
 
 rjpeg_t *rjpeg_alloc(void);
