@@ -124,8 +124,8 @@ static int task_http_iterate_transfer(retro_task_t *task)
 
 static void rarch_task_http_transfer_handler(retro_task_t *task)
 {
-   http_handle_t *http = (http_handle_t*)task->state;
-   http_transfer_data_t *data;
+   http_transfer_data_t *data = NULL;
+   http_handle_t        *http = (http_handle_t*)task->state;
 
    if (task->cancelled)
       goto task_finished;
@@ -196,7 +196,7 @@ task_finished:
 
 static bool rarch_task_http_finder(retro_task_t *task, void *user_data)
 {
-   http_handle_t *http;
+   http_handle_t *http = NULL;
 
    if (!task || (task->handler != rarch_task_http_transfer_handler))
       return false;
@@ -303,9 +303,9 @@ task_retriever_info_t *http_task_get_transfer_list(void)
    task_retriever_data_t retrieve_data;
 
    /* Fill retrieve data */
-   retrieve_data.handler = rarch_task_http_transfer_handler;
+   retrieve_data.handler      = rarch_task_http_transfer_handler;
    retrieve_data.element_size = sizeof(http_transfer_info_t);
-   retrieve_data.func = rarch_task_http_retriever;
+   retrieve_data.func         = rarch_task_http_retriever;
 
    /* Build list of current HTTP transfers and return it */
    task_queue_ctl(TASK_QUEUE_CTL_RETRIEVE, &retrieve_data);

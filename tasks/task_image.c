@@ -44,8 +44,8 @@ enum image_status_enum
 
 static int cb_image_menu_upload_generic(void *data, size_t len)
 {
-   nbio_handle_t *nbio = (nbio_handle_t*)data;
    unsigned r_shift, g_shift, b_shift, a_shift;
+   nbio_handle_t *nbio = (nbio_handle_t*)data;
 
    if (!nbio)
       return -1;
