@@ -962,9 +962,8 @@ int rpng_process_image(rpng_t *rpng,
 
    if (!rpng->process.inflate_initialized)
    {
-      int ret = rpng_load_image_argb_process_inflate_init(rpng, data,
-               width, height);
-      if (ret == -1)
+      if (rpng_load_image_argb_process_inflate_init(rpng, data,
+               width, height) == -1)
          return PNG_PROCESS_ERROR;
       return 0;
    }
