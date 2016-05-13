@@ -71,13 +71,13 @@ static bool rpng_load_image_argb(const char *path, uint32_t **data,
       goto end;
    }
 
-   if (!rpng_nbio_load_image_argb_start(rpng))
+   if (!rpng_start(rpng))
    {
       ret = false;
       goto end;
    }
 
-   while (rpng_nbio_load_image_argb_iterate(rpng));
+   while (rpng_iterate_image(rpng));
 
    if (!rpng_is_valid(rpng))
    {
@@ -87,7 +87,7 @@ static bool rpng_load_image_argb(const char *path, uint32_t **data,
    
    do
    {
-      retval = rpng_nbio_load_image_argb_process(rpng, data, width, height);
+      retval = rpng_process_image(rpng, (void**)data, width, height);
    }while(retval == IMAGE_PROCESS_NEXT);
 
    if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
@@ -97,7 +97,7 @@ end:
    if (handle)
       nbio_free(handle);
    if (rpng)
-      rpng_nbio_load_image_free(rpng);
+      rpng_free(rpng);
    rpng = NULL;
    if (!ret)
       free(*data);

@@ -218,13 +218,12 @@ static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
 {
    nbio_image_handle_t *image = nbio ? nbio->image : NULL;
 
-   if (nbio->image)
-      free(nbio->image);
+   if (image)
+      free(image);
 
    nbio->image                   = NULL;
 
    image_transfer_free(image->handle, nbio->image_type);
-
 
    image->handle                 = NULL;
    image->cb                     = NULL;
@@ -318,13 +317,13 @@ bool rarch_task_image_load_handler(retro_task_t *task)
    }
 
    if (     nbio->is_finished 
-         && nbio->image->is_finished 
+         && image->is_finished 
          && !task->cancelled)
    {
-      task->task_data = malloc(sizeof(nbio->image->ti));
+      task->task_data = malloc(sizeof(image->ti));
 
       if (task->task_data)
-         memcpy(task->task_data, &nbio->image->ti, sizeof(nbio->image->ti));
+         memcpy(task->task_data, &image->ti, sizeof(image->ti));
 
       return false;
    }
@@ -335,10 +334,11 @@ bool rarch_task_image_load_handler(retro_task_t *task)
 bool rarch_task_push_image_load(const char *fullpath,
       const char *type, retro_task_callback_t cb, void *user_data)
 {
-   nbio_handle_t *nbio   = NULL;
-   retro_task_t *t       = NULL;
-   uint32_t cb_type_hash = djb2_calculate(type);
-   struct nbio_t *handle = nbio_open(fullpath, NBIO_READ);
+   nbio_handle_t             *nbio   = NULL;
+   retro_task_t             *t       = NULL;
+   uint32_t             cb_type_hash = djb2_calculate(type);
+   struct nbio_t             *handle = nbio_open(fullpath, NBIO_READ);
+   nbio_image_handle_t        *image = NULL;
 
    if (!handle)
       goto error;
@@ -348,12 +348,17 @@ bool rarch_task_push_image_load(const char *fullpath,
    if (!nbio)
       goto error;
 
-   nbio->image        = (struct nbio_image_handle*)calloc(1, sizeof(*nbio->image));
+   image              = (nbio_image_handle_t*)calloc(1, sizeof(*image));
+   
+   if (!image)
+      goto error;
+
+   nbio->image        = image;
    nbio->handle       = handle;
    nbio->is_finished  = false;
    nbio->cb           = &cb_nbio_default;
    nbio->status       = NBIO_STATUS_TRANSFER;
-   nbio->image->status = IMAGE_STATUS_TRANSFER;
+   image->status      = IMAGE_STATUS_TRANSFER;
 
    if (strstr(fullpath, ".png"))
       nbio->image_type = IMAGE_TYPE_PNG;
@@ -389,6 +394,8 @@ bool rarch_task_push_image_load(const char *fullpath,
 error:
    if (t)
       free(t);
+   if (nbio->image)
+      free(nbio->image);
    if (nbio)
       free(nbio);
    RARCH_ERR("[image load] Failed to open '%s': %s.\n",
