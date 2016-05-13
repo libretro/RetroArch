@@ -29,6 +29,7 @@
 #endif
 #include <queues/task_queue.h>
 #include <string/stdstring.h>
+#include <features/features_cpu.h>
 
 #include <compat/strl.h>
 
@@ -38,7 +39,6 @@
 #include "autosave.h"
 #include "core_info.h"
 #include "configuration.h"
-#include "performance.h"
 #include "movie.h"
 #include "retroarch.h"
 #include "runloop.h"
@@ -60,6 +60,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_content.h"
 #endif
 
 #ifdef HAVE_NETPLAY
@@ -91,6 +92,12 @@
                                             settings, cmd->state[0], \
                                             cmd->state[1], cmd->state[2]))
 #endif
+
+struct rarch_dir_list
+{
+   struct string_list *list;
+   size_t ptr;
+};
 
 typedef struct event_cmd_state
 {
@@ -224,6 +231,60 @@ static bool runloop_check_movie_record(void)
    command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
 
    return true;
+}
+
+static bool runloop_check_movie_init(void)
+{
+   char msg[128], path[PATH_MAX_LENGTH];
+   settings_t *settings  = config_get_ptr();
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return false;
+
+   settings->rewind_granularity = 1;
+
+   if (settings->state_slot > 0)
+      snprintf(path, sizeof(path), "%s%d",
+            bsv_movie_get_path(), settings->state_slot);
+   else
+      strlcpy(path, bsv_movie_get_path(), sizeof(path));
+
+   strlcat(path, ".bsv", sizeof(path));
+
+   snprintf(msg, sizeof(msg), "%s \"%s\".",
+         msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+         path);
+
+   bsv_movie_init_handle(path, RARCH_MOVIE_RECORD);
+
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return false;
+
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+   {
+      runloop_msg_queue_push(msg, 1, 180, true);
+      RARCH_LOG("%s \"%s\".\n",
+            msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
+            path);
+   }
+   else
+   {
+      runloop_msg_queue_push(
+            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
+            1, 180, true);
+      RARCH_ERR("%s\n",
+            msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
+   }
+
+   return true;
+}
+
+static bool runloop_check_movie(void)
+{
+   if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
+      return runloop_check_movie_playback();
+   if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
+      return runloop_check_movie_init();
+   return runloop_check_movie_record();
 }
 
 /* Checks if slowmotion toggle/hold was being pressed and/or held. */
@@ -588,7 +649,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    runloop_check_slowmotion(&tmp);
 
    if (runloop_cmd_triggered(cmd, RARCH_MOVIE_RECORD_TOGGLE))
-      runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE, NULL);
+      runloop_check_movie();
 
    runloop_check_shader_dir(shader_dir,
          runloop_cmd_triggered(cmd, RARCH_SHADER_NEXT),
@@ -658,6 +719,26 @@ static bool runloop_is_frame_count_end(void)
    return runloop_max_frames && (*frame_count >= runloop_max_frames);
 }
 
+
+bool runloop_prepare_dummy(void)
+{
+   memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+#endif
+   runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
+   runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
+   runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+
+#ifdef HAVE_MENU
+   if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+   {
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+      return false;
+   }
+#endif
+   return true;
+}
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
@@ -868,54 +949,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
                return false;
          }
          break;
-      case RUNLOOP_CTL_CHECK_MOVIE:
-         if (bsv_movie_ctl(BSV_MOVIE_CTL_PLAYBACK_ON, NULL))
-            return runloop_check_movie_playback();
-         if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-            return runloop_ctl(RUNLOOP_CTL_CHECK_MOVIE_INIT, NULL);
-         return runloop_check_movie_record();
-      case RUNLOOP_CTL_CHECK_MOVIE_INIT:
-         if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-            return false;
-         {
-            char msg[128];
-            char path[PATH_MAX_LENGTH];
-
-            settings->rewind_granularity = 1;
-
-            if (settings->state_slot > 0)
-               snprintf(path, sizeof(path), "%s%d",
-                     bsv_movie_get_path(), settings->state_slot);
-            else
-               strlcpy(path, bsv_movie_get_path(), sizeof(path));
-
-            strlcat(path, ".bsv", sizeof(path));
-
-            snprintf(msg, sizeof(msg), "%s \"%s\".",
-                  msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-                  path);
-
-            bsv_movie_init_handle(path, RARCH_MOVIE_RECORD);
-
-            if (!bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-               return false;
-            else if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
-            {
-               runloop_msg_queue_push(msg, 1, 180, true);
-               RARCH_LOG("%s \"%s\".\n",
-                     msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO),
-                     path);
-            }
-            else
-            {
-               runloop_msg_queue_push(
-                     msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD),
-                     1, 180, true);
-               RARCH_ERR("%s\n",
-                     msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
-            }
-         }
-         break;
       case RUNLOOP_CTL_FRAME_TIME_FREE:
          memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
          runloop_frame_time_last           = 0;
@@ -1042,17 +1075,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #endif
             task_queue_ctl(TASK_QUEUE_CTL_INIT, &threaded_enable);
          }
-         break;
-      case RUNLOOP_CTL_PREPARE_DUMMY:
-         memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
-#ifdef HAVE_MENU
-         menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
-#endif
-         runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
-         runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
-         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-
-         rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
          break;
       case RUNLOOP_CTL_SET_CORE_SHUTDOWN:
          runloop_core_shutdown_initiated = true;
@@ -1243,7 +1265,7 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
  * Aborts core shutdown if invoked. */
 static int runloop_iterate_time_to_exit_load_dummy(void)
 {
-   if (!runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL))
+   if (!runloop_prepare_dummy())
       return -1;
 
    runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);

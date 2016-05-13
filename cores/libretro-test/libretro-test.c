@@ -7,7 +7,7 @@
 
 #include <retro_miscellaneous.h>
 
-#include "../../libretro.h"
+#include <libretro.h>
 
 static uint32_t *frame_buf;
 static struct retro_log_callback logging;

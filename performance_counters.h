@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 
-#include "libretro.h"
+#include <libretro.h>
 
 #ifdef __cplusplus
 extern "C" {

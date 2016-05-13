@@ -1,3 +1,25 @@
+/* Copyright  (C) 2010-2016 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (rjpeg.c).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 /* Modified version of stb_image's JPEG sources. 
  */
 
@@ -11,6 +33,7 @@
 #include <retro_inline.h>
 #include <boolean.h>
 #include <formats/image.h>
+#include <features/features_cpu.h>
 
 enum
 {
@@ -88,50 +111,18 @@ typedef struct
 #include <emmintrin.h>
 
 #ifdef _MSC_VER
-
-#if _MSC_VER >= 1400  /* not VC6 */
-#include <intrin.h> /* __cpuid */
-static int rjpeg__cpuid3(void)
-{
-   int info[4];
-   __cpuid(info,1);
-   return info[3];
-}
-#else
-static int rjpeg__cpuid3(void)
-{
-   int res;
-   __asm {
-      mov  eax,1
-      cpuid
-      mov  res,edx
-   }
-   return res;
-}
-#endif
-
 #define RJPEG_SIMD_ALIGN(type, name) __declspec(align(16)) type name
-
-static int rjpeg__sse2_available(void)
-{
-   int info3 = rjpeg__cpuid3();
-   return ((info3 >> 26) & 1) != 0;
-}
-#else /* assume GCC-style if not VC++ */
-#define RJPEG_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
-
-static int rjpeg__sse2_available(void)
-{
-#if defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__) >= 408 /* GCC 4.8 or later */
-   /* GCC 4.8+ has a nice way to do this */
-   return __builtin_cpu_supports("sse2");
 #else
-   /* portable way to do this, preferably without using GCC inline ASM?
-    * just bail for now. */
+#define RJPEG_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
+#endif
+
+static int rjpeg__sse2_available(void)
+{
+   uint64_t mask = cpu_features_get();
+   if (mask & RETRO_SIMD_SSE2)
+      return 1;
    return 0;
-#endif
 }
-#endif
 #endif
 
 /* ARM NEON */
@@ -2453,7 +2444,9 @@ bool rjpeg_image_load(uint8_t *_buf, void *data, size_t size,
       unsigned a_shift, unsigned r_shift,
       unsigned g_shift, unsigned b_shift)
 {
-   int x, y, comp;
+   int comp;
+   int x = 0;
+   int y = 0;
    struct texture_image *out_img = (struct texture_image*)data;
 
    out_img->pixels = (uint32_t*)rjpeg_load_from_memory(_buf, size, &x, &y, &comp, 4);

@@ -19,7 +19,7 @@
 #define INTERNAL_CORES_H__
 
 #include <boolean.h>
-#include "../libretro.h"
+#include <libretro.h>
 
 void libretro_dummy_retro_init(void);
 

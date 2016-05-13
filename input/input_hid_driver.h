@@ -24,7 +24,7 @@ extern "C" {
 #include <stdint.h>
 #include <boolean.h>
 
-#include "../libretro.h"
+#include <libretro.h>
 
 typedef struct hid_driver hid_driver_t;
 

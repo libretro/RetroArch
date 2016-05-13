@@ -204,7 +204,7 @@ OBJ += frontend/frontend.o \
        movie.o \
        record/record_driver.o \
        record/drivers/record_null.o \
-       performance.o \
+       libretro-common/features/features_cpu.o \
        performance_counters.o \
        verbosity.o
 
@@ -291,8 +291,11 @@ ifeq ($(HAVE_OSS_BSD), 1)
 endif
 
 ifeq ($(HAVE_ALSA), 1)
-   OBJ += audio/drivers/alsa.o \
-          audio/drivers/alsathread.o
+   OBJ += audio/drivers/alsa.o
+
+ifeq ($(HAVE_THREADS), 1)
+	OBJ += audio/drivers/alsathread.o
+endif
    LIBS += $(ALSA_LIBS)
    DEFINES += $(ALSA_CFLAGS)
 endif
@@ -575,10 +578,12 @@ ifeq ($(HAVE_UDEV), 1)
 endif
 
 ifeq ($(HAVE_LIBUSB), 1)
+ifeq ($(HAVE_THREADS), 1)
    DEFINES += -DHAVE_LIBUSB
    OBJ += input/drivers_hid/libusb_hid.o
    LIBS += -lusb-1.0
    HAVE_HID = 1
+endif
 endif
 
 ifeq ($(HAVE_IOHIDMANAGER), 1)
@@ -885,7 +890,6 @@ ifeq ($(HAVE_ZLIB), 1)
           tasks/task_decompress.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
-   HAVE_RPNG = 1
    HAVE_COMPRESSION = 1
    ifeq ($(WANT_ZLIB), 1)
       DEFINES += -DWANT_ZLIB
@@ -895,18 +899,23 @@ ifeq ($(HAVE_ZLIB), 1)
    endif
 endif
 
-ifdef HAVE_RPNG
-   DEFINES += -DHAVE_RPNG
-endif
-
 ifeq ($(HAVE_RPNG), 1)
+	DEFINES += -DHAVE_RPNG
    OBJ += libretro-common/formats/png/rpng.o \
           libretro-common/formats/png/rpng_encode.o
 endif
-OBJ += libretro-common/formats/jpeg/rjpeg.o \
-		 libretro-common/formats/bmp/rbmp_encode.o \
-       libretro-common/formats/tga/rtga.o \
+
+ifeq ($(HAVE_RJPEG), 1)
+	DEFINES += -DHAVE_RJPEG
+	OBJ += libretro-common/formats/jpeg/rjpeg.o
+endif
+
+OBJ += libretro-common/formats/bmp/rbmp_encode.o \
        libretro-common/formats/json/jsonsax.o
+
+ifeq ($(HAVE_RTGA), 1)
+OBJ += libretro-common/formats/tga/rtga.o
+endif
 
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION

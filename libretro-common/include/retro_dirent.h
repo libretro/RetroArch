@@ -49,7 +49,7 @@ const char *retro_dirent_get_name(struct RDIR *rdir);
  * Returns: true if directory listing entry is
  * a directory, false if not.
  */
-bool retro_dirent_is_dir(struct RDIR *rdir);
+bool retro_dirent_is_dir(struct RDIR *rdir, const char *path);
 
 void retro_closedir(struct RDIR *rdir);
 

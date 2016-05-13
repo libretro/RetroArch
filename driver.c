@@ -17,6 +17,7 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 
+#include "command.h"
 #include "general.h"
 #include "msg_hash.h"
 #include "system.h"

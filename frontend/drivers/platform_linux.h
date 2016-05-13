@@ -23,31 +23,6 @@
 
 #include <boolean.h>
 
-enum cpu_family
-{
-   CPU_FAMILY_UNKNOWN = 0,
-   CPU_FAMILY_ARM,
-   CPU_FAMILY_X86,
-   CPU_FAMILY_MIPS,
-
-   CPU_FAMILY_MAX  /* do not remove */
-};
-
-enum
-{
-   CPU_ARM_FEATURE_ARMv7       = (1 << 0),
-   CPU_ARM_FEATURE_VFPv3       = (1 << 1),
-   CPU_ARM_FEATURE_NEON        = (1 << 2),
-   CPU_ARM_FEATURE_LDREX_STREX = (1 << 3)
-};
-
-enum
-{
-   CPU_X86_FEATURE_SSSE3       = (1 << 0),
-   CPU_X86_FEATURE_POPCNT      = (1 << 1),
-   CPU_X86_FEATURE_MOVBE       = (1 << 2)
-};
-
 #ifndef MAX_PADS
 #define MAX_PADS 8
 #endif
@@ -55,12 +30,6 @@ enum
 #ifndef MAX_AXIS
 #define MAX_AXIS 10
 #endif
-
-enum cpu_family   linux_get_cpu_family(void);
-
-uint64_t    linux_get_cpu_features(void);
-
-int         linux_get_cpu_count(void);
 
 #ifdef ANDROID
 #include <jni.h>

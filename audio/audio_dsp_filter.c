@@ -23,13 +23,13 @@
 
 #include <file/file_path.h>
 #include <lists/dir_list.h>
+#include <features/features_cpu.h>
 
 #include "audio_dsp_filter.h"
 #include "audio_filters/dspfilter.h"
 
 #include "../config_file_userdata.h"
 #include "../frontend/frontend_driver.h"
-#include "../performance.h"
 #include "../performance_counters.h"
 #include "../dynamic.h"
 

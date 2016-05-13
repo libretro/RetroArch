@@ -79,10 +79,6 @@ enum runloop_ctl_state
    RUNLOOP_CTL_KEY_EVENT_GET,
    RUNLOOP_CTL_DATA_DEINIT,
 
-   RUNLOOP_CTL_CHECK_MOVIE,
-
-   RUNLOOP_CTL_CHECK_MOVIE_INIT,
-
    /* Initializes message queue. */
    RUNLOOP_CTL_MSG_QUEUE_INIT,
 
@@ -106,17 +102,12 @@ enum runloop_ctl_state
    RUNLOOP_CTL_SHADER_DIR_INIT,
    RUNLOOP_CTL_SYSTEM_INFO_GET,
    RUNLOOP_CTL_SYSTEM_INFO_INIT,
-   RUNLOOP_CTL_SYSTEM_INFO_FREE,
-   RUNLOOP_CTL_PREPARE_DUMMY
+   RUNLOOP_CTL_SYSTEM_INFO_FREE
 };
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
 
-typedef struct rarch_dir_list
-{
-   struct string_list *list;
-   size_t ptr;
-} rarch_dir_list_t;
+typedef struct rarch_dir_list rarch_dir_list_t;
 
 typedef struct rarch_dir
 {
@@ -127,7 +118,6 @@ typedef struct rarch_dir
 #ifdef HAVE_OVERLAY
    char osk_overlay[PATH_MAX_LENGTH];
 #endif
-   rarch_dir_list_t filter_dir;
 } rarch_dir_t;
 
 typedef struct rarch_path
@@ -303,6 +293,8 @@ void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
 
 char* runloop_msg_queue_pull(void);
+
+bool runloop_prepare_dummy(void);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 

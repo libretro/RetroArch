@@ -18,9 +18,9 @@
 #define __DYNAMIC_H
 
 #include <boolean.h>
+#include <libretro.h>
 
 #include "core_type.h"
-#include "libretro.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

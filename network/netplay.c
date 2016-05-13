@@ -589,7 +589,7 @@ int16_t input_state_net(unsigned port, unsigned device,
 
 #ifndef HAVE_SOCKET_LEGACY
 /* Custom inet_ntop. Win32 doesn't seem to support this ... */
-void np_log_connection(const struct sockaddr_storage *their_addr,
+void netplay_log_connection(const struct sockaddr_storage *their_addr,
       unsigned slot, const char *nick)
 {
    union

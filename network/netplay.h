@@ -22,8 +22,8 @@
 #include <stddef.h>
 
 #include <boolean.h>
+#include <libretro.h>
 
-#include "../libretro.h"
 #include "../core.h"
 
 typedef struct netplay netplay_t;

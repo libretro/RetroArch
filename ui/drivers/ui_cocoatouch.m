@@ -337,9 +337,6 @@ enum
    apple_platform     = self;
 
    [self setDelegate:self];
-    
-   if (rarch_main(argc, argv, NULL))
-       apple_rarch_exited();
 
 #ifdef HAVE_AVFOUNDATION
     /* Other background audio check */

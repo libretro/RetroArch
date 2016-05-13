@@ -90,6 +90,14 @@ struct sram_block
    size_t size;
 };
 
+typedef struct content_stream
+{
+   uint32_t a;
+   const uint8_t *b;
+   size_t c;
+   uint32_t crc;
+} content_stream_t;
+
 static const struct file_archive_file_backend *stream_backend = NULL;
 static struct string_list *temporary_content                  = NULL;
 static bool _content_is_inited                                = false;
@@ -892,7 +900,7 @@ bool content_load(content_ctx_info_t *info)
    wrap_args->argc = *rarch_argc_ptr;
    wrap_args->argv = rarch_argv_ptr;
 
-   if (!rarch_ctl(RARCH_CTL_MAIN_INIT, wrap_args))
+   if (!retroarch_main_init(wrap_args->argc, wrap_args->argv))
    {
       retval = false;
       goto error;

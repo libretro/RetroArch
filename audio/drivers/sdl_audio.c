@@ -35,8 +35,10 @@ typedef struct sdl_audio
    bool nonblock;
    bool is_paused;
 
+#ifdef HAVE_THREADS
    slock_t *lock;
    scond_t *cond;
+#endif
    fifo_buffer_t *buffer;
 } sdl_audio_t;
 
@@ -47,7 +49,9 @@ static void sdl_audio_cb(void *data, Uint8 *stream, int len)
    size_t write_size = len > (int)avail ? avail : len;
 
    fifo_read(sdl->buffer, stream, write_size);
+#ifdef HAVE_THREADS
    scond_signal(sdl->cond);
+#endif
 
    /* If underrun, fill rest with silence. */
    memset(stream + write_size, 0, len - write_size);
@@ -109,8 +113,10 @@ static void *sdl_audio_init(const char *device,
 
    settings->audio.out_rate = out.freq;
 
+#ifdef HAVE_THREADS
    sdl->lock = slock_new();
    sdl->cond = scond_new();
+#endif
 
    RARCH_LOG("SDL audio: Requested %u ms latency, got %d ms\n", 
          latency, (int)(out.samples * 4 * 1000 / settings->audio.out_rate));
@@ -160,9 +166,11 @@ static ssize_t sdl_audio_write(void *data, const void *buf, size_t size)
          if (avail == 0)
          {
             SDL_UnlockAudio();
+#ifdef HAVE_THREADS
             slock_lock(sdl->lock);
             scond_wait(sdl->cond, sdl->lock);
             slock_unlock(sdl->lock);
+#endif
          }
          else
          {
@@ -220,8 +228,10 @@ static void sdl_audio_free(void *data)
    if (sdl)
    {
       fifo_free(sdl->buffer);
+#ifdef HAVE_THREADS
       slock_free(sdl->lock);
       scond_free(sdl->cond);
+#endif
    }
    free(sdl);
 }

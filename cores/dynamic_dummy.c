@@ -19,8 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <libretro.h>
+
 #include "internal_cores.h"
-#include "../libretro.h"
 
 static uint16_t *frame_buf;
 

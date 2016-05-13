@@ -481,7 +481,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       submit_info.commandBufferCount = 1;
       submit_info.pCommandBuffers    = &staging;
 
+#ifdef HAVE_THREADS
       slock_lock(vk->context->queue_lock);
+#endif
       VKFUNC(vkQueueSubmit)(vk->context->queue,
             1, &submit_info, VK_NULL_HANDLE);
 
@@ -489,7 +491,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
        * during init, so waiting for GPU to complete transfer 
        * and blocking isn't a big deal. */
       VKFUNC(vkQueueWaitIdle)(vk->context->queue);
+#ifdef HAVE_THREADS
       slock_unlock(vk->context->queue_lock);
+#endif
 
       VKFUNC(vkFreeCommandBuffers)(vk->context->device, vk->staging_pool, 1, &staging);
       vulkan_destroy_texture(
@@ -1423,9 +1427,11 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          break;
    }
 
+#ifdef HAVE_THREADS
    vk->context.queue_lock = slock_new();
    if (!vk->context.queue_lock)
       return false;
+#endif
 
    return true;
 }
@@ -1577,7 +1583,9 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    present.pWaitSemaphores         = &vk->context.swapchain_semaphores[index];
 
    /* Better hope QueuePresent doesn't block D: */
+#ifdef HAVE_THREADS
    slock_lock(vk->context.queue_lock);
+#endif
    err = VKFUNC(vkQueuePresentKHR)(vk->context.queue, &present);
 
    if (err != VK_SUCCESS || result != VK_SUCCESS)
@@ -1586,7 +1594,9 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
       vk->context.invalid_swapchain = true;
    }
 
+#ifdef HAVE_THREADS
    slock_unlock(vk->context.queue_lock);
+#endif
 }
 
 void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,

@@ -13,6 +13,20 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <stdint.h>
+#include <math.h>
+#include <string.h>
+
+
+#include <compat/strl.h>
+#include <gfx/scaler/scaler.h>
+#include <formats/image.h>
+#include <retro_inline.h>
+#include <retro_miscellaneous.h>
+#include <retro_assert.h>
+#include <libretro.h>
+
 #include "../common/vulkan_common.h"
 #include "vulkan_shaders/alpha_blend.vert.inc"
 #include "vulkan_shaders/alpha_blend.frag.inc"
@@ -22,23 +36,10 @@
 #include "vulkan_shaders/ribbon_simple.vert.inc"
 #include "vulkan_shaders/ribbon_simple.frag.inc"
 
-#include <stdio.h>
-#include <stdint.h>
-#include <math.h>
-#include <string.h>
-
-#include <compat/strl.h>
-#include <gfx/scaler/scaler.h>
-#include <formats/image.h>
-#include <retro_inline.h>
-#include <retro_miscellaneous.h>
-#include <retro_assert.h>
-
 #include "../../driver.h"
 #include "../../record/record_driver.h"
 #include "../../performance_counters.h"
 
-#include "../../libretro.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 
@@ -884,13 +885,17 @@ static void vulkan_set_command_buffers(void *handle, uint32_t num_cmd,
 static void vulkan_lock_queue(void *handle)
 {
    vk_t *vk = (vk_t*)handle;
+#ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
+#endif
 }
 
 static void vulkan_unlock_queue(void *handle)
 {
    vk_t *vk = (vk_t*)handle;
+#ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
+#endif
 }
 
 static void vulkan_init_hw_render(vk_t *vk)
@@ -1740,10 +1745,14 @@ static bool vulkan_frame(void *data, const void *frame,
 
    retro_perf_start(&queue_submit);
 
+#ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
+#endif
    VKFUNC(vkQueueSubmit)(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]);
+#ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
+#endif
    retro_perf_stop(&queue_submit);
 
    retro_perf_start(&swapbuffers);
@@ -2007,7 +2016,9 @@ static const video_poke_interface_t vulkan_poke_interface = {
    NULL,
    NULL,
 #endif
+#ifdef HAVE_MENU
    vulkan_set_osd_msg,
+#endif
    vulkan_show_mouse,
    NULL,
    vulkan_get_current_shader,
@@ -2260,9 +2271,13 @@ static bool vulkan_overlay_load(void *data,
    if (!vk)
       return false;
 
+#ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
+#endif
    VKFUNC(vkQueueWaitIdle)(vk->context->queue);
+#ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
+#endif
    vulkan_overlay_free(vk);
 
    vk->overlay.images = (struct vk_texture*)

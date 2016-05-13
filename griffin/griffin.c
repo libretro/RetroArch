@@ -62,7 +62,7 @@ ENCODINGS
 /*============================================================
 PERFORMANCE
 ============================================================ */
-#include "../performance.c"
+#include "../libretro-common/features/features_cpu.c"
 #include "../performance_counters.c"
 
 /*============================================================
@@ -222,7 +222,9 @@ VIDEO IMAGE
 
 #include "../gfx/video_texture_image.c"
 
+#ifdef HAVE_RTGA
 #include "../libretro-common/formats/tga/rtga.c"
+#endif
 
 #ifdef HAVE_IMAGEVIEWER
 #include "../cores/libretro-imageviewer/image_core.c"
@@ -232,7 +234,9 @@ VIDEO IMAGE
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
 #endif
+#ifdef HAVE_RJPEG
 #include "../libretro-common/formats/jpeg/rjpeg.c"
+#endif
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 
 /*============================================================
@@ -430,7 +434,7 @@ INPUT (HID)
 
 #include "../input/drivers_hid/null_hid.c"
 
-#if defined(HAVE_LIBUSB)
+#if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
 #include "../input/drivers_hid/libusb_hid.c"
 #endif
 

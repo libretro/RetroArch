@@ -3638,7 +3638,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
-         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT_RETROARCH);
+         menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_QUIT);
 #endif
 
 #if defined(HAVE_LAKKA)
@@ -4594,7 +4594,7 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-#if defined(HAVE_THREADS) && !defined(RARCH_CONSOLE)
+#if defined(HAVE_THREADS)
          CONFIG_BOOL(
                list, list_info,
                &settings->video.threaded,
@@ -5454,7 +5454,6 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
-#ifndef RARCH_CONSOLE
          CONFIG_BOOL(
                list, list_info,
                &settings->video.font_enable,
@@ -5468,7 +5467,6 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler);
-#endif
 
          CONFIG_PATH(
                list, list_info,

@@ -63,7 +63,7 @@ DEFINES += -DHAVE_CHEEVOS
 DEFINES += -DHAVE_SL
 
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
-LOCAL_CPPFLAGS := -fno-exceptions -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
+LOCAL_CPPFLAGS := -fexceptions -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
 
 # Let ndk-build set the optimization flags but remove -O3 like in cf3c3
 LOCAL_CFLAGS := $(subst -O3,-O2,$(LOCAL_CFLAGS))
@@ -79,7 +79,8 @@ LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/glslang/Public \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/SPIRV \
-						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/spir2cross
+						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/spir2cross \
+						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/SPIRV-Cross
 
 LOCAL_SRC_FILES += $(RARCH_DIR)/deps/glslang/glslang.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/SpvBuilder.cpp \

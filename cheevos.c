@@ -20,8 +20,10 @@
 #include <streams/file_stream.h>
 #include <rhash.h>
 #include <rthreads/async_job.h>
+#include <libretro.h>
 
 #include "cheevos.h"
+#include "command.h"
 #include "dynamic.h"
 #include "libretro.h"
 #include "system.h"

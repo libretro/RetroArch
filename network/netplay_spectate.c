@@ -41,7 +41,7 @@ static void netplay_spectate_pre_frame(netplay_t *netplay)
    fd_set fds;
    struct timeval tmp_tv = {0};
 
-   if (!np_is_server(netplay))
+   if (!netplay_is_server(netplay))
       return;
 
    FD_ZERO(&fds);
@@ -78,22 +78,22 @@ static void netplay_spectate_pre_frame(netplay_t *netplay)
       return;
    }
 
-   if (!np_get_nickname(netplay, new_fd))
+   if (!netplay_get_nickname(netplay, new_fd))
    {
       RARCH_ERR("Failed to get nickname from client.\n");
       socket_close(new_fd);
       return;
    }
 
-   if (!np_send_nickname(netplay, new_fd))
+   if (!netplay_send_nickname(netplay, new_fd))
    {
       RARCH_ERR("Failed to send nickname to client.\n");
       socket_close(new_fd);
       return;
    }
 
-   header = np_bsv_header_generate(&header_size,
-         np_impl_magic());
+   header = netplay_bsv_header_generate(&header_size,
+         netplay_impl_magic());
 
    if (!header)
    {
@@ -118,7 +118,7 @@ static void netplay_spectate_pre_frame(netplay_t *netplay)
    netplay->spectate.fds[idx] = new_fd;
 
 #ifndef HAVE_SOCKET_LEGACY
-   np_log_connection(&their_addr, idx, netplay->other_nick);
+   netplay_log_connection(&their_addr, idx, netplay->other_nick);
 #endif
 }
 
@@ -133,7 +133,7 @@ static void netplay_spectate_post_frame(netplay_t *netplay)
 {
    unsigned i;
 
-   if (!np_is_server(netplay))
+   if (!netplay_is_server(netplay))
       return;
 
    for (i = 0; i < MAX_SPECTATORS; i++)
@@ -165,9 +165,9 @@ static void netplay_spectate_post_frame(netplay_t *netplay)
 static bool netplay_spectate_info_cb(netplay_t *netplay, unsigned frames)
 {
    unsigned i;
-   if(np_is_server(netplay))
+   if(netplay_is_server(netplay))
    {
-      if(!np_get_info(netplay))
+      if(!netplay_get_info(netplay))
          return false;
    }
 

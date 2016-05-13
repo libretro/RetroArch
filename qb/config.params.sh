@@ -77,3 +77,6 @@ HAVE_XSHM=no               # XShm video driver support (disabled because it's ju
 HAVE_CHEEVOS=yes           # Retro Achievements
 HAVE_VULKAN=auto           # Vulkan support
 C89_VULKAN=no
+HAVE_RPNG=yes              # RPNG support
+HAVE_RJPEG=yes             # RJPEG support
+HAVE_RTGA=yes              # RTGA support

@@ -65,7 +65,7 @@ DEFINES += -DDEBUG_ANDROID
 DEFINES += -DHAVE_SL
 
 LOCAL_CFLAGS += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
-LOCAL_CPPFLAGS := -std=gnu++11 $(DEFINES)
+LOCAL_CPPFLAGS := -fexceptions -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
 
 ifeq ($(NDK_DEBUG),1)
 LOCAL_CFLAGS += -O0 -g
@@ -83,7 +83,10 @@ LOCAL_C_INCLUDES += $(INCFLAGS)
 LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/glslang/Public \
 						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/glslang/MachineIndependent \
-						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/SPIRV
+						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/glslang/glslang/SPIRV \
+						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/spir2cross \
+						  -I$(LOCAL_PATH)/$(RARCH_DIR)/deps/SPIRV-Cross
+
 LOCAL_SRC_FILES += $(RARCH_DIR)/deps/glslang/glslang.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/SpvBuilder.cpp \
 						 $(RARCH_DIR)/deps/glslang/glslang/SPIRV/SPVRemapper.cpp \

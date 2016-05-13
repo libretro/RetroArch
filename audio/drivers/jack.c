@@ -41,8 +41,10 @@ typedef struct jack
    bool nonblock;
    bool is_paused;
 
+#ifdef HAVE_THREADS
    scond_t *cond;
    slock_t *cond_lock;
+#endif
    size_t buffer_size;
 } jack_t;
 
@@ -54,7 +56,9 @@ static int process_cb(jack_nframes_t nframes, void *data)
 
    if (nframes <= 0)
    {
+#ifdef HAVE_THREADS
       scond_signal(jd->cond);
+#endif
       return 0;
    }
 
@@ -74,7 +78,9 @@ static int process_cb(jack_nframes_t nframes, void *data)
       for (f = min_avail; f < nframes; f++)
          out[f] = 0.0f;
    }
+#ifdef HAVE_THREADS
    scond_signal(jd->cond);
+#endif
    return 0;
 }
 
@@ -86,7 +92,9 @@ static void shutdown_cb(void *data)
       return;
 
    jd->shutdown = true;
+#ifdef HAVE_THREADS
    scond_signal(jd->cond);
+#endif
 }
 
 static int parse_ports(char **dest_ports, const char **jports)
@@ -149,8 +157,10 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
    if (!jd)
       return NULL;
 
+#ifdef HAVE_THREADS
    jd->cond      = scond_new();
    jd->cond_lock = slock_new();
+#endif
 
    jd->client = jack_client_open("RetroArch", JackNullOption, NULL);
    if (jd->client == NULL)
@@ -258,12 +268,14 @@ static size_t write_buffer(jack_t *jd, const float *buf, size_t size)
          }
          written += write_frames;
       }
+#ifdef HAVE_THREADS
       else
       {
          slock_lock(jd->cond_lock);
          scond_wait(jd->cond, jd->cond_lock);
          slock_unlock(jd->cond_lock);
       }
+#endif
 
       if (jd->nonblock)
          break;
@@ -327,10 +339,12 @@ static void ja_free(void *data)
       if (jd->buffer[i] != NULL)
          jack_ringbuffer_free(jd->buffer[i]);
 
+#ifdef HAVE_THREADS
    if (jd->cond_lock)
       slock_free(jd->cond_lock);
    if (jd->cond)
       scond_free(jd->cond);
+#endif
    free(jd);
 }
 

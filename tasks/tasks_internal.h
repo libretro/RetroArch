@@ -40,8 +40,15 @@ enum nbio_status_enum
    NBIO_STATUS_TRANSFER_PARSE_FREE
 };
 
+enum image_type_enum
+{
+   IMAGE_TYPE_PNG = 0,
+   IMAGE_TYPE_JPEG
+};
+
 #ifdef HAVE_NETWORKING
-typedef struct {
+typedef struct
+{
     char *data;
     size_t len;
 } http_transfer_data_t;
@@ -51,6 +58,7 @@ typedef struct http_transfer_info
    char url[PATH_MAX_LENGTH];
    int progress;
 } http_transfer_info_t;
+#endif
 
 typedef struct nbio_image_handle
 {
@@ -69,6 +77,7 @@ typedef struct nbio_image_handle
 
 typedef struct nbio_handle
 {
+   enum image_type_enum image_type;
    nbio_image_handle_t image;
    bool is_finished;
    transfer_cb_t  cb;
@@ -79,6 +88,7 @@ typedef struct nbio_handle
    unsigned status;
 } nbio_handle_t;
 
+#ifdef HAVE_NETWORKING
 void *rarch_task_push_http_transfer(const char *url, const char *type,
       retro_task_callback_t cb, void *userdata);
 
@@ -131,7 +141,7 @@ bool rarch_task_push_content_load_default(
 
 void rarch_task_image_load_free(retro_task_t *task);
 
-void rarch_task_file_load_handler(retro_task_t *task);;
+void rarch_task_file_load_handler(retro_task_t *task);
 
 #ifdef __cplusplus
 }

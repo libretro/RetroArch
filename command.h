@@ -44,9 +44,7 @@ enum event_command
    /* Loads content file. */
    CMD_EVENT_LOAD_CONTENT,
    CMD_EVENT_LOAD_CONTENT_PERSIST,
-#ifdef HAVE_FFMPEG
    CMD_EVENT_LOAD_CONTENT_FFMPEG,
-#endif
    CMD_EVENT_LOAD_CONTENT_IMAGEVIEWER,
    CMD_EVENT_SET_PER_GAME_RESOLUTION,
    CMD_EVENT_SET_FRAME_LIMIT,
@@ -131,8 +129,6 @@ enum event_command
    CMD_EVENT_RESET_CONTEXT,
    /* Restarts RetroArch. */
    CMD_EVENT_RESTART_RETROARCH,
-   /* Force-quit RetroArch. */
-   CMD_EVENT_QUIT_RETROARCH,
    /* Shutdown the OS */
    CMD_EVENT_SHUTDOWN,
    /* Reboot the OS */

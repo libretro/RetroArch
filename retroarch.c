@@ -43,6 +43,8 @@
 #include <retro_stat.h>
 #include <retro_assert.h>
 
+#include <features/features_cpu.h>
+
 #include "content.h"
 #include "core_type.h"
 #include "core_info.h"
@@ -58,7 +60,6 @@
 #include "configuration.h"
 #include "general.h"
 #include "runloop.h"
-#include "performance.h"
 #include "managers/cheat_manager.h"
 #include "system.h"
 
@@ -175,7 +176,7 @@ static void retroarch_print_version(void)
    fprintf(stderr, "%s: Frontend for libretro -- v%s",
          msg_hash_to_str(MSG_PROGRAM), PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
-   printf(" -- %s --\n", rarch_git_version);
+   printf(" -- %s --\n", retroarch_git_version);
 #endif
    retroarch_get_capabilities(RARCH_CAPABILITIES_COMPILER, str, sizeof(str));
    fprintf(stdout, "%s", str);
@@ -1039,7 +1040,7 @@ static void retroarch_parse_input(int argc, char *argv[])
    {
       /* We requested explicit ROM, so use PLAIN core type. */
       current_core_type = CORE_TYPE_PLAIN;
-      rarch_ctl(RARCH_CTL_SET_PATHS, (void*)argv[optind]);
+      retroarch_set_pathnames((const char*)argv[optind]);
    }
    else if (*global->subsystem && optind < argc)
    {
@@ -1210,6 +1211,34 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    return true;
 }
 
+#define FAIL_CPU(simd_type) do { \
+   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
+   retroarch_fail(1, "validate_cpu_features()"); \
+} while(0)
+
+/* Validates CPU features for given processor architecture.
+ * Make sure we haven't compiled for something we cannot run.
+ * Ideally, code would get swapped out depending on CPU support,
+ * but this will do for now. */
+static void retroarch_validate_cpu_features(void)
+{
+   uint64_t cpu = cpu_features_get();
+   (void)cpu;
+
+#ifdef __SSE__
+   if (!(cpu & RETRO_SIMD_SSE))
+      FAIL_CPU("SSE");
+#endif
+#ifdef __SSE2__
+   if (!(cpu & RETRO_SIMD_SSE2))
+      FAIL_CPU("SSE2");
+#endif
+#ifdef __AVX__
+   if (!(cpu & RETRO_SIMD_AVX))
+      FAIL_CPU("AVX");
+#endif
+}
+
 /**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.
@@ -1219,7 +1248,7 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
  *
  * Returns: 0 on success, otherwise 1 if there was an error.
  **/
-static int retroarch_main_init(int argc, char *argv[])
+bool retroarch_main_init(int argc, char *argv[])
 {
    int sjlj_ret;
    bool *verbosity   = NULL;
@@ -1229,7 +1258,7 @@ static int retroarch_main_init(int argc, char *argv[])
    if ((sjlj_ret = setjmp(error_sjlj_context)) > 0)
    {
       RARCH_ERR("Fatal error received in: \"%s\"\n", error_string);
-      return sjlj_ret;
+      return false;
    }
 
    rarch_ctl(RARCH_CTL_SET_ERROR_ON_INIT, NULL);
@@ -1248,12 +1277,12 @@ static int retroarch_main_init(int argc, char *argv[])
       fprintf(stderr, "Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
-      RARCH_LOG_OUTPUT("Git: %s\n", rarch_git_version);
+      RARCH_LOG_OUTPUT("Git: %s\n", retroarch_git_version);
 #endif
       RARCH_LOG_OUTPUT("=================================================\n");
    }
 
-   rarch_ctl(RARCH_CTL_VALIDATE_CPU_FEATURES, NULL);
+   retroarch_validate_cpu_features();
    config_load();
 
    runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
@@ -1314,18 +1343,15 @@ static int retroarch_main_init(int argc, char *argv[])
 
    rarch_ctl(RARCH_CTL_UNSET_ERROR_ON_INIT, NULL);
    rarch_ctl(RARCH_CTL_SET_INITED, NULL);
-   return 0;
+
+   return true;
 
 error:
    command_event(CMD_EVENT_CORE_DEINIT, NULL);
    rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
-   return 1;
+   return false;
 }
 
-#define FAIL_CPU(simd_type) do { \
-   RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
-   retroarch_fail(1, "validate_cpu_features()"); \
-} while(0)
 
 bool rarch_ctl(enum rarch_ctl_state state, void *data)
 {
@@ -1339,20 +1365,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
    switch(state)
    {
-      case RARCH_CTL_SET_PATHS:
-         retroarch_set_basename((const char*)data);
-
-         if (!global->has_set.save_path)
-            fill_pathname_noext(global->name.savefile, global->name.base,
-                  ".srm", sizeof(global->name.savefile));
-         if (!global->has_set.state_path)
-            fill_pathname_noext(global->name.savestate, global->name.base,
-                  ".state", sizeof(global->name.savestate));
-         fill_pathname_noext(global->name.cheatfile, global->name.base,
-               ".cht", sizeof(global->name.cheatfile));
-
-         retroarch_set_paths_redirect((const char*)data);
-         break;
       case RARCH_CTL_IS_PLAIN_CORE:
          return (current_core_type == CORE_TYPE_PLAIN);
       case RARCH_CTL_IS_DUMMY_CORE:
@@ -1429,13 +1441,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 
          rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
          break;
-      case RARCH_CTL_MAIN_INIT:
-         {
-            struct rarch_main_wrap *wrap = (struct rarch_main_wrap*)data;
-            if (retroarch_main_init(wrap->argc, wrap->argv))
-               return false;
-         }
-         break;
       case RARCH_CTL_INIT:
          rarch_ctl(RARCH_CTL_DEINIT, NULL);
          retroarch_init_state();
@@ -1482,29 +1487,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          break;
       case RARCH_CTL_IS_BLOCK_CONFIG_READ:
          return rarch_block_config_read;
-      case RARCH_CTL_REPLACE_CONFIG:
-         {
-            char *path = (char*)data;
-
-            if (!path)
-               return false;
-
-            /* If config file to be replaced is the same as the
-             * current config file, exit. */
-            if (string_is_equal(path, global->path.config))
-               return false;
-
-            if (settings->config_save_on_exit && *global->path.config)
-               config_save_file(global->path.config);
-
-            strlcpy(global->path.config, path, sizeof(global->path.config));
-
-            rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
-
-            *settings->path.libretro = '\0'; /* Load core in new config. */
-         }
-         runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
-         break;
       case RARCH_CTL_MENU_RUNNING:
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_SET_TOGGLE, NULL);
@@ -1512,18 +1494,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
 #ifdef HAVE_OVERLAY
          if (settings->input.overlay_hide_in_menu)
             command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
-#endif
-         break;
-      case RARCH_CTL_LOAD_CONTENT:
-      case RARCH_CTL_LOAD_CONTENT_FFMPEG:
-      case RARCH_CTL_LOAD_CONTENT_IMAGEVIEWER:
-#ifdef HAVE_MENU
-         /* If content loading fails, we go back to menu. */
-         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
-         {
-            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-            return false;
-         }
 #endif
          break;
       case RARCH_CTL_MENU_RUNNING_FINISHED:
@@ -1536,55 +1506,81 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
             command_event(CMD_EVENT_OVERLAY_INIT, NULL);
 #endif
          break;
-      case RARCH_CTL_QUIT:
-         runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
-         rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
-         break;
-      case RARCH_CTL_FORCE_QUIT:
-         rarch_ctl(RARCH_CTL_QUIT, NULL);
-         break;
-      case RARCH_CTL_VALIDATE_CPU_FEATURES:
-         {
-            uint64_t cpu = cpu_features_get();
-            (void)cpu;
-
-#ifdef __SSE__
-            if (!(cpu & RETRO_SIMD_SSE))
-               FAIL_CPU("SSE");
-#endif
-#ifdef __SSE2__
-            if (!(cpu & RETRO_SIMD_SSE2))
-               FAIL_CPU("SSE2");
-#endif
-#ifdef __AVX__
-            if (!(cpu & RETRO_SIMD_AVX))
-               FAIL_CPU("AVX");
-#endif
-         }
-         break;
-      case RARCH_CTL_FILL_PATHNAMES:
-         retroarch_init_savefile_paths();
-         bsv_movie_set_path(global->name.savefile);
-
-         if (!*global->name.base)
-            return false;
-
-         if (!*global->name.ups)
-            fill_pathname_noext(global->name.ups, global->name.base, ".ups",
-                  sizeof(global->name.ups));
-         if (!*global->name.bps)
-            fill_pathname_noext(global->name.bps, global->name.base, ".bps",
-                  sizeof(global->name.bps));
-         if (!*global->name.ips)
-            fill_pathname_noext(global->name.ips, global->name.base, ".ips",
-                  sizeof(global->name.ips));
-         break;
       case RARCH_CTL_NONE:
       default:
          return false;
    }
 
    return true;
+}
+
+/* Replaces currently loaded configuration file with
+ * another one. Will load a dummy core to flush state
+ * properly. */
+bool retroarch_replace_config(char *path)
+{
+   settings_t *settings = config_get_ptr();
+   global_t     *global = global_get_ptr();
+
+   if (!path)
+      return false;
+
+   /* If config file to be replaced is the same as the
+    * current config file, exit. */
+   if (string_is_equal(path, global->path.config))
+      return false;
+
+   if (settings->config_save_on_exit && *global->path.config)
+      config_save_file(global->path.config);
+
+   strlcpy(global->path.config, path, sizeof(global->path.config));
+
+   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+
+   *settings->path.libretro = '\0'; /* Load core in new config. */
+
+   runloop_prepare_dummy();
+
+   return true;
+}
+
+void retroarch_set_pathnames(const char *path)
+{
+   global_t *global = global_get_ptr();
+
+   retroarch_set_basename(path);
+
+   if (!global->has_set.save_path)
+      fill_pathname_noext(global->name.savefile, global->name.base,
+            ".srm", sizeof(global->name.savefile));
+   if (!global->has_set.state_path)
+      fill_pathname_noext(global->name.savestate, global->name.base,
+            ".state", sizeof(global->name.savestate));
+   fill_pathname_noext(global->name.cheatfile, global->name.base,
+         ".cht", sizeof(global->name.cheatfile));
+
+   retroarch_set_paths_redirect(path);
+}
+
+void retroarch_fill_pathnames(void)
+{
+   global_t *global = global_get_ptr();
+
+   retroarch_init_savefile_paths();
+   bsv_movie_set_path(global->name.savefile);
+
+   if (!*global->name.base)
+      return;
+
+   if (!*global->name.ups)
+      fill_pathname_noext(global->name.ups, global->name.base, ".ups",
+            sizeof(global->name.ups));
+   if (!*global->name.bps)
+      fill_pathname_noext(global->name.bps, global->name.base, ".bps",
+            sizeof(global->name.bps));
+   if (!*global->name.ips)
+      fill_pathname_noext(global->name.ips, global->name.base, ".ips",
+            sizeof(global->name.ips));
 }
 
 int retroarch_get_capabilities(enum rarch_capabilities type,
@@ -1677,4 +1673,10 @@ void retroarch_fail(int error_code, const char *error)
 
    strlcpy(error_string, error, sizeof(error_string));
    longjmp(error_sjlj_context, error_code);
+}
+
+void retroarch_main_quit(void)
+{
+   runloop_ctl(RUNLOOP_CTL_SET_SHUTDOWN, NULL);
+   rarch_ctl(RARCH_CTL_MENU_RUNNING_FINISHED, NULL);
 }

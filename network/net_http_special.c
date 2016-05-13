@@ -17,8 +17,8 @@
 #include <stdlib.h>
 
 #include <net/net_http.h>
+#include <features/features_cpu.h>
 
-#include "../performance.h"
 #include "../performance_counters.h"
 #include "net_http_special.h"
 

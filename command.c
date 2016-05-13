@@ -70,6 +70,7 @@
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
+#include "menu/menu_content.h"
 #include "menu/menu_display.h"
 #include "menu/menu_shader.h"
 #endif
@@ -200,40 +201,6 @@ static const struct cmd_map map[] = {
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
 
-#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-static bool command_network_init(command_t *handle, uint16_t port)
-{
-   int fd;
-   struct addrinfo *res  = NULL;
-
-   RARCH_LOG("Bringing up command interface on port %hu.\n",
-         (unsigned short)port);
-
-   fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
-
-   if (fd < 0)
-      goto error;
-
-   handle->net_fd = fd;
-
-   if (!socket_nonblock(handle->net_fd))
-      goto error;
-
-   if (!socket_bind(handle->net_fd, (void*)res))
-   {
-      RARCH_ERR("Failed to bind socket.\n");
-      goto error;
-   }
-
-   freeaddrinfo_retro(res);
-   return true;
-
-error:
-   if (res)
-      freeaddrinfo_retro(res);
-   return false;
-}
-
 static bool command_get_arg(const char *tok,
       const char **arg, unsigned *index)
 {
@@ -274,6 +241,75 @@ static bool command_get_arg(const char *tok,
 
    return false;
 }
+
+static void command_parse_sub_msg(command_t *handle, const char *tok)
+{
+   const char *arg = NULL;
+   unsigned index  = 0;
+
+   if (command_get_arg(tok, &arg, &index))
+   {
+      if (arg)
+      {
+         if (!action_map[index].action(arg))
+            RARCH_ERR("Command \"%s\" failed.\n", arg);
+      }
+      else
+         handle->state[map[index].id] = true;
+   }
+   else
+      RARCH_WARN("%s \"%s\" %s.\n",
+            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
+            tok,
+            msg_hash_to_str(MSG_RECEIVED));
+}
+
+static void command_parse_msg(command_t *handle, char *buf)
+{
+   char *save      = NULL;
+   const char *tok = strtok_r(buf, "\n", &save);
+
+   while (tok)
+   {
+      command_parse_sub_msg(handle, tok);
+      tok = strtok_r(NULL, "\n", &save);
+   }
+}
+
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+static bool command_network_init(command_t *handle, uint16_t port)
+{
+   int fd;
+   struct addrinfo *res  = NULL;
+
+   RARCH_LOG("Bringing up command interface on port %hu.\n",
+         (unsigned short)port);
+
+   fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM);
+
+   if (fd < 0)
+      goto error;
+
+   handle->net_fd = fd;
+
+   if (!socket_nonblock(handle->net_fd))
+      goto error;
+
+   if (!socket_bind(handle->net_fd, (void*)res))
+   {
+      RARCH_ERR("Failed to bind socket.\n");
+      goto error;
+   }
+
+   freeaddrinfo_retro(res);
+   return true;
+
+error:
+   if (res)
+      freeaddrinfo_retro(res);
+   return false;
+}
+
 
 
 static bool send_udp_packet(const char *host,
@@ -389,39 +425,6 @@ bool command_network_send(const char *cmd_)
    return ret;
 }
 
-static void command_parse_sub_msg(command_t *handle, const char *tok)
-{
-   const char *arg = NULL;
-   unsigned index  = 0;
-
-   if (command_get_arg(tok, &arg, &index))
-   {
-      if (arg)
-      {
-         if (!action_map[index].action(arg))
-            RARCH_ERR("Command \"%s\" failed.\n", arg);
-      }
-      else
-         handle->state[map[index].id] = true;
-   }
-   else
-      RARCH_WARN("%s \"%s\" %s.\n",
-            msg_hash_to_str(MSG_UNRECOGNIZED_COMMAND),
-            tok,
-            msg_hash_to_str(MSG_RECEIVED));
-}
-
-static void command_parse_msg(command_t *handle, char *buf)
-{
-   char *save      = NULL;
-   const char *tok = strtok_r(buf, "\n", &save);
-
-   while (tok)
-   {
-      command_parse_sub_msg(handle, tok);
-      tok = strtok_r(NULL, "\n", &save);
-   }
-}
 
 static void command_network_poll(command_t *handle)
 {
@@ -869,8 +872,8 @@ static bool command_event_disk_control_append_image(const char *path)
        * If we actually use append_image, we assume that we
        * started out in a single disk case, and that this way
        * of doing it makes the most sense. */
-      rarch_ctl(RARCH_CTL_SET_PATHS, (void*)path);
-      rarch_ctl(RARCH_CTL_FILL_PATHNAMES, NULL);
+      retroarch_set_pathnames(path);
+      retroarch_fill_pathnames();
    }
 
    command_event(CMD_EVENT_AUTOSAVE_INIT, NULL);
@@ -1204,7 +1207,7 @@ static bool event_init_content(void)
       return true;
 
    if (!content_does_not_need_content())
-      rarch_ctl(RARCH_CTL_FILL_PATHNAMES, NULL);
+      retroarch_fill_pathnames();
 
    if (!content_init())
       return false;
@@ -1559,8 +1562,13 @@ static bool command_event_cmd_exec(void *data)
    }
 
 #if defined(HAVE_DYNAMIC)
-   if (!rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL))
+#ifdef HAVE_MENU
+   if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+   {
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
       return false;
+   }
+#endif
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif
@@ -1620,15 +1628,16 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
-         rarch_ctl(RARCH_CTL_LOAD_CONTENT, NULL);
-         break;
-#ifdef HAVE_FFMPEG
+         /* fall-through */
       case CMD_EVENT_LOAD_CONTENT_FFMPEG:
-         rarch_ctl(RARCH_CTL_LOAD_CONTENT_FFMPEG, NULL);
-         break;
-#endif
       case CMD_EVENT_LOAD_CONTENT_IMAGEVIEWER:
-         rarch_ctl(RARCH_CTL_LOAD_CONTENT_IMAGEVIEWER, NULL);
+#ifdef HAVE_MENU
+         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+         {
+            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+            return false;
+         }
+#endif
          break;
       case CMD_EVENT_LOAD_CONTENT:
          {
@@ -1766,11 +1775,11 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
-         runloop_ctl(RUNLOOP_CTL_PREPARE_DUMMY, NULL);
+         runloop_prepare_dummy();
          command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
          break;
       case CMD_EVENT_QUIT:
-         rarch_ctl(RARCH_CTL_QUIT, NULL);
+         retroarch_main_quit();
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
 #ifdef HAVE_CHEEVOS
@@ -2024,20 +2033,17 @@ bool command_event(enum event_command cmd, void *data)
             driver_ctl(RARCH_DRIVER_CTL_INIT, &flags);
          }
          break;
-      case CMD_EVENT_QUIT_RETROARCH:
-         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
-         break;
       case CMD_EVENT_SHUTDOWN:
 #if defined(__linux__) && !defined(ANDROID)
          runloop_msg_queue_push("Shutting down...", 1, 180, true);
-         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+         command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -P now");
 #endif
          break;
       case CMD_EVENT_REBOOT:
 #if defined(__linux__) && !defined(ANDROID)
          runloop_msg_queue_push("Rebooting...", 1, 180, true);
-         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+         command_event(CMD_EVENT_QUIT, NULL);
          system("shutdown -r now");
 #endif
          break;

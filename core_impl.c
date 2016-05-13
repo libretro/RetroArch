@@ -24,9 +24,9 @@
 #include <retro_inline.h>
 #include <boolean.h>
 #include <lists/string_list.h>
+#include <libretro.h>
 
 #include "dynamic.h"
-#include "libretro.h"
 #include "core.h"
 #include "general.h"
 #include "msg_hash.h"

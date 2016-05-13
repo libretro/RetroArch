@@ -40,7 +40,7 @@
 
 #include <retro_miscellaneous.h>
 
-#include "../../libretro.h"
+#include <libretro.h>
 
 #ifndef SOCKET_ERROR
 #define SOCKET_ERROR -1

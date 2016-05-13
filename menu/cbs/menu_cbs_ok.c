@@ -772,7 +772,7 @@ static int generic_action_ok(const char *path,
             flush_type      = MENU_SETTINGS;
             menu_display_set_msg_force(true);
 
-            if (rarch_ctl(RARCH_CTL_REPLACE_CONFIG, action_path))
+            if (retroarch_replace_config(action_path))
             {
                bool pending_push = false;
                menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
@@ -1259,6 +1259,7 @@ static int action_ok_save_state(const char *path,
 }
 
 #ifdef HAVE_NETWORKING
+#ifdef HAVE_ZLIB
 static void cb_decompressed(void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
@@ -1289,6 +1290,7 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
       free(dec);
    }
 }
+#endif
 
 /* expects http_transfer_t*, menu_file_transfer_t* */
 static void cb_generic_download(void *task_data,

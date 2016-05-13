@@ -31,12 +31,12 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <libretro.h>
 
 #include "../../driver.h"
 #include "../../record/record_driver.h"
 #include "../../performance_counters.h"
 
-#include "../../libretro.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -230,7 +230,8 @@ static bool gl_init_vao(gl_t *gl)
 #elif !defined(HAVE_OPENGLES2)
 static bool gl_check_fbo_proc(gl_t *gl)
 {
-   if (!gl->core_context && !gl_query_extension(gl, "ARB_framebuffer_object"))
+   if (!gl->core_context && !gl_query_extension(gl, "ARB_framebuffer_object")
+         && !gl_query_extension(gl, "EXT_framebuffer_object"))
       return false;
 
    return glGenFramebuffers 
@@ -2493,7 +2494,7 @@ static void DEBUG_CALLBACK_TYPE gl_debug_cb(GLenum source, GLenum type,
       const GLchar *message, void *userParam)
 {
    const char      *src = NULL;
-   const char **typestr = NULL;
+   const char *typestr  = NULL;
    gl_t             *gl = (gl_t*)userParam; /* Useful for debugger. */
 
    (void)gl;
@@ -3786,6 +3787,7 @@ static void video_texture_load_gl(
          );
 }
 
+#ifdef HAVE_THREADS
 static int video_texture_load_wrap_gl_mipmap(void *data)
 {
    uintptr_t id = 0;
@@ -3807,6 +3809,7 @@ static int video_texture_load_wrap_gl(void *data)
          TEXTURE_FILTER_LINEAR, &id);
    return id;
 }
+#endif
 
 static uintptr_t gl_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)

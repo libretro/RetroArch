@@ -60,9 +60,6 @@ enum rarch_ctl_state
    /* Initialize all drivers. */
    RARCH_CTL_INIT,
 
-   /* Initializes RetroArch. */
-   RARCH_CTL_MAIN_INIT,
-
    /* Deinitializes RetroArch. */
    RARCH_CTL_MAIN_DEINIT,
 
@@ -80,38 +77,13 @@ enum rarch_ctl_state
 
    RARCH_CTL_DESTROY,
 
-   RARCH_CTL_LOAD_CONTENT,
-
-   RARCH_CTL_LOAD_CONTENT_FFMPEG,
-
-   RARCH_CTL_LOAD_CONTENT_IMAGEVIEWER,
-
    RARCH_CTL_MENU_RUNNING,
 
    RARCH_CTL_MENU_RUNNING_FINISHED,
 
-   /* Replaces currently loaded configuration file with
-    * another one. Will load a dummy core to flush state
-    * properly. */
-   RARCH_CTL_REPLACE_CONFIG,
-
-   RARCH_CTL_QUIT,
-
-   RARCH_CTL_FORCE_QUIT,
-
-   /* Validates CPU features for given processor architecture.
-    * Make sure we haven't compiled for something we cannot run.
-    * Ideally, code would get swapped out depending on CPU support,
-    * but this will do for now. */
-   RARCH_CTL_VALIDATE_CPU_FEATURES,
-
-   RARCH_CTL_FILL_PATHNAMES,
-
    RARCH_CTL_SET_PATHS_REDIRECT,
 
    RARCH_CTL_SET_SRAM_ENABLE,
-
-   RARCH_CTL_SET_PATHS,
 
    RARCH_CTL_SET_FORCE_FULLSCREEN,
 
@@ -179,6 +151,15 @@ const char *retroarch_get_current_savefile_dir(void);
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
 
+void retroarch_set_pathnames(const char *path);
+
+void retroarch_fill_pathnames(void);
+
+/* Replaces currently loaded configuration file with
+ * another one. Will load a dummy core to flush state
+ * properly. */
+bool retroarch_replace_config(char *path);
+
 /**
  * retroarch_fail:
  * @error_code  : Error code.
@@ -187,6 +168,19 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir);
  * Sanely kills the program.
  **/
 void retroarch_fail(int error_code, const char *error);
+
+/**
+ * retroarch_main_init:
+ * @argc                 : Count of (commandline) arguments.
+ * @argv                 : (Commandline) arguments.
+ *
+ * Initializes the program.
+ *
+ * Returns: 1 (true) on success, otherwise false (0) if there was an error.
+ **/
+bool retroarch_main_init(int argc, char *argv[]);
+
+void retroarch_main_quit(void);
 
 #ifdef __cplusplus
 }

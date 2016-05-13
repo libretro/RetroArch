@@ -25,6 +25,8 @@
 #include <string/stdstring.h>
 #include <retro_assert.h>
 
+#include <features/features_cpu.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -38,7 +40,6 @@
 #include "record/record_driver.h"
 #include "core.h"
 #include "performance_counters.h"
-#include "performance.h"
 #include "system.h"
 #include "gfx/video_context_driver.h"
 
