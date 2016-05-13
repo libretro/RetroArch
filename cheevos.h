@@ -42,4 +42,6 @@ bool cheevos_test(void);
 
 bool cheevos_set_cheats(void);
 
+void cheevos_set_support_cheevos(bool state);
+
 #endif /* __RARCH_CHEEVOS_H */

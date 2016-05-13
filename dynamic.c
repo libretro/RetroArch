@@ -45,6 +45,7 @@
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
 #include "content.h"
+#include "cheevos.h"
 #include "retroarch.h"
 #include "configuration.h"
 #include "general.h"
@@ -1428,6 +1429,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
          return video_driver_get_hw_render_interface(
                (const struct retro_hw_render_interface**)data);
+      
+      case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
+      {
+         bool state = *(const bool*)data;
+         RARCH_LOG("Environ SET_SUPPORT_ACHIEVEMENTS: %s.\n", state ? "yes" : "no");
+         cheevos_set_support_cheevos(state);
+         break;
+      }
 
       /* Private extensions for internal use, not part of libretro API. */
       /* None yet. */

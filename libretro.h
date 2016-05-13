@@ -946,6 +946,15 @@ struct retro_hw_render_interface
                                             * the contents of the HW_RENDER_INTERFACE are invalidated.
                                             */
 
+#define RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS (42 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+                                           /* const bool * --
+                                            * If true, the libretro implementation supports achievements
+                                            * either via memory descriptors set with RETRO_ENVIRONMENT_SET_MEMORY_MAPS
+                                            * or via retro_get_memory_data/retro_get_memory_size.
+                                            *
+                                            * This must be called before the first call to retro_run.
+                                            */
+
 #define RETRO_MEMDESC_CONST     (1 << 0)   /* The frontend will never change this memory area once retro_load_game has returned. */
 #define RETRO_MEMDESC_BIGENDIAN (1 << 1)   /* The memory area contains big endian data. Default is little endian. */
 #define RETRO_MEMDESC_ALIGN_2   (1 << 16)  /* All memory access in this area is aligned to their own size, or 2, whichever is smaller. */
