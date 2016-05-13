@@ -2429,6 +2429,10 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
 {
    int comp;
    uint8_t **buf                 = (uint8_t**)buf_data;
+
+   if (!rjpeg)
+      return IMAGE_PROCESS_ERROR;
+
    rjpeg->output_image           = (uint32_t*)rjpeg_load_from_memory(*buf, size, width, height, &comp, 4);
 
    return IMAGE_PROCESS_END;
