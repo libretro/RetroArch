@@ -87,7 +87,8 @@ static bool rpng_load_image_argb(const char *path, uint32_t **data,
    
    do
    {
-      retval = rpng_process_image(rpng, (void**)data, width, height);
+      retval = rpng_process_image(rpng,
+            (void**)data, file_len, width, height);
    }while(retval == IMAGE_PROCESS_NEXT);
 
    if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
