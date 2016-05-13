@@ -1019,12 +1019,12 @@ bool rpng_is_valid(rpng_t *rpng)
    return false;
 }
 
-bool rpng_set_buf_ptr(rpng_t *rpng, uint8_t *data)
+bool rpng_set_buf_ptr(rpng_t *rpng, void *data)
 {
    if (!rpng)
       return false;
 
-   rpng->buff_data = data;
+   rpng->buff_data = (uint8_t*)data;
 
    return true;
 }

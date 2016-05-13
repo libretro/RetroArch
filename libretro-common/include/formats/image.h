@@ -72,7 +72,7 @@ void image_transfer_set_buffer_ptr(
 int image_transfer_process(
       void *data,
       enum image_type_enum type,
-      uint32_t **buf,
+      uint32_t **buf, size_t size,
       unsigned *width, unsigned *height);
 
 bool image_transfer_iterate(void *data, enum image_type_enum type);

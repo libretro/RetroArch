@@ -39,7 +39,7 @@ rpng_t *rpng_nbio_load_image_argb_init(const char *path);
 
 bool rpng_is_valid(rpng_t *rpng);
 
-bool rpng_set_buf_ptr(rpng_t *rpng, uint8_t *data);
+bool rpng_set_buf_ptr(rpng_t *rpng, void *data);
 
 rpng_t *rpng_alloc(void);
 

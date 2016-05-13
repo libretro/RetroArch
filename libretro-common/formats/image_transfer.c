@@ -92,7 +92,7 @@ void image_transfer_set_buffer_ptr(
 int image_transfer_process(
       void *data,
       enum image_type_enum type,
-      uint32_t **buf,
+      uint32_t **buf, size_t len,
       unsigned *width, unsigned *height)
 {
    switch (type)
@@ -104,14 +104,17 @@ int image_transfer_process(
 
          return rpng_nbio_load_image_argb_process(
                (rpng_t*)data,
-               buf,
-               width, height);
-#endif
+               buf, width, height);
+#else
          break;
+#endif
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
-#endif
+         return rjpeg_process_image((rjpeg_t*)data,
+               buf, len, width, height);
+#else
          break;
+#endif
    }
 
    return 0;

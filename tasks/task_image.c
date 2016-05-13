@@ -101,7 +101,7 @@ static int rarch_main_data_image_process(
    int retval = image_transfer_process(
          nbio->image.handle,
          nbio->image_type,
-         &nbio->image.ti.pixels, width, height);
+         &nbio->image.ti.pixels, nbio->image.size, width, height);
 
    if (retval == IMAGE_PROCESS_ERROR)
       return IMAGE_PROCESS_ERROR;
@@ -220,6 +220,7 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 
    image_transfer_set_buffer_ptr(nbio->image.handle, nbio->image_type, ptr);
 
+   nbio->image.size                     = *len;
    nbio->image.pos_increment            = (*len / 2) ? (*len / 2) : 1;
    nbio->image.processing_pos_increment = (*len / 4) ?  (*len / 4) : 1;
 
@@ -245,6 +246,7 @@ static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
       return -1;
 
    nbio->image.handle = image_transfer_new(nbio->image_type);
+   nbio->image.size   = len;
 
    if (!nbio->image.handle)
       goto error;

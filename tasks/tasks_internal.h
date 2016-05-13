@@ -62,6 +62,7 @@ typedef struct nbio_image_handle
    bool is_finished;
    transfer_cb_t  cb;
    void *handle;
+   size_t size;
    unsigned processing_pos_increment;
    unsigned pos_increment;
    uint64_t frame_count;
