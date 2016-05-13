@@ -185,7 +185,6 @@ static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
          goto error;
    }
 
-   nbio->image.frame_count++;
    return 0;
 
 error:
@@ -200,7 +199,6 @@ static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
 
    image->handle                 = NULL;
    image->cb                     = NULL;
-   image->frame_count            = 0;
 }
 
 static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)

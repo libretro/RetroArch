@@ -65,7 +65,6 @@ typedef struct nbio_image_handle
    size_t size;
    unsigned processing_pos_increment;
    unsigned pos_increment;
-   uint64_t frame_count;
    int processing_final_state;
    unsigned status;
 } nbio_image_handle_t;
