@@ -114,15 +114,12 @@ static int rarch_main_data_image_process(
 
 static int cb_image_menu_generic(nbio_handle_t *nbio)
 {
-   int retval     = 0;
    unsigned width = 0, height = 0;
    if (!nbio)
       return -1;
 
-   retval = rarch_main_data_image_process(nbio,
-         &width, &height);
-
-   switch (retval)
+   switch (rarch_main_data_image_process(nbio,
+         &width, &height))
    {
       case IMAGE_PROCESS_ERROR:
       case IMAGE_PROCESS_ERROR_END:
