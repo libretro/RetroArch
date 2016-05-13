@@ -99,6 +99,40 @@ static int cb_nbio_default(void *data, size_t len)
    return 0;
 }
 
+void image_transfer_free(void *data, enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         rpng_nbio_load_image_free((rpng_t*)data);
+#endif
+         break;
+      case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+#endif
+         break;
+   }
+}
+
+void *image_transfer_new(enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         return rpng_alloc();
+#endif
+         break;
+      case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+#endif
+         break;
+   }
+
+   return NULL;
+}
+
 static int image_transfer_process(
       void *data,
       enum image_type_enum type,
@@ -249,22 +283,12 @@ error:
    return -1;
 }
 
+
 static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
 {
    nbio_image_handle_t *image = nbio ? &nbio->image : NULL;
 
-   switch (nbio->image_type)
-   {
-      case IMAGE_TYPE_PNG:
-#ifdef HAVE_RPNG
-         rpng_nbio_load_image_free((rpng_t*)image->handle);
-#endif
-         break;
-      case IMAGE_TYPE_JPEG:
-#ifdef HAVE_RJPEG
-#endif
-         break;
-   }
+   image_transfer_free(image->handle, nbio->image_type);
 
    image->handle                 = NULL;
    image->cb                     = NULL;
@@ -324,29 +348,26 @@ error:
    return -1;
 }
 
+
 static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 {
    nbio_handle_t *nbio = (nbio_handle_t*)data; 
 
    if (!nbio || !data)
       return -1;
-   
-   switch (nbio->image_type)
-   {
-      case IMAGE_TYPE_PNG:
-#ifdef HAVE_RPNG
-         nbio->image.handle = rpng_alloc();
-#endif
-         break;
-      case IMAGE_TYPE_JPEG:
-#ifdef HAVE_RJPEG
-#endif
-         break;
-   }
+
+   nbio->image.handle = image_transfer_new(nbio->image_type);
+
+   if (!nbio->image.handle)
+      goto error;
 
    nbio->image.cb     = &cb_image_menu_thumbnail;
 
    return cb_nbio_generic(nbio, &len);
+
+error:
+   nbio->image.handle = 0;
+   return -1;
 }
 
 bool rarch_task_image_load_handler(retro_task_t *task)
