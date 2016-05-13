@@ -68,6 +68,7 @@ typedef struct
 struct rjpeg
 {
    uint8_t *buff_data;
+   struct texture_image *out_img;
    void *empty;
 };
 
@@ -2447,12 +2448,12 @@ static INLINE void video_frame_convert_rgba_to_bgra(
    }
 }
 
-int rjpeg_process_image(void *data, void **buf_data,
+int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
    int comp;
-   struct texture_image *out_img = (struct texture_image*)data;
-   uint8_t **buf                 = (uint8_t**)buf_data;
+   struct texture_image *out_img = (struct texture_image*)rjpeg->out_img;
+   uint8_t **buf                 = (uint8_t**)rjpeg->buff_data;
 
    out_img->pixels = (uint32_t*)rjpeg_load_from_memory(*buf, size, width, height, &comp, 4);
 
@@ -2466,9 +2467,18 @@ bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
    unsigned width  = 0;
    unsigned height = 0;
    struct texture_image *out_img = (struct texture_image*)data;
+   rjpeg_t *rjpeg  = rjpeg_alloc();
 
-   if (rjpeg_process_image(out_img, (void**)&buf, size, &width, &height) != IMAGE_PROCESS_END)
-      return false;
+   if (!rjpeg)
+      goto error;
+
+   if (!rjpeg_set_buf_ptr(rjpeg, &buf))
+      goto error;
+
+   rjpeg->out_img = out_img;
+
+   if (rjpeg_process_image(rjpeg, (void**)&buf, size, &width, &height) != IMAGE_PROCESS_END)
+      goto error;
 
    out_img->width   = width;
    out_img->height  = height;
@@ -2478,6 +2488,11 @@ bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
        video_frame_convert_rgba_to_bgra(buf, out_img->pixels, width);
 
    return true;
+
+error:
+   if (rjpeg)
+      free(rjpeg);
+   return false;
 }
 
 bool rjpeg_set_buf_ptr(rjpeg_t *rjpeg, void *data)
@@ -2503,5 +2518,6 @@ rjpeg_t *rjpeg_alloc(void)
    rjpeg_t *rjpeg = (rjpeg_t*)calloc(1, sizeof(*rjpeg));
    if (!rjpeg)
       return NULL;
+   rjpeg->out_img = (struct texture_image*)calloc(1, sizeof(*rjpeg->out_img));
    return rjpeg;
 }
