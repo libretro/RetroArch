@@ -68,7 +68,7 @@ static int cb_image_menu_upload_generic(void *data, size_t len)
    return 0;
 }
 
-static int rarch_main_data_image_iterate_transfer_parse(nbio_handle_t *nbio)
+static int task_image_iterate_transfer_parse(nbio_handle_t *nbio)
 {
    if (nbio->image.handle && nbio->image.cb)
    {
@@ -93,7 +93,7 @@ static int cb_nbio_default(void *data, size_t len)
    return 0;
 }
 
-static int rarch_main_data_image_process(
+static int task_image_process(
       nbio_handle_t *nbio,
       unsigned *width,
       unsigned *height)
@@ -118,7 +118,7 @@ static int cb_image_menu_generic(nbio_handle_t *nbio)
    if (!nbio)
       return -1;
 
-   switch (rarch_main_data_image_process(nbio,
+   switch (task_image_process(nbio,
          &width, &height))
    {
       case IMAGE_PROCESS_ERROR:
@@ -146,7 +146,7 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
    return 0;
 }
 
-static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
+static int task_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
    unsigned i, width = 0, height = 0;
    int retval = 0;
@@ -156,7 +156,7 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < nbio->image.processing_pos_increment; i++)
    {
-      retval = rarch_main_data_image_process(nbio,
+      retval = task_image_process(nbio,
                &width, &height);
       if (retval != IMAGE_PROCESS_NEXT)
          break;
@@ -169,7 +169,7 @@ static int rarch_main_data_image_iterate_process_transfer(nbio_handle_t *nbio)
    return -1;
 }
 
-static int rarch_main_data_image_iterate_transfer(nbio_handle_t *nbio)
+static int task_image_iterate_transfer(nbio_handle_t *nbio)
 {
    unsigned i;
 
@@ -263,21 +263,21 @@ bool rarch_task_image_load_handler(retro_task_t *task)
    switch (image->status)
    {
       case IMAGE_STATUS_PROCESS_TRANSFER:
-         if (rarch_main_data_image_iterate_process_transfer(nbio) == -1)
+         if (task_image_iterate_process_transfer(nbio) == -1)
             image->status = IMAGE_STATUS_PROCESS_TRANSFER_PARSE;
          break;
       case IMAGE_STATUS_TRANSFER_PARSE:
-         rarch_main_data_image_iterate_transfer_parse(nbio);
+         task_image_iterate_transfer_parse(nbio);
          if (image->is_blocking_on_processing)
             image->status = IMAGE_STATUS_PROCESS_TRANSFER;
          break;
       case IMAGE_STATUS_TRANSFER:
          if (!image->is_blocking)
-            if (rarch_main_data_image_iterate_transfer(nbio) == -1)
+            if (task_image_iterate_transfer(nbio) == -1)
                image->status = IMAGE_STATUS_TRANSFER_PARSE;
          break;
       case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
-         rarch_main_data_image_iterate_transfer_parse(nbio);
+         task_image_iterate_transfer_parse(nbio);
          if (!image->is_finished)
             break;
       case IMAGE_STATUS_TRANSFER_PARSE_FREE:
