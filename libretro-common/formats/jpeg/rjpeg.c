@@ -2454,8 +2454,6 @@ int rjpeg_process_image(void *data, void **buf_data,
    uint8_t **buf                 = (uint8_t**)buf_data;
 
    out_img->pixels = (uint32_t*)rjpeg_load_from_memory(*buf, size, width, height, &comp, 4);
-   out_img->width   = *width;
-   out_img->height  = *height;
 
    return IMAGE_PROCESS_END;
 }
@@ -2470,6 +2468,9 @@ bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
 
    if (rjpeg_process_image(out_img, (void**)&buf, size, &width, &height) != IMAGE_PROCESS_END)
       return false;
+
+   out_img->width   = width;
+   out_img->height  = height;
 
     if (r_shift == 0 && b_shift == 16) { } /* RGBA, doesn't need conversion */
     else
