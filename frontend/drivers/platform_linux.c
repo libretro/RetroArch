@@ -811,6 +811,8 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    const char *base = proc_acpi_sysfs_ac_adapter_path;
 
    snprintf(path, sizeof(path), "%s/%s", base, "online");
+   if (!path_file_exists(path))
+      return;
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
