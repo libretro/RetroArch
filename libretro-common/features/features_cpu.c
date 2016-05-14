@@ -120,19 +120,18 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    retro_perf_tick_t time_ticks = 0;
 #if defined(_WIN32)
    long tv_sec, tv_usec;
-   static const unsigned __int64 epoch = 11644473600000000Ui64;
+   static const unsigned __int64 epoch = 11644473600000000ULL;
    FILETIME file_time;
    SYSTEMTIME system_time;
    ULARGE_INTEGER ularge;
 
    GetSystemTime(&system_time);
    SystemTimeToFileTime(&system_time, &file_time);
-   ularge.LowPart = file_time.dwLowDateTime;
+   ularge.LowPart  = file_time.dwLowDateTime;
    ularge.HighPart = file_time.dwHighDateTime;
 
-   tv_sec = (long)((ularge.QuadPart - epoch) / 10000000L);
-   tv_usec = (long)(system_time.wMilliseconds * 1000);
-
+   tv_sec     = (long)((ularge.QuadPart - epoch) / 10000000L);
+   tv_usec    = (long)(system_time.wMilliseconds * 1000);
    time_ticks = (1000000 * tv_sec + tv_usec);
 #elif defined(__linux__) || defined(__QNX__) || defined(__MACH__)
    struct timespec tv;
