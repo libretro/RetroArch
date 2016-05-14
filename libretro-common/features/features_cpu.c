@@ -591,7 +591,7 @@ uint64_t cpu_features_get(void)
    vendor_shuffle[2] = flags[2];
    memcpy(vendor, vendor_shuffle, sizeof(vendor_shuffle));
 
-   printf("[CPUID]: Vendor: %s\n", vendor);
+   /* printf("[CPUID]: Vendor: %s\n", vendor); */
 
    vendor_is_intel = (
          flags[1] == VENDOR_INTEL_b &&
