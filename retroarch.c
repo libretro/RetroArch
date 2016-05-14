@@ -1616,6 +1616,10 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
                strlcat(s, "VFPU ", len);
             if (cpu & RETRO_SIMD_NEON)
                strlcat(s, "NEON ", len);
+            if (cpu & RETRO_SIMD_VFPV3)
+               strlcat(s, "VFPv3 ", len);
+            if (cpu & RETRO_SIMD_VFPV4)
+               strlcat(s, "VFPv4 ", len);
             if (cpu & RETRO_SIMD_PS)
                strlcat(s, "PS ", len);
             if (cpu & RETRO_SIMD_AES)
