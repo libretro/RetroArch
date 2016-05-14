@@ -796,7 +796,7 @@ static int setting_string_action_right_audio_device(void *data, bool wraparound)
    audio_device_index++;
 
    /* Reset index if needed */
-   if (audio_device_index == ptr->size)
+   if (audio_device_index == (signed)ptr->size)
       audio_device_index = 0;
 
    strlcpy(setting->value.target.string, ptr->elems[audio_device_index].data, setting->size);

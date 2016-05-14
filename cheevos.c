@@ -1651,7 +1651,7 @@ static int cheevos_deactivate__json_number(void *userdata,
 
       for (; cheevo < end; cheevo++)
       {
-         if (cheevo->id == id)
+         if (cheevo->id == (unsigned)id)
          {
             cheevo->active = 0;
             found = 1;
@@ -1666,7 +1666,7 @@ static int cheevos_deactivate__json_number(void *userdata,
 
          for (; cheevo < end; cheevo++)
          {
-            if (cheevo->id == id)
+            if (cheevo->id == (unsigned)id)
             {
                cheevo->active = 0;
                break;
