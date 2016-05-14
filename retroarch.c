@@ -154,6 +154,7 @@ static void retroarch_print_features(void)
    _PSUPP(libxml2, "libxml2", "libxml2 XML parsing");
    _PSUPP(sdl_image, "SDL_image", "SDL_image image loading");
    _PSUPP(rpng, "rpng", "PNG image loading/encoding");
+   _PSUPP(rpng, "rjpeg", "JPEG image loading");
    _PSUPP(fbo, "FBO", "OpenGL render-to-texture (multi-pass shaders)");
    _PSUPP(dynamic, "Dynamic", "Dynamic run-time loading of libretro library");
    _PSUPP(ffmpeg, "FFmpeg", "On-the-fly recording of gameplay with libavcodec");
