@@ -48,8 +48,38 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../general.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "platform_linux.h"
+
+#ifdef ANDROID
+enum
+{
+   /* Internal SDCARD writable */
+   INT_SD_WRITABLE = 1,
+   /* Internal SDCARD not writable but the private app dir is */
+   INT_SD_APPDIR_WRITABLE,
+   /* Internal SDCARD not writable at all */
+   INT_SD_NOT_WRITABLE
+};
+
+struct android_app *g_android;
+
+static pthread_key_t thread_key;
+
+static char screenshot_dir[PATH_MAX_LENGTH];
+static char downloads_dir[PATH_MAX_LENGTH];
+static char apk_dir[PATH_MAX_LENGTH];
+static char app_dir[PATH_MAX_LENGTH];
+static char int_sd_dir[PATH_MAX_LENGTH];
+static char int_sd_app_dir[PATH_MAX_LENGTH];
+#else
+static const char *proc_apm_path                   = "/proc/apm";
+static const char *proc_acpi_battery_path          = "/proc/acpi/battery";
+static const char *proc_acpi_sysfs_ac_adapter_path = "/sys/class/power_supply/ACAD";
+static const char *proc_acpi_sysfs_battery_path    = "/sys/class/power_supply";
+static const char *proc_acpi_ac_adapter_path       = "/proc/acpi/ac_adapter";
+#endif
 
 #ifndef HAVE_DYNAMIC
 static enum frontend_fork linux_fork_mode = FRONTEND_FORK_NONE;
@@ -98,24 +128,6 @@ error:
 }
 
 #ifdef ANDROID
-/* Internal SDCARD writable */
-#define INT_SD_WRITABLE         1
-/* Internal SDCARD not writable but the private app dir is */
-#define INT_SD_APPDIR_WRITABLE  2
-/* Internal SDCARD not writable at all */
-#define INT_SD_NOT_WRITABLE     3
-
-struct android_app *g_android;
-static pthread_key_t thread_key;
-
-char screenshot_dir[PATH_MAX_LENGTH];
-char downloads_dir[PATH_MAX_LENGTH];
-char apk_dir[PATH_MAX_LENGTH];
-char int_sd_dir[PATH_MAX_LENGTH];
-char app_dir[PATH_MAX_LENGTH];
-char int_sd_app_dir[PATH_MAX_LENGTH];
-
-
 /* forward declaration */
 bool android_run_events(void *data);
 
@@ -550,12 +562,6 @@ static void frontend_android_shutdown(bool unused)
 }
 
 #else
-static const char *proc_apm_path             = "/proc/apm";
-static const char *proc_acpi_battery_path    = "/proc/acpi/battery";
-static const char *proc_acpi_sysfs_ac_adapter_path= "/sys/class/power_supply/ACAD";
-static const char *proc_acpi_sysfs_battery_path= "/sys/class/power_supply";
-static const char *proc_acpi_ac_adapter_path = "/proc/acpi/ac_adapter";
-
 
 static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
 {
@@ -1813,7 +1819,6 @@ static int frontend_android_parse_drive_list(void *data)
 #endif
 
 #ifndef HAVE_DYNAMIC
-#include "../../retroarch.h"
 
 static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
 {
