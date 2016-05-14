@@ -394,10 +394,13 @@ bool rarch_task_push_image_load(const char *fullpath,
 error:
    if (t)
       free(t);
-   if (nbio->image)
-      free(nbio->image);
    if (nbio)
+   {
+      if (nbio->image)
+         free(nbio->image);
       free(nbio);
+   }
+
    RARCH_ERR("[image load] Failed to open '%s': %s.\n",
          fullpath, strerror(errno));
    return false;
