@@ -312,52 +312,6 @@ static unsigned char check_arm_cpu_feature(const char* feature)
    return status;
 }
 
-static unsigned char get_arm_cpu_implementer(void)
-{
-   unsigned char implementer = 0;
-   FILE *fp = fopen("/proc/cpuinfo", "r");
-
-   if (fp)
-   {
-      char line[1024];
-
-      while (fgets(line , sizeof(line) , fp) != NULL)
-      {
-         if (strncmp(line, "CPU implementer\t: ", 18))
-            continue;
-
-         sscanf(line+18, "0x%02hhx", &implementer);
-
-         break;
-      }
-      fclose(fp);
-   }
-   return implementer;
-}
-
-static unsigned short get_arm_cpu_part(void)
-{
-   unsigned short part = 0;
-   FILE *fp = fopen("/proc/cpuinfo", "r");
-
-   if (fp)
-   {
-      char line[1024];
-
-      while (fgets(line , sizeof(line) , fp) != NULL)
-      {
-         if (strncmp(line, "CPU part\t: ", 11))
-            continue;
-
-         sscanf(line+11, "0x%03hx", &part);
-
-         break;
-      }
-      fclose(fp);
-   }
-   return part;
-}
-
 #if !defined(_SC_NPROCESSORS_ONLN)
 /* Parse an decimal integer starting from 'input', but not going further
  * than 'limit'. Return the value into '*result'.
