@@ -5,7 +5,7 @@ RARCH_DIR := ../../../..
 
 HAVE_NEON   := 1
 HAVE_LOGGER := 0
-HAVE_VULKAN := 0
+HAVE_VULKAN := 1
 
 INCFLAGS    :=
 DEFINES     :=
