@@ -1079,8 +1079,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    if (glsl->active_idx)
    {
       unsigned j;
-      struct uniform_info orig_uniforms[2]     = {{0}};
-      struct uniform_info feedback_uniforms[2] = {{0}};
 
       /* Set original texture. */
       if (uni->orig.texture >= 0)
@@ -1098,12 +1096,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
       if (uni->orig.input_size >= 0)
          glUniform2fv(uni->orig.input_size, 1, info->input_size);
-
-      for (j = 0; j < 2; j++)
-      {
-         if (orig_uniforms[j].enabled)
-            gl_glsl_set_uniform_parameter(glsl, &orig_uniforms[j], NULL);
-      }
 
       /* Pass texture coordinates. */
       if (uni->orig.tex_coord >= 0)
