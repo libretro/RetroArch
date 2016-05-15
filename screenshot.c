@@ -56,9 +56,9 @@
 static bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
-   bool ret;
-   char filename[PATH_MAX_LENGTH];
    char shotname[256];
+   char filename[PATH_MAX_LENGTH];
+   bool ret                       = false;
    settings_t *settings           = config_get_ptr();
    global_t *global               = global_get_ptr();
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
@@ -82,13 +82,9 @@ static bool screenshot_dump(const char *folder, const void *frame,
    D3DSurface *surf = NULL;
 
    d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
-   ret = XGWriteSurfaceToFile(surf, filename);
-   surf->Release();
-
-   if(ret == S_OK)
+   if (XGWriteSurfaceToFile(surf, filename) == S_OK)
       ret = true;
-   else
-      ret = false;
+   surf->Release();
 #elif defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
    out_buffer = (uint8_t*)malloc(width * height * 3);
    if (!out_buffer)
