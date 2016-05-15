@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memalign.c).
+ * The following license statement only applies to this file (vector_3.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -21,32 +21,59 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h>
+#include <math.h>
 
-#include <memalign.h>
+#include <gfx/math/vector_3.h>
 
-void *memalign_alloc(size_t boundary, size_t size)
+float vec3_dot(const float *a, const float *b) 
 {
-   void **place   = NULL;
-   uintptr_t addr = 0;
-   void *ptr      = (void*)malloc(boundary + size + sizeof(uintptr_t));
-   if (!ptr)
-      return NULL;
-
-   addr           = ((uintptr_t)ptr + sizeof(uintptr_t) + boundary)
-      & ~(boundary - 1);
-   place          = (void**)addr;
-   place[-1]      = ptr;
-
-   return (void*)addr;
+	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
-void memalign_free(void *ptr)
+void vec3_cross(float* dst, const float *a, const float *b) 
 {
-   void **p = NULL;
-   if (!ptr)
-      return;
+   dst[0] = a[1]*b[2] - a[2]*b[1];
+   dst[1] = a[2]*b[0] - a[0]*b[2];
+   dst[2] = a[0]*b[1] - a[1]*b[0];
+}
 
-   p = (void**)ptr;
-   free(p[-1]);
+float vec3_length(const float *a)
+{
+	float length_sq     = vec3_dot(a,a);
+	float length        = sqrtf(length_sq);
+	return length;
+}
+
+void vec3_add(float *dst, const float *src)
+{
+	dst[0] += src[0];
+	dst[1] += src[1];
+	dst[2] += src[2];
+}
+
+void vec3_subtract(float *dst, const float *src)
+{
+	dst[0] -= src[0];
+	dst[1] -= src[1];
+	dst[2] -= src[2];
+}
+
+void vec3_scale(float *dst, const float scale)
+{
+	dst[0] *= scale;
+	dst[1] *= scale;
+	dst[2] *= scale;
+}
+
+void vec3_copy(float *dst, const float *src)
+{
+	dst[0] = src[0];
+	dst[1] = src[1];
+	dst[2] = src[2];
+}
+
+void vec3_normalize(float *dst)
+{
+	float length = vec3_length(dst);
+	vec3_scale(dst,1.0f/length);
 }

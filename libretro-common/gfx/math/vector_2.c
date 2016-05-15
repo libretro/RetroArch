@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2015 The RetroArch team
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memalign.c).
+ * The following license statement only applies to this file (vector_2.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -21,32 +21,34 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h>
+#include <math.h>
 
-#include <memalign.h>
+#include <gfx/math/vector_2.h>
 
-void *memalign_alloc(size_t boundary, size_t size)
+float vec2_dot(const float *a, const float *b) 
 {
-   void **place   = NULL;
-   uintptr_t addr = 0;
-   void *ptr      = (void*)malloc(boundary + size + sizeof(uintptr_t));
-   if (!ptr)
-      return NULL;
-
-   addr           = ((uintptr_t)ptr + sizeof(uintptr_t) + boundary)
-      & ~(boundary - 1);
-   place          = (void**)addr;
-   place[-1]      = ptr;
-
-   return (void*)addr;
+	return (a[0]*b[0]) + (a[1]*b[1]);
 }
 
-void memalign_free(void *ptr)
+float vec2_cross(const float *a, const float *b) 
 {
-   void **p = NULL;
-   if (!ptr)
-      return;
+	return (a[0]*b[1]) - (a[1]*b[0]);
+}
 
-   p = (void**)ptr;
-   free(p[-1]);
+void vec2_add(float *dst, const float *src)
+{
+	dst[0] += src[0];
+	dst[1] += src[1];
+}
+
+void vec2_subtract(float *dst, const float *src)
+{
+	dst[0] -= src[0];
+	dst[1] -= src[1];
+}
+
+void vec2_copy(float *dst, const float *src)
+{
+	dst[0] = src[0];
+	dst[1] = src[1];
 }
