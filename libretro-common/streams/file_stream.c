@@ -59,6 +59,11 @@
 
 #ifdef __CELLOS_LV2__
 #include <cell/cell_fs.h>
+#define O_RDONLY CELL_FS_O_RDONLY
+#define O_WRONLY CELL_FS_O_WRONLY
+#define O_CREAT CELL_FS_O_CREAT
+#define O_TRUNC CELL_FS_O_TRUNC
+#define O_RDWR CELL_FS_O_RDWR
 #else
 #include <fcntl.h>
 #endif
@@ -71,8 +76,6 @@ struct RFILE
    unsigned hints;
 #if defined(PSP) || defined(VITA)
    SceUID fd;
-#elif defined(__CELLOS_LV2__)
-   int fd;
 #else
 
 #define HAVE_BUFFERED_IO 1
@@ -130,9 +133,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #if defined(VITA) || defined(PSP)
          mode_int = 0777;
          flags    = PSP_O_RDONLY;
-#elif defined(__CELLOS_LV2__)
-         mode_int = 0777;
-         flags    = CELL_FS_O_RDONLY;
 #else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -146,9 +146,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #if defined(VITA) || defined(PSP)
          mode_int = 0777;
          flags    = PSP_O_CREAT | PSP_O_WRONLY | PSP_O_TRUNC;
-#elif defined(__CELLOS_LV2__)
-         mode_int = 0777;
-         flags    = CELL_FS_O_CREAT | CELL_FS_O_WRONLY | CELL_FS_O_TRUNC;
 #else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -167,9 +164,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 #if defined(VITA) || defined(PSP)
          mode_int = 0777;
          flags    = PSP_O_RDWR;
-#elif defined(__CELLOS_LV2__)
-         mode_int = 0777;
-         flags    = CELL_FS_O_RDWR;
 #else
 #if defined(HAVE_BUFFERED_IO)
          if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -188,8 +182,6 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 
 #if defined(VITA) || defined(PSP)
    stream->fd = sceIoOpen(path, flags, mode_int);
-#elif defined(__CELLOS_LV2__)
-   cellFsOpen(path, flags, &stream->fd, NULL, 0);
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -226,7 +218,7 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
    }
 #endif
 
-#if defined(VITA) || defined(PSP) || defined(__CELLOS_LV2__)
+#if defined(VITA) || defined(PSP)
    if (stream->fd == -1)
       goto error;
 #endif
@@ -240,17 +232,11 @@ error:
 
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 {
-#if defined(__CELLOS_LV2__)
-   uint64_t pos = 0;
-#endif
    if (!stream)
       goto error;
 
 #if defined(VITA) || defined(PSP)
    if (sceIoLseek(stream->fd, (SceOff)offset, whence) == -1)
-      goto error;
-#elif defined(__CELLOS_LV2__)
-   if (cellFsLseek(stream->fd, offset, whence, &pos) != CELL_FS_SUCCEEDED)
       goto error;
 #else
 
@@ -307,17 +293,11 @@ error:
 
 ssize_t filestream_tell(RFILE *stream)
 {
-#if defined(__CELLOS_LV2__)
-   uint64_t pos = 0;
-#endif
    if (!stream)
       goto error;
 #if defined(VITA) || defined(PSP)
   if (sceIoLseek(stream->fd, 0, SEEK_CUR) < 0)
      goto error;
-#elif defined(__CELLOS_LV2__)
-   if (cellFsLseek(stream->fd, 0, CELL_FS_SEEK_CUR, &pos) != CELL_FS_SUCCEEDED)
-      goto error;
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -350,11 +330,6 @@ ssize_t filestream_read(RFILE *stream, void *s, size_t len)
       goto error;
 #if defined(VITA) || defined(PSP)
    return sceIoRead(stream->fd, s, len);
-#elif defined(__CELLOS_LV2__)
-   uint64_t bytes_written;
-   if (cellFsRead(stream->fd, s, len, &bytes_written) != CELL_FS_SUCCEEDED)
-      goto error;
-   return bytes_written;
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -388,11 +363,6 @@ ssize_t filestream_write(RFILE *stream, const void *s, size_t len)
       goto error;
 #if defined(VITA) || defined(PSP)
    return sceIoWrite(stream->fd, s, len);
-#elif defined(__CELLOS_LV2__)
-   uint64_t bytes_written;
-   if (cellFsWrite(stream->fd, s, len, &bytes_written) != CELL_FS_SUCCEEDED)
-      goto error;
-   return bytes_written;
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
@@ -430,9 +400,6 @@ int filestream_close(RFILE *stream)
 #if defined(VITA) || defined(PSP)
    if (stream->fd > 0)
       sceIoClose(stream->fd);
-#elif defined(__CELLOS_LV2__)
-   if (stream->fd > 0)
-      cellFsClose(stream->fd);
 #else
 #if defined(HAVE_BUFFERED_IO)
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
