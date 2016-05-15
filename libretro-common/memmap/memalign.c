@@ -29,7 +29,7 @@ void *memalign_alloc(size_t boundary, size_t size)
 {
    void **place   = NULL;
    uintptr_t addr = 0;
-   void *ptr      = malloc(boundary + size + sizeof(uintptr_t));
+   void *ptr      = (void*)malloc(boundary + size + sizeof(uintptr_t));
    if (!ptr)
       return NULL;
 
