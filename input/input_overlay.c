@@ -548,8 +548,7 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
    /* We can't display when the menu is up */
    if (settings->input.overlay_hide_in_menu && menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL))
    {
-      if (!input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL)
-            && settings->input.overlay_enable)
+      if (!input_driver_is_onscreen_keyboard_enabled() && settings->input.overlay_enable)
          goto abort_load;
    }
 #endif
@@ -573,7 +572,7 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
    overlay_ptr = ol;
 
    input_overlay_load_active(settings->input.overlay_opacity);
-   input_overlay_enable(input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL) ? settings->osk.enable : settings->input.overlay_enable);
+   input_overlay_enable(input_driver_is_onscreen_keyboard_enabled() ? settings->osk.enable : settings->input.overlay_enable);
    input_overlay_set_scale_factor(settings->input.overlay_scale);
 
    ol->next_index = (ol->index + 1) % ol->size;
@@ -751,13 +750,13 @@ void input_poll_overlay(float opacity)
          analog_y = (float)ol_state->analog[analog_base + 1] / 0x7fff;
 
          if (analog_x <= -settings->input.axis_threshold)
-            ol_state->buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_LEFT);
+            BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
          if (analog_x >=  settings->input.axis_threshold)
-            ol_state->buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+            BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
          if (analog_y <= -settings->input.axis_threshold)
-            ol_state->buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_UP);
+            BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
          if (analog_y >=  settings->input.axis_threshold)
-            ol_state->buttons |= (1UL << RETRO_DEVICE_ID_JOYPAD_DOWN);
+            BIT32_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
          break;
       }
 

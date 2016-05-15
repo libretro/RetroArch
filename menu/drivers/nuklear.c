@@ -161,35 +161,6 @@ static void nk_menu_get_message(void *data, const char *message)
    strlcpy(nk->box_message, message, sizeof(nk->box_message));
 }
 
-static void nk_menu_draw_cursor(nk_menu_handle_t *nk,
-      float *color,
-      float x, float y, unsigned width, unsigned height)
-{
-   menu_display_ctx_draw_t draw;
-   struct gfx_coords coords;
-
-   coords.vertices      = 4;
-   coords.vertex        = NULL;
-   coords.tex_coord     = NULL;
-   coords.lut_tex_coord = NULL;
-   coords.color         = (const float*)color;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
-
-   draw.x           = x - 32;
-   draw.y           = (int)height - y - 32;
-   draw.width       = 64;
-   draw.height      = 64;
-   draw.coords      = &coords;
-   draw.matrix_data = NULL;
-   draw.texture     = nk->textures.list[NK_TEXTURE_POINTER];
-   draw.prim_type   = MENU_DISPLAY_PRIM_TRIANGLESTRIP;
-
-   menu_display_ctl(MENU_DISPLAY_CTL_DRAW, &draw);
-
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
-}
-
 static void nk_menu_frame(void *data)
 {
    float white_bg[16]=  {
@@ -203,15 +174,14 @@ static void nk_menu_frame(void *data)
    nk_menu_handle_t *nk = (nk_menu_handle_t*)data;
    settings_t *settings  = config_get_ptr();
 
-   bool libretro_running = menu_display_ctl(
-         MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL);
+   bool libretro_running = menu_display_libretro_running();
 
    if (!nk)
       return;
 
    video_driver_get_size(&width, &height);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+   menu_display_set_viewport();
 
    nk_input_begin(&nk->ctx);
    nk_menu_input_gamepad(nk);
@@ -232,31 +202,28 @@ static void nk_menu_frame(void *data)
       nk_menu_wnd_shader_parameters(nk);
    nk_common_device_draw(&device, &nk->ctx, width, height, NK_ANTI_ALIASING_ON);
 
-   if (settings->menu.mouse.enable && (settings->video.fullscreen
-            || !video_driver_ctl(RARCH_DISPLAY_CTL_HAS_WINDOWED, NULL)))
-   {
-      int16_t mouse_x = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
-      int16_t mouse_y = menu_input_mouse_state(MENU_MOUSE_Y_AXIS);
+   menu_display_draw_cursor(
+         &white_bg[0],
+         64,
+         nk->textures.list[NK_TEXTURE_POINTER],
+         menu_input_mouse_state(MENU_MOUSE_X_AXIS),
+         menu_input_mouse_state(MENU_MOUSE_Y_AXIS),
+         width,
+         height);
 
-      nk_menu_draw_cursor(nk, &white_bg[0], mouse_x, mouse_y, width, height);
-   }
-
-   menu_display_ctl(MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR, NULL);
-   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
+   menu_display_restore_clear_color();
+   menu_display_unset_viewport();
 }
 
 static void nk_menu_layout(nk_menu_handle_t *nk)
 {
-   void *fb_buf;
    float scale_factor;
    unsigned width, height, new_header_height;
 
    video_driver_get_size(&width, &height);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_GET_DPI, &scale_factor);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEADER_HEIGHT,
-         &new_header_height);
-
+   scale_factor = menu_display_get_dpi();
+   menu_display_set_header_height(new_header_height);
 }
 
 static void nk_menu_init_device(nk_menu_handle_t *nk)
@@ -314,7 +281,7 @@ static void *nk_menu_init(void **userdata)
    if (!menu)
       goto error;
 
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT_FIRST_DRIVER, NULL))
+   if (!menu_display_init_first_driver())
       goto error;
 
    nk = (nk_menu_handle_t*)calloc(1, sizeof(nk_menu_handle_t));
@@ -324,7 +291,7 @@ static void *nk_menu_init(void **userdata)
 
    *userdata = nk;
 
-   fill_pathname_join(nk->assets_directory, settings->assets_directory,
+   fill_pathname_join(nk->assets_directory, settings->directory.assets,
          "zahnrad", sizeof(nk->assets_directory));
    nk_menu_init_device(nk);
 
@@ -346,7 +313,7 @@ static void nk_menu_free(void *data)
    nk_buffer_free(&device.cmds);
    nk_common_device_shutdown(&device);
 
-   gfx_coord_array_free(&nk->list_block.carr);
+   video_coord_array_free(&nk->list_block.carr);
    font_driver_bind_block(NULL, NULL);
 }
 
@@ -368,8 +335,7 @@ static void nk_menu_context_destroy(void *data)
    for (i = 0; i < NK_TEXTURE_LAST; i++)
       video_driver_texture_unload((uintptr_t*)&nk->textures.list[i]);
 
-   menu_display_ctl(MENU_DISPLAY_CTL_FONT_MAIN_DEINIT, NULL);
-
+   menu_display_font_main_deinit();
    wimp_context_bg_destroy(nk);
 }
 
@@ -385,7 +351,7 @@ static void nk_menu_context_reset(void *data)
    if (!nk || !settings)
       return;
 
-   fill_pathname_join(iconpath, settings->assets_directory,
+   fill_pathname_join(iconpath, settings->directory.assets,
          "zahnrad", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
@@ -395,7 +361,7 @@ static void nk_menu_context_reset(void *data)
    wimp_context_bg_destroy(nk);
    nk_menu_context_reset_textures(nk, iconpath);
 
-   rarch_task_push_image_load(settings->menu.wallpaper, "cb_menu_wallpaper",
+   rarch_task_push_image_load(settings->path.menu_wallpaper, "cb_menu_wallpaper",
          menu_display_handle_wallpaper_upload, NULL);
 }
 
@@ -423,7 +389,7 @@ static bool nk_menu_init_list(void *data)
    menu_entries_add(menu_stack,
          info.path, info.label, info.type, info.flags, 0);
 
-   event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
+   command_event(CMD_EVENT_HISTORY_INIT, NULL);
 
    info.list  = selection_buf;
 

@@ -30,7 +30,6 @@
 #endif
 
 #include <boolean.h>
-#include <file/nbio.h>
 #include <formats/rpng.h>
 #include <file/archive_file.h>
 
@@ -818,14 +817,10 @@ static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
    for (i = 0; i < 4; i++)
       dword[i] = buf[i];
 
-   buf += 4;
-
    chunk->size = dword_be(dword);
 
    for (i = 0; i < 4; i++)
-      chunk->type[i] = buf[i];
-
-   buf += 4;
+      chunk->type[i] = buf[i + 4];
 
    return true;
 }
@@ -849,16 +844,16 @@ static bool png_parse_ihdr(uint8_t *buf,
    return true;
 }
 
-bool rpng_nbio_load_image_argb_iterate(rpng_t *rpng)
+bool rpng_iterate_image(rpng_t *rpng)
 {
    unsigned i;
-   unsigned ret;
-   uint8_t *buf = (uint8_t*)rpng->buff_data;
-
    struct png_chunk chunk = {0};
+   uint8_t *buf           = (uint8_t*)rpng->buff_data;
 
    if (!read_chunk_header(buf, &chunk))
       return false;
+
+   *buf += 8;
 
 #if 0
    for (i = 0; i < 4; i++)
@@ -939,8 +934,7 @@ bool rpng_nbio_load_image_argb_iterate(rpng_t *rpng)
          goto error;
    }
 
-   ret = 4 + 4 + chunk.size + 4;
-   rpng->buff_data += ret; 
+   rpng->buff_data += chunk.size + 12; 
 
    return true;
 
@@ -948,9 +942,13 @@ error:
    return false;
 }
 
-int rpng_nbio_load_image_argb_process(rpng_t *rpng,
-      uint32_t **data, unsigned *width, unsigned *height)
+int rpng_process_image(rpng_t *rpng,
+      void **_data, size_t size, unsigned *width, unsigned *height)
 {
+   uint32_t **data = (uint32_t**)_data;
+
+   (void)size;
+
    if (!rpng->process.initialized)
    {
       if (!rpng->process.stream_backend)
@@ -964,9 +962,8 @@ int rpng_nbio_load_image_argb_process(rpng_t *rpng,
 
    if (!rpng->process.inflate_initialized)
    {
-      int ret = rpng_load_image_argb_process_inflate_init(rpng, data,
-               width, height);
-      if (ret == -1)
+      if (rpng_load_image_argb_process_inflate_init(rpng, data,
+               width, height) == -1)
          return PNG_PROCESS_ERROR;
       return 0;
    }
@@ -974,7 +971,7 @@ int rpng_nbio_load_image_argb_process(rpng_t *rpng,
    return png_reverse_filter_iterate(rpng, data);
 }
 
-void rpng_nbio_load_image_free(rpng_t *rpng)
+void rpng_free(rpng_t *rpng)
 {
    if (!rpng)
       return;
@@ -992,7 +989,7 @@ void rpng_nbio_load_image_free(rpng_t *rpng)
    free(rpng);
 }
 
-bool rpng_nbio_load_image_argb_start(rpng_t *rpng)
+bool rpng_start(rpng_t *rpng)
 {
    unsigned i;
    char header[8] = {0};
@@ -1025,12 +1022,12 @@ bool rpng_is_valid(rpng_t *rpng)
    return false;
 }
 
-bool rpng_set_buf_ptr(rpng_t *rpng, uint8_t *data)
+bool rpng_set_buf_ptr(rpng_t *rpng, void *data)
 {
    if (!rpng)
       return false;
 
-   rpng->buff_data = data;
+   rpng->buff_data = (uint8_t*)data;
 
    return true;
 }
@@ -1041,78 +1038,4 @@ rpng_t *rpng_alloc(void)
    if (!rpng)
       return NULL;
    return rpng;
-}
-
-bool rpng_load_image_argb(const char *path, uint32_t **data,
-      unsigned *width, unsigned *height)
-{
-   int retval;
-   size_t file_len;
-   bool ret = true;
-   rpng_t *rpng = NULL;
-   void *ptr = NULL;
-   struct nbio_t* handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
-
-   if (!handle)
-      goto end;
-
-   ptr  = nbio_get_ptr(handle, &file_len);
-
-   nbio_begin_read(handle);
-
-   while (!nbio_iterate(handle));
-
-   ptr = nbio_get_ptr(handle, &file_len);
-
-   if (!ptr)
-   {
-      ret = false;
-      goto end;
-   }
-
-   rpng = rpng_alloc();
-
-   if (!rpng)
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
-   {
-      ret = false;
-      goto end;
-   }
-
-   if (!rpng_nbio_load_image_argb_start(rpng))
-   {
-      ret = false;
-      goto end;
-   }
-
-   while (rpng_nbio_load_image_argb_iterate(rpng));
-
-   if (!rpng_is_valid(rpng))
-   {
-      ret = false;
-      goto end;
-   }
-   
-   do
-   {
-      retval = rpng_nbio_load_image_argb_process(rpng, data, width, height);
-   }while(retval == PNG_PROCESS_NEXT);
-
-   if (retval == PNG_PROCESS_ERROR || retval == PNG_PROCESS_ERROR_END)
-      ret = false;
-
-end:
-   if (handle)
-      nbio_free(handle);
-   if (rpng)
-      rpng_nbio_load_image_free(rpng);
-   rpng = NULL;
-   if (!ret)
-      free(*data);
-   return ret;
 }

@@ -481,7 +481,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
       submit_info.commandBufferCount = 1;
       submit_info.pCommandBuffers    = &staging;
 
+#ifdef HAVE_THREADS
       slock_lock(vk->context->queue_lock);
+#endif
       VKFUNC(vkQueueSubmit)(vk->context->queue,
             1, &submit_info, VK_NULL_HANDLE);
 
@@ -489,7 +491,9 @@ struct vk_texture vulkan_create_texture(vk_t *vk,
        * during init, so waiting for GPU to complete transfer 
        * and blocking isn't a big deal. */
       VKFUNC(vkQueueWaitIdle)(vk->context->queue);
+#ifdef HAVE_THREADS
       slock_unlock(vk->context->queue_lock);
+#endif
 
       VKFUNC(vkFreeCommandBuffers)(vk->context->device, vk->staging_pool, 1, &staging);
       vulkan_destroy_texture(
@@ -523,13 +527,8 @@ static void vulkan_write_quad_descriptors(
       const struct vk_texture *texture,
       VkSampler sampler)
 {
-   VkDescriptorImageInfo image_info;
    VkDescriptorBufferInfo buffer_info;
    VkWriteDescriptorSet write      = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-
-   image_info.sampler              = sampler;
-   image_info.imageView            = texture->view;
-   image_info.imageLayout          = texture->layout;
 
    buffer_info.buffer              = buffer;
    buffer_info.offset              = offset;
@@ -542,12 +541,21 @@ static void vulkan_write_quad_descriptors(
    write.pBufferInfo               = &buffer_info;
    VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
 
-   write.dstSet                    = set;
-   write.dstBinding                = 1;
-   write.descriptorCount           = 1;
-   write.descriptorType            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-   write.pImageInfo                = &image_info;
-   VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
+   if (texture)
+   {
+      VkDescriptorImageInfo image_info;
+
+      image_info.sampler              = sampler;
+      image_info.imageView            = texture->view;
+      image_info.imageLayout          = texture->layout;
+
+      write.dstSet                    = set;
+      write.dstBinding                = 1;
+      write.descriptorCount           = 1;
+      write.descriptorType            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+      write.pImageInfo                = &image_info;
+      VKFUNC(vkUpdateDescriptorSets)(device, 1, &write, 0, NULL);
+   }
 }
 
 void vulkan_transition_texture(vk_t *vk, struct vk_texture *texture)
@@ -606,7 +614,8 @@ static void vulkan_check_dynamic_state(
 
 void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
 {
-   vulkan_transition_texture(vk, call->texture);
+   if (call->texture)
+      vulkan_transition_texture(vk, call->texture);
 
    if (call->pipeline != vk->tracker.pipeline)
    {
@@ -624,37 +633,34 @@ void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
    {
       VkDescriptorSet set;
 
-      if (memcmp(call->mvp, &vk->tracker.mvp, sizeof(*call->mvp)) 
-            || (call->texture->view != vk->tracker.view)
-            || (call->sampler != vk->tracker.sampler))
-      {
-         /* Upload UBO */
-         struct vk_buffer_range range;
-         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
-                  sizeof(*call->mvp), &range))
-            return;
-         memcpy(range.data, call->mvp, sizeof(*call->mvp));
+      /* Upload UBO */
+      struct vk_buffer_range range;
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+               call->uniform_size, &range))
+         return;
 
-         set = vulkan_descriptor_manager_alloc(
-               vk->context->device,
-               &vk->chain->descriptor_manager);
-         vulkan_write_quad_descriptors(
-               vk->context->device,
-               set,
-               range.buffer,
-               range.offset,
-               sizeof(*call->mvp),
-               call->texture,
-               call->sampler);
+      memcpy(range.data, call->uniform, call->uniform_size);
 
-         VKFUNC(vkCmdBindDescriptorSets)(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-               vk->pipelines.layout, 0,
-               1, &set, 0, NULL);
+      set = vulkan_descriptor_manager_alloc(
+            vk->context->device,
+            &vk->chain->descriptor_manager);
 
-         vk->tracker.view = call->texture->view;
-         vk->tracker.sampler = call->sampler;
-         vk->tracker.mvp = *call->mvp;
-      }
+      vulkan_write_quad_descriptors(
+            vk->context->device,
+            set,
+            range.buffer,
+            range.offset,
+            call->uniform_size,
+            call->texture,
+            call->sampler);
+
+      VKFUNC(vkCmdBindDescriptorSets)(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vk->pipelines.layout, 0,
+            1, &set, 0, NULL);
+
+      vk->tracker.view = VK_NULL_HANDLE;
+      vk->tracker.sampler = VK_NULL_HANDLE;
+      memset(&vk->tracker.mvp, 0, sizeof(vk->tracker.mvp));
    }
 
    /* VBO is already uploaded. */
@@ -1371,7 +1377,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       vk->context.device = cached_device;
       cached_device      = NULL;
 
-      video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+      video_driver_set_video_cache_context_ack();
       RARCH_LOG("[Vulkan]: Using cached Vulkan context.\n");
    }
    else if (VKFUNC(vkCreateDevice)(vk->context.gpu, &device_info,
@@ -1421,9 +1427,11 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          break;
    }
 
+#ifdef HAVE_THREADS
    vk->context.queue_lock = slock_new();
    if (!vk->context.queue_lock)
       return false;
+#endif
 
    return true;
 }
@@ -1575,7 +1583,9 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    present.pWaitSemaphores         = &vk->context.swapchain_semaphores[index];
 
    /* Better hope QueuePresent doesn't block D: */
+#ifdef HAVE_THREADS
    slock_lock(vk->context.queue_lock);
+#endif
    err = VKFUNC(vkQueuePresentKHR)(vk->context.queue, &present);
 
    if (err != VK_SUCCESS || result != VK_SUCCESS)
@@ -1584,7 +1594,9 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
       vk->context.invalid_swapchain = true;
    }
 
+#ifdef HAVE_THREADS
    slock_unlock(vk->context.queue_lock);
+#endif
 }
 
 void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
@@ -1612,7 +1624,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
                vk->context.swapchain_fences[i], NULL);
    }
 
-   if (video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
+   if (video_driver_is_video_cache_context())
    {
       cached_device   = vk->context.device;
       cached_instance = vk->context.instance;

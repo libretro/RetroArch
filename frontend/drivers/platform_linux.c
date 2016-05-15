@@ -48,398 +48,42 @@
 #include "../frontend_driver.h"
 #include "../../defaults.h"
 #include "../../general.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "platform_linux.h"
 
-/* This small data type is used to represent a CPU list / mask,
- * as read from sysfs on Linux.
- *
- * See http://www.kernel.org/doc/Documentation/cputopology.txt
- *
- * For now, we don't expect more than 32 cores on mobile devices, 
- * so keep everything simple.
- */
-typedef struct
+#ifdef ANDROID
+enum
 {
-    uint32_t mask;
-} CpuList;
+   /* Internal SDCARD writable */
+   INT_SD_WRITABLE = 1,
+   /* Internal SDCARD not writable but the private app dir is */
+   INT_SD_APPDIR_WRITABLE,
+   /* Internal SDCARD not writable at all */
+   INT_SD_NOT_WRITABLE
+};
 
-static bool                cpu_inited_once;
-static enum cpu_family     g_cpuFamily;
-static  uint64_t           g_cpuFeatures;
-static  int                g_cpuCount;
+struct android_app *g_android;
+
+static pthread_key_t thread_key;
+
+static char screenshot_dir[PATH_MAX_LENGTH];
+static char downloads_dir[PATH_MAX_LENGTH];
+static char apk_dir[PATH_MAX_LENGTH];
+static char app_dir[PATH_MAX_LENGTH];
+static char int_sd_dir[PATH_MAX_LENGTH];
+static char int_sd_app_dir[PATH_MAX_LENGTH];
+#else
+static const char *proc_apm_path                   = "/proc/apm";
+static const char *proc_acpi_battery_path          = "/proc/acpi/battery";
+static const char *proc_acpi_sysfs_ac_adapter_path = "/sys/class/power_supply/ACAD";
+static const char *proc_acpi_sysfs_battery_path    = "/sys/class/power_supply";
+static const char *proc_acpi_ac_adapter_path       = "/proc/acpi/ac_adapter";
+#endif
 
 #ifndef HAVE_DYNAMIC
 static enum frontend_fork linux_fork_mode = FRONTEND_FORK_NONE;
 #endif
-
-#ifdef __arm__
-#  define DEFAULT_CPU_FAMILY  CPU_FAMILY_ARM
-#elif defined __i386__
-#  define DEFAULT_CPU_FAMILY  CPU_FAMILY_X86
-#else
-#  define DEFAULT_CPU_FAMILY  CPU_FAMILY_UNKNOWN
-#endif
-
-#ifdef __i386__
-void x86_cpuid(int func, int flags[4]);
-#endif
-
-#ifdef __ARM_ARCH__
-/* Extract the content of a the first occurrence of a given field in
- * the content of /proc/cpuinfo and return it as a heap-allocated
- * string that must be freed by the caller.
- *
- * Return NULL if not found
- */
-static char *extract_cpuinfo_field(char* buffer,
-      ssize_t length, const char* field)
-{
-   int len;
-   const char *q;
-   int  fieldlen = strlen(field);
-   char* bufend  = buffer + length;
-   char* result  = NULL;
-   /* Look for first field occurrence, 
-    * and ensures it starts the line. */
-   const char *p = buffer;
-
-   for (;;)
-   {
-      p = memmem(p, bufend-p, field, fieldlen);
-      if (p == NULL)
-         return result;
-
-      if (p == buffer || p[-1] == '\n')
-         break;
-
-      p += fieldlen;
-   }
-
-   /* Skip to the first column followed by a space */
-   p += fieldlen;
-   p  = memchr(p, ':', bufend-p);
-   if (p == NULL || p[1] != ' ')
-      return result;
-
-   /* Find the end of the line */
-   p += 2;
-   q  = memchr(p, '\n', bufend-p);
-   if (q == NULL)
-      q = bufend;
-
-   /* Copy the line into a heap-allocated buffer */
-   len    = q-p;
-   result = malloc(len+1);
-   if (result == NULL)
-      return result;
-
-   memcpy(result, p, len);
-   result[len] = '\0';
-
-   return result;
-}
-
-/* Checks that a space-separated list of items 
- * contains one given 'item'.
- * Returns 1 if found, 0 otherwise.
- */
-static int has_list_item(const char* list, const char* item)
-{
-    const char*  p = list;
-    int    itemlen = strlen(item);
-
-    if (list == NULL)
-        return 0;
-
-    while (*p)
-    {
-        const char*  q;
-
-        /* skip spaces */
-        while (*p == ' ' || *p == '\t')
-            p++;
-
-        /* find end of current list item */
-        q = p;
-        while (*q && *q != ' ' && *q != '\t')
-            q++;
-
-        if (itemlen == q-p && !memcmp(p, item, itemlen))
-            return 1;
-
-        /* skip to next item */
-        p = q;
-    }
-    return 0;
-}
-#endif
-
-
-/* Parse an decimal integer starting from 'input', but not going further
- * than 'limit'. Return the value into '*result'.
- *
- * NOTE: Does not skip over leading spaces, or deal with sign characters.
- * NOTE: Ignores overflows.
- *
- * The function returns NULL in case of error (bad format), or the new
- * position after the decimal number in case of success (which will always
- * be <= 'limit').
- */
-static const char *parse_decimal(const char* input,
-      const char* limit, int* result)
-{
-    const char* p = input;
-    int       val = 0;
-
-    while (p < limit)
-    {
-        int d = (*p - '0');
-        if ((unsigned)d >= 10U)
-            break;
-        val = val*10 + d;
-        p++;
-    }
-    if (p == input)
-        return NULL;
-
-    *result = val;
-    return p;
-}
-
-
-/* Parse a textual list of cpus and store the result inside a CpuList object.
- * Input format is the following:
- * - comma-separated list of items (no spaces)
- * - each item is either a single decimal number (cpu index), or a range made
- *   of two numbers separated by a single dash (-). Ranges are inclusive.
- *
- * Examples:   0
- *             2,4-127,128-143
- *             0-1
- */
-static void cpulist_parse(CpuList* list, char **buf, ssize_t length)
-{
-   const char* p   = (const char*)buf;
-   const char* end = p + length;
-
-   /* NOTE: the input line coming from sysfs typically contains a
-    * trailing newline, so take care of it in the code below
-    */
-   while (p < end && *p != '\n')
-   {
-      int val, start_value, end_value;
-      /* Find the end of current item, and put it into 'q' */
-      const char *q = (const char*)memchr(p, ',', end-p);
-
-      if (!q)
-         q = end;
-
-      /* Get first value */
-      p = parse_decimal(p, q, &start_value);
-      if (p == NULL)
-         return;
-
-      end_value = start_value;
-
-      /* If we're not at the end of the item, expect a dash and
-       * and integer; extract end value.
-       */
-      if (p < q && *p == '-')
-      {
-         p = parse_decimal(p+1, q, &end_value);
-         if (p == NULL)
-            return;
-      }
-
-      /* Set bits CPU list bits */
-      for (val = start_value; val <= end_value; val++)
-      {
-         if ((unsigned)val < 32)
-            list->mask |= (uint32_t)(1U << val);
-      }
-
-      /* Jump to next item */
-      p = q;
-      if (p < end)
-         p++;
-   }
-}
-
-/* Read a CPU list from one sysfs file */
-static void cpulist_read_from(CpuList* list, const char* filename)
-{
-   ssize_t length;
-   char *buf  = NULL;
-
-   list->mask = 0;
-
-   if (filestream_read_file(filename, (void**)&buf, &length) != 1)
-   {
-      RARCH_ERR("Could not read %s: %s\n", filename, strerror(errno));
-      return;
-   }
-
-   cpulist_parse(list, &buf, length);
-   if (buf)
-      free(buf);
-   buf = NULL;
-}
-
-/* Return the number of cpus present on a given device.
- *
- * To handle all weird kernel configurations, we need to compute the
- * intersection of the 'present' and 'possible' CPU lists and count
- * the result.
- */
-static int get_cpu_count(void)
-{
-   CpuList  cpus_present[1];
-   CpuList cpus_possible[1];
-
-   cpulist_read_from(cpus_present, "/sys/devices/system/cpu/present");
-   cpulist_read_from(cpus_possible, "/sys/devices/system/cpu/possible");
-
-   /* Compute the intersection of both sets to get the actual number of
-    * CPU cores that can be used on this device by the kernel.
-    */
-   cpus_present->mask &= cpus_possible->mask;
-
-   return __builtin_popcount(cpus_present->mask);
-}
-
-static void linux_cpu_init(void)
-{
-   ssize_t  length;
-   void *buf = NULL;
-
-   g_cpuFamily   = DEFAULT_CPU_FAMILY;
-   g_cpuFeatures = 0;
-   g_cpuCount    = 1;
-
-   if (filestream_read_file("/proc/cpuinfo", &buf, &length) != 1)
-      return;
-
-   /* Count the CPU cores, the value may be 0 for single-core CPUs */
-   g_cpuCount = get_cpu_count();
-   if (g_cpuCount == 0)
-      g_cpuCount = 1;
-
-   RARCH_LOG("found cpuCount = %d\n", g_cpuCount);
-
-#ifdef __ARM_ARCH__
-   /* Extract architecture from the "CPU Architecture" field.
-    * The list is well-known, unlike the the output of
-    * the 'Processor' field which can vary greatly.
-    *
-    * See the definition of the 'proc_arch' array in
-    * $KERNEL/arch/arm/kernel/setup.c and the 'c_show' function in
-    * same file.
-    */
-   char* cpu_arch = extract_cpuinfo_field(buf, length, "CPU architecture");
-
-   if (cpu_arch)
-   {
-      char*  end;
-      int    has_armv7 = 0;
-      /* read the initial decimal number, ignore the rest */
-      long   arch_number = strtol(cpu_arch, &end, 10);
-
-      RARCH_LOG("Found CPU architecture = '%s'\n", cpu_arch);
-
-      /* Here we assume that ARMv8 will be upwards compatible with v7
-       * in the future. Unfortunately, there is no 'Features' field to
-       * indicate that Thumb-2 is supported.
-       */
-      if (end > cpu_arch && arch_number >= 7)
-         has_armv7 = 1;
-
-      /* Unfortunately, it seems that certain ARMv6-based CPUs
-       * report an incorrect architecture number of 7!
-       *
-       * See http://code.google.com/p/android/issues/detail?id=10812
-       *
-       * We try to correct this by looking at the 'elf_format'
-       * field reported by the 'Processor' field, which is of the
-       * form of "(v7l)" for an ARMv7-based CPU, and "(v6l)" for
-       * an ARMv6-one.
-       */
-      if (has_armv7)
-      {
-         char *cpu_proc = extract_cpuinfo_field(buf, length,
-               "Processor");
-
-         if (cpu_proc != NULL)
-         {
-            RARCH_LOG("found cpu_proc = '%s'\n", cpu_proc);
-            if (has_list_item(cpu_proc, "(v6l)"))
-            {
-               RARCH_ERR("CPU processor and architecture mismatch!!\n");
-               has_armv7 = 0;
-            }
-            free(cpu_proc);
-         }
-      }
-
-      if (has_armv7)
-         g_cpuFeatures |= CPU_ARM_FEATURE_ARMv7;
-
-      /* The LDREX / STREX instructions are available from ARMv6 */
-      if (arch_number >= 6)
-         g_cpuFeatures |= CPU_ARM_FEATURE_LDREX_STREX;
-
-      free(cpu_arch);
-   }
-
-   /* Extract the list of CPU features from 'Features' field */
-   char* cpu_features = extract_cpuinfo_field(buf, length, "Features");
-
-   if (cpu_features)
-   {
-      RARCH_LOG("found cpu_features = '%s'\n", cpu_features);
-
-      if (has_list_item(cpu_features, "vfpv3"))
-         g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
-
-      else if (has_list_item(cpu_features, "vfpv3d16"))
-         g_cpuFeatures |= CPU_ARM_FEATURE_VFPv3;
-
-      /* Note: Certain kernels only report NEON but not VFPv3
-       * in their features list. However, ARM mandates
-       * that if NEON is implemented, so must be VFPv3
-       * so always set the flag.
-       */
-      if (has_list_item(cpu_features, "neon"))
-         g_cpuFeatures |= CPU_ARM_FEATURE_NEON | CPU_ARM_FEATURE_VFPv3;
-      free(cpu_features);
-   }
-#endif /* __ARM_ARCH__ */
-
-#ifdef __i386__
-   g_cpuFamily = CPU_FAMILY_X86;
-#elif defined(_MIPS_ARCH)
-   g_cpuFamily = CPU_FAMILY_MIPS;
-#endif
-
-   if (buf)
-      free(buf);
-   buf = NULL;
-}
-
-enum cpu_family linux_get_cpu_platform(void)
-{
-    return g_cpuFamily;
-}
-
-uint64_t linux_get_cpu_features(void)
-{
-    return g_cpuFeatures;
-}
-
-int linux_get_cpu_count(void)
-{
-    return g_cpuCount;
-}
 
 int system_property_get(const char *command,
       const char *args, char *value)
@@ -484,21 +128,6 @@ error:
 }
 
 #ifdef ANDROID
-#define SDCARD_ROOT_WRITABLE     1
-#define SDCARD_EXT_DIR_WRITABLE  2
-#define SDCARD_NOT_WRITABLE      3
-
-struct android_app *g_android;
-static pthread_key_t thread_key;
-
-char screenshot_dir[PATH_MAX_LENGTH];
-char downloads_dir[PATH_MAX_LENGTH];
-char apk_path[PATH_MAX_LENGTH];
-char sdcard_dir[PATH_MAX_LENGTH];
-char app_dir[PATH_MAX_LENGTH];
-char ext_dir[PATH_MAX_LENGTH];
-
-
 /* forward declaration */
 bool android_run_events(void *data);
 
@@ -739,7 +368,7 @@ static void android_app_entry(void *data)
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
-      runloop_ctl(RUNLOOP_CTL_DATA_ITERATE, NULL);
+      runloop_iterate_data();
    }while (ret != -1);
 
    main_exit(data);
@@ -753,7 +382,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
         void* savedState, size_t savedStateSize)
 {
    int msgpipe[2];
-   struct android_app *android_app = 
+   struct android_app *android_app =
       (struct android_app*)calloc(1, sizeof(*android_app));
 
    if (!android_app)
@@ -933,12 +562,6 @@ static void frontend_android_shutdown(bool unused)
 }
 
 #else
-static const char *proc_apm_path             = "/proc/apm";
-static const char *proc_acpi_battery_path    = "/proc/acpi/battery";
-static const char *proc_acpi_sysfs_ac_adapter_path= "/sys/class/power_supply/ACAD";
-static const char *proc_acpi_sysfs_battery_path= "/sys/class/power_supply";
-static const char *proc_acpi_ac_adapter_path = "/proc/acpi/ac_adapter";
-
 
 static bool make_proc_acpi_key_val(char **_ptr, char **_key, char **_val)
 {
@@ -1008,6 +631,9 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
    int           pct = -1;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
+
+   if (!path_file_exists(path))
+      goto end;
 
    if (!filestream_read_file(path, (void**)&buf, &length))
       goto end;
@@ -1134,6 +760,8 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       return;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "status");
+   if (!path_file_exists(path))
+      return;
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
@@ -1167,6 +795,8 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
    ssize_t length   = 0;
 
    snprintf(path, sizeof(path), "%s/%s/%s", base, node, "state");
+   if (!path_file_exists(path))
+      return;
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
@@ -1194,6 +824,8 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    const char *base = proc_acpi_sysfs_ac_adapter_path;
 
    snprintf(path, sizeof(path), "%s/%s", base, "online");
+   if (!path_file_exists(path))
+      return;
    if (filestream_read_file(path, (void**)&buf, &length) != 1)
       return;
 
@@ -1249,6 +881,8 @@ static bool frontend_linux_powerstate_check_apm(
    char  *buf          = NULL;
    char *str           = NULL;
 
+   if (!path_file_exists(proc_apm_path))
+      goto error;
    if (filestream_read_file(proc_apm_path, (void**)&buf, &length) != 1)
       goto error;
 
@@ -1671,15 +1305,15 @@ static void frontend_linux_get_env(int *argc,
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      *sdcard_dir = '\0';
+      *int_sd_dir = '\0';
 
       if (argv && *argv)
-         strlcpy(sdcard_dir, argv, sizeof(sdcard_dir));
+         strlcpy(int_sd_dir, argv, sizeof(int_sd_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*sdcard_dir)
+      if (*int_sd_dir)
       {
-         RARCH_LOG("External storage location [%s]\n", sdcard_dir);
+         RARCH_LOG("External storage location [%s]\n", int_sd_dir);
          /* TODO base dir handler */
       }
    }
@@ -1733,15 +1367,15 @@ static void frontend_linux_get_env(int *argc,
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      *apk_path = '\0';
+      *apk_dir = '\0';
 
       if (argv && *argv)
-         strlcpy(apk_path, argv, sizeof(apk_path));
+         strlcpy(apk_dir, argv, sizeof(apk_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*apk_path)
+      if (*apk_dir)
       {
-         RARCH_LOG("APK location [%s].\n", apk_path);
+         RARCH_LOG("APK location [%s].\n", apk_dir);
       }
    }
 
@@ -1752,15 +1386,15 @@ static void frontend_linux_get_env(int *argc,
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      *ext_dir = '\0';
+      *int_sd_app_dir = '\0';
 
       if (argv && *argv)
-         strlcpy(ext_dir, argv, sizeof(ext_dir));
+         strlcpy(int_sd_app_dir, argv, sizeof(int_sd_app_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*ext_dir)
+      if (*int_sd_app_dir)
       {
-         RARCH_LOG("External files location [%s]\n", ext_dir);
+         RARCH_LOG("External files location [%s]\n", int_sd_app_dir);
       }
    }
 
@@ -1779,20 +1413,20 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(app_dir, argv, sizeof(app_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      //set paths depending on the ability to write to sdcard_dir
+      //set paths depending on the ability to write to int_sd_dir
 
-      if(*sdcard_dir)
+      if(*int_sd_dir)
       {
-         if(test_permissions(sdcard_dir))
-            perms = SDCARD_ROOT_WRITABLE;
+         if(test_permissions(int_sd_dir))
+            perms = INT_SD_WRITABLE;
       }
-      else if(*ext_dir)
+      else if(*int_sd_app_dir)
       {
-         if(test_permissions(ext_dir))
-            perms = SDCARD_EXT_DIR_WRITABLE;
+         if(test_permissions(int_sd_app_dir))
+            perms = INT_SD_APPDIR_WRITABLE;
       }
       else
-         perms = SDCARD_NOT_WRITABLE;
+         perms = INT_SD_NOT_WRITABLE;
 
       RARCH_LOG("SD permissions: %d",perms);
 
@@ -1829,16 +1463,8 @@ static void frontend_linux_get_env(int *argc,
                   app_dir, "database/rdb", sizeof(g_defaults.dir.database));
             fill_pathname_join(g_defaults.dir.cursor,
                   app_dir, "database/cursors", sizeof(g_defaults.dir.cursor));
-            fill_pathname_join(g_defaults.dir.cheats,
-                  app_dir, "cheats", sizeof(g_defaults.dir.cheats));
-            fill_pathname_join(g_defaults.dir.playlist,
-                  app_dir, "playlists", sizeof(g_defaults.dir.playlist));
-            fill_pathname_join(g_defaults.dir.remap,
-                  app_dir, "remaps", sizeof(g_defaults.dir.remap));
             fill_pathname_join(g_defaults.dir.wallpapers,
-                  app_dir, "wallpapers", sizeof(g_defaults.dir.wallpapers));
-            fill_pathname_join(g_defaults.dir.thumbnails,
-                  app_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
+                  app_dir, "assets/wallpapers", sizeof(g_defaults.dir.wallpapers));
             if(*downloads_dir && test_permissions(downloads_dir))
             {
                fill_pathname_join(g_defaults.dir.core_assets,
@@ -1869,68 +1495,110 @@ static void frontend_linux_get_env(int *argc,
 
             switch (perms)
             {
-               case SDCARD_EXT_DIR_WRITABLE:
+               case INT_SD_APPDIR_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
-                        ext_dir, "saves", sizeof(g_defaults.dir.sram));
-                  path_mkdir(g_defaults.dir.sram);
-
+                        int_sd_app_dir, "saves", sizeof(g_defaults.dir.sram));
                   fill_pathname_join(g_defaults.dir.savestate,
-                        ext_dir, "states", sizeof(g_defaults.dir.savestate));
-                  path_mkdir(g_defaults.dir.savestate);
-
+                        int_sd_app_dir, "states", sizeof(g_defaults.dir.savestate));
                   fill_pathname_join(g_defaults.dir.system,
-                        ext_dir, "system", sizeof(g_defaults.dir.system));
-                  path_mkdir(g_defaults.dir.system);
+                        int_sd_app_dir, "system", sizeof(g_defaults.dir.system));
 
                   fill_pathname_join(g_defaults.dir.menu_config,
-                        ext_dir, "config", sizeof(g_defaults.dir.menu_config));
-                  path_mkdir(g_defaults.dir.menu_config);
+                        int_sd_app_dir, "config", sizeof(g_defaults.dir.menu_config));
+                  fill_pathname_join(g_defaults.dir.remap,
+                        g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
+                  fill_pathname_join(g_defaults.dir.thumbnails,
+                        int_sd_app_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
+                  fill_pathname_join(g_defaults.dir.playlist,
+                        int_sd_app_dir, "playlists", sizeof(g_defaults.dir.playlist));
+                  fill_pathname_join(g_defaults.dir.cheats,
+                        int_sd_app_dir, "cheats", sizeof(g_defaults.dir.cheats));
 
+                  /* TODO/FIXME - Test if this is needed at all, as far as I know,
+                   * every directory we set in g_defaults already gets created if it
+                   * doesn't exist already */
+                  path_mkdir(g_defaults.dir.sram);
+                  path_mkdir(g_defaults.dir.savestate);
+                  path_mkdir(g_defaults.dir.system);
+                  path_mkdir(g_defaults.dir.menu_config);
+                  path_mkdir(g_defaults.dir.remap);
+                  path_mkdir(g_defaults.dir.thumbnails);
+                  path_mkdir(g_defaults.dir.playlist);
+                  path_mkdir(g_defaults.dir.cheats);
                   break;
-               case SDCARD_NOT_WRITABLE:
+               case INT_SD_NOT_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
                         app_dir, "saves", sizeof(g_defaults.dir.sram));
-                  path_mkdir(g_defaults.dir.sram);
                   fill_pathname_join(g_defaults.dir.savestate,
                         app_dir, "states", sizeof(g_defaults.dir.savestate));
-                  path_mkdir(g_defaults.dir.savestate);
                   fill_pathname_join(g_defaults.dir.system,
                         app_dir, "system", sizeof(g_defaults.dir.system));
-                  path_mkdir(g_defaults.dir.system);
 
                   fill_pathname_join(g_defaults.dir.menu_config,
                         app_dir, "config", sizeof(g_defaults.dir.menu_config));
+                  fill_pathname_join(g_defaults.dir.remap,
+                        g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
+                  fill_pathname_join(g_defaults.dir.thumbnails,
+                        app_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
+                  fill_pathname_join(g_defaults.dir.playlist,
+                        app_dir, "playlists", sizeof(g_defaults.dir.playlist));
+                  fill_pathname_join(g_defaults.dir.cheats,
+                        app_dir, "cheats", sizeof(g_defaults.dir.cheats));
+
+                  /* TODO/FIXME - Test if this is needed at all, as far as I know,
+                   * every directory we set in g_defaults already gets created if it
+                   * doesn't exist already */
+                  path_mkdir(g_defaults.dir.sram);
+                  path_mkdir(g_defaults.dir.savestate);
+                  path_mkdir(g_defaults.dir.system);
                   path_mkdir(g_defaults.dir.menu_config);
+                  path_mkdir(g_defaults.dir.remap);
+                  path_mkdir(g_defaults.dir.thumbnails);
+                  path_mkdir(g_defaults.dir.playlist);
+                  path_mkdir(g_defaults.dir.cheats);
                   break;
-               case SDCARD_ROOT_WRITABLE:
+               case INT_SD_WRITABLE:
+                  fill_pathname_join(g_defaults.dir.menu_config,
+                        int_sd_dir, "RetroArch/config", sizeof(g_defaults.dir.menu_config));
+                  fill_pathname_join(g_defaults.dir.remap,
+                        g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
+                  fill_pathname_join(g_defaults.dir.thumbnails,
+                        int_sd_dir, "RetroArch/thumbnails", sizeof(g_defaults.dir.thumbnails));
+                  fill_pathname_join(g_defaults.dir.playlist,
+                        int_sd_dir, "RetroArch/playlists", sizeof(g_defaults.dir.playlist));
+                  fill_pathname_join(g_defaults.dir.cheats,
+                        int_sd_dir, "RetroArch/cheats", sizeof(g_defaults.dir.cheats));
+
+                  /* TODO/FIXME - Test if this is needed at all, as far as I know,
+                   * every directory we set in g_defaults already gets created if it
+                   * doesn't exist already */
+                  path_mkdir(g_defaults.dir.menu_config);
+                  path_mkdir(g_defaults.dir.remap);
+                  path_mkdir(g_defaults.dir.thumbnails);
+                  path_mkdir(g_defaults.dir.playlist);
+                  path_mkdir(g_defaults.dir.cheats);
                default:
                   break;
             }
 
             /* create save and system directories in the internal dir too */
-            fill_pathname_join(buf,
-                  app_dir, "saves", sizeof(buf));
+            fill_pathname_join(buf, app_dir, "saves", sizeof(buf));
             path_mkdir(buf);
 
-            fill_pathname_join(buf,
-                  app_dir, "states", sizeof(buf));
+            fill_pathname_join(buf, app_dir, "states", sizeof(buf));
             path_mkdir(buf);
 
-            fill_pathname_join(buf,
-                  app_dir, "system", sizeof(buf));
+            fill_pathname_join(buf, app_dir, "system", sizeof(buf));
             path_mkdir(buf);
 
             /* create save and system directories in the internal sd too */
-            fill_pathname_join(buf,
-                  ext_dir, "saves", sizeof(buf));
+            fill_pathname_join(buf, int_sd_app_dir, "saves", sizeof(buf));
             path_mkdir(buf);
 
-            fill_pathname_join(buf,
-                  ext_dir, "states", sizeof(buf));
+            fill_pathname_join(buf, int_sd_app_dir, "states", sizeof(buf));
             path_mkdir(buf);
 
-            fill_pathname_join(buf,
-                  ext_dir, "system", sizeof(buf));
+            fill_pathname_join(buf, int_sd_app_dir, "system", sizeof(buf));
             path_mkdir(buf);
 
             RARCH_LOG("Default savefile folder: [%s]",   g_defaults.dir.sram);
@@ -1964,9 +1632,7 @@ static void frontend_linux_get_env(int *argc,
     * for gamepad-like/console devices. */
 
    if (device_is_game_console(device_model))
-   {
       snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
-   }
 
 #else
    char base_path[PATH_MAX];
@@ -1987,11 +1653,13 @@ static void frontend_linux_get_env(int *argc,
    fill_pathname_join(g_defaults.dir.core_info, base_path,
          "cores", sizeof(g_defaults.dir.core_info));
    fill_pathname_join(g_defaults.dir.autoconfig, base_path,
-         "autoconf", sizeof(g_defaults.dir.autoconfig));
+         "autoconfig", sizeof(g_defaults.dir.autoconfig));
    fill_pathname_join(g_defaults.dir.assets, base_path,
          "assets", sizeof(g_defaults.dir.assets));
-   fill_pathname_join(g_defaults.dir.remap, base_path,
-         "remap", sizeof(g_defaults.dir.remap));
+   fill_pathname_join(g_defaults.dir.menu_config, base_path,
+         "config", sizeof(g_defaults.dir.menu_config));
+   fill_pathname_join(g_defaults.dir.remap, g_defaults.dir.menu_config,
+         "remaps", sizeof(g_defaults.dir.remap));
    fill_pathname_join(g_defaults.dir.playlist, base_path,
          "playlists", sizeof(g_defaults.dir.playlist));
    fill_pathname_join(g_defaults.dir.cursor, base_path,
@@ -2128,11 +1796,6 @@ static void frontend_linux_init(void *data)
          "getStringExtra", "(Ljava/lang/String;)Ljava/lang/String;");
 #endif
 
-   if (!cpu_inited_once)
-   {
-      linux_cpu_init();
-      cpu_inited_once = true;
-   }
 }
 
 #ifdef ANDROID
@@ -2144,9 +1807,9 @@ static int frontend_android_parse_drive_list(void *data)
    menu_entries_add(list,
          app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
    menu_entries_add(list,
-         ext_dir, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
+         int_sd_app_dir, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
    menu_entries_add(list,
-         sdcard_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
+         int_sd_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
 
    menu_entries_add(list, "/", "",
          MENU_FILE_DIRECTORY, 0, 0);
@@ -2156,7 +1819,6 @@ static int frontend_android_parse_drive_list(void *data)
 #endif
 
 #ifndef HAVE_DYNAMIC
-#include "../../retroarch.h"
 
 static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
 {
@@ -2181,7 +1843,7 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
             fill_pathname_application_path(executable_path, sizeof(executable_path));
             strlcpy(settings->path.libretro, executable_path, sizeof(settings->path.libretro));
          }
-         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+         command_event(CMD_EVENT_QUIT, NULL);
          break;
       case FRONTEND_FORK_NONE:
       default:

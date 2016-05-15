@@ -26,7 +26,7 @@
 #include "../menu_navigation.h"
 
 #include "../../core_info.h"
-#include "../../cheats.h"
+#include "../../managers/cheat_manager.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../system.h"
@@ -59,7 +59,7 @@ int shader_action_parameter_right(unsigned type, const char *label, bool wraparo
    video_shader_ctx_t shader_info;
    struct video_shader_parameter *param = NULL;
 
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    param = &shader_info.data->parameters[type - MENU_SETTINGS_SHADER_PARAMETER_0];
    return generic_shader_action_parameter_right(shader_info.data, param, type, label, wraparound);
@@ -322,8 +322,7 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
 static int action_right_video_resolution(unsigned type, const char *label,
       bool wraparound)
 {
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT, NULL);
-
+   video_driver_get_next_video_out();
    return 0;
 }
 
@@ -340,7 +339,7 @@ static int playlist_association_right(unsigned type, const char *label,
    const char *path                 = path_basename(label);
    core_info_list_t           *list = NULL;
    
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+   core_info_get_list(&list);
    if (!list)
       return menu_cbs_exit();
 
@@ -392,7 +391,7 @@ int core_setting_right(unsigned type, const char *label,
 static int disk_options_disk_idx_right(unsigned type, const char *label,
       bool wraparound)
 {
-   event_cmd_ctl(EVENT_CMD_DISK_NEXT, NULL);
+   command_event(CMD_EVENT_DISK_NEXT, NULL);
 
    return 0;
 }
@@ -471,6 +470,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_FILE_IMAGEVIEWER:
          case MENU_FILE_PLAYLIST_COLLECTION:
          case MENU_FILE_DOWNLOAD_CORE_CONTENT:
+         case MENU_FILE_DOWNLOAD_THUMBNAIL_CONTENT:
          case MENU_FILE_SCAN_DIRECTORY:
          case MENU_SETTING_GROUP:
             switch (menu_label_hash)

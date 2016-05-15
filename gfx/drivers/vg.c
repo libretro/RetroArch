@@ -24,13 +24,13 @@
 #include <retro_inline.h>
 #include <retro_assert.h>
 #include <gfx/math/matrix_3x3.h>
+#include <libretro.h>
 
 #include "../video_context_driver.h"
-#include "../../libretro.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../driver.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 #include "../font_driver.h"
 #include "../../content.h"
 #include "../../runloop.h"
@@ -70,7 +70,7 @@ static PFNVGCREATEEGLIMAGETARGETKHRPROC pvgCreateEGLImageTargetKHR;
 static void vg_set_nonblock_state(void *data, bool state)
 {
    unsigned interval = state ? 0 : 1;
-   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
+   video_context_driver_swap_interval(&interval);
 }
 
 static INLINE bool vg_query_extension(const char *ext)
@@ -94,16 +94,16 @@ static void *vg_init(const video_info_t *video,
    VGfloat clearColor[4] = {0, 0, 0, 1};
    settings_t        *settings = config_get_ptr();
    vg_t                    *vg = (vg_t*)calloc(1, sizeof(vg_t));
-   const gfx_ctx_driver_t *ctx = gfx_ctx_init_first(
+   const gfx_ctx_driver_t *ctx = video_context_driver_init_first(
          vg, settings->video.context_driver,
          GFX_CTX_OPENVG_API, 0, 0, false);
 
    if (!vg || !ctx)
       goto error;
 
-   gfx_ctx_ctl(GFX_CTL_SET, (void*)ctx);
+   video_context_driver_set((void*)ctx);
 
-   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+   video_context_driver_get_video_size(&mode);
 
    temp_width  = mode.width;
    temp_height = mode.height;
@@ -117,8 +117,8 @@ static void *vg_init(const video_info_t *video,
 
    interval = video->vsync ? 1 : 0;
 
-   gfx_ctx_ctl(GFX_CTL_SWAP_INTERVAL, &interval);
-   gfx_ctx_ctl(GFX_CTL_UPDATE_WINDOW_TITLE, NULL);
+   video_context_driver_swap_interval(&interval);
+   video_context_driver_update_window_title();
 
    vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->keep_aspect = video->force_aspect;
@@ -137,7 +137,7 @@ static void *vg_init(const video_info_t *video,
    mode.height     = win_height;
    mode.fullscreen = video->fullscreen;
 
-   if (!gfx_ctx_ctl(GFX_CTL_SET_VIDEO_MODE, &mode))
+   if (!video_context_driver_set_video_mode(&mode))
       goto error;
 
    video_driver_get_size(&temp_width, &temp_height);
@@ -147,7 +147,7 @@ static void *vg_init(const video_info_t *video,
    mode.width  = 0;
    mode.height = 0;
 
-   gfx_ctx_ctl(GFX_CTL_GET_VIDEO_SIZE, &mode);
+   video_context_driver_get_video_size(&mode);
 
    temp_width  = mode.width;
    temp_height = mode.height;
@@ -170,7 +170,7 @@ static void *vg_init(const video_info_t *video,
    aspect_data.width    = temp_width;
    aspect_data.height   = temp_height;
 
-   gfx_ctx_ctl(GFX_CTL_TRANSLATE_ASPECT, &aspect_data);
+   video_context_driver_translate_aspect(&aspect_data);
 
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
@@ -182,7 +182,7 @@ static void *vg_init(const video_info_t *video,
    inp.input      = input;
    inp.input_data = input_data;
 
-   gfx_ctx_ctl(GFX_CTL_INPUT_DRIVER, &inp);
+   video_context_driver_input_driver(&inp);
 
    if (     settings->video.font_enable 
          && font_renderer_create_default((const void**)&vg->font_driver, &vg->mFontRenderer,
@@ -216,13 +216,13 @@ static void *vg_init(const video_info_t *video,
    }
 
    if (vg_query_extension("KHR_EGL_image") 
-         && gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_INIT, (void*)video))
+         && video_context_driver_init_image_buffer((void*)video))
    {
       gfx_ctx_proc_address_t proc_address;
 
       proc_address.sym = "vgCreateEGLImageTargetKHR";
 
-      gfx_ctx_ctl(GFX_CTL_PROC_ADDRESS_GET, &proc_address);
+      video_context_driver_get_proc_address(&proc_address);
 
       pvgCreateEGLImageTargetKHR = 
          (PFNVGCREATEEGLIMAGETARGETKHRPROC)proc_address.addr;
@@ -245,7 +245,7 @@ static void *vg_init(const video_info_t *video,
 error:
    if (vg)
       free(vg);
-   gfx_ctx_ctl(GFX_CTL_DESTROY, NULL);
+   video_context_driver_destroy();
    return NULL;
 }
 
@@ -266,7 +266,7 @@ static void vg_free(void *data)
       vgDestroyPaint(vg->mPaintBg);
    }
 
-   gfx_ctx_ctl(GFX_CTL_FREE, NULL);
+   video_context_driver_free();
 
    free(vg);
 }
@@ -343,7 +343,7 @@ static void vg_copy_frame(void *data, const void *frame,
       img_info.index  = 0;
       img_info.handle = &img;
       
-      new_egl         = gfx_ctx_ctl(GFX_CTL_IMAGE_BUFFER_WRITE, &img_info);
+      new_egl         = video_context_driver_write_to_image_buffer(&img_info);
       
       retro_assert(img != EGL_NO_IMAGE_KHR);
 
@@ -413,11 +413,11 @@ static bool vg_frame(void *data, const void *frame,
       vg_draw_message(vg, msg);
 #endif
 
-   gfx_ctx_ctl(GFX_CTL_UPDATE_WINDOW_TITLE, NULL);
+   video_context_driver_update_window_title();
 
    retro_perf_stop(&vg_fr);
 
-   gfx_ctx_ctl(GFX_CTL_SWAP_BUFFERS, NULL);
+   video_context_driver_swap_buffers();
 
    return true;
 }
@@ -435,7 +435,7 @@ static bool vg_alive(void *data)
    size_data.width      = &temp_width;
    size_data.height     = &temp_height;
 
-   gfx_ctx_ctl(GFX_CTL_CHECK_WINDOW, &size_data);
+   video_context_driver_check_window(&size_data);
 
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_size(&temp_width, &temp_height);
@@ -445,18 +445,18 @@ static bool vg_alive(void *data)
 
 static bool vg_focus(void *data)
 {
-   return gfx_ctx_ctl(GFX_CTL_FOCUS, NULL);
+   return video_context_driver_focus();
 }
 
 static bool vg_suppress_screensaver(void *data, bool enable)
 {
    bool enabled = enable;
-   return gfx_ctx_ctl(GFX_CTL_SUPPRESS_SCREENSAVER, &enabled);
+   return video_context_driver_suppress_screensaver(&enabled);
 }
 
 static bool vg_has_windowed(void *data)
 {
-   return gfx_ctx_ctl(GFX_CTL_HAS_WINDOWED, NULL);
+   return video_context_driver_has_windowed();
 }
 
 static bool vg_set_shader(void *data,

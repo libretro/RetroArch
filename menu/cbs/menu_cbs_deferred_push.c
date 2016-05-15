@@ -342,7 +342,7 @@ static int general_push(menu_displaylist_info_t *info,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+   core_info_get_list(&list);
 
    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system_menu);
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);

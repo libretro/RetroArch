@@ -66,6 +66,7 @@ typedef struct gfx_ctx_wayland_data
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
    unsigned swap_interval;
+   bool core_hw_context_enable; 
 
    unsigned buffer_scale;
 
@@ -638,8 +639,8 @@ static EGLint *egl_fill_attribs(gfx_ctx_wayland_data_t *wl, EGLint *attr)
 #ifdef GL_DEBUG
          debug = true;
 #else
-         struct retro_hw_render_callback *hwr = NULL;
-         video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+         struct retro_hw_render_callback *hwr =
+            video_driver_get_hw_context();
          debug = hwr->debug_context;
 #endif
 
@@ -705,7 +706,7 @@ static void gfx_ctx_wl_destroy(void *data)
    switch (wl_api)
    {
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
+#if defined(HAVE_VULKAN) && defined(HAVE_THREADS)
          if (wl->vk.context.queue_lock)
             slock_free(wl->vk.context.queue_lock);
 #endif
@@ -1138,6 +1139,28 @@ static void gfx_ctx_wl_bind_hw_render(void *data, bool enable)
    }
 }
 
+static uint32_t gfx_ctx_wl_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   if (wl->core_hw_context_enable)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   }
+   else
+      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
+   return flags;
+}
+
+static void gfx_ctx_wl_set_flags(void *data, uint32_t flags)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+      wl->core_hw_context_enable = true;
+}
+
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
@@ -1163,6 +1186,8 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL,
    NULL,
    "wayland",
+   gfx_ctx_wl_get_flags,
+   gfx_ctx_wl_set_flags,
    gfx_ctx_wl_bind_hw_render,
 #ifdef HAVE_VULKAN
    gfx_ctx_wl_get_context_data

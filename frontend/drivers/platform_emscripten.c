@@ -26,7 +26,7 @@
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../frontend_driver.h"
-#include "../../command_event.h"
+#include "../../command.h"
 
 static void emscripten_mainloop(void)
 {
@@ -34,7 +34,7 @@ static void emscripten_mainloop(void)
    int ret = runloop_iterate(&sleep_ms);
    if (ret == 1 && sleep_ms > 0)
       retro_sleep(sleep_ms);
-   runloop_ctl(RUNLOOP_CTL_DATA_ITERATE, NULL);
+   runloop_iterate_data();
    if (ret != -1)
       return;
 
@@ -44,22 +44,22 @@ static void emscripten_mainloop(void)
 
 void cmd_savefiles(void)
 {
-   event_cmd_ctl(EVENT_CMD_SAVEFILES, NULL);
+   command_event(CMD_EVENT_SAVEFILES, NULL);
 }
 
 void cmd_save_state(void)
 {
-   event_cmd_ctl(EVENT_CMD_SAVE_STATE, NULL);
+   command_event(CMD_EVENT_SAVE_STATE, NULL);
 }
 
 void cmd_load_state(void)
 {
-   event_cmd_ctl(EVENT_CMD_LOAD_STATE, NULL);
+   command_event(CMD_EVENT_LOAD_STATE, NULL);
 }
 
 void cmd_take_screenshot(void)
 {
-   event_cmd_ctl(EVENT_CMD_TAKE_SCREENSHOT, NULL);
+   command_event(CMD_EVENT_TAKE_SCREENSHOT, NULL);
 }
 
 

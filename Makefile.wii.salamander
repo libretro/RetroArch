@@ -60,7 +60,9 @@ OBJ = frontend/frontend_salamander.o \
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
 CFLAGS          += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
-OBJ             += logger/netlogger.o
+OBJ             += network/netlogger.o \
+						 libretro-common/net/net_compat.o \
+						 libretro-common/net/net_socket.o
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)

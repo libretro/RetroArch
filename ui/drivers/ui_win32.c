@@ -121,7 +121,7 @@ static void shader_dlg_refresh_trackbar_label(int index)
    video_shader_ctx_t shader_info;
    char val_buffer[32]         = {0};
 
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    if (floorf(shader_info.data->parameters[index].current) 
          == shader_info.data->parameters[index].current)
@@ -141,7 +141,7 @@ static void shader_dlg_params_refresh(void)
    int i;
    video_shader_ctx_t shader_info;
 
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    for (i = 0; i < GFX_MAX_PARAMETERS; i++)
    {
@@ -218,7 +218,7 @@ void shader_dlg_params_reload(void)
    int i, pos_x, pos_y;
    video_shader_ctx_t shader_info;
 
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    shader_dlg_params_clear();
 
@@ -353,7 +353,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
    int i, pos;
    video_shader_ctx_t shader_info;
 
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    switch (message)
    {
@@ -524,7 +524,7 @@ bool win32_browser(
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
    WPARAM mode         = wparam & 0xffff;
-   enum event_command cmd         = EVENT_CMD_NONE;
+   enum event_command cmd         = CMD_EVENT_NONE;
    bool do_wm_close     = false;
    settings_t *settings = config_get_ptr();
 
@@ -568,11 +568,11 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                {
                   case ID_M_LOAD_CORE:
                      runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, win32_file);
-                     cmd         = EVENT_CMD_LOAD_CORE;
+                     cmd         = CMD_EVENT_LOAD_CORE;
                      break;
                   case ID_M_LOAD_CONTENT:
                      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, win32_file);
-                     cmd         = EVENT_CMD_LOAD_CONTENT;
+                     cmd         = CMD_EVENT_LOAD_CONTENT;
                      do_wm_close = true;
                      break;
                }
@@ -580,34 +580,34 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          }
          break;
       case ID_M_RESET:
-         cmd = EVENT_CMD_RESET;
+         cmd = CMD_EVENT_RESET;
          break;
       case ID_M_MUTE_TOGGLE:
-         cmd = EVENT_CMD_AUDIO_MUTE_TOGGLE;
+         cmd = CMD_EVENT_AUDIO_MUTE_TOGGLE;
          break;
       case ID_M_MENU_TOGGLE:
-         cmd = EVENT_CMD_MENU_TOGGLE;
+         cmd = CMD_EVENT_MENU_TOGGLE;
          break;
       case ID_M_PAUSE_TOGGLE:
-         cmd = EVENT_CMD_PAUSE_TOGGLE;
+         cmd = CMD_EVENT_PAUSE_TOGGLE;
          break;
       case ID_M_LOAD_STATE:
-         cmd = EVENT_CMD_LOAD_STATE;
+         cmd = CMD_EVENT_LOAD_STATE;
          break;
       case ID_M_SAVE_STATE:
-         cmd = EVENT_CMD_SAVE_STATE;
+         cmd = CMD_EVENT_SAVE_STATE;
          break;
       case ID_M_DISK_CYCLE:
-         cmd = EVENT_CMD_DISK_EJECT_TOGGLE;
+         cmd = CMD_EVENT_DISK_EJECT_TOGGLE;
          break;
       case ID_M_DISK_NEXT:
-         cmd = EVENT_CMD_DISK_NEXT;
+         cmd = CMD_EVENT_DISK_NEXT;
          break;
       case ID_M_DISK_PREV:
-         cmd = EVENT_CMD_DISK_PREV;
+         cmd = CMD_EVENT_DISK_PREV;
          break;
       case ID_M_FULL_SCREEN:
-         cmd = EVENT_CMD_FULLSCREEN_TOGGLE;
+         cmd = CMD_EVENT_FULLSCREEN_TOGGLE;
          break;
 #ifndef _XBOX
       case ID_M_SHADER_PARAMETERS:
@@ -615,10 +615,10 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          break;
 #endif
       case ID_M_MOUSE_GRAB:
-         cmd = EVENT_CMD_GRAB_MOUSE_TOGGLE;
+         cmd = CMD_EVENT_GRAB_MOUSE_TOGGLE;
          break;
       case ID_M_TAKE_SCREENSHOT:
-         cmd = EVENT_CMD_TAKE_SCREENSHOT;
+         cmd = CMD_EVENT_TAKE_SCREENSHOT;
          break;
       case ID_M_QUIT:
          do_wm_close = true;
@@ -628,7 +628,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          {
             unsigned idx = (mode - (ID_M_WINDOW_SCALE_1X-1));
             runloop_ctl(RUNLOOP_CTL_SET_WINDOWED_SCALE, &idx);
-            cmd = EVENT_CMD_RESIZE_WINDOWED_SCALE;
+            cmd = CMD_EVENT_RESIZE_WINDOWED_SCALE;
          }
          else if (mode == ID_M_STATE_INDEX_AUTO)
          {
@@ -644,8 +644,8 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
          break;
    }
 
-	if (cmd != EVENT_CMD_NONE)
-		event_cmd_ctl(cmd, NULL);
+	if (cmd != CMD_EVENT_NONE)
+		command_event(cmd, NULL);
 
 	if (do_wm_close)
 		PostMessage(owner, WM_CLOSE, 0, 0);

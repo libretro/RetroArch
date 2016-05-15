@@ -36,10 +36,10 @@ static void input_reindex_devices(void)
    unsigned i;
    settings_t      *settings = config_get_ptr();
 
-   for(i=0; i < settings->input.max_users; i++)
+   for(i = 0; i < settings->input.max_users; i++)
       settings->input.device_name_index[i]=0;
 
-   for(i=0; i < settings->input.max_users; i++)
+   for(i = 0; i < settings->input.max_users; i++)
    {
       unsigned j;
       const char *tmp = settings->input.device_names[i];
@@ -311,32 +311,29 @@ static bool input_config_autoconfigure_joypad_init(autoconfig_params_t *params)
 
 bool input_config_autoconfigure_joypad(autoconfig_params_t *params)
 {
-   bool ret = false;
+   char msg[PATH_MAX_LENGTH];
 
    if (!input_config_autoconfigure_joypad_init(params))
-      return ret;
+      goto error;
 
    if (!*params->name)
-      return ret;
+      goto error;
 
-   if (!ret)
-      ret = input_autoconfigure_joypad_from_conf_dir(params);
-
+   if (input_autoconfigure_joypad_from_conf_dir(params))
+      return true;
 #if defined(HAVE_BUILTIN_AUTOCONFIG)
-   if (!ret)
-      ret = input_autoconfigure_joypad_from_conf_internal(params);
+   if (input_autoconfigure_joypad_from_conf_internal(params))
+      return true;
 #endif
-   if (!ret)
-   {
-      char msg[PATH_MAX_LENGTH];
 
-      RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)\n",
-            params->name, params->vid, params->pid);
-      snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured",
-            params->name, (long)params->vid, (long)params->pid);
-      runloop_msg_queue_push(msg, 0, 60, false);
-   }
-   return ret;
+   RARCH_LOG("Autodetect: no profiles found for %s (%d/%d)\n",
+         params->name, params->vid, params->pid);
+   snprintf(msg, sizeof(msg), "%s (%ld/%ld) not configured",
+         params->name, (long)params->vid, (long)params->pid);
+   runloop_msg_queue_push(msg, 0, 60, false);
+
+error:
+   return false;
 }
 
 const struct retro_keybind *input_get_auto_bind(unsigned port, unsigned id)

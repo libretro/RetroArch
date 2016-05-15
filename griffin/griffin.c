@@ -31,7 +31,7 @@
 #include "../verbosity.c"
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
-#include "../netlogger.c"
+#include "../network/netlogger.c"
 #endif
 
 /*============================================================
@@ -62,7 +62,8 @@ ENCODINGS
 /*============================================================
 PERFORMANCE
 ============================================================ */
-#include "../performance.c"
+#include "../libretro-common/features/features_cpu.c"
+#include "../performance_counters.c"
 
 /*============================================================
 COMPATIBILITY
@@ -101,7 +102,7 @@ CONFIG FILE
 
 #include "../libretro-common/file/config_file.c"
 #include "../config_file_userdata.c"
-#include "../core_options.c"
+#include "../managers/core_option_manager.c"
 
 /*============================================================
 ACHIEVEMENTS
@@ -113,14 +114,14 @@ ACHIEVEMENTS
 
 #include "../libretro-common/formats/json/jsonsax.c"
 #include "../libretro-common/utils/md5.c"
-#include "../net_http_special.c"
+#include "../network/net_http_special.c"
 #include "../cheevos.c"
 #endif
 
 /*============================================================
 CHEATS
 ============================================================ */
-#include "../cheats.c"
+#include "../managers/cheat_manager.c"
 #include "../libretro-common/hash/rhash.c"
 
 /*============================================================
@@ -221,15 +222,21 @@ VIDEO IMAGE
 
 #include "../gfx/video_texture_image.c"
 
+#ifdef HAVE_RTGA
 #include "../libretro-common/formats/tga/rtga.c"
+#endif
 
 #ifdef HAVE_IMAGEVIEWER
 #include "../cores/libretro-imageviewer/image_core.c"
 #endif
 
+#include "../libretro-common/formats/image_transfer.c"
 #ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
+#endif
+#ifdef HAVE_RJPEG
+#include "../libretro-common/formats/jpeg/rjpeg.c"
 #endif
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 
@@ -428,7 +435,7 @@ INPUT (HID)
 
 #include "../input/drivers_hid/null_hid.c"
 
-#if defined(HAVE_LIBUSB)
+#if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
 #include "../input/drivers_hid/libusb_hid.c"
 #endif
 
@@ -667,9 +674,9 @@ CONFIGURATION
 #include "../configuration.c"
 
 /*============================================================
-REWIND
+STATE MANAGER
 ============================================================ */
-#include "../rewind.c"
+#include "../managers/state_manager.c"
 
 /*============================================================
 FRONTEND
@@ -734,7 +741,7 @@ GIT
 /*============================================================
 RETROARCH
 ============================================================ */
-#include "../libretro_version_1.c"
+#include "../core_impl.c"
 #include "../retroarch.c"
 #include "../runloop.c"
 #include "../libretro-common/queues/task_queue.c"
@@ -784,11 +791,12 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETPLAY
-#include "../netplay/netplay_net.c"
-#include "../netplay/netplay_spectate.c"
-#include "../netplay/netplay_common.c"
-#include "../netplay/netplay.c"
+#include "../network/netplay_net.c"
+#include "../network/netplay_spectate.c"
+#include "../network/netplay_common.c"
+#include "../network/netplay.c"
 #include "../libretro-common/net/net_compat.c"
+#include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
 #ifndef HAVE_SOCKET_LEGACY
 #include "../libretro-common/net/net_ifinfo.c"
@@ -800,6 +808,7 @@ NETPLAY
 DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_content.c"
+#include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
 #ifdef HAVE_ZLIB
 #include "../tasks/task_decompress.c"
@@ -907,15 +916,11 @@ MENU
 
 #endif
 
-#ifdef HAVE_COMMAND
-#include "../command.c"
-#endif
-
 #ifdef HAVE_NETWORK_GAMEPAD
-#include "../remote.c"
+#include "../input/input_remote.c"
 #endif
 
-#include "../command_event.c"
+#include "../command.c"
 
 #ifdef __cplusplus
 extern "C" {

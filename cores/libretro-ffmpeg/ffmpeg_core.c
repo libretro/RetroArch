@@ -42,7 +42,7 @@ extern "C" {
 #include <rthreads/rthreads.h>
 #include <queues/fifo_queue.h>
 
-#include "libretro.h"
+#include <libretro.h>
 #ifdef RARCH_INTERNAL
 #include "internal_cores.h"
 #define CORE_PREFIX(s) libretro_ffmpeg_##s

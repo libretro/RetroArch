@@ -22,12 +22,13 @@
 extern "C" {
 #endif
 
-#include <stddef.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <math.h>
-#include <boolean.h>
 
 #include <retro_miscellaneous.h>
+#include <boolean.h>
+#include <libretro.h>
 
 #define RESAMPLER_SIMD_SSE      (1 << 0)
 #define RESAMPLER_SIMD_SSE2     (1 << 1)
@@ -200,10 +201,6 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
    (backend)->process(handle, data); \
 } while(0)
 
-#ifndef RARCH_INTERNAL
-#include "libretro.h"
-extern retro_get_cpu_features_t perf_get_cpu_features_cb;
-#endif
 
 #ifdef __cplusplus
 }

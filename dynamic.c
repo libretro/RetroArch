@@ -25,24 +25,30 @@
 #include <string/stdstring.h>
 #include <retro_assert.h>
 
+#include <features/features_cpu.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #include "dynamic.h"
-#include "command_event.h"
+#include "command.h"
 
 #include "audio/audio_driver.h"
 #include "camera/camera_driver.h"
 #include "location/location_driver.h"
 #include "record/record_driver.h"
-#include "libretro_version_1.h"
-#include "performance.h"
+#include "core.h"
+#include "performance_counters.h"
 #include "system.h"
+#include "gfx/video_context_driver.h"
 
 #include "cores/internal_cores.h"
 #include "frontend/frontend_driver.h"
 #include "content.h"
+#ifdef HAVE_CHEEVOS
+#include "cheevos.h"
+#endif
 #include "retroarch.h"
 #include "configuration.h"
 #include "general.h"
@@ -53,7 +59,7 @@
 #define SYMBOL(x) do { \
    function_t func = dylib_proc(lib_handle, #x); \
    memcpy(&current_core->x, &func, sizeof(func)); \
-   if (current_core->x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retro_fail(1, "init_libretro_sym()"); } \
+   if (current_core->x == NULL) { RARCH_ERR("Failed to load symbol: \"%s\"\n", #x); retroarch_fail(1, "init_libretro_sym()"); } \
 } while (0)
 
 static dylib_t lib_handle;
@@ -306,14 +312,14 @@ static void load_dynamic_core(void)
       RARCH_ERR("This could happen if other modules RetroArch depends on "
             "link against libretro directly.\n");
       RARCH_ERR("Proceeding could cause a crash. Aborting ...\n");
-      retro_fail(1, "init_libretro_sym()");
+      retroarch_fail(1, "init_libretro_sym()");
    }
 
    if (!*settings->path.libretro)
    {
       RARCH_ERR("RetroArch is built for dynamic libretro cores, but "
             "libretro_path is not set. Cannot continue.\n");
-      retro_fail(1, "init_libretro_sym()");
+      retroarch_fail(1, "init_libretro_sym()");
    }
 
    /* Need to use absolute path for this setting. It can be
@@ -329,7 +335,7 @@ static void load_dynamic_core(void)
       RARCH_ERR("Failed to open libretro core: \"%s\"\n",
             settings->path.libretro);
       RARCH_ERR("Error(s): %s\n", dylib_error());
-      retro_fail(1, "load_dynamic()");
+      retroarch_fail(1, "load_dynamic()");
    }
 }
 #endif
@@ -513,7 +519,7 @@ void libretro_get_current_core_pathname(char *name, size_t size)
    if (size == 0)
       return;
 
-   core_ctl(CORE_CTL_RETRO_GET_SYSTEM_INFO, &info);
+   core_get_system_info(&info);
 
    if (info.library_name)
       id = info.library_name;
@@ -618,6 +624,106 @@ static void rarch_log_libretro(enum retro_log_level level,
    }
 
    va_end(vp);
+}
+
+static size_t mmap_add_bits_down(size_t n)
+{
+   n |= n >>  1;
+   n |= n >>  2;
+   n |= n >>  4;
+   n |= n >>  8;
+   n |= n >> 16;
+   
+   /* double shift to avoid warnings on 32bit (it's dead code, but compilers suck) */
+   if (sizeof(size_t) > 4)
+      n |= n >> 16 >> 16;
+   
+   return n;
+}
+
+static size_t mmap_inflate(size_t addr, size_t mask)
+{
+    while (mask)
+   {
+      size_t tmp = (mask - 1) & ~mask;
+      /* to put in an 1 bit instead, OR in tmp+1 */
+      addr = ((addr & ~tmp) << 1) | (addr & tmp);
+      mask = mask & (mask - 1);
+   }
+   
+   return addr;
+}
+
+static size_t mmap_reduce(size_t addr, size_t mask)
+{
+   while (mask)
+   {
+      size_t tmp = (mask - 1) & ~mask;
+      addr = (addr & tmp) | ((addr >> 1) & ~tmp);
+      mask = (mask & (mask - 1)) >> 1;
+   }
+   
+   return addr;
+}
+
+static size_t mmap_highest_bit(size_t n)
+{
+   n = mmap_add_bits_down(n);
+   return n ^ (n >> 1);
+}
+
+static bool mmap_preprocess_descriptors(struct retro_memory_descriptor *first, unsigned count)
+{
+   struct retro_memory_descriptor *desc;
+   const struct retro_memory_descriptor *end;
+   size_t top_addr, disconnect_mask;
+   
+   end = first + count;
+   top_addr = 1;
+   
+   for (desc = first; desc < end; desc++)
+   {
+      if (desc->select != 0)
+         top_addr |= desc->select;
+      else
+         top_addr |= desc->start + desc->len - 1;
+   }
+   
+   top_addr = mmap_add_bits_down(top_addr);
+   
+   for (desc = first; desc < end; desc++)
+   {
+      if (desc->select == 0)
+      {
+         if (desc->len == 0)
+            return false;
+         
+         if ((desc->len & (desc->len - 1)) != 0)
+            return false;
+         
+         desc->select = top_addr & ~mmap_inflate(mmap_add_bits_down(desc->len - 1), desc->disconnect);
+      }
+      
+      if (desc->len == 0)
+         desc->len = mmap_add_bits_down(mmap_reduce(top_addr & ~desc->select, desc->disconnect)) + 1;
+      
+      if (desc->start & ~desc->select)
+         return false;
+       
+      while (mmap_reduce(top_addr & ~desc->select, desc->disconnect) >> 1 > desc->len - 1)
+         desc->disconnect |= mmap_highest_bit(top_addr & ~desc->select & ~desc->disconnect);
+      
+      disconnect_mask = mmap_add_bits_down(desc->len - 1);
+      desc->disconnect &= disconnect_mask;
+      
+      while ((~disconnect_mask) >> 1 & desc->disconnect)
+      {
+         disconnect_mask >>= 1;
+         desc->disconnect &= disconnect_mask;
+      }
+   }
+   
+   return true;
 }
 
 /**
@@ -739,7 +845,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY:
-         *(const char**)data = rarch_get_current_savefile_dir();
+         *(const char**)data = retroarch_get_current_savefile_dir();
          break;
 
       case RETRO_ENVIRONMENT_GET_USERNAME:
@@ -874,7 +980,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             }
          }
 
-         core_ctl(CORE_CTL_SET_INPUT_DESCRIPTORS, NULL);
+         core_set_input_descriptors();
 
          break;
       }
@@ -910,7 +1016,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_hw_render_callback *cb =
             (struct retro_hw_render_callback*)data;
 
-         video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+         hwr = video_driver_get_hw_context();
 
          RARCH_LOG("Environ SET_HW_RENDER.\n");
 
@@ -970,8 +1076,16 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                break;
 
             case RETRO_HW_CONTEXT_OPENGL_CORE:
-               RARCH_LOG("Requesting core OpenGL context (%u.%u).\n",
-                     cb->version_major, cb->version_minor);
+               {
+                  gfx_ctx_flags_t flags;
+                  flags.flags = 0;
+                  BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+
+                  video_context_driver_set_flags(&flags);
+
+                  RARCH_LOG("Requesting core OpenGL context (%u.%u).\n",
+                        cb->version_major, cb->version_minor);
+               }
                break;
 #endif
 
@@ -997,9 +1111,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SET_SUPPORT_NO_GAME: %s.\n", state ? "yes" : "no");
 
          if (state)
-            content_ctl(CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT, NULL);
+            content_set_does_not_need_content();
          else
-            content_ctl(CONTENT_CTL_UNSET_DOES_NOT_NEED_CONTENT, NULL);
+            content_unset_does_not_need_content();
          break;
       }
 
@@ -1013,17 +1127,14 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
       }
 
-      /* FIXME - PS3 audio driver needs to be fixed so that threaded
-       * audio works correctly (audio is already on a thread for PS3
-       * audio driver so that's probably the problem) */
-#if defined(HAVE_THREADS) && !defined(__CELLOS_LV2__)
       case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK:
+#if defined(HAVE_THREADS) && !defined(__CELLOS_LV2__)
       {
          RARCH_LOG("Environ SET_AUDIO_CALLBACK.\n");
-         audio_driver_ctl(RARCH_AUDIO_CTL_SET_CALLBACK, data);
-         break;
+         audio_driver_set_callback(data);
       }
 #endif
+      break;
 
       case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK:
       {
@@ -1047,7 +1158,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          uint64_t *mask = (uint64_t*)data;
 
          RARCH_LOG("Environ GET_INPUT_DEVICE_CAPABILITIES.\n");
-         if (input_driver_ctl(RARCH_INPUT_CTL_HAS_CAPABILITIES, NULL))
+         if (input_driver_has_capabilities())
             *mask = input_driver_get_capabilities();
          else
             return false;
@@ -1112,9 +1223,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          struct retro_perf_callback *cb = (struct retro_perf_callback*)data;
 
          RARCH_LOG("Environ GET_PERF_INTERFACE.\n");
-         cb->get_time_usec    = retro_get_time_usec;
-         cb->get_cpu_features = retro_get_cpu_features;
-         cb->get_perf_counter = retro_get_perf_counter;
+         cb->get_time_usec    = cpu_features_get_time_usec;
+         cb->get_cpu_features = cpu_features_get;
+         cb->get_perf_counter = cpu_features_get_perf_counter;
 
          cb->perf_register    = retro_perf_register; 
          cb->perf_start       = retro_perf_start;
@@ -1203,6 +1314,74 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          system->ports.size = i;
          break;
       }
+      
+      case RETRO_ENVIRONMENT_SET_MEMORY_MAPS:
+      {
+         unsigned i;
+         struct retro_memory_descriptor *descriptors;
+         const struct retro_memory_map *mmaps =
+            (const struct retro_memory_map*)data;
+         
+         free((void*)system->mmaps.descriptors);
+         system->mmaps.num_descriptors = 0;
+         
+         descriptors = (struct retro_memory_descriptor*)
+            calloc(mmaps->num_descriptors, sizeof(*system->mmaps.descriptors));
+         
+         if (!descriptors)
+            return false;
+         
+         system->mmaps.descriptors = descriptors;
+         memcpy((void*)system->mmaps.descriptors, mmaps->descriptors,
+            mmaps->num_descriptors * sizeof(*system->mmaps.descriptors));
+         system->mmaps.num_descriptors = mmaps->num_descriptors;
+         mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
+         
+         RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
+         
+         if (sizeof(void *) == 8)
+            RARCH_LOG("   ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");
+         else
+            RARCH_LOG("   ndx flags  ptr          offset   start    select   disconn  len      addrspace\n");
+         
+         for (i = 0; i < system->mmaps.num_descriptors; i++)
+         {
+            const struct retro_memory_descriptor *desc =
+               &system->mmaps.descriptors[i];
+            char flags[7];
+            
+            flags[0] = 'M';
+            if ((desc->flags & RETRO_MEMDESC_MINSIZE_8) == RETRO_MEMDESC_MINSIZE_8)
+               flags[1] = '8';
+            else if ((desc->flags & RETRO_MEMDESC_MINSIZE_4) == RETRO_MEMDESC_MINSIZE_4)
+               flags[1] = '4';
+            else if ((desc->flags & RETRO_MEMDESC_MINSIZE_2) == RETRO_MEMDESC_MINSIZE_2)
+               flags[1] = '2';
+            else
+               flags[1] = '1';
+            
+            flags[2] = 'A';
+            if ((desc->flags & RETRO_MEMDESC_ALIGN_8) == RETRO_MEMDESC_ALIGN_8)
+               flags[3] = '8';
+            else if ((desc->flags & RETRO_MEMDESC_ALIGN_4) == RETRO_MEMDESC_ALIGN_4)
+               flags[3] = '4';
+            else if ((desc->flags & RETRO_MEMDESC_ALIGN_2) == RETRO_MEMDESC_ALIGN_2)
+               flags[3] = '2';
+            else
+               flags[3] = '1';
+            
+            flags[4] = (desc->flags & RETRO_MEMDESC_BIGENDIAN) ? 'B' : 'b';
+            flags[5] = (desc->flags & RETRO_MEMDESC_CONST) ? 'C' : 'c';
+            flags[6] = 0;
+            
+            RARCH_LOG("   %03u %s %p %08X %08X %08X %08X %08X %s\n",
+               i + 1, flags, desc->ptr, desc->offset, desc->start,
+               desc->select, desc->disconnect, desc->len,
+               desc->addrspace ? desc->addrspace : "");
+         }
+         
+         break;
+      }
 
       case RETRO_ENVIRONMENT_SET_GEOMETRY:
       {
@@ -1236,7 +1415,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
             /* Forces recomputation of aspect ratios if
              * using core-dependent aspect ratios. */
-            event_cmd_ctl(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
+            command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
             /* TODO: Figure out what to do, if anything, with recording. */
          }
@@ -1244,18 +1423,23 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER:
-         return video_driver_ctl(
-               RARCH_DISPLAY_CTL_GET_CURRENT_SOFTWARE_FRAMEBUFFER,
+         return video_driver_get_current_software_framebuffer(
                (struct retro_framebuffer*)data);
 
       case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
-         return video_driver_ctl(
-               RARCH_DISPLAY_CTL_GET_HW_RENDER_INTERFACE,
+         return video_driver_get_hw_render_interface(
                (const struct retro_hw_render_interface**)data);
+      
+      case RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS:
+#ifdef HAVE_CHEEVOS
+         {
+            bool state = *(const bool*)data;
+            RARCH_LOG("Environ SET_SUPPORT_ACHIEVEMENTS: %s.\n", state ? "yes" : "no");
+            cheevos_set_support_cheevos(state);
+         }
+#endif
+      break;
 
-      /* Private extensions for internal use, not part of libretro API. */
-      /* None yet. */
-       
       /* Default */
       default:
          RARCH_LOG("Environ UNSUPPORTED (#%u).\n", cmd);

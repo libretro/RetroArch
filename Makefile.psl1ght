@@ -83,7 +83,6 @@ OBJ = griffin/griffin.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
-CFLAGS		+= -Ilogger/netlogger
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)

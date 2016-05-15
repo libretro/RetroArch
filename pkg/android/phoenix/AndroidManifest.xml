@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.retroarch"
     android:versionCode="47"
-    android:versionName="1.3.3"
+    android:versionName="1.3.4"
     android:installLocation="preferExternal">
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>

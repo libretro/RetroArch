@@ -13,18 +13,19 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <boolean.h>
-#include "audio_utils.h"
-
 #if defined(__SSE2__)
 #include <emmintrin.h>
 #elif defined(__ALTIVEC__)
 #include <altivec.h>
 #endif
 
+#include <boolean.h>
+#include <features/features_cpu.h>
+
+#include "audio_utils.h"
+
 #ifdef RARCH_INTERNAL
-#include "../performance.h"
+#include "../performance_counters.h"
 #endif
 
 /**
@@ -409,7 +410,7 @@ retro_get_cpu_features_t perf_get_cpu_features_cb;
 static unsigned audio_convert_get_cpu_features(void)
 {
 #ifdef RARCH_INTERNAL
-   return retro_get_cpu_features();
+   return cpu_features_get();
 #else
    return perf_get_cpu_features_cb();
 #endif

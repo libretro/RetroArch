@@ -76,7 +76,7 @@ static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd)
 {
     (void)data;
-    event_cmd_ctl(cmd, NULL);
+    command_event(cmd, NULL);
 }
 
 static void rarch_draw_observer(CFRunLoopObserverRef observer,
@@ -87,11 +87,11 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 
    if (ret == 1 && !ui_companion_is_on_foreground() && sleep_ms > 0)
       retro_sleep(sleep_ms);
-   runloop_ctl(RUNLOOP_CTL_DATA_ITERATE, NULL);
+   runloop_iterate_data();
 
    if (ret == -1)
    {
-      ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
+      ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
       main_exit(NULL);
       return;
    }
@@ -337,9 +337,6 @@ enum
    apple_platform     = self;
 
    [self setDelegate:self];
-    
-   if (rarch_main(argc, argv, NULL))
-       apple_rarch_exited();
 
 #ifdef HAVE_AVFOUNDATION
     /* Other background audio check */
@@ -408,7 +405,7 @@ enum
 #endif
    dispatch_async(dispatch_get_main_queue(),
                   ^{
-                  ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_MENU_SAVE_CURRENT_CONFIG);
+                  ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_MENU_SAVE_CURRENT_CONFIG);
                   });
    [self showPauseMenu: self];
 }
@@ -444,14 +441,14 @@ enum
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
    [self.window setRootViewController:[CocoaView get]];
 
-   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_START);
+   ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_AUDIO_START);
    rarch_disable_ui();
 }
 
 - (IBAction)showPauseMenu:(id)sender
 {
 #ifndef HAVE_AVFOUNDATION
-   ui_companion_cocoatouch_event_command(NULL, EVENT_CMD_AUDIO_STOP);
+   ui_companion_cocoatouch_event_command(NULL, CMD_EVENT_AUDIO_STOP);
 #endif
    rarch_enable_ui();
 

@@ -23,7 +23,7 @@
 
 #include "configuration.h"
 #include "movie.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "content.h"
 #include "retroarch.h"
 #include "runloop.h"
@@ -97,7 +97,7 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    if (swap_if_big32(header[CRC_INDEX]) != *content_crc_ptr)
       RARCH_WARN("CRC32 checksum mismatch between content file and saved content checksum in replay file header; replay highly likely to desync on playback.\n");
@@ -120,13 +120,13 @@ static bool init_playback(bsv_movie_t *handle, const char *path)
          return false;
       }
 
-      core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+      core_serialize_size( &info);
 
       if (info.size == state_size)
       {
          serial_info.data_const = handle->state;
          serial_info.size       = state_size;
-         core_ctl(CORE_CTL_RETRO_UNSERIALIZE, &serial_info);
+         core_unserialize(&serial_info);
       }
       else
          RARCH_WARN("Movie format seems to have a different serializer version. Will most likely fail.\n");
@@ -151,14 +151,14 @@ static bool init_record(bsv_movie_t *handle, const char *path)
       return false;
    }
 
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    /* This value is supposed to show up as
     * BSV1 in a HEX editor, big-endian. */
    header[MAGIC_INDEX]      = swap_if_little32(BSV_MAGIC);
    header[CRC_INDEX]        = swap_if_big32(*content_crc_ptr);
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+   core_serialize_size(&info);
 
    state_size               = info.size;
 
@@ -180,7 +180,7 @@ static bool init_record(bsv_movie_t *handle, const char *path)
       serial_info.data = handle->state;
       serial_info.size = state_size;
 
-      core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+      core_serialize(&serial_info);
 
       fwrite(handle->state, 1, state_size, handle->file);
    }
@@ -289,7 +289,7 @@ static void bsv_movie_frame_rewind(bsv_movie_t *handle)
          serial_info.data = handle->state;
          serial_info.size = handle->state_size;
 
-         core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+         core_serialize(&serial_info);
 
          fwrite(handle->state, 1, handle->state_size, handle->file);
       }
@@ -310,7 +310,7 @@ static void bsv_movie_init_state(void)
          RARCH_ERR("%s: \"%s\".\n",
                msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
                bsv_movie_state.movie_start_path);
-         retro_fail(1, "event_init_movie()");
+         retroarch_fail(1, "event_init_movie()");
       }
 
       bsv_movie_state.movie_playback = true;

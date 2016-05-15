@@ -13,6 +13,10 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdlib.h>
 #include <boolean.h>
 #include <string.h>
@@ -135,6 +139,53 @@ void fill_pathname_abbreviate_special(char *out_path,
 #endif
 
    retro_assert(strlcpy(out_path, in_path, size) < size);
+}
+
+bool fill_pathname_application_data(char *s, size_t len)
+{
+#if defined(_WIN32) && !defined(_XBOX)
+   const char *appdata = getenv("APPDATA");
+
+   if (appdata)
+   {
+      strlcpy(s, appdata, len);
+      return true;
+   }
+
+#elif defined(OSX)
+   const char *appdata = getenv("HOME");
+
+   if (appdata)
+   {
+      fill_pathname_join(s, appdata,
+            "Library/Application Support/RetroArch", len);
+      return true;
+   }
+#elif !defined(RARCH_CONSOLE)
+   const char *xdg     = getenv("XDG_CONFIG_HOME");
+   const char *appdata = getenv("HOME");
+
+   /* XDG_CONFIG_HOME falls back to $HOME/.config. */
+   if (xdg)
+   {
+      fill_pathname_join(s, xdg, "retroarch", len);
+      return true;
+   }
+
+   if (appdata)
+   {
+#ifdef __HAIKU__
+      fill_pathname_join(s, appdata,
+            "config/settings/retroarch/", len);
+#else
+      fill_pathname_join(s, appdata,
+            ".config/retroarch/", len);
+#endif
+      return true;
+   }
+#endif
+
+   return false;
 }
 
 #if !defined(RARCH_CONSOLE)

@@ -80,6 +80,8 @@ typedef struct gfx_ctx_drm_data
    unsigned interval;
    unsigned fb_width;
    unsigned fb_height;
+
+   bool core_hw_context_enable; 
 } gfx_ctx_drm_data_t;
 
 struct drm_fb
@@ -466,9 +468,7 @@ static EGLint *gfx_ctx_drm_egl_fill_attribs(
 #ifdef GL_DEBUG
          debug            = true;
 #else
-         struct retro_hw_render_callback *hwr = NULL;
-
-         video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+         struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
          debug           = hwr->debug_context;
 #endif
 
@@ -870,6 +870,28 @@ static void gfx_ctx_drm_bind_hw_render(void *data, bool enable)
    }
 }
 
+static uint32_t gfx_ctx_drm_get_flags(void *data)
+{
+   uint32_t             flags = 0;
+   gfx_ctx_drm_data_t    *drm = (gfx_ctx_drm_data_t*)data;
+
+   if (drm->core_hw_context_enable)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   }
+   else
+      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+
+   return flags;
+}
+
+static void gfx_ctx_drm_set_flags(void *data, uint32_t flags)
+{
+   gfx_ctx_drm_data_t *drm     = (gfx_ctx_drm_data_t*)data;
+   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+      drm->core_hw_context_enable = true;
+}
+
 const gfx_ctx_driver_t gfx_ctx_drm = {
    gfx_ctx_drm_init,
    gfx_ctx_drm_destroy,
@@ -895,5 +917,7 @@ const gfx_ctx_driver_t gfx_ctx_drm = {
    NULL,
    NULL,
    "kms",
-   gfx_ctx_drm_bind_hw_render,
+   gfx_ctx_drm_get_flags,
+   gfx_ctx_drm_set_flags,
+   gfx_ctx_drm_bind_hw_render
 };

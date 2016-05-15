@@ -461,7 +461,6 @@ static uint64_t libretrodb_tell(libretrodb_t *db)
 int libretrodb_create_index(libretrodb_t *db,
       const char *name, const char *field_name)
 {
-   int rv;
    struct node_iter_ctx nictx;
    struct rmsgpack_dom_value key;
    libretrodb_index_t idx;
@@ -476,10 +475,7 @@ int libretrodb_create_index(libretrodb_t *db,
    bintree_t *tree             = bintree_new(node_compare, &field_size);
 
    if (!tree || (libretrodb_cursor_open(db, &cur, NULL) != 0))
-   {
-      rv = -1;
       goto clean;
-   }
 
    key.type = RDT_STRING;
    key.val.string.len = strlen(field_name);
@@ -491,7 +487,6 @@ int libretrodb_create_index(libretrodb_t *db,
    {
       if (item.type != RDT_MAP)
       {
-         rv = -EINVAL;
          printf("Only map keys are supported\n");
          goto clean;
       }
@@ -500,21 +495,18 @@ int libretrodb_create_index(libretrodb_t *db,
 
       if (!field)
       {
-         rv = -EINVAL;
          printf("field not found in item\n");
          goto clean;
       }
 
       if (field->type != RDT_BINARY)
       {
-         rv = -EINVAL;
          printf("field is not binary\n");
          goto clean;
       }
 
       if (field->val.binary.len == 0)
       {
-         rv = -EINVAL;
          printf("field is empty\n");
          goto clean;
       }
@@ -523,7 +515,6 @@ int libretrodb_create_index(libretrodb_t *db,
          field_size = field->val.binary.len;
       else if (field->val.binary.len != field_size)
       {
-         rv = -EINVAL;
          printf("field is not of correct size\n");
          goto clean;
       }
@@ -531,7 +522,6 @@ int libretrodb_create_index(libretrodb_t *db,
       buff = malloc(field_size + sizeof(uint64_t));
       if (!buff)
       {
-         rv = -ENOMEM;
          goto clean;
       }
 
@@ -546,7 +536,6 @@ int libretrodb_create_index(libretrodb_t *db,
          printf("Value is not unique: ");
          rmsgpack_dom_value_print(field);
          printf("\n");
-         rv = -EINVAL;
          goto clean;
       }
       buff = NULL;
@@ -557,7 +546,6 @@ int libretrodb_create_index(libretrodb_t *db,
    idx_header_offset = filestream_seek(db->fd, 0, SEEK_END);
 
    (void)idx_header_offset;
-   (void)rv;
 
    strncpy(idx.name, name, 50);
 

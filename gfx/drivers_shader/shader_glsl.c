@@ -27,8 +27,8 @@
 #include "shader_glsl.h"
 #include "../video_state_tracker.h"
 #include "../../dynamic.h"
-#include "../../rewind.h"
-#include "../../libretro_version_1.h"
+#include "../../managers/state_manager.h"
+#include "../../core.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -124,10 +124,12 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/core_alpha_blend.glsl.vert.h"
 #include "../drivers/gl_shaders/core_alpha_blend.glsl.frag.h"
 
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.vert.h"
+#include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon_simple.glsl.vert.h"
+#include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
 #if !defined(HAVE_OPENGLES2)
-#include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.vert.h"
+#include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon.glsl.vert.h"
+#include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
 #endif
 
@@ -853,7 +855,7 @@ static void *gl_glsl_init(void *data, const char *path)
 
       mem_info.id = RETRO_MEMORY_SYSTEM_RAM;
 
-      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+      core_get_memory(&mem_info);
 
       info.wram      = (uint8_t*)mem_info.data;
       info.info      = glsl->shader->variable;
@@ -900,10 +902,10 @@ static void *gl_glsl_init(void *data, const char *path)
    }
 
 #if defined(HAVE_OPENGLES2)
-   shader_prog_info.vertex   = stock_vertex_xmb_simple;
+   shader_prog_info.vertex   = stock_vertex_xmb_simple_legacy;
    shader_prog_info.fragment = stock_fragment_xmb_simple;
 #else
-   shader_prog_info.vertex   = stock_vertex_xmb;
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_modern : stock_vertex_xmb_legacy;
    shader_prog_info.fragment = stock_fragment_xmb;
 #endif
    shader_prog_info.is_file  = false;
@@ -916,7 +918,7 @@ static void *gl_glsl_init(void *data, const char *path)
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU].id,
          &glsl->uniforms[VIDEO_SHADER_MENU]);
 
-   shader_prog_info.vertex   = stock_vertex_xmb_simple;
+   shader_prog_info.vertex   = glsl_core ? stock_vertex_xmb_simple_modern : stock_vertex_xmb_simple_legacy;
    shader_prog_info.fragment = stock_fragment_xmb_simple;
 
    gl_glsl_compile_program(
@@ -1017,10 +1019,10 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    unsigned texunit = 1;
    const struct shader_uniforms *uni = NULL;
    size_t size = 0, attribs_size = 0;
-   const struct gfx_tex_info *info = (const struct gfx_tex_info*)_info;
-   const struct gfx_tex_info *prev_info = (const struct gfx_tex_info*)_prev_info;
-   const struct gfx_tex_info *feedback_info = (const struct gfx_tex_info*)_feedback_info;
-   const struct gfx_tex_info *fbo_info = (const struct gfx_tex_info*)_fbo_info;
+   const struct video_tex_info *info = (const struct video_tex_info*)_info;
+   const struct video_tex_info *prev_info = (const struct video_tex_info*)_prev_info;
+   const struct video_tex_info *feedback_info = (const struct video_tex_info*)_feedback_info;
+   const struct video_tex_info *fbo_info = (const struct video_tex_info*)_fbo_info;
    struct glsl_attrib *attr = (struct glsl_attrib*)attribs;
    glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
 
@@ -1151,7 +1153,10 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          orig_uniforms[1].enabled        = true;
 
       for (j = 0; j < 2; j++)
-         gl_glsl_set_uniform_parameter(glsl, &orig_uniforms[j], NULL);
+      {
+         if (orig_uniforms[j].enabled)
+            gl_glsl_set_uniform_parameter(glsl, &orig_uniforms[j], NULL);
+      }
 
       /* Pass texture coordinates. */
       if (uni->orig.tex_coord >= 0)
@@ -1202,7 +1207,10 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          feedback_uniforms[1].enabled        = true;
 
       for (j = 0; j < 2; j++)
-         gl_glsl_set_uniform_parameter(glsl, &feedback_uniforms[j], NULL);
+      {
+         if (feedback_uniforms[j].enabled)
+            gl_glsl_set_uniform_parameter(glsl, &feedback_uniforms[j], NULL);
+      }
 
       /* Pass texture coordinates. */
       if (uni->feedback.tex_coord >= 0)
@@ -1253,7 +1261,10 @@ static void gl_glsl_set_params(void *data, void *shader_data,
             fbo_tex_params[2].enabled  = true;
 
          for (j = 0; j < 3; j++)
-            gl_glsl_set_uniform_parameter(glsl, &fbo_tex_params[j], NULL);
+         {
+            if (fbo_tex_params[j].enabled)
+               gl_glsl_set_uniform_parameter(glsl, &fbo_tex_params[j], NULL);
+         }
 
          if (uni->pass[i].tex_coord >= 0)
          {
@@ -1305,7 +1316,10 @@ static void gl_glsl_set_params(void *data, void *shader_data,
          prev_tex_params[2].enabled  = true;
 
       for (j = 0; j < 3; j++)
-         gl_glsl_set_uniform_parameter(glsl, &prev_tex_params[j], NULL);
+      {
+         if (prev_tex_params[j].enabled)
+            gl_glsl_set_uniform_parameter(glsl, &prev_tex_params[j], NULL);
+      }
 
       /* Pass texture coordinates. */
       if (uni->prev[i].tex_coord >= 0)
@@ -1405,7 +1419,7 @@ fallback:
       size += multiplier * coords->vertices; \
 }
 
-static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struct gfx_coords *coords)
+static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struct video_coords *coords)
 {
    /* Avoid hitting malloc on every single regular quad draw. */
    GLfloat short_buffer[4 * (2 + 2 + 4 + 2)];

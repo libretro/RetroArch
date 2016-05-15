@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "../../libretro.h"
+#include <libretro.h>
 
 typedef void (*send_control_t)(void *data, uint8_t *buf, size_t size);
 

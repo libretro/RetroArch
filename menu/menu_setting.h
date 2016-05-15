@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <boolean.h>
 
-#include "../command_event.h"
+#include "../command.h"
 #include "../input/input_driver.h"
 
 #ifdef __cplusplus

@@ -15,10 +15,11 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+
 #include <boolean.h>
+#include <libretro.h>
 
 #include "../../driver.h"
-#include "../../libretro.h"
 #include "../../general.h"
 #include "../input_config.h"
 #include "../input_joypad_driver.h"

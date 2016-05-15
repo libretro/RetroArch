@@ -16,13 +16,15 @@
 
 #include <math.h>
 #include <string.h>
+
 #include <compat/strl.h>
 #include <encodings/utf.h>
 #include <retro_miscellaneous.h>
+#include <features/features_cpu.h>
 
 #include "menu_animation.h"
 #include "../configuration.h"
-#include "../performance.h"
+#include "../performance_counters.h"
 
 #define IDEAL_DELTA_TIME (1.0 / 60.0 * 1000000.0)
 
@@ -559,7 +561,7 @@ bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data)
             static retro_time_t last_clock_update = 0;
             settings_t *settings     = config_get_ptr();
 
-            cur_time                 = retro_get_time_usec();
+            cur_time                 = cpu_features_get_time_usec();
             delta_time               = cur_time - old_time;
 
             if (delta_time >= IDEAL_DELTA_TIME* 4)

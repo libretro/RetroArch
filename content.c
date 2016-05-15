@@ -61,8 +61,9 @@
 #include "patch.h"
 #include "system.h"
 #include "retroarch.h"
-#include "command_event.h"
-#include "libretro_version_1.h"
+#include "command.h"
+#include "file_path_special.h"
+#include "core.h"
 #include "verbosity.h"
 
 #ifdef HAVE_7ZIP
@@ -88,6 +89,20 @@ struct sram_block
    void *data;
    size_t size;
 };
+
+typedef struct content_stream
+{
+   uint32_t a;
+   const uint8_t *b;
+   size_t c;
+   uint32_t crc;
+} content_stream_t;
+
+static const struct file_archive_file_backend *stream_backend = NULL;
+static struct string_list *temporary_content                  = NULL;
+static bool _content_is_inited                                = false;
+static bool core_does_not_need_content                        = false;
+static uint32_t content_crc                                   = 0;
 
 #ifdef HAVE_COMPRESSION
 
@@ -848,9 +863,10 @@ static void content_load_init_wrap(
  * If no content file can be loaded, will start up RetroArch
  * as-is.
  *
- * Returns: false (0) if rarch_main_init failed, otherwise true (1).
+ * Returns: false (0) if retroarch_main_init failed, 
+ * otherwise true (1).
  **/
-static bool content_load(content_ctx_info_t *info)
+bool content_load(content_ctx_info_t *info)
 {
    unsigned i;
    bool retval                       = true;
@@ -884,7 +900,7 @@ static bool content_load(content_ctx_info_t *info)
    wrap_args->argc = *rarch_argc_ptr;
    wrap_args->argv = rarch_argv_ptr;
 
-   if (!rarch_ctl(RARCH_CTL_MAIN_INIT, wrap_args))
+   if (!retroarch_main_init(wrap_args->argc, wrap_args->argv))
    {
       retval = false;
       goto error;
@@ -893,9 +909,9 @@ static bool content_load(content_ctx_info_t *info)
 #ifdef HAVE_MENU
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
 #endif
-   event_cmd_ctl(EVENT_CMD_HISTORY_INIT, NULL);
-   event_cmd_ctl(EVENT_CMD_RESUME, NULL);
-   event_cmd_ctl(EVENT_CMD_VIDEO_SET_ASPECT_RATIO, NULL);
+   command_event(CMD_EVENT_HISTORY_INIT, NULL);
+   command_event(CMD_EVENT_RESUME, NULL);
+   command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
    check_default_dirs();
 
@@ -947,16 +963,17 @@ static bool read_content_file(unsigned i, const char *path, void **buf,
       patch_content(&ret_buf, length);
 
 #ifdef HAVE_ZLIB
-   content_ctl(CONTENT_CTL_GET_CRC, &content_crc_ptr);
+   content_get_crc(&content_crc_ptr);
 
    stream_info.a = 0;
    stream_info.b = ret_buf;
    stream_info.c = *length;
 
-   content_ctl(CONTENT_CTL_STREAM_CRC_CALCULATE, &stream_info);
-
+   if (!stream_backend)
+      stream_backend = file_archive_get_default_file_backend();
+   stream_info.crc = stream_backend->stream_crc_calculate(
+         stream_info.a, stream_info.b, stream_info.c);
    *content_crc_ptr = stream_info.crc;
-
 
    RARCH_LOG("CRC32: 0x%x .\n", (unsigned)*content_crc_ptr);
 #endif
@@ -978,19 +995,15 @@ static bool dump_to_file_desperate(const void *data,
 {
    time_t time_;
    char timebuf[256];
+   char application_data[PATH_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
-#if defined(_WIN32) && !defined(_XBOX)
-   const char *base = getenv("APPDATA");
-#elif defined(__CELLOS_LV2__) || defined(_XBOX)
-   const char *base = NULL;
-#else
-   const char *base = getenv("HOME");
-#endif
 
-   if (!base)
+   if (!fill_pathname_application_data(application_data,
+            sizeof(application_data)))
       return false;
 
-   snprintf(path, sizeof(path), "%s/RetroArch-recovery-%u", base, type);
+   snprintf(path, sizeof(path), "%s/RetroArch-recovery-%u",
+      application_data, type);
 
    time(&time_);
 
@@ -1013,14 +1026,14 @@ static bool dump_to_file_desperate(const void *data,
  *
  * Returns: true if successful, false otherwise.
  **/
-static bool content_save_state(const char *path)
+bool content_save_state(const char *path)
 {
    retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
    bool ret    = false;
    void *data  = NULL;
 
-   core_ctl(CORE_CTL_RETRO_SERIALIZE_SIZE, &info);
+   core_serialize_size(&info);
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_SAVING_STATE),
@@ -1041,7 +1054,7 @@ static bool content_save_state(const char *path)
 
    serial_info.data = data;
    serial_info.size = info.size;
-   ret = core_ctl(CORE_CTL_RETRO_SERIALIZE, &serial_info);
+   ret              = core_serialize(&serial_info);
 
    if (ret)
       ret = filestream_write_file(path, data, info.size);
@@ -1065,7 +1078,7 @@ static bool content_save_state(const char *path)
  *
  * Returns: true if successful, false otherwise.
  **/
-static bool content_load_state(const char *path)
+bool content_load_state(const char *path)
 {
    unsigned i;
    ssize_t size;
@@ -1111,7 +1124,7 @@ static bool content_load_state(const char *path)
       retro_ctx_memory_info_t    mem_info;
 
       mem_info.id = blocks[i].type;
-      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+      core_get_memory(&mem_info);
 
       blocks[i].size = mem_info.size;
    }
@@ -1130,7 +1143,7 @@ static bool content_load_state(const char *path)
 
          mem_info.id = blocks[i].type;
 
-         core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+         core_get_memory(&mem_info);
 
          ptr = mem_info.data;
          if (ptr)
@@ -1140,7 +1153,7 @@ static bool content_load_state(const char *path)
 
    serial_info.data_const = buf;
    serial_info.size       = size;
-   ret = core_ctl(CORE_CTL_RETRO_UNSERIALIZE, &serial_info);
+   ret                    = core_unserialize(&serial_info);
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
@@ -1152,7 +1165,7 @@ static bool content_load_state(const char *path)
 
          mem_info.id = blocks[i].type;
 
-         core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+         core_get_memory(&mem_info);
 
          ptr = mem_info.data;
          if (ptr)
@@ -1178,25 +1191,24 @@ error:
 }
 
 /**
- * load_ram_file:
+ * content_load_ram_file:
  * @path             : path of RAM state that will be loaded from.
  * @type             : type of memory
  *
  * Load a RAM state from disk to memory.
  */
-static bool load_ram_file(void *data)
+bool content_load_ram_file(ram_type_t *ram)
 {
    ssize_t rc;
    retro_ctx_memory_info_t mem_info;
    void *buf       = NULL;
-   ram_type_t *ram = (ram_type_t*)data;
 
    if (!ram)
       return false;
 
    mem_info.id  = ram->type;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    if (mem_info.size == 0 || !mem_info.data)
       return false;
@@ -1226,14 +1238,14 @@ static bool load_ram_file(void *data)
 }
 
 /**
- * save_ram_file:
+ * content_save_ram_file:
  * @path             : path of RAM state that shall be written to.
  * @type             : type of memory
  *
  * Save a RAM state from memory to disk.
  *
  */
-static bool save_ram_file(ram_type_t *ram)
+bool content_save_ram_file(ram_type_t *ram)
 {
    retro_ctx_memory_info_t mem_info;
 
@@ -1242,7 +1254,7 @@ static bool save_ram_file(ram_type_t *ram)
 
    mem_info.id = ram->type;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    if (!mem_info.data || mem_info.size == 0)
       return false;
@@ -1433,7 +1445,7 @@ static bool load_content(
    load_info.special = special;
    load_info.info    = info;
 
-   if (!core_ctl(CORE_CTL_RETRO_LOAD_GAME, &load_info))
+   if (!core_load_game(&load_info))
    {
       RARCH_ERR("%s.\n", msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
       return false;
@@ -1444,11 +1456,11 @@ static bool load_content(
    {
       const void *load_data = NULL;
 
-      cheevos_ctl(CHEEVOS_CTL_SET_CHEATS, NULL);
+      cheevos_set_cheats();
 
       if (*content->elems[0].data)
          load_data = info;
-      cheevos_ctl(CHEEVOS_CTL_LOAD, (void*)load_data);
+      cheevos_load(load_data);
    }
 #endif
 
@@ -1594,9 +1606,9 @@ static bool init_content_file_set_attribs(
 
       attr.i               = system->info.block_extract;
       attr.i              |= system->info.need_fullpath << 1;
-      attr.i              |= (!content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))  << 2;
+      attr.i              |= (!content_does_not_need_content())  << 2;
 
-      if (content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL)
+      if (content_does_not_need_content()
             && settings->set_supports_no_game_enable)
          string_list_append(content, "", attr);
       else
@@ -1697,98 +1709,58 @@ static bool content_file_free(struct string_list *temporary_content)
    return true;
 }
 
-bool content_ctl(enum content_ctl_state state, void *data)
+bool content_does_not_need_content(void)
 {
-   static const struct file_archive_file_backend *stream_backend = NULL;
-   static struct string_list *temporary_content                  = NULL;
-   static bool content_is_inited                                 = false;
-   static bool core_does_not_need_content                        = false;
-   static uint32_t content_crc                                   = 0;
+   return core_does_not_need_content;
+}
 
-   switch(state)
-   {
-      case CONTENT_CTL_LOAD_RAM_FILE:
-         return load_ram_file(data);
-      case CONTENT_CTL_SAVE_RAM_FILE:
-         return save_ram_file((ram_type_t*)data);
-      case CONTENT_CTL_DOES_NOT_NEED_CONTENT:
-         return core_does_not_need_content;
-      case CONTENT_CTL_SET_DOES_NOT_NEED_CONTENT:
-         core_does_not_need_content = true;
-         break;
-      case CONTENT_CTL_UNSET_DOES_NOT_NEED_CONTENT:
-         core_does_not_need_content = false;
-         break;
-      case CONTENT_CTL_GET_CRC:
-         {
-            uint32_t **content_crc_ptr = (uint32_t**)data;
-            if (!content_crc_ptr)
-               return false;
-            *content_crc_ptr = &content_crc;
-         }
-         break;
-      case CONTENT_CTL_LOAD_STATE:
-         {
-            const char *path = (const char*)data;
-            if (!path)
-               return false;
-            return content_load_state(path);
-         }
-      case CONTENT_CTL_SAVE_STATE:
-         {
-            const char *path = (const char*)data;
-            if (!path)
-               return false;
-            return content_save_state(path);
-         }
-      case CONTENT_CTL_IS_INITED:
-         return content_is_inited;
-      case CONTENT_CTL_DEINIT:
-         content_ctl(CONTENT_CTL_TEMPORARY_FREE, NULL);
-         content_crc                = 0;
-         content_is_inited          = false;
-         core_does_not_need_content = false;
-         break;
-      case CONTENT_CTL_INIT:
-         content_is_inited = false;
-         temporary_content = string_list_new();
-         if (!temporary_content)
-            return false;
-         if (content_file_init(temporary_content))
-         {
-            content_is_inited = true;
-            return true;
-         }
-         content_ctl(CONTENT_CTL_DEINIT, NULL);
-         return false;
-      case CONTENT_CTL_TEMPORARY_FREE:
-         content_file_free(temporary_content);
-         temporary_content = NULL;
-         break;
-      case CONTENT_CTL_STREAM_INIT:
-#ifdef HAVE_ZLIB
-         if (!stream_backend)
-            stream_backend = file_archive_get_default_file_backend();
-#endif
-         break;
-      case CONTENT_CTL_STREAM_CRC_CALCULATE:
-         {
-            content_stream_t *stream = NULL;
-            content_ctl(CONTENT_CTL_STREAM_INIT, NULL);
+void content_set_does_not_need_content(void)
+{
+   core_does_not_need_content = true;
+}
 
-            stream = (content_stream_t*)data;
-#ifdef HAVE_ZLIB
-            stream->crc = stream_backend->stream_crc_calculate(
-                  stream->a, stream->b, stream->c);
-#endif
-         }
-         break;
-      case CONTENT_CTL_LOAD:
-         return content_load((content_ctx_info_t*)data);
-      case CONTENT_CTL_NONE:
-      default:
-         break;
-   }
+void content_unset_does_not_need_content(void)
+{
+   core_does_not_need_content = false;
+}
 
+bool content_get_crc(uint32_t **content_crc_ptr)
+{
+   if (!content_crc_ptr)
+      return false;
+   *content_crc_ptr = &content_crc;
    return true;
+}
+
+bool content_is_inited(void)
+{
+   return _content_is_inited;
+}
+
+void content_deinit(void)
+{
+   content_file_free(temporary_content);
+   temporary_content          = NULL;
+   content_crc                = 0;
+   _content_is_inited         = false;
+   core_does_not_need_content = false;
+}
+
+/* Initializes and loads a content file for the currently
+ * selected libretro core. */
+bool content_init(void)
+{
+   temporary_content = string_list_new();
+   if (!temporary_content)
+      goto error;
+
+   if (!content_file_init(temporary_content))
+      goto error;
+
+   _content_is_inited = true;
+   return true;
+
+error:
+   content_deinit();
+   return false;
 }

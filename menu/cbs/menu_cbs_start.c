@@ -25,12 +25,12 @@
 #include "../menu_hash.h"
 
 #include "../../core_info.h"
-#include "../../core_options.h"
-#include "../../cheats.h"
+#include "../../managers/core_option_manager.h"
+#include "../../managers/cheat_manager.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../../system.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 
 #include "../../gfx/video_shader_driver.h"
 
@@ -62,7 +62,7 @@ static int action_start_video_filter_file_load(unsigned type, const char *label)
       return -1;
 
    settings->path.softfilter_plugin[0] = '\0';
-   event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+   command_event(CMD_EVENT_REINIT, NULL);
    return 0;
 }
 
@@ -119,7 +119,7 @@ static int action_start_shader_action_parameter(unsigned type, const char *label
    video_shader_ctx_t shader_info;
    struct video_shader_parameter *param = NULL;
 
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    if (!shader_info.data)
       return 0;
@@ -259,7 +259,7 @@ static int action_start_core_setting(unsigned type,
    core_option_manager_t *coreopts = NULL;
    
    if (runloop_ctl(RUNLOOP_CTL_COREOPTS_GET, &coreopts))
-      core_option_set_default(coreopts, idx);
+      core_option_manager_set_default(coreopts, idx);
 
    return 0;
 }
@@ -274,7 +274,7 @@ static int action_start_playlist_association(unsigned type, const char *label)
    settings_t *settings             = config_get_ptr();
    const char *path                 = path_basename(label);
 
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+   core_info_get_list(&list);
    if (!list)
       return -1;
 

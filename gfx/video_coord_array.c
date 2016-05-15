@@ -36,7 +36,7 @@ static INLINE bool realloc_checked(void **ptr, size_t size)
    return *ptr == nptr;
 }
 
-static bool gfx_coord_array_resize(gfx_coord_array_t *ca,
+static bool video_coord_array_resize(video_coord_array_t *ca,
    unsigned cap)
 {
    size_t base_size    = sizeof(float) * cap;
@@ -59,8 +59,8 @@ static bool gfx_coord_array_resize(gfx_coord_array_t *ca,
    return true;
 }
 
-bool gfx_coord_array_append(gfx_coord_array_t *ca,
-      const gfx_coords_t *coords, unsigned count)
+bool video_coord_array_append(video_coord_array_t *ca,
+      const video_coords_t *coords, unsigned count)
 {
    size_t base_size, offset;
    count          = MIN(count, coords->vertices);
@@ -68,7 +68,7 @@ bool gfx_coord_array_append(gfx_coord_array_t *ca,
    if (ca->coords.vertices + count >= ca->allocated)
    {
       unsigned cap = next_pow2(ca->coords.vertices + count);
-      if (!gfx_coord_array_resize(ca, cap))
+      if (!video_coord_array_resize(ca, cap))
          return false;
    }
 
@@ -94,7 +94,7 @@ bool gfx_coord_array_append(gfx_coord_array_t *ca,
    return true;
 }
 
-void gfx_coord_array_free(gfx_coord_array_t *ca)
+void video_coord_array_free(video_coord_array_t *ca)
 {
    if (!ca->allocated)
       return;

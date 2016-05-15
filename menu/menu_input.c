@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <features/features_cpu.h>
+
 #include "menu_driver.h"
 #include "menu_input.h"
 #include "menu_animation.h"
@@ -38,9 +40,9 @@
 #include "menu_hash.h"
 
 #include "../general.h"
-#include "../cheats.h"
-#include "../performance.h"
-#include "../libretro_version_1.h"
+#include "../managers/cheat_manager.h"
+#include "../performance_counters.h"
+#include "../core.h"
 #include "../input/input_joypad_driver.h"
 #include "../input/input_remapping.h"
 #include "../input/input_config.h"
@@ -140,7 +142,7 @@ static void menu_input_key_end_line(void)
    menu_input_ctl(MENU_INPUT_CTL_UNSET_KEYBOARD_LABEL_SETTING, NULL);
 
    /* Avoid triggering states on pressing return. */
-   input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
+   input_driver_set_flushing_input();
 }
 
 static void menu_input_search_cb(void *userdata, const char *str)
@@ -266,7 +268,7 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    menu_input->binds.target->key = (enum retro_key)code;
    menu_input->binds.begin++;
    menu_input->binds.target++;
-   menu_input->binds.timeout_end = retro_get_time_usec() +
+   menu_input->binds.timeout_end = cpu_features_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
 
    return (menu_input->binds.begin <= menu_input->binds.last);
@@ -454,7 +456,7 @@ static bool menu_input_key_bind_set_mode(
    menu_input_key_bind_poll_bind_state(
          &menu_input->binds, bind_port, false);
 
-   menu_input->binds.timeout_end   = retro_get_time_usec() +
+   menu_input->binds.timeout_end   = cpu_features_get_time_usec() +
       MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
 
    keys.userdata = menu;
@@ -573,7 +575,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
    struct menu_bind_state binds;
    bool               timed_out = false;
    menu_input_t *menu_input     = menu_input_get_ptr();
-   int64_t current              = retro_get_time_usec();
+   int64_t current              = cpu_features_get_time_usec();
    int timeout                  = 
       (menu_input->binds.timeout_end - current) / 1000000;
 
@@ -583,7 +585,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
 
       menu_input->binds.begin++;
       menu_input->binds.target++;
-      menu_input->binds.timeout_end = retro_get_time_usec() +
+      menu_input->binds.timeout_end = cpu_features_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
       timed_out = true;
    }
@@ -599,7 +601,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
    if (menu_input->binds.begin > menu_input->binds.last)
    {
       /* Avoid new binds triggering things right away. */
-      input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
+      input_driver_set_flushing_input();
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
@@ -619,7 +621,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
       input_driver_keyboard_mapping_set_block(false);
 
       /* Avoid new binds triggering things right away. */
-      input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
+      input_driver_set_flushing_input();
 
       binds.begin++;
 
@@ -630,7 +632,7 @@ static bool menu_input_key_bind_iterate(char *s, size_t len)
       }
 
       binds.target++;
-      binds.timeout_end = retro_get_time_usec() +
+      binds.timeout_end = cpu_features_get_time_usec() +
          MENU_KEYBOARD_BIND_TIMEOUT_SECONDS * 1000000;
    }
    menu_input->binds = binds;
@@ -825,8 +827,8 @@ static int menu_input_pointer(unsigned *action)
    const struct retro_keybind *binds[MAX_USERS] = {NULL};
    menu_input_t *menu_input                     = menu_input_get_ptr();
 
-   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &fb_width);
-   menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
+   fb_width  = menu_display_get_width();
+   fb_height = menu_display_get_height();
 
    pointer_device = menu_driver_ctl(RARCH_MENU_CTL_IS_SET_TEXTURE, NULL) ?
         RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
@@ -940,7 +942,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
          menu_input_t *menu_input = menu_input_get_ptr();
 
          menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection);
-         menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
+         header_height = menu_display_get_header_height();
 
          BIT64_SET(*input_mouse, MENU_MOUSE_ACTION_BUTTON_L);
 
@@ -1068,7 +1070,6 @@ static int menu_input_pointer_post_iterate(
       menu_file_list_cbs_t *cbs,
       menu_entry_t *entry, unsigned action)
 {
-   unsigned header_height;
    size_t selection;
    static bool pointer_oldpressed[2];
    static bool pointer_oldback  = false;
@@ -1088,7 +1089,6 @@ static int menu_input_pointer_post_iterate(
       return -1;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
-   menu_display_ctl(MENU_DISPLAY_CTL_HEADER_HEIGHT, &header_height);
 
 #ifdef HAVE_OVERLAY
    check_overlay = check_overlay || 
@@ -1110,7 +1110,7 @@ static int menu_input_pointer_post_iterate(
       metrics.type  = DISPLAY_METRIC_DPI;
       metrics.value = &dpi; 
 
-      gfx_ctx_ctl(GFX_CTL_GET_METRICS, &metrics);
+      video_context_driver_get_metrics(&metrics);
 
       if (!pointer_oldpressed[0])
       {
@@ -1281,29 +1281,19 @@ unsigned menu_input_frame_retropad(retro_input_t input,
    float delta_time;
    static bool initial_held                = true;
    static bool first_held                  = false;
-   static const retro_input_t input_repeat =
-        (1UL << RETRO_DEVICE_ID_JOYPAD_UP)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_DOWN)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_LEFT)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_RIGHT)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_B)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_A)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_L)
-      | (1UL << RETRO_DEVICE_ID_JOYPAD_R);
    bool set_scroll                         = false;
    size_t new_scroll_accel                 = 0;
    menu_input_t *menu_input                = menu_input_get_ptr();
-   settings_t *settings                    = config_get_ptr();
 
    if (!menu_input)
       return 0;
 
-   core_ctl(CORE_CTL_RETRO_CTX_POLL_CB, NULL);
+   core_poll();
 
    /* don't run anything first frame, only capture held inputs
     * for old_input_state. */
 
-   if (input & input_repeat)
+   if (input)
    {
       if (!first_held)
       {
@@ -1314,6 +1304,16 @@ unsigned menu_input_frame_retropad(retro_input_t input,
 
       if (menu_input->delay.count >= menu_input->delay.timer)
       {
+         retro_input_t input_repeat = 0;
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_UP);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_DOWN);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_LEFT);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_B);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_A);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_L);
+         BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_R);
+
          set_scroll     = true;
          first_held     = false;
          trigger_input |= input & input_repeat;
@@ -1346,6 +1346,8 @@ unsigned menu_input_frame_retropad(retro_input_t input,
 
    if (menu_input->keyboard.display)
    {
+      settings_t *settings = config_get_ptr();
+
       /* send return key to close keyboard input window */
       if (trigger_input & (UINT64_C(1) << settings->menu_cancel_btn))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);

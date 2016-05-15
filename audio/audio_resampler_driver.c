@@ -17,11 +17,12 @@
 #include <string.h>
 
 #include <string/stdstring.h>
+#include <features/features_cpu.h>
 
 #include "audio_resampler_driver.h"
 #include "../config_file_userdata.h"
 #ifdef RARCH_INTERNAL
-#include "../performance.h"
+#include "../performance_counters.h"
 #endif
 #ifndef DONT_HAVE_STRING_LIST
 #include "../list_special.h"
@@ -141,11 +142,7 @@ retro_get_cpu_features_t perf_get_cpu_features_cb;
 
 static resampler_simd_mask_t resampler_get_cpu_features(void)
 {
-#ifdef RARCH_INTERNAL
-   return retro_get_cpu_features();
-#else
-   return perf_get_cpu_features_cb();
-#endif
+   return cpu_features_get();
 }
 
 /**

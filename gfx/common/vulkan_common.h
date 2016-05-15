@@ -38,14 +38,14 @@
 #include <rthreads/rthreads.h>
 #include <formats/image.h>
 
+#include <libretro.h>
+#include <libretro_vulkan.h>
+
 #include "../../driver.h"
-#include "../../performance.h"
-#include "../../libretro.h"
 #include "../../general.h"
 #include "../../retroarch.h"
 #include "../font_driver.h"
 #include "../video_context_driver.h"
-#include "../../libretro_vulkan.h"
 #include "../drivers_shader/shader_vulkan.h"
 
 typedef struct vulkan_filter_chain vulkan_filter_chain_t;
@@ -249,7 +249,9 @@ struct vk_draw_triangles
    VkPipeline pipeline;
    struct vk_texture *texture;
    VkSampler sampler;
-   const math_matrix_4x4 *mvp;
+
+   const void *uniform;
+   size_t uniform_size;
 
    const struct vk_buffer_range *vbo;
    unsigned vertices;
@@ -312,7 +314,7 @@ typedef struct vk
    struct
    {
       bool blend;
-      VkPipeline pipelines[4];
+      VkPipeline pipelines[8];
       struct vk_texture blank_texture;
    } display;
 

@@ -23,8 +23,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <boolean.h>
-
-#include "../libretro.h"
+#include <libretro.h>
 
 typedef struct rarch_joypad_driver input_device_driver_t;
 
@@ -42,23 +41,6 @@ struct rarch_joypad_driver
 
    const char *ident;
 };
-
-extern input_device_driver_t dinput_joypad;
-extern input_device_driver_t linuxraw_joypad;
-extern input_device_driver_t parport_joypad;
-extern input_device_driver_t udev_joypad;
-extern input_device_driver_t xinput_joypad;
-extern input_device_driver_t sdl_joypad;
-extern input_device_driver_t ps3_joypad;
-extern input_device_driver_t psp_joypad;
-extern input_device_driver_t ctr_joypad;
-extern input_device_driver_t xdk_joypad;
-extern input_device_driver_t gx_joypad;
-extern input_device_driver_t hid_joypad;
-extern input_device_driver_t android_joypad;
-extern input_device_driver_t qnx_joypad;
-extern input_device_driver_t null_joypad;
-extern input_device_driver_t mfi_joypad;
 
 /**
  * joypad_driver_find_handle:
@@ -225,6 +207,23 @@ bool input_joypad_hat_raw(const input_device_driver_t *driver,
  **/
 const char *input_joypad_name(const input_device_driver_t *driver,
       unsigned port);
+
+extern input_device_driver_t dinput_joypad;
+extern input_device_driver_t linuxraw_joypad;
+extern input_device_driver_t parport_joypad;
+extern input_device_driver_t udev_joypad;
+extern input_device_driver_t xinput_joypad;
+extern input_device_driver_t sdl_joypad;
+extern input_device_driver_t ps3_joypad;
+extern input_device_driver_t psp_joypad;
+extern input_device_driver_t ctr_joypad;
+extern input_device_driver_t xdk_joypad;
+extern input_device_driver_t gx_joypad;
+extern input_device_driver_t hid_joypad;
+extern input_device_driver_t android_joypad;
+extern input_device_driver_t qnx_joypad;
+extern input_device_driver_t null_joypad;
+extern input_device_driver_t mfi_joypad;
 
 #ifdef __cplusplus
 }

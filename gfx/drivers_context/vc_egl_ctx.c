@@ -469,7 +469,6 @@ static float gfx_ctx_vc_translate_aspect(void *data,
       unsigned width, unsigned height)
 {
    (void)data;
-
    /* Check for SD televisions: they should always be 4:3. */
    if ((width == 640 || width == 720) && (height == 480 || height == 576))
       return 4.0f / 3.0f;
@@ -624,6 +623,18 @@ static gfx_ctx_proc_t gfx_ctx_vc_get_proc_address(const char *symbol)
 #endif
 }
 
+static uint32_t gfx_ctx_vc_get_flags(void *data)
+{
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   return flags;
+}
+
+static void gfx_ctx_vc_set_flags(void *data, uint32_t flags)
+{
+   (void)data;
+}
+
 const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_init,
    gfx_ctx_vc_destroy,
@@ -649,5 +660,7 @@ const gfx_ctx_driver_t gfx_ctx_videocore = {
    gfx_ctx_vc_image_buffer_write,
    NULL,
    "videocore",
-   gfx_ctx_vc_bind_hw_render,
+   gfx_ctx_vc_get_flags,
+   gfx_ctx_vc_set_flags,
+   gfx_ctx_vc_bind_hw_render
 };

@@ -45,6 +45,7 @@ typedef struct http_handle
       struct http_connection_t *handle;
       transfer_cb_t  cb;
       char elem1[PATH_MAX_LENGTH];
+      char url[PATH_MAX_LENGTH];
    } connection;
    struct http_t *handle;
    transfer_cb_t  cb;
@@ -52,14 +53,14 @@ typedef struct http_handle
    bool error;
 } http_handle_t;
 
-static int rarch_main_data_http_con_iterate_transfer(http_handle_t *http)
+static int task_http_con_iterate_transfer(http_handle_t *http)
 {
    if (!net_http_connection_iterate(http->connection.handle))
       return -1;
    return 0;
 }
 
-static int rarch_main_data_http_conn_iterate_transfer_parse(
+static int task_http_conn_iterate_transfer_parse(
       http_handle_t *http)
 {
    if (net_http_connection_done(http->connection.handle))
@@ -100,14 +101,14 @@ static int cb_http_conn_default(void *data_, size_t len)
 }
 
 /**
- * rarch_main_data_http_iterate_transfer:
+ * task_http_iterate_transfer:
  *
  * Resumes HTTP transfer update.
  *
  * Returns: 0 when finished, -1 when we should continue
  * with the transfer on the next frame.
  **/
-static int rarch_main_data_http_iterate_transfer(retro_task_t *task)
+static int task_http_iterate_transfer(retro_task_t *task)
 {
    http_handle_t *http  = (http_handle_t*)task->state;
    size_t pos  = 0, tot = 0;
@@ -123,21 +124,24 @@ static int rarch_main_data_http_iterate_transfer(retro_task_t *task)
 
 static void rarch_task_http_transfer_handler(retro_task_t *task)
 {
-   http_handle_t *http = (http_handle_t*)task->state;
-   http_transfer_data_t *data;
+   http_transfer_data_t *data = NULL;
+   http_handle_t        *http = (http_handle_t*)task->state;
+
+   if (task->cancelled)
+      goto task_finished;
 
    switch (http->status)
    {
       case HTTP_STATUS_CONNECTION_TRANSFER_PARSE:
-         rarch_main_data_http_conn_iterate_transfer_parse(http);
+         task_http_conn_iterate_transfer_parse(http);
          http->status = HTTP_STATUS_TRANSFER;
          break;
       case HTTP_STATUS_CONNECTION_TRANSFER:
-         if (!rarch_main_data_http_con_iterate_transfer(http))
+         if (!task_http_con_iterate_transfer(http))
             http->status = HTTP_STATUS_CONNECTION_TRANSFER_PARSE;
          break;
       case HTTP_STATUS_TRANSFER:
-         if (!rarch_main_data_http_iterate_transfer(task))
+         if (!task_http_iterate_transfer(task))
             goto task_finished;
          break;
       case HTTP_STATUS_TRANSFER_PARSE:
@@ -147,7 +151,7 @@ static void rarch_task_http_transfer_handler(retro_task_t *task)
          break;
    }
 
-   if (task->cancelled || http->error)
+   if (http->error)
       goto task_finished;
 
    return;
@@ -192,23 +196,37 @@ task_finished:
 
 static bool rarch_task_http_finder(retro_task_t *task, void *user_data)
 {
-   http_handle_t *http = (http_handle_t*)task->state;
-   const char *handle_url = NULL;
-   if (  !http || !user_data || 
-         !task || task->handler != rarch_task_http_transfer_handler)
-      return false;
-   if (!http->connection.handle)
+   http_handle_t *http = NULL;
+
+   if (!task || (task->handler != rarch_task_http_transfer_handler))
       return false;
 
-   handle_url = net_http_connection_url(http->connection.handle);
-
-   if (!handle_url)
+   if (!user_data)
       return false;
 
-   return string_is_equal(handle_url, (const char*)user_data);
+   http = (http_handle_t*)task->state;
+   if (!http)
+      return false;
+
+   return string_is_equal(http->connection.url, (const char*)user_data);
 }
 
-bool rarch_task_push_http_transfer(const char *url, const char *type,
+static bool rarch_task_http_retriever(retro_task_t *task, void *data)
+{
+   http_transfer_info_t *info = (http_transfer_info_t*)data;
+
+   /* Extract HTTP handle and return already if invalid */
+   http_handle_t        *http = (http_handle_t *)task->state;
+   if (!http)
+      return false;
+
+   /* Fill HTTP info link */
+   strlcpy(info->url, http->connection.url, sizeof(info->url));
+   info->progress = task->progress;
+   return true;
+}
+
+void *rarch_task_push_http_transfer(const char *url, const char *type,
       retro_task_callback_t cb, void *user_data)
 {
    char tmp[PATH_MAX_LENGTH];
@@ -218,7 +236,7 @@ bool rarch_task_push_http_transfer(const char *url, const char *type,
    http_handle_t *http            = NULL;
 
    if (string_is_empty(url))
-      return false;
+      return NULL;
 
    find_data.func     = rarch_task_http_finder;
    find_data.userdata = (void*)url;
@@ -227,13 +245,13 @@ bool rarch_task_push_http_transfer(const char *url, const char *type,
    if (task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data))
    {
       RARCH_LOG("[http] '%s'' is already being downloaded.\n", url);
-      return false;
+      return NULL;
    }
 
    conn = net_http_connection_new(url);
 
    if (!conn)
-      return false;
+      return NULL;
 
    http                    = (http_handle_t*)calloc(1, sizeof(*http));
 
@@ -245,6 +263,8 @@ bool rarch_task_push_http_transfer(const char *url, const char *type,
 
    if (type)
       strlcpy(http->connection.elem1, type, sizeof(http->connection.elem1));
+
+   strlcpy(http->connection.url, url, sizeof(http->connection.url));
 
    http->status            = HTTP_STATUS_CONNECTION_TRANSFER;
    t                       = (retro_task_t*)calloc(1, sizeof(*t));
@@ -265,7 +285,7 @@ bool rarch_task_push_http_transfer(const char *url, const char *type,
 
    task_queue_ctl(TASK_QUEUE_CTL_PUSH, t);
 
-   return true;
+   return t;
 
 error:
    if (conn)
@@ -275,5 +295,19 @@ error:
    if (http)
       free(http);
 
-   return false;
+   return NULL;
+}
+
+task_retriever_info_t *http_task_get_transfer_list(void)
+{
+   task_retriever_data_t retrieve_data;
+
+   /* Fill retrieve data */
+   retrieve_data.handler      = rarch_task_http_transfer_handler;
+   retrieve_data.element_size = sizeof(http_transfer_info_t);
+   retrieve_data.func         = rarch_task_http_retriever;
+
+   /* Build list of current HTTP transfers and return it */
+   task_queue_ctl(TASK_QUEUE_CTL_RETRIEVE, &retrieve_data);
+   return retrieve_data.list;
 }

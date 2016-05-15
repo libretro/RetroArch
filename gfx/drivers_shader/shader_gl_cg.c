@@ -38,9 +38,9 @@
 
 #include "../video_shader_driver.h"
 #include "../video_shader_parse.h"
-#include "../../libretro_version_1.h"
+#include "../../core.h"
 #include "../../dynamic.h"
-#include "../../rewind.h"
+#include "../../managers/state_manager.h"
 #include "../video_state_tracker.h"
 
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
@@ -260,7 +260,7 @@ fallback:
    return false;
 }
 
-static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct gfx_coords *coords)
+static bool gl_cg_set_coords(void *handle_data, void *shader_data, const struct video_coords *coords)
 {
    cg_shader_data_t *cg = (cg_shader_data_t*)shader_data;
 
@@ -289,7 +289,7 @@ fallback:
 static void gl_cg_set_texture_info(
       cg_shader_data_t *cg, 
       const struct cg_fbo_params *params,
-      const struct gfx_tex_info *info)
+      const struct video_tex_info *info)
 {
    unsigned i;
    struct uniform_cg uniform_data[4];
@@ -348,10 +348,10 @@ static void gl_cg_set_params(void *data, void *shader_data,
    struct uniform_cg uniform_data[10];
    struct uniform_info uniform_params[10] = {{0}};
    unsigned uniform_count                   = 0;
-   const struct gfx_tex_info *info          = (const struct gfx_tex_info*)_info;
-   const struct gfx_tex_info *prev_info     = (const struct gfx_tex_info*)_prev_info;
-   const struct gfx_tex_info *feedback_info = (const struct gfx_tex_info*)_feedback_info;
-   const struct gfx_tex_info *fbo_info      = (const struct gfx_tex_info*)_fbo_info;
+   const struct video_tex_info *info          = (const struct video_tex_info*)_info;
+   const struct video_tex_info *prev_info     = (const struct video_tex_info*)_prev_info;
+   const struct video_tex_info *feedback_info = (const struct video_tex_info*)_feedback_info;
+   const struct video_tex_info *fbo_info      = (const struct video_tex_info*)_fbo_info;
    cg_shader_data_t *cg                = (cg_shader_data_t*)shader_data;
 
    if (!cg || (cg->active_idx == 0))
@@ -811,7 +811,7 @@ static bool gl_cg_load_imports(void *data)
 
       mem_info.id = memtype;
 
-      core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+      core_get_memory(&mem_info);
 
       if ((memtype != -1u) && 
             (cg->shader->variable[i].addr >= mem_info.size))
@@ -825,7 +825,7 @@ static bool gl_cg_load_imports(void *data)
    mem_info.size = 0;
    mem_info.id   = RETRO_MEMORY_SYSTEM_RAM;
 
-   core_ctl(CORE_CTL_RETRO_GET_MEMORY, &mem_info);
+   core_get_memory(&mem_info);
 
    tracker_info.wram      = (uint8_t*)mem_info.data;
    tracker_info.info      = cg->shader->variable;

@@ -25,7 +25,9 @@
 
 #include "../../driver.h"
 #include "../../general.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
+
+#include "../video_frame.h"
 #include "../video_context_driver.h"
 #include "../font_driver.h"
 
@@ -81,30 +83,6 @@ static void sdl_gfx_free(void *data)
    scaler_ctx_gen_reset(&vid->menu.scaler);
 
    free(vid);
-}
-
-static void sdl_update_scaler(SDL_Surface *surf, struct scaler_ctx *scaler,
-                              enum scaler_pix_fmt format, unsigned width,
-                              unsigned height, unsigned pitch)
-{
-   if (
-          width  != (unsigned)scaler->in_width
-       || height != (unsigned)scaler->in_height
-       || format != scaler->in_fmt
-       || pitch  != (unsigned)scaler->in_stride
-      )
-   {
-      scaler->in_fmt    = format;
-      scaler->in_width  = width;
-      scaler->in_height = height;
-      scaler->in_stride = pitch;
-
-      scaler->out_width  = surf->w;
-      scaler->out_height = surf->h;
-      scaler->out_stride = surf->pitch;
-
-      scaler_ctx_gen_filter(scaler);
-   }
 }
 
 static void sdl_init_font(sdl_video_t *vid, const char *font_path, unsigned font_size)
@@ -361,14 +339,23 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    if (!frame)
       return true;
 
-   sdl_update_scaler(vid->screen, &vid->scaler, vid->scaler.in_fmt, width, height, pitch);
-
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
 
    rarch_perf_init(&sdl_scale, "sdl_scale");
    retro_perf_start(&sdl_scale);
-   scaler_ctx_scale(&vid->scaler, vid->screen->pixels, frame);
+
+   video_frame_scale(
+         &vid->scaler,
+         vid->screen->pixels,
+         frame,
+         vid->scaler.in_fmt,
+         vid->screen->w,
+         vid->screen->h,
+         vid->screen->pitch,
+         width,
+         height,
+         pitch);
    retro_perf_stop(&sdl_scale);
 
    if (vid->menu.active)
@@ -414,7 +401,7 @@ static bool sdl_gfx_suppress_screensaver(void *data, bool enable)
 #ifdef HAVE_X11
    if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
    {
-      x11_suspend_screensaver(video_driver_window_get());
+      x11_suspend_screensaver(video_driver_window_get(), enable);
       return true;
    }
 #endif
@@ -446,28 +433,23 @@ static void sdl_set_filtering(void *data, unsigned index, bool smooth)
 
 static void sdl_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-   enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
-
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL;
+         video_driver_set_viewport_square_pixel();
          break;
 
       case ASPECT_RATIO_CORE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE;
+         video_driver_set_viewport_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG;
+         video_driver_set_viewport_config();
          break;
 
       default:
          break;
    }
-
-   if (cmd != RARCH_DISPLAY_CTL_NONE)
-      video_driver_ctl(cmd, NULL);
 
    video_driver_set_aspect_ratio_value(aspectratio_lut[aspect_ratio_idx].value);
 }
@@ -480,15 +462,23 @@ static void sdl_apply_state_changes(void *data)
 static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
-   enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
-   sdl_video_t *vid = (sdl_video_t*)data;
+   enum scaler_pix_fmt format = rgb32 
+      ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
+   sdl_video_t           *vid = (sdl_video_t*)data;
 
-   (void)alpha;
+   video_frame_scale(
+         &vid->menu.scaler,
+         vid->menu.frame->pixels,
+         frame,
+         format,
+         vid->menu.frame->w,
+         vid->menu.frame->h,
+         vid->menu.frame->pitch,
+         width,
+         height,
+         width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t))
+         );
 
-   sdl_update_scaler(vid->menu.frame, &vid->menu.scaler, format, width, height,
-                     width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
-
-   scaler_ctx_scale(&vid->menu.scaler, vid->menu.frame->pixels, frame);
    SDL_SetAlpha(vid->menu.frame, SDL_SRCALPHA, 255.0 * alpha);
 }
 

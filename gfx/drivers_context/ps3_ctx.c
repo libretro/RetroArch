@@ -414,6 +414,18 @@ static void gfx_ctx_ps3_get_video_output_next(void *data)
    }
 }
 
+static uint32_t gfx_ctx_ps3_get_flags(void *data)
+{
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   return flags;
+}
+
+static void gfx_ctx_ps3_set_flags(void *data, uint32_t flags)
+{
+   (void)data;
+}
+
 const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_init,
    gfx_ctx_ps3_destroy,
@@ -439,5 +451,7 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    NULL,
    NULL,
    "ps3",
+   gfx_ctx_ps3_get_flags,
+   gfx_ctx_ps3_set_flags
 };
 

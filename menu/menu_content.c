@@ -16,6 +16,7 @@
 #include <retro_assert.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
+#include <retro_stat.h>
 #include <string/stdstring.h>
 
 #include "menu_content.h"
@@ -88,12 +89,11 @@ static bool menu_content_load(void)
    content_ctx_info_t content_info;
    char name[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
-   bool msg_force       = true;
    char *fullpath       = NULL;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
    /* redraw menu frame */
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
+   menu_display_set_msg_force(true);
    menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
    if (*fullpath)
@@ -104,7 +104,7 @@ static bool menu_content_load(void)
    content_info.args        = NULL;
    content_info.environ_get = menu_content_environment_get;
 
-   if (!content_ctl(CONTENT_CTL_LOAD, &content_info))
+   if (!content_load(&content_info))
       goto error;
 
    if (*fullpath)
@@ -159,10 +159,10 @@ static bool menu_content_load_from_playlist(void *data)
    content_playlist_get_index(playlist,
          idx, &path, NULL, &core_path, NULL, NULL, NULL);
 
-   if (path && !string_is_empty(path))
+   if (!string_is_empty(path))
    {
       unsigned i;
-      RFILE *fp           = NULL;
+      bool valid_path     = false;
       char *path_check    = NULL;
       char *path_tolower  = strdup(path);
 
@@ -179,16 +179,13 @@ static bool menu_content_load_from_playlist(void *data)
 
       strncpy(path_check, path, strlen(path_tolower));
 
+      valid_path = path_is_valid(path_check);
+
       free(path_tolower);
-
-      fp = filestream_open(path_check, RFILE_MODE_READ, -1);
-
       free(path_check);
 
-      if (!fp)
+      if (!valid_path)
          goto error;
-
-      filestream_close(fp);
    }
 
    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
@@ -198,10 +195,10 @@ static bool menu_content_load_from_playlist(void *data)
    else
       menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
 
-   if (!event_cmd_ctl(EVENT_CMD_EXEC, (void*)path))
+   if (!command_event(CMD_EVENT_EXEC, (void*)path))
       return false;
 
-   event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
 
    return true;
 
@@ -262,7 +259,7 @@ static bool menu_content_find_first_core(void *data)
     * going to use the current core to load this. */
    if (menu_label_hash == MENU_LABEL_LOAD_CONTENT)
    {
-      core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_GET, (void*)&info);
+      core_info_get_current_core((core_info_t**)&info);
       if (info)
       {
          RARCH_LOG("Use the current core (%s) to load this content...\n",

@@ -18,8 +18,9 @@
 #define __CAMERA_DRIVER__H
 
 #include <stdint.h>
+
 #include <boolean.h>
-#include "../libretro.h"
+#include <libretro.h>
 
 #ifdef __cplusplus
 extern "C" {

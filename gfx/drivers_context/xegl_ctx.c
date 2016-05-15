@@ -189,16 +189,13 @@ static EGLint *xegl_fill_attribs(xegl_ctx_data_t *xegl, EGLint *attr)
 #ifdef EGL_KHR_create_context
       case GFX_CTX_OPENGL_API:
          {
-            bool debug       = false;
             unsigned version = xegl->egl.major * 1000 + xegl->egl.minor;
             bool core        = version >= 3001;
-            struct retro_hw_render_callback *hwr = NULL;
-
-            video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
 #ifdef GL_DEBUG
-            debug = true;
+            bool debug       = true;
 #else
-            debug = hwr->debug_context;
+            struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+            bool debug       = hwr->debug_context;
 #endif
 
             if (core)
@@ -352,6 +349,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
       goto error;
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
+   x11_update_window_title(NULL);
 
    if (fullscreen)
       x11_show_mouse(g_x11_dpy, g_x11_win, false);
@@ -443,12 +441,11 @@ static bool gfx_ctx_xegl_has_focus(void *data)
 static bool gfx_ctx_xegl_suppress_screensaver(void *data, bool enable)
 {
    (void)data;
-   (void)enable;
 
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
 
-   x11_suspend_screensaver(video_driver_window_get());
+   x11_suspend_screensaver(video_driver_window_get(), enable);
 
    return true;
 }
@@ -574,6 +571,18 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
    return NULL;
 }
 
+static uint32_t gfx_ctx_xegl_get_flags(void *data)
+{
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   return flags;
+}
+
+static void gfx_ctx_xegl_set_flags(void *data, uint32_t flags)
+{
+   (void)data;
+}
+
 const gfx_ctx_driver_t gfx_ctx_x_egl =
 {
    gfx_ctx_xegl_init,
@@ -600,5 +609,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL,
    gfx_ctx_xegl_show_mouse,
    "x-egl",
-   gfx_ctx_xegl_bind_hw_render,
+   gfx_ctx_xegl_get_flags,
+   gfx_ctx_xegl_set_flags,
+   gfx_ctx_xegl_bind_hw_render
 };

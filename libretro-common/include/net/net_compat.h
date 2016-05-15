@@ -136,14 +136,6 @@ struct hostent
 #ifdef GEKKO
 #define sendto(s, msg, len, flags, addr, tolen) net_sendto(s, msg, len, 0, addr, 8)
 #define socket(domain, type, protocol) net_socket(domain, type, protocol)
-
-static INLINE int inet_pton(int af, const char *src, void *dst)
-{
-   if (af != AF_INET)
-      return -1;
-
-   return inet_aton (src, dst);
-}
 #endif
 
 static INLINE bool isagain(int bytes)
@@ -211,22 +203,14 @@ struct addrinfo
 
 #endif
 
+uint16_t inet_htons(uint16_t hostshort);
+
+int inet_ptrton(int af, const char *src, void *dst);
+
 int getaddrinfo_retro(const char *node, const char *service,
-      const struct addrinfo *hints,
-      struct addrinfo **res);
+      struct addrinfo *hints, struct addrinfo **res);
 
 void freeaddrinfo_retro(struct addrinfo *res);
-
-bool socket_nonblock(int fd);
-
-int socket_close(int fd);
-
-int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
-      fd_set *errorfds, struct timeval *timeout);
-
-int socket_send_all_blocking(int fd, const void *data_, size_t size);
-
-int socket_receive_all_blocking(int fd, void *data_, size_t size);
 
 /**
  * network_init:

@@ -108,10 +108,10 @@ OBJ += frontend/frontend.o \
        frontend/drivers/platform_null.o \
        ui/ui_companion_driver.o \
        ui/drivers/ui_null.o \
-       libretro_version_1.o \
+       core_impl.o \
        retroarch.o \
        input/input_keyboard.o \
-       command_event.o \
+       command.o \
        msg_hash.o \
        intl/msg_hash_de.o \
        intl/msg_hash_eo.o \
@@ -127,6 +127,7 @@ OBJ += frontend/frontend.o \
        tasks/tasks_internal.o \
        tasks/task_content.o \
        tasks/task_file_transfer.o \
+       tasks/task_image.o \
        content.o \
        libretro-common/encodings/encoding_utf.o \
        libretro-common/lists/file_list.o \
@@ -157,7 +158,7 @@ OBJ += frontend/frontend.o \
        dynamic.o \
        cores/dynamic_dummy.o \
        libretro-common/queues/message_queue.o \
-       rewind.o \
+       managers/state_manager.o \
        gfx/drivers_font_renderer/bitmapfont.o \
        input/input_autodetect.o \
        input/input_joypad_driver.o \
@@ -168,10 +169,10 @@ OBJ += frontend/frontend.o \
        input/input_overlay.o \
        patch.o \
        libretro-common/queues/fifo_queue.o \
-       core_options.o \
+       managers/core_option_manager.o \
        libretro-common/compat/compat_fnmatch.o \
        libretro-common/compat/compat_posix_string.o \
-       cheats.o \
+       managers/cheat_manager.o \
        core_info.o \
        libretro-common/file/config_file.o \
        config_file_userdata.o \
@@ -203,7 +204,8 @@ OBJ += frontend/frontend.o \
        movie.o \
        record/record_driver.o \
        record/drivers/record_null.o \
-       performance.o \
+       libretro-common/features/features_cpu.o \
+       performance_counters.o \
        verbosity.o
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
@@ -289,8 +291,11 @@ ifeq ($(HAVE_OSS_BSD), 1)
 endif
 
 ifeq ($(HAVE_ALSA), 1)
-   OBJ += audio/drivers/alsa.o \
-          audio/drivers/alsathread.o
+   OBJ += audio/drivers/alsa.o
+
+ifeq ($(HAVE_THREADS), 1)
+	OBJ += audio/drivers/alsathread.o
+endif
    LIBS += $(ALSA_LIBS)
    DEFINES += $(ALSA_CFLAGS)
 endif
@@ -509,10 +514,6 @@ ifeq ($(HAVE_THREADS), 1)
    endif
 endif
 
-ifeq ($(HAVE_COMMAND), 1)
-   OBJ += command.o
-endif
-
 ifeq ($(HAVE_WAYLAND), 1)
  OBJ += gfx/drivers_context/wayland_ctx.o
  DEFINES += $(WAYLAND_CFLAGS)
@@ -577,10 +578,12 @@ ifeq ($(HAVE_UDEV), 1)
 endif
 
 ifeq ($(HAVE_LIBUSB), 1)
+ifeq ($(HAVE_THREADS), 1)
    DEFINES += -DHAVE_LIBUSB
    OBJ += input/drivers_hid/libusb_hid.o
    LIBS += -lusb-1.0
    HAVE_HID = 1
+endif
 endif
 
 ifeq ($(HAVE_IOHIDMANAGER), 1)
@@ -752,7 +755,7 @@ ifeq ($(HAVE_VULKAN), 1)
 		$(wildcard deps/glslang/glslang/glslang/MachineIndependent/preprocessor/*.cpp) \
 		$(wildcard deps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
 
-	SPIR2CROSS_SOURCES := deps/spir2cross/spir2cross.cpp
+	SPIRV_CROSS_SOURCES := deps/SPIRV-Cross/spirv_cross.cpp
 
 	DEFINES += \
 			  -Ideps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
@@ -761,13 +764,13 @@ ifeq ($(HAVE_VULKAN), 1)
 			  -Ideps/glslang/glslang/glslang/Public \
 			  -Ideps/glslang/glslang/SPIRV \
 			  -Ideps/glslang \
-			  -Ideps/spir2cross
+			  -Ideps/SPIRV-Cross
 
 	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -I./gfx/include/vulkan
    CFLAGS  += -I./gfx/include/vulkan
 
 	GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
-	SPIR2CROSS_OBJ := $(SPIR2CROSS_SOURCES:.cpp=.o)
+	SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)
 
 	OBJ += gfx/drivers/vulkan.o \
 			 gfx/common/vulkan_common.o \
@@ -776,7 +779,7 @@ ifeq ($(HAVE_VULKAN), 1)
 			 gfx/drivers_shader/glslang_util.o \
 			 gfx/drivers_shader/slang_reflection.o \
 			 $(GLSLANG_OBJ) \
-			 $(SPIR2CROSS_OBJ)
+			 $(SPIRV_CROSS_OBJ)
 	ifeq ($(HAVE_MENU_COMMON), 1)
 		OBJ += menu/drivers_display/menu_display_vulkan.o
 	endif
@@ -887,7 +890,6 @@ ifeq ($(HAVE_ZLIB), 1)
           tasks/task_decompress.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
-   HAVE_RPNG = 1
    HAVE_COMPRESSION = 1
    ifeq ($(WANT_ZLIB), 1)
       DEFINES += -DWANT_ZLIB
@@ -897,17 +899,24 @@ ifeq ($(HAVE_ZLIB), 1)
    endif
 endif
 
-ifdef HAVE_RPNG
-   DEFINES += -DHAVE_RPNG
-endif
-
 ifeq ($(HAVE_RPNG), 1)
+	DEFINES += -DHAVE_RPNG
    OBJ += libretro-common/formats/png/rpng.o \
           libretro-common/formats/png/rpng_encode.o
 endif
+
+ifeq ($(HAVE_RJPEG), 1)
+	DEFINES += -DHAVE_RJPEG
+	OBJ += libretro-common/formats/jpeg/rjpeg.o
+endif
+
 OBJ += libretro-common/formats/bmp/rbmp_encode.o \
-       libretro-common/formats/tga/rtga.o \
-       libretro-common/formats/json/jsonsax.o
+       libretro-common/formats/json/jsonsax.o \
+		 libretro-common/formats/image_transfer.o
+
+ifeq ($(HAVE_RTGA), 1)
+OBJ += libretro-common/formats/tga/rtga.o
+endif
 
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
@@ -952,7 +961,8 @@ ifeq ($(HAVE_NETWORKING), 1)
    DEFINES += -DHAVE_NETWORKING
    OBJ += libretro-common/net/net_compat.o \
           libretro-common/net/net_http.o \
-          net_http_special.o \
+			 libretro-common/net/net_socket.o \
+          network/net_http_special.o \
           tasks/task_http.o
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
@@ -972,7 +982,7 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_NETPLAY), 1)
       DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD -DHAVE_NETWORK_GAMEPAD
-      OBJ += netplay/netplay_net.o netplay/netplay_spectate.o netplay/netplay_common.o netplay/netplay.o
+      OBJ += network/netplay_net.o network/netplay_spectate.o network/netplay_common.o network/netplay.o
    endif
 
    # Retro Achievements (also depends on threads)
@@ -985,7 +995,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifeq ($(HAVE_NETWORK_GAMEPAD), 1)
-      OBJ += remote.o
+      OBJ += input/input_remote.o
    endif
 endif
 
@@ -1012,7 +1022,7 @@ ifeq ($(HAVE_FFMPEG), 1)
           cores/libretro-ffmpeg/ffmpeg_core.o
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
-   DEFINES += -DHAVE_FFMPEG -Iffmpeg
+   DEFINES += -Wno-deprecated-declarations -DHAVE_FFMPEG -Iffmpeg
 endif
 
 ifeq ($(HAVE_COMPRESSION), 1)

@@ -48,6 +48,10 @@
 #define UIUserInterfaceIdiomTV 2
 #endif
 
+#ifndef UIUserInterfaceIdiomCarPlay
+#define UIUserInterfaceIdiomCarPlay 3
+#endif
+
 @interface EAGLContext (OSXCompat) @end
 @implementation EAGLContext (OSXCompat)
 + (void)clearCurrentContext { [EAGLContext setCurrentContext:nil];  }
@@ -451,8 +455,9 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
     float   physical_width        = screen_rect.size.width  * scale;
     float   physical_height       = screen_rect.size.height * scale;
     float   dpi                   = 160                     * scale;
+    unsigned idiom_type           = UI_USER_INTERFACE_IDIOM();
 
-    switch (UI_USER_INTERFACE_IDIOM())
+    switch (idiom_type)
     {
        case -1: /* UIUserInterfaceIdiomUnspecified */
           /* TODO */
@@ -464,6 +469,7 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
           dpi = 163 * scale;
           break;
        case UIUserInterfaceIdiomTV:
+       case UIUserInterfaceIdiomCarPlay:
           /* TODO */
           break;
     }
@@ -589,6 +595,18 @@ static void cocoagl_gfx_ctx_bind_hw_render(void *data, bool enable)
         [g_context makeCurrentContext];
 }
 
+static uint32_t cocoagl_gfx_ctx_get_flags(void *data)
+{
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   return flags;
+}
+
+static void cocoagl_gfx_ctx_set_flags(void *data, uint32_t flags)
+{
+   (void)flags;
+}
+
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoagl_gfx_ctx_init,
    cocoagl_gfx_ctx_destroy,
@@ -614,5 +632,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL,
    NULL,
    "cocoagl",
+   cocoagl_gfx_ctx_get_flags,
+   cocoagl_gfx_ctx_set_flags,
    cocoagl_gfx_ctx_bind_hw_render,
 };

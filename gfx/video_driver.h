@@ -22,12 +22,12 @@
 #include <sys/types.h>
 
 #include <boolean.h>
+#include <libretro.h>
 
 #include "font_driver.h"
 #include "video_filter.h"
 #include "video_shader_parse.h"
 
-#include "../libretro.h"
 #include "../input/input_driver.h"
 
 
@@ -90,81 +90,6 @@ enum rarch_display_type
    /* video_display => N/A, video_window => HWND */
    RARCH_DISPLAY_WIN32,
    RARCH_DISPLAY_OSX
-};
-
-enum rarch_display_ctl_state
-{
-   RARCH_DISPLAY_CTL_NONE = 0,
-   RARCH_DISPLAY_CTL_INIT,
-   RARCH_DISPLAY_CTL_DEINIT,
-   RARCH_DISPLAY_CTL_DESTROY,
-   RARCH_DISPLAY_CTL_DESTROY_DATA,
-   RARCH_DISPLAY_CTL_LOCK,
-   RARCH_DISPLAY_CTL_UNLOCK,
-   RARCH_DISPLAY_CTL_LOCK_FREE,
-   RARCH_DISPLAY_CTL_LOCK_NEW,
-   RARCH_DISPLAY_CTL_SUPPORTS_RGBA,
-   RARCH_DISPLAY_CTL_SET_RGBA,
-   RARCH_DISPLAY_CTL_UNSET_RGBA,
-   RARCH_DISPLAY_CTL_DEFAULT_SETTINGS,
-   RARCH_DISPLAY_CTL_LOAD_SETTINGS,
-   RARCH_DISPLAY_CTL_SAVE_SETTINGS,
-   RARCH_DISPLAY_CTL_MONITOR_RESET,
-   RARCH_DISPLAY_CTL_MONITOR_ADJUST_SYSTEM_RATES,
-   RARCH_DISPLAY_CTL_APPLY_STATE_CHANGES,
-   RARCH_DISPLAY_CTL_FIND_DRIVER,
-   RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE,
-   RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT,
-   RARCH_DISPLAY_CTL_GET_PREV_VIDEO_OUT,
-   RARCH_DISPLAY_CTL_GET_NEXT_VIDEO_OUT,
-   RARCH_DISPLAY_CTL_HAS_WINDOWED,
-   RARCH_DISPLAY_CTL_SUPPORTS_RECORDING,
-   RARCH_DISPLAY_CTL_SUPPORTS_VIEWPORT_READ,
-   RARCH_DISPLAY_CTL_SUPPORTS_READ_FRAME_RAW,
-   RARCH_DISPLAY_CTL_IS_FOCUSED,
-   RARCH_DISPLAY_CTL_IS_ALIVE,
-   RARCH_DISPLAY_CTL_SET_ASPECT_RATIO,
-   /* Sets viewport to aspect ratio set by core. */
-   RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE,
-   /* Sets viewport to config aspect ratio. */
-   RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG,
-   /* Sets viewport to square pixel aspect ratio based on width/height. */ 
-   RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL,
-   RARCH_DISPLAY_CTL_RESET_CUSTOM_VIEWPORT,
-   RARCH_DISPLAY_CTL_READ_VIEWPORT,
-   RARCH_DISPLAY_CTL_SET_NONBLOCK_STATE,
-   RARCH_DISPLAY_CTL_SET_STUB_FRAME,
-   RARCH_DISPLAY_CTL_UNSET_STUB_FRAME,
-   /* Renders the current video frame. */
-   RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER,
-   RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB,
-   RARCH_DISPLAY_CTL_CACHED_FRAME_SET_PTR,
-   RARCH_DISPLAY_CTL_SHOW_MOUSE,
-   RARCH_DISPLAY_CTL_HIDE_MOUSE,
-   RARCH_DISPLAY_CTL_GET_FRAME_COUNT,
-   RARCH_DISPLAY_CTL_SET_OWN_DRIVER,
-   RARCH_DISPLAY_CTL_UNSET_OWN_DRIVER,
-   RARCH_DISPLAY_CTL_OWNS_DRIVER,
-   RARCH_DISPLAY_CTL_DEINIT_HW_CONTEXT,
-   RARCH_DISPLAY_CTL_IS_HW_CONTEXT,
-   RARCH_DISPLAY_CTL_HW_CONTEXT_GET,
-   RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT,
-   RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT,
-   RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT,
-   RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK,
-   RARCH_DISPLAY_CTL_UNSET_VIDEO_CACHE_CONTEXT_ACK,
-   RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT_ACK,
-   RARCH_DISPLAY_CTL_SET_ACTIVE,
-   RARCH_DISPLAY_CTL_UNSET_ACTIVE,
-   RARCH_DISPLAY_CTL_IS_ACTIVE,
-   RARCH_DISPLAY_CTL_HAS_GPU_RECORD,
-   RARCH_DISPLAY_CTL_GPU_RECORD_GET,
-   RARCH_DISPLAY_CTL_GPU_RECORD_INIT,
-   RARCH_DISPLAY_CTL_GPU_RECORD_DEINIT,
-   RARCH_DISPLAY_CTL_GET_CURRENT_SOFTWARE_FRAMEBUFFER,
-   RARCH_DISPLAY_CTL_GET_HW_RENDER_INTERFACE,
-   RARCH_DISPLAY_CTL_VIEWPORT_INFO,
-   RARCH_DISPLAY_CTL_SET_TITLE_BUF
 };
 
 typedef struct video_info
@@ -341,7 +266,72 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
-bool video_driver_ctl(enum rarch_display_ctl_state state, void *data);
+void video_driver_lock(void);
+void video_driver_unlock(void);
+void video_driver_lock_free(void);
+void video_driver_lock_new(void);
+void video_driver_destroy(void);
+void video_driver_set_cached_frame_ptr(const void *data);
+void video_driver_set_stub_frame(void);
+void video_driver_unset_stub_frame(void);
+bool video_driver_supports_recording(void);
+bool video_driver_supports_viewport_read(void);
+bool video_driver_supports_read_frame_raw(void);
+void video_driver_set_viewport_config(void);
+void video_driver_set_viewport_square_pixel(void);
+void video_driver_set_viewport_core(void);
+void video_driver_reset_custom_viewport(void);
+void video_driver_set_rgba(void);
+void video_driver_unset_rgba(void);
+bool video_driver_supports_rgba(void);
+bool video_driver_get_next_video_out(void);
+bool video_driver_get_prev_video_out(void);
+bool video_driver_init(void);
+void video_driver_destroy_data(void);
+void video_driver_deinit(void);
+void video_driver_monitor_reset(void);
+void video_driver_set_aspect_ratio(void);
+void video_driver_show_mouse(void);
+void video_driver_hide_mouse(void);
+void video_driver_set_nonblock_state(bool toggle);
+bool video_driver_find_driver(void);
+void video_driver_apply_state_changes(void);
+bool video_driver_read_viewport(uint8_t *buffer);
+bool video_driver_cached_frame_has_valid_framebuffer(void);
+bool video_driver_cached_frame_render(void);
+bool video_driver_is_alive(void);
+bool video_driver_is_focused(void);
+bool video_driver_has_windowed(void);
+uint64_t *video_driver_get_frame_count_ptr(void);
+bool video_driver_frame_filter_alive(void);
+bool video_driver_frame_filter_is_32bit(void);
+void video_driver_default_settings(void);
+void video_driver_load_settings(config_file_t *conf);
+void video_driver_save_settings(config_file_t *conf);
+void video_driver_set_own_driver(void);
+void video_driver_unset_own_driver(void);
+bool video_driver_owns_driver(void);
+bool video_driver_is_hw_context(void);
+void video_driver_deinit_hw_context(void);
+struct retro_hw_render_callback *video_driver_get_hw_context(void);
+void video_driver_set_video_cache_context(void);
+void video_driver_unset_video_cache_context(void);
+bool video_driver_is_video_cache_context(void);
+void video_driver_set_video_cache_context_ack(void);
+void video_driver_unset_video_cache_context_ack(void);
+bool video_driver_is_video_cache_context_ack(void);
+void video_driver_set_active(void);
+void video_driver_unset_active(void);
+bool video_driver_is_active(void);
+bool video_driver_has_gpu_record(void);
+uint8_t *video_driver_get_gpu_record(void);
+bool video_driver_gpu_record_init(unsigned size);
+void video_driver_gpu_record_deinit(void);
+bool video_driver_get_current_software_framebuffer(struct retro_framebuffer *fb);
+bool video_driver_get_hw_render_interface(const struct retro_hw_render_interface **iface);
+bool video_driver_get_viewport_info(struct video_viewport *viewport);
+void video_driver_set_title_buf(void);
+void video_driver_monitor_adjust_system_rates(void);
 
 /**
  * video_driver_find_handle:

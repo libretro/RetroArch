@@ -755,8 +755,7 @@ bool rarch_task_push_overlay_load_default(
       retro_task_callback_t cb, void *user_data)
 {
    settings_t *settings = config_get_ptr();
-   bool osk_enable      = 
-      input_driver_ctl(RARCH_INPUT_CTL_IS_OSK_ENABLED, NULL);
+   bool osk_enable      = input_driver_is_onscreen_keyboard_enabled();
 
    if (osk_enable)
    {

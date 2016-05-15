@@ -26,11 +26,11 @@
 #include "audio_utils.h"
 #include "audio_thread_wrapper.h"
 
-#include "../command_event.h"
+#include "../command.h"
 #include "../configuration.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../performance.h"
+#include "../performance_counters.h"
 #include "../verbosity.h"
 #include "../list_special.h"
 
@@ -93,7 +93,7 @@ typedef struct audio_driver_input_data
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
    &audio_alsa,
-#ifndef __QNX__
+#if !defined(__QNX__) && defined(HAVE_THREADS)
    &audio_alsathread,
 #endif
 #endif
@@ -154,8 +154,15 @@ static const audio_driver_t *audio_drivers[] = {
 };
 
 static audio_driver_input_data_t audio_driver_data;
-static const audio_driver_t *current_audio   = NULL;
-static void *audio_driver_context_audio_data = NULL;
+static struct retro_audio_callback audio_callback;
+static struct string_list *audio_driver_devices_list   = NULL;
+static struct retro_perf_counter resampler_proc        = {0};
+static const rarch_resampler_t *audio_driver_resampler = NULL;
+static void *audio_driver_resampler_data               = NULL;
+static bool audio_driver_active                        = false;
+static bool audio_driver_data_own                      = false;
+static const audio_driver_t *current_audio             = NULL;
+static void *audio_driver_context_audio_data           = NULL;
 
 /**
  * compute_audio_buffer_statistics:
@@ -253,7 +260,6 @@ const char *config_get_audio_driver_options(void)
    return char_list_new_special(STRING_LIST_AUDIO_DRIVERS, NULL);
 }
 
-
 static bool uninit_audio(void)
 {
    settings_t *settings = config_get_ptr();
@@ -277,11 +283,11 @@ static bool uninit_audio(void)
 
    if (!settings->audio.enable)
    {
-      audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
+      audio_driver_unset_active();
       return false;
    }
 
-   audio_driver_ctl(RARCH_AUDIO_CTL_RESAMPLER_DEINIT, NULL);
+   audio_driver_deinit_resampler();
 
    if (audio_driver_data.data)
       free(audio_driver_data.data);
@@ -291,14 +297,14 @@ static bool uninit_audio(void)
       free(audio_driver_data.output_samples.buf);
    audio_driver_data.output_samples.buf = NULL;
 
-   event_cmd_ctl(EVENT_CMD_DSP_FILTER_DEINIT, NULL);
+   command_event(CMD_EVENT_DSP_FILTER_DEINIT, NULL);
 
    compute_audio_buffer_statistics();
 
    return true;
 }
 
-static bool init_audio(bool audio_cb_inited)
+static bool audio_driver_init_internal(bool audio_cb_inited)
 {
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings = config_get_ptr();
@@ -332,16 +338,16 @@ static bool init_audio(bool audio_cb_inited)
 
    if (!settings->audio.enable)
    {
-      audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
+      audio_driver_unset_active();
       return false;
    }
 
-   audio_driver_ctl(RARCH_AUDIO_CTL_FIND_DRIVER, NULL);
+   audio_driver_find_driver();
 #ifdef HAVE_THREADS
    if (audio_cb_inited)
    {
       RARCH_LOG("Starting threaded audio driver ...\n");
-      if (!rarch_threaded_audio_init(
+      if (!audio_init_thread(
                &current_audio,
                &audio_driver_context_audio_data,
                *settings->audio.device ? settings->audio.device : NULL,
@@ -349,7 +355,7 @@ static bool init_audio(bool audio_cb_inited)
                current_audio))
       {
          RARCH_ERR("Cannot open threaded audio driver ... Exiting ...\n");
-         retro_fail(1, "init_audio()");
+         retroarch_fail(1, "audio_driver_init_internal()");
       }
    }
    else
@@ -364,17 +370,17 @@ static bool init_audio(bool audio_cb_inited)
    if (!audio_driver_context_audio_data)
    {
       RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
-      audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
+      audio_driver_unset_active();
    }
 
    audio_driver_data.use_float = false;
-   if (     audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL) 
+   if (     audio_driver_is_active() 
          && current_audio->use_float(audio_driver_context_audio_data))
       audio_driver_data.use_float = true;
 
-   if (!settings->audio.sync && audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL))
+   if (!settings->audio.sync && audio_driver_is_active())
    {
-      event_cmd_ctl(EVENT_CMD_AUDIO_SET_NONBLOCKING_STATE, NULL);
+      command_event(CMD_EVENT_AUDIO_SET_NONBLOCKING_STATE, NULL);
       audio_driver_data.chunk.size = audio_driver_data.chunk.nonblock_size;
    }
 
@@ -390,11 +396,11 @@ static bool init_audio(bool audio_cb_inited)
       audio_driver_data.audio_rate.source_ratio.current =
       (double)settings->audio.out_rate / audio_driver_data.audio_rate.input;
 
-   if (!audio_driver_ctl(RARCH_AUDIO_CTL_RESAMPLER_INIT, NULL))
+   if (!audio_driver_init_resampler())
    {
       RARCH_ERR("Failed to initialize resampler \"%s\".\n",
             settings->audio.resampler);
-      audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
+      audio_driver_unset_active();
    }
 
    retro_assert(audio_driver_data.data = (float*)
@@ -416,7 +422,7 @@ static bool init_audio(bool audio_cb_inited)
    audio_driver_data.audio_rate.control = false;
    if (
          !audio_cb_inited
-         && audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL) 
+         && audio_driver_is_active() 
          && settings->audio.rate_control
          )
    {
@@ -432,22 +438,22 @@ static bool init_audio(bool audio_cb_inited)
          RARCH_WARN("Audio rate control was desired, but driver does not support needed features.\n");
    }
 
-   event_cmd_ctl(EVENT_CMD_DSP_FILTER_INIT, NULL);
+   command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);
 
    audio_driver_data.free_samples.count = 0;
 
    /* Threaded driver is initially stopped. */
    if (
-         audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL)
+         audio_driver_is_active()
          && !settings->audio.mute_enable
          && audio_cb_inited
          )
-      audio_driver_ctl(RARCH_AUDIO_CTL_START, NULL);
+      audio_driver_start();
 
    return true;
 
 error:
-   return audio_driver_ctl(RARCH_AUDIO_CTL_DEINIT, NULL);
+   return audio_driver_deinit();
 }
 
 /*
@@ -487,7 +493,7 @@ void audio_driver_set_nonblocking_state(bool enable)
 {
    settings_t *settings = config_get_ptr();
    if (
-         audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL)
+         audio_driver_is_active()
          && audio_driver_context_audio_data
       )
       current_audio->set_nonblock_state(audio_driver_context_audio_data,
@@ -525,7 +531,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    if (runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL) || settings->audio.mute_enable)
       return true;
-   if (!audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL))
+   if (!audio_driver_is_active())
       return false;
    if (!audio_driver_data.data)
       return false;
@@ -566,7 +572,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (runloop_ctl(RUNLOOP_CTL_IS_SLOWMOTION, NULL))
       src_data.ratio *= settings->slowmotion_ratio;
 
-   audio_driver_ctl(RARCH_AUDIO_CTL_RESAMPLER_PROCESS, &src_data);
+   audio_driver_process_resampler(&src_data);
 
    output_data   = audio_driver_data.output_samples.buf;
    output_frames = src_data.output_frames;
@@ -586,7 +592,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (current_audio->write(audio_driver_context_audio_data,
             output_data, output_frames * output_size * 2) < 0)
    {
-      audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
+      audio_driver_unset_active();
       return false;
    }
 
@@ -699,8 +705,7 @@ void audio_driver_set_buffer_size(size_t bufsize)
    audio_driver_data.driver_buffer_size = bufsize;
 }
 
-
-static void audio_monitor_adjust_system_rates(void)
+void audio_driver_monitor_adjust_system_rates(void)
 {
    float timing_skew;
    settings_t                   *settings = config_get_ptr();
@@ -723,7 +728,7 @@ static void audio_monitor_adjust_system_rates(void)
          audio_driver_data.audio_rate.input);
 }
 
-static void audio_driver_setup_rewind(void)
+void audio_driver_setup_rewind(void)
 {
    unsigned i;
 
@@ -742,7 +747,7 @@ static void audio_driver_setup_rewind(void)
    audio_driver_data.data_ptr = 0;
 }
 
-static bool find_audio_driver(void)
+bool audio_driver_find_driver(void)
 {
    int i;
    driver_ctx_info_t drv;
@@ -770,202 +775,244 @@ static bool find_audio_driver(void)
       current_audio = (const audio_driver_t*)audio_driver_find_handle(0);
 
       if (!current_audio)
-         retro_fail(1, "find_audio_driver()");
+         retroarch_fail(1, "audio_driver_find()");
    }
 
    return true;
 }
 
-bool audio_driver_ctl(enum rarch_audio_ctl_state state, void *data)
+void audio_driver_deinit_resampler(void)
 {
-   static struct retro_audio_callback audio_callback;
-   static struct string_list *audio_driver_devices_list   = NULL;
-   static struct retro_perf_counter resampler_proc        = {0};
-   static const rarch_resampler_t *audio_driver_resampler = NULL;
-   static void *audio_driver_resampler_data               = NULL;
-   static bool audio_driver_active                        = false;
-   static bool audio_driver_data_own                      = false;
-   settings_t        *settings                            = config_get_ptr();
+   rarch_resampler_freep(&audio_driver_resampler,
+         &audio_driver_resampler_data);
+}
 
-   switch (state)
-   {
-      case RARCH_AUDIO_CTL_RESAMPLER_DEINIT:
-         rarch_resampler_freep(&audio_driver_resampler,
-               &audio_driver_resampler_data);
-         break;
-      case RARCH_AUDIO_CTL_DEVICES_LIST_FREE:
-         if (!current_audio || !current_audio->device_list_free
-               || !audio_driver_context_audio_data)
-            return false;
-         current_audio->device_list_free(audio_driver_context_audio_data, 
-               audio_driver_devices_list);
-         audio_driver_devices_list = NULL;
-         break;
-      case RARCH_AUDIO_CTL_DEVICES_LIST_NEW:
-         if (!current_audio || !current_audio->device_list_new
-               || !audio_driver_context_audio_data)
-            return false;
-         audio_driver_devices_list = (struct string_list*)
-            current_audio->device_list_new(audio_driver_context_audio_data);
-         if (!audio_driver_devices_list)
-            return false;
-         break;
-      case RARCH_AUDIO_CTL_DEVICES_LIST_GET:
-         {
-            struct string_list**ptr = (struct string_list**)data;
-            if (!ptr)
-               return false;
-            *ptr = audio_driver_devices_list;
-         }
-         break;
-      case RARCH_AUDIO_CTL_RESAMPLER_INIT:
-         return rarch_resampler_realloc(
-               &audio_driver_resampler_data,
-               &audio_driver_resampler,
-               settings->audio.resampler,
-               audio_driver_data.audio_rate.source_ratio.original);
-      case RARCH_AUDIO_CTL_RESAMPLER_PROCESS:
-         rarch_perf_init(&resampler_proc, "resampler_proc");
-         retro_perf_start(&resampler_proc);
-         rarch_resampler_process(audio_driver_resampler, 
-               audio_driver_resampler_data,
-               (struct resampler_data*)data);
-         retro_perf_stop(&resampler_proc);
-         break;
-      case RARCH_AUDIO_CTL_INIT:
-         return init_audio(audio_callback.callback != NULL);
-      case RARCH_AUDIO_CTL_DESTROY:
-         audio_driver_active   = false;
-         audio_driver_data_own = false;
-         current_audio         = NULL;
-         break;
-      case RARCH_AUDIO_CTL_DESTROY_DATA:
-         audio_driver_context_audio_data = NULL;
-         break;
-      case RARCH_AUDIO_CTL_DEINIT:
-         audio_driver_ctl(RARCH_AUDIO_CTL_DEVICES_LIST_FREE, NULL);
-         if (!uninit_audio())
-            return false;
-         break;
-      case RARCH_AUDIO_CTL_SETUP_REWIND:
-         audio_driver_setup_rewind();
-         break;
-      case RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE:
-         if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
-            return false; 
-         if (audio_callback.set_state)
-            audio_callback.set_state(true);
-         break;
-      case RARCH_AUDIO_CTL_SET_CALLBACK_DISABLE:
-         if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
-            return false;
+bool audio_driver_free_devices_list(void)
+{
+   if (!current_audio || !current_audio->device_list_free
+         || !audio_driver_context_audio_data)
+      return false;
+   current_audio->device_list_free(audio_driver_context_audio_data, 
+         audio_driver_devices_list);
+   audio_driver_devices_list = NULL;
+   return true;
+}
 
-         if (audio_callback.set_state)
-            audio_callback.set_state(false);
-         break;
-      case RARCH_AUDIO_CTL_HAS_CALLBACK:
-         return audio_callback.callback;
-      case RARCH_AUDIO_CTL_CALLBACK:
-         if (!audio_driver_ctl(RARCH_AUDIO_CTL_HAS_CALLBACK, NULL))
-            return false;
+bool audio_driver_new_devices_list(void)
+{
+   if (!current_audio || !current_audio->device_list_new
+         || !audio_driver_context_audio_data)
+      return false;
+   audio_driver_devices_list = (struct string_list*)
+      current_audio->device_list_new(audio_driver_context_audio_data);
+   if (!audio_driver_devices_list)
+      return false;
+   return true;
+}
 
-         if (audio_callback.callback)
-            audio_callback.callback();
-         break;
-      case RARCH_AUDIO_CTL_UNSET_CALLBACK:
-         audio_callback.callback  = NULL;
-         audio_callback.set_state = NULL;
-         break;
-      case RARCH_AUDIO_CTL_SET_CALLBACK:
-         {
-            const struct retro_audio_callback *cb = 
-               (const struct retro_audio_callback*)data;
+bool audio_driver_init(void)
+{
+   return audio_driver_init_internal(audio_callback.callback != NULL);
+}
+
+bool audio_driver_get_devices_list(void **data)
+{
+   struct string_list**ptr = (struct string_list**)data;
+   if (!ptr)
+      return false;
+   *ptr = audio_driver_devices_list;
+   return true;
+}
+
+bool audio_driver_init_resampler(void)
+{
+   settings_t *settings = config_get_ptr();
+   return rarch_resampler_realloc(
+         &audio_driver_resampler_data,
+         &audio_driver_resampler,
+         settings->audio.resampler,
+         audio_driver_data.audio_rate.source_ratio.original);
+}
+
+void audio_driver_process_resampler(struct resampler_data *data)
+{
+   rarch_perf_init(&resampler_proc, "resampler_proc");
+   retro_perf_start(&resampler_proc);
+   rarch_resampler_process(audio_driver_resampler, 
+         audio_driver_resampler_data, data);
+   retro_perf_stop(&resampler_proc);
+}
+
+bool audio_driver_deinit(void)
+{
+   audio_driver_free_devices_list();
+   if (!uninit_audio())
+      return false;
+   return true;
+}
+
+bool audio_driver_set_callback(const void *data)
+{
+   const struct retro_audio_callback *cb = (const struct retro_audio_callback*)data;
 #ifdef HAVE_NETPLAY
-            global_t *global = global_get_ptr();
+   global_t *global = global_get_ptr();
 #endif
 
-            if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
-               return false;
+   if (recording_driver_get_data_ptr()) /* A/V sync is a must. */
+      return false;
 
 #ifdef HAVE_NETPLAY
-            if (global->netplay.enable)
-               return false;
+   if (global->netplay.enable)
+      return false;
 #endif
-            if (cb)
-               audio_callback = *cb;
-         }
-         break;
-      case RARCH_AUDIO_CTL_MONITOR_ADJUST_SYSTEM_RATES:
-         audio_monitor_adjust_system_rates();
-         break;
-      case RARCH_AUDIO_CTL_MONITOR_SET_REFRESH_RATE:
-         {
-            double new_src_ratio = (double)settings->audio.out_rate / 
-               audio_driver_data.audio_rate.input;
-
-            audio_driver_data.audio_rate.source_ratio.original = new_src_ratio;
-            audio_driver_data.audio_rate.source_ratio.current  = new_src_ratio;
-         }
-         break;
-      case RARCH_AUDIO_CTL_MUTE_TOGGLE:
-         if (!audio_driver_context_audio_data)
-            return false;
-         if (!audio_driver_ctl(RARCH_AUDIO_CTL_IS_ACTIVE, NULL))
-            return false;
-
-         settings->audio.mute_enable = !settings->audio.mute_enable;
-
-         if (settings->audio.mute_enable)
-            event_cmd_ctl(EVENT_CMD_AUDIO_STOP, NULL);
-         else if (!event_cmd_ctl(EVENT_CMD_AUDIO_START, NULL))
-         {
-            audio_driver_ctl(RARCH_AUDIO_CTL_UNSET_ACTIVE, NULL);
-            return false;
-         }
-         break;
-      case RARCH_AUDIO_CTL_ALIVE:
-         if (!current_audio || !current_audio->alive 
-               || !audio_driver_context_audio_data)
-            return false;
-         return current_audio->alive(audio_driver_context_audio_data);
-      case RARCH_AUDIO_CTL_START:
-         if (!current_audio || !current_audio->start 
-               || !audio_driver_context_audio_data)
-            return false;
-         return current_audio->start(audio_driver_context_audio_data);
-      case RARCH_AUDIO_CTL_STOP:
-         if (!current_audio || !current_audio->stop 
-               || !audio_driver_context_audio_data)
-            return false;
-         return current_audio->stop(audio_driver_context_audio_data);
-      case RARCH_AUDIO_CTL_FIND_DRIVER:
-         return find_audio_driver();
-      case RARCH_AUDIO_CTL_SET_OWN_DRIVER:
-         audio_driver_data_own = true;
-         break;
-      case RARCH_AUDIO_CTL_UNSET_OWN_DRIVER:
-         audio_driver_data_own = false;
-         break;
-      case RARCH_AUDIO_CTL_OWNS_DRIVER:
-         return audio_driver_data_own;
-      case RARCH_AUDIO_CTL_SET_ACTIVE:
-         audio_driver_active = true;
-         break;
-      case RARCH_AUDIO_CTL_UNSET_ACTIVE:
-         audio_driver_active = false;
-         break;
-      case RARCH_AUDIO_CTL_IS_ACTIVE:
-         return audio_driver_active;
-      case RARCH_AUDIO_CTL_FRAME_IS_REVERSE:
-         /* We just rewound. Flush rewind audio buffer. */
-         audio_driver_flush(
-               audio_driver_data.rewind.buf + audio_driver_data.rewind.ptr,
-               audio_driver_data.rewind.size - audio_driver_data.rewind.ptr);
-         break;
-      case RARCH_AUDIO_CTL_NONE:
-      default:
-         break;
-   }
+   if (cb)
+      audio_callback = *cb;
 
    return true;
+}
+
+bool audio_driver_enable_callback(void)
+{
+   if (!audio_driver_has_callback())
+      return false; 
+   if (audio_callback.set_state)
+      audio_callback.set_state(true);
+   return true;
+}
+
+bool audio_driver_disable_callback(void)
+{
+   if (!audio_driver_has_callback())
+      return false;
+
+   if (audio_callback.set_state)
+      audio_callback.set_state(false);
+   return true;
+}
+
+/* Sets audio monitor rate to new value. */
+void audio_driver_monitor_set_rate(void)
+{
+   settings_t *settings = config_get_ptr();
+   double new_src_ratio = (double)settings->audio.out_rate / 
+      audio_driver_data.audio_rate.input;
+
+   audio_driver_data.audio_rate.source_ratio.original = new_src_ratio;
+   audio_driver_data.audio_rate.source_ratio.current  = new_src_ratio;
+}
+
+bool audio_driver_callback(void)
+{
+   if (!audio_driver_has_callback())
+      return false;
+
+   if (audio_callback.callback)
+      audio_callback.callback();
+
+   return true;
+}
+
+bool audio_driver_has_callback(void)
+{
+   return audio_callback.callback;
+}
+
+bool audio_driver_toggle_mute(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (!audio_driver_context_audio_data)
+      return false;
+   if (!audio_driver_is_active())
+      return false;
+
+   settings->audio.mute_enable = !settings->audio.mute_enable;
+
+   if (settings->audio.mute_enable)
+      command_event(CMD_EVENT_AUDIO_STOP, NULL);
+   else if (!command_event(CMD_EVENT_AUDIO_START, NULL))
+   {
+      audio_driver_unset_active();
+      return false;
+   }
+   return true;
+}
+
+bool audio_driver_start(void)
+{
+   if (!current_audio || !current_audio->start 
+         || !audio_driver_context_audio_data)
+      return false;
+   return current_audio->start(audio_driver_context_audio_data);
+}
+
+bool audio_driver_stop(void)
+{
+   if (!current_audio || !current_audio->stop 
+         || !audio_driver_context_audio_data)
+      return false;
+   return current_audio->stop(audio_driver_context_audio_data);
+}
+
+void audio_driver_unset_callback(void)
+{
+   audio_callback.callback  = NULL;
+   audio_callback.set_state = NULL;
+}
+
+bool audio_driver_alive(void)
+{
+   if (!current_audio || !current_audio->alive 
+         || !audio_driver_context_audio_data)
+      return false;
+   return current_audio->alive(audio_driver_context_audio_data);
+}
+
+void audio_driver_frame_is_reverse(void)
+{
+   /* We just rewound. Flush rewind audio buffer. */
+   audio_driver_flush(
+         audio_driver_data.rewind.buf + audio_driver_data.rewind.ptr,
+         audio_driver_data.rewind.size - audio_driver_data.rewind.ptr);
+}
+
+void audio_driver_destroy_data(void)
+{
+   audio_driver_context_audio_data = NULL;
+}
+
+void audio_driver_set_own_driver(void)
+{
+   audio_driver_data_own = true;
+}
+
+void audio_driver_unset_own_driver(void)
+{
+   audio_driver_data_own = false;
+}
+
+bool audio_driver_owns_driver(void)
+{
+   return audio_driver_data_own;
+}
+
+void audio_driver_set_active(void)
+{
+   audio_driver_active = true;
+}
+
+void audio_driver_unset_active(void)
+{
+   audio_driver_active = false;
+}
+
+bool audio_driver_is_active(void)
+{
+   return audio_driver_active;
+}
+
+void audio_driver_destroy(void)
+{
+   audio_driver_active   = false;
+   audio_driver_data_own = false;
+   current_audio         = NULL;
 }

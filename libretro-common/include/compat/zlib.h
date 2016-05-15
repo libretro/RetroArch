@@ -3,6 +3,10 @@
 
 #ifdef WANT_ZLIB
 
+#ifdef RARCH_INTERNAL
+#include "../../../deps/zlib/zconf.h.in"
+#endif
+
 /* zlib.h -- interface of the 'zlib' general purpose compression library
   version 1.2.8, April 28th, 2013
 

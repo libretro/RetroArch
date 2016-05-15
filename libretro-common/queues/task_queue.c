@@ -39,10 +39,12 @@ typedef struct
 struct retro_task_impl
 {
    void (*push_running)(retro_task_t *);
+   void (*cancel)(void *);
    void (*reset)(void);
    void (*wait)(void);
    void (*gather)(void);
    bool (*find)(retro_task_finder_t, void*);
+   void (*retrieve)(task_retriever_data_t *data);
    void (*init)(void);
    void (*deinit)(void);
 };
@@ -113,6 +115,7 @@ static retro_task_t *task_queue_get(task_queue_t *queue)
    return task;
 }
 
+
 static void retro_task_internal_gather(void)
 {
    retro_task_t *task = NULL;
@@ -138,6 +141,12 @@ static void retro_task_regular_push_running(retro_task_t *task)
    task_queue_put(&tasks_running, task);
 }
 
+static void retro_task_regular_cancel(void *task)
+{
+   retro_task_t *t = (retro_task_t*)task;
+   t->cancelled    = true;
+}
+ 
 static void retro_task_regular_gather(void)
 {
    retro_task_t *task  = NULL;
@@ -201,12 +210,51 @@ static bool retro_task_regular_find(retro_task_finder_t func, void *user_data)
    return false;
 }
 
+static void retro_task_regular_retrieve(task_retriever_data_t *data)
+{
+   retro_task_t *task;
+   task_retriever_info_t *info;
+   task_retriever_info_t *tail = NULL;
+
+   /* Parse all running tasks and handle matching handlers */
+   for (task = tasks_running.front; task != NULL; task = task->next)
+      if (task->handler == data->handler)
+      {
+         /* Create new link */
+         info       = (task_retriever_info_t*)malloc(sizeof(task_retriever_info_t));
+         info->data = malloc(data->element_size);
+         info->next = NULL;
+
+         /* Call retriever function and fill info-specific data */
+         if (!data->func(task, info->data))
+         {
+            free(info->data);
+            free(info);
+            continue;
+         }
+
+         /* Add link to list */
+         if (data->list == NULL)
+         {
+            data->list = info;
+            tail = data->list;
+         }
+         else
+         {
+            tail->next = info;
+            tail = tail->next;
+         }
+      }
+}
+
 static struct retro_task_impl impl_regular = {
    retro_task_regular_push_running,
+   retro_task_regular_cancel,
    retro_task_regular_reset,
    retro_task_regular_wait,
    retro_task_regular_gather,
    retro_task_regular_find,
+   retro_task_regular_retrieve,
    retro_task_regular_init,
    retro_task_regular_deinit
 };
@@ -218,11 +266,58 @@ static scond_t *worker_cond     = NULL;
 static sthread_t *worker_thread = NULL;
 static bool worker_continue     = true; /* use running_lock when touching it */
 
+static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
+{
+   retro_task_t *t = NULL;
+
+   /* Remove first element if needed */
+   if (task == queue->front)
+   {
+      queue->front = task->next;
+      task->next   = NULL;
+      return;
+   }
+
+   /* Parse queue */
+   t = queue->front;
+   while (t && t->next)
+   {
+      /* Remove task and update queue */
+      if (t->next == task)
+      {
+         t->next    = task->next;
+         task->next = NULL;
+         break;
+      }
+
+      /* Update iterator */
+      t = t->next;
+   }
+}
+
 static void retro_task_threaded_push_running(retro_task_t *task)
 {
    slock_lock(running_lock);
    task_queue_put(&tasks_running, task);
    scond_signal(worker_cond);
+   slock_unlock(running_lock);
+}
+
+static void retro_task_threaded_cancel(void *task)
+{
+   retro_task_t *t;
+
+   slock_lock(running_lock);
+   
+   for (t = tasks_running.front; t; t = t->next)
+   {
+      if (t == task)
+      {
+        t->cancelled = true;
+        break;
+      }
+   }
+
    slock_unlock(running_lock);
 }
 
@@ -270,16 +365,32 @@ static bool retro_task_threaded_find(
       retro_task_finder_t func, void *user_data)
 {
    retro_task_t *task = NULL;
+   bool result = false;
 
    slock_lock(running_lock);
    for (task = tasks_running.front; task; task = task->next)
    {
       if (func(task, user_data))
-         return true;
+      {
+         result = true;
+         break;
+      }
    }
    slock_unlock(running_lock);
 
-   return false;
+   return result;
+}
+
+static void retro_task_threaded_retrieve(task_retriever_data_t *data)
+{
+   /* Protect access to running tasks */
+   slock_lock(running_lock);
+
+   /* Call regular retrieve function */
+   retro_task_regular_retrieve(data);
+
+   /* Release access to running tasks */
+   slock_unlock(running_lock);
 }
 
 static void threaded_worker(void *userdata)
@@ -288,24 +399,16 @@ static void threaded_worker(void *userdata)
 
    for (;;)
    {
-      retro_task_t *queue = NULL;
       retro_task_t *task  = NULL;
-      retro_task_t *next  = NULL;
-
-      /* pop all into a local queue,
-       * tasks are in the reverse order here. */
-      slock_lock(running_lock);
 
       if (!worker_continue)
          break; /* should we keep running until all tasks finished? */
 
-      while ((task = task_queue_get(&tasks_running)) != NULL)
-      {
-         task->next = queue;
-         queue = task;
-      }
+      slock_lock(running_lock);
 
-      if (queue == NULL) /* no tasks running, lets wait a bit */
+      /* Get first task to run */
+      task = tasks_running.front;
+      if (task == NULL)
       {
          scond_wait(worker_cond, running_lock);
          slock_unlock(running_lock);
@@ -314,20 +417,29 @@ static void threaded_worker(void *userdata)
 
       slock_unlock(running_lock);
 
-      for (task = queue; task; task = next)
-      {
-         next = task->next;
-         task->handler(task);
+      task->handler(task);
 
-         if (task->finished)
-         {
-            slock_lock(finished_lock);
-            task_queue_put(&tasks_finished, task);
-            slock_unlock(finished_lock);
-         }
-         else
-            retro_task_threaded_push_running(task);
+      slock_lock(running_lock);
+      task_queue_remove(&tasks_running, task);
+      slock_unlock(running_lock);
+
+      /* Update queue */
+      if (!task->finished)
+      {
+         /* Re-add task to running queue */
+         retro_task_threaded_push_running(task);
       }
+      else
+      {
+         /* Add task to finished queue */
+         slock_lock(finished_lock);
+         task_queue_put(&tasks_finished, task);
+         slock_unlock(finished_lock);
+      }
+
+#if 0
+      retro_sleep(10);
+#endif
    }
 
    slock_unlock(running_lock);
@@ -367,10 +479,12 @@ static void retro_task_threaded_deinit(void)
 
 static struct retro_task_impl impl_threaded = {
    retro_task_threaded_push_running,
+   retro_task_threaded_cancel,
    retro_task_threaded_reset,
    retro_task_threaded_wait,
    retro_task_threaded_gather,
    retro_task_threaded_find,
+   retro_task_threaded_retrieve,
    retro_task_threaded_init,
    retro_task_threaded_deinit
 };
@@ -421,6 +535,9 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
                return false;
          }
          break;
+      case TASK_QUEUE_CTL_RETRIEVE:
+         impl_current->retrieve((task_retriever_data_t*)data);
+         break;
       case TASK_QUEUE_CTL_CHECK:
          {
 #ifdef HAVE_THREADS
@@ -452,6 +569,9 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
       case TASK_QUEUE_CTL_WAIT:
          impl_current->wait();
          break;
+      case TASK_QUEUE_CTL_CANCEL:
+         impl_current->cancel(data);
+         break;
       case TASK_QUEUE_CTL_NONE:
       default:
          break;
@@ -459,3 +579,37 @@ bool task_queue_ctl(enum task_queue_ctl_state state, void *data)
 
    return true;
 }
+
+void task_queue_cancel_task(void *task)
+{
+   task_queue_ctl(TASK_QUEUE_CTL_CANCEL, task);
+}
+
+void *task_queue_retriever_info_next(task_retriever_info_t **link)
+{
+   void *data = NULL;
+
+   /* Grab data and move to next link */
+   if (*link)
+   {
+      data = (*link)->data;
+      *link = (*link)->next;
+   }
+
+   return data;
+}
+
+void task_queue_retriever_info_free(task_retriever_info_t *list)
+{
+   task_retriever_info_t *info;
+
+   /* Free links including retriever-specific data */
+   while (list)
+   {
+      info = list->next;
+      free(list->data);
+      free(list);
+      list = info;
+   }
+}
+

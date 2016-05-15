@@ -20,7 +20,7 @@
 #include "../../general.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../command_event.h"
+#include "../../command.h"
 #include "string.h"
 #include "3ds.h"
 
@@ -170,7 +170,7 @@ static void ctr_joypad_poll(void)
       (state_tmp & KEY_SELECT) &&
       (state_tmp & KEY_L) &&
       (state_tmp & KEY_R))
-      event_cmd_ctl(EVENT_CMD_QUIT, NULL);
+      command_event(CMD_EVENT_QUIT, NULL);
 
 }
 

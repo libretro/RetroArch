@@ -44,6 +44,7 @@ typedef struct gfx_ctx_x_data
    bool g_debug;
    bool g_should_reset_mode;
    bool g_is_double;
+   bool core_hw_context_enable;
 
 #ifdef HAVE_OPENGL
    GLXWindow g_glx_win;
@@ -90,7 +91,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
                glFinish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
-               if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL))
+               if (!video_driver_is_video_cache_context())
                {
                   if (x->g_hw_ctx)
                      glXDestroyContext(g_x11_dpy, x->g_hw_ctx);
@@ -138,7 +139,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
       x->g_should_reset_mode = false;
    }
 
-   if (!video_driver_ctl(RARCH_DISPLAY_CTL_IS_VIDEO_CACHE_CONTEXT, NULL) 
+   if (!video_driver_is_video_cache_context()
          && g_x11_dpy)
    {
       XCloseDisplay(g_x11_dpy);
@@ -166,7 +167,7 @@ static void gfx_ctx_x_destroy(void *data)
    switch (x_api)
    {
       case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
+#if defined(HAVE_VULKAN) && defined(HAVE_THREADS)
          if (x->vk.context.queue_lock)
             slock_free(x->vk.context.queue_lock);
 #endif
@@ -332,8 +333,8 @@ static void *gfx_ctx_x_init(void *data)
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)
       calloc(1, sizeof(gfx_ctx_x_data_t));
 #ifndef GL_DEBUG
-   struct retro_hw_render_callback *hwr = NULL;
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
+   struct retro_hw_render_callback *hwr =
+      video_driver_get_hw_context();
 #endif
 
    if (!x)
@@ -532,6 +533,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    }
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);
+   x11_update_window_title(NULL);
 
    if (fullscreen)
       x11_show_mouse(g_x11_dpy, g_x11_win, false);
@@ -644,7 +646,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          }
          else
          {
-            video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+            video_driver_set_video_cache_context_ack();
             RARCH_LOG("[GLX]: Using cached GL context.\n");
          }
 
@@ -763,10 +765,12 @@ static void gfx_ctx_x_input_driver(void *data,
 
 static bool gfx_ctx_x_suppress_screensaver(void *data, bool enable)
 {
+   (void)data;
+
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
 
-   x11_suspend_screensaver(video_driver_window_get());
+   x11_suspend_screensaver(video_driver_window_get(), enable);
 
    return true;
 }
@@ -886,6 +890,28 @@ static void *gfx_ctx_x_get_context_data(void *data)
 }
 #endif
 
+static uint32_t gfx_ctx_x_get_flags(void *data)
+{
+   uint32_t flags = 0;
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+   if (x->core_hw_context_enable)
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   }
+   else
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   }
+   return flags;
+}
+
+static void gfx_ctx_x_set_flags(void *data, uint32_t flags)
+{
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+   if (BIT32_GET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT))
+      x->core_hw_context_enable = true;
+}
+
 const gfx_ctx_driver_t gfx_ctx_x = {
    gfx_ctx_x_init,
    gfx_ctx_x_destroy,
@@ -911,10 +937,12 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    NULL,
    gfx_ctx_x_show_mouse,
    "x",
+   gfx_ctx_x_get_flags,
+   gfx_ctx_x_set_flags,
 
    gfx_ctx_x_bind_hw_render,
 #ifdef HAVE_VULKAN
-   gfx_ctx_x_get_context_data,
+   gfx_ctx_x_get_context_data
 #else
    NULL
 #endif

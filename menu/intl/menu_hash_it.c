@@ -352,7 +352,9 @@ const char *menu_hash_to_str_it(uint32_t hash)
       case MENU_LABEL_VALUE_PAUSE_NONACTIVE:
          return "Non caricare in background";
       case MENU_LABEL_VALUE_UI_COMPANION_START_ON_BOOT:
-         return "Avvia UI Companion all'avvio";
+         return "Abilita UI Companion all'avvio";
+      case MENU_LABEL_VALUE_UI_COMPANION_ENABLE:
+         return "Abilita UI Companion";
       case MENU_LABEL_VALUE_UI_MENUBAR_ENABLE:
          return "Barra dei menù";
       case MENU_LABEL_VALUE_ARCHIVE_MODE:
@@ -587,8 +589,10 @@ const char *menu_hash_to_str_it(uint32_t hash)
          return "Settaggi";
       case MENU_LABEL_VALUE_QUIT_RETROARCH:
          return "Esci da RetroArch";
-		 case MENU_LABEL_VALUE_SHUTDOWN:
+	  case MENU_LABEL_VALUE_SHUTDOWN:
          return "Spegni";
+      case MENU_LABEL_VALUE_REBOOT:
+         return "Riavvia";
       case MENU_LABEL_VALUE_HELP:
          return "Aiuto";
       case MENU_LABEL_VALUE_SAVE_NEW_CONFIG:
@@ -924,7 +928,7 @@ const char *menu_hash_to_str_it(uint32_t hash)
       case MENU_LABEL_VALUE_DIRECTORY_SETTINGS:
          return "Directory";
       case MENU_LABEL_VALUE_RECORDING_SETTINGS:
-         return "Registrando";
+         return "Registrazione";
       case MENU_LABEL_VALUE_NO_INFORMATION_AVAILABLE:
          return "Nessuna informazione disponibile.";
       case MENU_LABEL_VALUE_INPUT_USER_BINDS:
@@ -967,6 +971,12 @@ const char *menu_hash_to_str_it(uint32_t hash)
          return "Cerca:";
       case MENU_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER:
          return "Usa visualizzatore di immagini interno";
+      case MENU_LABEL_VALUE_ENABLE:
+         return "Attivare";
+      case MENU_LABEL_VALUE_START_CORE:
+         return "Avvia Core";
+      case MENU_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
+         return "Tipo di ritardo";
       default:
          break;
    }

@@ -24,6 +24,7 @@
 #include <retro_assert.h>
 #include <string/stdstring.h>
 
+#include "file_path_special.h"
 #include "audio/audio_driver.h"
 #include "configuration.h"
 #include "config.def.h"
@@ -32,7 +33,7 @@
 #include "input/input_remapping.h"
 #include "defaults.h"
 #include "general.h"
-#include "libretro_version_1.h"
+#include "core.h"
 #include "retroarch.h"
 #include "system.h"
 #include "verbosity.h"
@@ -485,9 +486,9 @@ static void config_set_defaults(void)
    settings->menu.xmb_scale_factor   = xmb_scale_factor;
    settings->menu.xmb_alpha_factor   = xmb_alpha_factor;
    settings->menu.xmb_theme          = xmb_theme;
-   settings->menu.xmb_gradient       = xmb_gradient;
+   settings->menu.background_gradient= menu_background_gradient;
    settings->menu.xmb_shadows_enable = xmb_shadows_enable;
-   settings->menu.xmb_ribbon_enable  = xmb_ribbon_enable;
+   settings->menu.shader_pipeline    = menu_shader_pipeline;
    settings->menu.xmb_font[0]        = '\0';
    settings->menu.throttle_framerate = true;
    settings->menu.linear_filter      = true;
@@ -621,7 +622,7 @@ static void config_set_defaults(void)
    settings->menu.timedate_enable              = true;
    settings->menu.core_enable                  = true;
    settings->menu.dynamic_wallpaper_enable     = false;
-   settings->menu.thumbnails                   = 0;
+   settings->menu.thumbnails                   = menu_thumbnails_default;
    settings->menu.show_advanced_settings       = show_advanced_settings;
    settings->menu.entry_normal_color           = menu_entry_normal_color;
    settings->menu.entry_hover_color            = menu_entry_hover_color;
@@ -719,7 +720,7 @@ static void config_set_defaults(void)
 
    settings->set_supports_no_game_enable        = true;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_RESET_CUSTOM_VIEWPORT, NULL);
+   video_driver_reset_custom_viewport();
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
@@ -802,7 +803,7 @@ static void config_set_defaults(void)
 
    global->console.sound.system_bgm_enable = false;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_DEFAULT_SETTINGS, NULL);
+   video_driver_default_settings();
 
    if (*g_defaults.dir.wallpapers)
       strlcpy(settings->directory.dynamic_wallpapers,
@@ -950,19 +951,10 @@ static void config_set_defaults(void)
  **/
 static config_file_t *open_default_config_file(void)
 {
+   char application_data[PATH_MAX_LENGTH];
    char conf_path[PATH_MAX_LENGTH] = {0};
    char app_path[PATH_MAX_LENGTH]  = {0};
-   const char *xdg                 = NULL;
-   const char *home                = NULL;
    config_file_t *conf             = NULL;
-   bool saved                      = false;
-   global_t *global                = global_get_ptr();
-
-   (void)conf_path;
-   (void)app_path;
-   (void)saved;
-   (void)xdg;
-   (void)home;
 
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
@@ -973,11 +965,10 @@ static config_file_t *open_default_config_file(void)
 
    if (!conf)
    {
-      const char *appdata = getenv("APPDATA");
-
-      if (appdata)
+      if (fill_pathname_application_data(application_data,
+            sizeof(application_data)))
       {
-         fill_pathname_join(conf_path, appdata,
+         fill_pathname_join(conf_path, application_data,
                "retroarch.cfg", sizeof(conf_path));
          conf = config_file_new(conf_path);
       }
@@ -985,8 +976,11 @@ static config_file_t *open_default_config_file(void)
 
    if (!conf)
    {
+      bool saved = false;
+
       /* Try to create a new config file. */
       conf = config_file_new(NULL);
+
 
       if (conf)
       {
@@ -1010,21 +1004,20 @@ static config_file_t *open_default_config_file(void)
       RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
 #elif defined(OSX)
-   home = getenv("HOME");
-
-   if (!home)
+   if (!fill_pathname_application_data(application_data,
+            sizeof(application_data)))
       return NULL;
 
-   fill_pathname_join(conf_path, home,
-         "Library/Application Support/RetroArch", sizeof(conf_path));
-   path_mkdir(conf_path);
+   path_mkdir(application_data);
 
-   fill_pathname_join(conf_path, conf_path,
+   fill_pathname_join(conf_path, application_data,
          "retroarch.cfg", sizeof(conf_path));
    conf = config_file_new(conf_path);
 
    if (!conf)
    {
+      bool saved = false;
+
       conf = config_file_new(NULL);
 
       if (conf)
@@ -1045,102 +1038,85 @@ static config_file_t *open_default_config_file(void)
 
       RARCH_WARN("Created new config file in: \"%s\".\n", conf_path);
    }
-#elif !defined(__CELLOS_LV2__) && !defined(_XBOX)
-   xdg  = getenv("XDG_CONFIG_HOME");
-   home = getenv("HOME");
+#elif !defined(RARCH_CONSOLE)
+   bool has_application_data = fill_pathname_application_data(application_data,
+            sizeof(application_data));
 
-   /* XDG_CONFIG_HOME falls back to $HOME/.config. */
-   if (xdg)
-      fill_pathname_join(conf_path, xdg,
-            "retroarch/retroarch.cfg", sizeof(conf_path));
-   else if (home)
-#ifdef __HAIKU__
-      fill_pathname_join(conf_path, home,
-            "config/settings/retroarch/retroarch.cfg", sizeof(conf_path));
-#else
-      fill_pathname_join(conf_path, home,
-            ".config/retroarch/retroarch.cfg", sizeof(conf_path));
-#endif
-
-   if (xdg || home)
+   if (has_application_data)
    {
+      fill_pathname_join(conf_path, application_data,
+            "retroarch.cfg", sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new(conf_path);
    }
 
    /* Fallback to $HOME/.retroarch.cfg. */
-   if (!conf && home)
+   if (!conf && getenv("HOME"))
    {
-      fill_pathname_join(conf_path, home,
+      fill_pathname_join(conf_path, getenv("HOME"),
             ".retroarch.cfg", sizeof(conf_path));
       RARCH_LOG("Looking for config in: \"%s\".\n", conf_path);
       conf = config_file_new(conf_path);
    }
 
-   if (!conf)
+   if (!conf && has_application_data)
    {
-      if (home || xdg)
+      char basedir[PATH_MAX_LENGTH] = {0};
+
+      /* Try to create a new config file. */
+
+      strlcpy(conf_path, application_data, sizeof(conf_path));
+
+      fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
+
+      fill_pathname_join(conf_path, conf_path, "retroarch.cfg", sizeof(conf_path));
+
+      if (path_mkdir(basedir))
       {
-         char basedir[PATH_MAX_LENGTH] = {0};
+         bool saved                          = false;
+         char skeleton_conf[PATH_MAX_LENGTH] = {0};
 
-         /* Try to create a new config file. */
+         fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
+               "retroarch.cfg", sizeof(skeleton_conf));
+         conf = config_file_new(skeleton_conf);
+         if (conf)
+            RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
+         else
+            conf = config_file_new(NULL);
 
-         /* XDG_CONFIG_HOME falls back to $HOME/.config. */
-         if (xdg)
-            fill_pathname_join(conf_path, xdg,
-                  "retroarch/retroarch.cfg", sizeof(conf_path));
-         else if (home)
-#ifdef __HAIKU__
-            fill_pathname_join(conf_path, home,
-                  "config/settings/retroarch/retroarch.cfg", sizeof(conf_path));
-#else
-         fill_pathname_join(conf_path, home,
-               ".config/retroarch/retroarch.cfg", sizeof(conf_path));
-#endif
-
-         fill_pathname_basedir(basedir, conf_path, sizeof(basedir));
-
-         if (path_mkdir(basedir))
+         if (conf)
          {
-            char skeleton_conf[PATH_MAX_LENGTH] = {0};
-
-            fill_pathname_join(skeleton_conf, GLOBAL_CONFIG_DIR,
-                  "retroarch.cfg", sizeof(skeleton_conf));
-            conf = config_file_new(skeleton_conf);
-            if (conf)
-               RARCH_WARN("Config: using skeleton config \"%s\" as base for a new config file.\n", skeleton_conf);
-            else
-               conf = config_file_new(NULL);
-
-            if (conf)
-            {
-               /* Since this is a clean config file, we can safely use config_save_on_exit. */
-               config_set_bool(conf, "config_save_on_exit", true);
-               saved = config_file_write(conf, conf_path);
-            }
-
-            if (!saved)
-            {
-               /* WARN here to make sure user has a good chance of seeing it. */
-               RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
-               config_file_free(conf);
-
-               return NULL;
-            }
-
-            RARCH_WARN("Config: Created new config file in: \"%s\".\n", conf_path);
+            /* Since this is a clean config file, we can safely use config_save_on_exit. */
+            config_set_bool(conf, "config_save_on_exit", true);
+            saved = config_file_write(conf, conf_path);
          }
+
+         if (!saved)
+         {
+            /* WARN here to make sure user has a good chance of seeing it. */
+            RARCH_ERR("Failed to create new config file in: \"%s\".\n", conf_path);
+            config_file_free(conf);
+
+            return NULL;
+         }
+
+         RARCH_WARN("Config: Created new config file in: \"%s\".\n", conf_path);
       }
    }
 #endif
 
-   if (!conf)
-      return NULL;
+   (void)application_data;
+   (void)conf_path;
+   (void)app_path;
 
-   strlcpy(global->path.config, conf_path,
-         sizeof(global->path.config));
+   if (conf)
+   {
+      global_t *global = global_get_ptr();
+      strlcpy(global->path.config, conf_path, sizeof(global->path.config));
+      return conf;
+   }
 
-   return conf;
+   return NULL;
 }
 
 static void read_keybinds_keyboard(config_file_t *conf, unsigned user,
@@ -1430,7 +1406,7 @@ static bool config_load_file(const char *path, bool set_defaults)
     * important that it works for consoles right now */
    config_get_bool(conf, "custom_bgm_enable",
          &global->console.sound.system_bgm_enable);
-   video_driver_ctl(RARCH_DISPLAY_CTL_LOAD_SETTINGS, conf);
+   video_driver_load_settings(conf);
 #endif
    CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
 
@@ -1549,9 +1525,9 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb_scale_factor, "xmb_scale_factor");
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb_alpha_factor, "xmb_alpha_factor");
    CONFIG_GET_INT_BASE(conf, settings, menu.xmb_theme, "xmb_theme");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb_gradient, "xmb_gradient");
+   CONFIG_GET_INT_BASE(conf, settings, menu.background_gradient, "menu_background_gradient");
    CONFIG_GET_BOOL_BASE(conf, settings, menu.xmb_shadows_enable, "xmb_shadows_enable");
-   CONFIG_GET_INT_BASE(conf, settings, menu.xmb_ribbon_enable, "xmb_ribbon_enable");
+   CONFIG_GET_INT_BASE(conf, settings, menu.shader_pipeline, "menu_shader_pipeline");
    config_get_path(conf, "xmb_font", settings->menu.xmb_font, sizeof(settings->menu.xmb_font));
 #endif
    config_get_array(conf, "video_context_driver", settings->video.context_driver, sizeof(settings->video.context_driver));
@@ -2444,7 +2420,7 @@ void config_load(void)
       config_save_file(global->path.core_specific_config);
 
    /* Flush out some states that could have been set by core environment variables */
-   core_ctl(CORE_CTL_UNSET_INPUT_DESCRIPTORS, NULL);
+   core_unset_input_descriptors();
 
    if (!rarch_ctl(RARCH_CTL_IS_BLOCK_CONFIG_READ, NULL))
    {
@@ -2817,9 +2793,9 @@ bool config_save_file(const char *path)
    config_set_int(conf, "xmb_scale_factor", settings->menu.xmb_scale_factor);
    config_set_int(conf, "xmb_alpha_factor", settings->menu.xmb_alpha_factor);
    config_set_int(conf, "xmb_theme", settings->menu.xmb_theme);
-   config_set_int(conf, "xmb_gradient", settings->menu.xmb_gradient);
+   config_set_int(conf, "menu_background_gradient", settings->menu.background_gradient);
    config_set_bool(conf, "xmb_shadows_enable", settings->menu.xmb_shadows_enable);
-   config_set_int(conf, "xmb_ribbon_enable", settings->menu.xmb_ribbon_enable);
+   config_set_int(conf, "menu_shader_pipeline", settings->menu.shader_pipeline);
    config_set_path(conf, "xmb_font",
          !string_is_empty(settings->menu.xmb_font) ? settings->menu.xmb_font : "");
    config_set_bool(conf, "rgui_show_start_screen",
@@ -2870,7 +2846,7 @@ bool config_save_file(const char *path)
    config_set_int(conf, "custom_viewport_y",
          settings->video_viewport_custom.y);
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_SAVE_SETTINGS, conf);
+   video_driver_save_settings(conf);
 
    config_set_float(conf, "video_font_size", settings->video.font_size);
 

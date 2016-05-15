@@ -32,7 +32,7 @@
 #include "../../core_info.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
-#include "../../cheats.h"
+#include "../../managers/cheat_manager.h"
 #include "../../general.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_remapping.h"
@@ -482,7 +482,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
 
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+   core_info_get_list(&list);
 
    def_info.data       = list;
    def_info.dir        = menu_path_new;
@@ -506,7 +506,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    switch (ret)
    {
       case -1:
-         event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
 
          rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL);
@@ -641,7 +641,7 @@ static int action_ok_playlist_entry(const char *path,
       core_info.inf  = NULL;
       core_info.path = new_core_path;
 
-      if (!core_info_ctl(CORE_INFO_CTL_FIND, &core_info))
+      if (!core_info_find(&core_info))
          found_associated_core = false;
 
       if (!found_associated_core)
@@ -695,7 +695,7 @@ static int action_ok_playlist_entry(const char *path,
 static int action_ok_cheat_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   event_cmd_ctl(EVENT_CMD_CHEATS_APPLY, NULL);
+   command_event(CMD_EVENT_CHEATS_APPLY, NULL);
 
    return 0;
 }
@@ -758,7 +758,7 @@ static int generic_action_ok(const char *path,
          flush_char = NULL;
          flush_type = MENU_SETTINGS;
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, action_path);
-         if (event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL))
+         if (command_event(CMD_EVENT_LOAD_CORE, NULL))
          {
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_set_fork(FRONTEND_FORK_CORE))
@@ -768,12 +768,11 @@ static int generic_action_ok(const char *path,
          break;
       case ACTION_OK_LOAD_CONFIG_FILE:
          {
-            bool msg_force  = true;
             flush_char      = NULL;
             flush_type      = MENU_SETTINGS;
-            menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
+            menu_display_set_msg_force(true);
 
-            if (rarch_ctl(RARCH_CTL_REPLACE_CONFIG, action_path))
+            if (retroarch_replace_config(action_path))
             {
                bool pending_push = false;
                menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
@@ -819,8 +818,8 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_APPEND_DISK_IMAGE:
          flush_char = NULL;
          flush_type = 49;
-         event_cmd_ctl(EVENT_CMD_DISK_APPEND_IMAGE, action_path);
-         event_cmd_ctl(EVENT_CMD_RESUME, NULL);
+         command_event(CMD_EVENT_DISK_APPEND_IMAGE, action_path);
+         command_event(CMD_EVENT_RESUME, NULL);
          break;
       case ACTION_OK_SET_PATH:
          flush_char = NULL;
@@ -1237,7 +1236,7 @@ static int action_ok_file_load(const char *path,
 
 static int generic_action_ok_command(enum event_command cmd)
 {
-   if (!event_cmd_ctl(cmd, NULL))
+   if (!command_event(cmd, NULL))
       return menu_cbs_exit();
    return 0;
 }
@@ -1245,21 +1244,22 @@ static int generic_action_ok_command(enum event_command cmd)
 static int action_ok_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   if (generic_action_ok_command(EVENT_CMD_LOAD_STATE) == -1)
+   if (generic_action_ok_command(CMD_EVENT_LOAD_STATE) == -1)
       return menu_cbs_exit();
-   return generic_action_ok_command(EVENT_CMD_RESUME);
+   return generic_action_ok_command(CMD_EVENT_RESUME);
  }
 
 
 static int action_ok_save_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   if (generic_action_ok_command(EVENT_CMD_SAVE_STATE) == -1)
+   if (generic_action_ok_command(CMD_EVENT_SAVE_STATE) == -1)
       return menu_cbs_exit();
-   return generic_action_ok_command(EVENT_CMD_RESUME);
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 #ifdef HAVE_NETWORKING
+#ifdef HAVE_ZLIB
 static void cb_decompressed(void *task_data, void *user_data, const char *err)
 {
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
@@ -1270,10 +1270,10 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
       switch (type_hash)
       {
          case CB_CORE_UPDATER_DOWNLOAD:
-            event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
+            command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
             break;
          case CB_UPDATE_ASSETS:
-            event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+            command_event(CMD_EVENT_REINIT, NULL);
             break;
       }
    }
@@ -1290,6 +1290,7 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
       free(dec);
    }
 }
+#endif
 
 /* expects http_transfer_t*, menu_file_transfer_t* */
 static void cb_generic_download(void *task_data,
@@ -1379,6 +1380,19 @@ static void cb_generic_download(void *task_data,
    fill_pathname_join(output_path, dir_path,
          transf->path, sizeof(output_path));
 
+#ifdef HAVE_ZLIB
+   file_ext = path_get_extension(output_path);
+
+   if (string_is_equal_noncase(file_ext, "zip"))
+   {
+      if (rarch_task_check_decompress(output_path))
+      {
+        err = "Decompression already in progress.";
+        goto finish;
+      }
+   }
+#endif
+
    if (!filestream_write_file(output_path, data->data, data->len))
    {
       err = "Write failed.";
@@ -1386,21 +1400,23 @@ static void cb_generic_download(void *task_data,
    }
 
 #ifdef HAVE_ZLIB
-   file_ext = path_get_extension(output_path);
-
    if (!settings->network.buildbot_auto_extract_archive)
       goto finish;
 
    if (string_is_equal_noncase(file_ext, "zip"))
    {
-      rarch_task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
-            cb_decompressed, (void*)(uintptr_t)transf->type_hash);
+      if (!rarch_task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
+            cb_decompressed, (void*)(uintptr_t)transf->type_hash))
+      {
+        err = "Decompression failed.";
+        goto finish;
+      }
    }
 #else
    switch (transf->type_hash)
    {
       case CB_CORE_UPDATER_DOWNLOAD:
-         event_cmd_ctl(EVENT_CMD_CORE_INFO_INIT, NULL);
+         command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
          break;
    }
 #endif
@@ -1437,27 +1453,18 @@ static int action_ok_download_generic(const char *path,
    fill_pathname_join(s, settings->network.buildbot_assets_url,
          "frontend", sizeof(s));
    if (string_is_equal(type_msg, "cb_core_content_download"))
-   {
       fill_pathname_join(s, settings->network.buildbot_assets_url,
             "cores/gw", sizeof(s));
-   }
 #ifdef HAVE_LAKKA
+   /* TODO unhardcode this path*/
    else if (string_is_equal(type_msg, "cb_lakka_download"))
-   {
-      /* TODO unhardcode this path*/
-      fill_pathname_join(s, "http://sources.lakka.tv/nightly",
+      fill_pathname_join(s, "http://mirror.lakka.tv/nightly",
             LAKKA_PROJECT, sizeof(s));
-   }
 #endif
    else if (string_is_equal(type_msg, "cb_update_assets"))
       path = "assets.zip";
    else if (string_is_equal(type_msg, "cb_update_autoconfig_profiles"))
-      path = "autoconf.zip";
-
-#ifdef HAVE_HID
-   else if (string_is_equal(type_msg, "cb_update_autoconfig_profiles_hid"))
-      path = "autoconf_hid.zip";
-#endif
+      path = "autoconfig.zip";
    else if (string_is_equal(type_msg, "cb_update_core_info_files"))
       path = "info.zip";
    else if (string_is_equal(type_msg, "cb_update_cheats"))
@@ -1471,9 +1478,7 @@ static int action_ok_download_generic(const char *path,
    else if (string_is_equal(type_msg, "cb_update_shaders_cg"))
       path = "shaders_cg.zip";
    else if (string_is_equal(type_msg, "cb_core_thumbnails_download"))
-   {
       strlcpy(s, "http://thumbnailpacks.libretro.com", sizeof(s));
-   }
    else
       strlcpy(s, settings->network.buildbot_url, sizeof(s));
 
@@ -1589,7 +1594,7 @@ static int action_ok_update_autoconfig_profiles_hid(const char *path,
 static int action_ok_disk_cycle_tray_status(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_DISK_EJECT_TOGGLE);
+   return generic_action_ok_command(CMD_EVENT_DISK_EJECT_TOGGLE);
 }
 
 /* creates folder and core options stub file for subsequent runs */
@@ -1599,7 +1604,7 @@ static int action_ok_option_create(const char *path,
    char game_path[PATH_MAX_LENGTH];
    config_file_t *conf                    = NULL;
 
-   if (!rarch_game_options_validate(game_path, sizeof(game_path), true))
+   if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
    {
       runloop_msg_queue_push("Error saving core options file",
             1, 100, true);
@@ -1634,43 +1639,43 @@ static int action_ok_option_create(const char *path,
 static int action_ok_close_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_UNLOAD_CORE);
+   return generic_action_ok_command(CMD_EVENT_UNLOAD_CORE);
 }
 
 static int action_ok_quit(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_QUIT);
+   return generic_action_ok_command(CMD_EVENT_QUIT);
 }
 
 static int action_ok_save_new_config(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_MENU_SAVE_CONFIG);
+   return generic_action_ok_command(CMD_EVENT_MENU_SAVE_CONFIG);
 }
 
 static int action_ok_resume_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_RESUME);
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 static int action_ok_restart_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_RESET);
+   return generic_action_ok_command(CMD_EVENT_RESET);
 }
 
 static int action_ok_screenshot(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_TAKE_SCREENSHOT);
+   return generic_action_ok_command(CMD_EVENT_TAKE_SCREENSHOT);
 }
 
 static int action_ok_shader_apply_changes(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok_command(EVENT_CMD_SHADERS_APPLY_CHANGES);
+   return generic_action_ok_command(CMD_EVENT_SHADERS_APPLY_CHANGES);
 }
 
 static int action_ok_lookup_setting(const char *path,
@@ -1705,7 +1710,7 @@ static int generic_action_ok_network(const char *path,
    if (string_is_empty(settings->network.buildbot_url))
       return menu_cbs_exit();
 
-   event_cmd_ctl(EVENT_CMD_NETWORK_INIT, NULL);
+   command_event(CMD_EVENT_NETWORK_INIT, NULL);
 
    switch (type_id)
    {
@@ -1734,7 +1739,7 @@ static int generic_action_ok_network(const char *path,
 #ifdef HAVE_LAKKA
       case ACTION_OK_NETWORK_LAKKA_LIST:
          /* TODO unhardcode this path */
-         fill_pathname_join(url_path, "http://sources.lakka.tv/nightly",
+         fill_pathname_join(url_path, "http://mirror.lakka.tv/nightly",
                LAKKA_PROJECT, sizeof(url_path));
          fill_pathname_join(url_path, url_path,
                ".index", sizeof(url_path));
@@ -2106,7 +2111,7 @@ static int action_ok_load_archive(const char *path,
    fill_pathname_join(detect_content_path, menu_path, content_path,
          sizeof(detect_content_path));
 
-   event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
    rarch_task_push_content_load_default(
             NULL, detect_content_path, false, CORE_TYPE_PLAIN, NULL, NULL);
 
@@ -2132,7 +2137,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    menu_path    = menu->scratch2_buf;
    content_path = menu->scratch_buf;
 
-   core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+   core_info_get_list(&list);
 
    def_info.data       = list;
    def_info.dir        = menu_path;
@@ -2150,7 +2155,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    switch (ret)
    {
       case -1:
-         event_cmd_ctl(EVENT_CMD_LOAD_CORE, NULL);
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
          rarch_task_push_content_load_default(NULL, NULL,
                   false, CORE_TYPE_PLAIN, NULL, NULL);
          return 0;
@@ -2225,7 +2230,7 @@ static int action_ok_video_resolution(const char *path,
    {
       char msg[PATH_MAX_LENGTH] = {0};
 #ifdef __CELLOS_LV2__
-      event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+      command_event(CMD_EVENT_REINIT, NULL);
 #endif
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO

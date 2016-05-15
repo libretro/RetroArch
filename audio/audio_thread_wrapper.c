@@ -21,7 +21,7 @@
 #include <rthreads/rthreads.h>
 
 #include "audio_thread_wrapper.h"
-#include "../performance.h"
+#include "../performance_counters.h"
 #include "../verbosity.h"
 
 typedef struct audio_thread
@@ -102,7 +102,7 @@ static void audio_thread_loop(void *data)
       }
 
       slock_unlock(thr->lock);
-      audio_driver_ctl(RARCH_AUDIO_CTL_CALLBACK, NULL);
+      audio_driver_callback();
    }
 
    RARCH_LOG("[Audio Thread]: Tearing down driver.\n");
@@ -190,7 +190,7 @@ static bool audio_thread_stop(void *data)
    audio_thread_block(thr);
    thr->is_paused = true;
 
-   audio_driver_ctl(RARCH_AUDIO_CTL_SET_CALLBACK_DISABLE, NULL);
+   audio_driver_disable_callback();
 
    return true;
 }
@@ -202,7 +202,7 @@ static bool audio_thread_start(void *data)
    if (!thr)
       return false;
 
-   audio_driver_ctl(RARCH_AUDIO_CTL_SET_CALLBACK_ENABLE, NULL);
+   audio_driver_enable_callback();
 
    thr->is_paused = false;
    audio_thread_unblock(thr);
@@ -260,7 +260,7 @@ static const audio_driver_t audio_thread = {
 };
 
 /**
- * rarch_threaded_audio_init:
+ * audio_init_thread:
  * @out_driver                : output driver
  * @out_data                  : output audio data
  * @device                    : audio device (optional)
@@ -275,7 +275,7 @@ static const audio_driver_t audio_thread = {
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool rarch_threaded_audio_init(const audio_driver_t **out_driver,
+bool audio_init_thread(const audio_driver_t **out_driver,
       void **out_data, const char *device, unsigned audio_out_rate,
       unsigned latency, const audio_driver_t *drv)
 {

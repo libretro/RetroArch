@@ -17,6 +17,7 @@
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <features/features_cpu.h>
 
 #include "menu_generic.h"
 
@@ -28,7 +29,7 @@
 #include "../menu_entries.h"
 
 #include "../../configuration.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 #include "../../input/input_autodetect.h"
 #include "../../input/input_config.h"
 #include "../../cheevos.h"
@@ -52,11 +53,11 @@ static int action_iterate_help(menu_handle_t *menu,
             int64_t timeout;
             static bool timer_begin = false;
             static bool timer_end   = false;
-            int64_t current         = retro_get_time_usec();
+            int64_t current         = cpu_features_get_time_usec();
 
             if (!timer_begin)
             {
-               timeout_end = retro_get_time_usec() +
+               timeout_end = cpu_features_get_time_usec() +
                   3 /* seconds */ * 1000000;
                timer_begin = true;
                timer_end   = false;
@@ -178,7 +179,7 @@ static int action_iterate_help(menu_handle_t *menu,
          desc_info.idx = menu->help_screen_id;
          desc_info.s   = s;
          desc_info.len = len;
-         cheevos_ctl(CHEEVOS_CTL_GET_DESCRIPTION, &desc_info);
+         cheevos_get_description(&desc_info);
          break;
 #endif
 
@@ -289,7 +290,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
    if (     action != MENU_ACTION_NOOP
          || menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL) 
-         || menu_display_ctl(MENU_DISPLAY_CTL_UPDATE_PENDING, NULL))
+         || menu_display_get_update_pending())
    {
       BIT64_SET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER);
    }

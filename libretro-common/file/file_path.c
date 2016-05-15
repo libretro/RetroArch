@@ -243,7 +243,7 @@ void fill_pathname_noext(char *out_path, const char *in_path,
    retro_assert(strlcat(out_path, replace, size) < size);
 }
 
-static char *find_last_slash(const char *str)
+char *find_last_slash(const char *str)
 {
    const char *slash = strrchr(str, '/');
 #ifdef _WIN32

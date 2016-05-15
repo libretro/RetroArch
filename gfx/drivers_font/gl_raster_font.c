@@ -44,7 +44,7 @@ typedef struct
    const font_renderer_driver_t *font_driver;
    void *font_data;
 
-   gfx_font_raster_block_t *block;
+   video_font_raster_block_t *block;
 } gl_raster_t;
 
 static void gl_raster_font_free_font(void *data);
@@ -58,25 +58,22 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
    GLenum gl_format                     = GL_LUMINANCE_ALPHA;
    size_t ncomponents                   = 2;
    uint8_t       *tmp                   = NULL;
-   struct retro_hw_render_callback *hwr = NULL;
    bool ancient                         = false; /* add a check here if needed */
-   bool modern                          = font->gl->core_context;
-   
-   video_driver_ctl(RARCH_DISPLAY_CTL_HW_CONTEXT_GET, &hwr);
-
-   modern = modern ||
-         (hwr->context_type == RETRO_HW_CONTEXT_OPENGL &&
-          hwr->version_major >= 3);
+#if defined(GL_VERSION_3_0)
+   struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+#endif
 
    if (ancient)
    {
-      gl_internal = gl_format = GL_RGBA;
+      gl_internal = GL_RGBA;
+      gl_format   = GL_RGBA;
       ncomponents = 4;
    }
-#ifdef HAVE_OPENGLES
-   (void)modern;
-#elif defined(GL_VERSION_3_0)
-   else if (modern)
+    
+#if defined(GL_VERSION_3_0)
+    if (font->gl->core_context ||
+        (hwr->context_type == RETRO_HW_CONTEXT_OPENGL &&
+         hwr->version_major >= 3))
    {
       GLint swizzle[] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
       glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
@@ -101,7 +98,6 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
       {
          case 1:
             memcpy(dst, src, atlas->width);
-            src += atlas->width;
             break;
          case 2:
             for (j = 0; j < atlas->width; ++j)
@@ -233,7 +229,7 @@ static int gl_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
-static void gl_raster_font_draw_vertices(gl_t *gl, const gfx_coords_t *coords)
+static void gl_raster_font_draw_vertices(gl_t *gl, const video_coords_t *coords)
 {
    video_shader_ctx_mvp_t mvp;
    video_shader_ctx_coords_t coords_data;
@@ -241,12 +237,12 @@ static void gl_raster_font_draw_vertices(gl_t *gl, const gfx_coords_t *coords)
    coords_data.handle_data = NULL;
    coords_data.data        = coords;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_COORDS, &coords_data);
+   video_shader_driver_set_coords(&coords_data);
 
    mvp.data = gl;
    mvp.matrix = &gl->mvp_no_rot;
 
-   video_shader_driver_ctl(SHADER_CTL_SET_MVP, &mvp);
+   video_shader_driver_set_mvp(&mvp);
 
    glDrawArrays(GL_TRIANGLES, 0, coords->vertices);
 }
@@ -259,7 +255,7 @@ static void gl_raster_font_render_line(
    int x, y, delta_x, delta_y;
    float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
    unsigned i, msg_len;
-   struct gfx_coords coords;
+   struct video_coords coords;
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK]; 
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
@@ -330,7 +326,7 @@ static void gl_raster_font_render_line(
       coords.lut_tex_coord = font_lut_tex_coord;
 
       if (font->block)
-         gfx_coord_array_append(&font->block->carr, &coords, coords.vertices);
+         video_coord_array_append(&font->block->carr, &coords, coords.vertices);
       else
          gl_raster_font_draw_vertices(gl, &coords);
 
@@ -410,7 +406,7 @@ static void gl_raster_font_setup_viewport(gl_raster_t *font, bool full_screen)
    shader_info.idx        = VIDEO_SHADER_STOCK_BLEND;
    shader_info.set_active = true;
 
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 }
 
 static void gl_raster_font_restore_viewport(gl_t *gl)
@@ -524,20 +520,20 @@ static const struct font_glyph *gl_raster_font_get_glyph(
 static void gl_raster_font_flush_block(void *data)
 {
    gl_raster_t       *font       = (gl_raster_t*)data;
-   gfx_font_raster_block_t *block = font ? font->block : NULL;
+   video_font_raster_block_t *block = font ? font->block : NULL;
 
    if (!font || !block || !block->carr.coords.vertices)
       return;
 
    gl_raster_font_setup_viewport(font, block->fullscreen);
-   gl_raster_font_draw_vertices(font->gl, (gfx_coords_t*)&block->carr.coords);
+   gl_raster_font_draw_vertices(font->gl, (video_coords_t*)&block->carr.coords);
    gl_raster_font_restore_viewport(font->gl);
 }
 
 static void gl_raster_font_bind_block(void *data, void *userdata)
 {
    gl_raster_t              *font = (gl_raster_t*)data;
-   gfx_font_raster_block_t *block = (gfx_font_raster_block_t*)userdata;
+   video_font_raster_block_t *block = (video_font_raster_block_t*)userdata;
 
    if (font)
       font->block = block;

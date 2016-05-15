@@ -59,7 +59,7 @@ void main_exit(void *args)
 {
    settings_t *settings                  = config_get_ptr();
 
-   event_cmd_ctl(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
+   command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
 #ifdef HAVE_MENU
    /* Do not want menu context to live any more. */
@@ -67,7 +67,7 @@ void main_exit(void *args)
 #endif
    rarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
-   event_cmd_ctl(EVENT_CMD_PERFCNT_REPORT_FRONTEND_LOG, NULL);
+   command_event(CMD_EVENT_PERFCNT_REPORT_FRONTEND_LOG, NULL);
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
    logger_shutdown();
@@ -126,14 +126,14 @@ int rarch_main(int argc, char *argv[], void *data)
       info.args            = args;
       info.environ_get     = frontend_driver_environment_get_ptr();
 
-      if (!content_ctl(CONTENT_CTL_LOAD, &info))
+      if (!content_load(&info))
          return 0;
    }
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET,  &system);
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
-   if (content_ctl(CONTENT_CTL_IS_INITED, NULL) || content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL))
+   if (content_is_inited() || content_does_not_need_content())
    {
       char tmp[PATH_MAX_LENGTH];
       struct retro_system_info *info = system ? &system->info : NULL;
@@ -149,7 +149,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
       if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) || !info)
          content_push_to_history_playlist(
-               content_ctl(CONTENT_CTL_DOES_NOT_NEED_CONTENT, NULL) || *tmp,
+               content_does_not_need_content() || *tmp,
                *tmp ? tmp : NULL,
                info);
    }
@@ -164,7 +164,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
-      runloop_ctl(RUNLOOP_CTL_DATA_ITERATE, NULL);
+      runloop_iterate_data();
    }while(ret != -1);
 
    main_exit(args);

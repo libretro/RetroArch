@@ -1069,9 +1069,9 @@ const char *menu_hash_to_str_us(uint32_t hash)
       case MENU_LABEL_VALUE_XMB_THEME:
          return "XMB Theme";
       case MENU_LABEL_VALUE_XMB_GRADIENT:
-         return "XMB Gradient";
+         return "Background Gradient";
       case MENU_LABEL_VALUE_XMB_SHADOWS_ENABLE:
-         return "XMB Shadows Enable";
+         return "Icon Shadows Enable";
       case MENU_LABEL_VALUE_XMB_RIBBON_ENABLE:
          return "Menu Shader Pipeline";
       case MENU_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE:
@@ -1811,15 +1811,11 @@ int menu_hash_get_help_us(uint32_t hash, char *s, size_t len)
                "\n"
                "Extracting assets, please wait.\n"
                "This might take a while...\n"
-               "\n"
-               "For further information, go to Help.\n"
                );
          break;
       case MENU_LABEL_WELCOME_TO_RETROARCH:
          snprintf(s, len,
                "Welcome to RetroArch\n"
-               "\n"
-               "For further information, go to Help.\n"
                );
          break;
       case MENU_LABEL_INPUT_DRIVER:

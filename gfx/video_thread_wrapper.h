@@ -74,7 +74,7 @@ typedef struct thread_packet thread_packet_t;
 typedef struct thread_video thread_video_t;
 
 /**
- * rarch_threaded_video_init:
+ * video_init_thread:
  * @out_driver                : Output video driver
  * @out_data                  : Output video data
  * @input                     : Input input driver
@@ -87,13 +87,13 @@ typedef struct thread_video thread_video_t;
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool rarch_threaded_video_init(
+bool video_init_thread(
       const video_driver_t **out_driver, void **out_data,
       const input_driver_t **input, void **input_data,
       const video_driver_t *driver, const video_info_t *info);
 
 /**
- * rarch_threaded_video_get_ptr:
+ * video_thread_get_ptr:
  * @drv                       : Found driver.
  *
  * Gets the underlying video driver associated with the 
@@ -104,16 +104,20 @@ bool rarch_threaded_video_init(
  * with the threaded wrapper (if successful). If not successful,
  * NULL.
  **/
-void *rarch_threaded_video_get_ptr(const video_driver_t **drv);
+void *video_thread_get_ptr(const video_driver_t **drv);
 
-const char *rarch_threaded_video_get_ident(void);
+const char *video_thread_get_ident(void);
 
-bool rarch_threaded_video_font_init(const void **font_driver,
+bool video_thread_font_init(
+      const void **font_driver,
       void **font_handle,
-      void *data, const char *font_path, float font_size,
-      enum font_driver_render_api api, custom_font_command_method_t func);
+      void *data,
+      const char *font_path,
+      float font_size,
+      enum font_driver_render_api api,
+      custom_font_command_method_t func);
 
-unsigned rarch_threaded_video_texture_load(void *data,
+unsigned video_thread_texture_load(void *data,
       custom_command_method_t func);
 
 #ifdef __cplusplus

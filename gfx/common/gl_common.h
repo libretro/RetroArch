@@ -181,8 +181,8 @@ typedef struct gl
    GLuint texture[GFX_MAX_TEXTURES];
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
-   struct gfx_tex_info tex_info;
-   struct gfx_tex_info prev_info[GFX_MAX_TEXTURES];
+   struct video_tex_info tex_info;
+   struct video_tex_info prev_info[GFX_MAX_TEXTURES];
    GLuint tex_mag_filter;
    GLuint tex_min_filter;
    bool tex_mipmap;
@@ -196,7 +196,7 @@ typedef struct gl
    /* Render-to-texture, multipass shaders. */
    GLuint fbo[GFX_MAX_SHADERS];
    GLuint fbo_texture[GFX_MAX_SHADERS];
-   struct gfx_fbo_rect fbo_rect[GFX_MAX_SHADERS];
+   struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
    struct gfx_fbo_scale fbo_scale[GFX_MAX_SHADERS];
    int fbo_pass;
    bool fbo_inited;
@@ -231,7 +231,7 @@ typedef struct gl
    unsigned tex_w, tex_h;
    math_matrix_4x4 mvp, mvp_no_rot;
 
-   struct gfx_coords coords;
+   struct video_coords coords;
    const float *vertex_ptr;
    const float *white_color_ptr;
 
@@ -339,7 +339,7 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
-void gl_ff_vertex(const struct gfx_coords *coords);
+void gl_ff_vertex(const struct video_coords *coords);
 void gl_ff_matrix(const math_matrix_4x4 *mat);
 
 #endif

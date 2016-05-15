@@ -17,9 +17,9 @@
 #define __RARCH_SYSTEM_H
 
 #include <retro_miscellaneous.h>
+#include <libretro.h>
 
 #include "driver.h"
-#include "libretro.h"
 
 #ifndef MAX_USERS
 #define MAX_USERS 16
@@ -54,6 +54,8 @@ typedef struct rarch_system_info
       struct retro_controller_info *data;
       unsigned size;
    } ports;
+   
+   struct retro_memory_map mmaps;
 } rarch_system_info_t;
 
 #ifdef __cplusplus

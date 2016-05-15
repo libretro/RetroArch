@@ -14,8 +14,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <libretro.h>
+
 #include "input_x11_common.h"
-#include "../../libretro.h"
 
 static bool x11_mouse_wu;
 static bool x11_mouse_wd;

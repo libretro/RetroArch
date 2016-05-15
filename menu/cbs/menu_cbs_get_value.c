@@ -27,10 +27,10 @@
 #include "../../input/input_config.h"
 
 #include "../../core_info.h"
-#include "../../core_options.h"
-#include "../../cheats.h"
+#include "../../managers/core_option_manager.h"
+#include "../../managers/cheat_manager.h"
 #include "../../general.h"
-#include "../../performance.h"
+#include "../../performance_counters.h"
 #include "../../system.h"
 #include "../../intl/intl.h"
 
@@ -180,7 +180,7 @@ static void menu_action_setting_disp_set_label_pipeline(
    *s = '\0';
    *w = 19;
 
-   switch (settings->menu.xmb_ribbon_enable)
+   switch (settings->menu.shader_pipeline)
    {
       case 0:
          snprintf(s, len, "%s", "OFF");
@@ -296,7 +296,7 @@ static void menu_action_setting_disp_set_label_shader_parameter(
    strlcpy(s2, path, len2);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL)
-   video_shader_driver_ctl(SHADER_CTL_GET_CURRENT_SHADER, &shader_info);
+   video_shader_driver_get_current_shader(&shader_info);
 
    if (!shader_info.data)
       return;
@@ -645,6 +645,9 @@ static void menu_action_setting_disp_set_label_xmb_theme(
          snprintf(s, len, "%s", "RetroActive");
          break;
       case 3:
+         snprintf(s, len, "%s", "Pixel");
+         break;
+      case 4:
          snprintf(s, len, "%s", "Custom");
          break;
    }
@@ -666,7 +669,7 @@ static void menu_action_setting_disp_set_label_xmb_gradient(
 
    strlcpy(s2, path, len2);
    *w = 19;
-   switch (settings->menu.xmb_gradient)
+   switch (settings->menu.background_gradient)
    {
       case 0:
          snprintf(s, len, "%s", "Legacy Red");
@@ -1242,7 +1245,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
          char buf[PATH_MAX_LENGTH];
          core_info_list_t *list = NULL;
 
-         core_info_ctl(CORE_INFO_CTL_LIST_GET, &list);
+         core_info_get_list(&list);
 
          if (core_info_list_get_display_name(list, s, buf, sizeof(buf)))
             strlcpy(s, buf, len);
@@ -1255,7 +1258,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 
       if (runloop_ctl(RUNLOOP_CTL_COREOPTS_GET, &coreopts))
       {
-         core_opt = core_option_get_val(coreopts,
+         core_opt = core_option_manager_get_val(coreopts,
                type - MENU_SETTINGS_CORE_OPTION_START);
 
          strlcpy(s, "", len);

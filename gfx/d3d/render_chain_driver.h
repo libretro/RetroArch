@@ -17,10 +17,11 @@
 #ifndef __D3D_RENDER_CHAIN_H
 #define __D3D_RENDER_CHAIN_H
 
+#include <libretro.h>
+
 #include "../video_driver.h"
 #include "../video_shader_parse.h"
 #include "../video_state_tracker.h"
-#include "../../libretro.h"
 #include "../../defines/d3d_defines.h"
 
 #ifdef __cplusplus

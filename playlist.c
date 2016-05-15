@@ -51,7 +51,7 @@ struct content_playlist
 
 /**
  * content_playlist_get_index:
- * @playlist        	   : Playlist handle.
+ * @playlist            : Playlist handle.
  * @idx                 : Index of playlist entry.
  * @path                : Path of playlist entry.
  * @core_path           : Core path of playlist entry.
@@ -113,7 +113,6 @@ void content_playlist_get_index_by_path(content_playlist_t *playlist,
          *crc32     = playlist->entries[i].crc32;
       break;
    }
-
 }
 
 bool content_playlist_entry_exists(content_playlist_t *playlist,
@@ -133,7 +132,7 @@ bool content_playlist_entry_exists(content_playlist_t *playlist,
 
 /**
  * content_playlist_free_entry:
- * @entry           	   : Playlist entry handle.
+ * @entry               : Playlist entry handle.
  *
  * Frees playlist entry.
  **/
@@ -246,7 +245,7 @@ void content_playlist_push(content_playlist_t *playlist,
       /* Seen it before, bump to top. */
       tmp = playlist->entries[i];
       memmove(playlist->entries + 1, playlist->entries,
-		      i * sizeof(content_playlist_entry_t));
+            i * sizeof(content_playlist_entry_t));
       playlist->entries[0] = tmp;
 
       return;
@@ -298,7 +297,7 @@ void content_playlist_write_file(content_playlist_t *playlist)
 
 /**
  * content_playlist_free:
- * @playlist        	   : Playlist handle.
+ * @playlist            : Playlist handle.
  *
  * Frees playlist handle.
  */

@@ -417,7 +417,7 @@ static void xui_frame(void *data)
    if (!d3dr)
       return;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_VIEWPORT, NULL);
+   menu_display_set_viewport();
 
    app.RunFrame();
    XuiTimersRun();
@@ -445,7 +445,7 @@ static void xui_frame(void *data)
 
    XuiRenderEnd( app.GetDC() );
 
-   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_VIEWPORT, NULL);
+   menu_display_unset_viewport();
 }
 
 static void blit_line(int x, int y, const char *message, bool green)
@@ -454,7 +454,7 @@ static void blit_line(int x, int y, const char *message, bool green)
 
 static void xui_render_background(void)
 {
-   if (menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO_RUNNING, NULL))
+   if (menu_display_libretro_running())
 		XuiElementSetShow(m_background, FALSE);
 	else
 		XuiElementSetShow(m_background, TRUE);
@@ -534,10 +534,10 @@ static void xui_render(void *data)
    const char *label           = NULL;
 	unsigned menu_type          = 0;
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_GET_FRAME_COUNT, &frame_count);
+   frame_count = video_driver_get_frame_count_ptr();
 
-   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,     &fb_width);
-   menu_display_ctl(MENU_DISPLAY_CTL_MSG_FORCE, &msg_force);
+   fb_width = menu_display_get_width();
+   msg_force = menu_display_get_msg_force();
 
    if (
          menu_entries_ctl(MENU_ENTRIES_CTL_NEEDS_REFRESH, NULL) 
@@ -546,7 +546,7 @@ static void xui_render(void *data)
       )
 		return;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG, NULL);
+   menu_display_unset_framebuffer_dirty_flag();
    menu_animation_ctl(MENU_ANIMATION_CTL_CLEAR_ACTIVE, NULL);
 
 	xui_render_background();

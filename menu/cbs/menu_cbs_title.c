@@ -341,6 +341,13 @@ static int action_get_online_updater_list(const char *path, const char *label,
    return 0;
 }
 
+static int action_get_online_thumbnails_updater_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_THUMBNAILS_UPDATER_LIST), len);
+   return 0;
+}
+
 static int action_get_core_updater_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
@@ -652,6 +659,13 @@ static int action_get_title_input_settings(const char *path, const char *label,
    return 0;
 }
 
+static int action_get_title_input_binds_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   snprintf(s, len, "Input User %c Binds", path[0]);
+   return 0;
+}
+
 static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       const char *label, uint32_t label_hash, const char *elem1)
 {
@@ -825,6 +839,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_ONLINE_UPDATER:
          BIND_ACTION_GET_TITLE(cbs, action_get_online_updater_list);
          break;
+      case MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST:
+         BIND_ACTION_GET_TITLE(cbs, action_get_online_thumbnails_updater_list);
+         break;
       case MENU_LABEL_DEFERRED_CORE_UPDATER_LIST:
          BIND_ACTION_GET_TITLE(cbs, action_get_core_updater_list);
          break;
@@ -858,6 +875,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_CORE_COUNTERS:
          BIND_ACTION_GET_TITLE(cbs, action_get_core_counters_list);
          break;
+      case MENU_LABEL_DEFERRED_USER_BINDS_LIST:
+         BIND_ACTION_GET_TITLE(cbs, action_get_title_input_binds_list);
+         break;
       case MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
          BIND_ACTION_GET_TITLE(cbs, action_get_input_hotkey_binds_settings_list);
          break;
@@ -890,7 +910,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       case MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST:
          BIND_ACTION_GET_TITLE(cbs, action_get_user_accounts_cheevos_list);
          break;
-      case MENU_LABEL_DOWNLOAD_CORE_CONTENT:
+      case MENU_LABEL_DEFERRED_CORE_CONTENT_LIST:
          BIND_ACTION_GET_TITLE(cbs, action_get_download_core_content_list);
          break;
       case MENU_LABEL_DEFERRED_ACCOUNTS_LIST:

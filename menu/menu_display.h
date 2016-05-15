@@ -29,61 +29,6 @@
 extern "C" {
 #endif
 
-enum menu_display_ctl_state
-{
-   MENU_DISPLAY_CTL_NONE = 0,
-   MENU_DISPLAY_CTL_SET_VIEWPORT,
-   MENU_DISPLAY_CTL_UNSET_VIEWPORT,
-   MENU_DISPLAY_CTL_GET_FRAMEBUFFER_DIRTY_FLAG,
-   MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG,
-   MENU_DISPLAY_CTL_UNSET_FRAMEBUFFER_DIRTY_FLAG,
-   MENU_DISPLAY_CTL_GET_DPI,
-   MENU_DISPLAY_CTL_UPDATE_PENDING,
-   MENU_DISPLAY_CTL_WIDTH,
-   MENU_DISPLAY_CTL_HEIGHT,
-   MENU_DISPLAY_CTL_HEADER_HEIGHT,
-   MENU_DISPLAY_CTL_SET_HEADER_HEIGHT,
-   MENU_DISPLAY_CTL_SET_WIDTH,
-   MENU_DISPLAY_CTL_SET_HEIGHT,
-   MENU_DISPLAY_CTL_FB_PITCH,
-   MENU_DISPLAY_CTL_SET_FB_PITCH,
-   MENU_DISPLAY_CTL_LIBRETRO,
-   MENU_DISPLAY_CTL_LIBRETRO_RUNNING,
-   MENU_DISPLAY_CTL_SET_STUB_DRAW_FRAME,
-   MENU_DISPLAY_CTL_UNSET_STUB_DRAW_FRAME,
-   MENU_DISPLAY_CTL_FRAMEBUF_DEINIT,
-   MENU_DISPLAY_CTL_DEINIT,
-   MENU_DISPLAY_CTL_INIT,
-   MENU_DISPLAY_CTL_INIT_FIRST_DRIVER,
-   MENU_DISPLAY_CTL_FONT_DATA_INIT,
-   MENU_DISPLAY_CTL_SET_FONT_DATA_INIT,
-   MENU_DISPLAY_CTL_FONT_SIZE,
-   MENU_DISPLAY_CTL_SET_FONT_SIZE,
-   MENU_DISPLAY_CTL_MSG_FORCE,
-   MENU_DISPLAY_CTL_SET_MSG_FORCE,
-   MENU_DISPLAY_CTL_FONT_BUF,
-   MENU_DISPLAY_CTL_FONT_FLUSH_BLOCK,
-   MENU_DISPLAY_CTL_SET_FONT_BUF,
-   MENU_DISPLAY_CTL_FONT_FB,
-   MENU_DISPLAY_CTL_SET_FONT_FB,
-   MENU_DISPLAY_CTL_FONT_MAIN_DEINIT,
-   MENU_DISPLAY_CTL_FONT_MAIN_INIT,
-   MENU_DISPLAY_CTL_FONT_BIND_BLOCK,
-   MENU_DISPLAY_CTL_BLEND_BEGIN,
-   MENU_DISPLAY_CTL_BLEND_END,
-   MENU_DISPLAY_CTL_RESTORE_CLEAR_COLOR,
-   MENU_DISPLAY_CTL_CLEAR_COLOR,
-   MENU_DISPLAY_CTL_DRAW,
-   MENU_DISPLAY_CTL_DRAW_BG,
-   MENU_DISPLAY_CTL_DRAW_GRADIENT,
-   MENU_DISPLAY_CTL_DRAW_PIPELINE,
-   MENU_DISPLAY_CTL_ROTATE_Z,
-   MENU_DISPLAY_CTL_TEX_COORDS_GET,
-   MENU_DISPLAY_CTL_TIMEDATE,
-   MENU_DISPLAY_CTL_COORDS_ARRAY_RESET,
-   MENU_DISPLAY_CTL_COORDS_ARRAY_GET
-};
-
 enum menu_display_prim_type
 {
    MENU_DISPLAY_PRIM_NONE = 0,
@@ -113,7 +58,7 @@ typedef struct menu_display_ctx_draw
    float y;
    unsigned width;
    unsigned height;
-   struct gfx_coords *coords;
+   struct video_coords *coords;
    void *matrix_data;
    uintptr_t texture;
    enum menu_display_prim_type prim_type;
@@ -124,6 +69,7 @@ typedef struct menu_display_ctx_draw
    struct
    {
       unsigned id;
+      const void *backend_data;
    } pipeline;
 } menu_display_ctx_draw_t;
 
@@ -176,7 +122,62 @@ typedef struct menu_display_ctx_font
 
 typedef uintptr_t menu_texture_item;
 
-bool menu_display_ctl(enum menu_display_ctl_state state, void *data);
+void menu_display_blend_begin(void);
+void menu_display_blend_end(void);
+
+void menu_display_font_main_deinit(void);
+bool menu_display_font_main_init(menu_display_ctx_font_t *font);
+void menu_display_font_bind_block(void *block);
+bool menu_display_font_flush_block(void);
+
+void menu_display_framebuffer_deinit(void);
+
+void menu_display_deinit(void);
+bool menu_display_init(void);
+
+void menu_display_coords_array_reset(void);
+video_coord_array_t *menu_display_get_coords_array(void);
+void *menu_display_get_font_buffer(void);
+void menu_display_set_font_buffer(void *buffer);
+const uint8_t *menu_display_get_font_framebuffer(void);
+void menu_display_set_font_framebuffer(const uint8_t *buffer);
+bool menu_display_libretro_running(void);
+bool menu_display_libretro(void);
+
+void menu_display_set_width(unsigned width);
+unsigned menu_display_get_width(void);
+void menu_display_set_height(unsigned height);
+unsigned menu_display_get_height(void);
+void menu_display_set_header_height(unsigned height);
+unsigned menu_display_get_header_height(void);
+unsigned menu_display_get_font_size(void);
+void menu_display_set_font_size(unsigned size);
+size_t menu_display_get_framebuffer_pitch(void);
+void menu_display_set_framebuffer_pitch(size_t pitch);
+
+bool menu_display_get_msg_force(void);
+void menu_display_set_msg_force(bool state);
+bool menu_display_get_font_data_init(void);
+void menu_display_set_font_data_init(bool state);
+bool menu_display_get_update_pending(void);
+void menu_display_set_viewport(void);
+void menu_display_unset_viewport(void);
+bool menu_display_get_framebuffer_dirty_flag(void);
+void menu_display_set_framebuffer_dirty_flag(void);
+void menu_display_unset_framebuffer_dirty_flag(void);
+float menu_display_get_dpi(void);
+bool menu_display_init_first_driver(void);
+bool menu_display_restore_clear_color(void);
+void menu_display_clear_color(menu_display_ctx_clearcolor_t *color);
+void menu_display_draw(menu_display_ctx_draw_t *draw);
+
+void menu_display_draw_pipeline(menu_display_ctx_draw_t *draw);
+void menu_display_draw_bg(menu_display_ctx_draw_t *draw);
+void menu_display_draw_gradient(menu_display_ctx_draw_t *draw);
+void menu_display_rotate_z(menu_display_ctx_rotate_draw_t *draw);
+bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw);
+
+void menu_display_timedate(menu_display_ctx_datetime_t *datetime);
 
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err);

@@ -55,31 +55,6 @@
 extern "C" {
 #endif
 
-enum video_shader_driver_ctl_state
-{
-   SHADER_CTL_NONE = 0,
-   SHADER_CTL_DEINIT,
-   SHADER_CTL_INIT,
-   /* Finds first suitable shader context driver. */
-   SHADER_CTL_INIT_FIRST,
-   SHADER_CTL_SET_PARAMETER,
-   SHADER_CTL_SET_PARAMS,
-   SHADER_CTL_GET_FEEDBACK_PASS,
-   SHADER_CTL_MIPMAP_INPUT,
-   SHADER_CTL_SET_COORDS,
-   SHADER_CTL_COMPILE_PROGRAM,
-   SHADER_CTL_SCALE,
-   SHADER_CTL_INFO,
-   SHADER_CTL_SET_MVP,
-   SHADER_CTL_FILTER_TYPE,
-   SHADER_CTL_USE,
-   SHADER_CTL_WRAP_TYPE,
-   SHADER_CTL_GET_CURRENT_SHADER,
-   SHADER_CTL_DIRECT_GET_CURRENT_SHADER,
-   SHADER_CTL_GET_IDENT,
-   SHADER_CTL_GET_PREV_TEXTURES
-};
-
 enum shader_uniform_type
 {
    UNIFORM_1F = 0,
@@ -186,7 +161,7 @@ typedef struct shader_backend
    void (*shader_scale)(void *data,
          unsigned index, struct gfx_fbo_scale *scale);
    bool (*set_coords)(void *handle_data,
-         void *shader_data, const struct gfx_coords *coords);
+         void *shader_data, const struct video_coords *coords);
    bool (*set_mvp)(void *data, void *shader_data,
          const math_matrix_4x4 *mat);
    unsigned (*get_prev_textures)(void *data);
@@ -283,12 +258,48 @@ typedef struct video_shader_ctx_texture
    unsigned id;
 } video_shader_ctx_texture_t;
 
+bool video_shader_driver_get_prev_textures(video_shader_ctx_texture_t *texture);
+
+bool video_shader_driver_get_ident(video_shader_ctx_ident_t *ident);
+
+bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
+
+bool video_shader_driver_direct_get_current_shader(video_shader_ctx_t *shader);
+
+bool video_shader_driver_deinit(void);
+
+bool video_shader_driver_set_parameter(struct uniform_info *param);
+
+bool video_shader_driver_set_parameters(video_shader_ctx_params_t *params);
+
+bool video_shader_driver_init_first(void);
+
+bool video_shader_driver_init(video_shader_ctx_init_t *init);
+
+bool video_shader_driver_get_feedback_pass(unsigned *data);
+
+bool video_shader_driver_mipmap_input(unsigned *index);
+
+bool video_shader_driver_set_coords(video_shader_ctx_coords_t *coords);
+
+bool video_shader_driver_scale(video_shader_ctx_scale_t *scaler);
+
+bool video_shader_driver_info(video_shader_ctx_info_t *shader_info);
+
+bool video_shader_driver_set_mvp(video_shader_ctx_mvp_t *mvp);
+
+bool video_shader_driver_filter_type(video_shader_ctx_filter_t *filter);
+
+bool video_shader_driver_compile_program(struct shader_program_info *program_info);
+
+bool video_shader_driver_use(video_shader_ctx_info_t *shader_info);
+
+bool video_shader_driver_wrap_type(video_shader_ctx_wrap_t *wrap);
+
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
-
-bool video_shader_driver_ctl(enum video_shader_driver_ctl_state state, void *data);
 
 #ifdef __cplusplus
 }

@@ -172,6 +172,24 @@ static void frontend_gx_get_environment_settings(
 #elif defined(HAVE_FILE_LOGGER)
    retro_main_log_file_init("/retroarch-log.txt");
 #endif
+
+   /* This situation can happen on some loaders so we really need some
+      fake args or else retroarch will just crash on parsing NULL pointers */
+   if(*argc == 0 || argv == NULL)
+   {
+      struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+      if (args)
+      {
+         args->touched        = true;
+         args->no_content     = false;
+         args->verbose        = false;
+         args->config_path    = NULL;
+         args->sram_path      = NULL;
+         args->state_path     = NULL;
+         args->content_path   = NULL;
+         args->libretro_path  = NULL;
+      }
+   }
 #endif
 
 #ifdef HW_DOL
@@ -408,7 +426,7 @@ static bool frontend_gx_set_fork(enum frontend_fork fork_mode)
       case FRONTEND_FORK_RESTART:
          RARCH_LOG("FRONTEND_FORK_RESTART\n");
          gx_fork_mode  = fork_mode;
-         rarch_ctl(RARCH_CTL_FORCE_QUIT, NULL);
+         command_event(CMD_EVENT_QUIT, NULL);
          break;
       case FRONTEND_FORK_NONE:
       default:

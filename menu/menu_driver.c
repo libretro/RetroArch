@@ -115,7 +115,7 @@ static void bundle_decompressed(void *task_data,
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
 
    if (dec && !err)
-      event_cmd_ctl(EVENT_CMD_REINIT, NULL);
+      command_event(CMD_EVENT_REINIT, NULL);
 
    if (err)
       RARCH_ERR("%s", err);
@@ -148,7 +148,7 @@ static bool menu_init(menu_handle_t *menu_data)
    if (!menu_entries_ctl(MENU_ENTRIES_CTL_INIT, NULL))
       return false;
 
-   if (!core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_INIT, NULL))
+   if (!core_info_init_current_core())
       return false;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_SHADER_INIT, NULL))
@@ -159,7 +159,7 @@ static bool menu_init(menu_handle_t *menu_data)
       menu_data->push_help_screen = true;
       menu_data->help_screen_type = MENU_HELP_WELCOME;
       settings->menu_show_start_screen   = false;
-      event_cmd_ctl(EVENT_CMD_MENU_SAVE_CURRENT_CONFIG, NULL);
+      command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
    }
 
    if (      settings->bundle_assets_extract_enable
@@ -185,7 +185,7 @@ static bool menu_init(menu_handle_t *menu_data)
 
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_MANAGER_INIT, NULL);
 
-   if (!menu_display_ctl(MENU_DISPLAY_CTL_INIT, NULL))
+   if (!menu_display_init())
       return false;
 
    return true;
@@ -245,12 +245,12 @@ static void menu_driver_toggle(bool latch)
       menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
 
       /* Menu should always run with vsync on. */
-      event_cmd_ctl(EVENT_CMD_VIDEO_SET_BLOCKING_STATE, NULL);
+      command_event(CMD_EVENT_VIDEO_SET_BLOCKING_STATE, NULL);
       /* Stop all rumbling before entering the menu. */
-      event_cmd_ctl(EVENT_CMD_RUMBLE_STOP, NULL);
+      command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
       if (settings->menu.pause_libretro)
-         event_cmd_ctl(EVENT_CMD_AUDIO_STOP, NULL);
+         command_event(CMD_EVENT_AUDIO_STOP, NULL);
 
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
@@ -269,10 +269,10 @@ static void menu_driver_toggle(bool latch)
          driver_ctl(RARCH_DRIVER_CTL_SET_NONBLOCK_STATE, NULL);
 
       if (settings && settings->menu.pause_libretro)
-         event_cmd_ctl(EVENT_CMD_AUDIO_START, NULL);
+         command_event(CMD_EVENT_AUDIO_START, NULL);
 
       /* Prevent stray input from going to libretro core */
-      input_driver_ctl(RARCH_INPUT_CTL_SET_FLUSHING_INPUT, NULL);
+      input_driver_set_flushing_input();
 
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
@@ -391,7 +391,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
                if (!menu_driver_ctx)
                {
-                  retro_fail(1, "find_menu_driver()");
+                  retroarch_fail(1, "find_menu_driver()");
                   return false;
                }
             }
@@ -445,7 +445,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             BIT64_SET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER);
 
          if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_FRAMEBUFFER))
-            menu_display_ctl(MENU_DISPLAY_CTL_SET_FRAMEBUFFER_DIRTY_FLAG, NULL);
+            menu_display_set_framebuffer_dirty_flag();
 
          if (BIT64_GET(menu_driver_data->state, MENU_STATE_RENDER_MESSAGEBOX) 
                && !string_is_empty(menu_driver_data->menu_state.msg))
@@ -468,7 +468,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
          if (menu_driver_ctl(RARCH_MENU_CTL_IS_ALIVE, NULL) 
                && !runloop_ctl(RUNLOOP_CTL_IS_IDLE, NULL))
-            menu_display_ctl(MENU_DISPLAY_CTL_LIBRETRO, NULL);
+            menu_display_libretro();
 
          menu_driver_ctl(RARCH_MENU_CTL_SET_TEXTURE, NULL);
 
@@ -529,7 +529,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_data_own = true;
          break;
       case RARCH_MENU_CTL_UNSET_OWN_DRIVER:
-         if (!content_ctl(CONTENT_CTL_IS_INITED, NULL))
+         if (!content_is_inited())
             return false;
          menu_driver_data_own = false;
          break;
@@ -562,13 +562,13 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             menu_userdata = NULL;
 
             menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
-            menu_display_ctl(MENU_DISPLAY_CTL_DEINIT, NULL);
+            menu_display_deinit();
             menu_entries_ctl(MENU_ENTRIES_CTL_DEINIT, NULL);
 
-            event_cmd_ctl(EVENT_CMD_HISTORY_DEINIT, NULL);
+            command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
 
-            core_info_ctl(CORE_INFO_CTL_LIST_DEINIT, NULL);
-            core_info_ctl(CORE_INFO_CTL_CURRENT_CORE_FREE, NULL);
+            core_info_deinit_list();
+            core_info_free_current_core();
 
             free(menu_driver_data);
          }
@@ -583,7 +583,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
          if (!menu_driver_data || !menu_init(menu_driver_data))
          {
-            retro_fail(1, "init_menu()");
+            retroarch_fail(1, "init_menu()");
             return false;
          }
 
@@ -594,7 +594,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          {
             if (!menu_driver_ctx->lists_init(menu_driver_data))
             {
-               retro_fail(1, "init_menu()");
+               retroarch_fail(1, "init_menu()");
                return false;
             }
          }
@@ -761,7 +761,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (!latch)
                return false;
 
-            if (menu_driver_ctx->toggle)
+            if (menu_driver_ctx && menu_driver_ctx->toggle)
                menu_driver_ctx->toggle(menu_userdata, *latch);
          }
          break;
@@ -836,11 +836,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_QUICK_MENU, NULL))
             {
-               bool msg_force               = true;
-
                menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_QUICK_MENU, NULL);
                menu_entries_flush_stack(NULL, MENU_SETTINGS);
-               menu_display_ctl(MENU_DISPLAY_CTL_SET_MSG_FORCE, &msg_force);
+               menu_display_set_msg_force(true);
 
                generic_action_ok_displaylist_push("",
                      "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
@@ -862,7 +860,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (menu_driver_ctl(RARCH_MENU_CTL_IS_PENDING_SHUTDOWN, NULL))
             {
                menu_driver_ctl(RARCH_MENU_CTL_UNSET_PENDING_SHUTDOWN, NULL);
-               if (!event_cmd_ctl(EVENT_CMD_QUIT, NULL))
+               if (!command_event(CMD_EVENT_QUIT, NULL))
                   return false;
                return true;
             }

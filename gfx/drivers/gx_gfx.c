@@ -413,9 +413,9 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
    new_fb_pitch = new_fb_width * 2;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_WIDTH,  &new_fb_width);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_HEIGHT, &new_fb_height);
-   menu_display_ctl(MENU_DISPLAY_CTL_SET_FB_PITCH, &new_fb_pitch);
+   menu_display_set_width(new_fb_width);
+   menu_display_set_height(new_fb_height);
+   menu_display_set_framebuffer_pitch(new_fb_pitch);
 
    GX_SetViewportJitter(0, 0, gx_mode.fbWidth, gx_mode.efbHeight, 0, 1, 1);
    GX_SetDispCopySrc(0, 0, gx_mode.fbWidth, gx_mode.efbHeight);
@@ -472,28 +472,24 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gx_video_t *gx = (gx_video_t*)data;
-   enum rarch_display_ctl_state cmd = RARCH_DISPLAY_CTL_NONE;
 
    switch (aspect_ratio_idx)
    {
       case ASPECT_RATIO_SQUARE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_SQUARE_PIXEL;
+         video_driver_set_viewport_square_pixel();
          break;
 
       case ASPECT_RATIO_CORE:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CORE;
+         video_driver_set_viewport_core();
          break;
 
       case ASPECT_RATIO_CONFIG:
-         cmd = RARCH_DISPLAY_CTL_SET_VIEWPORT_CONFIG;
+         video_driver_set_viewport_config();
          break;
 
       default:
          break;
    }
-
-   if (cmd != RARCH_DISPLAY_CTL_NONE)
-      video_driver_ctl(cmd, NULL);
 
    video_driver_set_aspect_ratio_value(
          aspectratio_lut[aspect_ratio_idx].value);
@@ -555,8 +551,8 @@ static void init_texture(void *data, unsigned width, unsigned height)
    menu_w = 320;
    menu_h = 240;
 
-   menu_display_ctl(MENU_DISPLAY_CTL_WIDTH,  &menu_w);
-   menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &menu_h);
+   menu_w = menu_display_get_width();
+   menu_h = menu_display_get_height();
 
    GX_InitTexObj(fb_ptr, g_tex.data, width, height,
          (gx->rgb32) ? GX_TF_RGBA8 : gx->menu_texture_enable ?
@@ -1496,9 +1492,9 @@ static bool gx_frame(void *data, const void *frame,
       size_t fb_pitch;
       unsigned fb_width, fb_height;
 
-      menu_display_ctl(MENU_DISPLAY_CTL_WIDTH, &fb_width);
-      menu_display_ctl(MENU_DISPLAY_CTL_HEIGHT, &fb_height);
-      menu_display_ctl(MENU_DISPLAY_CTL_FB_PITCH, &fb_pitch);
+      fb_width  = menu_display_get_width();
+      fb_height = menu_display_get_height();
+      fb_pitch  = menu_display_get_framebuffer_pitch();
 
       convert_texture16(
             gx->menu_data,

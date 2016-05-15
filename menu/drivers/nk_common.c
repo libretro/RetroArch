@@ -180,7 +180,7 @@ void nk_common_device_draw(struct nk_device *dev,
    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vbo);
 #endif
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_BEGIN, NULL);
+   menu_display_blend_begin();
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glActiveTexture(GL_TEXTURE0);
@@ -190,7 +190,7 @@ void nk_common_device_draw(struct nk_device *dev,
    shader_info.data       = NULL;
    shader_info.idx        = dev->prog;
    shader_info.set_active = false;
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glUniformMatrix4fv(dev->uniform_proj, 1, GL_FALSE, &ortho[0][0]);
@@ -253,7 +253,7 @@ void nk_common_device_draw(struct nk_device *dev,
    shader_info.data       = NULL;
    shader_info.idx        = (GLint)last_prog;
    shader_info.set_active = false;
-   video_shader_driver_ctl(SHADER_CTL_USE, &shader_info);
+   video_shader_driver_use(&shader_info);
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    glBindTexture(GL_TEXTURE_2D, (GLuint)last_tex);
@@ -262,7 +262,7 @@ void nk_common_device_draw(struct nk_device *dev,
    glBindVertexArray((GLuint)last_vao);
 #endif
 
-   menu_display_ctl(MENU_DISPLAY_CTL_BLEND_END, NULL);
+   menu_display_blend_end();
 }
 
 //void nk_mem_alloc(nk_handle a, void *old, nk_size b);

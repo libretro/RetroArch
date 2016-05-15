@@ -21,14 +21,61 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 
 #include <net/net_compat.h>
+#include <net/net_socket.h>
 #include <compat/strl.h>
 
-#if defined(VITA)
+#if defined(_XBOX)
+/* TODO - implement h_length and h_addrtype */
+struct hostent
+{
+   int h_addrtype;     /* host address type   */
+   int h_length;       /* length of addresses */
+   char **h_addr_list; /* list of addresses   */
+};
+
+struct hostent *gethostbyname(const char *name)
+{
+   WSAEVENT event;
+   static struct hostent he;
+   static struct in_addr addr;
+   static char *addr_ptr;
+   XNDNS *dns     = NULL;
+
+   he.h_addr_list = &addr_ptr;
+   addr_ptr       = (char*)&addr;
+
+   if (!name)
+      return NULL;
+
+   event = WSACreateEvent();
+   XNetDnsLookup(name, event, &dns);
+   if (!dns)
+      goto error;
+
+   WaitForSingleObject((HANDLE)event, INFINITE);
+   if (dns->iStatus)
+      goto error;
+
+   memcpy(&addr, dns->aina, sizeof(addr));
+
+   WSACloseEvent(event);
+   XNetDnsRelease(dns);
+
+   return &he;
+
+error:
+   if (event)
+      WSACloseEvent(event);
+   return NULL;
+}
+#elif defined(VITA)
 static void *_net_compat_net_memory = NULL;
 #define COMPAT_NET_INIT_SIZE 512*1024
 #define INET_ADDRSTRLEN sizeof(struct sockaddr_in)
@@ -55,7 +102,7 @@ struct SceNetInAddr inet_aton(const char *ip_addr)
 {
    SceNetInAddr inaddr;
 
-   sceNetInetPton(AF_INET, ip_addr, &inaddr);	
+   inet_ptrton(AF_INET, ip_addr, &inaddr);
    return inaddr;
 }
 
@@ -93,30 +140,53 @@ struct hostent *gethostbyname(const char *name)
 }
 
 int retro_epoll_fd;
+#elif defined(_WIN32)
+int inet_aton(const char *cp, struct in_addr *inp)
+{
+	uint32_t addr = 0;
+	if (cp == 0 || inp == 0)
+		return -1;
 
+	addr = inet_addr(cp);
+	if (addr == INADDR_NONE || addr == INADDR_ANY)
+		return -1;
+
+	inp->s_addr = addr;
+   return 1;
+}
 #endif
 
 int getaddrinfo_retro(const char *node, const char *service,
-      const struct addrinfo *hints,
-      struct addrinfo **res)
+      struct addrinfo *hints, struct addrinfo **res)
 {
-#ifdef HAVE_SOCKET_LEGACY
    struct sockaddr_in *in_addr = NULL;
-   struct addrinfo *info = (struct addrinfo*)calloc(1, sizeof(*info));
+   struct addrinfo *info       = NULL;
+
+   (void)in_addr;
+   (void)info;
+
+#if defined(_WIN32) || defined(HAVE_SOCKET_LEGACY)
+   hints->ai_family    = AF_INET;
+#else
+   hints->ai_family    = AF_UNSPEC;
+#endif
+
+#ifdef HAVE_SOCKET_LEGACY
+   info = (struct addrinfo*)calloc(1, sizeof(*info));
    if (!info)
       goto error;
 
-   info->ai_family = AF_INET;
-   info->ai_socktype = hints->ai_socktype;
-
-   in_addr = (struct sockaddr_in*)calloc(1, sizeof(*in_addr));
+   info->ai_family     = AF_INET;
+   info->ai_socktype   = hints->ai_socktype;
+   in_addr             = (struct sockaddr_in*)
+      calloc(1, sizeof(*in_addr));
 
    if (!in_addr)
       goto error;
 
    info->ai_addrlen    = sizeof(*in_addr);
    in_addr->sin_family = AF_INET;
-   in_addr->sin_port   = htons(strtoul(service, NULL, 0));
+   in_addr->sin_port   = inet_htons(strtoul(service, NULL, 0));
 
    if (!node && (hints->ai_flags & AI_PASSIVE))
       in_addr->sin_addr.s_addr = INADDR_ANY;
@@ -135,7 +205,7 @@ int getaddrinfo_retro(const char *node, const char *service,
       goto error;
 
    info->ai_addr = (struct sockaddr*)in_addr;
-   *res = info;
+   *res          = info;
 
    return 0;
 
@@ -158,91 +228,6 @@ void freeaddrinfo_retro(struct addrinfo *res)
 #else
    freeaddrinfo(res);
 #endif
-}
-
-bool socket_nonblock(int fd)
-{
-#if defined(__CELLOS_LV2__) || defined(VITA)
-   int i = 1;
-   setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(int));
-   return true;
-#elif defined(_WIN32)
-   u_long mode = 1;
-   return ioctlsocket(fd, FIONBIO, &mode) == 0;
-#else
-   return fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == 0;
-#endif
-}
-
-int socket_close(int fd)
-{ 
-#if defined(_WIN32) && !defined(_XBOX360)
-   /* WinSock has headers from the stone age. */
-   return closesocket(fd);
-#elif defined(__CELLOS_LV2__)
-   return socketclose(fd);
-#elif defined(VITA)
-   return sceNetSocketClose(fd);
-#else
-   return close(fd);
-#endif
-}
-
-int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
-      fd_set *errorfds, struct timeval *timeout)
-{
-#if defined(__CELLOS_LV2__)
-   return socketselect(nfds, readfs, writefds, errorfds, timeout);
-#elif defined(VITA)
-   SceNetEpollEvent ev = {0};
-
-   ev.events = PSP2_NET_EPOLLIN | PSP2_NET_EPOLLHUP;
-   ev.data.fd = nfds;
-
-   if((sceNetEpollControl(retro_epoll_fd, PSP2_NET_EPOLL_CTL_ADD, nfds, &ev)))
-   {
-      int ret = sceNetEpollWait(retro_epoll_fd, &ev, 1, 0);
-      sceNetEpollControl(retro_epoll_fd, PSP2_NET_EPOLL_CTL_DEL, nfds, NULL);
-      return ret;
-   }
-   return 0;
-#else
-   return select(nfds, readfs, writefds, errorfds, timeout);
-#endif
-}
-
-int socket_send_all_blocking(int fd, const void *data_, size_t size)
-{
-   const uint8_t *data = (const uint8_t*)data_;
-
-   while (size)
-   {
-      ssize_t ret = send(fd, (const char*)data, size, 0);
-      if (ret <= 0)
-         return false;
-
-      data += ret;
-      size -= ret;
-   }
-
-   return true;
-}
-
-int socket_receive_all_blocking(int fd, void *data_, size_t size)
-{
-   const uint8_t *data = (const uint8_t*)data_;
-
-   while (size)
-   {
-      ssize_t ret = recv(fd, (char*)data, size, 0);
-      if (ret <= 0)
-         return false;
-
-      data += ret;
-      size -= ret;
-   }
-
-   return true;
 }
 
 /**
@@ -268,32 +253,49 @@ bool network_init(void)
       return false;
    }
 #elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+   int timeout_count = 10;
+
    cellSysmoduleLoadModule(CELL_SYSMODULE_NET);
    sys_net_initialize_network();
+
+   if (cellNetCtlInit() < 0)
+      return false;
+
+   for (;;)
+   {
+      int state;
+      if (cellNetCtlGetState(&state) < 0)
+         return false;
+
+      if (state == CELL_NET_CTL_STATE_IPObtained)
+         break;
+
+      retro_sleep(500);
+      timeout_count--;
+      if (timeout_count < 0)
+         return 0;
+   }
 #elif defined(VITA)
    SceNetInitParam initparam;
-   /* Init Net */
+
    if (sceNetShowNetstat() == PSP2_NET_ERROR_ENOTINIT)
    {
       _net_compat_net_memory = malloc(COMPAT_NET_INIT_SIZE);
 
-      initparam.memory = _net_compat_net_memory;
-      initparam.size = COMPAT_NET_INIT_SIZE;
-      initparam.flags = 0;
+      initparam.memory       = _net_compat_net_memory;
+      initparam.size         = COMPAT_NET_INIT_SIZE;
+      initparam.flags        = 0;
 
       sceNetInit(&initparam);
-      //printf("sceNetInit(): 0x%08X\n", ret);
 
-      /* Init NetCtl */
       sceNetCtlInit();
-   }
-   else
-   {
-      //printf("Net is already initialized.\n");
    }
    
    retro_epoll_fd = sceNetEpollCreate("epoll", 0);
-   //printf("Epoll %x\n",retro_epoll_fd);
+#elif defined(GEKKO)
+   char t[16];
+   if (if_config(t, NULL, NULL, TRUE) < 0)
+      return false;
 #else
    signal(SIGPIPE, SIG_IGN); /* Do not like SIGPIPE killing our app. */
 #endif
@@ -312,6 +314,7 @@ void network_deinit(void)
 #if defined(_WIN32)
    WSACleanup();
 #elif defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)
+   cellNetCtlTerm();
    sys_net_finalize_network();
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 #elif defined(VITA)
@@ -323,5 +326,28 @@ void network_deinit(void)
       free(_net_compat_net_memory);
       _net_compat_net_memory = NULL;
    }
+#elif defined(GEKKO) && !defined(HW_DOL)
+   net_deinit();
+#endif
+}
+
+uint16_t inet_htons(uint16_t hostshort)
+{
+#ifdef VITA
+   return sceNetHtons(hostshort);
+#else
+   return htons(hostshort);
+#endif
+}
+
+int inet_ptrton(int af, const char *src, void *dst)
+{
+#if defined(VITA)
+   return sceNetInetPton(af, src, dst);	
+#elif defined(GEKKO) || defined(_WIN32)
+   /* TODO/FIXME - should use InetPton on Vista and later */
+   return inet_aton(src, (struct in_addr*)dst);
+#else
+   return inet_pton(af, src, dst);
 #endif
 }

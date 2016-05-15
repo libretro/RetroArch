@@ -66,6 +66,8 @@ extern "C" {
 #include "../../audio/audio_utils.h"
 #include "../record_driver.h"
 
+#include "../../gfx/video_frame.h"
+
 #ifndef PIX_FMT_RGB32
 #define PIX_FMT_RGB32 AV_PIX_FMT_RGB32
 #endif
@@ -978,26 +980,17 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
    }
    else
    {
-      if ((int)vid->width != handle->video.scaler.in_width
-            || (int)vid->height != handle->video.scaler.in_height)
-      {
-         handle->video.scaler.in_width  = vid->width;
-         handle->video.scaler.in_height = vid->height;
-         handle->video.scaler.in_stride = vid->pitch;
-
-         handle->video.scaler.scaler_type = shrunk ?
-            SCALER_TYPE_BILINEAR : SCALER_TYPE_POINT;
-
-         handle->video.scaler.out_width  = handle->params.out_width;
-         handle->video.scaler.out_height = handle->params.out_height;
-         handle->video.scaler.out_stride = 
-            handle->video.conv_frame->linesize[0];
-
-         scaler_ctx_gen_filter(&handle->video.scaler);
-      }
-
-      scaler_ctx_scale(&handle->video.scaler,
-            handle->video.conv_frame->data[0], vid->data);
+      video_frame_record_scale(
+            &handle->video.scaler,
+            handle->video.conv_frame->data[0],
+            vid->data,
+            handle->params.out_width,
+            handle->params.out_height,
+            handle->video.conv_frame->linesize[0],
+            vid->width,
+            vid->height,
+            vid->pitch,
+            shrunk);
    }
 }
 

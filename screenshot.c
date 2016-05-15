@@ -40,11 +40,13 @@
 
 #include "general.h"
 #include "msg_hash.h"
-#include "gfx/scaler/scaler.h"
 #include "retroarch.h"
 #include "screenshot.h"
 #include "verbosity.h"
+
 #include "gfx/video_driver.h"
+#include "gfx/scaler/scaler.h"
+#include "gfx/video_frame.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -54,11 +56,11 @@
 static bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
-   settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
    bool ret;
    char filename[PATH_MAX_LENGTH];
    char shotname[256];
+   settings_t *settings           = config_get_ptr();
+   global_t *global               = global_get_ptr();
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
    uint8_t *out_buffer            = NULL;
    struct scaler_ctx scaler       = {0};
@@ -77,9 +79,8 @@ static bool screenshot_dump(const char *folder, const void *frame,
 
 #ifdef _XBOX1
    d3d_video_t *d3d = (d3d_video_t*)video_driver_get_ptr(true);
-   settings_t *settings = config_get_ptr();
-
    D3DSurface *surf = NULL;
+
    d3d->dev->GetBackBuffer(-1, D3DBACKBUFFER_TYPE_MONO, &surf);
    ret = XGWriteSurfaceToFile(surf, filename);
    surf->Release();
@@ -93,25 +94,14 @@ static bool screenshot_dump(const char *folder, const void *frame,
    if (!out_buffer)
       return false;
 
-   scaler.in_width    = width;
-   scaler.in_height   = height;
-   scaler.out_width   = width;
-   scaler.out_height  = height;
-   scaler.in_stride   = -pitch;
-   scaler.out_stride  = width * 3;
-   scaler.out_fmt     = SCALER_FMT_BGR24;
-   scaler.scaler_type = SCALER_TYPE_POINT;
+   video_frame_convert_to_bgr24(
+         &scaler,
+         out_buffer,
+         (const uint8_t*)frame + ((int)height - 1) * pitch,
+         width, height,
+         -pitch,
+         bgr24);
 
-   if (bgr24)
-      scaler.in_fmt = SCALER_FMT_BGR24;
-   else if (video_driver_get_pixel_format() == RETRO_PIXEL_FORMAT_XRGB8888)
-      scaler.in_fmt = SCALER_FMT_ARGB8888;
-   else
-      scaler.in_fmt = SCALER_FMT_RGB565;
-
-   scaler_ctx_gen_filter(&scaler);
-   scaler_ctx_scale(&scaler, out_buffer,
-         (const uint8_t*)frame + ((int)height - 1) * pitch);
    scaler_ctx_gen_reset(&scaler);
 
    RARCH_LOG("Using RPNG for PNG screenshots.\n");
@@ -154,7 +144,7 @@ static bool take_screenshot_viewport(void)
    settings_t *settings                  = config_get_ptr();
    global_t *global                      = global_get_ptr();
 
-   video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
+   video_driver_get_viewport_info(&vp);
 
    if (!vp.width || !vp.height)
       return false;
@@ -162,7 +152,7 @@ static bool take_screenshot_viewport(void)
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
-   if (!video_driver_ctl(RARCH_DISPLAY_CTL_READ_VIEWPORT, buffer))
+   if (!video_driver_read_viewport(buffer))
       goto done;
 
    screenshot_dir = settings->directory.screenshot;
@@ -193,13 +183,11 @@ static bool take_screenshot_raw(void)
    size_t pitch;
    char screenshot_path[PATH_MAX_LENGTH] = {0};
    const void *data                      = NULL;
-   const char *screenshot_dir            = NULL;
    global_t *global                      = global_get_ptr();
    settings_t *settings                  = config_get_ptr();
+   const char *screenshot_dir            = settings->directory.screenshot;
 
    video_driver_cached_frame_get(&data, &width, &height, &pitch);
-
-   screenshot_dir = settings->directory.screenshot;
 
    if (!*settings->directory.screenshot)
    {
@@ -225,18 +213,18 @@ static bool take_screenshot_choice(void)
    if ((!*settings->directory.screenshot) && (!*global->name.base))
       return false;
 
-   if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_VIEWPORT_READ, NULL))
+   if (video_driver_supports_viewport_read())
    {
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
-      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_cached_frame_render();
       return take_screenshot_viewport();
    }
 
-   if (!video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_HAS_VALID_FB, NULL))
+   if (!video_driver_cached_frame_has_valid_framebuffer())
       return take_screenshot_raw();
 
-   if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_READ_FRAME_RAW, NULL))
+   if (video_driver_supports_read_frame_raw())
    {
       unsigned old_width, old_height;
       size_t old_pitch;
@@ -255,7 +243,7 @@ static bool take_screenshot_choice(void)
 
       if (frame_data)
       {
-         video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_SET_PTR, (void*)frame_data);
+         video_driver_set_cached_frame_ptr(frame_data);
          if (take_screenshot_raw())
             ret = true;
          free(frame_data);
@@ -274,26 +262,19 @@ static bool take_screenshot_choice(void)
  **/
 bool take_screenshot(void)
 {
-   bool is_paused;
-   const char *msg_screenshot = NULL;
-   const char *msg            = NULL;
-   bool             ret = take_screenshot_choice();
-
-   if (ret)
-      msg_screenshot = msg_hash_to_str(MSG_TAKING_SCREENSHOT);
-   else
-      msg_screenshot = msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
-
-   msg = msg_screenshot;
+   bool             ret       = take_screenshot_choice();
+   const char *msg_screenshot = ret 
+      ? msg_hash_to_str(MSG_TAKING_SCREENSHOT)  :
+        msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
+   const char *msg            = msg_screenshot;
+   bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 
    RARCH_LOG("%s.\n", msg);
-
-   is_paused = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
 
    runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
 
    if (is_paused)
-      video_driver_ctl(RARCH_DISPLAY_CTL_CACHED_FRAME_RENDER, NULL);
+      video_driver_cached_frame_render();
 
    return ret;
 }

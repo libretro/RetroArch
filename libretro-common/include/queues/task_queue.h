@@ -56,6 +56,14 @@ enum task_queue_ctl_state
     */
    TASK_QUEUE_CTL_FIND,
 
+   /**
+    * Calls func for every running task when handler
+    * parameter matches task handler, allowing the
+    * list parameter to be filled with user-defined
+    * data.
+    */
+   TASK_QUEUE_CTL_RETRIEVE,
+
    /* Blocks until all tasks have finished.
     * This must only be called from the main thread. */
    TASK_QUEUE_CTL_WAIT,
@@ -82,8 +90,13 @@ enum task_queue_ctl_state
 
    TASK_QUEUE_CTL_UNSET_THREADED,
 
-   TASK_QUEUE_CTL_IS_THREADED
-};
+   TASK_QUEUE_CTL_IS_THREADED,
+   
+   /**
+    * Signals a task to end without waiting for
+    * it to complete. */
+   TASK_QUEUE_CTL_CANCEL
+ };
 
 typedef struct retro_task retro_task_t;
 typedef void (*retro_task_callback_t)(void *task_data,
@@ -93,6 +106,8 @@ typedef void (*retro_task_handler_t)(retro_task_t *task);
 
 typedef bool (*retro_task_finder_t)(retro_task_t *task,
       void *userdata);
+
+typedef bool (*retro_task_retriever_t)(retro_task_t *task, void *data);
 
 typedef struct
 {
@@ -144,9 +159,29 @@ typedef struct task_finder_data
    void *userdata;
 } task_finder_data_t;
 
+typedef struct task_retriever_info
+{
+   struct task_retriever_info *next;
+   void *data;
+} task_retriever_info_t;
+
+typedef struct task_retriever_data
+{
+   retro_task_handler_t handler;
+   size_t element_size;
+   retro_task_retriever_t func;
+   task_retriever_info_t *list;
+} task_retriever_data_t;
+
 void task_queue_push_progress(retro_task_t *task);
 
 bool task_queue_ctl(enum task_queue_ctl_state state, void *data);
+
+void *task_queue_retriever_info_next(task_retriever_info_t **link);
+
+void task_queue_retriever_info_free(task_retriever_info_t *list);
+
+void task_queue_cancel_task(void *task);
 
 RETRO_END_DECLS
 

@@ -21,7 +21,7 @@
 
 #include "record_driver.h"
 
-#include "../command_event.h"
+#include "../command.h"
 #include "../general.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
@@ -116,7 +116,7 @@ void find_record_driver(void)
       recording_driver = (const record_driver_t*)record_driver_find_handle(0);
 
       if (!recording_driver)
-         retro_fail(1, "find_record_driver()");
+         retroarch_fail(1, "find_record_driver()");
    }
 }
 
@@ -187,18 +187,18 @@ void recording_dump_frame(const void *data, unsigned width,
    ffemu_data.height  = height;
    ffemu_data.data    = data;
 
-   if (video_driver_ctl(RARCH_DISPLAY_CTL_HAS_GPU_RECORD, NULL))
+   if (video_driver_has_gpu_record())
    {
       uint8_t *gpu_buf         = NULL;
       struct video_viewport vp = {0};
 
-      video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
+      video_driver_get_viewport_info(&vp);
 
       if (!vp.width || !vp.height)
       {
          RARCH_WARN("%s \n",
                msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
-         event_cmd_ctl(EVENT_CMD_GPU_RECORD_DEINIT, NULL);
+         command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
 
          recording_dump_frame(data, width, height, pitch);
          return;
@@ -213,18 +213,19 @@ void recording_dump_frame(const void *data, unsigned width,
          runloop_msg_queue_push(
                msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE),
                1, 180, true);
-         event_cmd_ctl(EVENT_CMD_RECORD_DEINIT, NULL);
+         command_event(CMD_EVENT_RECORD_DEINIT, NULL);
          return;
       }
 
-      if (!video_driver_ctl(RARCH_DISPLAY_CTL_GPU_RECORD_GET, &gpu_buf))
+      gpu_buf = video_driver_get_gpu_record();
+      if (!gpu_buf)
          return;
 
       /* Big bottleneck.
        * Since we might need to do read-backs asynchronously,
        * it might take 3-4 times before this returns true. */
-      if (!video_driver_ctl(RARCH_DISPLAY_CTL_READ_VIEWPORT, gpu_buf))
-            return;
+      if (!video_driver_read_viewport(gpu_buf))
+         return;
 
       ffemu_data.pitch  = global->record.gpu_width * 3;
       ffemu_data.width  = global->record.gpu_width;
@@ -234,7 +235,7 @@ void recording_dump_frame(const void *data, unsigned width,
       ffemu_data.pitch  = -ffemu_data.pitch;
    }
 
-   if (!video_driver_ctl(RARCH_DISPLAY_CTL_HAS_GPU_RECORD, NULL))
+   if (!video_driver_has_gpu_record())
       ffemu_data.is_dupe = !data;
 
    if (recording_driver && recording_driver->push_video)
@@ -255,7 +256,7 @@ bool recording_deinit(void)
    recording_data            = NULL;
    recording_driver          = NULL;
 
-   event_cmd_ctl(EVENT_CMD_GPU_RECORD_DEINIT, NULL);
+   command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
 
    return true;
 }
@@ -311,7 +312,7 @@ bool recording_init(void)
    }
 
    if (!settings->video.gpu_record 
-         && video_driver_ctl(RARCH_DISPLAY_CTL_IS_HW_CONTEXT, NULL))
+         && video_driver_is_hw_context())
    {
       RARCH_WARN("%s.\n",
             msg_hash_to_str(MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING));
@@ -345,12 +346,12 @@ bool recording_init(void)
    if (*global->record.config)
       params.config = global->record.config;
 
-   if (video_driver_ctl(RARCH_DISPLAY_CTL_SUPPORTS_RECORDING, NULL))
+   if (video_driver_supports_recording())
    {
       unsigned gpu_size;
       struct video_viewport vp = {0};
 
-      video_driver_ctl(RARCH_DISPLAY_CTL_VIEWPORT_INFO, &vp);
+      video_driver_get_viewport_info(&vp);
 
       if (!vp.width || !vp.height)
       {
@@ -378,7 +379,7 @@ bool recording_init(void)
             vp.width, vp.height);
 
       gpu_size = vp.width * vp.height * 3;
-      if (!video_driver_ctl(RARCH_DISPLAY_CTL_GPU_RECORD_INIT, &gpu_size))
+      if (!video_driver_gpu_record_init(gpu_size))
          return false;
    }
    else
@@ -396,14 +397,14 @@ bool recording_init(void)
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
       if (settings->video.post_filter_record 
-            && video_driver_ctl(RARCH_DISPLAY_CTL_FRAME_FILTER_ALIVE, NULL))
+            && video_driver_frame_filter_alive())
       {
          unsigned max_width  = 0;
          unsigned max_height = 0;
          
          params.pix_fmt    = FFEMU_PIX_RGB565;
 
-         if (video_driver_ctl(RARCH_DISPLAY_CTL_FRAME_FILTER_IS_32BIT, NULL))
+         if (video_driver_frame_filter_is_32bit())
             params.pix_fmt = FFEMU_PIX_ARGB8888;
 
          rarch_softfilter_get_max_output_size(
@@ -424,7 +425,7 @@ bool recording_init(void)
    if (!record_driver_init_first(&recording_driver, &recording_data, &params))
    {
       RARCH_ERR("%s\n", msg_hash_to_str(MSG_FAILED_TO_START_RECORDING));
-      event_cmd_ctl(EVENT_CMD_GPU_RECORD_DEINIT, NULL);
+      command_event(CMD_EVENT_GPU_RECORD_DEINIT, NULL);
 
       return false;
    }

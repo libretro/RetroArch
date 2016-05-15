@@ -200,7 +200,7 @@ static bool sdl_ctx_set_video_mode(void *data, unsigned width, unsigned height,
 
 #ifdef HAVE_SDL2
    if (sdl->g_ctx)
-      video_driver_ctl(RARCH_DISPLAY_CTL_SET_VIDEO_CACHE_CONTEXT_ACK, NULL);
+      video_driver_set_video_cache_context_ack();
    else
    {
       sdl->g_ctx = SDL_GL_CreateContext(sdl->g_win);
@@ -400,6 +400,18 @@ static void sdl_ctx_show_mouse(void *data, bool state)
    SDL_ShowCursor(state);
 }
 
+static uint32_t sdl_ctx_get_flags(void *data)
+{
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_NONE);
+   return flags;
+}
+
+static void sdl_ctx_set_flags(void *data, uint32_t flags)
+{
+   (void)data;
+}
+
 const gfx_ctx_driver_t gfx_ctx_sdl_gl =
 {
    sdl_ctx_init,
@@ -426,5 +438,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    NULL,
    sdl_ctx_show_mouse,
    "sdl_gl",
+   sdl_ctx_get_flags,
+   sdl_ctx_set_flags,
    NULL /* bind_hw_render */
 };
