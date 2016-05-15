@@ -776,7 +776,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:
          return runloop_core_options;
-      case RUNLOOP_CTL_COREOPTS_GET:
+      case RUNLOOP_CTL_CORE_OPTIONS_LIST_GET:
          {
             core_option_manager_t **coreopts = (core_option_manager_t**)data;
             if (!coreopts)

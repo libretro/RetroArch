@@ -1256,7 +1256,7 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       core_option_manager_t *coreopts = NULL;
       const char *core_opt = NULL;
 
-      if (runloop_ctl(RUNLOOP_CTL_COREOPTS_GET, &coreopts))
+      if (runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
       {
          core_opt = core_option_manager_get_val(coreopts,
                type - MENU_SETTINGS_CORE_OPTION_START);

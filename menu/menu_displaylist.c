@@ -3930,7 +3930,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             {
                core_option_manager_t *coreopts = NULL;
 
-               runloop_ctl(RUNLOOP_CTL_COREOPTS_GET, &coreopts);
+               runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
                for (i = 0; i < opts; i++)
                   menu_entries_add(info->list,

@@ -258,7 +258,7 @@ static int action_start_core_setting(unsigned type,
    unsigned idx                = type - MENU_SETTINGS_CORE_OPTION_START;
    core_option_manager_t *coreopts = NULL;
    
-   if (runloop_ctl(RUNLOOP_CTL_COREOPTS_GET, &coreopts))
+   if (runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
       core_option_manager_set_default(coreopts, idx);
 
    return 0;
