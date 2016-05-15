@@ -1573,6 +1573,11 @@ void rglTexImage2DMultisample( 	GLenum target,
 #endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.5 
+ */
 void * rglMapBuffer(	GLenum target, GLenum access)
 {
 #if defined(HAVE_OPENGLES)
@@ -1582,6 +1587,11 @@ void * rglMapBuffer(	GLenum target, GLenum access)
 #endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 1.5 
+ */
 GLboolean rglUnmapBuffer( 	GLenum target)
 {
 #if defined(HAVE_OPENGLES)
