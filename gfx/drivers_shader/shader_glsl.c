@@ -1011,7 +1011,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       const void *_fbo_info, unsigned fbo_info_cnt)
 {
    unsigned i;
-   struct uniform_info uniform_params[10] = {{0}};
    GLfloat buffer[512];
    struct glsl_attrib attribs[32];
    float input_size[2], output_size[2], texture_size[2];
@@ -1065,7 +1064,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    /* Set lookup textures. */
    for (i = 0; i < glsl->shader->luts; i++)
    {
-      struct uniform_info lut_uniform = {0};
       if (uni->lut_texture[i] < 0)
          continue;
 
@@ -1083,7 +1081,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       /* Set original texture. */
       if (uni->orig.texture >= 0)
       {
-         struct uniform_info orig_tex_uniform = {0};
          /* Bind original texture. */
          glActiveTexture(GL_TEXTURE0 + texunit);
          glUniform1i(uni->orig.texture, texunit);
@@ -1143,7 +1140,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       for (i = 0; i < fbo_info_cnt; i++)
       {
          unsigned j;
-         struct uniform_info fbo_tex_params[3] = {{0}};
 
          if (uni->pass[i].texture)
          {
@@ -1177,7 +1173,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    for (i = 0; i < PREV_TEXTURES; i++)
    {
       unsigned j;
-      struct uniform_info prev_tex_params[3] = {{0}};
 
       if (uni->prev[i].texture >= 0)
       {
