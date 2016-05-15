@@ -586,6 +586,54 @@ static bool rarch_game_specific_options(char **output)
    return true;
 }
 
+static bool runloop_is_focused(void)
+{
+   settings_t *settings      = config_get_ptr();
+   if (settings->pause_nonactive)
+      return video_driver_is_focused();
+   return true;
+}
+
+static bool runloop_check_pause_state(event_cmd_state_t *cmd)
+{
+   bool check_is_oneshot = false;
+
+   if (!cmd)
+      return false;
+
+   check_is_oneshot      = runloop_cmd_triggered(cmd,
+         RARCH_FRAMEADVANCE) 
+      || runloop_cmd_press(cmd, RARCH_REWIND);
+
+   if (!runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+      return true;
+
+   if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
+   {
+      command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+      video_driver_cached_frame_render();
+   }
+
+   if (!check_is_oneshot)
+      return false;
+
+   return true;
+}
+
+static bool runloop_check_idle_state(event_cmd_state_t *cmd)
+{
+   settings_t *settings      = config_get_ptr();
+   bool focused              =  runloop_is_focused();
+
+   runloop_check_pause(settings, focused,
+         runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
+         runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
+
+   if (!runloop_check_pause_state(cmd) || !focused)
+      return false;
+   return true;
+}
+
 static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader_dir)
 {
    bool tmp                  = false;
@@ -622,7 +670,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    tmp = runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &tmp);
 #endif
-   if (!runloop_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, cmd))
+   if (!runloop_check_idle_state(cmd))
       return false;
 
    runloop_check_fast_forward_button(
@@ -673,44 +721,11 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    return true;
 }
 
-static bool runloop_check_pause_state(event_cmd_state_t *cmd)
-{
-   bool check_is_oneshot = false;
-
-   if (!cmd)
-      return false;
-
-   check_is_oneshot      = runloop_cmd_triggered(cmd,
-         RARCH_FRAMEADVANCE) 
-      || runloop_cmd_press(cmd, RARCH_REWIND);
-
-   if (!runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
-      return true;
-
-   if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
-   {
-      command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-      video_driver_cached_frame_render();
-   }
-
-   if (!check_is_oneshot)
-      return false;
-
-   return true;
-}
-
 void runloop_iterate_data(void)
 {
    task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
 }
 
-static bool runloop_is_focused(void)
-{
-   settings_t *settings                             = config_get_ptr();
-   if (settings->pause_nonactive)
-      return video_driver_is_focused();
-   return true;
-}
 
 static bool runloop_is_frame_count_end(void)
 {
@@ -739,6 +754,7 @@ bool runloop_prepare_dummy(void)
 #endif
    return true;
 }
+
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {
@@ -934,19 +950,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             if (!fullpath)
                return false;
             strlcpy(runloop_fullpath, fullpath, sizeof(runloop_fullpath));
-         }
-         break;
-      case RUNLOOP_CTL_CHECK_IDLE_STATE:
-         {
-            event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
-            bool focused              =  runloop_is_focused();
-
-            runloop_check_pause(settings, focused,
-                  runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
-                  runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
-
-            if (!runloop_check_pause_state(cmd) || !focused)
-               return false;
          }
          break;
       case RUNLOOP_CTL_FRAME_TIME_FREE:
