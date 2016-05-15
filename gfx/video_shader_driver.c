@@ -136,7 +136,8 @@ bool video_shader_driver_set_parameter(struct uniform_info *param)
 {
    if (!current_shader || !param)
       return false;
-   current_shader->set_uniform_parameter(shader_data, param);
+   current_shader->set_uniform_parameter(shader_data,
+         param, NULL);
    return true;
 }
 

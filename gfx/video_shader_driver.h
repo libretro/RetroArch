@@ -149,7 +149,8 @@ typedef struct shader_backend
          const void *prev_info,
          const void *feedback_info,
          const void *fbo_info, unsigned fbo_info_cnt);
-   void (*set_uniform_parameter)(void *data, struct uniform_info *param);
+   void (*set_uniform_parameter)(void *data, struct uniform_info *param,
+         void *uniform_data);
    bool (*compile_program)(void *data, unsigned idx,
          void *program_data, struct shader_program_info *program_info);
 
