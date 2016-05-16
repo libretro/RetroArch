@@ -19,11 +19,11 @@
 #endif
 
 .align 4
-.globl convert_float_s16_asm
-.globl _convert_float_s16_asm
-# convert_float_s16_asm(int16_t *out, const float *in, size_t samples)
-convert_float_s16_asm:
-_convert_float_s16_asm:
+.globl audio_convert_float_s16_asm
+.globl _audio_convert_float_s16_asm
+# audio_convert_float_s16_asm(int16_t *out, const float *in, size_t samples)
+audio_convert_float_s16_asm:
+_audio_convert_float_s16_asm:
    # Hacky way to get a constant of 2^15.
    # ((2^4)^2)^2 * 0.5 = 2^15
    vmov.f32 q8, #16.0
