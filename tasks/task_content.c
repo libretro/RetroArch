@@ -71,6 +71,26 @@ bool rarch_task_push_content_load_default(
 {
    bool load_content            = false;
 
+   switch (mode)
+   {
+      case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
+         break;
+      case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
+         break;
+      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
+         break;
+      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
+         break;
+      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+         break;
+      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+         break;
+      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
+         break;
+      case CONTENT_MODE_LOAD_NONE:
+         break;
+   }
+
    switch (type)
    {
       case CORE_TYPE_PLAIN:
