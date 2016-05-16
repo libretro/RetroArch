@@ -534,6 +534,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
    params->scale_factor = 1;
    params->threads = 1;
    params->frame_drop_ratio = 1;
+   params->audio_enable = true;
 
    if (!config)
       return true;
