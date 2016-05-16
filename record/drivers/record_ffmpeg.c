@@ -60,8 +60,7 @@ extern "C" {
 #include <gfx/scaler/scaler.h>
 #include <file/config_file.h>
 #include <conversion/float_to_s16.h>
-
-#include "../../audio/audio_utils.h"
+#include <conversion/s16_to_float.h>
 
 #include "../../general.h"
 #include "../../verbosity.h"

@@ -205,7 +205,8 @@ else ifeq ($(platform), vita)
 			 -lSceSysmodule_stub -lSceCtrl_stub -lSceAudio_stub -lUVLoader_stub \
 			 -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lfreetype -lz -lm -lc -lpng
 
-  PLATOBJS += audio/audio_utils_neon.o audio/drivers_resampler/sinc_resampler_neon.o \
+  PLATOBJS += libretro-common/conversion/s16_to_float_neon.o \
+				  audio/drivers_resampler/sinc_resampler_neon.o \
               audio/drivers_resampler/cc_resampler_neon.o
 
   LIBDIRS += -L.

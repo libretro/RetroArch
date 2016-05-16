@@ -20,11 +20,11 @@
 
 #include <lists/string_list.h>
 #include <conversion/float_to_s16.h>
+#include <conversion/s16_to_float.h>
 
 #include "audio_driver.h"
 #include "audio_resampler_driver.h"
 #include "../record/record_driver.h"
-#include "audio_utils.h"
 #include "audio_thread_wrapper.h"
 
 #include "../command.h"
