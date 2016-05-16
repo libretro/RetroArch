@@ -74,9 +74,9 @@ static void menu_content_environment_get(int *argc, char *argv[],
          ? settings->path.libretro : NULL;
 
 }
-
+#endif
 /**
- * menu_content_load:
+ * content_load_wrapper:
  *
  * Loads content into currently selected core.
  * Will also optionally push the content entry to the history playlist.
@@ -84,50 +84,59 @@ static void menu_content_environment_get(int *argc, char *argv[],
  * Returns: true (1) if successful, otherwise false (0).
  **/
 
-static bool menu_content_load(content_ctx_info_t *content_info)
+static bool content_load_wrapper(
+      content_ctx_info_t *content_info,
+      bool launched_from_menu)
 {
    char name[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
    char *fullpath       = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-   /* redraw menu frame */
-   menu_display_set_msg_force(true);
-   menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
+   if (launched_from_menu)
+   {
+      runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+      /* redraw menu frame */
+      menu_display_set_msg_force(true);
+      menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
-
-   fill_pathname_base(name, fullpath, sizeof(name));
+      fill_pathname_base(name, fullpath, sizeof(name));
+   }
 
    if (!content_load(content_info))
       goto error;
 
-   /** Show loading OSD message */
-   if (*fullpath)
+   if (launched_from_menu)
    {
-      snprintf(msg, sizeof(msg), "INFO - Loading %s ...", name);
-      runloop_msg_queue_push(msg, 1, 1, false);
-   }
+      /** Show loading OSD message */
+      if (*fullpath)
+      {
+         snprintf(msg, sizeof(msg), "INFO - Loading %s ...", name);
+         runloop_msg_queue_push(msg, 1, 1, false);
+      }
 
-   /* Push entry to top of playlist */
-   if (*fullpath || 
-         menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
-   {
-      struct retro_system_info *info = NULL;
-      menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-            &info);
-      content_push_to_history_playlist(true, fullpath, info);
-      playlist_write_file(g_defaults.history);
+      /* Push entry to top of playlist */
+      if (*fullpath || 
+            menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
+      {
+         struct retro_system_info *info = NULL;
+         menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+               &info);
+         content_push_to_history_playlist(true, fullpath, info);
+         playlist_write_file(g_defaults.history);
+      }
    }
 
    return true;
 
 error:
-   if (*fullpath)
-      snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
-   runloop_msg_queue_push(msg, 1, 90, false);
+   if (launched_from_menu)
+   {
+      if (*fullpath)
+         snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
+      runloop_msg_queue_push(msg, 1, 90, false);
+   }
    return false;
 }
-#endif
 
 static bool command_event_cmd_exec(void *data)
 {
@@ -149,13 +158,13 @@ static bool command_event_cmd_exec(void *data)
    }
 
 #if defined(HAVE_DYNAMIC)
-#ifdef HAVE_MENU
-   if (!menu_content_load(&content_info))
+   if (!content_load_wrapper(&content_info, false))
    {
+#ifdef HAVE_MENU
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+#endif
       return false;
    }
-#endif
 #else
    frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
 #endif
@@ -182,7 +191,7 @@ bool rarch_task_push_content_load_default(
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 #ifdef HAVE_MENU
-         if (!menu_content_load(content_info))
+         if (!content_load_wrapper(content_info, true))
             goto error;
 #endif
          break;
@@ -194,7 +203,7 @@ bool rarch_task_push_content_load_default(
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
 #ifdef HAVE_MENU
-         if (!menu_content_load(content_info))
+         if (!content_load_wrapper(content_info, true))
             goto error;
 #endif
          break;
@@ -203,11 +212,11 @@ bool rarch_task_push_content_load_default(
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 #ifdef HAVE_MENU
-         if (!menu_content_load(content_info))
+         if (!content_load_wrapper(content_info, true))
             goto error;
 #endif
 #ifdef HAVE_MENU
-         if (!menu_content_load(content_info))
+         if (!content_load_wrapper(content_info, true))
             goto error;
 #endif
          break;
@@ -219,7 +228,7 @@ bool rarch_task_push_content_load_default(
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
 #ifdef HAVE_MENU
-         if (!menu_content_load(content_info))
+         if (!content_load_wrapper(content_info, true))
             goto error;
 #endif
          break;
@@ -231,7 +240,7 @@ bool rarch_task_push_content_load_default(
 #endif
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
 #ifdef HAVE_MENU
-         if (!menu_content_load(content_info))
+         if (!content_load_wrapper(content_info, true))
             goto error;
 #endif
          break;
@@ -241,16 +250,16 @@ bool rarch_task_push_content_load_default(
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #ifdef HAVE_MENU
-         if (!menu_content_load(content_info))
+         if (!content_load_wrapper(content_info, true))
             goto error;
 #endif
 #else
          {
-         char *fullpath       = NULL;
+            char *fullpath       = NULL;
 
-         runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-         command_event_cmd_exec((void*)fullpath);
-         command_event(CMD_EVENT_QUIT, NULL);
+            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+            command_event_cmd_exec((void*)fullpath);
+            command_event(CMD_EVENT_QUIT, NULL);
          }
 #endif
          break;
