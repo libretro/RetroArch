@@ -36,6 +36,8 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 
+#include "../tasks/tasks_internal.h"
+
 static void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
@@ -141,11 +143,11 @@ error:
 static bool menu_content_load_from_playlist(void *data)
 {
    unsigned idx;
+   playlist_t *playlist         = NULL;
    const char *core_path        = NULL;
    const char *path             = NULL;
    menu_content_ctx_playlist_info_t *info = 
       (menu_content_ctx_playlist_info_t *)data;
-   playlist_t *playlist = NULL;
    
    if (!info)
       return false;
@@ -188,19 +190,15 @@ static bool menu_content_load_from_playlist(void *data)
          goto error;
    }
 
-   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-
-   if (path)
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
-   else
-      menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
-
-   if (!command_event(CMD_EVENT_EXEC, (void*)path))
-      return false;
-
-   command_event(CMD_EVENT_LOAD_CORE, NULL);
-
-   return true;
+   if (rarch_task_push_content_load_default(
+         core_path,
+         path,
+         false,
+         CORE_TYPE_PLAIN,
+         CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU,
+         NULL,
+         NULL))
+      return true;
 
 error:
    runloop_msg_queue_push("File could not be loaded.\n", 1, 100, true);

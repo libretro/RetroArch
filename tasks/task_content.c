@@ -118,6 +118,19 @@ bool rarch_task_push_content_load_default(
          }
 #endif
          break;
+      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+
+         if (fullpath)
+            menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+         else
+            menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
+
+         if (!command_event(CMD_EVENT_EXEC, (void*)fullpath))
+            return false;
+
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
+         break;
       case CONTENT_MODE_LOAD_NONE:
          break;
    }
