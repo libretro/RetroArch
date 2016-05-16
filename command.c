@@ -1625,12 +1625,12 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_LOAD_CONTENT_PERSIST:
-#ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
-#endif
-         /* fall-through */
       case CMD_EVENT_LOAD_CONTENT_FFMPEG:
       case CMD_EVENT_LOAD_CONTENT_IMAGEVIEWER:
+#ifdef HAVE_DYNAMIC
+         if (cmd == CMD_EVENT_LOAD_CONTENT_PERSIST)
+            command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
 #ifdef HAVE_MENU
          if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
          {
