@@ -36,6 +36,7 @@ enum content_mode_load
 {
    CONTENT_MODE_LOAD_NONE = 0,
    CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+   CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
    CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU,
@@ -127,6 +128,7 @@ bool rarch_task_push_content_load_default(
       const char *fullpath,
       bool persist,
       enum rarch_core_type type,
+      enum content_mode_load mode,
       retro_task_callback_t cb,
       void *user_data);
 

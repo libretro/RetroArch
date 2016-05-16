@@ -749,6 +749,7 @@ bool runloop_prepare_dummy(void)
    return rarch_task_push_content_load_default(
          NULL, NULL,
          true, CORE_TYPE_DUMMY,
+         CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
          NULL, NULL);
 }
 

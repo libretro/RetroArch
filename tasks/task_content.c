@@ -61,9 +61,13 @@ static bool task_content_load(bool persist, bool load_content)
 }
 
 bool rarch_task_push_content_load_default(
-      const char *core_path, const char *fullpath,
-      bool persist, enum rarch_core_type type,
-      retro_task_callback_t cb, void *user_data)
+      const char *core_path,
+      const char *fullpath,
+      bool persist,
+      enum rarch_core_type type,
+      enum content_mode_load mode,
+      retro_task_callback_t cb,
+      void *user_data)
 {
    bool load_content            = false;
 
