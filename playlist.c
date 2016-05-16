@@ -30,7 +30,7 @@
 #define PLAYLIST_ENTRIES 6
 #endif
 
-struct content_playlist_entry
+struct playlist_entry
 {
    char *path;
    char *label;
@@ -42,7 +42,7 @@ struct content_playlist_entry
 
 struct content_playlist
 {
-   struct content_playlist_entry *entries;
+   struct playlist_entry *entries;
    size_t size;
    size_t cap;
 
@@ -50,7 +50,7 @@ struct content_playlist
 };
 
 /**
- * content_playlist_get_index:
+ * playlist_get_index:
  * @playlist            : Playlist handle.
  * @idx                 : Index of playlist entry.
  * @path                : Path of playlist entry.
@@ -59,7 +59,7 @@ struct content_playlist
  * 
  * Gets values of playlist index: 
  **/
-void content_playlist_get_index(content_playlist_t *playlist,
+void playlist_get_index(playlist_t *playlist,
       size_t idx,
       const char **path, const char **label,
       const char **core_path, const char **core_name,
@@ -83,7 +83,7 @@ void content_playlist_get_index(content_playlist_t *playlist,
       *crc32     = playlist->entries[idx].crc32;
 }
 
-void content_playlist_get_index_by_path(content_playlist_t *playlist,
+void playlist_get_index_by_path(playlist_t *playlist,
       const char *search_path,
       char **path, char **label,
       char **core_path, char **core_name,
@@ -115,7 +115,7 @@ void content_playlist_get_index_by_path(content_playlist_t *playlist,
    }
 }
 
-bool content_playlist_entry_exists(content_playlist_t *playlist,
+bool playlist_entry_exists(playlist_t *playlist,
       const char *path,
       const char *crc32)
 {
@@ -131,12 +131,12 @@ bool content_playlist_entry_exists(content_playlist_t *playlist,
 }
 
 /**
- * content_playlist_free_entry:
+ * playlist_free_entry:
  * @entry               : Playlist entry handle.
  *
  * Frees playlist entry.
  **/
-static void content_playlist_free_entry(content_playlist_entry_t *entry)
+static void playlist_free_entry(playlist_entry_t *entry)
 {
    if (!entry)
       return;
@@ -168,13 +168,13 @@ static void content_playlist_free_entry(content_playlist_entry_t *entry)
    memset(entry, 0, sizeof(*entry));
 }
 
-void content_playlist_update(content_playlist_t *playlist, size_t idx,
+void playlist_update(playlist_t *playlist, size_t idx,
       const char *path, const char *label,
       const char *core_path, const char *core_name,
       const char *crc32,
       const char *db_name)
 {
-   content_playlist_entry_t *entry = NULL;
+   playlist_entry_t *entry = NULL;
    if (!playlist)
       return;
    if (idx > playlist->size)
@@ -194,7 +194,7 @@ void content_playlist_update(content_playlist_t *playlist, size_t idx,
 }
 
 /**
- * content_playlist_push:
+ * playlist_push:
  * @playlist        	   : Playlist handle.
  * @path                : Path of new playlist entry.
  * @core_path           : Core path of new playlist entry.
@@ -202,7 +202,7 @@ void content_playlist_update(content_playlist_t *playlist, size_t idx,
  *
  * Push entry to top of playlist.
  **/
-void content_playlist_push(content_playlist_t *playlist,
+void playlist_push(playlist_t *playlist,
       const char *path, const char *label,
       const char *core_path, const char *core_name,
       const char *crc32,
@@ -224,7 +224,7 @@ void content_playlist_push(content_playlist_t *playlist,
 
    for (i = 0; i < playlist->size; i++)
    {
-      content_playlist_entry_t tmp;
+      playlist_entry_t tmp;
       bool equal_path = (!path && !playlist->entries[i].path) ||
          (path && playlist->entries[i].path &&
           string_is_equal(path,playlist->entries[i].path));
@@ -245,7 +245,7 @@ void content_playlist_push(content_playlist_t *playlist,
       /* Seen it before, bump to top. */
       tmp = playlist->entries[i];
       memmove(playlist->entries + 1, playlist->entries,
-            i * sizeof(content_playlist_entry_t));
+            i * sizeof(playlist_entry_t));
       playlist->entries[0] = tmp;
 
       return;
@@ -253,12 +253,12 @@ void content_playlist_push(content_playlist_t *playlist,
 
    if (playlist->size == playlist->cap)
    {
-      content_playlist_free_entry(&playlist->entries[playlist->cap - 1]);
+      playlist_free_entry(&playlist->entries[playlist->cap - 1]);
       playlist->size--;
    }
 
    memmove(playlist->entries + 1, playlist->entries,
-         (playlist->cap - 1) * sizeof(content_playlist_entry_t));
+         (playlist->cap - 1) * sizeof(playlist_entry_t));
 
    playlist->entries[0].path      = path      ? strdup(path)      : NULL;
    playlist->entries[0].label     = label     ? strdup(label)     : NULL;
@@ -269,7 +269,7 @@ void content_playlist_push(content_playlist_t *playlist,
    playlist->size++;
 }
 
-void content_playlist_write_file(content_playlist_t *playlist)
+void playlist_write_file(playlist_t *playlist)
 {
    size_t i;
    FILE *file = NULL;
@@ -296,12 +296,12 @@ void content_playlist_write_file(content_playlist_t *playlist)
 }
 
 /**
- * content_playlist_free:
+ * playlist_free:
  * @playlist            : Playlist handle.
  *
  * Frees playlist handle.
  */
-void content_playlist_free(content_playlist_t *playlist)
+void playlist_free(playlist_t *playlist)
 {
    size_t i;
 
@@ -314,7 +314,7 @@ void content_playlist_free(content_playlist_t *playlist)
    playlist->conf_path = NULL;
 
    for (i = 0; i < playlist->cap; i++)
-      content_playlist_free_entry(&playlist->entries[i]);
+      playlist_free_entry(&playlist->entries[i]);
 
    free(playlist->entries);
    playlist->entries = NULL;
@@ -323,50 +323,50 @@ void content_playlist_free(content_playlist_t *playlist)
 }
 
 /**
- * content_playlist_clear:
+ * playlist_clear:
  * @playlist        	   : Playlist handle.
  *
  * Clears all playlist entries in playlist.
  **/
-void content_playlist_clear(content_playlist_t *playlist)
+void playlist_clear(playlist_t *playlist)
 {
    size_t i;
    if (!playlist)
       return;
 
    for (i = 0; i < playlist->cap; i++)
-      content_playlist_free_entry(&playlist->entries[i]);
+      playlist_free_entry(&playlist->entries[i]);
    playlist->size = 0;
 }
 
 /**
- * content_playlist_size:
+ * playlist_size:
  * @playlist        	   : Playlist handle.
  *
  * Gets size of playlist.
  * Returns: size of playlist.
  **/
-size_t content_playlist_size(content_playlist_t *playlist)
+size_t playlist_size(playlist_t *playlist)
 {
    if (!playlist)
       return 0;
    return playlist->size;
 }
 
-const char *content_playlist_entry_get_label(
-      const content_playlist_entry_t *entry)
+const char *playlist_entry_get_label(
+      const playlist_entry_t *entry)
 {
    if (!entry)
       return NULL;
    return entry->label;
 }
 
-static bool content_playlist_read_file(
-      content_playlist_t *playlist, const char *path)
+static bool playlist_read_file(
+      playlist_t *playlist, const char *path)
 {
    unsigned i;
    char buf[PLAYLIST_ENTRIES][1024] = {{0}};
-   content_playlist_entry_t *entry  = NULL;
+   playlist_entry_t *entry  = NULL;
    char *last                       = NULL;
    FILE *file                       = fopen(path, "r");
 
@@ -414,7 +414,7 @@ end:
 }
 
 /**
- * content_playlist_init:
+ * playlist_init:
  * @path            	   : Path to playlist contents file.
  * @size                : Maximum capacity of playlist size.
  *
@@ -422,34 +422,34 @@ end:
  *
  * Returns: handle to new playlist if successful, otherwise NULL
  **/
-content_playlist_t *content_playlist_init(const char *path, size_t size)
+playlist_t *playlist_init(const char *path, size_t size)
 {
-   content_playlist_t *playlist = (content_playlist_t*)
+   playlist_t *playlist = (playlist_t*)
       calloc(1, sizeof(*playlist));
    if (!playlist)
       return NULL;
 
-   playlist->entries = (content_playlist_entry_t*)calloc(size,
+   playlist->entries = (playlist_entry_t*)calloc(size,
          sizeof(*playlist->entries));
    if (!playlist->entries)
       goto error;
 
    playlist->cap = size;
 
-   content_playlist_read_file(playlist, path);
+   playlist_read_file(playlist, path);
 
    playlist->conf_path = strdup(path);
    return playlist;
 
 error:
-   content_playlist_free(playlist);
+   playlist_free(playlist);
    return NULL;
 }
 
-void content_playlist_qsort(content_playlist_t *playlist,
-      content_playlist_sort_fun_t *fn)
+void playlist_qsort(playlist_t *playlist,
+      playlist_sort_fun_t *fn)
 {
    qsort(playlist->entries, playlist->size,
-         sizeof(content_playlist_entry_t),
+         sizeof(playlist_entry_t),
          (int (*)(const void *, const void *))fn);
 }

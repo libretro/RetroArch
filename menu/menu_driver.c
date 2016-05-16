@@ -291,7 +291,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
    static bool menu_driver_data_own                = false;
    static bool menu_driver_pending_quit            = false;
    static bool menu_driver_pending_shutdown        = false;
-   static content_playlist_t *menu_driver_playlist = NULL;
+   static playlist_t *menu_driver_playlist = NULL;
    static struct video_shader *menu_driver_shader  = NULL;
    static menu_handle_t *menu_driver_data          = NULL;
    static const menu_ctx_driver_t *menu_driver_ctx = NULL;
@@ -357,7 +357,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_PLAYLIST_FREE:
          if (menu_driver_playlist)
-            content_playlist_free(menu_driver_playlist);
+            playlist_free(menu_driver_playlist);
          menu_driver_playlist = NULL;
          break;
       case RARCH_MENU_CTL_FIND_DRIVER:
@@ -402,13 +402,13 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             const char *path = (const char*)data;
             if (string_is_empty(path))
                return false;
-            menu_driver_playlist  = content_playlist_init(path,
+            menu_driver_playlist  = playlist_init(path,
                   COLLECTION_SIZE);
          }
          break;
       case RARCH_MENU_CTL_PLAYLIST_GET:
          {
-            content_playlist_t **playlist = (content_playlist_t**)data;
+            playlist_t **playlist = (playlist_t**)data;
             if (!playlist)
                return false;
             *playlist = menu_driver_playlist;

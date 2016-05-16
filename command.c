@@ -1942,8 +1942,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_HISTORY_DEINIT:
          if (g_defaults.history)
          {
-            content_playlist_write_file(g_defaults.history);
-            content_playlist_free(g_defaults.history);
+            playlist_write_file(g_defaults.history);
+            playlist_free(g_defaults.history);
          }
          g_defaults.history = NULL;
          break;
@@ -1954,7 +1954,7 @@ bool command_event(enum event_command cmd, void *data)
          RARCH_LOG("%s: [%s].\n",
                msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                settings->path.content_history);
-         g_defaults.history = content_playlist_init(
+         g_defaults.history = playlist_init(
                settings->path.content_history,
                settings->content_history_size);
          break;

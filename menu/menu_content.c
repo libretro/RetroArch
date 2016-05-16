@@ -120,7 +120,7 @@ static bool menu_content_load(void)
       menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
             &info);
       content_push_to_history_playlist(true, fullpath, info);
-      content_playlist_write_file(g_defaults.history);
+      playlist_write_file(g_defaults.history);
    }
 
    return true;
@@ -145,18 +145,18 @@ static bool menu_content_load_from_playlist(void *data)
    const char *path             = NULL;
    menu_content_ctx_playlist_info_t *info = 
       (menu_content_ctx_playlist_info_t *)data;
-   content_playlist_t *playlist = NULL;
+   playlist_t *playlist = NULL;
    
    if (!info)
       return false;
 
-   playlist = (content_playlist_t*)info->data;
+   playlist = (playlist_t*)info->data;
    idx      = info->idx;
 
    if (!playlist)
       return false;
 
-   content_playlist_get_index(playlist,
+   playlist_get_index(playlist,
          idx, &path, NULL, &core_path, NULL, NULL, NULL);
 
    if (!string_is_empty(path))

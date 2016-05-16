@@ -287,7 +287,7 @@ static int database_info_list_iterate_found_match(
    char db_playlist_path[PATH_MAX_LENGTH]      = {0};
    char  db_playlist_base_str[PATH_MAX_LENGTH] = {0};
    char entry_path_str[PATH_MAX_LENGTH]        = {0};
-   content_playlist_t   *playlist = NULL;
+   playlist_t   *playlist = NULL;
    settings_t           *settings = config_get_ptr();
    const char            *db_path = db_state->list->elems[
       db_state->list_index].data;
@@ -305,7 +305,7 @@ static int database_info_list_iterate_found_match(
    fill_pathname_join(db_playlist_path, settings->directory.playlist,
          db_playlist_base_str, sizeof(db_playlist_path));
 
-   playlist = content_playlist_init(db_playlist_path, COLLECTION_SIZE);
+   playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
 
    snprintf(db_crc, sizeof(db_crc), "%08X|crc", db_info_entry->crc32);
@@ -328,15 +328,15 @@ static int database_info_list_iterate_found_match(
    RARCH_LOG("entry path str: %s\n", entry_path_str);
 #endif
 
-   if(!content_playlist_entry_exists(playlist, entry_path_str, db_crc))
+   if(!playlist_entry_exists(playlist, entry_path_str, db_crc))
    {
-      content_playlist_push(playlist, entry_path_str,
+      playlist_push(playlist, entry_path_str,
             db_info_entry->name, "DETECT", "DETECT",
             db_crc, db_playlist_base_str);
    }
 
-   content_playlist_write_file(playlist);
-   content_playlist_free(playlist);
+   playlist_write_file(playlist);
+   playlist_free(playlist);
 
    database_info_list_free(db_state->info);
 

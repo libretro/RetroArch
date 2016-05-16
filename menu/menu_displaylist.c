@@ -1276,7 +1276,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 }
 
 static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
-      content_playlist_t *playlist, const char *path_playlist, bool is_history)
+      playlist_t *playlist, const char *path_playlist, bool is_history)
 {
    unsigned i;
    size_t list_size = 0;
@@ -1284,7 +1284,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    if (!playlist)
       return -1;
 
-   list_size = content_playlist_size(playlist);
+   list_size = playlist_size(playlist);
 
    if (list_size == 0)
    {
@@ -1309,7 +1309,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
       path = path_copy;
 
-      content_playlist_get_index(playlist, i,
+      playlist_get_index(playlist, i,
             &path, &label, NULL, &core_name, &crc32, &db_name);
       strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
@@ -1512,7 +1512,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    char path_playlist[PATH_MAX_LENGTH];
    char path_base[PATH_MAX_LENGTH]     = {0};
    char query[PATH_MAX_LENGTH]         = {0};
-   content_playlist_t *playlist        = NULL;
+   playlist_t *playlist        = NULL;
    database_info_list_t *db_info       = NULL;
    menu_handle_t *menu                 = NULL;
    settings_t *settings                = config_get_ptr();
@@ -1534,7 +1534,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    fill_pathname_join(path_playlist, settings->directory.playlist, path_base,
          sizeof(path_playlist));
 
-   playlist = content_playlist_init(path_playlist, COLLECTION_SIZE);
+   playlist = playlist_init(path_playlist, COLLECTION_SIZE);
 
    if (playlist)
       strlcpy(menu->db_playlist_file, path_playlist,
@@ -1558,7 +1558,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 
       if (playlist)
       {
-         for (j = 0; j < content_playlist_size(playlist); j++)
+         for (j = 0; j < playlist_size(playlist); j++)
          {
             const char *crc32                = NULL;
             char elem0[PATH_MAX_LENGTH]      = {0};
@@ -1567,7 +1567,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             struct string_list *tmp_str_list = NULL;
             uint32_t hash_value              = 0;
 
-            content_playlist_get_index(playlist, j,
+            playlist_get_index(playlist, j,
                   NULL, NULL, NULL, NULL,
                   NULL, &crc32);
 
@@ -1865,13 +1865,13 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             menu_hash_to_str(MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
             0, 0, 0);
 
-   content_playlist_free(playlist);
+   playlist_free(playlist);
    database_info_list_free(db_info);
 
    return 0;
 
 error:
-   content_playlist_free(playlist);
+   playlist_free(playlist);
 
    return -1;
 #else
@@ -2069,11 +2069,11 @@ loop:
    return 0;
 }
 
-static int menu_displaylist_sort_playlist(const content_playlist_entry_t *a,
-      const content_playlist_entry_t *b)
+static int menu_displaylist_sort_playlist(const playlist_entry_t *a,
+      const playlist_entry_t *b)
 {
-   const char *a_label = content_playlist_entry_get_label(a);
-   const char *b_label = content_playlist_entry_get_label(b);
+   const char *a_label = playlist_entry_get_label(a);
+   const char *b_label = playlist_entry_get_label(b);
 
    if (!a_label || !b_label)
       return 0;
@@ -2088,7 +2088,7 @@ static int menu_displaylist_parse_horizontal_list(
    menu_ctx_list_t list_horiz_info;
    char path_playlist[PATH_MAX_LENGTH], lpl_basename[PATH_MAX_LENGTH];
    bool is_historylist                 = false;
-   content_playlist_t *playlist        = NULL;
+   playlist_t *playlist        = NULL;
    menu_handle_t        *menu          = NULL;
    struct item_file *item              = NULL;
    settings_t      *settings           = config_get_ptr();
@@ -2132,7 +2132,7 @@ static int menu_displaylist_parse_horizontal_list(
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-   content_playlist_qsort(playlist, menu_displaylist_sort_playlist);
+   playlist_qsort(playlist, menu_displaylist_sort_playlist);
 
    if (string_is_equal(lpl_basename, "content_history"))
       is_historylist = true;
@@ -2246,7 +2246,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    const char *core_name           = NULL;
    const char *db_name             = NULL;
    char *fullpath                  = NULL;
-   content_playlist_t *playlist    = NULL;
+   playlist_t *playlist    = NULL;
    settings_t *settings            = config_get_ptr();
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
@@ -2263,7 +2263,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-   content_playlist_get_index(playlist, idx,
+   playlist_get_index(playlist, idx,
          NULL, &label, &core_path, &core_name, NULL, &db_name);
 
    if (!string_is_empty(db_name))
@@ -3735,7 +3735,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          else
          {
             char path_playlist[PATH_MAX_LENGTH];
-            content_playlist_t *playlist        = NULL;
+            playlist_t *playlist        = NULL;
 
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
 
@@ -3756,7 +3756,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-            content_playlist_qsort(playlist, menu_displaylist_sort_playlist);
+            playlist_qsort(playlist, menu_displaylist_sort_playlist);
 
             ret = menu_displaylist_parse_playlist(info,
                   playlist, path_playlist, false);
@@ -3772,7 +3772,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_HISTORY:
          {
             char path_playlist[PATH_MAX_LENGTH];
-            content_playlist_t *playlist        = g_defaults.history;
+            playlist_t *playlist        = g_defaults.history;
 
             if (!playlist)
                command_event(CMD_EVENT_HISTORY_INIT, NULL);
