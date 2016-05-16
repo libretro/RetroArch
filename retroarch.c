@@ -1251,12 +1251,11 @@ static void retroarch_validate_cpu_features(void)
  **/
 bool retroarch_main_init(int argc, char *argv[])
 {
-   int sjlj_ret;
    bool *verbosity   = NULL;
 
    retroarch_init_state();
 
-   if ((sjlj_ret = setjmp(error_sjlj_context)) > 0)
+   if (setjmp(error_sjlj_context) > 0)
    {
       RARCH_ERR("Fatal error received in: \"%s\"\n", error_string);
       return false;
