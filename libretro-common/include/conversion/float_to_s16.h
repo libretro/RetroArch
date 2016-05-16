@@ -114,7 +114,6 @@ void convert_float_to_s16_ALLEGREX(int16_t *out,
 #define convert_float_to_s16 convert_float_to_s16_C
 #endif
 
-
 RETRO_END_DECLS
 
 #endif

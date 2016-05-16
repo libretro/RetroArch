@@ -22,10 +22,6 @@
 #ifndef __LIBRETRO_SDK_CONVERSION_S16_TO_FLOAT_H__
 #define __LIBRETRO_SDK_CONVERSION_S16_TO_FLOAT_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <stddef.h>
 
