@@ -1668,11 +1668,7 @@ void rglCopyImageSubData( 	GLuint srcName,
 void rglBindVertexArray(GLuint array)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
-#if defined(__APPLE__) && !defined(CORE) && defined(GL_APPLE_vertex_array_object) && !defined(GL_ARB_vertex_array_object)
-   glBindVertexArraysAPPLE(array);
-#else
    glBindVertexArray(array);
-#endif
 #endif
 }
 
@@ -1686,11 +1682,7 @@ void rglBindVertexArray(GLuint array)
 void rglGenVertexArrays(GLsizei n, GLuint *arrays)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
-#if defined(__APPLE__) && !defined(CORE) && defined(GL_APPLE_vertex_array_object) && !defined(GL_ARB_vertex_array_object)
-   glGenVertexArraysAPPLE(n, arrays);
-#else
    glGenVertexArrays(n, arrays);
-#endif
 #endif
 }
 
@@ -1704,11 +1696,7 @@ void rglGenVertexArrays(GLsizei n, GLuint *arrays)
 void rglDeleteVertexArrays(GLsizei n, const GLuint *arrays)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
-#if defined(__APPLE__) && !defined(CORE) && defined(GL_APPLE_vertex_array_object) && !defined(GL_ARB_vertex_array_object)
-   glDeleteVertexArraysAPPLE(n, arrays);
-#else
    glDeleteVertexArrays(n, arrays);
-#endif
 #endif
 }
 
@@ -1836,7 +1824,7 @@ static void glsm_state_bind(void)
          gl_state.viewport.w,
          gl_state.viewport.h);
 #ifdef CORE
-   rglBindVertexArray(gl_state.vao);
+   glBindVertexArray(gl_state.vao);
 #endif
    for(i = 0; i < SGL_CAP_MAX; i ++)
    {
@@ -1876,7 +1864,7 @@ static void glsm_state_unbind(void)
 {
    unsigned i;
 #ifdef CORE
-   rglBindVertexArray(0);
+   glBindVertexArray(0);
 #endif
    for (i = 0; i < SGL_CAP_MAX; i ++)
    {
