@@ -24,6 +24,7 @@
 
 #include "frontend.h"
 #include "../ui/ui_companion_driver.h"
+#include "../tasks/tasks_internal.h"
 
 #include "../defaults.h"
 #include "../content.h"
@@ -126,7 +127,15 @@ int rarch_main(int argc, char *argv[], void *data)
       info.args            = args;
       info.environ_get     = frontend_driver_environment_get_ptr();
 
-      if (!content_load(&info))
+      if (!rarch_task_push_content_load_default(
+               NULL,
+               NULL,
+               false,
+               &info,
+               CORE_TYPE_PLAIN,
+               CONTENT_MODE_LOAD_FROM_CLI,
+               NULL,
+               NULL))
          return 0;
    }
 

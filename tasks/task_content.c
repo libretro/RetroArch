@@ -188,6 +188,10 @@ bool rarch_task_push_content_load_default(
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
          break;
+      case CONTENT_MODE_LOAD_FROM_CLI:
+         if (!content_load_wrapper(content_info, false))
+            goto error;
+         break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 #ifdef HAVE_MENU
@@ -281,7 +285,7 @@ bool rarch_task_push_content_load_default(
    }
 
 #ifdef HAVE_MENU
-   if (type != CORE_TYPE_DUMMY)
+   if (type != CORE_TYPE_DUMMY && mode != CONTENT_MODE_LOAD_FROM_CLI)
    {
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT,       NULL);
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
