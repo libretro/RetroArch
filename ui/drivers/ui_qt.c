@@ -23,8 +23,9 @@
 
 #include <file/file_path.h>
 #include <rthreads/rthreads.h>
-#include "../ui_companion_driver.h"
 
+#include "../ui_companion_driver.h"
+#include "../../tasks/tasks_internal.h"
 #include "qt/wrapper/wrapper.h"
 
 struct Wimp* wimp;
