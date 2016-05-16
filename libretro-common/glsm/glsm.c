@@ -204,6 +204,16 @@ void rglClear(GLbitfield mask)
 /*
  *
  * Core in:
+ * OpenGL    : 2.0
+ */
+void rglValidateProgram(GLuint program)
+{
+   glValidateProgram(program);
+}
+
+/*
+ *
+ * Core in:
  * OpenGL    : 1.0
  * OpenGLES  : N/A
  */
@@ -1304,6 +1314,37 @@ void rglGenBuffers(GLsizei n, GLuint *buffers)
 void rglUniform1f(GLint location, GLfloat v0)
 {
    glUniform1f(location, v0);
+}
+
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
+void rglUniform1fv(GLint location,  GLsizei count,  const GLfloat *value)
+{
+   glUniform1fv(location, count, value);
+}
+
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
+void rglUniform1iv(GLint location,  GLsizei count,  const GLint *value)
+{
+   glUniform1iv(location, count, value);
+}
+
+void rglRenderbufferStorageMultisample( 	GLenum target,
+  	GLsizei samples,
+  	GLenum internalformat,
+  	GLsizei width,
+  	GLsizei height)
+{
+   glRenderbufferStorageMultisample(target, samples, internalFormat, width, height);
 }
 
 /*

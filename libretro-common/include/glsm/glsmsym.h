@@ -150,7 +150,19 @@ RETRO_BEGIN_DECLS
 #define glProgramParameteri         rglProgramParameteri
 #define glTexSubImage2D             rglTexSubImage2D
 #define glDeleteVertexArrays        rglDeleteVertexArrays
+#define glRenderbufferStorageMultisample rglRenderbufferStorageMultisample
+#define glUniform1iv                rglUniform1iv
+#define glUniform1fv                rglUniform1fv
+#define glValidateProgram           rglValidateProgram
 
+void rglValidateProgram(GLuint program);
+void rglRenderbufferStorageMultisample( 	GLenum target,
+  	GLsizei samples,
+  	GLenum internalformat,
+  	GLsizei width,
+  	GLsizei height);
+void rglUniform1iv(GLint location,  GLsizei count,  const GLint *value);
+void rglUniform1fv(GLint location,  GLsizei count,  const GLfloat *value);
 void rglProgramParameteri( 	GLuint program,
   	GLenum pname,
   	GLint value);
