@@ -46,7 +46,7 @@ static const gfx_ctx_driver_t *gfx_ctx_drivers[] = {
 #if defined(HAVE_OPENDINGUX_FBDEV)
    &gfx_ctx_opendingux_fbdev,
 #endif
-#if defined(_WIN32) && defined(HAVE_OPENGL)
+#if defined(_WIN32) && (defined(HAVE_OPENGL) || defined(HAVE_VULKAN))
    &gfx_ctx_wgl,
 #endif
 #if defined(HAVE_WAYLAND)
