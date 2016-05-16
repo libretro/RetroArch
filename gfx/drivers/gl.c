@@ -112,17 +112,19 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
+static bool gl_core_context = false;
+
 static INLINE void context_bind_hw_render(gl_t *gl, bool enable)
 {
    if (gl && gl->shared_context_use)
       video_context_driver_bind_hw_render(&enable);
 }
 
-static INLINE bool gl_query_extension(gl_t *gl, const char *ext)
+static INLINE bool gl_query_extension(const char *ext)
 {
    bool ret = false;
 
-   if (gl->core_context)
+   if (gl_core_context)
    {
 #ifdef GL_NUM_EXTENSIONS
       GLint i;
@@ -175,7 +177,7 @@ static bool gl_check_eglimage_proc(void)
 #ifdef HAVE_GL_SYNC
 static bool gl_check_sync_proc(gl_t *gl)
 {
-   if (!gl_query_extension(gl, "ARB_sync"))
+   if (!gl_query_extension("ARB_sync"))
       return false;
 
    return glFenceSync && glDeleteSync && glClientWaitSync;
@@ -189,8 +191,7 @@ static bool gl_check_mipmap(void)
 
    if (!extension_queried)
    {
-      gl_t *gl          = (gl_t*)video_driver_get_ptr(false);
-      extension         = gl_query_extension(gl, "ARB_framebuffer_object");
+      extension         = gl_query_extension("ARB_framebuffer_object");
       extension_queried = true;
    }
 
@@ -203,7 +204,7 @@ static bool gl_check_mipmap(void)
 #ifndef HAVE_OPENGLES
 static bool gl_init_vao(gl_t *gl)
 {
-   if (!gl->core_context && !gl_query_extension(gl, "ARB_vertex_array_object"))
+   if (!gl_core_context && !gl_query_extension("ARB_vertex_array_object"))
       return false;
 
    if (!(glGenVertexArrays && glBindVertexArray && glDeleteVertexArrays))
@@ -226,12 +227,12 @@ static bool gl_init_vao(gl_t *gl)
 #define glFramebufferRenderbuffer glFramebufferRenderbufferOES
 #define glRenderbufferStorage glRenderbufferStorageOES
 #define glDeleteRenderbuffers glDeleteRenderbuffersOES
-#define gl_check_fbo_proc(gl) (true)
+#define gl_check_fbo_proc() (true)
 #elif !defined(HAVE_OPENGLES2)
-static bool gl_check_fbo_proc(gl_t *gl)
+static bool gl_check_fbo_proc(void)
 {
-   if (!gl->core_context && !gl_query_extension(gl, "ARB_framebuffer_object")
-         && !gl_query_extension(gl, "EXT_framebuffer_object"))
+   if (!gl_core_context && !gl_query_extension("ARB_framebuffer_object")
+         && !gl_query_extension("EXT_framebuffer_object"))
       return false;
 
    return glGenFramebuffers 
@@ -246,7 +247,7 @@ static bool gl_check_fbo_proc(gl_t *gl)
       && glDeleteRenderbuffers;
 }
 #else
-#define gl_check_fbo_proc(gl) (true)
+#define gl_check_fbo_proc() (true)
 #endif
 #endif
 
@@ -267,13 +268,13 @@ static bool gl_shader_init(gl_t *gl)
    }
 
    type = video_shader_parse_type(shader_path,
-         gl->core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
+         gl_core_context ? RARCH_SHADER_GLSL : DEFAULT_SHADER_TYPE);
 
    switch (type)
    {
 #ifdef HAVE_CG
       case RARCH_SHADER_CG:
-         if (gl->core_context)
+         if (gl_core_context)
             shader_path = NULL;
          break;
 #endif
@@ -288,7 +289,7 @@ static bool gl_shader_init(gl_t *gl)
          return true;
    }
 
-   init_data.gl.core_context_enabled = gl->core_context;
+   init_data.gl.core_context_enabled = gl_core_context;
    init_data.shader_type             = type;
    init_data.shader                  = NULL;
    init_data.data                    = gl;
@@ -308,7 +309,7 @@ static bool gl_shader_init(gl_t *gl)
 #ifndef NO_GL_FF_VERTEX
 static void gl_disable_client_arrays(gl_t *gl)
 {
-   if (!gl || gl->core_context)
+   if (!gl || gl_core_context)
       return;
 
    glClientActiveTexture(GL_TEXTURE1);
@@ -671,7 +672,7 @@ static void gl_init_fbo(gl_t *gl, unsigned fbo_width, unsigned fbo_height)
    if (shader_info.num == 1 && !scale.valid)
       return;
 
-   if (!gl_check_fbo_proc(gl))
+   if (!gl_check_fbo_proc())
    {
       RARCH_ERR("Failed to locate FBO functions. Won't be able to use render-to-texture.\n");
       return;
@@ -782,7 +783,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    RARCH_LOG("[GL]: Max texture size: %d px, renderbuffer size: %d px.\n",
          max_fbo_size, max_renderbuffer_size);
 
-   if (!gl_check_fbo_proc(gl))
+   if (!gl_check_fbo_proc())
       return false;
 
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -792,7 +793,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    stencil = hwr->stencil;
 
 #ifdef HAVE_OPENGLES2
-   if (stencil && !gl_query_extension(gl, "OES_packed_depth_stencil"))
+   if (stencil && !gl_query_extension("OES_packed_depth_stencil"))
       return false;
 #endif
 
@@ -1430,8 +1431,8 @@ static void gl_init_textures(gl_t *gl, const video_info_t *video)
 
    if (gl->hw_render_use && gl->base_size == sizeof(uint32_t))
    {
-      bool support_argb = gl_query_extension(gl, "OES_rgb8_rgba8")
-         || gl_query_extension(gl, "ARM_argb8");
+      bool support_argb = gl_query_extension("OES_rgb8_rgba8")
+         || gl_query_extension("ARM_argb8");
 
       if (support_argb)
       {
@@ -1775,7 +1776,7 @@ static bool gl_frame(void *data, const void *frame,
    context_bind_hw_render(gl, false);
 
 #ifndef HAVE_OPENGLES
-   if (gl->core_context)
+   if (gl_core_context)
       glBindVertexArray(gl->vao);
 #endif
 
@@ -1860,7 +1861,7 @@ static bool gl_frame(void *data, const void *frame,
       }
 
 #ifndef HAVE_OPENGLES
-      if (!gl->core_context)
+      if (!gl_core_context)
          glEnable(GL_TEXTURE_2D);
 #endif
       glDisable(GL_DEPTH_TEST);
@@ -2038,7 +2039,7 @@ static bool gl_frame(void *data, const void *frame,
 #endif
 
 #ifndef HAVE_OPENGLES
-   if (gl->core_context)
+   if (gl_core_context)
       glBindVertexArray(0);
 #endif
 
@@ -2066,6 +2067,20 @@ static void gl_free_overlay(gl_t *gl)
    gl->overlays             = 0;
 }
 #endif
+
+static void gl_destroy_resources(gl_t *gl)
+{
+   if (gl)
+   {
+      if (gl->empty_buf)
+         free(gl->empty_buf);
+      if (gl->conv_buffer)
+         free(gl->conv_buffer);
+      free(gl);
+   }
+
+   gl_core_context = false;
+}
 
 static void gl_free(void *data)
 {
@@ -2130,7 +2145,7 @@ static void gl_free(void *data)
 #endif
 
 #ifndef HAVE_OPENGLES
-   if (gl->core_context)
+   if (gl_core_context)
    {
       glBindVertexArray(0);
       glDeleteVertexArrays(1, &gl->vao);
@@ -2139,9 +2154,7 @@ static void gl_free(void *data)
 
    video_context_driver_free();
 
-   free(gl->empty_buf);
-   free(gl->conv_buffer);
-   free(gl);
+   gl_destroy_resources(gl);
 }
 
 static void gl_set_nonblock_state(void *data, bool state)
@@ -2181,10 +2194,10 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    (void)version;
    (void)hwr;
 #ifndef HAVE_OPENGLES
-   gl->core_context     = 
+   gl_core_context     = 
       (hwr->context_type == RETRO_HW_CONTEXT_OPENGL_CORE);
    
-   if (gl->core_context)
+   if (gl_core_context)
    {
       RARCH_LOG("[GL]: Using Core GL context.\n");
       if (!gl_init_vao(gl))
@@ -2208,7 +2221,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    if (vendor && renderer && (strstr(vendor, "ATI") || strstr(renderer, "ATI")))
       RARCH_LOG("[GL]: ATI card detected, skipping check for GL_RGB565 support.\n");
    else
-      gl->have_es2_compat = gl_query_extension(gl, "ARB_ES2_compatibility");
+      gl->have_es2_compat = gl_query_extension("ARB_ES2_compatibility");
 
    if (major >= 3)
       gl->have_full_npot_support = true;
@@ -2216,8 +2229,8 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    {  /* try to detect actual npot support. might fail for older cards. */
       GLint max_texture_size = 0;
       GLint max_native_instr = 0;
-      bool arb_npot = gl_query_extension(gl, "ARB_texture_non_power_of_two");
-      bool arb_frag_program = gl_query_extension(gl, "ARB_fragment_program");
+      bool arb_npot = gl_query_extension("ARB_texture_non_power_of_two");
+      bool arb_frag_program = gl_query_extension("ARB_fragment_program");
 
       glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
 
@@ -2255,8 +2268,8 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
       gl->have_full_npot_support = true;
    else
    {
-      bool arb_npot = gl_query_extension(gl, "ARB_texture_non_power_of_two");
-      bool oes_npot = gl_query_extension(gl, "OES_texture_npot");
+      bool arb_npot = gl_query_extension("ARB_texture_non_power_of_two");
+      bool oes_npot = gl_query_extension("OES_texture_npot");
       gl->have_full_npot_support = arb_npot || oes_npot;
    }
 #endif
@@ -2265,7 +2278,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    /* There are both APPLE and EXT variants. */
    /* Videocore hardware supports BGRA8888 extension, but
     * should be purposefully avoided. */
-   if (gl_query_extension(gl, "BGRA8888") && !strstr(renderer, "VideoCore"))
+   if (gl_query_extension("BGRA8888") && !strstr(renderer, "VideoCore"))
       RARCH_LOG("[GL]: BGRA8888 extension found for GLES.\n");
    else
    {
@@ -2277,22 +2290,22 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    /* GLES3 has unpack_subimage and sRGB in core. */
 
    gl->support_unpack_row_length = gles3;
-   if (!gles3 && gl_query_extension(gl, "GL_EXT_unpack_subimage"))
+   if (!gles3 && gl_query_extension("GL_EXT_unpack_subimage"))
    {
       RARCH_LOG("[GL]: Extension GL_EXT_unpack_subimage, can copy textures faster using UNPACK_ROW_LENGTH.\n");
       gl->support_unpack_row_length = true;
    }
 
    /* No extensions for float FBO currently. */
-   gl->has_srgb_fbo       = gles3 || gl_query_extension(gl, "EXT_sRGB");
+   gl->has_srgb_fbo       = gles3 || gl_query_extension("EXT_sRGB");
    gl->has_srgb_fbo_gles3 = gles3;
 #else
 #ifdef HAVE_FBO
    /* Float FBO is core in 3.2. */
-   gl->has_fp_fbo   = gl->core_context || gl_query_extension(gl, "ARB_texture_float");
-   gl->has_srgb_fbo = gl->core_context || 
-      (gl_query_extension(gl, "EXT_texture_sRGB")
-       && gl_query_extension(gl, "ARB_framebuffer_sRGB"));
+   gl->has_fp_fbo   = gl_core_context || gl_query_extension("ARB_texture_float");
+   gl->has_srgb_fbo = gl_core_context || 
+      (gl_query_extension("EXT_texture_sRGB")
+       && gl_query_extension("ARB_framebuffer_sRGB"));
 #endif
 #endif
 
@@ -2304,7 +2317,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #ifdef GL_DEBUG
    /* Useful for debugging, but kinda obnoxious otherwise. */
    RARCH_LOG("[GL]: Supported extensions:\n");
-   if (gl->core_context)
+   if (gl_core_context)
    {
 #ifdef GL_NUM_EXTENSIONS
       GLint exts = 0;
@@ -2576,7 +2589,7 @@ static void DEBUG_CALLBACK_TYPE gl_debug_cb(GLenum source, GLenum type,
 
 static void gl_begin_debug(gl_t *gl)
 {
-   if (gl_query_extension(gl, "KHR_debug"))
+   if (gl_query_extension("KHR_debug"))
    {
 #ifdef HAVE_OPENGLES2
       glDebugMessageCallbackKHR(gl_debug_cb, gl);
@@ -2589,7 +2602,7 @@ static void gl_begin_debug(gl_t *gl)
 #endif
    }
 #ifndef HAVE_OPENGLES2
-   else if (gl_query_extension(gl, "ARB_debug_output"))
+   else if (gl_query_extension("ARB_debug_output"))
    {
       glDebugMessageCallbackARB(gl_debug_cb, gl);
       glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
@@ -2600,6 +2613,7 @@ static void gl_begin_debug(gl_t *gl)
       RARCH_ERR("Neither GL_KHR_debug nor GL_ARB_debug_output are implemented. Cannot start GL debugging.\n");
 }
 #endif
+
 
 static void *gl_init(const video_info_t *video, const input_driver_t **input, void **input_data)
 {
@@ -2739,7 +2753,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 #ifdef HAVE_GLSL
    gl_glsl_set_get_proc_address(ctx_driver->get_proc_address);
-   gl_glsl_set_context_type(gl->core_context,
+   gl_glsl_set_context_type(gl_core_context,
          hwr->version_major, hwr->version_minor);
 #endif
 
@@ -2806,7 +2820,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    gl_set_texture_fmts(gl, video->rgb32);
 
 #ifndef HAVE_OPENGLES
-   if (!gl->core_context)
+   if (!gl_core_context)
       glEnable(GL_TEXTURE_2D);
 #endif
 
@@ -2868,7 +2882,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
 
 error:
    video_context_driver_destroy();
-   free(gl);
+   gl_destroy_resources(gl);
    return NULL;
 }
 
