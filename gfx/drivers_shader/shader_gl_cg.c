@@ -294,7 +294,6 @@ static void gl_cg_set_texture_info(
       const struct cg_fbo_params *params,
       const struct video_tex_info *info)
 {
-   unsigned i;
    CGparameter param                     = params->tex;
 
    cg_gl_set_texture_parameter(param, info->tex);
