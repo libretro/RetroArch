@@ -739,14 +739,7 @@ static bool runloop_is_frame_count_end(void)
 bool runloop_prepare_dummy(void)
 {
    content_ctx_info_t content_info = {0};
-   memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
-#ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
-#endif
-   runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
-   runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
-   runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-
+   runloop_ctl(RUNLOOP_CTL_STATE_FREE, NULL);
    return rarch_task_push_content_load_default(
          NULL, NULL,
          true, 
@@ -755,7 +748,6 @@ bool runloop_prepare_dummy(void)
          CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
          NULL, NULL);
 }
-
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
 {

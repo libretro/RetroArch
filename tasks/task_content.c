@@ -1937,6 +1937,15 @@ bool rarch_task_push_content_load_default(
    switch (mode)
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
+#ifdef HAVE_MENU
+         menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+#endif
+         runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
+         runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
+         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+         if (!content_load_wrapper(content_info, false))
+            goto error;
+         break;
       case CONTENT_MODE_LOAD_FROM_CLI:
          if (!content_load_wrapper(content_info, false))
             goto error;
