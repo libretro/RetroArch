@@ -109,7 +109,7 @@ static void convert_float_to_s16_neon(int16_t *out,
  * MIPS ALLEGREX implementation callback function.
  **/
 void convert_float_to_s16_ALLEGREX(int16_t *out,
-      const float *in, size_t samples)
+      const float *in, size_t samples);
 #else
 #define convert_float_to_s16 convert_float_to_s16_C
 #endif
