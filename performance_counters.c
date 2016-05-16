@@ -75,7 +75,7 @@ void rarch_perf_register(struct retro_perf_counter *perf)
    perf->registered = true;
 }
 
-void retro_perf_register(struct retro_perf_counter *perf)
+void performance_counter_register(struct retro_perf_counter *perf)
 {
    if (perf->registered || perf_ptr_libretro >= MAX_COUNTERS)
       return;

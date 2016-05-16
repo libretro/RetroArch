@@ -1227,7 +1227,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_cpu_features = cpu_features_get;
          cb->get_perf_counter = cpu_features_get_perf_counter;
 
-         cb->perf_register    = retro_perf_register; 
+         cb->perf_register    = performance_counter_register; 
          cb->perf_start       = performance_counter_start;
          cb->perf_stop        = performance_counter_stop;
          cb->perf_log         = retro_perf_log;

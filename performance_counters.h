@@ -46,10 +46,7 @@ unsigned retro_get_perf_count_libretro(void);
  **/
 retro_perf_tick_t retro_get_perf_counter(void);
 
-void retro_perf_register(struct retro_perf_counter *perf);
-
-/* Same as retro_perf_register, just for libretro cores. */
-void retro_perf_register(struct retro_perf_counter *perf);
+void performance_counter_register(struct retro_perf_counter *perf);
 
 void performance_counters_clear(void);
 
