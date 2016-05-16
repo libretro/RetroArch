@@ -66,8 +66,6 @@ bool rarch_task_push_content_load_default(
       retro_task_callback_t cb, void *user_data)
 {
    bool load_content            = false;
-   enum event_command cmd       = CMD_EVENT_NONE;
-
 
    switch (type)
    {
