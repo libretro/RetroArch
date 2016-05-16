@@ -1548,34 +1548,6 @@ static void command_event_main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
-static bool command_event_cmd_exec(void *data)
-{
-   char *fullpath = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-   if (fullpath != data)
-   {
-      runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-      if (data)
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, data);
-   }
-
-#if defined(HAVE_DYNAMIC)
-#ifdef HAVE_MENU
-   if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
-   {
-      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-      return false;
-   }
-#endif
-#else
-   frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
-#endif
-
-   return true;
-}
-
 /**
  * command_event:
  * @cmd                  : Event command index.
@@ -2331,8 +2303,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SET_FRAME_LIMIT:
          runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
          break;
-      case CMD_EVENT_EXEC:
-         return command_event_cmd_exec(data);
       case CMD_EVENT_NONE:
       default:
          return false;

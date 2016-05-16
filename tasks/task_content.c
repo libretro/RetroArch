@@ -28,6 +28,34 @@
 
 /* TODO/FIXME - turn this into actual task */
 
+static bool command_event_cmd_exec(void *data)
+{
+   char *fullpath = NULL;
+
+   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+
+   if (fullpath != data)
+   {
+      runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+      if (data)
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, data);
+   }
+
+#if defined(HAVE_DYNAMIC)
+#ifdef HAVE_MENU
+   if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+   {
+      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+      return false;
+   }
+#endif
+#else
+   frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
+#endif
+
+   return true;
+}
+
 bool rarch_task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
@@ -113,7 +141,7 @@ bool rarch_task_push_content_load_default(
          char *fullpath       = NULL;
 
          runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-         command_event(CMD_EVENT_EXEC, (void*)fullpath);
+         command_event_cmd_exec((void*)fullpath);
          command_event(CMD_EVENT_QUIT, NULL);
          }
 #endif
@@ -126,7 +154,7 @@ bool rarch_task_push_content_load_default(
          else
             menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
 
-         if (!command_event(CMD_EVENT_EXEC, (void*)fullpath))
+         if (!command_event_cmd_exec((void*)fullpath))
             return false;
 
          command_event(CMD_EVENT_LOAD_CORE, NULL);
