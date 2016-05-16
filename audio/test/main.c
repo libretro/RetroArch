@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
       uniform = (2.0 * rand()) / RAND_MAX - 1.0;
       rate_mod = 1.0 + ratio_max_deviation * uniform;
 
-      audio_convert_s16_to_float(input_f, input_i, 1024, 1.0f);
+      convert_s16_to_float(input_f, input_i, 1024, 1.0f);
 
       data.data_in = input_f;
       data.data_out = output_f;
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 
       output_samples = data.output_frames * 2;
 
-      audio_convert_float_to_s16(output_i, output_f, output_samples);
+      convert_float_to_s16(output_i, output_f, output_samples);
 
       if (fwrite(output_i, sizeof(int16_t), output_samples, stdout) != output_samples)
          break;

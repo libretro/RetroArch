@@ -310,7 +310,7 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings = config_get_ptr();
 
-   audio_convert_init_simd();
+   convert_init_simd();
 
    /* Accomodate rewind since at some point we might have two full buffers. */
    outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
@@ -539,7 +539,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    performance_counter_init(&audio_convert_s16, "audio_convert_s16");
    performance_counter_start(&audio_convert_s16);
-   audio_convert_s16_to_float(audio_driver_data.data, data, samples,
+   convert_s16_to_float(audio_driver_data.data, data, samples,
          audio_driver_data.volume_gain);
    performance_counter_stop(&audio_convert_s16);
 

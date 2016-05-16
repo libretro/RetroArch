@@ -1169,7 +1169,7 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
 
    if (handle->audio.use_float || handle->audio.resampler)
    {
-      audio_convert_s16_to_float(handle->audio.float_conv,
+      convert_s16_to_float(handle->audio.float_conv,
             (const int16_t*)aud->data, aud->frames * handle->params.channels, 1.0);
       aud->data = handle->audio.float_conv;
    }

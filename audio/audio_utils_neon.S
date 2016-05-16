@@ -19,11 +19,11 @@
 #endif
 
 .align 4
-.globl audio_convert_s16_float_asm
-.globl _audio_convert_s16_float_asm
-# audio_convert_s16_float_asm(float *out, const int16_t *in, size_t samples, const float *gain)
-audio_convert_s16_float_asm:
-_audio_convert_s16_float_asm:
+.globl convert_s16_float_asm
+.globl _convert_s16_float_asm
+# convert_s16_float_asm(float *out, const int16_t *in, size_t samples, const float *gain)
+convert_s16_float_asm:
+_convert_s16_float_asm:
    # Hacky way to get a constant of 2^-15.
    # Might be faster to just load a constant from memory.
    # It's just done once however ...

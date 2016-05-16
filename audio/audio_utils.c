@@ -23,25 +23,19 @@
 #include <features/features_cpu.h>
 #include <conversion/float_to_s16.h>
 
-#include "audio_utils.h"
-
-#ifdef RARCH_INTERNAL
-#include "../performance_counters.h"
-#endif
-
 /**
- * audio_convert_s16_to_float_C:
+ * convert_s16_to_float_C:
  * @out               : output buffer
  * @in                : input buffer
  * @samples           : size of samples to be converted
- * @gain              : gain applied to the audio volume
+ * @gain              : gain applied (.e.g. audio volume)
  *
- * Converts audio samples from signed integer 16-bit
+ * Converts from signed integer 16-bit
  * to floating point.
  *
  * C implementation callback function.
  **/
-void audio_convert_s16_to_float_C(float *out,
+void convert_s16_to_float_C(float *out,
       const int16_t *in, size_t samples, float gain)
 {
    size_t i;
@@ -52,18 +46,18 @@ void audio_convert_s16_to_float_C(float *out,
 
 #if defined(__SSE2__)
 /**
- * audio_convert_s16_to_float_SSE2:
+ * convert_s16_to_float_SSE2:
  * @out               : output buffer
  * @in                : input buffer
  * @samples           : size of samples to be converted
- * @gain              : gain applied to the audio volume
+ * @gain              : gain applied (e.g. audio volume)
  *
- * Converts audio samples from signed integer 16-bit
+ * Converts from signed integer 16-bit
  * to floating point.
  *
  * SSE2 implementation callback function.
  **/
-void audio_convert_s16_to_float_SSE2(float *out,
+void convert_s16_to_float_SSE2(float *out,
       const int16_t *in, size_t samples, float gain)
 {
    size_t i;
@@ -82,23 +76,23 @@ void audio_convert_s16_to_float_SSE2(float *out,
       _mm_storeu_ps(out + 4, output_r);
    }
 
-   audio_convert_s16_to_float_C(out, in, samples - i, gain);
+   convert_s16_to_float_C(out, in, samples - i, gain);
 }
 
 #elif defined(__ALTIVEC__)
 /**
- * audio_convert_s16_to_float_altivec:
+ * convert_s16_to_float_altivec:
  * @out               : output buffer
  * @in                : input buffer
  * @samples           : size of samples to be converted
- * @gain              : gain applied to the audio volume
+ * @gain              : gain applied (e.g. audio volume)
  *
- * Converts audio samples from signed integer 16-bit
+ * Converts from signed integer 16-bit
  * to floating point.
  *
  * AltiVec implementation callback function.
  **/
-void audio_convert_s16_to_float_altivec(float *out,
+void convert_s16_to_float_altivec(float *out,
       const int16_t *in, size_t samples, float gain)
 {
    size_t samples_in = samples;
@@ -125,52 +119,52 @@ void audio_convert_s16_to_float_altivec(float *out,
 
       samples_in -= i;
    }
-   audio_convert_s16_to_float_C(out, in, samples_in, gain);
+   convert_s16_to_float_C(out, in, samples_in, gain);
 }
 
 #elif defined(__ARM_NEON__) && !defined(VITA)
 /* Avoid potential hard-float/soft-float ABI issues. */
-void audio_convert_s16_float_asm(float *out, const int16_t *in,
+void convert_s16_float_asm(float *out, const int16_t *in,
       size_t samples, const float *gain);
 
 /**
- * audio_convert_s16_to_float_neon:
+ * convert_s16_to_float_neon:
  * @out               : output buffer
  * @in                : input buffer
  * @samples           : size of samples to be converted
- * @gain              : gain applied to the audio volume
+ * @gain              : gain applied (.e.g audio volume)
  *
- * Converts audio samples from signed integer 16-bit
+ * Converts from signed integer 16-bit
  * to floating point.
  *
  * ARM NEON implementation callback function.
  **/
-static void audio_convert_s16_to_float_neon(float *out,
+static void convert_s16_to_float_neon(float *out,
       const int16_t *in, size_t samples, float gain)
 {
    size_t aligned_samples = samples & ~7;
    if (aligned_samples)
-      audio_convert_s16_float_asm(out, in, aligned_samples, &gain);
+      convert_s16_float_asm(out, in, aligned_samples, &gain);
 
    /* Could do all conversion in ASM, but keep it simple for now. */
-   audio_convert_s16_to_float_C(out + aligned_samples, in + aligned_samples,
+   convert_s16_to_float_C(out + aligned_samples, in + aligned_samples,
          samples - aligned_samples, gain);
 }
 #elif defined(_MIPS_ARCH_ALLEGREX)
 
 /**
- * audio_convert_s16_to_float_ALLEGREX:
+ * convert_s16_to_float_ALLEGREX:
  * @out               : output buffer
  * @in                : input buffer
  * @samples           : size of samples to be converted
- * @gain              : gain applied to the audio volume
+ * @gain              : gain applied (.e.g audio volume)
  *
- * Converts audio samples from signed integer 16-bit
+ * Converts from signed integer 16-bit
  * to floating point.
  *
  * MIPS ALLEGREX implementation callback function.
  **/
-void audio_convert_s16_to_float_ALLEGREX(float *out,
+void convert_s16_to_float_ALLEGREX(float *out,
       const int16_t *in, size_t samples, float gain)
 {
 #ifdef DEBUG
@@ -230,25 +224,25 @@ void audio_convert_s16_to_float_ALLEGREX(float *out,
 }
 #endif
 
-static unsigned audio_convert_get_cpu_features(void)
+static unsigned convert_get_cpu_features(void)
 {
    return cpu_features_get();
 }
 
 /**
- * audio_convert_init_simd:
+ * convert_init_simd:
  *
- * Sets up function pointers for audio conversion
+ * Sets up function pointers for conversion
  * functions based on CPU features.
  **/
-void audio_convert_init_simd(void)
+void convert_init_simd(void)
 {
-   unsigned cpu = audio_convert_get_cpu_features();
+   unsigned cpu = convert_get_cpu_features();
 
    (void)cpu;
 #if defined(__ARM_NEON__) && !defined(VITA)
-   audio_convert_s16_to_float_arm = (cpu & RETRO_SIMD_NEON) ?
-      audio_convert_s16_to_float_neon : audio_convert_s16_to_float_C;
+   convert_s16_to_float_arm = (cpu & RETRO_SIMD_NEON) ?
+      convert_s16_to_float_neon : convert_s16_to_float_C;
    convert_float_to_s16_arm = (cpu & RETRO_SIMD_NEON) ?
       convert_float_to_s16_neon : convert_float_to_s16_C;
 #endif
