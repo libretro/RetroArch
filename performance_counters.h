@@ -37,15 +37,6 @@ unsigned retro_get_perf_count_rarch(void);
 
 unsigned retro_get_perf_count_libretro(void);
 
-/*
- * retro_get_perf_counter:
- *
- * Gets performance counter.
- *
- * Returns: performance counter.
- **/
-retro_perf_tick_t retro_get_perf_counter(void);
-
 void performance_counter_register(struct retro_perf_counter *perf);
 
 void performance_counters_clear(void);
