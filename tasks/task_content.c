@@ -96,23 +96,24 @@ static bool menu_content_load(void)
    menu_display_set_msg_force(true);
    menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
-   if (*fullpath)
-      fill_pathname_base(name, fullpath, sizeof(name));
-
    content_info.argc        = 0;
    content_info.argv        = NULL;
    content_info.args        = NULL;
    content_info.environ_get = menu_content_environment_get;
 
+   fill_pathname_base(name, fullpath, sizeof(name));
+
    if (!content_load(&content_info))
       goto error;
 
+   /** Show loading OSD message */
    if (*fullpath)
    {
       snprintf(msg, sizeof(msg), "INFO - Loading %s ...", name);
       runloop_msg_queue_push(msg, 1, 1, false);
    }
 
+   /* Push entry to top of playlist */
    if (*fullpath || 
          menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
    {
@@ -126,7 +127,8 @@ static bool menu_content_load(void)
    return true;
 
 error:
-   snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
+   if (*fullpath)
+      snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
    runloop_msg_queue_push(msg, 1, 90, false);
    return false;
 }
