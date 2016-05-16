@@ -85,7 +85,7 @@ bool rarch_task_push_content_load_default(
          break;
    }
 
-   if (load_content)
+   if (load_content && type == CORE_TYPE_PLAIN)
    {
       settings_t *settings = config_get_ptr();
       core_path            = settings->path.libretro;
@@ -104,8 +104,11 @@ bool rarch_task_push_content_load_default(
       return false;
 
 #ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT,       NULL);
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+   if (type != CORE_TYPE_DUMMY)
+   {
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT,       NULL);
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+   }
 #endif
 
    return true;

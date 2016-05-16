@@ -57,6 +57,7 @@
 #include "msg_hash.h"
 
 #include "input/input_keyboard.h"
+#include "tasks/tasks_internal.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
@@ -745,14 +746,10 @@ bool runloop_prepare_dummy(void)
    runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
    runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 
-#ifdef HAVE_MENU
-   if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
-   {
-      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-      return false;
-   }
-#endif
-   return true;
+   return rarch_task_push_content_load_default(
+         NULL, NULL,
+         true, CORE_TYPE_DUMMY,
+         NULL, NULL);
 }
 
 
