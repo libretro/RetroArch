@@ -19,10 +19,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if __SSE2__
-#include <emmintrin.h>
-#endif
-
 #include <retro_inline.h>
 #include <algorithms/mismatch.h>
 
