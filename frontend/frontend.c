@@ -150,12 +150,10 @@ int rarch_main(int argc, char *argv[], void *data)
 
       strlcpy(tmp, fullpath, sizeof(tmp));
 
+      /* Path can be relative here.
+       * Ensure we're pushing absolute path. */
       if (*tmp)
-      {
-         /* Path can be relative here.
-          * Ensure we're pushing absolute path. */
          path_resolve_realpath(tmp, sizeof(tmp));
-      }
 
       if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) || !info)
          content_push_to_history_playlist(
