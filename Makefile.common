@@ -369,9 +369,11 @@ ifeq ($(HAVE_NEON),1)
    DEFINES += -DSINC_LOWER_QUALITY
 endif
 
-OBJ += audio/audio_utils.o
+OBJ += audio/audio_utils.o \
+		 libretro-common/conversion/float_to_s16.o
 ifeq ($(HAVE_NEON),1)
-   OBJ += audio/audio_utils_neon.o
+   OBJ += audio/audio_utils_neon.o \
+			 libretro-common/conversion/float_to_s16_neon.o
 endif
 
 HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)

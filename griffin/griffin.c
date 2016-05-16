@@ -983,6 +983,7 @@ XML
  AUDIO UTILS
 ============================================================ */
 #include "../audio/audio_utils.c"
+#include "../libretro-common/conversion/float_to_s16.c"
 
 /*============================================================
  LIBRETRODB

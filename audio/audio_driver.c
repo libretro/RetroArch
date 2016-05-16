@@ -19,6 +19,7 @@
 #include <retro_assert.h>
 
 #include <lists/string_list.h>
+#include <conversion/float_to_s16.h>
 
 #include "audio_driver.h"
 #include "audio_resampler_driver.h"
@@ -581,7 +582,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    {
       performance_counter_init(&audio_convert_float, "audio_convert_float");
       performance_counter_start(&audio_convert_float);
-      audio_convert_float_to_s16(audio_driver_data.output_samples.conv_buf,
+      convert_float_to_s16(audio_driver_data.output_samples.conv_buf,
             (const float*)output_data, output_frames * 2);
       performance_counter_stop(&audio_convert_float);
 

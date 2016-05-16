@@ -59,11 +59,13 @@ extern "C" {
 #include <rthreads/rthreads.h>
 #include <gfx/scaler/scaler.h>
 #include <file/config_file.h>
+#include <conversion/float_to_s16.h>
+
+#include "../../audio/audio_utils.h"
 
 #include "../../general.h"
 #include "../../verbosity.h"
 #include "../../audio/audio_resampler_driver.h"
-#include "../../audio/audio_utils.h"
 #include "../record_driver.h"
 
 #include "../../gfx/video_frame.h"
@@ -1189,7 +1191,7 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
 
       if (!handle->audio.use_float)
       {
-         audio_convert_float_to_s16(handle->audio.fixed_conv,
+         convert_float_to_s16(handle->audio.fixed_conv,
                handle->audio.resample_out,
                aud->frames * handle->params.channels);
          aud->data = handle->audio.fixed_conv;
