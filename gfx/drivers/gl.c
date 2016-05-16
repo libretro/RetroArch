@@ -175,7 +175,7 @@ static bool gl_check_eglimage_proc(void)
 #endif
 
 #ifdef HAVE_GL_SYNC
-static bool gl_check_sync_proc(gl_t *gl)
+static bool gl_check_sync_proc(void)
 {
    if (!gl_query_extension("ARB_sync"))
       return false;
@@ -307,9 +307,9 @@ static bool gl_shader_init(gl_t *gl)
 }
 
 #ifndef NO_GL_FF_VERTEX
-static void gl_disable_client_arrays(gl_t *gl)
+static void gl_disable_client_arrays(void)
 {
-   if (!gl || gl_core_context)
+   if (gl_core_context)
       return;
 
    glClientActiveTexture(GL_TEXTURE1);
@@ -1971,7 +1971,7 @@ static bool gl_frame(void *data, const void *frame,
 
       glBindTexture(GL_TEXTURE_2D, 0);
 #ifndef NO_GL_FF_VERTEX
-      gl_disable_client_arrays(gl);
+      gl_disable_client_arrays();
 #endif
    }
 #endif
@@ -2110,7 +2110,7 @@ static void gl_free(void *data)
    video_shader_driver_deinit();
 
 #ifndef NO_GL_FF_VERTEX
-   gl_disable_client_arrays(gl);
+   gl_disable_client_arrays();
 #endif
 
    glDeleteTextures(gl->textures, gl->texture);
@@ -2246,7 +2246,7 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
 #endif
 
 #ifdef HAVE_GL_SYNC
-   gl->have_sync = gl_check_sync_proc(gl);
+   gl->have_sync = gl_check_sync_proc();
    if (gl->have_sync && settings->video.hard_sync)
       RARCH_LOG("[GL]: Using ARB_sync to reduce latency.\n");
 #endif
