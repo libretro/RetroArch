@@ -1076,8 +1076,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
 
    if (glsl->active_idx)
    {
-      unsigned j;
-
       /* Set original texture. */
       if (uni->orig.texture >= 0)
       {
@@ -1139,8 +1137,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
       /* Bind FBO textures. */
       for (i = 0; i < fbo_info_cnt; i++)
       {
-         unsigned j;
-
          if (uni->pass[i].texture)
          {
             glActiveTexture(GL_TEXTURE0 + texunit);
@@ -1172,8 +1168,6 @@ static void gl_glsl_set_params(void *data, void *shader_data,
    /* Set previous textures. Only bind if they're actually used. */
    for (i = 0; i < PREV_TEXTURES; i++)
    {
-      unsigned j;
-
       if (uni->prev[i].texture >= 0)
       {
          glActiveTexture(GL_TEXTURE0 + texunit);
