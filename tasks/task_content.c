@@ -42,10 +42,7 @@ static bool task_content_load(bool persist, bool load_content)
    {
 #ifdef HAVE_MENU
       if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
-      {
-         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
          return false;
-      }
 #endif
    }
    else
@@ -125,7 +122,7 @@ bool rarch_task_push_content_load_default(
       runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
 
    if (!task_content_load(persist, load_content))
-      return false;
+      goto error;
 
 #ifdef HAVE_MENU
    if (type != CORE_TYPE_DUMMY)
@@ -136,4 +133,21 @@ bool rarch_task_push_content_load_default(
 #endif
 
    return true;
+
+error:
+#ifdef HAVE_MENU
+   switch (mode)
+   {
+      case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
+         rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
+         break;
+      default:
+         break;
+   }
+#endif
+   return false;
 }
