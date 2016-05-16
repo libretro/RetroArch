@@ -722,11 +722,6 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    return true;
 }
 
-void runloop_iterate_data(void)
-{
-   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
-}
-
 static bool runloop_is_frame_count_end(void)
 {
    uint64_t *frame_count =

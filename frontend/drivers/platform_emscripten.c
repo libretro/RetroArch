@@ -18,6 +18,7 @@
 #include <emscripten/emscripten.h>
 
 #include <file/config_file.h>
+#include <queues/task_queue.h>
 
 #include "../../defaults.h"
 #include "../../general.h"
@@ -34,7 +35,7 @@ static void emscripten_mainloop(void)
    int ret = runloop_iterate(&sleep_ms);
    if (ret == 1 && sleep_ms > 0)
       retro_sleep(sleep_ms);
-   runloop_iterate_data();
+   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
    if (ret != -1)
       return;
 

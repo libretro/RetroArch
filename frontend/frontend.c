@@ -17,6 +17,7 @@
 
 #include <file/file_path.h>
 #include <retro_stat.h>
+#include <queues/task_queue.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/async_job.h>
@@ -173,7 +174,7 @@ int rarch_main(int argc, char *argv[], void *data)
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
-      runloop_iterate_data();
+      task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
    }while(ret != -1);
 
    main_exit(args);

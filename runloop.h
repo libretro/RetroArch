@@ -305,8 +305,6 @@ global_t *global_get_ptr(void);
  **/
 int runloop_iterate(unsigned *sleep_ms);
 
-void runloop_iterate_data(void);
-
 void runloop_msg_queue_push(const char *msg, unsigned prio,
       unsigned duration, bool flush);
 

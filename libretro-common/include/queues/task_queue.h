@@ -24,8 +24,10 @@
 #define __LIBRETRO_SDK_TASK_QUEUE_H__
 
 #include <stdint.h>
+#include <stddef.h>
 #include <boolean.h>
 
+#include <retro_common.h>
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS

@@ -43,6 +43,7 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <queues/task_queue.h>
 
 #include "../frontend.h"
 #include "../frontend_driver.h"
@@ -368,7 +369,7 @@ static void android_app_entry(void *data)
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
-      runloop_iterate_data();
+      task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
    }while (ret != -1);
 
    main_exit(data);
