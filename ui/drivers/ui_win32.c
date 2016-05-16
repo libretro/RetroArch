@@ -577,6 +577,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                      rarch_task_push_content_load_default(
                            NULL, NULL,
                            false, CORE_TYPE_PLAIN,
+						   CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                            NULL, NULL);
                      break;
                }
