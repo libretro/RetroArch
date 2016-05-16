@@ -279,10 +279,13 @@ static void poll_iteration(void)
 		
       if (core_name)
       {
+         content_ctx_info_t content_info = {0};
          rarch_task_push_content_load_default(
                NULL,
                __core.UTF8String,
-               false, CORE_TYPE_PLAIN,
+               false, 
+               &content_info,
+               CORE_TYPE_PLAIN,
                CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                NULL, NULL);
       }
@@ -318,9 +321,12 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
                 if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) 
                       && settings->set_supports_no_game_enable)
                 {
+                   content_ctx_info_t content_info = {0};
                     runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
                     rarch_task_push_content_load_default(
-                             NULL, NULL, false, CORE_TYPE_PLAIN,
+                             NULL, NULL, false,
+                             &content_info,
+                             CORE_TYPE_PLAIN,
                              CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                              NULL, NULL);
                 }
@@ -352,9 +358,12 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
                 
                 if (core_name)
                 {
+                   content_ctx_info_t content_info = {0};
                    rarch_task_push_content_load_default(
                          NULL, NULL,
-                         false, CORE_TYPE_PLAIN,
+                         false,
+                         &content_info,
+                         CORE_TYPE_PLAIN,
                          CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                          NULL, NULL);
                 }

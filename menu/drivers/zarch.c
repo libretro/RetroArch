@@ -796,8 +796,12 @@ static int zarch_zui_render_sidebar(zui_t *zui)
 
 static int zarch_zui_load_content(zui_t *zui, unsigned i)
 {
+   content_ctx_info_t content_info = {0};
+
    rarch_task_push_content_load_default(zui->pick_cores[i].path,
-         zui->pick_content, false, CORE_TYPE_PLAIN,
+         zui->pick_content, false,
+         &content_info,
+         CORE_TYPE_PLAIN,
          CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
          NULL, NULL);
 

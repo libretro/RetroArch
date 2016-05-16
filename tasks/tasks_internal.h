@@ -22,6 +22,7 @@
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
 
+#include "../content.h"
 #include "../core_type.h"
 #include "../runloop.h"
 
@@ -128,6 +129,7 @@ bool rarch_task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
       bool persist,
+      content_ctx_info_t *content_info,
       enum rarch_core_type type,
       enum content_mode_load mode,
       retro_task_callback_t cb,

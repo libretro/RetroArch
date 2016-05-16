@@ -459,6 +459,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
 {
    menu_content_ctx_defer_info_t def_info;
    char menu_path_new[PATH_MAX_LENGTH];
+   content_ctx_info_t content_info = {0};
    int ret                  = 0;
    const char *menu_path    = NULL;
    const char *menu_label   = NULL;
@@ -509,7 +510,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 
          rarch_task_push_content_load_default(NULL, NULL,
-                  false, CORE_TYPE_PLAIN,
+                  false, &content_info, CORE_TYPE_PLAIN,
                   CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
                   NULL, NULL);
          return 0;
@@ -555,8 +556,9 @@ static int action_ok_file_load_with_detect_core(const char *path,
 static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+   content_ctx_info_t content_info = {0};
    rarch_task_push_content_load_default(path, detect_content_path,
-         false, CORE_TYPE_PLAIN, 
+         false, &content_info, CORE_TYPE_PLAIN, 
          CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
          NULL, NULL);
 
@@ -750,7 +752,7 @@ static int generic_action_ok(const char *path,
          flush_type = 49;
          if (path_file_exists(action_path))
          {
-            settings_t *settings = config_get_ptr();
+            settings_t            *settings = config_get_ptr();
 
             strlcpy(settings->path.menu_wallpaper,
                   action_path, sizeof(settings->path.menu_wallpaper));
@@ -1129,13 +1131,15 @@ static int action_ok_core_deferred_set(const char *path,
 static int action_ok_core_load_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu      = NULL;
+   content_ctx_info_t content_info = {0};
+   menu_handle_t *menu                 = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
    rarch_task_push_content_load_default(path, menu->deferred_path,
             false,
+            &content_info,
             CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
             NULL, NULL);
@@ -1155,6 +1159,7 @@ static int generic_action_ok_file_load(const char *path,
       enum rarch_core_type action_type, unsigned id)
 {
    char new_path[PATH_MAX_LENGTH];
+   content_ctx_info_t content_info = {0};
    const char *menu_path    = NULL;
    file_list_t *menu_stack  = menu_entries_get_menu_stack_ptr(0);
 
@@ -1167,13 +1172,17 @@ static int generic_action_ok_file_load(const char *path,
    {
       case ACTION_OK_FFMPEG:
          rarch_task_push_content_load_default(
-               NULL, new_path, true, action_type,
+               NULL, new_path, true,
+               &content_info,
+               action_type,
                CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU,
                NULL, NULL);
          break;
       case ACTION_OK_IMAGEVIEWER:
          rarch_task_push_content_load_default(
-               NULL, new_path, true, action_type,
+               NULL, new_path, true, 
+               &content_info,
+               action_type,
                CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU,
                NULL, NULL);
          break;
@@ -1209,6 +1218,7 @@ static int action_ok_file_load(const char *path,
    const char *menu_path    = NULL;
    rarch_setting_t *setting = NULL;
    menu_handle_t *menu      = NULL;
+   content_ctx_info_t content_info = {0};
    file_list_t  *menu_stack = menu_entries_get_menu_stack_ptr(0);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
@@ -1243,7 +1253,9 @@ static int action_ok_file_load(const char *path,
 
    rarch_task_push_content_load_default(NULL,
          full_path_new,
-         true, CORE_TYPE_PLAIN,
+         true,
+         &content_info,
+         CORE_TYPE_PLAIN,
          CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
          NULL, NULL);
 
@@ -2048,8 +2060,9 @@ static int action_ok_start_core(const char *path,
    /* No content needed for this core, load core immediately. */
    if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
    {
+      content_ctx_info_t content_info = {0};
       rarch_task_push_content_load_default(NULL, NULL,
-            false, CORE_TYPE_PLAIN,
+            false, &content_info, CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU,
             NULL, NULL);
    }
@@ -2116,9 +2129,10 @@ static int action_ok_open_archive(const char *path,
 static int action_ok_load_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   menu_handle_t *menu      = NULL;
-   const char *menu_path    = NULL;
-   const char *content_path = NULL;
+   content_ctx_info_t content_info = {0};
+   menu_handle_t *menu             = NULL;
+   const char *menu_path           = NULL;
+   const char *content_path        = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -2131,7 +2145,8 @@ static int action_ok_load_archive(const char *path,
 
    command_event(CMD_EVENT_LOAD_CORE, NULL);
    rarch_task_push_content_load_default(
-            NULL, detect_content_path, false, CORE_TYPE_PLAIN,
+            NULL, detect_content_path, false, 
+            &content_info, CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
             NULL, NULL);
 
@@ -2142,6 +2157,7 @@ static int action_ok_load_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_content_ctx_defer_info_t def_info;
+   content_ctx_info_t content_info = {0};
    int ret                  = 0;
    core_info_list_t *list   = NULL;
    menu_handle_t *menu      = NULL;
@@ -2177,7 +2193,9 @@ static int action_ok_load_archive_detect_core(const char *path,
       case -1:
          command_event(CMD_EVENT_LOAD_CORE, NULL);
          rarch_task_push_content_load_default(NULL, NULL,
-                  false, CORE_TYPE_PLAIN,
+                  false, 
+                  &content_info,
+                  CORE_TYPE_PLAIN,
                   CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
                   NULL, NULL);
          return 0;

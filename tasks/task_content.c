@@ -84,9 +84,8 @@ static void menu_content_environment_get(int *argc, char *argv[],
  * Returns: true (1) if successful, otherwise false (0).
  **/
 
-static bool menu_content_load(void)
+static bool menu_content_load(content_ctx_info_t *content_info)
 {
-   content_ctx_info_t content_info;
    char name[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
    char *fullpath       = NULL;
@@ -96,14 +95,10 @@ static bool menu_content_load(void)
    menu_display_set_msg_force(true);
    menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
 
-   content_info.argc        = 0;
-   content_info.argv        = NULL;
-   content_info.args        = NULL;
-   content_info.environ_get = menu_content_environment_get;
 
    fill_pathname_base(name, fullpath, sizeof(name));
 
-   if (!content_load(&content_info))
+   if (!content_load(content_info))
       goto error;
 
    /** Show loading OSD message */
@@ -136,7 +131,13 @@ error:
 
 static bool command_event_cmd_exec(void *data)
 {
+   content_ctx_info_t content_info;
    char *fullpath = NULL;
+
+   content_info.argc        = 0;
+   content_info.argv        = NULL;
+   content_info.args        = NULL;
+   content_info.environ_get = menu_content_environment_get;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
@@ -149,7 +150,7 @@ static bool command_event_cmd_exec(void *data)
 
 #if defined(HAVE_DYNAMIC)
 #ifdef HAVE_MENU
-   if (!menu_content_load())
+   if (!menu_content_load(&content_info))
    {
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
       return false;
@@ -166,6 +167,7 @@ bool rarch_task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
       bool persist,
+      content_ctx_info_t *content_info,
       enum rarch_core_type type,
       enum content_mode_load mode,
       retro_task_callback_t cb,
@@ -180,7 +182,7 @@ bool rarch_task_push_content_load_default(
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
 #ifdef HAVE_MENU
-         if (!menu_content_load())
+         if (!menu_content_load(content_info))
             goto error;
 #endif
          break;
@@ -192,7 +194,7 @@ bool rarch_task_push_content_load_default(
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
 #ifdef HAVE_MENU
-         if (!menu_content_load())
+         if (!menu_content_load(content_info))
             goto error;
 #endif
          break;
@@ -201,11 +203,11 @@ bool rarch_task_push_content_load_default(
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 #ifdef HAVE_MENU
-         if (!menu_content_load())
+         if (!menu_content_load(content_info))
             goto error;
 #endif
 #ifdef HAVE_MENU
-         if (!menu_content_load())
+         if (!menu_content_load(content_info))
             goto error;
 #endif
          break;
@@ -217,7 +219,7 @@ bool rarch_task_push_content_load_default(
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
 #ifdef HAVE_MENU
-         if (!menu_content_load())
+         if (!menu_content_load(content_info))
             goto error;
 #endif
          break;
@@ -229,7 +231,7 @@ bool rarch_task_push_content_load_default(
 #endif
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
 #ifdef HAVE_MENU
-         if (!menu_content_load())
+         if (!menu_content_load(content_info))
             goto error;
 #endif
          break;
@@ -239,7 +241,7 @@ bool rarch_task_push_content_load_default(
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #ifdef HAVE_MENU
-         if (!menu_content_load())
+         if (!menu_content_load(content_info))
             goto error;
 #endif
 #else

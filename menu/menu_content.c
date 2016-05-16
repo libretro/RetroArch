@@ -51,6 +51,7 @@ static bool menu_content_load_from_playlist(void *data)
    playlist_t *playlist         = NULL;
    const char *core_path        = NULL;
    const char *path             = NULL;
+   content_ctx_info_t content_info = {0};
    menu_content_ctx_playlist_info_t *info = 
       (menu_content_ctx_playlist_info_t *)data;
    
@@ -99,6 +100,7 @@ static bool menu_content_load_from_playlist(void *data)
          core_path,
          path,
          false,
+         &content_info,
          CORE_TYPE_PLAIN,
          CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU,
          NULL,
