@@ -28,35 +28,6 @@
 
 /* TODO/FIXME - turn this into actual task */
 
-static bool task_content_load(bool persist, bool load_content)
-{
-   if (persist)
-   {
-#ifdef HAVE_DYNAMIC
-      command_event(CMD_EVENT_LOAD_CORE, NULL);
-#endif
-      load_content = true;
-   }
-
-   if (load_content)
-   {
-#ifdef HAVE_MENU
-      if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
-         return false;
-#endif
-   }
-   else
-   {
-      char *fullpath       = NULL;
-
-      runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-      command_event(CMD_EVENT_EXEC, (void*)fullpath);
-      command_event(CMD_EVENT_QUIT, NULL);
-   }
-
-   return true;
-}
-
 bool rarch_task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
@@ -66,7 +37,7 @@ bool rarch_task_push_content_load_default(
       retro_task_callback_t cb,
       void *user_data)
 {
-   bool load_content            = false;
+   settings_t *settings = config_get_ptr();
 
    switch (mode)
    {
@@ -74,56 +45,82 @@ bool rarch_task_push_content_load_default(
          break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+#ifdef HAVE_MENU
+         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+            goto error;
+#endif
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
+         core_path            = settings->path.libretro;
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+#ifdef HAVE_DYNAMIC
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+#ifdef HAVE_MENU
+         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+            goto error;
+#endif
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
+         core_path            = settings->path.libretro;
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+#ifdef HAVE_MENU
+         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+            goto error;
+#endif
+#ifdef HAVE_MENU
+         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+            goto error;
+#endif
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+         core_path            = settings->path.libretro; /* TODO/FIXME */
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+#ifdef HAVE_DYNAMIC
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+#ifdef HAVE_MENU
+         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+            goto error;
+#endif
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+         core_path            = settings->path.libretro; /* TODO/FIXME */
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+#ifdef HAVE_DYNAMIC
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
+#ifdef HAVE_MENU
+         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+            goto error;
+#endif
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+#ifdef HAVE_DYNAMIC
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
+#ifdef HAVE_MENU
+         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
+            goto error;
+#endif
+#else
+         {
+         char *fullpath       = NULL;
+
+         runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+         command_event(CMD_EVENT_EXEC, (void*)fullpath);
+         command_event(CMD_EVENT_QUIT, NULL);
+         }
+#endif
          break;
       case CONTENT_MODE_LOAD_NONE:
          break;
    }
-
-   switch (type)
-   {
-      case CORE_TYPE_PLAIN:
-      case CORE_TYPE_DUMMY:
-         load_content    = false;
-         if (persist)
-            load_content = true;
-         break;
-      case CORE_TYPE_FFMPEG:
-         persist         = false;
-         load_content    = true;
-         break;
-      case CORE_TYPE_IMAGEVIEWER:
-         persist         = false;
-         load_content    = true;
-         break;
-   }
-
-   if (load_content && type == CORE_TYPE_PLAIN)
-   {
-      settings_t *settings = config_get_ptr();
-      core_path            = settings->path.libretro;
-   }
-
-   if (core_path)
-   {
-      runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-      persist = true;
-   }
-
-   if (fullpath)
-      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
-
-   if (!task_content_load(persist, load_content))
-      goto error;
 
 #ifdef HAVE_MENU
    if (type != CORE_TYPE_DUMMY)
