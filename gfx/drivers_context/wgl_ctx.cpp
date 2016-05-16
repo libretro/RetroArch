@@ -439,6 +439,9 @@ static void *gfx_ctx_wgl_init(void *video_driver)
             return NULL;
 #endif
          break;
+      case GFX_CTX_NONE:
+      default:
+         break;
    }
 
    return (void*)"wgl";
