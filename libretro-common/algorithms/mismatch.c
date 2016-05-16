@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <retro_inline.h>
+#include <algorithms/mismatch.h>
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__)
 #define CPU_X86
