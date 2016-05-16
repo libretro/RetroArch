@@ -94,9 +94,10 @@ UI COMMON CONTEXT
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/common/win32_common.cpp"
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/wgl_ctx.cpp"
 #endif
+
 #endif
 
 
