@@ -283,6 +283,7 @@ static void poll_iteration(void)
                NULL,
                __core.UTF8String,
                false, CORE_TYPE_PLAIN,
+               CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                NULL, NULL);
       }
       else
@@ -320,6 +321,7 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
                     runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
                     rarch_task_push_content_load_default(
                              NULL, NULL, false, CORE_TYPE_PLAIN,
+                             CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                              NULL, NULL);
                 }
             }
@@ -353,6 +355,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
                    rarch_task_push_content_load_default(
                          NULL, NULL,
                          false, CORE_TYPE_PLAIN,
+                         CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                          NULL, NULL);
                 }
             }
