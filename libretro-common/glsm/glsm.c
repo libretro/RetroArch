@@ -1365,7 +1365,7 @@ void rglClearBufferfi( 	GLenum buffer,
   	GLint stencil)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3)
-   glClearBufferfi(buffer, drawBuffer, value);
+   glClearBufferfi(buffer, drawBuffer, depth, stencil);
 #endif
 }
 
@@ -1380,7 +1380,7 @@ void rglRenderbufferStorageMultisample( 	GLenum target,
   	GLsizei width,
   	GLsizei height)
 {
-   glRenderbufferStorageMultisample(target, samples, internalFormat, width, height);
+   glRenderbufferStorageMultisample(target, samples, internalformat, width, height);
 }
 
 /*
