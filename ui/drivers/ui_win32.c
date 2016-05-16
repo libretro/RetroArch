@@ -572,8 +572,12 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                      break;
                   case ID_M_LOAD_CONTENT:
                      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, win32_file);
-                     cmd         = CMD_EVENT_LOAD_CONTENT;
+
                      do_wm_close = true;
+                     rarch_task_push_content_load_default(
+                           NULL, NULL,
+                           false, CORE_TYPE_PLAIN,
+                           NULL, NULL);
                      break;
                }
             }

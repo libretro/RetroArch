@@ -277,10 +277,16 @@ static void poll_iteration(void)
       if (system)
          core_name = system->library_name;
 		
-      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
-
       if (core_name)
-         ui_companion_event_command(CMD_EVENT_LOAD_CONTENT);
+      {
+         rarch_task_push_content_load_default(
+               NULL,
+               __core.UTF8String,
+               false, CORE_TYPE_PLAIN,
+               NULL, NULL);
+      }
+      else
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
@@ -343,7 +349,12 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
                 runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
                 
                 if (core_name)
-                    ui_companion_event_command(CMD_EVENT_LOAD_CONTENT);
+                {
+                   rarch_task_push_content_load_default(
+                         NULL, NULL,
+                         false, CORE_TYPE_PLAIN,
+                         NULL, NULL);
+                }
             }
             break;
         case 0: /* NSCancelButton/NSModalResponseCancel */

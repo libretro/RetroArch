@@ -1624,34 +1624,6 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
          break;
-      case CMD_EVENT_LOAD_CONTENT_PERSIST:
-      case CMD_EVENT_LOAD_CONTENT_FFMPEG:
-      case CMD_EVENT_LOAD_CONTENT_IMAGEVIEWER:
-#ifdef HAVE_DYNAMIC
-         if (cmd == CMD_EVENT_LOAD_CONTENT_PERSIST)
-            command_event(CMD_EVENT_LOAD_CORE, NULL);
-#endif
-#ifdef HAVE_MENU
-         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
-         {
-            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-            return false;
-         }
-#endif
-         break;
-      case CMD_EVENT_LOAD_CONTENT:
-         {
-#ifdef HAVE_DYNAMIC
-            command_event(CMD_EVENT_LOAD_CONTENT_PERSIST, NULL);
-#else
-            char *fullpath = NULL;
-            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-            runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, settings->path.libretro);
-            command_event(CMD_EVENT_EXEC, (void*)fullpath);
-            command_event(CMD_EVENT_QUIT, NULL);
-#endif
-         }
-         break;
       case CMD_EVENT_LOAD_CORE_DEINIT:
 #ifdef HAVE_MENU
          menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_DEINIT, NULL);
