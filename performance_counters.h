@@ -51,7 +51,7 @@ void retro_perf_register(struct retro_perf_counter *perf);
 /* Same as retro_perf_register, just for libretro cores. */
 void retro_perf_register(struct retro_perf_counter *perf);
 
-void retro_perf_clear(void);
+void performance_counters_clear(void);
 
 void retro_perf_log(void);
 

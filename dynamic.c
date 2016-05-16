@@ -587,7 +587,7 @@ void uninit_libretro_sym(struct retro_core_t *current_core)
    location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
 
    /* Performance counters no longer valid. */
-   retro_perf_clear();
+   performance_counters_clear();
 }
 
 static void rarch_log_libretro(enum retro_log_level level,

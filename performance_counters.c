@@ -84,7 +84,7 @@ void retro_perf_register(struct retro_perf_counter *perf)
    perf->registered = true;
 }
 
-void retro_perf_clear(void)
+void performance_counters_clear(void)
 {
    perf_ptr_libretro = 0;
    memset(perf_counters_libretro, 0, sizeof(perf_counters_libretro));
