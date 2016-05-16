@@ -126,15 +126,13 @@ error:
  * selection needs to be made from a list, otherwise
  * returns true and fills in @s with path to core.
  **/
-static bool menu_content_find_first_core(void *data)
+static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info)
 {
    char new_core_path[PATH_MAX_LENGTH];
    const core_info_t *info                 = NULL;
    size_t supported                        = 0;
-   menu_content_ctx_defer_info_t *def_info = 
-      (menu_content_ctx_defer_info_t *)data;
-   core_info_list_t *core_info             = 
-      (core_info_list_t*)def_info->data;
+   core_info_list_t *core_info             =  def_info ? 
+      (core_info_list_t*)def_info->data : NULL;
    uint32_t menu_label_hash                = 
       menu_hash_calculate(def_info->menu_label);
 
