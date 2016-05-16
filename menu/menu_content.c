@@ -190,9 +190,9 @@ bool menu_content_ctl(enum menu_content_ctl_state state, void *data)
    switch (state)
    {
       case MENU_CONTENT_CTL_FIND_FIRST_CORE:
-         return menu_content_find_first_core(data);
+         return menu_content_find_first_core((menu_content_ctx_defer_info_t*)data);
       case MENU_CONTENT_CTL_LOAD_PLAYLIST:
-         return menu_content_load_from_playlist(data);
+         return menu_content_load_from_playlist((menu_content_ctx_playlist_info_t*)data);
       case MENU_CONTENT_CTL_NONE:
       default:
          break;
