@@ -573,11 +573,11 @@ recheckcapacity:;
       }
 
       rarch_perf_init(&gen_deltas, "gen_deltas");
-      retro_perf_start(&gen_deltas);
+      performance_counter_start(&gen_deltas);
 
-      oldb = state->thisblock;
-      newb = state->nextblock;
-      compressed = state->head + sizeof(size_t);
+      oldb        = state->thisblock;
+      newb        = state->nextblock;
+      compressed  = state->head + sizeof(size_t);
 
       compressed += state_manager_raw_compress(oldb, newb,
             state->blocksize, compressed);
@@ -761,7 +761,7 @@ void state_manager_check_rewind(bool pressed)
          state_manager_push_where(rewind_state.state, &state);
 
          rarch_perf_init(&rewind_serialize, "rewind_serialize");
-         retro_perf_start(&rewind_serialize);
+         performance_counter_start(&rewind_serialize);
 
          serial_info.data = state;
          serial_info.size = rewind_state.size;

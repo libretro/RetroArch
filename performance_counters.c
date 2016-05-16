@@ -131,7 +131,7 @@ int rarch_perf_init(struct retro_perf_counter *perf, const char *name)
    return 0;
 }
 
-void retro_perf_start(struct retro_perf_counter *perf)
+void performance_counter_start(struct retro_perf_counter *perf)
 {
    if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL) || !perf)
       return;

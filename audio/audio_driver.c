@@ -537,7 +537,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
       return false;
 
    rarch_perf_init(&audio_convert_s16, "audio_convert_s16");
-   retro_perf_start(&audio_convert_s16);
+   performance_counter_start(&audio_convert_s16);
    audio_convert_s16_to_float(audio_driver_data.data, data, samples,
          audio_driver_data.volume_gain);
    performance_counter_stop(&audio_convert_s16);
@@ -551,7 +551,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (audio_driver_data.dsp)
    {
       rarch_perf_init(&audio_dsp, "audio_dsp");
-      retro_perf_start(&audio_dsp);
+      performance_counter_start(&audio_dsp);
       rarch_dsp_filter_process(audio_driver_data.dsp, &dsp_data);
       performance_counter_stop(&audio_dsp);
 
@@ -580,7 +580,7 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (!audio_driver_data.use_float)
    {
       rarch_perf_init(&audio_convert_float, "audio_convert_float");
-      retro_perf_start(&audio_convert_float);
+      performance_counter_start(&audio_convert_float);
       audio_convert_float_to_s16(audio_driver_data.output_samples.conv_buf,
             (const float*)output_data, output_frames * 2);
       performance_counter_stop(&audio_convert_float);
@@ -837,7 +837,7 @@ bool audio_driver_init_resampler(void)
 void audio_driver_process_resampler(struct resampler_data *data)
 {
    rarch_perf_init(&resampler_proc, "resampler_proc");
-   retro_perf_start(&resampler_proc);
+   performance_counter_start(&resampler_proc);
    rarch_resampler_process(audio_driver_resampler, 
          audio_driver_resampler_data, data);
    performance_counter_stop(&resampler_proc);

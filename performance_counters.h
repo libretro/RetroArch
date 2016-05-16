@@ -60,12 +60,12 @@ void rarch_perf_log(void);
 int rarch_perf_init(struct retro_perf_counter *perf, const char *name);
 
 /**
- * retro_perf_start:
+ * performance_counter_start:
  * @perf               : pointer to performance counter
  *
  * Start performance counter. 
  **/
-void retro_perf_start(struct retro_perf_counter *perf);
+void performance_counter_start(struct retro_perf_counter *perf);
 
 /**
  * performance_counter_stop:

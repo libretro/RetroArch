@@ -671,7 +671,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    }
 
    rarch_perf_init(&thr_frame, "thr_frame");
-   retro_perf_start(&thr_frame);
+   performance_counter_start(&thr_frame);
 
    copy_stride = width * (thr->info.rgb32 
          ? sizeof(uint32_t) : sizeof(uint16_t));

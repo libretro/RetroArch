@@ -343,7 +343,7 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
       SDL_LockSurface(vid->screen);
 
    rarch_perf_init(&sdl_scale, "sdl_scale");
-   retro_perf_start(&sdl_scale);
+   performance_counter_start(&sdl_scale);
 
    video_frame_scale(
          &vid->scaler,

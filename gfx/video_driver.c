@@ -1069,7 +1069,7 @@ static bool video_driver_frame_filter(const void *data,
 
    *output_pitch = (*output_width) * video_driver_state.filter.out_bpp;
 
-   retro_perf_start(&softfilter_process);
+   performance_counter_start(&softfilter_process);
    rarch_softfilter_process(video_driver_state.filter.filter,
          video_driver_state.filter.buffer, *output_pitch,
          data, width, height, pitch);
@@ -2060,7 +2060,7 @@ static bool video_pixel_frame_scale(const void *data,
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
       return false;
 
-   retro_perf_start(&video_frame_conv);
+   performance_counter_start(&video_frame_conv);
 
    video_driver_scaler_ptr->scaler->in_width      = width;
    video_driver_scaler_ptr->scaler->in_height     = height;

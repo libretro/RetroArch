@@ -375,7 +375,7 @@ static bool vg_frame(void *data, const void *frame,
    static struct retro_perf_counter vg_image = {0};
 
    rarch_perf_init(&vg_fr, "vg_fr");
-   retro_perf_start(&vg_fr);
+   performance_counter_start(&vg_fr);
 
    video_driver_get_size(&width, &height);
 
@@ -402,7 +402,7 @@ static bool vg_frame(void *data, const void *frame,
    vgSeti(VG_SCISSORING, VG_TRUE);
 
    rarch_perf_init(&vg_image, "vg_image");
-   retro_perf_start(&vg_image);
+   performance_counter_start(&vg_image);
    vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
    performance_counter_stop(&vg_image);
 

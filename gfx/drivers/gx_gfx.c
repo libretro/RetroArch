@@ -1438,7 +1438,7 @@ static bool gx_frame(void *data, const void *frame,
    settings_t               *settings = config_get_ptr();
 
    rarch_perf_init(&gx_frame, "gx_frame");
-   retro_perf_start(&gx_frame);
+   performance_counter_start(&gx_frame);
 
    if(!gx || (!frame && !gx->menu_texture_enable))
       return true;
@@ -1474,7 +1474,7 @@ static bool gx_frame(void *data, const void *frame,
       static struct retro_perf_counter gx_frame_convert = {0};
 
       rarch_perf_init(&gx_frame_convert, "gx_frame_convert");
-      retro_perf_start(&gx_frame_convert);
+      performance_counter_start(&gx_frame_convert);
 
       if (gx->rgb32)
          convert_texture32(frame, g_tex.data, width, height, pitch);
