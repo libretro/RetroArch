@@ -983,7 +983,10 @@ static void *vulkan_init(const video_info_t *video,
 
    ctx_driver = vulkan_get_context(vk);
    if (!ctx_driver)
+   {
+      RARCH_ERR("[Vulkan]: Failed to get Vulkan context.\n");
       goto error;
+   }
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
@@ -1009,8 +1012,12 @@ static void *vulkan_init(const video_info_t *video,
    mode.width      = win_width;
    mode.height     = win_height;
    mode.fullscreen = video->fullscreen;
+
    if (!video_context_driver_set_video_mode(&mode))
+   {
+      RARCH_ERR("[Vulkan]: Failed to set video mode.\n");
       goto error;
+   }
 
    video_context_driver_get_video_size(&mode);
    temp_width  = mode.width;
@@ -1042,7 +1049,10 @@ static void *vulkan_init(const video_info_t *video,
    vulkan_init_resources(vk);
 
    if (!vulkan_init_filter_chain(vk))
+   {
+      RARCH_ERR("[Vulkan]: Failed to init filter chain.\n");
       goto error;
+   }
 
    inp.input      = input;
    inp.input_data = input_data;

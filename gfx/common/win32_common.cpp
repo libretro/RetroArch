@@ -228,7 +228,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          return 0;
    }
 
-   if (dinput_handle_message(dinput, message, wparam, lparam))
+   if (dinput && dinput_handle_message(dinput, message, wparam, lparam))
       return 0;
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
@@ -258,11 +258,11 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
             return ret;
          break;
       case WM_CREATE:
-         create_gl_context(hwnd, &g_quit);
+         create_graphics_context(hwnd, &g_quit);
          return 0;
    }
 
-   if (dinput_handle_message(dinput_wgl, message, wparam, lparam))
+   if (dinput_wgl && dinput_handle_message(dinput_wgl, message, wparam, lparam))
       return 0;
    return DefWindowProc(hwnd, message, wparam, lparam);
 }

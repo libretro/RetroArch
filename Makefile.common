@@ -741,11 +741,12 @@ ifeq ($(HAVE_SDL2), 1)
 endif
 
 ifeq ($(HAVE_VULKAN), 1)
-	ifeq ($(platform), win)
+	ifneq ($(findstring Win32,$(OS)),)
 		GLSLANG_PLATFORM := Windows
 	else
 		GLSLANG_PLATFORM := Unix
 	endif
+
 	GLSLANG_SOURCES := \
 		$(wildcard deps/glslang/*.cpp) \
 		$(wildcard deps/glslang/glslang/SPIRV/*.cpp) \
@@ -756,9 +757,14 @@ ifeq ($(HAVE_VULKAN), 1)
 		$(wildcard deps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
 
 	SPIRV_CROSS_SOURCES := deps/SPIRV-Cross/spirv_cross.cpp
+	ifneq ($(findstring Win32,$(OS)),)
+		# Trivial temporary workaround for MinGW and glslang.
+		CXXFLAGS += -fpermissive
+	endif
 
 	DEFINES += \
 			  -Ideps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
+			  -Ideps/glslang/glslang/OGLCompilersDLL \
 			  -Ideps/glslang/glslang \
 			  -Ideps/glslang/glslang/glslang/MachineIndependent \
 			  -Ideps/glslang/glslang/glslang/Public \
@@ -766,8 +772,8 @@ ifeq ($(HAVE_VULKAN), 1)
 			  -Ideps/glslang \
 			  -Ideps/SPIRV-Cross
 
-	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -I./gfx/include/vulkan
-   CFLAGS  += -I./gfx/include/vulkan
+	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Igfx/include
+	CFLAGS  += -Igfx/include
 
 	GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
 	SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)

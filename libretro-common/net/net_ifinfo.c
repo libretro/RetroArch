@@ -28,8 +28,8 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <winsock2.h>
-#include <IPHlpApi.h>
-#include <WS2tcpip.h>
+#include <iphlpapi.h>
+#include <ws2tcpip.h>
 #else
 #include <arpa/inet.h>
 #include <sys/socket.h>
