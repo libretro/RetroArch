@@ -39,7 +39,7 @@
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 #endif
 
-typedef struct audio_driver_input_data
+struct audio_driver_input_data
 {
    float *data;
 
@@ -89,7 +89,7 @@ typedef struct audio_driver_input_data
       unsigned buf[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
       uint64_t count;
    } free_samples;
-} audio_driver_input_data_t;
+};
 
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
@@ -154,7 +154,7 @@ static const audio_driver_t *audio_drivers[] = {
    NULL,
 };
 
-static audio_driver_input_data_t audio_driver_data;
+static struct audio_driver_input_data audio_driver_data;
 static struct retro_audio_callback audio_callback;
 static struct string_list *audio_driver_devices_list   = NULL;
 static struct retro_perf_counter resampler_proc        = {0};
