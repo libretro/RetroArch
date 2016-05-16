@@ -593,7 +593,7 @@ recheckcapacity:;
       write_size_t(state->head, compressed-state->data);
       state->head = compressed;
 
-      retro_perf_stop(&gen_deltas);
+      performance_counter_stop(&gen_deltas);
    }
    else
       state->thisblock_valid = true;
@@ -768,7 +768,7 @@ void state_manager_check_rewind(bool pressed)
 
          core_serialize(&serial_info);
 
-         retro_perf_stop(&rewind_serialize);
+         performance_counter_stop(&rewind_serialize);
 
          state_manager_push_do(rewind_state.state);
       }

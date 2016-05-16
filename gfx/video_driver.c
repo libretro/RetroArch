@@ -1073,7 +1073,7 @@ static bool video_driver_frame_filter(const void *data,
    rarch_softfilter_process(video_driver_state.filter.filter,
          video_driver_state.filter.buffer, *output_pitch,
          data, width, height, pitch);
-   retro_perf_stop(&softfilter_process);
+   performance_counter_stop(&softfilter_process);
 
    if (settings->video.post_filter_record)
       recording_dump_frame(video_driver_state.filter.buffer,
@@ -2072,7 +2072,7 @@ static bool video_pixel_frame_scale(const void *data,
    scaler_ctx_scale(video_driver_scaler_ptr->scaler,
          video_driver_scaler_ptr->scaler_out, data);
 
-   retro_perf_stop(&video_frame_conv);
+   performance_counter_stop(&video_frame_conv);
 
    return true;
 }

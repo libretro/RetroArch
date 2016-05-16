@@ -1229,7 +1229,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
 
          cb->perf_register    = retro_perf_register; 
          cb->perf_start       = retro_perf_start;
-         cb->perf_stop        = retro_perf_stop;
+         cb->perf_stop        = performance_counter_stop;
          cb->perf_log         = retro_perf_log;
          break;
       }

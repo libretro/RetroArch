@@ -140,7 +140,7 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size)
    ctr->pos += size >> 2;
    ctr->pos &= CTR_DSP_AUDIO_COUNT_MASK;
 
-   retro_perf_stop(&ctraudio_dsp_f);
+   performance_counter_stop(&ctraudio_dsp_f);
 
    return size;
 }

@@ -831,9 +831,7 @@ static bool ctr_frame(void* data, const void* frame,
 	framebufferInfo[framebufferInfoHeader[0x0]] = topFramebufferInfo;
 	framebufferInfoHeader[0x1]=1;
 
-
-
-   retro_perf_stop(&ctrframe_f);
+   performance_counter_stop(&ctrframe_f);
 
    return true;
 }

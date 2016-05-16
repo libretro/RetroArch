@@ -560,7 +560,7 @@ static bool psp_frame(void *data, const void *frame,
 
    sceGuFinish();
 
-   retro_perf_stop(&psp_frame_run);
+   performance_counter_stop(&psp_frame_run);
 
    if(psp->menu.active)
    {

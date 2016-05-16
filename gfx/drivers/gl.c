@@ -1602,7 +1602,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    }
 #endif
-   retro_perf_stop(&copy_frame);
+   performance_counter_stop(&copy_frame);
 }
 
 static INLINE void gl_set_prev_texture(gl_t *gl,
@@ -1672,7 +1672,7 @@ static void gl_pbo_async_readback(gl_t *gl)
          gl->vp.width, gl->vp.height,
          GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 #endif
-   retro_perf_stop(&async_readback);
+   performance_counter_stop(&async_readback);
 
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
@@ -1962,7 +1962,7 @@ static bool gl_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title();
 
-   retro_perf_stop(&frame_run);
+   performance_counter_stop(&frame_run);
 
 #ifdef HAVE_FBO
    /* Reset state which could easily mess up libretro core. */
@@ -2039,7 +2039,7 @@ static bool gl_frame(void *data, const void *frame,
                gl->fence_count * sizeof(GLsync));
       }
 
-      retro_perf_stop(&gl_fence);
+      performance_counter_stop(&gl_fence);
    }
 #endif
 
@@ -3204,7 +3204,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 
       if (!gl->readback_buffer_screenshot)
       {
-         retro_perf_stop(&read_viewport);
+         performance_counter_stop(&read_viewport);
          goto error;
       }
 
@@ -3219,7 +3219,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
       gl->readback_buffer_screenshot = NULL;
    }
 
-   retro_perf_stop(&read_viewport);
+   performance_counter_stop(&read_viewport);
    context_bind_hw_render(true);
    return true;
 

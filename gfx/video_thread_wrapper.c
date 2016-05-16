@@ -741,7 +741,7 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    slock_unlock(thr->lock);
 
-   retro_perf_stop(&thr_frame);
+   performance_counter_stop(&thr_frame);
 
    thr->last_time = cpu_features_get_time_usec();
    return true;

@@ -202,7 +202,7 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t size)
    GSPGPU_FlushDataCache(ctr->l, CTR_CSND_AUDIO_SIZE);
    GSPGPU_FlushDataCache(ctr->r, CTR_CSND_AUDIO_SIZE);
 
-   retro_perf_stop(&ctraudio_f);
+   performance_counter_stop(&ctraudio_f);
 
    return size;
 }

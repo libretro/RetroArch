@@ -404,7 +404,7 @@ static bool vg_frame(void *data, const void *frame,
    rarch_perf_init(&vg_image, "vg_image");
    retro_perf_start(&vg_image);
    vg_copy_frame(vg, frame, frame_width, frame_height, pitch);
-   retro_perf_stop(&vg_image);
+   performance_counter_stop(&vg_image);
 
    vgDrawImage(vg->mImage);
 
@@ -415,7 +415,7 @@ static bool vg_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title();
 
-   retro_perf_stop(&vg_fr);
+   performance_counter_stop(&vg_fr);
 
    video_context_driver_swap_buffers();
 

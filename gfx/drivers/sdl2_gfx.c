@@ -362,7 +362,7 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
       target->tex = SDL_CreateTexture(vid->renderer, format,
                                       SDL_TEXTUREACCESS_STREAMING, width, height);
 
-      retro_perf_stop(&sdl_create_texture);
+      performance_counter_stop(&sdl_create_texture);
 
       if (!target->tex)
       {
@@ -516,7 +516,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
       SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
 
-      retro_perf_stop(&sdl_copy_frame);
+      performance_counter_stop(&sdl_copy_frame);
    }
 
    SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
@@ -642,7 +642,7 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
 
    memcpy(buffer, bgr24->pixels, bgr24->h * bgr24->pitch);
 
-   retro_perf_stop(&sdl2_gfx_read_viewport);
+   performance_counter_stop(&sdl2_gfx_read_viewport);
 
    return true;
 }
@@ -707,7 +707,7 @@ static void sdl2_poke_set_texture_frame(void *data, const void *frame, bool rgb3
 
       SDL_UpdateTexture(vid->menu.tex, NULL, frame, vid->menu.pitch);
 
-      retro_perf_stop(&copy_texture_frame);
+      performance_counter_stop(&copy_texture_frame);
    }
 }
 

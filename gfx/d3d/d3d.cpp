@@ -1539,7 +1539,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title();
 
-   retro_perf_stop(&d3d_frame);
+   performance_counter_stop(&d3d_frame);
 
    video_context_driver_swap_buffers();
 

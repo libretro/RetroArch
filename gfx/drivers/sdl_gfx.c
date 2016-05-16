@@ -356,7 +356,7 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
          width,
          height,
          pitch);
-   retro_perf_stop(&sdl_scale);
+   performance_counter_stop(&sdl_scale);
 
    if (vid->menu.active)
       SDL_BlitSurface(vid->menu.frame, NULL, vid->screen, NULL);

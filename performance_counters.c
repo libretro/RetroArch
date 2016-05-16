@@ -140,7 +140,7 @@ void retro_perf_start(struct retro_perf_counter *perf)
    perf->start = cpu_features_get_perf_counter();
 }
 
-void retro_perf_stop(struct retro_perf_counter *perf)
+void performance_counter_stop(struct retro_perf_counter *perf)
 {
    if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL) || !perf)
       return;

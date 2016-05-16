@@ -1484,7 +1484,7 @@ static bool gx_frame(void *data, const void *frame,
          convert_texture16(frame, g_tex.data, width, height, pitch);
       DCFlushRange(g_tex.data, height * (width << (gx->rgb32 ? 2 : 1)));
 
-      retro_perf_stop(&gx_frame_convert);
+      performance_counter_stop(&gx_frame_convert);
    }
 
    if (gx->menu_texture_enable && gx->menu_data)
@@ -1566,7 +1566,7 @@ static bool gx_frame(void *data, const void *frame,
    VIDEO_SetNextFramebuffer(gx->framebuf[g_current_framebuf]);
    VIDEO_Flush();
 
-   retro_perf_stop(&gx_frame);
+   performance_counter_stop(&gx_frame);
 
    return true;
 }

@@ -68,12 +68,12 @@ int rarch_perf_init(struct retro_perf_counter *perf, const char *name);
 void retro_perf_start(struct retro_perf_counter *perf);
 
 /**
- * retro_perf_stop:
+ * performance_counter_stop:
  * @perf               : pointer to performance counter
  *
  * Stop performance counter. 
  **/
-void retro_perf_stop(struct retro_perf_counter *perf);
+void performance_counter_stop(struct retro_perf_counter *perf);
 
 #ifdef __cplusplus
 }

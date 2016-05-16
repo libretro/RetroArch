@@ -1482,7 +1482,7 @@ static bool vulkan_frame(void *data, const void *frame,
    VKFUNC(vkResetCommandBuffer)(vk->cmd, 0);
 
    VKFUNC(vkBeginCommandBuffer)(vk->cmd, &begin_info);
-   retro_perf_stop(&begin_cmd);
+   performance_counter_stop(&begin_cmd);
 
    memset(&vk->tracker, 0, sizeof(vk->tracker));
 
@@ -1538,7 +1538,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
       vk->last_valid_index = frame_index;
    }
-   retro_perf_stop(&copy_frame);
+   performance_counter_stop(&copy_frame);
 
    /* Notify filter chain about the new sync index. */
    vulkan_filter_chain_notify_sync_index(vk->filter_chain, frame_index);
@@ -1668,7 +1668,7 @@ static bool vulkan_frame(void *data, const void *frame,
    if (vk->overlay.enable)
       vulkan_render_overlay(vk);
 #endif
-   retro_perf_stop(&build_cmd);
+   performance_counter_stop(&build_cmd);
 
    /* End the render pass. We're done rendering to backbuffer now. */
    VKFUNC(vkCmdEndRenderPass)(vk->cmd);
@@ -1719,7 +1719,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
    retro_perf_start(&end_cmd);
    VKFUNC(vkEndCommandBuffer)(vk->cmd);
-   retro_perf_stop(&end_cmd);
+   performance_counter_stop(&end_cmd);
 
    /* Submit command buffers to GPU. */
 
@@ -1751,7 +1751,7 @@ static bool vulkan_frame(void *data, const void *frame,
    submit_info.pSignalSemaphores     = 
       &vk->context->swapchain_semaphores[frame_index];
 
-   retro_perf_stop(&frame_run);
+   performance_counter_stop(&frame_run);
 
    retro_perf_start(&queue_submit);
 
@@ -1763,11 +1763,11 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
-   retro_perf_stop(&queue_submit);
+   performance_counter_stop(&queue_submit);
 
    retro_perf_start(&swapbuffers);
    video_context_driver_swap_buffers();
-   retro_perf_stop(&swapbuffers);
+   performance_counter_stop(&swapbuffers);
 
    video_context_driver_update_window_title();
 
@@ -2089,7 +2089,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
 
       VKFUNC(vkUnmapMemory)(vk->context->device, staging->memory);
 
-      retro_perf_stop(&stream_readback);
+      performance_counter_stop(&stream_readback);
    }
    else
    {
