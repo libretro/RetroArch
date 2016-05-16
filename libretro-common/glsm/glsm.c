@@ -176,7 +176,6 @@ struct gl_cached_state
    int cap_translate[SGL_CAP_MAX];
 };
 
-static glsm_framebuffer_lock glsm_fb_lock = NULL;
 static struct retro_hw_render_callback hw_render;
 static struct gl_cached_state gl_state;
 
@@ -1418,11 +1417,8 @@ void rglGenFramebuffers(GLsizei n, GLuint *ids)
 void rglBindFramebuffer(GLenum target, GLuint framebuffer)
 {
    glsm_ctl(GLSM_CTL_IMM_VBO_DRAW, NULL);
-   if (!glsm_ctl(GLSM_CTL_IS_FRAMEBUFFER_LOCKED, NULL))
-   {
-      glBindFramebuffer(target, framebuffer);
-      gl_state.framebuf = framebuffer;
-   }
+   glBindFramebuffer(target, framebuffer);
+   gl_state.framebuf = framebuffer;
 }
 
 /*
@@ -1923,12 +1919,6 @@ static void glsm_state_unbind(void)
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0);
 }
 
-static bool dummy_framebuffer_lock(void *data)
-{
-   (void)data;
-   return false;
-}
-
 static bool glsm_state_ctx_init(void *data)
 {
    glsm_ctx_params_t *params = (glsm_ctx_params_t*)data;
@@ -1962,10 +1952,6 @@ static bool glsm_state_ctx_init(void *data)
    hw_render.bottom_left_origin = true;
    hw_render.cache_context      = true;
 
-   glsm_fb_lock                    = dummy_framebuffer_lock;
-   if (params->framebuffer_lock != NULL)
-      glsm_fb_lock                 = params->framebuffer_lock;
-
    if (!params->environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
       return false;
 
@@ -1981,8 +1967,6 @@ bool glsm_ctl(enum glsm_state_ctl state, void *data)
 {
    switch (state)
    {
-      case GLSM_CTL_IS_FRAMEBUFFER_LOCKED:
-         return glsm_fb_lock(NULL);
       case GLSM_CTL_IMM_VBO_DRAW:
          return false;
       case GLSM_CTL_IMM_VBO_DISABLE:
