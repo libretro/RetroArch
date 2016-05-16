@@ -823,6 +823,7 @@ void rglGetActiveUniform(GLuint program, GLuint index, GLsizei bufsize,
 }
 
 /*
+ * Category: UBO
  *
  * Core in:
  *
@@ -882,6 +883,7 @@ void rglGetUniformIndices(GLuint program,
 }
 
 /*
+ * Category: UBO
  *
  * Core in:
  *
@@ -900,6 +902,8 @@ void rglBindBufferBase( 	GLenum target,
 
 /*
  *
+ * Category: UBO
+ *
  * Core in:
  *
  * OpenGLES  : 3.0
@@ -916,6 +920,7 @@ GLuint rglGetUniformBlockIndex( 	GLuint program,
 }
 
 /*
+ * Category: UBO
  *
  * Core in:
  *
@@ -1128,6 +1133,7 @@ void rglTexCoord2f(GLfloat s, GLfloat t)
  *
  * Core in:
  * OpenGL    : 2.0 
+ *
  */
 void rglDisableVertexAttribArray(GLuint index)
 {
@@ -1148,6 +1154,12 @@ void rglEnableVertexAttribArray(GLuint index)
    glEnableVertexAttribArray(index);
 }
 
+/*
+ * Category: Shaders
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ */
 void rglVertexAttribIPointer(
       GLuint index,
       GLint size,
@@ -1608,6 +1620,7 @@ void rglBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 }
 
 /*
+ * Category: Blending
  *
  * Core in:
  * OpenGL    : 2.0 
