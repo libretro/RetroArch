@@ -112,11 +112,17 @@ static const GLfloat white_color[] = {
    1, 1, 1, 1,
 };
 
-static bool gl_core_context = false;
+static bool gl_core_context       = false;
+static bool gl_shared_context_use = false;
 
-static INLINE void context_bind_hw_render(gl_t *gl, bool enable)
+bool gl_query_core_context_in_use(void)
 {
-   if (gl && gl->shared_context_use)
+   return gl_core_context;
+}
+
+static INLINE void context_bind_hw_render(bool enable)
+{
+   if (gl_shared_context_use)
       video_context_driver_bind_hw_render(&enable);
 }
 
@@ -751,7 +757,7 @@ static void gl_deinit_hw_render(gl_t *gl)
    if (!gl)
       return;
 
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
 
    if (gl->hw_render_fbo_init)
       glDeleteFramebuffers(gl->textures, gl->hw_render_fbo);
@@ -759,7 +765,7 @@ static void gl_deinit_hw_render(gl_t *gl)
       glDeleteRenderbuffers(gl->textures, gl->hw_render_depth);
    gl->hw_render_fbo_init = false;
 
-   context_bind_hw_render(gl, false);
+   context_bind_hw_render(false);
 }
 
 static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
@@ -775,7 +781,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
 
    /* We can only share texture objects through contexts.
     * FBOs are "abstract" objects and are not shared. */
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
 
    RARCH_LOG("[GL]: Initializing HW render (%u x %u).\n", width, height);
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
@@ -855,7 +861,7 @@ static bool gl_init_hw_render(gl_t *gl, unsigned width, unsigned height)
    gl_bind_backbuffer();
    gl->hw_render_fbo_init = true;
 
-   context_bind_hw_render(gl, false);
+   context_bind_hw_render(false);
    return true;
 }
 #endif
@@ -1773,7 +1779,7 @@ static bool gl_frame(void *data, const void *frame,
 
    video_driver_get_size(&width, &height);
 
-   context_bind_hw_render(gl, false);
+   context_bind_hw_render(false);
 
 #ifndef HAVE_OPENGLES
    if (gl_core_context)
@@ -2043,7 +2049,7 @@ static bool gl_frame(void *data, const void *frame,
       glBindVertexArray(0);
 #endif
 
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
 
    return true;
 }
@@ -2079,7 +2085,8 @@ static void gl_destroy_resources(gl_t *gl)
       free(gl);
    }
 
-   gl_core_context = false;
+   gl_shared_context_use = false;
+   gl_core_context       = false;
 }
 
 static void gl_free(void *data)
@@ -2088,7 +2095,7 @@ static void gl_free(void *data)
    if (!gl)
       return;
 
-   context_bind_hw_render(gl, false);
+   context_bind_hw_render(false);
 
 #ifdef HAVE_GL_SYNC
    if (gl->have_sync)
@@ -2168,13 +2175,13 @@ static void gl_set_nonblock_state(void *data, bool state)
 
    RARCH_LOG("[GL]: VSync => %s\n", state ? "off" : "on");
 
-   context_bind_hw_render(gl, false);
+   context_bind_hw_render(false);
 
    if (!state)
       interval = settings->video.swap_interval;
 
    video_context_driver_swap_interval(&interval);
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
 }
 
 static bool resolve_extensions(gl_t *gl, const char *context_ident)
@@ -2470,11 +2477,11 @@ static const gfx_ctx_driver_t *gl_get_context(gl_t *gl)
     
    (void)api_name;
 
-   gl->shared_context_use = settings->video.shared_context
+   gl_shared_context_use = settings->video.shared_context
       && hwr->context_type != RETRO_HW_CONTEXT_NONE;
 
    return video_context_driver_init_first(gl, settings->video.context_driver,
-         api, major, minor, gl->shared_context_use);
+         api, major, minor, gl_shared_context_use);
 }
 
 #ifdef GL_DEBUG
@@ -2743,9 +2750,9 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
        * create textures. */
       gl->textures = 1;
 #ifdef GL_DEBUG
-      context_bind_hw_render(gl, true);
+      context_bind_hw_render(true);
       gl_begin_debug(gl);
-      context_bind_hw_render(gl, false);
+      context_bind_hw_render(false);
 #endif
    }
 #endif
@@ -2877,7 +2884,7 @@ static void *gl_init(const video_info_t *video, const input_driver_t **input, vo
    if (!gl_check_error())
       goto error;
 
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
    return gl;
 
 error:
@@ -2949,7 +2956,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    if (!gl)
       return;
 
-   context_bind_hw_render(gl, false);
+   context_bind_hw_render(false);
 
    shader_filter.index  = 1;
    shader_filter.smooth = &smooth;
@@ -2990,7 +2997,7 @@ static void gl_update_tex_filter_frame(gl_t *gl)
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
 }
 
 static bool gl_set_shader(void *data,
@@ -3005,7 +3012,7 @@ static bool gl_set_shader(void *data,
    if (!gl)
       return false;
 
-   context_bind_hw_render(gl, false);
+   context_bind_hw_render(false);
 
    if (type == RARCH_SHADER_NONE)
       return false;
@@ -3086,7 +3093,7 @@ static bool gl_set_shader(void *data,
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl_set_shader_viewport(gl, 0);
    gl_set_shader_viewport(gl, 1);
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
 #if defined(_WIN32) && !defined(_XBOX)
    shader_dlg_params_reload();
 #endif
@@ -3096,7 +3103,7 @@ static bool gl_set_shader(void *data,
    return true;
 
 error:
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
    return false;
 }
 
@@ -3128,7 +3135,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    if (!gl)
       return false;
 
-   context_bind_hw_render(gl, false);
+   context_bind_hw_render(false);
 
    rarch_perf_init(&read_viewport, "read_viewport");
    retro_perf_start(&read_viewport);
@@ -3213,11 +3220,11 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
    }
 
    retro_perf_stop(&read_viewport);
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
    return true;
 
 error:
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
 #endif
 
    return false;
@@ -3419,14 +3426,14 @@ static bool gl_overlay_load(void *data,
    if (!gl)
       return false;
 
-   context_bind_hw_render(gl, false);
+   context_bind_hw_render(false);
 
    gl_free_overlay(gl);
    gl->overlay_tex = (GLuint*)calloc(num_images, sizeof(*gl->overlay_tex));
 
    if (!gl->overlay_tex)
    {
-      context_bind_hw_render(gl, true);
+      context_bind_hw_render(true);
       return false;
    }
 
@@ -3464,7 +3471,7 @@ static bool gl_overlay_load(void *data,
          gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
 
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
    return true;
 }
 
@@ -3705,7 +3712,7 @@ static void gl_set_texture_frame(void *data,
    if (!gl)
       return;
 
-   context_bind_hw_render(gl, false);
+   context_bind_hw_render(false);
 
    menu_filter = settings->menu.linear_filter ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST;
 
@@ -3722,7 +3729,7 @@ static void gl_set_texture_frame(void *data,
    gl->menu_texture_alpha = alpha;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-   context_bind_hw_render(gl, true);
+   context_bind_hw_render(true);
 }
 
 static void gl_set_texture_enable(void *data, bool state, bool full_screen)

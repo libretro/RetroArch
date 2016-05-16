@@ -71,7 +71,7 @@ static bool gl_raster_font_upload_atlas(gl_raster_t *font,
    }
     
 #if defined(GL_VERSION_3_0)
-    if (font->gl->core_context ||
+    if (gl_query_core_context_in_use() ||
         (hwr->context_type == RETRO_HW_CONTEXT_OPENGL &&
          hwr->version_major >= 3))
    {
