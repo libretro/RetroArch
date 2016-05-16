@@ -884,7 +884,7 @@ static void content_load_init_wrap(
  * Returns: false (0) if retroarch_main_init failed, 
  * otherwise true (1).
  **/
-bool content_load(content_ctx_info_t *info)
+static bool content_load(content_ctx_info_t *info)
 {
    unsigned i;
    bool retval                       = true;

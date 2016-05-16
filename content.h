@@ -59,11 +59,6 @@ bool content_load_state(const char *path);
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path);
 
-/* Loads content file and starts up RetroArch.
- * If no content file can be loaded, will start up RetroArch
- * as-is. */
-bool content_load(content_ctx_info_t *info);
-
 bool content_does_not_need_content(void);
 
 void content_set_does_not_need_content(void);
