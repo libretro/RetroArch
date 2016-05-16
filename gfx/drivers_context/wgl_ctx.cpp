@@ -36,13 +36,17 @@
 #include "../../runloop.h"
 #include "../video_context_driver.h"
 
-#include "../common/gl_common.h"
 #include "../common/win32_common.h"
+
+#ifdef HAVE_OPENGL
+#include "../common/gl_common.h"
+#endif
 
 #ifdef HAVE_VULKAN
 #include "../common/vulkan_common.h"
 #endif
 
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 #ifndef WGL_CONTEXT_MAJOR_VERSION_ARB
 #define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
 #endif
@@ -66,8 +70,12 @@
 #ifndef WGL_CONTEXT_DEBUG_BIT_ARB
 #define WGL_CONTEXT_DEBUG_BIT_ARB 0x0001
 #endif
+#endif
 
+#if defined(HAVE_OPENGL)
 typedef HGLRC (APIENTRY *wglCreateContextAttribsProc)(HDC, HGLRC, const int*);
+static wglCreateContextAttribsProc pcreate_context;
+#endif
 static BOOL (APIENTRY *p_swap_interval)(int);
 
 static bool g_use_hw_ctx;
@@ -88,8 +96,6 @@ static unsigned g_interval;
 
 static dylib_t dll_handle = NULL; /* Handle to OpenGL32.dll */
 
-static wglCreateContextAttribsProc pcreate_context;
-
 static void setup_pixel_format(HDC hdc)
 {
    PIXELFORMATDESCRIPTOR pfd = {0};
@@ -105,6 +111,7 @@ static void setup_pixel_format(HDC hdc)
    SetPixelFormat(hdc, ChoosePixelFormat(hdc, &pfd), &pfd);
 }
 
+#if defined(HAVE_OPENGL)
 static void create_gl_context(HWND hwnd, bool *quit)
 {
    bool core_context;
@@ -228,13 +235,16 @@ static void create_gl_context(HWND hwnd, bool *quit)
          RARCH_ERR("[WGL]: wglCreateContextAttribsARB not supported.\n");
    }
 }
+#endif
 
 void create_graphics_context(HWND hwnd, bool *quit)
 {
    switch (g_api)
    {
       case GFX_CTX_OPENGL_API:
+#if defined(HAVE_OPENGL)
          create_gl_context(hwnd, quit);
+#endif
          break;
 
       case GFX_CTX_VULKAN_API:
@@ -250,9 +260,9 @@ void create_graphics_context(HWND hwnd, bool *quit)
                   width, height, g_interval))
             *quit = true;
          g_inited = true;
-         break;
 #endif
       }
+      break;
 
       case GFX_CTX_NONE:
       default:
@@ -328,8 +338,8 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
       case GFX_CTX_OPENGL_API:
 #ifdef HAVE_OPENGL
          SwapBuffers(g_hdc);
-         break;
 #endif
+         break;
 
       case GFX_CTX_VULKAN_API:
 #ifdef HAVE_VULKAN
@@ -576,9 +586,11 @@ static bool gfx_ctx_wgl_has_windowed(void *data)
 
 static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
    void *func = (void *)wglGetProcAddress(symbol);
    if (func)
       return (gfx_ctx_proc_t)wglGetProcAddress(symbol);
+#endif
    return (gfx_ctx_proc_t)GetProcAddress((HINSTANCE)dll_handle, symbol);
 }
 
@@ -597,7 +609,16 @@ static bool gfx_ctx_wgl_bind_api(void *data,
    g_minor = minor;
    g_api = api;
 
-   return api == GFX_CTX_OPENGL_API || api == GFX_CTX_VULKAN_API;
+#if defined(HAVE_OPENGL)
+   if (api == GFX_CTX_OPENGL_API)
+      return true;
+#endif
+#if defined(HAVE_VULKAN)
+   if (api == GFX_CTX_VULKAN_API)
+      return true;
+#endif
+
+   return false;
 }
 
 static void gfx_ctx_wgl_show_mouse(void *data, bool state)
