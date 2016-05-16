@@ -45,15 +45,13 @@
  *
  * Initializes core and loads content based on playlist entry.
  **/
-static bool menu_content_load_from_playlist(void *data)
+static bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info)
 {
    unsigned idx;
-   playlist_t *playlist         = NULL;
-   const char *core_path        = NULL;
-   const char *path             = NULL;
+   playlist_t *playlist            = NULL;
+   const char *core_path           = NULL;
+   const char *path                = NULL;
    content_ctx_info_t content_info = {0};
-   menu_content_ctx_playlist_info_t *info = 
-      (menu_content_ctx_playlist_info_t *)data;
    
    if (!info)
       return false;
