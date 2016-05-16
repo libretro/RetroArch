@@ -62,6 +62,7 @@
 #include "runloop.h"
 #include "managers/cheat_manager.h"
 #include "system.h"
+#include "tasks/tasks_internal.h"
 
 #include "git_version.h"
 
@@ -1519,6 +1520,7 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
  * properly. */
 bool retroarch_replace_config(char *path)
 {
+   content_ctx_info_t content_info = {0};
    settings_t *settings = config_get_ptr();
    global_t     *global = global_get_ptr();
 
@@ -1539,7 +1541,14 @@ bool retroarch_replace_config(char *path)
 
    *settings->path.libretro = '\0'; /* Load core in new config. */
 
-   runloop_prepare_dummy();
+   if (!rarch_task_push_content_load_default(
+         NULL, NULL,
+         true, 
+         &content_info,
+         CORE_TYPE_DUMMY,
+         CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+         NULL, NULL))
+      return false;
 
    return true;
 }

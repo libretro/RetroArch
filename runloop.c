@@ -727,26 +727,11 @@ void runloop_iterate_data(void)
    task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
 }
 
-
 static bool runloop_is_frame_count_end(void)
 {
    uint64_t *frame_count =
       video_driver_get_frame_count_ptr();
    return runloop_max_frames && (*frame_count >= runloop_max_frames);
-}
-
-
-bool runloop_prepare_dummy(void)
-{
-   content_ctx_info_t content_info = {0};
-   runloop_ctl(RUNLOOP_CTL_STATE_FREE, NULL);
-   return rarch_task_push_content_load_default(
-         NULL, NULL,
-         true, 
-         &content_info,
-         CORE_TYPE_DUMMY,
-         CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
-         NULL, NULL);
 }
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
@@ -1261,7 +1246,14 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
  * Aborts core shutdown if invoked. */
 static int runloop_iterate_time_to_exit_load_dummy(void)
 {
-   if (!runloop_prepare_dummy())
+   content_ctx_info_t content_info = {0};
+   if (!rarch_task_push_content_load_default(
+         NULL, NULL,
+         true, 
+         &content_info,
+         CORE_TYPE_DUMMY,
+         CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+         NULL, NULL))
       return -1;
 
    runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);

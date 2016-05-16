@@ -312,10 +312,7 @@ void runloop_msg_queue_push(const char *msg, unsigned prio,
 
 char* runloop_msg_queue_pull(void);
 
-bool runloop_prepare_dummy(void);
-
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
-
 
 #ifdef __cplusplus
 }

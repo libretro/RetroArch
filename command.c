@@ -56,6 +56,7 @@
 #include "managers/state_manager.h"
 #include "system.h"
 #include "ui/ui_companion_driver.h"
+#include "tasks/tasks_internal.h"
 #include "list_special.h"
 
 #ifdef HAVE_CHEEVOS
@@ -1558,6 +1559,7 @@ static void command_event_main_state(unsigned cmd)
  **/
 bool command_event(enum event_command cmd, void *data)
 {
+   content_ctx_info_t content_info = {0};
    unsigned i                = 0;
    bool boolean              = false;
    settings_t *settings      = config_get_ptr();
@@ -1719,7 +1721,14 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
-         runloop_prepare_dummy();
+         if (!rarch_task_push_content_load_default(
+                  NULL, NULL,
+                  true, 
+                  &content_info,
+                  CORE_TYPE_DUMMY,
+                  CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+                  NULL, NULL))
+            return false;
          command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
          break;
       case CMD_EVENT_QUIT:
