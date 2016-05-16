@@ -50,7 +50,6 @@ void audio_convert_s16_to_float_C(float *out,
       out[i] = (float)in[i] * gain; 
 }
 
-
 #if defined(__SSE2__)
 /**
  * audio_convert_s16_to_float_SSE2:
@@ -231,26 +230,9 @@ void audio_convert_s16_to_float_ALLEGREX(float *out,
 }
 #endif
 
-#ifndef RARCH_INTERNAL
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-retro_get_cpu_features_t perf_get_cpu_features_cb;
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
-
 static unsigned audio_convert_get_cpu_features(void)
 {
-#ifdef RARCH_INTERNAL
    return cpu_features_get();
-#else
-   return perf_get_cpu_features_cb();
-#endif
 }
 
 /**
