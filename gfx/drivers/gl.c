@@ -208,7 +208,7 @@ static bool gl_check_mipmap(void)
 }
 
 #ifndef HAVE_OPENGLES
-static bool gl_init_vao(gl_t *gl)
+static bool gl_check_vao(void)
 {
    if (!gl_core_context && !gl_query_extension("ARB_vertex_array_object"))
       return false;
@@ -216,7 +216,6 @@ static bool gl_init_vao(gl_t *gl)
    if (!(glGenVertexArrays && glBindVertexArray && glDeleteVertexArrays))
       return false;
 
-   glGenVertexArrays(1, &gl->vao);
    return true;
 }
 #endif
@@ -2207,11 +2206,12 @@ static bool resolve_extensions(gl_t *gl, const char *context_ident)
    if (gl_core_context)
    {
       RARCH_LOG("[GL]: Using Core GL context.\n");
-      if (!gl_init_vao(gl))
+      if (!gl_check_vao())
       {
          RARCH_ERR("[GL]: Failed to initialize VAOs.\n");
          return false;
       }
+      glGenVertexArrays(1, &gl->vao);
    }
 
    if (version && sscanf(version, "%u.%u", &major, &minor) != 2)
