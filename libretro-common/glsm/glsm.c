@@ -1338,6 +1338,42 @@ void rglUniform1iv(GLint location,  GLsizei count,  const GLint *value)
    glUniform1iv(location, count, value);
 }
 
+void rglClearBufferfv( 	GLenum buffer,
+  	GLint drawBuffer,
+  	const GLfloat * value)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3)
+   glClearBufferfv(buffer, drawBuffer, value);
+#endif
+}
+
+void rglTexBuffer(GLenum target, GLenum internalFormat, GLuint buffer)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3_2)
+   glTexBuffer(target, internalFormat, buffer);
+#endif
+}
+
+const GLubyte* rglGetStringi(GLenum name, GLuint index)
+{
+   glGetStringi(name, index);
+}
+
+void rglClearBufferfi( 	GLenum buffer,
+  	GLint drawBuffer,
+  	GLfloat depth,
+  	GLint stencil)
+{
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3)
+   glClearBufferfi(buffer, drawBuffer, value);
+#endif
+}
+
+/*
+ *
+ * Core in:
+ * OpenGL    : 3.0 
+ */
 void rglRenderbufferStorageMultisample( 	GLenum target,
   	GLsizei samples,
   	GLenum internalformat,
