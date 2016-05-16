@@ -649,7 +649,6 @@ CORES
 /*============================================================
 FILE
 ============================================================ */
-#include "../content.c"
 #include "../libretro-common/file/file_path.c"
 #include "../file_path_special.c"
 #include "../libretro-common/lists/dir_list.c"
