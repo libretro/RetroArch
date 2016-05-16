@@ -347,7 +347,7 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
 
       sdl_tex_zero(target);
 
-      rarch_perf_init(&sdl_create_texture, "sdl_create_texture");
+      performance_counter_init(&sdl_create_texture, "sdl_create_texture");
       performance_counter_start(&sdl_create_texture);
 
       if (menu)
@@ -511,7 +511,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
       sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
 
-      rarch_perf_init(&sdl_copy_frame, "sdl_copy_frame");
+      performance_counter_init(&sdl_copy_frame, "sdl_copy_frame");
       performance_counter_start(&sdl_copy_frame);
 
       SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
@@ -626,7 +626,7 @@ static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer)
    sdl2_video_t *vid = (sdl2_video_t*)data;
    static struct retro_perf_counter sdl2_gfx_read_viewport = {0};
 
-   rarch_perf_init(&sdl2_gfx_read_viewport, "sdl2_gfx_read_viewport");
+   performance_counter_init(&sdl2_gfx_read_viewport, "sdl2_gfx_read_viewport");
    performance_counter_start(&sdl2_gfx_read_viewport);
 
    video_driver_cached_frame_render();
@@ -702,7 +702,7 @@ static void sdl2_poke_set_texture_frame(void *data, const void *frame, bool rgb3
       sdl_refresh_input_size(vid, true, rgb32, width, height,
                              width * (rgb32 ? 4 : 2));
 
-      rarch_perf_init(&copy_texture_frame, "copy_texture_frame");
+      performance_counter_init(&copy_texture_frame, "copy_texture_frame");
       performance_counter_start(&copy_texture_frame);
 
       SDL_UpdateTexture(vid->menu.tex, NULL, frame, vid->menu.pitch);

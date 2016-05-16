@@ -121,7 +121,7 @@ void retro_perf_log(void)
    log_counters(perf_counters_libretro, perf_ptr_libretro);
 }
 
-int rarch_perf_init(struct retro_perf_counter *perf, const char *name)
+int performance_counter_init(struct retro_perf_counter *perf, const char *name)
 {
    perf->ident = name;
 

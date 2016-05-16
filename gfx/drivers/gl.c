@@ -1469,7 +1469,7 @@ static INLINE void gl_copy_frame(gl_t *gl, const void *frame,
 {
    static struct retro_perf_counter copy_frame = {0};
 
-   rarch_perf_init(&copy_frame, "copy_frame");
+   performance_counter_init(&copy_frame, "copy_frame");
    performance_counter_start(&copy_frame);
 
 #if defined(HAVE_OPENGLES2)
@@ -1660,7 +1660,7 @@ static void gl_pbo_async_readback(gl_t *gl)
          video_pixel_get_alignment(gl->vp.width * sizeof(uint32_t)));
 
    /* Read asynchronously into PBO buffer. */
-   rarch_perf_init(&async_readback, "async_readback");
+   performance_counter_init(&async_readback, "async_readback");
    performance_counter_start(&async_readback);
    glReadBuffer(GL_BACK);
 #ifdef HAVE_OPENGLES3
@@ -1770,7 +1770,7 @@ static bool gl_frame(void *data, const void *frame,
    gl_t                            *gl = (gl_t*)data;
    settings_t                *settings = config_get_ptr();
 
-   rarch_perf_init(&frame_run, "frame_run");
+   performance_counter_init(&frame_run, "frame_run");
    performance_counter_start(&frame_run);
 
    if (!gl)
@@ -2022,7 +2022,7 @@ static bool gl_frame(void *data, const void *frame,
    {
       static struct retro_perf_counter gl_fence = {0};
 
-      rarch_perf_init(&gl_fence, "gl_fence");
+      performance_counter_init(&gl_fence, "gl_fence");
       performance_counter_start(&gl_fence);
       glClear(GL_COLOR_BUFFER_BIT);
       gl->fences[gl->fence_count++] = 
@@ -3137,7 +3137,7 @@ static bool gl_read_viewport(void *data, uint8_t *buffer)
 
    context_bind_hw_render(false);
 
-   rarch_perf_init(&read_viewport, "read_viewport");
+   performance_counter_init(&read_viewport, "read_viewport");
    performance_counter_start(&read_viewport);
 
    num_pixels = gl->vp.width * gl->vp.height;

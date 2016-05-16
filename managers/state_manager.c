@@ -572,7 +572,7 @@ recheckcapacity:;
          goto recheckcapacity;
       }
 
-      rarch_perf_init(&gen_deltas, "gen_deltas");
+      performance_counter_init(&gen_deltas, "gen_deltas");
       performance_counter_start(&gen_deltas);
 
       oldb        = state->thisblock;
@@ -760,7 +760,7 @@ void state_manager_check_rewind(bool pressed)
 
          state_manager_push_where(rewind_state.state, &state);
 
-         rarch_perf_init(&rewind_serialize, "rewind_serialize");
+         performance_counter_init(&rewind_serialize, "rewind_serialize");
          performance_counter_start(&rewind_serialize);
 
          serial_info.data = state;

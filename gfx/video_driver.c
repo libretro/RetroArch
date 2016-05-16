@@ -1059,7 +1059,7 @@ static bool video_driver_frame_filter(const void *data,
    static struct retro_perf_counter softfilter_process = {0};
    settings_t *settings = config_get_ptr();
 
-   rarch_perf_init(&softfilter_process, "softfilter_process");
+   performance_counter_init(&softfilter_process, "softfilter_process");
 
    if (!video_driver_state.filter.filter || !data)
       return false;
@@ -2052,7 +2052,7 @@ static bool video_pixel_frame_scale(const void *data,
 {
    static struct retro_perf_counter video_frame_conv = {0};
 
-   rarch_perf_init(&video_frame_conv, "video_frame_conv");
+   performance_counter_init(&video_frame_conv, "video_frame_conv");
 
    if (     !data 
          || video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)

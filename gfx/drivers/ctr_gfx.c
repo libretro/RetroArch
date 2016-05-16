@@ -619,7 +619,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
    fflush(stdout);
 
-   rarch_perf_init(&ctrframe_f, "ctrframe_f");
+   performance_counter_init(&ctrframe_f, "ctrframe_f");
    performance_counter_start(&ctrframe_f);
 
    if (ctr->should_resize)

@@ -116,7 +116,7 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t size)
       }
    }
 
-   rarch_perf_init(&ctraudio_dsp_f, "ctraudio_dsp_f");
+   performance_counter_init(&ctraudio_dsp_f, "ctraudio_dsp_f");
    performance_counter_start(&ctraudio_dsp_f);
 
    pos = ctr->pos << 2;

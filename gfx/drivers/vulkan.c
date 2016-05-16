@@ -1456,13 +1456,13 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned frame_index                          = 
       vk->context->current_swapchain_index;
 
-   rarch_perf_init(&frame_run, "frame_run");
-   rarch_perf_init(&copy_frame, "copy_frame");
-   rarch_perf_init(&swapbuffers, "swapbuffers");
-   rarch_perf_init(&queue_submit, "queue_submit");
-   rarch_perf_init(&begin_cmd, "begin_command");
-   rarch_perf_init(&build_cmd, "build_command");
-   rarch_perf_init(&end_cmd, "end_command");
+   performance_counter_init(&frame_run, "frame_run");
+   performance_counter_init(&copy_frame, "copy_frame");
+   performance_counter_init(&swapbuffers, "swapbuffers");
+   performance_counter_init(&queue_submit, "queue_submit");
+   performance_counter_init(&begin_cmd, "begin_command");
+   performance_counter_init(&build_cmd, "build_command");
+   performance_counter_init(&end_cmd, "end_command");
    performance_counter_start(&frame_run);
 
    video_driver_get_size(&width, &height);
@@ -2076,7 +2076,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
       if (staging->memory == VK_NULL_HANDLE)
          return false;
 
-      rarch_perf_init(&stream_readback, "stream_readback");
+      performance_counter_init(&stream_readback, "stream_readback");
       performance_counter_start(&stream_readback);
 
       buffer += 3 * (vk->vp.height - 1) * vk->vp.width;

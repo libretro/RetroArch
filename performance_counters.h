@@ -57,7 +57,7 @@ void retro_perf_log(void);
 
 void rarch_perf_log(void);
 
-int rarch_perf_init(struct retro_perf_counter *perf, const char *name);
+int performance_counter_init(struct retro_perf_counter *perf, const char *name);
 
 /**
  * performance_counter_start:

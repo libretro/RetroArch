@@ -1447,7 +1447,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    video_driver_get_size(&width, &height);
 
-   rarch_perf_init(&d3d_frame, "d3d_frame");
+   performance_counter_init(&d3d_frame, "d3d_frame");
    performance_counter_start(&d3d_frame);
 
    /* We cannot recover in fullscreen. */
