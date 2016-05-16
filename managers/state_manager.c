@@ -24,6 +24,7 @@
 #endif
 
 #include <retro_inline.h>
+#include <algorithms/mismatch.h>
 
 #include "state_manager.h"
 #include "../configuration.h"
@@ -45,16 +46,6 @@
 
 #ifndef UINT32_MAX
 #define UINT32_MAX 0xffffffffu
-#endif
-
-#undef CPU_X86
-#if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__)
-#define CPU_X86
-#endif
-
-/* Other arches SIGBUS (usually) on unaligned accesses. */
-#ifndef CPU_X86
-#define NO_UNALIGNED_MEM
 #endif
 
 struct state_manager
@@ -152,131 +143,6 @@ static void *state_manager_raw_alloc(size_t len, uint16_t uniq)
    ret[len16/sizeof(uint16_t) + 3] = uniq;
 
    return ret;
-}
-
-#if __SSE2__
-#if defined(__GNUC__)
-static INLINE int compat_ctz(unsigned x)
-{
-   return __builtin_ctz(x);
-}
-#else
-
-/* Only checks at nibble granularity, 
- * because that's what we need. */
-
-static INLINE int compat_ctz(unsigned x)
-{
-   if (x & 0x000f)
-      return 0;
-   if (x & 0x00f0)
-      return 4;
-   if (x & 0x0f00)
-      return 8;
-   if (x & 0xf000)
-      return 12;
-   return 16;
-}
-#endif
-
-/* There's no equivalent in libc, you'd think so ...
- * std::mismatch exists, but it's not optimized at all. */
-
-static INLINE size_t find_change(const uint16_t *a, const uint16_t *b)
-{
-   const __m128i *a128 = (const __m128i*)a;
-   const __m128i *b128 = (const __m128i*)b;
-   
-   for (;;)
-   {
-      __m128i v0    = _mm_loadu_si128(a128);
-      __m128i v1    = _mm_loadu_si128(b128);
-      __m128i c     = _mm_cmpeq_epi32(v0, v1);
-      uint32_t mask = _mm_movemask_epi8(c);
-
-      if (mask != 0xffff) /* Something has changed, figure out where. */
-      {
-         size_t ret = (((uint8_t*)a128 - (uint8_t*)a) |
-               (compat_ctz(~mask))) >> 1;
-         return ret | (a[ret] == b[ret]);
-      }
-
-      a128++;
-      b128++;
-   }
-}
-#else
-static INLINE size_t find_change(const uint16_t *a, const uint16_t *b)
-{
-   const uint16_t *a_org = a;
-#ifdef NO_UNALIGNED_MEM
-   while (((uintptr_t)a & (sizeof(size_t) - 1)) && *a == *b)
-   {
-      a++;
-      b++;
-   }
-   if (*a == *b)
-#endif
-   {
-      const size_t *a_big = (const size_t*)a;
-      const size_t *b_big = (const size_t*)b;
-      
-      while (*a_big == *b_big)
-      {
-         a_big++;
-         b_big++;
-      }
-      a = (const uint16_t*)a_big;
-      b = (const uint16_t*)b_big;
-      
-      while (*a == *b)
-      {
-         a++;
-         b++;
-      }
-   }
-   return a - a_org;
-}
-#endif
-
-static INLINE size_t find_same(const uint16_t *a, const uint16_t *b)
-{
-   const uint16_t *a_org = a;
-#ifdef NO_UNALIGNED_MEM
-   if (((uintptr_t)a & (sizeof(uint32_t) - 1)) && *a != *b)
-   {
-      a++;
-      b++;
-   }
-   if (*a != *b)
-#endif
-   {
-      /* With this, it's random whether two consecutive identical
-       * words are caught.
-       *
-       * Luckily, compression rate is the same for both cases, and 
-       * three is always caught.
-       *
-       * (We prefer to miss two-word blocks, anyways; fewer iterations 
-       * of the outer loop, as well as in the decompressor.) */
-      const uint32_t *a_big = (const uint32_t*)a;
-      const uint32_t *b_big = (const uint32_t*)b;
-      
-      while (*a_big != *b_big)
-      {
-         a_big++;
-         b_big++;
-      }
-      a = (const uint16_t*)a_big;
-      b = (const uint16_t*)b_big;
-      
-      if (a != a_org && a[-1] == b[-1])
-      {
-         a--;
-         b--;
-      }
-   }
-   return a - a_org;
 }
 
 /*
@@ -484,7 +350,6 @@ error:
 
    return NULL;
 }
-
 
 static bool state_manager_pop(state_manager_t *state, const void **data)
 {

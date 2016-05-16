@@ -123,6 +123,7 @@ OBJ += frontend/frontend.o \
        intl/msg_hash_pt.o \
        intl/msg_hash_us.o \
        runloop.o \
+		 libretro-common/algorithms/mismatch.o \
        libretro-common/queues/task_queue.o \
        tasks/tasks_internal.o \
        tasks/task_content.o \
