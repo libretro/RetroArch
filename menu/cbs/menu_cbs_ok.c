@@ -2048,7 +2048,6 @@ static int action_ok_start_core(const char *path,
    /* No content needed for this core, load core immediately. */
    if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
    {
-      runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
       rarch_task_push_content_load_default(NULL, NULL,
             false, CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU,

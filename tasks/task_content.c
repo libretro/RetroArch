@@ -73,6 +73,7 @@ bool rarch_task_push_content_load_default(
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
          break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
+         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
          break;
