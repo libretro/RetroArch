@@ -374,9 +374,6 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 }
 
 - (IBAction)openCore:(id)sender {
-#ifdef HAVE_OPENGL
-   NSOpenGLContext *glc  = (NSOpenGLContext*)glcontext_get_ptr();
-#endif
     NSOpenPanel* panel   = (NSOpenPanel*)[NSOpenPanel openPanel];
     settings_t *settings = config_get_ptr();
     NSString *startdir   = BOXSTRING(settings->directory.libretro);
@@ -401,9 +398,6 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 	NSInteger result = [panel runModal];
 	if (result == 1)
        open_core_handler(panel, result);
-#endif
-#ifdef HAVE_OPENGL
-    [glc makeCurrentContext];
 #endif
 }
 
