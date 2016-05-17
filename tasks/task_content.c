@@ -1826,6 +1826,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
 
 }
 #endif
+
 /**
  * content_load_wrapper:
  *
@@ -1841,10 +1842,12 @@ static bool content_load_wrapper(
 {
    char name[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
+   bool add_to_playlist = false;
    char *fullpath       = NULL;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
+#ifdef HAVE_MENU
    if (launched_from_menu)
    {
       /* redraw menu frame */
@@ -1853,6 +1856,7 @@ static bool content_load_wrapper(
 
       fill_pathname_base(name, fullpath, sizeof(name));
    }
+#endif
 
    if (!content_load(content_info))
       goto error;
@@ -1866,14 +1870,24 @@ static bool content_load_wrapper(
          runloop_msg_queue_push(msg, 1, 1, false);
       }
    }
+   
+   add_to_playlist    = !string_is_empty(fullpath);
+
+#ifdef HAVE_MENU
+   if (!add_to_playlist)
+      add_to_playlist = menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
+#endif
 
    /* Push entry to top of playlist */
-   if (!string_is_empty(fullpath) || 
-         menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
+   if (add_to_playlist)
    {
       struct retro_system_info *info = NULL;
-      menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-            &info);
+#ifdef HAVE_MENU
+      if (launched_from_menu)
+         menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &info);
+      else
+#endif
+         runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
       content_push_to_history_playlist(true, fullpath, info);
       playlist_write_file(g_defaults.history);
    }
@@ -2033,10 +2047,12 @@ bool rarch_task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 
+#ifdef HAVE_MENU
          if (fullpath)
             menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
          else
             menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
+#endif
 
          if (!command_event_cmd_exec((void*)fullpath))
             return false;
