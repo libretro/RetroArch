@@ -71,6 +71,29 @@ bool image_transfer_start(void *data, enum image_type_enum type)
    return true;
 }
 
+bool image_transfer_is_valid(
+      void *data,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         return rpng_is_valid((rpng_t*)data);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+         return true;
+#else
+         break;
+#endif
+   }
+
+   return false;
+}
+
 void image_transfer_set_buffer_ptr(
       void *data,
       enum image_type_enum type,

@@ -77,6 +77,8 @@ int image_transfer_process(
 
 bool image_transfer_iterate(void *data, enum image_type_enum type);
 
+bool image_transfer_is_valid(void *data, enum image_type_enum type);
+
 RETRO_END_DECLS
 
 #endif

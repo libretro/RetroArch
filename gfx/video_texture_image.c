@@ -26,9 +26,6 @@
 #include <boolean.h>
 #include <formats/image.h>
 #include <file/nbio.h>
-#ifdef HAVE_RPNG
-#include <formats/rpng.h>
-#endif
 #ifdef HAVE_RJPEG
 #include <formats/rjpeg.h>
 #endif
@@ -93,8 +90,6 @@ bool video_texture_image_color_convert(unsigned r_shift,
    return false;
 }
 
-#ifdef HAVE_RPNG
-
 #ifdef GEKKO
 
 #define GX_BLIT_LINE_32(off) \
@@ -158,7 +153,7 @@ static bool video_texture_image_internal_gx_convert_texture32(
 }
 #endif
 
-static bool video_texture_image_load_png(
+static bool video_texture_image_load_internal(
       enum image_type_enum type,
       void *ptr,
       struct texture_image *out_img,
@@ -167,24 +162,24 @@ static bool video_texture_image_load_png(
 {
    int ret;
    bool success = false;
-   rpng_t *rpng = (rpng_t*)image_transfer_new(type);
+   void *img    = image_transfer_new(type);
 
-   if (!rpng)
+   if (!img)
       goto end;
 
-   image_transfer_set_buffer_ptr(rpng, type, (uint8_t*)ptr);
+   image_transfer_set_buffer_ptr(img, type, (uint8_t*)ptr);
 
-   if (!image_transfer_start(rpng, type))
+   if (!image_transfer_start(img, type))
       goto end;
 
-   while (image_transfer_iterate((void*)rpng, type));
+   while (image_transfer_iterate(img, type));
 
-   if (!rpng_is_valid(rpng))
+   if (!image_transfer_is_valid(img, type))
       goto end;
 
    do
    {
-      ret = image_transfer_process((void*)rpng, type,
+      ret = image_transfer_process(img, type,
             (uint32_t**)&out_img->pixels, 0, &out_img->width,
             &out_img->height);
    }while(ret == IMAGE_PROCESS_NEXT);
@@ -206,12 +201,11 @@ static bool video_texture_image_load_png(
    success = true;
 
 end:
-   if (rpng)
-      image_transfer_free(rpng, type);
+   if (img)
+      image_transfer_free(img, type);
 
    return success;
 }
-#endif
 
 
 void video_texture_image_free(struct texture_image *img)
@@ -276,13 +270,11 @@ bool video_texture_image_load(struct texture_image *out_img,
 #endif
          break;
       case IMAGE_FORMAT_PNG:
-#ifdef HAVE_RPNG
-         if (video_texture_image_load_png(
+         if (video_texture_image_load_internal(
                   IMAGE_TYPE_PNG,
                   ptr,out_img,
                a_shift, r_shift, g_shift, b_shift))
             goto success;
-#endif
          break;
       case IMAGE_FORMAT_JPEG:
 #ifdef HAVE_RJPEG
