@@ -20,6 +20,7 @@
 #include <time.h>
 #include <errno.h>
 
+#include <lists/string_list.h>
 #include <streams/file_stream.h>
 
 #include "../core.h"
@@ -29,6 +30,12 @@
 
 /* TODO/FIXME - turn this into actual task */
 
+struct ram_type
+{
+   const char *path;
+   int type;
+};
+
 /**
  * content_load_ram_file:
  * @path             : path of RAM state that will be loaded from.
@@ -36,23 +43,25 @@
  *
  * Load a RAM state from disk to memory.
  */
-bool content_load_ram_file(ram_type_t *ram)
+bool content_load_ram_file(unsigned slot)
 {
    ssize_t rc;
+   ram_type_t ram;
    retro_ctx_memory_info_t mem_info;
-   void *buf       = NULL;
+   global_t *global = global_get_ptr();
+   void *buf        = NULL;
 
-   if (!ram)
-      return false;
+   ram.path = global->savefiles->elems[slot].data;
+   ram.type = global->savefiles->elems[slot].attr.i;
 
-   mem_info.id  = ram->type;
+   mem_info.id  = ram.type;
 
    core_get_memory(&mem_info);
 
    if (mem_info.size == 0 || !mem_info.data)
       return false;
 
-   if (!filestream_read_file(ram->path, &buf, &rc))
+   if (!filestream_read_file(ram.path, &buf, &rc))
       return false;
 
    if (rc > 0)
@@ -84,21 +93,32 @@ bool content_load_ram_file(ram_type_t *ram)
  * Save a RAM state from memory to disk.
  *
  */
-bool content_save_ram_file(ram_type_t *ram)
+bool content_save_ram_file(unsigned slot)
 {
    retro_ctx_memory_info_t mem_info;
+   ram_type_t ram;
+   global_t  *global         = global_get_ptr();
 
-   if (!ram)
+   if (!global)
       return false;
 
-   mem_info.id = ram->type;
+   ram.type                  = global->savefiles->elems[slot].attr.i;
+   ram.path                  = global->savefiles->elems[slot].data;
+
+   mem_info.id               = ram.type;
 
    core_get_memory(&mem_info);
 
    if (!mem_info.data || mem_info.size == 0)
       return false;
 
-   if (!filestream_write_file(ram->path, mem_info.data, mem_info.size))
+   RARCH_LOG("%s #%u %s \"%s\".\n",
+         msg_hash_to_str(MSG_SAVING_RAM_TYPE),
+         ram.type,
+         msg_hash_to_str(MSG_TO),
+         ram.path);
+
+   if (!filestream_write_file(ram.path, mem_info.data, mem_info.size))
    {
       RARCH_ERR("%s.\n",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_SRAM));
@@ -107,7 +127,7 @@ bool content_save_ram_file(ram_type_t *ram)
       /* In case the file could not be written to, 
        * the fallback function 'dump_to_file_desperate'
        * will be called. */
-      if (!dump_to_file_desperate(mem_info.data, mem_info.size, ram->type))
+      if (!dump_to_file_desperate(mem_info.data, mem_info.size, ram.type))
       {
          RARCH_WARN("Failed ... Cannot recover save file.\n");
       }
@@ -116,7 +136,7 @@ bool content_save_ram_file(ram_type_t *ram)
 
    RARCH_LOG("%s \"%s\".\n",
          msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
-         ram->path);
+         ram.path);
 
    return true;
 }

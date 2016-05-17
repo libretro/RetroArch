@@ -1094,13 +1094,7 @@ static bool event_load_save_files(void)
       return false;
 
    for (i = 0; i < global->savefiles->size; i++)
-   {
-      ram_type_t ram;
-      ram.path = global->savefiles->elems[i].data;
-      ram.type = global->savefiles->elems[i].attr.i;
-
-      content_load_ram_file(&ram);
-   }
+      content_load_ram_file(i);
 
    return true;
 }
@@ -2084,18 +2078,7 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 
             for (i = 0; i < global->savefiles->size; i++)
-            {
-               ram_type_t ram;
-               ram.type    = global->savefiles->elems[i].attr.i;
-               ram.path    = global->savefiles->elems[i].data;
-
-               RARCH_LOG("%s #%u %s \"%s\".\n",
-                     msg_hash_to_str(MSG_SAVING_RAM_TYPE),
-                     ram.type,
-                     msg_hash_to_str(MSG_TO),
-                     ram.path);
-               content_save_ram_file(&ram);
-            }
+               content_save_ram_file(i);
          }
          return true;
       case CMD_EVENT_SAVEFILES_DEINIT:

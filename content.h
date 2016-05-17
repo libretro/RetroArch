@@ -30,11 +30,7 @@
 extern "C" {
 #endif
 
-typedef struct ram_type
-{
-   const char *path;
-   int type;
-} ram_type_t;
+typedef struct ram_type ram_type_t;
 
 typedef struct content_ctx_info
 {
@@ -45,10 +41,10 @@ typedef struct content_ctx_info
 } content_ctx_info_t;
 
 /* Load a RAM state from disk to memory. */
-bool content_load_ram_file(ram_type_t *ram);
+bool content_load_ram_file(unsigned slot);
 
 /* Save a RAM state from memory to disk. */
-bool content_save_ram_file(ram_type_t *ram);
+bool content_save_ram_file(unsigned slot);
 
 /* Load a state from disk to memory. */
 bool content_load_state(const char *path);
