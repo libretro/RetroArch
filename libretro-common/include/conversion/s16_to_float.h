@@ -108,12 +108,12 @@ void convert_s16_to_float_C(float *out,
       const int16_t *in, size_t samples, float gain);
 
 /**
- * convert_init_simd:
+ * convert_s16_to_float_init_simd:
  *
  * Sets up function pointers for conversion
  * functions based on CPU features.
  **/
-void convert_init_simd(void);
+void convert_s16_to_float_init_simd(void);
 
 RETRO_END_DECLS
 

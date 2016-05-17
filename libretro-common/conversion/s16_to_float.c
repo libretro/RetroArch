@@ -21,7 +21,7 @@
 
 #include <boolean.h>
 #include <features/features_cpu.h>
-#include <conversion/float_to_s16.h>
+#include <conversion/s16_to_float.h>
 
 /**
  * convert_s16_to_float_C:
@@ -224,26 +224,19 @@ void convert_s16_to_float_ALLEGREX(float *out,
 }
 #endif
 
-static unsigned convert_get_cpu_features(void)
-{
-   return cpu_features_get();
-}
-
 /**
- * convert_init_simd:
+ * convert_s16_to_float_init_simd:
  *
  * Sets up function pointers for conversion
  * functions based on CPU features.
  **/
-void convert_init_simd(void)
+void convert_s16_to_float_init_simd(void)
 {
-   unsigned cpu = convert_get_cpu_features();
+   unsigned cpu = cpu_features_get();
 
    (void)cpu;
 #if defined(__ARM_NEON__) && !defined(VITA)
    convert_s16_to_float_arm = (cpu & RETRO_SIMD_NEON) ?
       convert_s16_to_float_neon : convert_s16_to_float_C;
-   convert_float_to_s16_arm = (cpu & RETRO_SIMD_NEON) ?
-      convert_float_to_s16_neon : convert_float_to_s16_C;
 #endif
 }

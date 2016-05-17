@@ -310,7 +310,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings = config_get_ptr();
 
-   convert_init_simd();
+   convert_s16_to_float_init_simd();
+   convert_float_to_s16_init_simd();
 
    /* Accomodate rewind since at some point we might have two full buffers. */
    outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 

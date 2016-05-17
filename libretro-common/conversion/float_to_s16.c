@@ -28,6 +28,9 @@
 #include <altivec.h>
 #endif
 
+#include <features/features_cpu.h>
+#include <conversion/float_to_s16.h>
+
 /**
  * convert_float_to_s16_C:
  * @out               : output buffer
@@ -195,3 +198,20 @@ void convert_float_to_s16_ALLEGREX(int16_t *out,
    }
 }
 #endif
+
+/**
+ * convert_float_to_s16_init_simd:
+ *
+ * Sets up function pointers for conversion
+ * functions based on CPU features.
+ **/
+void convert_float_to_s16_init_simd(void)
+{
+   unsigned cpu = cpu_features_get();
+
+   (void)cpu;
+#if defined(__ARM_NEON__) && !defined(VITA)
+   convert_float_to_s16_arm = (cpu & RETRO_SIMD_NEON) ?
+      convert_float_to_s16_neon : convert_float_to_s16_C;
+#endif
+}

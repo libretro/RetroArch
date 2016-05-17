@@ -23,12 +23,12 @@
 #ifndef __LIBRETRO_SDK_CONVERSION_FLOAT_TO_S16_H__
 #define __LIBRETRO_SDK_CONVERSION_FLOAT_TO_S16_H__
 
-#include <stdint.h>
-#include <stddef.h>
-
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
+
+#include <stdint.h>
+#include <stddef.h>
 
 /**
  * convert_float_to_s16_C:
@@ -81,20 +81,6 @@ void (*convert_float_to_s16_arm)(int16_t *out,
       const float *in, size_t samples);
 
 void convert_float_s16_asm(int16_t *out, const float *in, size_t samples);
-
-/**
- * convert_float_to_s16_neon:
- * @out               : output buffer
- * @in                : input buffer
- * @samples           : size of samples to be converted
- *
- * Converts floating point 
- * to signed integer 16-bit.
- *
- * ARM NEON implementation callback function.
- **/
-static void convert_float_to_s16_neon(int16_t *out,
-      const float *in, size_t samples);
 #elif defined(_MIPS_ARCH_ALLEGREX)
 #define convert_float_to_s16 convert_float_to_s16_ALLEGREX
 /**
@@ -113,6 +99,14 @@ void convert_float_to_s16_ALLEGREX(int16_t *out,
 #else
 #define convert_float_to_s16 convert_float_to_s16_C
 #endif
+
+/**
+ * convert_float_to_s16_init_simd:
+ *
+ * Sets up function pointers for conversion
+ * functions based on CPU features.
+ **/
+void convert_float_to_s16_init_simd(void);
 
 RETRO_END_DECLS
 
