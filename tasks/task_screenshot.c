@@ -59,7 +59,6 @@ static bool screenshot_dump(const char *folder, const void *frame,
    char filename[PATH_MAX_LENGTH];
    bool ret                       = false;
    settings_t *settings           = config_get_ptr();
-   global_t *global               = global_get_ptr();
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
    uint8_t *out_buffer            = NULL;
    struct scaler_ctx scaler       = {0};
@@ -72,6 +71,7 @@ static bool screenshot_dump(const char *folder, const void *frame,
    }
    else
    {
+      global_t *global = global_get_ptr();
       snprintf(shotname, sizeof(shotname),"%s.png", path_basename(global->name.base));
       fill_pathname_join(filename, folder, shotname, sizeof(filename));
    }
