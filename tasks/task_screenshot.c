@@ -150,7 +150,7 @@ static bool take_screenshot_viewport(void)
 
    screenshot_dir = settings->directory.screenshot;
 
-   if (!*settings->directory.screenshot)
+   if (string_is_empty(screenshot_dir))
    {
       global_t *global = global_get_ptr();
       fill_pathname_basedir(screenshot_path, global->name.base,
