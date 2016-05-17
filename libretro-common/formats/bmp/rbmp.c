@@ -569,33 +569,30 @@ static unsigned char *rbmp__bmp_load(rbmp__context *s, unsigned *x, unsigned *y,
    return out;
 }
 
+static void rbmp_convert_frame(uint32_t *frame, unsigned width, unsigned height)
+{
+   uint32_t *end = frame + (width * height * sizeof(uint32_t))/4;
+
+   while(frame < end)
+   {
+      uint32_t pixel = *frame;
+      *frame = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
+      frame++;
+   }
+}
+
 int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
    int comp;
-#if 0
-   unsigned size_tex     = 0;
-#endif
 
    if (!rbmp)
       return IMAGE_PROCESS_ERROR;
 
    rbmp->output_image   = (uint32_t*)rbmp_load_from_memory(rbmp->buff_data, size, width, height, &comp, 4);
    *buf_data             = rbmp->output_image;
-#if 0
-   size_tex              = (*width) * (*height);
 
-   /* Convert RGBA to ARGB */
-   do
-   {
-      unsigned int texel = rbmp->output_image[size_tex];
-      unsigned int A     = texel & 0xFF000000;
-      unsigned int B     = texel & 0x00FF0000;
-      unsigned int G     = texel & 0x0000FF00;
-      unsigned int R     = texel & 0x000000FF;
-      ((unsigned int*)rbmp->output_image)[size_tex] = A | (R << 16) | G | (B >> 16);
-   }while(size_tex--);
-#endif
+   rbmp_convert_frame(rbmp->output_image, *width, *height);
 
    return IMAGE_PROCESS_END;
 }
