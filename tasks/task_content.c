@@ -1914,7 +1914,11 @@ static bool command_event_cmd_exec(void *data)
    content_info.argc        = 0;
    content_info.argv        = NULL;
    content_info.args        = NULL;
+#ifdef HAVE_MENU
    content_info.environ_get = menu_content_environment_get;
+#else
+   content_info.environ_get = NULL;
+#endif
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 

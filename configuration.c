@@ -453,7 +453,9 @@ static void config_set_defaults(void)
    const char *def_camera          = config_get_default_camera();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
+#ifdef HAVE_MENU
    static bool first_initialized   = true;
+#endif
 
    if (def_camera)
       strlcpy(settings->camera.driver,
@@ -931,7 +933,9 @@ static void config_set_defaults(void)
    else
       rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 
+#ifdef HAVE_MENU
    first_initialized = false;
+#endif
 }
 
 #ifndef GLOBAL_CONFIG_DIR
@@ -1224,6 +1228,7 @@ static void config_file_dump_all(config_file_t *conf)
 }
 #endif
 
+#ifdef HAVE_MENU
 static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *base)
 {
    unsigned tmp = 0;
@@ -1232,6 +1237,7 @@ static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *
    if (config_get_hex(conf, key, &tmp))
       *base = tmp;
 }
+#endif
 
 /**
  * config_load:
