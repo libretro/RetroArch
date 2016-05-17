@@ -22,6 +22,7 @@
 #include <errno.h>
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
@@ -1842,9 +1843,10 @@ static bool content_load_wrapper(
    char msg[PATH_MAX_LENGTH];
    char *fullpath       = NULL;
 
+   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+
    if (launched_from_menu)
    {
-      runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
       /* redraw menu frame */
       menu_display_set_msg_force(true);
       menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
@@ -1863,17 +1865,17 @@ static bool content_load_wrapper(
          snprintf(msg, sizeof(msg), "INFO - Loading %s ...", name);
          runloop_msg_queue_push(msg, 1, 1, false);
       }
+   }
 
-      /* Push entry to top of playlist */
-      if (*fullpath || 
-            menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
-      {
-         struct retro_system_info *info = NULL;
-         menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-               &info);
-         content_push_to_history_playlist(true, fullpath, info);
-         playlist_write_file(g_defaults.history);
-      }
+   /* Push entry to top of playlist */
+   if (!string_is_empty(fullpath) || 
+         menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
+   {
+      struct retro_system_info *info = NULL;
+      menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
+            &info);
+      content_push_to_history_playlist(true, fullpath, info);
+      playlist_write_file(g_defaults.history);
    }
 
    return true;
@@ -1881,9 +1883,11 @@ static bool content_load_wrapper(
 error:
    if (launched_from_menu)
    {
-      if (*fullpath)
+      if (!string_is_empty(fullpath) && !string_is_empty(name))
+      {
          snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
-      runloop_msg_queue_push(msg, 1, 90, false);
+         runloop_msg_queue_push(msg, 1, 90, false);
+      }
    }
    return false;
 }
