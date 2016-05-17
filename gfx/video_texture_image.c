@@ -159,7 +159,27 @@ static bool video_texture_image_load_internal(
 {
    int ret;
    bool success = false;
-   void *img    = image_transfer_new(type);
+   void *img    = NULL;
+
+   switch (type)
+   {
+      case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+         break;
+#else
+         return false;
+#endif
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         break;
+#else
+         return false;
+#endif
+      default:
+         break;
+   }
+   
+   img = image_transfer_new(type);
 
    if (!img)
       goto end;
