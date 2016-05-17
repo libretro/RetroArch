@@ -1976,6 +1976,7 @@ bool rarch_task_push_content_load_default(
         case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
         case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
         case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+        case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
             content_info->environ_get = menu_content_environment_get;
             break;
         default:
@@ -2023,10 +2024,6 @@ bool rarch_task_push_content_load_default(
          core_path            = settings->path.libretro;
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-#ifdef HAVE_MENU
-         if (!content_load_wrapper(content_info, true))
-            goto error;
-#endif
 #ifdef HAVE_MENU
          if (!content_load_wrapper(content_info, true))
             goto error;
