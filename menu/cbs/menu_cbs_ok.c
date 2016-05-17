@@ -510,7 +510,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 
          rarch_task_push_content_load_default(NULL, NULL,
-                  false, &content_info, CORE_TYPE_PLAIN,
+                  &content_info, CORE_TYPE_PLAIN,
                   CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
                   NULL, NULL);
          return 0;
@@ -558,7 +558,7 @@ static int action_ok_file_load_detect_core(const char *path,
 {
    content_ctx_info_t content_info = {0};
    rarch_task_push_content_load_default(path, detect_content_path,
-         false, &content_info, CORE_TYPE_PLAIN, 
+         &content_info, CORE_TYPE_PLAIN, 
          CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
          NULL, NULL);
 
@@ -1138,7 +1138,6 @@ static int action_ok_core_load_deferred(const char *path,
       return menu_cbs_exit();
 
    rarch_task_push_content_load_default(path, menu->deferred_path,
-            false,
             &content_info,
             CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
@@ -1172,7 +1171,7 @@ static int generic_action_ok_file_load(const char *path,
    {
       case ACTION_OK_FFMPEG:
          rarch_task_push_content_load_default(
-               NULL, new_path, true,
+               NULL, new_path,
                &content_info,
                action_type,
                CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU,
@@ -1180,7 +1179,7 @@ static int generic_action_ok_file_load(const char *path,
          break;
       case ACTION_OK_IMAGEVIEWER:
          rarch_task_push_content_load_default(
-               NULL, new_path, true, 
+               NULL, new_path,
                &content_info,
                action_type,
                CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU,
@@ -1253,7 +1252,6 @@ static int action_ok_file_load(const char *path,
 
    rarch_task_push_content_load_default(NULL,
          full_path_new,
-         true,
          &content_info,
          CORE_TYPE_PLAIN,
          CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
@@ -2062,7 +2060,7 @@ static int action_ok_start_core(const char *path,
    {
       content_ctx_info_t content_info = {0};
       rarch_task_push_content_load_default(NULL, NULL,
-            false, &content_info, CORE_TYPE_PLAIN,
+            &content_info, CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU,
             NULL, NULL);
    }
@@ -2145,7 +2143,7 @@ static int action_ok_load_archive(const char *path,
 
    command_event(CMD_EVENT_LOAD_CORE, NULL);
    rarch_task_push_content_load_default(
-            NULL, detect_content_path, false, 
+            NULL, detect_content_path,
             &content_info, CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
             NULL, NULL);
@@ -2193,7 +2191,6 @@ static int action_ok_load_archive_detect_core(const char *path,
       case -1:
          command_event(CMD_EVENT_LOAD_CORE, NULL);
          rarch_task_push_content_load_default(NULL, NULL,
-                  false, 
                   &content_info,
                   CORE_TYPE_PLAIN,
                   CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,

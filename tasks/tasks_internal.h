@@ -129,7 +129,6 @@ bool rarch_task_push_decompress(
 bool rarch_task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
-      bool persist,
       content_ctx_info_t *content_info,
       enum rarch_core_type type,
       enum content_mode_load mode,

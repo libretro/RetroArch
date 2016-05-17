@@ -1543,7 +1543,6 @@ bool retroarch_replace_config(char *path)
 
    if (!rarch_task_push_content_load_default(
          NULL, NULL,
-         true, 
          &content_info,
          CORE_TYPE_DUMMY,
          CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,

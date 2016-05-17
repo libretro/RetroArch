@@ -97,7 +97,6 @@ static bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *in
    if (rarch_task_push_content_load_default(
          core_path,
          path,
-         false,
          &content_info,
          CORE_TYPE_PLAIN,
          CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU,

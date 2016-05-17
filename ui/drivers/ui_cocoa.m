@@ -284,7 +284,6 @@ static void poll_iteration(void)
          rarch_task_push_content_load_default(
                NULL,
                __core.UTF8String,
-               false, 
                &content_info,
                CORE_TYPE_PLAIN,
                CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
@@ -325,7 +324,7 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
                    content_ctx_info_t content_info = {0};
                     runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
                     rarch_task_push_content_load_default(
-                             NULL, NULL, false,
+                             NULL, NULL,
                              &content_info,
                              CORE_TYPE_PLAIN,
                              CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
@@ -362,7 +361,6 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
                    content_ctx_info_t content_info = {0};
                    rarch_task_push_content_load_default(
                          NULL, NULL,
-                         false,
                          &content_info,
                          CORE_TYPE_PLAIN,
                          CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,

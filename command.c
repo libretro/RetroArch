@@ -1723,7 +1723,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_UNLOAD_CORE:
          if (!rarch_task_push_content_load_default(
                   NULL, NULL,
-                  true, 
                   &content_info,
                   CORE_TYPE_DUMMY,
                   CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,

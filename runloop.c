@@ -1244,7 +1244,6 @@ static int runloop_iterate_time_to_exit_load_dummy(void)
    content_ctx_info_t content_info = {0};
    if (!rarch_task_push_content_load_default(
          NULL, NULL,
-         true, 
          &content_info,
          CORE_TYPE_DUMMY,
          CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,

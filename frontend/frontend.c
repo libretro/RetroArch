@@ -128,7 +128,6 @@ int rarch_main(int argc, char *argv[], void *data)
       if (!rarch_task_push_content_load_default(
                NULL,
                NULL,
-               false,
                &info,
                CORE_TYPE_PLAIN,
                CONTENT_MODE_LOAD_FROM_CLI,
