@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#define __STDC_LIMIT_MACROS
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
