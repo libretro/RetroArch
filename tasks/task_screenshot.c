@@ -134,14 +134,14 @@ static bool take_screenshot_viewport(void)
    bool retval                           = false;
    struct video_viewport vp              = {0};
    settings_t *settings                  = config_get_ptr();
-   global_t *global                      = global_get_ptr();
 
    video_driver_get_viewport_info(&vp);
 
    if (!vp.width || !vp.height)
       return false;
 
-   if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
+   buffer = (uint8_t*)malloc(vp.width * vp.height * 3);
+   if (!buffer)
       return false;
 
    if (!video_driver_read_viewport(buffer))
@@ -151,6 +151,7 @@ static bool take_screenshot_viewport(void)
 
    if (!*settings->directory.screenshot)
    {
+      global_t *global = global_get_ptr();
       fill_pathname_basedir(screenshot_path, global->name.base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
@@ -175,7 +176,6 @@ static bool take_screenshot_raw(void)
    size_t pitch;
    char screenshot_path[PATH_MAX_LENGTH] = {0};
    const void *data                      = NULL;
-   global_t *global                      = global_get_ptr();
    settings_t *settings                  = config_get_ptr();
    const char *screenshot_dir            = settings->directory.screenshot;
 
@@ -183,6 +183,7 @@ static bool take_screenshot_raw(void)
 
    if (!*settings->directory.screenshot)
    {
+      global_t *global = global_get_ptr();
       fill_pathname_basedir(screenshot_path, global->name.base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
