@@ -814,6 +814,7 @@ DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_content.c"
 #include "../tasks/task_save_ram.c"
+#include "../tasks/task_save_state.c"
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
 #ifdef HAVE_ZLIB

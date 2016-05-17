@@ -128,6 +128,7 @@ OBJ += frontend/frontend.o \
        tasks/tasks_internal.o \
        tasks/task_content.o \
 		 tasks/task_save_ram.o \
+		 tasks/task_save_state.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
        libretro-common/encodings/encoding_utf.o \

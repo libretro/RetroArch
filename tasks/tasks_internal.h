@@ -145,6 +145,8 @@ bool content_save_ram_file(ram_type_t *ram);
 bool content_load_ram_file(ram_type_t *ram);
 bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type);
+bool content_save_state(const char *path);
+bool content_load_state(const char *path);
 
 #ifdef __cplusplus
 }
