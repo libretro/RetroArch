@@ -35,6 +35,7 @@ typedef struct math_matrix_4x4
 
 #define MAT_ELEM_4X4(mat, r, c) ((mat).data[4 * (c) + (r)])
 
+void matrix_4x4_copy(math_matrix_4x4 *dst, const math_matrix_4x4 *src);
 void matrix_4x4_identity(math_matrix_4x4 *mat);
 void matrix_4x4_transpose(math_matrix_4x4 *out, const math_matrix_4x4 *in);
 
