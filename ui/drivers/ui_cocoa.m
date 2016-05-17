@@ -37,11 +37,6 @@
 
 static id apple_platform;
 
-/* forward declaration */
-#ifdef HAVE_OPENGL
-void *glcontext_get_ptr(void);
-#endif
-
 void apple_rarch_exited(void)
 {
    [[NSApplication sharedApplication] terminate:nil];
