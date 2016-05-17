@@ -182,7 +182,7 @@ static bool take_screenshot_raw(void)
 
    video_driver_cached_frame_get(&data, &width, &height, &pitch);
 
-   if (!*settings->directory.screenshot)
+   if (string_is_empty(settings->directory.screenshot))
    {
       global_t *global = global_get_ptr();
       fill_pathname_basedir(screenshot_path, global->name.base,
