@@ -2428,13 +2428,26 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
    int comp;
-   uint8_t **buf                 = (uint8_t**)buf_data;
+   uint8_t **buf         = (uint8_t**)buf_data;
+   unsigned size_tex     = 0;
 
    if (!rjpeg)
       return IMAGE_PROCESS_ERROR;
 
-   rjpeg->output_image           = (uint32_t*)rjpeg_load_from_memory(rjpeg->buff_data, size, width, height, &comp, 4);
-   *buf_data = rjpeg->output_image;
+   rjpeg->output_image   = (uint32_t*)rjpeg_load_from_memory(rjpeg->buff_data, size, width, height, &comp, 4);
+   *buf_data             = rjpeg->output_image;
+   size_tex              = (*width) * (*height);
+
+   /* Convert RGBA to ARGB */
+   do
+   {
+      unsigned int texel = rjpeg->output_image[size_tex];
+      unsigned int A     = texel & 0xFF000000;
+      unsigned int B     = texel & 0x00FF0000;
+      unsigned int G     = texel & 0x0000FF00;
+      unsigned int R     = texel & 0x000000FF;
+      ((unsigned int*)rjpeg->output_image)[size_tex] = A | (R << 16) | G | (B >> 16);
+   }while(size_tex--);
 
    return IMAGE_PROCESS_END;
 }
