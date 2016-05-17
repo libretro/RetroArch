@@ -30,6 +30,7 @@
 
 #include <file/file_path.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 #include <gfx/scaler/scaler.h>
 
 #include <formats/rbmp.h>
@@ -203,7 +204,7 @@ static bool take_screenshot_choice(void)
    settings_t *settings = config_get_ptr();
 
    /* No way to infer screenshot directory. */
-   if ((!*settings->directory.screenshot) && (!*global->name.base))
+   if (string_is_empty(settings->directory.screenshot) && (!*global->name.base))
       return false;
 
    if (video_driver_supports_viewport_read())
