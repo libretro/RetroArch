@@ -127,6 +127,7 @@ endif
   HAVE_FILTERS_BUILTIN     := 1
   HAVE_THREADS             := 1
   HAVE_RPNG						:= 1
+  HAVE_RJPEG					:= 1
   HAVE_OVERLAY             := 1
   HAVE_BUILTIN_AUTOCONFIG  := 1
   HAVE_ZLIB                := 1
@@ -185,6 +186,7 @@ else ifeq ($(platform), psp1)
 
   BUILD_PRX                 = 1
   HAVE_RPNG                := 1
+  HAVE_RJPEG					:= 1
   HAVE_KERNEL_PRX          := 1
   RARCH_CONSOLE          = 1
 
@@ -215,6 +217,7 @@ else ifeq ($(platform), vita)
   HAVE_FILTERS_BUILTIN     := 1
   HAVE_BUILTIN_AUTOCONFIG  := 1
   HAVE_RPNG                := 1
+  HAVE_RJPEG					:= 1
   HAVE_ZLIB                := 1
   HAVE_VITA2D              := 1
   HAVE_NETWORKING          := 1
@@ -265,6 +268,10 @@ endif
 
 ifeq ($(HAVE_RPNG), 1)
 CFLAGS      += -DWANT_RPNG
+endif
+
+ifeq ($(HAVE_RJPEG), 1)
+CFLAGS      += -DHAVE_RJPEG
 endif
 
 ifeq ($(HAVE_FILE_LOGGER), 1)
