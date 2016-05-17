@@ -406,12 +406,10 @@ static int task_database_iterate_crc_lookup(
    if (db_state->entry_index >= db_state->info->count)
       return database_info_list_iterate_next(db_state);
 
+   /* If we haven't reached the end of the database list yet,
+    * continue iterating. */
    if (db_state->list_index < db_state->list->size)
-   {
-      /* Didn't reach the end of the database list yet,
-       * continue iterating. */
       return 1;
-   }
 
    if (db_state->info)
       database_info_list_free(db_state->info);
@@ -485,12 +483,10 @@ static int task_database_iterate_serial_lookup(
    if (db_state->entry_index >= db_state->info->count)
       return database_info_list_iterate_next(db_state);
 
+   /* If we haven't reached the end of the database list yet,
+    * continue iterating. */
    if (db_state->list_index < db_state->list->size)
-   {
-      /* Didn't reach the end of the database list yet,
-       * continue iterating. */
       return 1;
-   }
 
    if (db_state->info)
       database_info_list_free(db_state->info);
