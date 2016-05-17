@@ -139,6 +139,9 @@ void rarch_task_image_load_free(retro_task_t *task);
 
 void rarch_task_file_load_handler(retro_task_t *task);
 
+/* TODO/FIXME - turn this into actual task */
+bool take_screenshot(void);
+
 #ifdef __cplusplus
 }
 #endif

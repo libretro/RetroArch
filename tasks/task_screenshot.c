@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* TODO/FIXME - turn this into actual task */
+
 #ifdef _XBOX1
 #include <xtl.h>
 #include <xgraphics.h>
@@ -28,6 +30,7 @@
 
 #include <file/file_path.h>
 #include <compat/strl.h>
+#include <gfx/scaler/scaler.h>
 
 #include <formats/rbmp.h>
 
@@ -38,18 +41,14 @@
 #define IMG_EXT "bmp"
 #endif
 
-#include "general.h"
-#include "msg_hash.h"
-#include "retroarch.h"
-#include "screenshot.h"
-#include "verbosity.h"
+#include "../general.h"
+#include "../msg_hash.h"
 
-#include "gfx/video_driver.h"
-#include "gfx/scaler/scaler.h"
-#include "gfx/video_frame.h"
+#include "../gfx/video_driver.h"
+#include "../gfx/video_frame.h"
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "../config.h"
 #endif
 
 /* Take frame bottom-up. */
@@ -100,7 +99,6 @@ static bool screenshot_dump(const char *folder, const void *frame,
 
    scaler_ctx_gen_reset(&scaler);
 
-   RARCH_LOG("Using RPNG for PNG screenshots.\n");
    ret = rpng_save_image_bgr24(
          filename,
          out_buffer,
@@ -124,8 +122,6 @@ static bool screenshot_dump(const char *folder, const void *frame,
          pitch,
          bmp_type);
 #endif
-   if (!ret)
-      RARCH_ERR("Failed to take screenshot.\n");
 
    return ret;
 }
@@ -258,14 +254,12 @@ static bool take_screenshot_choice(void)
  **/
 bool take_screenshot(void)
 {
+   bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
    bool             ret       = take_screenshot_choice();
    const char *msg_screenshot = ret 
       ? msg_hash_to_str(MSG_TAKING_SCREENSHOT)  :
         msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
    const char *msg            = msg_screenshot;
-   bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-
-   RARCH_LOG("%s.\n", msg);
 
    runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
 

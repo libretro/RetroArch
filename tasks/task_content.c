@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* TODO/FIXME - turn this into actual task */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -1784,7 +1786,6 @@ error:
    return false;
 }
 
-/* TODO/FIXME - turn this into actual task */
 
 #ifdef HAVE_MENU
 static void menu_content_environment_get(int *argc, char *argv[],

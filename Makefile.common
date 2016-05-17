@@ -176,7 +176,7 @@ OBJ += frontend/frontend.o \
        core_info.o \
        libretro-common/file/config_file.o \
        config_file_userdata.o \
-       screenshot.o \
+       tasks/task_screenshot.o \
        libretro-common/gfx/scaler/scaler.o \
        gfx/drivers_shader/shader_null.o \
        gfx/video_shader_driver.o \
