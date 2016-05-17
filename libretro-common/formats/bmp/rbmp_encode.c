@@ -28,10 +28,10 @@
 
 static bool write_header_bmp(RFILE *file, unsigned width, unsigned height, bool is32bpp)
 {
+   uint8_t header[54];
    unsigned line_size  = (width * (is32bpp?4:3) + 3) & ~3;
    unsigned size       = line_size * height + 54;
    unsigned size_array = line_size * height;
-   uint8_t header[54];
 
    /* Generic BMP stuff. */
 
@@ -140,9 +140,9 @@ static void dump_line_32_to_24(uint8_t *line, const uint32_t *src, unsigned widt
 static void dump_content(RFILE *file, const void *frame,
       int width, int height, int pitch, enum rbmp_source_type type)
 {
-   uint8_t *line;
-   size_t line_size;
    int j;
+   size_t line_size;
+   uint8_t *line       = NULL;
    int bytes_per_pixel = (type==RBMP_SOURCE_TYPE_ARGB8888?4:3);
    union
    {
@@ -154,58 +154,68 @@ static void dump_content(RFILE *file, const void *frame,
    u.u8      = (const uint8_t*)frame;
    line_size = (width * bytes_per_pixel + 3) & ~3;
 
-   if (type == RBMP_SOURCE_TYPE_BGR24)
+   switch (type)
    {
-      /* BGR24 byte order input matches output. Can directly copy, but... need to make sure we pad it. */
-      uint32_t zeros = 0;
-      int pad = line_size-pitch;
-      for (j = 0; j < height; j++, u.u8 += pitch)
-      {
-         filestream_write(file, u.u8, pitch);
-         if(pad != 0)
-            filestream_write(file, &zeros, pad);
-      }
-      return;
-   }
-   else if(type == RBMP_SOURCE_TYPE_ARGB8888)
-   {
-      /* ARGB8888 byte order input matches output. Can directly copy. */
-      for (j = 0; j < height; j++, u.u8 += pitch)
-         filestream_write(file, u.u8, line_size);
-      return;
+      case RBMP_SOURCE_TYPE_BGR24:
+         {
+            /* BGR24 byte order input matches output. Can directly copy, but... need to make sure we pad it. */
+            uint32_t zeros = 0;
+            int pad = line_size-pitch;
+            for (j = 0; j < height; j++, u.u8 += pitch)
+            {
+               filestream_write(file, u.u8, pitch);
+               if(pad != 0)
+                  filestream_write(file, &zeros, pad);
+            }
+            return;
+         }
+         break;
+      case RBMP_SOURCE_TYPE_ARGB8888:
+         /* ARGB8888 byte order input matches output. Can directly copy. */
+         for (j = 0; j < height; j++, u.u8 += pitch)
+            filestream_write(file, u.u8, line_size);
+         return;
+      default:
+         break;
    }
 
    /* allocate line buffer, and initialize the final four bytes to zero, for deterministic padding */
    line = (uint8_t*)malloc(line_size);
-   if (!line) return;
+   if (!line)
+      return;
    *(uint32_t*)(line + line_size - 4) = 0;
 
-   if (type == RBMP_SOURCE_TYPE_XRGB888)
+   switch (type)
    {
-      for (j = 0; j < height; j++, u.u8 += pitch)
-      {
-         dump_line_32_to_24(line, u.u32, width);
-         filestream_write(file, line, line_size);
-      }
-   }
-   else /* type == RBMP_SOURCE_TYPE_RGB565 */
-   {
-      for (j = 0; j < height; j++, u.u8 += pitch)
-      {
-         dump_line_565_to_24(line, u.u16, width);
-         filestream_write(file, line, line_size);
-      }
+      case RBMP_SOURCE_TYPE_XRGB888:
+         for (j = 0; j < height; j++, u.u8 += pitch)
+         {
+            dump_line_32_to_24(line, u.u32, width);
+            filestream_write(file, line, line_size);
+         }
+         break;
+      case RBMP_SOURCE_TYPE_RGB565:
+         for (j = 0; j < height; j++, u.u8 += pitch)
+         {
+            dump_line_565_to_24(line, u.u16, width);
+            filestream_write(file, line, line_size);
+         }
+         break;
+      default:
+         break;
    }
 
    /* Free allocated line buffer */
    free(line);
 }
 
-bool rbmp_save_image(const char *filename, const void *frame,
+bool rbmp_save_image(
+      const char *filename,
+      const void *frame,
       unsigned width, unsigned height,
       unsigned pitch, enum rbmp_source_type type)
 {
-   bool ret;
+   bool ret    = false;
    RFILE *file = filestream_open(filename, RFILE_MODE_WRITE, -1);
    if (!file)
       return false;
