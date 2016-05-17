@@ -44,9 +44,6 @@ typedef struct content_ctx_info
    environment_get_t environ_get;  /* Function passed for environment_get function */
 } content_ctx_info_t;
 
-void content_push_to_history_playlist(bool do_push,
-      const char *path, void *data);
-
 /* Load a RAM state from disk to memory. */
 bool content_load_ram_file(ram_type_t *ram);
 

@@ -776,7 +776,7 @@ static void check_default_dirs(void)
       check_defaults_dir_create_dir(g_defaults.dir.thumbnails);
 }
 
-void content_push_to_history_playlist(bool do_push,
+static void content_push_to_history_playlist(bool do_push,
       const char *path, void *data)
 {
    settings_t *settings             = config_get_ptr();
