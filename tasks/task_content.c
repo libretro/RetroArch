@@ -1978,7 +1978,8 @@ bool rarch_task_push_content_load_default(
         case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
         case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
         case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
-            content_info->environ_get = menu_content_environment_get;
+           if (content_info && !content_info->environ_get)
+              content_info->environ_get = menu_content_environment_get;
             break;
         default:
             break;
