@@ -2580,36 +2580,6 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
    return IMAGE_PROCESS_END;
 }
 
-bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
-      unsigned a_shift, unsigned r_shift,
-      unsigned g_shift, unsigned b_shift)
-{
-   unsigned width  = 0;
-   unsigned height = 0;
-   struct texture_image *out_img = (struct texture_image*)data;
-   rjpeg_t *rjpeg  = rjpeg_alloc();
-
-   if (!rjpeg)
-      goto error;
-
-   if (!rjpeg_set_buf_ptr(rjpeg, &buf))
-      goto error;
-
-   if (rjpeg_process_image(rjpeg, (void**)&buf, size, &width, &height) != IMAGE_PROCESS_END)
-      goto error;
-
-   out_img->pixels = (uint32_t*)rjpeg->output_image;
-   out_img->width   = width;
-   out_img->height  = height;
-
-   return true;
-
-error:
-   if (rjpeg)
-      free(rjpeg);
-   return false;
-}
-
 bool rjpeg_set_buf_ptr(rjpeg_t *rjpeg, void *data)
 {
    if (!rjpeg)
