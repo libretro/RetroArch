@@ -116,7 +116,7 @@ bool video_texture_image_color_convert(unsigned r_shift,
    src += tmp_pitch; \
 }
 
-static bool video_texture_image_rpng_gx_convert_texture32(
+static bool video_texture_image_internal_gx_convert_texture32(
       struct texture_image *image)
 {
    unsigned tmp_pitch, width2, i;
@@ -196,7 +196,7 @@ static bool video_texture_image_load_png(
          a_shift, out_img);
 
 #ifdef GEKKO
-   if (!video_texture_image_rpng_gx_convert_texture32(out_img))
+   if (!video_texture_image_internal_gx_convert_texture32(out_img))
    {
       video_texture_image_free(out_img);
       goto end;
