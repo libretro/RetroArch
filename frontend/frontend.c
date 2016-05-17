@@ -15,22 +15,16 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <file/file_path.h>
-#include <retro_stat.h>
-#include <queues/task_queue.h>
+#include <stdint.h>
+#include <stddef.h>
 
 #include "frontend.h"
 #include "../ui/ui_companion_driver.h"
 #include "../tasks/tasks_internal.h"
 
-#include "../defaults.h"
-#include "../content.h"
-#include "../driver.h"
-#include "../system.h"
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../verbosity.h"
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
