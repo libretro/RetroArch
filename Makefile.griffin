@@ -266,10 +266,6 @@ ifeq ($(BIG_STACK),1)
 CFLAGS		+= -DBIG_STACK
 endif
 
-ifeq ($(HAVE_RPNG), 1)
-CFLAGS      += -DWANT_RPNG
-endif
-
 ifeq ($(HAVE_RJPEG), 1)
 CFLAGS      += -DHAVE_RJPEG
 endif

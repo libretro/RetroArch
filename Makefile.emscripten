@@ -72,7 +72,7 @@ else
    CFLAGS += -O2
 endif
 
-CFLAGS += -DWANT_RPNG -DHAVE_RJPEG -Wall -Wno-unused-result -Wno-unused-variable -I. -Ilibretro-common/include -std=gnu99 -s USE_ZLIB=1 \
+CFLAGS += -DHAVE_RPNG -DHAVE_RJPEG -Wall -Wno-unused-result -Wno-unused-variable -I. -Ilibretro-common/include -std=gnu99 -s USE_ZLIB=1 \
           -s EXPORTED_FUNCTIONS="['_main', '_malloc', '_cmd_savefiles', '_cmd_save_state', '_cmd_take_screenshot']"
 
 all: $(TARGET)
