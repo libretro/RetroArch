@@ -721,7 +721,11 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
       free(tmp);
    }
 
+#if 0
+   strlcat(xmb->thumbnail_file_path, ".jpg", sizeof(xmb->thumbnail_file_path));
+#else
    strlcat(xmb->thumbnail_file_path, ".png", sizeof(xmb->thumbnail_file_path));
+#endif
 }
 
 static void menu_display_handle_thumbnail_upload(void *task_data,
