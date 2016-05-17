@@ -157,47 +157,18 @@ typedef struct
    uint8_t *img_buffer_original;
 } rjpeg__context;
 
-/* initialize a memory-decode context */
-static void rjpeg__start_mem(rjpeg__context *s, const uint8_t *buffer, int len)
-{
-   s->io.read = NULL;
-   s->read_from_callbacks = 0;
-   s->img_buffer = s->img_buffer_original = (uint8_t *) buffer;
-   s->img_buffer_end = (uint8_t *) buffer+len;
-}
-
 static uint8_t *rjpeg__jpeg_load(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp);
 
-/* this is not threadsafe */
-static const char *rjpeg__g_failure_reason;
-
-static INLINE int rjpeg__err(const char *str)
-{
-   rjpeg__g_failure_reason = str;
-   return 0;
-}
-
-#ifdef RJPEG_NO_FAILURE_STRINGS
-   #define rjpeg__err(x,y)  0
-#elif defined(RJPEG_FAILURE_USERMSG)
-   #define rjpeg__err(x,y)  rjpeg__err(y)
-#else
-   #define rjpeg__err(x,y)  rjpeg__err(x)
-#endif
+#define rjpeg__err(x,y)  0
 
 #define rjpeg__errpf(x,y)   ((float *) (rjpeg__err(x,y)?NULL:NULL))
 #define rjpeg__errpuc(x,y)  ((unsigned char *) (rjpeg__err(x,y)?NULL:NULL))
 
 static int rjpeg__vertically_flip_on_load = 0;
 
-static unsigned char *rjpeg__load_main(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp)
-{
-   return rjpeg__jpeg_load(s,x,y,comp,req_comp);
-}
-
 static unsigned char *rjpeg__load_flip(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp)
 {
-   unsigned char *result = rjpeg__load_main(s, x, y, comp, req_comp);
+   unsigned char *result = rjpeg__jpeg_load(s,x,y,comp,req_comp);
 
    if (rjpeg__vertically_flip_on_load && result != NULL)
    {
@@ -225,7 +196,10 @@ static unsigned char *rjpeg__load_flip(rjpeg__context *s, unsigned *x, unsigned 
 static uint8_t *rjpeg_load_from_memory(const uint8_t *buffer, int len, unsigned *x, unsigned *y, int *comp, int req_comp)
 {
    rjpeg__context s;
-   rjpeg__start_mem(&s,buffer,len);
+   s.io.read             = NULL;
+   s.read_from_callbacks = 0;
+   s.img_buffer          = s.img_buffer_original = (uint8_t *) buffer;
+   s.img_buffer_end      = (uint8_t *) buffer+len;
    return rjpeg__load_flip(&s,x,y,comp,req_comp);
 }
 
@@ -398,15 +372,14 @@ typedef struct
 #define RJPEG__RESTART(x)     ((x) >= 0xd0 && (x) <= 0xd7)
 
 /* use comparisons since in some cases we handle more than one case (e.g. SOF) */
-#define rjpeg__DNL(x)         ((x) == 0xdc)
 #define rjpeg__SOI(x)         ((x) == 0xd8)
 #define rjpeg__EOI(x)         ((x) == 0xd9)
 #define rjpeg__SOF(x)         ((x) == 0xc0 || (x) == 0xc1 || (x) == 0xc2)
 #define rjpeg__SOS(x)         ((x) == 0xda)
 
 #define rjpeg__SOF_progressive(x)   ((x) == 0xc2)
-#define rjpeg__div4(x) ((uint8_t) ((x) >> 2))
-#define rjpeg__div16(x) ((uint8_t) ((x) >> 4))
+#define rjpeg__div4(x)              ((uint8_t) ((x) >> 2))
+#define rjpeg__div16(x)             ((uint8_t) ((x) >> 4))
 
 static int rjpeg__build_huffman(rjpeg__huffman *h, int *count)
 {
@@ -464,6 +437,7 @@ static void rjpeg__build_fast_ac(int16_t *fast_ac, rjpeg__huffman *h)
    for (i=0; i < (1 << FAST_BITS); ++i)
    {
       uint8_t fast = h->fast[i];
+
       fast_ac[i] = 0;
 
       if (fast < 255)
@@ -478,7 +452,9 @@ static void rjpeg__build_fast_ac(int16_t *fast_ac, rjpeg__huffman *h)
             /* magnitude code followed by receive_extend code */
             int k = ((i << len) & ((1 << FAST_BITS) - 1)) >> (FAST_BITS - magbits);
             int m = 1 << (magbits - 1);
-            if (k < m) k += (-1 << magbits) + 1;
+            if (k < m)
+               k += (-1 << magbits) + 1;
+
             /* if the result is small enough, we can fit it in fast_ac table */
             if (k >= -128 && k <= 127)
                fast_ac[i] = (int16_t) ((k << 8) + (run << 4) + (len + magbits));
@@ -638,7 +614,8 @@ static int rjpeg__jpeg_decode_block(
    int diff,dc,k;
    int t;
 
-   if (j->code_bits < 16) rjpeg__grow_buffer_unsafe(j);
+   if (j->code_bits < 16)
+      rjpeg__grow_buffer_unsafe(j);
    t = rjpeg__jpeg_huff_decode(j, hdc);
    if (t < 0)
       return rjpeg__err("bad huffman code","Corrupt JPEG");
@@ -675,12 +652,14 @@ static int rjpeg__jpeg_decode_block(
       else
       {
          int rs = rjpeg__jpeg_huff_decode(j, hac);
-         if (rs < 0) return rjpeg__err("bad huffman code","Corrupt JPEG");
+         if (rs < 0)
+            return rjpeg__err("bad huffman code","Corrupt JPEG");
          s = rs & 15;
          r = rs >> 4;
          if (s == 0)
          {
-            if (rs != 0xf0) break; /* end block */
+            if (rs != 0xf0)
+               break; /* end block */
             k += 16;
          }
          else
@@ -709,8 +688,8 @@ static int rjpeg__jpeg_decode_block_prog_dc(
 
    if (j->succ_high == 0)
    {
-      int diff,dc;
       int t;
+      int diff,dc;
 
       /* first scan for DC coefficient, must be first */
       memset(data,0,64*sizeof(data[0])); /* 0 all the ac values now */
@@ -1871,8 +1850,13 @@ static int rjpeg__decode_jpeg_header(rjpeg__jpeg *z, int scan)
    int m;
    z->marker = RJPEG__MARKER_none; /* initialize cached marker to empty */
    m = rjpeg__get_marker(z);
-   if (!rjpeg__SOI(m)) return rjpeg__err("no SOI","Corrupt JPEG");
-   if (scan == RJPEG_SCAN_TYPE) return 1;
+
+   if (!rjpeg__SOI(m))
+      return rjpeg__err("no SOI","Corrupt JPEG");
+
+   if (scan == RJPEG_SCAN_TYPE)
+      return 1;
+
    m = rjpeg__get_marker(z);
    while (!rjpeg__SOF(m))
    {
@@ -1882,7 +1866,8 @@ static int rjpeg__decode_jpeg_header(rjpeg__jpeg *z, int scan)
       while (m == RJPEG__MARKER_none)
       {
          /* some files have extra padding after their blocks, so ok, we'll scan */
-         if (rjpeg__at_eof(z->s)) return rjpeg__err("no SOF", "Corrupt JPEG");
+         if (rjpeg__at_eof(z->s))
+            return rjpeg__err("no SOF", "Corrupt JPEG");
          m = rjpeg__get_marker(z);
       }
    }
@@ -1944,8 +1929,6 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
 }
 
 /* static jfif-centered resampling (across block boundaries) */
-
-
 
 static uint8_t *rjpeg_resample_row_1(uint8_t *out, uint8_t *in_near, uint8_t *in_far, int w, int hs)
 {
@@ -2070,7 +2053,7 @@ static uint8_t *rjpeg__resample_row_hv_2_simd(uint8_t *out, uint8_t *in_near, ui
        * even pixels = 3*cur + prev = cur*4 + (prev - cur)
        * odd  pixels = 3*cur + next = cur*4 + (next - cur)
        * note the shared term. */
-      __m128i bias  = _mm_set1_epi16(8);
+      __m128i bias = _mm_set1_epi16(8);
       __m128i curs = _mm_slli_epi16(curr, 2);
       __m128i prvd = _mm_sub_epi16(prev, curr);
       __m128i nxtd = _mm_sub_epi16(next, curr);
@@ -2171,12 +2154,11 @@ static void rjpeg__YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y, const uint8_
    for (i=0; i < count; ++i)
    {
       int y_fixed = (y[i] << 20) + (1<<19); /* rounding */
-      int r,g,b;
       int cr = pcr[i] - 128;
       int cb = pcb[i] - 128;
-      r = y_fixed +  cr* float2fixed(1.40200f);
-      g = y_fixed + (cr*-float2fixed(0.71414f)) + ((cb*-float2fixed(0.34414f)) & 0xffff0000);
-      b = y_fixed                               +   cb* float2fixed(1.77200f);
+      int r = y_fixed +  cr* float2fixed(1.40200f);
+      int g = y_fixed + (cr*-float2fixed(0.71414f)) + ((cb*-float2fixed(0.34414f)) & 0xffff0000);
+      int b = y_fixed                               +   cb* float2fixed(1.77200f);
       r >>= 20;
       g >>= 20;
       b >>= 20;
