@@ -1433,7 +1433,6 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
                }
             }
          }
-         return 1;
       }
       else
       { // interleaved
@@ -1471,8 +1470,8 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
                }
             }
          }
-         return 1;
       }
+      return 1;
    }
    else
    {
@@ -1509,8 +1508,9 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
                }
             }
          }
-         return 1;
-      } else { // interleaved
+      }
+      else
+      { // interleaved
          int i,j,k,x,y;
          for (j=0; j < z->img_mcu_y; ++j)
          {
@@ -1544,8 +1544,8 @@ static int rjpeg__parse_entropy_coded_data(rjpeg__jpeg *z)
                }
             }
          }
-         return 1;
       }
+      return 1;
    }
 }
 
@@ -2141,15 +2141,24 @@ static void rjpeg__YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y, const uint8_
       b >>= 20;
       if ((unsigned) r > 255)
       {
-         if (r < 0) r = 0; else r = 255;
+         if (r < 0)
+            r = 0;
+         else
+            r = 255;
       }
       if ((unsigned) g > 255)
       {
-         if (g < 0) g = 0; else g = 255;
+         if (g < 0)
+            g = 0;
+         else
+            g = 255;
       }
       if ((unsigned) b > 255)
       {
-         if (b < 0) b = 0; else b = 255;
+         if (b < 0)
+            b = 0;
+         else
+            b = 255;
       }
       out[0] = (uint8_t)r;
       out[1] = (uint8_t)g;
