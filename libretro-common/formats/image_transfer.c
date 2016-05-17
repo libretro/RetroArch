@@ -25,6 +25,8 @@ void image_transfer_free(void *data, enum image_type_enum type)
          rjpeg_free((rjpeg_t*)data);
 #endif
          break;
+      case IMAGE_TYPE_NONE:
+         break;
    }
 }
 
@@ -59,16 +61,21 @@ bool image_transfer_start(void *data, enum image_type_enum type)
       case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
          if (!rpng_start((rpng_t*)data))
-            return false;
-#endif
+            break;
+         return true;
+#else
          break;
+#endif
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
+         return true;
 #endif
+         break;
+      case IMAGE_TYPE_NONE:
          break;
    }
 
-   return true;
+   return false;
 }
 
 bool image_transfer_is_valid(
@@ -89,6 +96,8 @@ bool image_transfer_is_valid(
 #else
          break;
 #endif
+      case IMAGE_TYPE_NONE:
+         break;
    }
 
    return false;
@@ -110,6 +119,8 @@ void image_transfer_set_buffer_ptr(
 #ifdef HAVE_RJPEG
          rjpeg_set_buf_ptr((rjpeg_t*)data, (uint8_t*)ptr);
 #endif
+         break;
+      case IMAGE_TYPE_NONE:
          break;
    }
 }
@@ -140,6 +151,8 @@ int image_transfer_process(
 #else
          break;
 #endif
+      case IMAGE_TYPE_NONE:
+         break;
    }
 
    return 0;
@@ -162,6 +175,8 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
 #else
          break;
 #endif
+      case IMAGE_TYPE_NONE:
+         return false;
    }
 
    return true;

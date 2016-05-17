@@ -26,9 +26,6 @@
 #include <boolean.h>
 #include <formats/image.h>
 #include <file/nbio.h>
-#ifdef HAVE_RJPEG
-#include <formats/rjpeg.h>
-#endif
 #ifdef HAVE_RTGA
 #include <formats/tga.h>
 #endif
@@ -229,6 +226,22 @@ static enum video_image_format video_texture_image_get_type(const char *path)
    return IMAGE_FORMAT_NONE;
 }
 
+static enum image_type_enum video_texture_image_convert_fmt_to_type(enum video_image_format fmt)
+{
+   switch (fmt)
+   {
+      case IMAGE_FORMAT_PNG:
+         return IMAGE_TYPE_PNG;
+      case IMAGE_FORMAT_JPEG:
+         return IMAGE_TYPE_JPEG;
+      default:
+      case IMAGE_FORMAT_NONE:
+         break;
+   }
+
+   return IMAGE_TYPE_NONE;
+}
+
 bool video_texture_image_load(struct texture_image *out_img, 
       const char *path)
 {
@@ -270,18 +283,12 @@ bool video_texture_image_load(struct texture_image *out_img,
 #endif
          break;
       case IMAGE_FORMAT_PNG:
-         if (video_texture_image_load_internal(
-                  IMAGE_TYPE_PNG,
-                  ptr,out_img,
-               a_shift, r_shift, g_shift, b_shift))
-            goto success;
-         break;
       case IMAGE_FORMAT_JPEG:
-#ifdef HAVE_RJPEG
-         if (rjpeg_image_load((uint8_t*)ptr, out_img, file_len,
+         if (video_texture_image_load_internal(
+                  video_texture_image_convert_fmt_to_type(fmt),
+                  ptr,out_img,
                   a_shift, r_shift, g_shift, b_shift))
             goto success;
-#endif
          break;
       default:
       case IMAGE_FORMAT_NONE:

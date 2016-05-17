@@ -42,7 +42,8 @@ struct texture_image
 
 enum image_type_enum
 {
-   IMAGE_TYPE_PNG = 0,
+   IMAGE_TYPE_NONE = 0,
+   IMAGE_TYPE_PNG,
    IMAGE_TYPE_JPEG
 };
 
