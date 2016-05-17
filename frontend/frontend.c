@@ -103,15 +103,12 @@ void main_exit(void *args)
  **/
 int rarch_main(int argc, char *argv[], void *data)
 {
-   char *fullpath                  = NULL;
-   rarch_system_info_t *system     = NULL;
    void *args                      = (void*)data;
 #ifndef HAVE_MAIN
    int ret                         = 0;
 #endif
 
    rarch_ctl(RARCH_CTL_PREINIT, NULL);
-
    frontend_driver_init_first(args);
    rarch_ctl(RARCH_CTL_INIT, NULL);
 
@@ -138,28 +135,6 @@ int rarch_main(int argc, char *argv[], void *data)
                NULL,
                NULL))
          return 0;
-   }
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET,  &system);
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-   if (content_is_inited() || content_does_not_need_content())
-   {
-      char tmp[PATH_MAX_LENGTH];
-      struct retro_system_info *info = system ? &system->info : NULL;
-
-      strlcpy(tmp, fullpath, sizeof(tmp));
-
-      /* Path can be relative here.
-       * Ensure we're pushing absolute path. */
-      if (*tmp)
-         path_resolve_realpath(tmp, sizeof(tmp));
-
-      if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) || !info)
-         content_push_to_history_playlist(
-               content_does_not_need_content() || *tmp,
-               *tmp ? tmp : NULL,
-               info);
    }
 
    ui_companion_driver_init_first();

@@ -1842,7 +1842,6 @@ static bool content_load_wrapper(
 {
    char name[PATH_MAX_LENGTH];
    char msg[PATH_MAX_LENGTH];
-   bool add_to_playlist = false;
    char *fullpath       = NULL;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
@@ -1871,25 +1870,38 @@ static bool content_load_wrapper(
       }
    }
    
-   add_to_playlist    = !string_is_empty(fullpath);
-
-#ifdef HAVE_MENU
-   if (!add_to_playlist)
-      add_to_playlist = menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
-#endif
-
-   /* Push entry to top of playlist */
-   if (add_to_playlist)
+   /* Push entry to top of history playlist */
+   if (content_is_inited() || content_does_not_need_content())
    {
+      char tmp[PATH_MAX_LENGTH];
       struct retro_system_info *info = NULL;
+      rarch_system_info_t *system    = NULL;
+
+      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+      if (system)
+         info = &system->info;
+
 #ifdef HAVE_MENU
       if (launched_from_menu)
          menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &info);
-      else
 #endif
-         runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
-      content_push_to_history_playlist(true, fullpath, info);
-      playlist_write_file(g_defaults.history);
+
+      strlcpy(tmp, fullpath, sizeof(tmp));
+
+      if (!launched_from_menu)
+      {
+         /* Path can be relative here.
+          * Ensure we're pushing absolute path. */
+         if (*tmp)
+            path_resolve_realpath(tmp, sizeof(tmp));
+      }
+
+      if (info && *tmp)
+      {
+         content_push_to_history_playlist(
+               true, tmp, info);
+         playlist_write_file(g_defaults.history);
+      }
    }
 
    return true;
