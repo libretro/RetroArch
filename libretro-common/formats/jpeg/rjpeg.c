@@ -124,13 +124,6 @@ struct rjpeg
 #define RJPEG_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
 #endif
 
-static int rjpeg__sse2_available(void)
-{
-   uint64_t mask = cpu_features_get();
-   if (mask & RETRO_SIMD_SSE2)
-      return 1;
-   return 0;
-}
 #endif
 
 /* ARM NEON */
@@ -633,7 +626,8 @@ static int rjpeg__jpeg_decode_block(rjpeg__jpeg *j, short data[64], rjpeg__huffm
 
    if (j->code_bits < 16) rjpeg__grow_buffer_unsafe(j);
    t = rjpeg__jpeg_huff_decode(j, hdc);
-   if (t < 0) return rjpeg__err("bad huffman code","Corrupt JPEG");
+   if (t < 0)
+      return rjpeg__err("bad huffman code","Corrupt JPEG");
 
    /* 0 all the ac values now so we can do it 32-bits at a time */
    memset(data,0,64*sizeof(data[0]));
@@ -2219,13 +2213,17 @@ static void rjpeg__YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y, const uint8
 /* set up the kernels */
 static void rjpeg__setup_jpeg(rjpeg__jpeg *j)
 {
+   uint64_t mask = cpu_features_get();
+
+   (void)mask;
+
    j->idct_block_kernel        = rjpeg__idct_block;
    j->YCbCr_to_RGB_kernel      = rjpeg__YCbCr_to_RGB_row;
    j->resample_row_hv_2_kernel = rjpeg__resample_row_hv_2;
 
 
 #if defined(__SSE2__)
-   if (rjpeg__sse2_available())
+   if (mask & RETRO_SIMD_SSE2)
    {
       j->idct_block_kernel        = rjpeg__idct_simd;
       j->YCbCr_to_RGB_kernel      = rjpeg__YCbCr_to_RGB_simd;
@@ -2406,24 +2404,6 @@ static unsigned char *rjpeg__jpeg_load(rjpeg__context *s, unsigned *x, unsigned 
    return rjpeg_load_jpeg_image(&j, x,y,comp,req_comp);
 }
 
-static INLINE void video_frame_convert_rgba_to_bgra(
-      const void *src_data,
-      void *dst_data,
-      unsigned width)
-{
-   unsigned x;
-   uint8_t      *dst  = (uint8_t*)dst_data;
-   const uint8_t *src = (const uint8_t*)src_data;
-
-   for (x = 0; x < width; x++, dst += 4, src += 4)
-   {
-      dst[3] = src[3];
-      dst[0] = src[2];
-      dst[1] = src[1];
-      dst[2] = src[0];
-   }
-}
-
 int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
@@ -2473,10 +2453,6 @@ bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
    out_img->pixels = (uint32_t*)rjpeg->output_image;
    out_img->width   = width;
    out_img->height  = height;
-
-    if (r_shift == 0 && b_shift == 16) { } /* RGBA, doesn't need conversion */
-    else
-       video_frame_convert_rgba_to_bgra(buf, out_img->pixels, width);
 
    return true;
 
