@@ -573,13 +573,16 @@ int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
    int comp;
+#if 0
    unsigned size_tex     = 0;
+#endif
 
    if (!rbmp)
       return IMAGE_PROCESS_ERROR;
 
    rbmp->output_image   = (uint32_t*)rbmp_load_from_memory(rbmp->buff_data, size, width, height, &comp, 4);
    *buf_data             = rbmp->output_image;
+#if 0
    size_tex              = (*width) * (*height);
 
    /* Convert RGBA to ARGB */
@@ -592,6 +595,7 @@ int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
       unsigned int R     = texel & 0x000000FF;
       ((unsigned int*)rbmp->output_image)[size_tex] = A | (R << 16) | G | (B >> 16);
    }while(size_tex--);
+#endif
 
    return IMAGE_PROCESS_END;
 }

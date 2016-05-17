@@ -37,7 +37,8 @@ enum video_image_format
    IMAGE_FORMAT_NONE = 0,
    IMAGE_FORMAT_TGA,
    IMAGE_FORMAT_PNG,
-   IMAGE_FORMAT_JPEG
+   IMAGE_FORMAT_JPEG,
+   IMAGE_FORMAT_BMP
 };
 
 bool video_texture_image_set_color_shifts(
@@ -175,6 +176,8 @@ static bool video_texture_image_load_internal(
 #else
          return false;
 #endif
+      case IMAGE_TYPE_BMP:
+         break;
       default:
          break;
    }
@@ -243,6 +246,8 @@ static enum video_image_format video_texture_image_get_type(const char *path)
       return IMAGE_FORMAT_PNG;
    if (strstr(path, ".jpg") || strstr(path, ".jpeg"))
       return IMAGE_FORMAT_JPEG;
+   if (strstr(path, ".bmp"))
+      return IMAGE_FORMAT_BMP;
    return IMAGE_FORMAT_NONE;
 }
 
@@ -254,6 +259,8 @@ static enum image_type_enum video_texture_image_convert_fmt_to_type(enum video_i
          return IMAGE_TYPE_PNG;
       case IMAGE_FORMAT_JPEG:
          return IMAGE_TYPE_JPEG;
+      case IMAGE_FORMAT_BMP:
+         return IMAGE_TYPE_BMP;
       default:
       case IMAGE_FORMAT_NONE:
          break;
@@ -302,6 +309,7 @@ bool video_texture_image_load(struct texture_image *out_img,
             goto success;
 #endif
          break;
+      case IMAGE_FORMAT_BMP:
       case IMAGE_FORMAT_PNG:
       case IMAGE_FORMAT_JPEG:
          if (video_texture_image_load_internal(

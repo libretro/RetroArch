@@ -44,7 +44,8 @@ enum image_type_enum
 {
    IMAGE_TYPE_NONE = 0,
    IMAGE_TYPE_PNG,
-   IMAGE_TYPE_JPEG
+   IMAGE_TYPE_JPEG,
+   IMAGE_TYPE_BMP
 };
 
 bool video_texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,

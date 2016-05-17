@@ -364,6 +364,8 @@ bool rarch_task_push_image_load(const char *fullpath,
       nbio->image_type = IMAGE_TYPE_PNG;
    else if (strstr(fullpath, ".jpeg") || strstr(fullpath, ".jpg"))
       nbio->image_type = IMAGE_TYPE_JPEG;
+   else if (strstr(fullpath, ".bmp"))
+      nbio->image_type = IMAGE_TYPE_BMP;
 
    switch (cb_type_hash)
    {

@@ -8,6 +8,7 @@
 #ifdef HAVE_RJPEG
 #include <formats/rjpeg.h>
 #endif
+#include <formats/rbmp.h>
 
 #include <formats/image.h>
 
@@ -24,6 +25,9 @@ void image_transfer_free(void *data, enum image_type_enum type)
 #ifdef HAVE_RJPEG
          rjpeg_free((rjpeg_t*)data);
 #endif
+         break;
+      case IMAGE_TYPE_BMP:
+         rbmp_free((rbmp_t*)data);
          break;
       case IMAGE_TYPE_NONE:
          break;
@@ -46,6 +50,8 @@ void *image_transfer_new(enum image_type_enum type)
 #else
          break;
 #endif
+      case IMAGE_TYPE_BMP:
+         return rbmp_alloc();
       default:
          break;
    }
@@ -71,6 +77,8 @@ bool image_transfer_start(void *data, enum image_type_enum type)
          return true;
 #endif
          break;
+      case IMAGE_TYPE_BMP:
+         return true;
       case IMAGE_TYPE_NONE:
          break;
    }
@@ -96,6 +104,8 @@ bool image_transfer_is_valid(
 #else
          break;
 #endif
+      case IMAGE_TYPE_BMP:
+         return true;
       case IMAGE_TYPE_NONE:
          break;
    }
@@ -119,6 +129,9 @@ void image_transfer_set_buffer_ptr(
 #ifdef HAVE_RJPEG
          rjpeg_set_buf_ptr((rjpeg_t*)data, (uint8_t*)ptr);
 #endif
+         break;
+      case IMAGE_TYPE_BMP:
+         rbmp_set_buf_ptr((rbmp_t*)data, (uint8_t*)ptr);
          break;
       case IMAGE_TYPE_NONE:
          break;
@@ -151,6 +164,9 @@ int image_transfer_process(
 #else
          break;
 #endif
+      case IMAGE_TYPE_BMP:
+         return rbmp_process_image((rbmp_t*)data,
+               (void**)buf, len, width, height);
       case IMAGE_TYPE_NONE:
          break;
    }
@@ -175,6 +191,8 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
 #else
          break;
 #endif
+      case IMAGE_TYPE_BMP:
+         return false;
       case IMAGE_TYPE_NONE:
          return false;
    }
