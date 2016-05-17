@@ -159,6 +159,7 @@ static bool video_texture_image_rpng_gx_convert_texture32(
 #endif
 
 static bool video_texture_image_load_png(
+      enum image_type_enum type,
       void *ptr,
       struct texture_image *out_img,
       unsigned a_shift, unsigned r_shift,
@@ -166,26 +167,25 @@ static bool video_texture_image_load_png(
 {
    int ret;
    bool success = false;
-   rpng_t *rpng = rpng_alloc();
+   rpng_t *rpng = (rpng_t*)image_transfer_new(type);
 
    if (!rpng)
       goto end;
 
-   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr))
+   image_transfer_set_buffer_ptr(rpng, type, (uint8_t*)ptr);
+
+   if (!image_transfer_start(rpng, type))
       goto end;
 
-   if (!rpng_start(rpng))
-      goto end;
-
-   while (rpng_iterate_image(rpng));
+   while (image_transfer_iterate((void*)rpng, type));
 
    if (!rpng_is_valid(rpng))
       goto end;
 
    do
    {
-      ret = rpng_process_image(rpng,
-            (void**)&out_img->pixels, 0, &out_img->width,
+      ret = image_transfer_process((void*)rpng, type,
+            (uint32_t**)&out_img->pixels, 0, &out_img->width,
             &out_img->height);
    }while(ret == IMAGE_PROCESS_NEXT);
 
@@ -207,7 +207,7 @@ static bool video_texture_image_load_png(
 
 end:
    if (rpng)
-      rpng_free(rpng);
+      image_transfer_free(rpng, type);
 
    return success;
 }
@@ -277,7 +277,9 @@ bool video_texture_image_load(struct texture_image *out_img,
          break;
       case IMAGE_FORMAT_PNG:
 #ifdef HAVE_RPNG
-         if (video_texture_image_load_png(ptr, out_img,
+         if (video_texture_image_load_png(
+                  IMAGE_TYPE_PNG,
+                  ptr,out_img,
                a_shift, r_shift, g_shift, b_shift))
             goto success;
 #endif
