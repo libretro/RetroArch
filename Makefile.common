@@ -920,7 +920,9 @@ ifeq ($(HAVE_RJPEG), 1)
 	OBJ += libretro-common/formats/jpeg/rjpeg.o
 endif
 
-OBJ += libretro-common/formats/bmp/rbmp_encode.o \
+OBJ += \
+		 libretro-common/formats/bmp/rbmp.o \
+		 libretro-common/formats/bmp/rbmp_encode.o \
        libretro-common/formats/json/jsonsax.o \
 		 libretro-common/formats/image_transfer.o
 

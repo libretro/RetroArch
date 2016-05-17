@@ -20,8 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* Modified version of stb_image's JPEG sources. 
- */
+/* Modified version of stb_image's JPEG sources. */
 
 #include <stdint.h>
 #include <stdarg.h>
