@@ -2516,7 +2516,6 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
    int comp;
-   uint8_t **buf         = (uint8_t**)buf_data;
    unsigned size_tex     = 0;
 
    if (!rjpeg)
