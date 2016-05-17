@@ -19,10 +19,6 @@
 #include <retro_stat.h>
 #include <queues/task_queue.h>
 
-#ifdef HAVE_THREADS
-#include <rthreads/async_job.h>
-#endif
-
 #include "frontend.h"
 #include "../ui/ui_companion_driver.h"
 #include "../tasks/tasks_internal.h"
@@ -38,15 +34,6 @@
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
-#endif
-
-#ifdef HAVE_THREADS
-static async_job_t *async_jobs;
-
-int rarch_main_async_job_add(async_task_t task, void *payload)
-{
-   return async_job_add(async_jobs, task, payload);
-}
 #endif
 
 /**
@@ -111,10 +98,6 @@ int rarch_main(int argc, char *argv[], void *data)
    rarch_ctl(RARCH_CTL_PREINIT, NULL);
    frontend_driver_init_first(args);
    rarch_ctl(RARCH_CTL_INIT, NULL);
-
-#ifdef HAVE_THREADS
-   async_jobs = async_job_new();
-#endif
    
    if (frontend_driver_is_inited())
    {
@@ -150,11 +133,6 @@ int rarch_main(int argc, char *argv[], void *data)
    }while(ret != -1);
 
    main_exit(args);
-#endif
-
-#ifdef HAVE_THREADS
-   async_job_free(async_jobs);
-   async_jobs = NULL;
 #endif
 
    return 0;

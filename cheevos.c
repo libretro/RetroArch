@@ -270,7 +270,7 @@ static int cheats_were_enabled = 0;
 
 /* forward declaration */
 
-int rarch_main_async_job_add(async_task_t task, void *payload);
+int retroarch_async_job_add(async_task_t task, void *payload);
 
 /*****************************************************************************
 Supporting functions.
@@ -1444,7 +1444,7 @@ static void cheevos_unlocker(void *payload)
       {
          RARCH_ERR("CHEEVOS error awarding achievement %u, will retry...\n", cheevo_id);
          /* re-schedule */
-         rarch_main_async_job_add(cheevos_unlocker, (void*)(uintptr_t)cheevo_id);
+         retroarch_async_job_add(cheevos_unlocker, (void*)(uintptr_t)cheevo_id);
       }
    }
 }
@@ -1463,7 +1463,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
          runloop_msg_queue_push(cheevo->title, 0, 3 * 60, false);
          runloop_msg_queue_push(cheevo->description, 0, 5 * 60, false);
 
-         rarch_main_async_job_add(cheevos_unlocker,
+         retroarch_async_job_add(cheevos_unlocker,
                (void*)(uintptr_t)cheevo->id);
 
          cheevo->active = 0;
@@ -1619,7 +1619,7 @@ static void cheevos_playing(void *payload)
       {
          RARCH_ERR("CHEEVOS error posting playing game %u activity, will retry\n", game_id);
          /* re-schedule */
-         rarch_main_async_job_add(cheevos_playing, (void*)(uintptr_t)game_id);
+         retroarch_async_job_add(cheevos_playing, (void*)(uintptr_t)game_id);
       }
    }
 }
@@ -2142,7 +2142,7 @@ bool cheevos_load(const void *data)
          free((void*)json);
          cheevos_locals.loaded = 1;
          
-         rarch_main_async_job_add(cheevos_playing, (void*)(uintptr_t)game_id);
+         retroarch_async_job_add(cheevos_playing, (void*)(uintptr_t)game_id);
          return true;
       }
       

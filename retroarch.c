@@ -26,6 +26,9 @@
 #include <boolean.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
+#ifdef HAVE_THREADS
+#include <rthreads/async_job.h>
+#endif
 
 #ifdef _WIN32
 #ifdef _XBOX
@@ -112,6 +115,10 @@ static char current_savefile_dir[PATH_MAX_LENGTH];
 static char error_string[PATH_MAX_LENGTH];
 static jmp_buf error_sjlj_context;
 
+#ifdef HAVE_THREADS
+static async_job_t *async_jobs;
+#endif
+
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, _##var##_supp ? "yes" : "no")
 
 static void retroarch_print_features(void)
@@ -170,6 +177,13 @@ static void retroarch_print_features(void)
    _PSUPP(v4l2, "Video4Linux2", "Camera driver");
 }
 #undef _PSUPP
+
+#ifdef HAVE_THREADS
+int retroarch_async_job_add(async_task_t task, void *payload)
+{
+   return async_job_add(async_jobs, task, payload);
+}
+#endif
 
 static void retroarch_print_version(void)
 {
@@ -1441,6 +1455,10 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          command_event(CMD_EVENT_SAVEFILES_DEINIT, NULL);
 
          rarch_ctl(RARCH_CTL_UNSET_INITED, NULL);
+#ifdef HAVE_THREADS
+         async_job_free(async_jobs);
+         async_jobs = NULL;
+#endif
          break;
       case RARCH_CTL_INIT:
          rarch_ctl(RARCH_CTL_DEINIT, NULL);
@@ -1451,6 +1469,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
                settings->input.libretro_device[i] = RETRO_DEVICE_JOYPAD;
          }
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
+#ifdef HAVE_THREADS
+         async_jobs = async_job_new();
+#endif
          break;
       case RARCH_CTL_SET_PATHS_REDIRECT:
          if(settings->sort_savestates_enable || settings->sort_savefiles_enable)
