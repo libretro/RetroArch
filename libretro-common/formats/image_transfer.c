@@ -131,9 +131,6 @@ int image_transfer_process(
 #endif
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
-#ifdef DEBUG
-         printf("len is: %d\n", len);
-#endif
          return rjpeg_process_image((rjpeg_t*)data,
                (void**)buf, len, width, height);
 #else
