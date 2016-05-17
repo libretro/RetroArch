@@ -1032,12 +1032,15 @@ struct retro_memory_descriptor
     * 'a'+'A' - valid (neither is a prefix of each other)
     * 'AR'+blank - valid ('R' is not in 0-9A-F)
     * 'ARB'+blank - valid (the B can't be part of the address either, because 
-    * there is no namespace 'AR')
+    *                      there is no namespace 'AR')
     * blank+'B' - not valid, because it's ambigous which address space B1234 
-    * would refer to.
+    *             would refer to.
     * The length can't be used for that purpose; the frontend may want 
     * to append arbitrary data to an address, without a separator. */
    const char *addrspace;
+   
+   /* TODO: When finalizing this one, add a description field,
+    * which should be "WRAM" or something roughly equally long. */
 };
 
 /* The frontend may use the largest value of 'start'+'select' in a 
