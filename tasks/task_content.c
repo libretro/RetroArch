@@ -1967,6 +1967,22 @@ bool rarch_task_push_content_load_default(
       void *user_data)
 {
    settings_t *settings = config_get_ptr();
+    
+#ifdef HAVE_MENU
+    switch (mode)
+    {
+        case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
+        case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
+        case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
+        case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+        case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
+        case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+            content_info->environ_get = menu_content_environment_get;
+            break;
+        default:
+            break;
+    }
+#endif
 
    switch (mode)
    {
