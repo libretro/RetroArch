@@ -74,7 +74,7 @@ typedef struct nbio_image_handle nbio_image_handle_t;
 typedef struct nbio_handle
 {
    enum image_type_enum image_type;
-   nbio_image_handle_t *image;
+   void *data;
    bool is_finished;
    transfer_cb_t  cb;
    struct nbio_t *handle;

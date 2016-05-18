@@ -60,8 +60,8 @@ struct nbio_image_handle
 static int cb_image_menu_upload_generic(void *data, size_t len)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;
-   nbio_handle_t *nbio = (nbio_handle_t*)data;
-   nbio_image_handle_t *image = nbio ? (nbio_image_handle_t*)nbio->image : NULL;
+   nbio_handle_t        *nbio = (nbio_handle_t*)data;
+   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
    if (!nbio || !image)
       return -1;
@@ -86,7 +86,7 @@ static int cb_image_menu_upload_generic(void *data, size_t len)
 
 static int task_image_iterate_transfer_parse(nbio_handle_t *nbio)
 {
-   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->image;
+   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
    if (image->handle && image->cb)
    {
@@ -97,26 +97,12 @@ static int task_image_iterate_transfer_parse(nbio_handle_t *nbio)
    return 0;
 }
 
-static int cb_nbio_default(void *data, size_t len)
-{
-   nbio_handle_t *nbio = (nbio_handle_t*)data;
-
-   if (!data)
-      return -1;
-
-   (void)len;
-
-   nbio->is_finished   = true;
-
-   return 0;
-}
-
 static int task_image_process(
       nbio_handle_t *nbio,
       unsigned *width,
       unsigned *height)
 {
-   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->image;
+   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
    int retval = image_transfer_process(
          image->handle,
@@ -135,7 +121,7 @@ static int task_image_process(
 static int cb_image_menu_generic(nbio_handle_t *nbio)
 {
    unsigned width = 0, height = 0;
-   nbio_image_handle_t *image = nbio ? (nbio_image_handle_t*)nbio->image : NULL;
+   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
    if (!nbio || !image)
       return -1;
 
@@ -157,8 +143,8 @@ static int cb_image_menu_generic(nbio_handle_t *nbio)
 
 static int cb_image_menu_thumbnail(void *data, size_t len)
 {
-   nbio_handle_t *nbio = (nbio_handle_t*)data; 
-   nbio_image_handle_t *image = nbio ? (nbio_image_handle_t*)nbio->image : NULL;
+   nbio_handle_t        *nbio = (nbio_handle_t*)data; 
+   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
    if (cb_image_menu_generic(nbio) != 0)
       return -1;
@@ -172,9 +158,9 @@ static int task_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
    unsigned i, width = 0, height = 0;
    int retval = 0;
-   nbio_image_handle_t *image = nbio ? (nbio_image_handle_t*)nbio->image : NULL;
+   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
-   if (!nbio)
+   if (!nbio || !image)
       return -1;
 
    for (i = 0; i < image->processing_pos_increment; i++)
@@ -195,7 +181,7 @@ static int task_image_iterate_process_transfer(nbio_handle_t *nbio)
 static int task_image_iterate_transfer(nbio_handle_t *nbio)
 {
    unsigned i;
-   nbio_image_handle_t *image = nbio ? (nbio_image_handle_t*)nbio->image : NULL;
+   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
    if (!nbio || !image)
       goto error;
@@ -217,12 +203,10 @@ error:
 
 static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
 {
-   nbio_image_handle_t *image = nbio ? nbio->image : NULL;
+   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
    if (image)
       free(image);
-
-   nbio->image                   = NULL;
 
    image_transfer_free(image->handle, nbio->image_type);
 
@@ -232,8 +216,8 @@ static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
 
 static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 {
-   void *ptr           = NULL;
-   nbio_image_handle_t *image = nbio ? nbio->image : NULL;
+   void *ptr                  = NULL;
+   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
    if (!image || !image->handle)
       goto error;
@@ -265,17 +249,19 @@ error:
 
 static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 {
+   nbio_image_handle_t *image = NULL;
    void *handle               = NULL;
    nbio_handle_t *nbio        = (nbio_handle_t*)data; 
-   nbio_image_handle_t *image = nbio ? nbio->image : NULL;
 
-   if (!nbio || !data || !image)
+   if (!nbio)
       goto error;
 
    handle = image_transfer_new(nbio->image_type);
 
    if (!handle)
       goto error;
+
+   image         = (nbio_image_handle_t*)nbio->data;
  
    image->handle = handle;
    image->size   = len;
@@ -290,7 +276,7 @@ error:
 bool rarch_task_image_load_handler(retro_task_t *task)
 {
    nbio_handle_t       *nbio  = (nbio_handle_t*)task->state;
-   nbio_image_handle_t *image = nbio ? nbio->image : NULL;
+   nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
    switch (image->status)
    {
@@ -342,6 +328,15 @@ bool rarch_task_push_image_load(const char *fullpath,
    struct nbio_t             *handle = nbio_open(fullpath, NBIO_READ);
    nbio_image_handle_t        *image = NULL;
 
+   switch (cb_type_hash)
+   {
+      case CB_MENU_WALLPAPER:
+      case CB_MENU_THUMBNAIL:
+         break;
+      default:
+         goto error;
+   }
+
    if (!handle)
       goto error;
 
@@ -355,12 +350,13 @@ bool rarch_task_push_image_load(const char *fullpath,
    if (!image)
       goto error;
 
-   nbio->image        = image;
+   image->status      = IMAGE_STATUS_TRANSFER;
+
+   nbio->data         = (nbio_image_handle_t*)image;
    nbio->handle       = handle;
    nbio->is_finished  = false;
-   nbio->cb           = &cb_nbio_default;
+   nbio->cb           = &cb_nbio_image_menu_thumbnail;
    nbio->status       = NBIO_STATUS_TRANSFER;
-   image->status      = IMAGE_STATUS_TRANSFER;
 
    if (strstr(fullpath, ".png"))
       nbio->image_type = IMAGE_TYPE_PNG;
@@ -371,15 +367,6 @@ bool rarch_task_push_image_load(const char *fullpath,
    else if (strstr(fullpath, ".tga"))
       nbio->image_type = IMAGE_TYPE_TGA;
 
-   switch (cb_type_hash)
-   {
-      case CB_MENU_WALLPAPER:
-      case CB_MENU_THUMBNAIL:
-         nbio->cb = &cb_nbio_image_menu_thumbnail;
-         break;
-      default:
-         break;
-   }
 
    nbio_begin_read(handle);
 
@@ -400,12 +387,10 @@ bool rarch_task_push_image_load(const char *fullpath,
 error:
    if (t)
       free(t);
+   if (image)
+      free(image);
    if (nbio)
-   {
-      if (nbio->image)
-         free(nbio->image);
       free(nbio);
-   }
 
    RARCH_ERR("[image load] Failed to open '%s': %s.\n",
          fullpath, strerror(errno));
