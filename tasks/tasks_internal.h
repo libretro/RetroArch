@@ -30,9 +30,6 @@
 extern "C" {
 #endif
 
-#define CB_MENU_WALLPAPER     0xb476e505U
-#define CB_MENU_THUMBNAIL     0x82f93a21U
-
 enum content_mode_load
 {
    CONTENT_MODE_LOAD_NONE = 0,
