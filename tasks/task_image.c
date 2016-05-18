@@ -209,6 +209,7 @@ static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
       free(image);
 
    image_transfer_free(image->handle, nbio->image_type);
+   image_texture_free(&image->ti);
 
    image->handle                 = NULL;
    image->cb                     = NULL;
