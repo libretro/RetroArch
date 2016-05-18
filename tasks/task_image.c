@@ -386,10 +386,9 @@ bool rarch_task_push_image_load(const char *fullpath,
    return true;
 
 error:
+   rarch_task_image_load_free(t);
    if (t)
       free(t);
-   if (image)
-      free(image);
    if (nbio)
       free(nbio);
 
