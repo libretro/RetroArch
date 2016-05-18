@@ -1262,6 +1262,24 @@ static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_content_history(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   *s = '\0';
+   *w = strlen(label);
+
+   menu_setting_get_label(list, s,
+         len, w, type, label, entry_label, i);
+
+   strlcpy(s2, path, len2);
+}
+
 static void menu_action_setting_disp_set_label(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -1276,9 +1294,6 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 
    switch (hash_label)
    {
-      case MENU_LABEL_LOAD_CONTENT_HISTORY:
-         *w = strlen(label);
-         break;
       case MENU_LABEL_SYSTEM_INFORMATION:
          *w = 2;
          break;
@@ -1559,6 +1574,16 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
 {
    if (!cbs)
       return -1;
+
+   switch (menu_label_hash)
+   {
+      case MENU_LABEL_LOAD_CONTENT_HISTORY:
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_content_history);
+         return 0;
+      default:
+         break;
+   }
 
    if (type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START)
    {
