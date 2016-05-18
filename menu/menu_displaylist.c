@@ -201,11 +201,6 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
 
       (void)core_date;
       (void)core_crc;
-#if 0
-      RARCH_LOG("elem date: %s\n",          core_date);
-      RARCH_LOG("elem crc: %s\n",           core_crc);
-      RARCH_LOG("elem core pathname: %s\n", core_pathname);
-#endif
 
       menu_entries_add(list, core_pathname, "",
             type, 0, 0);
@@ -2763,7 +2758,7 @@ static int menu_displaylist_parse_generic(
    for (i = 0; i < list_size; i++)
    {
       bool is_dir;
-      char label[PATH_MAX_LENGTH];
+      char label[PATH_MAX_LENGTH]   = {0};
       const char *path              = NULL;
       enum menu_file_type file_type = MENU_FILE_NONE;
 
