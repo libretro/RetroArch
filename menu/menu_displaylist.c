@@ -660,6 +660,45 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
+   {
+      char cpu_str[PATH_MAX_LENGTH];
+      char cpu_arch_str[PATH_MAX_LENGTH];
+      char cpu_text_str[PATH_MAX_LENGTH];
+      enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
+      strlcpy(cpu_text_str, "CPU Architecture: ", sizeof(cpu_text_str));
+
+      switch (arch)
+      {
+         case FRONTEND_ARCH_X86:
+            strlcpy(cpu_arch_str, "x86", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_X86_64:
+            strlcpy(cpu_arch_str, "x86-64", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_PPC:
+            strlcpy(cpu_arch_str, "PPC", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_ARM:
+            strlcpy(cpu_arch_str, "ARM", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_MIPS:
+            strlcpy(cpu_arch_str, "MIPS", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_TILE:
+            strlcpy(cpu_arch_str, "Tilera", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_NONE:
+         default:
+            strlcpy(cpu_arch_str, "N/A", sizeof(cpu_arch_str));
+            break;
+      }
+
+      snprintf(cpu_str, sizeof(cpu_str), "%s %s", cpu_text_str, cpu_arch_str);
+
+      menu_entries_add(info->list, cpu_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   }
+
    for(controller = 0; controller < MAX_USERS; controller++)
    {
        if (settings->input.autoconfigured[controller])
