@@ -983,13 +983,14 @@ void rpng_free(rpng_t *rpng)
 
    if (rpng->idat_buf.data)
       free(rpng->idat_buf.data);
-   if (rpng->process->inflate_buf)
-      free(rpng->process->inflate_buf);
    if (rpng->process)
    {
+      if (rpng->process->inflate_buf)
+         free(rpng->process->inflate_buf);
       if (rpng->process->stream)
       {
-         rpng->process->stream_backend->stream_free(rpng->process->stream);
+         if (rpng->process->stream_backend)
+            rpng->process->stream_backend->stream_free(rpng->process->stream);
          free(rpng->process->stream);
       }
       free(rpng->process);
