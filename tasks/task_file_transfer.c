@@ -55,7 +55,8 @@ static int task_file_transfer_iterate_parse(nbio_handle_t *nbio)
    if (nbio->cb)
    {
       int len = 0;
-      nbio->cb(nbio, len);
+      if (nbio->cb(nbio, len) == -1)
+         return -1;
    }
 
    return 0;
@@ -68,7 +69,8 @@ void rarch_task_file_load_handler(retro_task_t *task)
    switch (nbio->status)
    {
       case NBIO_STATUS_TRANSFER_PARSE:
-         task_file_transfer_iterate_parse(nbio);
+         if (task_file_transfer_iterate_parse(nbio) == -1)
+            goto task_finished;
          nbio->status = NBIO_STATUS_TRANSFER_PARSE_FREE;
          break;
       case NBIO_STATUS_TRANSFER:
