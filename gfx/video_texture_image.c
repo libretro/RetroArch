@@ -27,8 +27,6 @@
 #include <formats/image.h>
 #include <file/nbio.h>
 
-#include "video_driver.h"
-
 enum video_image_format
 {
    IMAGE_FORMAT_NONE = 0,
@@ -37,6 +35,18 @@ enum video_image_format
    IMAGE_FORMAT_JPEG,
    IMAGE_FORMAT_BMP
 };
+
+static bool video_texture_image_supports_rgba = false;
+
+void video_texture_image_set_rgba(void)
+{
+   video_texture_image_supports_rgba = true;
+}
+
+void video_texture_image_unset_rgba(void)
+{
+   video_texture_image_supports_rgba = false;
+}
 
 bool video_texture_image_set_color_shifts(
       unsigned *r_shift, unsigned *g_shift, unsigned *b_shift,
@@ -47,7 +57,7 @@ bool video_texture_image_set_color_shifts(
    *g_shift             = 8;
    *b_shift             = 0;
 
-   if (video_driver_supports_rgba())
+   if (video_texture_image_supports_rgba)
    {
       *r_shift = 0;
       *b_shift = 16;
@@ -120,10 +130,7 @@ static bool video_texture_image_internal_gx_convert_texture32(
          * image->height * sizeof(uint32_t));
 
    if (!tmp)
-   {
-      RARCH_ERR("Failed to create temp buffer for conversion.\n");
       return false;
-   }
 
    memcpy(tmp, image->pixels, image->width 
          * image->height * sizeof(uint32_t));

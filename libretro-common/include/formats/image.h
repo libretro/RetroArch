@@ -58,6 +58,8 @@ bool video_texture_image_color_convert(unsigned r_shift,
 
 bool video_texture_image_load(struct texture_image *img, const char *path);
 void video_texture_image_free(struct texture_image *img);
+void video_texture_image_set_rgba(void);
+void video_texture_image_unset_rgba(void);
 
 /* Image transfer */
 

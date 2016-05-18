@@ -1489,6 +1489,7 @@ void video_driver_set_rgba(void)
 {
    video_driver_lock();
    video_driver_use_rgba = true;
+   video_texture_image_set_rgba();
    video_driver_unlock();
 }
 
@@ -1496,6 +1497,7 @@ void video_driver_unset_rgba(void)
 {
    video_driver_lock();
    video_driver_use_rgba = false;
+   video_texture_image_unset_rgba();
    video_driver_unlock();
 }
 
