@@ -1010,9 +1010,9 @@ struct retro_memory_descriptor
 
    /* To go from emulated address to physical address, the following 
     * order applies:
-    * Subtract 'start', pick off 'disconnect', apply 'len', add 'offset'.
-    *
-    * The address space name must consist of only a-zA-Z0-9_-, 
+    * Subtract 'start', pick off 'disconnect', apply 'len', add 'offset'. */
+
+   /* The address space name must consist of only a-zA-Z0-9_-, 
     * should be as short as feasible (maximum length is 8 plus the NUL),
     * and may not be any other address space plus one or more 0-9A-F 
     * at the end.
@@ -1038,9 +1038,16 @@ struct retro_memory_descriptor
     * The length can't be used for that purpose; the frontend may want 
     * to append arbitrary data to an address, without a separator. */
    const char *addrspace;
-   
+
    /* TODO: When finalizing this one, add a description field,
     * which should be "WRAM" or something roughly equally long. */
+
+   /* TODO: When finalizing this one, replace 'select' with 'limit',
+    * which tells which bits can vary and still refer to the same address (limit = ~select). */
+
+   /* TODO: When finalizing this one, if 'len' is above what 'select' (or 'limit') allows,
+    * it's bankswitched. Bankswitched data must have both 'len' and 'select' != 0,
+    * and the mappings don't tell how the system switches the banks. */
 };
 
 /* The frontend may use the largest value of 'start'+'select' in a 
