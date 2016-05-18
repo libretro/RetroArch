@@ -653,15 +653,6 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
    {
       char cpu_str[PATH_MAX_LENGTH];
-      unsigned amount_cores = cpu_features_get_core_amount();
-
-      snprintf(cpu_str, sizeof(cpu_str), "CPU Cores: %d\n", amount_cores);
-      menu_entries_add(info->list, cpu_str, "",
-            MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
-   }
-
-   {
-      char cpu_str[PATH_MAX_LENGTH];
       char cpu_arch_str[PATH_MAX_LENGTH];
       char cpu_text_str[PATH_MAX_LENGTH];
       enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
@@ -698,6 +689,16 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       menu_entries_add(info->list, cpu_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
+
+   {
+      char cpu_str[PATH_MAX_LENGTH];
+      unsigned amount_cores = cpu_features_get_core_amount();
+
+      snprintf(cpu_str, sizeof(cpu_str), "CPU Cores: %d\n", amount_cores);
+      menu_entries_add(info->list, cpu_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   }
+
 
    for(controller = 0; controller < MAX_USERS; controller++)
    {
