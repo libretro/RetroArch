@@ -42,6 +42,8 @@ enum image_status_enum
    IMAGE_STATUS_TRANSFER_PARSE_FREE
 };
 
+typedef struct nbio_image_handle nbio_image_handle_t;
+
 struct nbio_image_handle
 {
    struct texture_image ti;

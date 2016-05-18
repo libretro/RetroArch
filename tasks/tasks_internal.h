@@ -63,8 +63,6 @@ typedef struct
 } http_transfer_data_t;
 #endif
 
-typedef struct nbio_image_handle nbio_image_handle_t;
-
 typedef struct nbio_handle
 {
    enum image_type_enum image_type;
