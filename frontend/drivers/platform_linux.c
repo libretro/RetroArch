@@ -1126,6 +1126,7 @@ static enum frontend_architecture frontend_linux_get_architecture(void)
    {
       case LINUX_ARCH_ARMV7L:
       case LINUX_ARCH_ARMV7B:
+         return FRONTEND_ARCH_ARMV7;
       case LINUX_ARCH_ARMV6L:
       case LINUX_ARCH_ARMV6B:
       case LINUX_ARCH_ARMV5TEB:
