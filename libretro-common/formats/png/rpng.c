@@ -30,6 +30,7 @@
 #endif
 
 #include <boolean.h>
+#include <formats/image.h>
 #include <formats/rpng.h>
 #include <file/archive_file.h>
 
@@ -125,14 +126,6 @@ struct rpng
    struct png_ihdr ihdr;
    uint8_t *buff_data;
    uint32_t palette[256];
-};
-
-enum png_process_code
-{
-   PNG_PROCESS_ERROR     = -2,
-   PNG_PROCESS_ERROR_END = -1,
-   PNG_PROCESS_NEXT      =  0,
-   PNG_PROCESS_END       =  1
 };
 
 static INLINE uint32_t dword_be(const uint8_t *buf)
@@ -539,7 +532,7 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
          break;
 
       default:
-         return PNG_PROCESS_ERROR_END;
+         return IMAGE_PROCESS_ERROR_END;
    }
 
    switch (ihdr->color_type)
@@ -565,13 +558,13 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
 
    memcpy(pngp->prev_scanline, pngp->decoded_scanline, pngp->pitch);
 
-   return PNG_PROCESS_NEXT;
+   return IMAGE_PROCESS_NEXT;
 }
 
 static int png_reverse_filter_regular_iterate(uint32_t **data, const struct png_ihdr *ihdr,
       struct rpng_process_t *pngp)
 {
-   int ret = PNG_PROCESS_END;
+   int ret = IMAGE_PROCESS_END;
 
    if (pngp->h < ihdr->height)
    {
@@ -581,7 +574,7 @@ static int png_reverse_filter_regular_iterate(uint32_t **data, const struct png_
             ihdr, pngp, filter);
    }
 
-   if (ret == PNG_PROCESS_END || ret == PNG_PROCESS_ERROR_END)
+   if (ret == IMAGE_PROCESS_END || ret == IMAGE_PROCESS_ERROR_END)
       goto end;
 
    pngp->h++;
@@ -591,7 +584,7 @@ static int png_reverse_filter_regular_iterate(uint32_t **data, const struct png_
    *data                       += ihdr->width;
    pngp->data_restore_buf_size += ihdr->width;
 
-   return PNG_PROCESS_NEXT;
+   return IMAGE_PROCESS_NEXT;
 
 end:
    png_reverse_filter_deinit(pngp);
@@ -611,25 +604,25 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    uint32_t *data = *data_;
 
    if (!to_next)
-      return PNG_PROCESS_END;
+      return IMAGE_PROCESS_END;
 
    ret = png_reverse_filter_init(ihdr, pngp);
 
    if (ret == 1)
-      return PNG_PROCESS_NEXT;
+      return IMAGE_PROCESS_NEXT;
    if (ret == -1)
-      return PNG_PROCESS_ERROR_END;
+      return IMAGE_PROCESS_ERROR_END;
 
    if (png_reverse_filter_init(&pngp->ihdr, pngp) == -1)
-      return PNG_PROCESS_ERROR;
+      return IMAGE_PROCESS_ERROR;
 
    do{
       ret = png_reverse_filter_regular_iterate(&pngp->data,
             &pngp->ihdr, pngp);
-   }while(ret == PNG_PROCESS_NEXT);
+   }while(ret == IMAGE_PROCESS_NEXT);
 
-   if (ret == PNG_PROCESS_ERROR || ret == PNG_PROCESS_ERROR_END)
-      return PNG_PROCESS_ERROR;
+   if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
+      return IMAGE_PROCESS_ERROR;
 
    pngp->inflate_buf            += pngp->pass.size;
    pngp->adam7_restore_buf_size += pngp->pass.size;
@@ -646,7 +639,7 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
    pngp->pass.size   = 0;
    pngp->adam7_pass_initialized = false;
 
-   return PNG_PROCESS_NEXT;
+   return IMAGE_PROCESS_NEXT;
 }
 
 static int png_reverse_filter_adam7(uint32_t **data_,
@@ -658,13 +651,13 @@ static int png_reverse_filter_adam7(uint32_t **data_,
 
    switch (ret)
    {
-      case PNG_PROCESS_ERROR_END:
-      case PNG_PROCESS_END:
+      case IMAGE_PROCESS_ERROR_END:
+      case IMAGE_PROCESS_END:
          break;
-      case PNG_PROCESS_NEXT:
+      case IMAGE_PROCESS_NEXT:
          pngp->pass.pos++;
          return 0;
-      case PNG_PROCESS_ERROR:
+      case IMAGE_PROCESS_ERROR:
          if (pngp->data)
             free(pngp->data);
          pngp->inflate_buf -= pngp->adam7_restore_buf_size;
@@ -956,7 +949,7 @@ int rpng_process_image(rpng_t *rpng,
 
       if (!rpng_load_image_argb_process_init(rpng, data, width,
                height))
-         return PNG_PROCESS_ERROR;
+         return IMAGE_PROCESS_ERROR;
       return 0;
    }
 
@@ -964,7 +957,7 @@ int rpng_process_image(rpng_t *rpng,
    {
       if (rpng_load_image_argb_process_inflate_init(rpng, data,
                width, height) == -1)
-         return PNG_PROCESS_ERROR;
+         return IMAGE_PROCESS_ERROR;
       return 0;
    }
 
