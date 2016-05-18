@@ -1273,7 +1273,6 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
    uint32_t hash_label         = menu_hash_calculate(label);
 
    *s = '\0';
-   *w = 19;
 
    switch (hash_label)
    {
@@ -1288,6 +1287,9 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
          break;
       case MENU_LABEL_ACHIEVEMENT_LIST:
          *w = 2;
+         break;
+      default:
+         *w = 19;
          break;
    }
 
