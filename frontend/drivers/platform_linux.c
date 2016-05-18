@@ -1103,36 +1103,24 @@ static enum frontend_powerstate frontend_linux_get_powerstate(
 #define LINUX_ARCH_PPC64      0x1028cf52U
 #define LINUX_ARCH_MIPS       0x7c9aa25eU
 #define LINUX_ARCH_TILE       0x7c9e7873U
-
-#define ANDROID_ARCH_ARMV7    0x26257a91U
-#define ANDROID_ARCH_ARM      0x406a3516U
+#define LINUX_ARCH_ARMV7L     0xf27015feU
 
 static enum frontend_architecture frontend_linux_get_architecture(void)
 {
    uint32_t buffer_hash;
    const char *val;
-#ifdef ANDROID
-   char abi[PROP_VALUE_MAX] = {0};
-   system_property_get("getprop", "ro.product.cpu.abi", abi);
-   val         = abi;
-#else
    struct utsname buffer;
 
    if (uname(&buffer) != 0)
       return FRONTEND_ARCH_NONE;
 
    val         = buffer.machine;
-#endif
    buffer_hash = djb2_calculate(val);
 
    switch (buffer_hash)
    {
-#ifdef ANDROID
-      case ANDROID_ARCH_ARMV7:
+      case LINUX_ARCH_ARMV7L:
          return FRONTEND_ARCH_ARM;
-      case ANDROID_ARCH_ARM:
-         return FRONTEND_ARCH_ARM;
-#endif
       case LINUX_ARCH_X86_64:
          return FRONTEND_ARCH_X86_64;
       case LINUX_ARCH_X86:
