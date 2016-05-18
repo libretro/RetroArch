@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include <streams/file_stream.h>
+#include <file/archive_file.h>
 
 #include "rpng_internal.h"
 
