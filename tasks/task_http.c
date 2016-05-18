@@ -38,6 +38,12 @@ enum http_status_enum
    HTTP_STATUS_TRANSFER_PARSE_FREE
 };
 
+typedef struct http_transfer_info
+{
+   char url[PATH_MAX_LENGTH];
+   int progress;
+} http_transfer_info_t;
+
 typedef struct http_handle
 {
    struct

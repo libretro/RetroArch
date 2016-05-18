@@ -61,12 +61,6 @@ typedef struct
     char *data;
     size_t len;
 } http_transfer_data_t;
-
-typedef struct http_transfer_info
-{
-   char url[PATH_MAX_LENGTH];
-   int progress;
-} http_transfer_info_t;
 #endif
 
 typedef struct nbio_image_handle nbio_image_handle_t;
