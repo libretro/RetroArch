@@ -1230,6 +1230,36 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
       if (core_info_list_get_display_name(list, s, buf, sizeof(buf)))
          strlcpy(s, buf, len);
    }
+
+   strlcpy(s2, path, len2);
+}
+
+static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   core_option_manager_t *coreopts = NULL;
+   const char *core_opt = NULL;
+
+   *s = '\0';
+   *w = 19;
+
+   if (runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   {
+      core_opt = core_option_manager_get_val(coreopts,
+            type - MENU_SETTINGS_CORE_OPTION_START);
+
+      strlcpy(s, "", len);
+
+      if (core_opt)
+         strlcpy(s, core_opt, len);
+   }
+
+   strlcpy(s2, path, len2);
 }
 
 static void menu_action_setting_disp_set_label(file_list_t* list,
@@ -1261,25 +1291,8 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
          break;
    }
 
-   if (type >= MENU_SETTINGS_CORE_OPTION_START)
-   {
-      core_option_manager_t *coreopts = NULL;
-      const char *core_opt = NULL;
-
-      if (runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
-      {
-         core_opt = core_option_manager_get_val(coreopts,
-               type - MENU_SETTINGS_CORE_OPTION_START);
-
-         strlcpy(s, "", len);
-
-         if (core_opt)
-            strlcpy(s, core_opt, len);
-      }
-   }
-   else
-      menu_setting_get_label(list, s,
-            len, w, type, label, entry_label, i);
+   menu_setting_get_label(list, s,
+         len, w, type, label, entry_label, i);
 
    strlcpy(s2, path, len2);
 }
@@ -1549,6 +1562,12 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    {
       BIND_ACTION_GET_VALUE(cbs,
          menu_action_setting_disp_set_label_playlist_associations);
+      return 0;
+   }
+   if (type >= MENU_SETTINGS_CORE_OPTION_START)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_core_options);
       return 0;
    }
 
