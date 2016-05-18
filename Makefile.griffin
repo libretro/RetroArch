@@ -128,6 +128,8 @@ endif
   HAVE_THREADS             := 1
   HAVE_RPNG						:= 1
   HAVE_RJPEG					:= 1
+  HAVE_RBMP					   := 1
+  HAVE_RTGA					   := 1
   HAVE_OVERLAY             := 1
   HAVE_BUILTIN_AUTOCONFIG  := 1
   HAVE_ZLIB                := 1
@@ -187,6 +189,8 @@ else ifeq ($(platform), psp1)
   BUILD_PRX                 = 1
   HAVE_RPNG                := 1
   HAVE_RJPEG					:= 1
+  HAVE_RBMP					   := 1
+  HAVE_RTGA					   := 1
   HAVE_KERNEL_PRX          := 1
   RARCH_CONSOLE          = 1
 
@@ -218,6 +222,8 @@ else ifeq ($(platform), vita)
   HAVE_BUILTIN_AUTOCONFIG  := 1
   HAVE_RPNG                := 1
   HAVE_RJPEG					:= 1
+  HAVE_RBMP					   := 1
+  HAVE_RTGA					   := 1
   HAVE_ZLIB                := 1
   HAVE_VITA2D              := 1
   HAVE_NETWORKING          := 1
@@ -284,6 +290,14 @@ endif
 
 ifeq ($(HAVE_RPNG), 1)
 CFLAGS      += -DHAVE_RPNG
+endif
+
+ifeq ($(HAVE_RBMP), 1)
+CFLAGS		+= -DHAVE_RBMP
+endif
+
+ifeq ($(HAVE_RTGA), 1)
+CFLAGS		+=	-DHAVE_RTGA
 endif
 
 ifeq ($(HAVE_7ZIP), 1)
