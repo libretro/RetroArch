@@ -1039,15 +1039,24 @@ struct retro_memory_descriptor
     * to append arbitrary data to an address, without a separator. */
    const char *addrspace;
 
-   /* TODO: When finalizing this one, add a description field,
-    * which should be "WRAM" or something roughly equally long. */
+   /* TODO: When finalizing this one, add a description field, which should be
+    * "WRAM" or something roughly equally long. */
 
-   /* TODO: When finalizing this one, replace 'select' with 'limit',
-    * which tells which bits can vary and still refer to the same address (limit = ~select). */
+   /* TODO: When finalizing this one, replace 'select' with 'limit', which tells
+    * which bits can vary and still refer to the same address (limit = ~select).
+    * TODO: limit? range? vary? something else? */
 
-   /* TODO: When finalizing this one, if 'len' is above what 'select' (or 'limit') allows,
-    * it's bankswitched. Bankswitched data must have both 'len' and 'select' != 0,
-    * and the mappings don't tell how the system switches the banks. */
+   /* TODO: When finalizing this one, if 'len' is above what 'select' (or
+    * 'limit') allows, it's bankswitched. Bankswitched data must have both 'len'
+    * and 'select' != 0, and the mappings don't tell how the system switches the
+    * banks. */
+
+   /* TODO: When finalizing this one, fix the 'len' bit removal order.
+    * For len=0x1800, pointer 0x1C00 should go to 0x1400, not 0x0C00.
+    * Algorithm: Take bits highest to lowest, but if it goes above len, clear
+    * the most recent addition and continue on the next bit.
+    * TODO: Can the above be optimized? Is "remove the lowest bit set in both
+    * pointer and 'len'" equivalent? */
 };
 
 /* The frontend may use the largest value of 'start'+'select' in a 
