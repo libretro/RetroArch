@@ -27,7 +27,7 @@
 #include <formats/image.h>
 #include <file/nbio.h>
 
-#include "../general.h"
+#include "video_driver.h"
 
 enum video_image_format
 {
@@ -157,35 +157,7 @@ static bool video_texture_image_load_internal(
 {
    int ret;
    bool success = false;
-   void *img    = NULL;
-
-   switch (type)
-   {
-      case IMAGE_TYPE_JPEG:
-#ifdef HAVE_RJPEG
-         break;
-#else
-         return false;
-#endif
-      case IMAGE_TYPE_PNG:
-#ifdef HAVE_RPNG
-         break;
-#else
-         return false;
-#endif
-      case IMAGE_TYPE_BMP:
-         break;
-      case IMAGE_TYPE_TGA:
-#ifdef HAVE_RTGA
-         break;
-#else
-         return false;
-#endif
-      default:
-         break;
-   }
-
-   img = image_transfer_new(type);
+   void *img    = image_transfer_new(type);
 
    if (!img)
       goto end;
@@ -243,12 +215,18 @@ void video_texture_image_free(struct texture_image *img)
 
 static enum video_image_format video_texture_image_get_type(const char *path)
 {
+#ifdef HAVE_RTGA
    if (strstr(path, ".tga"))
       return IMAGE_FORMAT_TGA;
+#endif
+#ifdef HAVE_RPNG
    if (strstr(path, ".png"))
       return IMAGE_FORMAT_PNG;
+#endif
+#ifdef HAVE_RJPEG
    if (strstr(path, ".jpg") || strstr(path, ".jpeg"))
       return IMAGE_FORMAT_JPEG;
+#endif
    if (strstr(path, ".bmp"))
       return IMAGE_FORMAT_BMP;
    return IMAGE_FORMAT_NONE;
@@ -258,14 +236,20 @@ static enum image_type_enum video_texture_image_convert_fmt_to_type(enum video_i
 {
    switch (fmt)
    {
+#ifdef HAVE_RPNG
       case IMAGE_FORMAT_PNG:
          return IMAGE_TYPE_PNG;
+#endif
+#ifdef HAVE_RJPEG
       case IMAGE_FORMAT_JPEG:
          return IMAGE_TYPE_JPEG;
+#endif
       case IMAGE_FORMAT_BMP:
          return IMAGE_TYPE_BMP;
+#ifdef HAVE_RTGA
       case IMAGE_FORMAT_TGA:
          return IMAGE_TYPE_TGA;
+#endif
       case IMAGE_FORMAT_NONE:
       default:
          break;
