@@ -237,7 +237,7 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
 
    image->size                     = *len;
    image->pos_increment            = (*len / 2) ? (*len / 2) : 1;
-   image->processing_pos_increment = (*len / 4) ?  (*len / 4) : 1;
+   image->processing_pos_increment = (*len / 4) ? (*len / 4) : 1;
 
    if (!image_transfer_start(image->handle, nbio->image_type))
       goto error;
