@@ -33,7 +33,9 @@
 #ifdef HAVE_RTGA
 #include <formats/rtga.h>
 #endif
+#ifdef HAVE_RBMP
 #include <formats/rbmp.h>
+#endif
 
 #include <formats/image.h>
 
@@ -57,7 +59,9 @@ void image_transfer_free(void *data, enum image_type_enum type)
 #endif
          break;
       case IMAGE_TYPE_BMP:
+#ifdef HAVE_RBMP
          rbmp_free((rbmp_t*)data);
+#endif
          break;
       case IMAGE_TYPE_NONE:
          break;
@@ -81,7 +85,11 @@ void *image_transfer_new(enum image_type_enum type)
          break;
 #endif
       case IMAGE_TYPE_BMP:
+#ifdef HAVE_RBMP
          return rbmp_alloc();
+#else
+         break;
+#endif
       default:
          break;
    }
@@ -177,7 +185,9 @@ void image_transfer_set_buffer_ptr(
 #endif
          break;
       case IMAGE_TYPE_BMP:
+#ifdef HAVE_RBMP
          rbmp_set_buf_ptr((rbmp_t*)data, (uint8_t*)ptr);
+#endif
          break;
       case IMAGE_TYPE_NONE:
          break;
@@ -218,8 +228,12 @@ int image_transfer_process(
          break;
 #endif
       case IMAGE_TYPE_BMP:
+#ifdef HAVE_RBMP
          return rbmp_process_image((rbmp_t*)data,
                (void**)buf, len, width, height);
+#else
+         break;
+#endif
       case IMAGE_TYPE_NONE:
          break;
    }

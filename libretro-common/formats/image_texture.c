@@ -236,8 +236,10 @@ static enum video_image_format image_texture_get_type(const char *path)
    if (strstr(path, ".jpg") || strstr(path, ".jpeg"))
       return IMAGE_FORMAT_JPEG;
 #endif
+#ifdef HAVE_RBMP
    if (strstr(path, ".bmp"))
       return IMAGE_FORMAT_BMP;
+#endif
    return IMAGE_FORMAT_NONE;
 }
 
@@ -253,8 +255,10 @@ static enum image_type_enum image_texture_convert_fmt_to_type(enum video_image_f
       case IMAGE_FORMAT_JPEG:
          return IMAGE_TYPE_JPEG;
 #endif
+#ifdef HAVE_RBMP
       case IMAGE_FORMAT_BMP:
          return IMAGE_TYPE_BMP;
+#endif
 #ifdef HAVE_RTGA
       case IMAGE_FORMAT_TGA:
          return IMAGE_TYPE_TGA;

@@ -244,7 +244,9 @@ VIDEO IMAGE
 #ifdef HAVE_RJPEG
 #include "../libretro-common/formats/jpeg/rjpeg.c"
 #endif
+#ifdef HAVE_RBMP
 #include "../libretro-common/formats/bmp/rbmp.c"
+#endif
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 
 /*============================================================
