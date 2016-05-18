@@ -70,7 +70,7 @@ void rarch_task_file_load_handler(retro_task_t *task)
    {
       case NBIO_STATUS_TRANSFER_PARSE:
          if (task_file_transfer_iterate_parse(nbio) == -1)
-            goto task_finished;
+            task->cancelled = true;
          nbio->status = NBIO_STATUS_TRANSFER_PARSE_FREE;
          break;
       case NBIO_STATUS_TRANSFER:
