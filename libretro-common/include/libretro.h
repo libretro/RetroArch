@@ -1057,6 +1057,18 @@ struct retro_memory_descriptor
     * the most recent addition and continue on the next bit.
     * TODO: Can the above be optimized? Is "remove the lowest bit set in both
     * pointer and 'len'" equivalent? */
+   
+   /* TODO: Some emulators (MAME?) emulate big endian systems by only accessing
+    * the emulated memory in 32-bit chunks, native endian. But that's nothing
+    * compared to Darek Mihocka <http://www.emulators.com/docs/nx07_vm101.htm>
+    * (section Emulation 103 - Nearly Free Byte Reversal) - he flips the ENTIRE
+    * RAM backwards! I'll want to represent both of those, via some flags.
+    * 
+    * I suspect MAME either didn't think of that idea, or don't want the #ifdef.
+    * Not sure which, nor do I really care. */
+   
+   /* TODO: Some of those flags are unused and/or don't really make sense. Clean
+    * them up. */
 };
 
 /* The frontend may use the largest value of 'start'+'select' in a 
