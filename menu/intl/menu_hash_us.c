@@ -1520,6 +1520,12 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Cocoa support";
       case MENU_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT:
          return "PNG support (RPNG)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT:
+         return "JPEG support (RJPEG)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT:
+         return "BMP support (RBMP)";
+      case MENU_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT:
+         return "RTGA support (RTGA)";
       case MENU_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT:
          return "SDL1.2 support";
       case MENU_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT:

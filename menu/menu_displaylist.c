@@ -912,6 +912,36 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    snprintf(feat_str, sizeof(feat_str),
          "%s: %s",
          menu_hash_to_str(
+            MENU_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT),
+         _rjpeg_supp ? 
+         menu_hash_to_str(MENU_LABEL_VALUE_YES) : 
+         menu_hash_to_str(MENU_LABEL_VALUE_NO));
+   menu_entries_add(info->list, feat_str, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
+         menu_hash_to_str(
+            MENU_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT),
+         _rbmp_supp ? 
+         menu_hash_to_str(MENU_LABEL_VALUE_YES) : 
+         menu_hash_to_str(MENU_LABEL_VALUE_NO));
+   menu_entries_add(info->list, feat_str, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
+         menu_hash_to_str(
+            MENU_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT),
+         _rtga_supp ? 
+         menu_hash_to_str(MENU_LABEL_VALUE_YES) : 
+         menu_hash_to_str(MENU_LABEL_VALUE_NO));
+   menu_entries_add(info->list, feat_str, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
+         menu_hash_to_str(
             MENU_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT),
          _sdl_supp ? 
          menu_hash_to_str(MENU_LABEL_VALUE_YES) : 
