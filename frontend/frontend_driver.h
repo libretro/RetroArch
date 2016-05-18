@@ -132,6 +132,8 @@ void frontend_driver_init_first(void *args);
 
 void frontend_driver_free(void);
 
+enum frontend_architecture frontend_driver_get_cpu_architecture(void);
+
 environment_get_t frontend_driver_environment_get_ptr(void);
 
 bool frontend_driver_has_get_video_driver_func(void);
