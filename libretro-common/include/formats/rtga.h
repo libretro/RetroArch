@@ -26,10 +26,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
-
 #include <retro_common_api.h>
 
 #include <boolean.h>
