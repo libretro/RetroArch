@@ -85,7 +85,7 @@ struct png_chunk
    uint8_t *data;
 };
 
-struct rpng_process_t
+struct rpng_process
 {
    bool inflate_initialized;
    bool adam7_pass_initialized;
@@ -116,7 +116,7 @@ struct rpng_process_t
 
 struct rpng
 {
-   struct rpng_process_t *process;
+   struct rpng_process *process;
    bool has_ihdr;
    bool has_idat;
    bool has_iend;
@@ -401,7 +401,7 @@ static void png_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
    }
 }
 
-static void png_reverse_filter_deinit(struct rpng_process_t *pngp)
+static void png_reverse_filter_deinit(struct rpng_process *pngp)
 {
    if (pngp->decoded_scanline)
       free(pngp->decoded_scanline);
@@ -425,7 +425,7 @@ static const struct adam7_pass passes[] = {
 };
 
 static int png_reverse_filter_init(const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp)
+      struct rpng_process *pngp)
 {
    size_t pass_size;
 
@@ -491,7 +491,7 @@ error:
 }
 
 static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp, unsigned filter)
+      struct rpng_process *pngp, unsigned filter)
 {
    unsigned i;
 
@@ -561,7 +561,7 @@ static int png_reverse_filter_copy_line(uint32_t *data, const struct png_ihdr *i
 }
 
 static int png_reverse_filter_regular_iterate(uint32_t **data, const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp)
+      struct rpng_process *pngp)
 {
    int ret = IMAGE_PROCESS_END;
 
@@ -596,7 +596,7 @@ end:
 
 static int png_reverse_filter_adam7_iterate(uint32_t **data_,
       const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp)
+      struct rpng_process *pngp)
 {
    int ret = 0;
    bool to_next = pngp->pass.pos < ARRAY_SIZE(passes);
@@ -643,7 +643,7 @@ static int png_reverse_filter_adam7_iterate(uint32_t **data_,
 
 static int png_reverse_filter_adam7(uint32_t **data_,
       const struct png_ihdr *ihdr,
-      struct rpng_process_t *pngp)
+      struct rpng_process *pngp)
 {
    int ret = png_reverse_filter_adam7_iterate(data_,
          ihdr, pngp);
@@ -684,7 +684,7 @@ static int rpng_load_image_argb_process_inflate_init(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
    int zstatus;
-   struct rpng_process_t *process = (struct rpng_process_t*)rpng->process;
+   struct rpng_process *process = (struct rpng_process*)rpng->process;
    bool to_continue        = (process->stream_backend->stream_get_avail_in(process->stream) > 0
          && process->stream_backend->stream_get_avail_out(process->stream) > 0);
 
@@ -767,10 +767,10 @@ bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
    return true;
 }
 
-static struct rpng_process_t *rpng_process_init(rpng_t *rpng,
+static struct rpng_process *rpng_process_init(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
-   struct rpng_process_t *process = (struct rpng_process_t*)calloc(1, sizeof(*process));
+   struct rpng_process *process = (struct rpng_process*)calloc(1, sizeof(*process));
 
    if (!process)
       goto error;
@@ -955,7 +955,7 @@ int rpng_process_image(rpng_t *rpng,
 
    if (!rpng->process)
    {
-      struct rpng_process_t *process = rpng_process_init(
+      struct rpng_process *process = rpng_process_init(
             rpng, data, width, height);
 
       if (!process)
