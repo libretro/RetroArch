@@ -70,10 +70,10 @@ static int cb_image_menu_upload_generic(void *data, size_t len)
          image->processing_final_state == IMAGE_PROCESS_ERROR_END)
       return -1;
 
-   video_texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
+   image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift);
 
-   video_texture_image_color_convert(r_shift, g_shift, b_shift,
+   image_texture_color_convert(r_shift, g_shift, b_shift,
          a_shift, &image->ti);
 
    image->is_blocking_on_processing         = false;

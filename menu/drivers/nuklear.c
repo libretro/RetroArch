@@ -143,11 +143,11 @@ static void nk_menu_context_reset_textures(nk_menu_handle_t *nk,
       if (string_is_empty(path) || !path_file_exists(path))
          continue;
 
-      video_texture_image_load(&ti, path);
+      image_texture_load(&ti, path);
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR, &nk->textures.list[i]);
 
-      video_texture_image_free(&ti);
+      image_texture_load(&ti);
    }
 }
 

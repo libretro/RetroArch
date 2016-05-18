@@ -159,11 +159,10 @@ static void mui_context_reset_textures(mui_handle_t *mui,
       if (string_is_empty(path) || !path_file_exists(path))
          continue;
 
-      video_texture_image_load(&ti, path);
+      image_texture_load(&ti, path);
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.list[i]);
-
-      video_texture_image_free(&ti);
+      image_texture_free(&ti);
    }
 }
 

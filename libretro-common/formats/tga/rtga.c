@@ -427,17 +427,19 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
    int comp;
+#if 0
    unsigned size_tex     = 0;
+#endif
 
    if (!rtga)
       return IMAGE_PROCESS_ERROR;
 
    rtga->output_image   = (uint32_t*)rtga_load_from_memory(rtga->buff_data, size, width, height, &comp, 4);
    *buf_data             = rtga->output_image;
+#if 0
    size_tex              = (*width) * (*height);
 
    printf("GETS HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-#if 0
    /* Convert RGBA to ARGB */
    do
    {

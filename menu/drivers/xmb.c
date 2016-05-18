@@ -739,7 +739,7 @@ static void menu_display_handle_thumbnail_upload(void *task_data,
 
    menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
 
-   video_texture_image_free(img);
+   image_texture_free(img);
    free(img);
 }
 
@@ -1402,19 +1402,19 @@ static void xmb_context_reset_horizontal_list(
       strlcat(content_texturepath, "-content.png",
             sizeof(content_texturepath));
 
-      video_texture_image_load(&ti, texturepath);
+      image_texture_load(&ti, texturepath);
 
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR, &node->icon);
 
-      video_texture_image_free(&ti);
+      image_texture_free(&ti);
 
-      video_texture_image_load(&ti, content_texturepath);
+      image_texture_load(&ti, content_texturepath);
 
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR, &node->content_icon);
 
-      video_texture_image_free(&ti);
+      image_texture_free(&ti);
    }
 
    xmb_toggle_horizontal_list(xmb);
@@ -2767,13 +2767,13 @@ static void xmb_context_reset_textures(
       if (string_is_empty(path) || !path_file_exists(path))
          continue;
 
-      video_texture_image_load(&ti, path);
+      image_texture_load(&ti, path);
 
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR,
             &xmb->textures.list[i]);
 
-      video_texture_image_free(&ti);
+      image_texture_free(&ti);
    }
 
    menu_display_allocate_white_texture();

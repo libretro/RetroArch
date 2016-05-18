@@ -1,27 +1,29 @@
-/*  RetroArch - A frontend for libretro.
- *  Copyright (C) 2010-2014 - Hans-Kristian Arntzen
- *  Copyright (C) 2011-2016 - Daniel De Matteis
- * 
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
+/* Copyright  (C) 2010-2016 The RetroArch team
  *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (image_texture.c).
+ * ---------------------------------------------------------------------------------------
  *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
-
-#ifdef HAVE_CONFIG_H
-#include "../../config.h"
-#endif
 
 #include <boolean.h>
 #include <formats/image.h>
@@ -36,19 +38,19 @@ enum video_image_format
    IMAGE_FORMAT_BMP
 };
 
-static bool video_texture_image_supports_rgba = false;
+static bool image_texture_supports_rgba = false;
 
-void video_texture_image_set_rgba(void)
+void image_texture_set_rgba(void)
 {
-   video_texture_image_supports_rgba = true;
+   image_texture_supports_rgba = true;
 }
 
-void video_texture_image_unset_rgba(void)
+void image_texture_unset_rgba(void)
 {
-   video_texture_image_supports_rgba = false;
+   image_texture_supports_rgba = false;
 }
 
-bool video_texture_image_set_color_shifts(
+bool image_texture_set_color_shifts(
       unsigned *r_shift, unsigned *g_shift, unsigned *b_shift,
       unsigned *a_shift)
 {
@@ -57,7 +59,7 @@ bool video_texture_image_set_color_shifts(
    *g_shift             = 8;
    *b_shift             = 0;
 
-   if (video_texture_image_supports_rgba)
+   if (image_texture_supports_rgba)
    {
       *r_shift = 0;
       *b_shift = 16;
@@ -67,7 +69,7 @@ bool video_texture_image_set_color_shifts(
    return false;
 }
 
-bool video_texture_image_color_convert(unsigned r_shift,
+bool image_texture_color_convert(unsigned r_shift,
       unsigned g_shift, unsigned b_shift, unsigned a_shift,
       struct texture_image *out_img)
 {
@@ -116,7 +118,7 @@ bool video_texture_image_color_convert(unsigned r_shift,
    src += tmp_pitch; \
 }
 
-static bool video_texture_image_internal_gx_convert_texture32(
+static bool image_texture_internal_gx_convert_texture32(
       struct texture_image *image)
 {
    unsigned tmp_pitch, width2, i;
@@ -155,7 +157,7 @@ static bool video_texture_image_internal_gx_convert_texture32(
 }
 #endif
 
-static bool video_texture_image_load_internal(
+static bool image_texture_load_internal(
       enum image_type_enum type,
       void *ptr,
       struct texture_image *out_img,
@@ -189,13 +191,13 @@ static bool video_texture_image_load_internal(
    if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
       goto end;
 
-   video_texture_image_color_convert(r_shift, g_shift, b_shift,
+   image_texture_color_convert(r_shift, g_shift, b_shift,
          a_shift, out_img);
 
 #ifdef GEKKO
-   if (!video_texture_image_internal_gx_convert_texture32(out_img))
+   if (!image_texture_internal_gx_convert_texture32(out_img))
    {
-      video_texture_image_free(out_img);
+      image_texture_free(out_img);
       goto end;
    }
 #endif
@@ -210,7 +212,7 @@ end:
 }
 
 
-void video_texture_image_free(struct texture_image *img)
+void image_texture_free(struct texture_image *img)
 {
    if (!img)
       return;
@@ -220,7 +222,7 @@ void video_texture_image_free(struct texture_image *img)
    memset(img, 0, sizeof(*img));
 }
 
-static enum video_image_format video_texture_image_get_type(const char *path)
+static enum video_image_format image_texture_get_type(const char *path)
 {
 #ifdef HAVE_RTGA
    if (strstr(path, ".tga"))
@@ -239,7 +241,7 @@ static enum video_image_format video_texture_image_get_type(const char *path)
    return IMAGE_FORMAT_NONE;
 }
 
-static enum image_type_enum video_texture_image_convert_fmt_to_type(enum video_image_format fmt)
+static enum image_type_enum image_texture_convert_fmt_to_type(enum video_image_format fmt)
 {
    switch (fmt)
    {
@@ -265,16 +267,16 @@ static enum image_type_enum video_texture_image_convert_fmt_to_type(enum video_i
    return IMAGE_TYPE_NONE;
 }
 
-bool video_texture_image_load(struct texture_image *out_img, 
+bool image_texture_load(struct texture_image *out_img, 
       const char *path)
 {
    unsigned r_shift, g_shift, b_shift, a_shift;
    size_t file_len             = 0;
    struct nbio_t      *handle  = NULL;
    void                   *ptr = NULL;
-   enum video_image_format fmt = video_texture_image_get_type(path);
+   enum video_image_format fmt = image_texture_get_type(path);
 
-   video_texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
+   image_texture_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift);
 
    if (fmt != IMAGE_FORMAT_NONE)
@@ -291,8 +293,8 @@ bool video_texture_image_load(struct texture_image *out_img,
       if (!ptr)
          goto error;
 
-      if (video_texture_image_load_internal(
-               video_texture_image_convert_fmt_to_type(fmt),
+      if (image_texture_load_internal(
+               image_texture_convert_fmt_to_type(fmt),
                ptr,out_img,
                a_shift, r_shift, g_shift, b_shift))
          goto success;

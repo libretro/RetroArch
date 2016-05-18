@@ -226,7 +226,7 @@ VIDEO SHADERS
 VIDEO IMAGE
 ============================================================ */
 
-#include "../gfx/video_texture_image.c"
+#include "../libretro-common/formats/image_texture.c"
 
 #ifdef HAVE_RTGA
 #include "../libretro-common/formats/tga/rtga.c"

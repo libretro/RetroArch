@@ -222,7 +222,7 @@ ifneq ($(HAVE_STRL), 1)
 OBJ += libretro-common/compat/compat_strl.o
 endif
 
-OBJ += gfx/video_texture_image.o
+OBJ += libretro-common/formats/image_texture.o
 
 ifeq ($(HAVE_IMAGEVIEWER), 1)
 DEFINES += -DHAVE_IMAGEVIEWER

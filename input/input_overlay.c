@@ -177,7 +177,7 @@ void input_overlay_free_overlay(struct overlay *overlay)
       return;
 
    for (i = 0; i < overlay->size; i++)
-      video_texture_image_free(&overlay->descs[i].image);
+      image_texture_free(&overlay->descs[i].image);
 
    if (overlay->load_images)
       free(overlay->load_images);
@@ -185,7 +185,7 @@ void input_overlay_free_overlay(struct overlay *overlay)
    if (overlay->descs)
       free(overlay->descs);
    overlay->descs       = NULL;
-   video_texture_image_free(&overlay->image);
+   image_texture_free(&overlay->image);
 }
 
 static void input_overlay_free_overlays(input_overlay_t *ol)

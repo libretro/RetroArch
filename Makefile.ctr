@@ -61,7 +61,7 @@ else
 	OBJS += libretro-common/hash/rhash.o
 	OBJS += gfx/video_context_driver.o
 	OBJS += gfx/drivers_context/gfx_null_ctx.o
-	OBJS += gfx/video_texture_image.o
+	OBJS += libretro-common/formats/image_texture.o
 	OBJS += libretro-common/formats/tga/rtga.o
 	OBJS += libretro-common/formats/png/rpng.o
 	OBJS += libretro-common/formats/png/rpng_encode.o
