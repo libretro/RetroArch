@@ -21,6 +21,7 @@
 #include <file/archive_file.h>
 #include <retro_stat.h>
 #include <string/stdstring.h>
+#include <features/features_cpu.h>
 
 #include "menu_driver.h"
 #include "menu_navigation.h"
@@ -646,6 +647,15 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU,
             cpu_str, sizeof(cpu_str));
+      menu_entries_add(info->list, cpu_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   }
+
+   {
+      char cpu_str[PATH_MAX_LENGTH];
+      unsigned amount_cores = cpu_features_get_core_amount();
+
+      snprintf(cpu_str, sizeof(cpu_str), "CPU Cores: %d\n", amount_cores);
       menu_entries_add(info->list, cpu_str, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
