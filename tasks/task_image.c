@@ -265,24 +265,25 @@ error:
 
 static int cb_nbio_image_menu_thumbnail(void *data, size_t len)
 {
-   nbio_handle_t *nbio = (nbio_handle_t*)data; 
+   void *handle               = NULL;
+   nbio_handle_t *nbio        = (nbio_handle_t*)data; 
    nbio_image_handle_t *image = nbio ? nbio->image : NULL;
 
    if (!nbio || !data || !image)
-      return -1;
-
-   image->handle = image_transfer_new(nbio->image_type);
-   image->size   = len;
-
-   if (!image->handle)
       goto error;
 
+   handle = image_transfer_new(nbio->image_type);
+
+   if (!handle)
+      goto error;
+ 
+   image->handle = handle;
+   image->size   = len;
    image->cb     = &cb_image_menu_thumbnail;
 
    return cb_nbio_generic(nbio, &len);
 
 error:
-   image->handle = 0;
    return -1;
 }
 
