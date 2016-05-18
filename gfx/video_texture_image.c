@@ -26,9 +26,6 @@
 #include <boolean.h>
 #include <formats/image.h>
 #include <file/nbio.h>
-#ifdef HAVE_RTGA
-#include <formats/tga.h>
-#endif
 
 #include "../general.h"
 
@@ -178,10 +175,16 @@ static bool video_texture_image_load_internal(
 #endif
       case IMAGE_TYPE_BMP:
          break;
+      case IMAGE_TYPE_TGA:
+#ifdef HAVE_RTGA
+         break;
+#else
+         return false;
+#endif
       default:
          break;
    }
-   
+
    img = image_transfer_new(type);
 
    if (!img)
@@ -261,8 +264,10 @@ static enum image_type_enum video_texture_image_convert_fmt_to_type(enum video_i
          return IMAGE_TYPE_JPEG;
       case IMAGE_FORMAT_BMP:
          return IMAGE_TYPE_BMP;
-      default:
+      case IMAGE_FORMAT_TGA:
+         return IMAGE_TYPE_TGA;
       case IMAGE_FORMAT_NONE:
+      default:
          break;
    }
 
@@ -281,46 +286,25 @@ bool video_texture_image_load(struct texture_image *out_img,
    video_texture_image_set_color_shifts(&r_shift, &g_shift, &b_shift,
          &a_shift);
 
-   switch (fmt)
+   if (fmt != IMAGE_FORMAT_NONE)
    {
-      case IMAGE_FORMAT_NONE:
-         break;
-      default:
-         handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
-         if (!handle)
-            goto error;
-         nbio_begin_read(handle);
+      handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
+      if (!handle)
+         goto error;
+      nbio_begin_read(handle);
 
-         while (!nbio_iterate(handle));
+      while (!nbio_iterate(handle));
 
-         ptr = nbio_get_ptr(handle, &file_len);
+      ptr = nbio_get_ptr(handle, &file_len);
 
-         if (!ptr)
-            goto error;
-         break;
-   }
+      if (!ptr)
+         goto error;
 
-   switch (fmt)
-   {
-      case IMAGE_FORMAT_TGA:
-#ifdef HAVE_RTGA
-         if (rtga_image_load_shift((uint8_t*)ptr, out_img,
-                  a_shift, r_shift, g_shift, b_shift))
-            goto success;
-#endif
-         break;
-      case IMAGE_FORMAT_BMP:
-      case IMAGE_FORMAT_PNG:
-      case IMAGE_FORMAT_JPEG:
-         if (video_texture_image_load_internal(
-                  video_texture_image_convert_fmt_to_type(fmt),
-                  ptr,out_img,
-                  a_shift, r_shift, g_shift, b_shift))
-            goto success;
-         break;
-      default:
-      case IMAGE_FORMAT_NONE:
-         break;
+      if (video_texture_image_load_internal(
+               video_texture_image_convert_fmt_to_type(fmt),
+               ptr,out_img,
+               a_shift, r_shift, g_shift, b_shift))
+         goto success;
    }
 
 error:

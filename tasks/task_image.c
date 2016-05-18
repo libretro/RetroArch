@@ -117,6 +117,7 @@ static int task_image_process(
       unsigned *height)
 {
    nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->image;
+
    int retval = image_transfer_process(
          image->handle,
          nbio->image_type,
@@ -366,6 +367,8 @@ bool rarch_task_push_image_load(const char *fullpath,
       nbio->image_type = IMAGE_TYPE_JPEG;
    else if (strstr(fullpath, ".bmp"))
       nbio->image_type = IMAGE_TYPE_BMP;
+   else if (strstr(fullpath, ".tga"))
+      nbio->image_type = IMAGE_TYPE_TGA;
 
    switch (cb_type_hash)
    {

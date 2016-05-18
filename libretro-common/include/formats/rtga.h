@@ -36,12 +36,17 @@
 
 RETRO_BEGIN_DECLS
 
-bool rtga_image_load_shift(uint8_t *buf,
-      void *data,
-      unsigned a_shift, unsigned r_shift,
-      unsigned g_shift, unsigned b_shift);
+typedef struct rtga rtga_t;
+
+int rtga_process_image(rtga_t *rtga, void **buf,
+      size_t size, unsigned *width, unsigned *height);
+
+bool rtga_set_buf_ptr(rtga_t *rtga, void *data);
+
+void rtga_free(rtga_t *rtga);
+
+rtga_t *rtga_alloc(void);
 
 RETRO_END_DECLS
 
 #endif
-

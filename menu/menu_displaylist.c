@@ -4011,7 +4011,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_IMAGES:
          info->type_default = MENU_FILE_IMAGE;
-         strlcpy(info->exts, "png|jpg|jpeg|bmp", sizeof(info->exts));
+         strlcpy(info->exts, "png|jpg|jpeg|bmp|tga", sizeof(info->exts));
          break;
       case DISPLAYLIST_AUDIO_FILTERS:
          info->type_default = MENU_FILE_AUDIOFILTER;

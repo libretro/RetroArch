@@ -8,6 +8,9 @@
 #ifdef HAVE_RJPEG
 #include <formats/rjpeg.h>
 #endif
+#ifdef HAVE_RTGA
+#include <formats/rtga.h>
+#endif
 #include <formats/rbmp.h>
 
 #include <formats/image.h>
@@ -16,6 +19,11 @@ void image_transfer_free(void *data, enum image_type_enum type)
 {
    switch (type)
    {
+      case IMAGE_TYPE_TGA:
+#ifdef HAVE_RTGA
+         rtga_free((rtga_t*)data);
+#endif
+         break;
       case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
          rpng_free((rpng_t*)data);
@@ -77,6 +85,11 @@ bool image_transfer_start(void *data, enum image_type_enum type)
          return true;
 #endif
          break;
+      case IMAGE_TYPE_TGA:
+#ifdef HAVE_RTGA
+         return true;
+#endif
+         break;
       case IMAGE_TYPE_BMP:
          return true;
       case IMAGE_TYPE_NONE:
@@ -100,6 +113,12 @@ bool image_transfer_is_valid(
 #endif
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
+         return true;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_TGA:
+#ifdef HAVE_RTGA
          return true;
 #else
          break;
@@ -128,6 +147,11 @@ void image_transfer_set_buffer_ptr(
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
          rjpeg_set_buf_ptr((rjpeg_t*)data, (uint8_t*)ptr);
+#endif
+         break;
+      case IMAGE_TYPE_TGA:
+#ifdef HAVE_RTGA
+         rtga_set_buf_ptr((rtga_t*)data, (uint8_t*)ptr);
 #endif
          break;
       case IMAGE_TYPE_BMP:
@@ -164,6 +188,13 @@ int image_transfer_process(
 #else
          break;
 #endif
+      case IMAGE_TYPE_TGA:
+#ifdef HAVE_RTGA
+         return rtga_process_image((rtga_t*)data,
+               (void**)buf, len, width, height);
+#else
+         break;
+#endif
       case IMAGE_TYPE_BMP:
          return rbmp_process_image((rbmp_t*)data,
                (void**)buf, len, width, height);
@@ -187,6 +218,12 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
          break;
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
+         return false;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_TGA:
+#ifdef HAVE_RTGA
          return false;
 #else
          break;
