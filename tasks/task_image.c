@@ -404,7 +404,9 @@ error:
 
 void rarch_task_image_load_free(retro_task_t *task)
 {
-   nbio_handle_t       *nbio  = (nbio_handle_t*)task->state;
+   nbio_handle_t       *nbio  = task ? (nbio_handle_t*)task->state : NULL;
+   if (!nbio)
+      return;
    rarch_task_image_load_free_internal(nbio);
 }
 
