@@ -245,7 +245,7 @@ static void *gfx_ctx_qnx_init(void *video_driver)
       goto error;
    }
 
-   if (!egl_create_surface(qnx->screen_win))
+   if (!egl_create_surface(&qnx->egl, qnx->screen_win))
       goto error;
 
    return qnx;
