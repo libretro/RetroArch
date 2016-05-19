@@ -16,7 +16,12 @@
 
 #include <stdint.h>
 
+#ifdef HAVE_OPENGLES
 #include <GLES2/gl2.h>
+#endif
+#ifdef HAVE_EGL
+#include <EGL/egl.h>
+#endif
 
 #include <bps/screen.h>
 #include <bps/navigator.h>
@@ -35,8 +40,6 @@
 #ifdef HAVE_OPENGLES
 #include "../common/gl_common.h"
 #endif
-
-#include "../image/image.h"
 
 #define WINDOW_BUFFERS 2
 

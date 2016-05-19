@@ -37,7 +37,6 @@
 
 typedef struct
 {
-   bool blocked;
 #ifdef HAVE_BB10
    screen_device_t handle;
 #endif
@@ -68,6 +67,7 @@ struct input_pointer
 
 typedef struct qnx_input
 {
+   bool blocked;
    unsigned pads_connected;
    struct input_pointer pointer[MAX_TOUCH];
    unsigned pointer_count;
@@ -320,15 +320,16 @@ static void qnx_process_keyboard_event(
       qnx_input_t *qnx,
       screen_event_t event, int type)
 {
+   unsigned b;
    qnx_input_device_t* controller = NULL;
-   settings_t *settings = config_get_ptr();
-   int i = 0;
-   int sym = 0;
-   int modifiers = 0;
-   int flags = 0;
-   int scan = 0;
-   int cap = 0;
-   uint64_t *state_cur = NULL;
+   settings_t *settings           = config_get_ptr();
+   int i                          = 0;
+   int sym                        = 0;
+   int modifiers                  = 0;
+   int flags                      = 0;
+   int scan                       = 0;
+   int cap                        = 0;
+   uint64_t *state_cur            = NULL;
 
    /* Get Keyboard state. */
    screen_get_event_property_iv(event,
@@ -474,7 +475,7 @@ static void qnx_process_touch_event(
          {
             if(qnx->pointer[i].contact_id == contact_id)
             {
-               gl_t *gl = (gl_t*)driver.video_data;
+               gl_t *gl = (gl_t*)video_driver_get_ptr(false);
 
                /*During a move, we can go ~30 pixel into the 
                 * bezel which gives negative numbers or 
@@ -764,17 +765,16 @@ static int16_t qnx_pointer_input_state(qnx_input_t *qnx,
 }
 
 static int16_t qnx_input_state(void *data,
-      const struct retro_keybind **retro_keybinds,
+      const struct retro_keybind **binds,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   qnx_input_t *qnx = (qnx_input_t*)data;
+   qnx_input_t *qnx     = (qnx_input_t*)data;
    settings_t *settings = config_get_ptr();
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
-         return input_joypad_pressed(qnx->joypad, port,
-               (unsigned int)settings->input.binds[port], id);
+         return input_joypad_pressed(qnx->joypad, port, binds[port], id);
       case RETRO_DEVICE_ANALOG:
          return qnx_analog_input_state(qnx, port, idx, id);
       case RARCH_DEVICE_POINTER_SCREEN:
