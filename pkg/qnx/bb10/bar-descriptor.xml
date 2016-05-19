@@ -3,7 +3,7 @@
 
     <id>com.RetroArch</id>
     <name>RetroArch</name>
-    <versionNumber>1.3.0</versionNumber>
+    <versionNumber>1.3.4</versionNumber>
     <buildId>1</buildId>
     <description>Cross-platform entertainment system</description>
     <author>Team Libretro</author>
@@ -13,11 +13,11 @@
         <transparent>false</transparent>
     </initialWindow>
     <category>core.games</category>
-    <asset path="../../media/assets">assets</asset>
-    <asset path="../../media/retroarch-96x96.png">icon.png</asset>
-    <asset path=".././media/overlays">overlays</asset>
+    <asset path="../../../media/assets">assets</asset>
+    <asset path="../../../media/retroarch-96x96.png">icon.png</asset>
+    <asset path=".././../media/overlays">overlays</asset>
     <asset path="lib">lib</asset>
-    <asset path="../../retroarch.cfg">retroarch.cfg</asset>
+    <asset path="../../../retroarch.cfg">retroarch.cfg</asset>
     <configuration name="Device-Debug">
        <platformArchitecture>armle-v7</platformArchitecture>
        <asset path="Device-Debug/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
