@@ -31,9 +31,14 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>src/cc_resampler_neon.S</name>
+			<type>1</type>
+			<location>/Users/squarepusher/libretro-super/retroarch/audio/drivers_resampler/cc_resampler_neon.S</location>
+		</link>
+		<link>
 			<name>src/float_to_s16_neon.S</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/libretro-common/conversion/float_to_s16_neon.S</locationURI>
+			<location>/Users/squarepusher/libretro-super/retroarch/libretro-common/conversion/float_to_s16_neon.S</location>
 		</link>
 		<link>
 			<name>src/griffin.c</name>
@@ -41,9 +46,14 @@
 			<location>/Users/squarepusher/libretro-super/retroarch/griffin/griffin.c</location>
 		</link>
 		<link>
+			<name>src/s16_to_float_neon.S</name>
+			<type>1</type>
+			<location>/Users/squarepusher/libretro-super/retroarch/libretro-common/conversion/s16_to_float_neon.S</location>
+		</link>
+		<link>
 			<name>src/sinc_neon.S</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/audio/drivers_resampler/sinc_resampler_neon.S</locationURI>
+			<location>/Users/squarepusher/libretro-super/retroarch/audio/drivers_resampler/sinc_resampler_neon.S</location>
 		</link>
 	</linkedResources>
 </projectDescription>
