@@ -210,9 +210,9 @@ static void qnx_input_autodetect_gamepad(qnx_input_t *qnx,
 
       params.idx = port;
       strlcpy(params.name, name_buf, sizeof(params.name));
-      params.vid = controller->vid;
-      params.pid = controller->pid;
-      strlcpy(params.driver, qnx->joypad, sizeof(params.driver));
+      params.vid = *controller->vid;
+      params.pid = *controller->pid;
+      strlcpy(params.driver, qnx->joypad->ident, sizeof(params.driver));
       input_config_autoconfigure_joypad(&params);
 
       controller->port = port;
@@ -475,6 +475,7 @@ static void qnx_process_touch_event(
          {
             if(qnx->pointer[i].contact_id == contact_id)
             {
+#if 0
                gl_t *gl = (gl_t*)video_driver_get_ptr(false);
 
                /*During a move, we can go ~30 pixel into the 
@@ -491,6 +492,7 @@ static void qnx_process_touch_event(
                   pos[1] = 0;
                if(pos[1] > gl->full_y)
                   pos[1] = gl->full_y;
+#endif
 
                input_translate_coord_viewport(pos[0], pos[1],
                      &qnx->pointer[i].x, &qnx->pointer[i].y,
