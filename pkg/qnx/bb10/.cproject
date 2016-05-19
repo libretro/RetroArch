@@ -71,6 +71,11 @@
 							<tool id="com.qnx.qcc.tool.assembler.2035959754" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
 								<option id="com.qnx.qcc.option.assembler.debug.540367047" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.assembler.includePath.1451631500" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.733664237" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.1280447837" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
 							<tool id="com.qnx.qcc.tool.linker.743621919" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
@@ -197,6 +202,11 @@
 							</tool>
 							<tool id="com.qnx.qcc.tool.assembler.599691721" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
 								<option id="com.qnx.qcc.option.assembler.includePath.23458603" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.1576391120" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.1962946740" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
 							<tool id="com.qnx.qcc.tool.linker.387550249" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
@@ -325,6 +335,11 @@
 							<tool id="com.qnx.qcc.tool.assembler.1306097437" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
 								<option id="com.qnx.qcc.option.assembler.debug.1137048691" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.assembler.includePath.1044527515" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.762564972" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.798923162" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
 							<tool id="com.qnx.qcc.tool.linker.778593783" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
@@ -454,6 +469,11 @@
 							<tool id="com.qnx.qcc.tool.assembler.483492359" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
 								<option id="com.qnx.qcc.option.assembler.debug.589118876" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.assembler.includePath.1898320536" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.567273228" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.1675252516" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
 							<tool id="com.qnx.qcc.tool.linker.1634675728" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
@@ -581,6 +601,11 @@
 							<tool id="com.qnx.qcc.tool.assembler.2099172774" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
 								<option id="com.qnx.qcc.option.assembler.debug.2120837207" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.assembler.includePath.2147079756" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.1203245351" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.1240528500" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
 							<tool id="com.qnx.qcc.tool.linker.661054406" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
@@ -708,6 +733,11 @@
 							<tool id="com.qnx.qcc.tool.assembler.752341444" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
 								<option id="com.qnx.qcc.option.assembler.debug.1893841439" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.assembler.includePath.1526962100" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.1401154300" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.540233515" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
 							<tool id="com.qnx.qcc.tool.linker.682798986" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
@@ -836,6 +866,11 @@
 							<tool id="com.qnx.qcc.tool.assembler.435181371" name="QCC Assembler" superClass="com.qnx.qcc.tool.assembler">
 								<option id="com.qnx.qcc.option.assembler.debug.748271361" name="Debug (-g)" superClass="com.qnx.qcc.option.assembler.debug" value="true" valueType="boolean"/>
 								<option id="com.qnx.qcc.option.assembler.includePath.1509746206" name="Include Directories (-I)" superClass="com.qnx.qcc.option.assembler.includePath"/>
+								<option id="com.qnx.qcc.option.assembler.qccoptions.1148138367" superClass="com.qnx.qcc.option.assembler.qccoptions" valueType="stringList">
+									<listOptionValue builtIn="false" value="-mcpu=cortex-a9"/>
+									<listOptionValue builtIn="false" value="-marm"/>
+									<listOptionValue builtIn="false" value="-mfpu=neon"/>
+								</option>
 								<inputType id="com.qnx.qcc.inputType.assembler.377665819" superClass="com.qnx.qcc.inputType.assembler"/>
 							</tool>
 							<tool id="com.qnx.qcc.tool.linker.644790321" name="QCC Linker" superClass="com.qnx.qcc.tool.linker">
