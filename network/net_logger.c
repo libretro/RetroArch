@@ -27,7 +27,7 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 
-#include "verbosity.h"
+#include "../verbosity.h"
 
 #if !defined(PC_DEVELOPMENT_IP_ADDRESS)
 #error "An IP address for the PC logging server was not set in the Makefile, cannot continue."

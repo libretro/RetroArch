@@ -22,15 +22,15 @@
 #include <net/net_compat.h>
 #include <retro_endianness.h>
 
-#include "../command.h"
-#include "../general.h"
-#include "../autosave.h"
-#include "../dynamic.h"
-#include "../movie.h"
-#include "../msg_hash.h"
-#include "../system.h"
-#include "../runloop.h"
-#include "../verbosity.h"
+#include "../../command.h"
+#include "../../general.h"
+#include "../../autosave.h"
+#include "../../dynamic.h"
+#include "../../movie.h"
+#include "../../msg_hash.h"
+#include "../../system.h"
+#include "../../runloop.h"
+#include "../../verbosity.h"
 
 #ifdef ANDROID
 #define HAVE_IPV6

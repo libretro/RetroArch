@@ -998,7 +998,10 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_NETPLAY), 1)
       DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD -DHAVE_NETWORK_GAMEPAD
-      OBJ += network/netplay_net.o network/netplay_spectate.o network/netplay_common.o network/netplay.o
+      OBJ += network/netplay/netplay_net.o \
+				 network/netplay/netplay_spectate.o \
+				 network/netplay/netplay_common.o \
+				 network/netplay/netplay.o
    endif
 
    # Retro Achievements (also depends on threads)

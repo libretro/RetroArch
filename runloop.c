@@ -65,7 +65,7 @@
 #endif
 
 #ifdef HAVE_NETPLAY
-#include "network/netplay.h"
+#include "network/netplay/netplay.h"
 #endif
 
 #include "verbosity.h"

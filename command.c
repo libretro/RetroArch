@@ -76,7 +76,7 @@
 #endif
 
 #ifdef HAVE_NETPLAY
-#include "network/netplay.h"
+#include "network/netplay/netplay.h"
 #endif
 
 #ifdef HAVE_NETWORKING

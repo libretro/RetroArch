@@ -31,7 +31,7 @@
 #include "../verbosity.c"
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
-#include "../network/netlogger.c"
+#include "../network/net_logger.c"
 #endif
 
 /*============================================================
@@ -799,10 +799,10 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETPLAY
-#include "../network/netplay_net.c"
-#include "../network/netplay_spectate.c"
-#include "../network/netplay_common.c"
-#include "../network/netplay.c"
+#include "../network/netplay/netplay_net.c"
+#include "../network/netplay/netplay_spectate.c"
+#include "../network/netplay/netplay_common.c"
+#include "../network/netplay/netplay.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
