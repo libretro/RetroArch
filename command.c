@@ -1714,6 +1714,12 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
+         /* auto overrides: reload the original config */
+         if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
+         {
+            config_unload_override();
+            runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+         }
          if (!rarch_task_push_content_load_default(
                   NULL, NULL,
                   &content_info,
