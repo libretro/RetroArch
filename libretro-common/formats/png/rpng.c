@@ -733,8 +733,6 @@ end:
    return 1;
 
 error:
-   process->stream_backend->stream_free(process->stream);
-
 false_end:
    process->inflate_initialized = false;
    return -1;
@@ -774,7 +772,7 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng,
    struct rpng_process *process = (struct rpng_process*)calloc(1, sizeof(*process));
 
    if (!process)
-      goto error;
+      return NULL;
 
    process->stream_backend = file_archive_get_default_file_backend();
 
@@ -786,14 +784,14 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng,
    process->stream = process->stream_backend->stream_new();
 
    if (!process->stream)
-      goto error;
+      return NULL;
 
    if (!process->stream_backend->stream_decompress_init(process->stream))
-      goto error;
+      return NULL;
 
    inflate_buf = (uint8_t*)malloc(process->inflate_buf_size);
    if (!inflate_buf)
-      goto error;
+      return NULL;
 
    process->inflate_buf = inflate_buf;
    process->stream_backend->stream_set(
@@ -804,13 +802,6 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng,
          process->inflate_buf);
 
    return process;
-
-error:
-   if (process->stream)
-      process->stream_backend->stream_free(process->stream);
-   if (process)
-      free(process);
-   return NULL;
 }
 
 static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)
@@ -959,7 +950,7 @@ int rpng_process_image(rpng_t *rpng,
             rpng, data, width, height);
 
       if (!process)
-         return IMAGE_PROCESS_ERROR;
+         goto error;
 
       rpng->process = process;
       return 0;
@@ -969,11 +960,22 @@ int rpng_process_image(rpng_t *rpng,
    {
       if (rpng_load_image_argb_process_inflate_init(rpng, data,
                width, height) == -1)
-         return IMAGE_PROCESS_ERROR;
+         goto error;
       return 0;
    }
 
    return png_reverse_filter_iterate(rpng, data);
+
+error:
+   if (rpng->process)
+   {
+      if (rpng->process->inflate_buf)
+         free(rpng->process->inflate_buf);
+      if (rpng->process->stream)
+         rpng->process->stream_backend->stream_free(rpng->process->stream);
+      free(rpng->process);
+   }
+   return IMAGE_PROCESS_ERROR;
 }
 
 void rpng_free(rpng_t *rpng)
