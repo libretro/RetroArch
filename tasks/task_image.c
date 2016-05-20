@@ -108,10 +108,8 @@ static int task_image_process(
       unsigned *height)
 {
    nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
-
-   int retval = image_transfer_process(
-         image->handle,
-         nbio->image_type,
+   int                 retval = image_transfer_process(
+         image->handle, nbio->image_type,
          &image->ti.pixels, image->size, width, height);
 
    if (retval == IMAGE_PROCESS_ERROR)
@@ -161,7 +159,7 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
 
 static int task_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
-   unsigned i, width = 0, height = 0;
+   unsigned i;
    int retval = 0;
    nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
@@ -170,6 +168,7 @@ static int task_image_iterate_process_transfer(nbio_handle_t *nbio)
 
    for (i = 0; i < image->processing_pos_increment; i++)
    {
+      unsigned width = 0, height = 0;
       retval = task_image_process(nbio,
                &width, &height);
       if (retval != IMAGE_PROCESS_NEXT)
