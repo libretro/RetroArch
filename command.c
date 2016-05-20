@@ -1060,12 +1060,7 @@ static void command_event_deinit_core(bool reinit)
       driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
    }
 
-   /* auto overrides: reload the original config */
-   if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
-   {
-      config_unload_override();
-      runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
-   }
+   command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
 }
 
 static void command_event_init_cheats(void)
@@ -1264,6 +1259,16 @@ static bool command_event_init_core(enum rarch_core_type *data)
       return false;
 
    return true;
+}
+
+static void command_event_disable_overrides(void)
+{
+   /* auto overrides: reload the original config */
+   if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   {
+      config_unload_override();
+      runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+   }
 }
 
 static bool command_event_save_auto_state(void)
@@ -1715,12 +1720,8 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_UNLOAD_CORE:
          command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
-         /* auto overrides: reload the original config */
-         if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
-         {
-            config_unload_override();
-            runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
-         }
+         command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
+
          if (!rarch_task_push_content_load_default(
                   NULL, NULL,
                   &content_info,
@@ -2299,6 +2300,9 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_SET_FRAME_LIMIT:
          runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
+         break;
+      case CMD_EVENT_DISABLE_OVERRIDES:
+         command_event_disable_overrides();
          break;
       case CMD_EVENT_NONE:
       default:
