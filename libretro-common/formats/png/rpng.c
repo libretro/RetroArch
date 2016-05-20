@@ -770,6 +770,7 @@ bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
 static struct rpng_process *rpng_process_init(rpng_t *rpng,
       uint32_t **data, unsigned *width, unsigned *height)
 {
+   uint8_t *inflate_buf         = NULL;
    struct rpng_process *process = (struct rpng_process*)calloc(1, sizeof(*process));
 
    if (!process)
@@ -790,10 +791,11 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng,
    if (!process->stream_backend->stream_decompress_init(process->stream))
       goto error;
 
-   process->inflate_buf = (uint8_t*)malloc(process->inflate_buf_size);
-   if (!process->inflate_buf)
+   inflate_buf = (uint8_t*)malloc(process->inflate_buf_size);
+   if (!inflate_buf)
       goto error;
 
+   process->inflate_buf = inflate_buf;
    process->stream_backend->stream_set(
          process->stream,
          rpng->idat_buf.size,
@@ -804,8 +806,6 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng,
    return process;
 
 error:
-   if (process->inflate_buf)
-      free(process->inflate_buf);
    if (process->stream)
       process->stream_backend->stream_free(process->stream);
    if (process)
