@@ -1714,6 +1714,7 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
+         command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
          /* auto overrides: reload the original config */
          if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
          {

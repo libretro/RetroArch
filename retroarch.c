@@ -1446,8 +1446,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          command_event(CMD_EVENT_CHEATS_DEINIT, NULL);
          command_event(CMD_EVENT_BSV_MOVIE_DEINIT, NULL);
 
-         command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
-
          command_event(CMD_EVENT_CORE_DEINIT, NULL);
 
          command_event(CMD_EVENT_TEMPORARY_CONTENT_DEINIT, NULL);
