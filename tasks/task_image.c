@@ -59,7 +59,7 @@ struct nbio_image_handle
    unsigned processing_pos_increment;
    unsigned pos_increment;
    int processing_final_state;
-   unsigned status;
+   enum image_status_enum status;
 };
 
 static int cb_image_menu_upload_generic(void *data, size_t len)
