@@ -1701,11 +1701,11 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    if (*next_fence != VK_NULL_HANDLE)
    {
       static struct retro_perf_counter fence_wait = {0};
-      rarch_perf_init(&fence_wait, "fence_wait");
 
-      retro_perf_start(&fence_wait);
+      performance_counter_init(&fence_wait, "fence_wait");
+      performance_counter_start(&fence_wait);
       VKFUNC(vkWaitForFences)(vk->context.device, 1, next_fence, true, UINT64_MAX);
-      retro_perf_stop(&fence_wait);
+      performance_counter_stop(&fence_wait);
 
       VKFUNC(vkResetFences)(vk->context.device, 1, next_fence);
    }
