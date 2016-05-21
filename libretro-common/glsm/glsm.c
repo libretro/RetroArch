@@ -1354,9 +1354,19 @@ void rglTexBuffer(GLenum target, GLenum internalFormat, GLuint buffer)
 #endif
 }
 
+/*
+ *
+ * Core in:
+ * OpenGL    : 2.0 
+ * OpenGLES  : 3.0
+ */
 const GLubyte* rglGetStringi(GLenum name, GLuint index)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3)
    glGetStringi(name, index);
+#else
+   return NULL;
+#endif
 }
 
 void rglClearBufferfi( 	GLenum buffer,
@@ -1373,6 +1383,7 @@ void rglClearBufferfi( 	GLenum buffer,
  *
  * Core in:
  * OpenGL    : 3.0 
+ * OpenGLES  : 3.0
  */
 void rglRenderbufferStorageMultisample( 	GLenum target,
   	GLsizei samples,
@@ -1380,7 +1391,9 @@ void rglRenderbufferStorageMultisample( 	GLenum target,
   	GLsizei width,
   	GLsizei height)
 {
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3)
    glRenderbufferStorageMultisample(target, samples, internalformat, width, height);
+#endif
 }
 
 /*
