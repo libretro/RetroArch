@@ -62,6 +62,10 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
    switch (type)
    {
+      case DIR_LIST_AUTOCONFIG:
+         dir  = input_dir;
+         exts = filter;
+         break;
       case DIR_LIST_CORES:
          dir  = settings->directory.libretro;
 

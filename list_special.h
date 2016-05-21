@@ -30,7 +30,8 @@ enum dir_list_type
    DIR_LIST_DATABASES,
    DIR_LIST_COLLECTIONS,
    DIR_LIST_PLAIN,
-   DIR_LIST_SHADERS
+   DIR_LIST_SHADERS,
+   DIR_LIST_AUTOCONFIG
 };
 
 enum string_list_type
