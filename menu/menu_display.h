@@ -182,6 +182,9 @@ void menu_display_timedate(menu_display_ctx_datetime_t *datetime);
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err);
 
+void menu_display_handle_thumbnail_upload(void *task_data,
+      void *user_data, const char *err);
+
 void menu_display_push_quad( 
       unsigned width, unsigned height,
       const float *colors, int x1, int y1,
