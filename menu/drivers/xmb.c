@@ -1405,6 +1405,7 @@ static void xmb_context_reset_horizontal_list(
 
       image_texture_load(&ti, texturepath);
 
+      video_driver_texture_unload(&node->icon);
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR, &node->icon);
 
@@ -1412,6 +1413,7 @@ static void xmb_context_reset_horizontal_list(
 
       image_texture_load(&ti, content_texturepath);
 
+      video_driver_texture_unload(&node->content_icon);
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR, &node->content_icon);
 
@@ -2651,6 +2653,7 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
          break;
       case MENU_IMAGE_WALLPAPER:
          xmb_context_bg_destroy(xmb);
+         video_driver_texture_unload(&xmb->textures.bg);
          video_driver_texture_load(data,
                TEXTURE_FILTER_MIPMAP_LINEAR,
                &xmb->textures.bg);
@@ -2661,6 +2664,7 @@ static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type
             struct texture_image *img = (struct texture_image*)data;
             xmb->thumbnail_height = xmb->thumbnail_width
                * (float)img->height / (float)img->width;
+            video_driver_texture_unload(&xmb->thumbnail);
             video_driver_texture_load(data,
                   TEXTURE_FILTER_MIPMAP_LINEAR, &xmb->thumbnail);
          }
@@ -2770,6 +2774,7 @@ static void xmb_context_reset_textures(
 
       image_texture_load(&ti, path);
 
+      video_driver_texture_unload(&xmb->textures.list[i]);
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR,
             &xmb->textures.list[i]);
