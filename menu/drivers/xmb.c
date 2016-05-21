@@ -741,6 +741,7 @@ static void menu_display_handle_thumbnail_upload(void *task_data,
 
    image_texture_free(img);
    free(img);
+   free(user_data);
 }
 
 static void xmb_update_thumbnail_image(void *data)
