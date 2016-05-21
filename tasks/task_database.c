@@ -589,8 +589,8 @@ static void task_database_handler(retro_task_t *task)
 task_finished:
    task->finished = true;
 
-   if (db->state.list)
-      dir_list_free(db->state.list);
+   if (dbstate->list)
+      dir_list_free(dbstate->list);
 
    if (db->state.buf)
       free(db->state.buf);
