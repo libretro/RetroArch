@@ -550,6 +550,7 @@ void menu_display_handle_wallpaper_upload(void *task_data,
    menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
    image_texture_free(img);
    free(img);
+   free(user_data);
 }
 
 void menu_display_allocate_white_texture(void)
