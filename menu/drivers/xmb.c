@@ -728,6 +728,48 @@ static void xmb_update_thumbnail_path(void *data, unsigned i)
 #endif
 }
 
+static void xmb_context_bg_destroy(xmb_handle_t *xmb)
+{
+    if (!xmb)
+        return;
+    video_driver_texture_unload(&xmb->textures.bg);
+    video_driver_texture_unload(&menu_display_white_texture);
+}
+
+static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type)
+{
+    xmb_handle_t *xmb = (xmb_handle_t*)userdata;
+    
+    if (!xmb || !data)
+        return false;
+    
+    switch (type)
+    {
+        case MENU_IMAGE_NONE:
+            break;
+        case MENU_IMAGE_WALLPAPER:
+            xmb_context_bg_destroy(xmb);
+            video_driver_texture_unload(&xmb->textures.bg);
+            video_driver_texture_load(data,
+                                      TEXTURE_FILTER_MIPMAP_LINEAR,
+                                      &xmb->textures.bg);
+            menu_display_allocate_white_texture();
+            break;
+        case MENU_IMAGE_THUMBNAIL:
+        {
+            struct texture_image *img = (struct texture_image*)data;
+            xmb->thumbnail_height = xmb->thumbnail_width
+            * (float)img->height / (float)img->width;
+            video_driver_texture_unload(&xmb->thumbnail);
+            video_driver_texture_load(data,
+                                      TEXTURE_FILTER_MIPMAP_LINEAR, &xmb->thumbnail);
+        }
+            break;
+    }
+    
+    return true;
+}
+
 static void xmb_update_thumbnail_image(void *data)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
@@ -735,8 +777,12 @@ static void xmb_update_thumbnail_image(void *data)
       return;
 
    if (path_file_exists(xmb->thumbnail_file_path))
-      rarch_task_push_image_load(xmb->thumbnail_file_path, "cb_menu_thumbnail",
-            menu_display_handle_thumbnail_upload, NULL);
+   {
+      struct texture_image ti = {0};
+      image_texture_load(&ti, xmb->thumbnail_file_path);
+      xmb_load_image(xmb, &ti, MENU_IMAGE_THUMBNAIL);
+      image_texture_free(&ti);
+   }
    else if (xmb->depth == 1)
       xmb->thumbnail = 0;
 }
@@ -2614,48 +2660,6 @@ static void xmb_free(void *data)
 
    font_driver_bind_block(NULL, NULL);
 
-}
-
-static void xmb_context_bg_destroy(xmb_handle_t *xmb)
-{
-   if (!xmb)
-      return;
-   video_driver_texture_unload(&xmb->textures.bg);
-   video_driver_texture_unload(&menu_display_white_texture);
-}
-
-static bool xmb_load_image(void *userdata, void *data, enum menu_image_type type)
-{
-   xmb_handle_t *xmb = (xmb_handle_t*)userdata;
-
-   if (!xmb || !data)
-      return false;
-
-   switch (type)
-   {
-      case MENU_IMAGE_NONE:
-         break;
-      case MENU_IMAGE_WALLPAPER:
-         xmb_context_bg_destroy(xmb);
-         video_driver_texture_unload(&xmb->textures.bg);
-         video_driver_texture_load(data,
-               TEXTURE_FILTER_MIPMAP_LINEAR,
-               &xmb->textures.bg);
-         menu_display_allocate_white_texture();
-         break;
-      case MENU_IMAGE_THUMBNAIL:
-         {
-            struct texture_image *img = (struct texture_image*)data;
-            xmb->thumbnail_height = xmb->thumbnail_width
-               * (float)img->height / (float)img->width;
-            video_driver_texture_unload(&xmb->thumbnail);
-            video_driver_texture_load(data,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, &xmb->thumbnail);
-         }
-         break;
-   }
-
-   return true;
 }
 
 static const char *xmb_texture_path(unsigned id)
