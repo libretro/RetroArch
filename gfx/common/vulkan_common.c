@@ -27,6 +27,7 @@
 #include <dynamic/dylib.h>
 
 #include "vulkan_common.h"
+#include "../../performance_counters.h"
 
 vulkan_context_fp_t vkcfp;
 
@@ -1672,7 +1673,13 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 
    if (*next_fence != VK_NULL_HANDLE)
    {
+      static struct retro_perf_counter fence_wait = {0};
+      rarch_perf_init(&fence_wait, "fence_wait");
+
+      retro_perf_start(&fence_wait);
       VKFUNC(vkWaitForFences)(vk->context.device, 1, next_fence, true, UINT64_MAX);
+      retro_perf_stop(&fence_wait);
+
       VKFUNC(vkResetFences)(vk->context.device, 1, next_fence);
    }
    else
@@ -1738,7 +1745,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    else
       swapchain_size           = surface_properties.currentExtent;
 
-   desired_swapchain_images    = surface_properties.minImageCount + 1;
+   desired_swapchain_images = surface_properties.minImageCount + 1;
 
    /* Limit latency. */
    if (desired_swapchain_images > 3)
