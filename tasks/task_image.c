@@ -383,6 +383,7 @@ bool rarch_task_push_image_load(const char *fullpath,
 
    t->state     = nbio;
    t->handler   = rarch_task_file_load_handler;
+   t->cleanup   = rarch_task_image_load_free;
    t->callback  = cb;
    t->user_data = user_data;
 
