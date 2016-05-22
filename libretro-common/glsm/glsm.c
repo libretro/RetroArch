@@ -1363,7 +1363,7 @@ void rglTexBuffer(GLenum target, GLenum internalFormat, GLuint buffer)
 const GLubyte* rglGetStringi(GLenum name, GLuint index)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES_3)
-   glGetStringi(name, index);
+   return glGetStringi(name, index);
 #else
    return NULL;
 #endif
