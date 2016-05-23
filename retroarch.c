@@ -405,19 +405,9 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
 
 const char *retroarch_get_current_savefile_dir(void)
 {
-   char* ret        = NULL;
-   
-   if (!string_is_empty(current_savefile_dir))
-      ret = current_savefile_dir;
-   else
-   {
-      global_t *global = global_get_ptr();
-      ret = strdup(global->name.base);
-      path_basedir(ret);
-   }
+   char *ret = current_savefile_dir;
 
-   RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n",
-         ret);
+   RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n", ret);
 
    return ret;
 }
@@ -515,6 +505,15 @@ static void retroarch_set_paths_redirect(const char *path)
             }
          }
       }
+   }
+
+   /* Set savefile directory if empty based on content directory */
+   if (string_is_empty(current_savefile_dir))
+   {
+      global_t *global = global_get_ptr();
+      strlcpy(current_savefile_dir, global->name.base,
+         sizeof(current_savefile_dir));
+      path_basedir(current_savefile_dir);
    }
 
    if(path_is_directory(current_savefile_dir))
