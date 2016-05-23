@@ -511,10 +511,11 @@ database_info_list_t *database_info_list_new(
    database_info_list->count = k;
 
 end:
-   database_cursor_close(db, cur);
-
    if (db)
+   {
+      database_cursor_close(db, cur);
       libretrodb_free(db);
+   }
    if (cur)
       libretrodb_cursor_free(cur);
 
