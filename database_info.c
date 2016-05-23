@@ -539,6 +539,8 @@ void database_info_list_free(database_info_list_t *database_info_list)
          free(info->rom_name);
       if (info->serial)
          free(info->serial);
+      if (info->genre)
+         free(info->genre);
       if (info->description)
          free(info->description);
       if (info->publisher)
