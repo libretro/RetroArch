@@ -1049,6 +1049,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #ifdef HAVE_THREADS
             threaded_enable = settings->threaded_data_runloop_enable;
 #endif
+            task_queue_ctl(TASK_QUEUE_CTL_DEINIT, NULL);
             task_queue_ctl(TASK_QUEUE_CTL_INIT, &threaded_enable);
          }
          break;
