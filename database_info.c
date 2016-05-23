@@ -501,9 +501,6 @@ database_info_list_t *database_info_list_new(
          database_info = new_ptr;
          db_ptr        = &database_info[k];
 
-         if (!db_ptr)
-            continue;
-
          memcpy(db_ptr, &db_info, sizeof(*db_ptr));
 
          k++;
@@ -534,9 +531,6 @@ void database_info_list_free(database_info_list_t *database_info_list)
    for (i = 0; i < database_info_list->count; i++)
    {
       database_info_t *info = &database_info_list->list[i];
-
-      if (!info)
-         continue;
 
       if (info->name)
          free(info->name);

@@ -101,22 +101,16 @@ static void input_overlay_scale(struct overlay *ol, float scale)
 
    for (i = 0; i < ol->size; i++)
    {
-      float scale_w, scale_h, adj_center_x, adj_center_y;
       struct overlay_desc *desc = &ol->descs[i];
+      float scale_w             = ol->mod_w * desc->range_x;
+      float scale_h             = ol->mod_h * desc->range_y;
+      float adj_center_x        = ol->mod_x + desc->x * ol->mod_w;
+      float adj_center_y        = ol->mod_y + desc->y * ol->mod_h;
 
-      if (!desc)
-         continue;
-
-      scale_w      = ol->mod_w * desc->range_x;
-      scale_h      = ol->mod_h * desc->range_y;
-
-      desc->mod_w  = 2.0f * scale_w;
-      desc->mod_h  = 2.0f * scale_h;
-
-      adj_center_x = ol->mod_x + desc->x * ol->mod_w;
-      adj_center_y = ol->mod_y + desc->y * ol->mod_h;
-      desc->mod_x  = adj_center_x - scale_w;
-      desc->mod_y  = adj_center_y - scale_h;
+      desc->mod_w               = 2.0f * scale_w;
+      desc->mod_h               = 2.0f * scale_h;
+      desc->mod_x               = adj_center_x - scale_w;
+      desc->mod_y               = adj_center_y - scale_h;
    }
 }
 
@@ -135,9 +129,6 @@ static void input_overlay_set_vertex_geom(void)
    for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
-
-      if (!desc)
-         continue;
 
       if (!desc->image.pixels)
          continue;
@@ -313,8 +304,6 @@ static void input_overlay_poll(input_overlay_state_t *out,
       float x_dist, y_dist;
       struct overlay_desc *desc = &ol->active->descs[i];
 
-      if (!desc)
-         continue;
       if (!inside_hitbox(desc, x, y))
          continue;
 
@@ -413,9 +402,6 @@ static void input_overlay_post_poll(float opacity)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
 
-      if (!desc)
-         continue;
-
       desc->range_x_mod = desc->range_x;
       desc->range_y_mod = desc->range_y;
 
@@ -460,9 +446,6 @@ static void input_overlay_poll_clear(float opacity)
    for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
-
-      if (!desc)
-         continue;
 
       desc->range_x_mod = desc->range_x;
       desc->range_y_mod = desc->range_y;
@@ -629,10 +612,6 @@ bool input_overlay_is_alive(void)
 bool input_overlay_key_pressed(int key)
 {
    input_overlay_state_t *ol_state  = &overlay_st_ptr;
-
-   if (!ol_state)
-      return false;
-
    return (ol_state->buttons & (UINT64_C(1) << key));
 }
 
