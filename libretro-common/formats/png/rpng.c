@@ -805,7 +805,11 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng,
 
 error:
    if (process)
+   {
+      if (process->stream)
+         process->stream_backend->stream_free(process->stream);
       free(process);
+   }
    return NULL;
 }
 
