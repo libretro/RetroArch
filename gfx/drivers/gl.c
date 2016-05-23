@@ -3608,8 +3608,6 @@ static void gl_render_overlay(gl_t *gl)
 
    for (i = 0; i < gl->overlays; i++)
    {
-      if (!gl)
-         return;
       glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
       glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
    }
