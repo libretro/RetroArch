@@ -43,6 +43,7 @@
 #include <file/file_path.h>
 #include <retro_stat.h>
 #include <lists/string_list.h>
+#include <string/stdstring.h>
 #include <rhash.h>
 
 #define MAX_INCLUDE_DEPTH 16
