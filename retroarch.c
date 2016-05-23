@@ -405,13 +405,16 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
 
 const char *retroarch_get_current_savefile_dir(void)
 {
-   global_t *global = global_get_ptr();
-
-   char* ret = strdup(global->name.base);
+   char* ret        = NULL;
+   
    if (!string_is_empty(current_savefile_dir))
       ret = current_savefile_dir;
    else
+   {
+      global_t *global = global_get_ptr();
+      ret = strdup(global->name.base);
       path_basedir(ret);
+   }
 
    RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n",
          ret);
@@ -429,11 +432,13 @@ static void retroarch_set_paths_redirect(const char *path)
    rarch_system_info_t      *info      = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
+
    if (!global)
    {
     RARCH_WARN("retroarch_set_paths_redirect was sent a NULL \"global\" pointer.");
     return;
    }
+
    if (info->info.library_name &&
             !string_is_empty(info->info.library_name))
          global_library_name_hash =
