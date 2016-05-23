@@ -210,14 +210,14 @@ static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
 {
    nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
-   if (image)
+   if (image) {
+      image_transfer_free(image->handle, nbio->image_type);
+
+      image->handle                 = NULL;
+      image->cb                     = NULL;
+
       free(image);
-
-   image_transfer_free(image->handle, nbio->image_type);
-   image_texture_free(&image->ti);
-
-   image->handle                 = NULL;
-   image->cb                     = NULL;
+   }
 }
 
 static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
@@ -331,7 +331,7 @@ bool rarch_task_push_image_load(const char *fullpath,
    nbio_handle_t             *nbio   = NULL;
    retro_task_t             *t       = NULL;
    uint32_t             cb_type_hash = djb2_calculate(type);
-   struct nbio_t             *handle = nbio_open(fullpath, NBIO_READ);
+   struct nbio_t             *handle = NULL;
    nbio_image_handle_t        *image = NULL;
 
    switch (cb_type_hash)
@@ -340,26 +340,30 @@ bool rarch_task_push_image_load(const char *fullpath,
       case CB_MENU_THUMBNAIL:
          break;
       default:
-         goto error;
+         goto error_msg;
    }
 
-   if (!handle)
-      goto error;
+   t = (retro_task_t*)calloc(1, sizeof(*t));
+   if (!t)
+      goto error_msg;
 
    nbio = (nbio_handle_t*)calloc(1, sizeof(*nbio));
-
    if (!nbio)
       goto error;
 
-   image              = (nbio_image_handle_t*)calloc(1, sizeof(*image));
-   
+   handle = nbio_open(fullpath, NBIO_READ);
+   if (!handle)
+      goto error;
+
+   nbio->handle       = handle;
+
+   image              = (nbio_image_handle_t*)calloc(1, sizeof(*image));   
    if (!image)
       goto error;
 
    image->status      = IMAGE_STATUS_TRANSFER;
 
    nbio->data         = (nbio_image_handle_t*)image;
-   nbio->handle       = handle;
    nbio->is_finished  = false;
    nbio->cb           = &cb_nbio_image_menu_thumbnail;
    nbio->status       = NBIO_STATUS_TRANSFER;
@@ -373,13 +377,7 @@ bool rarch_task_push_image_load(const char *fullpath,
    else if (strstr(fullpath, ".tga"))
       nbio->image_type = IMAGE_TYPE_TGA;
 
-
    nbio_begin_read(handle);
-
-   t = (retro_task_t*)calloc(1, sizeof(*t));
-
-   if (!t)
-      goto error;
 
    t->state     = nbio;
    t->handler   = rarch_task_file_load_handler;
@@ -393,20 +391,23 @@ bool rarch_task_push_image_load(const char *fullpath,
 
 error:
    rarch_task_image_load_free(t);
-   nbio_free(handle);
-   if (nbio)
-      free(nbio);
+   free(t);
 
+error_msg:
    RARCH_ERR("[image load] Failed to open '%s': %s.\n",
          fullpath, strerror(errno));
+
    return false;
 }
 
 void rarch_task_image_load_free(retro_task_t *task)
 {
    nbio_handle_t       *nbio  = task ? (nbio_handle_t*)task->state : NULL;
-   if (!nbio)
-      return;
-   rarch_task_image_load_free_internal(nbio);
-}
 
+   if (nbio) {
+      rarch_task_image_load_free_internal(nbio);
+      nbio_free(nbio->handle);
+      nbio->handle      = NULL;
+      free(nbio);
+   }
+}
