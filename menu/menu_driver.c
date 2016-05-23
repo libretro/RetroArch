@@ -646,6 +646,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                menu_driver_ctx->navigation_ascend_alphabet(
                      menu_userdata, ptr_out);
          }
+         break;
       case RARCH_MENU_CTL_NAVIGATION_DESCEND_ALPHABET:
          {
             size_t *ptr_out = (size_t*)data;

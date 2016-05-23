@@ -3863,6 +3863,7 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_CORE:
          START_GROUP(list, list_info, &group_info, menu_hash_to_str(MENU_LABEL_VALUE_CORE_SETTINGS), parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);

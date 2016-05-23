@@ -483,6 +483,7 @@ static int menu_cbs_init_bind_right_compare_type(menu_file_list_cbs_t *cbs,
                   BIND_ACTION_RIGHT(cbs, action_right_scroll);
                   break;
             }
+            break;
          case MENU_SETTING_ACTION:
          case MENU_FILE_CONTENTLIST_ENTRY:
             BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
