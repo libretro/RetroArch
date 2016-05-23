@@ -3455,7 +3455,7 @@ static bool setting_append_list_input_player_options(
                &settings->input.binds[user][i],
                user + 1,
                user,
-               strdup(name), /* TODO: Find a way to fix these memleaks. */
+               strdup(name),
                strdup(label),
                &defaults[i],
                &group_info,
@@ -6588,6 +6588,7 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+               settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
             }
 
             CONFIG_BOOL(
