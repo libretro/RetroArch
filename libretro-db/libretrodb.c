@@ -101,7 +101,7 @@ static int libretrodb_write_metadata(RFILE *fd, libretrodb_metadata_t *md)
    return rmsgpack_write_uint(fd, md->count);
 }
 
-static int validate_document(const struct rmsgpack_dom_value *doc)
+static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
 {
    unsigned i;
    struct rmsgpack_dom_value key, value;
@@ -127,7 +127,7 @@ static int validate_document(const struct rmsgpack_dom_value *doc)
       if (value.type != RDT_MAP)
          continue;
 
-      if ((rv == validate_document(&value)) != 0)
+      if ((rv == libretrodb_validate_document(&value)) != 0)
          return rv;
    }
 
@@ -154,7 +154,7 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
    item.type = RDT_NULL;
    while ((rv = value_provider(ctx, &item)) == 0)
    {
-      if ((rv = validate_document(&item)) < 0)
+      if ((rv = libretrodb_validate_document(&item)) < 0)
          goto clean;
 
       if ((rv = rmsgpack_dom_write(fd, &item)) < 0)
