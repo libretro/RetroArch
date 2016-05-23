@@ -545,10 +545,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_ctl(RARCH_MENU_CTL_CONTEXT_DESTROY, NULL);
          if (menu_driver_ctl(RARCH_MENU_CTL_OWNS_DRIVER, NULL))
             return true;
+         menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
+         menu_driver_ctl(RARCH_MENU_CTL_SHADER_DEINIT, NULL);
          if (menu_driver_data)
          {
-            menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
-            menu_shader_free(menu_driver_data);
             menu_input_ctl(MENU_INPUT_CTL_DEINIT, NULL);
             menu_navigation_ctl(MENU_NAVIGATION_CTL_DEINIT, NULL);
 
