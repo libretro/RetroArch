@@ -589,9 +589,6 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    {
       const core_info_t *core = &core_info_list->list[i];
 
-      if (!core)
-         continue;
-
       if (core_info_does_support_file(core, path))
          continue;
 
