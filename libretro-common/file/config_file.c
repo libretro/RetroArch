@@ -265,7 +265,7 @@ static char *strip_comment(char *str)
    char *strend = str + strlen(str);
    bool cut_comment = true;
 
-   while (!string_is_empty)
+   while (!string_is_empty(str))
    {
       char *comment = NULL;
       char *literal = strchr(str, '\"');
