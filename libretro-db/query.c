@@ -995,6 +995,7 @@ void *libretrodb_query_compile(libretrodb_t *db,
    if (!q->root.func)
    {
       raise_unexpected_eof(buff.offset, error);
+      libretrodb_query_free(q);
       return NULL;
    }
    goto success;

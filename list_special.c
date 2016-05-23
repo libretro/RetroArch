@@ -126,7 +126,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
    struct string_list *s            = string_list_new();
 
    if (!s || !len)
-      return NULL;
+      goto error;
 
    attr.i = 0;
    *len   = 0;

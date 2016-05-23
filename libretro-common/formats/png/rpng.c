@@ -791,7 +791,7 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng,
 
    inflate_buf = (uint8_t*)malloc(process->inflate_buf_size);
    if (!inflate_buf)
-      return NULL;
+      goto error;
 
    process->inflate_buf = inflate_buf;
    process->stream_backend->stream_set(
@@ -802,6 +802,11 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng,
          process->inflate_buf);
 
    return process;
+
+error:
+   if (process)
+      free(process);
+   return NULL;
 }
 
 static bool read_chunk_header(uint8_t *buf, struct png_chunk *chunk)

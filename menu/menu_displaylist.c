@@ -1949,6 +1949,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    return 0;
 
 error:
+   if (db_info)
+      database_info_list_free(db_info);
    playlist_free(playlist);
 
    return -1;
