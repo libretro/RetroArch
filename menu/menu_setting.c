@@ -101,6 +101,7 @@ struct rarch_setting
    double               max;
    
    uint64_t             flags;
+   uint64_t             free_flags;
    
    change_handler_t              change_handler;
    change_handler_t              read_handler;
@@ -1692,6 +1693,10 @@ bool CONFIG_STRING_OPTIONS(
                setting_string_setting_options(ST_STRING_OPTIONS, name, SHORT, target, len, default_value, "", values,
                   group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
       return false;
+
+   /* Request values to be freed later */
+   settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_VALUES);
+
    return true;
 }
 
@@ -1729,6 +1734,10 @@ bool CONFIG_BIND(
                setting_bind_setting(name, SHORT, target, player, player_offset, default_value,
                   group_info->name, subgroup_info->name, parent_group))))
       return false;
+
+   /* Request name and short description to be freed later */
+   settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
+
    return true;
 }
 
@@ -3103,6 +3112,14 @@ void settings_data_list_current_add_flags(
 {
    (*list)[list_info->index - 1].flags |= values;
    setting_add_special_callbacks(list, list_info, values);
+}
+
+void settings_data_list_current_add_free_flags(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned values)
+{
+   (*list)[list_info->index - 1].free_flags |= values;
 }
 
 #ifdef HAVE_OVERLAY
@@ -7324,31 +7341,33 @@ static bool setting_append_list(
 static bool menu_setting_free(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   unsigned values;
+   unsigned n;
 
    if (!data)
       return false;
 
+   /* Free data which was previously tagged */
    for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
-   {
-      enum setting_type setting_type = menu_setting_get_type(setting);
-
-      switch (setting_type)
-      {
-         case ST_STRING_OPTIONS:
-            if (setting->values)
+      for (values = setting->free_flags, n = 0; values != 0; values >>= 1, n++)
+         if (values & 1)
+            switch (1 << n)
+            {
+            case SD_FREE_FLAG_VALUES:
                free((void*)setting->values);
-            setting->values = NULL;
-            break;
-         case ST_BIND:
-            free((void*)setting->name);
-            free((void*)setting->short_description);
-            setting->name = NULL;
-            setting->short_description = NULL;
-            break;
-         default:
-            break;
-      }
-   }
+               setting->values = NULL;
+               break;
+            case SD_FREE_FLAG_NAME:
+               free((void*)setting->name);
+               setting->name = NULL;
+               break;
+            case SD_FREE_FLAG_SHORT:
+               free((void*)setting->short_description);
+               setting->short_description = NULL;
+               break;
+            default:
+               break;
+            }
 
    free(data);
 
