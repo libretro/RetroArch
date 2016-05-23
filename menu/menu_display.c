@@ -696,9 +696,6 @@ void menu_display_snow(int width, int height)
    {
       struct display_particle *p = (struct display_particle*)&particles[i];
 
-      if (!p)
-         return;
-
       if (p->alive)
       {
          int16_t mouse_x  = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
