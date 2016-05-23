@@ -760,12 +760,7 @@ void menu_display_snow(int width, int height)
 void menu_display_draw_text(const char *msg, 
       int width, int height, struct font_params *params)
 {
-   void *fb_buf              = NULL;
-
-   params->x           = params->x;
-   params->y           = params->y;
-
-   fb_buf = menu_display_get_font_buffer();
+   void *fb_buf = menu_display_get_font_buffer();
    video_driver_set_osd_msg(msg, params, fb_buf);
 }
 
