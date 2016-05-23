@@ -1371,7 +1371,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
 }
 
 static bool menu_settings_list_append(rarch_setting_t **list,
-      rarch_setting_info_t *list_info, rarch_setting_t value)
+      rarch_setting_info_t *list_info)
 {
    if (!list || !*list || !list_info)
       return false;
@@ -1385,9 +1385,6 @@ static bool menu_settings_list_append(rarch_setting_t **list,
          return false;
    }
 
-   value.name_hash = value.name ? menu_hash_calculate(value.name) : 0;
-
-   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1395,17 +1392,26 @@ bool START_GROUP(rarch_setting_t **list, rarch_setting_info_t *list_info,
       rarch_setting_group_info_t *group_info,
       const char *name, const char *parent_group)
 {
+   rarch_setting_t value = setting_group_setting (ST_GROUP, name, parent_group);
    group_info->name = name;
-   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_GROUP, name, parent_group))))
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
 bool END_GROUP(rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_END_GROUP, 0, parent_group))))
+   rarch_setting_t value = setting_group_setting (ST_END_GROUP, 0, parent_group);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1415,11 +1421,15 @@ bool START_SUB_GROUP(rarch_setting_t **list,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   rarch_setting_t value;
+   rarch_setting_t value = setting_subgroup_setting (ST_SUB_GROUP, name, group_info->name, parent_group);
+
    subgroup_info->name = name;
-   value = setting_subgroup_setting (ST_SUB_GROUP, name, group_info->name, parent_group);
-   if (!(menu_settings_list_append(list, list_info, value)))
+
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1428,9 +1438,12 @@ bool END_SUB_GROUP(
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_group_setting (ST_END_SUB_GROUP, 0, parent_group))))
+   rarch_setting_t value = setting_group_setting (ST_END_SUB_GROUP, 0, parent_group);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 bool CONFIG_ACTION(
@@ -1441,9 +1454,14 @@ bool CONFIG_ACTION(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   if (!menu_settings_list_append(list, list_info,
-            setting_action_setting(name, SHORT, group_info->name, subgroup_info->name, parent_group)))
+   rarch_setting_t value = setting_action_setting(name, SHORT,
+         group_info->name, subgroup_info->name, parent_group);
+
+   if (!menu_settings_list_append(list, list_info))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1562,10 +1580,16 @@ bool CONFIG_BOOL(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!menu_settings_list_append(list, list_info,
-            setting_bool_setting  (name, SHORT, target, default_value, off, on,
-               group_info->name, subgroup_info->name, parent_group, change_handler, read_handler)))
+   rarch_setting_t value = setting_bool_setting  (name, SHORT, target,
+         default_value, off, on,
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler);
+
+   if (!menu_settings_list_append(list, list_info))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1580,10 +1604,13 @@ bool CONFIG_INT(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_int_setting   (name, SHORT, target, default_value,
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_int_setting   (name, SHORT, target, default_value,
+                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1601,8 +1628,11 @@ bool CONFIG_UINT(
    rarch_setting_t value = setting_uint_setting  (name, SHORT, target, default_value,
                   group_info->name,
                   subgroup_info->name, parent_group, change_handler, read_handler);
-   if (!(menu_settings_list_append(list, list_info, value)))
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1617,10 +1647,13 @@ bool CONFIG_FLOAT(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_float_setting (name, SHORT, target, default_value, rounding,
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_float_setting (name, SHORT, target, default_value, rounding,
+                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1635,10 +1668,13 @@ bool CONFIG_PATH(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_string_setting(ST_PATH, name, SHORT, target, len, default_value, "",
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_string_setting(ST_PATH, name, SHORT, target, len, default_value, "",
+                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1653,10 +1689,13 @@ bool CONFIG_DIR(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_string_setting(ST_DIR, name, SHORT, target, len, default_value, empty,
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_string_setting(ST_DIR, name, SHORT, target, len, default_value, empty,
+                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1671,10 +1710,13 @@ bool CONFIG_STRING(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_string_setting(ST_STRING, name, SHORT, target, len, default_value, "",
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_string_setting(ST_STRING, name, SHORT, target, len, default_value, "",
+                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1689,11 +1731,14 @@ bool CONFIG_STRING_OPTIONS(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_string_setting_options(ST_STRING_OPTIONS, name, SHORT, target, len, default_value, "", values,
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_string_setting_options(ST_STRING_OPTIONS, name, SHORT, target, len, default_value, "", values,
+         group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
 
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    /* Request values to be freed later */
    settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_VALUES);
 
@@ -1713,8 +1758,11 @@ bool CONFIG_HEX(
 {
    rarch_setting_t value = setting_hex_setting(name, SHORT, target, default_value,
          group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
-   if (!(menu_settings_list_append(list, list_info, value)))
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1730,11 +1778,14 @@ bool CONFIG_BIND(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_bind_setting(name, SHORT, target, player, player_offset, default_value,
-                  group_info->name, subgroup_info->name, parent_group))))
+   rarch_setting_t value = setting_bind_setting(name, SHORT, target, player, player_offset, default_value,
+                  group_info->name, subgroup_info->name, parent_group);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
 
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    /* Request name and short description to be freed later */
    settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
 
@@ -7429,8 +7480,11 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
          goto error;
    }
 
-   if (!(menu_settings_list_append(&list, list_info, terminator)))
+   if (!(menu_settings_list_append(&list, list_info)))
       goto error;
+   if (terminator.name)
+      terminator.name_hash = menu_hash_calculate(terminator.name);
+   (*&list)[list_info->index++] = terminator;
 
    /* flatten this array to save ourselves some kilobytes. */
    resized_list = (rarch_setting_t*)realloc(list,
