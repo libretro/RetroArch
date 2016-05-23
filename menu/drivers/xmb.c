@@ -2785,7 +2785,7 @@ static void xmb_context_reset_textures(
    xmb->add_tab_node.zoom       = xmb->categories.active.zoom;
 }
 
-static void xmb_context_reset_background(xmb_handle_t *xmb, const char *iconpath)
+static void xmb_context_reset_background(const char *iconpath)
 {
    char path[PATH_MAX_LENGTH]  = {0};
    settings_t *settings        = config_get_ptr();
@@ -2794,13 +2794,10 @@ static void xmb_context_reset_background(xmb_handle_t *xmb, const char *iconpath
 
    if (*settings->path.menu_wallpaper)
       strlcpy(path, settings->path.menu_wallpaper, sizeof(path));
+
    if (path_file_exists(path))
-   {
-      struct texture_image ti = {0};
-      image_texture_load(&ti, path);
-      xmb_load_image(xmb, &ti, MENU_IMAGE_WALLPAPER);
-      image_texture_free(&ti);
-   }
+      rarch_task_push_image_load(path, "cb_menu_wallpaper",
+            menu_display_handle_wallpaper_upload, NULL);
 }
 
 static void xmb_context_reset(void *data)
@@ -2829,7 +2826,7 @@ static void xmb_context_reset(void *data)
    xmb_layout(xmb);
    xmb_font(xmb);
    xmb_context_reset_textures(xmb, iconpath);
-   xmb_context_reset_background(xmb, iconpath);
+   xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb, themepath);
 
    if (!string_is_equal(xmb_thumbnails_ident(), "OFF"))
