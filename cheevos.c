@@ -1955,20 +1955,28 @@ static unsigned cheevos_find_game_id_nes(
       {
          53, 198, 228
       };
-      bool round  = true;
-      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
+      bool round     = true;
+      RFILE *file    = NULL;
       uint8_t * data = (uint8_t *) malloc(rom_size << 14);
       
-      if (!file || !data)
+      if (!data)
          return 0;
+
+      file = filestream_open(info->path, RFILE_MODE_READ, 0);
+
+      if (!file)
+      {
+         free(data);
+         filestream_close(file);
+         return 0;
+      }
 
       /* from fceu core - need it for a correctly md5 sum */
       memset(data, 0xFF, rom_size << 14);
 
       /* from fceu core - compute size using the cart mapper */
-      mapper_no = (header.rom_type >> 4);
+      mapper_no  = (header.rom_type >> 4);
 	   mapper_no |= (header.rom_type2 & 0xF0);
-      
 
       for (i = 0; i != sizeof(not_power2) / sizeof(not_power2[0]); ++i)
       {
@@ -1977,7 +1985,8 @@ static unsigned cheevos_find_game_id_nes(
           * since PRGCartMapping wants ROM_size to be to the power of 2
           * so instead if not to power of 2, we just use head.ROM_size when
           * we use FCEU_read. */
-         if (not_power2[i] == mapper_no) {
+         if (not_power2[i] == mapper_no)
+         {
             round = false;
             break;
          }

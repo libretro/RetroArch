@@ -650,6 +650,8 @@ int rmsgpack_read(RFILE *fd,
          return read_map(fd, (uint32_t)tmp_len, callbacks, data);
    }
 
+   if (buff)
+      free(buff);
    return 0;
 
 error:

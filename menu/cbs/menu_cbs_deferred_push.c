@@ -180,6 +180,8 @@ static int deferred_push_cursor_manager_list_deferred(
 end:
    if (conf)
       config_file_free(conf);
+   free(rdb);
+   free(query);
    return ret;
 }
 

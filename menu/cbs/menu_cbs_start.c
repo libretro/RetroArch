@@ -289,6 +289,8 @@ static int action_start_playlist_association(unsigned type, const char *label)
 
    strlcpy(settings->playlist_cores, new_playlist_cores, sizeof(settings->playlist_cores));
 
+   string_list_free(stcores);
+   string_list_free(stnames);
    return 0;
 }
 

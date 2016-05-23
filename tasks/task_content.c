@@ -617,6 +617,7 @@ static int content_file_compressed_read(
    if (optional_filename && path_file_exists(optional_filename))
    {
       *length = 0;
+      string_list_free(str_list);
       return 1;
    }
 

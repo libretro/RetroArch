@@ -732,5 +732,7 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
 error:
    if (core_name)
       free(core_name);
+   if (display_name)
+      free(display_name);
    return false;
 }

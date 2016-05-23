@@ -226,6 +226,7 @@ static void *ja_init(const char *device, unsigned rate, unsigned latency)
 error:
    if (jports != NULL)
       jack_free(jports);
+   free(jd);
    return NULL;
 }
 

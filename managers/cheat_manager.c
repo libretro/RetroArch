@@ -226,7 +226,10 @@ bool cheat_manager_load(const char *path)
    cheat = cheat_manager_new(cheats);
 
    if (!cheat)
+   {
+      config_file_free(conf);
       return false;
+   }
 
    for (i = 0; i < cheats; i++)
    {

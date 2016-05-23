@@ -618,11 +618,10 @@ static bool open_devices(udev_input_t *udev, const char *type, device_handle_cb 
       {
          int fd = open(devnode, O_RDONLY | O_NONBLOCK);
 
-         (void)fd;
-
          RARCH_LOG("[udev] Adding device %s as type %s.\n", devnode, type);
          if (!add_device(udev, devnode, cb))
             RARCH_ERR("[udev] Failed to open device: %s (%s).\n", devnode, strerror(errno));
+         close(fd);
       }
 
       udev_device_unref(dev);

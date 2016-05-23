@@ -1050,6 +1050,8 @@ static bool frontend_linux_powerstate_check_acpi_sysfs(
    else
       *state = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
 
+   retro_closedir(entry);
+
    return true;
 
 error:
