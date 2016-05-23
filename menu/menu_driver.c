@@ -529,8 +529,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          menu_driver_data_own = true;
          break;
       case RARCH_MENU_CTL_UNSET_OWN_DRIVER:
-         if (!content_is_inited())
-            return false;
          menu_driver_data_own = false;
          break;
       case RARCH_MENU_CTL_SET_TEXTURE:
