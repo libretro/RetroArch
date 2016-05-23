@@ -3488,9 +3488,6 @@ static void gl_overlay_tex_geom(void *data,
 
    tex          = (GLfloat*)&gl->overlay_tex_coord[image * 8];
 
-   if (!tex)
-      return;
-
    tex[0]       = x;
    tex[1]       = y;
    tex[2]       = x + w;
@@ -3523,9 +3520,6 @@ static void gl_overlay_vertex_geom(void *data,
    /* Flipped, so we preserve top-down semantics. */
    y               = 1.0f - y;
    h               = -h;
-
-   if (!vertex)
-      return;
 
    vertex[0]       = x;
    vertex[1]       = y;
@@ -3566,9 +3560,6 @@ static void gl_overlay_set_alpha(void *data, unsigned image, float mod)
       return;
 
    color          = (GLfloat*)&gl->overlay_color_coord[image * 16];
-
-   if (!color)
-      return;
 
    color[ 0 + 3]  = mod;
    color[ 4 + 3]  = mod;
