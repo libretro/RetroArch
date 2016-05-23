@@ -57,9 +57,9 @@ static int file_decompressed_subdir(const char *name,
       unsigned cmode, uint32_t csize,uint32_t size,
       uint32_t crc32, void *userdata)
 {
-   char path[PATH_MAX_LENGTH];
    char path_dir[PATH_MAX_LENGTH];
-   decompress_state_t *dec = (decompress_state_t*)userdata;
+   char path[PATH_MAX_LENGTH]      = {0};
+   decompress_state_t         *dec = (decompress_state_t*)userdata;
 
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
@@ -98,8 +98,8 @@ static int file_decompressed(const char *name, const char *valid_exts,
    const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
    uint32_t crc32, void *userdata)
 {
-   char path[PATH_MAX_LENGTH];
-   decompress_state_t *dec = (decompress_state_t*)userdata;
+   char path[PATH_MAX_LENGTH] = {0};
+   decompress_state_t    *dec = (decompress_state_t*)userdata;
 
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')

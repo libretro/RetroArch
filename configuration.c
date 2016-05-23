@@ -1961,8 +1961,8 @@ bool config_load_override(void)
 {
    char buf[PATH_MAX_LENGTH];
    char config_directory[PATH_MAX_LENGTH];
-   char core_path[PATH_MAX_LENGTH];
-   char game_path[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH]        = {0};
+   char game_path[PATH_MAX_LENGTH]        = {0};
    config_file_t *new_conf                = NULL;
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
@@ -2140,8 +2140,8 @@ bool config_load_override(void)
 bool config_load_remap(void)
 {
    char remap_directory[PATH_MAX_LENGTH];    /* path to the directory containing retroarch.cfg (prefix)    */
-   char core_path[PATH_MAX_LENGTH];    /* final path for core-specific configuration (prefix+suffix) */
-   char game_path[PATH_MAX_LENGTH];    /* final path for game-specific configuration (prefix+suffix) */
+   char core_path[PATH_MAX_LENGTH]         = {0};    /* final path for core-specific configuration (prefix+suffix) */
+   char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
    config_file_t *new_conf                 = NULL;
    const char *core_name                   = NULL;
    const char *game_name                   = NULL;

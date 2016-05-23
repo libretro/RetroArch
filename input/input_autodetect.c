@@ -202,7 +202,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       autoconfig_params_t *params)
 {
    size_t i;
-   char path[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH] = {0};
    int ret                    = 0;
    int index                  = -1;
    int current_best           = 0;

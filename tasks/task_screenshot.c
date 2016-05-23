@@ -56,8 +56,8 @@
 static bool screenshot_dump(const char *folder, const void *frame,
       unsigned width, unsigned height, int pitch, bool bgr24)
 {
-   char shotname[256];
    char filename[PATH_MAX_LENGTH];
+   char shotname[256]             = {0};
    bool ret                       = false;
    settings_t *settings           = config_get_ptr();
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)

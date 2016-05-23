@@ -113,8 +113,9 @@ void menu_shader_manager_init(menu_handle_t *menu)
          break;
       default:
          {
-            char preset_path[PATH_MAX_LENGTH];
-            const char *shader_dir = *settings->directory.video_shader ?
+            char preset_path[PATH_MAX_LENGTH] = {0};
+            const char *shader_dir            = 
+               *settings->directory.video_shader ?
                settings->directory.video_shader : settings->directory.system;
 
             fill_pathname_join(preset_path, shader_dir,

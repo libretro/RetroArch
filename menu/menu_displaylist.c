@@ -110,8 +110,8 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 
                if (settings)
                {
-                  char core_path[PATH_MAX_LENGTH];
                   char display_name[PATH_MAX_LENGTH];
+                  char core_path[PATH_MAX_LENGTH]    = {0};
                   char *last = NULL;
 
                   fill_pathname_join(
@@ -213,7 +213,7 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
 
                if (settings)
                {
-                  char core_path[PATH_MAX_LENGTH];
+                  char core_path[PATH_MAX_LENGTH]    = {0};
                   char display_name[PATH_MAX_LENGTH];
                   char *last = NULL;
 
@@ -1590,7 +1590,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    char path_playlist[PATH_MAX_LENGTH];
    char path_base[PATH_MAX_LENGTH]     = {0};
    char query[PATH_MAX_LENGTH]         = {0};
-   playlist_t *playlist        = NULL;
+   playlist_t *playlist                = NULL;
    database_info_list_t *db_info       = NULL;
    menu_handle_t *menu                 = NULL;
    settings_t *settings                = config_get_ptr();
@@ -2164,7 +2164,8 @@ static int menu_displaylist_parse_horizontal_list(
 {
    menu_ctx_list_t list_info;
    menu_ctx_list_t list_horiz_info;
-   char path_playlist[PATH_MAX_LENGTH], lpl_basename[PATH_MAX_LENGTH];
+   char lpl_basename[PATH_MAX_LENGTH];
+   char path_playlist[PATH_MAX_LENGTH] = {0};
    bool is_historylist                 = false;
    playlist_t *playlist        = NULL;
    menu_handle_t        *menu          = NULL;
@@ -3812,8 +3813,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          else
          {
-            char path_playlist[PATH_MAX_LENGTH];
-            playlist_t *playlist        = NULL;
+            char path_playlist[PATH_MAX_LENGTH] = {0};
+            playlist_t *playlist                = NULL;
 
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
 
@@ -3935,10 +3936,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                string_list_new_special(STRING_LIST_SUPPORTED_CORES_NAMES,
                      (void*)menu->deferred_path,
                      &cores_names_len, &cores_names_size);
-            struct string_list *cores_paths = 
-               string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,
-                  (void*)menu->deferred_path,
-                  &cores_paths_len, &cores_paths_size);
 
             if (cores_names_size == 0)
             {
@@ -3949,6 +3946,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             }
             else
             {
+               struct string_list *cores_paths = 
+                  string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,
+                        (void*)menu->deferred_path,
+                        &cores_paths_len, &cores_paths_size);
+
                for (i = 0; i < cores_names_size; i++)
                {
                   switch (type)
@@ -3968,9 +3970,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         cores_names->elems[i].data);
                }
 
-               string_list_free(cores_names);
                string_list_free(cores_paths);
             }
+
+            string_list_free(cores_names);
          }
          break;
       case DISPLAYLIST_CORE_INFO:
