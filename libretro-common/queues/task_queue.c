@@ -126,6 +126,9 @@ static void retro_task_internal_gather(void)
       if (task->callback)
          task->callback(task->task_data, task->user_data, task->error);
 
+      if (task->cleanup)
+          task->cleanup(task);
+
       if (task->error)
          free(task->error);
 

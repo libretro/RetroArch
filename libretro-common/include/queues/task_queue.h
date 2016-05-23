@@ -123,6 +123,10 @@ struct retro_task
    /* always called from the main loop */
    retro_task_callback_t callback;
 
+   /* task cleanup handler to free allocated resources, will
+    * be called immediately after running the main callback */
+   retro_task_handler_t cleanup;
+
    /* set to true by the handler to signal 
     * the task has finished executing. */
    bool finished;
