@@ -3387,9 +3387,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_ctx_parse_entry_t *entry  = 
                (menu_displaylist_ctx_parse_entry_t*)data;
 
-            if (!entry)
-               goto error;
-
             if (menu_displaylist_parse_settings(entry->data,
                      entry->info,
                      entry->info_label,

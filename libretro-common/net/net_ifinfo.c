@@ -56,9 +56,6 @@ void net_ifinfo_free(net_ifinfo_t *list)
       struct net_ifinfo_entry *ptr = 
          (struct net_ifinfo_entry*)&list->entries[k];
 
-      if (!ptr)
-         continue;
-
       if (*ptr->name)
          free(ptr->name);
       if (*ptr->host)

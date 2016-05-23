@@ -55,9 +55,6 @@ static bool core_option_manager_parse_variable(core_option_manager_t *opt, size_
    char *config_val           = NULL;
    struct core_option *option = (struct core_option*)&opt->opts[idx];
 
-   if (!option)
-      return false;
-
    option->key = strdup(var->key);
    value       = strdup(var->value);
    desc_end    = strstr(value, "; ");
@@ -327,8 +324,6 @@ const char *core_option_manager_get_val(core_option_manager_t *opt, size_t idx)
    if (!opt)
       return NULL;
    option = (struct core_option*)&opt->opts[idx];
-   if (!option)
-      return NULL;
    return option->vals->elems[option->index].data;
 }
 

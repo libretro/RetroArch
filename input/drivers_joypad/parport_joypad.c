@@ -327,16 +327,12 @@ static void parport_joypad_destroy(void)
 static bool parport_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
-   if (!pad)
-      return false;
    return joykey < PARPORT_NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
 }
 
 static uint64_t parport_joypad_get_buttons(unsigned port)
 {
    const struct parport_joypad *pad = (const struct parport_joypad*)&parport_pads[port];
-   if (!pad)
-      return false;
    return pad->buttons;
 }
 

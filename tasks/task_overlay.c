@@ -412,9 +412,6 @@ static void rarch_task_overlay_deferred_load(overlay_loader_t *loader)
 
       overlay = &loader->overlays[loader->pos];
 
-      if (!overlay)
-         continue;
-
       snprintf(overlay->config.descs.key,
             sizeof(overlay->config.descs.key), "overlay%u_descs", loader->pos);
 

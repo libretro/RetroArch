@@ -754,9 +754,6 @@ void input_state_overlay(int16_t *ret, unsigned port, unsigned device, unsigned 
 {
    input_overlay_state_t *ol_state = &overlay_st_ptr;
 
-   if (!ol_state)
-      return;
-
    if (port != 0)
       return;
 

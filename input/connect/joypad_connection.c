@@ -54,12 +54,9 @@ joypad_connection_t *pad_connection_init(unsigned pads)
    {
       joypad_connection_t *conn = (joypad_connection_t*)&joyconn[i];
 
-      if (!conn)
-         continue;
-
-      conn->connected = false;
-      conn->iface     = NULL;
-      conn->data      = NULL;
+      conn->connected           = false;
+      conn->iface               = NULL;
+      conn->data                = NULL;
    }
 
    return joyconn;

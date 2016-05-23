@@ -296,8 +296,6 @@ void *rarch_task_push_http_transfer(const char *url, const char *type,
 error:
    if (conn)
       net_http_connection_free(conn);
-   if (t)
-      free(t);
    if (http)
       free(http);
 

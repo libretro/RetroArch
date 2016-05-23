@@ -328,7 +328,5 @@ bool rarch_task_push_decompress(
 error:
    if (s)
       free(s);
-   if (t)
-      free(t);
    return false;
 }
