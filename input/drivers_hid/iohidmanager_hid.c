@@ -315,8 +315,9 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
    IOReturn ret;
    uint16_t dev_vid, dev_pid;
 
-   settings_t *settings = config_get_ptr();
-   iohidmanager_hid_t     *hid = (iohidmanager_hid_t*)hid_driver_get_data();
+   settings_t                     *settings = config_get_ptr();
+   iohidmanager_hid_t                  *hid = (iohidmanager_hid_t*)
+      hid_driver_get_data();
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)
       calloc(1, sizeof(*adapter));
 
@@ -328,10 +329,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
    ret = IOHIDDeviceOpen(device, kIOHIDOptionsTypeNone);
 
    if (ret != kIOReturnSuccess)
-   {
-      free(adapter);
-      return;
-   }
+      goto error;
 
    /* Move the device's run loop to this thread. */
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
@@ -352,7 +350,7 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
          &iohidmanager_hid_device_send_control);
 
    if (adapter->slot == -1)
-       return;
+      goto error;
 
    if (pad_connection_has_interface(hid->slots, adapter->slot))
       IOHIDDeviceRegisterInputReportCallback(device,
@@ -363,34 +361,37 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
             iohidmanager_hid_device_input_callback, adapter);
 
    if (string_is_empty(adapter->name))
-      return;
+      goto error;
 
    strlcpy(settings->input.device_names[adapter->slot],
          adapter->name, sizeof(settings->input.device_names[adapter->slot]));
 
    iohidmanager_hid_device_add_autodetect(adapter->slot,
          adapter->name, iohidmanager_hid.ident, dev_vid, dev_pid);
+
+   return;
+
+error:
+   free(adapter);
 }
 
 static void iohidmanager_hid_append_matching_dictionary(
       CFMutableArrayRef array,
       uint32_t page, uint32_t use)
 {
-   CFNumberRef usen, pagen;
    CFMutableDictionaryRef matcher = CFDictionaryCreateMutable(
          kCFAllocatorDefault, 0,
          &kCFTypeDictionaryKeyCallBacks,
          &kCFTypeDictionaryValueCallBacks);
+   CFNumberRef pagen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
+   CFNumberRef usen  = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &use);
 
-   pagen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &page);
    CFDictionarySetValue(matcher, CFSTR(kIOHIDDeviceUsagePageKey), pagen);
-   CFRelease(pagen);
-
-   usen = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &use);
    CFDictionarySetValue(matcher, CFSTR(kIOHIDDeviceUsageKey), usen);
-   CFRelease(usen);
-
    CFArrayAppendValue(array, matcher);
+
+   CFRelease(pagen);
+   CFRelease(usen);
    CFRelease(matcher);
 }
 
