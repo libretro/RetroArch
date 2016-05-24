@@ -83,13 +83,17 @@ static void rarch_task_overlay_load_desc_image(
    if (config_get_path(conf, overlay_desc_image_key,
             image_path, sizeof(image_path)))
    {
+      struct texture_image image_tex;
       char path[PATH_MAX_LENGTH] = {0};
       fill_pathname_resolve_relative(path, loader->overlay_path,
             image_path, sizeof(path));
 
       if (rarch_task_overlay_load_texture_image(input_overlay,
-               &desc->image, path))
+               &image_tex, path))
+      {
+         desc->image       = image_tex;
          desc->image_index = input_overlay->load_images_size - 1;
+      }
    }
 
    input_overlay->pos ++;
@@ -471,6 +475,7 @@ static void rarch_task_overlay_deferred_load(retro_task_t *task)
 
       if (!string_is_empty(overlay->config.paths.path))
       {
+         struct texture_image image_tex;
          char overlay_resolved_path[PATH_MAX_LENGTH] = {0};
 
          fill_pathname_resolve_relative(overlay_resolved_path,
@@ -478,7 +483,7 @@ static void rarch_task_overlay_deferred_load(retro_task_t *task)
                overlay->config.paths.path, sizeof(overlay_resolved_path));
 
          if (!rarch_task_overlay_load_texture_image(overlay,
-                  &overlay->image, overlay_resolved_path))
+                  &image_tex, overlay_resolved_path))
          {
             RARCH_ERR("[Overlay]: Failed to load image: %s.\n",
                   overlay_resolved_path);
@@ -486,6 +491,7 @@ static void rarch_task_overlay_deferred_load(retro_task_t *task)
             goto error;
          }
 
+         overlay->image = image_tex;
       }
 
       snprintf(overlay->config.names.key, sizeof(overlay->config.names.key),
