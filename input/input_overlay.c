@@ -575,10 +575,10 @@ abort_load:
 
 void input_overlay_init(void)
 {
-   input_overlay_free();
-
-   if (config_get_ptr()->input.overlay_enable)
-      rarch_task_push_overlay_load_default(input_overlay_loaded, NULL);
+   settings_t *settings = config_get_ptr();
+   if (!settings->input.overlay_enable)
+      return;
+   rarch_task_push_overlay_load_default(input_overlay_loaded, NULL);
 }
 
 /**
