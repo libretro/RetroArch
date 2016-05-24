@@ -519,9 +519,9 @@ void input_overlay_free(void)
 static void input_overlay_loaded(void *task_data, void *user_data, const char *err)
 {
    size_t i;
-   input_overlay_t       *ol;
-   overlay_task_data_t *data = (overlay_task_data_t*)task_data;
-   settings_t      *settings = config_get_ptr();
+   overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
+   settings_t                   *settings = config_get_ptr();
+   input_overlay_t                    *ol = NULL;
    const video_overlay_interface_t *iface = NULL;
 
    if (err)
@@ -545,17 +545,20 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
       goto abort_load;
    }
 
-   ol = (input_overlay_t*)calloc(1, sizeof(*ol));
-   ol->overlays = data->overlays;
-   ol->size     = data->size;
-   ol->active   = data->active;
+   ol             = (input_overlay_t*)calloc(1, sizeof(*ol));
+   ol->overlays   = data->overlays;
+   ol->size       = data->size;
+   ol->active     = data->active;
    ol->iface      = iface;
    ol->iface_data = video_driver_get_ptr(true);
 
-   overlay_ptr = ol;
+   overlay_ptr    = ol;
 
    input_overlay_load_active(settings->input.overlay_opacity);
-   input_overlay_enable(input_driver_is_onscreen_keyboard_enabled() ? settings->osk.enable : settings->input.overlay_enable);
+   if (input_driver_is_onscreen_keyboard_enabled())
+      input_overlay_enable(settings->osk.enable);
+   else
+      input_overlay_enable(settings->input.overlay_enable);
    input_overlay_set_scale_factor(settings->input.overlay_scale);
 
    ol->next_index = (ol->index + 1) % ol->size;
