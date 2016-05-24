@@ -1739,6 +1739,7 @@ void video_driver_default_settings(void)
 
 void video_driver_load_settings(config_file_t *conf)
 {
+   bool tmp_bool    = false;
    global_t *global = global_get_ptr();
 
    if (!conf)
@@ -1746,10 +1747,14 @@ void video_driver_load_settings(config_file_t *conf)
 
    CONFIG_GET_BOOL_BASE(conf, global,
          console.screen.gamma_correction, "gamma_correction");
-   config_get_bool(conf, "flicker_filter_enable",
-         &global->console.flickerfilter_enable);
-   config_get_bool(conf, "soft_filter_enable",
-         &global->console.softfilter_enable);
+
+   if (config_get_bool(conf, "flicker_filter_enable",
+         &tmp_bool))
+      global->console.flickerfilter_enable = tmp_bool;
+
+   if (config_get_bool(conf, "soft_filter_enable",
+         &tmp_bool))
+      global->console.softfilter_enable = tmp_bool;
 
    CONFIG_GET_INT_BASE(conf, global,
          console.screen.soft_filter_index,

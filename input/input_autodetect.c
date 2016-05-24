@@ -72,6 +72,7 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
 static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       autoconfig_params_t *params)
 {
+   int tmp_int;
    char ident[PATH_MAX_LENGTH]        = {0};
    char input_driver[PATH_MAX_LENGTH] = {0};
    int                      input_vid = 0;
@@ -83,8 +84,12 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
-   config_get_int  (conf, "input_vendor_id", &input_vid);
-   config_get_int  (conf, "input_product_id", &input_pid);
+
+   if (config_get_int  (conf, "input_vendor_id", &tmp_int))
+      input_vid = tmp_int;
+
+   if (config_get_int  (conf, "input_product_id", &tmp_int))
+      input_pid = tmp_int;
 
    /* Check for VID/PID */
    if (     (params->vid == input_vid)
