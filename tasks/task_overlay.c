@@ -494,8 +494,7 @@ static void rarch_task_overlay_deferred_load(overlay_loader_t *loader)
       if (config_get_array(conf, overlay->config.rect.key,
                overlay->config.rect.array, sizeof(overlay->config.rect.array)))
       {
-         struct string_list *list = 
-            string_split(overlay->config.rect.array, ", ");
+         struct string_list *list = string_split(overlay->config.rect.array, ", ");
 
          if (!list || list->size < 4)
          {
@@ -515,8 +514,8 @@ static void rarch_task_overlay_deferred_load(overlay_loader_t *loader)
       /* Assume for now that scaling center is in the middle.
        * TODO: Make this configurable. */
       overlay->block_scale = false;
-      overlay->center_x = overlay->x + 0.5f * overlay->w;
-      overlay->center_y = overlay->y + 0.5f * overlay->h;
+      overlay->center_x    = overlay->x + 0.5f * overlay->w;
+      overlay->center_y    = overlay->y + 0.5f * overlay->h;
    }
 
    return;
@@ -546,18 +545,17 @@ static ssize_t rarch_task_overlay_find_index(const struct overlay *ol,
 static bool rarch_task_overlay_resolve_targets(struct overlay *ol,
       size_t idx, size_t size)
 {
-   size_t i;
-   struct overlay *current = NULL;
-
-   current = (struct overlay*)&ol[idx];
+   unsigned i;
+   struct overlay *current = (struct overlay*)&ol[idx];
 
    for (i = 0; i < current->size; i++)
    {
       const char *next = current->descs[i].next_index_name;
+      size_t next_idx  = 0;
 
       if (*next)
       {
-         ssize_t next_idx = rarch_task_overlay_find_index(ol, next, size);
+         next_idx = rarch_task_overlay_find_index(ol, next, size);
 
          if (next_idx < 0)
          {
@@ -565,12 +563,13 @@ static bool rarch_task_overlay_resolve_targets(struct overlay *ol,
                   next);
             return false;
          }
-
-         current->descs[i].next_index = next_idx;
       }
       else
-         current->descs[i].next_index = (idx + 1) % size;
+         next_idx = (idx + 1) & size;
+
+      current->descs[i].next_index = next_idx;
    }
+
    return true;
 }
 
