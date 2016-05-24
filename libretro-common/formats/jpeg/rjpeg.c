@@ -2384,17 +2384,21 @@ static void rjpeg__cleanup_jpeg(rjpeg__jpeg *j)
 static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned *out_y, int *comp, int req_comp)
 {
    int n, decode_n;
+   int k;
+   unsigned int i,j;
+   uint8_t *output;
+   uint8_t *coutput[4];
    z->s->img_n = 0; /* make rjpeg__cleanup_jpeg safe */
 
    /* validate req_comp */
    if (req_comp < 0 || req_comp > 4)
-       return rjpeg__errpuc("bad req_comp", "Internal error");
+      return rjpeg__errpuc("bad req_comp", "Internal error");
 
    /* load a jpeg image from whichever source, but leave in YCbCr format */
    if (!rjpeg__decode_jpeg_image(z))
    {
-       rjpeg__cleanup_jpeg(z);
-       return NULL;
+      rjpeg__cleanup_jpeg(z);
+      return NULL;
    }
 
    /* determine actual number of components to generate */
@@ -2406,109 +2410,102 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned 
       decode_n = z->s->img_n;
 
    /* resample and color-convert */
+   rjpeg__resample res_comp[4];
+
+   for (k=0; k < decode_n; ++k)
    {
-      int k;
-      unsigned int i,j;
-      uint8_t *output;
-      uint8_t *coutput[4];
+      rjpeg__resample *r = &res_comp[k];
 
-      rjpeg__resample res_comp[4];
-
-      for (k=0; k < decode_n; ++k)
-      {
-         rjpeg__resample *r = &res_comp[k];
-
-         /* allocate line buffer big enough for upsampling off the edges
-          * with upsample factor of 4 */
-         z->img_comp[k].linebuf = (uint8_t *) malloc(z->s->img_x + 3);
-         if (!z->img_comp[k].linebuf)
-         {
-             rjpeg__cleanup_jpeg(z);
-             return rjpeg__errpuc("outofmem", "Out of memory");
-         }
-
-         r->hs       = z->img_h_max / z->img_comp[k].h;
-         r->vs       = z->img_v_max / z->img_comp[k].v;
-         r->ystep    = r->vs >> 1;
-         r->w_lores  = (z->s->img_x + r->hs-1) / r->hs;
-         r->ypos     = 0;
-         r->line0    = r->line1 = z->img_comp[k].data;
-         r->resample = rjpeg__resample_row_generic;
-
-         if      (r->hs == 1 && r->vs == 1)
-            r->resample = rjpeg_resample_row_1;
-         else if (r->hs == 1 && r->vs == 2)
-            r->resample = rjpeg__resample_row_v_2;
-         else if (r->hs == 2 && r->vs == 1)
-            r->resample = rjpeg__resample_row_h_2;
-         else if (r->hs == 2 && r->vs == 2)
-            r->resample = z->resample_row_hv_2_kernel;
-      }
-
-      /* can't error after this so, this is safe */
-      output = (uint8_t *) malloc(n * z->s->img_x * z->s->img_y + 1);
-
-      if (!output)
+      /* allocate line buffer big enough for upsampling off the edges
+       * with upsample factor of 4 */
+      z->img_comp[k].linebuf = (uint8_t *) malloc(z->s->img_x + 3);
+      if (!z->img_comp[k].linebuf)
       {
          rjpeg__cleanup_jpeg(z);
          return rjpeg__errpuc("outofmem", "Out of memory");
       }
 
-      /* now go ahead and resample */
-      for (j=0; j < z->s->img_y; ++j)
+      r->hs       = z->img_h_max / z->img_comp[k].h;
+      r->vs       = z->img_v_max / z->img_comp[k].v;
+      r->ystep    = r->vs >> 1;
+      r->w_lores  = (z->s->img_x + r->hs-1) / r->hs;
+      r->ypos     = 0;
+      r->line0    = r->line1 = z->img_comp[k].data;
+      r->resample = rjpeg__resample_row_generic;
+
+      if      (r->hs == 1 && r->vs == 1)
+         r->resample = rjpeg_resample_row_1;
+      else if (r->hs == 1 && r->vs == 2)
+         r->resample = rjpeg__resample_row_v_2;
+      else if (r->hs == 2 && r->vs == 1)
+         r->resample = rjpeg__resample_row_h_2;
+      else if (r->hs == 2 && r->vs == 2)
+         r->resample = z->resample_row_hv_2_kernel;
+   }
+
+   /* can't error after this so, this is safe */
+   output = (uint8_t *) malloc(n * z->s->img_x * z->s->img_y + 1);
+
+   if (!output)
+   {
+      rjpeg__cleanup_jpeg(z);
+      return rjpeg__errpuc("outofmem", "Out of memory");
+   }
+
+   /* now go ahead and resample */
+   for (j=0; j < z->s->img_y; ++j)
+   {
+      uint8_t *out = output + n * z->s->img_x * j;
+      for (k=0; k < decode_n; ++k)
       {
-         uint8_t *out = output + n * z->s->img_x * j;
-         for (k=0; k < decode_n; ++k)
-         {
-            rjpeg__resample *r = &res_comp[k];
-            int y_bot  = r->ystep >= (r->vs >> 1);
-            coutput[k] = r->resample(z->img_comp[k].linebuf,
-                  y_bot ? r->line1 : r->line0,
-                  y_bot ? r->line0 : r->line1,
-                  r->w_lores, r->hs);
+         rjpeg__resample *r = &res_comp[k];
+         int y_bot  = r->ystep >= (r->vs >> 1);
+         coutput[k] = r->resample(z->img_comp[k].linebuf,
+               y_bot ? r->line1 : r->line0,
+               y_bot ? r->line0 : r->line1,
+               r->w_lores, r->hs);
 
-            if (++r->ystep >= r->vs)
-            {
-               r->ystep = 0;
-               r->line0 = r->line1;
-               if (++r->ypos < z->img_comp[k].y)
-                  r->line1 += z->img_comp[k].w2;
-            }
-         }
-
-         if (n >= 3)
+         if (++r->ystep >= r->vs)
          {
-            uint8_t *y = coutput[0];
-            if (z->s->img_n == 3)
-               z->YCbCr_to_RGB_kernel(out, y, coutput[1], coutput[2], z->s->img_x, n);
-            else
-               for (i=0; i < z->s->img_x; ++i)
-               {
-                  out[0] = out[1] = out[2] = y[i];
-                  out[3] = 255; /* not used if n==3 */
-                  out += n;
-               }
-         }
-         else
-         {
-            uint8_t *y = coutput[0];
-            if (n == 1)
-               for (i=0; i < z->s->img_x; ++i)
-                  out[i] = y[i];
-            else
-               for (i=0; i < z->s->img_x; ++i)
-                  *out++ = y[i], *out++ = 255;
+            r->ystep = 0;
+            r->line0 = r->line1;
+            if (++r->ypos < z->img_comp[k].y)
+               r->line1 += z->img_comp[k].w2;
          }
       }
 
-      rjpeg__cleanup_jpeg(z);
-      *out_x = z->s->img_x;
-      *out_y = z->s->img_y;
-
-      if (comp)
-         *comp  = z->s->img_n; /* report original components, not output */
-      return output;
+      if (n >= 3)
+      {
+         uint8_t *y = coutput[0];
+         if (z->s->img_n == 3)
+            z->YCbCr_to_RGB_kernel(out, y, coutput[1], coutput[2], z->s->img_x, n);
+         else
+            for (i=0; i < z->s->img_x; ++i)
+            {
+               out[0] = out[1] = out[2] = y[i];
+               out[3] = 255; /* not used if n==3 */
+               out += n;
+            }
+      }
+      else
+      {
+         uint8_t *y = coutput[0];
+         if (n == 1)
+            for (i=0; i < z->s->img_x; ++i)
+               out[i] = y[i];
+         else
+            for (i=0; i < z->s->img_x; ++i)
+               *out++ = y[i], *out++ = 255;
+      }
    }
+
+   rjpeg__cleanup_jpeg(z);
+   *out_x = z->s->img_x;
+   *out_y = z->s->img_y;
+
+   if (comp)
+      *comp  = z->s->img_n; /* report original components, not output */
+   return output;
 }
 
 static unsigned char *rjpeg__jpeg_load(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp)
