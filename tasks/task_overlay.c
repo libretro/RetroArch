@@ -605,10 +605,23 @@ static void rarch_task_overlay_resolve_iterate(overlay_loader_t *loader)
    loader->resolve_pos += 1;
 }
 
+static void rarch_task_overlay_free(retro_task_t *task)
+{
+   overlay_loader_t *loader  = (overlay_loader_t*)task->state;
+
+   if (loader->overlay_path)
+      free(loader->overlay_path);
+
+   if (loader->conf)
+      config_file_free(loader->conf);
+
+   free(loader);
+}
+
 static void rarch_task_overlay_handler(retro_task_t *task)
 {
-   overlay_loader_t *loader = (overlay_loader_t*)task->state;
-   overlay_task_data_t *data;
+   overlay_task_data_t *data = NULL;
+   overlay_loader_t *loader  = (overlay_loader_t*)task->state;
 
    switch (loader->state)
    {
@@ -661,13 +674,7 @@ task_finished:
       task->task_data = data;
    }
 
-   if (loader->overlay_path)
-      free(loader->overlay_path);
-
-   if (loader->conf)
-      config_file_free(loader->conf);
-
-   free(loader);
+   rarch_task_overlay_free(task);
 }
 
 
