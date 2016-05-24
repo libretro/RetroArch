@@ -180,11 +180,8 @@ void playlist_update(playlist_t *playlist, size_t idx,
    if (idx > playlist->size)
       return;
 
-   entry = &playlist->entries[idx];
+   entry            = &playlist->entries[idx];
    
-   if (!entry)
-      return;
-
    entry->path      = path ?  strdup(path)          : entry->path;
    entry->label     = label ? strdup(label)         : entry->label;
    entry->core_path = core_path ? strdup(core_path) : entry->core_path;
