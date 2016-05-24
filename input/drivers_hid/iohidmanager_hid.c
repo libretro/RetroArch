@@ -248,8 +248,10 @@ static void iohidmanager_hid_device_remove(void *data,
       memset(hid->axes[adapter->slot], 0, sizeof(hid->axes));
 
       pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
-      free(adapter);
    }
+    
+   if (adapter)
+      free(adapter);
 }
 
 static int32_t iohidmanager_hid_device_get_int_property(
