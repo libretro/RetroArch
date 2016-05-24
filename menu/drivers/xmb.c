@@ -1423,7 +1423,7 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 
    xmb_context_destroy_horizontal_list(xmb);
    if (xmb->horizontal_list)
-      free(xmb->horizontal_list);
+      file_list_free(xmb->horizontal_list);
    xmb->horizontal_list = NULL;
 
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -2586,7 +2586,7 @@ error:
          free(xmb->selection_buf_old);
       xmb->selection_buf_old = NULL;
       if (xmb->horizontal_list)
-         free(xmb->horizontal_list);
+         file_list_free(xmb->horizontal_list);
       xmb->horizontal_list = NULL;
    }
    return NULL;
