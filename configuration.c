@@ -1408,10 +1408,13 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, set_supports_no_game_enable, "core_set_supports_no_game_enable");
 
 #ifdef RARCH_CONSOLE
-   /* TODO - will be refactored later to make it more clean - it's more
-    * important that it works for consoles right now */
-   config_get_bool(conf, "custom_bgm_enable",
-         &global->console.sound.system_bgm_enable);
+   {
+      bool tmp_bool = false;
+      /* TODO - will be refactored later to make it more clean - it's more
+       * important that it works for consoles right now */
+      if (config_get_bool(conf, "custom_bgm_enable", &tmp_bool))
+         global->console.sound.system_bgm_enable = tmp_bool;
+   }
    video_driver_load_settings(conf);
 #endif
    CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
@@ -1761,9 +1764,12 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, network_remote_enable, "network_remote_enable");
    for (i = 0; i < MAX_USERS; i++)
    {
-      char tmp[64] = {0};
+      bool tmp_bool = false;
+      char tmp[64]  = {0};
       snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
-      config_get_bool(conf, tmp, &settings->network_remote_enable_user[i]);
+
+      if (config_get_bool(conf, tmp, &tmp_bool))
+         settings->network_remote_enable_user[i] = tmp_bool;
    }
    CONFIG_GET_INT_BASE(conf, settings, network_remote_base_port, "network_remote_base_port");
 
