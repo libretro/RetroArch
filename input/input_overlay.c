@@ -42,10 +42,21 @@
 #define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 
+typedef struct input_overlay_state
+{
+   /* This is a bitmask of (1 << key_bind_id). */
+   uint64_t buttons;
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4]; 
+
+   uint32_t keys[RETROK_LAST / 32 + 1];
+} input_overlay_state_t;
+
 struct input_overlay
 {
    void *iface_data;
    const video_overlay_interface_t *iface;
+   input_overlay_state_t overlay_state;
    bool enable;
 
    bool blocked;
@@ -60,17 +71,6 @@ struct input_overlay
    enum overlay_status state;
 };
 
-typedef struct input_overlay_state
-{
-   /* This is a bitmask of (1 << key_bind_id). */
-   uint64_t buttons;
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4]; 
-
-   uint32_t keys[RETROK_LAST / 32 + 1];
-} input_overlay_state_t;
-
-static input_overlay_state_t overlay_st_ptr;
 static input_overlay_t *overlay_ptr = NULL;
 
 /**
@@ -598,7 +598,10 @@ bool input_overlay_is_alive(input_overlay_t *ol)
 
 bool input_overlay_key_pressed(int key)
 {
-   input_overlay_state_t *ol_state  = &overlay_st_ptr;
+   input_overlay_t             *ol  = overlay_ptr;
+   input_overlay_state_t *ol_state  = ol ? &ol->overlay_state : NULL;
+   if (!ol)
+      return false;
    return (ol_state->buttons & (UINT64_C(1) << key));
 }
 
@@ -614,12 +617,17 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
    uint16_t key_mod                = 0;
    bool polled                     = false;
    settings_t *settings            = config_get_ptr();
-   input_overlay_state_t *ol_state = &overlay_st_ptr;
-
+   input_overlay_state_t *ol_state = NULL;
+   
    if (!ol)
       ol = overlay_ptr;
 
-   if (!input_overlay_is_alive(ol) || !ol_state)
+   if (!input_overlay_is_alive(ol))
+      return;
+
+   ol_state = &ol->overlay_state;
+
+   if (!ol_state)
       return;
 
    memcpy(old_key_state.keys, ol_state->keys,
@@ -742,9 +750,10 @@ void input_poll_overlay(input_overlay_t *ol, float opacity)
 void input_state_overlay(int16_t *ret, unsigned port, unsigned device, unsigned idx,
       unsigned id)
 {
-   input_overlay_state_t *ol_state = &overlay_st_ptr;
+   input_overlay_t             *ol = overlay_ptr;
+   input_overlay_state_t *ol_state = ol ? &ol->overlay_state : NULL;
 
-   if (port != 0)
+   if (!ol || port != 0)
       return;
 
    switch (device)
