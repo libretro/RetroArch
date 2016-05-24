@@ -81,8 +81,8 @@ static void audio_thread_loop(void *data)
       if (!thr->alive)
       {
          scond_signal(thr->cond);
-         slock_unlock(thr->lock);
          thr->stopped_ack = true;
+         slock_unlock(thr->lock);
          break;
       }
 

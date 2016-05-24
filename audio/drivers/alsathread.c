@@ -132,7 +132,9 @@ static void alsa_thread_free(void *data)
    {
       if (alsa->worker_thread)
       {
+         slock_lock(alsa->cond_lock);
          alsa->thread_dead = true;
+         slock_unlock(alsa->cond_lock);
          sthread_join(alsa->worker_thread);
       }
       if (alsa->buffer)
