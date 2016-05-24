@@ -177,6 +177,10 @@ void input_overlay_free_overlay(struct overlay *overlay)
       free(overlay->descs);
    overlay->descs       = NULL;
    image_texture_free(&overlay->image);
+
+   if (overlay_ptr)
+      free(overlay_ptr);
+   overlay_ptr = NULL;
 }
 
 static void input_overlay_free_overlays(input_overlay_t *ol)
