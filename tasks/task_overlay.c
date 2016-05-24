@@ -639,15 +639,19 @@ static void rarch_task_overlay_handler(retro_task_t *task)
       case OVERLAY_STATUS_DEFERRED_DONE:
       default:
       case OVERLAY_STATUS_NONE:
+         task->finished = true;
          goto task_finished;
    }
 
    if (task->cancelled)
+   {
+      task->finished = true;
       goto task_finished;
+   }
 
    return;
+
 task_finished:
-   task->finished = true;
 
    if (task->cancelled)
    {
@@ -663,7 +667,7 @@ task_finished:
 
       free(loader->overlays);
    }
-   else
+   else if (task->finished)
    {
       data = (overlay_task_data_t*)calloc(1, sizeof(*data));
 
