@@ -854,12 +854,7 @@ static INLINE uint8_t rjpeg__clamp(int x)
 {
    /* trick to use a single test to catch both cases */
    if ((unsigned int) x > 255)
-   {
-      if (x < 0)
-         return 0;
-      if (x > 255)
-         return 255;
-   }
+      return 255;
    return (uint8_t) x;
 }
 

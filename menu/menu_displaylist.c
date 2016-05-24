@@ -1629,9 +1629,6 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (settings)
          show_advanced_settings      = settings->menu.show_advanced_settings;
 
-      if (!db_info_entry)
-         continue;
-
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
 
       if (playlist)

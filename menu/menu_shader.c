@@ -190,8 +190,7 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
    if (!conf)
       return;
 
-   RARCH_LOG("Setting Menu shader: %s.\n", preset_path 
-         ? preset_path : "N/A (stock)");
+   RARCH_LOG("Setting Menu shader: %s.\n", preset_path);
 
    if (video_shader_read_conf_cgp(conf, shader))
    {

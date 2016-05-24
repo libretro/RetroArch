@@ -728,12 +728,8 @@ void menu_display_snow(int width, int height)
    for (i = 0; i < PARTICLES_COUNT; ++i)
    {
       unsigned j;
-      float alpha;
-      float colors[16];
+      float alpha, colors[16];
       struct display_particle *p = &particles[i];
-
-      if (!p)
-         return;
 
       if (!p->alive)
          continue;

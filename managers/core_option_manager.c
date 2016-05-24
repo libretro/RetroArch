@@ -335,12 +335,9 @@ void core_option_manager_set_val(core_option_manager_t *opt,
    if (!opt)
       return;
    
-   option = (struct core_option*)&opt->opts[idx];
-
-   if (!option)
-      return;
-
+   option        = (struct core_option*)&opt->opts[idx];
    option->index = val_idx % option->vals->size;
+
    opt->updated  = true;
 }
 
@@ -359,10 +356,7 @@ void core_option_manager_next(core_option_manager_t *opt, size_t idx)
    if (!opt)
       return;
    
-   option = (struct core_option*)&opt->opts[idx];
-
-   if (!option)
-      return;
+   option        = (struct core_option*)&opt->opts[idx];
 
    option->index = (option->index + 1) % option->vals->size;
    opt->updated  = true;
@@ -384,13 +378,10 @@ void core_option_manager_prev(core_option_manager_t *opt, size_t idx)
    if (!opt)
       return;
    
-   option = (struct core_option*)&opt->opts[idx];
-
-   if (!option)
-      return;
-
+   option        = (struct core_option*)&opt->opts[idx];
    option->index = (option->index + option->vals->size - 1) %
       option->vals->size;
+
    opt->updated  = true;
 }
 

@@ -2434,14 +2434,11 @@ static int setting_bind_action_start(void *data)
    if (!keybind)
       return -1;
 
-   keybind->joykey = NO_BTN;
+   keybind->joykey  = NO_BTN;
    keybind->joyaxis = AXIS_NONE;
 
    if (setting->index_offset)
       def_binds = (struct retro_keybind*)retro_keybinds_rest;
-
-   if (!def_binds)
-      return -1;
 
    bind_type    = menu_setting_get_bind_type(setting);
    keybind->key = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;

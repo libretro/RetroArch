@@ -697,9 +697,9 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
 
 bool core_info_get_display_name(const char *path, char *s, size_t len)
 {
-   char       *core_name = NULL;
+   char       *core_name    = NULL;
    char       *display_name = NULL;
-   config_file_t *conf   = NULL;
+   config_file_t *conf      = NULL;
 
    if (!path_file_exists(path))
       return false;
@@ -707,19 +707,16 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
    conf = config_file_new(path);
 
    if (!conf)
-      goto error;
+      return false;
 
    config_get_string(conf, "corename",
          &core_name);
-
    config_get_string(conf, "display_name",
          &display_name);
 
    config_file_free(conf);
 
-   if (!core_name)
-      goto error;
-   if (!conf)
+   if (!core_name || !display_name)
       goto error;
 
    snprintf(s, len,"%s",display_name);
@@ -730,6 +727,7 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
    return true;
 
 error:
+   config_file_free(conf);
    if (core_name)
       free(core_name);
    if (display_name)
