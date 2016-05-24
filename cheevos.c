@@ -42,7 +42,7 @@
 #include "verbosity.h"
 
 /* Define this macro to deactivate awarded cheevos. */
-#define CHEEVOS_DEACTIVATE
+#undef CHEEVOS_DEACTIVATE
 
 /* Define this macro to log URLs (will log the user token). */
 #undef CHEEVOS_LOG_URLS
@@ -67,9 +67,17 @@
 
 enum
 {
-   CHEEVOS_CONSOLE_GAMEBOY = 4,
-   CHEEVOS_CONSOLE_GAMEBOY_ADVANCED = 5,
-   CHEEVOS_CONSOLE_GAMEBOY_COLOR = 6,
+   CHEEVOS_CONSOLE_MEGA_DRIVE      = 1,
+   CHEEVOS_CONSOLE_NINTENDO_64     = 2,
+   CHEEVOS_CONSOLE_SUPER_NINTENDO  = 3,
+   CHEEVOS_CONSOLE_GAMEBOY         = 4,
+   CHEEVOS_CONSOLE_GAMEBOY_ADVANCE = 5,
+   CHEEVOS_CONSOLE_GAMEBOY_COLOR   = 6,
+   CHEEVOS_CONSOLE_NINTENDO        = 7,
+   CHEEVOS_CONSOLE_PC_ENGINE       = 8,
+   CHEEVOS_CONSOLE_SEGA_CD         = 9,
+   CHEEVOS_CONSOLE_SEGA_32X        = 10,
+   CHEEVOS_CONSOLE_MASTER_SYSTEM   = 11,
 };
 
 enum
@@ -645,8 +653,7 @@ static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
          const struct retro_memory_descriptor *desc;
          const struct retro_memory_descriptor *end;
          
-#if 0
-         if (cheevos_locals.console_id == CHEEVOS_CONSOLE_GAMEBOY_ADVANCED)
+         if (cheevos_locals.console_id == CHEEVOS_CONSOLE_GAMEBOY_ADVANCE)
          {
             /* Patch the address to correctly map it to the mmaps */
             if (var->value < 0x8000)
@@ -660,14 +667,17 @@ static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
                var->value += 0x2000000 - 0x8000;
             }
          }
-#endif
+         else if (cheevos_locals.console_id == CHEEVOS_CONSOLE_PC_ENGINE)
+         {
+            var->value += 0x1f0000;
+         }
         
          desc = system->mmaps.descriptors;
          end = desc + system->mmaps.num_descriptors;
          
          for (; desc < end; desc++)
          {
-            if (var->value >= desc->start && var->value < (desc->start + desc->len))
+            if ((var->value & desc->select) == desc->start)
             {
                var->bank_id = desc - system->mmaps.descriptors;
                var->value = var->value - desc->start + desc->offset;
@@ -1955,28 +1965,20 @@ static unsigned cheevos_find_game_id_nes(
       {
          53, 198, 228
       };
-      bool round     = true;
-      RFILE *file    = NULL;
+      bool round  = true;
+      RFILE *file = filestream_open(info->path, RFILE_MODE_READ, 0);
       uint8_t * data = (uint8_t *) malloc(rom_size << 14);
       
-      if (!data)
+      if (!file || !data)
          return 0;
-
-      file = filestream_open(info->path, RFILE_MODE_READ, 0);
-
-      if (!file)
-      {
-         free(data);
-         filestream_close(file);
-         return 0;
-      }
 
       /* from fceu core - need it for a correctly md5 sum */
       memset(data, 0xFF, rom_size << 14);
 
       /* from fceu core - compute size using the cart mapper */
-      mapper_no  = (header.rom_type >> 4);
+      mapper_no = (header.rom_type >> 4);
 	   mapper_no |= (header.rom_type2 & 0xF0);
+      
 
       for (i = 0; i != sizeof(not_power2) / sizeof(not_power2[0]); ++i)
       {
@@ -1985,8 +1987,7 @@ static unsigned cheevos_find_game_id_nes(
           * since PRGCartMapping wants ROM_size to be to the power of 2
           * so instead if not to power of 2, we just use head.ROM_size when
           * we use FCEU_read. */
-         if (not_power2[i] == mapper_no)
-         {
+         if (not_power2[i] == mapper_no) {
             round = false;
             break;
          }
