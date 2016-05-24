@@ -75,7 +75,7 @@ static void rarch_task_overlay_load_desc_image(
 {
    char overlay_desc_image_key[64]  = {0};
    char image_path[PATH_MAX_LENGTH] = {0};
-   config_file_t *conf      = loader->conf;
+   config_file_t              *conf = loader->conf;
 
    snprintf(overlay_desc_image_key, sizeof(overlay_desc_image_key),
          "overlay%u_desc%u_overlay", ol_idx, desc_idx);
@@ -131,13 +131,15 @@ static bool rarch_task_overlay_load_desc(
    if (by_pixel && (width == 0 || height == 0))
    {
       RARCH_ERR("[Overlay]: Base overlay is not set and not using normalized coordinates.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    if (!config_get_array(conf, overlay_desc_key, overlay, sizeof(overlay)))
    {
       RARCH_ERR("[Overlay]: Didn't find key: %s.\n", overlay_desc_key);
-      goto error;
+      ret = false;
+      goto end;
    }
 
    list = string_split(overlay, ", ");
@@ -145,22 +147,24 @@ static bool rarch_task_overlay_load_desc(
    if (!list)
    {
       RARCH_ERR("[Overlay]: Failed to split overlay desc.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
    if (list->size < 6)
    {
       RARCH_ERR("[Overlay]: Overlay desc is invalid. Requires at least 6 tokens.\n");
-      goto error;
+      ret = false;
+      goto end;
    }
 
-   key = list->elems[0].data;
-   x   = list->elems[1].data;
-   y   = list->elems[2].data;
-   box = list->elems[3].data;
+   key            = list->elems[0].data;
+   x              = list->elems[1].data;
+   y              = list->elems[2].data;
+   box            = list->elems[3].data;
 
-   box_hash = djb2_calculate(box);
-   key_hash = djb2_calculate(key);
+   box_hash       = djb2_calculate(box);
+   key_hash       = djb2_calculate(key);
 
    desc->key_mask = 0;
 
@@ -175,7 +179,7 @@ static bool rarch_task_overlay_load_desc(
       default:
          if (strstr(key, "retrok_") == key)
          {
-            desc->type = OVERLAY_TYPE_KEYBOARD;
+            desc->type     = OVERLAY_TYPE_KEYBOARD;
             desc->key_mask = input_config_translate_str_to_rk(key + 7);
          }
          else
@@ -294,21 +298,13 @@ end:
    if (list)
       string_list_free(list);
    return ret;
-
-error:
-   if (list)
-      string_list_free(list);
-   return false;
 }
 
 static void rarch_task_overlay_deferred_loading(overlay_loader_t *loader)
 {
    size_t i                = 0;
-   bool not_done           = true;
-   struct overlay *overlay = NULL;
-
-   overlay = &loader->overlays[loader->pos];
-   not_done = loader->pos < loader->size;
+   struct overlay *overlay = &loader->overlays[loader->pos];
+   bool not_done           = loader->pos < loader->size;
 
    if (!not_done)
    {
@@ -361,9 +357,9 @@ static void rarch_task_overlay_deferred_loading(overlay_loader_t *loader)
                {
                   RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n",
                         (unsigned)overlay->pos);
-                  goto error;
+                  loader->state = OVERLAY_STATUS_DEFERRED_ERROR;
+                  break;
                }
-
             }
             else
             {
@@ -371,7 +367,6 @@ static void rarch_task_overlay_deferred_loading(overlay_loader_t *loader)
                loader->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_DONE;
                break;
             }
-
          }
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_DONE:
@@ -382,13 +377,9 @@ static void rarch_task_overlay_deferred_loading(overlay_loader_t *loader)
          loader->loading_status = OVERLAY_IMAGE_TRANSFER_NONE;
          break;
       case OVERLAY_IMAGE_TRANSFER_ERROR:
-         goto error;
+         loader->state = OVERLAY_STATUS_DEFERRED_ERROR;
+         break;
    }
-
-   return;
-
-error:
-   loader->state = OVERLAY_STATUS_DEFERRED_ERROR;
 }
 
 static void rarch_task_overlay_deferred_load(overlay_loader_t *loader)
@@ -585,9 +576,7 @@ static bool rarch_task_overlay_resolve_targets(struct overlay *ol,
 
 static void rarch_task_overlay_resolve_iterate(overlay_loader_t *loader)
 {
-   bool not_done = true;
-
-   not_done = loader->resolve_pos < loader->size;
+   bool not_done = loader->resolve_pos < loader->size;
 
    if (!not_done)
    {
@@ -599,7 +588,8 @@ static void rarch_task_overlay_resolve_iterate(overlay_loader_t *loader)
             loader->resolve_pos, loader->size))
    {
       RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
-      goto error;
+      loader->state = OVERLAY_STATUS_DEFERRED_ERROR;
+      return;
    }
 
    if (loader->resolve_pos == 0)
@@ -614,10 +604,6 @@ static void rarch_task_overlay_resolve_iterate(overlay_loader_t *loader)
    }
 
    loader->resolve_pos += 1;
-
-   return;
-error:
-   loader->state = OVERLAY_STATUS_DEFERRED_ERROR;
 }
 
 static void rarch_task_overlay_handler(retro_task_t *task)
