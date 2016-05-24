@@ -38,7 +38,7 @@
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-static bool file_list_capacity(file_list_t *list, size_t cap)
+static struct item_file *realloc_file_list_capacity(file_list_t *list, size_t cap)
 {
    struct item_file *new_data = NULL;
    retro_assert(cap > list->size);
@@ -47,16 +47,13 @@ static bool file_list_capacity(file_list_t *list, size_t cap)
          cap * sizeof(struct item_file));
 
    if (!new_data)
-      return false;
+      return NULL;
 
    if (cap > list->capacity)
       memset(&new_data[list->capacity], 0,
             sizeof(*new_data) * (cap - list->capacity));
 
-   list->list     = new_data;
-   list->capacity = cap;
-
-   return true;
+   return new_data;
 }
 
 bool file_list_prepend(file_list_t *list,
@@ -65,9 +62,17 @@ bool file_list_prepend(file_list_t *list,
       size_t entry_idx)
 {
    unsigned i;
-   if (list->size >= list->capacity &&
-      !file_list_capacity(list, list->capacity * 2 + 1))
+   if (list->size >= list->capacity)
+   {
+      size_t new_capacity     = list->capacity * 2 + 1;
+      struct item_file *items = realloc_file_list_capacity(
+            list, new_capacity);
+
+      if (!items)
          return false;
+      list->list     = items;
+      list->capacity = new_capacity;
+   }
 
    list->size++;
 
@@ -108,9 +113,16 @@ bool file_list_append(file_list_t *list,
       unsigned type, size_t directory_ptr,
       size_t entry_idx)
 {
-   if (list->size >= list->capacity &&
-      !file_list_capacity(list, list->capacity * 2 + 1))
+   if (list->size >= list->capacity)
+   {
+      size_t new_capacity     = list->capacity * 2 + 1;
+      struct item_file *items = 
+         realloc_file_list_capacity(list, new_capacity);
+      if (!items)
          return false;
+      list->list     = items;
+      list->capacity = new_capacity;
+   }
 
    list->list[list->size].label         = NULL;
    list->list[list->size].path          = NULL;
