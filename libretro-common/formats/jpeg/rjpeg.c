@@ -2395,10 +2395,7 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned 
 
    /* load a jpeg image from whichever source, but leave in YCbCr format */
    if (!rjpeg__decode_jpeg_image(z))
-   {
-      rjpeg__cleanup_jpeg(z);
-      return NULL;
-   }
+      goto error;
 
    /* determine actual number of components to generate */
    n = req_comp ? req_comp : z->s->img_n;
@@ -2419,10 +2416,7 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned 
        * with upsample factor of 4 */
       z->img_comp[k].linebuf = (uint8_t *) malloc(z->s->img_x + 3);
       if (!z->img_comp[k].linebuf)
-      {
-         rjpeg__cleanup_jpeg(z);
-         return rjpeg__errpuc("outofmem", "Out of memory");
-      }
+         goto error;
 
       r->hs       = z->img_h_max / z->img_comp[k].h;
       r->vs       = z->img_v_max / z->img_comp[k].v;
@@ -2446,10 +2440,7 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned 
    output = (uint8_t *) malloc(n * z->s->img_x * z->s->img_y + 1);
 
    if (!output)
-   {
-      rjpeg__cleanup_jpeg(z);
-      return rjpeg__errpuc("outofmem", "Out of memory");
-   }
+      goto error;
 
    /* now go ahead and resample */
    for (j=0; j < z->s->img_y; ++j)
@@ -2458,8 +2449,9 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned 
       for (k=0; k < decode_n; ++k)
       {
          rjpeg__resample *r = &res_comp[k];
-         int y_bot  = r->ystep >= (r->vs >> 1);
-         coutput[k] = r->resample(z->img_comp[k].linebuf,
+         int         y_bot  = r->ystep >= (r->vs >> 1);
+
+         coutput[k]         = r->resample(z->img_comp[k].linebuf,
                y_bot ? r->line1 : r->line0,
                y_bot ? r->line0 : r->line1,
                r->w_lores, r->hs);
@@ -2505,6 +2497,12 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned 
    if (comp)
       *comp  = z->s->img_n; /* report original components, not output */
    return output;
+
+error:
+   if (output)
+      free(output);
+   rjpeg__cleanup_jpeg(z);
+   return NULL;
 }
 
 static unsigned char *rjpeg__jpeg_load(rjpeg__context *s, unsigned *x, unsigned *y, int *comp, int req_comp)
