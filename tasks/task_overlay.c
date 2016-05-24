@@ -613,12 +613,20 @@ static void rarch_task_overlay_free(retro_task_t *task)
 {
    unsigned i;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
+   struct overlay *overlay   = &loader->overlays[loader->pos];
 
    if (loader->overlay_path)
       free(loader->overlay_path);
 
+
    if (task->cancelled)
    {
+      for (i = 0; i < overlay->load_images_size; i++)
+      {
+         struct texture_image *ti = &overlay->load_images[i];
+         image_texture_free(ti);
+      }
+
       for (i = 0; i < loader->size; i++)
          input_overlay_free_overlay(&loader->overlays[i]);
 
