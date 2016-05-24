@@ -354,8 +354,6 @@ static bool sdl_ctx_has_focus(void *data)
    flags = (SDL_APPINPUTFOCUS | SDL_APPACTIVE);
    return (SDL_GetAppState() & flags) == flags;
 #endif
-
-   (void)data;
 }
 
 static bool sdl_ctx_suppress_screensaver(void *data, bool enable)
