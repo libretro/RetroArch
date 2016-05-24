@@ -221,15 +221,12 @@ bool cheat_manager_load(const char *path)
    config_get_uint(conf, "cheats", &cheats);
 
    if (cheats == 0)
-      return false;
+      goto error;
 
    cheat = cheat_manager_new(cheats);
 
    if (!cheat)
-   {
-      config_file_free(conf);
-      return false;
-   }
+      goto error;
 
    for (i = 0; i < cheats; i++)
    {
@@ -263,6 +260,10 @@ bool cheat_manager_load(const char *path)
    cheat_manager_state = cheat;
 
    return true;
+
+error:
+   config_file_free(conf);
+   return false;
 }
 
 

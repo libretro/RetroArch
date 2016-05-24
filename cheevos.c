@@ -1999,11 +1999,14 @@ static unsigned cheevos_find_game_id_nes(
          filestream_seek(file, sizeof(header), SEEK_CUR);
 
       bytes    = (round) ? rom_size : header.rom_size;
-      num_read = filestream_read(file, (void*) data, 0x4000 * bytes );
+      num_read = filestream_read(file, (void*)data, 0x4000 * bytes );
       filestream_close(file);
 
       if (num_read <= 0)
-            return 0;
+      {
+         free(data);
+         return 0;
+      }
 
       MD5_Update(&ctx, (void*) data, rom_size << 14);
       MD5_Final(hash, &ctx);

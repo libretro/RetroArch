@@ -942,6 +942,8 @@ static void *gl_glsl_init(void *data, const char *path)
 error:
    gl_glsl_destroy_resources(glsl);
 
+   if (conf)
+      config_file_free(conf);
    if (glsl)
       free(glsl);
 

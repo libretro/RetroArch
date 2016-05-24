@@ -786,7 +786,10 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng, unsigned *width, uns
       return NULL;
 
    if (!process->stream_backend->stream_decompress_init(process->stream))
+   {
+      free(process);
       return NULL;
+   }
 
    inflate_buf = (uint8_t*)malloc(process->inflate_buf_size);
    if (!inflate_buf)

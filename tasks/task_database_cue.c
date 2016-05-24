@@ -128,7 +128,10 @@ static int find_token(RFILE *fd, const char *token)
    while (strncmp(tmp_token, token, tmp_len) != 0)
    {
       if (get_token(fd, tmp_token, tmp_len) <= 0)
+      {
+         free(tmp_token);
          return -1;
+      }
    }
 
    free(tmp_token);
@@ -180,7 +183,10 @@ static int detect_ps1_game_sub(const char *track_path,
          return 0;
 
       if (!strncasecmp((const char*)(tmp + 33), "SYSTEM.CNF;1", 12))
+      {
+         filestream_close(fp);
          break;
+      }
 
       tmp += *tmp;
    }
@@ -389,6 +395,7 @@ int find_first_data_track(const char *cue_path,
          if (sscanf(tmp_token, "%02d:%02d:%02d", &m, &s, &f) < 3)
          {
             RARCH_LOG("Error parsing time stamp '%s'\n", tmp_token);
+            filestream_close(fd);
             return -errno;
          }
 

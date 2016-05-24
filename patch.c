@@ -523,7 +523,10 @@ static bool apply_patch_content(uint8_t **buf,
       return false;
 
    if (!path_file_exists(patch_path))
+   {
+      free(patch_data);
       return false;
+   }
 
    RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
          patch_desc, patch_path);

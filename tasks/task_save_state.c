@@ -206,5 +206,6 @@ error:
    RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
          path);
+   free(buf);
    return false;
 }
