@@ -1884,7 +1884,8 @@ static int rjpeg__decode_jpeg_image(rjpeg__jpeg *j)
       j->img_comp[m].raw_coeff = NULL;
    }
    j->restart_interval = 0;
-   if (!rjpeg__decode_jpeg_header(j, RJPEG_SCAN_LOAD)) return 0;
+   if (!rjpeg__decode_jpeg_header(j, RJPEG_SCAN_LOAD))
+      return 0;
    m = rjpeg__get_marker(j);
 
    while (!rjpeg__EOI(m))
@@ -2304,17 +2305,11 @@ static void rjpeg__YCbCr_to_RGB_simd(uint8_t *out, const uint8_t *y, const uint8
       g >>= 20;
       b >>= 20;
       if ((unsigned) r > 255)
-      {
-         if (r < 0) r = 0; else r = 255;
-      }
+         r = 255;
       if ((unsigned) g > 255)
-      {
-         if (g < 0) g = 0; else g = 255;
-      }
+         g = 255;
       if ((unsigned) b > 255)
-      {
-         if (b < 0) b = 0; else b = 255;
-      }
+         b = 255;
       out[0] = (uint8_t)r;
       out[1] = (uint8_t)g;
       out[2] = (uint8_t)b;
