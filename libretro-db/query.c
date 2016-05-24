@@ -413,6 +413,8 @@ static void query_argument_free(struct argument *arg)
 
    for (i = 0; i < arg->a.invocation.argc; i++)
       query_argument_free(&arg->a.invocation.argv[i]);
+
+   free((void*)arg->a.invocation.argv);
 }
 
 static struct buffer query_parse_integer(struct buffer buff,
