@@ -924,7 +924,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    if (
          !settings->menu.mouse.enable 
 #ifdef HAVE_OVERLAY
-         || (settings->input.overlay_enable && input_overlay_is_alive())
+         || (settings->input.overlay_enable && input_overlay_is_alive(NULL))
 #endif
          )
    {
@@ -1092,7 +1092,7 @@ static int menu_input_pointer_post_iterate(
 
 #ifdef HAVE_OVERLAY
    check_overlay = check_overlay || 
-      (settings->input.overlay_enable && input_overlay_is_alive());
+      (settings->input.overlay_enable && input_overlay_is_alive(NULL));
 #endif
 
    if (check_overlay)
@@ -1225,7 +1225,7 @@ static unsigned menu_input_frame_pointer(unsigned *data)
 #ifdef HAVE_OVERLAY
    if (!mouse_enabled)
       mouse_enabled = !(settings->input.overlay_enable 
-            && input_overlay_is_alive());
+            && input_overlay_is_alive(NULL));
 #endif
     
    if (!mouse_enabled)

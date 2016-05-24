@@ -428,7 +428,7 @@ void input_poll(void)
       libretro_input_binds[i] = settings->input.binds[i];
 
 #ifdef HAVE_OVERLAY
-   input_poll_overlay(settings->input.overlay_opacity);
+   input_poll_overlay(NULL, settings->input.overlay_opacity);
 #endif
 
 #ifdef HAVE_COMMAND
