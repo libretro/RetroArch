@@ -499,9 +499,9 @@ static void xmb_draw_icon(
    settings_t *settings = config_get_ptr();
 
    if (
-         x < -icon_size / 2 ||
+         x < (-icon_size / 2.0f) ||
          x > width ||
-         y < icon_size  / 2 ||
+         y < (icon_size  / 2.0f) ||
          y > height + icon_size)
       return;
 
