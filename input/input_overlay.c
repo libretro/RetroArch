@@ -499,7 +499,7 @@ void input_overlay_free(void)
 }
 
 /* task_data = overlay_task_data_t* */
-static void input_overlay_loaded(void *task_data, void *user_data, const char *err)
+void input_overlay_loaded(void *task_data, void *user_data, const char *err)
 {
    size_t i;
    overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
@@ -557,14 +557,6 @@ abort_load:
 
    free(data->overlays);
    free(data);
-}
-
-void input_overlay_init(void)
-{
-   settings_t *settings = config_get_ptr();
-   if (!settings->input.overlay_enable)
-      return;
-   rarch_task_push_overlay_load_default(input_overlay_loaded, NULL);
 }
 
 /**

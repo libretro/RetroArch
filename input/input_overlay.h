@@ -241,6 +241,8 @@ bool input_overlay_key_pressed(int key);
 
 bool input_overlay_is_alive(input_overlay_t *ol);
 
+void input_overlay_loaded(void *task_data, void *user_data, const char *err);
+
 #ifdef __cplusplus
 }
 #endif
