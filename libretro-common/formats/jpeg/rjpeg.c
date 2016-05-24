@@ -2520,7 +2520,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
 {
    int comp;
    uint32_t *img         = NULL;
-   uint32_t **pixels     = (uint32_t**)buf_data;
+   uint32_t *pixels      = NULL;
    unsigned size_tex     = 0;
 
    if (!rjpeg)
@@ -2532,7 +2532,15 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       return IMAGE_PROCESS_ERROR;
 
    size_tex = (*width) * (*height);
-   *pixels  = (uint32_t*)malloc(size_tex * sizeof(uint32_t));
+   pixels   = (uint32_t*)malloc(size_tex * sizeof(uint32_t));
+
+   if (!pixels)
+   {
+      free(img);
+      return IMAGE_PROCESS_ERROR;
+   }
+
+   *buf_data = pixels;
 
    /* Convert RGBA to ARGB */
    do
@@ -2542,7 +2550,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       unsigned int B     = texel & 0x00FF0000;
       unsigned int G     = texel & 0x0000FF00;
       unsigned int R     = texel & 0x000000FF;
-      ((unsigned int*)*pixels)[size_tex] = A | (R << 16) | G | (B >> 16);
+      ((unsigned int*)pixels)[size_tex] = A | (R << 16) | G | (B >> 16);
    }while(size_tex--);
 
    free(img);
