@@ -551,7 +551,7 @@ static bool rarch_task_overlay_resolve_targets(struct overlay *ol,
    for (i = 0; i < current->size; i++)
    {
       const char *next = current->descs[i].next_index_name;
-      size_t next_idx  = 0;
+      ssize_t next_idx  = 0;
 
       if (*next)
       {
