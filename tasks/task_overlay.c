@@ -643,22 +643,14 @@ static void rarch_task_overlay_handler(retro_task_t *task)
          break;
       case OVERLAY_STATUS_DEFERRED_ERROR:
          task->error = strdup("Failed to load the overlay.");
+         task->cancelled = true;
+         break;
       case OVERLAY_STATUS_DEFERRED_DONE:
       default:
       case OVERLAY_STATUS_NONE:
          task->finished = true;
-         goto task_finished;
+         break;
    }
-
-   if (task->cancelled)
-   {
-      task->finished = true;
-      goto task_finished;
-   }
-
-   return;
-
-task_finished:
 
    if (task->cancelled)
    {
@@ -673,6 +665,7 @@ task_finished:
          input_overlay_free_overlay(&loader->overlays[i]);
 
       free(loader->overlays);
+      rarch_task_overlay_free(task);
    }
    else if (task->finished)
    {
@@ -683,9 +676,9 @@ task_finished:
       data->active   = loader->active;
 
       task->task_data = data;
+      rarch_task_overlay_free(task);
    }
 
-   rarch_task_overlay_free(task);
 }
 
 
