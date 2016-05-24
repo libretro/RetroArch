@@ -614,10 +614,19 @@ static void rarch_task_overlay_resolve_iterate(retro_task_t *task)
 
 static void rarch_task_overlay_free(retro_task_t *task)
 {
+   unsigned i;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
 
    if (loader->overlay_path)
       free(loader->overlay_path);
+
+   if (task->cancelled)
+   {
+      for (i = 0; i < loader->size; i++)
+         input_overlay_free_overlay(&loader->overlays[i]);
+
+      free(loader->overlays);
+   }
 
    if (loader->conf)
       config_file_free(loader->conf);
@@ -627,7 +636,6 @@ static void rarch_task_overlay_free(retro_task_t *task)
 
 static void rarch_task_overlay_handler(retro_task_t *task)
 {
-   overlay_task_data_t *data = NULL;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
 
    switch (loader->state)
@@ -642,7 +650,6 @@ static void rarch_task_overlay_handler(retro_task_t *task)
          rarch_task_overlay_resolve_iterate(task);
          break;
       case OVERLAY_STATUS_DEFERRED_ERROR:
-         task->error     = strdup("Failed to load the overlay.");
          task->cancelled = true;
          break;
       case OVERLAY_STATUS_DEFERRED_DONE:
@@ -652,23 +659,10 @@ static void rarch_task_overlay_handler(retro_task_t *task)
          break;
    }
 
-   if (task->cancelled)
+   if (task->finished && !task->cancelled)
    {
-      unsigned i;
-
-      if (task->error)
-         free(task->error);
-
-      task->error = strdup("Task cancelled.");
-
-      for (i = 0; i < loader->size; i++)
-         input_overlay_free_overlay(&loader->overlays[i]);
-
-      free(loader->overlays);
-   }
-   else if (task->finished)
-   {
-      data = (overlay_task_data_t*)calloc(1, sizeof(*data));
+      overlay_task_data_t *data = (overlay_task_data_t*)
+         calloc(1, sizeof(*data));
 
       data->overlays = loader->overlays;
       data->size     = loader->size;
@@ -676,10 +670,7 @@ static void rarch_task_overlay_handler(retro_task_t *task)
 
       task->task_data = data;
    }
-
 }
-
-
 
 static bool rarch_task_push_overlay_load(const char *overlay_path,
       retro_task_callback_t cb, void *user_data)
