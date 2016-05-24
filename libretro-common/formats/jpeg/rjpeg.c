@@ -2375,9 +2375,9 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned 
    int n, decode_n;
    int k;
    unsigned int i,j;
-   uint8_t *output;
-   uint8_t *coutput[4];
-   z->s->img_n = 0; /* make rjpeg__cleanup_jpeg safe */
+   uint8_t *coutput[4] = {0};
+   uint8_t *output     = NULL;
+   z->s->img_n         = 0; /* make rjpeg__cleanup_jpeg safe */
 
    /* validate req_comp */
    if (req_comp < 0 || req_comp > 4)
@@ -2489,8 +2489,6 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned 
    return output;
 
 error:
-   if (output)
-      free(output);
    rjpeg__cleanup_jpeg(z);
    return NULL;
 }
