@@ -43,7 +43,7 @@ typedef struct {
 
 } overlay_loader_t;
 
-static void rarch_task_overlay_resolve_iterate(overlay_loader_t *loader);
+static void rarch_task_overlay_resolve_iterate(retro_task_t *task);
 
 static void rarch_task_overlay_image_done(struct overlay *overlay)
 {
@@ -300,11 +300,12 @@ end:
    return ret;
 }
 
-static void rarch_task_overlay_deferred_loading(overlay_loader_t *loader)
+static void rarch_task_overlay_deferred_loading(retro_task_t *task)
 {
-   size_t i                = 0;
-   struct overlay *overlay = &loader->overlays[loader->pos];
-   bool not_done           = loader->pos < loader->size;
+   size_t i                  = 0;
+   overlay_loader_t *loader  = (overlay_loader_t*)task->state;
+   struct overlay *overlay   = &loader->overlays[loader->pos];
+   bool not_done             = loader->pos < loader->size;
 
    if (!not_done)
    {
@@ -357,7 +358,8 @@ static void rarch_task_overlay_deferred_loading(overlay_loader_t *loader)
                {
                   RARCH_ERR("[Overlay]: Failed to load overlay descs for overlay #%u.\n",
                         (unsigned)overlay->pos);
-                  loader->state = OVERLAY_STATUS_DEFERRED_ERROR;
+                  task->cancelled = true;
+                  loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
                   break;
                }
             }
@@ -371,21 +373,23 @@ static void rarch_task_overlay_deferred_loading(overlay_loader_t *loader)
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_DONE:
          if (loader->pos == 0)
-            rarch_task_overlay_resolve_iterate(loader);
+            rarch_task_overlay_resolve_iterate(task);
 
          loader->pos += 1;
          loader->loading_status = OVERLAY_IMAGE_TRANSFER_NONE;
          break;
       case OVERLAY_IMAGE_TRANSFER_ERROR:
-         loader->state = OVERLAY_STATUS_DEFERRED_ERROR;
+         task->cancelled = true;
+         loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
          break;
    }
 }
 
-static void rarch_task_overlay_deferred_load(overlay_loader_t *loader)
+static void rarch_task_overlay_deferred_load(retro_task_t *task)
 {
    unsigned i;
-   config_file_t *conf = loader->conf;
+   overlay_loader_t *loader  = (overlay_loader_t*)task->state;
+   config_file_t       *conf = loader->conf;
 
    for (i = 0; i < loader->pos_increment; i++, loader->pos++)
    {
@@ -521,8 +525,9 @@ static void rarch_task_overlay_deferred_load(overlay_loader_t *loader)
    return;
 
 error:
-   loader->pos   = 0;
-   loader->state = OVERLAY_STATUS_DEFERRED_ERROR;
+   task->cancelled = true;
+   loader->pos     = 0;
+   loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
 }
 
 static ssize_t rarch_task_overlay_find_index(const struct overlay *ol,
@@ -573,9 +578,10 @@ static bool rarch_task_overlay_resolve_targets(struct overlay *ol,
    return true;
 }
 
-static void rarch_task_overlay_resolve_iterate(overlay_loader_t *loader)
+static void rarch_task_overlay_resolve_iterate(retro_task_t *task)
 {
-   bool not_done = loader->resolve_pos < loader->size;
+   overlay_loader_t *loader  = (overlay_loader_t*)task->state;
+   bool             not_done = loader->resolve_pos < loader->size;
 
    if (!not_done)
    {
@@ -587,7 +593,8 @@ static void rarch_task_overlay_resolve_iterate(overlay_loader_t *loader)
             loader->resolve_pos, loader->size))
    {
       RARCH_ERR("[Overlay]: Failed to resolve next targets.\n");
-      loader->state = OVERLAY_STATUS_DEFERRED_ERROR;
+      task->cancelled = true;
+      loader->state   = OVERLAY_STATUS_DEFERRED_ERROR;
       return;
    }
 
@@ -626,13 +633,13 @@ static void rarch_task_overlay_handler(retro_task_t *task)
    switch (loader->state)
    {
       case OVERLAY_STATUS_DEFERRED_LOADING:
-         rarch_task_overlay_deferred_loading(loader);
+         rarch_task_overlay_deferred_loading(task);
          break;
       case OVERLAY_STATUS_DEFERRED_LOAD:
-         rarch_task_overlay_deferred_load(loader);
+         rarch_task_overlay_deferred_load(task);
          break;
       case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
-         rarch_task_overlay_resolve_iterate(loader);
+         rarch_task_overlay_resolve_iterate(task);
          break;
       case OVERLAY_STATUS_DEFERRED_ERROR:
          task->error = strdup("Failed to load the overlay.");
