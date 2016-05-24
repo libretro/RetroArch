@@ -53,20 +53,6 @@ static void rarch_task_overlay_image_done(struct overlay *overlay)
    overlay->pos_increment = (overlay->size / 2) ? (overlay->size / 2) : 8;
 }
 
-static bool rarch_task_overlay_load_texture_image(struct overlay *overlay,
-      struct texture_image *image, const char *path)
-{
-   if (!image)
-      return false;
-   if (!image_texture_load(image, path))
-      return false;
-
-   overlay->load_images[overlay->load_images_size++] = *image;
-
-   return true;
-}
-
-
 static void rarch_task_overlay_load_desc_image(
       overlay_loader_t *loader,
       struct overlay_desc *desc,
@@ -88,9 +74,9 @@ static void rarch_task_overlay_load_desc_image(
       fill_pathname_resolve_relative(path, loader->overlay_path,
             image_path, sizeof(path));
 
-      if (rarch_task_overlay_load_texture_image(input_overlay,
-               &image_tex, path))
+      if (image_texture_load(&image_tex, path))
       {
+         input_overlay->load_images[input_overlay->load_images_size++] = image_tex;
          desc->image       = image_tex;
          desc->image_index = input_overlay->load_images_size - 1;
       }
@@ -482,8 +468,7 @@ static void rarch_task_overlay_deferred_load(retro_task_t *task)
                loader->overlay_path,
                overlay->config.paths.path, sizeof(overlay_resolved_path));
 
-         if (!rarch_task_overlay_load_texture_image(overlay,
-                  &image_tex, overlay_resolved_path))
+         if (!image_texture_load(&image_tex, overlay_resolved_path))
          {
             RARCH_ERR("[Overlay]: Failed to load image: %s.\n",
                   overlay_resolved_path);
@@ -491,6 +476,7 @@ static void rarch_task_overlay_deferred_load(retro_task_t *task)
             goto error;
          }
 
+         overlay->load_images[overlay->load_images_size++] = image_tex;
          overlay->image = image_tex;
       }
 
