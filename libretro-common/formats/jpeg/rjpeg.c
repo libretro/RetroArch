@@ -2162,26 +2162,11 @@ static void rjpeg__YCbCr_to_RGB_row(uint8_t *out, const uint8_t *y, const uint8_
       g >>= 20;
       b >>= 20;
       if ((unsigned) r > 255)
-      {
-         if (r < 0)
-            r = 0;
-         else
-            r = 255;
-      }
+         r = 255;
       if ((unsigned) g > 255)
-      {
-         if (g < 0)
-            g = 0;
-         else
-            g = 255;
-      }
+         g = 255;
       if ((unsigned) b > 255)
-      {
-         if (b < 0)
-            b = 0;
-         else
-            b = 255;
-      }
+         b = 255;
       out[0] = (uint8_t)r;
       out[1] = (uint8_t)g;
       out[2] = (uint8_t)b;
