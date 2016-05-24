@@ -67,7 +67,6 @@ typedef struct
 struct rjpeg
 {
    uint8_t *buff_data;
-   uint32_t *output_image;
    void *empty;
 };
 
@@ -2520,25 +2519,33 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       size_t size, unsigned *width, unsigned *height)
 {
    int comp;
+   uint32_t *img         = NULL;
+   uint32_t **pixels     = (uint32_t**)buf_data;
    unsigned size_tex     = 0;
 
    if (!rjpeg)
       return IMAGE_PROCESS_ERROR;
 
-   rjpeg->output_image   = (uint32_t*)rjpeg_load_from_memory(rjpeg->buff_data, size, width, height, &comp, 4);
-   *buf_data             = rjpeg->output_image;
-   size_tex              = (*width) * (*height);
+   img   = (uint32_t*)rjpeg_load_from_memory(rjpeg->buff_data, size, width, height, &comp, 4);
+
+   if (!img)
+      return IMAGE_PROCESS_ERROR;
+
+   size_tex = (*width) * (*height);
+   *pixels  = (uint32_t*)malloc(size_tex * sizeof(uint32_t));
 
    /* Convert RGBA to ARGB */
    do
    {
-      unsigned int texel = rjpeg->output_image[size_tex];
+      unsigned int texel = img[size_tex];
       unsigned int A     = texel & 0xFF000000;
       unsigned int B     = texel & 0x00FF0000;
       unsigned int G     = texel & 0x0000FF00;
       unsigned int R     = texel & 0x000000FF;
-      ((unsigned int*)rjpeg->output_image)[size_tex] = A | (R << 16) | G | (B >> 16);
+      ((unsigned int*)*pixels)[size_tex] = A | (R << 16) | G | (B >> 16);
    }while(size_tex--);
+
+   free(img);
 
    return IMAGE_PROCESS_END;
 }
