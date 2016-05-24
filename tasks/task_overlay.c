@@ -393,10 +393,12 @@ static void rarch_task_overlay_deferred_load(retro_task_t *task)
 
    for (i = 0; i < loader->pos_increment; i++, loader->pos++)
    {
-      char conf_key[64]                = {0};
-      char overlay_full_screen_key[64] = {0};
-      struct overlay          *overlay = NULL;
-      bool                     to_cont = loader->pos < loader->size;
+      char conf_key[64]                 = {0};
+      char overlay_full_screen_key[64]  = {0};
+      struct texture_image *texture_img = NULL;
+      struct overlay_desc *overlay_desc = NULL;
+      struct overlay          *overlay  = NULL;
+      bool                     to_cont  = loader->pos < loader->size;
 
       if (!to_cont)
       {
@@ -418,16 +420,17 @@ static void rarch_task_overlay_deferred_load(retro_task_t *task)
          goto error;
       }
 
-      overlay->descs = (struct overlay_desc*)
+      overlay_desc = (struct overlay_desc*)
          calloc(overlay->config.descs.size, sizeof(*overlay->descs));
 
-      if (!overlay->descs)
+      if (!overlay_desc)
       {
          RARCH_ERR("[Overlay]: Failed to allocate descs.\n");
          goto error;
       }
 
-      overlay->size = overlay->config.descs.size;
+      overlay->descs = overlay_desc;
+      overlay->size  = overlay->config.descs.size;
 
       snprintf(overlay_full_screen_key, sizeof(overlay_full_screen_key),
             "overlay%u_full_screen", loader->pos);
@@ -449,14 +452,16 @@ static void rarch_task_overlay_deferred_load(retro_task_t *task)
       config_get_float(conf, conf_key, &overlay->config.range_mod);
 
       /* Precache load image array for simplicity. */
-      overlay->load_images = (struct texture_image*)
+      texture_img = (struct texture_image*)
          calloc(1 + overlay->size, sizeof(struct texture_image));
 
-      if (!overlay->load_images)
+      if (!texture_img)
       {
          RARCH_ERR("[Overlay]: Failed to allocate load_images.\n");
          goto error;
       }
+
+      overlay->load_images = texture_img;
 
       snprintf(overlay->config.paths.key, sizeof(overlay->config.paths.key),
             "overlay%u_overlay", loader->pos);
