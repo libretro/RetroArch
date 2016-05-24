@@ -765,8 +765,7 @@ bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
    return true;
 }
 
-static struct rpng_process *rpng_process_init(rpng_t *rpng,
-      uint32_t **data, unsigned *width, unsigned *height)
+static struct rpng_process *rpng_process_init(rpng_t *rpng, unsigned *width, unsigned *height)
 {
    uint8_t *inflate_buf         = NULL;
    struct rpng_process *process = (struct rpng_process*)calloc(1, sizeof(*process));
@@ -956,7 +955,7 @@ int rpng_process_image(rpng_t *rpng,
    if (!rpng->process)
    {
       struct rpng_process *process = rpng_process_init(
-            rpng, data, width, height);
+            rpng, width, height);
 
       if (!process)
          goto error;
