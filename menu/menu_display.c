@@ -218,7 +218,7 @@ void menu_display_deinit(void)
 
 bool menu_display_init(void)
 {
-   retro_assert(menu_display_msg_queue = msg_queue_new(8));
+   retro_assert((menu_display_msg_queue = msg_queue_new(8)) != NULL);
    menu_disp_ca.allocated              =  0;
    return true;
 }

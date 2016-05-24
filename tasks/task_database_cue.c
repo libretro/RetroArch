@@ -141,9 +141,9 @@ static int detect_ps1_game_sub(const char *track_path,
       char *game_id, int sub_channel_mixed)
 {
    uint8_t* tmp;
-   uint8_t buffer[2048 * 2];
    int skip, frame_size, is_mode1, cd_sector;
-   RFILE *fp = filestream_open(track_path, RFILE_MODE_READ, -1);
+   uint8_t buffer[2048 * 2] = {0};
+   RFILE                *fp = filestream_open(track_path, RFILE_MODE_READ, -1);
    if (!fp)
       return 0;
 
