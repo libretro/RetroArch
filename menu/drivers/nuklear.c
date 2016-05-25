@@ -198,8 +198,7 @@ static void nk_menu_frame(void *data)
 
    nk_input_end(&nk->ctx);
    nk_menu_main(nk);
-   if(nk_window_is_closed(&nk->ctx, "Shader Parameters"))
-      nk_menu_wnd_shader_parameters(nk);
+
    nk_common_device_draw(&device, &nk->ctx, width, height, NK_ANTI_ALIASING_ON);
 
    menu_display_draw_cursor(
@@ -294,6 +293,10 @@ static void *nk_menu_init(void **userdata)
    fill_pathname_join(nk->assets_directory, settings->directory.assets,
          "nuklear", sizeof(nk->assets_directory));
    nk_menu_init_device(nk);
+
+   nk->window[ZRMENU_WND_MAIN].open = true;
+   nk->window[ZRMENU_WND_TEST].open = true;
+   nk->window[ZRMENU_WND_SHADER_PARAMETERS].open = true;
 
    return menu;
 error:
