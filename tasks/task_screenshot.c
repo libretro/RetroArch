@@ -53,8 +53,13 @@
 #endif
 
 /* Take frame bottom-up. */
-static bool screenshot_dump(const char *folder, const void *frame,
-      unsigned width, unsigned height, int pitch, bool bgr24)
+static bool screenshot_dump(
+      const char *global_name_base,
+      const char *folder,
+      const void *frame,
+      unsigned width,
+      unsigned height,
+      int pitch, bool bgr24)
 {
    char filename[PATH_MAX_LENGTH];
    char shotname[256]             = {0};
@@ -72,8 +77,7 @@ static bool screenshot_dump(const char *folder, const void *frame,
    }
    else
    {
-      global_t *global = global_get_ptr();
-      snprintf(shotname, sizeof(shotname),"%s.png", path_basename(global->name.base));
+      snprintf(shotname, sizeof(shotname),"%s.png", path_basename(global_name_base));
       fill_pathname_join(filename, folder, shotname, sizeof(filename));
    }
 
@@ -127,7 +131,7 @@ static bool screenshot_dump(const char *folder, const void *frame,
    return ret;
 }
 
-static bool take_screenshot_viewport(void)
+static bool take_screenshot_viewport(const char *global_name_base)
 {
    char screenshot_path[PATH_MAX_LENGTH] = {0};
    const char *screenshot_dir            = NULL;
@@ -152,14 +156,13 @@ static bool take_screenshot_viewport(void)
 
    if (string_is_empty(screenshot_dir))
    {
-      global_t *global = global_get_ptr();
-      fill_pathname_basedir(screenshot_path, global->name.base,
+      fill_pathname_basedir(screenshot_path, global_name_base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
 
    /* Data read from viewport is in bottom-up order, suitable for BMP. */
-   if (!screenshot_dump(screenshot_dir, buffer, vp.width, vp.height,
+   if (!screenshot_dump(global_name_base, screenshot_dir, buffer, vp.width, vp.height,
             vp.width * 3, true))
       goto done;
 
@@ -171,7 +174,7 @@ done:
    return retval;
 }
 
-static bool take_screenshot_raw(void)
+static bool take_screenshot_raw(const char *global_name_base)
 {
    unsigned width, height;
    size_t pitch;
@@ -184,8 +187,7 @@ static bool take_screenshot_raw(void)
 
    if (string_is_empty(settings->directory.screenshot))
    {
-      global_t *global = global_get_ptr();
-      fill_pathname_basedir(screenshot_path, global->name.base,
+      fill_pathname_basedir(screenshot_path, global_name_base,
             sizeof(screenshot_path));
       screenshot_dir = screenshot_path;
    }
@@ -193,18 +195,17 @@ static bool take_screenshot_raw(void)
    /* Negative pitch is needed as screenshot takes bottom-up,
     * but we use top-down.
     */
-   return screenshot_dump(screenshot_dir,
+   return screenshot_dump(global_name_base, screenshot_dir,
          (const uint8_t*)data + (height - 1) * pitch,
          width, height, -pitch, false);
 }
 
-static bool take_screenshot_choice(void)
+static bool take_screenshot_choice(const char *global_name_base)
 {
-   global_t *global     = global_get_ptr();
    settings_t *settings = config_get_ptr();
 
    /* No way to infer screenshot directory. */
-   if (string_is_empty(settings->directory.screenshot) && (!*global->name.base))
+   if (string_is_empty(settings->directory.screenshot) && (!*global_name_base))
       return false;
 
    if (video_driver_supports_viewport_read())
@@ -212,11 +213,11 @@ static bool take_screenshot_choice(void)
       /* Avoid taking screenshot of GUI overlays. */
       video_driver_set_texture_enable(false, false);
       video_driver_cached_frame_render();
-      return take_screenshot_viewport();
+      return take_screenshot_viewport(global_name_base);
    }
 
    if (!video_driver_cached_frame_has_valid_framebuffer())
-      return take_screenshot_raw();
+      return take_screenshot_raw(global_name_base);
 
    if (video_driver_supports_read_frame_raw())
    {
@@ -238,7 +239,7 @@ static bool take_screenshot_choice(void)
       if (frame_data)
       {
          video_driver_set_cached_frame_ptr(frame_data);
-         if (take_screenshot_raw())
+         if (take_screenshot_raw(global_name_base))
             ret = true;
          free(frame_data);
       }
@@ -256,8 +257,9 @@ static bool take_screenshot_choice(void)
  **/
 bool take_screenshot(void)
 {
+   global_t *global           = global_get_ptr();
    bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool             ret       = take_screenshot_choice();
+   bool             ret       = take_screenshot_choice(global->name.base);
    const char *msg_screenshot = ret 
       ? msg_hash_to_str(MSG_TAKING_SCREENSHOT)  :
         msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
