@@ -406,7 +406,6 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
 const char *retroarch_get_current_savefile_dir(void)
 {
    char *ret = current_savefile_dir;
-
    RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n", ret);
 
    return ret;
@@ -1290,9 +1289,9 @@ bool retroarch_main_init(int argc, char *argv[])
    {
       char str[PATH_MAX_LENGTH] = {0};
 
-      RARCH_LOG_OUTPUT("=== Build =======================================");
+      RARCH_LOG_OUTPUT("=== Build =======================================\n");
       retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
-      fprintf(stderr, "%s", str);
+      fprintf(stderr, "Capabilities: %s\n", str);
       fprintf(stderr, "Built: %s\n", __DATE__);
       RARCH_LOG_OUTPUT("Version: %s\n", PACKAGE_VERSION);
 #ifdef HAVE_GIT_VERSION
