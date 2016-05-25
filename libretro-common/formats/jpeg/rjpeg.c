@@ -2529,7 +2529,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
    *buf_data = pixels;
 
    /* Convert RGBA to ARGB */
-   do
+   while (size_tex--)
    {
       unsigned int texel = img[size_tex];
       unsigned int A     = texel & 0xFF000000;
@@ -2537,7 +2537,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
       unsigned int G     = texel & 0x0000FF00;
       unsigned int R     = texel & 0x000000FF;
       ((unsigned int*)pixels)[size_tex] = A | (R << 16) | G | (B >> 16);
-   }while(size_tex--);
+   };
 
    free(img);
 
