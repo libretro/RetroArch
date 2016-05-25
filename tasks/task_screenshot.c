@@ -258,12 +258,15 @@ static bool take_screenshot_choice(const char *global_name_base)
 bool take_screenshot(void)
 {
    global_t *global           = global_get_ptr();
+   char *name_base            = strdup(global->name.base);
    bool            is_paused  = runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL);
-   bool             ret       = take_screenshot_choice(global->name.base);
+   bool             ret       = take_screenshot_choice(name_base);
    const char *msg_screenshot = ret 
       ? msg_hash_to_str(MSG_TAKING_SCREENSHOT)  :
         msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT);
    const char *msg            = msg_screenshot;
+
+   free(name_base);
 
    runloop_msg_queue_push(msg, 1, is_paused ? 1 : 180, true);
 
