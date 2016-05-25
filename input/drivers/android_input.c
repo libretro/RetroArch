@@ -840,16 +840,17 @@ static void handle_hotplug(android_input_data_t *android_data,
       else if (*port == 1)
          strlcpy(name_buf, "TTT THT Arcade (User 2)", sizeof(name_buf));
    }
-
-   else if (strstr(device_name, "360 Wireless"))
-      strlcpy(name_buf, "XBox 360 Wireless", sizeof(name_buf));
-
-   else if (strstr(device_name, "Microsoft"))
+/*
+   else if (strstr(device_name, "Microsoft") )
    {
       if (strstr(device_name, "Dual Strike"))
          strlcpy(device_name, "SideWinder Dual Strike", sizeof(device_name));
       else if (strstr(device_name, "SideWinder"))
          strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
+      else if (strstr(device_name, "X-Box 360 pad"))
+         strlcpy(name_buf, "XBox 360 Controller", sizeof(name_buf));
+      else if (strstr(device_name, "360 Wireless"))
+         strlcpy(name_buf, "XBox 360 Wireless Controller", sizeof(name_buf));
    }
 
    else if (
@@ -857,8 +858,8 @@ static void handle_hotplug(android_input_data_t *android_data,
          strstr(device_name, "Dualshock3") ||
          strstr(device_name, "Sixaxis")
          )
-      strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
-
+      strlcpy(name_buf, "PlayStation 3 Controller", sizeof(name_buf));
+*/
    else if (strstr(device_name, "MOGA"))
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
 
