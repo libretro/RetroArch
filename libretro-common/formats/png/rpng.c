@@ -964,7 +964,7 @@ int rpng_process_image(rpng_t *rpng,
          goto error;
 
       rpng->process = process;
-      return 0;
+      return IMAGE_PROCESS_NEXT;
    }
 
    if (!rpng->process->inflate_initialized)
@@ -972,7 +972,7 @@ int rpng_process_image(rpng_t *rpng,
       if (rpng_load_image_argb_process_inflate_init(rpng, data,
                width, height) == -1)
          goto error;
-      return 0;
+      return IMAGE_PROCESS_NEXT;
    }
 
    return png_reverse_filter_iterate(rpng, data);
