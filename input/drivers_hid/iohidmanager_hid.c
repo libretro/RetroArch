@@ -323,8 +323,10 @@ static void iohidmanager_hid_device_add(void *data, IOReturn result,
    struct iohidmanager_hid_adapter *adapter = (struct iohidmanager_hid_adapter*)
       calloc(1, sizeof(*adapter));
 
-   if (!adapter || !hid)
+   if (!adapter)
       return;
+   if (!hid)
+      goto error;
 
    adapter->handle        = device;
 
