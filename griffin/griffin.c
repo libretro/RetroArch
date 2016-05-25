@@ -915,8 +915,8 @@ MENU
 #endif
 
 #ifdef HAVE_NUKLEAR
-#include "../menu/drivers/nk_common.c"
-#include "../menu/drivers/nk_menu.c"
+#include "../menu/drivers/nuklear/nk_common.c"
+#include "../menu/drivers/nuklear/nk_menu.c"
 #include "../menu/drivers/nuklear.c"
 #endif
 

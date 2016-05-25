@@ -16,8 +16,8 @@
  */
 
 #include "nk_common.h"
-#include "../menu_display.h"
-#include "../menu_input.h"
+#include "../../menu_display.h"
+#include "../../menu_input.h"
 
 enum
 {

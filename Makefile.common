@@ -421,8 +421,8 @@ ifeq ($(HAVE_MATERIALUI), 1)
    DEFINES += -DHAVE_MATERIALUI
 endif
 ifeq ($(HAVE_NUKLEAR), 1)
-   OBJ += menu/drivers/nk_common.o
-   OBJ += menu/drivers/nk_menu.o
+   OBJ += menu/drivers/nuklear/nk_common.o
+   OBJ += menu/drivers/nuklear/nk_menu.o
    OBJ += menu/drivers/nuklear.o
    DEFINES += -DHAVE_NUKLEAR
 endif

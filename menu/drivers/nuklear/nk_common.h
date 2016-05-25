@@ -23,11 +23,11 @@
 #define NK_INCLUDE_DEFAULT_FONT
 
 #include <string.h>
-#include "../../deps/nuklear/nuklear.h"
-#include "../../deps/stb/stb_image.h"
+#include "../../../deps/nuklear/nuklear.h"
+#include "../../../deps/stb/stb_image.h"
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
-#include "../../gfx/common/gl_common.h"
+#include "../../../gfx/common/gl_common.h"
 #endif
 
 #define MAX_VERTEX_MEMORY     (512 * 1024)

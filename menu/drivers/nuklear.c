@@ -32,7 +32,7 @@
 #include <lists/string_list.h>
 
 #include "menu_generic.h"
-#include "nk_menu.h"
+#include "nuklear/nk_menu.h"
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"

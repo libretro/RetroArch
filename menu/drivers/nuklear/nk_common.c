@@ -27,11 +27,11 @@
 
 #include "nk_common.h"
 
-#include "../menu_display.h"
-#include "../../gfx/video_shader_driver.h"
+#include "../../menu_display.h"
+#include "../../../gfx/video_shader_driver.h"
 
-#include "../../gfx/drivers/gl_shaders/pipeline_nuklear.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_nuklear.glsl.frag.h"
+#include "../../../gfx/drivers/gl_shaders/pipeline_nuklear.glsl.vert.h"
+#include "../../../gfx/drivers/gl_shaders/pipeline_nuklear.glsl.frag.h"
 
 struct nk_font *font;
 struct nk_font_atlas atlas;
@@ -69,7 +69,7 @@ char* nk_common_file_load(const char* path, size_t* size)
    return (char*)buf;
 }
 
-NK_API void nk_common_device_init(struct nk_device *dev)
+void nk_common_device_init(struct nk_device *dev)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    GLint status;

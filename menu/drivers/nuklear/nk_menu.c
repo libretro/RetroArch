@@ -28,26 +28,26 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 
-#include "../menu_driver.h"
-#include "../menu_hash.h"
+#include "../../menu_driver.h"
+#include "../../menu_hash.h"
 
-#include "../../gfx/common/gl_common.h"
-#include "../../core_info.h"
-#include "../../configuration.h"
-#include "../../retroarch.h"
+#include "../../../gfx/common/gl_common.h"
+#include "../../../core_info.h"
+#include "../../../configuration.h"
+#include "../../../retroarch.h"
 
 
 #define LEN(a) (sizeof(a)/sizeof(a)[0])
 
 
-void nk_menu_set_state(nk_menu_handle_t *zr, const int id,
+void nk_menu_wnd_set_state(nk_menu_handle_t *zr, const int id,
    struct nk_vec2 pos, struct nk_vec2 size)
 {
    zr->window[id].position = pos;
    zr->window[id].size = size;
 }
 
-void nk_menu_get_state(nk_menu_handle_t *zr, const int id,
+void nk_menu_wnd_get_state(nk_menu_handle_t *zr, const int id,
    struct nk_vec2 *pos, struct nk_vec2 *size)
 {
    *pos = zr->window[id].position;
@@ -97,7 +97,7 @@ void nk_menu_wnd_shader_parameters(nk_menu_handle_t *zr)
       }
    }
    /* save position and size to restore after context reset */
-   nk_menu_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
+   nk_menu_wnd_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);
 }
 
@@ -138,7 +138,7 @@ void nk_menu_wnd_test(nk_menu_handle_t *zr)
       size = menu_entries_get_size();
    }
    /* save position and size to restore after context reset */
-   nk_menu_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
+   nk_menu_wnd_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);
 }
 
@@ -168,7 +168,7 @@ void nk_menu_wnd_main(nk_menu_handle_t *zr)
 
 
    /* save position and size to restore after context reset */
-   nk_menu_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
+   nk_menu_wnd_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    if (zr->size_changed)
       nk_window_set_size(ctx, nk_vec2(nk_window_get_size(ctx).x, zr->size.y));
 
