@@ -406,6 +406,11 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
 const char *retroarch_get_current_savefile_dir(void)
 {
    char *ret = current_savefile_dir;
+
+   /* try to infer the path in case it's still empty by calling
+   set_paths_redirect */
+   if (string_is_empty(ret))
+      rarch_ctl(RARCH_CTL_SET_PATHS_REDIRECT, NULL);
    RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n", ret);
 
    return ret;
