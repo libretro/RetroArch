@@ -1,4 +1,4 @@
-static const char *zahnrad_shader = 
+static const char *nuklear_shader = 
 "struct input\n"
 "{\n"
 "  float time;\n"

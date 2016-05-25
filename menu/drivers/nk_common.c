@@ -30,8 +30,8 @@
 #include "../menu_display.h"
 #include "../../gfx/video_shader_driver.h"
 
-#include "../../gfx/drivers/gl_shaders/pipeline_zahnrad.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_zahnrad.glsl.frag.h"
+#include "../../gfx/drivers/gl_shaders/pipeline_nuklear.glsl.vert.h"
+#include "../../gfx/drivers/gl_shaders/pipeline_nuklear.glsl.frag.h"
 
 struct nk_font *font;
 struct nk_font_atlas atlas;
@@ -77,8 +77,8 @@ NK_API void nk_common_device_init(struct nk_device *dev)
    dev->prog      = glCreateProgram();
    dev->vert_shdr = glCreateShader(GL_VERTEX_SHADER);
    dev->frag_shdr = glCreateShader(GL_FRAGMENT_SHADER);
-   glShaderSource(dev->vert_shdr, 1, &zahnrad_vertex_shader, 0);
-   glShaderSource(dev->frag_shdr, 1, &zahnrad_fragment_shader, 0);
+   glShaderSource(dev->vert_shdr, 1, &nuklear_vertex_shader, 0);
+   glShaderSource(dev->frag_shdr, 1, &nuklear_fragment_shader, 0);
    glCompileShader(dev->vert_shdr);
    glCompileShader(dev->frag_shdr);
    glGetShaderiv(dev->vert_shdr, GL_COMPILE_STATUS, &status);

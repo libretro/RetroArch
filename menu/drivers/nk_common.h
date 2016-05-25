@@ -22,7 +22,8 @@
 #define NK_INCLUDE_FONT_BAKING
 #define NK_INCLUDE_DEFAULT_FONT
 
-#include "../../deps/zahnrad/nuklear.h"
+#include <string.h>
+#include "../../deps/nuklear/nuklear.h"
 #include "../../deps/stb/stb_image.h"
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)

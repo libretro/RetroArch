@@ -147,7 +147,7 @@ static void nk_menu_context_reset_textures(nk_menu_handle_t *nk,
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR, &nk->textures.list[i]);
 
-      image_texture_load(&ti);
+      image_texture_load(&ti, path);
    }
 }
 
@@ -292,7 +292,7 @@ static void *nk_menu_init(void **userdata)
    *userdata = nk;
 
    fill_pathname_join(nk->assets_directory, settings->directory.assets,
-         "zahnrad", sizeof(nk->assets_directory));
+         "nuklear", sizeof(nk->assets_directory));
    nk_menu_init_device(nk);
 
    return menu;
@@ -352,7 +352,7 @@ static void nk_menu_context_reset(void *data)
       return;
 
    fill_pathname_join(iconpath, settings->directory.assets,
-         "zahnrad", sizeof(iconpath));
+         "nuklear", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    nk_menu_layout(nk);

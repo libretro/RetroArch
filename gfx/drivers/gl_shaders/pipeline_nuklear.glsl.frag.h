@@ -1,4 +1,4 @@
-static const char *zahnrad_fragment_shader =
+static const char *nuklear_fragment_shader =
 "#version 300 es\n"
 "precision mediump float;\n"
 "uniform sampler2D Texture;\n"

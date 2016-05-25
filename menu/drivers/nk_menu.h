@@ -57,7 +57,7 @@ struct window {
 
 typedef struct nk_menu_handle
 {
-   /* zahnrad mandatory */
+   /* nuklear mandatory */
    void *memory;
    struct nk_context ctx;
    struct nk_memory_status status;
@@ -83,7 +83,7 @@ typedef struct nk_menu_handle
       menu_texture_item list[NK_TEXTURE_LAST];
    } textures;
 
-   gfx_font_raster_block_t list_block;
+   video_font_raster_block_t list_block;
 } nk_menu_handle_t;
 
 void nk_menu_wnd_shader_parameters(nk_menu_handle_t *zr);

@@ -1,4 +1,4 @@
-static const char *zahnrad_vertex_shader =
+static const char *nuklear_vertex_shader =
 "#version 300 es\n"
 "uniform mat4 ProjMtx;\n"
 "in vec2 Position;\n"
