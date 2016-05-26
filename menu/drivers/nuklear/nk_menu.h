@@ -36,7 +36,7 @@ enum
    NK_WND_SETTINGS,
    NK_WND_FILE_PICKER,
    NK_WND_SHADER_PARAMETERS,
-   NK_WND_LAST,
+   NK_WND_LAST
 };
 
 enum nk_menu_theme

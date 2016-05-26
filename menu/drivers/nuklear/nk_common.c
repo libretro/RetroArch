@@ -221,7 +221,9 @@ void nk_common_device_draw(struct nk_device *dev,
    config.shape_AA             = AA;
    config.line_AA              = AA;
    config.circle_segment_count = 22;
-   //config.line_thickness       = 1.0f;
+#if 0
+   config.line_thickness       = 1.0f;
+#endif
    config.null                 = dev->null;
 
    /* setup buffers to load vertices and elements */
@@ -269,7 +271,6 @@ void nk_common_device_draw(struct nk_device *dev,
    menu_display_blend_end();
 }
 
-//void nk_mem_alloc(nk_handle a, void *old, nk_size b);
 void* nk_common_mem_alloc(nk_handle a, void *old, nk_size b)
 {
    (void)a;
