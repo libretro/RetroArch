@@ -918,6 +918,7 @@ MENU
 #include "../menu/drivers/nuklear/nk_common.c"
 #include "../menu/drivers/nuklear/nk_menu.c"
 #include "../menu/drivers/nuklear/nk_wnd_shader_parameters.c"
+#include "../menu/drivers/nuklear/nk_wnd_main.c"
 #include "../menu/drivers/nuklear.c"
 #endif
 

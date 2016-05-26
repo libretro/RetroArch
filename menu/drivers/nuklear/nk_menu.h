@@ -88,6 +88,6 @@ typedef struct nk_menu_handle
    video_font_raster_block_t list_block;
 } nk_menu_handle_t;
 
-void nk_menu_wnd_shader_parameters(nk_menu_handle_t *zr);
-void nk_menu_wnd_main(nk_menu_handle_t *zr);
+void nk_wnd_shader_parameters(nk_menu_handle_t *zr);
+void nk_wnd_main(nk_menu_handle_t *zr);
 

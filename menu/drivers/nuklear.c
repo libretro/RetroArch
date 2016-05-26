@@ -53,9 +53,12 @@ static void nk_menu_main(nk_menu_handle_t *nk)
    struct nk_context *ctx = &nk->ctx;
 
    if (nk->window[ZRMENU_WND_SHADER_PARAMETERS].open)
-      nk_menu_wnd_shader_parameters(nk);
+      nk_wnd_shader_parameters(nk);
+   if (nk->window[ZRMENU_WND_MAIN].open)
+      nk_wnd_main(nk);
 
    nk->window[ZRMENU_WND_SHADER_PARAMETERS].open = !nk_window_is_closed(ctx, "Shader Parameters");
+   nk->window[ZRMENU_WND_MAIN].open = !nk_window_is_closed(ctx, "Main");
 
    nk_buffer_info(&nk->status, &nk->ctx.memory);
 }
@@ -285,6 +288,7 @@ static void *nk_menu_init(void **userdata)
    nk_menu_init_device(nk);
 
    nk->window[ZRMENU_WND_SHADER_PARAMETERS].open = true;
+   nk->window[ZRMENU_WND_MAIN].open = true;
 
    return menu;
 error:
