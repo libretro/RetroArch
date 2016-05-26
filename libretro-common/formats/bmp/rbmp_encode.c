@@ -167,7 +167,6 @@ static void dump_content(RFILE *file, const void *frame,
                if(pad != 0)
                   filestream_write(file, &zeros, pad);
             }
-            return;
          }
          break;
       case RBMP_SOURCE_TYPE_ARGB8888:

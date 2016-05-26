@@ -1650,8 +1650,9 @@ error:
 
 static bool command_event_cmd_exec(void *data)
 {
+   char *fullpath;
+#if defined(HAVE_DYNAMIC)
    content_ctx_info_t content_info;
-   char *fullpath = NULL;
 
    content_info.argc        = 0;
    content_info.argv        = NULL;
@@ -1661,7 +1662,9 @@ static bool command_event_cmd_exec(void *data)
 #else
    content_info.environ_get = NULL;
 #endif
+#endif
 
+   fullpath = NULL;
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
    if (fullpath != data)

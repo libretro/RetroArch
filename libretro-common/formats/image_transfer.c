@@ -113,13 +113,15 @@ bool image_transfer_start(void *data, enum image_type_enum type)
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
          return true;
-#endif
+#else
          break;
+#endif
       case IMAGE_TYPE_TGA:
 #ifdef HAVE_RTGA
          return true;
-#endif
+#else
          break;
+#endif
       case IMAGE_TYPE_BMP:
          return true;
       case IMAGE_TYPE_NONE:
