@@ -34,9 +34,6 @@
 static bool assets_loaded;
 static char path[PATH_MAX_LENGTH];
 
-static file_list_t *drives = NULL;
-struct string_list *files  = NULL;
-
 struct icon_list {
     struct nk_image disk;
     struct nk_image folder;
@@ -69,12 +66,14 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk)
 
    int i = 0;
    char buf[PATH_MAX_LENGTH];
+   
+   static file_list_t *drives;
+   static struct string_list *files;
 
    if (!drives)
    {
       drives = (file_list_t*)calloc(1, sizeof(file_list_t));
       frontend_driver_parse_drive_list(drives);
-      /* RARCH_LOG ("Drives: %s\n",drives->list[0].path); */
    }
 
    if (!assets_loaded)
@@ -85,36 +84,50 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk)
          NK_WINDOW_BORDER))
    {
       nk_layout_row_dynamic(ctx, 30, 3);
-      for (i = 0; i < drives->size; i++)
+      if (drives->size == 0)
       {
-         if(nk_button_image_label(ctx, icons.disk, drives->list[i].path, 
+         if(nk_button_image_label(ctx, icons.disk, "/", 
             NK_TEXT_CENTERED, NK_BUTTON_DEFAULT))
          {
-            fill_pathname_join(path, drives->list[i].path,
+            fill_pathname_join(path, "/",
                   "", sizeof(path));
-            /* RARCH_LOG("Current Path: %s\n", path); */
             files = dir_list_new(path, NULL, true, true);
          }
       }
-      nk_layout_row_dynamic(ctx, 30, 1);
-      if (files)
-      for (i = 0; i < files->size; i++)
+      else
       {
-         /* RARCH_LOG ("Drives: %s\n",files->elems[i].data); */
-         if (nk_button_image_label(ctx, path_is_directory(files->elems[i].data) ? 
-            icons.folder : icons.file, path_basename(files->elems[i].data), 
-            NK_TEXT_RIGHT, NK_BUTTON_DEFAULT))
+         for (i = 0; i < drives->size; i++)
          {
-            fill_pathname_join(path, files->elems[i].data,
-                  "", sizeof(path));
-            if (path_is_directory (path))
+            if(nk_button_image_label(ctx, icons.disk, drives->list[i].path, 
+               NK_TEXT_CENTERED, NK_BUTTON_DEFAULT))
+            {
+               fill_pathname_join(path, drives->list[i].path,
+                     "", sizeof(path));
                files = dir_list_new(path, NULL, true, true);
-            else
-               RARCH_LOG ("File: %s selected\n", path);
+            }
          }
       }
 
+      nk_layout_row_dynamic(ctx, 30, 1);
+      if (files)
+      {
+         for (i = 0; i < files->size; i++)
+         {
+            if (nk_button_image_label(ctx, path_is_directory(files->elems[i].data) ? 
+               icons.folder : icons.file, path_basename(files->elems[i].data), 
+               NK_TEXT_RIGHT, NK_BUTTON_DEFAULT))
+            {
+               fill_pathname_join(path, files->elems[i].data,
+                     "", sizeof(path));
+               if (path_is_directory (path))
+                  files = dir_list_new(path, NULL, true, true);
+               else
+                  RARCH_LOG ("File: %s selected\n", path);
+            }
+         }
+      }
    }
+
    /* save position and size to restore after context reset */
    nk_wnd_set_state(nk, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);
