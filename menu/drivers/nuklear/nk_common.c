@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+ /*  This file is intended for backend code. */
+
 #include <streams/file_stream.h>
 
 #define NK_INCLUDE_FIXED_TYPES

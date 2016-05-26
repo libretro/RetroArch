@@ -15,6 +15,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*  This file is intended for helper functions, custom controls, etc. */
+
 #include "nk_common.h"
 #include "../../menu_display.h"
 #include "../../menu_input.h"
@@ -28,8 +30,8 @@ enum
 enum
 {
    ZRMENU_WND_MAIN = 0,
+   ZRMENU_WND_SETTINGS,
    ZRMENU_WND_SHADER_PARAMETERS,
-   ZRMENU_WND_TEST,
 };
 
 enum nk_menu_theme
@@ -87,6 +89,5 @@ typedef struct nk_menu_handle
 } nk_menu_handle_t;
 
 void nk_menu_wnd_shader_parameters(nk_menu_handle_t *zr);
-void nk_menu_wnd_test(nk_menu_handle_t *zr);
 void nk_menu_wnd_main(nk_menu_handle_t *zr);
 

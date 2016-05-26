@@ -52,15 +52,10 @@ static void nk_menu_main(nk_menu_handle_t *nk)
 {
    struct nk_context *ctx = &nk->ctx;
 
-   if (nk->window[ZRMENU_WND_MAIN].open)
-      nk_menu_wnd_main(nk);
    if (nk->window[ZRMENU_WND_SHADER_PARAMETERS].open)
       nk_menu_wnd_shader_parameters(nk);
-   if (nk->window[ZRMENU_WND_TEST].open)
-      nk_menu_wnd_test(nk);
 
    nk->window[ZRMENU_WND_SHADER_PARAMETERS].open = !nk_window_is_closed(ctx, "Shader Parameters");
-   nk->window[ZRMENU_WND_TEST].open = !nk_window_is_closed(ctx, "Test");
 
    nk_buffer_info(&nk->status, &nk->ctx.memory);
 }
@@ -216,13 +211,8 @@ static void nk_menu_frame(void *data)
 
 static void nk_menu_layout(nk_menu_handle_t *nk)
 {
-   float scale_factor;
-   unsigned width, height, new_header_height;
-
+   unsigned width, height;
    video_driver_get_size(&width, &height);
-
-   scale_factor = menu_display_get_dpi();
-   menu_display_set_header_height(new_header_height);
 }
 
 static void nk_menu_init_device(nk_menu_handle_t *nk)
@@ -294,8 +284,6 @@ static void *nk_menu_init(void **userdata)
          "nuklear", sizeof(nk->assets_directory));
    nk_menu_init_device(nk);
 
-   nk->window[ZRMENU_WND_MAIN].open = true;
-   nk->window[ZRMENU_WND_TEST].open = true;
    nk->window[ZRMENU_WND_SHADER_PARAMETERS].open = true;
 
    return menu;
