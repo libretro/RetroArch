@@ -46,7 +46,9 @@ struct nk_image nk_common_image_load(const char *filename)
     int x,y,n;
     GLuint tex;
     unsigned char *data = stbi_load(filename, &x, &y, &n, 0);
-    if (!data) printf("Failed to load image: %s\n", filename);
+
+    if (!data)
+       printf("Failed to load image: %s\n", filename);
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
     glGenTextures(1, &tex);

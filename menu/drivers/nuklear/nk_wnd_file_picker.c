@@ -15,8 +15,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "nk_menu.h"
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -26,6 +24,9 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <lists/dir_list.h>
+#include <retro_stat.h>
+
+#include "nk_menu.h"
 
 #include "../../menu_driver.h"
 #include "../../menu_hash.h"
@@ -34,16 +35,19 @@
 static bool assets_loaded;
 static char path[PATH_MAX_LENGTH];
 
-struct icon_list {
+struct icon_list
+{
     struct nk_image disk;
     struct nk_image folder;
     struct nk_image file;
 };
+
 struct icon_list icons;
 
 void load_icons(nk_menu_handle_t *nk)
 {
-   char buf[PATH_MAX_LENGTH];
+   char buf[PATH_MAX_LENGTH] = {0};
+
    fill_pathname_join(buf, nk->assets_directory,
          "harddisk.png", sizeof(buf));
    icons.disk = nk_common_image_load(buf);
@@ -60,14 +64,12 @@ void load_icons(nk_menu_handle_t *nk)
 void nk_wnd_file_picker(nk_menu_handle_t *nk)
 {
    struct nk_panel layout;
-   struct nk_context *ctx = &nk->ctx;
-   const int id           = NK_WND_FILE_PICKER;
-   settings_t *settings   = config_get_ptr();
-
-   int i = 0;
-
-   static file_list_t *drives;
-   static struct string_list *files;
+   struct nk_context            *ctx = &nk->ctx;
+   const int id                      = NK_WND_FILE_PICKER;
+   int i                             = 0;
+   static file_list_t *drives        = NULL;
+   static struct string_list *files  = NULL;
+   settings_t *settings              = config_get_ptr();
 
    if (!drives)
    {
@@ -83,6 +85,7 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk)
          NK_WINDOW_BORDER))
    {
       nk_layout_row_dynamic(ctx, 30, 3);
+
       if (drives->size == 0)
       {
          if(nk_button_image_label(ctx, icons.disk, "/", 
