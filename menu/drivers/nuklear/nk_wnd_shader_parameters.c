@@ -48,10 +48,6 @@ void nk_menu_wnd_shader_parameters(nk_menu_handle_t *zr)
          NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_MOVABLE|
          NK_WINDOW_SCALABLE|NK_WINDOW_BORDER))
    {
-      struct nk_panel combo;
-      static const char *themes[] = {"Dark", "Light"};
-      enum   nk_menu_theme old     = zr->theme;
-
       nk_layout_row_dynamic(ctx, 30, 1);
 
       video_shader_driver_get_current_shader(&shader_info);
