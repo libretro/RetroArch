@@ -1826,6 +1826,7 @@ bool rarch_task_push_content_load_default(
             return false;
 
          command_event(CMD_EVENT_LOAD_CORE, NULL);
+         return true;
          break;
       case CONTENT_MODE_LOAD_NONE:
          break;
