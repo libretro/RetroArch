@@ -127,21 +127,17 @@ static int cb_image_menu_generic(nbio_handle_t *nbio)
 {
    unsigned width = 0, height = 0;
    nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
+   int retval;
+
    if (!nbio || !image)
       return -1;
 
-   switch (task_image_process(nbio,
-         &width, &height))
-   {
-      case IMAGE_PROCESS_ERROR:
-      case IMAGE_PROCESS_ERROR_END:
-         return -1;
-      default:
-         break;
-   }
+   retval = task_image_process(nbio, &width, &height);
+   if ((retval == IMAGE_PROCESS_ERROR) || (retval == IMAGE_PROCESS_ERROR_END))
+      return -1;
 
-   image->is_blocking_on_processing         = true;
-   image->is_finished                       = false;
+   image->is_blocking_on_processing         = (retval != IMAGE_PROCESS_END);
+   image->is_finished                       = (retval == IMAGE_PROCESS_END);
 
    return 0;
 }
