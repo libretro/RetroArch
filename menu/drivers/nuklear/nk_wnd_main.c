@@ -29,9 +29,6 @@
 #include "../../menu_driver.h"
 #include "../../menu_hash.h"
 
-
-
-
 void nk_wnd_main(nk_menu_handle_t *zr)
 {
    unsigned i;
@@ -46,9 +43,8 @@ void nk_wnd_main(nk_menu_handle_t *zr)
          NK_WINDOW_SCALABLE|NK_WINDOW_BORDER))
    {
       nk_layout_row_dynamic(ctx, 30, 1);
-
-
    }
+
    /* save position and size to restore after context reset */
    nk_wnd_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);

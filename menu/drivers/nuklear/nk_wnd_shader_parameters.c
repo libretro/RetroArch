@@ -34,7 +34,6 @@
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
 
-
 void nk_wnd_shader_parameters(nk_menu_handle_t *zr)
 {
    unsigned i;
@@ -58,12 +57,6 @@ void nk_wnd_shader_parameters(nk_menu_handle_t *zr)
          {
             if (!string_is_empty(shader_info.data->parameters[i].desc))
             {
-/*               if(shader_info.data->parameters[i].minimum == 0 &&
-                     shader_info.data->parameters[i].maximum == 1 &&
-                     shader_info.data->parameters[i].step == 1)
-                  nk_checkbox_float(ctx, shader_info.data->parameters[i].desc,
-                        &(shader_info.data->parameters[i].current));
-               else*/
                   nk_property_float(ctx, shader_info.data->parameters[i].desc,
                         shader_info.data->parameters[i].minimum,
                         &(shader_info.data->parameters[i].current),
@@ -73,6 +66,7 @@ void nk_wnd_shader_parameters(nk_menu_handle_t *zr)
          }
       }
    }
+
    /* save position and size to restore after context reset */
    nk_wnd_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);
