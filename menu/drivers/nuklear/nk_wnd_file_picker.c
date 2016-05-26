@@ -116,8 +116,7 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk)
                icons.folder : icons.file, path_basename(files->elems[i].data), 
                NK_TEXT_RIGHT, NK_BUTTON_DEFAULT))
             {
-               fill_pathname_join(path, files->elems[i].data,
-                     "", sizeof(path));
+               strlcpy (path, files->elems[i].data, sizeof(path));
                if (path_is_directory (path))
                   files = dir_list_new(path, NULL, true, true);
                else
@@ -126,7 +125,6 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk)
          }
       }
    }
-
    /* save position and size to restore after context reset */
    nk_wnd_set_state(nk, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);
