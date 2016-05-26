@@ -1072,12 +1072,12 @@ static bool load_content_from_compressed_archive(
       bool need_fullpath, const char *path)
 {
    union string_list_elem_attr attributes;
-   char new_path[PATH_MAX_LENGTH];
-   char new_basedir[PATH_MAX_LENGTH];
+   char new_path[PATH_MAX_LENGTH]    = {0};
+   char new_basedir[PATH_MAX_LENGTH] = {0};
    ssize_t new_path_len              = 0;
    bool ret                          = false;
-   settings_t *settings              = config_get_ptr();
    rarch_system_info_t      *sys_info= NULL;
+   settings_t *settings              = config_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &sys_info);
 

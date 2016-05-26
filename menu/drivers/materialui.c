@@ -215,7 +215,8 @@ static void mui_draw_tab(mui_handle_t *mui,
       unsigned width, unsigned height,
       float *pure_white)
 {
-   unsigned tab_icon;
+   unsigned tab_icon = 0;
+
    switch (i)
    {
       case MUI_SYSTEM_TAB_MAIN:
@@ -996,12 +997,11 @@ static void mui_frame(void *data)
 
 static void mui_font(void)
 {
-   int font_size;
-   char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
    menu_display_ctx_font_t font_info;
-   settings_t *settings = config_get_ptr();
-
-   font_size = menu_display_get_font_size();
+   char mediapath[PATH_MAX_LENGTH] = {0};
+   char fontpath[PATH_MAX_LENGTH]  = {0};
+   settings_t            *settings = config_get_ptr();
+   int                   font_size = menu_display_get_font_size();
 
    fill_pathname_join(mediapath, settings->directory.assets,
          "glui", sizeof(mediapath));

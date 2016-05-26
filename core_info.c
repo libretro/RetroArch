@@ -161,9 +161,9 @@ static void core_info_list_free(core_info_list_t *core_info_list)
 static config_file_t *core_info_list_iterate(
       struct string_list *contents, size_t i)
 {
-   char info_path_base[PATH_MAX_LENGTH];
-   char info_path[PATH_MAX_LENGTH];
-   settings_t *settings = config_get_ptr();
+   char info_path_base[PATH_MAX_LENGTH] = {0};
+   char info_path[PATH_MAX_LENGTH]      = {0};
+   settings_t                 *settings = config_get_ptr();
 
    if (!contents->elems[i].data)
       return NULL;

@@ -464,15 +464,15 @@ int libretrodb_create_index(libretrodb_t *db,
    struct node_iter_ctx nictx;
    struct rmsgpack_dom_value key;
    libretrodb_index_t idx;
-   struct rmsgpack_dom_value item;
-   struct rmsgpack_dom_value *field;
    uint64_t idx_header_offset;
-   libretrodb_cursor_t cur     = {0};
-   void *buff                  = NULL;
-   uint64_t *buff_u64          = NULL;
-   uint8_t field_size          = 0;
-   uint64_t item_loc           = libretrodb_tell(db);
-   bintree_t *tree             = bintree_new(node_compare, &field_size);
+   struct rmsgpack_dom_value item   = {0};
+   libretrodb_cursor_t cur          = {0};
+   struct rmsgpack_dom_value *field = NULL;
+   void *buff                       = NULL;
+   uint64_t *buff_u64               = NULL;
+   uint8_t field_size               = 0;
+   uint64_t item_loc                = libretrodb_tell(db);
+   bintree_t *tree                  = bintree_new(node_compare, &field_size);
 
    if (!tree || (libretrodb_cursor_open(db, &cur, NULL) != 0))
       goto clean;
