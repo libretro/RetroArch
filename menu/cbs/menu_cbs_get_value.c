@@ -1187,12 +1187,13 @@ static void menu_action_setting_disp_set_label_playlist_associations(file_list_t
       const char *path,
       char *s2, size_t len2)
 {
+   char playlist_name_with_ext[PATH_MAX_LENGTH] = {0};
+   bool found_matching_core_association         = false;
+   settings_t         *settings                 = config_get_ptr();
+   struct string_list *str_list                 = string_split(settings->playlist_names, ";");
+   struct string_list *str_list2                = string_split(settings->playlist_cores, ";");
+
    strlcpy(s2, path, len2);
-   char playlist_name_with_ext[PATH_MAX_LENGTH];
-   bool found_matching_core_association = false;
-   settings_t         *settings = config_get_ptr();
-   struct string_list *str_list  = string_split(settings->playlist_names, ";");
-   struct string_list *str_list2 = string_split(settings->playlist_cores, ";");
 
    *s = '\0';
    *w = 19;
