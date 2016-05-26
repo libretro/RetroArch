@@ -38,7 +38,7 @@ void nk_wnd_main(nk_menu_handle_t *zr)
    video_shader_ctx_t shader_info;
    struct nk_panel layout;
    struct nk_context *ctx = &zr->ctx;
-   const int id           = ZRMENU_WND_MAIN;
+   const int id           = NK_WND_MAIN;
    settings_t *settings   = config_get_ptr();
 
    if (nk_begin(ctx, &layout, "Main", nk_rect(240, 10, 300, 400),

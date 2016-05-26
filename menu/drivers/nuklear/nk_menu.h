@@ -29,9 +29,11 @@ enum
 
 enum
 {
-   ZRMENU_WND_MAIN = 0,
-   ZRMENU_WND_SETTINGS,
-   ZRMENU_WND_SHADER_PARAMETERS,
+   NK_WND_MAIN = 0,
+   NK_WND_SETTINGS,
+   NK_WND_FILE_PICKER,
+   NK_WND_SHADER_PARAMETERS,
+   NK_WND_LAST,
 };
 
 enum nk_menu_theme
@@ -90,4 +92,6 @@ typedef struct nk_menu_handle
 
 void nk_wnd_shader_parameters(nk_menu_handle_t *zr);
 void nk_wnd_main(nk_menu_handle_t *zr);
+void nk_wnd_file_picker(nk_menu_handle_t *zr);
+void nk_wnd_settings(nk_menu_handle_t *zr);
 

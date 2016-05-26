@@ -52,13 +52,19 @@ static void nk_menu_main(nk_menu_handle_t *nk)
 {
    struct nk_context *ctx = &nk->ctx;
 
-   if (nk->window[ZRMENU_WND_SHADER_PARAMETERS].open)
+   if (nk->window[NK_WND_SETTINGS].open)
+      nk_wnd_settings(nk);
+   if (nk->window[NK_WND_FILE_PICKER].open)
+      nk_wnd_file_picker(nk);
+   if (nk->window[NK_WND_SHADER_PARAMETERS].open)
       nk_wnd_shader_parameters(nk);
-   if (nk->window[ZRMENU_WND_MAIN].open)
+   if (nk->window[NK_WND_MAIN].open)
       nk_wnd_main(nk);
 
-   nk->window[ZRMENU_WND_SHADER_PARAMETERS].open = !nk_window_is_closed(ctx, "Shader Parameters");
-   nk->window[ZRMENU_WND_MAIN].open = !nk_window_is_closed(ctx, "Main");
+   nk->window[NK_WND_SETTINGS].open = !nk_window_is_closed(ctx, "Settings");
+   nk->window[NK_WND_FILE_PICKER].open = !nk_window_is_closed(ctx, "Select File");
+   nk->window[NK_WND_SHADER_PARAMETERS].open = !nk_window_is_closed(ctx, "Shader Parameters");
+   nk->window[NK_WND_MAIN].open = !nk_window_is_closed(ctx, "Main");
 
    nk_buffer_info(&nk->status, &nk->ctx.memory);
 }
@@ -287,8 +293,13 @@ static void *nk_menu_init(void **userdata)
          "nuklear", sizeof(nk->assets_directory));
    nk_menu_init_device(nk);
 
-   nk->window[ZRMENU_WND_SHADER_PARAMETERS].open = true;
-   nk->window[ZRMENU_WND_MAIN].open = true;
+   /* for demo puposes only, opens all windows */ 
+#if 1   
+      for (int i=0; i < NK_WND_LAST; i++)
+         nk->window[i].open = true;
+#else
+      nk->window[NK_WND_MAIN].open = true;
+#endif
 
    return menu;
 error:
