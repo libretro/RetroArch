@@ -41,7 +41,6 @@ void nk_wnd_shader_parameters(nk_menu_handle_t *zr)
    struct nk_panel layout;
    struct nk_context *ctx = &zr->ctx;
    const int id           = NK_WND_SHADER_PARAMETERS;
-   settings_t *settings   = config_get_ptr();
 
    if (nk_begin(ctx, &layout, "Shader Parameters", nk_rect(240, 10, 300, 400),
          NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_MOVABLE|
