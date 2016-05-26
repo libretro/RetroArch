@@ -65,8 +65,7 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk)
    settings_t *settings   = config_get_ptr();
 
    int i = 0;
-   char buf[PATH_MAX_LENGTH];
-   
+
    static file_list_t *drives;
    static struct string_list *files;
 
