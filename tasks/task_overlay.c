@@ -677,14 +677,38 @@ static void rarch_task_overlay_handler(retro_task_t *task)
    }
 }
 
+static bool rarch_task_overlay_finder(retro_task_t *task, void *user_data)
+{
+   overlay_loader_t *loader = NULL;
+
+   if (!task || (task->handler != rarch_task_overlay_handler))
+      return false;
+
+   if (!user_data)
+      return false;
+
+   loader = (overlay_loader_t*)task->state;
+   if (!loader)
+      return false;
+
+   return string_is_equal(loader->overlay_path, (const char*)user_data);
+}
+
 static bool rarch_task_push_overlay_load(const char *overlay_path,
       retro_task_callback_t cb, void *user_data)
 {
    retro_task_t *t          = NULL;
    config_file_t *conf      = NULL;
    overlay_loader_t *loader = (overlay_loader_t*)calloc(1, sizeof(*loader));
-   
+   task_finder_data_t find_data;
+
    if (!loader)
+      goto error;
+
+   /* Prevent overlay from being loaded if it already is being loaded */
+   find_data.func     = rarch_task_overlay_finder;
+   find_data.userdata = (void*)overlay_path;
+   if (task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data))
       goto error;
 
    conf = config_file_new(overlay_path);
