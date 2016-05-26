@@ -183,13 +183,11 @@ static int detect_ps1_game_sub(const char *track_path,
          return 0;
 
       if (!strncasecmp((const char*)(tmp + 33), "SYSTEM.CNF;1", 12))
-      {
-         filestream_close(fp);
          break;
-      }
 
       tmp += *tmp;
    }
+
    if(tmp >= (buffer + 2048 * 2))
    {
       filestream_close(fp);
