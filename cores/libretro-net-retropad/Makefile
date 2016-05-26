@@ -116,7 +116,10 @@ else
    CFLAGS += -O3
 endif
 
-OBJECTS := ../../libretro-common/net/net_compat.o ../../libretro-common/net/net_socket.o retropad.o
+OBJECTS :=  ../../libretro-common/net/net_compat.o \
+				../../libretro-common/net/net_socket.o \
+				net_retropad_core.o
+
 CFLAGS += -I../../libretro-common/include -Wall -pedantic $(fpic)
 
 ifneq (,$(findstring qnx,$(platform)))

@@ -68,11 +68,17 @@ static dylib_t lib_handle;
 #endif
 
 #define SYMBOL_DUMMY(x) current_core->x = libretro_dummy_##x
+
 #ifdef HAVE_FFMPEG
 #define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
 #endif
+
 #ifdef HAVE_IMAGEVIEWER
 #define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
+#endif
+
+#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#define SYMBOL_NETRETROPAD(x) current_core->x = libretro_netretropad_##x
 #endif
 
 static bool ignore_environment_cb;
@@ -498,6 +504,43 @@ static void load_symbols(enum rarch_core_type type, struct retro_core_t *current
          SYMBOL_IMAGEVIEWER(retro_get_region);
          SYMBOL_IMAGEVIEWER(retro_get_memory_data);
          SYMBOL_IMAGEVIEWER(retro_get_memory_size);
+#endif
+         break;
+      case CORE_TYPE_NETRETROPAD:
+#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+         SYMBOL_NETRETROPAD(retro_init);
+         SYMBOL_NETRETROPAD(retro_deinit);
+
+         SYMBOL_NETRETROPAD(retro_api_version);
+         SYMBOL_NETRETROPAD(retro_get_system_info);
+         SYMBOL_NETRETROPAD(retro_get_system_av_info);
+
+         SYMBOL_NETRETROPAD(retro_set_environment);
+         SYMBOL_NETRETROPAD(retro_set_video_refresh);
+         SYMBOL_NETRETROPAD(retro_set_audio_sample);
+         SYMBOL_NETRETROPAD(retro_set_audio_sample_batch);
+         SYMBOL_NETRETROPAD(retro_set_input_poll);
+         SYMBOL_NETRETROPAD(retro_set_input_state);
+
+         SYMBOL_NETRETROPAD(retro_set_controller_port_device);
+
+         SYMBOL_NETRETROPAD(retro_reset);
+         SYMBOL_NETRETROPAD(retro_run);
+
+         SYMBOL_NETRETROPAD(retro_serialize_size);
+         SYMBOL_NETRETROPAD(retro_serialize);
+         SYMBOL_NETRETROPAD(retro_unserialize);
+
+         SYMBOL_NETRETROPAD(retro_cheat_reset);
+         SYMBOL_NETRETROPAD(retro_cheat_set);
+
+         SYMBOL_NETRETROPAD(retro_load_game);
+         SYMBOL_NETRETROPAD(retro_load_game_special);
+
+         SYMBOL_NETRETROPAD(retro_unload_game);
+         SYMBOL_NETRETROPAD(retro_get_region);
+         SYMBOL_NETRETROPAD(retro_get_memory_data);
+         SYMBOL_NETRETROPAD(retro_get_memory_size);
 #endif
          break;
    }
