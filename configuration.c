@@ -1673,15 +1673,17 @@ static bool config_load_file(const char *path, bool set_defaults)
    }
 
    {
-      bool tmp_bool;
-      char tmp[64] = {0};
-      strlcpy(tmp, "perfcnt_enable", sizeof(tmp));
-      config_get_bool(conf, tmp, &tmp_bool);
+      bool tmp_bool = false;
+      char tmp[64]  = {0};
 
-      if (tmp_bool)
-         runloop_ctl(RUNLOOP_CTL_SET_PERFCNT_ENABLE, NULL);
-      else
-         runloop_ctl(RUNLOOP_CTL_UNSET_PERFCNT_ENABLE, NULL);
+      strlcpy(tmp, "perfcnt_enable", sizeof(tmp));
+      if (config_get_bool(conf, tmp, &tmp_bool))
+      {
+         if (tmp_bool)
+            runloop_ctl(RUNLOOP_CTL_SET_PERFCNT_ENABLE, NULL);
+         else
+            runloop_ctl(RUNLOOP_CTL_UNSET_PERFCNT_ENABLE, NULL);
+      }
    }
 
 #if TARGET_OS_IPHONE
