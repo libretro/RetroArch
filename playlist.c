@@ -257,15 +257,10 @@ void playlist_push(playlist_t *playlist,
    memmove(playlist->entries + 1, playlist->entries,
          (playlist->cap - 1) * sizeof(playlist_entry_t));
 
-   if (playlist->entries[0].core_path)
-      free(playlist->entries[0].core_path);
-   if (playlist->entries[0].core_name)
-      free(playlist->entries[0].core_name);
-
    playlist->entries[0].path      = path      ? strdup(path)      : NULL;
    playlist->entries[0].label     = label     ? strdup(label)     : NULL;
-   playlist->entries[0].core_path = strdup(core_path);
-   playlist->entries[0].core_name = strdup(core_name);
+   playlist->entries[0].core_path = core_path ? strdup(core_path) : NULL;
+   playlist->entries[0].core_name = core_name ? strdup(core_name) : NULL;
    playlist->entries[0].db_name   = db_name   ? strdup(db_name)   : NULL;
    playlist->entries[0].crc32     = crc32     ? strdup(crc32)     : NULL;
    playlist->size++;
