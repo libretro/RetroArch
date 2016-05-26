@@ -2010,6 +2010,7 @@ static unsigned cheevos_find_game_id_nes(
 
       MD5_Update(&ctx, (void*) data, rom_size << 14);
       MD5_Final(hash, &ctx);
+      free(data);
    }
    
    to = timeout;

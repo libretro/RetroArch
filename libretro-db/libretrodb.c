@@ -566,6 +566,7 @@ clean:
    if (cur.is_valid)
       libretrodb_cursor_close(&cur);
    bintree_free(tree);
+   free(tree);
    return 0;
 }
 

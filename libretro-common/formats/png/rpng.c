@@ -783,7 +783,10 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng, unsigned *width, uns
    process->stream = process->stream_backend->stream_new();
 
    if (!process->stream)
+   {
+      free(process);
       return NULL;
+   }
 
    if (!process->stream_backend->stream_decompress_init(process->stream))
    {

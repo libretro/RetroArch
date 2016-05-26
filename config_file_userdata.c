@@ -82,6 +82,7 @@ int config_userdata_get_float_array(void *userdata, const char *key_str,
          (*values)[i] = (float)strtod(list->elems[i].data, NULL);
       *out_num_values = list->size;
       string_list_free(list);
+      free(str);
       return true;
    }
 
@@ -111,6 +112,7 @@ int config_userdata_get_int_array(void *userdata, const char *key_str,
          (*values)[i] = (int)strtod(list->elems[i].data, NULL);
       *out_num_values = list->size;
       string_list_free(list);
+      free(str);
       return true;
    }
 

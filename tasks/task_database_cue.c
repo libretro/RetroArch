@@ -191,7 +191,10 @@ static int detect_ps1_game_sub(const char *track_path,
       tmp += *tmp;
    }
    if(tmp >= (buffer + 2048 * 2))
+   {
+      filestream_close(fp);
       return 0;
+   }
 
    cd_sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
    filestream_seek(fp, 13 + skip + cd_sector * frame_size, SEEK_SET);

@@ -520,7 +520,10 @@ static bool apply_patch_content(uint8_t **buf,
    if (!filestream_read_file(patch_path, &patch_data, &patch_size))
       return false;
    if (patch_size < 0)
+   {
+      free(patch_data);
       return false;
+   }
 
    if (!path_file_exists(patch_path))
    {
