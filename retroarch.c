@@ -1099,7 +1099,7 @@ static void retroarch_init_savefile_paths(void)
    global->savefiles = string_list_new();
    retro_assert(global->savefiles);
 
-   if (*global->subsystem)
+   if (system && *global->subsystem)
    {
       /* For subsystems, we know exactly which RAM types are supported. */
 
@@ -1317,35 +1317,36 @@ bool retroarch_main_init(int argc, char *argv[])
             settings->multimedia.builtin_imageviewer_enable))
       {
          char *fullpath    = NULL;
-#if defined(HAVE_FFMPEG) || defined(HAVE_IMAGEVIEWER)
-         global_t *global  = global_get_ptr();
-#endif
 
-         runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-         switch (retroarch_path_is_media_type(fullpath))
+         if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath))
          {
-            case RARCH_CONTENT_MOVIE:
-            case RARCH_CONTENT_MUSIC:
-               if (settings->multimedia.builtin_mediaplayer_enable)
-               {
+#if defined(HAVE_FFMPEG) || defined(HAVE_IMAGEVIEWER)
+            global_t *global  = global_get_ptr();
+#endif
+            switch (retroarch_path_is_media_type(fullpath))
+            {
+               case RARCH_CONTENT_MOVIE:
+               case RARCH_CONTENT_MUSIC:
+                  if (settings->multimedia.builtin_mediaplayer_enable)
+                  {
 #ifdef HAVE_FFMPEG
-                  global->has_set.libretro  = false;
-                  current_core_type         = CORE_TYPE_FFMPEG;
+                     global->has_set.libretro  = false;
+                     current_core_type         = CORE_TYPE_FFMPEG;
 #endif
-               }
-               break;
+                  }
+                  break;
 #ifdef HAVE_IMAGEVIEWER
-            case RARCH_CONTENT_IMAGE:
-               if (settings->multimedia.builtin_imageviewer_enable)
-               {
-                  global->has_set.libretro  = false;
-                  current_core_type         = CORE_TYPE_IMAGEVIEWER;
-               }
-               break;
+               case RARCH_CONTENT_IMAGE:
+                  if (settings->multimedia.builtin_imageviewer_enable)
+                  {
+                     global->has_set.libretro  = false;
+                     current_core_type         = CORE_TYPE_IMAGEVIEWER;
+                  }
+                  break;
 #endif
-            default:
-               break;
+               default:
+                  break;
+            }
          }
       }
    }

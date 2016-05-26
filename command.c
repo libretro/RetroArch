@@ -383,7 +383,7 @@ static bool command_verify(const char *cmd)
 
 bool command_network_send(const char *cmd_)
 {
-   bool ret;
+   bool ret            = false;
    char *command       = NULL;
    char *save          = NULL;
    const char *cmd     = NULL;
@@ -415,11 +415,14 @@ bool command_network_send(const char *cmd_)
    if (port_)
       port = strtoul(port_, NULL, 0);
 
-   RARCH_LOG("%s: \"%s\" to %s:%hu\n",
-         msg_hash_to_str(MSG_SENDING_COMMAND),
-         cmd, host, (unsigned short)port);
+   if (cmd)
+   {
+      RARCH_LOG("%s: \"%s\" to %s:%hu\n",
+            msg_hash_to_str(MSG_SENDING_COMMAND),
+            cmd, host, (unsigned short)port);
 
-   ret = command_verify(cmd) && send_udp_packet(host, port, cmd);
+      ret = command_verify(cmd) && send_udp_packet(host, port, cmd);
+   }
    free(command);
 
    return ret;
@@ -1662,12 +1665,13 @@ bool command_event(enum event_command cmd, void *data)
             unsigned idx = 0;
             unsigned *window_scale = NULL;
 
-            runloop_ctl(RUNLOOP_CTL_GET_WINDOWED_SCALE, &window_scale);
+            if (runloop_ctl(RUNLOOP_CTL_GET_WINDOWED_SCALE, &window_scale))
+            {
+               if (*window_scale == 0)
+                  return false;
 
-            if (*window_scale == 0)
-               return false;
-
-            settings->video.scale = *window_scale;
+               settings->video.scale = *window_scale;
+            }
 
             if (!settings->video.fullscreen)
                command_event(CMD_EVENT_REINIT, NULL);

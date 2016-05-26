@@ -824,16 +824,17 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (string_is_empty(settings->directory.system))
          {
             char *fullpath = NULL;
-            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-            RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
-                  fullpath);
-            fill_pathname_basedir(global->dir.systemdir, fullpath,
-                  sizeof(global->dir.systemdir));
+            if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath))
+            {
+               RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
+                     fullpath);
+               fill_pathname_basedir(global->dir.systemdir, fullpath,
+                     sizeof(global->dir.systemdir));
+            }
 
             *(const char**)data = global->dir.systemdir;
             RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
-               global->dir.systemdir);
+                  global->dir.systemdir);
          }
          else
          {
@@ -898,7 +899,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             "L", "R", "L2", "R2", "L3", "R3",
          };
 
-         memset(system->input_desc_btn, 0,
+         memset(&system->input_desc_btn, 0,
                sizeof(system->input_desc_btn));
 
          desc = (const struct retro_input_descriptor*)data;
@@ -998,7 +999,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
          if (key_event)
             *key_event                  = info->callback;
-         if (frontend_key_event)
+
+         if (frontend_key_event && key_event)
             *frontend_key_event         = *key_event;
          break;
       }

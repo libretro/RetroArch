@@ -685,18 +685,19 @@ static int mui_get_core_title(char *s, size_t len)
    core_name    = system->library_name;
    core_version = system->library_version;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
-
    if (!settings->menu.core_enable)
       return -1; 
 
-   if (string_is_empty(core_name))
-      core_name = info->info.library_name;
-   if (string_is_empty(core_name))
-      core_name = menu_hash_to_str(MENU_VALUE_NO_CORE);
+   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info))
+   {
+      if (string_is_empty(core_name))
+         core_name = info->info.library_name;
+      if (!core_version)
+         core_version = info->info.library_version;
+   }
 
-   if (!core_version)
-      core_version = info->info.library_version;
+   if (string_is_empty(core_name))
+      core_name    = menu_hash_to_str(MENU_VALUE_NO_CORE);
    if (!core_version)
       core_version = "";
 

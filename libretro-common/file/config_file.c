@@ -302,10 +302,10 @@ static bool parse_line(config_file_t *conf,
       struct config_entry_list *list, char *line)
 {
    char *comment   = NULL;
-   char *key       = (char*)malloc(9);
    char *key_tmp   = NULL;
    size_t cur_size = 8;
    size_t idx      = 0;
+   char *key       = (char*)malloc(9);
 
    if (!key)
       return false;

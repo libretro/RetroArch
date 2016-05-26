@@ -289,13 +289,14 @@ static bool menu_entries_elem_is_dir(file_list_t *list,
 static int menu_entries_elem_get_first_char(
       file_list_t *list, unsigned offset)
 {
-   int ret;
+   int ret          = 0;
    const char *path = NULL;
 
    menu_entries_get_at_offset(list, offset,
          NULL, NULL, NULL, NULL, &path);
 
-   ret = tolower((int)*path);
+   if (path != NULL)
+      ret = tolower((int)*path);
 
    /* "Normalize" non-alphabetical entries so they
     * are lumped together for purposes of jumping. */

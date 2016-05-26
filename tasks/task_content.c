@@ -168,9 +168,9 @@ static int content_7zip_file_read(
 {
    CFileInStream archiveStream;
    CLookToRead lookStream;
-   CSzArEx db;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
+   CSzArEx db           = {0};
    uint8_t *output      = 0;
    long outsize         = -1;
 
@@ -232,8 +232,10 @@ static int content_7zip_file_read(
          }
 
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         res = utf16_to_char_string(temp, infile, sizeof(infile)) 
-            ? SZ_OK : SZ_ERROR_FAIL;
+         res = SZ_ERROR_FAIL;
+         if (temp)
+            res = utf16_to_char_string(temp, infile, sizeof(infile)) 
+               ? SZ_OK : SZ_ERROR_FAIL;
 
          if (string_is_equal(infile, needle))
          {
@@ -309,9 +311,9 @@ static struct string_list *compressed_7zip_file_list_new(
 {
    CFileInStream archiveStream;
    CLookToRead lookStream;
-   CSzArEx db;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
+   CSzArEx db                   = {0};
    size_t temp_size             = 0;
    struct string_list     *list = NULL;
    
@@ -379,8 +381,12 @@ static struct string_list *compressed_7zip_file_list_new(
          }
 
          SzArEx_GetFileNameUtf16(&db, i, temp);
-         res      = utf16_to_char_string(temp, infile, sizeof(infile)) 
-            ? SZ_OK : SZ_ERROR_FAIL;
+         res      = SZ_ERROR_FAIL;
+
+         if (temp)
+            res      = utf16_to_char_string(temp, infile, sizeof(infile)) 
+               ? SZ_OK : SZ_ERROR_FAIL;
+
          file_ext = path_get_extension(infile);
 
          if (string_list_find_elem_prefix(ext_list, ".", file_ext))
@@ -1364,9 +1370,8 @@ static bool init_content_file_set_attribs(
       else
       {
          char *fullpath    = NULL;
-         runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-         string_list_append(content, fullpath, attr);
+         if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath))
+            string_list_append(content, fullpath, attr);
       }
    }
 
