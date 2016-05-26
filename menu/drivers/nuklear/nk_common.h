@@ -15,6 +15,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _NK_COMMON_H
+#define _NK_COMMON_H
+
  /*  This file is intended for backend code. */
 
 #define NK_INCLUDE_FIXED_TYPES
@@ -80,3 +83,5 @@ void* nk_common_mem_alloc(nk_handle a, void *old, nk_size b);
 void nk_common_mem_free(nk_handle unused, void *ptr);
 
 void device_upload_atlas(struct nk_device *dev, const void *image, int width, int height);
+
+#endif

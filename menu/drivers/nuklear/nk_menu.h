@@ -17,6 +17,9 @@
 
 /*  This file is intended for helper functions, custom controls, etc. */
 
+#ifndef _NK_MENU_H
+#define _NK_MENU_H
+
 #include "nk_common.h"
 #include "../../menu_display.h"
 #include "../../menu_input.h"
@@ -94,4 +97,9 @@ void nk_wnd_shader_parameters(nk_menu_handle_t *zr);
 void nk_wnd_main(nk_menu_handle_t *zr);
 void nk_wnd_file_picker(nk_menu_handle_t *zr);
 void nk_wnd_settings(nk_menu_handle_t *zr);
+void nk_wnd_set_state(nk_menu_handle_t *zr, const int id,
+   struct nk_vec2 pos, struct nk_vec2 size);
+void nk_wnd_get_state(nk_menu_handle_t *zr, const int id,
+   struct nk_vec2 *pos, struct nk_vec2 *size);
 
+#endif

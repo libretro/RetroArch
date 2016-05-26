@@ -26,10 +26,6 @@
 #include "../core_type.h"
 #include "../runloop.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 enum content_mode_load
 {
    CONTENT_MODE_LOAD_NONE = 0,
@@ -132,9 +128,5 @@ void rarch_task_file_load_handler(retro_task_t *task);
 bool take_screenshot(void);
 bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
