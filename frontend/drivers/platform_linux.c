@@ -833,9 +833,7 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    if (strstr((char*)buf, "1"))
       *have_ac = true;
 
-   if (buf)
-      free(buf);
-   buf = NULL;
+   free(buf);
 }
 
 static bool next_string(char **_ptr, char **_str)

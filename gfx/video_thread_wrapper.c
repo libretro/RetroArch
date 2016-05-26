@@ -348,7 +348,7 @@ static bool video_thread_handle_packet(
              * it's called in this "special" way. */
             thr->frame.within_thread = true;
 
-            if (thr->driver && thr->driver->read_viewport)
+            if (thr->driver->read_viewport)
                ret = thr->driver->read_viewport(thr->driver_data,
                      (uint8_t*)pkt.data.v);
 

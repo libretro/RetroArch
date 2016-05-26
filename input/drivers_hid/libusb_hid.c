@@ -515,8 +515,7 @@ static void libusb_hid_free(void *data)
    libusb_hotplug_deregister_callback(hid->ctx, hid->hp);
 
    libusb_exit(hid->ctx);
-   if (hid)
-      free(hid);
+   free(hid);
 }
 
 static void poll_thread(void *data)

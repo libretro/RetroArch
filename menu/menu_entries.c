@@ -50,8 +50,7 @@ static void menu_list_free_list(file_list_t *list)
       menu_driver_ctl(RARCH_MENU_CTL_LIST_FREE, &list_info);
    }
 
-   if (list)
-      file_list_free(list);
+   file_list_free(list);
 }
 
 static void menu_list_free(menu_list_t *menu_list)

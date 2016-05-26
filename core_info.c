@@ -83,7 +83,7 @@ static void core_info_list_resolve_all_firmware(
       core_info_t *info     = (core_info_t*)&core_info_list->list[i];
       config_file_t *config = (config_file_t*)info->config_data;
 
-      if (!info || !config)
+      if (!config)
          continue;
 
       if (!config_get_uint(config, "firmware_count", &count))

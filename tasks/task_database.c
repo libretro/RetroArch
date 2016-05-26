@@ -411,8 +411,7 @@ static int task_database_iterate_crc_lookup(
    if (db_state->list_index < db_state->list->size)
       return 1;
 
-   if (db_state->info)
-      database_info_list_free(db_state->info);
+   database_info_list_free(db_state->info);
    return 0;
 }
 
@@ -488,8 +487,7 @@ static int task_database_iterate_serial_lookup(
    if (db_state->list_index < db_state->list->size)
       return 1;
 
-   if (db_state->info)
-      database_info_list_free(db_state->info);
+   database_info_list_free(db_state->info);
    return 0;
 }
 

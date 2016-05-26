@@ -101,7 +101,6 @@ static bool rarch_task_overlay_load_desc(
    char conf_key[64]                    = {0};
    char overlay_desc_normalized_key[64] = {0};
    char overlay[256]                    = {0};
-   char *save                           = NULL;
    char *key                            = NULL;
    struct string_list *list             = NULL;
    const char *x                        = NULL;
@@ -174,11 +173,10 @@ static bool rarch_task_overlay_load_desc(
          }
          else
          {
-            const char *tmp = NULL;
+            char      *save = NULL;
+            const char *tmp = strtok_r(key, "|", &save);
 
             desc->type = OVERLAY_TYPE_BUTTONS;
-
-            tmp = strtok_r(key, "|", &save);
 
             for (; tmp; tmp = strtok_r(NULL, "|", &save))
             {

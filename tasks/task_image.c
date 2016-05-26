@@ -68,7 +68,7 @@ static int cb_image_menu_upload_generic(void *data, size_t len)
    nbio_handle_t        *nbio = (nbio_handle_t*)data;
    nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
-   if (!nbio || !image)
+   if (!image)
       return -1;
 
    if (image->processing_final_state == IMAGE_PROCESS_ERROR ||
@@ -125,11 +125,11 @@ static int task_image_process(
 
 static int cb_image_menu_generic(nbio_handle_t *nbio)
 {
+   int retval;
    unsigned width = 0, height = 0;
    nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
-   int retval;
 
-   if (!nbio || !image)
+   if (!image)
       return -1;
 
    retval = task_image_process(nbio, &width, &height);
@@ -157,11 +157,11 @@ static int cb_image_menu_thumbnail(void *data, size_t len)
 
 static int task_image_iterate_process_transfer(nbio_handle_t *nbio)
 {
-   unsigned i, width = 0, height = 0;
    int retval = 0;
+   unsigned i, width = 0, height = 0;
    nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
-   if (!nbio || !image)
+   if (!image)
       return -1;
 
    for (i = 0; i < image->processing_pos_increment; i++)
@@ -184,7 +184,7 @@ static int task_image_iterate_transfer(nbio_handle_t *nbio)
    unsigned i;
    nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
-   if (!nbio || !image)
+   if (!image)
       goto error;
 
    if (image->is_finished)

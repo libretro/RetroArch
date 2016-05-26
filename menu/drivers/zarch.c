@@ -403,9 +403,6 @@ static bool zarch_zui_tab(zui_t *zui, struct zui_tabbed *tab,
    const float   *bg = zui_bg_panel;
    bool selected     = tab->tab_selection == tab_id; /* TODO/FIXME */
 
-   if (!zui || !tab )
-      return false;
-
    if (!width)
    {
       if (!zui->fb_buf)
@@ -738,9 +735,6 @@ static int zarch_zui_render_lay_root(zui_t *zui)
 
    tabbed.width            = zui->width - 290 - 40;
    zui->next_selection_set = false;
-
-   if (!zui)
-      return 1;
 
    if (zarch_zui_render_lay_root_recent(zui, &tabbed))
       return 0;

@@ -195,7 +195,8 @@ void menu_input_st_hex_cb(void *userdata, const char *str)
          unsigned *ptr = (unsigned*)setting_get_ptr(setting);
          if (str[0] == '#')
             str++;
-         *ptr = strtoul(str, NULL, 16);
+         if (ptr)
+            *ptr = strtoul(str, NULL, 16);
       }
    }
 

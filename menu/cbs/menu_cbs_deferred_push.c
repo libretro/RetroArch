@@ -200,14 +200,13 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       goto end;
 
    strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
-   strlcpy(info->path_b,    str_list->elems[0].data, sizeof(info->path_b));
-   strlcpy(info->path_c,    query, sizeof(info->path_c));
+   strlcpy(info->path_b, str_list->elems[0].data, sizeof(info->path_b));
+   strlcpy(info->path_c, query, sizeof(info->path_c));
 
    ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
 end:
-   if (str_list)
-      string_list_free(str_list);
+   string_list_free(str_list);
 #endif
    return ret;
 }
