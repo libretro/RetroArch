@@ -202,7 +202,7 @@ error:
    return -1;
 }
 
-static void rarch_task_image_load_free_internal(nbio_handle_t *nbio)
+static void task_image_load_free_internal(nbio_handle_t *nbio)
 {
    nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
 
@@ -245,7 +245,7 @@ static int cb_nbio_generic(nbio_handle_t *nbio, size_t *len)
    return 0;
 
 error:
-   rarch_task_image_load_free_internal(nbio);
+   task_image_load_free_internal(nbio);
    return -1;
 }
 
@@ -275,7 +275,7 @@ error:
    return -1;
 }
 
-bool rarch_task_image_load_handler(retro_task_t *task)
+bool task_image_load_handler(retro_task_t *task)
 {
    nbio_handle_t       *nbio  = (nbio_handle_t*)task->state;
    nbio_image_handle_t *image = (nbio_image_handle_t*)nbio->data;
@@ -321,7 +321,7 @@ bool rarch_task_image_load_handler(retro_task_t *task)
    return true;
 }
 
-bool rarch_task_push_image_load(const char *fullpath,
+bool task_push_image_load(const char *fullpath,
       const char *type, retro_task_callback_t cb, void *user_data)
 {
    nbio_handle_t             *nbio   = NULL;
@@ -376,8 +376,8 @@ bool rarch_task_push_image_load(const char *fullpath,
    nbio_begin_read(handle);
 
    t->state     = nbio;
-   t->handler   = rarch_task_file_load_handler;
-   t->cleanup   = rarch_task_image_load_free;
+   t->handler   = task_file_load_handler;
+   t->cleanup   = task_image_load_free;
    t->callback  = cb;
    t->user_data = user_data;
 
@@ -387,7 +387,7 @@ bool rarch_task_push_image_load(const char *fullpath,
 
 error:
    nbio_free(handle);
-   rarch_task_image_load_free(t);
+   task_image_load_free(t);
    free(t);
 
 error_msg:
@@ -397,12 +397,12 @@ error_msg:
    return false;
 }
 
-void rarch_task_image_load_free(retro_task_t *task)
+void task_image_load_free(retro_task_t *task)
 {
    nbio_handle_t       *nbio  = task ? (nbio_handle_t*)task->state : NULL;
 
    if (nbio) {
-      rarch_task_image_load_free_internal(nbio);
+      task_image_load_free_internal(nbio);
       nbio_free(nbio->handle);
       nbio->handle      = NULL;
       free(nbio);

@@ -577,7 +577,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, win32_file);
 
                      do_wm_close = true;
-                     rarch_task_push_content_load_default(
+                     task_push_content_load_default(
                            NULL, NULL,
                            &content_info,
                            CORE_TYPE_PLAIN,

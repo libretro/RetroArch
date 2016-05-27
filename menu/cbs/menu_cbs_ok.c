@@ -509,7 +509,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
       case -1:
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 
-         rarch_task_push_content_load_default(NULL, NULL,
+         task_push_content_load_default(NULL, NULL,
                   &content_info, CORE_TYPE_PLAIN,
                   CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
                   NULL, NULL);
@@ -557,7 +557,7 @@ static int action_ok_file_load_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    content_ctx_info_t content_info = {0};
-   rarch_task_push_content_load_default(path, detect_content_path,
+   task_push_content_load_default(path, detect_content_path,
          &content_info, CORE_TYPE_PLAIN, 
          CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
          NULL, NULL);
@@ -756,7 +756,7 @@ static int generic_action_ok(const char *path,
 
             strlcpy(settings->path.menu_wallpaper,
                   action_path, sizeof(settings->path.menu_wallpaper));
-            rarch_task_push_image_load(action_path, "cb_menu_wallpaper",
+            task_push_image_load(action_path, "cb_menu_wallpaper",
                   menu_display_handle_wallpaper_upload, NULL);
          }
          break;
@@ -1137,7 +1137,7 @@ static int action_ok_core_load_deferred(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   rarch_task_push_content_load_default(path, menu->deferred_path,
+   task_push_content_load_default(path, menu->deferred_path,
             &content_info,
             CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
@@ -1170,7 +1170,7 @@ static int generic_action_ok_file_load(const char *path,
    switch (id)
    {
       case ACTION_OK_FFMPEG:
-         rarch_task_push_content_load_default(
+         task_push_content_load_default(
                NULL, new_path,
                &content_info,
                action_type,
@@ -1178,7 +1178,7 @@ static int generic_action_ok_file_load(const char *path,
                NULL, NULL);
          break;
       case ACTION_OK_IMAGEVIEWER:
-         rarch_task_push_content_load_default(
+         task_push_content_load_default(
                NULL, new_path,
                &content_info,
                action_type,
@@ -1250,7 +1250,7 @@ static int action_ok_file_load(const char *path,
       fill_pathname_join(full_path_new, menu_path_new, path,
             sizeof(full_path_new));
 
-   rarch_task_push_content_load_default(NULL,
+   task_push_content_load_default(NULL,
          full_path_new,
          &content_info,
          CORE_TYPE_PLAIN,
@@ -1412,7 +1412,7 @@ static void cb_generic_download(void *task_data,
 
    if (string_is_equal_noncase(file_ext, "zip"))
    {
-      if (rarch_task_check_decompress(output_path))
+      if (task_check_decompress(output_path))
       {
         err = "Decompression already in progress.";
         goto finish;
@@ -1432,7 +1432,7 @@ static void cb_generic_download(void *task_data,
 
    if (string_is_equal_noncase(file_ext, "zip"))
    {
-      if (!rarch_task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
+      if (!task_push_decompress(output_path, dir_path, NULL, NULL, NULL,
             cb_decompressed, (void*)(uintptr_t)transf->type_hash))
       {
         err = "Decompression failed.";
@@ -1515,7 +1515,7 @@ static int action_ok_download_generic(const char *path,
    transf->type_hash = menu_hash_calculate(type_msg);
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   rarch_task_push_http_transfer(s3, false, type_msg, cb_generic_download, transf);
+   task_push_http_transfer(s3, false, type_msg, cb_generic_download, transf);
 #endif
    return 0;
 }
@@ -1777,7 +1777,7 @@ static int generic_action_ok_network(const char *path,
 #endif
    }
 
-   rarch_task_push_http_transfer(url_path, false, url_label, callback, NULL);
+   task_push_http_transfer(url_path, false, url_label, callback, NULL);
 
    return generic_action_ok_displaylist_push(path,
          label, type, idx, entry_idx, type_id2);
@@ -2059,7 +2059,7 @@ static int action_ok_start_core(const char *path,
    if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
    {
       content_ctx_info_t content_info = {0};
-      rarch_task_push_content_load_default(NULL, NULL,
+      task_push_content_load_default(NULL, NULL,
             &content_info, CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU,
             NULL, NULL);
@@ -2142,7 +2142,7 @@ static int action_ok_load_archive(const char *path,
          sizeof(detect_content_path));
 
    command_event(CMD_EVENT_LOAD_CORE, NULL);
-   rarch_task_push_content_load_default(
+   task_push_content_load_default(
             NULL, detect_content_path,
             &content_info, CORE_TYPE_PLAIN,
             CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
@@ -2190,7 +2190,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    {
       case -1:
          command_event(CMD_EVENT_LOAD_CORE, NULL);
-         rarch_task_push_content_load_default(NULL, NULL,
+         task_push_content_load_default(NULL, NULL,
                   &content_info,
                   CORE_TYPE_PLAIN,
                   CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,

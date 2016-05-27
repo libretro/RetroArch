@@ -1694,7 +1694,7 @@ static bool command_event_cmd_exec(void *data)
    return true;
 }
 
-bool rarch_task_push_content_load_default(
+bool task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
       content_ctx_info_t *content_info,

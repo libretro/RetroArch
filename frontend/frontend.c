@@ -102,7 +102,7 @@ int rarch_main(int argc, char *argv[], void *data)
       info.args            = args;
       info.environ_get     = frontend_driver_environment_get_ptr();
 
-      if (!rarch_task_push_content_load_default(
+      if (!task_push_content_load_default(
                NULL,
                NULL,
                &info,

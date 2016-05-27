@@ -1726,7 +1726,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
          command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
 
-         if (!rarch_task_push_content_load_default(
+         if (!task_push_content_load_default(
                   NULL, NULL,
                   &content_info,
                   CORE_TYPE_DUMMY,
@@ -1868,7 +1868,7 @@ bool command_event(enum event_command cmd, void *data)
          command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #ifdef HAVE_OVERLAY
          if (settings->input.overlay_enable)
-            rarch_task_push_overlay_load_default(input_overlay_loaded, NULL);
+            task_push_overlay_load_default(input_overlay_loaded, NULL);
 #endif
          break;
       case CMD_EVENT_OVERLAY_NEXT:

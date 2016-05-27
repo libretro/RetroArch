@@ -62,7 +62,7 @@ static int task_file_transfer_iterate_parse(nbio_handle_t *nbio)
    return 0;
 }
 
-void rarch_task_file_load_handler(retro_task_t *task)
+void task_file_load_handler(retro_task_t *task)
 {
    nbio_handle_t         *nbio  = (nbio_handle_t*)task->state;
 
@@ -89,7 +89,7 @@ void rarch_task_file_load_handler(retro_task_t *task)
       case IMAGE_TYPE_JPEG:
       case IMAGE_TYPE_TGA:
       case IMAGE_TYPE_BMP:
-         if (!rarch_task_image_load_handler(task))
+         if (!task_image_load_handler(task))
             task->finished = true;
          break;
       case 0:

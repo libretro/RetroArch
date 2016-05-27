@@ -600,7 +600,7 @@ task_finished:
    free(db);
 }
 
-bool rarch_task_push_dbscan(const char *fullpath,
+bool task_push_dbscan(const char *fullpath,
       bool directory, retro_task_callback_t cb)
 {
    retro_task_t *t   = (retro_task_t*)calloc(1, sizeof(*t));

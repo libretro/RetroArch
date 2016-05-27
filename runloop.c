@@ -1243,7 +1243,7 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
 static int runloop_iterate_time_to_exit_load_dummy(void)
 {
    content_ctx_info_t content_info = {0};
-   if (!rarch_task_push_content_load_default(
+   if (!task_push_content_load_default(
          NULL, NULL,
          &content_info,
          CORE_TYPE_DUMMY,

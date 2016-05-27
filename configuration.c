@@ -3000,7 +3000,7 @@ bool config_replace(char *path)
 
    *settings->path.libretro = '\0'; /* Load core in new config. */
 
-   if (!rarch_task_push_content_load_default(
+   if (!task_push_content_load_default(
          NULL, NULL,
          &content_info,
          CORE_TYPE_DUMMY,

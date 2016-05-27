@@ -735,7 +735,7 @@ static void xmb_update_thumbnail_image(void *data)
       return;
 
    if (path_file_exists(xmb->thumbnail_file_path))
-      rarch_task_push_image_load(xmb->thumbnail_file_path, "cb_menu_thumbnail",
+      task_push_image_load(xmb->thumbnail_file_path, "cb_menu_thumbnail",
             menu_display_handle_thumbnail_upload, NULL);
    else if (xmb->depth == 1)
       xmb->thumbnail = 0;
@@ -1071,7 +1071,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
        {
            if(path_file_exists(path))
            {
-              rarch_task_push_image_load(path, "cb_menu_wallpaper",
+              task_push_image_load(path, "cb_menu_wallpaper",
                   menu_display_handle_wallpaper_upload, NULL);
               strlcpy(xmb->background_file_path,
                     path, sizeof(xmb->background_file_path));
@@ -2795,7 +2795,7 @@ static void xmb_context_reset_background(const char *iconpath)
       strlcpy(path, settings->path.menu_wallpaper, sizeof(path));
 
    if (path_file_exists(path))
-      rarch_task_push_image_load(path, "cb_menu_wallpaper",
+      task_push_image_load(path, "cb_menu_wallpaper",
             menu_display_handle_wallpaper_upload, NULL);
 }
 

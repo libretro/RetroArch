@@ -94,7 +94,7 @@ static bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *in
          goto error;
    }
 
-   if (rarch_task_push_content_load_default(
+   if (task_push_content_load_default(
          core_path,
          path,
          &content_info,

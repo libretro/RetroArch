@@ -176,7 +176,7 @@ static bool menu_init(menu_handle_t *menu_data)
       menu_data->help_screen_type           = MENU_HELP_EXTRACT;
       menu_data->push_help_screen           = true;
 #ifdef HAVE_ZLIB
-      rarch_task_push_decompress(settings->path.bundle_assets_src, 
+      task_push_decompress(settings->path.bundle_assets_src, 
             settings->path.bundle_assets_dst,
             NULL, settings->path.bundle_assets_dst_subdir,
             NULL, bundle_decompressed, NULL);

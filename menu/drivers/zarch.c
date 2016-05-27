@@ -792,7 +792,7 @@ static int zarch_zui_load_content(zui_t *zui, unsigned i)
 {
    content_ctx_info_t content_info = {0};
 
-   rarch_task_push_content_load_default(zui->pick_cores[i].path,
+   task_push_content_load_default(zui->pick_cores[i].path,
          zui->pick_content,
          &content_info,
          CORE_TYPE_PLAIN,
@@ -1028,7 +1028,7 @@ static void *zarch_init(void **userdata)
    zui->font_size       = 28;
 
    if (!string_is_empty(settings->path.menu_wallpaper))
-      rarch_task_push_image_load(settings->path.menu_wallpaper,
+      task_push_image_load(settings->path.menu_wallpaper,
             "cb_menu_wallpaper",
             menu_display_handle_wallpaper_upload, NULL);
 
@@ -1113,7 +1113,7 @@ static void zarch_context_reset(void *data)
 
    zarch_context_bg_destroy(zui);
 
-   rarch_task_push_image_load(settings->path.menu_wallpaper,
+   task_push_image_load(settings->path.menu_wallpaper,
          "cb_menu_wallpaper", menu_display_handle_wallpaper_upload, NULL);
 
    menu_display_allocate_white_texture();

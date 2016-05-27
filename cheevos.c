@@ -1460,7 +1460,7 @@ static void cheevos_unlocked(void *task_data, void *user_data, const char *error
       RARCH_ERR("CHEEVOS error awarding achievement %u, retrying\n", cheevo->id);
 
       cheevos_make_unlock_url(cheevo, url, sizeof(url));
-      rarch_task_push_http_transfer(url, true, NULL, cheevos_unlocked, cheevo);
+      task_push_http_transfer(url, true, NULL, cheevos_unlocked, cheevo);
    }
 }
 
@@ -1483,7 +1483,7 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
          runloop_msg_queue_push(cheevo->description, 0, 5 * 60, false);
 
          cheevos_make_unlock_url(cheevo, url, sizeof(url));
-         rarch_task_push_http_transfer(url, true, NULL, cheevos_unlocked, cheevo);
+         task_push_http_transfer(url, true, NULL, cheevos_unlocked, cheevo);
       }
    }
 }
@@ -1637,7 +1637,7 @@ static void cheevos_playing(void *task_data, void *user_data, const char *error)
       RARCH_ERR("CHEEVOS error posting playing game %u activity, will retry\n", game_id);
 
       cheevos_make_playing_url(game_id, url, sizeof(url));
-      rarch_task_push_http_transfer(url, true, NULL, cheevos_playing, (void*)(uintptr_t)game_id);
+      task_push_http_transfer(url, true, NULL, cheevos_playing, (void*)(uintptr_t)game_id);
    }
 }
 
@@ -2169,7 +2169,7 @@ bool cheevos_load(const void *data)
          cheevos_locals.loaded = 1;
          
          cheevos_make_playing_url(game_id, url, sizeof(url));
-         rarch_task_push_http_transfer(url, true, NULL, cheevos_playing, (void*)(uintptr_t)game_id);
+         task_push_http_transfer(url, true, NULL, cheevos_playing, (void*)(uintptr_t)game_id);
          return true;
       }
       
