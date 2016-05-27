@@ -170,7 +170,7 @@ static int content_7zip_file_read(
    CLookToRead lookStream;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
-   CSzArEx db           = {0};
+   CSzArEx db;
    uint8_t *output      = 0;
    long outsize         = -1;
 
@@ -313,7 +313,7 @@ static struct string_list *compressed_7zip_file_list_new(
    CLookToRead lookStream;
    ISzAlloc allocImp;
    ISzAlloc allocTempImp;
-   CSzArEx db                   = {0};
+   CSzArEx db;
    size_t temp_size             = 0;
    struct string_list     *list = NULL;
    
