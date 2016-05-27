@@ -232,7 +232,7 @@ static bool rarch_task_http_retriever(retro_task_t *task, void *data)
    return true;
 }
 
-void *rarch_task_push_http_transfer(const char *url, const char *type,
+void *rarch_task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *user_data)
 {
    char tmp[PATH_MAX_LENGTH];
@@ -280,6 +280,7 @@ void *rarch_task_push_http_transfer(const char *url, const char *type,
 
    t->handler              = rarch_task_http_transfer_handler;
    t->state                = http;
+   t->mute                 = mute;
    t->callback             = cb;
    t->user_data            = user_data;
    t->progress             = -1;

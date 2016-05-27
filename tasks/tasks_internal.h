@@ -69,7 +69,7 @@ typedef struct nbio_handle
 } nbio_handle_t;
 
 #ifdef HAVE_NETWORKING
-void *rarch_task_push_http_transfer(const char *url, const char *type,
+void *rarch_task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
 task_retriever_info_t *http_task_get_transfer_list(void);

@@ -1515,7 +1515,7 @@ static int action_ok_download_generic(const char *path,
    transf->type_hash = menu_hash_calculate(type_msg);
    strlcpy(transf->path, path, sizeof(transf->path));
 
-   rarch_task_push_http_transfer(s3, type_msg, cb_generic_download, transf);
+   rarch_task_push_http_transfer(s3, false, type_msg, cb_generic_download, transf);
 #endif
    return 0;
 }
@@ -1777,7 +1777,7 @@ static int generic_action_ok_network(const char *path,
 #endif
    }
 
-   rarch_task_push_http_transfer(url_path, url_label, callback, NULL);
+   rarch_task_push_http_transfer(url_path, false, url_label, callback, NULL);
 
    return generic_action_ok_displaylist_push(path,
          label, type, idx, entry_idx, type_id2);

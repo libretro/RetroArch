@@ -135,6 +135,9 @@ struct retro_task
     * to signal the task *must* end. */
    bool cancelled;
 
+   /* if true no OSD messages will be displayed. */
+   bool mute;
+
    /* created by the handler, destroyed by the user */
    void *task_data;
 
