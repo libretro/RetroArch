@@ -1867,7 +1867,6 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_OVERLAY_INIT:
          command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #ifdef HAVE_OVERLAY
-         input_overlay_free();
          if (settings->input.overlay_enable)
             rarch_task_push_overlay_load_default(input_overlay_loaded, NULL);
 #endif
