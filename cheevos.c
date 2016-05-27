@@ -1473,7 +1473,6 @@ static void cheevos_test_cheevo_set(const cheevoset_t *set)
    {
       if (cheevo->active && cheevos_test_cheevo(cheevo))
       {
-         settings_t *settings = config_get_ptr();
          char url[256];
 
          cheevo->active = 0;
