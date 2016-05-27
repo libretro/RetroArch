@@ -383,10 +383,10 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
    /* If this is already set,
     * do not overwrite it as this was initialized before in
     * a menu or otherwise. */
-   if (!string_is_empty(settings->directory.system))
-      return;
-
-   RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
+   if (string_is_empty(settings->directory.system))
+   {
+      RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",argv[0]);
+   }
 }
 
 const char *retroarch_get_current_savefile_dir(void)
@@ -415,14 +415,14 @@ static void retroarch_set_paths_redirect(const char *path)
 
    if (!global)
    {
-    RARCH_WARN("retroarch_set_paths_redirect was sent a NULL \"global\" pointer.");
-    return;
+      RARCH_WARN("retroarch_set_paths_redirect was sent a NULL \"global\" pointer.");
+      return;
    }
 
    if (info->info.library_name &&
-            !string_is_empty(info->info.library_name))
-         global_library_name_hash =
-            msg_hash_calculate(info->info.library_name);
+         !string_is_empty(info->info.library_name))
+      global_library_name_hash =
+         msg_hash_calculate(info->info.library_name);
 
    /* Initialize current save directories
     * with the values from the config. */
@@ -502,7 +502,7 @@ static void retroarch_set_paths_redirect(const char *path)
    {
       global_t *global = global_get_ptr();
       strlcpy(current_savefile_dir, global->name.base,
-         sizeof(current_savefile_dir));
+            sizeof(current_savefile_dir));
       path_basedir(current_savefile_dir);
    }
 
@@ -1176,13 +1176,13 @@ static bool retroarch_init_state(void)
 
 bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
 {
-   char core_path[PATH_MAX_LENGTH];
-   char config_directory[PATH_MAX_LENGTH];
-   const char *core_name       = NULL;
-   const char *game_name       = NULL;
-   global_t *global            = global_get_ptr();
-   settings_t *settings        = config_get_ptr();
-   rarch_system_info_t *system = NULL;
+   char core_path[PATH_MAX_LENGTH]        = {0};
+   char config_directory[PATH_MAX_LENGTH] = {0};
+   const char *core_name                  = NULL;
+   const char *game_name                  = NULL;
+   rarch_system_info_t *system            = NULL;
+   global_t *global                       = global_get_ptr();
+   settings_t *settings                   = config_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
