@@ -108,6 +108,7 @@ enum
 
 static bool current_core_explicitly_set = false;
 static enum rarch_core_type current_core_type;
+static enum rarch_core_type explicit_current_core_type;
 static char current_savefile_dir[PATH_MAX_LENGTH];
 
 static char error_string[PATH_MAX_LENGTH];
@@ -690,7 +691,8 @@ static void retroarch_parse_input(int argc, char *argv[])
     * bogus arguments.
     */
 
-   current_core_type                     = CORE_TYPE_DUMMY;
+   retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
+
    *global->subsystem                    = '\0';
    global->has_set.save_path             = false;
    global->has_set.state_path            = false;
@@ -846,7 +848,7 @@ static void retroarch_parse_input(int argc, char *argv[])
                global->has_set.libretro = true;
 
                /* We requested explicit core, so use PLAIN core type. */
-               current_core_type = CORE_TYPE_PLAIN;
+               retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
             }
             else
             {
@@ -1043,20 +1045,20 @@ static void retroarch_parse_input(int argc, char *argv[])
       {
          /* Allow stray -L arguments to go through to workaround cases where it's used as "config file".
           * This seems to still be the case for Android, which should be properly fixed. */
-         current_core_type = CORE_TYPE_DUMMY;
+         retroarch_set_current_core_type(CORE_TYPE_DUMMY, false);
       }
    }
 
    if (!*global->subsystem && optind < argc)
    {
       /* We requested explicit ROM, so use PLAIN core type. */
-      current_core_type = CORE_TYPE_PLAIN;
+      retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
       retroarch_set_pathnames((const char*)argv[optind]);
    }
    else if (*global->subsystem && optind < argc)
    {
       /* We requested explicit ROM, so use PLAIN core type. */
-      current_core_type = CORE_TYPE_PLAIN;
+      retroarch_set_current_core_type(CORE_TYPE_PLAIN, false);
       retroarch_set_special_paths(argv + optind, argc - optind);
    }
    else
@@ -1297,9 +1299,6 @@ bool retroarch_main_init(int argc, char *argv[])
 
    runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
 
-   if (current_core_explicitly_set)
-      current_core_explicitly_set = false;
-   else
    {
       settings_t *settings = config_get_ptr();
 
@@ -1321,7 +1320,7 @@ bool retroarch_main_init(int argc, char *argv[])
                   {
 #ifdef HAVE_FFMPEG
                      global->has_set.libretro  = false;
-                     current_core_type         = CORE_TYPE_FFMPEG;
+                     retroarch_set_current_core_type(CORE_TYPE_FFMPEG, false);
 #endif
                   }
                   break;
@@ -1330,7 +1329,7 @@ bool retroarch_main_init(int argc, char *argv[])
                   if (settings->multimedia.builtin_imageviewer_enable)
                   {
                      global->has_set.libretro  = false;
-                     current_core_type         = CORE_TYPE_IMAGEVIEWER;
+                     retroarch_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
                   }
                   break;
 #endif
@@ -1340,9 +1339,15 @@ bool retroarch_main_init(int argc, char *argv[])
          }
       }
    }
-
+   
    driver_ctl(RARCH_DRIVER_CTL_INIT_PRE, NULL);
-   if (!command_event(CMD_EVENT_CORE_INIT, &current_core_type))
+   if (current_core_explicitly_set)
+   {
+      current_core_explicitly_set = false;
+      if (!command_event(CMD_EVENT_CORE_INIT, &explicit_current_core_type))
+         goto error;
+   }
+   else if (!command_event(CMD_EVENT_CORE_INIT, &current_core_type))
       goto error;
 
    driver_ctl(RARCH_DRIVER_CTL_INIT_ALL, NULL);
@@ -1643,10 +1648,15 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
    return 0;
 }
 
-void retroarch_set_current_core_type(enum rarch_core_type type)
+void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set)
 {
-   current_core_explicitly_set = true;
-   current_core_type = type;
+   if (explicitly_set && !current_core_explicitly_set)
+   {
+      current_core_explicitly_set = true;
+      explicit_current_core_type  = type;
+   }
+   else
+      current_core_type          = type;
 }
 
 /**

@@ -26,6 +26,10 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #include "../menu/menu_display.h"
@@ -1751,9 +1755,11 @@ bool task_push_content_load_default(
          break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #if defined(HAVE_NETWORK) && defined(HAVE_NETWORK_GAMEPAD)
+         runloop_set_current_core_type(CORE_TYPE_NETRETROPAD, true);
          core_path            = settings->path.libretro; /* TODO/FIXME */
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
@@ -1761,8 +1767,10 @@ bool task_push_content_load_default(
          if (!content_load_wrapper(content_info, true))
             goto error;
 #endif
-#endif
+         return true;
+#else
          break;
+#endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
          core_path            = settings->path.libretro;
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);

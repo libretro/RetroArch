@@ -154,7 +154,7 @@ void retroarch_set_pathnames(const char *path);
 
 void retroarch_fill_pathnames(void);
 
-void retroarch_set_current_core_type(enum rarch_core_type type);
+void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set);
 
 /**
  * retroarch_fail:
