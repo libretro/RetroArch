@@ -788,7 +788,6 @@ THREAD
 #elif defined(HAVE_THREADS)
 #include "../libretro-common/rthreads/rthreads.c"
 #include "../libretro-common/rthreads/rsemaphore.c"
-#include "../libretro-common/rthreads/async_job.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
 #include "../autosave.c"

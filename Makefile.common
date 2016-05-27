@@ -513,7 +513,6 @@ ifeq ($(HAVE_THREADS), 1)
    OBJ += autosave.o \
           libretro-common/rthreads/rthreads.o \
           libretro-common/rthreads/rsemaphore.o  \
-          libretro-common/rthreads/async_job.o \
           gfx/video_thread_wrapper.o \
           audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS

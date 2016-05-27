@@ -1978,7 +1978,11 @@ static unsigned cheevos_find_game_id_nes(
       uint8_t * data = (uint8_t *) malloc(rom_size << 14);
       
       if (!file || !data)
+      {
+         if (file)
+            filestream_close(file);
          return 0;
+      }
 
       /* from fceu core - need it for a correctly md5 sum */
       memset(data, 0xFF, rom_size << 14);
