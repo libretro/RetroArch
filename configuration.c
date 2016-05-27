@@ -57,7 +57,7 @@ void config_free(void)
    configuration_settings = NULL;
 }
 
-static bool config_init(void)
+bool config_init(void)
 {
    configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
 
@@ -65,13 +65,6 @@ static bool config_init(void)
       return false;
    return true;
 }
-
-bool config_realloc(void)
-{
-   config_free();
-   return config_init();
-}
-
 
 /**
  * config_get_default_audio:

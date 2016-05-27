@@ -560,7 +560,7 @@ bool config_save_autoconf_profile(const char *path, unsigned user);
  **/
 bool config_save_file(const char *path);
 
-bool config_realloc(void);
+bool config_init(void);
 
 void config_free(void);
 

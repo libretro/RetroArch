@@ -1432,10 +1432,10 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          driver_ctl(RARCH_DRIVER_CTL_UNINIT_ALL, NULL);
          break;
       case RARCH_CTL_PREINIT:
-         if (!config_realloc())
-            return false;
 
          command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
+
+         config_init();
 
          runloop_ctl(RUNLOOP_CTL_CLEAR_STATE, NULL);
          break;
