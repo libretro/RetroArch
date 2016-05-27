@@ -465,7 +465,7 @@ int libretrodb_create_index(libretrodb_t *db,
    struct rmsgpack_dom_value key;
    libretrodb_index_t idx;
    uint64_t idx_header_offset;
-   struct rmsgpack_dom_value item   = {0};
+   struct rmsgpack_dom_value item;
    libretrodb_cursor_t cur          = {0};
    struct rmsgpack_dom_value *field = NULL;
    void *buff                       = NULL;
