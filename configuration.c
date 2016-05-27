@@ -44,45 +44,25 @@
 #endif
 
 struct defaults g_defaults;
-
-static settings_t **config_get_ptr_double(void)
-{
-   static settings_t *g_config;
-   return &g_config;
-}
-
-static void config_free_ptr(void)
-{
-   settings_t **settings = config_get_ptr_double();
-   *settings = NULL;
-}
+static settings_t *configuration_settings;
 
 settings_t *config_get_ptr(void)
 {
-   settings_t **settings = config_get_ptr_double();
-   return *settings;
+   return configuration_settings;
 }
 
 void config_free(void)
 {
-   settings_t *settings = config_get_ptr();
-   if (!settings)
-      return;
-
-   free(settings);
-   config_free_ptr();
+   free(configuration_settings);
+   configuration_settings = NULL;
 }
 
 static bool config_init(void)
 {
-   settings_t **settings = config_get_ptr_double();
-   settings_t    *config = (settings_t*)calloc(1, sizeof(settings_t));
+   configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
 
-   if (!config)
+   if (!configuration_settings)
       return false;
-
-   *settings = config;
-
    return true;
 }
 
