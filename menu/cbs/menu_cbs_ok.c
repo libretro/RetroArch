@@ -778,7 +778,7 @@ static int generic_action_ok(const char *path,
             flush_type      = MENU_SETTINGS;
             menu_display_set_msg_force(true);
 
-            if (retroarch_replace_config(action_path))
+            if (config_replace(action_path))
             {
                bool pending_push = false;
                menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);

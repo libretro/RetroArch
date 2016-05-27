@@ -560,6 +560,11 @@ bool config_save_autoconf_profile(const char *path, unsigned user);
  **/
 bool config_save_file(const char *path);
 
+/* Replaces currently loaded configuration file with
+ * another one. Will load a dummy core to flush state
+ * properly. */
+bool config_replace(char *path);
+
 bool config_init(void);
 
 void config_free(void);
