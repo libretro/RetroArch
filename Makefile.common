@@ -510,8 +510,7 @@ ifeq ($(HAVE_FREETYPE), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o \
-          libretro-common/rthreads/rthreads.o \
+   OBJ += libretro-common/rthreads/rthreads.o \
           libretro-common/rthreads/rsemaphore.o  \
           gfx/video_thread_wrapper.o \
           audio/audio_thread_wrapper.o

@@ -790,7 +790,6 @@ THREAD
 #include "../libretro-common/rthreads/rsemaphore.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
-#include "../autosave.c"
 #endif
 
 
