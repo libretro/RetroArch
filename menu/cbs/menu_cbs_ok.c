@@ -2073,7 +2073,7 @@ static int action_ok_start_net_retropad_core(const char *path,
 {
    content_ctx_info_t content_info = {0};
    task_push_content_load_default(NULL, NULL,
-         &content_info, CORE_TYPE_PLAIN,
+         &content_info, CORE_TYPE_NETRETROPAD,
          CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU,
          NULL, NULL);
 

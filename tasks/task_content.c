@@ -1754,7 +1754,6 @@ bool task_push_content_load_default(
          core_path            = settings->path.libretro; /* TODO/FIXME */
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-         retroarch_set_current_core_type(CORE_TYPE_NET_RETROPAD);
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
