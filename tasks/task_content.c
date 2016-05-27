@@ -1754,8 +1754,8 @@ bool task_push_content_load_default(
 #endif
          break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
-#if defined(HAVE_NETWORK) && defined(HAVE_NETWORK_GAMEPAD)
-         runloop_set_current_core_type(CORE_TYPE_NETRETROPAD, true);
+#if defined(HAVE_NETPLAY) && defined(HAVE_NETWORK_GAMEPAD)
+         retroarch_set_current_core_type(CORE_TYPE_NETRETROPAD, true);
          core_path            = settings->path.libretro; /* TODO/FIXME */
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
