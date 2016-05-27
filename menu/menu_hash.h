@@ -20,6 +20,9 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_START_NET_RETROPAD                                          0xf2ae670dU
+#define MENU_LABEL_VALUE_START_NET_RETROPAD                                    0xad11a6a0U
+
 #define CB_THUMBNAILS_UPDATER_DOWNLOAD                                         0xf4ee156bU
 
 #define MENU_LABEL_THUMBNAILS_UPDATER_LIST                                     0xff70176bU

@@ -3563,6 +3563,16 @@ static bool setting_append_list(
                &subgroup_info,
                parent_group);
 
+#if defined(HAVE_NETPLAY) && defined(HAVE_NETWORK_GAMEPAD)
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_START_NET_RETROPAD),
+               menu_hash_to_str(MENU_LABEL_VALUE_START_NET_RETROPAD),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
+
          CONFIG_ACTION(
                list, list_info,
                menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS),

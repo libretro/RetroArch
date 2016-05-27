@@ -2068,6 +2068,18 @@ static int action_ok_start_core(const char *path,
    return 0;
 }
 
+static int action_ok_start_net_retropad_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   content_ctx_info_t content_info = {0};
+   task_push_content_load_default(NULL, NULL,
+         &content_info, CORE_TYPE_PLAIN,
+         CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU,
+         NULL, NULL);
+
+   return 0;
+}
+
 static int action_ok_open_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2338,6 +2350,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
    {
       case MENU_LABEL_START_CORE:
          BIND_ACTION_OK(cbs, action_ok_start_core);
+         break;
+      case MENU_LABEL_START_NET_RETROPAD:
+         BIND_ACTION_OK(cbs, action_ok_start_net_retropad_core);
          break;
       case MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE:
          BIND_ACTION_OK(cbs, action_ok_open_archive_detect_core);

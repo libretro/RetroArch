@@ -620,6 +620,8 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "take_screenshot";
       case MENU_LABEL_CORE_UPDATER_LIST:
          return "core_updater_list";
+      case MENU_LABEL_START_NET_RETROPAD:
+         return "menu_start_net_retropad";
       case MENU_LABEL_THUMBNAILS_UPDATER_LIST:
          return "thumbnails_updater_list";
       case MENU_LABEL_CORE_UPDATER_BUILDBOT_URL:
@@ -754,6 +756,8 @@ const char *menu_hash_to_str_us(uint32_t hash)
 
    switch (hash)
    {
+      case MENU_LABEL_VALUE_START_NET_RETROPAD:
+         return "Start Remote RetroPad";
       case MENU_LABEL_VALUE_THUMBNAILS_UPDATER_LIST:
          return "Thumbnails Updater";
       case MENU_LABEL_VALUE_MENU_LINEAR_FILTER:

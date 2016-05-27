@@ -3411,6 +3411,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_parse_settings(menu, info,
                   menu_hash_to_str(MENU_LABEL_START_CORE), PARSE_ACTION, false);
 
+            menu_displaylist_parse_settings(menu, info,
+                  menu_hash_to_str(MENU_LABEL_START_NET_RETROPAD), PARSE_ACTION, false);
+
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_has_fork())
 #endif

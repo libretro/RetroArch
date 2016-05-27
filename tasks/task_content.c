@@ -1709,6 +1709,7 @@ bool task_push_content_load_default(
     switch (mode)
     {
         case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
+        case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
         case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
         case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
         case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
@@ -1746,6 +1747,20 @@ bool task_push_content_load_default(
 #ifdef HAVE_MENU
          if (!content_load_wrapper(content_info, true))
             goto error;
+#endif
+         break;
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
+#if defined(HAVE_NETWORK) && defined(HAVE_NETWORK_GAMEPAD)
+         core_path            = settings->path.libretro; /* TODO/FIXME */
+         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+#ifdef HAVE_DYNAMIC
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+#ifdef HAVE_MENU
+         if (!content_load_wrapper(content_info, true))
+            goto error;
+#endif
 #endif
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:

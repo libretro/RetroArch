@@ -1408,6 +1408,9 @@ static int mui_list_push(void *data, void *userdata,
          entry.info_label      = menu_hash_to_str(MENU_LABEL_START_CORE);
          menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
 
+         entry.info_label      = menu_hash_to_str(MENU_LABEL_START_NET_RETROPAD);
+         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+
 #ifndef HAVE_DYNAMIC
          if (frontend_driver_has_fork())
 #endif
