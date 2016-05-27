@@ -43,6 +43,7 @@ struct ram_type
    int type;
 };
 
+#ifdef HAVE_THREADS
 /* Autosave support. */
 struct autosave_st
 {
@@ -284,6 +285,7 @@ void autosave_deinit(void)
    autosave_state.list     = NULL;
    autosave_state.num      = 0;
 }
+#endif
 
 /**
  * content_load_ram_file:
