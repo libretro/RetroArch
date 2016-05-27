@@ -44,7 +44,7 @@
 #endif
 
 struct defaults g_defaults;
-static settings_t *configuration_settings;
+static settings_t *configuration_settings = NULL;
 
 settings_t *config_get_ptr(void)
 {
@@ -2078,7 +2078,7 @@ bool config_load_override(void)
  *
  * Returns: false if there was an error.
  */
- bool config_unload_override(void)
+bool config_unload_override(void)
 {
    global_t *global     = global_get_ptr();
 
@@ -2210,7 +2210,7 @@ bool config_load_remap(void)
 static void parse_config_file(void)
 {
    global_t *global = global_get_ptr();
-   bool ret = config_load_file((*global->path.config)
+   bool         ret = config_load_file((*global->path.config)
          ? global->path.config : NULL, false);
 
    if (*global->path.config)
@@ -2461,7 +2461,7 @@ static bool config_save_keybinds_file(const char *path)
 bool config_save_autoconf_profile(const char *path, unsigned user)
 {
    unsigned i;
-   int ret = false;
+   bool ret                             = false;
    char buf[PATH_MAX_LENGTH]            = {0};
    char autoconf_file[PATH_MAX_LENGTH]  = {0};
    config_file_t *conf                  = NULL;
@@ -2506,7 +2506,9 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
       save_keybind(conf, "input", input_config_bind_map_get_base(i),
             &settings->input.binds[user][i], false, false);
    }
+
    ret = config_file_write(conf, autoconf_file);
+
    config_file_free(conf);
 
    return ret;
