@@ -19,6 +19,8 @@
 
 #include <boolean.h>
 
+#include "core_type.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -152,10 +154,7 @@ void retroarch_set_pathnames(const char *path);
 
 void retroarch_fill_pathnames(void);
 
-/* Replaces currently loaded configuration file with
- * another one. Will load a dummy core to flush state
- * properly. */
-bool retroarch_replace_config(char *path);
+void retroarch_set_current_core_type(enum rarch_core_type type);
 
 /**
  * retroarch_fail:

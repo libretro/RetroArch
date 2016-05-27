@@ -106,6 +106,7 @@ enum
    RA_OPT_MAX_FRAMES
 };
 
+static bool current_core_explicitly_set = false;
 static enum rarch_core_type current_core_type;
 static char current_savefile_dir[PATH_MAX_LENGTH];
 
@@ -1296,6 +1297,9 @@ bool retroarch_main_init(int argc, char *argv[])
 
    runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
 
+   if (current_core_explicitly_set)
+      current_core_explicitly_set = false;
+   else
    {
       settings_t *settings = config_get_ptr();
 
@@ -1637,6 +1641,12 @@ int retroarch_get_capabilities(enum rarch_capabilities type,
    }
 
    return 0;
+}
+
+void retroarch_set_current_core_type(enum rarch_core_type type)
+{
+   current_core_explicitly_set = true;
+   current_core_type = type;
 }
 
 /**
