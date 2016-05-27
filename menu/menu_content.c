@@ -130,26 +130,34 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
    char new_core_path[PATH_MAX_LENGTH]     = {0};
    const core_info_t *info                 = NULL;
    size_t supported                        = 0;
-   core_info_list_t *core_info             =  def_info ? 
+   core_info_list_t *core_info             = def_info ? 
       (core_info_list_t*)def_info->data : NULL;
    uint32_t menu_label_hash                = 
       menu_hash_calculate(def_info->menu_label);
+   const char *default_info_dir            = def_info ?
+      def_info->dir : NULL;
 
-   if (     !string_is_empty(def_info->dir) 
-         && !string_is_empty(def_info->path))
-      fill_pathname_join(def_info->s, 
-            def_info->dir, def_info->path, def_info->len);
+   if (!string_is_empty(default_info_dir))
+   {
+      const char *default_info_path = def_info->path;
+      size_t default_info_length    = def_info->len;
+
+      if (!string_is_empty(default_info_path))
+         fill_pathname_join(def_info->s, 
+               default_info_dir, default_info_path,
+               default_info_length);
 
 #ifdef HAVE_COMPRESSION
-   if (     !string_is_empty(def_info->dir) 
-         && path_is_compressed_file(def_info->dir))
-   {
-      /* In case of a compressed archive, we have to join with a hash */
-      /* We are going to write at the position of dir: */
-      retro_assert(strlen(def_info->dir) < strlen(def_info->s));
-      def_info->s[strlen(def_info->dir)] = '#';
-   }
+      if (path_is_compressed_file(default_info_dir))
+      {
+         size_t len = strlen(default_info_dir);
+         /* In case of a compressed archive, we have to join with a hash */
+         /* We are going to write at the position of dir: */
+         retro_assert(len < strlen(def_info->s));
+         def_info->s[len] = '#';
+      }
 #endif
+   }
 
    if (core_info)
       core_info_list_get_supported_cores(core_info,
