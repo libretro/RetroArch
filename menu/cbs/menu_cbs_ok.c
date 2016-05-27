@@ -634,14 +634,14 @@ static int action_ok_playlist_entry(const char *path,
          (core_name_hash == MENU_VALUE_DETECT)
       )
    {
-      char new_core_path[PATH_MAX_LENGTH];
-      char new_display_name[PATH_MAX_LENGTH];
       core_info_ctx_find_t core_info;
-      const char *entry_path            = NULL;
-      const char *entry_crc32           = NULL;
-      const char *db_name               = NULL;
-      const char             *path_base = path_basename(menu->db_playlist_file);
-      bool        found_associated_core = menu_playlist_find_associated_core(
+      char new_core_path[PATH_MAX_LENGTH]    = {0};
+      char new_display_name[PATH_MAX_LENGTH] = {0};
+      const char *entry_path                 = NULL;
+      const char *entry_crc32                = NULL;
+      const char *db_name                    = NULL;
+      const char             *path_base      = path_basename(menu->db_playlist_file);
+      bool        found_associated_core      = menu_playlist_find_associated_core(
             path_base, new_core_path, sizeof(new_core_path));
 
       core_info.inf  = NULL;

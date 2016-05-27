@@ -127,7 +127,7 @@ error:
  **/
 static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info)
 {
-   char new_core_path[PATH_MAX_LENGTH];
+   char new_core_path[PATH_MAX_LENGTH]     = {0};
    const core_info_t *info                 = NULL;
    size_t supported                        = 0;
    core_info_list_t *core_info             =  def_info ? 
@@ -141,7 +141,8 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
             def_info->dir, def_info->path, def_info->len);
 
 #ifdef HAVE_COMPRESSION
-   if (path_is_compressed_file(def_info->dir))
+   if (     !string_is_empty(def_info->dir) 
+         && path_is_compressed_file(def_info->dir))
    {
       /* In case of a compressed archive, we have to join with a hash */
       /* We are going to write at the position of dir: */
