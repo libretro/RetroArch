@@ -1,58 +1,60 @@
-static const char *stock_xmb_simple = 
-"struct input\n"
-"{\n"
-"  float time;\n"
-"};\n"
+#include "shaders_common.h"
 
-"float iqhash(float n)\n"
-"{\n"
-"return frac(sin(n)*43758.5453);\n"
-"}\n"
+static const char *stock_xmb_simple = GLSL(
+   struct input
+   {
+      float time;
+   };
 
-"float noise(float3 x)\n"
-"{\n"
-"float3 p = floor(x);\n"
-"float3 f = frac(x);\n"
-"f = f * f * (3.0 - 2.0 * f);\n"
-"float n = p.x + p.y * 57.0 + 113.0 * p.z;\n"
-"return lerp(lerp(lerp(iqhash(n+0.0), iqhash(n+1.0), f.x),\n"
-"lerp(iqhash(n+57.0), iqhash(n+58.0), f.x), f.y),\n"
-"lerp(lerp(iqhash(n+113.0), iqhash(n+114.0), f.x),\n"
-"lerp(iqhash(n+170.0), iqhash(n+171.0), f.x), f.y), f.z);\n"
-"}\n"
+   float iqhash(float n)
+   {
+      return frac(sin(n)*43758.5453);
+   }
 
-"void main_vertex\n"
-"(\n"
-"	float2 position	: POSITION,\n"
-"	float4 color	: COLOR,\n"
-"	float2 texCoord : TEXCOORD0,\n"
+   float noise(float3 x)
+   {
+      float3 p = floor(x);
+      float3 f = frac(x);
+      f = f * f * (3.0 - 2.0 * f);
+      float n = p.x + p.y * 57.0 + 113.0 * p.z;
+      return lerp(lerp(lerp(iqhash(n+0.0), iqhash(n+1.0), f.x),
+            lerp(iqhash(n+57.0), iqhash(n+58.0), f.x), f.y),
+         lerp(lerp(iqhash(n+113.0), iqhash(n+114.0), f.x),
+            lerp(iqhash(n+170.0), iqhash(n+171.0), f.x), f.y), f.z);
+   }
 
-"    uniform input IN,\n"
+   void main_vertex
+   (
+      float2 position	: POSITION,
+      float4 color	: COLOR,
+      float2 texCoord : TEXCOORD0,
 
-"	out float4 oPosition : POSITION,\n"
-"	out float4 oColor    : COLOR,\n"
-"	out float2 otexCoord : TEXCOORD\n"
-")\n"
-"{\n"
-"float3 v = float3(position.x, 0.0, position.y);\n"
-"float3 v2 = v;\n"
-"v2.x = v2.x + IN.time / 2.0;\n"
-"v2.z = v.z * 3.0;\n"
-"v.y = -cos((v.x + v.z / 3.0 + IN.time) * 2.0) / 10.0 - noise(v2.xyz) / 3.0;\n"
-"	oPosition = float4(v, 1.0);\n"
-"	oColor = color;\n"
-"	otexCoord = texCoord;\n"
-"}\n"
+      uniform input IN,
 
-"struct output\n"
-"{\n"
-"  float4 color    : COLOR;\n"
-"};\n"
+      out float4 oPosition : POSITION,
+      out float4 oColor    : COLOR,
+      out float2 otexCoord : TEXCOORD
+   )
+   {
+      float3 v = float3(position.x, 0.0, position.y);
+      float3 v2 = v;
+      v2.x = v2.x + IN.time / 2.0;
+      v2.z = v.z * 3.0;
+      v.y = -cos((v.x + v.z / 3.0 + IN.time) * 2.0) / 10.0 - noise(v2.xyz) / 3.0;
+      oPosition = float4(v, 1.0);
+      oColor = color;
+      otexCoord = texCoord;
+   }
 
-"output main_fragment(uniform input IN) \n"
-"{\n"
-"   output OUT;\n"
-"   OUT.color = float4(1.0, 1.0, 1.0, 0.05);\n"
-"   return OUT;\n"
-"}\n"
-;
+   struct output
+   {
+     float4 color    : COLOR;
+   };
+
+   output main_fragment(uniform input IN)
+   {
+      output OUT;
+      OUT.color = float4(1.0, 1.0, 1.0, 0.05);
+      return OUT;
+   }
+);

@@ -1,37 +1,38 @@
-static const char *nuklear_shader = 
-"struct input\n"
-"{\n"
-"  float time;\n"
-"};\n"
+#include "shaders_common.h"
 
-"void main_vertex\n"
-"(\n"
-"	float4 position	: POSITION,\n"
-"	float4 color	: COLOR,\n"
-"	float2 texCoord : TEXCOORD0,\n"
+static const char *nuklear_shader = GLSL(
+   struct input
+   {
+      float time;
+   };
 
-"    uniform float4x4 modelViewProj,\n"
+   void main_vertex
+   (
+    float4 position	: POSITION,
+    float4 color	: COLOR,
+    float2 texCoord : TEXCOORD0,
 
-"	out float4 oPosition : POSITION,\n"
-"	out float4 oColor    : COLOR,\n"
-"	out float2 otexCoord : TEXCOORD\n"
-")\n"
-"{\n"
-"	oPosition = mul(modelViewProj, position);\n"
-"	oColor = color;\n"
-"	otexCoord = texCoord;\n"
-"}\n"
+    uniform float4x4 modelViewProj,
 
-"struct output \n"
-"{\n"
-"  float4 color    : COLOR;\n"
-"};\n"
+    out float4 oPosition : POSITION,
+    out float4 oColor    : COLOR,
+    out float2 otexCoord : TEXCOORD
+   )
+   {
+      oPosition = mul(modelViewProj, position);
+      oColor    = color;
+      otexCoord = texCoord;
+   }
 
+   struct output
+   {
+      float4 color    : COLOR;
+   };
 
-"output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D Texture : TEXUNIT0, uniform input IN)\n" 
-"{\n"
-"   output OUT;\n"
-"   OUT.color = tex2D(Texture, texCoord);\n"
-"   return OUT;\n"
-"}\n"
-;
+   output main_fragment(float2 texCoord : TEXCOORD0, uniform sampler2D Texture : TEXUNIT0, uniform input IN)\
+   {
+      output OUT;
+      OUT.color = tex2D(Texture, texCoord);
+      return OUT;
+   }
+);
