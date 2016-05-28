@@ -1,9 +1,7 @@
 static const char *stock_vertex_xmb_modern =
-   "#define COMPAT_VARYING out\n"
-   "#define COMPAT_ATTRIBUTE in\n"
-   "COMPAT_ATTRIBUTE vec3 VertexCoord;\n"
+   "in vec3 VertexCoord;\n"
    "uniform float time;\n"
-   "COMPAT_VARYING vec3 fragVertexEc;\n"
+   "out vec3 fragVertexEc;\n"
    "float iqhash( float n )\n"
    "{\n"
    "  return fract(sin(n)*43758.5453);\n"
