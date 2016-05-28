@@ -1725,8 +1725,6 @@ bool task_push_content_load_default(
       retro_task_callback_t cb,
       void *user_data)
 {
-   settings_t *settings = config_get_ptr();
-
    switch (mode)
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
