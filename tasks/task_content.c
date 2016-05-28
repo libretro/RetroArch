@@ -1567,16 +1567,14 @@ static void menu_content_environment_get(int *argc, char *argv[],
 #endif
 
 /**
- * content_load_wrapper:
+ * task_load_content:
  *
  * Loads content into currently selected core.
  * Will also optionally push the content entry to the history playlist.
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-
-static bool content_load_wrapper(
-      content_ctx_info_t *content_info,
+static bool task_load_content(content_ctx_info_t *content_info, 
       bool launched_from_menu)
 {
    char name[PATH_MAX_LENGTH];
@@ -1684,7 +1682,7 @@ static bool command_event_cmd_exec(void *data)
    }
 
 #if defined(HAVE_DYNAMIC)
-   if (!content_load_wrapper(&content_info, false))
+   if (!task_load_content(&content_info, false))
    {
 #ifdef HAVE_MENU
       rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
@@ -1697,6 +1695,7 @@ static bool command_event_cmd_exec(void *data)
 
    return true;
 }
+
 
 bool task_push_content_load_default(
       const char *core_path,
@@ -1739,19 +1738,17 @@ bool task_push_content_load_default(
          runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
          runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-         if (!content_load_wrapper(content_info, false))
+         if (!task_load_content(content_info, false))
             goto error;
          break;
       case CONTENT_MODE_LOAD_FROM_CLI:
-         if (!content_load_wrapper(content_info, false))
+         if (!task_load_content(content_info, false))
             goto error;
          break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-#ifdef HAVE_MENU
-         if (!content_load_wrapper(content_info, true))
+         if (!task_load_content(content_info, true))
             goto error;
-#endif
          break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #if defined(HAVE_NETPLAY) && defined(HAVE_NETWORK_GAMEPAD)
@@ -1763,10 +1760,8 @@ bool task_push_content_load_default(
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
-#ifdef HAVE_MENU
-         if (!content_load_wrapper(content_info, true))
+         if (!task_load_content(content_info, true))
             goto error;
-#endif
          return true;
 #else
          break;
@@ -1778,19 +1773,15 @@ bool task_push_content_load_default(
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
-#ifdef HAVE_MENU
-         if (!content_load_wrapper(content_info, true))
+         if (!task_load_content(content_info, true))
             goto error;
-#endif
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
          core_path            = settings->path.libretro;
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-#ifdef HAVE_MENU
-         if (!content_load_wrapper(content_info, true))
+         if (!task_load_content(content_info, true))
             goto error;
-#endif
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
          core_path            = settings->path.libretro; /* TODO/FIXME */
@@ -1799,10 +1790,8 @@ bool task_push_content_load_default(
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
-#ifdef HAVE_MENU
-         if (!content_load_wrapper(content_info, true))
+         if (!task_load_content(content_info, true))
             goto error;
-#endif
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          core_path            = settings->path.libretro; /* TODO/FIXME */
@@ -1811,20 +1800,16 @@ bool task_push_content_load_default(
          command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
-#ifdef HAVE_MENU
-         if (!content_load_wrapper(content_info, true))
+         if (!task_load_content(content_info, true))
             goto error;
-#endif
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 #ifdef HAVE_DYNAMIC
          command_event(CMD_EVENT_LOAD_CORE, NULL);
-#ifdef HAVE_MENU
-         if (!content_load_wrapper(content_info, true))
+         if (!task_load_content(content_info, true))
             goto error;
-#endif
 #else
          {
             char *fullpath       = NULL;
