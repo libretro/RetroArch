@@ -1726,29 +1726,30 @@ bool task_push_content_load_default(
       void *user_data)
 {
    settings_t *settings = config_get_ptr();
-    
-#ifdef HAVE_MENU
-    switch (mode)
-    {
-        case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
-        case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
-        case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-        case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-        case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-        case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
-        case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-        case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
-        case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
-           if (content_info && !content_info->environ_get)
-              content_info->environ_get = menu_content_environment_get;
-            break;
-        default:
-            break;
-    }
-#endif
 
-    switch (mode)
-    {
+   switch (mode)
+   {
+      case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
+      case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
+#ifdef HAVE_MENU
+         if (content_info && !content_info->environ_get)
+            content_info->environ_get = menu_content_environment_get;
+#endif
+         break;
+      default:
+         break;
+   }
+
+   switch (mode)
+   {
+      /* Clear content path */
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
@@ -1756,7 +1757,21 @@ bool task_push_content_load_default(
          break;
       default:
          break;
-    }
+   }
+
+   switch (mode)
+   {
+      /* Set content path */
+      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
+         break;
+      default:
+         break;
+   }
 
    switch (mode)
    {
@@ -1767,10 +1782,6 @@ bool task_push_content_load_default(
 #endif
          runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
          runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
-         if (!task_load_content(content_info, false))
-            goto error;
-         break;
-      case CONTENT_MODE_LOAD_FROM_CLI:
          if (!task_load_content(content_info, false))
             goto error;
          break;
@@ -1787,28 +1798,27 @@ bool task_push_content_load_default(
 #else
          break;
 #endif
+      case CONTENT_MODE_LOAD_FROM_CLI:
+         if (!task_load_content(content_info, false))
+            goto error;
+         break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
          if (!task_load_content(content_info, true))
             goto error;
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
          if (!task_load_content(content_info, true))
             goto error;
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
          if (!task_load_content(content_info, true))
             goto error;
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
          if (!task_load_content(content_info, true))
             goto error;
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
 #ifdef HAVE_DYNAMIC
          if (!task_load_content(content_info, true))
             goto error;
