@@ -1696,6 +1696,14 @@ static bool command_event_cmd_exec(void *data)
    return true;
 }
 
+static bool task_load_core(const char *core_path)
+{
+   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+#ifdef HAVE_DYNAMIC
+   command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
+   return true;
+}
 
 bool task_push_content_load_default(
       const char *core_path,
@@ -1755,11 +1763,9 @@ bool task_push_content_load_default(
          retroarch_set_current_core_type(CORE_TYPE_NETRETROPAD, true);
          core_path            = settings->path.libretro; /* TODO/FIXME */
          runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 
-#ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
-#endif
+         if (!task_load_core(core_path))
+            goto error;
          if (!task_load_content(content_info, true))
             goto error;
          return true;
@@ -1769,10 +1775,8 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
          core_path            = settings->path.libretro;
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-#ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
-#endif
+         if (!task_load_core(core_path))
+            goto error;
          if (!task_load_content(content_info, true))
             goto error;
          break;
@@ -1786,19 +1790,15 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
          core_path            = settings->path.libretro; /* TODO/FIXME */
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-#ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
-#endif
+         if (!task_load_core(core_path))
+            goto error;
          if (!task_load_content(content_info, true))
             goto error;
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          core_path            = settings->path.libretro; /* TODO/FIXME */
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-#ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
-#endif
+         if (!task_load_core(core_path))
+            goto error;
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
          if (!task_load_content(content_info, true))
             goto error;
@@ -1807,7 +1807,8 @@ bool task_push_content_load_default(
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 #ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
+         if (!task_load_core(core_path))
+            goto error;
          if (!task_load_content(content_info, true))
             goto error;
 #else
@@ -1833,7 +1834,8 @@ bool task_push_content_load_default(
          if (!command_event_cmd_exec((void*)fullpath))
             return false;
 
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
+         if (!task_load_core(core_path))
+            goto error;
          return true;
          break;
       case CONTENT_MODE_LOAD_NONE:
