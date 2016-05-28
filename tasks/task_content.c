@@ -1784,17 +1784,12 @@ bool task_push_content_load_default(
          break;
 #endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
-         core_path            = settings->path.libretro;
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
-         if (!task_load_core(core_path))
-            goto error;
          if (!task_load_content(content_info, true))
             goto error;
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
-         core_path            = settings->path.libretro;
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
          if (!task_load_content(content_info, true))
             goto error;
          break;
@@ -1810,10 +1805,7 @@ bool task_push_content_load_default(
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
 #ifdef HAVE_DYNAMIC
-         if (!task_load_core(core_path))
-            goto error;
          if (!task_load_content(content_info, true))
             goto error;
 #else
