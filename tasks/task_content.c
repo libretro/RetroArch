@@ -1800,14 +1800,10 @@ bool task_push_content_load_default(
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
-         if (!task_load_core(core_path))
-            goto error;
          if (!task_load_content(content_info, true))
             goto error;
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         if (!task_load_core(core_path))
-            goto error;
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
          if (!task_load_content(content_info, true))
             goto error;
