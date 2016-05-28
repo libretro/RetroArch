@@ -1799,7 +1799,6 @@ bool task_push_content_load_default(
             goto error;
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-         core_path            = settings->path.libretro; /* TODO/FIXME */
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,  (void*)fullpath);
          if (!task_load_core(core_path))
             goto error;
@@ -1807,7 +1806,6 @@ bool task_push_content_load_default(
             goto error;
          break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         core_path            = settings->path.libretro; /* TODO/FIXME */
          if (!task_load_core(core_path))
             goto error;
          runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)fullpath);
