@@ -1747,6 +1747,17 @@ bool task_push_content_load_default(
     }
 #endif
 
+    switch (mode)
+    {
+      case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
+      case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
+         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+         break;
+      default:
+         break;
+    }
+
    switch (mode)
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
@@ -1756,7 +1767,6 @@ bool task_push_content_load_default(
 #endif
          runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
          runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
-         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
          if (!task_load_content(content_info, false))
             goto error;
          break;
@@ -1765,14 +1775,12 @@ bool task_push_content_load_default(
             goto error;
          break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
-         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
          if (!task_load_content(content_info, true))
             goto error;
          break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #if defined(HAVE_NETPLAY) && defined(HAVE_NETWORK_GAMEPAD)
          retroarch_set_current_core_type(CORE_TYPE_NETRETROPAD, true);
-         runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
          if (!task_load_content(content_info, true))
             goto error;
          return true;
