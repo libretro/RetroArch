@@ -1705,6 +1705,17 @@ static bool task_load_core(const char *core_path)
    return true;
 }
 
+static void task_push_quickmenu(enum content_mode_load mode, enum rarch_core_type type)
+{
+#ifdef HAVE_MENU
+   if (type != CORE_TYPE_DUMMY && mode != CONTENT_MODE_LOAD_FROM_CLI)
+   {
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT,       NULL);
+      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+   }
+#endif
+}
+
 bool task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
@@ -1842,13 +1853,7 @@ bool task_push_content_load_default(
          break;
    }
 
-#ifdef HAVE_MENU
-   if (type != CORE_TYPE_DUMMY && mode != CONTENT_MODE_LOAD_FROM_CLI)
-   {
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT,       NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-   }
-#endif
+   task_push_quickmenu(mode, type);
 
    return true;
 
