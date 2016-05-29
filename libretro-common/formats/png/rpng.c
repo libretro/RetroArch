@@ -61,6 +61,7 @@ enum png_chunk_type
    PNG_CHUNK_IHDR,
    PNG_CHUNK_IDAT,
    PNG_CHUNK_PLTE,
+   PNG_CHUNK_tRNS,
    PNG_CHUNK_IEND
 };
 
@@ -121,6 +122,7 @@ struct rpng
    bool has_idat;
    bool has_iend;
    bool has_plte;
+   bool has_trns;
    struct idat_buffer idat_buf;
    struct png_ihdr ihdr;
    uint8_t *buff_data;
@@ -144,6 +146,7 @@ static enum png_chunk_type png_chunk_type(const struct png_chunk *chunk)
       { "IDAT", PNG_CHUNK_IDAT },
       { "IEND", PNG_CHUNK_IEND },
       { "PLTE", PNG_CHUNK_PLTE },
+      { "tRNS", PNG_CHUNK_tRNS },
    };
 
    for (i = 0; i < ARRAY_SIZE(chunk_map); i++)
@@ -754,6 +757,18 @@ static bool png_read_plte(uint8_t *buf,
    return true;
 }
 
+static bool png_read_trns(uint8_t *buf, uint32_t *palette, unsigned entries)
+{
+   unsigned i;
+
+   for (i = 0; i < entries; i++, buf++, palette++)
+   {
+      *palette = (*palette & 0x00ffffff) | *buf << 24;
+   }
+
+   return true;
+}
+
 bool png_realloc_idat(const struct png_chunk *chunk, struct idat_buffer *buf)
 {
    uint8_t *new_buffer = (uint8_t*)realloc(buf->data, buf->size + chunk->size);
@@ -900,7 +915,7 @@ bool rpng_iterate_image(rpng_t *rpng)
          {
             unsigned entries = chunk.size / 3;
 
-            if (!rpng->has_ihdr || rpng->has_plte || rpng->has_iend || rpng->has_idat)
+            if (!rpng->has_ihdr || rpng->has_plte || rpng->has_iend || rpng->has_idat || rpng->has_trns)
                goto error;
 
             if (chunk.size % 3)
@@ -915,6 +930,28 @@ bool rpng_iterate_image(rpng_t *rpng)
                goto error;
 
             rpng->has_plte = true;
+         }
+         break;
+
+      case PNG_CHUNK_tRNS:
+         {
+            unsigned entries = chunk.size / 3;
+
+            if (rpng->has_idat)
+               goto error;
+            
+            if (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT)
+            {
+               /* we should compare with the number of palette entries */
+               if (chunk.size > 256)
+                  goto error;
+               
+               if (!png_read_trns(buf, rpng->palette, chunk.size))
+                  goto error;
+            }
+            /* TODO: support colorkey in grayscale and truecolor images */
+
+            rpng->has_trns = true;
          }
          break;
 
