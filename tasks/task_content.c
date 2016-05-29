@@ -1773,6 +1773,17 @@ bool task_push_content_load_default(
 
    switch (mode)
    {
+      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
+         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+         if (!task_load_core(core_path))
+            goto error;
+         break;
+      default:
+         break;
+   }
+
+   switch (mode)
+   {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
          runloop_ctl(RUNLOOP_CTL_STATE_FREE, NULL);
 #ifdef HAVE_MENU
