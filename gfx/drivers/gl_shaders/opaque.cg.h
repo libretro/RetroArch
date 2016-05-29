@@ -29,6 +29,6 @@ static const char *stock_cg_gl_program = GLSL(
 
       float4 main_fragment(input IN, vertex_data vert, uniform sampler2D s0 : TEXUNIT0) : COLOR
       {
-        return vert.color * tex2D(s0, vert.tex)
+        return vert.color * tex2D(s0, vert.tex);
       }
 );

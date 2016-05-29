@@ -51,7 +51,7 @@ static const char *stock_xmb_simple = GLSL(
      float4 color    : COLOR;
    };
 
-   output main_fragment(uniform input IN)
+   output main_fragment(uniform input IN) 
    {
       output OUT;
       OUT.color = float4(1.0, 1.0, 1.0, 0.05);
