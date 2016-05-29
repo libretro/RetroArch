@@ -1028,6 +1028,8 @@ bool rpng_iterate_image(rpng_t *rpng)
                if (chunk.size > 256)
                   goto error;
                
+               buf += 8;
+
                if (!png_read_trns(buf, rpng->palette, chunk.size))
                   goto error;
             }
