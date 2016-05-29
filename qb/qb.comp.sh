@@ -72,9 +72,6 @@ if [ "$OS" = "Win32" ]; then
 		WINDRES=$(which ${CROSS_COMPILE}windres)
 		[ "$WINDRES" ] || { echo "$echobuf ... Not found. Exiting."; exit 1; }
 	fi
-
-   #Should force Vulkan support to be built-in
-   HAVE_VULKAN='yes'
 	echo "$echobuf ... $WINDRES"
 fi
 
