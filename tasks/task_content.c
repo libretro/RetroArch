@@ -1368,13 +1368,15 @@ static bool init_content_file_set_attribs(
       attr.i              |= system->info.need_fullpath << 1;
       attr.i              |= (!content_does_not_need_content())  << 2;
 
-      if (content_does_not_need_content()
+      char *fullpath    = NULL;
+
+      if (!runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath)
+            && content_does_not_need_content()
             && settings->set_supports_no_game_enable)
          string_list_append(content, "", attr);
       else
       {
-         char *fullpath    = NULL;
-         if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath))
+         if(fullpath)
             string_list_append(content, fullpath, attr);
       }
    }
