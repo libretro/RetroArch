@@ -395,13 +395,31 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
       struct retro_system_av_info info;
 
       uint32_t *buf = &image_buffer[0];
-      uint32_t *end = buf + (image_width*image_height*sizeof(uint32_t))/4;
-
-      while(buf < end)
+      int x, y;
+      
+      for (y = 0; y < image_height; y++)
       {
-         uint32_t pixel = *buf;
-         *buf = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
-         buf++;
+         for (x = 0; x < image_width; x++, buf++)
+         {
+            uint32_t pixel = *buf;
+            uint32_t a = pixel >> 24;
+            
+            if (a == 255)
+               *buf = (pixel & 0x0000ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0x000000ff);
+            else
+            {
+               uint32_t r = pixel & 0x0000ff;
+               uint32_t g = (pixel & 0x00ff00) >> 8;
+               uint32_t b = (pixel & 0xff0000) >> 16;
+               uint32_t bg = ((x & 8) ^ (y & 8)) ? 0x66 : 0x99;
+               
+               r = a * r / 255 + (255 - a) * bg / 255;
+               g = a * g / 255 + (255 - a) * bg / 255;
+               b = a * b / 255 + (255 - a) * bg / 255;
+               
+               *buf = r << 16 | g << 8 | b;
+            }
+         }
       }
 
       IMAGE_CORE_PREFIX(retro_get_system_av_info)(&info);
