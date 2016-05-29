@@ -327,18 +327,100 @@ static void png_reverse_filter_copy_line_plt(uint32_t *data,
       const uint8_t *decoded, unsigned width,
       unsigned depth, const uint32_t *palette)
 {
-   unsigned i, bit;
-   unsigned mask = (1 << depth) - 1;
-
-   bit = 0;
-
-   for (i = 0; i < width; i++, bit += depth)
+   switch (depth)
    {
-      unsigned byte = bit >> 3;
-      unsigned val  = decoded[byte] >> (8 - depth - (bit & 7));
-
-      val          &= mask;
-      data[i]       = palette[val];
+      case 1:
+         {
+            unsigned w = width / 8;
+            unsigned i;
+            
+            for (i = 0; i < w; i++, decoded++)
+            {
+               *data++ = palette[(*decoded >> 7) & 1];
+               *data++ = palette[(*decoded >> 6) & 1];
+               *data++ = palette[(*decoded >> 5) & 1];
+               *data++ = palette[(*decoded >> 4) & 1];
+               *data++ = palette[(*decoded >> 3) & 1];
+               *data++ = palette[(*decoded >> 2) & 1];
+               *data++ = palette[(*decoded >> 1) & 1];
+               *data++ = palette[*decoded & 1];
+            }
+            
+            switch (width & 7)
+            {
+               case 7:
+                  data[6] = palette[(*decoded >> 1) & 1];
+               case 6:
+                  data[5] = palette[(*decoded >> 2) & 1];
+               case 5:
+                  data[4] = palette[(*decoded >> 3) & 1];
+               case 4:
+                  data[3] = palette[(*decoded >> 4) & 1];
+               case 3:
+                  data[2] = palette[(*decoded >> 5) & 1];
+               case 2: 
+                  data[1] = palette[(*decoded >> 6) & 1];
+               case 1:
+                  data[0] = palette[(*decoded >> 7) & 1];
+                  break;
+            }
+         }
+         break;
+      
+      case 2:
+         {
+            unsigned w = width / 4;
+            unsigned i;
+            
+            for (i = 0; i < w; i++, decoded++)
+            {
+               *data++ = palette[(*decoded >> 6) & 3];
+               *data++ = palette[(*decoded >> 4) & 3];
+               *data++ = palette[(*decoded >> 2) & 3];
+               *data++ = palette[*decoded & 3];
+            }
+            
+            switch (width & 3)
+            {
+               case 3:
+                  data[2] = palette[(*decoded >> 2) & 3];
+               case 2: 
+                  data[1] = palette[(*decoded >> 4) & 3];
+               case 1:
+                  data[0] = palette[(*decoded >> 6) & 3];
+                  break;
+            }
+         }
+         break;
+      
+      case 4:
+         {
+            unsigned w = width / 2;
+            unsigned i;
+            
+            for (i = 0; i < w; i++, decoded++)
+            {
+               *data++ = palette[*decoded >> 4];
+               *data++ = palette[*decoded & 0x0f];
+            }
+            
+            if (width & 1)
+            {
+               *data = palette[*decoded >> 4];
+            }
+         }
+         break;
+      
+      case 8:
+         {
+            unsigned i;
+            
+            for (i = 0; i < width; i++, decoded++, data++)
+            {
+               *data = palette[*decoded];
+            }
+         }
+         break;
    }
 }
 
