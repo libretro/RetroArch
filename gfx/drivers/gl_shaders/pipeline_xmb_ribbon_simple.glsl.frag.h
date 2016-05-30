@@ -1,9 +1,6 @@
 #include "shaders_common.h"
 
 static const char *stock_fragment_xmb_simple = GLSL(
-   #ifdef GL_ES
-   precision mediump float;
-   #endif
    uniform float time;
 
    void main()
