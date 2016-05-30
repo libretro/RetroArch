@@ -1,9 +1,6 @@
 #include "shaders_common.h"
 
 static const char *stock_fragment_modern_blend = GLSL(
-   #ifdef GL_ES
-   precision mediump float;
-   #endif
    uniform sampler2D Texture;
    varying vec2 tex_coord;
    varying vec4 color;
