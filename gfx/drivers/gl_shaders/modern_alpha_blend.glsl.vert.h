@@ -1,10 +1,6 @@
 #include "shaders_common.h"
 
 static const char *stock_vertex_modern_blend = GLSL(
-   #ifdef GL_ES
-   precision mediump float;
-   #endif
-
    attribute vec2 TexCoord;
    attribute vec2 VertexCoord;
    attribute vec4 Color;
