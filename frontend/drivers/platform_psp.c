@@ -159,9 +159,7 @@ static void frontend_psp_deinit(void *data)
 {
    (void)data;
 #ifndef IS_SALAMANDER
-   bool *verbose      = retro_main_verbosity();
-   *verbose           = false;
-
+   verbosity_disable();
 #ifdef HAVE_FILE_LOGGER
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 #endif

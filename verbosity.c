@@ -53,10 +53,25 @@
 /* If this is non-NULL. RARCH_LOG and friends 
  * will write to this file. */
 static FILE *log_file;
+static bool main_verbosity;
 
-bool *retro_main_verbosity(void)
+void verbosity_enable(void)
 {
-   static bool main_verbosity;
+   main_verbosity = true;
+}
+
+void verbosity_disable(void)
+{
+   main_verbosity = false;
+}
+
+bool verbosity_is_enabled(void)
+{
+   return main_verbosity;
+}
+
+bool *verbosity_get_ptr(void)
+{
    return &main_verbosity;
 }
 
@@ -82,15 +97,6 @@ void retro_main_log_file_deinit(void)
 }
 
 #if !defined(HAVE_LOGGER)
-static bool RARCH_LOG_VERBOSE(void)
-{
-   bool *verbose = NULL;
-   verbose = retro_main_verbosity();
-   if (!verbose)
-      return false;
-   return *verbose;
-}
-
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
 #if TARGET_OS_IPHONE
@@ -100,7 +106,7 @@ static aslclient asl_client;
 #endif
 #endif
 
-   if (!RARCH_LOG_VERBOSE())
+   if (!verbosity_is_enabled())
       return;
 #if TARGET_OS_IPHONE
 #if TARGET_IPHONE_SIMULATOR
@@ -148,7 +154,7 @@ void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
 
-   if (!RARCH_LOG_VERBOSE())
+   if (!verbosity_is_enabled())
       return;
 
    va_start(ap, fmt);

@@ -1545,7 +1545,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
          RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
 
    if (!global->has_set.verbosity)
-      wrap_args->verbose       = *retro_main_verbosity();
+      wrap_args->verbose       = verbosity_is_enabled();
 
    wrap_args->touched          = true;
    wrap_args->config_path      = NULL;

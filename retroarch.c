@@ -794,9 +794,7 @@ static void retroarch_parse_input(int argc, char *argv[])
 
          case 'v':
             {
-               bool *verbosity = retro_main_verbosity();
-               if (verbosity)
-                  *verbosity = true;
+               verbosity_enable();
                global->has_set.verbosity = true;
             }
             break;
@@ -1263,8 +1261,6 @@ static void retroarch_validate_cpu_features(void)
  **/
 bool retroarch_main_init(int argc, char *argv[])
 {
-   bool *verbosity   = NULL;
-
    retroarch_init_state();
 
    if (setjmp(error_sjlj_context) > 0)
@@ -1277,9 +1273,7 @@ bool retroarch_main_init(int argc, char *argv[])
    retro_main_log_file_init(NULL);
    retroarch_parse_input(argc, argv);
 
-   verbosity = retro_main_verbosity();
-
-   if (verbosity && *verbosity)
+   if (verbosity_is_enabled())
    {
       char str[PATH_MAX_LENGTH] = {0};
 

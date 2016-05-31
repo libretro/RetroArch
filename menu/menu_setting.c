@@ -3056,9 +3056,11 @@ void general_write_handler(void *data)
          break;
       case MENU_LABEL_LOG_VERBOSITY:
          {
-            bool *verbose = retro_main_verbosity();
+            if (setting->value.target.boolean && *setting->value.target.boolean)
+               verbosity_enable();
+            else
+               verbosity_disable();
 
-            *verbose = *setting->value.target.boolean;
             global->has_set.verbosity = *setting->value.target.boolean;
          }
          break;
@@ -4077,7 +4079,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  retro_main_verbosity(),
+                  verbosity_get_ptr(),
                   menu_hash_to_str(MENU_LABEL_LOG_VERBOSITY),
                   menu_hash_to_str(MENU_LABEL_VALUE_LOG_VERBOSITY),
                   false,

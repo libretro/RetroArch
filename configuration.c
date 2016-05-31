@@ -1236,7 +1236,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_file_t *conf                   = NULL;
    settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
-   bool *verbose                         = retro_main_verbosity();
 
    if (path)
    {
@@ -1268,7 +1267,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       extra_path = strtok_r(NULL, "|", &save);
    }
 #if 0
-   if (*verbose)
+   if (verbosity_is_enabled())
    {
       RARCH_LOG_OUTPUT("=== Config ===\n");
       config_file_dump_all(conf);
@@ -1643,8 +1642,10 @@ static bool config_load_file(const char *path, bool set_defaults)
    {
       if (config_get_bool(conf, "log_verbosity", &tmp_bool))
       {
-         if (verbose)
-            *verbose = tmp_bool;
+         if (tmp_bool)
+            verbosity_enable();
+         else
+            verbosity_disable();
       }
    }
 
@@ -2529,6 +2530,7 @@ bool config_save_file(const char *path)
 {
    float msg_color;
    unsigned i           = 0;
+   bool tmp_bool        = false;
    bool ret             = false;
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();
@@ -2944,12 +2946,9 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "sort_savestates_enable",
          settings->sort_savestates_enable);
    config_set_int(conf, "libretro_log_level", settings->libretro_log_level);
-   config_set_bool(conf, "log_verbosity", *retro_main_verbosity());
 
-   {
-      bool perfcnt_enable = runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL);
-      config_set_bool(conf, "perfcnt_enable", perfcnt_enable);
-   }
+   config_set_bool(conf, "log_verbosity", verbosity_is_enabled());
+   config_set_bool(conf, "perfcnt_enable", runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL));
 
 #if TARGET_OS_IPHONE
    config_set_bool(conf, "small_keyboard_enable",   settings->input.small_keyboard_enable);

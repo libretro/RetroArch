@@ -27,7 +27,13 @@
 extern "C" {
 #endif
 
-bool *retro_main_verbosity(void);
+bool verbosity_is_enabled(void);
+
+void verbosity_enable(void);
+
+void verbosity_disable(void);
+
+bool *verbosity_get_ptr(void);
 
 FILE *retro_main_log_file(void);
 
