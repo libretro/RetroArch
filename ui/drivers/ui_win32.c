@@ -514,7 +514,7 @@ bool win32_browser(
    ofn.lpstrInitialDir = TEXT(initial_dir);
    ofn.lpstrDefExt     = "";
    ofn.nMaxFile        = PATH_MAX;
-   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
 
    if (!GetOpenFileName(&ofn))
       return false;
