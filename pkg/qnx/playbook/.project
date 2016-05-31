@@ -85,27 +85,37 @@
 		<link>
 			<name>overlays</name>
 			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/media/overlays</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/media/overlays</locationURI>
 		</link>
 		<link>
 			<name>shaders_glsl</name>
 			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/media/shaders_glsl</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/media/shaders_glsl</locationURI>
 		</link>
 		<link>
 			<name>src/griffin.c</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/griffin/griffin.c</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/griffin/griffin.c</locationURI>
 		</link>
 		<link>
 			<name>src/sinc_neon.S</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/audio/sinc_neon.S</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/audio/drivers_resampler/sinc_resampler_neon.S</locationURI>
 		</link>
 		<link>
-			<name>src/utils_neon.S</name>
+			<name>src/s16_to_float_neon.S</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/audio/utils_neon.S</locationURI>
+			<locationURI>PARENT-3-PROJECT_LOC/libretro-common/conversion/s16_to_float_neon.S</locationURI>
+		</link>
+		<link>
+			<name>src/float_to_s16_neon.S</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/libretro-common/conversion/float_to_s16_neon.S</locationURI>
+		</link>
+		<link>
+			<name>src/cc_resampler_neon.S</name>
+			<type>1</type>
+			<locationURI>PARENT-3-PROJECT_LOC/audio/drivers_resampler/cc_resampler_neon.S</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
