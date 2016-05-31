@@ -21,18 +21,8 @@
        <platformArchitecture>armle-v7</platformArchitecture>
        <asset path="Device-Debug/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
     </configuration>
-    <configuration name="Device-Release">
-       <platformArchitecture>armle-v7</platformArchitecture>
-       <asset path="Device-Release/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
-    </configuration>
-    <configuration name="Device-Profile">
-       <platformArchitecture>armle-v7</platformArchitecture>
-       <asset path="Device-Profile/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
-    </configuration>
-    <configuration name="Device-Coverage">
-       <platformArchitecture>armle-v7</platformArchitecture>
-       <asset path="Device-Coverage/RetroArch" entry="true" type="Qnx/Elf">RetroArch</asset>
-    </configuration>
+    <configuration id="com.qnx.qcc.toolChain.465834703" name="Default">       <platformArchitecture>armle-v7</platformArchitecture>
+</configuration>
 
     <icon>
         <image>icon.png</image>
