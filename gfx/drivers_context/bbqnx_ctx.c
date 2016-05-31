@@ -120,12 +120,6 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    usage = SCREEN_USAGE_OPENGL_ES2 | SCREEN_USAGE_ROTATION;
 
 #ifdef HAVE_EGL
-   if (!eglBindAPI(EGL_OPENGL_ES_API))
-   {
-      RARCH_ERR("eglBindAPI failed.\n");
-      goto error;
-   }
-
    if (!egl_init_context(&qnx->egl, EGL_DEFAULT_DISPLAY, &major, &minor,
             &n, attribs))
    {
