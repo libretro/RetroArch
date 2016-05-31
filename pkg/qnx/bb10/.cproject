@@ -39,7 +39,7 @@
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_XMB"/>
-									<listOptionValue builtIn="false" value="HAVE_GLUI"/>
+									<listOptionValue builtIn="false" value="HAVE_MATERIALUI"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -170,7 +170,7 @@
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_XMB"/>
-									<listOptionValue builtIn="false" value="HAVE_GLUI"/>
+									<listOptionValue builtIn="false" value="HAVE_MATERIALUI"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -303,7 +303,7 @@
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_XMB"/>
-									<listOptionValue builtIn="false" value="HAVE_GLUI"/>
+									<listOptionValue builtIn="false" value="HAVE_MATERIALUI"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -437,7 +437,7 @@
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_XMB"/>
-									<listOptionValue builtIn="false" value="HAVE_GLUI"/>
+									<listOptionValue builtIn="false" value="HAVE_MATERIALUI"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -569,7 +569,7 @@
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_XMB"/>
-									<listOptionValue builtIn="false" value="HAVE_GLUI"/>
+									<listOptionValue builtIn="false" value="HAVE_MATERIALUI"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -701,7 +701,7 @@
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_XMB"/>
-									<listOptionValue builtIn="false" value="HAVE_GLUI"/>
+									<listOptionValue builtIn="false" value="HAVE_MATERIALUI"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
@@ -834,7 +834,7 @@
 									<listOptionValue builtIn="false" value="HAVE_ALSA"/>
 									<listOptionValue builtIn="false" value="RARCH_INTERNAL"/>
 									<listOptionValue builtIn="false" value="HAVE_XMB"/>
-									<listOptionValue builtIn="false" value="HAVE_GLUI"/>
+									<listOptionValue builtIn="false" value="HAVE_MATERIALUI"/>
 									<listOptionValue builtIn="false" value="HAVE_RGUI"/>
 									<listOptionValue builtIn="false" value="HAVE_MENU"/>
 									<listOptionValue builtIn="false" value="RARCH_MOBILE"/>
