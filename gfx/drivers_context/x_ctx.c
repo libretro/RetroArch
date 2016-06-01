@@ -133,7 +133,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 
    x11_colormap_destroy();
 
-   if (x->g_should_reset_mode)
+   if (x->g_should_reset_mode && g_x11_dpy)
    {
       x11_exit_fullscreen(g_x11_dpy, &x->g_desktop_mode);
       x->g_should_reset_mode = false;

@@ -1363,26 +1363,33 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_MEMORY_MAPS:
       {
          unsigned i;
-         struct retro_memory_descriptor *descriptors;
-         const struct retro_memory_map *mmaps =
+         struct retro_memory_descriptor *descriptors = NULL;
+         const struct retro_memory_map *mmaps        =
             (const struct retro_memory_map*)data;
          
-         free((void*)system->mmaps.descriptors);
-         system->mmaps.num_descriptors = 0;
+         if (system)
+         {
+            RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
+            free((void*)system->mmaps.descriptors);
+            system->mmaps.num_descriptors = 0;
+            descriptors = (struct retro_memory_descriptor*)
+               calloc(mmaps->num_descriptors,
+                     sizeof(*system->mmaps.descriptors));
+
+            if (!descriptors)
+               return false;
+
+            system->mmaps.descriptors = descriptors;
+            memcpy((void*)system->mmaps.descriptors, mmaps->descriptors,
+                  mmaps->num_descriptors * sizeof(*system->mmaps.descriptors));
+            system->mmaps.num_descriptors = mmaps->num_descriptors;
+            mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
+         }
+         else
+         {
+            RARCH_WARN("Environ SET_MEMORY_MAPS, but system pointer not initialized..\n");
+         }
          
-         descriptors = (struct retro_memory_descriptor*)
-            calloc(mmaps->num_descriptors, sizeof(*system->mmaps.descriptors));
-         
-         if (!descriptors)
-            return false;
-         
-         system->mmaps.descriptors = descriptors;
-         memcpy((void*)system->mmaps.descriptors, mmaps->descriptors,
-            mmaps->num_descriptors * sizeof(*system->mmaps.descriptors));
-         system->mmaps.num_descriptors = mmaps->num_descriptors;
-         mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
-         
-         RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
          
          if (sizeof(void *) == 8)
             RARCH_LOG("   ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");
