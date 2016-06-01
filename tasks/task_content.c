@@ -1858,7 +1858,6 @@ bool task_push_content_load_default(
          if (!task_load_core(core_path))
             goto error;
          return true;
-         break;
       case CONTENT_MODE_LOAD_NONE:
          break;
    }
