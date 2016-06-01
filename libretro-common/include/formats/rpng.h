@@ -29,7 +29,6 @@
 #include <retro_common_api.h>
 
 #include <boolean.h>
-#include <file/archive_file.h>
 
 RETRO_BEGIN_DECLS
 

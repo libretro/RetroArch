@@ -62,6 +62,10 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
    switch (type)
    {
+      case DIR_LIST_AUTOCONFIG:
+         dir  = input_dir;
+         exts = filter;
+         break;
       case DIR_LIST_CORES:
          dir  = settings->directory.libretro;
 
@@ -122,7 +126,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
    struct string_list *s            = string_list_new();
 
    if (!s || !len)
-      return NULL;
+      goto error;
 
    attr.i = 0;
    *len   = 0;
@@ -256,9 +260,8 @@ struct string_list *string_list_new_special(enum string_list_type type,
 
          for (i = 0; i < *list_size; i++)
          {
-            const char *opt  = NULL;
             const core_info_t *info  = (const core_info_t*)&core_info[i];
-            opt              = info ? info->display_name : NULL;
+            const char          *opt = info->display_name;
 
             if (!opt)
                goto error;
@@ -277,7 +280,6 @@ struct string_list *string_list_new_special(enum string_list_type type,
 error:
    string_list_free(s);
    s    = NULL;
-   *len = 0;
    return NULL;
 }
 

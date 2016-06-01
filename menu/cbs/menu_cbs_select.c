@@ -13,6 +13,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <queues/task_queue.h>
+
 #include "../menu_driver.h"
 #include "../menu_entry.h"
 #include "../menu_cbs.h"
@@ -78,7 +80,7 @@ static int action_select_default(const char *path, const char *label, unsigned t
    if (action != MENU_ACTION_NOOP)
        ret = menu_entry_action(&entry, idx, action);
 
-   runloop_iterate_data();
+   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
     
    return ret;
 }

@@ -166,15 +166,18 @@ void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height)
    }
 }
 
+#ifndef HAVE_BB10
 static void egl_sighandler(int sig)
 {
    (void)sig;
    if (g_egl_quit) exit(1);
    g_egl_quit = 1;
 }
+#endif
 
 void egl_install_sighandlers(void)
 {
+#ifndef HAVE_BB10
    struct sigaction sa;
 
    sa.sa_sigaction = NULL;
@@ -183,6 +186,7 @@ void egl_install_sighandlers(void)
    sigemptyset(&sa.sa_mask);
    sigaction(SIGINT, &sa, NULL);
    sigaction(SIGTERM, &sa, NULL);
+#endif
 }
 
 bool egl_init_context(egl_ctx_data_t *egl,

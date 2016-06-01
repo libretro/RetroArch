@@ -9,18 +9,28 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 
+#define HAVE_STB_IMAGE
+
+#ifdef HAVE_STB_IMAGE
 #define STB_IMAGE_IMPLEMENTATION
 
-#ifdef RARCH_INTERNAL
+#if 0
 #define STBI_NO_PSD
 #define STBI_NO_GIF
 #define STBI_NO_HDR
 #define STBI_NO_PIC
 #define STBI_NO_PNM
-#define STBI_SUPPORT_ZLIB
 #endif
+#define STBI_SUPPORT_ZLIB
 
+#ifdef RARCH_INTERNAL
 #include "../../deps/stb/stb_image.h"
+#else
+#include <stb_image.h>
+#endif
+#else
+#include <formats/image.h>
+#endif
 
 #include <libretro.h>
 
@@ -40,6 +50,9 @@ static retro_environment_t IMAGE_CORE_PREFIX(environ_cb);
 
 static bool      process_new_image;
 static uint32_t* image_buffer;
+#ifndef HAVE_STB_IMAGE
+static struct texture_image image_texture;
+#endif
 static int       image_width;
 static int       image_height;
 static bool      image_uploaded;
@@ -50,10 +63,10 @@ struct string_list *file_list;
 #define DUPE_TEST
 #endif
 
-#ifdef RARCH_INTERNAL
-static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|tga";
-#else
+#ifdef HAVE_STB_IMAGE
 static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|psd|tga|gif|hdr|pic|ppm|pgm";
+#else
+static const char* IMAGE_CORE_PREFIX(valid_extensions) = "jpg|jpeg|png|bmp|tga";
 #endif
 
 void IMAGE_CORE_PREFIX(retro_get_system_info)(struct retro_system_info *info)
@@ -76,6 +89,13 @@ void IMAGE_CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *in
    info->timing.sample_rate    = 44100.0;
 }
 
+static void imageviewer_reset(void)
+{
+   image_buffer = NULL;
+   image_width  = 0;
+   image_height = 0;
+}
+
 void IMAGE_CORE_PREFIX(retro_init)(void)
 {
    struct retro_log_callback log;
@@ -85,19 +105,25 @@ void IMAGE_CORE_PREFIX(retro_init)(void)
    else
       IMAGE_CORE_PREFIX(log_cb) = NULL;
 
-   image_buffer = NULL;
-   image_width  = 0;
-   image_height = 0;
+   imageviewer_reset();
 
+}
+
+static void imageviewer_free_image(void)
+{
+#ifdef HAVE_STB_IMAGE
+   if (image_buffer)
+      free(image_buffer);
+#else
+   image_texture_free(&image_texture);
+#endif
+   image_buffer = NULL;
 }
 
 void IMAGE_CORE_PREFIX(retro_deinit)(void)
 {
-   if (image_buffer)
-      free(image_buffer);
-   image_buffer = NULL;
-   image_width  = 0;
-   image_height = 0;
+   imageviewer_free_image();
+   imageviewer_reset();
 }
 
 void IMAGE_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
@@ -174,16 +200,24 @@ void IMAGE_CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char * c)
 static bool imageviewer_load(const char *path, int image_index)
 {
    int comp;
-   if (image_buffer)
-      free(image_buffer);
-   
+
+   imageviewer_free_image();
+
+   (void)comp;
+#ifdef HAVE_STB_IMAGE
    image_buffer           = (uint32_t*)stbi_load(
          path,
          &image_width,
          &image_height,
          &comp,
          4);
-
+#else
+   if (!image_texture_load(&image_texture, path))
+      return false;
+   image_buffer = (uint32_t*)image_texture.pixels;
+   image_width  = image_texture.width;
+   image_height = image_texture.height;
+#endif
    if (!image_buffer)
       return false;
 
@@ -226,11 +260,10 @@ bool IMAGE_CORE_PREFIX(retro_load_game_special)(unsigned a, const struct retro_g
    return false;
 }
 
+
 void IMAGE_CORE_PREFIX(retro_unload_game)(void)
 {
-   if (image_buffer)
-      free(image_buffer);
-   image_buffer = NULL;
+   imageviewer_free_image();
    image_width  = 0;
    image_height = 0;
 }
@@ -360,14 +393,33 @@ void IMAGE_CORE_PREFIX(retro_run)(void)
    {
       /* RGBA > XRGB8888 */
       struct retro_system_av_info info;
-      uint32_t *buf = &image_buffer[0];
-      uint32_t *end = buf + (image_width*image_height*sizeof(uint32_t))/4;
 
-      while(buf < end)
+      uint32_t *buf = &image_buffer[0];
+      int x, y;
+      
+      for (y = 0; y < image_height; y++)
       {
-         uint32_t pixel = *buf;
-         *buf = (pixel & 0xff00ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0xff);
-         buf++;
+         for (x = 0; x < image_width; x++, buf++)
+         {
+            uint32_t pixel = *buf;
+            uint32_t a = pixel >> 24;
+            
+            if (a == 255)
+               *buf = (pixel & 0x0000ff00) | ((pixel << 16) & 0x00ff0000) | ((pixel >> 16) & 0x000000ff);
+            else
+            {
+               uint32_t r = pixel & 0x0000ff;
+               uint32_t g = (pixel & 0x00ff00) >> 8;
+               uint32_t b = (pixel & 0xff0000) >> 16;
+               uint32_t bg = ((x & 8) ^ (y & 8)) ? 0x66 : 0x99;
+               
+               r = a * r / 255 + (255 - a) * bg / 255;
+               g = a * g / 255 + (255 - a) * bg / 255;
+               b = a * b / 255 + (255 - a) * bg / 255;
+               
+               *buf = r << 16 | g << 8 | b;
+            }
+         }
       }
 
       IMAGE_CORE_PREFIX(retro_get_system_av_info)(&info);

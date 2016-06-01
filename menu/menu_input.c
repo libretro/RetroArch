@@ -195,7 +195,8 @@ void menu_input_st_hex_cb(void *userdata, const char *str)
          unsigned *ptr = (unsigned*)setting_get_ptr(setting);
          if (str[0] == '#')
             str++;
-         *ptr = strtoul(str, NULL, 16);
+         if (ptr)
+            *ptr = strtoul(str, NULL, 16);
       }
    }
 
@@ -924,7 +925,7 @@ static int menu_input_mouse_post_iterate(uint64_t *input_mouse,
    if (
          !settings->menu.mouse.enable 
 #ifdef HAVE_OVERLAY
-         || (settings->input.overlay_enable && input_overlay_is_alive())
+         || (settings->input.overlay_enable && input_overlay_is_alive(NULL))
 #endif
          )
    {
@@ -1080,19 +1081,16 @@ static int menu_input_pointer_post_iterate(
    int ret                      = 0;
    menu_input_t *menu_input     = menu_input_get_ptr();
    settings_t *settings         = config_get_ptr();
-   bool check_overlay           = false;
-   
-   if (settings)
-      check_overlay             = !settings->menu.pointer.enable;
+   bool check_overlay           = settings ? !settings->menu.pointer.enable : false;
 
-   if (!menu_input)
+   if (!menu_input || !settings)
       return -1;
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return -1;
 
 #ifdef HAVE_OVERLAY
    check_overlay = check_overlay || 
-      (settings->input.overlay_enable && input_overlay_is_alive());
+      (settings->input.overlay_enable && input_overlay_is_alive(NULL));
 #endif
 
    if (check_overlay)
@@ -1225,7 +1223,7 @@ static unsigned menu_input_frame_pointer(unsigned *data)
 #ifdef HAVE_OVERLAY
    if (!mouse_enabled)
       mouse_enabled = !(settings->input.overlay_enable 
-            && input_overlay_is_alive());
+            && input_overlay_is_alive(NULL));
 #endif
     
    if (!mouse_enabled)

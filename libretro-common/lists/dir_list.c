@@ -181,8 +181,8 @@ struct string_list *dir_list_new(const char *dir,
 
    while (retro_readdir(entry))
    {
-      char file_path[PATH_MAX_LENGTH];
-      bool is_dir;
+      bool is_dir                     = false;
+      char file_path[PATH_MAX_LENGTH] = {0};
       int ret                         = 0;
       const char *name                = retro_dirent_get_name(entry);
       const char *file_ext            = path_get_extension(name);

@@ -23,6 +23,7 @@
 #include <boolean.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <queues/task_queue.h>
 
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
@@ -35,11 +36,6 @@
 #include "../../tasks/tasks_internal.h"
 
 static id apple_platform;
-
-/* forward declaration */
-#ifdef HAVE_OPENGL
-void *glcontext_get_ptr(void);
-#endif
 
 void apple_rarch_exited(void)
 {
@@ -231,7 +227,7 @@ static void poll_iteration(void)
        ret = runloop_iterate(&sleep_ms);
        if (ret == 1 && sleep_ms > 0)
           retro_sleep(sleep_ms);
-       runloop_iterate_data();
+       task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
        while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.002, FALSE) == kCFRunLoopRunHandledSource);
     }
     
@@ -277,10 +273,19 @@ static void poll_iteration(void)
       if (system)
          core_name = system->library_name;
 		
-      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
-
       if (core_name)
-         ui_companion_event_command(CMD_EVENT_LOAD_CONTENT);
+      {
+         content_ctx_info_t content_info = {0};
+         task_push_content_load_default(
+               NULL,
+               __core.UTF8String,
+               &content_info,
+               CORE_TYPE_PLAIN,
+               CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+               NULL, NULL);
+      }
+      else
+         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
 
       [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
    }
@@ -311,9 +316,13 @@ static void open_core_handler(NSOpenPanel *panel, NSInteger result)
                 if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) 
                       && settings->set_supports_no_game_enable)
                 {
+                   content_ctx_info_t content_info = {0};
                     runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-                    rarch_task_push_content_load_default(
-                             NULL, NULL, false, CORE_TYPE_PLAIN,
+                    task_push_content_load_default(
+                             NULL, NULL,
+                             &content_info,
+                             CORE_TYPE_PLAIN,
+                             CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                              NULL, NULL);
                 }
             }
@@ -343,7 +352,15 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
                 runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
                 
                 if (core_name)
-                    ui_companion_event_command(CMD_EVENT_LOAD_CONTENT);
+                {
+                   content_ctx_info_t content_info = {0};
+                   task_push_content_load_default(
+                         NULL, NULL,
+                         &content_info,
+                         CORE_TYPE_PLAIN,
+                         CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                         NULL, NULL);
+                }
             }
             break;
         case 0: /* NSCancelButton/NSModalResponseCancel */
@@ -352,9 +369,6 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 }
 
 - (IBAction)openCore:(id)sender {
-#ifdef HAVE_OPENGL
-   NSOpenGLContext *glc  = (NSOpenGLContext*)glcontext_get_ptr();
-#endif
     NSOpenPanel* panel   = (NSOpenPanel*)[NSOpenPanel openPanel];
     settings_t *settings = config_get_ptr();
     NSString *startdir   = BOXSTRING(settings->directory.libretro);
@@ -380,16 +394,10 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 	if (result == 1)
        open_core_handler(panel, result);
 #endif
-#ifdef HAVE_OPENGL
-    [glc makeCurrentContext];
-#endif
 }
 
 - (void)openDocument:(id)sender
 {
-#ifdef HAVE_OPENGL
-   NSOpenGLContext *glc  = (NSOpenGLContext*)glcontext_get_ptr();
-#endif
    NSOpenPanel* panel    = (NSOpenPanel*)[NSOpenPanel openPanel];
    settings_t *settings  = config_get_ptr();
    NSString *startdir    = BOXSTRING(settings->directory.menu_content);
@@ -415,9 +423,6 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
     NSInteger result = [panel runModal];
     if (result == 1)
         open_document_handler(panel, result);
-#endif
-#ifdef HAVE_OPENGL
-    [glc makeCurrentContext];
 #endif
 }
 

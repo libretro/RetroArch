@@ -1030,9 +1030,7 @@ static HRESULT xbox_io_mount(const char* szDrive, char* szDevice)
 static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
 {
 #ifndef IS_SALAMANDER
-   bool *verbose               = retro_main_verbosity();
-   bool original_verbose       = *verbose;
-   *verbose                    = true;
+   bool original_verbose       = verbosity_is_enabled();
 #endif
    char szSourceDevice[48]     = {0};
    char szDestinationDrive[16] = {0};
@@ -1059,7 +1057,10 @@ static HRESULT xbox_io_mount(char *szDrive, char *szDevice)
    IoCreateSymbolicLink(&LinkName, &DeviceName);
 
 #ifndef IS_SALAMANDER
-   *verbose = original_verbose;
+   if (original_verbose)
+      verbosity_enable();
+   else
+      verbosity_disable();
 #endif
    return S_OK;
 }
@@ -1091,10 +1092,7 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
    (void)ret;
 
 #ifndef IS_SALAMANDER
-   bool *verbose         = retro_main_verbosity();
-   bool original_verbose = *verbose;
-
-   *verbose              = true;
+   bool original_verbose       = verbosity_is_enabled();
 #endif
 
 #ifndef IS_SALAMANDER
@@ -1226,7 +1224,10 @@ static void frontend_xdk_get_environment_settings(int *argc, char *argv[],
 
 #ifndef IS_SALAMANDER
 exit:
-   *verbose = original_verbose;
+   if (original_verbose)
+      verbosity_enable();
+   else
+      verbosity_disable();
 #endif
 }
 
@@ -1247,9 +1248,7 @@ static void frontend_xdk_init(void *data)
 static void frontend_xdk_exec(const char *path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
-   bool *verbose         = retro_main_verbosity();
-   bool original_verbose = *verbose;
-   *verbose              = true;
+   bool original_verbose       = verbosity_is_enabled();
 #endif
    (void)should_load_game;
 
@@ -1287,7 +1286,10 @@ static void frontend_xdk_exec(const char *path, bool should_load_game)
 #endif
 #endif
 #ifndef IS_SALAMANDER
-   *verbose = original_verbose;
+   if (original_verbose)
+      verbosity_enable();
+   else
+      verbosity_disable();
 #endif
 }
 

@@ -130,7 +130,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    char scale_type_y[64]        = {0};
    char frame_count_mod[64]     = {0};
    struct gfx_fbo_scale *scale  = NULL;
-   bool smooth                  = false;
+   bool tmp_bool                = false;
    float fattr                  = 0.0f;
    int iattr                    = 0;
 
@@ -145,8 +145,12 @@ static bool video_shader_parse_pass(config_file_t *conf,
    
    /* Smooth */
    snprintf(filter_name_buf, sizeof(filter_name_buf), "filter_linear%u", i);
-   if (config_get_bool(conf, filter_name_buf, &smooth))
+
+   if (config_get_bool(conf, filter_name_buf, &tmp_bool))
+   {
+      bool smooth = tmp_bool;
       pass->filter = smooth ? RARCH_FILTER_LINEAR : RARCH_FILTER_NEAREST;
+   }
    else
       pass->filter = RARCH_FILTER_UNSPEC;
 
@@ -163,13 +167,16 @@ static bool video_shader_parse_pass(config_file_t *conf,
 
    /* FBO types and mipmapping */
    snprintf(srgb_output_buf, sizeof(srgb_output_buf), "srgb_framebuffer%u", i);
-   config_get_bool(conf, srgb_output_buf, &pass->fbo.srgb_fbo);
+   if (config_get_bool(conf, srgb_output_buf, &tmp_bool))
+      pass->fbo.srgb_fbo = tmp_bool;
 
    snprintf(fp_fbo_buf, sizeof(fp_fbo_buf), "float_framebuffer%u", i);
-   config_get_bool(conf, fp_fbo_buf, &pass->fbo.fp_fbo);
+   if (config_get_bool(conf, fp_fbo_buf, &tmp_bool))
+      pass->fbo.fp_fbo = tmp_bool;
 
    snprintf(mipmap_buf, sizeof(mipmap_buf), "mipmap_input%u", i);
-   config_get_bool(conf, mipmap_buf, &pass->mipmap);
+   if (config_get_bool(conf, mipmap_buf, &tmp_bool))
+      pass->mipmap = tmp_bool;
 
    snprintf(alias_buf, sizeof(alias_buf), "alias%u", i);
    if (!config_get_array(conf, alias_buf, pass->alias, sizeof(pass->alias)))

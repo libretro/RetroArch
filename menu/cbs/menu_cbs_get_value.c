@@ -1179,6 +1179,162 @@ static void menu_action_setting_disp_set_label_core_option_create(
    strlcpy(s2, path, len2);
 }
 
+static void menu_action_setting_disp_set_label_playlist_associations(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   char playlist_name_with_ext[PATH_MAX_LENGTH] = {0};
+   bool found_matching_core_association         = false;
+   settings_t         *settings                 = config_get_ptr();
+   struct string_list *str_list                 = string_split(settings->playlist_names, ";");
+   struct string_list *str_list2                = string_split(settings->playlist_cores, ";");
+
+   strlcpy(s2, path, len2);
+
+   *s = '\0';
+   *w = 19;
+
+   strlcpy(playlist_name_with_ext, path, sizeof(playlist_name_with_ext));
+   strlcat(playlist_name_with_ext, ".lpl", sizeof(playlist_name_with_ext));
+
+   for (i = 0; i < str_list->size; i++)
+   {
+      if (string_is_equal(str_list->elems[i].data, playlist_name_with_ext))
+      {
+         if (str_list->size != str_list2->size)
+            break;
+
+         if (str_list2->elems[i].data == NULL)
+            break;
+
+         found_matching_core_association = true;
+         strlcpy(s, str_list2->elems[i].data, len);
+      }
+   }
+
+   string_list_free(str_list);
+   string_list_free(str_list2);
+
+   if (string_is_equal(s, "DETECT") || !found_matching_core_association)
+      strlcpy(s, "N/A", len);
+   else
+   {
+      char buf[PATH_MAX_LENGTH];
+      core_info_list_t *list = NULL;
+
+      core_info_get_list(&list);
+
+      if (core_info_list_get_display_name(list, s, buf, sizeof(buf)))
+         strlcpy(s, buf, len);
+   }
+
+   strlcpy(s2, path, len2);
+}
+
+static void menu_action_setting_disp_set_label_core_options(file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   core_option_manager_t *coreopts = NULL;
+   const char *core_opt = NULL;
+
+   *s = '\0';
+   *w = 19;
+
+   if (runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts))
+   {
+      core_opt = core_option_manager_get_val(coreopts,
+            type - MENU_SETTINGS_CORE_OPTION_START);
+
+      strlcpy(s, "", len);
+
+      if (core_opt)
+         strlcpy(s, core_opt, len);
+   }
+
+   strlcpy(s2, path, len2);
+}
+
+static void menu_action_setting_disp_set_label_content_history(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   *s = '\0';
+   *w = strlen(label);
+
+   menu_setting_get_label(list, s,
+         len, w, type, label, entry_label, i);
+
+   strlcpy(s2, path, len2);
+}
+
+static void menu_action_setting_disp_set_label_system_information(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   *s = '\0';
+   *w = 2;
+
+   menu_setting_get_label(list, s,
+         len, w, type, label, entry_label, i);
+
+   strlcpy(s2, path, len2);
+}
+
+static void menu_action_setting_disp_set_label_debug_information(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   *s = '\0';
+   *w = 2;
+
+   menu_setting_get_label(list, s,
+         len, w, type, label, entry_label, i);
+
+   strlcpy(s2, path, len2);
+}
+
+static void menu_action_setting_disp_set_label_achievement_information(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *entry_label,
+      const char *path,
+      char *s2, size_t len2)
+{
+   *s = '\0';
+   *w = 2;
+
+   menu_setting_get_label(list, s,
+         len, w, type, label, entry_label, i);
+
+   strlcpy(s2, path, len2);
+}
+
 static void menu_action_setting_disp_set_label(file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
       const char *label,
@@ -1187,89 +1343,11 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
       const char *path,
       char *s2, size_t len2)
 {
-   uint32_t hash_label         = menu_hash_calculate(label);
-
    *s = '\0';
    *w = 19;
 
-   switch (hash_label)
-   {
-      case MENU_LABEL_LOAD_CONTENT_HISTORY:
-         *w = strlen(label);
-         break;
-      case MENU_LABEL_SYSTEM_INFORMATION:
-         *w = 2;
-         break;
-      case MENU_LABEL_DEBUG_INFORMATION:
-         *w = 2;
-         break;
-      case MENU_LABEL_ACHIEVEMENT_LIST:
-         *w = 2;
-         break;
-   }
-
-   if (type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START)
-   {
-      char playlist_name_with_ext[PATH_MAX_LENGTH];
-      unsigned i;
-      bool found_matching_core_association = false;
-      settings_t         *settings = config_get_ptr();
-      struct string_list *str_list  = string_split(settings->playlist_names, ";");
-      struct string_list *str_list2 = string_split(settings->playlist_cores, ";");
-
-      strlcpy(playlist_name_with_ext, path, sizeof(playlist_name_with_ext));
-      strlcat(playlist_name_with_ext, ".lpl", sizeof(playlist_name_with_ext));
-
-      for (i = 0; i < str_list->size; i++)
-      {
-         if (string_is_equal(str_list->elems[i].data, playlist_name_with_ext))
-         {
-            if (str_list->size != str_list2->size)
-               break;
-
-            if (str_list2->elems[i].data == NULL)
-               break;
-
-            found_matching_core_association = true;
-            strlcpy(s, str_list2->elems[i].data, len);
-         }
-      }
-
-      string_list_free(str_list);
-      string_list_free(str_list2);
-
-      if (string_is_equal(s, "DETECT") || !found_matching_core_association)
-         strlcpy(s, "N/A", len);
-      else
-      {
-         char buf[PATH_MAX_LENGTH];
-         core_info_list_t *list = NULL;
-
-         core_info_get_list(&list);
-
-         if (core_info_list_get_display_name(list, s, buf, sizeof(buf)))
-            strlcpy(s, buf, len);
-      }
-   }
-   else if (type >= MENU_SETTINGS_CORE_OPTION_START)
-   {
-      core_option_manager_t *coreopts = NULL;
-      const char *core_opt = NULL;
-
-      if (runloop_ctl(RUNLOOP_CTL_COREOPTS_GET, &coreopts))
-      {
-         core_opt = core_option_manager_get_val(coreopts,
-               type - MENU_SETTINGS_CORE_OPTION_START);
-
-         strlcpy(s, "", len);
-
-         if (core_opt)
-            strlcpy(s, core_opt, len);
-      }
-   }
-   else
-      menu_setting_get_label(list, s,
-            len, w, type, label, entry_label, i);
+   menu_setting_get_label(list, s,
+         len, w, type, label, entry_label, i);
 
    strlcpy(s2, path, len2);
 }
@@ -1534,6 +1612,41 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
 {
    if (!cbs)
       return -1;
+
+   switch (menu_label_hash)
+   {
+      case MENU_LABEL_LOAD_CONTENT_HISTORY:
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_content_history);
+         return 0;
+      case MENU_LABEL_SYSTEM_INFORMATION:
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_system_information);
+         return 0;
+      case MENU_LABEL_DEBUG_INFORMATION:
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_debug_information);
+         return 0;
+      case MENU_LABEL_ACHIEVEMENT_LIST:
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_achievement_information);
+         return 0;
+      default:
+         break;
+   }
+
+   if (type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_playlist_associations);
+      return 0;
+   }
+   if (type >= MENU_SETTINGS_CORE_OPTION_START)
+   {
+      BIND_ACTION_GET_VALUE(cbs,
+         menu_action_setting_disp_set_label_core_options);
+      return 0;
+   }
 
    if (type >= MENU_SETTINGS_SHADER_PARAMETER_0
          && type <= MENU_SETTINGS_SHADER_PARAMETER_LAST)

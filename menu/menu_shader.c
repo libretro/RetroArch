@@ -113,8 +113,9 @@ void menu_shader_manager_init(menu_handle_t *menu)
          break;
       default:
          {
-            char preset_path[PATH_MAX_LENGTH];
-            const char *shader_dir = *settings->directory.video_shader ?
+            char preset_path[PATH_MAX_LENGTH] = {0};
+            const char *shader_dir            = 
+               *settings->directory.video_shader ?
                settings->directory.video_shader : settings->directory.system;
 
             fill_pathname_join(preset_path, shader_dir,
@@ -189,8 +190,7 @@ void menu_shader_manager_set_preset(struct video_shader *shader,
    if (!conf)
       return;
 
-   RARCH_LOG("Setting Menu shader: %s.\n", preset_path 
-         ? preset_path : "N/A (stock)");
+   RARCH_LOG("Setting Menu shader: %s.\n", preset_path);
 
    if (video_shader_read_conf_cgp(conf, shader))
    {
@@ -417,9 +417,4 @@ void menu_shader_manager_apply_changes(void)
    }
    menu_shader_manager_set_preset(NULL, shader_type, NULL);
 #endif
-}
-
-void menu_shader_free(menu_handle_t *menu)
-{
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_DEINIT, NULL);
 }

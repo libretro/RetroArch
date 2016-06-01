@@ -55,7 +55,7 @@ int action_scan_file(const char *path,
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
-   rarch_task_push_dbscan(fullpath, false, handle_dbscan_finished);
+   task_push_dbscan(fullpath, false, handle_dbscan_finished);
 
    return 0;
 }
@@ -78,7 +78,7 @@ int action_scan_directory(const char *path,
    if (path)
       fill_pathname_join(fullpath, fullpath, path, sizeof(fullpath));
 
-   rarch_task_push_dbscan(fullpath, true, handle_dbscan_finished);
+   task_push_dbscan(fullpath, true, handle_dbscan_finished);
 
    return 0;
 }

@@ -123,12 +123,14 @@ OBJ += frontend/frontend.o \
        intl/msg_hash_pt.o \
        intl/msg_hash_us.o \
        runloop.o \
+		 libretro-common/algorithms/mismatch.o \
        libretro-common/queues/task_queue.o \
        tasks/tasks_internal.o \
        tasks/task_content.o \
+		 tasks/task_save_ram.o \
+		 tasks/task_save_state.o \
        tasks/task_file_transfer.o \
        tasks/task_image.o \
-       content.o \
        libretro-common/encodings/encoding_utf.o \
        libretro-common/lists/file_list.o \
        libretro-common/lists/dir_list.o \
@@ -176,7 +178,7 @@ OBJ += frontend/frontend.o \
        core_info.o \
        libretro-common/file/config_file.o \
        config_file_userdata.o \
-       screenshot.o \
+       tasks/task_screenshot.o \
        libretro-common/gfx/scaler/scaler.o \
        gfx/drivers_shader/shader_null.o \
        gfx/video_shader_driver.o \
@@ -220,7 +222,7 @@ ifneq ($(HAVE_STRL), 1)
 OBJ += libretro-common/compat/compat_strl.o
 endif
 
-OBJ += gfx/video_texture_image.o
+OBJ += libretro-common/formats/image_texture.o
 
 ifeq ($(HAVE_IMAGEVIEWER), 1)
 DEFINES += -DHAVE_IMAGEVIEWER
@@ -368,9 +370,16 @@ ifeq ($(HAVE_NEON),1)
    DEFINES += -DSINC_LOWER_QUALITY
 endif
 
-OBJ += audio/audio_utils.o
+OBJ += libretro-common/conversion/s16_to_float.o \
+		 libretro-common/conversion/float_to_s16.o
 ifeq ($(HAVE_NEON),1)
-   OBJ += audio/audio_utils_neon.o
+   OBJ += libretro-common/conversion/s16_to_float_neon.o \
+			 libretro-common/conversion/float_to_s16_neon.o
+endif
+
+ifneq ($(findstring Win32,$(OS)),)
+HAVE_VULKAN=1
+DEFINES += -DHAVE_VULKAN
 endif
 
 HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)
@@ -417,8 +426,12 @@ ifeq ($(HAVE_MATERIALUI), 1)
    DEFINES += -DHAVE_MATERIALUI
 endif
 ifeq ($(HAVE_NUKLEAR), 1)
-   OBJ += menu/drivers/nk_common.o
-   OBJ += menu/drivers/nk_menu.o
+   OBJ += menu/drivers/nuklear/nk_common.o
+   OBJ += menu/drivers/nuklear/nk_menu.o
+   OBJ += menu/drivers/nuklear/nk_wnd_main.o
+   OBJ += menu/drivers/nuklear/nk_wnd_file_picker.o
+   OBJ += menu/drivers/nuklear/nk_wnd_shader_parameters.o
+   OBJ += menu/drivers/nuklear/nk_wnd_settings.o
    OBJ += menu/drivers/nuklear.o
    DEFINES += -DHAVE_NUKLEAR
 endif
@@ -502,10 +515,8 @@ ifeq ($(HAVE_FREETYPE), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += autosave.o \
-          libretro-common/rthreads/rthreads.o \
+   OBJ += libretro-common/rthreads/rthreads.o \
           libretro-common/rthreads/rsemaphore.o  \
-          libretro-common/rthreads/async_job.o \
           gfx/video_thread_wrapper.o \
           audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
@@ -619,6 +630,7 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
 OBJ += ui/drivers/ui_win32.o
+
 endif
 
 # Video
@@ -741,11 +753,12 @@ ifeq ($(HAVE_SDL2), 1)
 endif
 
 ifeq ($(HAVE_VULKAN), 1)
-	ifeq ($(platform), win)
+	ifneq ($(findstring Win32,$(OS)),)
 		GLSLANG_PLATFORM := Windows
 	else
 		GLSLANG_PLATFORM := Unix
 	endif
+
 	GLSLANG_SOURCES := \
 		$(wildcard deps/glslang/*.cpp) \
 		$(wildcard deps/glslang/glslang/SPIRV/*.cpp) \
@@ -756,9 +769,14 @@ ifeq ($(HAVE_VULKAN), 1)
 		$(wildcard deps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM)/*.cpp)
 
 	SPIRV_CROSS_SOURCES := deps/SPIRV-Cross/spirv_cross.cpp
+	ifneq ($(findstring Win32,$(OS)),)
+		# Trivial temporary workaround for MinGW and glslang.
+		CXXFLAGS += -fpermissive
+	endif
 
 	DEFINES += \
 			  -Ideps/glslang/glslang/glslang/OSDependent/$(GLSLANG_PLATFORM) \
+			  -Ideps/glslang/glslang/OGLCompilersDLL \
 			  -Ideps/glslang/glslang \
 			  -Ideps/glslang/glslang/glslang/MachineIndependent \
 			  -Ideps/glslang/glslang/glslang/Public \
@@ -766,8 +784,8 @@ ifeq ($(HAVE_VULKAN), 1)
 			  -Ideps/glslang \
 			  -Ideps/SPIRV-Cross
 
-	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -I./gfx/include/vulkan
-   CFLAGS  += -I./gfx/include/vulkan
+	CXXFLAGS += -Wno-switch -Wno-sign-compare -fno-strict-aliasing -Wno-maybe-uninitialized -Wno-reorder -Igfx/include
+	CFLAGS  += -Igfx/include
 
 	GLSLANG_OBJ := $(GLSLANG_SOURCES:.cpp=.o)
 	SPIRV_CROSS_OBJ := $(SPIRV_CROSS_SOURCES:.cpp=.o)
@@ -899,6 +917,11 @@ ifeq ($(HAVE_ZLIB), 1)
    endif
 endif
 
+ifeq ($(HAVE_RTGA), 1)
+	DEFINES += -DHAVE_RTGA
+	OBJ += libretro-common/formats/tga/rtga.o
+endif
+
 ifeq ($(HAVE_RPNG), 1)
 	DEFINES += -DHAVE_RPNG
    OBJ += libretro-common/formats/png/rpng.o \
@@ -910,13 +933,14 @@ ifeq ($(HAVE_RJPEG), 1)
 	OBJ += libretro-common/formats/jpeg/rjpeg.o
 endif
 
+ifeq ($(HAVE_RBMP), 1)
+	DEFINES += -DHAVE_RBMP
+	OBJ += libretro-common/formats/bmp/rbmp.o
+endif
+
 OBJ += libretro-common/formats/bmp/rbmp_encode.o \
        libretro-common/formats/json/jsonsax.o \
 		 libretro-common/formats/image_transfer.o
-
-ifeq ($(HAVE_RTGA), 1)
-OBJ += libretro-common/formats/tga/rtga.o
-endif
 
 ifdef HAVE_COMPRESSION
    DEFINES += -DHAVE_COMPRESSION
@@ -982,7 +1006,10 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifeq ($(HAVE_NETPLAY), 1)
       DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD -DHAVE_NETWORK_GAMEPAD
-      OBJ += network/netplay_net.o network/netplay_spectate.o network/netplay_common.o network/netplay.o
+      OBJ += network/netplay/netplay_net.o \
+				 network/netplay/netplay_spectate.o \
+				 network/netplay/netplay_common.o \
+				 network/netplay/netplay.o
    endif
 
    # Retro Achievements (also depends on threads)
@@ -995,7 +1022,8 @@ ifeq ($(HAVE_NETWORKING), 1)
    endif
 
    ifeq ($(HAVE_NETWORK_GAMEPAD), 1)
-      OBJ += input/input_remote.o
+      OBJ += input/input_remote.o \
+				 cores/libretro-net-retropad/net_retropad_core.o
    endif
 endif
 

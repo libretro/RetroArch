@@ -526,8 +526,8 @@ static bool psp_frame(void *data, const void *frame,
 
    psp->draw_buffer = FROM_GU_POINTER(sceGuSwapBuffers());
 
-   rarch_perf_init(&psp_frame_run, "psp_frame_run");
-   retro_perf_start(&psp_frame_run);
+   performance_counter_init(&psp_frame_run, "psp_frame_run");
+   performance_counter_start(&psp_frame_run);
 
    if (psp->should_resize)
       psp_update_viewport(psp);
@@ -560,7 +560,7 @@ static bool psp_frame(void *data, const void *frame,
 
    sceGuFinish();
 
-   retro_perf_stop(&psp_frame_run);
+   performance_counter_stop(&psp_frame_run);
 
    if(psp->menu.active)
    {

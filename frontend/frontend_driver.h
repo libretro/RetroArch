@@ -53,6 +53,7 @@ enum frontend_architecture
    FRONTEND_ARCH_X86_64,
    FRONTEND_ARCH_PPC,
    FRONTEND_ARCH_ARM,
+   FRONTEND_ARCH_ARMV7,
    FRONTEND_ARCH_MIPS,
    FRONTEND_ARCH_TILE
 };
@@ -131,6 +132,8 @@ bool frontend_driver_is_inited(void);
 void frontend_driver_init_first(void *args);
 
 void frontend_driver_free(void);
+
+enum frontend_architecture frontend_driver_get_cpu_architecture(void);
 
 environment_get_t frontend_driver_environment_get_ptr(void);
 

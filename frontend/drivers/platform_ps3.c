@@ -96,9 +96,8 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
       void *args, void *params_data)
 {
 #ifndef IS_SALAMANDER
-   bool *verbose         = retro_main_verbosity();
-   bool original_verbose = *verbose;
-   *verbose              = true;
+   bool original_verbose = verbosity_is_enabled();
+   verbosity_enable();
 #endif
 
    (void)args;
@@ -236,7 +235,10 @@ static void frontend_ps3_get_environment_settings(int *argc, char *argv[],
    }
 
 #ifndef IS_SALAMANDER
-   *verbose = original_verbose;
+   if (original_verbose)
+      verbosity_enable();
+   else
+      verbosity_disable();
 #endif
 }
 
@@ -383,10 +385,9 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
 {
 #ifndef IS_SALAMANDER
    char *fullpath        = NULL;
-   bool *verbose         = retro_main_verbosity();
-   bool original_verbose = *verbose;
+   bool original_verbose = verbosity_is_enabled();
 
-   *verbose              = true;
+   verbosity_enable();
 #endif
 
    (void)should_load_game;
@@ -422,7 +423,10 @@ static void frontend_ps3_exec(const char *path, bool should_load_game)
    cellSysmoduleUnloadModule(CELL_SYSMODULE_NET);
 
 #ifndef IS_SALAMANDER
-   *verbose = original_verbose;
+   if (original_verbose)
+      verbosity_enable();
+   else
+      verbosity_disable();
 #endif
 }
 
@@ -432,9 +436,9 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
    bool should_load_game = false;
 
 #ifndef IS_SALAMANDER
-   bool *verbose         = retro_main_verbosity();
-   bool original_verbose = *verbose;
-   *verbose              = true;
+   bool original_verbose = verbosity_is_enabled();
+
+   verbosity_enable();
 
    if (ps3_fork_mode == FRONTEND_FORK_NONE)
    {
@@ -465,7 +469,10 @@ static void frontend_ps3_exitspawn(char *core_path, size_t core_path_size)
 #endif
 
 #ifndef IS_SALAMANDER
-   *verbose = original_verbose;
+   if (original_verbose)
+      verbosity_enable();
+   else
+      verbosity_disable();
 #endif
 #endif
 }

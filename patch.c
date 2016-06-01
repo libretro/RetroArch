@@ -68,6 +68,15 @@ struct bps_data
    size_t source_relative_offset, target_relative_offset, output_offset;
 };
 
+struct ups_data
+{
+   const uint8_t *patch_data, *source_data; 
+   uint8_t *target_data;
+   unsigned patch_length, source_length, target_length;
+   unsigned patch_offset, source_offset, target_offset;
+   unsigned patch_checksum, source_checksum, target_checksum;
+};
+
 typedef enum patch_error (*patch_func_t)(const uint8_t*, size_t,
       const uint8_t*, size_t, uint8_t*, size_t*);
 
@@ -206,7 +215,6 @@ static enum patch_error bps_apply_patch(
       }
    }
 
-
    for (i = 0; i < 32; i += 8)
       modify_source_checksum |= bps_read(&bps) << i;
    for (i = 0; i < 32; i += 8)
@@ -236,15 +244,6 @@ static enum patch_error bps_apply_patch(
 
    return PATCH_SUCCESS;
 }
-
-struct ups_data
-{
-   const uint8_t *patch_data, *source_data; 
-   uint8_t *target_data;
-   unsigned patch_length, source_length, target_length;
-   unsigned patch_offset, source_offset, target_offset;
-   unsigned patch_checksum, source_checksum, target_checksum;
-};
 
 static uint8_t ups_patch_read(struct ups_data *data) 
 {
@@ -520,10 +519,16 @@ static bool apply_patch_content(uint8_t **buf,
    if (!filestream_read_file(patch_path, &patch_data, &patch_size))
       return false;
    if (patch_size < 0)
+   {
+      free(patch_data);
       return false;
+   }
 
    if (!path_file_exists(patch_path))
+   {
+      free(patch_data);
       return false;
+   }
 
    RARCH_LOG("Found %s file in \"%s\", attempting to patch ...\n",
          patch_desc, patch_path);

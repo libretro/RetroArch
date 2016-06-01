@@ -21,6 +21,7 @@
 #include <boolean.h>
 
 #include <file/file_path.h>
+#include <queues/task_queue.h>
 
 #include "cocoa/cocoa_common.h"
 #include "../ui_companion_driver.h"
@@ -87,7 +88,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 
    if (ret == 1 && !ui_companion_is_on_foreground() && sleep_ms > 0)
       retro_sleep(sleep_ms);
-   runloop_iterate_data();
+   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
 
    if (ret == -1)
    {

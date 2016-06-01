@@ -238,8 +238,7 @@ static bool font_init_first(
 
 bool font_driver_has_render_msg(void)
 {
-   const font_renderer_t *font_ctx = font_osd_driver;
-   if (!font_ctx || !font_ctx->render_msg)
+   if (!font_osd_driver || !font_osd_driver->render_msg)
       return false;
    return true;
 }
@@ -247,48 +246,40 @@ bool font_driver_has_render_msg(void)
 void font_driver_render_msg(void *font_data,
       const char *msg, const struct font_params *params)
 {
-   const font_renderer_t *font_ctx = font_osd_driver;
 
-   if (font_ctx->render_msg)
-      font_ctx->render_msg(font_data 
+   if (font_osd_driver && font_osd_driver->render_msg)
+      font_osd_driver->render_msg(font_data 
             ? font_data : font_osd_data, msg, params);
 }
 
 void font_driver_bind_block(void *font_data, void *block)
 {
-   const font_renderer_t *font_ctx = font_osd_driver;
    void             *new_font_data = font_data 
       ? font_data : font_osd_data;
 
-   if (font_ctx->bind_block)
-      font_ctx->bind_block(new_font_data, block);
+   if (font_osd_driver && font_osd_driver->bind_block)
+      font_osd_driver->bind_block(new_font_data, block);
 }
 
 void font_driver_flush(void *data)
 {
-   const font_renderer_t *font_ctx = font_osd_driver;
-
-   if (font_ctx->flush)
-      font_ctx->flush(data);
+   if (font_osd_driver && font_osd_driver->flush)
+      font_osd_driver->flush(data);
 }
 
 int font_driver_get_message_width(void *data,
       const char *msg, unsigned len, float scale)
 {
-   const font_renderer_t *font_ctx = font_osd_driver;
 
-   if (!font_ctx || !font_ctx->get_message_width)
+   if (!font_osd_driver || !font_osd_driver->get_message_width)
       return -1;
-   return font_ctx->get_message_width(data, msg, len, scale);
+   return font_osd_driver->get_message_width(data, msg, len, scale);
 }
 
 void font_driver_free(void *data)
 {
-   const font_renderer_t *font_ctx = 
-      (const font_renderer_t*)font_osd_driver;
-
-   if (font_ctx->free)
-      font_ctx->free(data ? data : font_osd_data);
+   if (font_osd_driver && font_osd_driver->free)
+      font_osd_driver->free(data ? data : font_osd_data);
 
    if (data)
       return;

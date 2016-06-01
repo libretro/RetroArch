@@ -55,20 +55,22 @@ static int task_file_transfer_iterate_parse(nbio_handle_t *nbio)
    if (nbio->cb)
    {
       int len = 0;
-      nbio->cb(nbio, len);
+      if (nbio->cb(nbio, len) == -1)
+         return -1;
    }
 
    return 0;
 }
 
-void rarch_task_file_load_handler(retro_task_t *task)
+void task_file_load_handler(retro_task_t *task)
 {
    nbio_handle_t         *nbio  = (nbio_handle_t*)task->state;
 
    switch (nbio->status)
    {
       case NBIO_STATUS_TRANSFER_PARSE:
-         task_file_transfer_iterate_parse(nbio);
+         if (task_file_transfer_iterate_parse(nbio) == -1)
+            task->cancelled = true;
          nbio->status = NBIO_STATUS_TRANSFER_PARSE_FREE;
          break;
       case NBIO_STATUS_TRANSFER:
@@ -81,29 +83,24 @@ void rarch_task_file_load_handler(retro_task_t *task)
          break;
    }
 
-   if (nbio->image)
+   switch (nbio->image_type)
    {
-      if (!rarch_task_image_load_handler(task))
-         goto task_finished;
+      case IMAGE_TYPE_PNG:
+      case IMAGE_TYPE_JPEG:
+      case IMAGE_TYPE_TGA:
+      case IMAGE_TYPE_BMP:
+         if (!task_image_load_handler(task))
+            task->finished = true;
+         break;
+      case 0:
+         if (nbio->is_finished)
+            task->finished = true;
+         break;
    }
-   else
-      if (nbio->is_finished)
-         goto task_finished;
-
 
    if (task->cancelled)
    {
       task->error = strdup("Task canceled.");
-      goto task_finished;
+      task->finished = true;
    }
-
-   return;
-
-task_finished:
-   task->finished = true;
-
-   nbio_free(nbio->handle);
-   nbio->handle      = NULL;
-   nbio->is_finished = false;
-   free(nbio);
 }

@@ -66,3 +66,13 @@ Usecase: Search for all games released on October 1995.
 
 `libretrodb_tool <db file> find "{'releasemonth':10,'releaseyear':1995}"`
 
+# Compiling the Database
+
+Use [libretro-super](https://github.com/libretro/libretro-super) to compile the entire database:
+
+```
+git clone git@github.com:libretro/libretro-super.git
+cd libretro-super
+./libretro-fetch.sh retroarch
+./libretro-build-database.sh
+```

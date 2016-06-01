@@ -218,7 +218,7 @@ void menu_display_deinit(void)
 
 bool menu_display_init(void)
 {
-   retro_assert(menu_display_msg_queue = msg_queue_new(8));
+   retro_assert((menu_display_msg_queue = msg_queue_new(8)) != NULL);
    menu_disp_ca.allocated              =  0;
    return true;
 }
@@ -538,6 +538,22 @@ bool menu_display_get_tex_coords(menu_display_ctx_coord_draw_t *draw)
    return true;
 }
 
+void menu_display_handle_thumbnail_upload(void *task_data,
+      void *user_data, const char *err)
+{
+   menu_ctx_load_image_t load_image_info;
+   struct texture_image *img = (struct texture_image*)task_data;
+
+   load_image_info.data = img;
+   load_image_info.type = MENU_IMAGE_THUMBNAIL;
+
+   menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
+
+   image_texture_free(img);
+   free(img);
+   free(user_data);
+}
+
 void menu_display_handle_wallpaper_upload(void *task_data,
       void *user_data, const char *err)
 {
@@ -548,8 +564,9 @@ void menu_display_handle_wallpaper_upload(void *task_data,
    load_image_info.type = MENU_IMAGE_WALLPAPER;
 
    menu_driver_ctl(RARCH_MENU_CTL_LOAD_IMAGE, &load_image_info);
-   video_texture_image_free(img);
+   image_texture_free(img);
    free(img);
+   free(user_data);
 }
 
 void menu_display_allocate_white_texture(void)
@@ -679,9 +696,6 @@ void menu_display_snow(int width, int height)
    {
       struct display_particle *p = (struct display_particle*)&particles[i];
 
-      if (!p)
-         return;
-
       if (p->alive)
       {
          int16_t mouse_x  = menu_input_mouse_state(MENU_MOUSE_X_AXIS);
@@ -714,12 +728,8 @@ void menu_display_snow(int width, int height)
    for (i = 0; i < PARTICLES_COUNT; ++i)
    {
       unsigned j;
-      float alpha;
-      float colors[16];
+      float alpha, colors[16];
       struct display_particle *p = &particles[i];
-
-      if (!p)
-         return;
 
       if (!p->alive)
          continue;
@@ -743,12 +753,7 @@ void menu_display_snow(int width, int height)
 void menu_display_draw_text(const char *msg, 
       int width, int height, struct font_params *params)
 {
-   void *fb_buf              = NULL;
-
-   params->x           = params->x;
-   params->y           = params->y;
-
-   fb_buf = menu_display_get_font_buffer();
+   void *fb_buf = menu_display_get_font_buffer();
    video_driver_set_osd_msg(msg, params, fb_buf);
 }
 

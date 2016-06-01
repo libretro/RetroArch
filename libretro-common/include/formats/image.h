@@ -42,19 +42,24 @@ struct texture_image
 
 enum image_type_enum
 {
-   IMAGE_TYPE_PNG = 0,
-   IMAGE_TYPE_JPEG
+   IMAGE_TYPE_NONE = 0,
+   IMAGE_TYPE_PNG,
+   IMAGE_TYPE_JPEG,
+   IMAGE_TYPE_BMP,
+   IMAGE_TYPE_TGA
 };
 
-bool video_texture_image_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
+bool image_texture_set_color_shifts(unsigned *r_shift, unsigned *g_shift,
       unsigned *b_shift, unsigned *a_shift);
 
-bool video_texture_image_color_convert(unsigned r_shift,
+bool image_texture_color_convert(unsigned r_shift,
       unsigned g_shift, unsigned b_shift, unsigned a_shift,
       struct texture_image *out_img);
 
-bool video_texture_image_load(struct texture_image *img, const char *path);
-void video_texture_image_free(struct texture_image *img);
+bool image_texture_load(struct texture_image *img, const char *path);
+void image_texture_free(struct texture_image *img);
+void image_texture_set_rgba(void);
+void image_texture_unset_rgba(void);
 
 /* Image transfer */
 
@@ -76,6 +81,8 @@ int image_transfer_process(
       unsigned *width, unsigned *height);
 
 bool image_transfer_iterate(void *data, enum image_type_enum type);
+
+bool image_transfer_is_valid(void *data, enum image_type_enum type);
 
 RETRO_END_DECLS
 

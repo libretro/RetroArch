@@ -983,7 +983,10 @@ static void *vulkan_init(const video_info_t *video,
 
    ctx_driver = vulkan_get_context(vk);
    if (!ctx_driver)
+   {
+      RARCH_ERR("[Vulkan]: Failed to get Vulkan context.\n");
       goto error;
+   }
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
@@ -1009,8 +1012,12 @@ static void *vulkan_init(const video_info_t *video,
    mode.width      = win_width;
    mode.height     = win_height;
    mode.fullscreen = video->fullscreen;
+
    if (!video_context_driver_set_video_mode(&mode))
+   {
+      RARCH_ERR("[Vulkan]: Failed to set video mode.\n");
       goto error;
+   }
 
    video_context_driver_get_video_size(&mode);
    temp_width  = mode.width;
@@ -1042,7 +1049,10 @@ static void *vulkan_init(const video_info_t *video,
    vulkan_init_resources(vk);
 
    if (!vulkan_init_filter_chain(vk))
+   {
+      RARCH_ERR("[Vulkan]: Failed to init filter chain.\n");
       goto error;
+   }
 
    inp.input      = input;
    inp.input_data = input_data;
@@ -1446,14 +1456,14 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned frame_index                          = 
       vk->context->current_swapchain_index;
 
-   rarch_perf_init(&frame_run, "frame_run");
-   rarch_perf_init(&copy_frame, "copy_frame");
-   rarch_perf_init(&swapbuffers, "swapbuffers");
-   rarch_perf_init(&queue_submit, "queue_submit");
-   rarch_perf_init(&begin_cmd, "begin_command");
-   rarch_perf_init(&build_cmd, "build_command");
-   rarch_perf_init(&end_cmd, "end_command");
-   retro_perf_start(&frame_run);
+   performance_counter_init(&frame_run, "frame_run");
+   performance_counter_init(&copy_frame, "copy_frame");
+   performance_counter_init(&swapbuffers, "swapbuffers");
+   performance_counter_init(&queue_submit, "queue_submit");
+   performance_counter_init(&begin_cmd, "begin_command");
+   performance_counter_init(&build_cmd, "build_command");
+   performance_counter_init(&end_cmd, "end_command");
+   performance_counter_start(&frame_run);
 
    video_driver_get_size(&width, &height);
 
@@ -1465,21 +1475,21 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_buffer_chain_discard(&chain->vbo);
    vulkan_buffer_chain_discard(&chain->ubo);
 
-   retro_perf_start(&begin_cmd);
+   performance_counter_start(&begin_cmd);
    /* Start recording the command buffer. */
    vk->cmd          = chain->cmd;
    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
    VKFUNC(vkResetCommandBuffer)(vk->cmd, 0);
 
    VKFUNC(vkBeginCommandBuffer)(vk->cmd, &begin_info);
-   retro_perf_stop(&begin_cmd);
+   performance_counter_stop(&begin_cmd);
 
    memset(&vk->tracker, 0, sizeof(vk->tracker));
 
    vulkan_flush_caches(vk);
 
    /* Upload texture */
-   retro_perf_start(&copy_frame);
+   performance_counter_start(&copy_frame);
    if (frame && !vk->hw.enable)
    {
       unsigned y;
@@ -1528,13 +1538,13 @@ static bool vulkan_frame(void *data, const void *frame,
 
       vk->last_valid_index = frame_index;
    }
-   retro_perf_stop(&copy_frame);
+   performance_counter_stop(&copy_frame);
 
    /* Notify filter chain about the new sync index. */
    vulkan_filter_chain_notify_sync_index(vk->filter_chain, frame_index);
    vulkan_filter_chain_set_frame_count(vk->filter_chain, frame_count);
 
-   retro_perf_start(&build_cmd);
+   performance_counter_start(&build_cmd);
    /* Render offscreen filter chain passes. */
    {
       /* Set the source texture in the filter chain */
@@ -1658,7 +1668,7 @@ static bool vulkan_frame(void *data, const void *frame,
    if (vk->overlay.enable)
       vulkan_render_overlay(vk);
 #endif
-   retro_perf_stop(&build_cmd);
+   performance_counter_stop(&build_cmd);
 
    /* End the render pass. We're done rendering to backbuffer now. */
    VKFUNC(vkCmdEndRenderPass)(vk->cmd);
@@ -1707,9 +1717,9 @@ static bool vulkan_frame(void *data, const void *frame,
             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
    }
 
-   retro_perf_start(&end_cmd);
+   performance_counter_start(&end_cmd);
    VKFUNC(vkEndCommandBuffer)(vk->cmd);
-   retro_perf_stop(&end_cmd);
+   performance_counter_stop(&end_cmd);
 
    /* Submit command buffers to GPU. */
 
@@ -1741,9 +1751,9 @@ static bool vulkan_frame(void *data, const void *frame,
    submit_info.pSignalSemaphores     = 
       &vk->context->swapchain_semaphores[frame_index];
 
-   retro_perf_stop(&frame_run);
+   performance_counter_stop(&frame_run);
 
-   retro_perf_start(&queue_submit);
+   performance_counter_start(&queue_submit);
 
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
@@ -1753,11 +1763,11 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
-   retro_perf_stop(&queue_submit);
+   performance_counter_stop(&queue_submit);
 
-   retro_perf_start(&swapbuffers);
+   performance_counter_start(&swapbuffers);
    video_context_driver_swap_buffers();
-   retro_perf_stop(&swapbuffers);
+   performance_counter_stop(&swapbuffers);
 
    video_context_driver_update_window_title();
 
@@ -2066,8 +2076,8 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
       if (staging->memory == VK_NULL_HANDLE)
          return false;
 
-      rarch_perf_init(&stream_readback, "stream_readback");
-      retro_perf_start(&stream_readback);
+      performance_counter_init(&stream_readback, "stream_readback");
+      performance_counter_start(&stream_readback);
 
       buffer += 3 * (vk->vp.height - 1) * vk->vp.width;
       VKFUNC(vkMapMemory)(vk->context->device, staging->memory,
@@ -2079,7 +2089,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer)
 
       VKFUNC(vkUnmapMemory)(vk->context->device, staging->memory);
 
-      retro_perf_stop(&stream_readback);
+      performance_counter_stop(&stream_readback);
    }
    else
    {

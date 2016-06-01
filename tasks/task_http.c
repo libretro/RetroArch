@@ -38,6 +38,12 @@ enum http_status_enum
    HTTP_STATUS_TRANSFER_PARSE_FREE
 };
 
+typedef struct http_transfer_info
+{
+   char url[PATH_MAX_LENGTH];
+   int progress;
+} http_transfer_info_t;
+
 typedef struct http_handle
 {
    struct
@@ -122,7 +128,7 @@ static int task_http_iterate_transfer(retro_task_t *task)
    return 0;
 }
 
-static void rarch_task_http_transfer_handler(retro_task_t *task)
+static void task_http_transfer_handler(retro_task_t *task)
 {
    http_transfer_data_t *data = NULL;
    http_handle_t        *http = (http_handle_t*)task->state;
@@ -194,11 +200,11 @@ task_finished:
    free(http);
 }
 
-static bool rarch_task_http_finder(retro_task_t *task, void *user_data)
+static bool task_http_finder(retro_task_t *task, void *user_data)
 {
    http_handle_t *http = NULL;
 
-   if (!task || (task->handler != rarch_task_http_transfer_handler))
+   if (!task || (task->handler != task_http_transfer_handler))
       return false;
 
    if (!user_data)
@@ -211,7 +217,7 @@ static bool rarch_task_http_finder(retro_task_t *task, void *user_data)
    return string_is_equal(http->connection.url, (const char*)user_data);
 }
 
-static bool rarch_task_http_retriever(retro_task_t *task, void *data)
+static bool task_http_retriever(retro_task_t *task, void *data)
 {
    http_transfer_info_t *info = (http_transfer_info_t*)data;
 
@@ -226,7 +232,7 @@ static bool rarch_task_http_retriever(retro_task_t *task, void *data)
    return true;
 }
 
-void *rarch_task_push_http_transfer(const char *url, const char *type,
+void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *user_data)
 {
    char tmp[PATH_MAX_LENGTH];
@@ -238,7 +244,7 @@ void *rarch_task_push_http_transfer(const char *url, const char *type,
    if (string_is_empty(url))
       return NULL;
 
-   find_data.func     = rarch_task_http_finder;
+   find_data.func     = task_http_finder;
    find_data.userdata = (void*)url;
 
    /* Concurrent download of the same file is not allowed */
@@ -272,8 +278,9 @@ void *rarch_task_push_http_transfer(const char *url, const char *type,
    if (!t)
       goto error;
 
-   t->handler              = rarch_task_http_transfer_handler;
+   t->handler              = task_http_transfer_handler;
    t->state                = http;
+   t->mute                 = mute;
    t->callback             = cb;
    t->user_data            = user_data;
    t->progress             = -1;
@@ -290,8 +297,6 @@ void *rarch_task_push_http_transfer(const char *url, const char *type,
 error:
    if (conn)
       net_http_connection_free(conn);
-   if (t)
-      free(t);
    if (http)
       free(http);
 
@@ -303,9 +308,9 @@ task_retriever_info_t *http_task_get_transfer_list(void)
    task_retriever_data_t retrieve_data;
 
    /* Fill retrieve data */
-   retrieve_data.handler      = rarch_task_http_transfer_handler;
+   retrieve_data.handler      = task_http_transfer_handler;
    retrieve_data.element_size = sizeof(http_transfer_info_t);
-   retrieve_data.func         = rarch_task_http_retriever;
+   retrieve_data.func         = task_http_retriever;
 
    /* Build list of current HTTP transfers and return it */
    task_queue_ctl(TASK_QUEUE_CTL_RETRIEVE, &retrieve_data);

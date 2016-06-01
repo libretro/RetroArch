@@ -39,4 +39,4 @@ ifeq ($(USE_CLANG),1)
    APP_CPPFLAGS := -Wno-invalid-source-encoding
 endif
 
-APP_STL := gnustl_static
+APP_STL := c++_static

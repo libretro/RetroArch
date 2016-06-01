@@ -310,6 +310,7 @@ py_state_t *py_state_new(const char *script,
       if (!ret || len < 0)
       {
          RARCH_ERR("Python: Failed to read script\n");
+         free(script_);
          goto error;
       }
 

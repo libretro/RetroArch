@@ -1,0 +1,33 @@
+.\" retroarch-cg2glsl.6
+
+.TH "RETROARCH-CG2GLSL" "6" "July 10, 2014" "RETROARCH-CG2GLSL" "System Manager's Manual: retroarch-cg2glsl"
+
+.SH "NAME"
+
+retroarch-cg2glsl \- Shader converter.
+
+.SH "SYNOPSIS"
+
+\fBretroarch-cg2glsl\fR [Cg file] [GLSL file output]
+
+.LP
+
+\fBretroarch-cg2glsl\fR [Cg directory] [GLSL directory output]
+
+.SH "DESCRIPTION"
+
+\fBretroarch-cg2glsl\fR converts Cg shaders to GLSL shaders. It can convert single shaders as well as whole folder structures in batch. 100% compatibility is not guaranteed, but almost all shaders should work fine. Cg presets (.cgp) are not converted at the moment, but converting them is as simple as copying over the .cgp, rename it to .glslp and replace references to .cg files to .glsl.
+
+.LP
+
+Requires Python 3 and cgc (nvidia-cg-toolkit) 3.1.
+
+.SH "EXAMPLE COMMANDLINES"
+
+.TP
+\fBConvert a Cg shader to GLSL shader\fR
+retroarch-cg2glsl prog.cg(p) prog.glsl(p)
+
+.TP
+\fBConvert a Cg directory to GLSL directory\fR
+retroarch-cg2glsl cg-dir out-xml-shader-dir

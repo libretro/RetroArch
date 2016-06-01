@@ -619,8 +619,8 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
    fflush(stdout);
 
-   rarch_perf_init(&ctrframe_f, "ctrframe_f");
-   retro_perf_start(&ctrframe_f);
+   performance_counter_init(&ctrframe_f, "ctrframe_f");
+   performance_counter_start(&ctrframe_f);
 
    if (ctr->should_resize)
       ctr_update_viewport(ctr);
@@ -831,9 +831,7 @@ static bool ctr_frame(void* data, const void* frame,
 	framebufferInfo[framebufferInfoHeader[0x0]] = topFramebufferInfo;
 	framebufferInfoHeader[0x1]=1;
 
-
-
-   retro_perf_stop(&ctrframe_f);
+   performance_counter_stop(&ctrframe_f);
 
    return true;
 }

@@ -29,11 +29,6 @@ enum menu_content_ctl_state
 {
    MENU_CONTENT_CTL_NONE = 0,
 
-   /* Loads content into currently selected core.
-    * Will also optionally push the content entry 
-    * to the history playlist. */
-   MENU_CONTENT_CTL_LOAD,
-
    /* Initializes core and loads content 
     * (based on playlist entry). */
    MENU_CONTENT_CTL_LOAD_PLAYLIST,

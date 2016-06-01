@@ -72,7 +72,7 @@ struct defaults
    } settings; 
 
 #ifndef IS_SALAMANDER
-   content_playlist_t *history;
+   playlist_t *history;
 #endif
 };
 

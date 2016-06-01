@@ -16,7 +16,12 @@
 
 #include <stdint.h>
 
+#ifdef HAVE_OPENGLES
 #include <GLES2/gl2.h>
+#endif
+#ifdef HAVE_EGL
+#include <EGL/egl.h>
+#endif
 
 #include <bps/screen.h>
 #include <bps/navigator.h>
@@ -35,8 +40,6 @@
 #ifdef HAVE_OPENGLES
 #include "../common/gl_common.h"
 #endif
-
-#include "../image/image.h"
 
 #define WINDOW_BUFFERS 2
 
@@ -117,12 +120,6 @@ static void *gfx_ctx_qnx_init(void *video_driver)
    usage = SCREEN_USAGE_OPENGL_ES2 | SCREEN_USAGE_ROTATION;
 
 #ifdef HAVE_EGL
-   if (!eglBindAPI(EGL_OPENGL_ES_API))
-   {
-      RARCH_ERR("eglBindAPI failed.\n");
-      goto error;
-   }
-
    if (!egl_init_context(&qnx->egl, EGL_DEFAULT_DISPLAY, &major, &minor,
             &n, attribs))
    {
@@ -242,7 +239,7 @@ static void *gfx_ctx_qnx_init(void *video_driver)
       goto error;
    }
 
-   if (!egl_create_surface(qnx->screen_win))
+   if (!egl_create_surface(&qnx->egl, qnx->screen_win))
       goto error;
 
    return qnx;

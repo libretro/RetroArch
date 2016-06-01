@@ -353,6 +353,9 @@ static int playlist_association_left(unsigned type, const char *label,
 
    strlcpy(settings->playlist_cores, new_playlist_cores, sizeof(settings->playlist_cores));
 
+   string_list_free(stnames);
+   string_list_free(stcores);
+
    return 0;
 }
 

@@ -36,100 +36,7 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 
-static void menu_content_environment_get(int *argc, char *argv[],
-      void *args, void *params_data)
-{
-   struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
-   char *fullpath                    = NULL;
-   global_t *global                  = global_get_ptr();
-   settings_t *settings              = config_get_ptr();
-    
-   if (!wrap_args)
-      return;
-
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-   wrap_args->no_content       = menu_driver_ctl(
-         RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL);
-
-   if (!global->has_set.verbosity)
-      wrap_args->verbose       = *retro_main_verbosity();
-
-   wrap_args->touched          = true;
-   wrap_args->config_path      = NULL;
-   wrap_args->sram_path        = NULL;
-   wrap_args->state_path       = NULL;
-   wrap_args->content_path     = NULL;
-
-   if (*global->path.config)
-      wrap_args->config_path   = global->path.config;
-   if (*global->dir.savefile)
-      wrap_args->sram_path     = global->dir.savefile;
-   if (*global->dir.savestate)
-      wrap_args->state_path    = global->dir.savestate;
-   if (*fullpath)
-      wrap_args->content_path  = fullpath;
-   if (!global->has_set.libretro)
-      wrap_args->libretro_path = *settings->path.libretro 
-         ? settings->path.libretro : NULL;
-
-}
-
-/**
- * menu_content_load:
- *
- * Loads content into currently selected core.
- * Will also optionally push the content entry to the history playlist.
- *
- * Returns: true (1) if successful, otherwise false (0).
- **/
-
-static bool menu_content_load(void)
-{
-   content_ctx_info_t content_info;
-   char name[PATH_MAX_LENGTH];
-   char msg[PATH_MAX_LENGTH];
-   char *fullpath       = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-   /* redraw menu frame */
-   menu_display_set_msg_force(true);
-   menu_driver_ctl(RARCH_MENU_CTL_RENDER, NULL);
-
-   if (*fullpath)
-      fill_pathname_base(name, fullpath, sizeof(name));
-
-   content_info.argc        = 0;
-   content_info.argv        = NULL;
-   content_info.args        = NULL;
-   content_info.environ_get = menu_content_environment_get;
-
-   if (!content_load(&content_info))
-      goto error;
-
-   if (*fullpath)
-   {
-      snprintf(msg, sizeof(msg), "INFO - Loading %s ...", name);
-      runloop_msg_queue_push(msg, 1, 1, false);
-   }
-
-   if (*fullpath || 
-         menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL))
-   {
-      struct retro_system_info *info = NULL;
-      menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET,
-            &info);
-      content_push_to_history_playlist(true, fullpath, info);
-      content_playlist_write_file(g_defaults.history);
-   }
-
-   return true;
-
-error:
-   snprintf(msg, sizeof(msg), "Failed to load %s.\n", name);
-   runloop_msg_queue_push(msg, 1, 90, false);
-   return false;
-}
+#include "../tasks/tasks_internal.h"
 
 /**
  * menu_content_load_from_playlist:
@@ -138,25 +45,24 @@ error:
  *
  * Initializes core and loads content based on playlist entry.
  **/
-static bool menu_content_load_from_playlist(void *data)
+static bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info)
 {
    unsigned idx;
-   const char *core_path        = NULL;
-   const char *path             = NULL;
-   menu_content_ctx_playlist_info_t *info = 
-      (menu_content_ctx_playlist_info_t *)data;
-   content_playlist_t *playlist = NULL;
+   playlist_t *playlist            = NULL;
+   const char *core_path           = NULL;
+   const char *path                = NULL;
+   content_ctx_info_t content_info = {0};
    
    if (!info)
       return false;
 
-   playlist = (content_playlist_t*)info->data;
+   playlist = (playlist_t*)info->data;
    idx      = info->idx;
 
    if (!playlist)
       return false;
 
-   content_playlist_get_index(playlist,
+   playlist_get_index(playlist,
          idx, &path, NULL, &core_path, NULL, NULL, NULL);
 
    if (!string_is_empty(path))
@@ -188,19 +94,15 @@ static bool menu_content_load_from_playlist(void *data)
          goto error;
    }
 
-   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-
-   if (path)
-      menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
-   else
-      menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
-
-   if (!command_event(CMD_EVENT_EXEC, (void*)path))
-      return false;
-
-   command_event(CMD_EVENT_LOAD_CORE, NULL);
-
-   return true;
+   if (task_push_content_load_default(
+         core_path,
+         path,
+         &content_info,
+         CORE_TYPE_PLAIN,
+         CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU,
+         NULL,
+         NULL))
+      return true;
 
 error:
    runloop_msg_queue_push("File could not be loaded.\n", 1, 100, true);
@@ -223,32 +125,39 @@ error:
  * selection needs to be made from a list, otherwise
  * returns true and fills in @s with path to core.
  **/
-static bool menu_content_find_first_core(void *data)
+static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info)
 {
-   char new_core_path[PATH_MAX_LENGTH];
+   char new_core_path[PATH_MAX_LENGTH]     = {0};
    const core_info_t *info                 = NULL;
    size_t supported                        = 0;
-   menu_content_ctx_defer_info_t *def_info = 
-      (menu_content_ctx_defer_info_t *)data;
-   core_info_list_t *core_info             = 
-      (core_info_list_t*)def_info->data;
+   core_info_list_t *core_info             = def_info ? 
+      (core_info_list_t*)def_info->data : NULL;
    uint32_t menu_label_hash                = 
       menu_hash_calculate(def_info->menu_label);
+   const char *default_info_dir            = def_info ?
+      def_info->dir : NULL;
 
-   if (     !string_is_empty(def_info->dir) 
-         && !string_is_empty(def_info->path))
-      fill_pathname_join(def_info->s, 
-            def_info->dir, def_info->path, def_info->len);
+   if (!string_is_empty(default_info_dir))
+   {
+      const char *default_info_path = def_info->path;
+      size_t default_info_length    = def_info->len;
+
+      if (!string_is_empty(default_info_path))
+         fill_pathname_join(def_info->s, 
+               default_info_dir, default_info_path,
+               default_info_length);
 
 #ifdef HAVE_COMPRESSION
-   if (path_is_compressed_file(def_info->dir))
-   {
-      /* In case of a compressed archive, we have to join with a hash */
-      /* We are going to write at the position of dir: */
-      retro_assert(strlen(def_info->dir) < strlen(def_info->s));
-      def_info->s[strlen(def_info->dir)] = '#';
-   }
+      if (path_is_compressed_file(default_info_dir))
+      {
+         size_t len = strlen(default_info_dir);
+         /* In case of a compressed archive, we have to join with a hash */
+         /* We are going to write at the position of dir: */
+         retro_assert(len < strlen(def_info->s));
+         def_info->s[len] = '#';
+      }
 #endif
+   }
 
    if (core_info)
       core_info_list_get_supported_cores(core_info,
@@ -289,11 +198,9 @@ bool menu_content_ctl(enum menu_content_ctl_state state, void *data)
    switch (state)
    {
       case MENU_CONTENT_CTL_FIND_FIRST_CORE:
-         return menu_content_find_first_core(data);
-      case MENU_CONTENT_CTL_LOAD:
-         return menu_content_load();
+         return menu_content_find_first_core((menu_content_ctx_defer_info_t*)data);
       case MENU_CONTENT_CTL_LOAD_PLAYLIST:
-         return menu_content_load_from_playlist(data);
+         return menu_content_load_from_playlist((menu_content_ctx_playlist_info_t*)data);
       case MENU_CONTENT_CTL_NONE:
       default:
          break;

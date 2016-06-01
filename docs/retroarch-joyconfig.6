@@ -1,0 +1,83 @@
+.\" retroarch-joyconfig.6:
+
+.TH  "RETROARCH-JOYCONFIG" "6" "October 1, 2011" "RETROARCH-JOYCONFIG" "System Manager's Manual: retroarch-joyconfig"
+
+.SH NAME
+
+retroarch-joyconfig \- Tool to configure joypad bindings for \fBretroarch\fR.
+
+.SH SYNOPSIS
+
+\fBretroarch-joyconfig\fR [OPTIONS]...
+
+.SH "DESCRIPTION"
+
+\fBretroarch-joyconfig is a simple tool that allows updating or creating a configuration file for \fBretroarch\fR.
+It reads in necessary joypad bindings for a certain user and joypad.
+
+.SH "EXAMPLE COMMANDLINES"
+
+.TP
+\fBConfigure joypad for user 1, using first joypad. Configuration is dumped to a file.\fR
+retroarch-joyconfig -p 1 -j 0 -o inputconfig.cfg
+
+.TP
+\fBConfigure joypad for user 1, using first joypad. Update retroarch.cfg directly.\fR
+retroarch-joyconfig -p 1 -j 0 -i retroarch.cfg -o retroarch.cfg
+
+.TP
+\fBConfigure joypad for user 1, using first joypad. Configuration is dumped to stdout.\fR
+retroarch-joyconfig -p 1 -j 0
+
+.TP
+\fBCreate an autoconfig file using first joypad.\fR
+retroarch-joyconfig -j 0 -a ~/.config/retroarch/autoconfig/pad.cfg
+
+.SH "GENERAL OPTIONS"
+
+.TP
+\fB--player PLAYER, -p PLAYER\fR
+Configuration will be done for the user PLAYER. This can be from 1 up to and including 5 (multitap).
+Default is configuration for user 1.
+
+.TP
+\fB--joypad PAD, -j PAD\fR
+Which joypad to use when configuring. Use a numeric indexing. Default here is 0 (first joypad).
+
+.TP
+\fB--driver DRIVER, -d DRIVER\fR
+Uses a particular joypad driver instead of the first available one.
+
+.TP
+\fB--input PATH, -i PATH\fR
+Use config file found in PATH as a base. Old configuration values can be overwritten by new values when configuring binds. If not used, an empty config file will be used as a base. Using this option only does \fBnot\fR update the file found in PATH.
+
+.TP
+\fB--output PATH, -o PATH\fR
+Writes the final config to a file, rather than \fBstdout\fR. If -i and -o point to the same file, the file found in PATH will simply be updated with the new configs.
+
+.TP
+\fB-a PATH, --autoconfig PATH\fR
+Also writes an autoconfigure file for the joypad which was configured. It can be used by RetroArch to automatically configure a joypad when it's plugged in.
+
+.TP
+\fB--misc, -m\fR
+Also configure some binds that aren't directly related to RetroPad, such as save states, menu toggle, etc.
+Only configures some of the most useful binds.
+
+.TP
+\fB--allmisc, -M\fR
+Same as --misc, but goes through every bind available (40+). Very exhaustive.
+
+.TP
+\fB-t SECONDS, --timeout SECONDS\fR
+Adds a timeout of N seconds to each bind. If timed out, the bind will not be used.
+
+.TP
+\fB--help, -h\fR
+Prints help message.
+
+.SH "SEE ALSO"
+\fBretroarch\fR(6)
+
+.\"

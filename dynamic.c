@@ -68,11 +68,17 @@ static dylib_t lib_handle;
 #endif
 
 #define SYMBOL_DUMMY(x) current_core->x = libretro_dummy_##x
+
 #ifdef HAVE_FFMPEG
 #define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
 #endif
+
 #ifdef HAVE_IMAGEVIEWER
 #define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
+#endif
+
+#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#define SYMBOL_NETRETROPAD(x) current_core->x = libretro_netretropad_##x
 #endif
 
 static bool ignore_environment_cb;
@@ -500,6 +506,43 @@ static void load_symbols(enum rarch_core_type type, struct retro_core_t *current
          SYMBOL_IMAGEVIEWER(retro_get_memory_size);
 #endif
          break;
+      case CORE_TYPE_NETRETROPAD:
+#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+         SYMBOL_NETRETROPAD(retro_init);
+         SYMBOL_NETRETROPAD(retro_deinit);
+
+         SYMBOL_NETRETROPAD(retro_api_version);
+         SYMBOL_NETRETROPAD(retro_get_system_info);
+         SYMBOL_NETRETROPAD(retro_get_system_av_info);
+
+         SYMBOL_NETRETROPAD(retro_set_environment);
+         SYMBOL_NETRETROPAD(retro_set_video_refresh);
+         SYMBOL_NETRETROPAD(retro_set_audio_sample);
+         SYMBOL_NETRETROPAD(retro_set_audio_sample_batch);
+         SYMBOL_NETRETROPAD(retro_set_input_poll);
+         SYMBOL_NETRETROPAD(retro_set_input_state);
+
+         SYMBOL_NETRETROPAD(retro_set_controller_port_device);
+
+         SYMBOL_NETRETROPAD(retro_reset);
+         SYMBOL_NETRETROPAD(retro_run);
+
+         SYMBOL_NETRETROPAD(retro_serialize_size);
+         SYMBOL_NETRETROPAD(retro_serialize);
+         SYMBOL_NETRETROPAD(retro_unserialize);
+
+         SYMBOL_NETRETROPAD(retro_cheat_reset);
+         SYMBOL_NETRETROPAD(retro_cheat_set);
+
+         SYMBOL_NETRETROPAD(retro_load_game);
+         SYMBOL_NETRETROPAD(retro_load_game_special);
+
+         SYMBOL_NETRETROPAD(retro_unload_game);
+         SYMBOL_NETRETROPAD(retro_get_region);
+         SYMBOL_NETRETROPAD(retro_get_memory_data);
+         SYMBOL_NETRETROPAD(retro_get_memory_size);
+#endif
+         break;
    }
 }
 
@@ -587,7 +630,7 @@ void uninit_libretro_sym(struct retro_core_t *current_core)
    location_driver_ctl(RARCH_LOCATION_CTL_UNSET_ACTIVE, NULL);
 
    /* Performance counters no longer valid. */
-   retro_perf_clear();
+   performance_counters_clear();
 }
 
 static void rarch_log_libretro(enum retro_log_level level,
@@ -824,16 +867,18 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (string_is_empty(settings->directory.system))
          {
             char *fullpath = NULL;
-            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-            RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
-                  fullpath);
-            fill_pathname_basedir(global->dir.systemdir, fullpath,
-                  sizeof(global->dir.systemdir));
+            if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath) &&
+                  fullpath)
+            {
+               RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
+                     fullpath);
+               fill_pathname_basedir(global->dir.systemdir, fullpath,
+                     sizeof(global->dir.systemdir));
+            }
 
             *(const char**)data = global->dir.systemdir;
             RARCH_LOG("Environ SYSTEM_DIRECTORY: \"%s\".\n",
-               global->dir.systemdir);
+                  global->dir.systemdir);
          }
          else
          {
@@ -898,7 +943,7 @@ bool rarch_environment_cb(unsigned cmd, void *data)
             "L", "R", "L2", "R2", "L3", "R3",
          };
 
-         memset(system->input_desc_btn, 0,
+         memset(&system->input_desc_btn, 0,
                sizeof(system->input_desc_btn));
 
          desc = (const struct retro_input_descriptor*)data;
@@ -998,7 +1043,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("Environ SET_KEYBOARD_CALLBACK.\n");
          if (key_event)
             *key_event                  = info->callback;
-         if (frontend_key_event)
+
+         if (frontend_key_event && key_event)
             *frontend_key_event         = *key_event;
          break;
       }
@@ -1227,9 +1273,9 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          cb->get_cpu_features = cpu_features_get;
          cb->get_perf_counter = cpu_features_get_perf_counter;
 
-         cb->perf_register    = retro_perf_register; 
-         cb->perf_start       = retro_perf_start;
-         cb->perf_stop        = retro_perf_stop;
+         cb->perf_register    = performance_counter_register; 
+         cb->perf_start       = performance_counter_start;
+         cb->perf_stop        = performance_counter_stop;
          cb->perf_log         = retro_perf_log;
          break;
       }
@@ -1318,26 +1364,33 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       case RETRO_ENVIRONMENT_SET_MEMORY_MAPS:
       {
          unsigned i;
-         struct retro_memory_descriptor *descriptors;
-         const struct retro_memory_map *mmaps =
+         struct retro_memory_descriptor *descriptors = NULL;
+         const struct retro_memory_map *mmaps        =
             (const struct retro_memory_map*)data;
          
-         free((void*)system->mmaps.descriptors);
-         system->mmaps.num_descriptors = 0;
+         if (system)
+         {
+            RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
+            free((void*)system->mmaps.descriptors);
+            system->mmaps.num_descriptors = 0;
+            descriptors = (struct retro_memory_descriptor*)
+               calloc(mmaps->num_descriptors,
+                     sizeof(*system->mmaps.descriptors));
+
+            if (!descriptors)
+               return false;
+
+            system->mmaps.descriptors = descriptors;
+            memcpy((void*)system->mmaps.descriptors, mmaps->descriptors,
+                  mmaps->num_descriptors * sizeof(*system->mmaps.descriptors));
+            system->mmaps.num_descriptors = mmaps->num_descriptors;
+            mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
+         }
+         else
+         {
+            RARCH_WARN("Environ SET_MEMORY_MAPS, but system pointer not initialized..\n");
+         }
          
-         descriptors = (struct retro_memory_descriptor*)
-            calloc(mmaps->num_descriptors, sizeof(*system->mmaps.descriptors));
-         
-         if (!descriptors)
-            return false;
-         
-         system->mmaps.descriptors = descriptors;
-         memcpy((void*)system->mmaps.descriptors, mmaps->descriptors,
-            mmaps->num_descriptors * sizeof(*system->mmaps.descriptors));
-         system->mmaps.num_descriptors = mmaps->num_descriptors;
-         mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
-         
-         RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
          
          if (sizeof(void *) == 8)
             RARCH_LOG("   ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");

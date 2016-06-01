@@ -24,8 +24,10 @@
 #define __LIBRETRO_SDK_TASK_QUEUE_H__
 
 #include <stdint.h>
+#include <stddef.h>
 #include <boolean.h>
 
+#include <retro_common.h>
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
@@ -121,6 +123,10 @@ struct retro_task
    /* always called from the main loop */
    retro_task_callback_t callback;
 
+   /* task cleanup handler to free allocated resources, will
+    * be called immediately after running the main callback */
+   retro_task_handler_t cleanup;
+
    /* set to true by the handler to signal 
     * the task has finished executing. */
    bool finished;
@@ -128,6 +134,9 @@ struct retro_task
    /* set to true by the task system 
     * to signal the task *must* end. */
    bool cancelled;
+
+   /* if true no OSD messages will be displayed. */
+   bool mute;
 
    /* created by the handler, destroyed by the user */
    void *task_data;

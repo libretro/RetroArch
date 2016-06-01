@@ -26,6 +26,7 @@
 #include "input_autodetect.h"
 
 #include "../configuration.h"
+#include "../list_special.h"
 #include "../runloop.h"
 #include "../verbosity.h"
 
@@ -71,6 +72,7 @@ static void input_autoconfigure_joypad_conf(config_file_t *conf,
 static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
       autoconfig_params_t *params)
 {
+   int tmp_int;
    char ident[PATH_MAX_LENGTH]        = {0};
    char input_driver[PATH_MAX_LENGTH] = {0};
    int                      input_vid = 0;
@@ -82,8 +84,12 @@ static int input_try_autoconfigure_joypad_from_conf(config_file_t *conf,
 
    config_get_array(conf, "input_device", ident, sizeof(ident));
    config_get_array(conf, "input_driver", input_driver, sizeof(input_driver));
-   config_get_int  (conf, "input_vendor_id", &input_vid);
-   config_get_int  (conf, "input_product_id", &input_pid);
+
+   if (config_get_int  (conf, "input_vendor_id", &tmp_int))
+      input_vid = tmp_int;
+
+   if (config_get_int  (conf, "input_product_id", &tmp_int))
+      input_pid = tmp_int;
 
    /* Check for VID/PID */
    if (     (params->vid == input_vid)
@@ -201,7 +207,7 @@ static bool input_autoconfigure_joypad_from_conf_dir(
       autoconfig_params_t *params)
 {
    size_t i;
-   char path[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH] = {0};
    int ret                    = 0;
    int index                  = -1;
    int current_best           = 0;
@@ -216,11 +222,15 @@ static bool input_autoconfigure_joypad_from_conf_dir(
          settings->directory.autoconfig,
          settings->input.joypad_driver,
          sizeof(path));
-   list = dir_list_new(path, "cfg", false, false);
+   list = dir_list_new_special(path, DIR_LIST_AUTOCONFIG, "cfg");
 
    if (!list || !list->size)
-      list = dir_list_new(settings->directory.autoconfig,
-            "cfg", false, false);
+   {
+      if (list)
+         string_list_free(list);
+      list = dir_list_new_special(settings->directory.autoconfig,
+            DIR_LIST_AUTOCONFIG, "cfg");
+   }
 
    if(!list)
       return false;

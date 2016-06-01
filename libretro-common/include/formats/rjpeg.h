@@ -37,9 +37,6 @@ typedef struct rjpeg rjpeg_t;
 int rjpeg_process_image(rjpeg_t *rjpeg, void **buf,
       size_t size, unsigned *width, unsigned *height);
 
-bool rjpeg_image_load(uint8_t *buf, void *data, size_t size,
-      unsigned a_shift, unsigned r_shift, unsigned g_shift, unsigned b_shift);
-
 bool rjpeg_set_buf_ptr(rjpeg_t *rjpeg, void *data);
 
 void rjpeg_free(rjpeg_t *rjpeg);

@@ -159,9 +159,7 @@ static void frontend_psp_deinit(void *data)
 {
    (void)data;
 #ifndef IS_SALAMANDER
-   bool *verbose      = retro_main_verbosity();
-   *verbose           = false;
-
+   verbosity_disable();
 #ifdef HAVE_FILE_LOGGER
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
 #endif
@@ -359,7 +357,7 @@ static enum frontend_powerstate frontend_psp_get_powerstate(int *seconds, int *p
 enum frontend_architecture frontend_psp_get_architecture(void)
 {
 #ifdef VITA
-   return FRONTEND_ARCH_ARM;
+   return FRONTEND_ARCH_ARMV7;
 #else
    return FRONTEND_ARCH_MIPS;
 #endif

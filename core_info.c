@@ -83,7 +83,7 @@ static void core_info_list_resolve_all_firmware(
       core_info_t *info     = (core_info_t*)&core_info_list->list[i];
       config_file_t *config = (config_file_t*)info->config_data;
 
-      if (!info || !config)
+      if (!config)
          continue;
 
       if (!config_get_uint(config, "firmware_count", &count))
@@ -123,9 +123,6 @@ static void core_info_list_free(core_info_list_t *core_info_list)
    {
       core_info_t *info = (core_info_t*)&core_info_list->list[i];
 
-      if (!info)
-         continue;
-
       free(info->path);
       free(info->core_name);
       free(info->systemname);
@@ -164,9 +161,9 @@ static void core_info_list_free(core_info_list_t *core_info_list)
 static config_file_t *core_info_list_iterate(
       struct string_list *contents, size_t i)
 {
-   char info_path_base[PATH_MAX_LENGTH];
-   char info_path[PATH_MAX_LENGTH];
-   settings_t *settings = config_get_ptr();
+   char info_path_base[PATH_MAX_LENGTH] = {0};
+   char info_path[PATH_MAX_LENGTH]      = {0};
+   settings_t                 *settings = config_get_ptr();
 
    if (!contents->elems[i].data)
       return NULL;
@@ -589,9 +586,6 @@ void core_info_list_get_supported_cores(core_info_list_t *core_info_list,
    {
       const core_info_t *core = &core_info_list->list[i];
 
-      if (!core)
-         continue;
-
       if (core_info_does_support_file(core, path))
          continue;
 
@@ -703,9 +697,9 @@ bool core_info_list_get_display_name(core_info_list_t *core_info_list,
 
 bool core_info_get_display_name(const char *path, char *s, size_t len)
 {
-   char       *core_name = NULL;
+   char       *core_name    = NULL;
    char       *display_name = NULL;
-   config_file_t *conf   = NULL;
+   config_file_t *conf      = NULL;
 
    if (!path_file_exists(path))
       return false;
@@ -713,20 +707,17 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
    conf = config_file_new(path);
 
    if (!conf)
-      goto error;
+      return false;
 
    config_get_string(conf, "corename",
          &core_name);
-
    config_get_string(conf, "display_name",
          &display_name);
 
-   config_file_free(conf);
+   if (!core_name || !display_name)
+      goto error;
 
-   if (!core_name)
-      goto error;
-   if (!conf)
-      goto error;
+   config_file_free(conf);
 
    snprintf(s, len,"%s",display_name);
 
@@ -736,7 +727,10 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
    return true;
 
 error:
+   config_file_free(conf);
    if (core_name)
       free(core_name);
+   if (display_name)
+      free(display_name);
    return false;
 }

@@ -62,6 +62,13 @@ enum setting_flags
    SD_FLAG_ADVANCED       = (1 << 9)
 };
 
+enum settings_free_flags
+{
+   SD_FREE_FLAG_VALUES    = (1 << 0),
+   SD_FREE_FLAG_NAME      = (1 << 1),
+   SD_FREE_FLAG_SHORT     = (1 << 2)
+};
+
 enum menu_setting_ctl_state
 {
    MENU_SETTING_CTL_NONE = 0,
@@ -366,6 +373,11 @@ void menu_settings_list_current_add_range(
       bool enforce_minrange_enable, bool enforce_maxrange_enable);
 
 void settings_data_list_current_add_flags(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned values);
+
+void settings_data_list_current_add_free_flags(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       unsigned values);

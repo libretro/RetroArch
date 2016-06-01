@@ -28,8 +28,8 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <winsock2.h>
-#include <IPHlpApi.h>
-#include <WS2tcpip.h>
+#include <iphlpapi.h>
+#include <ws2tcpip.h>
 #else
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -55,9 +55,6 @@ void net_ifinfo_free(net_ifinfo_t *list)
    {
       struct net_ifinfo_entry *ptr = 
          (struct net_ifinfo_entry*)&list->entries[k];
-
-      if (!ptr)
-         continue;
 
       if (*ptr->name)
          free(ptr->name);

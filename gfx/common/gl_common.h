@@ -215,7 +215,6 @@ typedef struct gl
    bool has_srgb_fbo_gles3;
 #endif
    bool hw_render_use;
-   bool shared_context_use;
 
    bool should_resize;
    bool quitting;
@@ -286,7 +285,6 @@ typedef struct gl
    unsigned fence_count;
 #endif
 
-   bool core_context;
    GLuint vao;
 } gl_t;
 
@@ -339,6 +337,7 @@ static INLINE unsigned gl_wrap_type_to_enum(enum gfx_wrap_type type)
    return 0;
 }
 
+bool gl_query_core_context_in_use(void);
 void gl_ff_vertex(const struct video_coords *coords);
 void gl_ff_matrix(const math_matrix_4x4 *mat);
 

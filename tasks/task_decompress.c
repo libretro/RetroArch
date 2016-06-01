@@ -57,9 +57,9 @@ static int file_decompressed_subdir(const char *name,
       unsigned cmode, uint32_t csize,uint32_t size,
       uint32_t crc32, void *userdata)
 {
-   char path[PATH_MAX_LENGTH];
    char path_dir[PATH_MAX_LENGTH];
-   decompress_state_t *dec = (decompress_state_t*)userdata;
+   char path[PATH_MAX_LENGTH]      = {0};
+   decompress_state_t         *dec = (decompress_state_t*)userdata;
 
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
@@ -98,8 +98,8 @@ static int file_decompressed(const char *name, const char *valid_exts,
    const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
    uint32_t crc32, void *userdata)
 {
-   char path[PATH_MAX_LENGTH];
-   decompress_state_t *dec = (decompress_state_t*)userdata;
+   char path[PATH_MAX_LENGTH] = {0};
+   decompress_state_t    *dec = (decompress_state_t*)userdata;
 
    /* Ignore directories. */
    if (name[strlen(name) - 1] == '/' || name[strlen(name) - 1] == '\\')
@@ -226,7 +226,7 @@ static bool task_decompress_finder(
    return string_is_equal(dec->source_file, (const char*)user_data);
 }
 
-bool rarch_task_check_decompress(const char *source_file)
+bool task_check_decompress(const char *source_file)
 {
    task_finder_data_t find_data;
 
@@ -238,7 +238,7 @@ bool rarch_task_check_decompress(const char *source_file)
    return task_queue_ctl(TASK_QUEUE_CTL_FIND, &find_data);
 }
 
-bool rarch_task_push_decompress(
+bool task_push_decompress(
       const char *source_file,
       const char *target_dir,
       const char *target_file,
@@ -274,7 +274,7 @@ bool rarch_task_push_decompress(
    if (!valid_ext || !valid_ext[0])
       valid_ext   = NULL;
 
-   if (rarch_task_check_decompress(source_file))
+   if (task_check_decompress(source_file))
    {
       RARCH_LOG("[decompress] File '%s' already being decompressed.\n",
             source_file);
@@ -328,7 +328,5 @@ bool rarch_task_push_decompress(
 error:
    if (s)
       free(s);
-   if (t)
-      free(t);
    return false;
 }

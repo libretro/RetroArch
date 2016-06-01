@@ -75,7 +75,7 @@ void rarch_perf_register(struct retro_perf_counter *perf)
    perf->registered = true;
 }
 
-void retro_perf_register(struct retro_perf_counter *perf)
+void performance_counter_register(struct retro_perf_counter *perf)
 {
    if (perf->registered || perf_ptr_libretro >= MAX_COUNTERS)
       return;
@@ -84,7 +84,7 @@ void retro_perf_register(struct retro_perf_counter *perf)
    perf->registered = true;
 }
 
-void retro_perf_clear(void)
+void performance_counters_clear(void)
 {
    perf_ptr_libretro = 0;
    memset(perf_counters_libretro, 0, sizeof(perf_counters_libretro));
@@ -121,7 +121,7 @@ void retro_perf_log(void)
    log_counters(perf_counters_libretro, perf_ptr_libretro);
 }
 
-int rarch_perf_init(struct retro_perf_counter *perf, const char *name)
+int performance_counter_init(struct retro_perf_counter *perf, const char *name)
 {
    perf->ident = name;
 
@@ -131,7 +131,7 @@ int rarch_perf_init(struct retro_perf_counter *perf, const char *name)
    return 0;
 }
 
-void retro_perf_start(struct retro_perf_counter *perf)
+void performance_counter_start(struct retro_perf_counter *perf)
 {
    if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL) || !perf)
       return;
@@ -140,7 +140,7 @@ void retro_perf_start(struct retro_perf_counter *perf)
    perf->start = cpu_features_get_perf_counter();
 }
 
-void retro_perf_stop(struct retro_perf_counter *perf)
+void performance_counter_stop(struct retro_perf_counter *perf)
 {
    if (!runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL) || !perf)
       return;

@@ -30,11 +30,7 @@
 extern "C" {
 #endif
 
-typedef struct ram_type
-{
-   const char *path;
-   int type;
-} ram_type_t;
+typedef struct ram_type ram_type_t;
 
 typedef struct content_ctx_info
 {
@@ -44,25 +40,17 @@ typedef struct content_ctx_info
    environment_get_t environ_get;  /* Function passed for environment_get function */
 } content_ctx_info_t;
 
-void content_push_to_history_playlist(bool do_push,
-      const char *path, void *data);
-
 /* Load a RAM state from disk to memory. */
-bool content_load_ram_file(ram_type_t *ram);
+bool content_load_ram_file(unsigned slot);
 
 /* Save a RAM state from memory to disk. */
-bool content_save_ram_file(ram_type_t *ram);
+bool content_save_ram_file(unsigned slot);
 
 /* Load a state from disk to memory. */
 bool content_load_state(const char *path);
 
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path);
-
-/* Loads content file and starts up RetroArch.
- * If no content file can be loaded, will start up RetroArch
- * as-is. */
-bool content_load(content_ctx_info_t *info);
 
 bool content_does_not_need_content(void);
 

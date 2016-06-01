@@ -302,6 +302,24 @@ static const bool _rpng_supp = true;
 static const bool _rpng_supp = false;
 #endif
 
+#ifdef HAVE_RJPEG
+static const bool _rjpeg_supp = true;
+#else
+static const bool _rjpeg_supp = false;
+#endif
+
+#ifdef HAVE_RBMP
+static const bool _rbmp_supp = true;
+#else
+static const bool _rbmp_supp = false;
+#endif
+
+#ifdef HAVE_RTGA
+static const bool _rtga_supp = true;
+#else
+static const bool _rtga_supp = false;
+#endif
+
 #ifdef HAVE_CORETEXT
 static const bool _coretext_supp = true;
 #else

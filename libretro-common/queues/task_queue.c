@@ -126,6 +126,9 @@ static void retro_task_internal_gather(void)
       if (task->callback)
          task->callback(task->task_data, task->user_data, task->error);
 
+      if (task->cleanup)
+          task->cleanup(task);
+
       if (task->error)
          free(task->error);
 
@@ -212,39 +215,46 @@ static bool retro_task_regular_find(retro_task_finder_t func, void *user_data)
 
 static void retro_task_regular_retrieve(task_retriever_data_t *data)
 {
-   retro_task_t *task;
-   task_retriever_info_t *info;
+   retro_task_t *task          = NULL;
    task_retriever_info_t *tail = NULL;
 
    /* Parse all running tasks and handle matching handlers */
    for (task = tasks_running.front; task != NULL; task = task->next)
-      if (task->handler == data->handler)
+   {
+      task_retriever_info_t *info = NULL;
+      if (task->handler != data->handler)
+         continue;
+
+      /* Create new link */
+      info       = (task_retriever_info_t*)malloc(sizeof(task_retriever_info_t));
+      info->data = malloc(data->element_size);
+      info->next = NULL;
+
+      /* Call retriever function and fill info-specific data */
+      if (!data->func(task, info->data))
       {
-         /* Create new link */
-         info       = (task_retriever_info_t*)malloc(sizeof(task_retriever_info_t));
-         info->data = malloc(data->element_size);
-         info->next = NULL;
+         free(info->data);
+         free(info);
+         continue;
+      }
 
-         /* Call retriever function and fill info-specific data */
-         if (!data->func(task, info->data))
-         {
-            free(info->data);
-            free(info);
-            continue;
-         }
-
-         /* Add link to list */
-         if (data->list == NULL)
-         {
-            data->list = info;
-            tail = data->list;
-         }
-         else
+      /* Add link to list */
+      if (data->list)
+      {
+         if (tail)
          {
             tail->next = info;
             tail = tail->next;
          }
       }
+      else
+      {
+         data->list = info;
+         tail = data->list;
+      }
+
+      free(info);
+   }
 }
 
 static struct retro_task_impl impl_regular = {

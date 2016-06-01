@@ -19,11 +19,12 @@
 #include <retro_assert.h>
 
 #include <lists/string_list.h>
+#include <conversion/float_to_s16.h>
+#include <conversion/s16_to_float.h>
 
 #include "audio_driver.h"
 #include "audio_resampler_driver.h"
 #include "../record/record_driver.h"
-#include "audio_utils.h"
 #include "audio_thread_wrapper.h"
 
 #include "../command.h"
@@ -38,7 +39,7 @@
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
 #endif
 
-typedef struct audio_driver_input_data
+struct audio_driver_input_data
 {
    float *data;
 
@@ -88,7 +89,7 @@ typedef struct audio_driver_input_data
       unsigned buf[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
       uint64_t count;
    } free_samples;
-} audio_driver_input_data_t;
+};
 
 static const audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
@@ -153,7 +154,7 @@ static const audio_driver_t *audio_drivers[] = {
    NULL,
 };
 
-static audio_driver_input_data_t audio_driver_data;
+static struct audio_driver_input_data audio_driver_data;
 static struct retro_audio_callback audio_callback;
 static struct string_list *audio_driver_devices_list   = NULL;
 static struct retro_perf_counter resampler_proc        = {0};
@@ -309,7 +310,8 @@ static bool audio_driver_init_internal(bool audio_cb_inited)
    size_t outsamples_max, max_bufsamples = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    settings_t *settings = config_get_ptr();
 
-   audio_convert_init_simd();
+   convert_s16_to_float_init_simd();
+   convert_float_to_s16_init_simd();
 
    /* Accomodate rewind since at some point we might have two full buffers. */
    outsamples_max = max_bufsamples * AUDIO_MAX_RATIO * 
@@ -536,11 +538,11 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
    if (!audio_driver_data.data)
       return false;
 
-   rarch_perf_init(&audio_convert_s16, "audio_convert_s16");
-   retro_perf_start(&audio_convert_s16);
-   audio_convert_s16_to_float(audio_driver_data.data, data, samples,
+   performance_counter_init(&audio_convert_s16, "audio_convert_s16");
+   performance_counter_start(&audio_convert_s16);
+   convert_s16_to_float(audio_driver_data.data, data, samples,
          audio_driver_data.volume_gain);
-   retro_perf_stop(&audio_convert_s16);
+   performance_counter_stop(&audio_convert_s16);
 
    src_data.data_in               = audio_driver_data.data;
    src_data.input_frames          = samples >> 1;
@@ -550,10 +552,10 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    if (audio_driver_data.dsp)
    {
-      rarch_perf_init(&audio_dsp, "audio_dsp");
-      retro_perf_start(&audio_dsp);
+      performance_counter_init(&audio_dsp, "audio_dsp");
+      performance_counter_start(&audio_dsp);
       rarch_dsp_filter_process(audio_driver_data.dsp, &dsp_data);
-      retro_perf_stop(&audio_dsp);
+      performance_counter_stop(&audio_dsp);
 
       if (dsp_data.output)
       {
@@ -579,11 +581,11 @@ static bool audio_driver_flush(const int16_t *data, size_t samples)
 
    if (!audio_driver_data.use_float)
    {
-      rarch_perf_init(&audio_convert_float, "audio_convert_float");
-      retro_perf_start(&audio_convert_float);
-      audio_convert_float_to_s16(audio_driver_data.output_samples.conv_buf,
+      performance_counter_init(&audio_convert_float, "audio_convert_float");
+      performance_counter_start(&audio_convert_float);
+      convert_float_to_s16(audio_driver_data.output_samples.conv_buf,
             (const float*)output_data, output_frames * 2);
-      retro_perf_stop(&audio_convert_float);
+      performance_counter_stop(&audio_convert_float);
 
       output_data = audio_driver_data.output_samples.conv_buf;
       output_size = sizeof(int16_t);
@@ -836,11 +838,11 @@ bool audio_driver_init_resampler(void)
 
 void audio_driver_process_resampler(struct resampler_data *data)
 {
-   rarch_perf_init(&resampler_proc, "resampler_proc");
-   retro_perf_start(&resampler_proc);
+   performance_counter_init(&resampler_proc, "resampler_proc");
+   performance_counter_start(&resampler_proc);
    rarch_resampler_process(audio_driver_resampler, 
          audio_driver_resampler_data, data);
-   retro_perf_stop(&resampler_proc);
+   performance_counter_stop(&resampler_proc);
 }
 
 bool audio_driver_deinit(void)

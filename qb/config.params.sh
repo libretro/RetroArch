@@ -1,7 +1,6 @@
 HAVE_LIBRETRODB=yes        # Libretrodb support
 HAVE_RGUI=yes              # RGUI menu
 HAVE_MATERIALUI=auto       # MaterialUI menu 
-HAVE_CHEEVOS=no            # Cheevos (achievements)
 HAVE_XMB=auto              # XMB menu
 HAVE_NUKLEAR=no            # Nuklear menu
 HAVE_DYNAMIC=yes           # Dynamic loading of libretro library
@@ -78,5 +77,6 @@ HAVE_CHEEVOS=yes           # Retro Achievements
 HAVE_VULKAN=auto           # Vulkan support
 C89_VULKAN=no
 HAVE_RPNG=yes              # RPNG support
+HAVE_RBMP=yes              # RBMP support
 HAVE_RJPEG=yes             # RJPEG support
 HAVE_RTGA=yes              # RTGA support

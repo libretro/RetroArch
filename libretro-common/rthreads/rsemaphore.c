@@ -59,11 +59,13 @@ ssem_t *ssem_new(int value)
    return semaphore;
 
 error:
-   if (semaphore->mutex)
-      slock_free(semaphore->mutex);
-   semaphore->mutex = NULL;
    if (semaphore)
+   {
+      if (semaphore->mutex)
+         slock_free(semaphore->mutex);
+      semaphore->mutex = NULL;
       free((void*)semaphore);
+   }
    return NULL;
 }
 

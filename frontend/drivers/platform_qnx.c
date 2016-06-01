@@ -24,10 +24,12 @@
 
 #include "../../defaults.h"
 #include "../../dynamic.h"
+#include "../../verbosity.h"
 
 static void frontend_qnx_init(void *data)
 {
    (void)data;
+   verbosity_enable();
    bps_initialize();
 }
 

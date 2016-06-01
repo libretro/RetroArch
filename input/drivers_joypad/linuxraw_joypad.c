@@ -221,11 +221,7 @@ static bool linuxraw_joypad_init(void *data)
       autoconfig_params_t params  = {{0}};
       struct linuxraw_joypad *pad = (struct linuxraw_joypad*)&linuxraw_pads[i];
 
-      if (!pad)
-         continue;
-
       params.idx = i;
-
       pad->fd    = -1;
       pad->ident = settings->input.device_names[i];
       
@@ -285,16 +281,12 @@ static void linuxraw_joypad_destroy(void)
 static bool linuxraw_joypad_button(unsigned port, uint16_t joykey)
 {
    const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
-   if (!pad)
-      return false;
    return joykey < NUM_BUTTONS && BIT64_GET(pad->buttons, joykey);
 }
 
 static uint64_t linuxraw_joypad_get_buttons(unsigned port)
 {
    const struct linuxraw_joypad *pad = (const struct linuxraw_joypad*)&linuxraw_pads[port];
-   if (!pad)
-      return 0;
    return pad->buttons;
 }
 

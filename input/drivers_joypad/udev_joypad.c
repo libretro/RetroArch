@@ -572,8 +572,6 @@ static bool udev_joypad_init(void *data)
    return true;
 
 error:
-   if (enumerate)
-      udev_enumerate_unref(enumerate);
    udev_joypad_destroy();
    return false;
 }
@@ -612,8 +610,6 @@ static bool udev_joypad_button(unsigned port, uint16_t joykey)
 static uint64_t udev_joypad_get_buttons(unsigned port)
 {
    const struct udev_joypad *pad = (const struct udev_joypad*)&udev_pads[port];
-   if (!pad)
-      return 0;
    return pad->buttons;
 }
 

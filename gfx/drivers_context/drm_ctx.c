@@ -325,8 +325,9 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
 
    drm_free();
 
-   if (g_drm_fd >= 0)
-      filestream_close(drm->drm);
+   if (drm->drm)
+      if (g_drm_fd >= 0)
+         filestream_close(drm->drm);
 
    g_gbm_surface      = NULL;
    g_gbm_dev          = NULL;

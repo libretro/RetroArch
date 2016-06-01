@@ -101,7 +101,7 @@ static int libretrodb_write_metadata(RFILE *fd, libretrodb_metadata_t *md)
    return rmsgpack_write_uint(fd, md->count);
 }
 
-static int validate_document(const struct rmsgpack_dom_value *doc)
+static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
 {
    unsigned i;
    struct rmsgpack_dom_value key, value;
@@ -127,7 +127,7 @@ static int validate_document(const struct rmsgpack_dom_value *doc)
       if (value.type != RDT_MAP)
          continue;
 
-      if ((rv == validate_document(&value)) != 0)
+      if ((rv == libretrodb_validate_document(&value)) != 0)
          return rv;
    }
 
@@ -154,7 +154,7 @@ int libretrodb_create(RFILE *fd, libretrodb_value_provider value_provider,
    item.type = RDT_NULL;
    while ((rv = value_provider(ctx, &item)) == 0)
    {
-      if ((rv = validate_document(&item)) < 0)
+      if ((rv = libretrodb_validate_document(&item)) < 0)
          goto clean;
 
       if ((rv = rmsgpack_dom_write(fd, &item)) < 0)
@@ -464,15 +464,15 @@ int libretrodb_create_index(libretrodb_t *db,
    struct node_iter_ctx nictx;
    struct rmsgpack_dom_value key;
    libretrodb_index_t idx;
-   struct rmsgpack_dom_value item;
-   struct rmsgpack_dom_value *field;
    uint64_t idx_header_offset;
-   libretrodb_cursor_t cur     = {0};
-   void *buff                  = NULL;
-   uint64_t *buff_u64          = NULL;
-   uint8_t field_size          = 0;
-   uint64_t item_loc           = libretrodb_tell(db);
-   bintree_t *tree             = bintree_new(node_compare, &field_size);
+   struct rmsgpack_dom_value item;
+   libretrodb_cursor_t cur          = {0};
+   struct rmsgpack_dom_value *field = NULL;
+   void *buff                       = NULL;
+   uint64_t *buff_u64               = NULL;
+   uint8_t field_size               = 0;
+   uint64_t item_loc                = libretrodb_tell(db);
+   bintree_t *tree                  = bintree_new(node_compare, &field_size);
 
    if (!tree || (libretrodb_cursor_open(db, &cur, NULL) != 0))
       goto clean;
@@ -557,7 +557,6 @@ int libretrodb_create_index(libretrodb_t *db,
    nictx.db = db;
    nictx.idx = &idx;
    bintree_iterate(tree, node_iter, &nictx);
-   bintree_free(tree);
 
 clean:
    rmsgpack_dom_value_free(&item);
@@ -565,6 +564,8 @@ clean:
       free(buff);
    if (cur.is_valid)
       libretrodb_cursor_close(&cur);
+   bintree_free(tree);
+   free(tree);
    return 0;
 }
 

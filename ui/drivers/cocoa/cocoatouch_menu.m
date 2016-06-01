@@ -21,6 +21,7 @@
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
+#include <queues/task_queue.h>
 
 #include "cocoa_common.h"
 #include "../../../input/input_config.h"
@@ -755,7 +756,7 @@ didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 - (void)menuSelect: (uint32_t) i
 {
    menu_entry_select(i);
-   runloop_iterate_data();
+   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
 }
 
 - (void)menuBack

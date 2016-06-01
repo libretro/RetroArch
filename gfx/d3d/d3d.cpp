@@ -1447,8 +1447,8 @@ static bool d3d_frame(void *data, const void *frame,
 
    video_driver_get_size(&width, &height);
 
-   rarch_perf_init(&d3d_frame, "d3d_frame");
-   retro_perf_start(&d3d_frame);
+   performance_counter_init(&d3d_frame, "d3d_frame");
+   performance_counter_start(&d3d_frame);
 
    /* We cannot recover in fullscreen. */
    if (d3d->needs_restore)
@@ -1539,7 +1539,7 @@ static bool d3d_frame(void *data, const void *frame,
 
    video_context_driver_update_window_title();
 
-   retro_perf_stop(&d3d_frame);
+   performance_counter_stop(&d3d_frame);
 
    video_context_driver_swap_buffers();
 

@@ -451,7 +451,7 @@ static int file_archive_decompress_data_to_file(
    }
 
 end:
-   if (handle->data)
+   if (handle && handle->data)
       free(handle->data);
    return ret;
 }

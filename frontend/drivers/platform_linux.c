@@ -43,6 +43,7 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <queues/task_queue.h>
 
 #include "../frontend.h"
 #include "../frontend_driver.h"
@@ -368,7 +369,7 @@ static void android_app_entry(void *data)
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
-      runloop_iterate_data();
+      task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
    }while (ret != -1);
 
    main_exit(data);
@@ -832,9 +833,7 @@ static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
    if (strstr((char*)buf, "1"))
       *have_ac = true;
 
-   if (buf)
-      free(buf);
-   buf = NULL;
+   free(buf);
 }
 
 static bool next_string(char **_ptr, char **_str)
@@ -1049,6 +1048,8 @@ static bool frontend_linux_powerstate_check_acpi_sysfs(
    else
       *state = FRONTEND_POWERSTATE_ON_POWER_SOURCE;
 
+   retro_closedir(entry);
+
    return true;
 
 error:
@@ -1102,36 +1103,35 @@ static enum frontend_powerstate frontend_linux_get_powerstate(
 #define LINUX_ARCH_PPC64      0x1028cf52U
 #define LINUX_ARCH_MIPS       0x7c9aa25eU
 #define LINUX_ARCH_TILE       0x7c9e7873U
-
-#define ANDROID_ARCH_ARMV7    0x26257a91U
-#define ANDROID_ARCH_ARM      0x406a3516U
+#define LINUX_ARCH_ARMV7B     0xf27015f4U
+#define LINUX_ARCH_ARMV7L     0xf27015feU
+#define LINUX_ARCH_ARMV6L     0xf27015ddU
+#define LINUX_ARCH_ARMV6B     0xf27015d3U
+#define LINUX_ARCH_ARMV5TEB   0x28612995U
+#define LINUX_ARCH_ARMV5TEL   0x4ecca435U
 
 static enum frontend_architecture frontend_linux_get_architecture(void)
 {
    uint32_t buffer_hash;
    const char *val;
-#ifdef ANDROID
-   char abi[PROP_VALUE_MAX] = {0};
-   system_property_get("getprop", "ro.product.cpu.abi", abi);
-   val         = abi;
-#else
    struct utsname buffer;
 
    if (uname(&buffer) != 0)
       return FRONTEND_ARCH_NONE;
 
    val         = buffer.machine;
-#endif
    buffer_hash = djb2_calculate(val);
 
    switch (buffer_hash)
    {
-#ifdef ANDROID
-      case ANDROID_ARCH_ARMV7:
+      case LINUX_ARCH_ARMV7L:
+      case LINUX_ARCH_ARMV7B:
+         return FRONTEND_ARCH_ARMV7;
+      case LINUX_ARCH_ARMV6L:
+      case LINUX_ARCH_ARMV6B:
+      case LINUX_ARCH_ARMV5TEB:
+      case LINUX_ARCH_ARMV5TEL:
          return FRONTEND_ARCH_ARM;
-      case ANDROID_ARCH_ARM:
-         return FRONTEND_ARCH_ARM;
-#endif
       case LINUX_ARCH_X86_64:
          return FRONTEND_ARCH_X86_64;
       case LINUX_ARCH_X86:

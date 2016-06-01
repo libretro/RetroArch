@@ -152,7 +152,7 @@ static int deferred_push_database_manager_list_deferred(
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
-   char rdb_path[PATH_MAX_LENGTH];
+   char rdb_path[PATH_MAX_LENGTH] = {0};
    int ret                        = -1;
    char *query                    = NULL;
    char *rdb                      = NULL;
@@ -180,6 +180,8 @@ static int deferred_push_cursor_manager_list_deferred(
 end:
    if (conf)
       config_file_free(conf);
+   free(rdb);
+   free(query);
    return ret;
 }
 
@@ -198,14 +200,13 @@ static int deferred_push_cursor_manager_list_deferred_query_subsearch(
       goto end;
 
    strlcpy(info->path,   str_list->elems[1].data, sizeof(info->path));
-   strlcpy(info->path_b,    str_list->elems[0].data, sizeof(info->path_b));
-   strlcpy(info->path_c,    query, sizeof(info->path_c));
+   strlcpy(info->path_b, str_list->elems[0].data, sizeof(info->path_b));
+   strlcpy(info->path_c, query, sizeof(info->path_c));
 
    ret = deferred_push_dlist(info, DISPLAYLIST_DATABASE_QUERY);
 
 end:
-   if (str_list)
-      string_list_free(str_list);
+   string_list_free(str_list);
 #endif
    return ret;
 }
@@ -409,7 +410,10 @@ static int general_push(menu_displaylist_info_t *info,
                      sizeof(info->exts));
          }
          else
-            strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
+         {
+            if (system->valid_extensions)
+               strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
+         }
          break;
       case PUSH_DETECT_CORE_LIST:
          if (!string_is_empty(list->all_ext))

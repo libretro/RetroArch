@@ -215,7 +215,7 @@ void input_overlay_set_alpha_mod(float mod);
  *
  * Scales the overlay by a factor of scale.
  **/
-void input_overlay_set_scale_factor(float scale);
+void input_overlay_set_scale_factor(input_overlay_t *ol, float scale);
 
 /**
  * input_overlay_next:
@@ -231,7 +231,7 @@ void input_overlay_next(float opacity);
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-void input_poll_overlay(float opacity);
+void input_poll_overlay(input_overlay_t *ol, float opacity);
 
 void input_state_overlay(int16_t *ret,
       unsigned port, unsigned device, unsigned idx,
@@ -239,7 +239,9 @@ void input_state_overlay(int16_t *ret,
 
 bool input_overlay_key_pressed(int key);
 
-bool input_overlay_is_alive(void);
+bool input_overlay_is_alive(input_overlay_t *ol);
+
+void input_overlay_loaded(void *task_data, void *user_data, const char *err);
 
 #ifdef __cplusplus
 }

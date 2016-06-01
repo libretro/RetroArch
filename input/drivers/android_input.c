@@ -638,12 +638,13 @@ static void handle_hotplug(android_input_data_t *android_data,
       int source)
 {
    char device_name[256]        = {0};
+   char device_model[256]       = {0};
    char name_buf[256]           = {0};
    int vendorId                 = 0;
    int productId                = 0;
    bool back_mapped             = false;
    settings_t         *settings = config_get_ptr();
-   char device_model[256] = {0};
+
    frontend_android_get_name(device_model, sizeof(device_model));
 
    RARCH_LOG("Device model: (%s).\n", device_model);
@@ -654,7 +655,8 @@ static void handle_hotplug(android_input_data_t *android_data,
       return;
    }
 
-   if (!engine_lookup_name(device_name, &vendorId, &productId, sizeof(device_name), id))
+   if (!engine_lookup_name(device_name, &vendorId,
+            &productId, sizeof(device_name), id))
    {
       RARCH_ERR("Could not look up device name or IDs.\n");
       return;
@@ -693,7 +695,8 @@ static void handle_hotplug(android_input_data_t *android_data,
       RARCH_LOG("Special Device Detected: %s\n", device_model);
       {
 #if 0
-         RARCH_LOG("- Pads Mapped: %d\n- Device Name: %s\n- IDS: %d, %d, %d", android_data->pads_connected, device_name, id, pad_id1, pad_id2);
+         RARCH_LOG("- Pads Mapped: %d\n- Device Name: %s\n- IDS: %d, %d, %d",
+               android_data->pads_connected, device_name, id, pad_id1, pad_id2);
 #endif
          /* remove the remote or virtual controller device if it is mapped */
          if (strstr(android_data->pad_states[0].name,"SHIELD Remote") || 
@@ -705,7 +708,9 @@ static void handle_hotplug(android_input_data_t *android_data,
             *port = 0;
             strlcpy(name_buf, device_name, sizeof(name_buf));
          }
-         /* if the actual controller has not been mapped yet, then configure Virtual device for now */
+
+         /* if the actual controller has not been mapped yet, 
+          * then configure Virtual device for now */
          if (strstr(device_name, "Virtual") && android_data->pads_connected==0)
             strlcpy (name_buf, "SHIELD Virtual Controller", sizeof(name_buf));
          else
@@ -714,7 +719,8 @@ static void handle_hotplug(android_input_data_t *android_data,
          /* apply the hack only for the first controller
           * store the id for later use
          */
-         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03") && android_data->pads_connected==0)
+         if (strstr(device_name, "NVIDIA Corporation NVIDIA Controller v01.03") 
+               && android_data->pads_connected==0)
             pad_id1 = id;
          else if (strstr(device_name, "Virtual") && pad_id1 != -1)
          {
@@ -775,8 +781,12 @@ static void handle_hotplug(android_input_data_t *android_data,
     * This device is composed of two hid devices
     * We make it look like one device
     */
-   else if(strstr(device_model, "R800") && (
-       strstr(device_name, "keypad-game-zeus") || strstr(device_name, "keypad-zeus")))
+   else if(strstr(device_model, "R800") && 
+         (
+          strstr(device_name, "keypad-game-zeus") || 
+          strstr(device_name, "keypad-zeus")
+         )
+         )
    {
       /* only use the hack if the device is one of the built-in devices */
       RARCH_LOG("Special Device Detected: %s\n", device_model);
@@ -840,31 +850,12 @@ static void handle_hotplug(android_input_data_t *android_data,
       else if (*port == 1)
          strlcpy(name_buf, "TTT THT Arcade (User 2)", sizeof(name_buf));
    }
-
-   else if (strstr(device_name, "360 Wireless"))
-      strlcpy(name_buf, "XBox 360 Wireless", sizeof(name_buf));
-
-   else if (strstr(device_name, "Microsoft"))
-   {
-      if (strstr(device_name, "Dual Strike"))
-         strlcpy(device_name, "SideWinder Dual Strike", sizeof(device_name));
-      else if (strstr(device_name, "SideWinder"))
-         strlcpy(name_buf, "SideWinder Classic", sizeof(name_buf));
-   }
-
-   else if (
-         strstr(device_name, "PLAYSTATION(R)3") ||
-         strstr(device_name, "Dualshock3") ||
-         strstr(device_name, "Sixaxis")
-         )
-      strlcpy(name_buf, "PlayStation3", sizeof(name_buf));
-
    else if (strstr(device_name, "MOGA"))
       strlcpy(name_buf, "Moga IME", sizeof(name_buf));
 
-   // if device is keyboard only and didn't match any of the devices above
-   // then assume it is a keyboard, register the id, and return unless the
-   // maximum number of keyboards are already registered
+   /* If device is keyboard only and didn't match any of the devices above
+    * then assume it is a keyboard, register the id, and return unless the
+    * maximum number of keyboards are already registered. */
    else if(source == AINPUT_SOURCE_KEYBOARD && kbd_num < MAX_NUM_KEYBOARDS)
    {
       kbd_id[kbd_num] = id;
@@ -872,8 +863,8 @@ static void handle_hotplug(android_input_data_t *android_data,
       return;
    }
 
-   // if device was not keyboard only, yet did not match any of the devices
-   // then try to autoconfigure as gamepad based on device_name
+   /* if device was not keyboard only, yet did not match any of the devices
+    * then try to autoconfigure as gamepad based on device_name. */
    else if (!string_is_empty(device_name))
       strlcpy(name_buf, device_name, sizeof(name_buf));
 
@@ -892,7 +883,9 @@ static void handle_hotplug(android_input_data_t *android_data,
       bool      autoconfigured;
       autoconfig_params_t params   = {{0}};
 
-      RARCH_LOG("Pads Connected: %d Port: %d\n %s VID/PID: %d/%d\n",android_data->pads_connected, *port, name_buf, params.vid, params.pid);
+      RARCH_LOG("Pads Connected: %d Port: %d\n %s VID/PID: %d/%d\n",
+            android_data->pads_connected, *port, name_buf,
+            params.vid, params.pid);
 
       strlcpy(params.name, name_buf, sizeof(params.name));
       params.idx = *port;
@@ -906,7 +899,8 @@ static void handle_hotplug(android_input_data_t *android_data,
 
       if (autoconfigured)
       {
-         if (settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey != 0)
+         if (settings->input.autoconf_binds[*port]
+               [RARCH_MENU_TOGGLE].joykey != 0)
             back_mapped = true;
       }
    }
@@ -918,7 +912,8 @@ static void handle_hotplug(android_input_data_t *android_data,
    }
 
    if (!back_mapped && settings->input.back_as_menu_toggle_enable)
-      settings->input.autoconf_binds[*port][RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
+      settings->input.autoconf_binds[*port]
+         [RARCH_MENU_TOGGLE].joykey = AKEYCODE_BACK;
 
    android_data->pad_states[android_data->pads_connected].id = id;
    android_data->pad_states[android_data->pads_connected].port = *port;

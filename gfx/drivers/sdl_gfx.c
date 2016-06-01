@@ -342,8 +342,8 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
 
-   rarch_perf_init(&sdl_scale, "sdl_scale");
-   retro_perf_start(&sdl_scale);
+   performance_counter_init(&sdl_scale, "sdl_scale");
+   performance_counter_start(&sdl_scale);
 
    video_frame_scale(
          &vid->scaler,
@@ -356,7 +356,7 @@ static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
          width,
          height,
          pitch);
-   retro_perf_stop(&sdl_scale);
+   performance_counter_stop(&sdl_scale);
 
    if (vid->menu.active)
       SDL_BlitSurface(vid->menu.frame, NULL, vid->screen, NULL);
@@ -459,6 +459,7 @@ static void sdl_apply_state_changes(void *data)
    (void)data;
 }
 
+#ifdef HAVE_MENU
 static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned width, unsigned height, float alpha)
 {
@@ -497,6 +498,7 @@ static void sdl_show_mouse(void *data, bool state)
 
    SDL_ShowCursor(state);
 }
+#endif
 
 static void sdl_grab_mouse_toggle(void *data)
 {
@@ -521,10 +523,16 @@ static const video_poke_interface_t sdl_poke_interface = {
    sdl_apply_state_changes,
 #ifdef HAVE_MENU
    sdl_set_texture_frame,
-   sdl_set_texture_enable,
 #endif
+#ifdef HAVE_MENU
+   sdl_set_texture_enable,
    NULL,
    sdl_show_mouse,
+#else
+   NULL,
+   NULL,
+   NULL,
+#endif
    sdl_grab_mouse_toggle,
    NULL
 };

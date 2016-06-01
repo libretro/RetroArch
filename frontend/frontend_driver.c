@@ -300,4 +300,12 @@ void frontend_driver_shutdown(bool a)
       return;
    frontend->shutdown(a);
 }
+
+enum frontend_architecture frontend_driver_get_cpu_architecture(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->get_architecture)
+      return FRONTEND_ARCH_NONE;
+   return frontend->get_architecture();
+}
 #endif

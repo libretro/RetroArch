@@ -156,7 +156,10 @@ error:
    if (alsa)
    {
       if (alsa->pcm)
+      {
          snd_pcm_close(alsa->pcm);
+         snd_config_update_free_global();
+      }
 
       free(alsa);
    }
@@ -298,7 +301,9 @@ static void alsa_free(void *data)
       {
          snd_pcm_drop(alsa->pcm);
          snd_pcm_close(alsa->pcm);
+         snd_config_update_free_global();
       }
+
       free(alsa);
    }
 }

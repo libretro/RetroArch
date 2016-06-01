@@ -286,6 +286,8 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 error:
    if (fd >= 0)
       socket_close(fd);
+   if (state)
+      free(state);
    return NULL;
 }
 

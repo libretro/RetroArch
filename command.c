@@ -49,13 +49,13 @@
 #include "content.h"
 #include "movie.h"
 #include "general.h"
-#include "screenshot.h"
 #include "msg_hash.h"
 #include "retroarch.h"
 #include "managers/cheat_manager.h"
 #include "managers/state_manager.h"
 #include "system.h"
 #include "ui/ui_companion_driver.h"
+#include "tasks/tasks_internal.h"
 #include "list_special.h"
 
 #ifdef HAVE_CHEEVOS
@@ -76,7 +76,7 @@
 #endif
 
 #ifdef HAVE_NETPLAY
-#include "network/netplay.h"
+#include "network/netplay/netplay.h"
 #endif
 
 #ifdef HAVE_NETWORKING
@@ -383,7 +383,7 @@ static bool command_verify(const char *cmd)
 
 bool command_network_send(const char *cmd_)
 {
-   bool ret;
+   bool ret            = false;
    char *command       = NULL;
    char *save          = NULL;
    const char *cmd     = NULL;
@@ -415,11 +415,14 @@ bool command_network_send(const char *cmd_)
    if (port_)
       port = strtoul(port_, NULL, 0);
 
-   RARCH_LOG("%s: \"%s\" to %s:%hu\n",
-         msg_hash_to_str(MSG_SENDING_COMMAND),
-         cmd, host, (unsigned short)port);
+   if (cmd)
+   {
+      RARCH_LOG("%s: \"%s\" to %s:%hu\n",
+            msg_hash_to_str(MSG_SENDING_COMMAND),
+            cmd, host, (unsigned short)port);
 
-   ret = command_verify(cmd) && send_udp_packet(host, port, cmd);
+      ret = command_verify(cmd) && send_udp_packet(host, port, cmd);
+   }
    free(command);
 
    return ret;
@@ -993,9 +996,12 @@ static void command_event_init_controllers(void)
       const struct retro_controller_description *desc = NULL;
       unsigned device = settings->input.libretro_device[i];
 
-      if (i < info->ports.size)
-         desc = libretro_find_controller_description(
-               &info->ports.data[i], device);
+      if (info)
+      {
+         if (i < info->ports.size)
+            desc = libretro_find_controller_description(
+                  &info->ports.data[i], device);
+      }
 
       if (desc)
          ident = desc->desc;
@@ -1060,12 +1066,7 @@ static void command_event_deinit_core(bool reinit)
       driver_ctl(RARCH_DRIVER_CTL_UNINIT, &flags);
    }
 
-   /* auto overrides: reload the original config */
-   if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
-   {
-      config_unload_override();
-      runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
-   }
+   command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
 }
 
 static void command_event_init_cheats(void)
@@ -1094,13 +1095,7 @@ static bool event_load_save_files(void)
       return false;
 
    for (i = 0; i < global->savefiles->size; i++)
-   {
-      ram_type_t ram;
-      ram.path = global->savefiles->elems[i].data;
-      ram.type = global->savefiles->elems[i].attr.i;
-
-      content_load_ram_file(&ram);
-   }
+      content_load_ram_file(i);
 
    return true;
 }
@@ -1270,6 +1265,16 @@ static bool command_event_init_core(enum rarch_core_type *data)
       return false;
 
    return true;
+}
+
+static void command_event_disable_overrides(void)
+{
+   /* auto overrides: reload the original config */
+   if (runloop_ctl(RUNLOOP_CTL_IS_OVERRIDES_ACTIVE, NULL))
+   {
+      config_unload_override();
+      runloop_ctl(RUNLOOP_CTL_UNSET_OVERRIDES_ACTIVE, NULL);
+   }
 }
 
 static bool command_event_save_auto_state(void)
@@ -1548,34 +1553,6 @@ static void command_event_main_state(unsigned cmd)
    RARCH_LOG("%s\n", msg);
 }
 
-static bool command_event_cmd_exec(void *data)
-{
-   char *fullpath = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-   if (fullpath != data)
-   {
-      runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-      if (data)
-         runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, data);
-   }
-
-#if defined(HAVE_DYNAMIC)
-#ifdef HAVE_MENU
-   if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
-   {
-      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-      return false;
-   }
-#endif
-#else
-   frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
-#endif
-
-   return true;
-}
-
 /**
  * command_event:
  * @cmd                  : Event command index.
@@ -1586,6 +1563,7 @@ static bool command_event_cmd_exec(void *data)
  **/
 bool command_event(enum event_command cmd, void *data)
 {
+   content_ctx_info_t content_info = {0};
    unsigned i                = 0;
    bool boolean              = false;
    settings_t *settings      = config_get_ptr();
@@ -1623,34 +1601,6 @@ bool command_event(enum event_command cmd, void *data)
             }
          }
 #endif
-         break;
-      case CMD_EVENT_LOAD_CONTENT_PERSIST:
-#ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
-#endif
-         /* fall-through */
-      case CMD_EVENT_LOAD_CONTENT_FFMPEG:
-      case CMD_EVENT_LOAD_CONTENT_IMAGEVIEWER:
-#ifdef HAVE_MENU
-         if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
-         {
-            rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-            return false;
-         }
-#endif
-         break;
-      case CMD_EVENT_LOAD_CONTENT:
-         {
-#ifdef HAVE_DYNAMIC
-            command_event(CMD_EVENT_LOAD_CONTENT_PERSIST, NULL);
-#else
-            char *fullpath = NULL;
-            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-            runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, settings->path.libretro);
-            command_event(CMD_EVENT_EXEC, (void*)fullpath);
-            command_event(CMD_EVENT_QUIT, NULL);
-#endif
-         }
          break;
       case CMD_EVENT_LOAD_CORE_DEINIT:
 #ifdef HAVE_MENU
@@ -1718,12 +1668,13 @@ bool command_event(enum event_command cmd, void *data)
             unsigned idx = 0;
             unsigned *window_scale = NULL;
 
-            runloop_ctl(RUNLOOP_CTL_GET_WINDOWED_SCALE, &window_scale);
+            if (runloop_ctl(RUNLOOP_CTL_GET_WINDOWED_SCALE, &window_scale))
+            {
+               if (*window_scale == 0)
+                  return false;
 
-            if (*window_scale == 0)
-               return false;
-
-            settings->video.scale = *window_scale;
+               settings->video.scale = *window_scale;
+            }
 
             if (!settings->video.fullscreen)
                command_event(CMD_EVENT_REINIT, NULL);
@@ -1775,7 +1726,16 @@ bool command_event(enum event_command cmd, void *data)
             return false;
          break;
       case CMD_EVENT_UNLOAD_CORE:
-         runloop_prepare_dummy();
+         command_event(CMD_EVENT_AUTOSAVE_STATE, NULL);
+         command_event(CMD_EVENT_DISABLE_OVERRIDES, NULL);
+
+         if (!task_push_content_load_default(
+                  NULL, NULL,
+                  &content_info,
+                  CORE_TYPE_DUMMY,
+                  CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+                  NULL, NULL))
+            return false;
          command_event(CMD_EVENT_LOAD_CORE_DEINIT, NULL);
          break;
       case CMD_EVENT_QUIT:
@@ -1910,7 +1870,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_OVERLAY_INIT:
          command_event(CMD_EVENT_OVERLAY_DEINIT, NULL);
 #ifdef HAVE_OVERLAY
-         input_overlay_init();
+         if (settings->input.overlay_enable)
+            task_push_overlay_load_default(input_overlay_loaded, NULL);
 #endif
          break;
       case CMD_EVENT_OVERLAY_NEXT:
@@ -1942,8 +1903,8 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_HISTORY_DEINIT:
          if (g_defaults.history)
          {
-            content_playlist_write_file(g_defaults.history);
-            content_playlist_free(g_defaults.history);
+            playlist_write_file(g_defaults.history);
+            playlist_free(g_defaults.history);
          }
          g_defaults.history = NULL;
          break;
@@ -1954,7 +1915,7 @@ bool command_event(enum event_command cmd, void *data)
          RARCH_LOG("%s: [%s].\n",
                msg_hash_to_str(MSG_LOADING_HISTORY_FILE),
                settings->path.content_history);
-         g_defaults.history = content_playlist_init(
+         g_defaults.history = playlist_init(
                settings->path.content_history,
                settings->content_history_size);
          break;
@@ -2000,7 +1961,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_OVERLAY_SET_SCALE_FACTOR:
 #ifdef HAVE_OVERLAY
-         input_overlay_set_scale_factor(settings->input.overlay_scale);
+         input_overlay_set_scale_factor(NULL, settings->input.overlay_scale);
 #endif
          break;
       case CMD_EVENT_OVERLAY_SET_ALPHA_MOD:
@@ -2133,18 +2094,7 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 
             for (i = 0; i < global->savefiles->size; i++)
-            {
-               ram_type_t ram;
-               ram.type    = global->savefiles->elems[i].attr.i;
-               ram.path    = global->savefiles->elems[i].data;
-
-               RARCH_LOG("%s #%u %s \"%s\".\n",
-                     msg_hash_to_str(MSG_SAVING_RAM_TYPE),
-                     ram.type,
-                     msg_hash_to_str(MSG_TO),
-                     ram.path);
-               content_save_ram_file(&ram);
-            }
+               content_save_ram_file(i);
          }
          return true;
       case CMD_EVENT_SAVEFILES_DEINIT:
@@ -2359,8 +2309,9 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SET_FRAME_LIMIT:
          runloop_ctl(RUNLOOP_CTL_SET_FRAME_LIMIT, NULL);
          break;
-      case CMD_EVENT_EXEC:
-         return command_event_cmd_exec(data);
+      case CMD_EVENT_DISABLE_OVERRIDES:
+         command_event_disable_overrides();
+         break;
       case CMD_EVENT_NONE:
       default:
          return false;

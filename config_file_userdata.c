@@ -25,36 +25,6 @@
 
 #include "config_file_userdata.h"
 
-#define get_array_setup() \
-   char key[2][256]; \
-   bool got; \
-   struct config_file_userdata *usr = (struct config_file_userdata*)userdata; \
-   char *str = NULL; \
-   fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0])); \
-   fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1])); \
-   got = config_get_string(usr->conf, key[0], &str); \
-   got = got || config_get_string(usr->conf, key[1], &str);
-
-#define get_array_body(T) \
-   if (got) \
-   { \
-      unsigned i; \
-      struct string_list *list = string_split(str, " "); \
-      *values = (T*)calloc(list->size, sizeof(T)); \
-      for (i = 0; i < list->size; i++) \
-         (*values)[i] = (T)strtod(list->elems[i].data, NULL); \
-      *out_num_values = list->size; \
-      string_list_free(list); \
-      return true; \
-   } \
-   else \
-   { \
-      *values = (T*)calloc(num_default_values, sizeof(T)); \
-      memcpy(*values, default_values, sizeof(T) * num_default_values); \
-      *out_num_values = num_default_values; \
-      return false; \
-   }
-
 int config_userdata_get_float(void *userdata, const char *key_str,
       float *value, float default_value)
 {
@@ -95,24 +65,74 @@ int config_userdata_get_float_array(void *userdata, const char *key_str,
       float **values, unsigned *out_num_values,
       const float *default_values, unsigned num_default_values)
 {
-   get_array_setup()
-   get_array_body(float)
+   char key[2][256];
+   struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
+   char *str = NULL;
+
+   fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0]));
+   fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1]));
+
+   if (  config_get_string(usr->conf, key[0], &str) ||
+         config_get_string(usr->conf, key[1], &str))
+   {
+      unsigned i;
+      struct string_list *list = string_split(str, " ");
+      *values = (float*)calloc(list->size, sizeof(float));
+      for (i = 0; i < list->size; i++)
+         (*values)[i] = (float)strtod(list->elems[i].data, NULL);
+      *out_num_values = list->size;
+      string_list_free(list);
+      free(str);
+      return true;
+   }
+
+   *values = (float*)calloc(num_default_values, sizeof(float));
+   memcpy(*values, default_values, sizeof(float) * num_default_values); 
+   *out_num_values = num_default_values; 
+   return false; 
 }
 
 int config_userdata_get_int_array(void *userdata, const char *key_str,
       int **values, unsigned *out_num_values,
       const int *default_values, unsigned num_default_values)
 {
-   get_array_setup()
-   get_array_body(int)
+   char key[2][256];
+   struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
+   char *str = NULL;
+   fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0]));
+   fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1]));
+
+   if (  config_get_string(usr->conf, key[0], &str) ||
+         config_get_string(usr->conf, key[1], &str))
+   {
+      unsigned i;
+      struct string_list *list = string_split(str, " ");
+      *values = (int*)calloc(list->size, sizeof(int));
+      for (i = 0; i < list->size; i++)
+         (*values)[i] = (int)strtod(list->elems[i].data, NULL);
+      *out_num_values = list->size;
+      string_list_free(list);
+      free(str);
+      return true;
+   }
+
+   *values = (int*)calloc(num_default_values, sizeof(int));
+   memcpy(*values, default_values, sizeof(int) * num_default_values);
+   *out_num_values = num_default_values;
+   return false;
 }
 
 int config_userdata_get_string(void *userdata, const char *key_str,
       char **output, const char *default_output)
 {
-   get_array_setup()
+   char key[2][256];
+   struct config_file_userdata *usr = (struct config_file_userdata*)userdata;
+   char *str = NULL;
+   fill_pathname_join_delim(key[0], usr->prefix[0], key_str, '_', sizeof(key[0]));
+   fill_pathname_join_delim(key[1], usr->prefix[1], key_str, '_', sizeof(key[1]));
 
-   if (got)
+   if (  config_get_string(usr->conf, key[0], &str) ||
+         config_get_string(usr->conf, key[1], &str))
    {
       *output = str;
       return true; 

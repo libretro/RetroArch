@@ -21,6 +21,7 @@
 #include <file/archive_file.h>
 #include <retro_stat.h>
 #include <string/stdstring.h>
+#include <features/features_cpu.h>
 
 #include "menu_driver.h"
 #include "menu_navigation.h"
@@ -109,8 +110,8 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 
                if (settings)
                {
-                  char core_path[PATH_MAX_LENGTH];
                   char display_name[PATH_MAX_LENGTH];
+                  char core_path[PATH_MAX_LENGTH]    = {0};
                   char *last = NULL;
 
                   fill_pathname_join(
@@ -200,11 +201,6 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
 
       (void)core_date;
       (void)core_crc;
-#if 0
-      RARCH_LOG("elem date: %s\n",          core_date);
-      RARCH_LOG("elem crc: %s\n",           core_crc);
-      RARCH_LOG("elem core pathname: %s\n", core_pathname);
-#endif
 
       menu_entries_add(list, core_pathname, "",
             type, 0, 0);
@@ -217,7 +213,7 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
 
                if (settings)
                {
-                  char core_path[PATH_MAX_LENGTH];
+                  char core_path[PATH_MAX_LENGTH]    = {0};
                   char display_name[PATH_MAX_LENGTH];
                   char *last = NULL;
 
@@ -650,6 +646,58 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    }
 
+   {
+      char cpu_str[PATH_MAX_LENGTH];
+      char cpu_arch_str[PATH_MAX_LENGTH];
+      char cpu_text_str[PATH_MAX_LENGTH];
+      enum frontend_architecture arch = frontend_driver_get_cpu_architecture();
+      strlcpy(cpu_text_str, "CPU Architecture: ", sizeof(cpu_text_str));
+
+      switch (arch)
+      {
+         case FRONTEND_ARCH_X86:
+            strlcpy(cpu_arch_str, "x86", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_X86_64:
+            strlcpy(cpu_arch_str, "x86-64", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_PPC:
+            strlcpy(cpu_arch_str, "PPC", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_ARM:
+            strlcpy(cpu_arch_str, "ARM", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_ARMV7:
+            strlcpy(cpu_arch_str, "ARMv7", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_MIPS:
+            strlcpy(cpu_arch_str, "MIPS", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_TILE:
+            strlcpy(cpu_arch_str, "Tilera", sizeof(cpu_arch_str));
+            break;
+         case FRONTEND_ARCH_NONE:
+         default:
+            strlcpy(cpu_arch_str, "N/A", sizeof(cpu_arch_str));
+            break;
+      }
+
+      snprintf(cpu_str, sizeof(cpu_str), "%s %s", cpu_text_str, cpu_arch_str);
+
+      menu_entries_add(info->list, cpu_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   }
+
+   {
+      char cpu_str[PATH_MAX_LENGTH];
+      unsigned amount_cores = cpu_features_get_core_amount();
+
+      snprintf(cpu_str, sizeof(cpu_str), "CPU Cores: %d\n", amount_cores);
+      menu_entries_add(info->list, cpu_str, "",
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+   }
+
+
    for(controller = 0; controller < MAX_USERS; controller++)
    {
        if (settings->input.autoconfigured[controller])
@@ -904,6 +952,36 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          menu_hash_to_str(
             MENU_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT),
          _rpng_supp ? 
+         menu_hash_to_str(MENU_LABEL_VALUE_YES) : 
+         menu_hash_to_str(MENU_LABEL_VALUE_NO));
+   menu_entries_add(info->list, feat_str, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
+         menu_hash_to_str(
+            MENU_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT),
+         _rjpeg_supp ? 
+         menu_hash_to_str(MENU_LABEL_VALUE_YES) : 
+         menu_hash_to_str(MENU_LABEL_VALUE_NO));
+   menu_entries_add(info->list, feat_str, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
+         menu_hash_to_str(
+            MENU_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT),
+         _rbmp_supp ? 
+         menu_hash_to_str(MENU_LABEL_VALUE_YES) : 
+         menu_hash_to_str(MENU_LABEL_VALUE_NO));
+   menu_entries_add(info->list, feat_str, "",
+         MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+   snprintf(feat_str, sizeof(feat_str),
+         "%s: %s",
+         menu_hash_to_str(
+            MENU_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT),
+         _rtga_supp ? 
          menu_hash_to_str(MENU_LABEL_VALUE_YES) : 
          menu_hash_to_str(MENU_LABEL_VALUE_NO));
    menu_entries_add(info->list, feat_str, "",
@@ -1276,7 +1354,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 }
 
 static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
-      content_playlist_t *playlist, const char *path_playlist, bool is_history)
+      playlist_t *playlist, const char *path_playlist, bool is_history)
 {
    unsigned i;
    size_t list_size = 0;
@@ -1284,7 +1362,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    if (!playlist)
       return -1;
 
-   list_size = content_playlist_size(playlist);
+   list_size = playlist_size(playlist);
 
    if (list_size == 0)
    {
@@ -1309,7 +1387,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
       path = path_copy;
 
-      content_playlist_get_index(playlist, i,
+      playlist_get_index(playlist, i,
             &path, &label, NULL, &core_name, &crc32, &db_name);
       strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
@@ -1509,10 +1587,10 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
 {
 #ifdef HAVE_LIBRETRODB
    unsigned i, j, k;
-   char path_playlist[PATH_MAX_LENGTH];
+   char path_playlist[PATH_MAX_LENGTH] = {0};
    char path_base[PATH_MAX_LENGTH]     = {0};
    char query[PATH_MAX_LENGTH]         = {0};
-   content_playlist_t *playlist        = NULL;
+   playlist_t *playlist                = NULL;
    database_info_list_t *db_info       = NULL;
    menu_handle_t *menu                 = NULL;
    settings_t *settings                = config_get_ptr();
@@ -1523,7 +1601,8 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    database_info_build_query(query, sizeof(query),
          "displaylist_parse_database_entry", info->path_b);
 
-   if (!(db_info = database_info_list_new(info->path, query)))
+   db_info = database_info_list_new(info->path, query);
+   if (!db_info)
       goto error;
 
    fill_short_pathname_representation(path_base, info->path,
@@ -1534,7 +1613,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
    fill_pathname_join(path_playlist, settings->directory.playlist, path_base,
          sizeof(path_playlist));
 
-   playlist = content_playlist_init(path_playlist, COLLECTION_SIZE);
+   playlist = playlist_init(path_playlist, COLLECTION_SIZE);
 
    if (playlist)
       strlcpy(menu->db_playlist_file, path_playlist,
@@ -1551,14 +1630,11 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
       if (settings)
          show_advanced_settings      = settings->menu.show_advanced_settings;
 
-      if (!db_info_entry)
-         continue;
-
       snprintf(crc_str, sizeof(crc_str), "%08X", db_info_entry->crc32);
 
       if (playlist)
       {
-         for (j = 0; j < content_playlist_size(playlist); j++)
+         for (j = 0; j < playlist_size(playlist); j++)
          {
             const char *crc32                = NULL;
             char elem0[PATH_MAX_LENGTH]      = {0};
@@ -1567,7 +1643,7 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             struct string_list *tmp_str_list = NULL;
             uint32_t hash_value              = 0;
 
-            content_playlist_get_index(playlist, j,
+            playlist_get_index(playlist, j,
                   NULL, NULL, NULL, NULL,
                   NULL, &crc32);
 
@@ -1865,13 +1941,15 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             menu_hash_to_str(MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
             0, 0, 0);
 
-   content_playlist_free(playlist);
+   playlist_free(playlist);
    database_info_list_free(db_info);
 
    return 0;
 
 error:
-   content_playlist_free(playlist);
+   if (db_info)
+      database_info_list_free(db_info);
+   playlist_free(playlist);
 
    return -1;
 #else
@@ -2069,11 +2147,11 @@ loop:
    return 0;
 }
 
-static int menu_displaylist_sort_playlist(const content_playlist_entry_t *a,
-      const content_playlist_entry_t *b)
+static int menu_displaylist_sort_playlist(const playlist_entry_t *a,
+      const playlist_entry_t *b)
 {
-   const char *a_label = content_playlist_entry_get_label(a);
-   const char *b_label = content_playlist_entry_get_label(b);
+   const char *a_label = playlist_entry_get_label(a);
+   const char *b_label = playlist_entry_get_label(b);
 
    if (!a_label || !b_label)
       return 0;
@@ -2086,9 +2164,10 @@ static int menu_displaylist_parse_horizontal_list(
 {
    menu_ctx_list_t list_info;
    menu_ctx_list_t list_horiz_info;
-   char path_playlist[PATH_MAX_LENGTH], lpl_basename[PATH_MAX_LENGTH];
+   char lpl_basename[PATH_MAX_LENGTH]  = {0};
+   char path_playlist[PATH_MAX_LENGTH] = {0};
    bool is_historylist                 = false;
-   content_playlist_t *playlist        = NULL;
+   playlist_t *playlist                = NULL;
    menu_handle_t        *menu          = NULL;
    struct item_file *item              = NULL;
    settings_t      *settings           = config_get_ptr();
@@ -2132,7 +2211,7 @@ static int menu_displaylist_parse_horizontal_list(
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-   content_playlist_qsort(playlist, menu_displaylist_sort_playlist);
+   playlist_qsort(playlist, menu_displaylist_sort_playlist);
 
    if (string_is_equal(lpl_basename, "content_history"))
       is_historylist = true;
@@ -2246,7 +2325,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
    const char *core_name           = NULL;
    const char *db_name             = NULL;
    char *fullpath                  = NULL;
-   content_playlist_t *playlist    = NULL;
+   playlist_t *playlist            = NULL;
    settings_t *settings            = config_get_ptr();
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
@@ -2263,7 +2342,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-   content_playlist_get_index(playlist, idx,
+   playlist_get_index(playlist, idx,
          NULL, &label, &core_path, &core_name, NULL, &db_name);
 
    if (!string_is_empty(db_name))
@@ -2547,31 +2626,31 @@ static int menu_displaylist_parse_options_remappings(
          menu_hash_to_str(MENU_LABEL_REMAP_FILE_SAVE_GAME),
          MENU_SETTING_ACTION, 0, 0);
 
-   for (p = 0; p < settings->input.max_users; p++)
+   if (system)
    {
-      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
+      for (p = 0; p < settings->input.max_users; p++)
       {
-         char desc_label[64];
-         unsigned user           = p + 1;
-         unsigned desc_offset    = retro_id;
-         const char *description = NULL;
+         for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND + 4; retro_id++)
+         {
+            char desc_label[64]     = {0};
+            unsigned user           = p + 1;
+            unsigned desc_offset    = retro_id;
+            const char *description = system->input_desc_btn[p][desc_offset];
 
-         if (desc_offset >= RARCH_FIRST_CUSTOM_BIND)
-            desc_offset = RARCH_FIRST_CUSTOM_BIND 
-               + (desc_offset - RARCH_FIRST_CUSTOM_BIND) * 2;
+            if (desc_offset >= RARCH_FIRST_CUSTOM_BIND)
+               desc_offset = RARCH_FIRST_CUSTOM_BIND 
+                  + (desc_offset - RARCH_FIRST_CUSTOM_BIND) * 2;
 
-         if (system)
-            description = system->input_desc_btn[p][desc_offset];
+            if (!description)
+               continue;
 
-         if (!description)
-            continue;
-
-         snprintf(desc_label, sizeof(desc_label),
-               "%s %u %s : ", menu_hash_to_str(MENU_VALUE_USER),
-               user, description);
-         menu_entries_add(info->list, desc_label, "",
-               MENU_SETTINGS_INPUT_DESC_BEGIN +
-               (p * (RARCH_FIRST_CUSTOM_BIND + 4)) +  retro_id, 0, 0);
+            snprintf(desc_label, sizeof(desc_label),
+                  "%s %u %s : ", menu_hash_to_str(MENU_VALUE_USER),
+                  user, description);
+            menu_entries_add(info->list, desc_label, "",
+                  MENU_SETTINGS_INPUT_DESC_BEGIN +
+                  (p * (RARCH_FIRST_CUSTOM_BIND + 4)) +  retro_id, 0, 0);
+         }
       }
    }
 
@@ -2629,7 +2708,7 @@ static int menu_displaylist_parse_generic(
 
    if (!horizontal && hash_label != MENU_LABEL_CORE_LIST)
    {
-      char out_dir[PATH_MAX_LENGTH];
+      char out_dir[PATH_MAX_LENGTH] = {0};
       fill_pathname_parent_dir(out_dir, info->path, sizeof(out_dir));
 
       if (!string_is_empty(out_dir))
@@ -2680,7 +2759,7 @@ static int menu_displaylist_parse_generic(
    for (i = 0; i < list_size; i++)
    {
       bool is_dir;
-      char label[PATH_MAX_LENGTH];
+      char label[PATH_MAX_LENGTH]   = {0};
       const char *path              = NULL;
       enum menu_file_type file_type = MENU_FILE_NONE;
 
@@ -2850,8 +2929,8 @@ static int menu_displaylist_parse_generic(
 
 bool menu_playlist_find_associated_core(const char *path, char *s, size_t len)
 {
-   bool ret = false;
    unsigned j;
+   bool ret = false;
    settings_t *settings         = config_get_ptr();
    struct string_list *existing_core_names = 
       string_split(settings->playlist_names, ";");
@@ -3306,9 +3385,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             menu_displaylist_ctx_parse_entry_t *entry  = 
                (menu_displaylist_ctx_parse_entry_t*)data;
 
-            if (!entry)
-               goto error;
-
             if (menu_displaylist_parse_settings(entry->data,
                      entry->info,
                      entry->info_label,
@@ -3334,6 +3410,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      PARSE_ACTION, false);
             menu_displaylist_parse_settings(menu, info,
                   menu_hash_to_str(MENU_LABEL_START_CORE), PARSE_ACTION, false);
+
+            menu_displaylist_parse_settings(menu, info,
+                  menu_hash_to_str(MENU_LABEL_START_NET_RETROPAD), PARSE_ACTION, false);
 
 #ifndef HAVE_DYNAMIC
             if (frontend_driver_has_fork())
@@ -3734,8 +3813,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          else
          {
-            char path_playlist[PATH_MAX_LENGTH];
-            content_playlist_t *playlist        = NULL;
+            char path_playlist[PATH_MAX_LENGTH] = {0};
+            playlist_t *playlist                = NULL;
 
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_FREE, NULL);
 
@@ -3756,7 +3835,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
-            content_playlist_qsort(playlist, menu_displaylist_sort_playlist);
+            playlist_qsort(playlist, menu_displaylist_sort_playlist);
 
             ret = menu_displaylist_parse_playlist(info,
                   playlist, path_playlist, false);
@@ -3772,7 +3851,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_HISTORY:
          {
             char path_playlist[PATH_MAX_LENGTH];
-            content_playlist_t *playlist        = g_defaults.history;
+            playlist_t *playlist        = g_defaults.history;
 
             if (!playlist)
                command_event(CMD_EVENT_HISTORY_INIT, NULL);
@@ -3857,10 +3936,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                string_list_new_special(STRING_LIST_SUPPORTED_CORES_NAMES,
                      (void*)menu->deferred_path,
                      &cores_names_len, &cores_names_size);
-            struct string_list *cores_paths = 
-               string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,
-                  (void*)menu->deferred_path,
-                  &cores_paths_len, &cores_paths_size);
 
             if (cores_names_size == 0)
             {
@@ -3871,6 +3946,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             }
             else
             {
+               struct string_list *cores_paths = 
+                  string_list_new_special(STRING_LIST_SUPPORTED_CORES_PATHS,
+                        (void*)menu->deferred_path,
+                        &cores_paths_len, &cores_paths_size);
+
                for (i = 0; i < cores_names_size; i++)
                {
                   switch (type)
@@ -3890,9 +3970,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                         cores_names->elems[i].data);
                }
 
-               string_list_free(cores_names);
                string_list_free(cores_paths);
             }
+
+            string_list_free(cores_names);
          }
          break;
       case DISPLAYLIST_CORE_INFO:
@@ -3930,7 +4011,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             {
                core_option_manager_t *coreopts = NULL;
 
-               runloop_ctl(RUNLOOP_CTL_COREOPTS_GET, &coreopts);
+               runloop_ctl(RUNLOOP_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
                for (i = 0; i < opts; i++)
                   menu_entries_add(info->list,
@@ -4011,7 +4092,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_IMAGES:
          info->type_default = MENU_FILE_IMAGE;
-         strlcpy(info->exts, "png", sizeof(info->exts));
+         strlcpy(info->exts, "png|jpg|jpeg|bmp|tga", sizeof(info->exts));
          break;
       case DISPLAYLIST_AUDIO_FILTERS:
          info->type_default = MENU_FILE_AUDIOFILTER;

@@ -1059,7 +1059,7 @@ static bool video_driver_frame_filter(const void *data,
    static struct retro_perf_counter softfilter_process = {0};
    settings_t *settings = config_get_ptr();
 
-   rarch_perf_init(&softfilter_process, "softfilter_process");
+   performance_counter_init(&softfilter_process, "softfilter_process");
 
    if (!video_driver_state.filter.filter || !data)
       return false;
@@ -1069,11 +1069,11 @@ static bool video_driver_frame_filter(const void *data,
 
    *output_pitch = (*output_width) * video_driver_state.filter.out_bpp;
 
-   retro_perf_start(&softfilter_process);
+   performance_counter_start(&softfilter_process);
    rarch_softfilter_process(video_driver_state.filter.filter,
          video_driver_state.filter.buffer, *output_pitch,
          data, width, height, pitch);
-   retro_perf_stop(&softfilter_process);
+   performance_counter_stop(&softfilter_process);
 
    if (settings->video.post_filter_record)
       recording_dump_frame(video_driver_state.filter.buffer,
@@ -1489,6 +1489,7 @@ void video_driver_set_rgba(void)
 {
    video_driver_lock();
    video_driver_use_rgba = true;
+   image_texture_set_rgba();
    video_driver_unlock();
 }
 
@@ -1496,6 +1497,7 @@ void video_driver_unset_rgba(void)
 {
    video_driver_lock();
    video_driver_use_rgba = false;
+   image_texture_unset_rgba();
    video_driver_unlock();
 }
 
@@ -1737,6 +1739,7 @@ void video_driver_default_settings(void)
 
 void video_driver_load_settings(config_file_t *conf)
 {
+   bool tmp_bool    = false;
    global_t *global = global_get_ptr();
 
    if (!conf)
@@ -1744,10 +1747,14 @@ void video_driver_load_settings(config_file_t *conf)
 
    CONFIG_GET_BOOL_BASE(conf, global,
          console.screen.gamma_correction, "gamma_correction");
-   config_get_bool(conf, "flicker_filter_enable",
-         &global->console.flickerfilter_enable);
-   config_get_bool(conf, "soft_filter_enable",
-         &global->console.softfilter_enable);
+
+   if (config_get_bool(conf, "flicker_filter_enable",
+         &tmp_bool))
+      global->console.flickerfilter_enable = tmp_bool;
+
+   if (config_get_bool(conf, "soft_filter_enable",
+         &tmp_bool))
+      global->console.softfilter_enable = tmp_bool;
 
    CONFIG_GET_INT_BASE(conf, global,
          console.screen.soft_filter_index,
@@ -2052,7 +2059,7 @@ static bool video_pixel_frame_scale(const void *data,
 {
    static struct retro_perf_counter video_frame_conv = {0};
 
-   rarch_perf_init(&video_frame_conv, "video_frame_conv");
+   performance_counter_init(&video_frame_conv, "video_frame_conv");
 
    if (     !data 
          || video_driver_get_pixel_format() != RETRO_PIXEL_FORMAT_0RGB1555)
@@ -2060,7 +2067,7 @@ static bool video_pixel_frame_scale(const void *data,
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
       return false;
 
-   retro_perf_start(&video_frame_conv);
+   performance_counter_start(&video_frame_conv);
 
    video_driver_scaler_ptr->scaler->in_width      = width;
    video_driver_scaler_ptr->scaler->in_height     = height;
@@ -2072,7 +2079,7 @@ static bool video_pixel_frame_scale(const void *data,
    scaler_ctx_scale(video_driver_scaler_ptr->scaler,
          video_driver_scaler_ptr->scaler_out, data);
 
-   retro_perf_stop(&video_frame_conv);
+   performance_counter_stop(&video_frame_conv);
 
    return true;
 }

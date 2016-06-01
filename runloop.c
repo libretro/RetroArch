@@ -57,6 +57,7 @@
 #include "msg_hash.h"
 
 #include "input/input_keyboard.h"
+#include "tasks/tasks_internal.h"
 
 #ifdef HAVE_MENU
 #include "menu/menu_driver.h"
@@ -64,7 +65,7 @@
 #endif
 
 #ifdef HAVE_NETPLAY
-#include "network/netplay.h"
+#include "network/netplay/netplay.h"
 #endif
 
 #include "verbosity.h"
@@ -586,6 +587,54 @@ static bool rarch_game_specific_options(char **output)
    return true;
 }
 
+static bool runloop_is_focused(void)
+{
+   settings_t *settings      = config_get_ptr();
+   if (settings->pause_nonactive)
+      return video_driver_is_focused();
+   return true;
+}
+
+static bool runloop_check_pause_state(event_cmd_state_t *cmd)
+{
+   bool check_is_oneshot = false;
+
+   if (!cmd)
+      return false;
+
+   check_is_oneshot      = runloop_cmd_triggered(cmd,
+         RARCH_FRAMEADVANCE) 
+      || runloop_cmd_press(cmd, RARCH_REWIND);
+
+   if (!runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
+      return true;
+
+   if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
+   {
+      command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
+      video_driver_cached_frame_render();
+   }
+
+   if (!check_is_oneshot)
+      return false;
+
+   return true;
+}
+
+static bool runloop_check_idle_state(event_cmd_state_t *cmd)
+{
+   settings_t *settings      = config_get_ptr();
+   bool focused              =  runloop_is_focused();
+
+   runloop_check_pause(settings, focused,
+         runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
+         runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
+
+   if (!runloop_check_pause_state(cmd) || !focused)
+      return false;
+   return true;
+}
+
 static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader_dir)
 {
    bool tmp                  = false;
@@ -622,7 +671,7 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    tmp = runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY);
    netplay_driver_ctl(RARCH_NETPLAY_CTL_FULLSCREEN_TOGGLE, &tmp);
 #endif
-   if (!runloop_ctl(RUNLOOP_CTL_CHECK_IDLE_STATE, cmd))
+   if (!runloop_check_idle_state(cmd))
       return false;
 
    runloop_check_fast_forward_button(
@@ -673,71 +722,11 @@ static bool runloop_check_state(event_cmd_state_t *cmd, rarch_dir_list_t *shader
    return true;
 }
 
-static bool runloop_check_pause_state(event_cmd_state_t *cmd)
-{
-   bool check_is_oneshot = false;
-
-   if (!cmd)
-      return false;
-
-   check_is_oneshot      = runloop_cmd_triggered(cmd,
-         RARCH_FRAMEADVANCE) 
-      || runloop_cmd_press(cmd, RARCH_REWIND);
-
-   if (!runloop_ctl(RUNLOOP_CTL_IS_PAUSED, NULL))
-      return true;
-
-   if (runloop_cmd_triggered(cmd, RARCH_FULLSCREEN_TOGGLE_KEY))
-   {
-      command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL);
-      video_driver_cached_frame_render();
-   }
-
-   if (!check_is_oneshot)
-      return false;
-
-   return true;
-}
-
-void runloop_iterate_data(void)
-{
-   task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
-}
-
-static bool runloop_is_focused(void)
-{
-   settings_t *settings                             = config_get_ptr();
-   if (settings->pause_nonactive)
-      return video_driver_is_focused();
-   return true;
-}
-
 static bool runloop_is_frame_count_end(void)
 {
    uint64_t *frame_count =
       video_driver_get_frame_count_ptr();
    return runloop_max_frames && (*frame_count >= runloop_max_frames);
-}
-
-
-bool runloop_prepare_dummy(void)
-{
-   memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
-#ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
-#endif
-   runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
-   runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
-   runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-
-#ifdef HAVE_MENU
-   if (!menu_content_ctl(MENU_CONTENT_CTL_LOAD, NULL))
-   {
-      rarch_ctl(RARCH_CTL_MENU_RUNNING, NULL);
-      return false;
-   }
-#endif
-   return true;
 }
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data)
@@ -776,7 +765,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
          break;
       case RUNLOOP_CTL_HAS_CORE_OPTIONS:
          return runloop_core_options;
-      case RUNLOOP_CTL_COREOPTS_GET:
+      case RUNLOOP_CTL_CORE_OPTIONS_LIST_GET:
          {
             core_option_manager_t **coreopts = (core_option_manager_t**)data;
             if (!coreopts)
@@ -936,19 +925,6 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
             strlcpy(runloop_fullpath, fullpath, sizeof(runloop_fullpath));
          }
          break;
-      case RUNLOOP_CTL_CHECK_IDLE_STATE:
-         {
-            event_cmd_state_t *cmd    = (event_cmd_state_t*)data;
-            bool focused              =  runloop_is_focused();
-
-            runloop_check_pause(settings, focused,
-                  runloop_cmd_triggered(cmd, RARCH_PAUSE_TOGGLE),
-                  runloop_cmd_triggered(cmd, RARCH_FRAMEADVANCE));
-
-            if (!runloop_check_pause_state(cmd) || !focused)
-               return false;
-         }
-         break;
       case RUNLOOP_CTL_FRAME_TIME_FREE:
          memset(&runloop_frame_time, 0, sizeof(struct retro_frame_time_callback));
          runloop_frame_time_last           = 0;
@@ -1073,6 +1049,7 @@ bool runloop_ctl(enum runloop_ctl_state state, void *data)
 #ifdef HAVE_THREADS
             threaded_enable = settings->threaded_data_runloop_enable;
 #endif
+            task_queue_ctl(TASK_QUEUE_CTL_DEINIT, NULL);
             task_queue_ctl(TASK_QUEUE_CTL_INIT, &threaded_enable);
          }
          break;
@@ -1265,7 +1242,13 @@ static void runloop_iterate_linefeed_overlay(settings_t *settings)
  * Aborts core shutdown if invoked. */
 static int runloop_iterate_time_to_exit_load_dummy(void)
 {
-   if (!runloop_prepare_dummy())
+   content_ctx_info_t content_info = {0};
+   if (!task_push_content_load_default(
+         NULL, NULL,
+         &content_info,
+         CORE_TYPE_DUMMY,
+         CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+         NULL, NULL))
       return -1;
 
    runloop_ctl(RUNLOOP_CTL_UNSET_SHUTDOWN,      NULL);

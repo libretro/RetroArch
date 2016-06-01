@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include <streams/file_stream.h>
+#include <file/archive_file.h>
 
 #include "rpng_internal.h"
 
@@ -366,7 +367,8 @@ end:
    free(avg_filtered);
    free(paeth_filtered);
 
-   stream_backend->stream_free(stream);
+   if (stream_backend)
+      stream_backend->stream_free(stream);
    return ret;
 }
 

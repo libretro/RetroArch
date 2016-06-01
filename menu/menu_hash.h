@@ -20,6 +20,9 @@
 extern "C" {
 #endif
 
+#define MENU_LABEL_START_NET_RETROPAD                                          0xf2ae670dU
+#define MENU_LABEL_VALUE_START_NET_RETROPAD                                    0xad11a6a0U
+
 #define CB_THUMBNAILS_UPDATER_DOWNLOAD                                         0xf4ee156bU
 
 #define MENU_LABEL_THUMBNAILS_UPDATER_LIST                                     0xff70176bU
@@ -1053,6 +1056,9 @@ extern "C" {
 #define MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_COMMAND_IFACE_SUPPORT             0x9c9c8e3eU
 #define MENU_LABEL_VALUE_SYSTEM_INFO_NETWORK_REMOTE_SUPPORT                    0x1a817f5bU
 #define MENU_LABEL_VALUE_SYSTEM_INFO_COCOA_SUPPORT                             0x89849204U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_RTGA_SUPPORT                              0x9615b53eU
+#define MENU_LABEL_VALUE_SYSTEM_INFO_RBMP_SUPPORT                              0x211afc81U
+#define MENU_LABEL_VALUE_SYSTEM_INFO_RJPEG_SUPPORT                             0xc70a5ea8U
 #define MENU_LABEL_VALUE_SYSTEM_INFO_RPNG_SUPPORT                              0xe1dcea36U
 #define MENU_LABEL_VALUE_SYSTEM_INFO_SDL_SUPPORT                               0xf9bc2a42U
 #define MENU_LABEL_VALUE_SYSTEM_INFO_SDL2_SUPPORT                              0x3c2d6134U

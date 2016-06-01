@@ -61,7 +61,7 @@ else
 	OBJS += libretro-common/hash/rhash.o
 	OBJS += gfx/video_context_driver.o
 	OBJS += gfx/drivers_context/gfx_null_ctx.o
-	OBJS += gfx/video_texture_image.o
+	OBJS += libretro-common/formats/image_texture.o
 	OBJS += libretro-common/formats/tga/rtga.o
 	OBJS += libretro-common/formats/png/rpng.o
 	OBJS += libretro-common/formats/png/rpng_encode.o
@@ -292,7 +292,7 @@ CFLAGS += -I. -Ideps/zlib -Ideps/7zip -Ilibretro-common/include
 
 CFLAGS += -DRARCH_INTERNAL -DRARCH_CONSOLE -DSINC_LOWEST_QUALITY
 CFLAGS += -DHAVE_GRIFFIN=1 -DHAVE_FILTERS_BUILTIN -DHAVE_MENU -DHAVE_RGUI
-CFLAGS += -DHAVE_ZLIB -DHAVE_RPNG -DWANT_ZLIB -DHAVE_BUILTIN_AUTOCONFIG
+CFLAGS += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DWANT_ZLIB -DHAVE_BUILTIN_AUTOCONFIG
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 

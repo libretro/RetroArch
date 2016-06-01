@@ -22,15 +22,24 @@
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
 
+#include "../content.h"
 #include "../core_type.h"
 #include "../runloop.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define CB_MENU_WALLPAPER     0xb476e505U
-#define CB_MENU_THUMBNAIL     0x82f93a21U
+enum content_mode_load
+{
+   CONTENT_MODE_LOAD_NONE = 0,
+   CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+   CONTENT_MODE_LOAD_FROM_CLI,
+   CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU,
+   CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU,
+   CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
+   CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
+   CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU,
+   CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU,
+   CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+   CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU
+};
 
 enum nbio_status_enum
 {
@@ -46,20 +55,12 @@ typedef struct
     char *data;
     size_t len;
 } http_transfer_data_t;
-
-typedef struct http_transfer_info
-{
-   char url[PATH_MAX_LENGTH];
-   int progress;
-} http_transfer_info_t;
 #endif
-
-typedef struct nbio_image_handle nbio_image_handle_t;
 
 typedef struct nbio_handle
 {
    enum image_type_enum image_type;
-   nbio_image_handle_t *image;
+   void *data;
    bool is_finished;
    transfer_cb_t  cb;
    struct nbio_t *handle;
@@ -69,22 +70,22 @@ typedef struct nbio_handle
 } nbio_handle_t;
 
 #ifdef HAVE_NETWORKING
-void *rarch_task_push_http_transfer(const char *url, const char *type,
+void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
 task_retriever_info_t *http_task_get_transfer_list(void);
 #endif
 
-bool rarch_task_push_image_load(const char *fullpath, const char *type,
+bool task_push_image_load(const char *fullpath, const char *type,
       retro_task_callback_t cb, void *userdata);
 
 #ifdef HAVE_LIBRETRODB
-bool rarch_task_push_dbscan(const char *fullpath,
+bool task_push_dbscan(const char *fullpath,
       bool directory, retro_task_callback_t cb);
 #endif
 
 #ifdef HAVE_OVERLAY
-bool rarch_task_push_overlay_load_default(
+bool task_push_overlay_load_default(
         retro_task_callback_t cb, void *user_data);
 #endif
     
@@ -98,11 +99,11 @@ int detect_ps1_game(const char *track_path, char *game_id);
 
 int detect_psp_game(const char *track_path, char *game_id);
 
-bool rarch_task_check_decompress(const char *source_file);
+bool task_check_decompress(const char *source_file);
 
-bool rarch_task_image_load_handler(retro_task_t *task);
+bool task_image_load_handler(retro_task_t *task);
 
-bool rarch_task_push_decompress(
+bool task_push_decompress(
       const char *source_file,
       const char *target_dir,
       const char *target_file,
@@ -111,20 +112,22 @@ bool rarch_task_push_decompress(
       retro_task_callback_t cb,
       void *user_data);
 
-bool rarch_task_push_content_load_default(
+bool task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
-      bool persist,
+      content_ctx_info_t *content_info,
       enum rarch_core_type type,
+      enum content_mode_load mode,
       retro_task_callback_t cb,
       void *user_data);
 
-void rarch_task_image_load_free(retro_task_t *task);
+void task_image_load_free(retro_task_t *task);
 
-void rarch_task_file_load_handler(retro_task_t *task);
+void task_file_load_handler(retro_task_t *task);
 
-#ifdef __cplusplus
-}
-#endif
+/* TODO/FIXME - turn this into actual task */
+bool take_screenshot(void);
+bool dump_to_file_desperate(const void *data,
+      size_t size, unsigned type);
 
 #endif

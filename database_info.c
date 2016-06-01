@@ -501,9 +501,6 @@ database_info_list_t *database_info_list_new(
          database_info = new_ptr;
          db_ptr        = &database_info[k];
 
-         if (!db_ptr)
-            continue;
-
          memcpy(db_ptr, &db_info, sizeof(*db_ptr));
 
          k++;
@@ -514,10 +511,11 @@ database_info_list_t *database_info_list_new(
    database_info_list->count = k;
 
 end:
-   database_cursor_close(db, cur);
-
    if (db)
+   {
+      database_cursor_close(db, cur);
       libretrodb_free(db);
+   }
    if (cur)
       libretrodb_cursor_free(cur);
 
@@ -535,15 +533,14 @@ void database_info_list_free(database_info_list_t *database_info_list)
    {
       database_info_t *info = &database_info_list->list[i];
 
-      if (!info)
-         continue;
-
       if (info->name)
          free(info->name);
       if (info->rom_name)
          free(info->rom_name);
       if (info->serial)
          free(info->serial);
+      if (info->genre)
+         free(info->genre);
       if (info->description)
          free(info->description);
       if (info->publisher)

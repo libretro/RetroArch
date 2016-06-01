@@ -31,7 +31,7 @@
 #include "../verbosity.c"
 
 #if defined(HAVE_LOGGER) && !defined(ANDROID)
-#include "../network/netlogger.c"
+#include "../network/net_logger.c"
 #endif
 
 /*============================================================
@@ -44,6 +44,12 @@ CONSOLE EXTENSIONS
 #endif
 
 #endif
+
+/*============================================================
+ALGORITHMS
+============================================================ */
+
+#include "../libretro-common/algorithms/mismatch.c"
 
 /*============================================================
 ARCHIVE FILE
@@ -220,7 +226,7 @@ VIDEO SHADERS
 VIDEO IMAGE
 ============================================================ */
 
-#include "../gfx/video_texture_image.c"
+#include "../libretro-common/formats/image_texture.c"
 
 #ifdef HAVE_RTGA
 #include "../libretro-common/formats/tga/rtga.c"
@@ -237,6 +243,9 @@ VIDEO IMAGE
 #endif
 #ifdef HAVE_RJPEG
 #include "../libretro-common/formats/jpeg/rjpeg.c"
+#endif
+#ifdef HAVE_RBMP
+#include "../libretro-common/formats/bmp/rbmp.c"
 #endif
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 
@@ -643,7 +652,6 @@ CORES
 /*============================================================
 FILE
 ============================================================ */
-#include "../content.c"
 #include "../libretro-common/file/file_path.c"
 #include "../file_path_special.c"
 #include "../libretro-common/lists/dir_list.c"
@@ -780,10 +788,8 @@ THREAD
 #elif defined(HAVE_THREADS)
 #include "../libretro-common/rthreads/rthreads.c"
 #include "../libretro-common/rthreads/rsemaphore.c"
-#include "../libretro-common/rthreads/async_job.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../audio/audio_thread_wrapper.c"
-#include "../autosave.c"
 #endif
 
 
@@ -791,10 +797,10 @@ THREAD
 NETPLAY
 ============================================================ */
 #ifdef HAVE_NETPLAY
-#include "../network/netplay_net.c"
-#include "../network/netplay_spectate.c"
-#include "../network/netplay_common.c"
-#include "../network/netplay.c"
+#include "../network/netplay/netplay_net.c"
+#include "../network/netplay/netplay_spectate.c"
+#include "../network/netplay/netplay_common.c"
+#include "../network/netplay/netplay.c"
 #include "../libretro-common/net/net_compat.c"
 #include "../libretro-common/net/net_socket.c"
 #include "../libretro-common/net/net_http.c"
@@ -808,6 +814,8 @@ NETPLAY
 DATA RUNLOOP
 ============================================================ */
 #include "../tasks/task_content.c"
+#include "../tasks/task_save_ram.c"
+#include "../tasks/task_save_state.c"
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
 #ifdef HAVE_ZLIB
@@ -821,7 +829,7 @@ DATA RUNLOOP
 /*============================================================
 SCREENSHOTS
 ============================================================ */
-#include "../screenshot.c"
+#include "../tasks/task_screenshot.c"
 
 /*============================================================
 PLAYLISTS
@@ -905,8 +913,12 @@ MENU
 #endif
 
 #ifdef HAVE_NUKLEAR
-#include "../menu/drivers/nk_common.c"
-#include "../menu/drivers/nk_menu.c"
+#include "../menu/drivers/nuklear/nk_common.c"
+#include "../menu/drivers/nuklear/nk_menu.c"
+#include "../menu/drivers/nuklear/nk_wnd_shader_parameters.c"
+#include "../menu/drivers/nuklear/nk_wnd_file_picker.c"
+#include "../menu/drivers/nuklear/nk_wnd_settings.c"
+#include "../menu/drivers/nuklear/nk_wnd_main.c"
 #include "../menu/drivers/nuklear.c"
 #endif
 
@@ -918,6 +930,7 @@ MENU
 
 #ifdef HAVE_NETWORK_GAMEPAD
 #include "../input/input_remote.c"
+#include "../cores/libretro-net-retropad/net_retropad_core.c"
 #endif
 
 #include "../command.c"
@@ -976,7 +989,8 @@ XML
 /*============================================================
  AUDIO UTILS
 ============================================================ */
-#include "../audio/audio_utils.c"
+#include "../libretro-common/conversion/s16_to_float.c"
+#include "../libretro-common/conversion/float_to_s16.c"
 
 /*============================================================
  LIBRETRODB

@@ -128,7 +128,10 @@ static int find_token(RFILE *fd, const char *token)
    while (strncmp(tmp_token, token, tmp_len) != 0)
    {
       if (get_token(fd, tmp_token, tmp_len) <= 0)
+      {
+         free(tmp_token);
          return -1;
+      }
    }
 
    free(tmp_token);
@@ -141,9 +144,9 @@ static int detect_ps1_game_sub(const char *track_path,
       char *game_id, int sub_channel_mixed)
 {
    uint8_t* tmp;
-   uint8_t buffer[2048 * 2];
    int skip, frame_size, is_mode1, cd_sector;
-   RFILE *fp = filestream_open(track_path, RFILE_MODE_READ, -1);
+   uint8_t buffer[2048 * 2] = {0};
+   RFILE                *fp = filestream_open(track_path, RFILE_MODE_READ, -1);
    if (!fp)
       return 0;
 
@@ -177,15 +180,22 @@ static int detect_ps1_game_sub(const char *track_path,
    while (tmp < (buffer + 2048 * 2))
    {
       if (!*tmp)
+      {
+         filestream_close(fp);
          return 0;
+      }
 
       if (!strncasecmp((const char*)(tmp + 33), "SYSTEM.CNF;1", 12))
          break;
 
       tmp += *tmp;
    }
+
    if(tmp >= (buffer + 2048 * 2))
+   {
+      filestream_close(fp);
       return 0;
+   }
 
    cd_sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
    filestream_seek(fp, 13 + skip + cd_sector * frame_size, SEEK_SET);
@@ -389,6 +399,7 @@ int find_first_data_track(const char *cue_path,
          if (sscanf(tmp_token, "%02d:%02d:%02d", &m, &s, &f) < 3)
          {
             RARCH_LOG("Error parsing time stamp '%s'\n", tmp_token);
+            filestream_close(fd);
             return -errno;
          }
 

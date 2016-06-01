@@ -15,36 +15,19 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <file/file_path.h>
-#include <retro_stat.h>
-
-#ifdef HAVE_THREADS
-#include <rthreads/async_job.h>
-#endif
+#include <stdint.h>
+#include <stddef.h>
 
 #include "frontend.h"
 #include "../ui/ui_companion_driver.h"
+#include "../tasks/tasks_internal.h"
 
-#include "../defaults.h"
-#include "../content.h"
-#include "../driver.h"
-#include "../system.h"
 #include "../driver.h"
 #include "../retroarch.h"
 #include "../runloop.h"
-#include "../verbosity.h"
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
-#endif
-
-#ifdef HAVE_THREADS
-static async_job_t *async_jobs;
-
-int rarch_main_async_job_add(async_task_t task, void *payload)
-{
-   return async_job_add(async_jobs, task, payload);
-}
 #endif
 
 /**
@@ -101,21 +84,14 @@ void main_exit(void *args)
  **/
 int rarch_main(int argc, char *argv[], void *data)
 {
-   char *fullpath                  = NULL;
-   rarch_system_info_t *system     = NULL;
    void *args                      = (void*)data;
 #ifndef HAVE_MAIN
    int ret                         = 0;
 #endif
 
    rarch_ctl(RARCH_CTL_PREINIT, NULL);
-
    frontend_driver_init_first(args);
    rarch_ctl(RARCH_CTL_INIT, NULL);
-
-#ifdef HAVE_THREADS
-   async_jobs = async_job_new();
-#endif
    
    if (frontend_driver_is_inited())
    {
@@ -126,32 +102,15 @@ int rarch_main(int argc, char *argv[], void *data)
       info.args            = args;
       info.environ_get     = frontend_driver_environment_get_ptr();
 
-      if (!content_load(&info))
+      if (!task_push_content_load_default(
+               NULL,
+               NULL,
+               &info,
+               CORE_TYPE_PLAIN,
+               CONTENT_MODE_LOAD_FROM_CLI,
+               NULL,
+               NULL))
          return 0;
-   }
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET,  &system);
-   runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-
-   if (content_is_inited() || content_does_not_need_content())
-   {
-      char tmp[PATH_MAX_LENGTH];
-      struct retro_system_info *info = system ? &system->info : NULL;
-
-      strlcpy(tmp, fullpath, sizeof(tmp));
-
-      if (*tmp)
-      {
-         /* Path can be relative here.
-          * Ensure we're pushing absolute path. */
-         path_resolve_realpath(tmp, sizeof(tmp));
-      }
-
-      if (rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL) || !info)
-         content_push_to_history_playlist(
-               content_does_not_need_content() || *tmp,
-               *tmp ? tmp : NULL,
-               info);
    }
 
    ui_companion_driver_init_first();
@@ -164,15 +123,10 @@ int rarch_main(int argc, char *argv[], void *data)
 
       if (ret == 1 && sleep_ms > 0)
          retro_sleep(sleep_ms);
-      runloop_iterate_data();
+      task_queue_ctl(TASK_QUEUE_CTL_CHECK, NULL);
    }while(ret != -1);
 
    main_exit(args);
-#endif
-
-#ifdef HAVE_THREADS
-   async_job_free(async_jobs);
-   async_jobs = NULL;
 #endif
 
    return 0;

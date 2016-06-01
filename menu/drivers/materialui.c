@@ -159,11 +159,10 @@ static void mui_context_reset_textures(mui_handle_t *mui,
       if (string_is_empty(path) || !path_file_exists(path))
          continue;
 
-      video_texture_image_load(&ti, path);
+      image_texture_load(&ti, path);
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR, &mui->textures.list[i]);
-
-      video_texture_image_free(&ti);
+      image_texture_free(&ti);
    }
 }
 
@@ -216,7 +215,8 @@ static void mui_draw_tab(mui_handle_t *mui,
       unsigned width, unsigned height,
       float *pure_white)
 {
-   unsigned tab_icon;
+   unsigned tab_icon = 0;
+
    switch (i)
    {
       case MUI_SYSTEM_TAB_MAIN:
@@ -685,18 +685,22 @@ static int mui_get_core_title(char *s, size_t len)
    core_name    = system->library_name;
    core_version = system->library_version;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
-
    if (!settings->menu.core_enable)
       return -1; 
 
-   if (string_is_empty(core_name))
-      core_name = info->info.library_name;
-   if (string_is_empty(core_name))
-      core_name = menu_hash_to_str(MENU_VALUE_NO_CORE);
+   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info))
+   {
+      if (info)
+      {
+         if (string_is_empty(core_name))
+            core_name = info->info.library_name;
+         if (!core_version)
+            core_version = info->info.library_version;
+      }
+   }
 
-   if (!core_version)
-      core_version = info->info.library_version;
+   if (string_is_empty(core_name))
+      core_name    = menu_hash_to_str(MENU_VALUE_NO_CORE);
    if (!core_version)
       core_version = "";
 
@@ -997,12 +1001,11 @@ static void mui_frame(void *data)
 
 static void mui_font(void)
 {
-   int font_size;
-   char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
    menu_display_ctx_font_t font_info;
-   settings_t *settings = config_get_ptr();
-
-   font_size = menu_display_get_font_size();
+   char mediapath[PATH_MAX_LENGTH] = {0};
+   char fontpath[PATH_MAX_LENGTH]  = {0};
+   settings_t            *settings = config_get_ptr();
+   int                   font_size = menu_display_get_font_size();
 
    fill_pathname_join(mediapath, settings->directory.assets,
          "glui", sizeof(mediapath));
@@ -1250,7 +1253,7 @@ static void mui_context_reset(void *data)
    menu_display_allocate_white_texture();
    mui_context_reset_textures(mui, iconpath);
 
-   rarch_task_push_image_load(settings->path.menu_wallpaper, "cb_menu_wallpaper",
+   task_push_image_load(settings->path.menu_wallpaper, "cb_menu_wallpaper",
          menu_display_handle_wallpaper_upload, NULL);
 }
 
@@ -1406,6 +1409,9 @@ static int mui_list_push(void *data, void *userdata,
          }
 
          entry.info_label      = menu_hash_to_str(MENU_LABEL_START_CORE);
+         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+
+         entry.info_label      = menu_hash_to_str(MENU_LABEL_START_NET_RETROPAD);
          menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
 
 #ifndef HAVE_DYNAMIC

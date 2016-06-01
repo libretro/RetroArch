@@ -19,6 +19,8 @@
 
 #include <boolean.h>
 
+#include "core_type.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -77,37 +79,34 @@ enum rarch_ctl_state
 
    RARCH_CTL_DESTROY,
 
+   /* Menu running? */
    RARCH_CTL_MENU_RUNNING,
-
    RARCH_CTL_MENU_RUNNING_FINISHED,
 
    RARCH_CTL_SET_PATHS_REDIRECT,
 
    RARCH_CTL_SET_SRAM_ENABLE,
 
+   /* Force fullscreen */
    RARCH_CTL_SET_FORCE_FULLSCREEN,
-
    RARCH_CTL_UNSET_FORCE_FULLSCREEN,
-
    RARCH_CTL_IS_FORCE_FULLSCREEN,
 
+   /* Block config read */
    RARCH_CTL_SET_BLOCK_CONFIG_READ,
-
    RARCH_CTL_UNSET_BLOCK_CONFIG_READ,
-
    RARCH_CTL_IS_BLOCK_CONFIG_READ,
 
+   /* Error */
    RARCH_CTL_SET_ERROR_ON_INIT,
-
    RARCH_CTL_UNSET_ERROR_ON_INIT,
+   RARCH_CTL_IS_ERROR_ON_INIT,
 
+   /* Username */
    RARCH_CTL_HAS_SET_USERNAME,
-
    RARCH_CTL_USERNAME_SET,
+   RARCH_CTL_USERNAME_UNSET
 
-   RARCH_CTL_USERNAME_UNSET,
-
-   RARCH_CTL_IS_ERROR_ON_INIT
 };
 
 enum rarch_content_type
@@ -155,10 +154,7 @@ void retroarch_set_pathnames(const char *path);
 
 void retroarch_fill_pathnames(void);
 
-/* Replaces currently loaded configuration file with
- * another one. Will load a dummy core to flush state
- * properly. */
-bool retroarch_replace_config(char *path);
+void retroarch_set_current_core_type(enum rarch_core_type type, bool explicitly_set);
 
 /**
  * retroarch_fail:

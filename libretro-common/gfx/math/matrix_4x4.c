@@ -25,6 +25,15 @@
 
 #include <gfx/math/matrix_4x4.h>
 
+void matrix_4x4_copy(math_matrix_4x4 *dst, const math_matrix_4x4 *src)
+{
+   unsigned i, j;
+
+   for (i = 0; i < 4; i++)
+      for (j = 0; j < 4; j++)
+      MAT_ELEM_4X4(*dst, i, j) = MAT_ELEM_4X4(*src, i, j);
+}
+
 /*
  * Sets mat to an identity matrix
  */

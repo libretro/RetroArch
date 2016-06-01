@@ -87,8 +87,6 @@ static bool linuxraw_is_pressed(linuxraw_input_t *linuxraw,
 
    if (id >= RARCH_BIND_LIST_END)
       return false;
-   if (!bind)
-      return false;
 
    return bind->valid && linuxraw_key_pressed(linuxraw, binds[id].key);
 }

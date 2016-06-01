@@ -134,13 +134,10 @@ static int driver_find_index(const char * label, const char *drv)
 {
    unsigned i;
    char str[256];
-   const void           *obj = NULL;
 
-   for (i = 0; (obj = (const void*)
-            find_driver_nonempty(label, i, str, sizeof(str))) != NULL; i++)
+   for (i = 0; 
+         find_driver_nonempty(label, i, str, sizeof(str)) != NULL; i++)
    {
-      if (!obj)
-         return -1;
       if (string_is_empty(str))
          break;
       if (string_is_equal_noncase(drv, str))

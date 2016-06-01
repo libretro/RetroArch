@@ -32,7 +32,7 @@
 #include <lists/string_list.h>
 
 #include "menu_generic.h"
-#include "nk_menu.h"
+#include "nuklear/nk_menu.h"
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
@@ -52,15 +52,19 @@ static void nk_menu_main(nk_menu_handle_t *nk)
 {
    struct nk_context *ctx = &nk->ctx;
 
-   if (nk->window[ZRMENU_WND_MAIN].open)
-      nk_menu_wnd_main(nk);
-   if (nk->window[ZRMENU_WND_SHADER_PARAMETERS].open)
-      nk_menu_wnd_shader_parameters(nk);
-   if (nk->window[ZRMENU_WND_TEST].open)
-      nk_menu_wnd_test(nk);
+   if (nk->window[NK_WND_SETTINGS].open)
+      nk_wnd_settings(nk);
+   if (nk->window[NK_WND_FILE_PICKER].open)
+      nk_wnd_file_picker(nk);
+   if (nk->window[NK_WND_SHADER_PARAMETERS].open)
+      nk_wnd_shader_parameters(nk);
+   if (nk->window[NK_WND_MAIN].open)
+      nk_wnd_main(nk);
 
-   nk->window[ZRMENU_WND_SHADER_PARAMETERS].open = !nk_window_is_closed(ctx, "Shader Parameters");
-   nk->window[ZRMENU_WND_TEST].open = !nk_window_is_closed(ctx, "Test");
+   nk->window[NK_WND_SETTINGS].open = !nk_window_is_closed(ctx, "Settings");
+   nk->window[NK_WND_FILE_PICKER].open = !nk_window_is_closed(ctx, "Select File");
+   nk->window[NK_WND_SHADER_PARAMETERS].open = !nk_window_is_closed(ctx, "Shader Parameters");
+   nk->window[NK_WND_MAIN].open = !nk_window_is_closed(ctx, "Main");
 
    nk_buffer_info(&nk->status, &nk->ctx.memory);
 }
@@ -143,11 +147,11 @@ static void nk_menu_context_reset_textures(nk_menu_handle_t *nk,
       if (string_is_empty(path) || !path_file_exists(path))
          continue;
 
-      video_texture_image_load(&ti, path);
+      image_texture_load(&ti, path);
       video_driver_texture_load(&ti,
             TEXTURE_FILTER_MIPMAP_LINEAR, &nk->textures.list[i]);
 
-      video_texture_image_free(&ti);
+      image_texture_load(&ti, path);
    }
 }
 
@@ -198,8 +202,7 @@ static void nk_menu_frame(void *data)
 
    nk_input_end(&nk->ctx);
    nk_menu_main(nk);
-   if(nk_window_is_closed(&nk->ctx, "Shader Parameters"))
-      nk_menu_wnd_shader_parameters(nk);
+
    nk_common_device_draw(&device, &nk->ctx, width, height, NK_ANTI_ALIASING_ON);
 
    menu_display_draw_cursor(
@@ -217,13 +220,8 @@ static void nk_menu_frame(void *data)
 
 static void nk_menu_layout(nk_menu_handle_t *nk)
 {
-   float scale_factor;
-   unsigned width, height, new_header_height;
-
+   unsigned width, height;
    video_driver_get_size(&width, &height);
-
-   scale_factor = menu_display_get_dpi();
-   menu_display_set_header_height(new_header_height);
 }
 
 static void nk_menu_init_device(nk_menu_handle_t *nk)
@@ -292,8 +290,16 @@ static void *nk_menu_init(void **userdata)
    *userdata = nk;
 
    fill_pathname_join(nk->assets_directory, settings->directory.assets,
-         "zahnrad", sizeof(nk->assets_directory));
+         "nuklear", sizeof(nk->assets_directory));
    nk_menu_init_device(nk);
+
+   /* for demo puposes only, opens all windows */ 
+#if 1   
+      for (int i=0; i < NK_WND_LAST; i++)
+         nk->window[i].open = true;
+#else
+      nk->window[NK_WND_MAIN].open = true;
+#endif
 
    return menu;
 error:
@@ -352,7 +358,7 @@ static void nk_menu_context_reset(void *data)
       return;
 
    fill_pathname_join(iconpath, settings->directory.assets,
-         "zahnrad", sizeof(iconpath));
+         "nuklear", sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
    nk_menu_layout(nk);
@@ -361,7 +367,7 @@ static void nk_menu_context_reset(void *data)
    wimp_context_bg_destroy(nk);
    nk_menu_context_reset_textures(nk, iconpath);
 
-   rarch_task_push_image_load(settings->path.menu_wallpaper, "cb_menu_wallpaper",
+   task_push_image_load(settings->path.menu_wallpaper, "cb_menu_wallpaper",
          menu_display_handle_wallpaper_upload, NULL);
 }
 

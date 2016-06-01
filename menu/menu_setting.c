@@ -101,6 +101,7 @@ struct rarch_setting
    double               max;
    
    uint64_t             flags;
+   uint64_t             free_flags;
    
    change_handler_t              change_handler;
    change_handler_t              read_handler;
@@ -1064,22 +1065,24 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
    unsigned index_offset;
    const struct retro_controller_description *desc = NULL;
    const char *name            = NULL;
+   rarch_system_info_t *system = NULL;
    rarch_setting_t *setting    = (rarch_setting_t*)data;
    settings_t      *settings   = config_get_ptr();
-   rarch_system_info_t *system = NULL;
-   
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!setting)
       return;
 
    index_offset = menu_setting_get_index_offset(setting);
 
-   if (index_offset < system->ports.size)
-      desc = libretro_find_controller_description(
-            &system->ports.data[index_offset],
-            settings->input.libretro_device
-            [index_offset]);
+   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system)
+         && system)
+   {
+      if (index_offset < system->ports.size)
+         desc = libretro_find_controller_description(
+               &system->ports.data[index_offset],
+               settings->input.libretro_device
+               [index_offset]);
+   }
 
    if (desc)
       name = desc->desc;
@@ -1370,7 +1373,7 @@ static rarch_setting_t setting_subgroup_setting(enum setting_type type,
 }
 
 static bool menu_settings_list_append(rarch_setting_t **list,
-      rarch_setting_info_t *list_info, rarch_setting_t value)
+      rarch_setting_info_t *list_info)
 {
    if (!list || !*list || !list_info)
       return false;
@@ -1384,9 +1387,6 @@ static bool menu_settings_list_append(rarch_setting_t **list,
          return false;
    }
 
-   value.name_hash = value.name ? menu_hash_calculate(value.name) : 0;
-
-   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1394,17 +1394,26 @@ bool START_GROUP(rarch_setting_t **list, rarch_setting_info_t *list_info,
       rarch_setting_group_info_t *group_info,
       const char *name, const char *parent_group)
 {
+   rarch_setting_t value = setting_group_setting (ST_GROUP, name, parent_group);
    group_info->name = name;
-   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_GROUP, name, parent_group))))
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
 bool END_GROUP(rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-   if (!(menu_settings_list_append(list, list_info, setting_group_setting (ST_END_GROUP, 0, parent_group))))
+   rarch_setting_t value = setting_group_setting (ST_END_GROUP, 0, parent_group);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1414,11 +1423,15 @@ bool START_SUB_GROUP(rarch_setting_t **list,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   rarch_setting_t value;
+   rarch_setting_t value = setting_subgroup_setting (ST_SUB_GROUP, name, group_info->name, parent_group);
+
    subgroup_info->name = name;
-   value = setting_subgroup_setting (ST_SUB_GROUP, name, group_info->name, parent_group);
-   if (!(menu_settings_list_append(list, list_info, value)))
+
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1427,9 +1440,12 @@ bool END_SUB_GROUP(
       rarch_setting_info_t *list_info,
       const char *parent_group)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_group_setting (ST_END_SUB_GROUP, 0, parent_group))))
+   rarch_setting_t value = setting_group_setting (ST_END_SUB_GROUP, 0, parent_group);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 bool CONFIG_ACTION(
@@ -1440,9 +1456,14 @@ bool CONFIG_ACTION(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   if (!menu_settings_list_append(list, list_info,
-            setting_action_setting(name, SHORT, group_info->name, subgroup_info->name, parent_group)))
+   rarch_setting_t value = setting_action_setting(name, SHORT,
+         group_info->name, subgroup_info->name, parent_group);
+
+   if (!menu_settings_list_append(list, list_info))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1561,10 +1582,16 @@ bool CONFIG_BOOL(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!menu_settings_list_append(list, list_info,
-            setting_bool_setting  (name, SHORT, target, default_value, off, on,
-               group_info->name, subgroup_info->name, parent_group, change_handler, read_handler)))
+   rarch_setting_t value = setting_bool_setting  (name, SHORT, target,
+         default_value, off, on,
+         group_info->name, subgroup_info->name, parent_group,
+         change_handler, read_handler);
+
+   if (!menu_settings_list_append(list, list_info))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1579,10 +1606,13 @@ bool CONFIG_INT(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_int_setting   (name, SHORT, target, default_value,
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_int_setting   (name, SHORT, target, default_value,
+                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1600,8 +1630,11 @@ bool CONFIG_UINT(
    rarch_setting_t value = setting_uint_setting  (name, SHORT, target, default_value,
                   group_info->name,
                   subgroup_info->name, parent_group, change_handler, read_handler);
-   if (!(menu_settings_list_append(list, list_info, value)))
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1616,10 +1649,13 @@ bool CONFIG_FLOAT(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_float_setting (name, SHORT, target, default_value, rounding,
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_float_setting (name, SHORT, target, default_value, rounding,
+                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1634,10 +1670,13 @@ bool CONFIG_PATH(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_string_setting(ST_PATH, name, SHORT, target, len, default_value, "",
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_string_setting(ST_PATH, name, SHORT, target, len, default_value, "",
+                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1652,10 +1691,13 @@ bool CONFIG_DIR(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_string_setting(ST_DIR, name, SHORT, target, len, default_value, empty,
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_string_setting(ST_DIR, name, SHORT, target, len, default_value, empty,
+                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1670,10 +1712,13 @@ bool CONFIG_STRING(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_string_setting(ST_STRING, name, SHORT, target, len, default_value, "",
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_string_setting(ST_STRING, name, SHORT, target, len, default_value, "",
+                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1688,10 +1733,17 @@ bool CONFIG_STRING_OPTIONS(
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_string_setting_options(ST_STRING_OPTIONS, name, SHORT, target, len, default_value, "", values,
-                  group_info->name, subgroup_info->name, parent_group, change_handler, read_handler))))
+   rarch_setting_t value = setting_string_setting_options(ST_STRING_OPTIONS, name, SHORT, target, len, default_value, "", values,
+         group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
+   /* Request values to be freed later */
+   settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_VALUES);
+
    return true;
 }
 
@@ -1708,8 +1760,11 @@ bool CONFIG_HEX(
 {
    rarch_setting_t value = setting_hex_setting(name, SHORT, target, default_value,
          group_info->name, subgroup_info->name, parent_group, change_handler, read_handler);
-   if (!(menu_settings_list_append(list, list_info, value)))
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
    return true;
 }
 
@@ -1725,10 +1780,17 @@ bool CONFIG_BIND(
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
 {
-   if (!(menu_settings_list_append(list, list_info,
-               setting_bind_setting(name, SHORT, target, player, player_offset, default_value,
-                  group_info->name, subgroup_info->name, parent_group))))
+   rarch_setting_t value = setting_bind_setting(name, SHORT, target, player, player_offset, default_value,
+                  group_info->name, subgroup_info->name, parent_group);
+   if (!(menu_settings_list_append(list, list_info)))
       return false;
+
+   if (value.name)
+      value.name_hash = menu_hash_calculate(value.name);
+   (*list)[list_info->index++] = value;
+   /* Request name and short description to be freed later */
+   settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
+
    return true;
 }
 
@@ -2286,11 +2348,9 @@ static int setting_action_start_libretro_device_type(void *data)
    unsigned index_offset, current_device;
    unsigned devices[128], types = 0, port = 0;
    const struct retro_controller_info *desc = NULL;
-   rarch_setting_t   *setting  = (rarch_setting_t*)data;
-   settings_t        *settings = config_get_ptr();
    rarch_system_info_t *system = NULL;
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   settings_t        *settings = config_get_ptr();
+   rarch_setting_t   *setting  = (rarch_setting_t*)data;
 
    if (setting_generic_action_start_default(setting) != 0)
       return -1;
@@ -2301,13 +2361,17 @@ static int setting_action_start_libretro_device_type(void *data)
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
-    * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!system->ports.size)
-      devices[types++] = RETRO_DEVICE_ANALOG;
+   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system) 
+         && system)
+   {
+      /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+       * older core which doesn't use SET_CONTROLLER_INFO. */
+      if (!system->ports.size)
+         devices[types++] = RETRO_DEVICE_ANALOG;
 
-   desc = port < system->ports.size ?
-      &system->ports.data[port] : NULL;
+      if (port < system->ports.size)
+         desc = &system->ports.data[port];
+   }
 
    if (desc)
    {
@@ -2374,14 +2438,11 @@ static int setting_bind_action_start(void *data)
    if (!keybind)
       return -1;
 
-   keybind->joykey = NO_BTN;
+   keybind->joykey  = NO_BTN;
    keybind->joyaxis = AXIS_NONE;
 
    if (setting->index_offset)
       def_binds = (struct retro_keybind*)retro_keybinds_rest;
-
-   if (!def_binds)
-      return -1;
 
    bind_type    = menu_setting_get_bind_type(setting);
    keybind->key = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;
@@ -2440,8 +2501,6 @@ static int setting_action_left_libretro_device_type(
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
    if (!setting)
       return -1;
 
@@ -2450,13 +2509,18 @@ static int setting_action_left_libretro_device_type(
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
-    * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!system->ports.size)
-      devices[types++] = RETRO_DEVICE_ANALOG;
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   if (port < system->ports.size)
-      desc = &system->ports.data[port];
+   if (system)
+   {
+      /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+       * older core which doesn't use SET_CONTROLLER_INFO. */
+      if (!system->ports.size)
+         devices[types++] = RETRO_DEVICE_ANALOG;
+
+      if (port < system->ports.size)
+         desc = &system->ports.data[port];
+   }
 
    if (desc)
    {
@@ -2505,8 +2569,6 @@ static int setting_action_right_libretro_device_type(
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
    if (!setting)
       return -1;
 
@@ -2515,13 +2577,17 @@ static int setting_action_right_libretro_device_type(
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
-    * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!system->ports.size)
-      devices[types++] = RETRO_DEVICE_ANALOG;
+   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system) 
+         && system)
+   {
+      /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+       * older core which doesn't use SET_CONTROLLER_INFO. */
+      if (!system->ports.size)
+         devices[types++] = RETRO_DEVICE_ANALOG;
 
-   if (port < system->ports.size)
-      desc = &system->ports.data[port];
+      if (port < system->ports.size)
+         desc = &system->ports.data[port];
+   }
 
    if (desc)
    {
@@ -2997,9 +3063,11 @@ void general_write_handler(void *data)
          break;
       case MENU_LABEL_LOG_VERBOSITY:
          {
-            bool *verbose = retro_main_verbosity();
+            if (setting->value.target.boolean && *setting->value.target.boolean)
+               verbosity_enable();
+            else
+               verbosity_disable();
 
-            *verbose = *setting->value.target.boolean;
             global->has_set.verbosity = *setting->value.target.boolean;
          }
          break;
@@ -3007,9 +3075,10 @@ void general_write_handler(void *data)
          video_driver_set_filtering(1, settings->video.smooth);
          break;
       case MENU_LABEL_VIDEO_ROTATION:
-         video_driver_set_rotation(
-               (*setting->value.target.unsigned_integer +
-                system->rotation) % 4);
+         if (system)
+            video_driver_set_rotation(
+                  (*setting->value.target.unsigned_integer +
+                   system->rotation) % 4);
          break;
       case MENU_LABEL_AUDIO_VOLUME:
          audio_driver_set_volume_gain(db_to_gain(*setting->value.target.fraction));
@@ -3103,6 +3172,14 @@ void settings_data_list_current_add_flags(
 {
    (*list)[list_info->index - 1].flags |= values;
    setting_add_special_callbacks(list, list_info, values);
+}
+
+void settings_data_list_current_add_free_flags(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      unsigned values)
+{
+   (*list)[list_info->index - 1].free_flags |= values;
 }
 
 #ifdef HAVE_OVERLAY
@@ -3438,7 +3515,7 @@ static bool setting_append_list_input_player_options(
                &settings->input.binds[user][i],
                user + 1,
                user,
-               strdup(name), /* TODO: Find a way to fix these memleaks. */
+               strdup(name),
                strdup(label),
                &defaults[i],
                &group_info,
@@ -3495,6 +3572,16 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+
+#if defined(HAVE_NETPLAY) && defined(HAVE_NETWORK_GAMEPAD)
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str(MENU_LABEL_START_NET_RETROPAD),
+               menu_hash_to_str(MENU_LABEL_VALUE_START_NET_RETROPAD),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+#endif
 
          CONFIG_ACTION(
                list, list_info,
@@ -3846,6 +3933,7 @@ static bool setting_append_list(
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);
+         break;
       case SETTINGS_LIST_CORE:
          START_GROUP(list, list_info, &group_info, menu_hash_to_str(MENU_LABEL_VALUE_CORE_SETTINGS), parent_group);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
@@ -3999,7 +4087,7 @@ static bool setting_append_list(
 
             CONFIG_BOOL(
                   list, list_info,
-                  retro_main_verbosity(),
+                  verbosity_get_ptr(),
                   menu_hash_to_str(MENU_LABEL_LOG_VERBOSITY),
                   menu_hash_to_str(MENU_LABEL_VALUE_LOG_VERBOSITY),
                   false,
@@ -6571,6 +6659,7 @@ static bool setting_append_list(
                      general_write_handler,
                      general_read_handler);
                settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+               settings_data_list_current_add_free_flags(list, list_info, SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT);
             }
 
             CONFIG_BOOL(
@@ -7324,31 +7413,33 @@ static bool setting_append_list(
 static bool menu_setting_free(void *data)
 {
    rarch_setting_t *setting = (rarch_setting_t*)data;
+   unsigned values;
+   unsigned n;
 
    if (!data)
       return false;
 
+   /* Free data which was previously tagged */
    for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
-   {
-      enum setting_type setting_type = menu_setting_get_type(setting);
-
-      switch (setting_type)
-      {
-         case ST_STRING_OPTIONS:
-            if (setting->values)
+      for (values = setting->free_flags, n = 0; values != 0; values >>= 1, n++)
+         if (values & 1)
+            switch (1 << n)
+            {
+            case SD_FREE_FLAG_VALUES:
                free((void*)setting->values);
-            setting->values = NULL;
-            break;
-         case ST_BIND:
-            free((void*)setting->name);
-            free((void*)setting->short_description);
-            setting->name = NULL;
-            setting->short_description = NULL;
-            break;
-         default:
-            break;
-      }
-   }
+               setting->values = NULL;
+               break;
+            case SD_FREE_FLAG_NAME:
+               free((void*)setting->name);
+               setting->name = NULL;
+               break;
+            case SD_FREE_FLAG_SHORT:
+               free((void*)setting->short_description);
+               setting->short_description = NULL;
+               break;
+            default:
+               break;
+            }
 
    free(data);
 
@@ -7408,8 +7499,11 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
          goto error;
    }
 
-   if (!(menu_settings_list_append(&list, list_info, terminator)))
+   if (!(menu_settings_list_append(&list, list_info)))
       goto error;
+   if (terminator.name)
+      terminator.name_hash = menu_hash_calculate(terminator.name);
+   (*&list)[list_info->index++] = terminator;
 
    /* flatten this array to save ourselves some kilobytes. */
    resized_list = (rarch_setting_t*)realloc(list,

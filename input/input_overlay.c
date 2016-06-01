@@ -33,7 +33,6 @@
 
 #include "../configuration.h"
 #include "../verbosity.h"
-#include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
@@ -42,10 +41,21 @@
 #define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 
+typedef struct input_overlay_state
+{
+   /* This is a bitmask of (1 << key_bind_id). */
+   uint64_t buttons;
+   /* Left X, Left Y, Right X, Right Y */
+   int16_t analog[4]; 
+
+   uint32_t keys[RETROK_LAST / 32 + 1];
+} input_overlay_state_t;
+
 struct input_overlay
 {
    void *iface_data;
    const video_overlay_interface_t *iface;
+   input_overlay_state_t overlay_state;
    bool enable;
 
    bool blocked;
@@ -60,17 +70,6 @@ struct input_overlay
    enum overlay_status state;
 };
 
-typedef struct input_overlay_state
-{
-   /* This is a bitmask of (1 << key_bind_id). */
-   uint64_t buttons;
-   /* Left X, Left Y, Right X, Right Y */
-   int16_t analog[4]; 
-
-   uint32_t keys[RETROK_LAST / 32 + 1];
-} input_overlay_state_t;
-
-static input_overlay_state_t overlay_st_ptr;
 static input_overlay_t *overlay_ptr = NULL;
 
 /**
@@ -101,32 +100,23 @@ static void input_overlay_scale(struct overlay *ol, float scale)
 
    for (i = 0; i < ol->size; i++)
    {
-      float scale_w, scale_h, adj_center_x, adj_center_y;
       struct overlay_desc *desc = &ol->descs[i];
+      float scale_w             = ol->mod_w * desc->range_x;
+      float scale_h             = ol->mod_h * desc->range_y;
+      float adj_center_x        = ol->mod_x + desc->x * ol->mod_w;
+      float adj_center_y        = ol->mod_y + desc->y * ol->mod_h;
 
-      if (!desc)
-         continue;
-
-      scale_w      = ol->mod_w * desc->range_x;
-      scale_h      = ol->mod_h * desc->range_y;
-
-      desc->mod_w  = 2.0f * scale_w;
-      desc->mod_h  = 2.0f * scale_h;
-
-      adj_center_x = ol->mod_x + desc->x * ol->mod_w;
-      adj_center_y = ol->mod_y + desc->y * ol->mod_h;
-      desc->mod_x  = adj_center_x - scale_w;
-      desc->mod_y  = adj_center_y - scale_h;
+      desc->mod_w               = 2.0f * scale_w;
+      desc->mod_h               = 2.0f * scale_h;
+      desc->mod_x               = adj_center_x - scale_w;
+      desc->mod_y               = adj_center_y - scale_h;
    }
 }
 
-static void input_overlay_set_vertex_geom(void)
+static void input_overlay_set_vertex_geom(input_overlay_t *ol)
 {
    size_t i;
-   input_overlay_t *ol = overlay_ptr;
 
-   if (!ol)
-      return;
    if (ol->active->image.pixels)
       ol->iface->vertex_geom(ol->iface_data, 0,
             ol->active->mod_x, ol->active->mod_y,
@@ -135,9 +125,6 @@ static void input_overlay_set_vertex_geom(void)
    for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
-
-      if (!desc)
-         continue;
 
       if (!desc->image.pixels)
          continue;
@@ -155,18 +142,17 @@ static void input_overlay_set_vertex_geom(void)
  *
  * Scales the overlay by a factor of scale.
  **/
-void input_overlay_set_scale_factor(float scale)
+void input_overlay_set_scale_factor(input_overlay_t *ol, float scale)
 {
    size_t i;
-   input_overlay_t *ol = overlay_ptr;
 
    if (!ol)
-      return;
+      ol = overlay_ptr;
 
    for (i = 0; i < ol->size; i++)
       input_overlay_scale(&ol->overlays[i], scale);
 
-   input_overlay_set_vertex_geom();
+   input_overlay_set_vertex_geom(ol);
 }
 
 void input_overlay_free_overlay(struct overlay *overlay)
@@ -177,7 +163,7 @@ void input_overlay_free_overlay(struct overlay *overlay)
       return;
 
    for (i = 0; i < overlay->size; i++)
-      video_texture_image_free(&overlay->descs[i].image);
+      image_texture_free(&overlay->descs[i].image);
 
    if (overlay->load_images)
       free(overlay->load_images);
@@ -185,7 +171,11 @@ void input_overlay_free_overlay(struct overlay *overlay)
    if (overlay->descs)
       free(overlay->descs);
    overlay->descs       = NULL;
-   video_texture_image_free(&overlay->image);
+   image_texture_free(&overlay->image);
+
+   if (overlay_ptr)
+      free(overlay_ptr);
+   overlay_ptr = NULL;
 }
 
 static void input_overlay_free_overlays(input_overlay_t *ol)
@@ -203,18 +193,17 @@ static void input_overlay_free_overlays(input_overlay_t *ol)
    ol->overlays = NULL;
 }
 
-static void input_overlay_load_active(float opacity)
+static void input_overlay_load_active(input_overlay_t *ol, float opacity)
 {
-   input_overlay_t *ol = overlay_ptr;
    if (!ol)
       return;
 
-   if (ol->iface && ol->iface->load)
+   if (ol->iface->load)
       ol->iface->load(ol->iface_data, ol->active->load_images,
             ol->active->load_images_size);
 
    input_overlay_set_alpha_mod(opacity);
-   input_overlay_set_vertex_geom();
+   input_overlay_set_vertex_geom(ol);
 
    if (ol->iface && ol->iface->full_screen)
       ol->iface->full_screen(ol->iface_data, ol->active->full_screen);
@@ -226,11 +215,8 @@ static void input_overlay_load_active(float opacity)
  *
  * Enable or disable the overlay.
  **/
-static void input_overlay_enable(bool enable)
+static void input_overlay_enable(input_overlay_t *ol, bool enable)
 {
-   input_overlay_t *ol = overlay_ptr;
-   if (!ol)
-      return;
    ol->enable = enable;
 
    if (ol->iface && ol->iface->enable)
@@ -283,12 +269,13 @@ static bool inside_hitbox(const struct overlay_desc *desc, float x, float y)
  * @norm_x and @norm_y are the result of
  * input_translate_coord_viewport().
  **/
-static void input_overlay_poll(input_overlay_state_t *out,
+static void input_overlay_poll(
+      input_overlay_t *ol,
+      input_overlay_state_t *out,
       int16_t norm_x, int16_t norm_y)
 {
    size_t i;
    float x, y;
-   input_overlay_t *ol      = overlay_ptr;
 
    memset(out, 0, sizeof(*out));
 
@@ -313,8 +300,6 @@ static void input_overlay_poll(input_overlay_state_t *out,
       float x_dist, y_dist;
       struct overlay_desc *desc = &ol->active->descs[i];
 
-      if (!desc)
-         continue;
       if (!inside_hitbox(desc, x, y))
          continue;
 
@@ -399,22 +384,15 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
  * update the range modifiers for pressed/unpressed regions
  * and alpha mods.
  **/
-static void input_overlay_post_poll(float opacity)
+static void input_overlay_post_poll(input_overlay_t *ol, float opacity)
 {
    size_t i;
-   input_overlay_t *ol      = overlay_ptr;
-
-   if (!ol)
-      return;
 
    input_overlay_set_alpha_mod(opacity);
 
    for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
-
-      if (!desc)
-         continue;
 
       desc->range_x_mod = desc->range_x;
       desc->range_y_mod = desc->range_y;
@@ -445,13 +423,9 @@ static void input_overlay_post_poll(float opacity)
  * Call when there is nothing to poll. Allows overlay to
  * clear certain state.
  **/
-static void input_overlay_poll_clear(float opacity)
+static void input_overlay_poll_clear(input_overlay_t *ol, float opacity)
 {
    size_t i;
-   input_overlay_t *ol      = overlay_ptr;
-
-   if (!ol)
-      return;
 
    ol->blocked = false;
 
@@ -460,9 +434,6 @@ static void input_overlay_poll_clear(float opacity)
    for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
-
-      if (!desc)
-         continue;
 
       desc->range_x_mod = desc->range_x;
       desc->range_y_mod = desc->range_y;
@@ -490,7 +461,7 @@ void input_overlay_next(float opacity)
    ol->index      = ol->next_index;
    ol->active     = &ol->overlays[ol->index];
 
-   input_overlay_load_active(opacity);
+   input_overlay_load_active(ol, opacity);
 
    ol->blocked    = true;
    ol->next_index = (ol->index + 1) % ol->size;
@@ -503,11 +474,8 @@ void input_overlay_next(float opacity)
  *
  * Returns: true (1) if overlay is fullscreen, otherwise false (0).
  **/
-static bool input_overlay_full_screen(void)
+static bool input_overlay_full_screen(input_overlay_t *ol)
 {
-   input_overlay_t *ol      = overlay_ptr;
-   if (!ol)
-      return false;
    return ol->active->full_screen;
 }
 
@@ -533,12 +501,12 @@ void input_overlay_free(void)
 }
 
 /* task_data = overlay_task_data_t* */
-static void input_overlay_loaded(void *task_data, void *user_data, const char *err)
+void input_overlay_loaded(void *task_data, void *user_data, const char *err)
 {
    size_t i;
-   input_overlay_t       *ol;
-   overlay_task_data_t *data = (overlay_task_data_t*)task_data;
-   settings_t      *settings = config_get_ptr();
+   overlay_task_data_t              *data = (overlay_task_data_t*)task_data;
+   settings_t                   *settings = config_get_ptr();
+   input_overlay_t                    *ol = NULL;
    const video_overlay_interface_t *iface = NULL;
 
    if (err)
@@ -562,22 +530,25 @@ static void input_overlay_loaded(void *task_data, void *user_data, const char *e
       goto abort_load;
    }
 
-   ol = (input_overlay_t*)calloc(1, sizeof(*ol));
-   ol->overlays = data->overlays;
-   ol->size     = data->size;
-   ol->active   = data->active;
+   ol             = (input_overlay_t*)calloc(1, sizeof(*ol));
+   ol->overlays   = data->overlays;
+   ol->size       = data->size;
+   ol->active     = data->active;
    ol->iface      = iface;
    ol->iface_data = video_driver_get_ptr(true);
 
-   overlay_ptr = ol;
+   input_overlay_load_active(ol, settings->input.overlay_opacity);
 
-   input_overlay_load_active(settings->input.overlay_opacity);
-   input_overlay_enable(input_driver_is_onscreen_keyboard_enabled() ? settings->osk.enable : settings->input.overlay_enable);
-   input_overlay_set_scale_factor(settings->input.overlay_scale);
+   if (input_driver_is_onscreen_keyboard_enabled())
+      input_overlay_enable(ol, settings->osk.enable);
+   else
+      input_overlay_enable(ol, settings->input.overlay_enable);
+   input_overlay_set_scale_factor(ol, settings->input.overlay_scale);
 
    ol->next_index = (ol->index + 1) % ol->size;
    ol->state      = OVERLAY_STATUS_NONE;
    ol->alive      = true;
+   overlay_ptr    = ol;
 
    free(data);
    return;
@@ -588,14 +559,6 @@ abort_load:
 
    free(data->overlays);
    free(data);
-}
-
-void input_overlay_init(void)
-{
-   input_overlay_free();
-
-   if (config_get_ptr()->input.overlay_enable)
-      rarch_task_push_overlay_load_default(input_overlay_loaded, NULL);
 }
 
 /**
@@ -618,9 +581,10 @@ void input_overlay_set_alpha_mod(float mod)
       ol->iface->set_alpha(ol->iface_data, i, mod);
 }
 
-bool input_overlay_is_alive(void)
+bool input_overlay_is_alive(input_overlay_t *ol)
 {
-   input_overlay_t *ol      = overlay_ptr;
+   if (!ol)
+      ol = overlay_ptr;
    if (!ol)
       return false;
    return ol->alive;
@@ -628,11 +592,10 @@ bool input_overlay_is_alive(void)
 
 bool input_overlay_key_pressed(int key)
 {
-   input_overlay_state_t *ol_state  = &overlay_st_ptr;
-
-   if (!ol_state)
+   input_overlay_t             *ol  = overlay_ptr;
+   input_overlay_state_t *ol_state  = ol ? &ol->overlay_state : NULL;
+   if (!ol)
       return false;
-
    return (ol_state->buttons & (UINT64_C(1) << key));
 }
 
@@ -641,23 +604,31 @@ bool input_overlay_key_pressed(int key)
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-void input_poll_overlay(float opacity)
+void input_poll_overlay(input_overlay_t *ol, float opacity)
 {
    input_overlay_state_t old_key_state;
    unsigned i, j, device;
    uint16_t key_mod                = 0;
    bool polled                     = false;
    settings_t *settings            = config_get_ptr();
-   input_overlay_state_t *ol_state = &overlay_st_ptr;
+   input_overlay_state_t *ol_state = NULL;
+   
+   if (!ol)
+      ol = overlay_ptr;
 
-   if (!input_overlay_is_alive() || !ol_state)
+   if (!input_overlay_is_alive(ol))
+      return;
+
+   ol_state = &ol->overlay_state;
+
+   if (!ol_state)
       return;
 
    memcpy(old_key_state.keys, ol_state->keys,
          sizeof(ol_state->keys));
    memset(ol_state, 0, sizeof(*ol_state));
 
-   device = input_overlay_full_screen() ?
+   device = input_overlay_full_screen(ol) ?
       RARCH_DEVICE_POINTER_SCREEN : RETRO_DEVICE_POINTER;
 
    for (i = 0;
@@ -671,7 +642,7 @@ void input_poll_overlay(float opacity)
       int16_t y = input_driver_state(NULL, 0,
             device, i, RETRO_DEVICE_ID_POINTER_Y);
 
-      input_overlay_poll(&polled_data, x, y);
+      input_overlay_poll(ol, &polled_data, x, y);
 
       ol_state->buttons |= polled_data.buttons;
 
@@ -765,20 +736,18 @@ void input_poll_overlay(float opacity)
    }
 
    if (polled)
-      input_overlay_post_poll(opacity);
+      input_overlay_post_poll(ol, opacity);
    else
-      input_overlay_poll_clear(opacity);
+      input_overlay_poll_clear(ol, opacity);
 }
 
 void input_state_overlay(int16_t *ret, unsigned port, unsigned device, unsigned idx,
       unsigned id)
 {
-   input_overlay_state_t *ol_state = &overlay_st_ptr;
+   input_overlay_t             *ol = overlay_ptr;
+   input_overlay_state_t *ol_state = ol ? &ol->overlay_state : NULL;
 
-   if (!ol_state)
-      return;
-
-   if (port != 0)
+   if (!ol || port != 0)
       return;
 
    switch (device)

@@ -50,6 +50,7 @@
 #include "../../runloop.h"
 #include "../../gfx/video_context_driver.h"
 #include "../../gfx/video_shader_driver.h"
+#include "../../tasks/tasks_internal.h"
 
 #include "../../gfx/common/gl_common.h"
 #include "../../gfx/common/win32_common.h"
@@ -513,7 +514,7 @@ bool win32_browser(
    ofn.lpstrInitialDir = TEXT(initial_dir);
    ofn.lpstrDefExt     = "";
    ofn.nMaxFile        = PATH_MAX;
-   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
 
    if (!GetOpenFileName(&ofn))
       return false;
@@ -564,6 +565,8 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             if (win32_browser(owner, win32_file,
                      extensions, title, initial_dir))
             {
+               content_ctx_info_t content_info = {0};
+
                switch (mode)
                {
                   case ID_M_LOAD_CORE:
@@ -572,8 +575,14 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                      break;
                   case ID_M_LOAD_CONTENT:
                      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, win32_file);
-                     cmd         = CMD_EVENT_LOAD_CONTENT;
+
                      do_wm_close = true;
+                     task_push_content_load_default(
+                           NULL, NULL,
+                           &content_info,
+                           CORE_TYPE_PLAIN,
+                           CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                           NULL, NULL);
                      break;
                }
             }

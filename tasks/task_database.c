@@ -287,7 +287,7 @@ static int database_info_list_iterate_found_match(
    char db_playlist_path[PATH_MAX_LENGTH]      = {0};
    char  db_playlist_base_str[PATH_MAX_LENGTH] = {0};
    char entry_path_str[PATH_MAX_LENGTH]        = {0};
-   content_playlist_t   *playlist = NULL;
+   playlist_t   *playlist = NULL;
    settings_t           *settings = config_get_ptr();
    const char            *db_path = db_state->list->elems[
       db_state->list_index].data;
@@ -305,12 +305,13 @@ static int database_info_list_iterate_found_match(
    fill_pathname_join(db_playlist_path, settings->directory.playlist,
          db_playlist_base_str, sizeof(db_playlist_path));
 
-   playlist = content_playlist_init(db_playlist_path, COLLECTION_SIZE);
+   playlist = playlist_init(db_playlist_path, COLLECTION_SIZE);
 
 
    snprintf(db_crc, sizeof(db_crc), "%08X|crc", db_info_entry->crc32);
 
-   strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
+   if (entry_path)
+      strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
 
    if (!string_is_empty(zip_name))
       fill_pathname_join_delim(entry_path_str, entry_path_str, zip_name,
@@ -328,15 +329,15 @@ static int database_info_list_iterate_found_match(
    RARCH_LOG("entry path str: %s\n", entry_path_str);
 #endif
 
-   if(!content_playlist_entry_exists(playlist, entry_path_str, db_crc))
+   if(!playlist_entry_exists(playlist, entry_path_str, db_crc))
    {
-      content_playlist_push(playlist, entry_path_str,
+      playlist_push(playlist, entry_path_str,
             db_info_entry->name, "DETECT", "DETECT",
             db_crc, db_playlist_base_str);
    }
 
-   content_playlist_write_file(playlist);
-   content_playlist_free(playlist);
+   playlist_write_file(playlist);
+   playlist_free(playlist);
 
    database_info_list_free(db_state->info);
 
@@ -406,15 +407,12 @@ static int task_database_iterate_crc_lookup(
    if (db_state->entry_index >= db_state->info->count)
       return database_info_list_iterate_next(db_state);
 
+   /* If we haven't reached the end of the database list yet,
+    * continue iterating. */
    if (db_state->list_index < db_state->list->size)
-   {
-      /* Didn't reach the end of the database list yet,
-       * continue iterating. */
       return 1;
-   }
 
-   if (db_state->info)
-      database_info_list_free(db_state->info);
+   database_info_list_free(db_state->info);
    return 0;
 }
 
@@ -485,15 +483,12 @@ static int task_database_iterate_serial_lookup(
    if (db_state->entry_index >= db_state->info->count)
       return database_info_list_iterate_next(db_state);
 
+   /* If we haven't reached the end of the database list yet,
+    * continue iterating. */
    if (db_state->list_index < db_state->list->size)
-   {
-      /* Didn't reach the end of the database list yet,
-       * continue iterating. */
       return 1;
-   }
 
-   if (db_state->info)
-      database_info_list_free(db_state->info);
+   database_info_list_free(db_state->info);
    return 0;
 }
 
@@ -593,8 +588,8 @@ static void task_database_handler(retro_task_t *task)
 task_finished:
    task->finished = true;
 
-   if (db->state.list)
-      dir_list_free(db->state.list);
+   if (dbstate->list)
+      dir_list_free(dbstate->list);
 
    if (db->state.buf)
       free(db->state.buf);
@@ -606,7 +601,7 @@ task_finished:
    free(db);
 }
 
-bool rarch_task_push_dbscan(const char *fullpath,
+bool task_push_dbscan(const char *fullpath,
       bool directory, retro_task_callback_t cb)
 {
    retro_task_t *t   = (retro_task_t*)calloc(1, sizeof(*t));

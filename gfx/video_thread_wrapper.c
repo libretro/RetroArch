@@ -348,7 +348,7 @@ static bool video_thread_handle_packet(
              * it's called in this "special" way. */
             thr->frame.within_thread = true;
 
-            if (thr->driver && thr->driver->read_viewport)
+            if (thr->driver->read_viewport)
                ret = thr->driver->read_viewport(thr->driver_data,
                      (uint8_t*)pkt.data.v);
 
@@ -670,8 +670,8 @@ static bool video_thread_frame(void *data, const void *frame_,
       return false;
    }
 
-   rarch_perf_init(&thr_frame, "thr_frame");
-   retro_perf_start(&thr_frame);
+   performance_counter_init(&thr_frame, "thr_frame");
+   performance_counter_start(&thr_frame);
 
    copy_stride = width * (thr->info.rgb32 
          ? sizeof(uint32_t) : sizeof(uint16_t));
@@ -741,7 +741,7 @@ static bool video_thread_frame(void *data, const void *frame_,
 
    slock_unlock(thr->lock);
 
-   retro_perf_stop(&thr_frame);
+   performance_counter_stop(&thr_frame);
 
    thr->last_time = cpu_features_get_time_usec();
    return true;

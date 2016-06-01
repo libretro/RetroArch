@@ -91,8 +91,7 @@ static void frontend_ctr_deinit(void *data)
    u8 not_2DS;
    (void)data;
 #ifndef IS_SALAMANDER
-   bool *verbose      = retro_main_verbosity();
-   *verbose           = true;
+   verbosity_enable();
 
 #ifdef HAVE_FILE_LOGGER
    command_event(CMD_EVENT_LOG_FILE_DEINIT, NULL);
@@ -187,9 +186,7 @@ static void frontend_ctr_init(void *data)
 {
 #ifndef IS_SALAMANDER
    (void)data;
-   bool *verbose      = retro_main_verbosity();
-
-   *verbose           = true;
+   verbosity_enable();
 
    gfxInit(GSP_BGR8_OES,GSP_RGB565_OES,false);   
 

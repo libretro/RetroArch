@@ -133,7 +133,7 @@ fi
 if [ "$MAN_DIR" ]; then
    add_define_make MAN_DIR "$MAN_DIR"
 else
-   add_define_make MAN_DIR "${PREFIX}/share/man/man1"
+   add_define_make MAN_DIR "${PREFIX}/share/man"
 fi
 
 if [ "$OS" = 'Win32' ]; then

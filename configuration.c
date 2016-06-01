@@ -27,6 +27,7 @@
 #include "file_path_special.h"
 #include "audio/audio_driver.h"
 #include "configuration.h"
+#include "content.h"
 #include "config.def.h"
 #include "input/input_config.h"
 #include "input/input_keymaps.h"
@@ -39,59 +40,34 @@
 #include "verbosity.h"
 #include "lakka.h"
 
+#include "tasks/tasks_internal.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 struct defaults g_defaults;
-
-static settings_t **config_get_ptr_double(void)
-{
-   static settings_t *g_config;
-   return &g_config;
-}
-
-static void config_free_ptr(void)
-{
-   settings_t **settings = config_get_ptr_double();
-   *settings = NULL;
-}
+static settings_t *configuration_settings = NULL;
 
 settings_t *config_get_ptr(void)
 {
-   settings_t **settings = config_get_ptr_double();
-   return *settings;
+   return configuration_settings;
 }
 
 void config_free(void)
 {
-   settings_t *settings = config_get_ptr();
-   if (!settings)
-      return;
-
-   free(settings);
-   config_free_ptr();
+   free(configuration_settings);
+   configuration_settings = NULL;
 }
 
-static bool config_init(void)
+bool config_init(void)
 {
-   settings_t **settings = config_get_ptr_double();
-   settings_t    *config = (settings_t*)calloc(1, sizeof(settings_t));
+   configuration_settings = (settings_t*)calloc(1, sizeof(settings_t));
 
-   if (!config)
+   if (!configuration_settings)
       return false;
-
-   *settings = config;
-
    return true;
 }
-
-bool config_realloc(void)
-{
-   config_free();
-   return config_init();
-}
-
 
 /**
  * config_get_default_audio:
@@ -453,7 +429,9 @@ static void config_set_defaults(void)
    const char *def_camera          = config_get_default_camera();
    const char *def_location        = config_get_default_location();
    const char *def_record          = config_get_default_record();
+#ifdef HAVE_MENU
    static bool first_initialized   = true;
+#endif
 
    if (def_camera)
       strlcpy(settings->camera.driver,
@@ -931,7 +909,9 @@ static void config_set_defaults(void)
    else
       rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
 
+#ifdef HAVE_MENU
    first_initialized = false;
+#endif
 }
 
 #ifndef GLOBAL_CONFIG_DIR
@@ -1224,6 +1204,7 @@ static void config_file_dump_all(config_file_t *conf)
 }
 #endif
 
+#ifdef HAVE_MENU
 static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *base)
 {
    unsigned tmp = 0;
@@ -1232,6 +1213,7 @@ static void config_get_hex_base(config_file_t *conf, const char *key, unsigned *
    if (config_get_hex(conf, key, &tmp))
       *base = tmp;
 }
+#endif
 
 /**
  * config_load:
@@ -1254,7 +1236,6 @@ static bool config_load_file(const char *path, bool set_defaults)
    config_file_t *conf                   = NULL;
    settings_t *settings                  = config_get_ptr();
    global_t   *global                    = global_get_ptr();
-   bool *verbose                         = retro_main_verbosity();
 
    if (path)
    {
@@ -1286,7 +1267,7 @@ static bool config_load_file(const char *path, bool set_defaults)
       extra_path = strtok_r(NULL, "|", &save);
    }
 #if 0
-   if (*verbose)
+   if (verbosity_is_enabled())
    {
       RARCH_LOG_OUTPUT("=== Config ===\n");
       config_file_dump_all(conf);
@@ -1402,10 +1383,13 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, set_supports_no_game_enable, "core_set_supports_no_game_enable");
 
 #ifdef RARCH_CONSOLE
-   /* TODO - will be refactored later to make it more clean - it's more
-    * important that it works for consoles right now */
-   config_get_bool(conf, "custom_bgm_enable",
-         &global->console.sound.system_bgm_enable);
+   {
+      bool tmp_bool = false;
+      /* TODO - will be refactored later to make it more clean - it's more
+       * important that it works for consoles right now */
+      if (config_get_bool(conf, "custom_bgm_enable", &tmp_bool))
+         global->console.sound.system_bgm_enable = tmp_bool;
+   }
    video_driver_load_settings(conf);
 #endif
    CONFIG_GET_INT_BASE(conf, settings, state_slot, "state_slot");
@@ -1658,21 +1642,25 @@ static bool config_load_file(const char *path, bool set_defaults)
    {
       if (config_get_bool(conf, "log_verbosity", &tmp_bool))
       {
-         if (verbose)
-            *verbose = tmp_bool;
+         if (tmp_bool)
+            verbosity_enable();
+         else
+            verbosity_disable();
       }
    }
 
    {
-      bool tmp_bool;
-      char tmp[64] = {0};
-      strlcpy(tmp, "perfcnt_enable", sizeof(tmp));
-      config_get_bool(conf, tmp, &tmp_bool);
+      bool tmp_bool = false;
+      char tmp[64]  = {0};
 
-      if (tmp_bool)
-         runloop_ctl(RUNLOOP_CTL_SET_PERFCNT_ENABLE, NULL);
-      else
-         runloop_ctl(RUNLOOP_CTL_UNSET_PERFCNT_ENABLE, NULL);
+      strlcpy(tmp, "perfcnt_enable", sizeof(tmp));
+      if (config_get_bool(conf, tmp, &tmp_bool))
+      {
+         if (tmp_bool)
+            runloop_ctl(RUNLOOP_CTL_SET_PERFCNT_ENABLE, NULL);
+         else
+            runloop_ctl(RUNLOOP_CTL_UNSET_PERFCNT_ENABLE, NULL);
+      }
    }
 
 #if TARGET_OS_IPHONE
@@ -1755,9 +1743,12 @@ static bool config_load_file(const char *path, bool set_defaults)
    CONFIG_GET_BOOL_BASE(conf, settings, network_remote_enable, "network_remote_enable");
    for (i = 0; i < MAX_USERS; i++)
    {
-      char tmp[64] = {0};
+      bool tmp_bool = false;
+      char tmp[64]  = {0};
       snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
-      config_get_bool(conf, tmp, &settings->network_remote_enable_user[i]);
+
+      if (config_get_bool(conf, tmp, &tmp_bool))
+         settings->network_remote_enable_user[i] = tmp_bool;
    }
    CONFIG_GET_INT_BASE(conf, settings, network_remote_base_port, "network_remote_base_port");
 
@@ -1955,8 +1946,8 @@ bool config_load_override(void)
 {
    char buf[PATH_MAX_LENGTH];
    char config_directory[PATH_MAX_LENGTH];
-   char core_path[PATH_MAX_LENGTH];
-   char game_path[PATH_MAX_LENGTH];
+   char core_path[PATH_MAX_LENGTH]        = {0};
+   char game_path[PATH_MAX_LENGTH]        = {0};
    config_file_t *new_conf                = NULL;
    const char *core_name                  = NULL;
    const char *game_name                  = NULL;
@@ -2091,7 +2082,7 @@ bool config_load_override(void)
  *
  * Returns: false if there was an error.
  */
- bool config_unload_override(void)
+bool config_unload_override(void)
 {
    global_t *global     = global_get_ptr();
 
@@ -2134,8 +2125,8 @@ bool config_load_override(void)
 bool config_load_remap(void)
 {
    char remap_directory[PATH_MAX_LENGTH];    /* path to the directory containing retroarch.cfg (prefix)    */
-   char core_path[PATH_MAX_LENGTH];    /* final path for core-specific configuration (prefix+suffix) */
-   char game_path[PATH_MAX_LENGTH];    /* final path for game-specific configuration (prefix+suffix) */
+   char core_path[PATH_MAX_LENGTH]         = {0};    /* final path for core-specific configuration (prefix+suffix) */
+   char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
    config_file_t *new_conf                 = NULL;
    const char *core_name                   = NULL;
    const char *game_name                   = NULL;
@@ -2223,7 +2214,7 @@ bool config_load_remap(void)
 static void parse_config_file(void)
 {
    global_t *global = global_get_ptr();
-   bool ret = config_load_file((*global->path.config)
+   bool         ret = config_load_file((*global->path.config)
          ? global->path.config : NULL, false);
 
    if (*global->path.config)
@@ -2474,7 +2465,7 @@ static bool config_save_keybinds_file(const char *path)
 bool config_save_autoconf_profile(const char *path, unsigned user)
 {
    unsigned i;
-   int ret = false;
+   bool ret                             = false;
    char buf[PATH_MAX_LENGTH]            = {0};
    char autoconf_file[PATH_MAX_LENGTH]  = {0};
    config_file_t *conf                  = NULL;
@@ -2519,7 +2510,9 @@ bool config_save_autoconf_profile(const char *path, unsigned user)
       save_keybind(conf, "input", input_config_bind_map_get_base(i),
             &settings->input.binds[user][i], false, false);
    }
+
    ret = config_file_write(conf, autoconf_file);
+
    config_file_free(conf);
 
    return ret;
@@ -2952,12 +2945,9 @@ bool config_save_file(const char *path)
    config_set_bool(conf, "sort_savestates_enable",
          settings->sort_savestates_enable);
    config_set_int(conf, "libretro_log_level", settings->libretro_log_level);
-   config_set_bool(conf, "log_verbosity", *retro_main_verbosity());
 
-   {
-      bool perfcnt_enable = runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL);
-      config_set_bool(conf, "perfcnt_enable", perfcnt_enable);
-   }
+   config_set_bool(conf, "log_verbosity", verbosity_is_enabled());
+   config_set_bool(conf, "perfcnt_enable", runloop_ctl(RUNLOOP_CTL_IS_PERFCNT_ENABLE, NULL));
 
 #if TARGET_OS_IPHONE
    config_set_bool(conf, "small_keyboard_enable",   settings->input.small_keyboard_enable);
@@ -2980,4 +2970,41 @@ bool config_save_file(const char *path)
    ret = config_file_write(conf, path);
    config_file_free(conf);
    return ret;
+}
+
+/* Replaces currently loaded configuration file with
+ * another one. Will load a dummy core to flush state
+ * properly. */
+bool config_replace(char *path)
+{
+   content_ctx_info_t content_info = {0};
+   settings_t *settings            = config_get_ptr();
+   global_t     *global            = global_get_ptr();
+
+   if (!path)
+      return false;
+
+   /* If config file to be replaced is the same as the
+    * current config file, exit. */
+   if (string_is_equal(path, global->path.config))
+      return false;
+
+   if (settings->config_save_on_exit && *global->path.config)
+      config_save_file(global->path.config);
+
+   strlcpy(global->path.config, path, sizeof(global->path.config));
+
+   rarch_ctl(RARCH_CTL_UNSET_BLOCK_CONFIG_READ, NULL);
+
+   *settings->path.libretro = '\0'; /* Load core in new config. */
+
+   if (!task_push_content_load_default(
+         NULL, NULL,
+         &content_info,
+         CORE_TYPE_DUMMY,
+         CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE,
+         NULL, NULL))
+      return false;
+
+   return true;
 }

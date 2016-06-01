@@ -94,9 +94,10 @@ UI COMMON CONTEXT
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../gfx/common/win32_common.cpp"
 
-#ifdef HAVE_OPENGL
+#if defined(HAVE_OPENGL) || defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/wgl_ctx.cpp"
 #endif
+
 #endif
 
 
@@ -141,7 +142,7 @@ VIDEO DRIVER
 #include "../gfx/drivers_shader/shader_vulkan.cpp"
 #include "../gfx/drivers_shader/glslang_util.cpp"
 #include "../gfx/drivers_shader/slang_reflection.cpp"
-#include "../deps/spir2cross/spir2cross.cpp"
+#include "../deps/SPIRV-Cross/spirv_cross.cpp"
 #endif
 
 /*============================================================

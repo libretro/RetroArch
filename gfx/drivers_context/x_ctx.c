@@ -133,7 +133,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
 
    x11_colormap_destroy();
 
-   if (x->g_should_reset_mode)
+   if (x->g_should_reset_mode && g_x11_dpy)
    {
       x11_exit_fullscreen(g_x11_dpy, &x->g_desktop_mode);
       x->g_should_reset_mode = false;
@@ -894,7 +894,7 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
 {
    uint32_t flags = 0;
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
-   if (x->core_hw_context_enable)
+   if (x->core_hw_context_enable || x->g_core_es)
    {
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
    }

@@ -169,12 +169,11 @@ static enum zarch_layout_type zarch_layout;
 
 static void zarch_zui_font(void)
 {
-   int font_size;
-   char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
    menu_display_ctx_font_t font_info;
-   settings_t *settings = config_get_ptr();
-
-   font_size = menu_display_get_font_size();
+   char mediapath[PATH_MAX_LENGTH] = {0};
+   char fontpath[PATH_MAX_LENGTH]  = {0};
+   settings_t            *settings = config_get_ptr();
+   int                   font_size = menu_display_get_font_size();
 
    fill_pathname_join(
          mediapath,
@@ -402,9 +401,6 @@ static bool zarch_zui_tab(zui_t *zui, struct zui_tabbed *tab,
    int         width = tab->tab_width;
    const float   *bg = zui_bg_panel;
    bool selected     = tab->tab_selection == tab_id; /* TODO/FIXME */
-
-   if (!zui || !tab )
-      return false;
 
    if (!width)
    {
@@ -739,9 +735,6 @@ static int zarch_zui_render_lay_root(zui_t *zui)
    tabbed.width            = zui->width - 290 - 40;
    zui->next_selection_set = false;
 
-   if (!zui)
-      return 1;
-
    if (zarch_zui_render_lay_root_recent(zui, &tabbed))
       return 0;
    if (zarch_zui_render_lay_root_load  (zui, &tabbed))
@@ -796,8 +789,14 @@ static int zarch_zui_render_sidebar(zui_t *zui)
 
 static int zarch_zui_load_content(zui_t *zui, unsigned i)
 {
-   rarch_task_push_content_load_default(zui->pick_cores[i].path,
-         zui->pick_content, false, CORE_TYPE_PLAIN, NULL, NULL);
+   content_ctx_info_t content_info = {0};
+
+   task_push_content_load_default(zui->pick_cores[i].path,
+         zui->pick_content,
+         &content_info,
+         CORE_TYPE_PLAIN,
+         CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
+         NULL, NULL);
 
    zarch_layout = LAY_HOME;
 
@@ -1028,7 +1027,7 @@ static void *zarch_init(void **userdata)
    zui->font_size       = 28;
 
    if (!string_is_empty(settings->path.menu_wallpaper))
-      rarch_task_push_image_load(settings->path.menu_wallpaper,
+      task_push_image_load(settings->path.menu_wallpaper,
             "cb_menu_wallpaper",
             menu_display_handle_wallpaper_upload, NULL);
 
@@ -1113,7 +1112,7 @@ static void zarch_context_reset(void *data)
 
    zarch_context_bg_destroy(zui);
 
-   rarch_task_push_image_load(settings->path.menu_wallpaper,
+   task_push_image_load(settings->path.menu_wallpaper,
          "cb_menu_wallpaper", menu_display_handle_wallpaper_upload, NULL);
 
    menu_display_allocate_white_texture();

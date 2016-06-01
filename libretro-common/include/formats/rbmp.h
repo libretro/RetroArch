@@ -38,6 +38,8 @@ enum rbmp_source_type
    RBMP_SOURCE_TYPE_ARGB8888
 };
 
+typedef struct rbmp rbmp_t;
+
 bool rbmp_save_image(
       const char *filename,
       const void *frame,
@@ -45,6 +47,15 @@ bool rbmp_save_image(
       unsigned height,
       unsigned pitch,
       enum rbmp_source_type type);
+
+int rbmp_process_image(rbmp_t *rbmp, void **buf,
+      size_t size, unsigned *width, unsigned *height);
+
+bool rbmp_set_buf_ptr(rbmp_t *rbmp, void *data);
+
+void rbmp_free(rbmp_t *rbmp);
+
+rbmp_t *rbmp_alloc(void);
 
 RETRO_END_DECLS
 

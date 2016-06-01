@@ -622,9 +622,12 @@ static enum frontend_architecture frontend_darwin_get_architecture(void)
       case DARWIN_ARCH_POWER_MAC:
         return FRONTEND_ARCH_PPC;
    }
-#endif
 
    return FRONTEND_ARCH_NONE;
+#else
+   /* TODO/FIXME - make this more flexible */
+   return FRONTEND_ARCH_ARMV7;
+#endif
 }
 
 static int frontend_darwin_parse_drive_list(void *data)
