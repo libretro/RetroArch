@@ -114,9 +114,9 @@ int generic_action_ok_displaylist_push(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
-   char tmp[PATH_MAX_LENGTH];
-   char action_path[PATH_MAX_LENGTH];
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_GENERIC;
+   char tmp[PATH_MAX_LENGTH]         = {0};
+   char action_path[PATH_MAX_LENGTH] = {0};
    menu_displaylist_info_t      info = {0};
    const char           *menu_label  = NULL;
    const char            *menu_path  = NULL;
@@ -725,7 +725,7 @@ static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, unsigned flush_id)
 {
-   char action_path[PATH_MAX_LENGTH];
+   char action_path[PATH_MAX_LENGTH] = {0};
    unsigned flush_type               = 0;
    int ret                           = 0;
    const char             *menu_path = NULL;
@@ -1011,8 +1011,8 @@ static int generic_action_ok_remap_file_save(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
 {
-   char directory[PATH_MAX_LENGTH];
-   char file[PATH_MAX_LENGTH];
+   char directory[PATH_MAX_LENGTH] = {0};
+   char file[PATH_MAX_LENGTH]      = {0};
    global_t *global                = global_get_ptr();
    settings_t *settings            = config_get_ptr();
    rarch_system_info_t *info       = NULL;
@@ -1323,8 +1323,8 @@ static void cb_decompressed(void *task_data, void *user_data, const char *err)
 static void cb_generic_download(void *task_data,
       void *user_data, const char *err)
 {
-   char output_path[PATH_MAX_LENGTH];
-   char shaderdir[PATH_MAX_LENGTH];
+   char output_path[PATH_MAX_LENGTH]     = {0};
+   char shaderdir[PATH_MAX_LENGTH]       = {0};
    const char             *file_ext      = NULL;
    const char             *dir_path      = NULL;
    menu_file_transfer_t     *transf      = (menu_file_transfer_t*)user_data;

@@ -61,7 +61,7 @@ static bool screenshot_dump(
       unsigned height,
       int pitch, bool bgr24)
 {
-   char filename[PATH_MAX_LENGTH];
+   char filename[PATH_MAX_LENGTH] = {0};
    char shotname[256]             = {0};
    bool ret                       = false;
    settings_t *settings           = config_get_ptr();

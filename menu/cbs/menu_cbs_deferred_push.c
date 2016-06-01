@@ -152,7 +152,7 @@ static int deferred_push_database_manager_list_deferred(
 static int deferred_push_cursor_manager_list_deferred(
       menu_displaylist_info_t *info)
 {
-   char rdb_path[PATH_MAX_LENGTH];
+   char rdb_path[PATH_MAX_LENGTH] = {0};
    int ret                        = -1;
    char *query                    = NULL;
    char *rdb                      = NULL;

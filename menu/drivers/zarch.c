@@ -169,12 +169,11 @@ static enum zarch_layout_type zarch_layout;
 
 static void zarch_zui_font(void)
 {
-   int font_size;
-   char mediapath[PATH_MAX_LENGTH], fontpath[PATH_MAX_LENGTH];
    menu_display_ctx_font_t font_info;
-   settings_t *settings = config_get_ptr();
-
-   font_size = menu_display_get_font_size();
+   char mediapath[PATH_MAX_LENGTH] = {0};
+   char fontpath[PATH_MAX_LENGTH]  = {0};
+   settings_t            *settings = config_get_ptr();
+   int                   font_size = menu_display_get_font_size();
 
    fill_pathname_join(
          mediapath,
