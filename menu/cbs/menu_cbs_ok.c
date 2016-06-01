@@ -116,6 +116,7 @@ int generic_action_ok_displaylist_push(const char *path,
 {
    enum menu_displaylist_ctl_state dl_type = DISPLAYLIST_GENERIC;
    char tmp[PATH_MAX_LENGTH]         = {0};
+   char parent_dir[PATH_MAX_LENGTH]  = {0};
    char action_path[PATH_MAX_LENGTH] = {0};
    menu_displaylist_info_t      info = {0};
    const char           *menu_label  = NULL;
@@ -320,19 +321,15 @@ int generic_action_ok_displaylist_push(const char *path,
          strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
          break;
       case ACTION_OK_DL_PARENT_DIRECTORY_PUSH:
-         {
-            char parent_dir[PATH_MAX_LENGTH];
+         fill_pathname_parent_dir(parent_dir,
+               action_path, sizeof(parent_dir));
+         fill_pathname_parent_dir(parent_dir,
+               parent_dir, sizeof(parent_dir));
 
-            fill_pathname_parent_dir(parent_dir,
-                  action_path, sizeof(parent_dir));
-            fill_pathname_parent_dir(parent_dir,
-                  parent_dir, sizeof(parent_dir));
-
-            info.type          = type;
-            info.directory_ptr = idx;
-            info_path          = parent_dir;
-            info_label         = menu_label;
-         }
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = parent_dir;
+         info_label         = menu_label;
          break;
       case ACTION_OK_DL_DIRECTORY_PUSH:
          info.type          = type;
