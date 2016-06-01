@@ -377,6 +377,11 @@ ifeq ($(HAVE_NEON),1)
 			 libretro-common/conversion/float_to_s16_neon.o
 endif
 
+ifneq ($(findstring Win32,$(OS)),)
+HAVE_VULKAN=1
+DEFINES += -DHAVE_VULKAN
+endif
+
 HW_CONTEXT_MENU_DRIVERS=$(HAVE_RGUI)
 
 ifeq ($(HW_CONTEXT_MENU_DRIVERS),0)
@@ -625,6 +630,7 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
 OBJ += ui/drivers/ui_win32.o
+
 endif
 
 # Video
