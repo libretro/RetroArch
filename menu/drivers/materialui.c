@@ -690,10 +690,13 @@ static int mui_get_core_title(char *s, size_t len)
 
    if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info))
    {
-      if (string_is_empty(core_name))
-         core_name = info->info.library_name;
-      if (!core_version)
-         core_version = info->info.library_version;
+      if (info)
+      {
+         if (string_is_empty(core_name))
+            core_name = info->info.library_name;
+         if (!core_version)
+            core_version = info->info.library_version;
+      }
    }
 
    if (string_is_empty(core_name))

@@ -1074,7 +1074,8 @@ static void setting_get_string_representation_uint_libretro_device(void *data,
 
    index_offset = menu_setting_get_index_offset(setting);
 
-   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system))
+   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system)
+         && system)
    {
       if (index_offset < system->ports.size)
          desc = libretro_find_controller_description(
@@ -2360,15 +2361,16 @@ static int setting_action_start_libretro_device_type(void *data)
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system))
+   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system) 
+         && system)
    {
       /* Only push RETRO_DEVICE_ANALOG as default if we use an 
        * older core which doesn't use SET_CONTROLLER_INFO. */
       if (!system->ports.size)
          devices[types++] = RETRO_DEVICE_ANALOG;
 
-      desc = port < system->ports.size ?
-         &system->ports.data[port] : NULL;
+      if (port < system->ports.size)
+         desc = &system->ports.data[port];
    }
 
    if (desc)
@@ -2567,8 +2569,6 @@ static int setting_action_right_libretro_device_type(
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
    if (!setting)
       return -1;
 
@@ -2577,13 +2577,17 @@ static int setting_action_right_libretro_device_type(
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
-    * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!system->ports.size)
-      devices[types++] = RETRO_DEVICE_ANALOG;
+   if (runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system) 
+         && system)
+   {
+      /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+       * older core which doesn't use SET_CONTROLLER_INFO. */
+      if (!system->ports.size)
+         devices[types++] = RETRO_DEVICE_ANALOG;
 
-   if (port < system->ports.size)
-      desc = &system->ports.data[port];
+      if (port < system->ports.size)
+         desc = &system->ports.data[port];
+   }
 
    if (desc)
    {

@@ -867,7 +867,8 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          if (string_is_empty(settings->directory.system))
          {
             char *fullpath = NULL;
-            if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath))
+            if (runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath) &&
+                  fullpath)
             {
                RARCH_WARN("SYSTEM DIR is empty, assume CONTENT DIR %s\n",
                      fullpath);

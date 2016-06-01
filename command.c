@@ -996,9 +996,12 @@ static void command_event_init_controllers(void)
       const struct retro_controller_description *desc = NULL;
       unsigned device = settings->input.libretro_device[i];
 
-      if (i < info->ports.size)
-         desc = libretro_find_controller_description(
-               &info->ports.data[i], device);
+      if (info)
+      {
+         if (i < info->ports.size)
+            desc = libretro_find_controller_description(
+                  &info->ports.data[i], device);
+      }
 
       if (desc)
          ident = desc->desc;
