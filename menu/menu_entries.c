@@ -453,12 +453,12 @@ int menu_entries_get_core_title(char *s, size_t len)
    if (!settings->menu.core_enable)
       return -1; 
 
-   if (string_is_empty(core_name))
+   if (string_is_empty(core_name) && info)
       core_name = info->info.library_name;
    if (string_is_empty(core_name))
       core_name = menu_hash_to_str(MENU_VALUE_NO_CORE);
 
-   if (!core_version)
+   if (!core_version && info)
       core_version = info->info.library_version;
    if (!core_version)
       core_version = "";

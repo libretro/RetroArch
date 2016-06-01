@@ -367,7 +367,8 @@ end:
    free(avg_filtered);
    free(paeth_filtered);
 
-   stream_backend->stream_free(stream);
+   if (stream_backend)
+      stream_backend->stream_free(stream);
    return ret;
 }
 

@@ -1411,7 +1411,7 @@ static bool content_file_init(struct string_list *temporary_content)
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   if (*global->subsystem)
+   if (*global->subsystem && system)
    {
       special = init_content_file_subsystem(&ret, system);
       if (!ret)
@@ -1559,7 +1559,7 @@ static void menu_content_environment_get(int *argc, char *argv[],
       wrap_args->sram_path     = global->dir.savefile;
    if (*global->dir.savestate)
       wrap_args->state_path    = global->dir.savestate;
-   if (*fullpath)
+   if (fullpath && *fullpath)
       wrap_args->content_path  = fullpath;
    if (!global->has_set.libretro)
       wrap_args->libretro_path = *settings->path.libretro 

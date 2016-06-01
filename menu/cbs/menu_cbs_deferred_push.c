@@ -410,7 +410,10 @@ static int general_push(menu_displaylist_info_t *info,
                      sizeof(info->exts));
          }
          else
-            strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
+         {
+            if (system->valid_extensions)
+               strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
+         }
          break;
       case PUSH_DETECT_CORE_LIST:
          if (!string_is_empty(list->all_ext))

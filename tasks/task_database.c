@@ -310,7 +310,8 @@ static int database_info_list_iterate_found_match(
 
    snprintf(db_crc, sizeof(db_crc), "%08X|crc", db_info_entry->crc32);
 
-   strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
+   if (entry_path)
+      strlcpy(entry_path_str, entry_path, sizeof(entry_path_str));
 
    if (!string_is_empty(zip_name))
       fill_pathname_join_delim(entry_path_str, entry_path_str, zip_name,

@@ -2499,8 +2499,6 @@ static int setting_action_left_libretro_device_type(
    settings_t      *settings   = config_get_ptr();
    rarch_system_info_t *system = NULL;
 
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-
    if (!setting)
       return -1;
 
@@ -2509,13 +2507,18 @@ static int setting_action_left_libretro_device_type(
    devices[types++] = RETRO_DEVICE_NONE;
    devices[types++] = RETRO_DEVICE_JOYPAD;
 
-   /* Only push RETRO_DEVICE_ANALOG as default if we use an 
-    * older core which doesn't use SET_CONTROLLER_INFO. */
-   if (!system->ports.size)
-      devices[types++] = RETRO_DEVICE_ANALOG;
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-   if (port < system->ports.size)
-      desc = &system->ports.data[port];
+   if (system)
+   {
+      /* Only push RETRO_DEVICE_ANALOG as default if we use an 
+       * older core which doesn't use SET_CONTROLLER_INFO. */
+      if (!system->ports.size)
+         devices[types++] = RETRO_DEVICE_ANALOG;
+
+      if (port < system->ports.size)
+         desc = &system->ports.data[port];
+   }
 
    if (desc)
    {
@@ -3068,9 +3071,10 @@ void general_write_handler(void *data)
          video_driver_set_filtering(1, settings->video.smooth);
          break;
       case MENU_LABEL_VIDEO_ROTATION:
-         video_driver_set_rotation(
-               (*setting->value.target.unsigned_integer +
-                system->rotation) % 4);
+         if (system)
+            video_driver_set_rotation(
+                  (*setting->value.target.unsigned_integer +
+                   system->rotation) % 4);
          break;
       case MENU_LABEL_AUDIO_VOLUME:
          audio_driver_set_volume_gain(db_to_gain(*setting->value.target.fraction));
