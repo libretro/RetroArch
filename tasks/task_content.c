@@ -1362,13 +1362,12 @@ static bool init_content_file_set_attribs(
    }
    else
    {
+      char       *fullpath = NULL;
       settings_t *settings = config_get_ptr();
 
       attr.i               = system->info.block_extract;
       attr.i              |= system->info.need_fullpath << 1;
       attr.i              |= (!content_does_not_need_content())  << 2;
-
-      char *fullpath    = NULL;
 
       if (!runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath)
             && content_does_not_need_content()
