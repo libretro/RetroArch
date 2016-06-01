@@ -714,10 +714,10 @@ bool core_info_get_display_name(const char *path, char *s, size_t len)
    config_get_string(conf, "display_name",
          &display_name);
 
-   config_file_free(conf);
-
    if (!core_name || !display_name)
       goto error;
+
+   config_file_free(conf);
 
    snprintf(s, len,"%s",display_name);
 

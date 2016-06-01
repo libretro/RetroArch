@@ -557,7 +557,6 @@ int libretrodb_create_index(libretrodb_t *db,
    nictx.db = db;
    nictx.idx = &idx;
    bintree_iterate(tree, node_iter, &nictx);
-   bintree_free(tree);
 
 clean:
    rmsgpack_dom_value_free(&item);

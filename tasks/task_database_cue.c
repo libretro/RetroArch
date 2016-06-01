@@ -180,7 +180,10 @@ static int detect_ps1_game_sub(const char *track_path,
    while (tmp < (buffer + 2048 * 2))
    {
       if (!*tmp)
+      {
+         filestream_close(fp);
          return 0;
+      }
 
       if (!strncasecmp((const char*)(tmp + 33), "SYSTEM.CNF;1", 12))
          break;
