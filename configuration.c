@@ -2530,7 +2530,6 @@ bool config_save_file(const char *path)
 {
    float msg_color;
    unsigned i           = 0;
-   bool tmp_bool        = false;
    bool ret             = false;
    config_file_t *conf  = config_file_new(path);
    settings_t *settings = config_get_ptr();

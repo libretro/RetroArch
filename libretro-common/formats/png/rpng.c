@@ -1016,27 +1016,23 @@ bool rpng_iterate_image(rpng_t *rpng)
          break;
 
       case PNG_CHUNK_tRNS:
+         if (rpng->has_idat)
+            goto error;
+
+         if (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT)
          {
-            unsigned entries = chunk.size / 3;
-
-            if (rpng->has_idat)
+            /* we should compare with the number of palette entries */
+            if (chunk.size > 256)
                goto error;
-            
-            if (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT)
-            {
-               /* we should compare with the number of palette entries */
-               if (chunk.size > 256)
-                  goto error;
-               
-               buf += 8;
 
-               if (!png_read_trns(buf, rpng->palette, chunk.size))
-                  goto error;
-            }
-            /* TODO: support colorkey in grayscale and truecolor images */
+            buf += 8;
 
-            rpng->has_trns = true;
+            if (!png_read_trns(buf, rpng->palette, chunk.size))
+               goto error;
          }
+         /* TODO: support colorkey in grayscale and truecolor images */
+
+         rpng->has_trns = true;
          break;
 
       case PNG_CHUNK_IDAT:
