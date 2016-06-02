@@ -215,6 +215,7 @@ static core_info_list_t *core_info_list_new(void)
 
       if (conf)
       {
+         bool tmp_bool  = false;
          unsigned count = 0;
 
          config_get_string(conf, "display_name",
@@ -268,8 +269,9 @@ static core_info_list_t *core_info_list_new(void)
                core_info[i].notes)
             core_info[i].note_list = string_split(core_info[i].notes, "|");
 
-         config_get_bool(conf, "supports_no_game",
-               &core_info[i].supports_no_game);
+         if (config_get_bool(conf, "supports_no_game",
+               &tmp_bool))
+            core_info[i].supports_no_game = tmp_bool;
 
          core_info[i].config_data = conf;
       }
