@@ -22,6 +22,7 @@
 #include <boolean.h>
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #include "playlist.h"
 #include "verbosity.h"
@@ -378,7 +379,7 @@ static bool playlist_read_file(
    char buf[PLAYLIST_ENTRIES][1024] = {{0}};
    playlist_entry_t *entry  = NULL;
    char *last                       = NULL;
-   FILE *file                       = fopen(path, "r");
+   RFILE *file                      = filestream_open(path, RFILE_MODE_READ, -1);
 
    /* If playlist file does not exist,
     * create an empty playlist instead.
@@ -392,7 +393,7 @@ static bool playlist_read_file(
       {
          *buf[i] = '\0';
 
-         if (!fgets(buf[i], sizeof(buf[i]), file))
+         if (!filestream_gets(file, buf[i], sizeof(buf[i])))
             goto end;
 
          last = strrchr(buf[i], '\n');
@@ -419,7 +420,7 @@ static bool playlist_read_file(
    }
 
 end:
-   fclose(file);
+   filestream_close(file);
    return true;
 }
 
