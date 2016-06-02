@@ -230,6 +230,17 @@ error:
    return NULL;
 }
 
+char *filestream_gets(RFILE *stream, char *s, size_t len)
+{
+   if (!stream)
+      return NULL;
+#if defined(HAVE_BUFFERED_IO)
+   return fgets(s, len, stream->fp);
+#else
+   return gets(s);
+#endif
+}
+
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 {
    if (!stream)

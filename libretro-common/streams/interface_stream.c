@@ -198,8 +198,7 @@ char *intfstream_gets(intfstream_internal_t *intf,
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         /* unimplemented */
-         break;
+         return filestream_gets(intf->file.fp, buffer, len);
       case INTFSTREAM_MEMORY:
          return memstream_gets(intf->memory.fp, buffer, len);
    }
