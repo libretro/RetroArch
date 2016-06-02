@@ -95,6 +95,7 @@ static bool task_overlay_load_desc(
 {
    float width_mod, height_mod;
    uint32_t box_hash, key_hash;
+   bool tmp_bool                        = false;
    bool ret                             = true;
    bool by_pixel                        = false;
    char overlay_desc_key[64]            = {0};
@@ -275,7 +276,9 @@ static bool task_overlay_load_desc(
    desc->movable     = false;
    desc->delta_x     = 0.0f;
    desc->delta_y     = 0.0f;
-   config_get_bool(conf, conf_key, &desc->movable);
+
+   if (config_get_bool(conf, conf_key, &tmp_bool))
+      desc->movable = tmp_bool;
 
    desc->range_x_mod = desc->range_x;
    desc->range_y_mod = desc->range_y;
@@ -381,6 +384,8 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
    for (i = 0; i < loader->pos_increment; i++, loader->pos++)
    {
+      float tmp_float                   = 0.0;
+      bool tmp_bool                     = false;
       char conf_key[64]                 = {0};
       char overlay_full_screen_key[64]  = {0};
       struct texture_image *texture_img = NULL;
@@ -431,13 +436,17 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       snprintf(conf_key, sizeof(conf_key),
             "overlay%u_normalized", loader->pos);
-      config_get_bool(conf, conf_key, &overlay->config.normalized);
+
+      if (config_get_bool(conf, conf_key, &tmp_bool))
+         overlay->config.normalized = tmp_bool;
 
       snprintf(conf_key, sizeof(conf_key), "overlay%u_alpha_mod", loader->pos);
-      config_get_float(conf, conf_key, &overlay->config.alpha_mod);
+      if (config_get_float(conf, conf_key, &tmp_float))
+         overlay->config.alpha_mod = tmp_float;
 
       snprintf(conf_key, sizeof(conf_key), "overlay%u_range_mod", loader->pos);
-      config_get_float(conf, conf_key, &overlay->config.range_mod);
+      if (config_get_float(conf, conf_key, &tmp_float))
+         overlay->config.range_mod = tmp_float;
 
       /* Precache load image array for simplicity. */
       texture_img = (struct texture_image*)
