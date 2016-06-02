@@ -19,6 +19,9 @@
 #include "../../general.h"
 #include "../../verbosity.h"
 #include "win32_common.h"
+#include "../../driver.h"
+#include "../../runloop.h"
+#include "../../tasks/tasks_internal.h"
 
 #if !defined(_XBOX)
 
@@ -32,7 +35,7 @@
 #include <commdlg.h>
 #include "../../retroarch.h"
 #include "../video_thread_wrapper.h"
-
+#include <Shellapi.h>
 #ifndef _MSC_VER
 extern "C" {
 #endif
@@ -159,6 +162,28 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          }
          break;
 
+      case WM_DROPFILES:
+        // Get the count of the files dropped
+      {
+      char szFilename[1024] = {0};
+      if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
+        {
+         content_ctx_info_t content_info = {0};
+            // Get the path of a single file that has been dropped
+         DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
+                     task_push_content_load_default(
+                           NULL, szFilename,
+                           &content_info,
+                           CORE_TYPE_PLAIN,
+                           CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                           NULL, NULL);
+                PostMessage(hwnd, WM_CLOSE, 0, 0);
+        }
+        // Release the memory that the system allocated for use in transferring file
+        // names to the application
+        DragFinish((HDROP)wparam);
+      }
+      break; 
       case WM_CHAR:
       case WM_KEYDOWN:
       case WM_KEYUP:
@@ -205,6 +230,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
 
    switch (message)
    {
+      case WM_DROPFILES:
       case WM_SYSCOMMAND:
       case WM_CHAR:
       case WM_KEYDOWN:
@@ -224,6 +250,7 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
             curD3D                = p_cs->lpCreateParams;
             g_inited              = true;
+            DragAcceptFiles(hwnd, true);
          }
          return 0;
    }
@@ -242,6 +269,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
 
    switch (message)
    {
+      case WM_DROPFILES:
       case WM_SYSCOMMAND:
       case WM_CHAR:
       case WM_KEYDOWN:
@@ -259,6 +287,7 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
          break;
       case WM_CREATE:
          create_graphics_context(hwnd, &g_quit);
+         DragAcceptFiles(hwnd, true);
          return 0;
    }
 
