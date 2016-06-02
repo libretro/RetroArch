@@ -411,7 +411,7 @@ static int general_push(menu_displaylist_info_t *info,
          }
          else
          {
-            if (system->valid_extensions)
+            if (!string_is_empty(system->valid_extensions))
                strlcpy(info->exts, system->valid_extensions, sizeof(info->exts));
          }
          break;

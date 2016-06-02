@@ -596,7 +596,8 @@ static void *libusb_hid_init(void)
    return hid;
 
 error:
-   libusb_hid_free(hid);
+   if (hid)
+      libusb_hid_free(hid);
    return NULL;
 }
 
