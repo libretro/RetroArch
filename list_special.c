@@ -234,6 +234,9 @@ struct string_list *string_list_new_special(enum string_list_type type,
          core_info_list_get_supported_cores(core_info_list,
                (const char*)data, &core_info, list_size);
 
+         if (!core_info)
+            goto error;
+
          if (*list_size == 0)
             goto error;
 
@@ -254,6 +257,9 @@ struct string_list *string_list_new_special(enum string_list_type type,
          core_info_get_list(&core_info_list);
          core_info_list_get_supported_cores(core_info_list,
                (const char*)data, &core_info, list_size);
+
+         if (!core_info)
+            goto error;
 
          if (*list_size == 0)
             goto error;
