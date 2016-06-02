@@ -23,6 +23,7 @@
 #include <file/file_path.h>
 #include <rhash.h>
 #include <string/stdstring.h>
+#include <streams/file_stream.h>
 
 #include "../general.h"
 #include "../verbosity.h"
@@ -410,13 +411,13 @@ bool video_shader_resolve_parameters(config_file_t *conf,
    for (i = 0; i < shader->passes; i++)
    {
       char line[4096] = {0};
-      FILE *file = fopen(shader->pass[i].source.path, "r");
+      RFILE *file = filestream_open(shader->pass[i].source.path, RFILE_MODE_READ, -1);
 
       if (!file)
          continue;
 
       while (shader->num_parameters < ARRAY_SIZE(shader->parameters)
-            && fgets(line, sizeof(line), file))
+            && filestream_gets(file, line, sizeof(line)))
       {
          int ret = sscanf(line,
                "#pragma parameter %63s \"%63[^\"]\" %f %f %f %f",
@@ -441,7 +442,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
          param++;
       }
 
-      fclose(file);
+      filestream_close(file);
    }
 
    if (conf)
