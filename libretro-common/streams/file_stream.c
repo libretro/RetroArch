@@ -241,6 +241,17 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
 #endif
 }
 
+int filestream_getc(RFILE *stream)
+{
+   if (!stream)
+      return 0;
+#if defined(HAVE_BUFFERED_IO)
+   return fgetc(stream->fp);
+#else
+   return getc(stream->fp);
+#endif
+}
+
 ssize_t filestream_seek(RFILE *stream, ssize_t offset, int whence)
 {
    if (!stream)

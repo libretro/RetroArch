@@ -214,8 +214,7 @@ int intfstream_getc(intfstream_internal_t *intf)
    switch (intf->type)
    {
       case INTFSTREAM_FILE:
-         /* unimplemented */
-         break;
+         return filestream_getc(intf->file.fp);
       case INTFSTREAM_MEMORY:
          return memstream_getc(intf->memory.fp);
    }
