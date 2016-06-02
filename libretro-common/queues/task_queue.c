@@ -246,14 +246,13 @@ static void retro_task_regular_retrieve(task_retriever_data_t *data)
             tail->next = info;
             tail = tail->next;
          }
+         free(info);
       }
       else
       {
          data->list = info;
          tail = data->list;
       }
-
-      free(info);
    }
 }
 
