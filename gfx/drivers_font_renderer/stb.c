@@ -171,7 +171,8 @@ error:
    if (font_data)
       free(font_data);
 
-   font_renderer_stb_free(self);
+   if (self)
+      font_renderer_stb_free(self);
    return NULL;
 }
 

@@ -1363,13 +1363,13 @@ bool rarch_environment_cb(unsigned cmd, void *data)
       
       case RETRO_ENVIRONMENT_SET_MEMORY_MAPS:
       {
-         unsigned i;
-         struct retro_memory_descriptor *descriptors = NULL;
-         const struct retro_memory_map *mmaps        =
-            (const struct retro_memory_map*)data;
-         
          if (system)
          {
+            unsigned i;
+            const struct retro_memory_map *mmaps        =
+               (const struct retro_memory_map*)data;
+            struct retro_memory_descriptor *descriptors = NULL;
+
             RARCH_LOG("Environ SET_MEMORY_MAPS.\n");
             free((void*)system->mmaps.descriptors);
             system->mmaps.num_descriptors = 0;
@@ -1385,6 +1385,47 @@ bool rarch_environment_cb(unsigned cmd, void *data)
                   mmaps->num_descriptors * sizeof(*system->mmaps.descriptors));
             system->mmaps.num_descriptors = mmaps->num_descriptors;
             mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
+
+            if (sizeof(void *) == 8)
+               RARCH_LOG("   ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");
+            else
+               RARCH_LOG("   ndx flags  ptr          offset   start    select   disconn  len      addrspace\n");
+
+            for (i = 0; i < system->mmaps.num_descriptors; i++)
+            {
+               const struct retro_memory_descriptor *desc =
+                  &system->mmaps.descriptors[i];
+               char flags[7];
+
+               flags[0] = 'M';
+               if ((desc->flags & RETRO_MEMDESC_MINSIZE_8) == RETRO_MEMDESC_MINSIZE_8)
+                  flags[1] = '8';
+               else if ((desc->flags & RETRO_MEMDESC_MINSIZE_4) == RETRO_MEMDESC_MINSIZE_4)
+                  flags[1] = '4';
+               else if ((desc->flags & RETRO_MEMDESC_MINSIZE_2) == RETRO_MEMDESC_MINSIZE_2)
+                  flags[1] = '2';
+               else
+                  flags[1] = '1';
+
+               flags[2] = 'A';
+               if ((desc->flags & RETRO_MEMDESC_ALIGN_8) == RETRO_MEMDESC_ALIGN_8)
+                  flags[3] = '8';
+               else if ((desc->flags & RETRO_MEMDESC_ALIGN_4) == RETRO_MEMDESC_ALIGN_4)
+                  flags[3] = '4';
+               else if ((desc->flags & RETRO_MEMDESC_ALIGN_2) == RETRO_MEMDESC_ALIGN_2)
+                  flags[3] = '2';
+               else
+                  flags[3] = '1';
+
+               flags[4] = (desc->flags & RETRO_MEMDESC_BIGENDIAN) ? 'B' : 'b';
+               flags[5] = (desc->flags & RETRO_MEMDESC_CONST) ? 'C' : 'c';
+               flags[6] = 0;
+
+               RARCH_LOG("   %03u %s %p %08X %08X %08X %08X %08X %s\n",
+                     i + 1, flags, desc->ptr, desc->offset, desc->start,
+                     desc->select, desc->disconnect, desc->len,
+                     desc->addrspace ? desc->addrspace : "");
+            }
          }
          else
          {
@@ -1392,46 +1433,6 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          }
          
          
-         if (sizeof(void *) == 8)
-            RARCH_LOG("   ndx flags  ptr              offset   start    select   disconn  len      addrspace\n");
-         else
-            RARCH_LOG("   ndx flags  ptr          offset   start    select   disconn  len      addrspace\n");
-         
-         for (i = 0; i < system->mmaps.num_descriptors; i++)
-         {
-            const struct retro_memory_descriptor *desc =
-               &system->mmaps.descriptors[i];
-            char flags[7];
-            
-            flags[0] = 'M';
-            if ((desc->flags & RETRO_MEMDESC_MINSIZE_8) == RETRO_MEMDESC_MINSIZE_8)
-               flags[1] = '8';
-            else if ((desc->flags & RETRO_MEMDESC_MINSIZE_4) == RETRO_MEMDESC_MINSIZE_4)
-               flags[1] = '4';
-            else if ((desc->flags & RETRO_MEMDESC_MINSIZE_2) == RETRO_MEMDESC_MINSIZE_2)
-               flags[1] = '2';
-            else
-               flags[1] = '1';
-            
-            flags[2] = 'A';
-            if ((desc->flags & RETRO_MEMDESC_ALIGN_8) == RETRO_MEMDESC_ALIGN_8)
-               flags[3] = '8';
-            else if ((desc->flags & RETRO_MEMDESC_ALIGN_4) == RETRO_MEMDESC_ALIGN_4)
-               flags[3] = '4';
-            else if ((desc->flags & RETRO_MEMDESC_ALIGN_2) == RETRO_MEMDESC_ALIGN_2)
-               flags[3] = '2';
-            else
-               flags[3] = '1';
-            
-            flags[4] = (desc->flags & RETRO_MEMDESC_BIGENDIAN) ? 'B' : 'b';
-            flags[5] = (desc->flags & RETRO_MEMDESC_CONST) ? 'C' : 'c';
-            flags[6] = 0;
-            
-            RARCH_LOG("   %03u %s %p %08X %08X %08X %08X %08X %s\n",
-               i + 1, flags, desc->ptr, desc->offset, desc->start,
-               desc->select, desc->disconnect, desc->len,
-               desc->addrspace ? desc->addrspace : "");
-         }
          
          break;
       }
