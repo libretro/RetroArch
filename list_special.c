@@ -242,14 +242,13 @@ struct string_list *string_list_new_special(enum string_list_type type,
 
          for (i = 0; i < *list_size; i++)
          {
-            const char *opt  = NULL;
             const core_info_t *info = (const core_info_t*)&core_info[i];
-            opt              = info ? info->path : NULL;
+            const char *opt = info->path;
 
             if (!opt)
                goto error;
 
-            *len           += strlen(opt) + 1;
+            *len += strlen(opt) + 1;
             string_list_append(s, opt, attr);
          }
          break;
