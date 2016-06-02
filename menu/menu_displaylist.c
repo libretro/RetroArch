@@ -1375,8 +1375,9 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
    for (i = 0; i < list_size; i++)
    {
-      uint32_t core_name_hash;
-      char fill_buf[PATH_MAX_LENGTH], path_copy[PATH_MAX_LENGTH];
+      char fill_buf[PATH_MAX_LENGTH]  = {0};
+      char path_copy[PATH_MAX_LENGTH] = {0};
+      uint32_t core_name_hash         = 0;
       const char *core_name           = NULL;
       const char *db_name             = NULL;
       const char *path                = NULL;
@@ -1389,9 +1390,12 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
       playlist_get_index(playlist, i,
             &path, &label, NULL, &core_name, &crc32, &db_name);
-      strlcpy(fill_buf, core_name, sizeof(fill_buf));
 
-      core_name_hash = core_name ? menu_hash_calculate(core_name) : 0;
+      if (core_name)
+      {
+         strlcpy(fill_buf, core_name, sizeof(fill_buf));
+         core_name_hash = menu_hash_calculate(core_name);
+      }
 
       if (path)
       {
