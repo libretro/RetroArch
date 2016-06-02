@@ -1155,10 +1155,10 @@ static int generic_action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       enum rarch_core_type action_type, unsigned id)
 {
-   char new_path[PATH_MAX_LENGTH];
+   char new_path[PATH_MAX_LENGTH]  = {0};
    content_ctx_info_t content_info = {0};
-   const char *menu_path    = NULL;
-   file_list_t *menu_stack  = menu_entries_get_menu_stack_ptr(0);
+   const char *menu_path           = NULL;
+   file_list_t *menu_stack         = menu_entries_get_menu_stack_ptr(0);
 
    menu_entries_get_last(menu_stack, &menu_path, NULL, NULL, NULL);
 
@@ -1209,14 +1209,14 @@ static int action_ok_file_load_imageviewer(const char *path,
 static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char menu_path_new[PATH_MAX_LENGTH];
-   char full_path_new[PATH_MAX_LENGTH];
-   const char *menu_label   = NULL;
-   const char *menu_path    = NULL;
-   rarch_setting_t *setting = NULL;
-   menu_handle_t *menu      = NULL;
-   content_ctx_info_t content_info = {0};
-   file_list_t  *menu_stack = menu_entries_get_menu_stack_ptr(0);
+   char menu_path_new[PATH_MAX_LENGTH] = {0};
+   char full_path_new[PATH_MAX_LENGTH] = {0};
+   const char *menu_label              = NULL;
+   const char *menu_path               = NULL;
+   rarch_setting_t *setting            = NULL;
+   menu_handle_t *menu                 = NULL;
+   content_ctx_info_t content_info     = {0};
+   file_list_t  *menu_stack            = menu_entries_get_menu_stack_ptr(0);
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -1470,8 +1470,8 @@ static int action_ok_download_generic(const char *path,
       const char *type_msg)
 {
 #ifdef HAVE_NETWORKING
-   char s[PATH_MAX_LENGTH];
-   char s3[PATH_MAX_LENGTH];
+   char s[PATH_MAX_LENGTH]      = {0};
+   char s3[PATH_MAX_LENGTH]     = {0};
    menu_file_transfer_t *transf = NULL;
    settings_t *settings         = config_get_ptr();
 
@@ -1723,7 +1723,7 @@ static int generic_action_ok_network(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned type_id)
 {
-   char url_path[PATH_MAX_LENGTH];
+   char url_path[PATH_MAX_LENGTH] = {0};
    settings_t *settings           = config_get_ptr();
    unsigned type_id2              = 0;
    const char *url_label          = NULL;
