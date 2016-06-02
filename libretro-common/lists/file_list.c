@@ -89,7 +89,7 @@ bool file_list_prepend(file_list_t *list,
       free(copy);
    }
 
-   memset(&list->list[0], 0, sizeof(file_list_t));
+   memset(&list->list[0], 0, sizeof(*list->list) * list->capacity);
 
    list->list[0].label         = NULL;
    list->list[0].path          = NULL;
