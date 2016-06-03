@@ -71,6 +71,8 @@ static void file_list_add(file_list_t *list, unsigned idx,
       list->list[idx].label      = strdup(label);
    if (path)
       list->list[idx].path       = strdup(path);
+
+   list->size++;
 }
 
 bool file_list_prepend(file_list_t *list,
@@ -91,9 +93,7 @@ bool file_list_prepend(file_list_t *list,
       list->capacity = new_capacity;
    }
 
-   list->size++;
-
-   for (i = list->size -1; i > 0; i--)
+   for (i = list->size; i > 0; i--)
    {
       struct item_file *copy = (struct item_file*)
          calloc(1, sizeof(struct item_file));
@@ -130,8 +130,6 @@ bool file_list_append(file_list_t *list,
 
    file_list_add(list, list->size, path, label, type,
          directory_ptr, entry_idx);
-
-   list->size++;
 
    return true;
 }
