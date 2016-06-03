@@ -22,6 +22,7 @@
 #include "../../driver.h"
 #include "../../runloop.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../core_info.h"
 
 #if !defined(_XBOX)
 
@@ -79,6 +80,68 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 static HMONITOR win32_monitor_last;
 static unsigned win32_monitor_count;
 static HMONITOR win32_monitor_all[MAX_MONITORS];
+
+INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message, 
+        WPARAM wParam, LPARAM lParam)
+{
+	core_info_list_t *core_info_list = NULL;
+    const core_info_t *core_info     = NULL;
+	size_t list_size;
+	char *fullpath = NULL;
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        {
+            // Add items to list. 
+			
+            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+            core_info_get_list(&core_info_list);
+			core_info_list_get_supported_cores(core_info_list,
+            (const char*)fullpath, &core_info, &list_size);
+            HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);  
+
+	     for (int i = 0; i < list_size; i++)
+         {
+            const core_info_t *info = (const core_info_t*)&core_info[i];
+            SendMessage(hwndList, LB_ADDSTRING, 0, 
+				(LPARAM)info->display_name); 
+         }
+		  SetFocus(hwndList); 
+          return TRUE;  
+		}
+
+    case WM_COMMAND:
+        switch (LOWORD(wParam))
+        {
+        case IDOK:
+        case IDCANCEL:
+            EndDialog(hDlg, LOWORD(wParam));
+            return FALSE;
+
+        case ID_CORELISTBOX:
+            {
+                switch (HIWORD(wParam)) 
+                { 
+                case LBN_SELCHANGE:
+                    {
+						runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+                        HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX); 
+                        int lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
+						core_info_get_list(&core_info_list);
+			            core_info_list_get_supported_cores(core_info_list,
+                        (const char*)fullpath, &core_info, &list_size);
+						const core_info_t *info = (const core_info_t*)&core_info[lbItem];
+						runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
+                    } 
+
+                }
+            }
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 
 static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
       HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
@@ -166,23 +229,73 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
         // Get the count of the files dropped
       {
       char szFilename[1024] = {0};
+	  
       if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
         {
-         content_ctx_info_t content_info = {0};
-            // Get the path of a single file that has been dropped
-         DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
-                     task_push_content_load_default(
-                           NULL, szFilename,
+			//poll list of current cores
+			content_ctx_info_t content_info = {0};
+			size_t list_size;
+			core_info_list_t *core_info_list = NULL;
+			const core_info_t *core_info     = NULL;
+			DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
+			core_info_get_list(&core_info_list);
+			core_info_list_get_supported_cores(core_info_list,(const char*)szFilename, &core_info, &list_size);
+			runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,szFilename);
+			if (strlen(settings->path.libretro))
+			{
+			//we already have path for libretro core
+	        for (int i = 0; i < list_size; i++)
+			{
+            const core_info_t *info = (const core_info_t*)&core_info[i];
+			if(!strcmp(settings->path.libretro,info->path)){
+			//our previous core supports the current rom
+		    content_ctx_info_t content_info = {0};
+            task_push_content_load_default(
+                           NULL, NULL,
                            &content_info,
                            CORE_TYPE_PLAIN,
                            CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                            NULL, NULL);
-                PostMessage(hwnd, WM_CLOSE, 0, 0);
-        }
-        // Release the memory that the system allocated for use in transferring file
-        // names to the application
-        DragFinish((HDROP)wparam);
-      }
+			DragFinish((HDROP)wparam);
+			return 0;
+			}
+            }
+			goto load_fail;
+			}
+			else
+			{
+load_fail:
+			//poll for cores for current rom since none exist.
+			if(list_size ==1)
+			{
+				//pick core that only exists and is bound to work. Ish.
+				 const core_info_t *info = (const core_info_t*)&core_info[0];
+				  runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
+                     task_push_content_load_default(
+                           NULL, NULL,
+                           &content_info,
+                           CORE_TYPE_PLAIN,
+                           CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                           NULL, NULL);
+			}
+			else
+			{
+			//pick one core that could be compatible, ew
+			if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),hwnd,PickCoreProc,NULL)==IDOK) 
+			{
+                     task_push_content_load_default(
+                           NULL, NULL,
+                           &content_info,
+                           CORE_TYPE_PLAIN,
+                           CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                           NULL, NULL);
+			}
+			}
+			DragFinish((HDROP)wparam);
+			return 0;
+			}
+	  }
+	  }
       break; 
       case WM_CHAR:
       case WM_KEYDOWN:
