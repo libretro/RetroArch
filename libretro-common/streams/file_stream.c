@@ -361,6 +361,18 @@ error:
    return -1;
 }
 
+int filestream_eof(RFILE *stream)
+{
+   ssize_t current_position = filestream_tell(stream);
+   ssize_t end_position     = filestream_seek(stream, 0, SEEK_END);
+
+   filestream_seek(stream, current_position, SEEK_SET);
+
+   if (current_position >= end_position)
+      return 1;
+   return 0;
+}
+
 ssize_t filestream_tell(RFILE *stream)
 {
    if (!stream)

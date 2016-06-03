@@ -69,6 +69,8 @@ char *filestream_getline(RFILE *stream);
 
 int filestream_getc(RFILE *stream);
 
+int filestream_eof(RFILE *stream);
+
 bool filestream_write_file(const char *path, const void *data, ssize_t size);
 
 int filestream_putc(RFILE *stream, int c);
