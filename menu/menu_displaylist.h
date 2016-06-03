@@ -19,15 +19,14 @@
 #include <stdint.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 #include <lists/file_list.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
 #endif
+
+RETRO_BEGIN_DECLS
 
 enum menu_displaylist_parse_type
 {
@@ -159,8 +158,6 @@ typedef struct menu_displaylist_ctx_entry
 
 bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

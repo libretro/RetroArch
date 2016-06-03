@@ -18,10 +18,9 @@
 #define __CHEAT_MANAGER_H
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct cheat_manager cheat_manager_t;
 
@@ -74,8 +73,6 @@ void cheat_manager_state_free(void);
 
 bool cheat_manager_alloc_if_empty(void);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

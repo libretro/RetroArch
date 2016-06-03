@@ -20,14 +20,13 @@
 #include <stddef.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include "menu_setting.h"
 #include "menu_entry.h"
 #include "menu_displaylist.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum menu_list_type
 {
@@ -179,8 +178,6 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
 
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

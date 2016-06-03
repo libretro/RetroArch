@@ -20,10 +20,9 @@
 #include <stdlib.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum menu_content_ctl_state
 {
@@ -63,8 +62,6 @@ typedef struct menu_content_ctx_defer_info
 
 bool menu_content_ctl(enum menu_content_ctl_state state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

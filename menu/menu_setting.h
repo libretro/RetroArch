@@ -19,14 +19,14 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include "../command.h"
 #include "../input/input_driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum setting_type
 {
@@ -384,8 +384,6 @@ void settings_data_list_current_add_free_flags(
 
 bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

@@ -17,14 +17,14 @@
 #define MENU_ENTRY_H__
 
 #include <stdint.h>
+
 #include <boolean.h>
+#include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 
 #include "menu_input.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum menu_entry_type
 {
@@ -112,8 +112,6 @@ int menu_entry_select(uint32_t i);
 int menu_entry_action(menu_entry_t *entry,
                       unsigned i, enum menu_action action);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

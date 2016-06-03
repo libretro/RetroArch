@@ -20,10 +20,9 @@
 #include <stddef.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum menu_navigation_ctl_state
 {
@@ -46,8 +45,6 @@ enum menu_navigation_ctl_state
 
 bool menu_navigation_ctl(enum menu_navigation_ctl_state state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

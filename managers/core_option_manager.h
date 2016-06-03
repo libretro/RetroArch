@@ -20,10 +20,9 @@
 #include <stddef.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct core_option_manager core_option_manager_t;
 
@@ -151,9 +150,6 @@ void core_option_manager_prev(core_option_manager_t *opt, size_t idx);
  **/
 void core_option_manager_set_default(core_option_manager_t *opt, size_t idx);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
-

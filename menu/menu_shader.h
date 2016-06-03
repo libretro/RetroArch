@@ -17,11 +17,11 @@
 #ifndef _MENU_SHADER_MANAGER_H
 #define _MENU_SHADER_MANAGER_H
 
+#include <retro_common_api.h>
+
 #include "../gfx/video_shader_driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 /**
  * menu_shader_manager_init:
@@ -70,8 +70,6 @@ unsigned menu_shader_manager_get_type(
  **/
 void menu_shader_manager_apply_changes(void);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

@@ -24,6 +24,7 @@
 #include <ctype.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include "menu_entries.h"
 
@@ -31,9 +32,7 @@
 
 #include "../driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 #ifndef MAX_COUNTERS
 #define MAX_COUNTERS 64
@@ -480,9 +479,6 @@ extern menu_ctx_driver_t menu_ctx_xmb;
 extern menu_ctx_driver_t menu_ctx_zarch;
 extern menu_ctx_driver_t menu_ctx_null;
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
-

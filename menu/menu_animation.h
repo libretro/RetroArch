@@ -19,11 +19,11 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <boolean.h>
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 typedef float (*easing_cb) (float, float, float, float);
 typedef void  (*tween_cb)  (void);
@@ -129,8 +129,6 @@ typedef struct menu_animation_ctx_ticker
 
 bool menu_animation_ctl(enum menu_animation_ctl_state state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

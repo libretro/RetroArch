@@ -18,16 +18,15 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <boolean.h>
 
+#include <boolean.h>
+#include <retro_common_api.h>
 #include <gfx/math/matrix_4x4.h>
 
 #include "../gfx/video_context_driver.h"
 #include "../gfx/video_coord_array.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum menu_display_prim_type
 {
@@ -210,8 +209,6 @@ extern menu_display_ctx_driver_t menu_display_ctx_vulkan;
 extern menu_display_ctx_driver_t menu_display_ctx_d3d;
 extern menu_display_ctx_driver_t menu_display_ctx_null;
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

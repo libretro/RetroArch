@@ -16,9 +16,9 @@
 #ifndef MENU_HASH_H__
 #define MENU_HASH_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 #define MENU_LABEL_START_NET_RETROPAD                                          0xf2ae670dU
 #define MENU_LABEL_VALUE_START_NET_RETROPAD                                    0xad11a6a0U
@@ -1202,8 +1202,6 @@ int menu_hash_get_help(uint32_t hash, char *s, size_t len);
 
 uint32_t menu_hash_calculate(const char *s);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

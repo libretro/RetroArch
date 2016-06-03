@@ -17,12 +17,12 @@
 #ifndef _MENU_INPUT_H
 #define _MENU_INPUT_H
 
+#include <retro_common_api.h>
+
 #include "../input/input_driver.h"
 #include "../input/input_keyboard.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum menu_action
 {
@@ -141,8 +141,6 @@ int16_t menu_input_mouse_state(enum menu_input_mouse_state state);
 
 bool menu_input_ctl(enum menu_input_ctl_state state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
