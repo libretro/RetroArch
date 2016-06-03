@@ -25,6 +25,7 @@
 #endif
 
 #include <boolean.h>
+#include <retro_common_api.h>
 #include "../../driver.h"
 #include "../video_context_driver.h"
 
@@ -66,15 +67,11 @@ bool win32_monitor_set_fullscreen(unsigned width,
       unsigned height, unsigned refresh, char *dev_name);
 
 #ifndef _XBOX
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 #endif
 
 bool win32_window_create(void *data, unsigned style,

@@ -22,12 +22,11 @@
 #include <EGL/eglext.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include "../video_context_driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 /* Put this structure as the first member of egl-based contexts
  * like this:
@@ -97,8 +96,6 @@ bool egl_get_native_visual_id(egl_ctx_data_t *egl, EGLint *value);
 
 bool egl_has_config(egl_ctx_data_t *egl);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

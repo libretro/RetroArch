@@ -32,6 +32,7 @@
 
 #include <boolean.h>
 #include <retro_inline.h>
+#include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/scaler/scaler.h>
@@ -48,9 +49,7 @@
 #include "../video_context_driver.h"
 #include "../drivers_shader/shader_vulkan.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct vulkan_filter_chain vulkan_filter_chain_t;
 
@@ -509,9 +508,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       unsigned swap_interval);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

@@ -17,6 +17,7 @@
 #ifndef __D3D_RENDER_CHAIN_H
 #define __D3D_RENDER_CHAIN_H
 
+#include <retro_common_api.h>
 #include <libretro.h>
 
 #include "../video_driver.h"
@@ -24,9 +25,7 @@
 #include "../video_state_tracker.h"
 #include "../../defines/d3d_defines.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 struct LinkInfo
 {
@@ -79,9 +78,7 @@ extern renderchain_driver_t null_renderchain;
 bool renderchain_init_first(const renderchain_driver_t **renderchain_driver,
 	void **renderchain_handle);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

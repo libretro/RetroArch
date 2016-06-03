@@ -17,13 +17,12 @@
 #define _D3D_COMMON_H
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include "win32_common.h"
 #include "../../defines/d3d_defines.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 bool d3d_swap(void *data, LPDIRECT3DDEVICE dev);
 
@@ -115,8 +114,6 @@ void d3d_device_free(LPDIRECT3DDEVICE dev, LPDIRECT3D pd3d);
 
 D3DTEXTUREFILTERTYPE d3d_translate_filter(unsigned type);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

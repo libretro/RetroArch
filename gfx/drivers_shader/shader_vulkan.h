@@ -19,13 +19,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <boolean.h>
+#include <retro_common_api.h>
+
 #include "../common/vulkan_common.h"
 
-#include <boolean.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct vulkan_filter_chain vulkan_filter_chain_t;
 
@@ -144,9 +143,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 struct video_shader *vulkan_filter_chain_get_preset(
       vulkan_filter_chain_t *chain);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

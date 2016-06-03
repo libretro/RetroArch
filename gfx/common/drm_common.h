@@ -24,11 +24,10 @@
 #include <poll.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 #include <retro_inline.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 extern uint32_t g_connector_id;
 extern int g_drm_fd;
@@ -73,8 +72,6 @@ static INLINE bool drm_wait_flip(int timeout)
    return false;
 }
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
