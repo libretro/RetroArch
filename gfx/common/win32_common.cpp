@@ -243,11 +243,14 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
 			runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,szFilename);
 			if (strlen(settings->path.libretro))
 			{
+         core_info_t *current_core = NULL;
+         core_info_get_current_core(&current_core);
 			//we already have path for libretro core
 	        for (int i = 0; i < list_size; i++)
 			{
             const core_info_t *info = (const core_info_t*)&core_info[i];
-			if(!strcmp(settings->path.libretro,info->path)){
+         if(strcmp(info->systemname,current_core->systemname))break;
+			if(!strcmp(current_core->path,info->path)){
 			//our previous core supports the current rom
 		    content_ctx_info_t content_info = {0};
             task_push_content_load_default(
@@ -258,10 +261,10 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                            NULL, NULL);
 			DragFinish((HDROP)wparam);
 			return 0;
-			}
-            }
+			      }
+         }
 			goto load_fail;
-			}
+      }
 			else
 			{
 load_fail:
@@ -281,7 +284,7 @@ load_fail:
 			else
 			{
 			//pick one core that could be compatible, ew
-			if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),hwnd,PickCoreProc,NULL)==IDOK) 
+			if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),hwnd,PickCoreProc,(LPARAM)NULL)==IDOK) 
 			{
                      task_push_content_load_default(
                            NULL, NULL,
