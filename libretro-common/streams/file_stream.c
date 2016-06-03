@@ -296,7 +296,7 @@ int filestream_getc(RFILE *stream)
 #if defined(HAVE_BUFFERED_IO)
    return fgetc(stream->fp);
 #else
-   return getc(stream->fp);
+   return getc(stream->fd);
 #endif
 }
 
