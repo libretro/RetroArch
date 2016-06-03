@@ -743,7 +743,8 @@ static void check_proc_acpi_sysfs_battery(const char *node,
       int *seconds, int *percent)
 {
    unsigned capacity;
-   char path[1024], info[1024];
+   char path[1024]   = {0};
+   char info[1024]   = {0};
    const char *base  = proc_acpi_sysfs_battery_path;
    char        *buf  = NULL;
    char         *ptr = NULL;
@@ -787,7 +788,7 @@ end:
 
 static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 {
-   char path[1024];
+   char path[1024]  = {0};
    const char *base = proc_acpi_ac_adapter_path;
    char       *buf  = NULL;
    char        *ptr = NULL;
@@ -819,7 +820,7 @@ static void check_proc_acpi_ac_adapter(const char * node, bool *have_ac)
 
 static void check_proc_acpi_sysfs_ac_adapter(const char * node, bool *have_ac)
 {
-   char  path[1024];
+   char  path[1024] = {0};
    ssize_t length   = 0;
    char     *buf    = NULL;
    const char *base = proc_acpi_sysfs_ac_adapter_path;
@@ -870,13 +871,13 @@ static bool frontend_linux_powerstate_check_apm(
       enum frontend_powerstate *state,
       int *seconds, int *percent)
 {
-   char *ptr;
    int ac_status       = 0;
    int battery_status  = 0;
    int battery_flag    = 0;
    int battery_percent = 0;
    int battery_time    = 0;
    ssize_t length      = 0;
+   char *ptr           = NULL;
    char  *buf          = NULL;
    char *str           = NULL;
 
@@ -1112,9 +1113,9 @@ static enum frontend_powerstate frontend_linux_get_powerstate(
 
 static enum frontend_architecture frontend_linux_get_architecture(void)
 {
-   uint32_t buffer_hash;
-   const char *val;
    struct utsname buffer;
+   uint32_t buffer_hash   = 0;
+   const char *val        = NULL;
 
    if (uname(&buffer) != 0)
       return FRONTEND_ARCH_NONE;
@@ -1435,7 +1436,7 @@ static void frontend_linux_get_env(int *argc,
          RARCH_LOG("Application location: [%s].\n", app_dir);
          if (args && *app_dir)
          {
-            char buf[PATH_MAX_LENGTH];
+            char buf[PATH_MAX_LENGTH] = {0};
 
             fill_pathname_join(g_defaults.dir.assets, app_dir,
                   "assets", sizeof(g_defaults.dir.assets));
@@ -1635,9 +1636,9 @@ static void frontend_linux_get_env(int *argc,
       snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
 
 #else
-   char base_path[PATH_MAX];
-   const char *xdg  = getenv("XDG_CONFIG_HOME");
-   const char *home = getenv("HOME");
+   char base_path[PATH_MAX] = {0};
+   const char *xdg          = getenv("XDG_CONFIG_HOME");
+   const char *home         = getenv("HOME");
 
    if (xdg)
       snprintf(base_path, sizeof(base_path),
@@ -1837,8 +1838,8 @@ static bool frontend_linux_set_fork(enum frontend_fork fork_mode)
          linux_fork_mode  = FRONTEND_FORK_CORE;
 
          {
-            char executable_path[PATH_MAX_LENGTH];
-            settings_t *settings = config_get_ptr();
+            char executable_path[PATH_MAX_LENGTH] = {0};
+            settings_t                  *settings = config_get_ptr();
 
             fill_pathname_application_path(executable_path, sizeof(executable_path));
             strlcpy(settings->path.libretro, executable_path, sizeof(settings->path.libretro));
