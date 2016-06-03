@@ -14,6 +14,7 @@
  */
 
 #include <retro_miscellaneous.h>
+#include <string/stdstring.h>
 
 #include "../../frontend/frontend_driver.h"
 #include "../../general.h"
