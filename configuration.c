@@ -931,10 +931,10 @@ static void config_set_defaults(void)
  **/
 static config_file_t *open_default_config_file(void)
 {
-   char application_data[PATH_MAX_LENGTH];
-   char conf_path[PATH_MAX_LENGTH] = {0};
-   char app_path[PATH_MAX_LENGTH]  = {0};
-   config_file_t *conf             = NULL;
+   char application_data[PATH_MAX_LENGTH] = {0};
+   char conf_path[PATH_MAX_LENGTH]        = {0};
+   char app_path[PATH_MAX_LENGTH]         = {0};
+   config_file_t *conf                    = NULL;
 
 #if defined(_WIN32) && !defined(_XBOX)
    fill_pathname_application_path(app_path, sizeof(app_path));
@@ -1745,6 +1745,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    {
       bool tmp_bool = false;
       char tmp[64]  = {0};
+
       snprintf(tmp, sizeof(tmp), "network_remote_enable_user_p%u", i + 1);
 
       if (config_get_bool(conf, tmp, &tmp_bool))
@@ -1944,8 +1945,8 @@ static void config_load_core_specific(void)
  */
 bool config_load_override(void)
 {
-   char buf[PATH_MAX_LENGTH];
-   char config_directory[PATH_MAX_LENGTH];
+   char buf[PATH_MAX_LENGTH]              = {0};
+   char config_directory[PATH_MAX_LENGTH] = {0};
    char core_path[PATH_MAX_LENGTH]        = {0};
    char game_path[PATH_MAX_LENGTH]        = {0};
    config_file_t *new_conf                = NULL;
@@ -2124,7 +2125,7 @@ bool config_unload_override(void)
  */
 bool config_load_remap(void)
 {
-   char remap_directory[PATH_MAX_LENGTH];    /* path to the directory containing retroarch.cfg (prefix)    */
+   char remap_directory[PATH_MAX_LENGTH]   = {0};    /* path to the directory containing retroarch.cfg (prefix)    */
    char core_path[PATH_MAX_LENGTH]         = {0};    /* final path for core-specific configuration (prefix+suffix) */
    char game_path[PATH_MAX_LENGTH]         = {0};    /* final path for game-specific configuration (prefix+suffix) */
    config_file_t *new_conf                 = NULL;
@@ -2344,7 +2345,7 @@ static void save_keybind_axis(config_file_t *conf, const char *prefix,
 
    if (dir)
    {
-      char config[16];
+      char config[16] = {0};
       snprintf(config, sizeof(config), "%c%u", dir, axis);
       config_set_string(conf, key, config);
    }
