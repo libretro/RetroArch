@@ -56,6 +56,23 @@ static struct item_file *realloc_file_list_capacity(file_list_t *list, size_t ca
    return new_data;
 }
 
+static void file_list_add(file_list_t *list, unsigned idx,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr,
+      size_t entry_idx)
+{
+   memset(&list->list[idx], 0, sizeof(*list->list));
+
+   list->list[idx].type          = type;
+   list->list[idx].directory_ptr = directory_ptr;
+   list->list[idx].entry_idx     = entry_idx;
+
+   if (label)
+      list->list[idx].label      = strdup(label);
+   if (path)
+      list->list[idx].path       = strdup(path);
+}
+
 bool file_list_prepend(file_list_t *list,
       const char *path, const char *label,
       unsigned type, size_t directory_ptr,
@@ -89,16 +106,8 @@ bool file_list_prepend(file_list_t *list,
       free(copy);
    }
 
-   memset(&list->list[0], 0, sizeof(*list->list));
-
-   list->list[0].type          = type;
-   list->list[0].directory_ptr = directory_ptr;
-   list->list[0].entry_idx     = entry_idx;
-
-   if (label)
-      list->list[0].label      = strdup(label);
-   if (path)
-      list->list[0].path       = strdup(path);
+   file_list_add(list, 0, path, label, type,
+         directory_ptr, entry_idx);
 
    return true;
 }
@@ -119,16 +128,8 @@ bool file_list_append(file_list_t *list,
       list->capacity = new_capacity;
    }
 
-   memset(&list->list[list->size], 0, sizeof(*list->list));
-
-   list->list[list->size].type          = type;
-   list->list[list->size].directory_ptr = directory_ptr;
-   list->list[list->size].entry_idx     = entry_idx;
-
-   if (label)
-      list->list[list->size].label      = strdup(label);
-   if (path)
-      list->list[list->size].path       = strdup(path);
+   file_list_add(list, list->size, path, label, type,
+         directory_ptr, entry_idx);
 
    list->size++;
 
