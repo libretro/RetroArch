@@ -80,7 +80,7 @@ static int action_iterate_help(menu_handle_t *menu,
       case MENU_HELP_CONTROLS:
          {
             unsigned i;
-            char s2[PATH_MAX_LENGTH];
+            char s2[PATH_MAX_LENGTH] = {0};
             const unsigned binds[] = {
                RETRO_DEVICE_ID_JOYPAD_UP,
                RETRO_DEVICE_ID_JOYPAD_DOWN,
@@ -330,7 +330,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
             if (setting)
             {
-               char needle[PATH_MAX_LENGTH];
+               char needle[PATH_MAX_LENGTH] = {0};
                strlcpy(needle, menu_setting_get_name(setting), sizeof(needle));
                label_hash       = menu_hash_calculate(needle);
             }
