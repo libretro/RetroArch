@@ -75,12 +75,8 @@ static void file_list_add(file_list_t *list, unsigned idx,
    list->size++;
 }
 
-bool file_list_prepend(file_list_t *list,
-      const char *path, const char *label,
-      unsigned type, size_t directory_ptr,
-      size_t entry_idx)
+bool file_list_expand_if_needed(file_list_t *list)
 {
-   unsigned i;
    if (list->size >= list->capacity)
    {
       size_t new_capacity     = list->capacity * 2 + 1;
@@ -92,6 +88,18 @@ bool file_list_prepend(file_list_t *list,
       list->list     = items;
       list->capacity = new_capacity;
    }
+   return true;
+}
+
+bool file_list_prepend(file_list_t *list,
+      const char *path, const char *label,
+      unsigned type, size_t directory_ptr,
+      size_t entry_idx)
+{
+   unsigned i;
+   
+   if (!file_list_expand_if_needed(list))
+      return false;
 
    for (i = list->size; i > 0; i--)
    {
@@ -117,16 +125,8 @@ bool file_list_append(file_list_t *list,
       unsigned type, size_t directory_ptr,
       size_t entry_idx)
 {
-   if (list->size >= list->capacity)
-   {
-      size_t new_capacity     = list->capacity * 2 + 1;
-      struct item_file *items = 
-         realloc_file_list_capacity(list, new_capacity);
-      if (!items)
-         return false;
-      list->list     = items;
-      list->capacity = new_capacity;
-   }
+   if (!file_list_expand_if_needed(list))
+      return false;
 
    file_list_add(list, list->size, path, label, type,
          directory_ptr, entry_idx);
