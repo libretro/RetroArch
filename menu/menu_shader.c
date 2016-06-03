@@ -214,17 +214,17 @@ void menu_shader_manager_save_preset(
       const char *basename, bool apply)
 {
 #ifdef HAVE_SHADER_MANAGER
-   char buffer[PATH_MAX_LENGTH];
-   char config_directory[PATH_MAX_LENGTH];
-   char preset_path[PATH_MAX_LENGTH];
-   unsigned d, type            = RARCH_SHADER_NONE;
-   const char *dirs[3]         = {0};
-   config_file_t *conf         = NULL;
-   bool ret                    = false;
-   struct video_shader *shader = NULL;
-   global_t *global            = global_get_ptr();
-   settings_t *settings        = config_get_ptr();
-   menu_handle_t *menu         = NULL;
+   char buffer[PATH_MAX_LENGTH]           = {0};
+   char config_directory[PATH_MAX_LENGTH] = {0};
+   char preset_path[PATH_MAX_LENGTH]      = {0};
+   unsigned d, type                       = RARCH_SHADER_NONE;
+   const char *dirs[3]                    = {0};
+   config_file_t *conf                    = NULL;
+   bool ret                               = false;
+   struct video_shader *shader            = NULL;
+   global_t *global                       = global_get_ptr();
+   settings_t *settings                   = config_get_ptr();
+   menu_handle_t *menu                    = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
    {

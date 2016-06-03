@@ -339,8 +339,8 @@ static bool zarch_zui_list_item(zui_t *zui, struct zui_tabbed *tab, int x1, int 
       const char *label, unsigned item_id, const char *entry, bool selected)
 {
    menu_animation_ctx_ticker_t ticker;
-   char title_buf[PATH_MAX_LENGTH];
    unsigned ticker_size;
+   char title_buf[PATH_MAX_LENGTH] = {0};
    uint64_t *frame_count = NULL;
    unsigned           id = zarch_zui_hash(zui, label);
    int                x2 = x1 + zui->width - 290 - 40;
@@ -586,9 +586,9 @@ static void zarch_zui_render_lay_root_load_set_new_path(zui_t *zui,
 static int zarch_zui_render_lay_root_load(zui_t *zui,
       struct zui_tabbed *tabbed)
 {
-   char parent_dir[PATH_MAX_LENGTH];
-   settings_t *settings   = config_get_ptr();
-   core_info_list_t *list = NULL;
+   char parent_dir[PATH_MAX_LENGTH] = {0};
+   settings_t           *settings   = config_get_ptr();
+   core_info_list_t           *list = NULL;
 
    if (zarch_zui_tab(zui, tabbed, "Load", 1))
    {
@@ -650,9 +650,9 @@ static int zarch_zui_render_lay_root_load(zui_t *zui,
 
             for (i = skip + zui->load_dlist_first; i < size; ++i)
             {
-               char label[PATH_MAX_LENGTH];
-               const char *path     = NULL;
-               const char *basename = NULL;
+               char label[PATH_MAX_LENGTH] = {0};
+               const char        *path     = NULL;
+               const char        *basename = NULL;
 
                if (j > 10)
                   break;
@@ -727,7 +727,7 @@ static int zarch_zui_render_lay_root_downloads(
 
 static int zarch_zui_render_lay_root(zui_t *zui)
 {
-   char item[PATH_MAX_LENGTH];
+   char item[PATH_MAX_LENGTH]      = {0};
    static struct zui_tabbed tabbed = {~0U};
 
    zarch_zui_tabbed_begin(zui, &tabbed, 0, 0);

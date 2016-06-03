@@ -129,13 +129,17 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
 {
    char new_core_path[PATH_MAX_LENGTH]     = {0};
    const core_info_t *info                 = NULL;
+   core_info_list_t *core_info             = NULL;
+   const char *default_info_dir            = NULL;
    size_t supported                        = 0;
-   core_info_list_t *core_info             = def_info ? 
-      (core_info_list_t*)def_info->data : NULL;
-   uint32_t menu_label_hash                = 
-      menu_hash_calculate(def_info->menu_label);
-   const char *default_info_dir            = def_info ?
-      def_info->dir : NULL;
+   uint32_t menu_label_hash                = 0;
+
+   if (def_info)
+   {
+      menu_label_hash   = menu_hash_calculate(def_info->menu_label);
+      core_info         = (core_info_list_t*)def_info->data;
+      default_info_dir  = def_info->dir;
+   }
 
    if (!string_is_empty(default_info_dir))
    {

@@ -226,7 +226,8 @@ static void nk_menu_layout(nk_menu_handle_t *nk)
 
 static void nk_menu_init_device(nk_menu_handle_t *nk)
 {
-   char buf[PATH_MAX_LENGTH];
+   char buf[PATH_MAX_LENGTH] = {0};
+
    fill_pathname_join(buf, nk->assets_directory,
          "DroidSans.ttf", sizeof(buf));
 
@@ -348,9 +349,10 @@ static void nk_menu_context_destroy(void *data)
 static void nk_menu_context_reset(void *data)
 {
    char iconpath[PATH_MAX_LENGTH] = {0};
-   nk_menu_handle_t *nk              = (nk_menu_handle_t*)data;
+   nk_menu_handle_t *nk           = (nk_menu_handle_t*)data;
    settings_t *settings           = config_get_ptr();
-   unsigned width, height = 0;
+   unsigned width                 = 0;
+   unsigned height                = 0;
 
    video_driver_get_size(&width, &height);
 
