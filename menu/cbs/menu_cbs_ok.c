@@ -456,13 +456,13 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
       unsigned type, bool is_carchive)
 {
    menu_content_ctx_defer_info_t def_info;
-   char menu_path_new[PATH_MAX_LENGTH];
-   content_ctx_info_t content_info = {0};
-   int ret                  = 0;
-   const char *menu_path    = NULL;
-   const char *menu_label   = NULL;
-   menu_handle_t *menu      = NULL;
-   core_info_list_t *list   = NULL;
+   content_ctx_info_t content_info     = {0};
+   char menu_path_new[PATH_MAX_LENGTH] = {0};
+   int ret                             = 0;
+   const char *menu_path               = NULL;
+   const char *menu_label              = NULL;
+   menu_handle_t *menu                 = NULL;
+   core_info_list_t *list              = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -570,13 +570,13 @@ static int action_ok_playlist_entry(const char *path,
    menu_content_ctx_playlist_info_t playlist_info;
    uint32_t core_name_hash, core_path_hash;
    size_t selection_ptr             = 0;
-   playlist_t *playlist     = g_defaults.history;
+   playlist_t *playlist             = g_defaults.history;
    bool is_history                  = true;
    const char *entry_path           = NULL;
    const char *entry_label          = NULL;
    const char *core_path            = NULL;
    const char *core_name            = NULL;
-   playlist_t *tmp_playlist = NULL;
+   playlist_t *tmp_playlist         = NULL;
    menu_handle_t *menu              = NULL;
    uint32_t hash_label              = menu_hash_calculate(label);
 
@@ -1091,12 +1091,12 @@ static int action_ok_core_deferred_set(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t selection;
-   char core_display_name[PATH_MAX_LENGTH];
-   const char            *entry_path = NULL;
-   const char           *entry_label = NULL;
-   const char           *entry_crc32 = NULL;
-   const char               *db_name = NULL;
-   playlist_t *playlist      = NULL;
+   char core_display_name[PATH_MAX_LENGTH] = {0};
+   const char            *entry_path       = NULL;
+   const char           *entry_label       = NULL;
+   const char           *entry_crc32       = NULL;
+   const char               *db_name       = NULL;
+   playlist_t               *playlist      = NULL;
 
    if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
       return menu_cbs_exit();
@@ -1626,8 +1626,8 @@ static int action_ok_disk_cycle_tray_status(const char *path,
 static int action_ok_option_create(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   char game_path[PATH_MAX_LENGTH];
-   config_file_t *conf                    = NULL;
+   char game_path[PATH_MAX_LENGTH] = {0};
+   config_file_t *conf             = NULL;
 
    if (!retroarch_validate_game_options(game_path, sizeof(game_path), true))
    {
@@ -1816,9 +1816,9 @@ static int action_ok_rdb_entry_submenu(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    union string_list_elem_attr attr;
-   char new_label[PATH_MAX_LENGTH];
-   char new_path[PATH_MAX_LENGTH];
-   int ret = -1;
+   int ret                         = -1;
+   char new_label[PATH_MAX_LENGTH] = {0};
+   char new_path[PATH_MAX_LENGTH]  = {0};
    char *rdb                       = NULL;
    int len                         = 0;
    struct string_list *str_list    = NULL;
