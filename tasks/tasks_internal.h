@@ -17,7 +17,9 @@
 #define TASKS_HANDLER_INTERNAL_H
 
 #include <stdint.h>
+
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include <queues/message_queue.h>
 #include <queues/task_queue.h>
@@ -26,10 +28,7 @@
 #include "../core_type.h"
 #include "../runloop.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum content_mode_load
 {
@@ -135,9 +134,6 @@ bool take_screenshot(void);
 bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type);
 
-
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
