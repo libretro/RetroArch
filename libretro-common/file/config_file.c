@@ -117,7 +117,7 @@ static char *strip_comment(char *str)
 {
    /* Remove everything after comment.
     * Keep #s inside string literals. */
-   char *strend = str + strlen(str);
+   char *string_end = str + strlen(str);
    bool cut_comment = true;
 
    while (!string_is_empty(str))
@@ -125,10 +125,10 @@ static char *strip_comment(char *str)
       char *comment = NULL;
       char *literal = strchr(str, '\"');
       if (!literal)
-         literal = strend;
+         literal = string_end;
       comment = (char*)strchr(str, '#');
       if (!comment)
-         comment = strend;
+         comment = string_end;
 
       if (cut_comment && literal < comment)
       {
@@ -146,7 +146,7 @@ static char *strip_comment(char *str)
          str = comment;
       }
       else
-         str = strend;
+         str = string_end;
    }
 
    return str;
@@ -413,25 +413,23 @@ static config_file_t *config_file_new_internal(
 
       line = getaline(file);
 
-      if (line)
-      {
-         if (parse_line(conf, list, line))
-         {
-            if (conf->entries)
-               conf->tail->next = list;
-            else
-               conf->entries = list;
-
-            conf->tail = list;
-         }
-
-         free(line);
-      }
-      else
+      if (!line)
       {
          free(list);
          continue;
       }
+
+      if (parse_line(conf, list, line))
+      {
+         if (conf->entries)
+            conf->tail->next = list;
+         else
+            conf->entries = list;
+
+         conf->tail = list;
+      }
+
+      free(line);
 
       if (list != conf->tail)
          free(list);
