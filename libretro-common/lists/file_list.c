@@ -89,13 +89,8 @@ bool file_list_prepend(file_list_t *list,
       free(copy);
    }
 
-   memset(&list->list[0], 0, sizeof(*list->list) * list->capacity);
+   memset(&list->list[0], 0, sizeof(*list->list));
 
-   list->list[0].label         = NULL;
-   list->list[0].path          = NULL;
-   list->list[0].alt           = NULL;
-   list->list[0].userdata      = NULL;
-   list->list[0].actiondata    = NULL;
    list->list[0].type          = type;
    list->list[0].directory_ptr = directory_ptr;
    list->list[0].entry_idx     = entry_idx;
