@@ -29,7 +29,7 @@
 #define IDI_ICON 1
 
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0500 //_WIN32_WINNT_WIN2K
+#define _WIN32_WINNT 0x0500 /*_WIN32_WINNT_WIN2K */
 #endif
 
 #include <windows.h>
@@ -91,24 +91,25 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
     switch (message)
     {
     case WM_INITDIALOG:
-        {
-            // Add items to list. 
-			
-            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-            core_info_get_list(&core_info_list);
-			core_info_list_get_supported_cores(core_info_list,
-            (const char*)fullpath, &core_info, &list_size);
-            HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);  
+       {
+          unsigned i;
+          /* Add items to list.  */
 
-	     for (int i = 0; i < list_size; i++)
-         {
-            const core_info_t *info = (const core_info_t*)&core_info[i];
-            SendMessage(hwndList, LB_ADDSTRING, 0, 
-				(LPARAM)info->display_name); 
-         }
-		  SetFocus(hwndList); 
+          runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+          core_info_get_list(&core_info_list);
+          core_info_list_get_supported_cores(core_info_list,
+                (const char*)fullpath, &core_info, &list_size);
+          HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);  
+
+          for (i = 0; i < list_size; i++)
+          {
+             const core_info_t *info = (const core_info_t*)&core_info[i];
+             SendMessage(hwndList, LB_ADDSTRING, 0, 
+                   (LPARAM)info->display_name); 
+          }
+          SetFocus(hwndList); 
           return TRUE;  
-		}
+       }
 
     case WM_COMMAND:
         switch (LOWORD(wParam))
@@ -269,7 +270,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                else
                {
 load_fail:
-                  /*poll for cores for current rom since none exist. */
+                  /* Poll for cores for current rom since none exist. */
                   if(list_size ==1)
                   {
                      /*pick core that only exists and is bound to work. Ish. */
@@ -286,7 +287,7 @@ load_fail:
                   }
                   else
                   {
-                     /*pick one core that could be compatible, ew */
+                     /* Pick one core that could be compatible, ew */
                      if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
                               hwnd,PickCoreProc,(LPARAM)NULL)==IDOK) 
                      {
