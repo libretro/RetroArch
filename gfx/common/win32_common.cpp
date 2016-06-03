@@ -242,11 +242,14 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                core_info_list_t *core_info_list = NULL;
                const core_info_t *core_info     = NULL;
                DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
+
                core_info_get_list(&core_info_list);
-               core_info_list_get_supported_cores(core_info_list,(const char*)szFilename, &core_info, &list_size);
+               core_info_list_get_supported_cores(core_info_list,
+                     (const char*)szFilename, &core_info, &list_size);
+
                runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,szFilename);
 
-               if (strlen(settings->path.libretro))
+               if (!string_is_empty(settings->path.libretro))
                {
                   unsigned i;
                   core_info_t *current_core = NULL;
@@ -282,7 +285,7 @@ load_fail:
                      /*pick core that only exists and is bound to work. Ish. */
                      const core_info_t *info = (const core_info_t*)&core_info[0];
 
-                     runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
+                     runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, info->path);
 
                      task_push_content_load_default(
                            NULL, NULL,
