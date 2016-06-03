@@ -19,11 +19,11 @@
 
 #include <boolean.h>
 
+#include <retro_common_api.h>
+
 #include "core_type.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 #define MENU_VALUE_FILE_WEBM           0x7ca00b50U
 #define MENU_VALUE_FILE_F4F            0x0b886be5U
@@ -178,8 +178,6 @@ bool retroarch_main_init(int argc, char *argv[]);
 
 void retroarch_main_quit(void);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

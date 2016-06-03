@@ -19,9 +19,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct cheevos_ctx_desc
 {
@@ -48,8 +48,6 @@ bool cheevos_set_cheats(void);
 
 void cheevos_set_support_cheevos(bool state);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif /* __RARCH_CHEEVOS_H */

@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <retro_common_api.h>
+
 #define MSG_UNKNOWN                                   0x3a834e55U
 #define MSG_PROGRAM                                   0xc339565dU
 #define MSG_FOUND_SHADER                              0x817f42b7U
@@ -157,9 +159,7 @@
 #define MSG_DOWNLOADING                               0x465305dbU
 #define MSG_EXTRACTING                                0x25a4c19eU
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 const char *msg_hash_to_str(uint32_t hash);
 
@@ -187,10 +187,7 @@ const char *msg_hash_to_str_us(uint32_t hash);
 
 uint32_t msg_hash_calculate(const char *s);
 
-#ifdef __cplusplus
-}
-#endif
-
+RETRO_END_DECLS
 
 #endif
 

@@ -17,14 +17,13 @@
 #ifndef __RARCH_MOVIE_H
 #define __RARCH_MOVIE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <stddef.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 #define BSV_MAGIC          0x42535631
 
@@ -80,9 +79,6 @@ bool bsv_movie_ctl(enum bsv_ctl_state state, void *data);
 
 bool bsv_movie_init_handle(const char *path, enum rarch_movie_type type);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
-

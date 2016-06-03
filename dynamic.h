@@ -18,6 +18,7 @@
 #define __DYNAMIC_H
 
 #include <boolean.h>
+#include <retro_common_api.h>
 #include <libretro.h>
 
 #include "core_type.h"
@@ -26,9 +27,7 @@
 #include "config.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 /**
  * libretro_get_environment_info:
@@ -182,9 +181,7 @@ void init_libretro_sym(enum rarch_core_type type,
  **/
 void uninit_libretro_sym(struct retro_core_t *core);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

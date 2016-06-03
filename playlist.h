@@ -20,9 +20,9 @@
 
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct playlist_entry playlist_entry_t;
 typedef struct content_playlist       playlist_t;
@@ -124,9 +124,6 @@ void playlist_write_file(playlist_t *playlist);
 void playlist_qsort(playlist_t *playlist,
       playlist_sort_fun_t *fn);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
-
