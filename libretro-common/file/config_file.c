@@ -81,7 +81,7 @@ static config_file_t *config_file_new_internal(
 
 static char *getaline(FILE *file)
 {
-   char* newline = (char*)malloc(9);
+   char* newline     = (char*)malloc(9);
    char* newline_tmp = NULL;
    size_t cur_size   = 8;
    size_t idx        = 0;
