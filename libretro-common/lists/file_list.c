@@ -119,11 +119,8 @@ bool file_list_append(file_list_t *list,
       list->capacity = new_capacity;
    }
 
-   list->list[list->size].label         = NULL;
-   list->list[list->size].path          = NULL;
-   list->list[list->size].alt           = NULL;
-   list->list[list->size].userdata      = NULL;
-   list->list[list->size].actiondata    = NULL;
+   memset(&list->list[list->size], 0, sizeof(*list->list));
+
    list->list[list->size].type          = type;
    list->list[list->size].directory_ptr = directory_ptr;
    list->list[list->size].entry_idx     = entry_idx;
