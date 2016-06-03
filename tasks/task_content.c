@@ -1800,10 +1800,6 @@ bool task_push_content_load_default(
          if (!task_load_content(content_info, false))
             goto error;
          break;
-      case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
-         if (!task_load_content(content_info, true))
-            goto error;
-         break;
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #if defined(HAVE_NETPLAY) && defined(HAVE_NETWORK_GAMEPAD)
          retroarch_set_current_core_type(CORE_TYPE_NETRETROPAD, true);
@@ -1817,18 +1813,11 @@ bool task_push_content_load_default(
          if (!task_load_content(content_info, false))
             goto error;
          break;
+      case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
-         if (!task_load_content(content_info, true))
-            goto error;
-         break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
-         if (!task_load_content(content_info, true))
-            goto error;
-         break;
+      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
-         if (!task_load_content(content_info, true))
-            goto error;
-         break;
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
          if (!task_load_content(content_info, true))
             goto error;
