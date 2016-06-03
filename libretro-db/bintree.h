@@ -23,9 +23,9 @@
 #ifndef __LIBRETRODB_BINTREE_H__
 #define __LIBRETRODB_BINTREE_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct bintree bintree_t;
 
@@ -40,8 +40,6 @@ int bintree_iterate(const bintree_t *t, bintree_iter_cb cb, void *ctx);
 
 void bintree_free(bintree_t *t);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

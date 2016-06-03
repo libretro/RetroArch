@@ -30,12 +30,12 @@
 #include <unistd.h>
 #endif
 
+#include <retro_common_api.h>
+
 #include "query.h"
 #include "rmsgpack_dom.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct libretrodb libretrodb_t;
 
@@ -105,8 +105,6 @@ void libretrodb_query_free(void *q);
 int libretrodb_cursor_read_item(libretrodb_cursor_t *cursor,
       struct rmsgpack_dom_value *out);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

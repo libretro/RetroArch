@@ -25,11 +25,10 @@
 
 #include <stdint.h>
 
+#include <retro_common_api.h>
 #include <streams/file_stream.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum rmsgpack_dom_type
 {
@@ -96,8 +95,6 @@ int rmsgpack_dom_write(RFILE *fd, const struct rmsgpack_dom_value *obj);
 
 int rmsgpack_dom_read_into(RFILE *fd, ...);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
