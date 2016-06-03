@@ -20,14 +20,13 @@
 #include <stddef.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum frontend_powerstate
 {
@@ -153,8 +152,6 @@ bool frontend_driver_get_core_extension(char *s, size_t len);
 
 bool frontend_driver_get_salamander_basename(char *s, size_t len);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

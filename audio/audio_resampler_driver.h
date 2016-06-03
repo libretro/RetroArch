@@ -18,17 +18,16 @@
 #ifndef __AUDIO_RESAMPLER_DRIVER_H
 #define __AUDIO_RESAMPLER_DRIVER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <stddef.h>
 #include <math.h>
 
-#include <retro_miscellaneous.h>
 #include <boolean.h>
+#include <retro_common_api.h>
+#include <retro_miscellaneous.h>
 #include <libretro.h>
+
+RETRO_BEGIN_DECLS
 
 #define RESAMPLER_SIMD_SSE      (1 << 0)
 #define RESAMPLER_SIMD_SSE2     (1 << 1)
@@ -201,10 +200,6 @@ bool rarch_resampler_realloc(void **re, const rarch_resampler_t **backend,
    (backend)->process(handle, data); \
 } while(0)
 
-
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
-

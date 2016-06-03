@@ -22,11 +22,11 @@
 #endif
 
 #include <stdint.h>
-#include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <boolean.h>
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct input_remote input_remote_t;
 
@@ -45,9 +45,6 @@ void input_remote_state(
       unsigned idx,
       unsigned id);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
-

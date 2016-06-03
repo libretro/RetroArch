@@ -18,9 +18,9 @@
 #ifndef DSPFILTER_API_H__
 #define DSPFILTER_API_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 #define DSPFILTER_SIMD_SSE      (1 << 0)
 #define DSPFILTER_SIMD_SSE2     (1 << 1)
@@ -177,8 +177,6 @@ struct dspfilter_implementation
    const char *short_ident; 
 };
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

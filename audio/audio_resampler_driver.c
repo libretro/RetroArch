@@ -127,19 +127,6 @@ static const rarch_resampler_t *find_resampler_driver(const char *ident)
    return resampler_drivers[0];
 }
 
-#ifndef RARCH_INTERNAL
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-retro_get_cpu_features_t perf_get_cpu_features_cb;
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
-
 static resampler_simd_mask_t resampler_get_cpu_features(void)
 {
    return cpu_features_get();

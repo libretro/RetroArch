@@ -20,10 +20,9 @@
 #include <stdint.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum font_driver_render_api
 {
@@ -159,8 +158,6 @@ extern font_renderer_driver_t freetype_font_renderer;
 extern font_renderer_driver_t coretext_font_renderer;
 extern font_renderer_driver_t bitmap_font_renderer;
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

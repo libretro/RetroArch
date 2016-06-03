@@ -19,9 +19,9 @@
 
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 enum analog_dpad_mode
 {
@@ -75,9 +75,6 @@ enum analog_dpad_mode
 #define GET_HAT_DIR(x)     (x & HAT_MASK)
 #define GET_HAT(x)         (x & (~HAT_MASK))
 
-
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

@@ -19,11 +19,10 @@
 
 #include <stdint.h>
 
+#include <retro_common_api.h>
 #include <libretro.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 #ifndef MAX_COUNTERS
 #define MAX_COUNTERS 64
@@ -63,9 +62,7 @@ void performance_counter_start(struct retro_perf_counter *perf);
  **/
 void performance_counter_stop(struct retro_perf_counter *perf);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

@@ -20,12 +20,13 @@
 
 #include <stdint.h>
 #include <stddef.h>
+
 #include <boolean.h>
+#include <retro_common_api.h>
+
 #include "frontend_driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 /**
  * main_exit:
@@ -50,8 +51,6 @@ void main_exit(void *args);
  **/
 int rarch_main(int argc, char *argv[], void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

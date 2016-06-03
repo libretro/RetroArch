@@ -22,13 +22,12 @@
 #include <sys/types.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include "audio_dsp_filter.h"
 #include "audio_resampler_driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 #define AUDIO_CHUNK_SIZE_BLOCKING      512
 
@@ -218,8 +217,6 @@ extern audio_driver_t audio_ctr_dsp;
 extern audio_driver_t audio_rwebaudio;
 extern audio_driver_t audio_null;
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

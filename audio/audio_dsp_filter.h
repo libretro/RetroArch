@@ -17,9 +17,9 @@
 #ifndef __AUDIO_DSP_FILTER_H__
 #define __AUDIO_DSP_FILTER_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct rarch_dsp_filter rarch_dsp_filter_t;
 
@@ -41,9 +41,7 @@ struct rarch_dsp_data
 void rarch_dsp_filter_process(rarch_dsp_filter_t *dsp,
       struct rarch_dsp_data *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 
