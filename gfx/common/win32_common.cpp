@@ -249,12 +249,14 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
                if (strlen(settings->path.libretro))
                {
                   unsigned i;
+                  core_info_t *current_core = NULL;
+                  core_info_get_current_core(&current_core);
 
                   /*we already have path for libretro core */
                   for (i = 0; i < list_size; i++)
                   {
                      const core_info_t *info = (const core_info_t*)&core_info[i];
-
+                     if(strcmp(info->systemname,current_core->systemname))break;
                      if(!strcmp(settings->path.libretro,info->path))
                      {
                         /* Our previous core supports the current rom */
