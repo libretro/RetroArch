@@ -144,7 +144,8 @@ static int detect_ps1_game_sub(const char *track_path,
       char *game_id, int sub_channel_mixed)
 {
    uint8_t* tmp;
-   int skip, frame_size, is_mode1, cd_sector;
+   uint8_t* boot_file;
+   int i, skip, frame_size, is_mode1, cd_sector;
    uint8_t buffer[2048 * 2] = {0};
    RFILE                *fp = filestream_open(track_path, RFILE_MODE_READ, -1);
    if (!fp)
@@ -198,27 +199,34 @@ static int detect_ps1_game_sub(const char *track_path,
    }
 
    cd_sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
-   filestream_seek(fp, 13 + skip + cd_sector * frame_size, SEEK_SET);
-   filestream_read(fp, buffer, 256);
+   filestream_seek(fp, skip + cd_sector * frame_size, SEEK_SET);
+   filestream_read(fp, buffer, 63);
+   buffer[63] = '\0';
 
-   tmp = (uint8_t*)strrchr((const char*)buffer, '\\');
-   if(!tmp)
-      tmp = buffer;
-   else
+   tmp = buffer;
+   boot_file = buffer;
+
+   while(*tmp && *tmp != '\n')
+   {
+      if((*tmp == '\\') || (*tmp == ':'))
+         boot_file = tmp + 1;
+
       tmp++;
+   }
 
+   tmp = boot_file;
    *game_id++ = toupper(*tmp++);
    *game_id++ = toupper(*tmp++);
    *game_id++ = toupper(*tmp++);
    *game_id++ = toupper(*tmp++);
-   *game_id++ = '-';
+   *game_id++ = '-';      
    tmp++;
-   *game_id++ = *tmp++;
-   *game_id++ = *tmp++;
-   *game_id++ = *tmp++;
-   tmp++;
-   *game_id++ = *tmp++;
-   *game_id++ = *tmp++;
+   for(i = 0; i < 5; i++)
+   {
+      if(*tmp == '.')
+         tmp++;
+      *game_id++ = *tmp++;
+   }
    *game_id = 0;
 
    filestream_close(fp);
