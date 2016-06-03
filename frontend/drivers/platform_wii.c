@@ -47,11 +47,11 @@ char gx_rom_path[PATH_MAX_LENGTH];
 
 static void dol_copy_argv_path(const char *dolpath, const char *argpath)
 {
-   char tmp[PATH_MAX_LENGTH];
    size_t t_len;
-   struct __argv *argv = (struct __argv *)ARGS_ADDR;
-   char *cmdline = NULL;
-   size_t len = 0;
+   char tmp[PATH_MAX_LENGTH] = {0};
+   struct __argv       *argv = (struct __argv *)ARGS_ADDR;
+   char             *cmdline = NULL;
+   size_t                len = 0;
 
    memset(ARGS_ADDR, 0, sizeof(struct __argv));
 
@@ -117,11 +117,11 @@ void system_exec_wii(const char *_path, bool should_load_game)
 {
    FILE *fp;
    size_t size, booter_size;
-   void *dol;
-   char path[PATH_MAX_LENGTH];
-   char game_path[PATH_MAX_LENGTH];
+   void *dol                       = NULL;
+   char path[PATH_MAX_LENGTH]      = {0};
+   char game_path[PATH_MAX_LENGTH] = {0};
 #ifndef IS_SALAMANDER
-   bool original_verbose = verbosity_is_enabled();
+   bool original_verbose           = verbosity_is_enabled();
 #endif
 
    /* copy heap info into stack so it survives 

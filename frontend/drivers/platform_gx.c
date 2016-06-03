@@ -120,7 +120,7 @@ static void gx_devthread(void *a)
          {
             if (!gx_devices[i].interface->isInserted())
             {
-               char n[8];
+               char n[8] = {0};
 
                gx_devices[i].mounted = false;
                snprintf(n, sizeof(n), "%s:", gx_devices[i].name);
@@ -166,6 +166,8 @@ static void frontend_gx_get_environment_settings(
       int *argc, char *argv[],
       void *args, void *params_data)
 {
+   char *last_slash = NULL;
+   char *device_end = NULL;
 #ifndef IS_SALAMANDER
 #if defined(HAVE_LOGGER)
    logger_init();
@@ -196,10 +198,11 @@ static void frontend_gx_get_environment_settings(
    chdir("carda:/retroarch");
 #endif
    getcwd(g_defaults.dir.core, MAXPATHLEN);
-   char *last_slash = strrchr(g_defaults.dir.core, '/');
+
+   last_slash = strrchr(g_defaults.dir.core, '/');
    if (last_slash)
       *last_slash = 0;
-   char *device_end = strchr(g_defaults.dir.core, '/');
+   device_end = strchr(g_defaults.dir.core, '/');
    if (device_end)
       snprintf(g_defaults.dir.port, sizeof(g_defaults.dir.port),
             "%.*s/retroarch", device_end - g_defaults.dir.core,
@@ -232,8 +235,9 @@ static void frontend_gx_get_environment_settings(
    if (*argc > 2 && argv[1] != NULL && argv[2] != NULL)
    {
       static char path[PATH_MAX_LENGTH];
-      *path = '\0';
       struct rarch_main_wrap *args = (struct rarch_main_wrap*)params_data;
+
+      *path = '\0';
 
       if (args)
       {
@@ -395,8 +399,8 @@ static void frontend_gx_exitspawn(char *s, size_t len)
 static void frontend_gx_process_args(int *argc, char *argv[])
 {
 #ifndef IS_SALAMANDER
-   char path[PATH_MAX_LENGTH];
-   settings_t *settings = config_get_ptr();
+   char path[PATH_MAX_LENGTH] = {0};
+   settings_t       *settings = config_get_ptr();
 
    /* A big hack: sometimes Salamander doesn't save the new core
     * it loads on first boot, so we make sure
