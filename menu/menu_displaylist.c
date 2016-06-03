@@ -2641,11 +2641,13 @@ static int menu_displaylist_parse_options_remappings(
             char desc_label[64]     = {0};
             unsigned user           = p + 1;
             unsigned desc_offset    = retro_id;
-            const char *description = system->input_desc_btn[p][desc_offset];
+            const char *description = NULL;
 
             if (desc_offset >= RARCH_FIRST_CUSTOM_BIND)
                desc_offset = RARCH_FIRST_CUSTOM_BIND 
                   + (desc_offset - RARCH_FIRST_CUSTOM_BIND) * 2;
+             
+            description = system->input_desc_btn[p][desc_offset];
 
             if (!description)
                continue;

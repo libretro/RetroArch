@@ -256,6 +256,10 @@ static uint8_t *rtga__tga_load(rtga__context *s, unsigned *x, unsigned *y, int *
    int RLE_count = 0;
    int RLE_repeating = 0;
    int read_next_pixel = 1;
+    
+   (void)tga_palette_start;
+   (void)tga_x_origin;
+   (void)tga_y_origin;
 
    /*   do a tiny bit of precessing */
    if ( tga_image_type >= 8 )
@@ -416,9 +420,6 @@ static uint8_t *rtga__tga_load(rtga__context *s, unsigned *x, unsigned *y, int *
    /* convert to target component count */
    if (req_comp && req_comp != tga_comp)
       tga_data = rtga__convert_format(tga_data, tga_comp, req_comp, tga_width, tga_height);
-
-   tga_palette_start = tga_palette_len = tga_palette_bits =
-         tga_x_origin = tga_y_origin = 0;
 
    return tga_data;
 }
