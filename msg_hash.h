@@ -157,6 +157,10 @@
 #define MSG_DOWNLOADING                               0x465305dbU
 #define MSG_EXTRACTING                                0x25a4c19eU
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 const char *msg_hash_to_str(uint32_t hash);
 
 const char *msg_hash_to_str_fr(uint32_t hash);
@@ -182,6 +186,11 @@ const char *msg_hash_to_str_nl(uint32_t hash);
 const char *msg_hash_to_str_us(uint32_t hash);
 
 uint32_t msg_hash_calculate(const char *s);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
 
