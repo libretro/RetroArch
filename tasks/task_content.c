@@ -1728,6 +1728,29 @@ bool task_push_content_load_default(
       retro_task_callback_t cb,
       void *user_data)
 {
+   bool loading_from_menu = false;
+
+   /* First we determine if we are loading from a menu */
+   switch (mode)
+   {
+#if defined(HAVE_NETPLAY) && defined(HAVE_NETWORK_GAMEPAD)
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
+#endif
+      case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
+#ifdef HAVE_DYNAMIC
+      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
+#endif
+      case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
+         loading_from_menu = true;
+         break;
+      default:
+         break;
+   }
+
    switch (mode)
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
@@ -1776,11 +1799,52 @@ bool task_push_content_load_default(
          break;
    }
 
+   /* Set libretro core path */
    switch (mode)
    {
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
+      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
          runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
+         break;
+      default:
+         break;
+   }
+
+   /* Is content required by this core? */
+   switch (mode)
+   {
+      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
+#ifdef HAVE_MENU
+         if (fullpath)
+            menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
+         else
+            menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
+#endif
+         break;
+      default:
+         break;
+   }
+
+   /* On targets that have no dynamic core loading support, we'd 
+    * execute the new core from this point. If this returns false,
+    * we assume we can dynamically load the core. */
+   switch (mode)
+   {
+      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
+         if (!command_event_cmd_exec((void*)fullpath))
+            return false;
+         break;
+      default:
+         break;
+   }
+
+   /* Load core */
+   switch (mode)
+   {
+      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
+      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
+      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
          if (!task_load_core(core_path))
             goto error;
          break;
@@ -1788,6 +1852,8 @@ bool task_push_content_load_default(
          break;
    }
 
+   /* Preliminary stuff that has to be done before we 
+    * load the actual content. Can differ per mode. */
    switch (mode)
    {
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
@@ -1797,36 +1863,38 @@ bool task_push_content_load_default(
 #endif
          runloop_ctl(RUNLOOP_CTL_DATA_DEINIT, NULL);
          runloop_ctl(RUNLOOP_CTL_TASK_INIT, NULL);
-         if (!task_load_content(content_info, false))
-            goto error;
          break;
-      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #if defined(HAVE_NETPLAY) && defined(HAVE_NETWORK_GAMEPAD)
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
          retroarch_set_current_core_type(CORE_TYPE_NETRETROPAD, true);
-         if (!task_load_content(content_info, true))
-            goto error;
-         return true;
-#else
          break;
 #endif
-      case CONTENT_MODE_LOAD_FROM_CLI:
-         if (!task_load_content(content_info, false))
-            goto error;
+      default:
          break;
+   }
+
+   /* Load content */
+   switch (mode)
+   {
+      case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
+      case CONTENT_MODE_LOAD_FROM_CLI:
+#if defined(HAVE_NETPLAY) && defined(HAVE_NETWORK_GAMEPAD)
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
+#endif
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
+#ifdef HAVE_DYNAMIC
+      case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
+#endif
       case CONTENT_MODE_LOAD_CONTENT_WITH_FFMPEG_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_IMAGEVIEWER_CORE_FROM_MENU:
-         if (!task_load_content(content_info, true))
+         if (!task_load_content(content_info, loading_from_menu))
             goto error;
          break;
+#ifndef HAVE_DYNAMIC
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
-#ifdef HAVE_DYNAMIC
-         if (!task_load_content(content_info, true))
-            goto error;
-#else
          {
             char *fullpath       = NULL;
 
@@ -1834,29 +1902,27 @@ bool task_push_content_load_default(
             command_event_cmd_exec((void*)fullpath);
             command_event(CMD_EVENT_QUIT, NULL);
          }
-#endif
          break;
-      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-
-#ifdef HAVE_MENU
-         if (fullpath)
-            menu_driver_ctl(RARCH_MENU_CTL_UNSET_LOAD_NO_CONTENT, NULL);
-         else
-            menu_driver_ctl(RARCH_MENU_CTL_SET_LOAD_NO_CONTENT, NULL);
 #endif
-
-         if (!command_event_cmd_exec((void*)fullpath))
-            return false;
-
-         if (!task_load_core(core_path))
-            goto error;
-         return true;
       case CONTENT_MODE_LOAD_NONE:
+      default:
          break;
    }
 
-   task_push_quickmenu(mode, type);
+   /* Push quick menu onto menu stack */
+   switch (mode)
+   {
+      case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
+#if defined(HAVE_NETPLAY) && defined(HAVE_NETWORK_GAMEPAD)
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
+#endif
+         break;
+      default:
+#ifdef HAVE_MENU
+         task_push_quickmenu(mode, type);
+#endif
+         break;
+   }
 
    return true;
 
