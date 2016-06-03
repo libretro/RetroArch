@@ -63,7 +63,7 @@ extern char *core_buf;
 extern size_t core_len;
 
 static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
-      unsigned type)
+      enum menu_file_type type)
 {
    char c;
    int i, j = 0;
@@ -135,6 +135,9 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
                      menu_entries_set_alt_at_offset(list, j, display_name);
                }
             }
+            break;
+         default:
+         case MENU_FILE_NONE:
             break;
       }
 
