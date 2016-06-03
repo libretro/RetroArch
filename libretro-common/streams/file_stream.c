@@ -129,6 +129,19 @@ RFILE *filestream_open(const char *path, unsigned mode, ssize_t len)
 
    switch (mode & 0xff)
    {
+      case RFILE_MODE_READ_TEXT:
+#if defined(VITA) || defined(PSP)
+         mode_int = 0777;
+         flags    = PSP_O_RDONLY;
+#else
+#if defined(HAVE_BUFFERED_IO)
+         if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
+            mode_str = "r";
+#endif
+         /* No "else" here */
+         flags    = O_RDONLY;
+#endif
+         break;
       case RFILE_MODE_READ:
 #if defined(VITA) || defined(PSP)
          mode_int = 0777;

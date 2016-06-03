@@ -411,7 +411,7 @@ bool video_shader_resolve_parameters(config_file_t *conf,
    for (i = 0; i < shader->passes; i++)
    {
       char line[4096] = {0};
-      RFILE *file = filestream_open(shader->pass[i].source.path, RFILE_MODE_READ, -1);
+      RFILE *file = filestream_open(shader->pass[i].source.path, RFILE_MODE_READ_TEXT, -1);
 
       if (!file)
          continue;

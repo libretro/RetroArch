@@ -379,7 +379,7 @@ static bool playlist_read_file(
    char buf[PLAYLIST_ENTRIES][1024] = {{0}};
    playlist_entry_t *entry  = NULL;
    char *last                       = NULL;
-   RFILE *file                      = filestream_open(path, RFILE_MODE_READ, -1);
+   RFILE *file                      = filestream_open(path, RFILE_MODE_READ_TEXT, -1);
 
    /* If playlist file does not exist,
     * create an empty playlist instead.
