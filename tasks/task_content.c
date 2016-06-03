@@ -1772,9 +1772,9 @@ bool task_push_content_load_default(
          break;
    }
 
+   /* Clear content path */
    switch (mode)
    {
-      /* Clear content path */
       case CONTENT_MODE_LOAD_NOTHING_WITH_DUMMY_CORE:
       case CONTENT_MODE_LOAD_NOTHING_WITH_CURRENT_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
