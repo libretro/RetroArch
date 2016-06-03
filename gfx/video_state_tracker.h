@@ -17,16 +17,16 @@
 #ifndef __VIDEO_STATE_TRACKER_H
 #define __VIDEO_STATE_TRACKER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
+
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif
+
+RETRO_BEGIN_DECLS
 
 enum state_tracker_type
 {
@@ -113,8 +113,6 @@ unsigned state_tracker_get_uniform(state_tracker_t *tracker,
       struct state_tracker_uniform *uniforms,
       unsigned elem, unsigned frame_count);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

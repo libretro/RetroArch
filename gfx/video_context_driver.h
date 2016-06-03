@@ -18,6 +18,7 @@
 #define __VIDEO_CONTEXT_DRIVER_H
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include "video_driver.h"
 
@@ -25,9 +26,7 @@
 #include "../config.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 #ifndef MAX_EGLIMAGE_TEXTURES
 #define MAX_EGLIMAGE_TEXTURES 32
@@ -324,9 +323,6 @@ bool video_context_driver_has_windowed(void);
 
 void video_context_driver_free(void);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
-

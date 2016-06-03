@@ -18,13 +18,13 @@
 #ifndef __STATE_MANAGER_H
 #define __STATE_MANAGER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <stddef.h>
+
 #include <boolean.h>
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct state_manager state_manager_t;
 
@@ -42,8 +42,6 @@ void state_manager_event_init(void);
  **/
 void state_manager_check_rewind(bool pressed);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

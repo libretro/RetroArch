@@ -22,6 +22,7 @@
 #include <sys/types.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 #include <libretro.h>
 
 #include "font_driver.h"
@@ -30,10 +31,7 @@
 
 #include "../input/input_driver.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum texture_filter_type
 {
@@ -554,8 +552,6 @@ extern video_driver_t video_sunxi;
 extern video_driver_t video_xshm;
 extern video_driver_t video_null;
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

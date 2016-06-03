@@ -17,14 +17,14 @@
 #ifndef __VIDEO_SHADER_PARSE_H
 #define __VIDEO_SHADER_PARSE_H
 
-#include <boolean.h>
-#include <file/config_file.h>
 #include "video_state_tracker.h"
-#include <retro_miscellaneous.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <boolean.h>
+#include <retro_common_api.h>
+#include <retro_miscellaneous.h>
+#include <file/config_file.h>
+
+RETRO_BEGIN_DECLS
 
 #ifndef GFX_MAX_SHADERS
 #define GFX_MAX_SHADERS 26
@@ -218,9 +218,6 @@ bool video_shader_resolve_parameters(config_file_t *conf,
 enum rarch_shader_type video_shader_parse_type(const char *path,
       enum rarch_shader_type fallback);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
-

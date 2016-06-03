@@ -17,6 +17,7 @@
 #define VIDEO_SHADER_DRIVER_H__
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include <gfx/math/matrix_4x4.h>
 
@@ -51,9 +52,7 @@
 
 #include "video_context_driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum shader_uniform_type
 {
@@ -301,8 +300,6 @@ extern const shader_backend_t hlsl_backend;
 extern const shader_backend_t gl_cg_backend;
 extern const shader_backend_t shader_null_backend;
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

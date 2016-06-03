@@ -21,10 +21,9 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 struct video_fbo_rect
 {
@@ -93,8 +92,6 @@ bool video_coord_array_append(video_coord_array_t *ca,
 
 void video_coord_array_free(video_coord_array_t *ca);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

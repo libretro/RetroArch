@@ -18,6 +18,7 @@
 #define __VIDEO_STATE_PYTHON_H
 
 #include <stdint.h>
+
 #include <boolean.h>
 
 #ifndef PY_STATE_OMIT_DECLARATION

@@ -20,12 +20,11 @@
 #include <limits.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include "video_driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum thread_cmd
 {
@@ -120,8 +119,6 @@ bool video_thread_font_init(
 unsigned video_thread_texture_load(void *data,
       custom_command_method_t func);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
