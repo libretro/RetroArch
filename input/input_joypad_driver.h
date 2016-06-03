@@ -17,13 +17,13 @@
 #ifndef INPUT_JOYPAD_DRIVER_H__
 #define INPUT_JOYPAD_DRIVER_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
+
 #include <boolean.h>
+#include <retro_common_api.h>
 #include <libretro.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct rarch_joypad_driver input_device_driver_t;
 
@@ -225,8 +225,6 @@ extern input_device_driver_t qnx_joypad;
 extern input_device_driver_t null_joypad;
 extern input_device_driver_t mfi_joypad;
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

@@ -18,11 +18,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <boolean.h>
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 /**
  * input_remapping_load_file:
@@ -49,8 +49,6 @@ void input_remapping_set_defaults(void);
 void input_remapping_state(unsigned port,
       unsigned *device, unsigned *idx, unsigned *id);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

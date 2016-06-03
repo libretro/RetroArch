@@ -17,14 +17,13 @@
 #ifndef INPUT_HID_DRIVER_H__
 #define INPUT_HID_DRIVER_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
-#include <boolean.h>
 
+#include <boolean.h>
+#include <retro_common_api.h>
 #include <libretro.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct hid_driver hid_driver_t;
 
@@ -87,8 +86,6 @@ extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
 extern hid_driver_t null_hid;
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

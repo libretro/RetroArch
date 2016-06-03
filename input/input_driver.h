@@ -20,7 +20,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
+
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include "input_joypad_driver.h"
 
@@ -32,9 +34,7 @@
 #define MAX_USERS 16
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef uint64_t retro_input_t;
 
@@ -319,8 +319,6 @@ extern input_driver_t input_qnx;
 extern input_driver_t input_rwebinput;
 extern input_driver_t input_null;
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

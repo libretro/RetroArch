@@ -19,11 +19,10 @@
 
 #include <stdint.h>
 
+#include <retro_common_api.h>
 #include <libretro.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 struct rarch_key_map
 {
@@ -99,9 +98,7 @@ unsigned input_keymaps_translate_rk_to_keysym(enum retro_key key);
  **/
 void input_keymaps_translate_rk_to_str(enum retro_key key, char *buf, size_t size);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

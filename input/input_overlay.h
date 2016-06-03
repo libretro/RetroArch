@@ -20,12 +20,11 @@
 #include <stdint.h>
 #include <boolean.h>
 
+#include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 #include <formats/image.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 #define BOX_RADIAL       0x18df06d2U
 #define BOX_RECT         0x7c9d4d93U
@@ -243,8 +242,6 @@ bool input_overlay_is_alive(input_overlay_t *ol);
 
 void input_overlay_loaded(void *task_data, void *user_data, const char *err);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

@@ -18,8 +18,9 @@
 #define __UI_COMPANION_DRIVER_H
 
 #include <stddef.h>
-#include <boolean.h>
 
+#include <boolean.h>
+#include <retro_common_api.h>
 #include <lists/file_list.h>
 
 #ifdef HAVE_CONFIG_H
@@ -28,9 +29,7 @@
 
 #include "../command.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct ui_companion_driver
 {
@@ -94,8 +93,6 @@ void ui_companion_driver_toggle(void);
 
 void ui_companion_driver_free(void);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

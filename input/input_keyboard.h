@@ -17,14 +17,13 @@
 #ifndef INPUT_KEYBOARD_H__
 #define INPUT_KEYBOARD_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 #include <libretro.h>
+
+RETRO_BEGIN_DECLS
 
 enum rarch_input_keyboard_ctl_state
 {
@@ -97,9 +96,7 @@ const char **input_keyboard_start_line(void *userdata,
 
 bool input_keyboard_ctl(enum rarch_input_keyboard_ctl_state state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 
