@@ -226,76 +226,83 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          break;
 
       case WM_DROPFILES:
-        // Get the count of the files dropped
-      {
-      char szFilename[1024] = {0};
-	  
-      if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
-        {
-			//poll list of current cores
-			content_ctx_info_t content_info = {0};
-			size_t list_size;
-			core_info_list_t *core_info_list = NULL;
-			const core_info_t *core_info     = NULL;
-			DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
-			core_info_get_list(&core_info_list);
-			core_info_list_get_supported_cores(core_info_list,(const char*)szFilename, &core_info, &list_size);
-			runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,szFilename);
-			if (strlen(settings->path.libretro))
-			{
-			//we already have path for libretro core
-	        for (int i = 0; i < list_size; i++)
-			{
-            const core_info_t *info = (const core_info_t*)&core_info[i];
-			if(!strcmp(settings->path.libretro,info->path)){
-			//our previous core supports the current rom
-		    content_ctx_info_t content_info = {0};
-            task_push_content_load_default(
-                           NULL, NULL,
-                           &content_info,
-                           CORE_TYPE_PLAIN,
-                           CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
-                           NULL, NULL);
-			DragFinish((HDROP)wparam);
-			return 0;
-			}
-            }
-			goto load_fail;
-			}
-			else
-			{
+         /* Get the count of the files dropped */
+         {
+            char szFilename[1024] = {0};
+
+            if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
+            {
+               /*poll list of current cores */
+               size_t list_size;
+               content_ctx_info_t content_info = {0};
+               core_info_list_t *core_info_list = NULL;
+               const core_info_t *core_info     = NULL;
+               DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
+               core_info_get_list(&core_info_list);
+               core_info_list_get_supported_cores(core_info_list,(const char*)szFilename, &core_info, &list_size);
+               runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,szFilename);
+               if (strlen(settings->path.libretro))
+               {
+                  unsigned i;
+
+                  /*we already have path for libretro core */
+                  for (i = 0; i < list_size; i++)
+                  {
+                     const core_info_t *info = (const core_info_t*)&core_info[i];
+
+                     if(!strcmp(settings->path.libretro,info->path))
+                     {
+                        /* Our previous core supports the current rom */
+                        content_ctx_info_t content_info = {0};
+                        task_push_content_load_default(
+                              NULL, NULL,
+                              &content_info,
+                              CORE_TYPE_PLAIN,
+                              CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                              NULL, NULL);
+                        DragFinish((HDROP)wparam);
+                        return 0;
+                     }
+                  }
+                  goto load_fail;
+               }
+               else
+               {
 load_fail:
-			//poll for cores for current rom since none exist.
-			if(list_size ==1)
-			{
-				//pick core that only exists and is bound to work. Ish.
-				 const core_info_t *info = (const core_info_t*)&core_info[0];
-				  runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
+                  /*poll for cores for current rom since none exist. */
+                  if(list_size ==1)
+                  {
+                     /*pick core that only exists and is bound to work. Ish. */
+                     const core_info_t *info = (const core_info_t*)&core_info[0];
+
+                     runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
+
                      task_push_content_load_default(
                            NULL, NULL,
                            &content_info,
                            CORE_TYPE_PLAIN,
                            CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                            NULL, NULL);
-			}
-			else
-			{
-			//pick one core that could be compatible, ew
-			if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),hwnd,PickCoreProc,NULL)==IDOK) 
-			{
-                     task_push_content_load_default(
-                           NULL, NULL,
-                           &content_info,
-                           CORE_TYPE_PLAIN,
-                           CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
-                           NULL, NULL);
-			}
-			}
-			DragFinish((HDROP)wparam);
-			return 0;
-			}
-	  }
-	  }
+                  }
+                  else
+                  {
+                     /*pick one core that could be compatible, ew */
+                     if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),
+                              hwnd,PickCoreProc,(LPARAM)NULL)==IDOK) 
+                     {
+                        task_push_content_load_default(
+                              NULL, NULL,
+                              &content_info,
+                              CORE_TYPE_PLAIN,
+                              CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                              NULL, NULL);
+                     }
+                  }
+                  DragFinish((HDROP)wparam);
+                  return 0;
+               }
+            }
+         }
       break; 
       case WM_CHAR:
       case WM_KEYDOWN:
