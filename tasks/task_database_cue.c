@@ -145,7 +145,7 @@ static int detect_ps1_game_sub(const char *track_path,
 {
    uint8_t* tmp;
    uint8_t* boot_file;
-   int i, skip, frame_size, is_mode1, cd_sector;
+   int skip, frame_size, is_mode1, cd_sector;
    uint8_t buffer[2048 * 2] = {0};
    RFILE                *fp = filestream_open(track_path, RFILE_MODE_READ, -1);
    if (!fp)
@@ -219,14 +219,18 @@ static int detect_ps1_game_sub(const char *track_path,
    *game_id++ = toupper(*tmp++);
    *game_id++ = toupper(*tmp++);
    *game_id++ = toupper(*tmp++);
-   *game_id++ = '-';      
-   tmp++;
-   for(i = 0; i < 5; i++)
+   *game_id++ = '-';
+
+   if(!isalnum(*tmp))
+      tmp++;
+
+   while(isalnum(*tmp))
    {
+      *game_id++ = *tmp++;
       if(*tmp == '.')
          tmp++;
-      *game_id++ = *tmp++;
    }
+
    *game_id = 0;
 
    filestream_close(fp);
