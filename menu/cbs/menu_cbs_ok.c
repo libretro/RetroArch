@@ -2381,7 +2381,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          BIND_ACTION_OK(cbs, action_ok_load_state);
          break;
       case MENU_LABEL_UNDOLOADSTATE:
-         printf ("first test\n");
          BIND_ACTION_OK(cbs, action_ok_undo_load_state);
          break;
       case MENU_LABEL_RESUME_CONTENT:
