@@ -200,12 +200,17 @@ static int detect_ps1_game_sub(const char *track_path,
 
    cd_sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
    filestream_seek(fp, skip + cd_sector * frame_size, SEEK_SET);
-   filestream_read(fp, buffer, 63);
-   buffer[63] = '\0';
+   filestream_read(fp, buffer, 256);
+   buffer[256] = '\0';
 
    tmp = buffer;
-   boot_file = buffer;
+   while(*tmp && strncasecmp((const char*)tmp, "boot", 4))
+      tmp++;
 
+   if(!*tmp)
+      return 0;
+
+   boot_file = tmp;
    while(*tmp && *tmp != '\n')
    {
       if((*tmp == '\\') || (*tmp == ':'))
