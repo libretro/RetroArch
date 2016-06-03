@@ -84,63 +84,66 @@ static HMONITOR win32_monitor_all[MAX_MONITORS];
 INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message, 
         WPARAM wParam, LPARAM lParam)
 {
-	core_info_list_t *core_info_list = NULL;
-    const core_info_t *core_info     = NULL;
-	size_t list_size;
-	char *fullpath = NULL;
-    switch (message)
-    {
-    case WM_INITDIALOG:
-       {
-          unsigned i;
-          /* Add items to list.  */
+   size_t list_size;
+   core_info_list_t *core_info_list = NULL;
+   const core_info_t *core_info     = NULL;
+   char *fullpath                   = NULL;
 
-          runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-          core_info_get_list(&core_info_list);
-          core_info_list_get_supported_cores(core_info_list,
-                (const char*)fullpath, &core_info, &list_size);
-          HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);  
+   switch (message)
+   {
+      case WM_INITDIALOG:
+         {
+            HWND hwndList;
+            unsigned i;
+            /* Add items to list.  */
 
-          for (i = 0; i < list_size; i++)
-          {
-             const core_info_t *info = (const core_info_t*)&core_info[i];
-             SendMessage(hwndList, LB_ADDSTRING, 0, 
-                   (LPARAM)info->display_name); 
-          }
-          SetFocus(hwndList); 
-          return TRUE;  
-       }
+            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+            core_info_get_list(&core_info_list);
+            core_info_list_get_supported_cores(core_info_list,
+                  (const char*)fullpath, &core_info, &list_size);
 
-    case WM_COMMAND:
-        switch (LOWORD(wParam))
-        {
-        case IDOK:
-        case IDCANCEL:
-            EndDialog(hDlg, LOWORD(wParam));
-            return FALSE;
+            hwndList = GetDlgItem(hDlg, ID_CORELISTBOX);  
 
-        case ID_CORELISTBOX:
+            for (i = 0; i < list_size; i++)
             {
-                switch (HIWORD(wParam)) 
-                { 
-                case LBN_SELCHANGE:
-                    {
-						runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
-                        HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX); 
-                        int lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
-						core_info_get_list(&core_info_list);
-			            core_info_list_get_supported_cores(core_info_list,
-                        (const char*)fullpath, &core_info, &list_size);
-						const core_info_t *info = (const core_info_t*)&core_info[lbItem];
-						runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
-                    } 
-
-                }
+               const core_info_t *info = (const core_info_t*)&core_info[i];
+               SendMessage(hwndList, LB_ADDSTRING, 0, 
+                     (LPARAM)info->display_name); 
             }
-            return TRUE;
-        }
-    }
-    return FALSE;
+            SetFocus(hwndList); 
+            return TRUE;  
+         }
+
+      case WM_COMMAND:
+         switch (LOWORD(wParam))
+         {
+            case IDOK:
+            case IDCANCEL:
+               EndDialog(hDlg, LOWORD(wParam));
+               return FALSE;
+
+            case ID_CORELISTBOX:
+               {
+                  switch (HIWORD(wParam)) 
+                  { 
+                     case LBN_SELCHANGE:
+                        {
+                           runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
+                           HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX); 
+                           int lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
+                           core_info_get_list(&core_info_list);
+                           core_info_list_get_supported_cores(core_info_list,
+                                 (const char*)fullpath, &core_info, &list_size);
+                           const core_info_t *info = (const core_info_t*)&core_info[lbItem];
+                           runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
+                        } 
+
+                  }
+               }
+               return TRUE;
+         }
+   }
+   return FALSE;
 }
 
 
@@ -235,13 +238,14 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
             {
                /*poll list of current cores */
                size_t list_size;
-               content_ctx_info_t content_info = {0};
+               content_ctx_info_t content_info  = {0};
                core_info_list_t *core_info_list = NULL;
                const core_info_t *core_info     = NULL;
                DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
                core_info_get_list(&core_info_list);
                core_info_list_get_supported_cores(core_info_list,(const char*)szFilename, &core_info, &list_size);
                runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,szFilename);
+
                if (strlen(settings->path.libretro))
                {
                   unsigned i;
