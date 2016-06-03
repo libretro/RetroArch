@@ -236,8 +236,10 @@ static bool runloop_check_movie_record(void)
 
 static bool runloop_check_movie_init(void)
 {
-   char msg[128], path[PATH_MAX_LENGTH];
-   settings_t *settings  = config_get_ptr();
+   char msg[128]              = {0};
+   char path[PATH_MAX_LENGTH] = {0};
+   settings_t *settings       = config_get_ptr();
+
    if (bsv_movie_ctl(BSV_MOVIE_CTL_IS_INITED, NULL))
       return false;
 
@@ -429,7 +431,7 @@ static void runloop_check_fast_forward_button(bool fastforward_pressed,
 static void runloop_check_stateslots(settings_t *settings,
       bool pressed_increase, bool pressed_decrease)
 {
-   char msg[128];
+   char msg[128]         = {0};
 
    /* Save state slots */
    if (pressed_increase)
@@ -501,8 +503,8 @@ static bool shader_dir_init(rarch_dir_list_t *dir_list)
 static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
       bool pressed_next, bool pressed_prev)
 {
-   uint32_t ext_hash;
-   char msg[128];
+   uint32_t ext_hash           = 0;
+   char msg[128]               = {0};
    const char *shader          = NULL;
    const char *ext             = NULL;
    enum rarch_shader_type type = RARCH_SHADER_NONE;
@@ -569,8 +571,8 @@ static void runloop_check_shader_dir(rarch_dir_list_t *dir_list,
  **/
 static bool rarch_game_specific_options(char **output)
 {
-   char game_path[PATH_MAX_LENGTH];
-   config_file_t *option_file = NULL;
+   char game_path[PATH_MAX_LENGTH] = {0};
+   config_file_t *option_file      = NULL;
    
    if (!retroarch_validate_game_options(game_path, sizeof(game_path), false))
          return false;
