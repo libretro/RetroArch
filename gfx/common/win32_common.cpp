@@ -230,6 +230,68 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          break;
 
       case WM_DROPFILES:
+<<<<<<< HEAD
+        // Get the count of the files dropped
+      {
+      char szFilename[1024] = {0};
+	  
+      if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
+        {
+			//poll list of current cores
+			content_ctx_info_t content_info = {0};
+			size_t list_size;
+			core_info_list_t *core_info_list = NULL;
+			const core_info_t *core_info     = NULL;
+			DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
+			core_info_get_list(&core_info_list);
+			core_info_list_get_supported_cores(core_info_list,(const char*)szFilename, &core_info, &list_size);
+			runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH,szFilename);
+			if (strlen(settings->path.libretro))
+			{
+         core_info_t *current_core = NULL;
+         core_info_get_current_core(&current_core);
+			//we already have path for libretro core
+	        for (int i = 0; i < list_size; i++)
+			{
+            const core_info_t *info = (const core_info_t*)&core_info[i];
+         if(strcmp(info->systemname,current_core->systemname))break;
+			if(!strcmp(current_core->path,info->path)){
+			//our previous core supports the current rom
+		    content_ctx_info_t content_info = {0};
+            task_push_content_load_default(
+                           NULL, NULL,
+                           &content_info,
+                           CORE_TYPE_PLAIN,
+                           CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                           NULL, NULL);
+			DragFinish((HDROP)wparam);
+			return 0;
+			      }
+         }
+			goto load_fail;
+      }
+			else
+			{
+load_fail:
+			//poll for cores for current rom since none exist.
+			if(list_size ==1)
+			{
+				//pick core that only exists and is bound to work. Ish.
+				 const core_info_t *info = (const core_info_t*)&core_info[0];
+				  runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
+                     task_push_content_load_default(
+                           NULL, NULL,
+                           &content_info,
+                           CORE_TYPE_PLAIN,
+                           CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                           NULL, NULL);
+			}
+			else
+			{
+			//pick one core that could be compatible, ew
+			if(DialogBoxParam(GetModuleHandle(NULL),MAKEINTRESOURCE(IDD_PICKCORE),hwnd,PickCoreProc,(LPARAM)NULL)==IDOK) 
+			{
+=======
          /* Get the count of the files dropped */
          {
             char szFilename[1024] = {0};
@@ -282,6 +344,7 @@ load_fail:
 
                      runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
 
+>>>>>>> upstream/master
                      task_push_content_load_default(
                            NULL, NULL,
                            &content_info,
