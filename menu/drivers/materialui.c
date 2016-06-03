@@ -499,16 +499,14 @@ static void mui_render_label_value(mui_handle_t *mui,
       const char *value, float *pure_white)
 {
    menu_animation_ctx_ticker_t ticker;
-   char label_str[PATH_MAX_LENGTH];
-   char value_str[PATH_MAX_LENGTH];
-   int value_len            = strlen(value);
-   int ticker_limit         = 0;
-   size_t usable_width      = 0;
-   uintptr_t texture_switch = 0;
-   bool do_draw_text        = false;
-   uint32_t hash_value      = 0;
-
-   usable_width = width - (mui->margin * 2);
+   char label_str[PATH_MAX_LENGTH] = {0};
+   char value_str[PATH_MAX_LENGTH] = {0};
+   int value_len                   = strlen(value);
+   int ticker_limit                = 0;
+   uintptr_t texture_switch        = 0;
+   bool do_draw_text               = false;
+   uint32_t hash_value             = 0;
+   size_t usable_width             = width - (mui->margin * 2);
 
    if (value_len * mui->glyph_width > usable_width / 2)
       value_len = (usable_width/2) / mui->glyph_width;
@@ -776,15 +774,15 @@ static void mui_frame(void *data)
    };
    menu_animation_ctx_ticker_t ticker;
    unsigned width, height, ticker_limit, i;
-   char msg[256];
-   char title[256];
-   char title_buf[256];
-   char title_msg[256];
    size_t selection;
    size_t title_margin;
-   uint64_t *frame_count;
    menu_display_ctx_draw_t draw;
    mui_handle_t *mui               = (mui_handle_t*)data;
+   uint64_t *frame_count           = NULL;
+   char msg[256]                   = {0};
+   char title[256]                 = {0};
+   char title_buf[256]             = {0};
+   char title_msg[256]             = {0};
    const uint32_t normal_color     = 0x212121ff;
    const uint32_t hover_color      = 0x212121ff;
    const uint32_t title_color      = 0xffffffff;
@@ -938,10 +936,10 @@ static void mui_frame(void *data)
    /* Title */
    if (mui_get_core_title(title_msg, sizeof(title_msg)) == 0)
    {
-      char title_buf_msg_tmp[256];
-      char title_buf_msg[256];
-      size_t usable_width = width - (mui->margin * 2);
       int ticker_limit, value_len;
+      char title_buf_msg_tmp[256] = {0};
+      char title_buf_msg[256]     = {0};
+      size_t         usable_width = width - (mui->margin * 2);
       
       snprintf(title_buf_msg, sizeof(title_buf), "%s (%s)",
             title_buf, title_msg);

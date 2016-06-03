@@ -1672,10 +1672,9 @@ static void xmb_draw_items(xmb_handle_t *xmb,
    for (; i < end; i++)
    {
       menu_entry_t entry;
-      char name[PATH_MAX_LENGTH];
-      char value[PATH_MAX_LENGTH];
       float icon_x, icon_y;
-
+      char name[PATH_MAX_LENGTH]  = {0};
+      char value[PATH_MAX_LENGTH] = {0};
       const float half_size       = xmb->icon.size / 2.0f;
       uintptr_t texture_switch    = 0;
       uintptr_t         icon      = 0;
@@ -2026,9 +2025,10 @@ static void xmb_frame(void *data)
    size_t selection;
    math_matrix_4x4 mymat;
    unsigned i, width, height;
-   char msg[PATH_MAX_LENGTH], title_msg[256];
    float item_color[16], coord_black[16], coord_white[16];
    menu_display_ctx_rotate_draw_t rotate_draw;
+   char msg[PATH_MAX_LENGTH]               = {0};
+   char title_msg[256]                     = {0};
    bool display_kb                         = false;
    bool render_background                  = false;
    file_list_t *selection_buf              = NULL;
@@ -2121,7 +2121,7 @@ static void xmb_frame(void *data)
    if (settings->menu.timedate_enable)
    {
       menu_display_ctx_datetime_t datetime;
-      char timedate[256];
+      char timedate[256] = {0};
 
       datetime.s         = timedate;
       datetime.len       = sizeof(timedate);
@@ -2241,7 +2241,8 @@ static void xmb_frame(void *data)
 
    if (display_kb)
    {
-      const char *str = NULL, *label = NULL;
+      const char *str   = NULL;
+      const char *label = NULL;
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
 

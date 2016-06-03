@@ -416,9 +416,11 @@ static void rgui_render(void *data)
    size_t i, end, fb_pitch, old_start;
    unsigned fb_width, fb_height;
    int bottom;
-   uint64_t *frame_count;
-   char title[256], title_buf[256], title_msg[64];
-   char msg[PATH_MAX_LENGTH];
+   uint64_t *frame_count          = NULL;
+   char title[256]                = {0};
+   char title_buf[256]            = {0};
+   char title_msg[64]             = {0};
+   char msg[PATH_MAX_LENGTH]      = {0};
    settings_t *settings           = config_get_ptr();
    rgui_t *rgui                   = (rgui_t*)data;
 
@@ -563,7 +565,7 @@ static void rgui_render(void *data)
    if (settings->menu.timedate_enable)
    {
       menu_display_ctx_datetime_t datetime;
-      char timedate[PATH_MAX_LENGTH];
+      char timedate[PATH_MAX_LENGTH] = {0};
 
       datetime.s         = timedate;
       datetime.len       = sizeof(timedate);
@@ -586,13 +588,13 @@ static void rgui_render(void *data)
    {
       menu_animation_ctx_ticker_t ticker;
       size_t selection;
-      char entry_path[PATH_MAX_LENGTH];
-      char entry_value[PATH_MAX_LENGTH];
-      char message[PATH_MAX_LENGTH];
-      char entry_title_buf[PATH_MAX_LENGTH];
-      char type_str_buf[PATH_MAX_LENGTH];
-      unsigned entry_spacing = menu_entry_get_spacing(i);
-      bool entry_selected    = menu_entry_is_currently_selected(i);
+      char entry_path[PATH_MAX_LENGTH]      = {0};
+      char entry_value[PATH_MAX_LENGTH]     = {0};
+      char message[PATH_MAX_LENGTH]         = {0};
+      char entry_title_buf[PATH_MAX_LENGTH] = {0};
+      char type_str_buf[PATH_MAX_LENGTH]    = {0};
+      unsigned                entry_spacing = menu_entry_get_spacing(i);
+      bool                entry_selected    = menu_entry_is_currently_selected(i);
       
       if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
          continue;
@@ -639,7 +641,8 @@ static void rgui_render(void *data)
 
    if (display_kb)
    {
-      const char *str = NULL, *label = NULL;
+      const char *str   = NULL;
+      const char *label = NULL;
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_BUFF_PTR, &str);
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL,    &label);
 
