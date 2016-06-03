@@ -19,6 +19,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct cheevos_ctx_desc
 {
    unsigned idx;
@@ -43,5 +47,9 @@ bool cheevos_test(void);
 bool cheevos_set_cheats(void);
 
 void cheevos_set_support_cheevos(bool state);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __RARCH_CHEEVOS_H */
