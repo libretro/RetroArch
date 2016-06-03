@@ -22,12 +22,11 @@
 #include <stddef.h>
 
 #include <file/archive_file.h>
+#include <retro_common_api.h>
 
 #include "libretro-db/libretrodb.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum database_status
 {
@@ -120,8 +119,6 @@ int database_info_build_query(
  * memory after it is no longer required. */
 char *bin_to_hex_alloc(const uint8_t *data, size_t len);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif /* CORE_INFO_H_ */

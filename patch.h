@@ -20,6 +20,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
 /* BPS/UPS/IPS implementation from bSNES (nall::).
  * Modified for RetroArch. */
 
@@ -33,5 +37,7 @@
  *
  **/
 void patch_content(uint8_t **buf, ssize_t *size);
+
+RETRO_END_DECLS
 
 #endif

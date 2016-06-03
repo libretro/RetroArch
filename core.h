@@ -18,14 +18,13 @@
 #ifndef _LIBRETRO_CORE_IMPL_H
 #define _LIBRETRO_CORE_IMPL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <boolean.h>
 #include <libretro.h>
+#include <retro_common_api.h>
 
 #include "core_type.h"
+
+RETRO_BEGIN_DECLS
 
 enum
 {
@@ -183,8 +182,6 @@ bool core_uninit_libretro_callbacks(void);
 
 void core_set_input_state(retro_ctx_input_state_info_t *info);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

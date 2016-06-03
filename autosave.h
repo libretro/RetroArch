@@ -17,11 +17,11 @@
 #ifndef __RARCH_AUTOSAVE_H
 #define __RARCH_AUTOSAVE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stddef.h>
+
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 typedef struct autosave autosave_t;
 
@@ -43,8 +43,6 @@ void autosave_init(void);
 
 void autosave_deinit(void);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

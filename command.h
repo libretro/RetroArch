@@ -23,10 +23,9 @@
 
 #include <stdint.h>
 #include <boolean.h>
+#include <retro_common_api.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct command command_t;
 
@@ -244,9 +243,6 @@ bool command_free(command_t *handle);
  **/
 bool command_event(enum event_command action, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
-

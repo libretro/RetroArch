@@ -21,10 +21,9 @@
 #include <stddef.h>
 
 #include <lists/string_list.h>
+#include <retro_common_api.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct
 {
@@ -120,8 +119,6 @@ bool core_info_find(core_info_ctx_find_t *info);
 
 bool core_info_load(core_info_ctx_find_t *info);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif /* CORE_INFO_H_ */

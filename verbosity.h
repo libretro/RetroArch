@@ -20,12 +20,11 @@
 #include <stdarg.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 #include <compat/posix_string.h>
 #include <compat/strl.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 bool verbosity_is_enabled(void);
 
@@ -140,9 +139,6 @@ void RARCH_ERR_V(const char *tag, const char *fmt, va_list ap);
 void RARCH_ERR(const char *fmt, ...);
 #endif
 
-
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

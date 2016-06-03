@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include "gfx/video_driver.h"
 #include "driver.h"
@@ -28,9 +29,7 @@
 #define MAX_USERS 16
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 /* All config related settings go here. */
 
@@ -571,8 +570,6 @@ void config_free(void);
 
 settings_t *config_get_ptr(void);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

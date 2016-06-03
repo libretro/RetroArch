@@ -22,6 +22,7 @@
 #include <sys/types.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 #include <compat/posix_string.h>
 
 #ifdef HAVE_CONFIG_H
@@ -30,9 +31,7 @@
 
 #include "input/input_defines.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 #define DRIVERS_CMD_ALL \
       ( DRIVER_AUDIO \
@@ -171,8 +170,6 @@ typedef struct driver_ctx_info
 
 bool driver_ctl(enum driver_ctl_state state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

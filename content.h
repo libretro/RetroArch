@@ -23,12 +23,11 @@
 #include <sys/types.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #include "frontend/frontend_driver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct ram_type ram_type_t;
 
@@ -68,8 +67,6 @@ void content_deinit(void);
  * selected libretro core. */
 bool content_init(void);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

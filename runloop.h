@@ -17,12 +17,11 @@
 #define __RETROARCH_RUNLOOP_H
 
 #include <retro_miscellaneous.h>
+#include <retro_common_api.h>
 
 #include "configuration.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum runloop_ctl_state
 {
@@ -317,8 +316,6 @@ char* runloop_msg_queue_pull(void);
 
 bool runloop_ctl(enum runloop_ctl_state state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

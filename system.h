@@ -17,6 +17,7 @@
 #define __RARCH_SYSTEM_H
 
 #include <retro_miscellaneous.h>
+#include <retro_common_api.h>
 #include <libretro.h>
 
 #include "driver.h"
@@ -25,9 +26,7 @@
 #define MAX_USERS 16
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 typedef struct rarch_system_info
 {
@@ -58,8 +57,6 @@ typedef struct rarch_system_info
    struct retro_memory_map mmaps;
 } rarch_system_info_t;
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
