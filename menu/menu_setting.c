@@ -6227,6 +6227,20 @@ static bool setting_append_list(
 
          CONFIG_BOOL(
                list, list_info,
+               &settings->pause_nonactive,
+               menu_hash_to_str(MENU_LABEL_PAUSE_NONACTIVE),
+               menu_hash_to_str(MENU_LABEL_VALUE_PAUSE_NONACTIVE),
+               pause_nonactive,
+               menu_hash_to_str(MENU_VALUE_OFF),
+               menu_hash_to_str(MENU_VALUE_ON),
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler);
+
+         CONFIG_BOOL(
+               list, list_info,
                &settings->video.disable_composition,
                menu_hash_to_str(MENU_LABEL_VIDEO_DISABLE_COMPOSITION),
                menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION),
@@ -6240,20 +6254,6 @@ static bool setting_append_list(
                general_read_handler);
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_REINIT);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_CMD_APPLY_AUTO);
-
-         CONFIG_BOOL(
-               list, list_info,
-               &settings->pause_nonactive,
-               menu_hash_to_str(MENU_LABEL_PAUSE_NONACTIVE),
-               menu_hash_to_str(MENU_LABEL_VALUE_PAUSE_NONACTIVE),
-               pause_nonactive,
-               menu_hash_to_str(MENU_VALUE_OFF),
-               menu_hash_to_str(MENU_VALUE_ON),
-               &group_info,
-               &subgroup_info,
-               parent_group,
-               general_write_handler,
-               general_read_handler);
 
          CONFIG_BOOL(
                list, list_info,
