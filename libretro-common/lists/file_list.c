@@ -75,7 +75,7 @@ static void file_list_add(file_list_t *list, unsigned idx,
    list->size++;
 }
 
-bool file_list_expand_if_needed(file_list_t *list)
+static bool file_list_expand_if_needed(file_list_t *list)
 {
    if (list->size >= list->capacity)
    {
