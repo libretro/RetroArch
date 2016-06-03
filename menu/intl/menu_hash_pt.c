@@ -35,6 +35,8 @@ const char *menu_hash_to_str_pt(uint32_t hash)
 {
    switch (hash)
    {
+      case MENU_LABEL_VALUE_START_NET_RETROPAD:
+         return "Iniciar RetroPad Remoto";
       case MENU_LABEL_VALUE_SCAN_THIS_DIRECTORY:
          return "<Escanear este Diretório>";
       case MENU_LABEL_VALUE_SCAN_FILE:
@@ -43,14 +45,6 @@ const char *menu_hash_to_str_pt(uint32_t hash)
          return "Escanear Diretório";
       case MENU_LABEL_VALUE_START_CORE:
          return "Iniciar Core";
-      case MENU_VALUE_SETTINGS_TAB:
-         return "Aba de Definições";
-      case MENU_VALUE_HISTORY_TAB:
-         return "Aba de Histórico";
-      case MENU_VALUE_ADD_TAB:
-         return "Aba de Adição";
-      case MENU_VALUE_PLAYLISTS_TAB:
-         return "Aba de Listas de Jogos";
       case MENU_LABEL_VALUE_INFORMATION_LIST:
          return "Informação";
       case MENU_LABEL_VALUE_USE_BUILTIN_PLAYER:
