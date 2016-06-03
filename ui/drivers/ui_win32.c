@@ -542,7 +542,7 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
             switch (mode)
             {
                case ID_M_LOAD_CORE:
-                  extensions  = "All Files\0*.*\0 Libretro core(.dll)\0*.dll\0";
+                  extensions  = "Libretro core (.dll)\0*.dll\0\All Files\0*.*\0";
 #ifdef HAVE_MENU
                   title       = menu_hash_to_str(MENU_LABEL_VALUE_CORE_LIST);
 #else
