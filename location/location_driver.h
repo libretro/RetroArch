@@ -19,11 +19,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <boolean.h>
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 enum rarch_location_ctl_state
 {
@@ -139,8 +139,6 @@ void init_location(void);
 
 bool location_driver_ctl(enum rarch_location_ctl_state state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

@@ -17,17 +17,15 @@
 #ifndef RARCH_VERSION_H__
 #define RARCH_VERSION_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 /* Put this in a separate file so we don't have to rebuilt 
  * retroarch.c every single build. */
 extern const char retroarch_git_version[];
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
 

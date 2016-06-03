@@ -18,11 +18,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <boolean.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <boolean.h>
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
 
 enum ffemu_pix_format
 {
@@ -172,8 +172,6 @@ void recording_driver_clear_data_ptr(void);
 
 void recording_driver_set_data_ptr(void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif

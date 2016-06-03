@@ -20,11 +20,10 @@
 #include <stdint.h>
 
 #include <boolean.h>
+#include <retro_common_api.h>
 #include <libretro.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 enum rarch_camera_ctl_state
 {
@@ -108,8 +107,6 @@ bool driver_camera_start(void);
 
 bool camera_driver_ctl(enum rarch_camera_ctl_state state, void *data);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
