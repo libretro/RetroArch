@@ -1526,9 +1526,11 @@ static void command_event_load_state(const char *path, char *s, size_t len, bool
    if (settings->state_slot < 0)
       snprintf(s, len, "%s #-1 (auto).",
             msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
-   else
+   else if (!undo)
       snprintf(s, len, "%s #%d.", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
             settings->state_slot);
+   else
+      snprintf(s, len, "%s #-1 (undo).", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
 }
 
 static void command_event_main_state(unsigned cmd)
