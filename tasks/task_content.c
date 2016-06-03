@@ -1699,26 +1699,6 @@ static bool command_event_cmd_exec(void *data)
    return true;
 }
 
-static bool task_load_core(const char *core_path)
-{
-   runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)core_path);
-#ifdef HAVE_DYNAMIC
-   command_event(CMD_EVENT_LOAD_CORE, NULL);
-#endif
-   return true;
-}
-
-static void task_push_quickmenu(enum content_mode_load mode, enum rarch_core_type type)
-{
-#ifdef HAVE_MENU
-   if (type != CORE_TYPE_DUMMY && mode != CONTENT_MODE_LOAD_FROM_CLI)
-   {
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT,       NULL);
-      menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-   }
-#endif
-}
-
 bool task_push_content_load_default(
       const char *core_path,
       const char *fullpath,
@@ -1845,8 +1825,9 @@ bool task_push_content_load_default(
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-         if (!task_load_core(core_path))
-            goto error;
+#ifdef HAVE_DYNAMIC
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
+#endif
          break;
       default:
          break;
@@ -1919,7 +1900,11 @@ bool task_push_content_load_default(
          break;
       default:
 #ifdef HAVE_MENU
-         task_push_quickmenu(mode, type);
+         if (type != CORE_TYPE_DUMMY && mode != CONTENT_MODE_LOAD_FROM_CLI)
+         {
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUIT,       NULL);
+            menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+         }
 #endif
          break;
    }
