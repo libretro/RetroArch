@@ -49,11 +49,14 @@ void menu_shader_manager_init(menu_handle_t *menu)
    menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
          &shader);
 
-   if (*global->path.core_specific_config
-         && settings->core_specific_config)
-      config_path = global->path.core_specific_config;
-   else if (*global->path.config)
-      config_path = global->path.config;
+   if (global)
+   {
+      if (*global->path.core_specific_config
+            && settings->core_specific_config)
+         config_path = global->path.core_specific_config;
+      else if (*global->path.config)
+         config_path = global->path.config;
+   }
 
    /* In a multi-config setting, we can't have
     * conflicts on menu.cgp/menu.glslp. */
