@@ -57,7 +57,7 @@ static int file_decompressed_subdir(const char *name,
       unsigned cmode, uint32_t csize,uint32_t size,
       uint32_t crc32, void *userdata)
 {
-   char path_dir[PATH_MAX_LENGTH];
+   char path_dir[PATH_MAX_LENGTH]  = {0};
    char path[PATH_MAX_LENGTH]      = {0};
    decompress_state_t         *dec = (decompress_state_t*)userdata;
 
@@ -247,7 +247,7 @@ bool task_push_decompress(
       retro_task_callback_t cb,
       void *user_data)
 {
-   char tmp[PATH_MAX_LENGTH];
+   char tmp[PATH_MAX_LENGTH]  = {0};
    decompress_state_t *s      = NULL;
    retro_task_t *t            = NULL;
    bool is_compressed         = false;

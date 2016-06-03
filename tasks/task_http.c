@@ -235,8 +235,8 @@ static bool task_http_retriever(retro_task_t *task, void *data)
 void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *user_data)
 {
-   char tmp[PATH_MAX_LENGTH];
    task_finder_data_t find_data;
+   char tmp[PATH_MAX_LENGTH]      = {0};
    struct http_connection_t *conn = NULL;
    retro_task_t  *t               = NULL;
    http_handle_t *http            = NULL;

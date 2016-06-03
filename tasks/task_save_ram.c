@@ -346,8 +346,8 @@ bool content_load_ram_file(unsigned slot)
  */
 bool content_save_ram_file(unsigned slot)
 {
-   retro_ctx_memory_info_t mem_info;
    ram_type_t ram;
+   retro_ctx_memory_info_t mem_info;
    global_t  *global         = global_get_ptr();
 
    if (!global)

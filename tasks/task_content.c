@@ -210,10 +210,10 @@ static int content_7zip_file_read(
       for (i = 0; i < db.db.NumFiles; i++)
       {
          size_t len;
-         char infile[PATH_MAX_LENGTH];
-         size_t offset           = 0;
-         size_t outSizeProcessed = 0;
-         const CSzFileItem    *f = db.db.Files + i;
+         char infile[PATH_MAX_LENGTH] = {0};
+         size_t offset                = 0;
+         size_t outSizeProcessed      = 0;
+         const CSzFileItem    *f      = db.db.Files + i;
 
          /* We skip over everything which is not a directory. 
           * FIXME: Why continue then if f->IsDir is true?*/
@@ -359,7 +359,7 @@ static struct string_list *compressed_7zip_file_list_new(
       for (i = 0; i < db.db.NumFiles; i++)
       {
          union string_list_elem_attr attr;
-         char infile[PATH_MAX_LENGTH];
+         char infile[PATH_MAX_LENGTH] = {0};
          const char *file_ext         = NULL;
          size_t                   len = 0;
          bool supported_by_core       = false;
@@ -719,7 +719,7 @@ struct string_list *compressed_file_list_new(const char *path,
 
 static void check_defaults_dir_create_dir(const char *path)
 {
-   char new_path[PATH_MAX_LENGTH];
+   char new_path[PATH_MAX_LENGTH] = {0};
    fill_pathname_expand_special(new_path,
          path, sizeof(new_path));
 
@@ -1019,9 +1019,9 @@ bool dump_to_file_desperate(const void *data,
       size_t size, unsigned type)
 {
    time_t time_;
-   char timebuf[256];
-   char application_data[PATH_MAX_LENGTH];
-   char path[PATH_MAX_LENGTH];
+   char timebuf[256]                      = {0};
+   char application_data[PATH_MAX_LENGTH] = {0};
+   char path[PATH_MAX_LENGTH]             = {0};
 
    if (!fill_pathname_application_data(application_data,
             sizeof(application_data)))
@@ -1307,8 +1307,8 @@ static bool init_content_file_extract(
 
       if (string_is_equal_noncase(ext, "zip"))
       {
-         char new_path[PATH_MAX_LENGTH];
-         char temp_content[PATH_MAX_LENGTH];
+         char new_path[PATH_MAX_LENGTH]     = {0};
+         char temp_content[PATH_MAX_LENGTH] = {0};
 
          strlcpy(temp_content, content->elems[i].data,
                sizeof(temp_content));
@@ -1530,8 +1530,8 @@ error:
 static void menu_content_environment_get(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
    char *fullpath                    = NULL;
+   struct rarch_main_wrap *wrap_args = (struct rarch_main_wrap*)params_data;
    global_t *global                  = global_get_ptr();
    settings_t *settings              = config_get_ptr();
     
@@ -1578,9 +1578,9 @@ static void menu_content_environment_get(int *argc, char *argv[],
 static bool task_load_content(content_ctx_info_t *content_info, 
       bool launched_from_menu)
 {
-   char name[PATH_MAX_LENGTH];
-   char msg[PATH_MAX_LENGTH];
-   char *fullpath       = NULL;
+   char name[PATH_MAX_LENGTH] = {0};
+   char msg[PATH_MAX_LENGTH]  = {0};
+   char *fullpath             = NULL;
 
    runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
 
@@ -1611,7 +1611,7 @@ static bool task_load_content(content_ctx_info_t *content_info,
    /* Push entry to top of history playlist */
    if (content_is_inited() || content_does_not_need_content())
    {
-      char tmp[PATH_MAX_LENGTH];
+      char tmp[PATH_MAX_LENGTH]      = {0};
       struct retro_system_info *info = NULL;
       rarch_system_info_t *system    = NULL;
 
@@ -1658,10 +1658,12 @@ error:
 
 static bool command_event_cmd_exec(void *data)
 {
-   char *fullpath;
 #if defined(HAVE_DYNAMIC)
    content_ctx_info_t content_info;
+#endif
+   char *fullpath           = NULL;
 
+#if defined(HAVE_DYNAMIC)
    content_info.argc        = 0;
    content_info.argv        = NULL;
    content_info.args        = NULL;

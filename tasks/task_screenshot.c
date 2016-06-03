@@ -223,8 +223,8 @@ static bool take_screenshot_choice(const char *global_name_base)
    {
       unsigned old_width, old_height;
       size_t old_pitch;
-      void *frame_data;
       bool ret             = false;
+      void *frame_data     = NULL;
       const void* old_data = NULL;
 
       video_driver_cached_frame_get(&old_data, &old_width, &old_height,
