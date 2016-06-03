@@ -40,8 +40,8 @@ void menu_cbs_init(void *data,
       unsigned type, size_t idx)
 {
    menu_ctx_bind_t bind_info;
-   char elem0[PATH_MAX_LENGTH];
-   char elem1[PATH_MAX_LENGTH];
+   char elem0[PATH_MAX_LENGTH]  = {0};
+   char elem1[PATH_MAX_LENGTH]  = {0};
    const char *repr_label       = NULL;
    struct string_list *str_list = NULL;
    const char *menu_label       = NULL;
