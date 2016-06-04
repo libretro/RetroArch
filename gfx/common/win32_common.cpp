@@ -310,10 +310,9 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
             case SC_SCREENSAVE:
             case SC_MONITORPOWER:
                *quit = true;
-               return 0;
+               break;
          }
          break;
-
       case WM_DROPFILES:
          return win32_drag_query_file(hwnd, wparam);
       case WM_CHAR:
@@ -327,15 +326,15 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
-      {
-         WINDOWPLACEMENT placement;
-         GetWindowPlacement(g_hwnd, &placement);
-         g_pos_x = placement.rcNormalPosition.left;
-         g_pos_y = placement.rcNormalPosition.top;
-         g_quit = true;
-         *quit = true;
-         return 0;
-      }
+         {
+            WINDOWPLACEMENT placement;
+            GetWindowPlacement(g_hwnd, &placement);
+            g_pos_x = placement.rcNormalPosition.left;
+            g_pos_y = placement.rcNormalPosition.top;
+            g_quit  = true;
+            *quit   = true;
+         }
+         break;
       case WM_SIZE:
          /* Do not send resize message if we minimize. */
          if (wparam != SIZE_MAXHIDE && wparam != SIZE_MINIMIZED)
@@ -345,7 +344,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
             g_resized = true;
          }
          *quit = true;
-         return 0;
+         break;
 	  case WM_COMMAND:
          if (settings->ui.menubar_enable)
             win32_menu_loop(g_hwnd, wparam);
