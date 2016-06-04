@@ -1479,7 +1479,13 @@ static void command_event_save_state(const char *path,
       path_remove_extension(buf);
       snprintf(buf, sizeof(buf), "%s.last", buf);
 
-      content_rename_state(path, buf);
+      if (!content_rename_state(path, buf))
+      {
+         snprintf(s, len, "%s \"%s\".",
+               "Failed to save undo information\n",
+               buf);
+         return;
+      }
    }
 
    if (!content_save_state(path))
@@ -1519,7 +1525,7 @@ static void command_event_load_state(const char *path, char *s, size_t len, bool
       path_remove_extension(buf);
       snprintf(buf, sizeof(buf), "%s.undo", buf);
 
-      if(!content_save_state(buf))
+      if (!content_save_state(buf))
       {
          snprintf(s, len, "%s \"%s\".",
                "Failed to save undo information\n",
