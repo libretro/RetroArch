@@ -64,7 +64,7 @@ static unsigned g_pos_y = CW_USEDEFAULT;
 static bool g_resized;
 bool g_inited;
 static bool g_quit;
-static HWND g_hwnd;
+static ui_window_win32_t main_window;
 
 extern void *dinput_wgl;
 static void *curD3D = NULL;
@@ -328,7 +328,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
       case WM_QUIT:
          {
             WINDOWPLACEMENT placement;
-            GetWindowPlacement(g_hwnd, &placement);
+            GetWindowPlacement(main_window.hwnd, &placement);
             g_pos_x = placement.rcNormalPosition.left;
             g_pos_y = placement.rcNormalPosition.top;
             g_quit  = true;
@@ -347,7 +347,7 @@ static LRESULT CALLBACK WndProcCommon(bool *quit, HWND hwnd, UINT message,
          break;
 	  case WM_COMMAND:
          if (settings->ui.menubar_enable)
-            win32_menu_loop(g_hwnd, wparam);
+            win32_menu_loop(main_window.hwnd, wparam);
          break;
    }
    return 0;
@@ -432,18 +432,18 @@ bool win32_window_create(void *data, unsigned style,
       unsigned height, bool fullscreen)
 {
 #ifndef _XBOX
-   g_hwnd = CreateWindowEx(0, "RetroArch", "RetroArch",
+   main_window.hwnd = CreateWindowEx(0, "RetroArch", "RetroArch",
          style,
          fullscreen ? mon_rect->left : g_pos_x,
          fullscreen ? mon_rect->top  : g_pos_y,
          width, height,
          NULL, NULL, NULL, data);
-   if (!g_hwnd)
+   if (!main_window.hwnd)
       return false;
 
    video_driver_display_type_set(RARCH_DISPLAY_WIN32);
    video_driver_display_set(0);
-   video_driver_window_set((uintptr_t)g_hwnd);
+   video_driver_window_set((uintptr_t)main_window.hwnd);
 #endif
    return true;
 }
@@ -659,16 +659,16 @@ void win32_set_window(unsigned *width, unsigned *height,
       if (!fullscreen && settings->ui.menubar_enable)
       {
          RECT rc_temp = {0, 0, (LONG)*height, 0x7FFF};
-         SetMenu(g_hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
-         SendMessage(g_hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
+         SetMenu(main_window.hwnd, LoadMenu(GetModuleHandle(NULL),MAKEINTRESOURCE(IDR_MENU)));
+         SendMessage(main_window.hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
          g_resize_height = *height += rc_temp.top + rect->top;
-         SetWindowPos(g_hwnd, NULL, 0, 0, *width, *height, SWP_NOMOVE);
+         SetWindowPos(main_window.hwnd, NULL, 0, 0, *width, *height, SWP_NOMOVE);
       }
 
-      ShowWindow(g_hwnd, SW_RESTORE);
-      UpdateWindow(g_hwnd);
-      SetForegroundWindow(g_hwnd);
-      SetFocus(g_hwnd);
+      ShowWindow(main_window.hwnd, SW_RESTORE);
+      UpdateWindow(main_window.hwnd);
+      SetForegroundWindow(main_window.hwnd);
+      ui_window_win32_set_focused(&main_window);
    }
 
    win32_show_cursor(!fullscreen);
@@ -706,7 +706,7 @@ bool win32_set_video_mode(void *data,
    win32_set_window(&width, &height, fullscreen, windowed_full, &rect);
 
    /* Wait until context is created (or failed to do so ...) */
-   while (!g_inited && !g_quit && GetMessage(&msg, g_hwnd, 0, 0))
+   while (!g_inited && !g_quit && GetMessage(&msg, main_window.hwnd, 0, 0))
    {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
@@ -722,7 +722,7 @@ bool win32_set_video_mode(void *data,
 #ifdef _XBOX
 static HANDLE GetFocus(void)
 {
-   return g_hwnd;
+   return main_window.hwnd;
 }
 
 BOOL IsIconic(HWND hwnd)
@@ -736,12 +736,12 @@ bool win32_has_focus(void)
    if (!g_inited)
       return false;
 
-   return GetFocus() == g_hwnd;
+   return GetFocus() == main_window.hwnd;
 }
 
 HWND win32_get_window(void)
 {
-   return g_hwnd;
+   return main-window.hwnd;
 }
 
 void win32_window_reset(void)
@@ -755,5 +755,5 @@ void win32_destroy_window(void)
 #ifndef _XBOX
    UnregisterClass("RetroArch", GetModuleHandle(NULL));
 #endif
-   g_hwnd = NULL;
+   main_window.hwnd = NULL;
 }
