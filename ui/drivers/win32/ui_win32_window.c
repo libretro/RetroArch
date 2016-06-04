@@ -75,6 +75,8 @@ void ui_window_win32_set_title(void *data, char *buf)
 
 void ui_window_win32_set_droppable(void *data, bool droppable)
 {
+   ui_window_win32_t *window = (ui_window_win32_t*)data;
+   DragAcceptFiles(window->hwnd, droppable);
 }
 
 const ui_window_t ui_window_win32 = {
