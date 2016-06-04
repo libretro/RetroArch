@@ -89,8 +89,6 @@ void get_ios_version(int *major, int *minor);
 #elif defined(HAVE_COCOA)
 #include <AppKit/AppKit.h>
 
-#include "ui_cocoa_window.h"
-
 @interface CocoaView : NSView
 #ifdef HAVE_CORELOCATION
 <CLLocationManagerDelegate>

@@ -76,6 +76,7 @@
 #endif
 
 #if defined(HAVE_COCOATOUCH)
+
 static GLKView *g_view;
 UIView *g_pause_indicator_view;
 #endif
@@ -88,6 +89,7 @@ static bool g_is_syncing = true;
 static bool g_use_hw_ctx;
 
 #if defined(HAVE_COCOA)
+#include "../../ui/drivers/cocoa/ui_cocoa_window.h"
 static NSOpenGLPixelFormat* g_format;
 
 void *glcontext_get_ptr(void)
@@ -419,10 +421,11 @@ static void cocoagl_gfx_ctx_update_window_title(void *data)
    (void)got_text;
 
 #if defined(HAVE_COCOA)
-   CocoaView *g_view = (CocoaView*)nsview_get_ptr();
-   static const char* const text = buf; /* < Can't access buffer directly in the block */
+    ui_window_cocoa_t view;
+    view.data = (CocoaView*)nsview_get_ptr();
+
    if (got_text)
-       [[g_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
+       ui_window_cocoa_set_title(&view, buf);
 #endif
     if (settings->fps_show)
         runloop_msg_queue_push(buf_fps, 1, 1, false);

@@ -23,13 +23,15 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "cocoa_common.h"
+
 #include "../../ui_companion_driver.h"
 
 RETRO_BEGIN_DECLS
 
 typedef struct ui_window_cocoa
 {
-    void *empty;
+    CocoaView *data;
 } ui_window_cocoa_t;
 
 void ui_window_cocoa_set_visible(void *data,
