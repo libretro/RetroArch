@@ -55,7 +55,7 @@ void shader_dlg_show(HWND parent_hwnd);
 void shader_dlg_params_reload(void);
 #endif
 
-void win32_monitor_from_window(HWND data, bool destroy);
+void win32_monitor_from_window(void);
 
 void win32_monitor_init(void);
 

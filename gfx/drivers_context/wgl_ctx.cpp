@@ -506,7 +506,7 @@ static void gfx_ctx_wgl_destroy(void *data)
 
    if (window)
    {
-      win32_monitor_from_window(window, true);
+      win32_monitor_from_window();
       win32_destroy_window();
    }
 

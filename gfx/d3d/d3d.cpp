@@ -1194,7 +1194,6 @@ static void d3d_free_overlays(d3d_video_t *d3d)
 static void d3d_free(void *data)
 {
    d3d_video_t   *d3d = (d3d_video_t*)data;
-   HWND        window = win32_get_window();
 
    if (!d3d)
       return;
@@ -1218,7 +1217,7 @@ static void d3d_free(void *data)
    d3d->dev = NULL;
    g_pD3D   = NULL;
 
-   win32_monitor_from_window(window, true);
+   win32_monitor_from_window();
 
    if (d3d)
       delete d3d;

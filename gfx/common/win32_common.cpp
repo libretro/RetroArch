@@ -158,12 +158,12 @@ static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
 }
 
 
-void win32_monitor_from_window(HWND data, bool destroy)
+void win32_monitor_from_window(void)
 {
 #ifndef _XBOX
+   HWND data          = win32_get_window();
    win32_monitor_last = MonitorFromWindow(data, MONITOR_DEFAULTTONEAREST);
-   if (destroy && data)
-      DestroyWindow(data);
+   DestroyWindow(data);
 #endif
 }
 
@@ -186,7 +186,7 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    HMONITOR *hm_to_use  = (HMONITOR*)hm_data;
 
    if (!win32_monitor_last)
-      win32_monitor_from_window(GetDesktopWindow(), false);
+      win32_monitor_last = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTONEAREST);
 
    *hm_to_use = win32_monitor_last;
    fs_monitor = settings->video.monitor_index;
