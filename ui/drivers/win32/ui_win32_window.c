@@ -46,7 +46,13 @@
 #include "../../../runloop.h"
 #include "../../../tasks/tasks_internal.h"
 
-static void ui_window_win32_set_visible(void *data,
+void ui_window_win32_destroy(void *data)
+{
+   ui_window_win32_t *window = (ui_window_win32_t*)data;
+   DestroyWindow(hwnd);
+}
+
+void ui_window_win32_set_visible(void *data,
         bool set_visible)
 {
 }
