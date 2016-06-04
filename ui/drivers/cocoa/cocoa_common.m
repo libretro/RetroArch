@@ -64,9 +64,10 @@ void *glkitview_init(void);
    
 #if defined(HAVE_COCOA)
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-   ui_window_cocoa_t view;
-   view.data = (CocoaView*)self;
-   ui_window_cocoa_set_droppable(&view, true);
+   ui_window_cocoa_t cocoa_view;
+   cocoa_view.data = (CocoaView*)self;
+    
+   [self registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
 #elif defined(HAVE_COCOATOUCH)
    self.view = (__bridge GLKView*)glkitview_init();
    

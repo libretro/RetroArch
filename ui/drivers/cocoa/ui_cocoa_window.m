@@ -62,7 +62,7 @@ void ui_window_cocoa_set_droppable(void *data, bool droppable)
 
    if (droppable)
    {
-      [[cocoa_view window] registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
+      [[cocoa_view window] registerForDraggedTypes:[NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil]];
    }
    else
    {
