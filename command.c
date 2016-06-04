@@ -102,8 +102,8 @@ struct command
    bool state[RARCH_BIND_LIST_END];
 };
 
-enum lastcmd_source_t { cmd_none, cmd_stdin, cmd_network };
-static int lastcmd_source_type;
+enum cmd_source_t { cmd_none, cmd_stdin, cmd_network };
+static enum cmd_source_t lastcmd_source;
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static int lastcmd_net_fd;
 static struct sockaddr_storage lastcmd_net_source;
@@ -113,14 +113,14 @@ static socklen_t lastcmd_net_source_len;
 static bool command_reply(const char * data, size_t len)
 {
 #ifdef HAVE_STDIN_CMD
-   if (lastcmd_source_type == cmd_stdin)
+   if (lastcmd_source == cmd_stdin)
    {
       fwrite(data, 1,len, stdout);
       return true;
    }
 #endif
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
-   if (lastcmd_source_type == cmd_network)
+   if (lastcmd_source == cmd_network)
    {
       sendto(lastcmd_net_fd, data, len, 0, (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
       return true;
@@ -352,16 +352,19 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
             msg_hash_to_str(MSG_RECEIVED));
 }
 
-static void command_parse_msg(command_t *handle, char *buf)
+static void command_parse_msg(command_t *handle, char *buf, enum cmd_source_t source)
 {
    char *save      = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
+
+   lastcmd_source = source;
 
    while (tok)
    {
       command_parse_sub_msg(handle, tok);
       tok = strtok_r(NULL, "\n", &save);
    }
+   lastcmd_source = cmd_none;
 }
 
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
@@ -538,7 +541,6 @@ static void command_network_poll(command_t *handle)
    {
       char buf[1024];
 
-      lastcmd_source_type = cmd_network;
       lastcmd_net_fd = handle->net_fd;
       lastcmd_net_source_len = sizeof(lastcmd_net_source);
       ssize_t ret = recvfrom(handle->net_fd, buf,
@@ -549,8 +551,7 @@ static void command_network_poll(command_t *handle)
 
       buf[ret] = '\0';
 
-      command_parse_msg(handle, buf);
-      lastcmd_source_type = cmd_none;
+      command_parse_msg(handle, buf, cmd_network);
    }
 }
 #endif
@@ -753,9 +754,7 @@ static void command_stdin_poll(command_t *handle)
    *last_newline++ = '\0';
    msg_len = last_newline - handle->stdin_buf;
 
-   lastcmd_source_type = cmd_stdin;
-   command_parse_msg(handle, handle->stdin_buf);
-   lastcmd_source_type = cmd_none;
+   command_parse_msg(handle, handle->stdin_buf, cmd_stdin);
 
    memmove(handle->stdin_buf, last_newline,
          handle->stdin_buf_ptr - msg_len);
