@@ -49,12 +49,6 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam);
 #endif
 
 extern "C" bool dinput_handle_message(void *dinput, UINT message, WPARAM wParam, LPARAM lParam);
-extern "C" bool win32_browser(
-      HWND owner,
-      char *filename,
-      const char *extensions,
-      const char *title,
-      const char *initial_dir);
 
 unsigned g_resize_width;
 unsigned g_resize_height;

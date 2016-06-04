@@ -493,7 +493,7 @@ bool win32_shader_dlg_init(void)
    return true;
 }
 
-bool win32_browser(
+static bool win32_browser(
       HWND owner,
       char *filename,
       const char *extensions,
