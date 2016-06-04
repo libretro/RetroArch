@@ -37,7 +37,7 @@
 
 static id apple_platform;
 
-void apple_rarch_exited(void)
+static void app_terminate(void)
 {
    [[NSApplication sharedApplication] terminate:nil];
 }
@@ -103,9 +103,9 @@ void apple_rarch_exited(void)
          }
          break;
         case NSMouseMoved:
-  case NSLeftMouseDragged:
- case NSRightMouseDragged:
- case NSOtherMouseDragged:
+        case NSLeftMouseDragged:
+        case NSRightMouseDragged:
+        case NSOtherMouseDragged:
          {
             NSPoint pos;
             NSPoint mouse_pos;
@@ -127,19 +127,19 @@ void apple_rarch_exited(void)
             apple->window_pos_y = (int16_t)mouse_pos.y;
          }
          break;
- case NSScrollWheel:
+        case NSScrollWheel:
          /* TODO/FIXME - properly implement. */
          break;
- case NSLeftMouseDown:
-case NSRightMouseDown:
-case NSOtherMouseDown:
+        case NSLeftMouseDown:
+        case NSRightMouseDown:
+        case NSOtherMouseDown:
          apple = (cocoa_input_data_t*)input_driver_get_data();
          if (!apple)
             return;
          apple->mouse_buttons |= 1 << event.buttonNumber;
          apple->touch_count = 1;
          break;
-case NSLeftMouseUp:
+      case NSLeftMouseUp:
       case NSRightMouseUp:
       case NSOtherMouseUp:
          apple = (cocoa_input_data_t*)input_driver_get_data();
@@ -198,7 +198,7 @@ static char** waiting_argv;
         }
     }
    if (rarch_main(waiting_argc, waiting_argv, NULL))
-      apple_rarch_exited();
+      app_terminate();
 
    waiting_argc = 0;
 
@@ -555,7 +555,7 @@ static void ui_companion_cocoa_deinit(void *data)
 {
    ui_companion_cocoa_t *handle = (ui_companion_cocoa_t*)data;
 
-   apple_rarch_exited();
+   app_terminate();
 
    if (handle)
       free(handle);
