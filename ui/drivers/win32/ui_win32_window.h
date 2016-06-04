@@ -28,7 +28,7 @@
 #include <windows.h>
 #endif
 
-#icnlude "../../ui_companion_driver.h"
+#include "../../ui_companion_driver.h"
 
 RETRO_BEGIN_DECLS
 

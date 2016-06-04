@@ -41,6 +41,8 @@
 #include <retro_inline.h>
 #include <file/file_path.h>
 
+#include "ui_win32_window.h"
+
 #include "../../ui_companion_driver.h"
 #include "../../../driver.h"
 #include "../../../runloop.h"
@@ -49,7 +51,7 @@
 void ui_window_win32_destroy(void *data)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
-   DestroyWindow(hwnd);
+   DestroyWindow(window->hwnd);
 }
 
 void ui_window_win32_set_visible(void *data,
