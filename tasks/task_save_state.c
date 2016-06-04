@@ -18,10 +18,12 @@
 #include <sys/types.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include <errno.h>
 
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
+#include <file/file_path.h>
 
 #include "../core.h"
 #include "../msg_hash.h"
@@ -209,4 +211,20 @@ error:
          path);
    free(buf);
    return false;
+}
+
+bool content_rename_state(const char *origin, const char *dest)
+{
+   int ret = 0;
+   if (path_file_exists(dest))
+      unlink(dest);
+
+   ret = rename (origin, dest);
+   if (!ret)
+      return true;
+   else
+   {
+      RARCH_LOG ("Error %d renaming file %s", ret, origin);
+      return false;
+   }
 }

@@ -298,8 +298,12 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_VALUE_NO_CORES_AVAILABLE                                    0xe16bfd0dU
 #define MENU_LABEL_SAVE_STATE                                                  0x3a4849b5U
 #define MENU_LABEL_VALUE_LOAD_STATE                                            0xd23ba706U
+#define MENU_LABEL_VALUE_UNDO_LOAD_STATE                                       0xc83f09fcU
+#define MENU_LABEL_VALUE_UNDO_SAVE_STATE                                       0x341b870bU
 #define MENU_LABEL_VALUE_SAVE_STATE                                            0x3e182415U
 #define MENU_LABEL_LOAD_STATE                                                  0xa39eb286U
+#define MENU_LABEL_UNDO_LOAD_STATE                                             0x464aaf5cU
+#define MENU_LABEL_UNDO_SAVE_STATE                                             0xdcf4468bU
 #define MENU_LABEL_REWIND                                                      0x1931d5aeU
 #define MENU_LABEL_NETPLAY_FLIP_PLAYERS                                        0x801425abU
 #define MENU_LABEL_CHEAT_INDEX_MINUS                                           0x57f58b6cU
@@ -955,6 +959,8 @@ RETRO_BEGIN_DECLS
 #define MENU_LABEL_CUSTOM_BIND_DEFAULTS                                        0xe88f7b13U
 #define MENU_LABEL_SAVESTATE                                                   0x3a4849b5U
 #define MENU_LABEL_LOADSTATE                                                   0xa39eb286U
+#define MENU_LABEL_UNDOLOADSTATE                                               0x464aaf5cU
+#define MENU_LABEL_UNDOSAVESTATE                                               0xdcf4468bU
 #define MENU_LABEL_RESUME_CONTENT                                              0xd9f088b0U
 #define MENU_LABEL_VALUE_RESUME_CONTENT                                        0xae6e5911U
 #define MENU_LABEL_VALUE_RESUME                                                0xce8ac2f6U

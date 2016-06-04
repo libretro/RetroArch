@@ -658,6 +658,10 @@ static const char *menu_hash_to_str_us_label(uint32_t hash)
          return "savestate";
       case MENU_LABEL_LOAD_STATE:
          return "loadstate";
+      case MENU_LABEL_UNDO_LOAD_STATE:
+         return "undoloadstate";
+      case MENU_LABEL_UNDO_SAVE_STATE:
+         return "undosavestate";
       case MENU_LABEL_RESUME_CONTENT:
          return "resume_content";
       case MENU_LABEL_INPUT_DRIVER:
@@ -1374,6 +1378,10 @@ const char *menu_hash_to_str_us(uint32_t hash)
          return "Save State";
       case MENU_LABEL_VALUE_LOAD_STATE:
          return "Load State";
+      case MENU_LABEL_VALUE_UNDO_LOAD_STATE:
+         return "Undo Load State";
+      case MENU_LABEL_VALUE_UNDO_SAVE_STATE:
+         return "Undo Save State";
       case MENU_LABEL_VALUE_RESUME_CONTENT:
          return "Resume";
       case MENU_LABEL_VALUE_INPUT_DRIVER:

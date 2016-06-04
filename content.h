@@ -51,6 +51,12 @@ bool content_load_state(const char *path);
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path);
 
+/* Copy a save state. */
+bool content_rename_state(const char *origin, const char *dest);
+
+/* Load a state backup from disk to memory. */
+bool content_undo_load_state(const char *path);
+
 bool content_does_not_need_content(void);
 
 void content_set_does_not_need_content(void);

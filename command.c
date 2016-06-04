@@ -1469,6 +1469,24 @@ static void command_event_save_state(const char *path,
       char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
+   char buf[PATH_MAX_LENGTH] = {0};
+
+   if (path_file_exists(path))
+   {
+      /* TODO: Fence with a setting */
+      strlcpy(buf, path, sizeof(buf));
+      snprintf(buf, sizeof(buf), "%s", path);
+      path_remove_extension(buf);
+      snprintf(buf, sizeof(buf), "%s.last", buf);
+
+      if (!content_rename_state(path, buf))
+      {
+         snprintf(s, len, "%s \"%s\".",
+               "Failed to save undo information\n",
+               buf);
+         return;
+      }
+   }
 
    if (!content_save_state(path))
    {
@@ -1494,9 +1512,27 @@ static void command_event_save_state(const char *path,
  *
  * Loads a state with path being @path.
  **/
-static void command_event_load_state(const char *path, char *s, size_t len)
+static void command_event_load_state(const char *path, char *s, size_t len, bool undo)
 {
    settings_t *settings = config_get_ptr();
+   char buf[PATH_MAX_LENGTH] = {0};
+
+   if (!undo)
+   {
+      /* TODO: Fence with a setting */
+      strlcpy(buf, path, sizeof(buf));
+      snprintf(buf, sizeof(buf), "%s", path);
+      path_remove_extension(buf);
+      snprintf(buf, sizeof(buf), "%s.undo", buf);
+
+      if (!content_save_state(buf))
+      {
+         snprintf(s, len, "%s \"%s\".",
+               "Failed to save undo information\n",
+               buf);
+         return;
+      }
+   }
 
    if (!content_load_state(path))
    {
@@ -1509,15 +1545,18 @@ static void command_event_load_state(const char *path, char *s, size_t len)
    if (settings->state_slot < 0)
       snprintf(s, len, "%s #-1 (auto).",
             msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
-   else
+   else if (!undo)
       snprintf(s, len, "%s #%d.", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
             settings->state_slot);
+   else
+      snprintf(s, len, "%s #-1 (undo).", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
 }
 
 static void command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
    char path[PATH_MAX_LENGTH] = {0};
+   char buf[PATH_MAX_LENGTH]  = {0};
    char msg[128]              = {0};
    global_t *global           = global_get_ptr();
    settings_t *settings       = config_get_ptr();
@@ -1541,7 +1580,19 @@ static void command_event_main_state(unsigned cmd)
             command_event_save_state(path, msg, sizeof(msg));
             break;
          case CMD_EVENT_LOAD_STATE:
-            command_event_load_state(path, msg, sizeof(msg));
+            command_event_load_state(path, msg, sizeof(msg), false);
+            break;
+         case CMD_EVENT_UNDO_LOAD_STATE:
+            strlcpy(buf, path, sizeof(buf));
+            path_remove_extension(buf);
+            snprintf(buf, sizeof(buf), "%s.undo", buf);
+            command_event_load_state(buf, msg, sizeof(msg), true);
+            break;
+         case CMD_EVENT_UNDO_SAVE_STATE:
+            strlcpy(buf, path, sizeof(buf));
+            path_remove_extension(buf);
+            snprintf(buf, sizeof(buf), "%s.last", buf);
+            command_event_load_state(buf, msg, sizeof(msg), true);
             break;
       }
    }
@@ -1661,6 +1712,12 @@ bool command_event(enum event_command cmd, void *data)
             return false;
 #endif
 
+         command_event_main_state(cmd);
+         break;
+      case CMD_EVENT_UNDO_LOAD_STATE:
+         command_event_main_state(cmd);
+         break;
+      case CMD_EVENT_UNDO_SAVE_STATE:
          command_event_main_state(cmd);
          break;
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
