@@ -181,9 +181,14 @@ static struct
 #ifdef HAVE_SSA
 static void ass_msg_cb(int level, const char *fmt, va_list args, void *data)
 {
+   char buffer[4096];
    (void)data;
+
    if (level < 6)
-      log_cb(RETRO_LOG_INFO, fmt);
+   {
+      vsnprintf(buffer, sizeof(buffer), fmt, args);
+      log_cb(RETRO_LOG_INFO, "%s\n", buffer);
+   }
 }
 #endif
 
