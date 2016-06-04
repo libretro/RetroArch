@@ -28,11 +28,20 @@ void ui_window_cocoa_destroy(void *data)
 
 void ui_window_cocoa_set_focused(void *data)
 {
+    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
+    [[cocoa_view window] makeKeyAndOrderFront:nil];
 }
 
 void ui_window_cocoa_set_visible(void *data,
         bool set_visible)
 {
+    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
+    if (set_visible)
+        [[cocoa_view window] makeKeyAndOrderFront:nil];
+    else
+        [[cocoa_view window] orderOut:nil];
 }
 
 void ui_window_cocoa_set_title(void *data, char *buf)
