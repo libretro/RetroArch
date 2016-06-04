@@ -65,9 +65,16 @@ void ui_window_win32_set_visible(void *data,
 {
 }
 
+void ui_window_win32_set_title(void *data, char *buf)
+{
+   ui_window_win32_t *window = (ui_window_win32_t*)data;
+   SetWindowText(window->hwnd, buf);
+}
+
 const ui_window_t ui_window_win32 = {
    ui_window_win32_destroy,
    ui_window_win32_set_focused,
    ui_window_win32_set_visible,
+   ui_window_win32_set_title,
    "win32"
 };

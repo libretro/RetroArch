@@ -36,6 +36,7 @@ typedef struct ui_window
    void (*destroy)(void *data);
    void (*set_focused)(void *data);
    void (*set_visible)(void *data, bool visible);
+   void (*set_title)(void *data, char *buf);
    const char *ident;
 } ui_window_t;
 
