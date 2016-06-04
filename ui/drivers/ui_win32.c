@@ -322,7 +322,7 @@ void shader_dlg_params_reload(void)
 static void shader_dlg_update_on_top_state(void)
 {
    bool on_top = SendMessage(g_shader_dlg.on_top_checkbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
-   SetWindowPos(g_shader_dlg.window.hnd, on_top ? HWND_TOPMOST : HWND_NOTOPMOST , 0, 0, 0, 0,
+   SetWindowPos(g_shader_dlg.window.hwnd, on_top ? HWND_TOPMOST : HWND_NOTOPMOST , 0, 0, 0, 0,
          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
 
