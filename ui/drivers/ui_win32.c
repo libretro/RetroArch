@@ -337,7 +337,7 @@ void shader_dlg_show(HWND parent_hwnd)
                0, 0, SWP_NOSIZE | SWP_SHOWWINDOW);
       }
       else
-         ShowWindow(g_shader_dlg.hwnd, SW_SHOW);
+         ShowWindow(g_shader_dlg.hwnd, SW_SHOWNORMAL);
 
       shader_dlg_update_on_top_state();
 
@@ -364,7 +364,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
-         ShowWindow(g_shader_dlg.hwnd, 0);
+         ShowWindow(g_shader_dlg.hwnd, SW_HIDE);
          return 0;
 
       case WM_COMMAND:
