@@ -291,7 +291,8 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
 
 int filestream_getc(RFILE *stream)
 {
-   char c;
+   char c = 0;
+   (void)c;
    if (!stream)
       return 0;
 #if defined(HAVE_BUFFERED_IO)
