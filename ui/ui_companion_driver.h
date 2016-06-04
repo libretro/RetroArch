@@ -31,6 +31,12 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct ui_window
+{
+   void (*set_visible)(void *data, bool visible);
+   const char *ident;
+} ui_window_t;
+
 typedef struct ui_companion_driver
 {
    void *(*init)(void);
@@ -43,8 +49,12 @@ typedef struct ui_companion_driver
    void (*notify_refresh)(void *data);
    void (*msg_queue_push)(const char *msg, unsigned priority, unsigned duration, bool flush);
    void (*render_messagebox)(const char *msg);
-   const char *ident;
+   const ui_window_t *window;
+   const char        *ident;
 } ui_companion_driver_t;
+
+extern const ui_window_t           ui_window_null;
+extern const ui_window_t           ui_window_win32;
 
 extern const ui_companion_driver_t ui_companion_null;
 extern const ui_companion_driver_t ui_companion_cocoa;

@@ -723,6 +723,7 @@ UI
 #include "../ui/ui_companion_driver.c"
 
 #include "../ui/drivers/ui_null.c"
+#include "../ui/drivers/null/ui_null_window.c"
 
 #ifdef HAVE_QT
 #include "../ui/drivers/ui_qt.c"
@@ -730,6 +731,7 @@ UI
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../ui/drivers/ui_win32.c"
+#include "../ui/drivers/win32/ui_win32_window.c"
 #endif
 
 /*============================================================

@@ -108,6 +108,7 @@ OBJ += frontend/frontend.o \
        frontend/drivers/platform_null.o \
        ui/ui_companion_driver.o \
        ui/drivers/ui_null.o \
+		 ui/drivers/null/ui_null_window.o \
        core_impl.o \
        retroarch.o \
        input/input_keyboard.o \
@@ -629,8 +630,8 @@ endif
 # Companion UI
 
 ifneq ($(findstring Win32,$(OS)),)
-OBJ += ui/drivers/ui_win32.o
-
+OBJ += ui/drivers/ui_win32.o \
+		 ui/drivers/win32/ui_win32_window.o
 endif
 
 # Video

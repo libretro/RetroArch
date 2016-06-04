@@ -1,5 +1,5 @@
 /* RetroArch - A frontend for libretro.
- *  Copyright (C) 2011-2015 - Daniel De Matteis
+ *  Copyright (C) 2011-2016 - Daniel De Matteis
  *
  * RetroArch is free software: you can redistribute it and/or modify it under the terms
  * of the GNU General Public License as published by the Free Software Found-
@@ -687,5 +687,6 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_notify_refresh,
    ui_companion_cocoatouch_msg_queue_push,
    ui_companion_cocoatouch_render_messagebox,
+   &ui_window_null,
    "cocoatouch",
 };
