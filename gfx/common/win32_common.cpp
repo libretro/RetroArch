@@ -129,16 +129,18 @@ INT_PTR CALLBACK PickCoreProc(HWND hDlg, UINT message,
                   { 
                      case LBN_SELCHANGE:
                         {
+                           int lbItem;
+                           const core_info_t *info = NULL;
                            runloop_ctl(RUNLOOP_CTL_GET_CONTENT_PATH, &fullpath);
                            HWND hwndList = GetDlgItem(hDlg, ID_CORELISTBOX); 
-                           int lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
+                           lbItem = (int)SendMessage(hwndList, LB_GETCURSEL, 0, 0); 
                            core_info_get_list(&core_info_list);
                            core_info_list_get_supported_cores(core_info_list,
                                  (const char*)fullpath, &core_info, &list_size);
-                           const core_info_t *info = (const core_info_t*)&core_info[lbItem];
+                           info = (const core_info_t*)&core_info[lbItem];
                            runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH,info->path);
                         } 
-
+                        break;
                   }
                }
                return TRUE;
