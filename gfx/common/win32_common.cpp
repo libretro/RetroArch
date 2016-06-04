@@ -25,6 +25,8 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
 
+#include "../../ui/drivers/win32/ui_win32_window.h"
+
 #if !defined(_XBOX)
 
 #define IDI_ICON 1
@@ -741,7 +743,7 @@ bool win32_has_focus(void)
 
 HWND win32_get_window(void)
 {
-   return main-window.hwnd;
+   return main_window.hwnd;
 }
 
 void win32_window_reset(void)
