@@ -184,20 +184,6 @@ static bool command_set_shader(const char *arg)
    return video_driver_set_shader(type, arg);
 }
 
-#ifdef HAVE_CHEEVOS
-typedef struct
-{
-   unsigned size;
-   unsigned type;
-   int      bank_id;
-   unsigned value;
-   unsigned previous;
-} cheevos_var_t;
-
-void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value);
-uint8_t *cheevos_get_memory(const cheevos_var_t *var);
-#endif
-
 static bool command_read_ram(const char *arg)
 {
 #ifdef HAVE_CHEEVOS

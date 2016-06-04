@@ -158,15 +158,6 @@ enum
 
 typedef struct
 {
-   unsigned size;
-   unsigned type;
-   int      bank_id;
-   unsigned value;
-   unsigned previous;
-} cheevos_var_t;
-
-typedef struct
-{
    unsigned type;
    unsigned req_hits;
    unsigned curr_hits;
