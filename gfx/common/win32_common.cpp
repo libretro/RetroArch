@@ -751,7 +751,11 @@ bool win32_has_focus(void)
    if (!g_inited)
       return false;
 
+#ifdef _XBOX
    return GetForegroundWindow() == main_window.hwnd;
+#else
+   return ui_window_win32_focused(&main_window);
+#endif
 }
 
 HWND win32_get_window(void)
