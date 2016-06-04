@@ -25,8 +25,6 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../core_info.h"
 
-#include "../../ui/drivers/win32/ui_win32_window.h"
-
 #if !defined(_XBOX)
 
 #define IDI_ICON 1
@@ -66,7 +64,7 @@ static unsigned g_pos_y = CW_USEDEFAULT;
 static bool g_resized;
 bool g_inited;
 static bool g_quit;
-static ui_window_win32_t main_window;
+ui_window_win32_t main_window;
 
 extern void *dinput_wgl;
 static void *curD3D = NULL;

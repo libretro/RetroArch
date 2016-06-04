@@ -35,11 +35,13 @@
 
 #ifndef _XBOX
 #include "../../ui/drivers/ui_win32_resource.h"
+#include "../../ui/drivers/win32/ui_win32_window.h"
 
 extern unsigned g_resize_width;
 extern unsigned g_resize_height;
 extern bool g_inited;
 extern bool g_restore_desktop;
+extern ui_window_win32_t main_window;
 
 LRESULT win32_handle_keyboard_event(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
