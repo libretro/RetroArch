@@ -41,6 +41,7 @@
 
 #elif defined(HAVE_COCOA)
 #include "../ui/drivers/ui_cocoa.m"
+#include "../ui/drivers/cocoa/ui_cocoa_window.m"
 #endif
 
 #endif
