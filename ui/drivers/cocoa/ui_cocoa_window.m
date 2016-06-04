@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
 
 void ui_window_cocoa_destroy(void *data)
@@ -29,12 +30,12 @@ void ui_window_cocoa_set_focused(void *data)
 {
 }
 
-static void ui_window_cocoa_set_visible(void *data,
+void ui_window_cocoa_set_visible(void *data,
         bool set_visible)
 {
 }
 
-static void ui_window_cocoa_set_title(void *data, char *buf)
+void ui_window_cocoa_set_title(void *data, char *buf)
 {
 }
 
