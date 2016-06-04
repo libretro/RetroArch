@@ -108,7 +108,7 @@ typedef struct
 {
    ui_window_win32_t window;
    ui_window_win32_t separator;
-   HWND on_top_checkbox;
+   ui_window_win32_t on_top_checkbox;
    shader_param_ctrl_t controls[GFX_MAX_PARAMETERS];
    int parameters_start_y;
 } shader_dlg_t;
@@ -318,7 +318,7 @@ void shader_dlg_params_reload(void)
 
 static void shader_dlg_update_on_top_state(void)
 {
-   bool on_top = SendMessage(g_shader_dlg.on_top_checkbox, BM_GETCHECK, 0, 0) == BST_CHECKED;
+   bool on_top = SendMessage(g_shader_dlg.on_top_checkbox.hwnd, BM_GETCHECK, 0, 0) == BST_CHECKED;
    SetWindowPos(g_shader_dlg.window.hwnd, on_top ? HWND_TOPMOST : HWND_NOTOPMOST , 0, 0, 0, 0,
          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
@@ -476,14 +476,14 @@ bool win32_shader_dlg_init(void)
          SHADER_DLG_WIDTH, SHADER_DLG_MIN_HEIGHT, NULL, NULL, NULL, NULL);
 
    pos_y = SHADER_DLG_CTRL_MARGIN;
-   g_shader_dlg.on_top_checkbox = CreateWindowEx(0, "BUTTON", "Always on Top",
+   g_shader_dlg.on_top_checkbox.hwnd = CreateWindowEx(0, "BUTTON", "Always on Top",
          BS_AUTOCHECKBOX | WS_VISIBLE | WS_CHILD,
          SHADER_DLG_CTRL_X, pos_y, SHADER_DLG_CTRL_WIDTH,
          SHADER_DLG_CHECKBOX_HEIGHT, g_shader_dlg.window.hwnd,
          (HMENU)SHADER_DLG_CHECKBOX_ONTOP_ID, NULL, NULL);
    pos_y +=  SHADER_DLG_CHECKBOX_HEIGHT + SHADER_DLG_CTRL_MARGIN;
 
-   SendMessage(g_shader_dlg.on_top_checkbox,
+   SendMessage(g_shader_dlg.on_top_checkbox.hwnd,
          WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
    pos_y +=  SHADER_DLG_SEPARATOR_HEIGHT + SHADER_DLG_CTRL_MARGIN;
