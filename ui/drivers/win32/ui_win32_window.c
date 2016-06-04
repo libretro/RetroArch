@@ -64,7 +64,7 @@ void ui_window_win32_set_visible(void *data,
         bool set_visible)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
-   ShowWindow(window->hwnd, visible ? SW_SHOWNORMAL : SW_HIDE);
+   ShowWindow(window->hwnd, set_visible ? SW_SHOWNORMAL : SW_HIDE);
 }
 
 void ui_window_win32_set_title(void *data, char *buf)
