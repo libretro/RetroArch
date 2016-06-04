@@ -207,14 +207,15 @@ static char** waiting_argv;
 
 static void poll_iteration(void)
 {
-    NSEvent *event = NULL;
-    
-    do
+    while (1)
     {
-        event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
-        
+        NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+        if (!event)
+           break;
+        [event retain];
         [NSApp sendEvent: event];
-    }while(event != nil);
+        [event release];
+    };
 }
 
 - (void) rarch_main
