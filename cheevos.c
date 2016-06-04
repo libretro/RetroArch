@@ -605,6 +605,68 @@ static unsigned cheevos_parse_operator(const char **memaddr)
    return op;
 }
 
+void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value)
+{
+   rarch_system_info_t *system;
+   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+   
+   var->bank_id = -1;
+   var->value = value;
+   
+   if (system->mmaps.num_descriptors != 0)
+   {
+      const struct retro_memory_descriptor *desc;
+      const struct retro_memory_descriptor *end;
+      
+      if (cheevos_locals.console_id == CHEEVOS_CONSOLE_GAMEBOY_ADVANCE)
+      {
+         /* Patch the address to correctly map it to the mmaps */
+         if (var->value < 0x8000)
+         {
+            /* Internal RAM */
+            var->value += 0x3000000;
+         }
+         else
+         {
+            /* Work RAM */
+            var->value += 0x2000000 - 0x8000;
+         }
+      }
+      else if (cheevos_locals.console_id == CHEEVOS_CONSOLE_PC_ENGINE)
+      {
+         var->value += 0x1f0000;
+      }
+     
+      desc = system->mmaps.descriptors;
+      end = desc + system->mmaps.num_descriptors;
+      
+      for (; desc < end; desc++)
+      {
+         if ((var->value & desc->select) == desc->start)
+         {
+            var->bank_id = desc - system->mmaps.descriptors;
+            var->value = var->value - desc->start + desc->offset;
+            break;
+         }
+      }
+   }
+   else
+   {
+      unsigned i;
+      
+      for (i = 0; i < sizeof(cheevos_locals.meminfo) / sizeof(cheevos_locals.meminfo[0]); i++)
+      {
+         if (var->value < cheevos_locals.meminfo[i].size)
+         {
+            var->bank_id = i;
+            break;
+         }
+         
+         var->value -= cheevos_locals.meminfo[i].size;
+      }
+   }
+}
+
 static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
 {
    char *end       = NULL;
@@ -647,63 +709,7 @@ static void cheevos_parse_var(cheevos_var_t *var, const char **memaddr)
    if (   var->type == CHEEVOS_VAR_TYPE_ADDRESS 
        || var->type == CHEEVOS_VAR_TYPE_DELTA_MEM)
    {
-      rarch_system_info_t *system;
-      runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
-      
-      var->bank_id = -1;
-      
-      if (system->mmaps.num_descriptors != 0)
-      {
-         const struct retro_memory_descriptor *desc;
-         const struct retro_memory_descriptor *end;
-         
-         if (cheevos_locals.console_id == CHEEVOS_CONSOLE_GAMEBOY_ADVANCE)
-         {
-            /* Patch the address to correctly map it to the mmaps */
-            if (var->value < 0x8000)
-            {
-               /* Internal RAM */
-               var->value += 0x3000000;
-            }
-            else
-            {
-               /* Work RAM */
-               var->value += 0x2000000 - 0x8000;
-            }
-         }
-         else if (cheevos_locals.console_id == CHEEVOS_CONSOLE_PC_ENGINE)
-         {
-            var->value += 0x1f0000;
-         }
-        
-         desc = system->mmaps.descriptors;
-         end = desc + system->mmaps.num_descriptors;
-         
-         for (; desc < end; desc++)
-         {
-            if ((var->value & desc->select) == desc->start)
-            {
-               var->bank_id = desc - system->mmaps.descriptors;
-               var->value = var->value - desc->start + desc->offset;
-               break;
-            }
-         }
-      }
-      else
-      {
-         unsigned i;
-         
-         for (i = 0; i < sizeof(cheevos_locals.meminfo) / sizeof(cheevos_locals.meminfo[0]); i++)
-         {
-            if (var->value < cheevos_locals.meminfo[i].size)
-            {
-               var->bank_id = i;
-               break;
-            }
-            
-            var->value -= cheevos_locals.meminfo[i].size;
-         }
-      }
+      cheevos_parse_guest_addr(var, var->value);
 #ifdef CHEEVOS_DUMP_ADDRS
       RARCH_LOG("CHEEVOS var %03d:%08X\n", var->bank_id + 1, var->value);
 #endif
@@ -1072,7 +1078,7 @@ static int cheevos_parse(const char *json)
 Test all the achievements (call once per frame).
 *****************************************************************************/
 
-static const uint8_t *cheevos_get_memory(const cheevos_var_t *var)
+uint8_t *cheevos_get_memory(const cheevos_var_t *var)
 {
    if (var->bank_id >= 0)
    {

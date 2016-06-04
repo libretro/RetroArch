@@ -102,6 +102,33 @@ struct command
    bool state[RARCH_BIND_LIST_END];
 };
 
+enum lastcmd_source_t { cmd_none, cmd_stdin, cmd_network };
+static int lastcmd_source_type;
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+static int lastcmd_net_fd;
+static struct sockaddr_storage lastcmd_net_source;
+static socklen_t lastcmd_net_source_len;
+#endif
+
+static bool command_reply(const char * data, size_t len)
+{
+#ifdef HAVE_STDIN_CMD
+   if (lastcmd_source_type == cmd_stdin)
+   {
+      fwrite(data, 1,len, stdout);
+      return true;
+   }
+#endif
+#if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
+   if (lastcmd_source_type == cmd_network)
+   {
+      sendto(lastcmd_net_fd, data, len, 0, (struct sockaddr*)&lastcmd_net_source, lastcmd_net_source_len);
+      return true;
+   }
+#endif
+   return false;
+}
+
 struct cmd_map
 {
    const char *str;
@@ -157,8 +184,82 @@ static bool command_set_shader(const char *arg)
    return video_driver_set_shader(type, arg);
 }
 
+#ifdef HAVE_CHEEVOS
+typedef struct
+{
+   unsigned size;
+   unsigned type;
+   int      bank_id;
+   unsigned value;
+   unsigned previous;
+} cheevos_var_t;
+
+void cheevos_parse_guest_addr(cheevos_var_t *var, unsigned value);
+uint8_t *cheevos_get_memory(const cheevos_var_t *var);
+#endif
+
+static bool command_read_ram(const char *arg)
+{
+#ifdef HAVE_CHEEVOS
+   cheevos_var_t var;
+   const uint8_t * data;
+   unsigned nbytes;
+   int i;
+   char reply[256];
+   strcpy(reply, "READ_CORE_RAM ");
+   char * reply_at = reply + strlen("READ_CORE_RAM ");
+   strcpy(reply_at, arg);
+
+   cheevos_parse_guest_addr(&var, strtoul(reply_at, (char**)&reply_at, 16));
+   data = cheevos_get_memory(&var);
+
+   nbytes = strtol(reply_at, NULL, 10);
+   *reply_at = '\0';
+
+   for (i=0;i<nbytes;i++)
+   {
+      sprintf(reply_at+3*i, " %.2X", data[i]);
+   }
+   reply_at[3*nbytes] = '\n';
+
+   command_reply(reply, reply_at+3*nbytes+1 - reply);
+
+   return true;
+#else
+   return false;
+#endif
+}
+
+static bool command_write_ram(const char *arg)
+{
+#ifdef HAVE_CHEEVOS
+   cheevos_var_t var;
+   uint8_t * data;
+   unsigned nbytes;
+   int i;
+   char reply[256];
+
+   cheevos_parse_guest_addr(&var, strtoul(arg, (char**)&arg, 16));
+   data = cheevos_get_memory(&var);
+
+   while (*arg)
+   {
+      *data = strtoul(arg, (char**)&arg, 16);
+      data++;
+   }
+
+   return true;
+#else
+   return false;
+#endif
+}
+
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER", command_set_shader, "<shader path>" },
+#ifdef HAVE_CHEEVOS
+   { "READ_CORE_RAM", command_read_ram, "<address> <number of bytes>" },
+   { "WRITE_CORE_RAM", command_write_ram, "<address> <byte1> <byte2> ..." },
+#endif
 };
 
 static const struct cmd_map map[] = {
@@ -182,7 +283,7 @@ static const struct cmd_map map[] = {
    { "CHEAT_TOGGLE",           RARCH_CHEAT_TOGGLE },
    { "SCREENSHOT",             RARCH_SCREENSHOT },
    { "MUTE",                   RARCH_MUTE },
-   { "OSK",                   RARCH_OSK },
+   { "OSK",                    RARCH_OSK },
    { "NETPLAY_FLIP",           RARCH_NETPLAY_FLIP },
    { "SLOWMOTION",             RARCH_SLOWMOTION },
    { "VOLUME_UP",              RARCH_VOLUME_UP },
@@ -198,6 +299,7 @@ static const struct cmd_map map[] = {
    { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
    { "MENU_RIGHT",             RETRO_DEVICE_ID_JOYPAD_RIGHT },
    { "MENU_A",                 RETRO_DEVICE_ID_JOYPAD_A },
+   { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
    { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
 };
 
@@ -449,14 +551,20 @@ static void command_network_poll(command_t *handle)
    for (;;)
    {
       char buf[1024];
+
+      lastcmd_source_type = cmd_network;
+      lastcmd_net_fd = handle->net_fd;
+      lastcmd_net_source_len = sizeof(lastcmd_net_source);
       ssize_t ret = recvfrom(handle->net_fd, buf,
-            sizeof(buf) - 1, 0, NULL, NULL);
+            sizeof(buf) - 1, 0, (struct sockaddr*)&lastcmd_net_source, &lastcmd_net_source_len);
 
       if (ret <= 0)
          break;
 
       buf[ret] = '\0';
+
       command_parse_msg(handle, buf);
+      lastcmd_source_type = cmd_none;
    }
 }
 #endif
@@ -659,7 +767,9 @@ static void command_stdin_poll(command_t *handle)
    *last_newline++ = '\0';
    msg_len = last_newline - handle->stdin_buf;
 
+   lastcmd_source_type = cmd_stdin;
    command_parse_msg(handle, handle->stdin_buf);
+   lastcmd_source_type = cmd_none;
 
    memmove(handle->stdin_buf, last_newline,
          handle->stdin_buf_ptr - msg_len);
