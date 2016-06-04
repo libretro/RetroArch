@@ -1469,6 +1469,18 @@ static void command_event_save_state(const char *path,
       char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
+   char buf[PATH_MAX_LENGTH] = {0};
+
+   if (path_file_exists(path))
+   {
+      /* TODO: Fence with a setting */
+      strlcpy(buf, path, sizeof(buf));
+      snprintf(buf, sizeof(buf), "%s", path);
+      path_remove_extension(buf);
+      snprintf(buf, sizeof(buf), "%s.last", buf);
+
+      content_rename_state(path, buf);
+   }
 
    if (!content_save_state(path))
    {
