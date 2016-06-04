@@ -79,11 +79,18 @@ void ui_window_win32_set_droppable(void *data, bool droppable)
    DragAcceptFiles(window->hwnd, droppable);
 }
 
+bool ui_window_win32_focused(void *data)
+{
+   ui_window_win32_t *window = (ui_window_win32_t*)data;
+   return (GetForeGroundWindow() == window->hwnd);
+}
+
 const ui_window_t ui_window_win32 = {
    ui_window_win32_destroy,
    ui_window_win32_set_focused,
    ui_window_win32_set_visible,
    ui_window_win32_set_title,
    ui_window_win32_set_droppable,
+   ui_window_win32_focused,
    "win32"
 };

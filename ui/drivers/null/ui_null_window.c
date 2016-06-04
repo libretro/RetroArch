@@ -42,11 +42,17 @@ static void ui_window_null_set_droppable(void *data, bool droppable)
 {
 }
 
+static bool ui_window_null_focused(void *data)
+{
+   return true;
+}
+
 const ui_window_t ui_window_null = {
    ui_window_null_destroy,
    ui_window_null_set_focused,
    ui_window_null_set_visible,
    ui_window_null_set_title,
    ui_window_null_set_droppable,
+   ui_window_null_focused,
    "null"
 };

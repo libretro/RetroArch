@@ -70,11 +70,21 @@ void ui_window_cocoa_set_droppable(void *data, bool droppable)
    }
 }
 
+bool ui_window_cocoa_focused(void *data)
+{
+   ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+   CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
+   if ([[cocoa_view window] isMainWindow] == YES)
+      return true;
+   return false;
+}
+
 const ui_window_t ui_window_cocoa = {
    ui_window_cocoa_destroy,
    ui_window_cocoa_set_focused,
    ui_window_cocoa_set_visible,
    ui_window_cocoa_set_title,
    ui_window_cocoa_set_droppable,
+   ui_window_cocoa_focused,
    "cocoa"
 };

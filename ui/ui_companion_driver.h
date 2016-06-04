@@ -38,6 +38,7 @@ typedef struct ui_window
    void (*set_visible)(void *data, bool visible);
    void (*set_title)(void *data, char *buf);
    void (*set_droppable)(void *data, bool droppable);
+   bool (*focused)(void *data);
    const char *ident;
 } ui_window_t;
 
