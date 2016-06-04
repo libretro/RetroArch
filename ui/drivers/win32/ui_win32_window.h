@@ -46,6 +46,8 @@ void ui_window_win32_destroy(void *data);
 
 void ui_window_win32_set_title(void *data, char *buf);
 
+void ui_window_win32_set_droppable(void *data, bool droppable);
+
 RETRO_END_DECLS
 
 #endif

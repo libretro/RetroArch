@@ -55,10 +55,26 @@ void ui_window_cocoa_set_title(void *data, char *buf)
    [[cocoa_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
 }
 
+void ui_window_cocoa_set_droppable(void *data, bool droppable)
+{
+   ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+   CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
+
+   if (droppable)
+   {
+      [[cocoa_view window] registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
+   }
+   else
+   {
+      [[cocoa_view window] unregisterDraggedTypes];
+   }
+}
+
 const ui_window_t ui_window_cocoa = {
    ui_window_cocoa_destroy,
    ui_window_cocoa_set_focused,
    ui_window_cocoa_set_visible,
    ui_window_cocoa_set_title,
+   ui_window_cocoa_set_droppable,
    "cocoa"
 };
