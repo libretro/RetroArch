@@ -746,7 +746,7 @@ bool win32_has_focus(void)
    if (!g_inited)
       return false;
 
-   return GetFocus() == main_window.hwnd;
+   return GetForegroundWindow() == main_window.hwnd;
 }
 
 HWND win32_get_window(void)
