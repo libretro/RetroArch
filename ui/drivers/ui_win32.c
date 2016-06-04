@@ -116,7 +116,7 @@ typedef struct
    int parameters_start_y;
 } shader_dlg_t;
 
-static shader_dlg_t g_shader_dlg = {0};
+static shader_dlg_t g_shader_dlg = {{0}};
 
 static void shader_dlg_refresh_trackbar_label(int index)
 {
