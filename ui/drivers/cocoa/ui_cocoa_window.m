@@ -24,6 +24,9 @@
 
 void ui_window_cocoa_destroy(void *data)
 {
+    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
+    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
+    [[cocoa_view window] release];
 }
 
 void ui_window_cocoa_set_focused(void *data)
