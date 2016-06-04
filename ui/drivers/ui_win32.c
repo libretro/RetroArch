@@ -338,7 +338,7 @@ void shader_dlg_show(HWND parent_hwnd)
                0, 0, SWP_NOSIZE | SWP_SHOWWINDOW);
       }
       else
-         ShowWindow(g_shader_dlg.window.hwnd, SW_SHOWNORMAL);
+         ui_window_win32_set_visible(&g_shader_dlg.window, true);
 
       shader_dlg_update_on_top_state();
 
@@ -346,7 +346,7 @@ void shader_dlg_show(HWND parent_hwnd)
 
    }
 
-   SetFocus(g_shader_dlg.window.hwnd);
+   ui_window_win32_set_focused(&g_shader_dlg.window);
 }
 
 static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
@@ -365,7 +365,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
-         ShowWindow(g_shader_dlg.window.hwnd, SW_HIDE);
+         ui_window_win32_set_visible(&g_shader_dlg.window, false);
          return 0;
 
       case WM_COMMAND:
