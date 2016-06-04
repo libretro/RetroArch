@@ -224,6 +224,8 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       content_ctx_info_t content_info  = {0};
       core_info_list_t *core_info_list = NULL;
       const core_info_t *core_info     = NULL;
+      settings_t *settings             = config_get_ptr();
+
       DragQueryFile((HDROP)wparam, 0, szFilename, 1024);
 
       core_info_get_list(&core_info_list);
