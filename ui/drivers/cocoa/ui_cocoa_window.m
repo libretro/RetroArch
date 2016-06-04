@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "cocoa_common.h"
+#include "ui_cocoa_window.h"
 #include "../../ui_companion_driver.h"
 
 void ui_window_cocoa_destroy(void *data)

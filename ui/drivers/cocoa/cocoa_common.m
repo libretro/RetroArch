@@ -17,6 +17,7 @@
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
 #include "cocoa_common.h"
+#include "ui_cocoa_window.h"
 
 /* Define compatibility symbols and categories. */
 
