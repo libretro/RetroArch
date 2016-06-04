@@ -54,6 +54,12 @@ void ui_window_win32_destroy(void *data)
    DestroyWindow(window->hwnd);
 }
 
+void ui_window_win32_set_focused(void *data)
+{
+   ui_window_win32_t *window = (ui_window_win32_t*)data;
+   SetFocus(window->hwnd);
+}
+
 void ui_window_win32_set_visible(void *data,
         bool set_visible)
 {
@@ -61,6 +67,7 @@ void ui_window_win32_set_visible(void *data,
 
 const ui_window_t ui_window_win32 = {
    ui_window_win32_destroy,
+   ui_window_win32_set_focused,
    ui_window_win32_set_visible,
-   "win32",
+   "win32"
 };

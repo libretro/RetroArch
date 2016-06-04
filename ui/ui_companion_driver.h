@@ -34,6 +34,7 @@ RETRO_BEGIN_DECLS
 typedef struct ui_window
 {
    void (*destroy)(void *data);
+   void (*set_focused)(void *data);
    void (*set_visible)(void *data, bool visible);
    const char *ident;
 } ui_window_t;

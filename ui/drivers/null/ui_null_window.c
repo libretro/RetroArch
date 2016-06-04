@@ -25,6 +25,10 @@ void ui_window_null_destroy(void *data)
 {
 }
 
+void ui_window_null_set_focused(void *data)
+{
+}
+
 static void ui_window_null_set_visible(void *data,
         bool set_visible)
 {
@@ -32,6 +36,7 @@ static void ui_window_null_set_visible(void *data,
 
 const ui_window_t ui_window_null = {
    ui_window_null_destroy,
+   ui_window_null_set_focused,
    ui_window_null_set_visible,
-   "null",
+   "null"
 };

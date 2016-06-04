@@ -40,6 +40,8 @@ typedef struct ui_window_win32
 void ui_window_win32_set_visible(void *data,
         bool set_visible);
 
+void ui_window_win32_set_focused(void *data);
+
 void ui_window_win32_destroy(void *data);
 
 RETRO_END_DECLS
