@@ -735,6 +735,11 @@ static HANDLE GetFocus(void)
    return main_window.hwnd;
 }
 
+static HWND GetForegroundWindow(void)
+{
+   return main_window.hwnd;
+}
+
 BOOL IsIconic(HWND hwnd)
 {
    return FALSE;
