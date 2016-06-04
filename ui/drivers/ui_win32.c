@@ -94,10 +94,7 @@ typedef struct
    enum shader_param_ctrl_type type;
    union
    {
-      struct
-      {
-         HWND hwnd;
-      } checkbox;
+      ui_window_win32_t checkbox;
       struct
       {
          HWND hwnd;
@@ -200,7 +197,7 @@ static void shader_dlg_params_clear(void)
          case SHADER_PARAM_CTRL_NONE:
             break;
          case SHADER_PARAM_CTRL_CHECKBOX:
-            DestroyWindow(control->checkbox.hwnd);
+            ui_window_win32_destroy(&control->checkbox);
             break;
          case SHADER_PARAM_CTRL_TRACKBAR:
             DestroyWindow(control->trackbar.label_title);
