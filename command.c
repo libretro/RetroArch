@@ -198,17 +198,24 @@ static bool command_read_ram(const char *arg)
 
    cheevos_parse_guest_addr(&var, strtoul(reply_at, (char**)&reply_at, 16));
    data = cheevos_get_memory(&var);
-
-   nbytes = strtol(reply_at, NULL, 10);
-   *reply_at = '\0';
-
-   for (i=0;i<nbytes;i++)
+   
+   if (data)
    {
-      sprintf(reply_at+3*i, " %.2X", data[i]);
+      unsigned nbytes = strtol(reply_at, NULL, 10);
+      
+      for (i=0;i<nbytes;i++)
+      {
+         sprintf(reply_at+3*i, " %.2X", data[i]);
+      }
+      reply_at[3*nbytes] = '\n';
+      command_reply(reply, reply_at+3*nbytes+1 - reply);
    }
-   reply_at[3*nbytes] = '\n';
+   else
+   {
+      strcpy(reply_at, " -1\n");
+      command_reply(reply, reply_at+strlen(" -1\n") - reply);
+   }
 
-   command_reply(reply, reply_at+3*nbytes+1 - reply);
 
    return true;
 #else
@@ -227,6 +234,8 @@ static bool command_write_ram(const char *arg)
 
    cheevos_parse_guest_addr(&var, strtoul(arg, (char**)&arg, 16));
    data = cheevos_get_memory(&var);
+
+   if (!data) return false;
 
    while (*arg)
    {
