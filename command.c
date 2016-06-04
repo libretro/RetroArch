@@ -1588,6 +1588,12 @@ static void command_event_main_state(unsigned cmd)
             snprintf(buf, sizeof(buf), "%s.undo", buf);
             command_event_load_state(buf, msg, sizeof(msg), true);
             break;
+         case CMD_EVENT_UNDO_SAVE_STATE:
+            strlcpy(buf, path, sizeof(buf));
+            path_remove_extension(buf);
+            snprintf(buf, sizeof(buf), "%s.last", buf);
+            command_event_load_state(buf, msg, sizeof(msg), true);
+            break;
       }
    }
    else
@@ -1709,6 +1715,9 @@ bool command_event(enum event_command cmd, void *data)
          command_event_main_state(cmd);
          break;
       case CMD_EVENT_UNDO_LOAD_STATE:
+         command_event_main_state(cmd);
+         break;
+      case CMD_EVENT_UNDO_SAVE_STATE:
          command_event_main_state(cmd);
          break;
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:

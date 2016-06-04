@@ -1274,6 +1274,14 @@ static int action_ok_load_state(const char *path,
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
+static int action_ok_save_state(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   if (generic_action_ok_command(CMD_EVENT_SAVE_STATE) == -1)
+      return menu_cbs_exit();
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+}
+
 static int action_ok_undo_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -1282,10 +1290,10 @@ static int action_ok_undo_load_state(const char *path,
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
-static int action_ok_save_state(const char *path,
+static int action_ok_undo_save_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   if (generic_action_ok_command(CMD_EVENT_SAVE_STATE) == -1)
+   if (generic_action_ok_command(CMD_EVENT_UNDO_SAVE_STATE) == -1)
       return menu_cbs_exit();
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
@@ -2382,6 +2390,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          break;
       case MENU_LABEL_UNDOLOADSTATE:
          BIND_ACTION_OK(cbs, action_ok_undo_load_state);
+         break;
+      case MENU_LABEL_UNDOSAVESTATE:
+         BIND_ACTION_OK(cbs, action_ok_undo_save_state);
          break;
       case MENU_LABEL_RESUME_CONTENT:
          BIND_ACTION_OK(cbs, action_ok_resume_content);

@@ -2282,6 +2282,11 @@ static int menu_displaylist_parse_load_content_settings(
             MENU_SETTING_ACTION_LOADSTATE, 0, 0);
 
       menu_entries_add(info->list,
+            menu_hash_to_str(MENU_LABEL_VALUE_UNDO_SAVE_STATE),
+            menu_hash_to_str(MENU_LABEL_UNDO_SAVE_STATE),
+            MENU_SETTING_ACTION_LOADSTATE, 0, 0);
+
+      menu_entries_add(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_CORE_OPTIONS),
             menu_hash_to_str(MENU_LABEL_CORE_OPTIONS),
             MENU_SETTING_ACTION, 0, 0);
