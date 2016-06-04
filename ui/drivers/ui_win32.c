@@ -110,8 +110,8 @@ typedef struct
 typedef struct
 {
    ui_window_win32_t window;
+   ui_window_win32_t separator;
    HWND on_top_checkbox;
-   HWND separator;
    shader_param_ctrl_t controls[GFX_MAX_PARAMETERS];
    int parameters_start_y;
 } shader_dlg_t;
@@ -298,10 +298,10 @@ void shader_dlg_params_reload(void)
 
    }
 
-   if (g_shader_dlg.separator)
-      DestroyWindow(g_shader_dlg.separator);
+   if (g_shader_dlg.separator.hwnd)
+      ui_window_win32_destroy(&g_shader_dlg.separator);
 
-   g_shader_dlg.separator = CreateWindowEx(0, "STATIC", "",
+   g_shader_dlg.separator.hwnd = CreateWindowEx(0, "STATIC", "",
          SS_ETCHEDHORZ | WS_VISIBLE | WS_CHILD, SHADER_DLG_CTRL_X,
          g_shader_dlg.parameters_start_y - SHADER_DLG_CTRL_MARGIN - SHADER_DLG_SEPARATOR_HEIGHT / 2,
          (pos_x - SHADER_DLG_CTRL_X) + SHADER_DLG_CTRL_WIDTH,
