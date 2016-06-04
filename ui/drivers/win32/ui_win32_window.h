@@ -48,6 +48,8 @@ void ui_window_win32_set_title(void *data, char *buf);
 
 void ui_window_win32_set_droppable(void *data, bool droppable);
 
+bool ui_window_win32_focused(void *data);
+
 RETRO_END_DECLS
 
 #endif
