@@ -269,14 +269,11 @@ static int win32_drag_query_file(HWND hwnd, WPARAM wparam)
       {
          /*pick core that only exists and is bound to work. Ish. */
          const core_info_t *info = (const core_info_t*)&core_info[0];
-
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, info->path);
-
          task_push_content_load_default(
-               NULL, NULL,
+               info->path, NULL,
                &content_info,
                CORE_TYPE_PLAIN,
-               CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+               CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI,
                NULL, NULL);
       }
       else
