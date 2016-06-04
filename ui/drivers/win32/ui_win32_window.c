@@ -58,6 +58,7 @@ void ui_window_win32_set_visible(void *data,
 }
 
 const ui_window_t ui_window_win32 = {
+   ui_window_win32_destroy,
    ui_window_win32_set_visible,
    "win32",
 };

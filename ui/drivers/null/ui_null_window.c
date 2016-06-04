@@ -21,12 +21,17 @@
 
 #include "../../ui_companion_driver.h"
 
+void ui_window_null_destroy(void *data)
+{
+}
+
 static void ui_window_null_set_visible(void *data,
         bool set_visible)
 {
 }
 
 const ui_window_t ui_window_null = {
+   ui_window_null_destroy,
    ui_window_null_set_visible,
    "null",
 };
