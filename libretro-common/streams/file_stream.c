@@ -291,10 +291,15 @@ char *filestream_gets(RFILE *stream, char *s, size_t len)
 
 int filestream_getc(RFILE *stream)
 {
+   char c;
    if (!stream)
       return 0;
 #if defined(HAVE_BUFFERED_IO)
-   return fgetc(stream->fp);
+    return fgetc(stream->fp);
+#elif defined(VITA) || defined(PSP)
+    if(filestream_read(stream, &c, 1) == 1)
+       return (int)c;
+    return EOF;
 #else
    return getc(stream->fd);
 #endif
