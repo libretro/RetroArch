@@ -379,10 +379,14 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          break;
       case WM_CREATE:
          {
+            ui_window_win32_t window;
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
             curD3D                = p_cs->lpCreateParams;
             g_inited              = true;
-            DragAcceptFiles(hwnd, true);
+            
+            window.hwnd           = hwnd;
+
+            ui_window_win32_set_droppable(&window, true);
          }
          return 0;
    }
@@ -418,8 +422,13 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
             return ret;
          break;
       case WM_CREATE:
-         create_graphics_context(hwnd, &g_quit);
-         DragAcceptFiles(hwnd, true);
+         {
+            ui_window_win32_t window;
+            window.hwnd           = hwnd;
+
+            create_graphics_context(hwnd, &g_quit);
+            ui_window_win32_set_droppable(&window, true);
+         }
          return 0;
    }
 
