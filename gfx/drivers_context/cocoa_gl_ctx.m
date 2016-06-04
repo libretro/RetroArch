@@ -412,19 +412,16 @@ static void cocoagl_gfx_ctx_get_video_size(void *data, unsigned* width, unsigned
 
 static void cocoagl_gfx_ctx_update_window_title(void *data)
 {
-   static char buf[128] = {0};
+   static char buf[128]     = {0};
    static char buf_fps[128] = {0};
-   bool got_text = video_monitor_get_fps(buf, sizeof(buf),
-         buf_fps, sizeof(buf_fps));
-   settings_t *settings = config_get_ptr();
-
-   (void)got_text;
-
+   settings_t *settings     = config_get_ptr();
 #if defined(HAVE_COCOA)
-    ui_window_cocoa_t view;
-    view.data = (CocoaView*)nsview_get_ptr();
+   ui_window_cocoa_t view;
 
-   if (got_text)
+   view.data = (CocoaView*)nsview_get_ptr();
+
+   if (video_monitor_get_fps(buf, sizeof(buf),
+         buf_fps, sizeof(buf_fps)))
        ui_window_cocoa_set_title(&view, buf);
 #endif
     if (settings->fps_show)
@@ -435,9 +432,9 @@ static bool cocoagl_gfx_ctx_get_metrics(void *data, enum display_metric_types ty
             float *value)
 {
 #if __has_feature(objc_arc)
-    RAScreen *screen               = (__bridge RAScreen*)get_chosen_screen();
+    RAScreen *screen              = (__bridge RAScreen*)get_chosen_screen();
 #else
-    RAScreen *screen               = (RAScreen*)get_chosen_screen();
+    RAScreen *screen              = (RAScreen*)get_chosen_screen();
 #endif
 #if defined(HAVE_COCOA)
     NSDictionary *description     = [screen deviceDescription];
