@@ -161,9 +161,8 @@ static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
 void win32_monitor_from_window(void)
 {
 #ifndef _XBOX
-   HWND data          = win32_get_window();
-   win32_monitor_last = MonitorFromWindow(data, MONITOR_DEFAULTTONEAREST);
-   DestroyWindow(data);
+   win32_monitor_last = MonitorFromWindow(&main_window->hwnd, MONITOR_DEFAULTTONEAREST);
+   ui_window_win32_destroy(&main_window);
 #endif
 }
 
