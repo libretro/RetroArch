@@ -1499,7 +1499,8 @@ static void command_event_load_state(const char *path, char *s, size_t len, bool
    settings_t *settings = config_get_ptr();
    char buf[PATH_MAX_LENGTH] = {0};
 
-   if (!undo) {
+   if (!undo)
+   {
       /* TODO: Fence with a setting */
       strlcpy(buf, path, sizeof(buf));
       snprintf(buf, sizeof(buf), "%s", path);
