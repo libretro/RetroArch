@@ -43,7 +43,7 @@ static id apple_platform;
 static CFRunLoopObserverRef iterate_observer;
 
 /* forward declaration */
-void apple_rarch_exited(void);
+static void apple_rarch_exited(void);
 
 static void rarch_enable_ui(void)
 {
@@ -544,7 +544,7 @@ void apple_display_alert(const char *message, const char *title)
    [alert show];
 }
 
-void apple_rarch_exited(void)
+static void apple_rarch_exited(void)
 {
     RetroArch_iOS *ap = (RetroArch_iOS *)apple_platform;
     
