@@ -82,7 +82,7 @@ void ui_window_win32_set_droppable(void *data, bool droppable)
 bool ui_window_win32_focused(void *data)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
-   return (GetForeGroundWindow() == window->hwnd);
+   return (GetForegroundWindow() == window->hwnd);
 }
 
 const ui_window_t ui_window_win32 = {
