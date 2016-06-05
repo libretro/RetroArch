@@ -181,10 +181,7 @@ static int detect_ps1_game_sub(const char *track_path,
    while (tmp < (buffer + 2048 * 2))
    {
       if (!*tmp)
-      {
-         filestream_close(fp);
-         return 0;
-      }
+         goto error;
 
       if (!strncasecmp((const char*)(tmp + 33), "SYSTEM.CNF;1", 12))
          break;
@@ -193,10 +190,7 @@ static int detect_ps1_game_sub(const char *track_path,
    }
 
    if(tmp >= (buffer + 2048 * 2))
-   {
-      filestream_close(fp);
-      return 0;
-   }
+      goto error;
 
    cd_sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
    filestream_seek(fp, skip + cd_sector * frame_size, SEEK_SET);
@@ -208,7 +202,7 @@ static int detect_ps1_game_sub(const char *track_path,
       tmp++;
 
    if(!*tmp)
-      return 0;
+      goto error;
 
    boot_file = tmp;
    while(*tmp && *tmp != '\n')
@@ -240,6 +234,10 @@ static int detect_ps1_game_sub(const char *track_path,
 
    filestream_close(fp);
    return 1;
+
+error:
+   filestream_close(fp);
+   return 0;
 }
 
 int detect_ps1_game(const char *track_path, char *game_id)
@@ -368,6 +366,7 @@ int detect_system(const char *track_path, int32_t offset,
 
    RARCH_LOG("Could not find compatible system\n");
    rv = -EINVAL;
+
 clean:
    filestream_close(fd);
    return rv;
