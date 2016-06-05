@@ -138,13 +138,13 @@ int socket_select(int nfds, fd_set *readfs, fd_set *writefds,
 #elif defined(VITA)
    SceNetEpollEvent ev = {0};
 
-   ev.events = PSP2_NET_EPOLLIN | PSP2_NET_EPOLLHUP;
+   ev.events = SCE_NET_EPOLLIN | SCE_NET_EPOLLHUP;
    ev.data.fd = nfds;
 
-   if((sceNetEpollControl(retro_epoll_fd, PSP2_NET_EPOLL_CTL_ADD, nfds, &ev)))
+   if((sceNetEpollControl(retro_epoll_fd, SCE_NET_EPOLL_CTL_ADD, nfds, &ev)))
    {
       int ret = sceNetEpollWait(retro_epoll_fd, &ev, 1, 0);
-      sceNetEpollControl(retro_epoll_fd, PSP2_NET_EPOLL_CTL_DEL, nfds, NULL);
+      sceNetEpollControl(retro_epoll_fd, SCE_NET_EPOLL_CTL_DEL, nfds, NULL);
       return ret;
    }
    return 0;
@@ -214,7 +214,7 @@ static int domain_get(enum socket_domain type)
    {
       case SOCKET_DOMAIN_INET:
 #ifdef VITA
-         return PSP2_NET_AF_INET;
+         return SCE_NET_AF_INET;
 #else
          return AF_INET;
 #endif
@@ -239,10 +239,10 @@ int socket_create(
    switch (socket_type)
    {
       case SOCKET_TYPE_DATAGRAM:
-         type = PSP2_NET_SOCK_DGRAM;
+         type = SCE_NET_SOCK_DGRAM;
          break;
       case SOCKET_TYPE_STREAM:
-         type = PSP2_NET_SOCK_STREAM;
+         type = SCE_NET_SOCK_STREAM;
          break;
       case SOCKET_TYPE_SEQPACKET:
          /* TODO/FIXME - implement */
@@ -255,10 +255,10 @@ int socket_create(
          protocol = 0;
          break;
       case SOCKET_PROTOCOL_TCP:
-         protocol = PSP2_NET_IPPROTO_TCP;
+         protocol = SCE_NET_IPPROTO_TCP;
          break;
       case SOCKET_PROTOCOL_UDP:
-         protocol = PSP2_NET_IPPROTO_UDP;
+         protocol = SCE_NET_IPPROTO_UDP;
          break;
    }
 

@@ -62,7 +62,7 @@
 #endif
 
 #if defined(VITA)
-#define FIO_S_ISDIR PSP2_S_ISDIR
+#define FIO_S_ISDIR SCE_S_ISDIR
 #endif
 
 #if (defined(__CELLOS_LV2__) && !defined(__PSL1GHT__)) || defined(__QNX__) || defined(PSP)

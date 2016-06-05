@@ -74,18 +74,18 @@
 #define listen sceNetListen
 #define send sceNetSend
 #define recv sceNetRecv
-#define MSG_DONTWAIT PSP2_NET_MSG_DONTWAIT
-#define AF_INET PSP2_NET_AF_INET
+#define MSG_DONTWAIT SCE_NET_MSG_DONTWAIT
+#define AF_INET SCE_NET_AF_INET
 #define AF_UNSPEC 0
-#define INADDR_ANY PSP2_NET_INADDR_ANY
+#define INADDR_ANY SCE_NET_INADDR_ANY
 #define INADDR_NONE 0xffffffff
-#define SOCK_STREAM PSP2_NET_SOCK_STREAM
-#define SOCK_DGRAM PSP2_NET_SOCK_DGRAM
-#define SOL_SOCKET PSP2_NET_SOL_SOCKET
-#define SO_REUSEADDR PSP2_NET_SO_REUSEADDR
-#define SO_SNDBUF PSP2_NET_SO_SNDBUF
-#define SO_SNDTIMEO PSP2_NET_SO_SNDTIMEO
-#define SO_NBIO PSP2_NET_SO_NBIO
+#define SOCK_STREAM SCE_NET_SOCK_STREAM
+#define SOCK_DGRAM SCE_NET_SOCK_DGRAM
+#define SOL_SOCKET SCE_NET_SOL_SOCKET
+#define SO_REUSEADDR SCE_NET_SO_REUSEADDR
+#define SO_SNDBUF SCE_NET_SO_SNDBUF
+#define SO_SNDTIMEO SCE_NET_SO_SNDTIMEO
+#define SO_NBIO SCE_NET_SO_NBIO
 #define htonl sceNetHtonl
 #define ntohl sceNetNtohl
 #define htons sceNetHtons
@@ -147,7 +147,7 @@ static INLINE bool isagain(int bytes)
       return false;
    return true;
 #elif defined(VITA)
-	 return (bytes<0 && (bytes == PSP2_NET_ERROR_EAGAIN || bytes == PSP2_NET_ERROR_EWOULDBLOCK));
+	 return (bytes<0 && (bytes == SCE_NET_ERROR_EAGAIN || bytes == SCE_NET_ERROR_EWOULDBLOCK));
 #else
    return (bytes < 0 && (errno == EAGAIN || errno == EWOULDBLOCK));
 #endif
