@@ -42,11 +42,11 @@
 #  include <psp2/io/fcntl.h>
 #  include <psp2/io/dirent.h>
 
-#define PSP_O_RDONLY PSP2_O_RDONLY
-#define PSP_O_RDWR   PSP2_O_RDWR
-#define PSP_O_CREAT  PSP2_O_CREAT
-#define PSP_O_WRONLY PSP2_O_WRONLY
-#define PSP_O_TRUNC  PSP2_O_TRUNC
+#define PSP_O_RDONLY SCE_O_RDONLY
+#define PSP_O_RDWR   SCE_O_RDWR
+#define PSP_O_CREAT  SCE_O_CREAT
+#define PSP_O_WRONLY SCE_O_WRONLY
+#define PSP_O_TRUNC  SCE_O_TRUNC
 #else
 #  if defined(PSP)
 #    include <pspiofilemgr.h>

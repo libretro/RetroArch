@@ -49,7 +49,7 @@ typedef struct psp_audio
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
 #ifdef VITA
-#define PSP_THREAD_STOPPED PSP2_THREAD_STOPPED
+#define PSP_THREAD_STOPPED SCE_THREAD_STOPPED
 #else
 #define SceKernelThreadInfo SceKernelThreadRunStatus
 #define sceKernelGetThreadInfo sceKernelReferThreadRunStatus
@@ -60,8 +60,8 @@ static int audioMainLoop(SceSize args, void* argp)
    psp_audio_t* psp = *((psp_audio_t**)argp);
 
 #ifdef VITA
-   int port = sceAudioOutOpenPort(PSP2_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
-      psp->rate, PSP2_AUDIO_OUT_MODE_STEREO);
+   int port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
+      psp->rate, SCE_AUDIO_OUT_MODE_STEREO);
 #else
    sceAudioSRCChReserve(AUDIO_OUT_COUNT, psp->rate, 2);
 #endif

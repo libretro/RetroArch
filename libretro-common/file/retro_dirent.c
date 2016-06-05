@@ -168,7 +168,7 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *path)
 #if defined(PSP)
    return (entry->d_stat.st_attr & FIO_SO_IFDIR) == FIO_SO_IFDIR;
 #elif defined(VITA)
-   return PSP2_S_ISDIR(entry->d_stat.st_mode);
+   return SCE_S_ISDIR(entry->d_stat.st_mode);
 #endif
 #elif defined(__CELLOS_LV2__)
    CellFsDirent *entry = (CellFsDirent*)&rdir->entry;

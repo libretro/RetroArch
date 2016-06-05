@@ -278,7 +278,7 @@ bool network_init(void)
 #elif defined(VITA)
    SceNetInitParam initparam;
 
-   if (sceNetShowNetstat() == PSP2_NET_ERROR_ENOTINIT)
+   if (sceNetShowNetstat() == SCE_NET_ERROR_ENOTINIT)
    {
       _net_compat_net_memory = malloc(COMPAT_NET_INIT_SIZE);
 
