@@ -132,7 +132,7 @@ enum
 };
 
 #ifdef GEKKO
-#define MAX_GAMMA_SETTING 2
+#define MAX_GAMMA_SETTING 30
 #else
 #define MAX_GAMMA_SETTING 1
 #endif
