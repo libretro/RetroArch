@@ -404,7 +404,7 @@ const char *retroarch_get_current_savefile_dir(void)
    return ret;
 }
 
-static void retroarch_set_paths_redirect(const char *path)
+static void retroarch_set_paths_redirect()
 {
    char current_savestate_dir[PATH_MAX_LENGTH];
    uint32_t global_library_name_hash   = 0;
@@ -1463,12 +1463,9 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          runloop_ctl(RUNLOOP_CTL_MSG_QUEUE_INIT, NULL);
          break;
       case RARCH_CTL_SET_PATHS_REDIRECT:
-         if(settings->sort_savestates_enable || settings->sort_savefiles_enable)
-         {
-            if (content_does_not_need_content())
-               return false;
-            retroarch_set_paths_redirect(global->name.base);
-         }
+         if (content_does_not_need_content())
+            return false;
+         retroarch_set_paths_redirect();
          break;
       case RARCH_CTL_SET_SRAM_ENABLE:
          global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
@@ -1540,7 +1537,7 @@ void retroarch_set_pathnames(const char *path)
    fill_pathname_noext(global->name.cheatfile, global->name.base,
          ".cht", sizeof(global->name.cheatfile));
 
-   retroarch_set_paths_redirect(path);
+   retroarch_set_paths_redirect();
 }
 
 void retroarch_fill_pathnames(void)
