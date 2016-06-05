@@ -391,27 +391,14 @@ static void retroarch_set_special_paths(char **argv, unsigned num_content)
    }
 }
 
-const char *retroarch_get_current_savefile_dir(void)
+static void retroarch_set_paths_redirect(void)
 {
-   char *ret = current_savefile_dir;
-
-   /* try to infer the path in case it's still empty by calling
-   set_paths_redirect */
-   if (string_is_empty(ret))
-      rarch_ctl(RARCH_CTL_SET_PATHS_REDIRECT, NULL);
-   RARCH_LOG("Environ SAVE_DIRECTORY: \"%s\".\n", ret);
-
-   return ret;
-}
-
-static void retroarch_set_paths_redirect()
-{
-   char current_savestate_dir[PATH_MAX_LENGTH];
-   uint32_t global_library_name_hash   = 0;
-   bool check_global_library_name_hash = false;
-   global_t                *global     = global_get_ptr();
-   settings_t              *settings   = config_get_ptr();
-   rarch_system_info_t      *info      = NULL;
+   char current_savestate_dir[PATH_MAX_LENGTH] = {0};
+   uint32_t global_library_name_hash           = 0;
+   bool check_global_library_name_hash         = false;
+   global_t                *global             = global_get_ptr();
+   settings_t              *settings           = config_get_ptr();
+   rarch_system_info_t      *info              = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &info);
 
@@ -543,6 +530,19 @@ static void retroarch_set_paths_redirect()
             global->name.cheatfile);
    }
 }
+
+const char *retroarch_get_current_savefile_dir(void)
+{
+   char *ret = current_savefile_dir;
+
+   /* try to infer the path in case it's still empty by calling
+   set_paths_redirect */
+   if (string_is_empty(ret) && !content_does_not_need_content())
+      retroarch_set_paths_redirect();
+
+   return ret;
+}
+
 
 enum rarch_content_type retroarch_path_is_media_type(const char *path)
 {
