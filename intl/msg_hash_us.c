@@ -115,6 +115,10 @@ const char *msg_hash_to_str_us(uint32_t hash)
          return "Failed to load state from";
       case MSG_FAILED_TO_SAVE_STATE_TO:
          return "Failed to save state to";
+      case MSG_FAILED_TO_LOAD_UNDO:
+         return "No undo state found";
+      case MSG_FAILED_TO_SAVE_UNDO:
+         return "Failed to save undo information";
       case MSG_FAILED_TO_SAVE_SRAM:
          return "Failed to save SRAM";
       case MSG_STATE_SIZE:
