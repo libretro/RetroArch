@@ -131,8 +131,10 @@ enum
    RECORD_NULL
 };
 
-#ifdef GEKKO
+#if defined(HW_RVL)
 #define MAX_GAMMA_SETTING 30
+#elif defined(GEKKO)
+#define MAX_GAMMA_SETTING 2
 #else
 #define MAX_GAMMA_SETTING 1
 #endif
