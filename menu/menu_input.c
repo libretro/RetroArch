@@ -214,7 +214,8 @@ void menu_input_st_string_cb(void *userdata, const char *str)
 
       menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
 
-      setting = menu_setting_find(label);
+      if (!string_is_empty(label))
+         setting = menu_setting_find(label);
 
       if (setting)
       {
