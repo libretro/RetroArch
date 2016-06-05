@@ -482,6 +482,7 @@ int libretrodb_create_index(libretrodb_t *db,
 
    /* We know we aren't going to change it */
    key.val.string.buff = (char *) field_name;
+   item.type           = RDT_NULL;
 
    while (libretrodb_cursor_read_item(&cur, &item) == 0)
    {
