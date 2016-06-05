@@ -33,6 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef KEYCODE_KEYCODE_H
 #define KEYCODE_KEYCODE_H
 
+#include <stdint.h>
+
+#include <retro_common_api.h>
+#include "../input_config.h"
+
 #ifndef MAX_KEYS
 #define MAX_KEYS     256
 #endif
@@ -160,13 +165,7 @@ enum
    KEY_RightGUI = 231
 };
 
-#include <stdint.h>
-
-#include "../input_config.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+RETRO_BEGIN_DECLS
 
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device);
@@ -180,9 +179,6 @@ int32_t apple_keyboard_find_any_key(void);
 
 void apple_keyboard_free(void);
 
-#ifdef __cplusplus
-}
-#endif
-
+RETRO_END_DECLS
 
 #endif

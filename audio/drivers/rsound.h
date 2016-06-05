@@ -16,14 +16,6 @@
 #ifndef __RSOUND_H
 #define __RSOUND_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#if 0
-#define STANDALONE
-#endif
-
 #include <sys/types.h>
 #include <unistd.h>
 #include <rthreads/rthreads.h>
@@ -32,7 +24,10 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
+#include <retro_common_api.h>
 #include <queues/fifo_queue.h>
+
+RETRO_BEGIN_DECLS
 
 #ifdef _WIN32
 #define RSD_DEFAULT_HOST "127.0.0.1" /* Stupid Windows. */
@@ -323,8 +318,6 @@ int rsd_pause (rsound_t *rd, int enable);
 /* Frees an rsound_t struct. Make sure that the stream is properly closed down with rsd_stop() before calling rsd_free(). */
 int rsd_free (rsound_t *rd);
 
-#ifdef __cplusplus
-}
-#endif
+RETRO_END_DECLS
 
 #endif
