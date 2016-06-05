@@ -1852,7 +1852,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (runloop_ctl(RUNLOOP_CTL_GET_WINDOWED_SCALE, &window_scale))
             {
-               if (*window_scale == 0)
+               if (!window_scale || *window_scale == 0)
                   return false;
 
                settings->video.scale = *window_scale;
