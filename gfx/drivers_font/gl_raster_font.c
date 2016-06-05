@@ -360,8 +360,8 @@ static void gl_raster_font_render_message(
       return;
    }
 
-   line_height = scale * 1/ (float)
-      font->font_driver->get_line_height(font->font_data);
+   line_height = 1 / 
+      (scale * (float) font->font_driver->get_line_height(font->font_data));
 
    for (;;)
    {
