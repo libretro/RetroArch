@@ -732,7 +732,7 @@ static void *gl_glsl_init(void *data, const char *path)
    if (!glsl->shader)
       goto error;
 
-   if (path)
+   if (!string_is_empty(path))
    {
       bool ret             = false;
       const char *path_ext = path_get_extension(path);
@@ -772,7 +772,8 @@ static void *gl_glsl_init(void *data, const char *path)
       glsl->shader->modern = true;
    }
 
-   video_shader_resolve_relative(glsl->shader, path);
+   if (!string_is_empty(path))
+      video_shader_resolve_relative(glsl->shader, path);
    video_shader_resolve_parameters(conf, glsl->shader);
 
    if (conf)
@@ -1321,7 +1322,8 @@ static bool gl_glsl_set_coords(void *handle_data, void *shader_data, const struc
    return true;
 
 fallback:
-   gl_ff_vertex(coords);
+   if (coords)
+      gl_ff_vertex(coords);
    return false;
 }
 
