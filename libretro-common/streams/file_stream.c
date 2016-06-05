@@ -369,8 +369,8 @@ error:
 
 int filestream_eof(RFILE *stream)
 {
-   ssize_t current_position = filestream_tell(stream);
-   ssize_t end_position     = filestream_seek(stream, 0, SEEK_END);
+   size_t current_position = filestream_tell(stream);
+   size_t end_position     = filestream_seek(stream, 0, SEEK_END);
 
    filestream_seek(stream, current_position, SEEK_SET);
 
