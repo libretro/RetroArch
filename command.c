@@ -1471,9 +1471,10 @@ static void command_event_save_state(const char *path,
    settings_t *settings = config_get_ptr();
    char buf[PATH_MAX_LENGTH] = {0};
 
+   /* if a save state already exists rename it to .last before saving 
+    * so it can be recovered */
    if (path_file_exists(path))
    {
-      /* TODO: Fence with a setting */
       strlcpy(buf, path, sizeof(buf));
       snprintf(buf, sizeof(buf), "%s", path);
       path_remove_extension(buf);
@@ -1482,8 +1483,8 @@ static void command_event_save_state(const char *path,
       if (!content_rename_state(path, buf))
       {
          snprintf(s, len, "%s \"%s\".",
-               "Failed to save undo information\n",
-               buf);
+               msg_hash_to_str(MSG_FAILED_TO_SAVE_UNDO),
+               path);
          return;
       }
    }
@@ -1517,9 +1518,11 @@ static void command_event_load_state(const char *path, char *s, size_t len, bool
    settings_t *settings = config_get_ptr();
    char buf[PATH_MAX_LENGTH] = {0};
 
+   /* save a state before loading (unless it's an undo operation already) 
+    * so the state can be recovered
+    */
    if (!undo)
    {
-      /* TODO: Fence with a setting */
       strlcpy(buf, path, sizeof(buf));
       snprintf(buf, sizeof(buf), "%s", path);
       path_remove_extension(buf);
@@ -1528,8 +1531,8 @@ static void command_event_load_state(const char *path, char *s, size_t len, bool
       if (!content_save_state(buf))
       {
          snprintf(s, len, "%s \"%s\".",
-               "Failed to save undo information\n",
-               buf);
+               msg_hash_to_str(MSG_FAILED_TO_SAVE_UNDO),
+               path);
          return;
       }
    }
@@ -1586,13 +1589,27 @@ static void command_event_main_state(unsigned cmd)
             strlcpy(buf, path, sizeof(buf));
             path_remove_extension(buf);
             snprintf(buf, sizeof(buf), "%s.undo", buf);
-            command_event_load_state(buf, msg, sizeof(msg), true);
+
+            if (path_file_exists(buf))
+               command_event_load_state(buf, msg, sizeof(msg), true);
+            else
+            {
+               snprintf(msg, sizeof(msg), "%s.",
+                  msg_hash_to_str(MSG_FAILED_TO_LOAD_UNDO));
+            }
             break;
          case CMD_EVENT_UNDO_SAVE_STATE:
             strlcpy(buf, path, sizeof(buf));
             path_remove_extension(buf);
             snprintf(buf, sizeof(buf), "%s.last", buf);
-            command_event_load_state(buf, msg, sizeof(msg), true);
+
+            if (path_file_exists(buf))
+               command_event_load_state(buf, msg, sizeof(msg), true);
+            else
+            {
+               snprintf(msg, sizeof(msg), "%s.",
+                  msg_hash_to_str(MSG_FAILED_TO_LOAD_UNDO));
+            }
             break;
       }
    }
