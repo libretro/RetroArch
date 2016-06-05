@@ -1373,7 +1373,6 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
    static bool rarch_error_on_init         = false;
    static bool rarch_block_config_read     = false;
    static bool rarch_force_fullscreen      = false;
-   global_t *global                        = global_get_ptr();
    settings_t *settings                    = config_get_ptr();
 
    switch(state)
@@ -1468,8 +1467,13 @@ bool rarch_ctl(enum rarch_ctl_state state, void *data)
          retroarch_set_paths_redirect();
          break;
       case RARCH_CTL_SET_SRAM_ENABLE:
-         global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
-            && !content_does_not_need_content();
+         {
+            global_t *global                        = global_get_ptr();
+
+            if (global)
+               global->sram.use = rarch_ctl(RARCH_CTL_IS_PLAIN_CORE, NULL)
+                  && !content_does_not_need_content();
+         }
          break;
       case RARCH_CTL_SET_ERROR_ON_INIT:
          rarch_error_on_init = true;
