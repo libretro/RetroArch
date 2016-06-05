@@ -1207,7 +1207,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          general_write_handler,
          general_read_handler);
 #endif
-#if defined(HW_RVL) || defined(_XBOX360)
+#if defined(GEKKO) || defined(_XBOX360)
    CONFIG_UINT(
          list, list_info,
          &global->console.screen.gamma_correction,

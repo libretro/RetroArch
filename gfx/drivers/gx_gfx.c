@@ -864,10 +864,13 @@ static void gx_resize(void *data)
 
 #ifdef HW_RVL
    VIDEO_SetTrapFilter(global->console.softfilter_enable);
-#endif
    int gamma = global->console.screen.gamma_correction;
    if(gamma == 0) gamma = 10; //default 1.0 gamma value
    VIDEO_SetGamma(gamma);
+#else
+	int gamma = global->console.screen.gamma_correction;
+	GX_SetDispCopyGamma(MAX(0,MIN(2,gamma)));
+#endif
 
    /* Ignore this for custom resolutions */
    if (gx->keep_aspect && gx_mode.efbHeight >= 192)
