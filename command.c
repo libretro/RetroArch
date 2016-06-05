@@ -103,13 +103,16 @@ struct command
 };
 
 enum cmd_source_t { cmd_none, cmd_stdin, cmd_network };
+#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static enum cmd_source_t lastcmd_source;
+#endif
 #if defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static int lastcmd_net_fd;
 static struct sockaddr_storage lastcmd_net_source;
 static socklen_t lastcmd_net_source_len;
 #endif
 
+#if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool command_reply(const char * data, size_t len)
 {
 #ifdef HAVE_STDIN_CMD
@@ -128,6 +131,7 @@ static bool command_reply(const char * data, size_t len)
 #endif
    return false;
 }
+#endif
 
 struct cmd_map
 {
