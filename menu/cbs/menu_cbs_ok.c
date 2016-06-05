@@ -317,8 +317,10 @@ int generic_action_ok_displaylist_push(const char *path,
                break;
          }
 
-         strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
-         strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
+         if (!string_is_empty(path))
+            strlcpy(menu->scratch_buf, path, sizeof(menu->scratch_buf));
+         if (!string_is_empty(menu_path))
+            strlcpy(menu->scratch2_buf, menu_path, sizeof(menu->scratch2_buf));
          break;
       case ACTION_OK_DL_PARENT_DIRECTORY_PUSH:
          fill_pathname_parent_dir(parent_dir,
@@ -1417,8 +1419,9 @@ static void cb_generic_download(void *task_data,
       goto finish;
    }
 
-   fill_pathname_join(output_path, dir_path,
-         transf->path, sizeof(output_path));
+   if (!string_is_empty(dir_path))
+      fill_pathname_join(output_path, dir_path,
+            transf->path, sizeof(output_path));
 
 #ifdef HAVE_ZLIB
    file_ext = path_get_extension(output_path);
