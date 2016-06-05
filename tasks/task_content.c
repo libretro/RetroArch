@@ -1346,7 +1346,7 @@ static bool init_content_file_set_attribs(
 
    attr.i                  = 0;
 
-   if (*global->subsystem)
+   if (*global->subsystem && special)
    {
       unsigned i;
 
@@ -1422,7 +1422,7 @@ static bool content_file_init(struct string_list *temporary_content)
    if (!content)
       goto error;
 
-   if (special && !init_content_file_set_attribs(temporary_content,
+   if (!init_content_file_set_attribs(temporary_content,
             content, system, special))
       goto error;
 
