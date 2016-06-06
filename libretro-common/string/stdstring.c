@@ -59,6 +59,21 @@ char *string_to_lower(char *s)
    return s;
 }
 
+char *string_ucwords(char *s)
+{
+  char *cs = (char *)s;
+  for ( ; *cs != '\0'; cs++)
+  {
+    if (*cs == ' ')
+    {
+      *(cs+1) = toupper(*(cs+1));
+    }
+  }
+
+  s[0] = toupper(s[0]);
+  return s;
+}
+
 char *string_replace_substring(const char *in,
       const char *pattern, const char *replacement)
 {

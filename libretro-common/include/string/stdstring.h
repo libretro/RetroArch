@@ -42,6 +42,8 @@ char *string_to_upper(char *s);
 
 char *string_to_lower(char *s);
 
+char *string_ucwords(char* s);
+
 char *string_replace_substring(const char *in, const char *pattern,
       const char *by);
 
