@@ -61,7 +61,7 @@ void load_icons(nk_menu_handle_t *nk)
    assets_loaded = true;
 }
 
-void nk_wnd_file_picker(nk_menu_handle_t *nk, const char* startup_path)
+bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, const char* out, const char* filter)
 {
    struct nk_panel layout;
    struct nk_context                 *ctx = &nk->ctx;
@@ -77,10 +77,10 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk, const char* startup_path)
       frontend_driver_parse_drive_list(drives);
    }
 
-   if (!string_is_empty(startup_path) && string_is_empty(path))
+   if (!string_is_empty(in) && string_is_empty(path))
    {
       RARCH_LOG("beep\n");
-      strlcpy(path, startup_path, sizeof(path));
+      strlcpy(path, in, sizeof(path));
       files = dir_list_new(path, NULL, true, true);
    }
 
@@ -135,7 +135,13 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk, const char* startup_path)
          }
       }
    }
+
+   /* sort the dir list with directories first */
+   dir_list_sort(files, true);
+
    /* save position and size to restore after context reset */
    nk_wnd_set_state(nk, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);
+
+   return false;
 }

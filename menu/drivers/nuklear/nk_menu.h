@@ -95,7 +95,7 @@ typedef struct nk_menu_handle
 
 void nk_wnd_shader_parameters(nk_menu_handle_t *zr);
 void nk_wnd_main(nk_menu_handle_t *zr);
-void nk_wnd_file_picker(nk_menu_handle_t *zr, const char* startup_path);
+bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, const char* out, const char* filter);
 void nk_wnd_settings(nk_menu_handle_t *zr);
 void nk_wnd_set_state(nk_menu_handle_t *zr, const int id,
    struct nk_vec2 pos, struct nk_vec2 size);
