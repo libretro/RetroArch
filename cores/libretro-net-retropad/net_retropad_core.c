@@ -149,9 +149,9 @@ void NETRETROPAD_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 
       { NULL, NULL },
    };
+   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
 
-   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
 
    NETRETROPAD_CORE_PREFIX(environ_cb) = cb;
    bool no_content = true;

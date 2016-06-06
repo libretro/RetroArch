@@ -199,8 +199,10 @@ static bool command_read_ram(const char *arg)
    unsigned nbytes;
    int i;
    char reply[256];
+   char *reply_at = NULL;
+
    strcpy(reply, "READ_CORE_RAM ");
-   char * reply_at = reply + strlen("READ_CORE_RAM ");
+   reply_at = reply + strlen("READ_CORE_RAM ");
    strcpy(reply_at, arg);
 
    cheevos_parse_guest_addr(&var, strtoul(reply_at, (char**)&reply_at, 16));
@@ -550,11 +552,12 @@ static void command_network_poll(command_t *handle)
 
    for (;;)
    {
+      ssize_t ret;
       char buf[1024];
 
       lastcmd_net_fd = handle->net_fd;
       lastcmd_net_source_len = sizeof(lastcmd_net_source);
-      ssize_t ret = recvfrom(handle->net_fd, buf,
+      ret = recvfrom(handle->net_fd, buf,
             sizeof(buf) - 1, 0, (struct sockaddr*)&lastcmd_net_source, &lastcmd_net_source_len);
 
       if (ret <= 0)
