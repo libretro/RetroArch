@@ -50,12 +50,14 @@
 
 static void nk_menu_main(nk_menu_handle_t *nk)
 {
+
+   settings_t *settings  = config_get_ptr();
    struct nk_context *ctx = &nk->ctx;
 
    if (nk->window[NK_WND_SETTINGS].open)
       nk_wnd_settings(nk);
    if (nk->window[NK_WND_FILE_PICKER].open)
-      nk_wnd_file_picker(nk);
+      nk_wnd_file_picker(nk, settings->directory.menu_content);
    if (nk->window[NK_WND_SHADER_PARAMETERS].open)
       nk_wnd_shader_parameters(nk);
    if (nk->window[NK_WND_MAIN].open)

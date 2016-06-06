@@ -61,10 +61,10 @@ void load_icons(nk_menu_handle_t *nk)
    assets_loaded = true;
 }
 
-void nk_wnd_file_picker(nk_menu_handle_t *nk)
+void nk_wnd_file_picker(nk_menu_handle_t *nk, const char* startup_path)
 {
    struct nk_panel layout;
-   struct nk_context            *ctx = &nk->ctx;
+   struct nk_context                 *ctx = &nk->ctx;
    const int id                      = NK_WND_FILE_PICKER;
    int i                             = 0;
    static file_list_t *drives        = NULL;
@@ -77,10 +77,17 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk)
       frontend_driver_parse_drive_list(drives);
    }
 
+   if (!string_is_empty(startup_path) && string_is_empty(path))
+   {
+      RARCH_LOG("beep\n");
+      strlcpy(path, startup_path, sizeof(path));
+      files = dir_list_new(path, NULL, true, true);
+   }
+
    if (!assets_loaded)
       load_icons(nk);
 
-   if (nk_begin(ctx, &layout, "Select File", nk_rect(440, 10, 330, 400),
+   if (nk_begin(ctx, &layout, "Select File", nk_rect(10, 10, 500, 400),
          NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_MOVABLE|
          NK_WINDOW_BORDER))
    {
