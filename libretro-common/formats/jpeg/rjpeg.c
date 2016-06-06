@@ -2375,6 +2375,7 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned 
    int n, decode_n;
    int k;
    unsigned int i,j;
+   rjpeg__resample res_comp[4];
    uint8_t *coutput[4] = {0};
    uint8_t *output     = NULL;
    z->s->img_n         = 0; /* make rjpeg__cleanup_jpeg safe */
@@ -2396,8 +2397,6 @@ static uint8_t *rjpeg_load_jpeg_image(rjpeg__jpeg *z, unsigned *out_x, unsigned 
       decode_n = z->s->img_n;
 
    /* resample and color-convert */
-   rjpeg__resample res_comp[4];
-
    for (k=0; k < decode_n; ++k)
    {
       rjpeg__resample *r = &res_comp[k];
