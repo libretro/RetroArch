@@ -66,6 +66,8 @@ extern struct nk_user_font usrfnt;
 extern struct nk_allocator nk_alloc;
 extern struct nk_device device;
 
+enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK};
+
 struct nk_image nk_common_image_load(const char *filename);
 
 char* nk_common_file_load(const char* path, size_t* size);
@@ -83,5 +85,7 @@ void* nk_common_mem_alloc(nk_handle a, void *old, nk_size b);
 void nk_common_mem_free(nk_handle unused, void *ptr);
 
 void device_upload_atlas(struct nk_device *dev, const void *image, int width, int height);
+
+void nk_common_set_style(struct nk_context *ctx, enum theme theme);
 
 #endif

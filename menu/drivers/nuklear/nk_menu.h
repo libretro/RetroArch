@@ -39,12 +39,6 @@ enum
    NK_WND_LAST
 };
 
-enum nk_menu_theme
-{
-   THEME_DARK = 0,
-   THEME_LIGHT
-};
-
 struct icons {
     struct nk_image folder;
     struct nk_image monitor;
@@ -81,8 +75,6 @@ typedef struct nk_menu_handle
    /* image & theme related variables */
    char assets_directory[PATH_MAX_LENGTH];
    struct icons icons;
-   enum nk_menu_theme theme;
-
 
    struct
    {
