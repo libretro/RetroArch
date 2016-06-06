@@ -81,7 +81,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, const char* out, c
    {
       RARCH_LOG("beep\n");
       strlcpy(path, in, sizeof(path));
-      files = dir_list_new(path, NULL, true, true);
+      files = dir_list_new(path, filter, true, true);
    }
 
    if (!assets_loaded)
@@ -100,7 +100,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, const char* out, c
          {
             fill_pathname_join(path, "/",
                   "", sizeof(path));
-            files = dir_list_new(path, NULL, true, true);
+            files = dir_list_new(path, filter, true, true);
          }
       }
       else
@@ -112,7 +112,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, const char* out, c
             {
                fill_pathname_join(path, drives->list[i].path,
                      "", sizeof(path));
-               files = dir_list_new(path, NULL, true, true);
+               files = dir_list_new(path, filter, true, true);
             }
          }
       }
@@ -128,7 +128,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, const char* out, c
             {
                strlcpy (path, files->elems[i].data, sizeof(path));
                if (path_is_directory (path))
-                  files = dir_list_new(path, NULL, true, true);
+                  files = dir_list_new(path, filter, true, true);
                else
                   RARCH_LOG ("File: %s selected\n", path);
             }

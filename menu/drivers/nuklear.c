@@ -57,7 +57,7 @@ static void nk_menu_main(nk_menu_handle_t *nk)
    if (nk->window[NK_WND_SETTINGS].open)
       nk_wnd_settings(nk);
    if (nk->window[NK_WND_FILE_PICKER].open)
-      nk_wnd_file_picker(nk, NULL, NULL, NULL);
+      nk_wnd_file_picker(nk, settings->directory.menu_content, NULL, ".zip");
    if (nk->window[NK_WND_SHADER_PARAMETERS].open)
       nk_wnd_shader_parameters(nk);
    if (nk->window[NK_WND_MAIN].open)
