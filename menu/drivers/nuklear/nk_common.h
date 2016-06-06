@@ -86,6 +86,4 @@ void nk_common_mem_free(nk_handle unused, void *ptr);
 
 void device_upload_atlas(struct nk_device *dev, const void *image, int width, int height);
 
-void nk_common_set_style(struct nk_context *ctx, enum theme theme);
-
 #endif

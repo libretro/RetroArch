@@ -93,5 +93,6 @@ void nk_wnd_set_state(nk_menu_handle_t *nk, const int id,
    struct nk_vec2 pos, struct nk_vec2 size);
 void nk_wnd_get_state(nk_menu_handle_t *nk, const int id,
    struct nk_vec2 *pos, struct nk_vec2 *size);
+void nk_common_set_style(struct nk_context *ctx, enum theme theme);
 
 #endif
