@@ -132,9 +132,12 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, char* out, const c
                   files = dir_list_new(path, filter, true, true);
                else
                   RARCH_LOG ("File: %s selected\n", path);
-                  ret = true;
             }
          }
+      }
+      nk_layout_row_dynamic(ctx, 30, 1);
+      {
+         nk_button_text(ctx, "OK", 2, NK_BUTTON_DEFAULT);
       }
    }
 
