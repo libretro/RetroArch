@@ -61,7 +61,7 @@ void load_icons(nk_menu_handle_t *nk)
    assets_loaded = true;
 }
 
-bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, const char* out, const char* filter)
+bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, char* out, const char* filter)
 {
    struct nk_panel layout;
    struct nk_context                 *ctx = &nk->ctx;
@@ -70,6 +70,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, const char* out, c
    static file_list_t *drives        = NULL;
    static struct string_list *files  = NULL;
    settings_t *settings              = config_get_ptr();
+   bool ret                          = false;
 
    if (!drives)
    {
@@ -91,7 +92,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, const char* out, c
          NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_MOVABLE|
          NK_WINDOW_BORDER))
    {
-      nk_layout_row_dynamic(ctx, 30, 3);
+      nk_layout_row_dynamic(ctx, 30, 4);
 
       if (drives->size == 0)
       {
@@ -131,6 +132,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, const char* out, c
                   files = dir_list_new(path, filter, true, true);
                else
                   RARCH_LOG ("File: %s selected\n", path);
+                  ret = true;
             }
          }
       }
@@ -139,9 +141,12 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, const char* out, c
    /* sort the dir list with directories first */
    dir_list_sort(files, true);
 
+   /* copy the path variable to out*/
+   strlcpy(out, path, sizeof(path));
+
    /* save position and size to restore after context reset */
    nk_wnd_set_state(nk, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);
 
-   return false;
+   return ret;
 }
