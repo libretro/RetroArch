@@ -21,17 +21,17 @@
 #include "nk_menu.h"
 
 /* sets window position and size */
-void nk_wnd_set_state(nk_menu_handle_t *zr, const int id,
+void nk_wnd_set_state(nk_menu_handle_t *nk, const int id,
    struct nk_vec2 pos, struct nk_vec2 size)
 {
-   zr->window[id].position = pos;
-   zr->window[id].size = size;
+   nk->window[id].position = pos;
+   nk->window[id].size = size;
 }
 
 /* gets window position and size */
-void nk_wnd_get_state(nk_menu_handle_t *zr, const int id,
+void nk_wnd_get_state(nk_menu_handle_t *nk, const int id,
    struct nk_vec2 *pos, struct nk_vec2 *size)
 {
-   *pos = zr->window[id].position;
-   *size = zr->window[id].size;
+   *pos = nk->window[id].position;
+   *size = nk->window[id].size;
 }
