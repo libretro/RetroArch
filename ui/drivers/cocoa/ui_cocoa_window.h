@@ -34,19 +34,6 @@ typedef struct ui_window_cocoa
     CocoaView *data;
 } ui_window_cocoa_t;
 
-void ui_window_cocoa_set_visible(void *data,
-        bool set_visible);
-
-void ui_window_cocoa_set_focused(void *data);
-
-void ui_window_cocoa_destroy(void *data);
-
-void ui_window_cocoa_set_title(void *data, char *buf);
-
-void ui_window_cocoa_set_droppable(void *data, bool droppable);
-
-bool ui_window_cocoa_focused(void *data);
-
 RETRO_END_DECLS
 
 #endif

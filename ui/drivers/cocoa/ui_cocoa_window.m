@@ -23,21 +23,21 @@
 #include "ui_cocoa_window.h"
 #include "../../ui_companion_driver.h"
 
-void ui_window_cocoa_destroy(void *data)
+static void ui_window_cocoa_destroy(void *data)
 {
     ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
     CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
     [[cocoa_view window] release];
 }
 
-void ui_window_cocoa_set_focused(void *data)
+static void ui_window_cocoa_set_focused(void *data)
 {
     ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
     CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
     [[cocoa_view window] makeKeyAndOrderFront:nil];
 }
 
-void ui_window_cocoa_set_visible(void *data,
+static void ui_window_cocoa_set_visible(void *data,
         bool set_visible)
 {
     ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
@@ -48,7 +48,7 @@ void ui_window_cocoa_set_visible(void *data,
         [[cocoa_view window] orderOut:nil];
 }
 
-void ui_window_cocoa_set_title(void *data, char *buf)
+static void ui_window_cocoa_set_title(void *data, char *buf)
 {
    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
@@ -56,7 +56,7 @@ void ui_window_cocoa_set_title(void *data, char *buf)
    [[cocoa_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
 }
 
-void ui_window_cocoa_set_droppable(void *data, bool droppable)
+static void ui_window_cocoa_set_droppable(void *data, bool droppable)
 {
    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
@@ -71,7 +71,7 @@ void ui_window_cocoa_set_droppable(void *data, bool droppable)
    }
 }
 
-bool ui_window_cocoa_focused(void *data)
+static bool ui_window_cocoa_focused(void *data)
 {
    ui_window_cocoa_t *cocoa = (ui_window_cocoa_t*)data;
    CocoaView *cocoa_view    = (CocoaView*)cocoa->data;
