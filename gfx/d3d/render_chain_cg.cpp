@@ -35,33 +35,33 @@
 #include "d3d.h"
 
 #define cg_d3d9_set_param_1f(param, x) if (param) cgD3D9SetUniform(param, x)
+namespace {
+   struct lut_info
+   {
+      LPDIRECT3DTEXTURE tex;
+      char id[64];
+      bool smooth;
+   };
 
-struct lut_info
-{
-   LPDIRECT3DTEXTURE tex;
-   char id[64];
-   bool smooth;
+   struct Vertex
+   {
+      float x, y, z;
+      float u, v;
+      float lut_u, lut_v;
+      float r, g, b, a;
+   };
+
+   struct Pass
+   {
+      LinkInfo info;
+      LPDIRECT3DTEXTURE tex;
+      LPDIRECT3DVERTEXBUFFER vertex_buf;
+      CGprogram vPrg, fPrg;
+      unsigned last_width, last_height;
+      LPDIRECT3DVERTEXDECLARATION vertex_decl;
+      std::vector<unsigned> attrib_map;
+   };
 };
-
-struct Vertex
-{
-   float x, y, z;
-   float u, v;
-   float lut_u, lut_v;
-   float r, g, b, a;
-};
-
-struct Pass
-{
-   LinkInfo info;
-   LPDIRECT3DTEXTURE tex;
-   LPDIRECT3DVERTEXBUFFER vertex_buf;
-   CGprogram vPrg, fPrg;
-   unsigned last_width, last_height;
-   LPDIRECT3DVERTEXDECLARATION vertex_decl;
-   std::vector<unsigned> attrib_map;
-};
-
 typedef struct cg_renderchain
 {
    LPDIRECT3DDEVICE dev;
