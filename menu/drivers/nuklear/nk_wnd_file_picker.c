@@ -61,15 +61,16 @@ void load_icons(nk_menu_handle_t *nk)
    assets_loaded = true;
 }
 
-void nk_wnd_file_picker(nk_menu_handle_t *nk)
+bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, char* out, const char* filter)
 {
    struct nk_panel layout;
-   struct nk_context            *ctx = &nk->ctx;
+   struct nk_context                 *ctx = &nk->ctx;
    const int id                      = NK_WND_FILE_PICKER;
    int i                             = 0;
    static file_list_t *drives        = NULL;
    static struct string_list *files  = NULL;
    settings_t *settings              = config_get_ptr();
+   bool ret                          = false;
 
    if (!drives)
    {
@@ -77,14 +78,21 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk)
       frontend_driver_parse_drive_list(drives);
    }
 
+   if (!string_is_empty(in) && string_is_empty(path))
+   {
+      RARCH_LOG("beep\n");
+      strlcpy(path, in, sizeof(path));
+      files = dir_list_new(path, filter, true, true);
+   }
+
    if (!assets_loaded)
       load_icons(nk);
 
-   if (nk_begin(ctx, &layout, "Select File", nk_rect(440, 10, 330, 400),
+   if (nk_begin(ctx, &layout, "Select File", nk_rect(10, 10, 500, 400),
          NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_MOVABLE|
          NK_WINDOW_BORDER))
    {
-      nk_layout_row_dynamic(ctx, 30, 3);
+      nk_layout_row_dynamic(ctx, 30, 4);
 
       if (drives->size == 0)
       {
@@ -93,7 +101,7 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk)
          {
             fill_pathname_join(path, "/",
                   "", sizeof(path));
-            files = dir_list_new(path, NULL, true, true);
+            files = dir_list_new(path, filter, true, true);
          }
       }
       else
@@ -105,7 +113,7 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk)
             {
                fill_pathname_join(path, drives->list[i].path,
                      "", sizeof(path));
-               files = dir_list_new(path, NULL, true, true);
+               files = dir_list_new(path, filter, true, true);
             }
          }
       }
@@ -121,14 +129,26 @@ void nk_wnd_file_picker(nk_menu_handle_t *nk)
             {
                strlcpy (path, files->elems[i].data, sizeof(path));
                if (path_is_directory (path))
-                  files = dir_list_new(path, NULL, true, true);
-               else
-                  RARCH_LOG ("File: %s selected\n", path);
+                  files = dir_list_new(path, filter, true, true);
             }
          }
       }
+      nk_layout_row_dynamic(ctx, 30, 1);
+      {
+         if (nk_button_text(ctx, "OK", 2, NK_BUTTON_DEFAULT))
+            ret = true;
+      }
    }
+
+   /* sort the dir list with directories first */
+   dir_list_sort(files, true);
+
+   /* copy the path variable to out*/
+   strlcpy(out, path, sizeof(path));
+
    /* save position and size to restore after context reset */
    nk_wnd_set_state(nk, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);
+
+   return ret;
 }
