@@ -389,10 +389,11 @@ static void gfx_ctx_wgl_update_window_title(void *data)
    char buf[128]        = {0};
    char buf_fps[128]    = {0};
    settings_t *settings = config_get_ptr();
+   const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-   if (video_monitor_get_fps(buf, sizeof(buf),
+   if (window && video_monitor_get_fps(buf, sizeof(buf),
             buf_fps, sizeof(buf_fps)))
-      ui_window_win32_set_title(&main_window, buf);
+      window->set_title(&main_window, buf);
    if (settings->fps_show)
       runloop_msg_queue_push(buf_fps, 1, 1, false);
 }

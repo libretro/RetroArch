@@ -37,19 +37,6 @@ typedef struct ui_window_win32
    HWND hwnd;
 } ui_window_win32_t;
 
-void ui_window_win32_set_visible(void *data,
-        bool set_visible);
-
-void ui_window_win32_set_focused(void *data);
-
-void ui_window_win32_destroy(void *data);
-
-void ui_window_win32_set_title(void *data, char *buf);
-
-void ui_window_win32_set_droppable(void *data, bool droppable);
-
-bool ui_window_win32_focused(void *data);
-
 RETRO_END_DECLS
 
 #endif

@@ -48,38 +48,38 @@
 #include "../../../runloop.h"
 #include "../../../tasks/tasks_internal.h"
 
-void ui_window_win32_destroy(void *data)
+static void ui_window_win32_destroy(void *data)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
    DestroyWindow(window->hwnd);
 }
 
-void ui_window_win32_set_focused(void *data)
+static void ui_window_win32_set_focused(void *data)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
    SetFocus(window->hwnd);
 }
 
-void ui_window_win32_set_visible(void *data, 
+static void ui_window_win32_set_visible(void *data, 
         bool set_visible)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
    ShowWindow(window->hwnd, set_visible ? SW_SHOWNORMAL : SW_HIDE);
 }
 
-void ui_window_win32_set_title(void *data, char *buf)
+static void ui_window_win32_set_title(void *data, char *buf)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
    SetWindowText(window->hwnd, buf);
 }
 
-void ui_window_win32_set_droppable(void *data, bool droppable)
+static void ui_window_win32_set_droppable(void *data, bool droppable)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
    DragAcceptFiles(window->hwnd, droppable);
 }
 
-bool ui_window_win32_focused(void *data)
+static bool ui_window_win32_focused(void *data)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
    return (GetForegroundWindow() == window->hwnd);

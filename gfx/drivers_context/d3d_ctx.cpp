@@ -76,15 +76,16 @@ static void gfx_ctx_d3d_swap_buffers(void *data)
 
 static void gfx_ctx_d3d_update_title(void *data)
 {
-   char buf[128]        = {0};
-   char buffer_fps[128] = {0};
-   settings_t *settings = config_get_ptr();
+   char buf[128]             = {0};
+   char buffer_fps[128]      = {0};
+   settings_t *settings      = config_get_ptr();
+   const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
-   if (video_monitor_get_fps(buf, sizeof(buf),
+   if (window && video_monitor_get_fps(buf, sizeof(buf),
             buffer_fps, sizeof(buffer_fps)))
    {
 #ifndef _XBOX
-      ui_window_win32_set_title(&main_window, buf);
+      window->set_title(&main_window, buf);
 #endif
    }
 

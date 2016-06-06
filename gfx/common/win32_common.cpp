@@ -156,7 +156,10 @@ void win32_monitor_from_window(void)
 {
 #ifndef _XBOX
    win32_monitor_last = MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST);
-   ui_window_win32_destroy(&main_window);
+   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+
+   if (window)
+      window->destroy(&main_window);
 #endif
 }
 
@@ -373,14 +376,16 @@ LRESULT CALLBACK WndProcD3D(HWND hwnd, UINT message,
          break;
       case WM_CREATE:
          {
-            ui_window_win32_t window;
+            ui_window_win32_t win32_window;
+            const ui_window_t *window = ui_companion_driver_get_window_ptr();
             LPCREATESTRUCT p_cs   = (LPCREATESTRUCT)lparam;
             curD3D                = p_cs->lpCreateParams;
             g_inited              = true;
             
-            window.hwnd           = hwnd;
+            win32_window.hwnd     = hwnd;
 
-            ui_window_win32_set_droppable(&window, true);
+            if (window)
+               window->set_droppable(&win32_window, true);
          }
          return 0;
    }
@@ -417,11 +422,14 @@ LRESULT CALLBACK WndProcGL(HWND hwnd, UINT message,
          break;
       case WM_CREATE:
          {
-            ui_window_win32_t window;
-            window.hwnd           = hwnd;
+            ui_window_win32_t win32_window;
+            const ui_window_t *window = ui_companion_driver_get_window_ptr();
+            win32_window.hwnd           = hwnd;
 
             create_graphics_context(hwnd, &g_quit);
-            ui_window_win32_set_droppable(&window, true);
+
+            if (window)
+               window->set_droppable(&win32_window, true);
          }
          return 0;
    }
@@ -660,6 +668,8 @@ void win32_set_window(unsigned *width, unsigned *height,
 
    if (!fullscreen || windowed_full)
    {
+      const ui_window_t *window = ui_companion_driver_get_window_ptr();
+
       if (!fullscreen && settings->ui.menubar_enable)
       {
          RECT rc_temp = {0, 0, (LONG)*height, 0x7FFF};
@@ -672,7 +682,9 @@ void win32_set_window(unsigned *width, unsigned *height,
       ShowWindow(main_window.hwnd, SW_RESTORE);
       UpdateWindow(main_window.hwnd);
       SetForegroundWindow(main_window.hwnd);
-      ui_window_win32_set_focused(&main_window);
+
+      if (window)
+         window->set_focused(&main_window);
    }
 
    win32_show_cursor(!fullscreen);
@@ -742,13 +754,18 @@ BOOL IsIconic(HWND hwnd)
 
 bool win32_has_focus(void)
 {
+#ifndef _XBOX
+   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+#endif
    if (!g_inited)
       return false;
 
 #ifdef _XBOX
    return GetForegroundWindow() == main_window.hwnd;
 #else
-   return ui_window_win32_focused(&main_window);
+   if (window)
+      return window->focused(&main_window);
+   return false;
 #endif
 }
 

@@ -187,6 +187,7 @@ static void shader_dlg_params_clear(void)
 
    for (i = 0; i < GFX_MAX_PARAMETERS; i++)
    {
+      const ui_window_t *window = ui_companion_driver_get_window_ptr();
       shader_param_ctrl_t*control = &g_shader_dlg.controls[i];
 
       if (control->type == SHADER_PARAM_CTRL_NONE)
@@ -197,7 +198,8 @@ static void shader_dlg_params_clear(void)
          case SHADER_PARAM_CTRL_NONE:
             break;
          case SHADER_PARAM_CTRL_CHECKBOX:
-            ui_window_win32_destroy(&control->checkbox);
+            if (window)
+               window->destroy(&control->checkbox);
             break;
          case SHADER_PARAM_CTRL_TRACKBAR:
             DestroyWindow(control->trackbar.label_title);
@@ -216,7 +218,7 @@ void shader_dlg_params_reload(void)
    RECT parent_rect;
    int i, pos_x, pos_y;
    video_shader_ctx_t shader_info;
-
+   const ui_window_t *window = ui_companion_driver_get_window_ptr();
    video_shader_driver_get_current_shader(&shader_info);
 
    shader_dlg_params_clear();
@@ -295,8 +297,8 @@ void shader_dlg_params_reload(void)
 
    }
 
-   if (g_shader_dlg.separator.hwnd)
-      ui_window_win32_destroy(&g_shader_dlg.separator);
+   if (window && g_shader_dlg.separator.hwnd)
+      window->destroy(&g_shader_dlg.separator);
 
    g_shader_dlg.separator.hwnd = CreateWindowEx(0, "STATIC", "",
          SS_ETCHEDHORZ | WS_VISIBLE | WS_CHILD, SHADER_DLG_CTRL_X,
@@ -325,6 +327,8 @@ static void shader_dlg_update_on_top_state(void)
 
 void shader_dlg_show(HWND parent_hwnd)
 {
+   const ui_window_t *window = ui_companion_driver_get_window_ptr();
+
    if (!IsWindowVisible(g_shader_dlg.window.hwnd))
    {
       if (parent_hwnd)
@@ -335,7 +339,7 @@ void shader_dlg_show(HWND parent_hwnd)
                0, 0, SWP_NOSIZE | SWP_SHOWWINDOW);
       }
       else
-         ui_window_win32_set_visible(&g_shader_dlg.window, true);
+         window->set_visible(&g_shader_dlg.window, true);
 
       shader_dlg_update_on_top_state();
 
@@ -343,7 +347,7 @@ void shader_dlg_show(HWND parent_hwnd)
 
    }
 
-   ui_window_win32_set_focused(&g_shader_dlg.window);
+   window->set_focused(&g_shader_dlg.window);
 }
 
 static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
@@ -351,6 +355,7 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 {
    int i, pos;
    video_shader_ctx_t shader_info;
+   const ui_window_t *window = ui_companion_driver_get_window_ptr();
 
    video_shader_driver_get_current_shader(&shader_info);
 
@@ -362,7 +367,8 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
-         ui_window_win32_set_visible(&g_shader_dlg.window, false);
+         if (window)
+            window->set_visible(&g_shader_dlg.window, false);
          return 0;
 
       case WM_COMMAND:
