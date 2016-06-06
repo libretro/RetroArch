@@ -56,6 +56,10 @@ ifeq ($(HAVE_FILE_LOGGER), 1)
    CFLAGS += -DHAVE_FILE_LOGGER
 endif
 
+ifeq ($(HAVE_SHADERPIPELINE), 1)
+	CFLAGS += -DHAVE_SHADERPIPELINE
+endif
+
 CFLAGS += -I./libretro-common/include
 
 # Switches

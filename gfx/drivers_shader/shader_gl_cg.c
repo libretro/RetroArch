@@ -43,7 +43,9 @@
 #include "../../managers/state_manager.h"
 #include "../video_state_tracker.h"
 
+#ifdef HAVE_SHADERPIPELINE
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
+#endif
 
 #define SEMANTIC_TEXCOORD     0x92ee91cdU
 #define SEMANTIC_TEXCOORD0    0xf0c0cb9dU
@@ -1051,6 +1053,7 @@ static void *gl_cg_init(void *data, const char *path)
 
    gl_cg_set_shaders(cg->prg[1].fprg, cg->prg[1].vprg);
 
+#ifdef HAVE_SHADERPIPELINE
    shader_prog_info.combined = stock_xmb_simple;
    shader_prog_info.is_file  = false;
 
@@ -1070,6 +1073,7 @@ static void *gl_cg_init(void *data, const char *path)
          &cg->prg[VIDEO_SHADER_MENU_SEC],
          &shader_prog_info);
    gl_cg_set_program_base_attrib(cg, VIDEO_SHADER_MENU_SEC);
+#endif
 
    gl_cg_reset_attrib(cg);
 

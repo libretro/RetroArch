@@ -95,6 +95,7 @@ static void menu_display_vk_viewport(void *data)
 
 static void menu_display_vk_draw_pipeline(void *data)
 {
+#ifdef HAVE_SHADERPIPELINE
    menu_display_ctx_draw_t *draw = (menu_display_ctx_draw_t*)data;
    vk_t *vk                      = (vk_t*)video_driver_get_ptr(false);
    video_coord_array_t *ca         = NULL;
@@ -111,6 +112,7 @@ static void menu_display_vk_draw_pipeline(void *data)
    draw->pipeline.backend_data = &t;
 
    t += 0.01;
+#endif
 }
 
 static void menu_display_vk_draw(void *data)
@@ -166,6 +168,7 @@ static void menu_display_vk_draw(void *data)
 
    switch (draw->pipeline.id)
    {
+#ifdef HAVE_SHADERPIPELINE
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_SEC:
       {
@@ -182,6 +185,7 @@ static void menu_display_vk_draw(void *data)
          vulkan_draw_triangles(vk, &call);
          break;
       }
+#endif
 
       default:
       {

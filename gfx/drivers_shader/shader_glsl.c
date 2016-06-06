@@ -124,6 +124,7 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/core_alpha_blend.glsl.vert.h"
 #include "../drivers/gl_shaders/core_alpha_blend.glsl.frag.h"
 
+#ifdef HAVE_SHADERPIPELINE
 #include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
@@ -131,6 +132,7 @@ static const char *glsl_prefixes[] = {
 #include "../drivers/gl_shaders/legacy_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/modern_pipeline_xmb_ribbon.glsl.vert.h"
 #include "../drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
+#endif
 #endif
 
 typedef struct glsl_shader_data
@@ -902,6 +904,7 @@ static void *gl_glsl_init(void *data, const char *path)
       glsl->uniforms[VIDEO_SHADER_STOCK_BLEND] = glsl->uniforms[0];
    }
 
+#ifdef HAVE_SHADERPIPELINE
 #if defined(HAVE_OPENGLES2)
    shader_prog_info.vertex   = stock_vertex_xmb_simple_legacy;
    shader_prog_info.fragment = stock_fragment_xmb_simple;
@@ -929,6 +932,7 @@ static void *gl_glsl_init(void *data, const char *path)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_SEC].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_SEC]);
+#endif
 
    gl_glsl_reset_attrib(glsl);
 

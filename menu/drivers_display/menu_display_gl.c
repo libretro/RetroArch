@@ -153,7 +153,7 @@ static void menu_display_gl_draw(void *data)
 
 static void menu_display_gl_draw_pipeline(void *data)
 {
-#if defined(HAVE_GLSL) || defined(HAVE_CG)
+#ifdef HAVE_SHADERPIPELINE
    video_shader_ctx_info_t shader_info;
    menu_display_ctx_draw_t *draw     = (menu_display_ctx_draw_t*)data;
    struct uniform_info uniform_param = {0};

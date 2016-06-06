@@ -1954,6 +1954,7 @@ static void xmb_draw_bg(
    menu_display_blend_begin();
    menu_display_set_viewport();
 
+#ifdef HAVE_SHADERPIPELINE
    if (settings->menu.shader_pipeline > 0)
    {
       draw.color = xmb_gradient_ident();
@@ -1972,6 +1973,7 @@ static void xmb_draw_bg(
       menu_display_draw_pipeline(&draw);
    }
    else
+#endif
    {
       if (!running && draw.texture)
          draw.color = &coord_white[0];

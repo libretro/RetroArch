@@ -417,6 +417,7 @@
 					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+               "-DHAVE_SHADERPIPELINE",
                "-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
 				);
@@ -481,6 +482,7 @@
 					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+               "-DHAVE_SHADERPIPELINE",
                "-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
 				);
@@ -546,6 +548,7 @@
 					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+               "-DHAVE_SHADERPIPELINE",
                "-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
 				);
@@ -609,6 +612,7 @@
 					"-DHAVE_ZARCH",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
+               "-DHAVE_SHADERPIPELINE",
                "-DHAVE_MMAP",
 					"-DHAVE_LIBRETRODB",
 				);
