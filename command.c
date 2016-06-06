@@ -112,6 +112,7 @@ static struct sockaddr_storage lastcmd_net_source;
 static socklen_t lastcmd_net_source_len;
 #endif
 
+#ifdef HAVE_CHEEVOS
 #if defined(HAVE_STDIN_CMD) || defined(HAVE_NETWORK_CMD) && defined(HAVE_NETPLAY)
 static bool command_reply(const char * data, size_t len)
 {
@@ -131,6 +132,7 @@ static bool command_reply(const char * data, size_t len)
 #endif
    return false;
 }
+#endif
 #endif
 
 struct cmd_map
@@ -188,9 +190,10 @@ static bool command_set_shader(const char *arg)
    return video_driver_set_shader(type, arg);
 }
 
+
+#ifdef HAVE_CHEEVOS
 static bool command_read_ram(const char *arg)
 {
-#ifdef HAVE_CHEEVOS
    cheevos_var_t var;
    const uint8_t * data;
    unsigned nbytes;
@@ -222,14 +225,10 @@ static bool command_read_ram(const char *arg)
 
 
    return true;
-#else
-   return false;
-#endif
 }
 
 static bool command_write_ram(const char *arg)
 {
-#ifdef HAVE_CHEEVOS
    cheevos_var_t var;
    uint8_t * data;
    unsigned nbytes;
@@ -248,10 +247,9 @@ static bool command_write_ram(const char *arg)
    }
 
    return true;
-#else
    return false;
-#endif
 }
+#endif
 
 static const struct cmd_action_map action_map[] = {
    { "SET_SHADER", command_set_shader, "<shader path>" },
