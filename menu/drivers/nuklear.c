@@ -276,6 +276,7 @@ static void nk_menu_init_device(nk_menu_handle_t *nk)
    nk->icons.page_off = nk_common_image_load(buf);
 
    nk->size_changed = true;
+   nk_common_set_style(&nk->ctx, THEME_BLUE);
 }
 
 static void *nk_menu_init(void **userdata)
@@ -300,7 +301,6 @@ static void *nk_menu_init(void **userdata)
       goto error;
 
    *userdata = nk;
-
    fill_pathname_join(nk->assets_directory, settings->directory.assets,
          "nuklear", sizeof(nk->assets_directory));
    nk_menu_init_device(nk);

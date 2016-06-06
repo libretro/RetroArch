@@ -29,12 +29,12 @@
 #include "../../menu_driver.h"
 #include "../../menu_hash.h"
 
-void nk_wnd_settings(nk_menu_handle_t *zr)
+void nk_wnd_settings(nk_menu_handle_t *nk)
 {
    unsigned i;
    video_shader_ctx_t shader_info;
    struct nk_panel layout;
-   struct nk_context *ctx = &zr->ctx;
+   struct nk_context *ctx = &nk->ctx;
    const int id           = NK_WND_SETTINGS;
 
    if (nk_begin(ctx, &layout, "Settings", nk_rect(240, 10, 300, 400),
@@ -45,6 +45,6 @@ void nk_wnd_settings(nk_menu_handle_t *zr)
    }
 
    /* save position and size to restore after context reset */
-   nk_wnd_set_state(zr, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
+   nk_wnd_set_state(nk, id, nk_window_get_position(ctx), nk_window_get_size(ctx));
    nk_end(ctx);
 }

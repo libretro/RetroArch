@@ -282,3 +282,4 @@ void nk_common_mem_free(nk_handle unused, void *ptr)
    (void)unused;
    free(ptr);
 }
+

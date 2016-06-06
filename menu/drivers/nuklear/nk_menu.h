@@ -39,12 +39,6 @@ enum
    NK_WND_LAST
 };
 
-enum nk_menu_theme
-{
-   THEME_DARK = 0,
-   THEME_LIGHT
-};
-
 struct icons {
     struct nk_image folder;
     struct nk_image monitor;
@@ -81,8 +75,6 @@ typedef struct nk_menu_handle
    /* image & theme related variables */
    char assets_directory[PATH_MAX_LENGTH];
    struct icons icons;
-   enum nk_menu_theme theme;
-
 
    struct
    {
@@ -93,13 +85,14 @@ typedef struct nk_menu_handle
    video_font_raster_block_t list_block;
 } nk_menu_handle_t;
 
-void nk_wnd_shader_parameters(nk_menu_handle_t *zr);
-void nk_wnd_main(nk_menu_handle_t *zr);
+void nk_wnd_shader_parameters(nk_menu_handle_t *nk);
+void nk_wnd_main(nk_menu_handle_t *nk);
 bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, char* out, const char* filter);
-void nk_wnd_settings(nk_menu_handle_t *zr);
-void nk_wnd_set_state(nk_menu_handle_t *zr, const int id,
+void nk_wnd_settings(nk_menu_handle_t *nk);
+void nk_wnd_set_state(nk_menu_handle_t *nk, const int id,
    struct nk_vec2 pos, struct nk_vec2 size);
-void nk_wnd_get_state(nk_menu_handle_t *zr, const int id,
+void nk_wnd_get_state(nk_menu_handle_t *nk, const int id,
    struct nk_vec2 *pos, struct nk_vec2 *size);
+void nk_common_set_style(struct nk_context *ctx, enum theme theme);
 
 #endif

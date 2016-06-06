@@ -66,6 +66,8 @@ extern struct nk_user_font usrfnt;
 extern struct nk_allocator nk_alloc;
 extern struct nk_device device;
 
+enum theme {THEME_BLACK, THEME_WHITE, THEME_RED, THEME_BLUE, THEME_DARK};
+
 struct nk_image nk_common_image_load(const char *filename);
 
 char* nk_common_file_load(const char* path, size_t* size);
