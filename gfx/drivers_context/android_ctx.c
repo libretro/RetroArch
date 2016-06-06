@@ -152,12 +152,12 @@ static void *android_gfx_ctx_init(void *video_driver)
    if (!android_app->window)
       goto unlock_error;
 
-   ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
-
    switch (android_api)
    {
       case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
+         ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
+
 #ifdef HAVE_EGL
          if (!egl_create_context(&and->egl, context_attributes))
          {
