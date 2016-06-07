@@ -205,11 +205,6 @@ static char** waiting_argv;
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
-static void poll_iteration(void)
-{
-
-}
-
 - (void) rarch_main
 {
     int ret = 0;
