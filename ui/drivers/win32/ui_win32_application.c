@@ -31,11 +31,11 @@ static void ui_application_win32_process_events(void)
    {
       MSG msg2;
 
-	  if (PeekMessage(&msg2, 0, 0, 0, PM_REMOVE))
-	  {
+      if (PeekMessage(&msg2, 0, 0, 0, PM_REMOVE))
+      {
          TranslateMessage(&msg2);
          DispatchMessage (&msg2);
-	  }
+      }
    }
 }
 
