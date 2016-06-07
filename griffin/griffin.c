@@ -442,6 +442,7 @@ INPUT (HID)
 ============================================================ */
 #include "../input/drivers_joypad/hid_joypad.c"
 
+#ifdef HAVE_HID
 #include "../input/drivers_hid/null_hid.c"
 
 #if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
@@ -460,7 +461,6 @@ INPUT (HID)
 #include "../input/drivers_hid/wiiusb_hid.c"
 #endif
 
-#ifdef HAVE_HID
 #include "../input/connect/joypad_connection.c"
 #include "../input/connect/connect_ps3.c"
 #include "../input/connect/connect_ps4.c"
