@@ -440,9 +440,8 @@ INPUT
 /*============================================================
 INPUT (HID)
 ============================================================ */
-#include "../input/drivers_joypad/hid_joypad.c"
-
 #ifdef HAVE_HID
+#include "../input/drivers_joypad/hid_joypad.c"
 #include "../input/drivers_hid/null_hid.c"
 
 #if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
