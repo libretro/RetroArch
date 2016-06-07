@@ -351,6 +351,7 @@ static const char *xmb_thumbnails_ident(void)
    return "OFF";
 }
 
+#ifdef HAVE_SHADERPIPELINE
 static float *xmb_gradient_ident(void)
 {
    settings_t *settings = config_get_ptr();
@@ -380,6 +381,7 @@ static float *xmb_gradient_ident(void)
 
    return &gradient_legacy_red[0];
 }
+#endif
 
 static void xmb_fill_default_background_path(xmb_handle_t *xmb,
       char *path, size_t size)
