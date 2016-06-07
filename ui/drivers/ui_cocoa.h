@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _COCOA_WINDOW_UI
-#define _COCOA_WINDOW_UI
+#ifndef _COCOA_UI
+#define _COCOA_UI
 
 #include <stdint.h>
 #include <stddef.h>
@@ -23,11 +23,16 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#include "cocoa_common.h"
+#include "cocoa/cocoa_common.h"
 
-#include "../../ui_companion_driver.h"
+#include "../ui_companion_driver.h"
 
 RETRO_BEGIN_DECLS
+
+typedef struct ui_application_cocoa
+{
+   void *empty;
+} ui_application_cocoa_t;
 
 typedef struct ui_window_cocoa
 {

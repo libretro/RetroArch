@@ -89,7 +89,7 @@ static bool g_is_syncing = true;
 static bool g_use_hw_ctx;
 
 #if defined(HAVE_COCOA)
-#include "../../ui/drivers/cocoa/ui_cocoa_window.h"
+#include "../../ui/drivers/ui_cocoa.h"
 static NSOpenGLPixelFormat* g_format;
 
 void *glcontext_get_ptr(void)

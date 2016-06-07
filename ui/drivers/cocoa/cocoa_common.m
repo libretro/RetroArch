@@ -18,7 +18,7 @@
 #include <sys/stat.h>
 #include "cocoa_common.h"
 #ifdef HAVE_COCOA
-#include "ui_cocoa_window.h"
+#include "../ui_cocoa.h"
 #endif
 
 /* Define compatibility symbols and categories. */
