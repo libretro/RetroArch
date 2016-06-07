@@ -246,8 +246,8 @@ VIDEO IMAGE
 #endif
 #ifdef HAVE_RBMP
 #include "../libretro-common/formats/bmp/rbmp.c"
-#endif
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
+#endif
 
 /*============================================================
 VIDEO DRIVER
