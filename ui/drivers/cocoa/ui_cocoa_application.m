@@ -21,7 +21,7 @@
 
 #include "../../ui_companion_driver.h"
 
-static void ui_application_cocoa_process_events(void *data)
+static void ui_application_cocoa_process_events(void)
 {
 }
 
