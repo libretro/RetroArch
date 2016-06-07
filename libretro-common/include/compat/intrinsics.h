@@ -60,7 +60,7 @@ static INLINE int compat_ctz(unsigned x)
 {
    return __builtin_ctz(x);
 }
-#elif defined(_MSC_VER) && defined(_MSC_VER >= 1400)
+#elif _MSC_VER >= 1400
 static INLINE int compat_ctz(unsigned x)
 {
    int r = 0;
