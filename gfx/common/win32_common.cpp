@@ -537,13 +537,9 @@ void win32_show_cursor(bool state)
 void win32_check_window(bool *quit, bool *resize, unsigned *width, unsigned *height)
 {
 #ifndef _XBOX
-   MSG msg;
-
-   while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-   {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-   }
+   const ui_application_t *application = ui_companion_driver_get_application_ptr();
+   if (application)
+      application->process_events();
 #endif
    *quit = g_quit;
 

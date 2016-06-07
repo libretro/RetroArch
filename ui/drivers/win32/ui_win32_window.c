@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <windows.h>
+
 #ifdef _MSC_VER
 #pragma comment( lib, "comctl32" )
 #endif

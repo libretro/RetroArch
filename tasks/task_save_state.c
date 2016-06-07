@@ -18,7 +18,12 @@
 #include <sys/types.h>
 #include <string.h>
 #include <time.h>
+
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
+#endif
 #include <errno.h>
 
 #include <lists/string_list.h>

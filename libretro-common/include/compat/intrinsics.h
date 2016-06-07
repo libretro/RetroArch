@@ -63,9 +63,9 @@ static INLINE int compat_ctz(unsigned x)
 #elif _MSC_VER >= 1400
 static INLINE int compat_ctz(unsigned x)
 {
-   int r = 0;
-   _BitScanReverse(&r, x);
-   return r;
+   unsigned long r = 0;
+   _BitScanReverse((unsigned long*)&r, x);
+   return (int)r;
 }
 #else
 /* Only checks at nibble granularity, 
