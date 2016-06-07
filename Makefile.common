@@ -650,7 +650,8 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
 OBJ += ui/drivers/ui_win32.o \
-		 ui/drivers/win32/ui_win32_window.o
+		 ui/drivers/win32/ui_win32_window.o \
+		 ui/drivers/win32/ui_win32_application.o
 endif
 
 # Video
