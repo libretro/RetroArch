@@ -31,6 +31,7 @@ const char *menu_hash_to_str(uint32_t hash)
    if (!settings)
       return "null";
 
+#ifdef HAVE_LANGEXTRA
    switch (settings->user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
@@ -60,6 +61,7 @@ const char *menu_hash_to_str(uint32_t hash)
       default:
          break;
    }
+#endif
 
    if (ret && !string_is_equal(ret, "null"))
       return ret;
@@ -75,6 +77,7 @@ int menu_hash_get_help(uint32_t hash, char *s, size_t len)
    if (!settings)
       return -1;
 
+#ifdef HAVE_LANGEXTRA
    switch (settings->user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
@@ -104,6 +107,7 @@ int menu_hash_get_help(uint32_t hash, char *s, size_t len)
       default:
          break;
    }
+#endif
 
    if (ret == 0)
       return ret;

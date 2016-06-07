@@ -404,7 +404,9 @@ typedef struct settings
    unsigned menu_scroll_up_btn;
 
    char username[32];
+#ifdef HAVE_LANGEXTRA
    unsigned int user_language;
+#endif
 
    bool config_save_on_exit;
 

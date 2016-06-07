@@ -122,14 +122,6 @@ OBJ += frontend/frontend.o \
        input/input_keyboard.o \
        command.o \
        msg_hash.o \
-       intl/msg_hash_de.o \
-       intl/msg_hash_eo.o \
-       intl/msg_hash_es.o \
-       intl/msg_hash_fr.o \
-       intl/msg_hash_it.o \
-       intl/msg_hash_nl.o \
-       intl/msg_hash_pl.o \
-       intl/msg_hash_pt.o \
        intl/msg_hash_us.o \
        runloop.o \
 		 libretro-common/algorithms/mismatch.o \
@@ -216,6 +208,29 @@ OBJ += frontend/frontend.o \
        libretro-common/features/features_cpu.o \
        performance_counters.o \
        verbosity.o
+
+ifeq ($(HAVE_LANGEXTRA), 1)
+DEFINES += -DHAVE_LANGEXTRA
+OBJ += intl/msg_hash_de.o \
+       intl/msg_hash_eo.o \
+       intl/msg_hash_es.o \
+       intl/msg_hash_fr.o \
+       intl/msg_hash_it.o \
+       intl/msg_hash_nl.o \
+       intl/msg_hash_pl.o \
+       intl/msg_hash_pt.o
+
+ifeq ($(HAVE_MENU), 1)
+OBJ +=	 menu/intl/menu_hash_de.o \
+          menu/intl/menu_hash_es.o \
+          menu/intl/menu_hash_eo.o \
+          menu/intl/menu_hash_fr.o \
+          menu/intl/menu_hash_it.o \
+          menu/intl/menu_hash_nl.o \
+          menu/intl/menu_hash_pl.o \
+          menu/intl/menu_hash_pt.o
+endif
+endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
 OBJ += libretro-common/compat/compat_getopt.o
@@ -466,14 +481,6 @@ ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_hash.o \
           menu/menu_driver.o \
           menu/menu_content.o \
-          menu/intl/menu_hash_de.o \
-          menu/intl/menu_hash_es.o \
-          menu/intl/menu_hash_eo.o \
-          menu/intl/menu_hash_fr.o \
-          menu/intl/menu_hash_it.o \
-          menu/intl/menu_hash_nl.o \
-          menu/intl/menu_hash_pl.o \
-          menu/intl/menu_hash_pt.o \
           menu/intl/menu_hash_us$(PSEUDO_NS).o \
           menu/menu_input.o \
           menu/menu_entry.o \

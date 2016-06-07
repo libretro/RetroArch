@@ -1147,6 +1147,7 @@ static void setting_get_string_representation_uint_autosave_interval(void *data,
 }
 #endif
 
+#ifdef HAVE_LANGEXTRA
 static void setting_get_string_representation_uint_user_language(void *data,
       char *s, size_t len)
 {
@@ -1171,6 +1172,7 @@ static void setting_get_string_representation_uint_user_language(void *data,
    if (settings)
       strlcpy(s, modes[settings->user_language], len);
 }
+#endif
 
 static void setting_get_string_representation_uint_libretro_log_level(void *data,
       char *s, size_t len)
@@ -6776,6 +6778,7 @@ static bool setting_append_list(
                general_read_handler);
          settings_data_list_current_add_flags(list, list_info, SD_FLAG_ALLOW_INPUT);
 
+#ifdef HAVE_LANGEXTRA
          CONFIG_UINT(
                list, list_info,
                &settings->user_language,
@@ -6799,6 +6802,7 @@ static bool setting_append_list(
          menu_settings_list_current_add_cmd(list, list_info, CMD_EVENT_MENU_REFRESH);
          (*list)[list_info->index - 1].get_string_representation = 
             &setting_get_string_representation_uint_user_language;
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          END_GROUP(list, list_info, parent_group);

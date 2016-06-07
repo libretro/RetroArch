@@ -901,9 +901,11 @@ bool rarch_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_LANGUAGE:
+#ifdef HAVE_LANGEXTRA
          *(unsigned *)data = settings->user_language;
          RARCH_LOG("Environ GET_LANGUAGE: \"%u\".\n",
                settings->user_language);
+#endif
          break;
 
       case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
