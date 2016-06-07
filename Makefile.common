@@ -1087,6 +1087,7 @@ ifeq ($(HAVE_COCOA),1)
                input/drivers_keyboard/keyboard_event_apple.o \
                ui/drivers/ui_cocoa.o \
                ui/drivers/cocoa/ui_cocoa_window.o \
+               ui/drivers/cocoa/ui_cocoa_application.o \
                ui/drivers/cocoa/cocoa_common.o \
                gfx/drivers_context/cocoa_gl_ctx.o
 endif
