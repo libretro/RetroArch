@@ -41,7 +41,7 @@ static void ui_application_cocoa_process_events(void)
         [event retain];
         [NSApp sendEvent: event];
         [event release];
-    };
+    }
 }
 
 const ui_application_t ui_application_cocoa = {
