@@ -27,7 +27,7 @@
 #include "../verbosity.h"
 #include "../command.h"
 
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
 #include "input_remote.h"
 #endif
 
@@ -95,7 +95,7 @@ static turbo_buttons_t input_driver_turbo_btns;
 #ifdef HAVE_COMMAND
 static command_t *input_driver_command          = NULL;
 #endif
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
 static input_remote_t *input_driver_remote        = NULL;
 #endif
 static const input_driver_t *current_input        = NULL;
@@ -281,7 +281,7 @@ static retro_input_t input_driver_keys_pressed(void)
       }
 #endif
 
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
       if (input_driver_remote)
          state |= input_remote_key_pressed(key,0);
 #endif
@@ -436,7 +436,7 @@ void input_poll(void)
       command_poll(input_driver_command);
 #endif
 
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
       input_remote_poll(input_driver_remote);
 #endif
@@ -486,7 +486,7 @@ int16_t input_state(unsigned port, unsigned device,
       input_state_overlay(&res, port, device, idx, id);
 #endif
 
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
       input_remote_state(&res, port, device, idx, id);
 #endif
    }
@@ -877,7 +877,7 @@ void input_driver_deinit_command(void)
 
 void input_driver_deinit_remote(void)
 {
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
    if (input_driver_remote)
       input_remote_free(input_driver_remote);
    input_driver_remote = NULL;
@@ -886,7 +886,7 @@ void input_driver_deinit_remote(void)
 
 bool input_driver_init_remote(void)
 {
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
    settings_t *settings = config_get_ptr();
 
    if (!settings->network_remote_enable)

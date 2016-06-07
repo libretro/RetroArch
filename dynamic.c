@@ -77,7 +77,7 @@ static dylib_t lib_handle;
 #define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
 #endif
 
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
 #define SYMBOL_NETRETROPAD(x) current_core->x = libretro_netretropad_##x
 #endif
 
@@ -507,7 +507,7 @@ static void load_symbols(enum rarch_core_type type, struct retro_core_t *current
 #endif
          break;
       case CORE_TYPE_NETRETROPAD:
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
          SYMBOL_NETRETROPAD(retro_init);
          SYMBOL_NETRETROPAD(retro_deinit);
 

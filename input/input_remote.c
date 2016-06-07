@@ -41,7 +41,7 @@
 struct input_remote
 {
 
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
    int net_fd[MAX_USERS];
 #endif
 
@@ -63,7 +63,7 @@ static input_remote_state_t *input_remote_get_state_ptr(void)
    return &remote_st_ptr;
 }
 
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
 static bool input_remote_init_network(input_remote_t *handle,
       uint16_t port, unsigned user)
 {
@@ -107,7 +107,7 @@ error:
 input_remote_t *input_remote_new(uint16_t port)
 {
    unsigned user;
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
    settings_t   *settings = config_get_ptr();
 #endif
    input_remote_t *handle = (input_remote_t*)
@@ -118,7 +118,7 @@ input_remote_t *input_remote_new(uint16_t port)
 
    (void)port;
 
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
    for(user = 0; user < settings->input.max_users; user ++)
    {
       handle->net_fd[user] = -1;
@@ -130,7 +130,7 @@ input_remote_t *input_remote_new(uint16_t port)
 
    return handle;
 
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
 error:
    input_remote_free(handle);
    return NULL;
@@ -140,7 +140,7 @@ error:
 void input_remote_free(input_remote_t *handle)
 {
    unsigned user;
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
    settings_t *settings = config_get_ptr();
 
    for(user = 0; user < settings->input.max_users; user ++)
@@ -150,7 +150,7 @@ void input_remote_free(input_remote_t *handle)
    free(handle);
 }
 
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
 static void input_remote_parse_packet(char *buffer, unsigned size, unsigned user)
 {
    input_remote_state_t *ol_state  = input_remote_get_state_ptr();
@@ -212,7 +212,7 @@ void input_remote_poll(input_remote_t *handle)
    {
       if (settings->network_remote_enable_user[user])
       {
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
          char buf[8];
          ssize_t ret;
          fd_set fds;

@@ -1741,7 +1741,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    settings->bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
    CONFIG_GET_BOOL_BASE(conf, settings, network_remote_enable, "network_remote_enable");
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -2925,7 +2925,7 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
    }
 
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
    {
       char tmp[64] = {0};

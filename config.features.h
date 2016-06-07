@@ -32,7 +32,7 @@ static const bool _network_command_supp = true;
 static const bool _network_command_supp = false;
 #endif
 
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
 static const bool _network_gamepad_supp = true;
 #else
 static const bool _network_gamepad_supp = false;
