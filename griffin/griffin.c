@@ -723,6 +723,7 @@ UI
 
 #include "../ui/drivers/ui_null.c"
 #include "../ui/drivers/null/ui_null_window.c"
+#include "../ui/drivers/null/ui_null_application.c"
 
 #ifdef HAVE_QT
 #include "../ui/drivers/ui_qt.c"

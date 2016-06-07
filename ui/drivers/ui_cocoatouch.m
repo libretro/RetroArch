@@ -688,5 +688,6 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_msg_queue_push,
    ui_companion_cocoatouch_render_messagebox,
    &ui_window_null,
+   &ui_application_null,
    "cocoatouch",
 };

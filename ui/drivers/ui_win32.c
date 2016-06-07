@@ -730,5 +730,6 @@ const ui_companion_driver_t ui_companion_win32 = {
    NULL,
    NULL,
    &ui_window_win32,
+   &ui_application_null,
    "win32",
 };

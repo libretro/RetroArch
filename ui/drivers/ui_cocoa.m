@@ -597,5 +597,6 @@ const ui_companion_driver_t ui_companion_cocoa = {
    NULL,
    NULL,
    &ui_window_cocoa,
+   &ui_application_null,
    "cocoa",
 };
