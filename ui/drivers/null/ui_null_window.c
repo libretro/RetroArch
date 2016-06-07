@@ -21,11 +21,11 @@
 
 #include "../../ui_companion_driver.h"
 
-void ui_window_null_destroy(void *data)
+static void ui_window_null_destroy(void *data)
 {
 }
 
-void ui_window_null_set_focused(void *data)
+static void ui_window_null_set_focused(void *data)
 {
 }
 

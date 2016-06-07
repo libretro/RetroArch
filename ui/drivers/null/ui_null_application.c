@@ -21,7 +21,7 @@
 
 #include "../../ui_companion_driver.h"
 
-void ui_application_null_process_events(void *data)
+static void ui_application_null_process_events(void *data)
 {
 }
 
