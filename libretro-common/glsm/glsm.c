@@ -1809,10 +1809,10 @@ void rglDeleteVertexArrays(GLsizei n, const GLuint *arrays)
  * OpenGL    : 3.2
  * OpenGLES  : 3.0
  */
-GLsync rglFenceSync(GLenum condition, GLbitfield flags)
+void *rglFenceSync(GLenum condition, GLbitfield flags)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
-   return glFenceSync(condition, flags);
+   return (GLsync)glFenceSync(condition, flags);
 #endif
 }
 
@@ -1822,10 +1822,10 @@ GLsync rglFenceSync(GLenum condition, GLbitfield flags)
  * OpenGL    : 3.2
  * OpenGLES  : 3.0
  */
-void rglWaitSync(GLsync sync, GLbitfield flags, GLuint64 timeout)
+void rglWaitSync(void *sync, GLbitfield flags, GLuint64 timeout)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
-   glWaitSync(sync, flags, timeout);
+   glWaitSync((GLsync)sync, flags, timeout);
 #endif
 }
 

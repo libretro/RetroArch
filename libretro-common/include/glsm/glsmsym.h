@@ -393,8 +393,8 @@ void rglTexSubImage2D( 	GLenum target,
   	GLenum type,
   	const GLvoid * pixels);
 void rglDeleteVertexArrays(GLsizei n, const GLuint *arrays);
-GLsync rglFenceSync(GLenum condition, GLbitfield flags);
-void rglWaitSync(GLsync sync, GLbitfield flags, GLuint64 timeout);
+void *rglFenceSync(GLenum condition, GLbitfield flags);
+void rglWaitSync(void *data, GLbitfield flags, GLuint64 timeout);
 
 RETRO_END_DECLS
 
