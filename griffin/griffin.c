@@ -757,6 +757,7 @@ RETROARCH
 #include "../tasks/tasks_internal.c"
 
 #include "../msg_hash.c"
+#ifdef HAVE_LANGEXTRA
 #include "../intl/msg_hash_de.c"
 #include "../intl/msg_hash_es.c"
 #include "../intl/msg_hash_eo.c"
@@ -765,10 +766,12 @@ RETROARCH
 #include "../intl/msg_hash_nl.c"
 #include "../intl/msg_hash_pt.c"
 #include "../intl/msg_hash_pl.c"
-#include "../intl/msg_hash_us.c"
 #ifdef HAVE_UTF8
 #include "../intl/msg_hash_ru.c"
 #endif
+#endif
+
+#include "../intl/msg_hash_us.c"
 
 /*============================================================
 RECORDING
@@ -870,6 +873,7 @@ MENU
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
 
+#ifdef HAVE_LANGEXTRA
 #include "../menu/intl/menu_hash_de.c"
 #include "../menu/intl/menu_hash_es.c"
 #include "../menu/intl/menu_hash_eo.c"
@@ -878,10 +882,11 @@ MENU
 #include "../menu/intl/menu_hash_nl.c"
 #include "../menu/intl/menu_hash_pl.c"
 #include "../menu/intl/menu_hash_pt.c"
-#include "../menu/intl/menu_hash_us.c"
 #ifdef HAVE_UTF8
 #include "../menu/intl/menu_hash_ru.c"
 #endif
+#endif
+#include "../menu/intl/menu_hash_us.c"
 
 #include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"

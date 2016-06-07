@@ -1,3 +1,7 @@
+CFLAGS += -I./libretro-common/include
+
+# Switches
+
 ifeq ($(HAVE_GL_CONTEXT),)
    HAVE_GL_CONTEXT=0
 
@@ -64,52 +68,8 @@ ifeq ($(HAVE_SHADERPIPELINE), 1)
 	CFLAGS += -DHAVE_SHADERPIPELINE
 endif
 
-CFLAGS += -I./libretro-common/include
+# General libretro-common files
 
-# Switches
-
-
-# System
-
-ifneq ($(findstring BSD,$(OS)),)
-   BSD_LOCAL_INC += -I/usr/local/include
-endif
-
-ifneq ($(findstring Darwin,$(OS)),)
-   OSX := 1
-   LIBS += -framework AppKit
-else
-   OSX := 0
-endif
-
-ifneq ($(findstring Linux,$(OS)),)
-   LIBS += -lrt
-   OBJ += input/drivers/linuxraw_input.o \
-          input/common/linux_common.o \
-          input/common/epoll_common.o \
-          input/drivers_joypad/linuxraw_joypad.o \
-          frontend/drivers/platform_linux.o
-endif
-
-
-ifeq ($(findstring Haiku,$(OS)),)
-   LIBS += -lm
-   DEBUG_FLAG = -g
-else
-   LIBS += -lroot -lnetwork
-   # stable and nightly haiku builds are stuck on gdb 6.x but we use gcc4
-   DEBUG_FLAG = -gdwarf-2
-endif
-
-# Git
-
-GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
-ifneq ($(GIT_VERSION),)
-   DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
-   OBJ += git_version.o
-endif
-
-# General object files
 OBJ += libretro-common/algorithms/mismatch.o \
        libretro-common/queues/task_queue.o \
        libretro-common/queues/fifo_queue.o \
@@ -145,6 +105,15 @@ OBJ += libretro-common/algorithms/mismatch.o \
        libretro-common/formats/json/jsonsax.o \
 		 libretro-common/formats/image_transfer.o
 
+ifeq ($(HAVE_THREADS), 1)
+OBJ += libretro-common/rthreads/rthreads.o \
+          libretro-common/rthreads/rsemaphore.o 
+endif
+
+ifeq ($(HAVE_GL_CONTEXT), 1)
+OBJ += libretro-common/glsym/rglgen.o
+endif
+
 ifneq ($(HAVE_GETOPT_LONG), 1)
 OBJ += libretro-common/compat/compat_getopt.o
 endif
@@ -162,7 +131,90 @@ ifeq ($(HAVE_NEON),1)
 			 libretro-common/conversion/float_to_s16_neon.o
 endif
 
+ifeq ($(HAVE_RTGA), 1)
+	OBJ += libretro-common/formats/tga/rtga.o
+endif
 
+ifeq ($(HAVE_RPNG), 1)
+   OBJ += libretro-common/formats/png/rpng.o \
+          libretro-common/formats/png/rpng_encode.o
+endif
+
+ifeq ($(HAVE_RJPEG), 1)
+	OBJ += libretro-common/formats/jpeg/rjpeg.o
+endif
+
+ifeq ($(HAVE_RBMP), 1)
+	OBJ += libretro-common/formats/bmp/rbmp.o \
+			 libretro-common/formats/bmp/rbmp_encode.o
+endif
+
+ifeq ($(HAVE_NETWORKING), 1)
+   OBJ += libretro-common/net/net_compat.o \
+          libretro-common/net/net_http.o \
+			 libretro-common/net/net_socket.o
+
+   ifneq ($(HAVE_SOCKET_LEGACY),1)
+	OBJ += libretro-common/net/net_ifinfo.o
+	endif
+
+   ifeq ($(WANT_IFADDRS), 1)
+	OBJ += libretro-common/compat/compat_ifaddrs.o
+	endif
+
+   ifeq ($(HAVE_CHEEVOS), 1)
+      ifeq ($(HAVE_THREADS), 1)
+         OBJ += libretro-common/utils/md5.o
+      endif
+   endif
+endif
+
+ifeq ($(HAVE_ZLIB), 1)
+   OBJ += libretro-common/file/archive_file.o \
+          libretro-common/file/archive_file_zlib.o
+endif
+
+# System
+
+ifneq ($(findstring BSD,$(OS)),)
+   BSD_LOCAL_INC += -I/usr/local/include
+endif
+
+ifneq ($(findstring Darwin,$(OS)),)
+   OSX := 1
+   LIBS += -framework AppKit
+else
+   OSX := 0
+endif
+
+ifneq ($(findstring Linux,$(OS)),)
+   LIBS += -lrt
+   OBJ += input/drivers/linuxraw_input.o \
+          input/common/linux_common.o \
+          input/common/epoll_common.o \
+          input/drivers_joypad/linuxraw_joypad.o \
+          frontend/drivers/platform_linux.o
+endif
+
+ifeq ($(findstring Haiku,$(OS)),)
+   LIBS += -lm
+   DEBUG_FLAG = -g
+else
+   LIBS += -lroot -lnetwork
+   # stable and nightly haiku builds are stuck on gdb 6.x but we use gcc4
+   DEBUG_FLAG = -gdwarf-2
+endif
+
+# Git
+
+GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+ifneq ($(GIT_VERSION),)
+   DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
+   OBJ += git_version.o
+endif
+
+
+# General object files
 OBJ += frontend/frontend.o \
        frontend/frontend_driver.o \
        frontend/drivers/platform_null.o \
@@ -245,16 +297,6 @@ OBJ += intl/msg_hash_de.o \
        intl/msg_hash_pl.o \
        intl/msg_hash_pt.o
 
-ifeq ($(HAVE_MENU), 1)
-OBJ +=	 menu/intl/menu_hash_de.o \
-          menu/intl/menu_hash_es.o \
-          menu/intl/menu_hash_eo.o \
-          menu/intl/menu_hash_fr.o \
-          menu/intl/menu_hash_it.o \
-          menu/intl/menu_hash_nl.o \
-          menu/intl/menu_hash_pl.o \
-          menu/intl/menu_hash_pt.o
-endif
 endif
 
 
@@ -516,6 +558,17 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/drivers_display/menu_display_null.o \
           menu/drivers/menu_generic.o \
           menu/drivers/null.o
+
+ifeq ($(HAVE_LANGEXTRA), 1)
+OBJ +=	 menu/intl/menu_hash_de.o \
+          menu/intl/menu_hash_es.o \
+          menu/intl/menu_hash_eo.o \
+          menu/intl/menu_hash_fr.o \
+          menu/intl/menu_hash_it.o \
+          menu/intl/menu_hash_nl.o \
+          menu/intl/menu_hash_pl.o \
+          menu/intl/menu_hash_pt.o
+endif
 endif
 
 ifeq ($(UTF8), 1)
@@ -535,9 +588,7 @@ ifeq ($(HAVE_FREETYPE), 1)
 endif
 
 ifeq ($(HAVE_THREADS), 1)
-   OBJ += libretro-common/rthreads/rthreads.o \
-          libretro-common/rthreads/rsemaphore.o  \
-          gfx/video_thread_wrapper.o \
+   OBJ += gfx/video_thread_wrapper.o \
           audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
    ifeq ($(findstring Haiku,$(OS)),)
@@ -674,8 +725,7 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
    DEFINES += -DHAVE_OPENGL -DHAVE_GLSL
    OBJ += gfx/drivers/gl.o \
           gfx/common/gl_common.o \
-          gfx/drivers_font/gl_raster_font.o \
-          libretro-common/glsym/rglgen.o
+          gfx/drivers_font/gl_raster_font.o
 
    ifeq ($(HAVE_MENU_COMMON), 1)
       OBJ += menu/drivers_display/menu_display_gl.o
@@ -925,9 +975,7 @@ endif
 
 
 ifeq ($(HAVE_ZLIB), 1)
-   OBJ += libretro-common/file/archive_file.o \
-          libretro-common/file/archive_file_zlib.o \
-          tasks/task_decompress.o
+   OBJ += tasks/task_decompress.o
    OBJ += $(ZLIB_OBJS)
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
@@ -941,24 +989,18 @@ endif
 
 ifeq ($(HAVE_RTGA), 1)
 	DEFINES += -DHAVE_RTGA
-	OBJ += libretro-common/formats/tga/rtga.o
 endif
 
 ifeq ($(HAVE_RPNG), 1)
 	DEFINES += -DHAVE_RPNG
-   OBJ += libretro-common/formats/png/rpng.o \
-          libretro-common/formats/png/rpng_encode.o
 endif
 
 ifeq ($(HAVE_RJPEG), 1)
 	DEFINES += -DHAVE_RJPEG
-	OBJ += libretro-common/formats/jpeg/rjpeg.o
 endif
 
 ifeq ($(HAVE_RBMP), 1)
 	DEFINES += -DHAVE_RBMP
-	OBJ += libretro-common/formats/bmp/rbmp.o \
-			 libretro-common/formats/bmp/rbmp_encode.o
 endif
 
 ifdef HAVE_COMPRESSION
@@ -1002,19 +1044,11 @@ endif
 
 ifeq ($(HAVE_NETWORKING), 1)
    DEFINES += -DHAVE_NETWORKING
-   OBJ += libretro-common/net/net_compat.o \
-          libretro-common/net/net_http.o \
-			 libretro-common/net/net_socket.o \
-          network/net_http_special.o \
-          tasks/task_http.o
-
-   ifneq ($(HAVE_SOCKET_LEGACY),1)
-	OBJ += libretro-common/net/net_ifinfo.o
-	endif
+   OBJ     += network/net_http_special.o \
+				  tasks/task_http.o
 
    ifeq ($(WANT_IFADDRS), 1)
 	DEFINES += -DWANT_IFADDRS
-	OBJ += libretro-common/compat/compat_ifaddrs.o
 	endif
 
    ifneq ($(findstring Win32,$(OS)),)
@@ -1036,8 +1070,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_CHEEVOS), 1)
       ifeq ($(HAVE_THREADS), 1)
          DEFINES += -DHAVE_CHEEVOS
-         OBJ += cheevos.o \
-					 libretro-common/utils/md5.o
+         OBJ += cheevos.o
       endif
    endif
 
