@@ -1580,6 +1580,7 @@ static void command_event_save_state(const char *path,
    settings_t *settings = config_get_ptr();
    char buf[PATH_MAX_LENGTH] = {0};
 
+#if 0
    /* if a save state already exists rename it to .last before saving 
     * so it can be recovered */
    if (path_file_exists(path))
@@ -1597,6 +1598,7 @@ static void command_event_save_state(const char *path,
          return;
       }
    }
+#endif
 
    if (!content_save_state(path))
    {
