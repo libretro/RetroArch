@@ -61,7 +61,7 @@ void load_icons(nk_menu_handle_t *nk)
    assets_loaded = true;
 }
 
-bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, char* out, const char* filter)
+bool nk_wnd_file_picker(nk_menu_handle_t *nk, char* title, char* in, char* out, char* filter)
 {
    struct nk_panel layout;
    struct nk_context                 *ctx = &nk->ctx;
@@ -80,7 +80,6 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, char* out, const c
 
    if (!string_is_empty(in) && string_is_empty(path))
    {
-      RARCH_LOG("beep\n");
       strlcpy(path, in, sizeof(path));
       files = dir_list_new(path, filter, true, true);
    }
@@ -88,7 +87,7 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, char* out, const c
    if (!assets_loaded)
       load_icons(nk);
 
-   if (nk_begin(ctx, &layout, "Select File", nk_rect(10, 10, 500, 400),
+   if (nk_begin(ctx, &layout, title, nk_rect(10, 10, 500, 400),
          NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_MOVABLE|
          NK_WINDOW_BORDER))
    {
@@ -136,7 +135,12 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, char* out, const c
       nk_layout_row_dynamic(ctx, 30, 1);
       {
          if (nk_button_text(ctx, "OK", 2, NK_BUTTON_DEFAULT))
+         {
             ret = true;
+            strlcpy(out, path, sizeof(path));
+            nk->window[NK_WND_FILE_PICKER].open = false;
+            path[0] = '\0';
+         }
       }
    }
 
@@ -144,7 +148,6 @@ bool nk_wnd_file_picker(nk_menu_handle_t *nk, const char* in, char* out, const c
    dir_list_sort(files, true);
 
    /* copy the path variable to out*/
-   strlcpy(out, path, sizeof(path));
 
    /* save position and size to restore after context reset */
    nk_wnd_set_state(nk, id, nk_window_get_position(ctx), nk_window_get_size(ctx));

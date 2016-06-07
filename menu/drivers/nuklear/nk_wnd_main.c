@@ -29,19 +29,72 @@
 #include "../../menu_driver.h"
 #include "../../menu_hash.h"
 
-void nk_wnd_main(nk_menu_handle_t *nk)
+static char* out;
+static char core[PATH_MAX_LENGTH] = {0};
+static char content[PATH_MAX_LENGTH] = {0};
+float ratio[] = {0.85f, 0.15f};
+
+void nk_wnd_main(nk_menu_handle_t *nk, const char* title)
 {
    unsigned i;
    video_shader_ctx_t shader_info;
    struct nk_panel layout;
    struct nk_context *ctx = &nk->ctx;
    const int id           = NK_WND_MAIN;
+   settings_t *settings  = config_get_ptr();
 
-   if (nk_begin(ctx, &layout, "Main", nk_rect(240, 10, 300, 400),
+   static char picker_filter[PATH_MAX_LENGTH];
+   static char picker_title[PATH_MAX_LENGTH];
+   static char* picker_startup_dir;
+
+   int len_core, len_content = 0;
+
+   if (!out)
+      out = &core;
+
+   if (!string_is_empty(core))
+      len_core = strlen(path_basename(core));
+   if (!string_is_empty(content))
+      len_content = strlen(content);
+
+   if (nk->window[NK_WND_FILE_PICKER].open)
+   {
+      if (nk_wnd_file_picker(nk, picker_title, picker_startup_dir, out, picker_filter))
+      {
+         RARCH_LOG ("%s selected\n", out);
+         nk_window_close(&nk->ctx, picker_title);
+      }
+   }
+
+
+   if (nk_begin(ctx, &layout, title, nk_rect(240, 10, 600, 400),
          NK_WINDOW_CLOSABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_MOVABLE|
          NK_WINDOW_SCALABLE|NK_WINDOW_BORDER))
    {
       nk_layout_row_dynamic(ctx, 30, 1);
+      nk_label(ctx,"Core:", NK_TEXT_LEFT);
+      nk_layout_row(ctx, NK_DYNAMIC, 30, 3, ratio);
+      nk_edit_string(ctx, NK_EDIT_SIMPLE, path_basename(core), &len_core, 64, nk_filter_default);
+      if (nk_button_text(ctx, "...", 3, NK_BUTTON_DEFAULT))
+      {
+         out = &core;
+         strlcpy(picker_title, "Select core", sizeof(picker_title));
+         strlcpy(picker_filter, ".dll", sizeof(picker_filter));
+         picker_startup_dir = settings->directory.libretro;
+         nk->window[NK_WND_FILE_PICKER].open = true;
+      }
+      nk_layout_row_dynamic(ctx, 30, 1);
+      nk_label(ctx,"Content:", NK_TEXT_LEFT);
+      nk_layout_row(ctx, NK_DYNAMIC, 30, 3, ratio);
+      nk_edit_string(ctx, NK_EDIT_SIMPLE, content, &len_content, 64, nk_filter_default);
+      if (nk_button_text(ctx, "...", 3, NK_BUTTON_DEFAULT))
+      {
+         out = &content;
+         strlcpy(picker_title, "Select content", sizeof(picker_title));
+         strlcpy(picker_filter, ".zip", sizeof(picker_filter));
+         picker_startup_dir = settings->directory.menu_content;
+         nk->window[NK_WND_FILE_PICKER].open = true;
+      }
    }
 
    /* save position and size to restore after context reset */

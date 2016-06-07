@@ -48,34 +48,19 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
+/* this is the main control function, it opens and closes windows, */
 static void nk_menu_main(nk_menu_handle_t *nk)
 {
 
-   settings_t *settings  = config_get_ptr();
    struct nk_context *ctx = &nk->ctx;
-
-   static char out[PATH_MAX_LENGTH];
 
    if (nk->window[NK_WND_SETTINGS].open)
       nk_wnd_settings(nk);
-   if (nk->window[NK_WND_FILE_PICKER].open)
-   {
-      if (nk_wnd_file_picker(nk, settings->directory.menu_content, out, ".zip"))
-      {
-         RARCH_LOG ("%s selected\n", out);
-         nk_window_close(&nk->ctx, "Select File");
-      }
 
-   }
    if (nk->window[NK_WND_SHADER_PARAMETERS].open)
       nk_wnd_shader_parameters(nk);
    if (nk->window[NK_WND_MAIN].open)
-      nk_wnd_main(nk);
-
-   nk->window[NK_WND_SETTINGS].open = !nk_window_is_closed(ctx, "Settings");
-   nk->window[NK_WND_FILE_PICKER].open = !nk_window_is_closed(ctx, "Select File");
-   nk->window[NK_WND_SHADER_PARAMETERS].open = !nk_window_is_closed(ctx, "Shader Parameters");
-   nk->window[NK_WND_MAIN].open = !nk_window_is_closed(ctx, "Main");
+      nk_wnd_main(nk, "Demo");
 
    nk_buffer_info(&nk->status, &nk->ctx.memory);
 }
@@ -311,7 +296,6 @@ static void *nk_menu_init(void **userdata)
          nk->window[i].open = true;
 #else
       nk->window[NK_WND_MAIN].open = true;
-      nk->window[NK_WND_FILE_PICKER].open = true;
 #endif
 
    return menu;
