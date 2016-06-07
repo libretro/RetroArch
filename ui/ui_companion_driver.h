@@ -33,6 +33,7 @@ RETRO_BEGIN_DECLS
 
 typedef struct ui_application
 {
+   bool (*pending_events)(void);
    void (*process_events)(void);
    const char *ident;
 } ui_application_t;

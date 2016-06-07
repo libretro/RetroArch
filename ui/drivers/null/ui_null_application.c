@@ -21,11 +21,17 @@
 
 #include "../../ui_companion_driver.h"
 
+static bool ui_application_null_pending_events(void)
+{
+   return true;
+}
+
 static void ui_application_null_process_events(void)
 {
 }
 
 const ui_application_t ui_application_null = {
+   ui_application_null_pending_events,
    ui_application_null_process_events,
    "null"
 };
