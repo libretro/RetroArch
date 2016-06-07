@@ -54,7 +54,7 @@
 
 #include "../../gfx/common/gl_common.h"
 #include "../../gfx/common/win32_common.h"
-#include "win32/ui_win32_window.h"
+#include "ui_win32.h"
 
 #define SHADER_DLG_WIDTH                  220
 #define SHADER_DLG_MIN_HEIGHT             200

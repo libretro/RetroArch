@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _WIN32_WINDOW_UI
-#define _WIN32_WINDOW_UI
+#ifndef _WIN32_UI
+#define _WIN32_UI
 
 #include <stdint.h>
 #include <stddef.h>
@@ -28,7 +28,7 @@
 #include <windows.h>
 #endif
 
-#include "../../ui_companion_driver.h"
+#include "../ui_companion_driver.h"
 
 RETRO_BEGIN_DECLS
 

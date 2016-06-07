@@ -41,7 +41,7 @@
 #include <retro_inline.h>
 #include <file/file_path.h>
 
-#include "ui_win32_window.h"
+#include "../ui_win32.h"
 
 #include "../../ui_companion_driver.h"
 #include "../../../driver.h"
