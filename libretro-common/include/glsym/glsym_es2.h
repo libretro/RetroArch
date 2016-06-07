@@ -44,12 +44,6 @@ typedef void *GLeglImageOES;
 #if !defined(GL_OES_fixed_point) && !defined(HAVE_OPENGLES2)
 typedef GLint GLfixed;
 #endif
-#if defined(OSX) && !defined(MAC_OS_X_VERSION_10_7)
-typedef long long int GLint64;
-typedef unsigned long long int GLuint64;
-typedef unsigned long long int GLuint64EXT;
-typedef struct __GLsync *GLsync;
-#endif
 typedef void (GL_APIENTRYP RGLSYMGLDEBUGMESSAGECONTROLKHRPROC) (GLenum source, GLenum type, GLenum severity, GLsizei count, const GLuint *ids, GLboolean enabled);
 typedef void (GL_APIENTRYP RGLSYMGLDEBUGMESSAGEINSERTKHRPROC) (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *buf);
 typedef void (GL_APIENTRYP RGLSYMGLDEBUGMESSAGECALLBACKKHRPROC) (RGLGENGLDEBUGPROCKHR callback, const void *userParam);
