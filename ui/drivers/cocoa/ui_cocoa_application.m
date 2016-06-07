@@ -19,10 +19,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <objc/objc-runtime.h>
+#include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
 
 static void ui_application_cocoa_process_events(void)
 {
+    while (1)
+    {
+        NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+        if (!event)
+            break;
+        [event retain];
+        [NSApp sendEvent: event];
+        [event release];
+    };
 }
 
 const ui_application_t ui_application_cocoa = {

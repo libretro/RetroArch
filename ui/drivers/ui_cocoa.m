@@ -207,15 +207,7 @@ static char** waiting_argv;
 
 static void poll_iteration(void)
 {
-    while (1)
-    {
-        NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
-        if (!event)
-           break;
-        [event retain];
-        [NSApp sendEvent: event];
-        [event release];
-    };
+
 }
 
 - (void) rarch_main
@@ -224,7 +216,9 @@ static void poll_iteration(void)
     while (ret != -1)
     {
        unsigned sleep_ms = 0;
-       poll_iteration();
+       const ui_application_t *application = ui_companion_driver_get_application_ptr();
+       if (application)
+          application->process_events();
        ret = runloop_iterate(&sleep_ms);
        if (ret == 1 && sleep_ms > 0)
           retro_sleep(sleep_ms);
