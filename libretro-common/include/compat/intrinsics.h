@@ -30,6 +30,10 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+
 RETRO_BEGIN_DECLS
 
 /* Count Leading Zero, unsigned 16bit input value */
