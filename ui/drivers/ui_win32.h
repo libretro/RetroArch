@@ -32,6 +32,11 @@
 
 RETRO_BEGIN_DECLS
 
+typedef struct ui_application_win32
+{
+   void *empty;
+} ui_application_win32_t;
+
 typedef struct ui_window_win32
 {
    HWND hwnd;
