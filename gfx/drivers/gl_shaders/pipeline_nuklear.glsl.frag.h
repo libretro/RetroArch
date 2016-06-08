@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char *nuklear_fragment_shader = GLSL_330(
+static const char *nuklear_fragment_shader = GLSL_300(
    precision mediump float;
    uniform sampler2D Texture;
    in vec2 Frag_UV;
