@@ -296,39 +296,31 @@ static char** waiting_argv;
    }
 }
 
-static void open_core_handler(NSOpenPanel *panel, NSInteger result)
+static void open_core_handler(ui_browser_window_state_t *state, bool result)
 {
-    switch (result)
-    {
-        case 1: /* NSOKButton/NSModalResponseOK */
-            if (panel.URL)
-            {
-                settings_t *settings = config_get_ptr();
-                NSURL *url           = (NSURL*)panel.URL;
-                NSString *__core     = url.path;
+    if (!state)
+        return;
+    if (string_is_empty(state->result))
+        return;
+    if (!result)
+        return;
+
+    settings_t *settings = config_get_ptr();
                 
-                if (!__core)
-                    return;
+    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)state->result);
+    ui_companion_event_command(CMD_EVENT_LOAD_CORE);
                 
-                runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
-                ui_companion_event_command(CMD_EVENT_LOAD_CORE);
-                
-                if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) 
+    if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL)
                       && settings->set_supports_no_game_enable)
-                {
-                   content_ctx_info_t content_info = {0};
-                    runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-                    task_push_content_load_default(
-                             NULL, NULL,
-                             &content_info,
-                             CORE_TYPE_PLAIN,
-                             CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
-                             NULL, NULL);
-                }
-            }
-            break;
-        case 0: /* NSCancelButton/NSModalResponseCancel */
-            break;
+    {
+        content_ctx_info_t content_info = {0};
+        runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+        task_push_content_load_default(
+                NULL, NULL,
+                &content_info,
+                CORE_TYPE_PLAIN,
+                CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                NULL, NULL);
     }
 }
 
@@ -369,31 +361,26 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 }
 
 - (IBAction)openCore:(id)sender {
-    NSOpenPanel* panel   = (NSOpenPanel*)[NSOpenPanel openPanel];
-    settings_t *settings = config_get_ptr();
-    NSString *startdir   = BOXSTRING(settings->directory.libretro);
-	NSArray *filetypes    = [[NSArray alloc] initWithObjects:BOXSTRING("dylib"), BOXSTRING("Core"), nil];
-	[panel setAllowedFileTypes:filetypes];
-#if defined(MAC_OS_X_VERSION_10_6)
-    [panel setMessage:BOXSTRING("Load Core")];
-    [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
-    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
-     {
-         [[NSApplication sharedApplication] stopModal];
-         open_core_handler(panel, result);
-     }];
-    [[NSApplication sharedApplication] runModalForWindow:panel];
-#else
-	[panel setTitle:NSLocalizedString(BOXSTRING("Load Core"), BOXSTRING("open panel"))];
-	[panel setDirectory:startdir];
-	[panel setCanChooseDirectories:NO];
-	[panel setCanChooseFiles:YES];
-	[panel setAllowsMultipleSelection:NO];
-	[panel setTreatsFilePackagesAsDirectories:NO];
-	NSInteger result = [panel runModal];
-	if (result == 1)
-       open_core_handler(panel, result);
-#endif
+    const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
+    
+    if (browser)
+    {
+        ui_browser_window_state_t browser_state;
+        settings_t *settings        = config_get_ptr();
+        
+        browser_state.filters       = strdup("dylib");
+        browser_state.filters_title = strdup("Core");
+        browser_state.title         = strdup("Load Core");
+        browser_state.startdir      = strdup(settings->directory.libretro);
+        
+        bool result = browser->open(&browser_state);
+        open_core_handler(&browser_state, result);
+        
+        free(browser_state.filters);
+        free(browser_state.filters_title);
+        free(browser_state.title);
+        free(browser_state.startdir);
+    }
 }
 
 - (void)openDocument:(id)sender

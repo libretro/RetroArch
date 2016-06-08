@@ -71,6 +71,7 @@ typedef struct ui_browser_window_state
    char *startdir;
    char *path;
    char *title;
+   char *result;
 } ui_browser_window_state_t;
 
 typedef struct ui_browser_window

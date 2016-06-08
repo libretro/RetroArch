@@ -30,8 +30,8 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
    [panel setAllowedFileTypes:filetypes];
 #if defined(MAC_OS_X_VERSION_10_6)
    [panel setMessage:BOXSTRING(state->title)];
-   if ([panel runModalForDirectory:BOXSTRING(state->path) file:nil] == 1)
-        return true;
+   if ([panel runModalForDirectory:BOXSTRING(state->startdir) file:nil] != 1)
+        return false;
 #else
     [panel setTitle:NSLocalizedString(BOXSTRING(string->title), BOXSTRING("open panel"))];
     [panel setDirectory:BOXSTRING(state->startdir)];
@@ -40,11 +40,14 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
     [panel setAllowsMultipleSelection:NO];
     [panel setTreatsFilePackagesAsDirectories:NO];
     NSInteger result = [panel runModal];
-    if (result == 1)
-        return true;
+    if (result != 1)
+        return false;
 #endif
-    
-   return false;
+    NSURL *url           = (NSURL*)panel.URL;
+    const char *res_path = [url.path UTF8String];
+    state->result        = strdup(res_path);
+                                   
+   return true;
 }
 
 static bool ui_browser_window_cocoa_save(ui_browser_window_state_t *state)
