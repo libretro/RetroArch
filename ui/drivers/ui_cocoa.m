@@ -281,13 +281,16 @@ static char** waiting_argv;
    }
    else
    {
-      ui_msg_window_state msg_window_state;
       const ui_msg_window_t *msg_window = ui_companion_driver_get_msg_window_ptr();
       if (msg_window)
       {
-         msg_window_state.text = strdup("Cannot open multiple files");
-         msg_window_state.text = strdup("RetroArch");
+         ui_msg_window_state msg_window_state;
+         msg_window_state.text  = strdup("Cannot open multiple files");
+         msg_window_state.title = strdup("RetroArch");
          msg_window->information(&msg_window_state);
+
+         free(msg_window_state.text);
+         free(msg_window_state.title);
       }
       [sender replyToOpenOrPrint:NSApplicationDelegateReplyFailure];
    }
