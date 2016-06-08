@@ -56,9 +56,10 @@ bool content_save_state_with_backup(const char *path, bool save_to_disk);
 /* Copy a save state. */
 bool content_rename_state(const char *origin, const char *dest);
 
-/* Load a state backup from disk to memory. */
+/* Undoes the last load state operation that was done */
 bool content_undo_load_state();
 
+/* Restores the last savestate file which was overwritten */
 bool content_undo_save_state();
 
 bool content_does_not_need_content(void);

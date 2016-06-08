@@ -182,7 +182,7 @@ bool content_undo_load_state()
 
 bool content_undo_save_state()
 {
-   filestream_write_file(old_save_file.path, old_save_file.data, old_save_file.size);
+   bool ret = filestream_write_file(old_save_file.path, old_save_file.data, old_save_file.size);
 
    /* Wipe the save file buffer as it's intended to be one use only */
    old_save_file.path[0] = '\0';
@@ -193,7 +193,7 @@ bool content_undo_save_state()
 
    old_save_file.data = 0;
 
-   return true;
+   return ret;
 }
 
 
@@ -433,4 +433,32 @@ bool content_rename_state(const char *origin, const char *dest)
 
    RARCH_LOG ("Error %d renaming file %s", ret, origin);
    return false;
+}
+
+/*
+* Resets the state and savefile backups
+* TODO/FIXME: Figure out when and where this should be called
+*
+*/
+bool content_reset_savestate_backups()
+{
+   if (old_save_file.data)
+   {
+      free(old_save_file.data);
+      old_save_file.data = NULL;
+   }
+
+   old_save_file.path[0] = '\0';
+   old_save_file.size = 0;
+
+   if (old_state_buf.data)
+   {
+      free(old_state_buf.data);
+      old_state_buf.data = NULL;
+   }
+
+   old_state_buf.path[0] = '\0';
+   old_state_buf.size = 0;
+
+   return true;
 }
