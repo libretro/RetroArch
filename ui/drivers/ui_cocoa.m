@@ -380,9 +380,9 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
 
 - (void)openDocument:(id)sender
 {
-    const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
+   const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
    settings_t *settings  = config_get_ptr();
-    NSString *startdir    = BOXSTRING(settings->directory.menu_content);
+   NSString *startdir    = BOXSTRING(settings->directory.menu_content);
     
    if (!startdir.length)
       startdir           = BOXSTRING("/");
@@ -399,28 +399,6 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
         
         free(browser_state.title);
     }
-#if 0
-#if defined(MAC_OS_X_VERSION_10_6)
-   [panel setMessage:BOXSTRING("Load Content")];
-   [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
-   [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
-   {
-      [[NSApplication sharedApplication] stopModal];
-      open_document_handler(panel, result);
-   }];
-   [[NSApplication sharedApplication] runModalForWindow:panel];
-#else
-    [panel setTitle:NSLocalizedString(BOXSTRING("Load Content"), BOXSTRING("open panel"))];
-    [panel setDirectory:startdir];
-    [panel setCanChooseDirectories:NO];
-    [panel setCanChooseFiles:YES];
-    [panel setAllowsMultipleSelection:NO];
-    [panel setTreatsFilePackagesAsDirectories:NO];
-    NSInteger result = [panel runModal];
-    if (result == 1)
-        open_document_handler(panel, result);
-#endif
-#endif
 }
 
 - (void)unloadingCore
