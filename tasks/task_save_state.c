@@ -236,7 +236,7 @@ bool content_save_state_with_backup(const char *path, bool save_to_disk)
    if (ret) {
       if (save_to_disk) {
          if (path_file_exists(path)) {
-            content_load_state(path, true);
+            content_load_state_with_backup(path, true);
          }
 
          ret = filestream_write_file(path, data, info.size);
@@ -245,7 +245,7 @@ bool content_save_state_with_backup(const char *path, bool save_to_disk)
       in old_state_buf to allow content_undo_load_state() to restore it */
       else 
       {
-         old_state_buf.path = NULL;
+         old_state_buf.path[0] = '\0';
 
          /* If we were holding onto an old state already, clean it up first */
          if (old_state_buf.data) {
@@ -254,7 +254,8 @@ bool content_save_state_with_backup(const char *path, bool save_to_disk)
          }
 
          old_state_buf.data = malloc(info.size);
-         memcpy(old_state_buf.data, data);
+         memcpy(old_state_buf.data, data, info.size);
+         old_state_buf.size = info.size;
       }
    }
    else
@@ -314,7 +315,9 @@ bool content_load_state_with_backup(const char *path, bool save_to_backup_buffer
       }
 
       old_save_file.data = malloc(size);
-      memcpy(old_save_file.data, buf);
+      memcpy(old_save_file.data, buf, size);
+
+      old_save_file.size = size;
 
       free(buf);
       return true;
@@ -373,7 +376,7 @@ bool content_load_state_with_backup(const char *path, bool save_to_backup_buffer
    serial_info.size       = size;
    
    /* Backup the current state so we can undo this load */
-   content_save_state(NULL, true);
+   content_save_state_with_backup(NULL, true);
    ret                    = core_unserialize(&serial_info);
 
    /* Flush back. */
