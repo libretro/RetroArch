@@ -64,7 +64,7 @@ struct sram_block
 
 bool content_undo_load_state()
 {
-   if (old_state_buf.data == NULL)
+   if (old_state_buf.data == NULL || old_state_buf.size == 0)
       return false;
 
    unsigned i;
@@ -79,7 +79,7 @@ bool content_undo_load_state()
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),
-         "from internal buffer");
+         "RAM");
 
    RARCH_LOG("%s: %u %s.\n",
          msg_hash_to_str(MSG_STATE_SIZE),
@@ -136,10 +136,24 @@ bool content_undo_load_state()
             memcpy(blocks[i].data, ptr, blocks[i].size);
       }
    }
+   
+   /* We need to make a temporary copy of the buffer, to allow the swap below */
+   void* temp_data = malloc(old_state_buf.size);
+   size_t temp_data_size = old_state_buf.size;
+   memcpy(temp_data, old_state_buf.data, old_state_buf.size);
 
-   serial_info.data_const = old_state_buf.data;
-   serial_info.size       = old_state_buf.size;
+   serial_info.data_const = temp_data;
+   serial_info.size       = temp_data_size;
+
+   /* Swap the current state with the backup state. This way, we can undo
+   what we're undoing */
+   content_save_state_with_backup("RAM", false);
    bool ret               = core_unserialize(&serial_info);
+
+   /* Clean up the temporary copy */
+   free(temp_data);
+   temp_data = NULL;
+   temp_data_size = 0;
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
@@ -166,16 +180,7 @@ bool content_undo_load_state()
    if (!ret)   
       RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
-         "from internal buffer");
-
-   /* Wipe the old state buffer, it's meant to be one use only */
-   old_state_buf.path[0] = '\0';
-   if (old_state_buf.data) {
-      free(old_state_buf.data);
-      old_state_buf.data = NULL;
-   }
-
-   old_state_buf.data = 0;
+         "RAM");
 
    return ret;
 }
@@ -196,7 +201,7 @@ bool content_undo_save_state()
    if (!ret)   
       RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
-         "from internal buffer");
+         "RAM");
 
    return ret;
 }
@@ -388,7 +393,7 @@ bool content_load_state_with_backup(const char *path, bool load_to_backup_buffer
    serial_info.size       = size;
    
    /* Backup the current state so we can undo this load */
-   content_save_state_with_backup("internal buffer", false);
+   content_save_state_with_backup("RAM", false);
    ret                    = core_unserialize(&serial_info);
 
    /* Flush back. */
@@ -443,12 +448,14 @@ bool content_rename_state(const char *origin, const char *dest)
 }
 
 /*
-* Resets the state and savefile backups
+* 
 * TODO/FIXME: Figure out when and where this should be called
 *
 */
 bool content_reset_savestate_backups()
 {
+   printf("Resetting undo buffers.\n");
+
    if (old_save_file.data)
    {
       free(old_save_file.data);

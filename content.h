@@ -47,7 +47,7 @@ bool content_save_ram_file(unsigned slot);
 
 /* Load a state from disk to memory. */
 bool content_load_state(const char* path);
-bool content_load_state_with_backup(const char* path, bool save_to_backup_buffer);
+bool content_load_state_with_backup(const char* path, bool load_to_backup_buffer);
 
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path);
@@ -77,6 +77,9 @@ void content_deinit(void);
 /* Initializes and loads a content file for the currently
  * selected libretro core. */
 bool content_init(void);
+
+/* Resets the state and savefile backup buffers */
+bool content_reset_savestate_backups();
 
 RETRO_END_DECLS
 

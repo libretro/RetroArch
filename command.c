@@ -1601,8 +1601,14 @@ static void command_event_undo_save_state(char *s, size_t len)
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
-            "from internal buffer");
+            "RAM");
+
+      return;
    }
+
+   /* TODO/FIXME - use msg_hash_to_str here and there */
+   snprintf(s, len, "%s",
+            "Restored save state.");
 }
 
 /**
@@ -1639,8 +1645,12 @@ static void command_event_undo_load_state(char *s, size_t len)
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
-            "from internal buffer");
+            "RAM");
+      return;
    }
+   /* TODO/FIXME - use msg_hash_to_str here and there */
+   snprintf(s, len, "%s",
+            "Undid load state.");  
 }
 
 static void command_event_main_state(unsigned cmd)
