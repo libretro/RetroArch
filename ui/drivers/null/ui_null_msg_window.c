@@ -36,9 +36,15 @@ static enum ui_msg_window_response ui_msg_window_null_question(ui_msg_window_sta
    return UI_MSG_RESPONSE_CANCEL;
 }
 
+static enum ui_msg_window_response ui_msg_window_null_warning(ui_msg_window_state *state)
+{
+   return UI_MSG_RESPONSE_CANCEL;
+}
+
 const ui_msg_window_t ui_msg_window_null = {
    ui_msg_window_null_error,
    ui_msg_window_null_information,
    ui_msg_window_null_question,
+   ui_msg_window_null_warning,
    "null"
 };

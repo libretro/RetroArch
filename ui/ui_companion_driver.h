@@ -65,9 +65,10 @@ typedef struct ui_msg_window_state
 
 typedef struct ui_msg_window
 {
-   enum ui_msg_window_response (*error)(ui_msg_window_state *state);
+   enum ui_msg_window_response (*error      )(ui_msg_window_state *state);
    enum ui_msg_window_response (*information)(ui_msg_window_state *state);
-   enum ui_msg_window_response (*question)(ui_msg_window_state *state);
+   enum ui_msg_window_response (*question   )(ui_msg_window_state *state);
+   enum ui_msg_window_response (*warning    )(ui_msg_window_state *state);
    const char *ident;
 } ui_msg_window_t;
 

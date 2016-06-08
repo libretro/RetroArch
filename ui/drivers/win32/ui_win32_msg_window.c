@@ -38,9 +38,15 @@ static enum ui_msg_window_response ui_msg_window_win32_question(ui_msg_window_st
    return UI_MSG_RESPONSE_CANCEL;
 }
 
+static enum ui_msg_window_response ui_msg_window_win32_warning(ui_msg_window_state *state)
+{
+   return UI_MSG_RESPONSE_CANCEL;
+}
+
 const ui_msg_window_t ui_msg_window_win32 = {
    ui_msg_window_win32_error,
    ui_msg_window_win32_information,
    ui_msg_window_win32_question,
+   ui_msg_window_win32_warning,
    "win32"
 };

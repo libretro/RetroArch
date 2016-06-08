@@ -124,9 +124,15 @@ static enum ui_msg_window_response ui_msg_window_cocoa_question(ui_msg_window_st
    return ui_msg_window_cocoa_dialog(state, UI_MSG_WINDOW_TYPE_QUESTION);
 }
 
+static enum ui_msg_window_response ui_msg_window_cocoa_warning(ui_msg_window_state *state)
+{
+   return ui_msg_window_cocoa_dialog(state, UI_MSG_WINDOW_TYPE_WARNING);
+}
+
 const ui_msg_window_t ui_msg_window_cocoa = {
    ui_msg_window_cocoa_error,
    ui_msg_window_cocoa_information,
    ui_msg_window_cocoa_question,
+   ui_msg_window_cocoa_warning,
    "cocoa"
 };
