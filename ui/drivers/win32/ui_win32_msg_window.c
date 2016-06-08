@@ -35,29 +35,66 @@ static enum ui_msg_window_response ui_msg_window_win32_response(ui_msg_window_st
 	    return UI_MSG_RESPONSE_YES;
 	   case IDNO:
         return UI_MSG_RESPONSE_NO;
+	   default:
+		   break;
+	}
+
+	switch (state->buttons)
+	{
+	   case UI_MSG_WINDOW_OK:
+		   return UI_MSG_RESPONSE_OK;
+	   case UI_MSG_WINDOW_OKCANCEL:
+		   return UI_MSG_RESPONSE_CANCEL;
+	   case UI_MSG_WINDOW_YESNO:
+		   return UI_MSG_RESPONSE_NO;
+	   case UI_MSG_WINDOW_YESNOCANCEL:
+		   return UI_MSG_RESPONSE_CANCEL;
+	   default:
+		   break;
 	}
 
 	return UI_MSG_RESPONSE_NA;
 }
 
+static UINT ui_msg_window_win32_buttons(ui_msg_window_state *state)
+{
+	switch (state->buttons)
+	{
+	   case UI_MSG_WINDOW_OK:
+		   return MB_OK;
+	   case UI_MSG_WINDOW_OKCANCEL:
+		   return MB_OKCANCEL;
+	   case UI_MSG_WINDOW_YESNO:
+		   return MB_YESNO;
+	   case UI_MSG_WINDOW_YESNOCANCEL:
+		   return MB_YESNOCANCEL;
+	}
+
+	return 0;
+}
+
 static enum ui_msg_window_response ui_msg_window_win32_error(ui_msg_window_state *state)
 {
-   return UI_MSG_RESPONSE_CANCEL;
+   UINT flags = MB_ICONERROR | ui_msg_window_win32_buttons(state);
+   return ui_msg_window_win32_response(state, MessageBoxA(NULL, (LPCSTR)state->text, (LPCSTR)state->title, flags));
 }
 
 static enum ui_msg_window_response ui_msg_window_win32_information(ui_msg_window_state *state)
 {
-   return UI_MSG_RESPONSE_CANCEL;
+   UINT flags = MB_ICONINFORMATION | ui_msg_window_win32_buttons(state);
+   return ui_msg_window_win32_response(state, MessageBoxA(NULL, (LPCSTR)state->text, (LPCSTR)state->title, flags));
 }
 
 static enum ui_msg_window_response ui_msg_window_win32_question(ui_msg_window_state *state)
 {
-   return UI_MSG_RESPONSE_CANCEL;
+   UINT flags = MB_ICONQUESTION | ui_msg_window_win32_buttons(state);
+   return ui_msg_window_win32_response(state, MessageBoxA(NULL, (LPCSTR)state->text, (LPCSTR)state->title, flags));
 }
 
 static enum ui_msg_window_response ui_msg_window_win32_warning(ui_msg_window_state *state)
 {
-   return UI_MSG_RESPONSE_CANCEL;
+   UINT flags = MB_ICONWARNING | ui_msg_window_win32_buttons(state);
+   return ui_msg_window_win32_response(state, MessageBoxA(NULL, (LPCSTR)state->text, (LPCSTR)state->title, flags));
 }
 
 const ui_msg_window_t ui_msg_window_win32 = {
