@@ -31,6 +31,7 @@
 #endif
 #endif
 
+#include <compat/apple_compat.h>
 #include <retro_assert.h>
 
 #import "../../ui/drivers/cocoa/cocoa_common.h"
@@ -163,7 +164,7 @@ void *get_chosen_screen(void)
 
    if (settings->video.monitor_index >= screens.count)
    {
-      RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
+      RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.");
 #if __has_feature(objc_arc)
       return (__bridge void*)screens;
 #else

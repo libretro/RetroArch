@@ -20,6 +20,7 @@
 #ifdef HAVE_COCOA
 #include "../ui_cocoa.h"
 #endif
+#include "../../../verbosity.h"
 
 /* Define compatibility symbols and categories. */
 
