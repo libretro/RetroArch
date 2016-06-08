@@ -67,6 +67,7 @@ typedef struct ui_browser_window_state
 {
    void *window;
    char *filters;
+   char *filters_title;
    char *startdir;
    char *path;
    char *title;
