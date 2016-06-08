@@ -506,16 +506,13 @@ int main(int argc, char *argv[])
 
 void apple_display_alert(const char *message, const char *title)
 {
-    NSAlert* alert = [[NSAlert new] autorelease];
-    
-    [alert setMessageText:(*title) ? BOXSTRING(title) : BOXSTRING("RetroArch")];
-    [alert setInformativeText:BOXSTRING(message)];
-    [alert setAlertStyle:NSInformationalAlertStyle];
-    [alert beginSheetModalForWindow:((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window
-                      modalDelegate:apple_platform
-                     didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
-                        contextInfo:nil];
-    [[NSApplication sharedApplication] runModalForWindow:[alert window]];
+    ui_msg_window_state msg_window_state;
+    const ui_msg_window_t *msg_window = ui_companion_driver_get_msg_window_ptr();
+    if (!msg_window)
+        return;
+    msg_window_state.text = strdup(message);
+    msg_window_state.text = (*title) ? strdup(title) : strdup("RetroArch");
+    msg_window->information(&msg_window_state);
 }
 
 typedef struct ui_companion_cocoa
