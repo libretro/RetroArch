@@ -19,40 +19,33 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <objc/objc-runtime.h>
+#include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
 
-static void ui_window_null_destroy(void *data)
+static bool ui_application_cocoa_pending_events(void)
 {
-}
-
-static void ui_window_null_set_focused(void *data)
-{
-}
-
-static void ui_window_null_set_visible(void *data,
-        bool set_visible)
-{
-}
-
-static void ui_window_null_set_title(void *data, char *buf)
-{
-}
-
-static void ui_window_null_set_droppable(void *data, bool droppable)
-{
-}
-
-static bool ui_window_null_focused(void *data)
-{
+   NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+   if (!event)
+      return false;
    return true;
 }
 
-const ui_window_t ui_window_null = {
-   ui_window_null_destroy,
-   ui_window_null_set_focused,
-   ui_window_null_set_visible,
-   ui_window_null_set_title,
-   ui_window_null_set_droppable,
-   ui_window_null_focused,
-   "null"
+static void ui_application_cocoa_process_events(void)
+{
+    while (1)
+    {
+        NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
+        if (!event)
+            break;
+        [event retain];
+        [NSApp sendEvent: event];
+        [event release];
+    }
+}
+
+const ui_application_t ui_application_cocoa = {
+   ui_application_cocoa_pending_events,
+   ui_application_cocoa_process_events,
+   "cocoa"
 };

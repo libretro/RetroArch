@@ -19,6 +19,7 @@
 #include <stdlib.h>
 
 #include <boolean.h>
+#include <retro_environment.h>
 
 #include "joypad_connection.h"
 #include "../input_defines.h"
@@ -37,46 +38,52 @@ enum connect_ps4_dpad_states
    DPAD_OFF        = 0x8
 };
 
+#if (__STDC_VERSION__ >= 199901L) || defined(__cplusplus)
+typedef uint8_t bf_uint8_t;
+#else
+typedef int bf_uint8_t;
+#endif
+
 struct ps4buttons
 {
 #ifdef MSB_FIRST
-   uint8_t triangle      : 1;
-   uint8_t circle        : 1;
-   uint8_t cross         : 1;
-   uint8_t square        : 1;
-   uint8_t dpad          : 4;
+   bf_uint8_t triangle      : 1;
+   bf_uint8_t circle        : 1;
+   bf_uint8_t cross         : 1;
+   bf_uint8_t square        : 1;
+   bf_uint8_t dpad          : 4;
 
-   uint8_t r3            : 1;
-   uint8_t l3            : 1;
-   uint8_t options       : 1;
-   uint8_t share         : 1;
-   uint8_t r2            : 1;
-   uint8_t l2            : 1;
-   uint8_t r1            : 1;
-   uint8_t l1            : 1;
+   bf_uint8_t r3            : 1;
+   bf_uint8_t l3            : 1;
+   bf_uint8_t options       : 1;
+   bf_uint8_t share         : 1;
+   bf_uint8_t r2            : 1;
+   bf_uint8_t l2            : 1;
+   bf_uint8_t r1            : 1;
+   bf_uint8_t l1            : 1;
 
-   uint8_t reportcounter : 6;
-   uint8_t touchpad      : 1;
-   uint8_t ps            : 1;
+   bf_uint8_t reportcounter : 6;
+   bf_uint8_t touchpad      : 1;
+   bf_uint8_t ps            : 1;
 #else
-   uint8_t dpad          : 4;
-   uint8_t square        : 1;
-   uint8_t cross         : 1;
-   uint8_t circle        : 1;
-   uint8_t triangle      : 1;
+   bf_uint8_t dpad          : 4;
+   bf_uint8_t square        : 1;
+   bf_uint8_t cross         : 1;
+   bf_uint8_t circle        : 1;
+   bf_uint8_t triangle      : 1;
 
-   uint8_t l1            : 1;
-   uint8_t r1            : 1;
-   uint8_t l2            : 1;
-   uint8_t r2            : 1;
-   uint8_t share         : 1;
-   uint8_t options       : 1;
-   uint8_t l3            : 1;
-   uint8_t r3            : 1;
+   bf_uint8_t l1            : 1;
+   bf_uint8_t r1            : 1;
+   bf_uint8_t l2            : 1;
+   bf_uint8_t r2            : 1;
+   bf_uint8_t share         : 1;
+   bf_uint8_t options       : 1;
+   bf_uint8_t l3            : 1;
+   bf_uint8_t r3            : 1;
 
-   uint8_t ps            : 1;
-   uint8_t touchpad      : 1;
-   uint8_t reportcounter : 6;
+   bf_uint8_t ps            : 1;
+   bf_uint8_t touchpad      : 1;
+   bf_uint8_t reportcounter : 6;
 #endif
 }__attribute__((packed));
 

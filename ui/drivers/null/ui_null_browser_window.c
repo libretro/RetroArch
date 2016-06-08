@@ -21,38 +21,18 @@
 
 #include "../../ui_companion_driver.h"
 
-static void ui_window_null_destroy(void *data)
+static bool ui_browser_window_null_open(ui_browser_window_state_t *state)
 {
+   return false;
 }
 
-static void ui_window_null_set_focused(void *data)
+static bool ui_browser_window_null_save(ui_browser_window_state_t *state)
 {
+   return false;
 }
 
-static void ui_window_null_set_visible(void *data,
-        bool set_visible)
-{
-}
-
-static void ui_window_null_set_title(void *data, char *buf)
-{
-}
-
-static void ui_window_null_set_droppable(void *data, bool droppable)
-{
-}
-
-static bool ui_window_null_focused(void *data)
-{
-   return true;
-}
-
-const ui_window_t ui_window_null = {
-   ui_window_null_destroy,
-   ui_window_null_set_focused,
-   ui_window_null_set_visible,
-   ui_window_null_set_title,
-   ui_window_null_set_droppable,
-   ui_window_null_focused,
+const ui_browser_window_t ui_browser_window_null = {
+   ui_browser_window_null_open,
+   ui_browser_window_null_save,
    "null"
 };

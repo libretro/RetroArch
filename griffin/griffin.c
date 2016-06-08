@@ -246,8 +246,8 @@ VIDEO IMAGE
 #endif
 #ifdef HAVE_RBMP
 #include "../libretro-common/formats/bmp/rbmp.c"
-#endif
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
+#endif
 
 /*============================================================
 VIDEO DRIVER
@@ -356,7 +356,6 @@ INPUT
 ============================================================ */
 #include "../input/input_autodetect.c"
 #include "../input/input_joypad_driver.c"
-#include "../input/input_hid_driver.c"
 #include "../input/input_config.c"
 #include "../input/input_keymaps.c"
 #include "../input/input_remapping.c"
@@ -440,8 +439,9 @@ INPUT
 /*============================================================
 INPUT (HID)
 ============================================================ */
+#ifdef HAVE_HID
+#include "../input/input_hid_driver.c"
 #include "../input/drivers_joypad/hid_joypad.c"
-
 #include "../input/drivers_hid/null_hid.c"
 
 #if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
@@ -460,7 +460,6 @@ INPUT (HID)
 #include "../input/drivers_hid/wiiusb_hid.c"
 #endif
 
-#ifdef HAVE_HID
 #include "../input/connect/joypad_connection.c"
 #include "../input/connect/connect_ps3.c"
 #include "../input/connect/connect_ps4.c"
@@ -724,6 +723,9 @@ UI
 
 #include "../ui/drivers/ui_null.c"
 #include "../ui/drivers/null/ui_null_window.c"
+#include "../ui/drivers/null/ui_null_browser_window.c"
+#include "../ui/drivers/null/ui_null_msg_window.c"
+#include "../ui/drivers/null/ui_null_application.c"
 
 #ifdef HAVE_QT
 #include "../ui/drivers/ui_qt.c"
@@ -731,7 +733,9 @@ UI
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include "../ui/drivers/ui_win32.c"
-#include "../ui/drivers/win32/ui_win32_window.c"
+#include "../ui/drivers/win32/ui_win32_browser_window.c"
+#include "../ui/drivers/win32/ui_win32_msg_window.c"
+#include "../ui/drivers/win32/ui_win32_application.c"
 #endif
 
 /*============================================================
@@ -758,6 +762,7 @@ RETROARCH
 #include "../tasks/tasks_internal.c"
 
 #include "../msg_hash.c"
+#ifdef HAVE_LANGEXTRA
 #include "../intl/msg_hash_de.c"
 #include "../intl/msg_hash_es.c"
 #include "../intl/msg_hash_eo.c"
@@ -766,10 +771,12 @@ RETROARCH
 #include "../intl/msg_hash_nl.c"
 #include "../intl/msg_hash_pt.c"
 #include "../intl/msg_hash_pl.c"
-#include "../intl/msg_hash_us.c"
 #ifdef HAVE_UTF8
 #include "../intl/msg_hash_ru.c"
 #endif
+#endif
+
+#include "../intl/msg_hash_us.c"
 
 /*============================================================
 RECORDING
@@ -871,6 +878,7 @@ MENU
 #include "../menu/menu_displaylist.c"
 #include "../menu/menu_animation.c"
 
+#ifdef HAVE_LANGEXTRA
 #include "../menu/intl/menu_hash_de.c"
 #include "../menu/intl/menu_hash_es.c"
 #include "../menu/intl/menu_hash_eo.c"
@@ -879,10 +887,11 @@ MENU
 #include "../menu/intl/menu_hash_nl.c"
 #include "../menu/intl/menu_hash_pl.c"
 #include "../menu/intl/menu_hash_pt.c"
-#include "../menu/intl/menu_hash_us.c"
 #ifdef HAVE_UTF8
 #include "../menu/intl/menu_hash_ru.c"
 #endif
+#endif
+#include "../menu/intl/menu_hash_us.c"
 
 #include "../menu/drivers/null.c"
 #include "../menu/drivers/menu_generic.c"
@@ -930,7 +939,7 @@ MENU
 
 #endif
 
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
 #include "../input/input_remote.c"
 #include "../cores/libretro-net-retropad/net_retropad_core.c"
 #endif

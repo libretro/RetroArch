@@ -18,6 +18,10 @@ ifeq ($(HAVE_LIBRETRODB),)
    HAVE_LIBRETRODB = 1
 endif
 
+ifeq ($(HAVE_HID), 1)
+	DEFINES += -DHAVE_HID
+endif
+
 ifeq ($(HAVE_LIBRETRODB), 1)
    DEFINES += -DHAVE_LIBRETRODB
 endif
@@ -113,19 +117,14 @@ OBJ += frontend/frontend.o \
        ui/ui_companion_driver.o \
        ui/drivers/ui_null.o \
 		 ui/drivers/null/ui_null_window.o \
+		 ui/drivers/null/ui_null_browser_window.o \
+		 ui/drivers/null/ui_null_msg_window.o \
+		 ui/drivers/null/ui_null_application.o \
        core_impl.o \
        retroarch.o \
        input/input_keyboard.o \
        command.o \
        msg_hash.o \
-       intl/msg_hash_de.o \
-       intl/msg_hash_eo.o \
-       intl/msg_hash_es.o \
-       intl/msg_hash_fr.o \
-       intl/msg_hash_it.o \
-       intl/msg_hash_nl.o \
-       intl/msg_hash_pl.o \
-       intl/msg_hash_pt.o \
        intl/msg_hash_us.o \
        runloop.o \
 		 libretro-common/algorithms/mismatch.o \
@@ -154,7 +153,6 @@ OBJ += frontend/frontend.o \
        libretro-common/hash/rhash.o \
        audio/audio_driver.o \
        input/input_driver.o \
-       input/input_hid_driver.o \
        gfx/video_coord_array.o \
        gfx/video_driver.o \
        camera/camera_driver.o \
@@ -206,7 +204,6 @@ OBJ += frontend/frontend.o \
        input/drivers/nullinput.o \
        input/drivers_hid/null_hid.o \
        input/drivers_joypad/null_joypad.o \
-       input/drivers_joypad/hid_joypad.o \
        playlist.o \
        movie.o \
        record/record_driver.o \
@@ -214,6 +211,19 @@ OBJ += frontend/frontend.o \
        libretro-common/features/features_cpu.o \
        performance_counters.o \
        verbosity.o
+
+ifeq ($(HAVE_LANGEXTRA), 1)
+DEFINES += -DHAVE_LANGEXTRA
+OBJ += intl/msg_hash_de.o \
+       intl/msg_hash_eo.o \
+       intl/msg_hash_es.o \
+       intl/msg_hash_fr.o \
+       intl/msg_hash_it.o \
+       intl/msg_hash_nl.o \
+       intl/msg_hash_pl.o \
+       intl/msg_hash_pt.o
+
+endif
 
 ifneq ($(HAVE_GETOPT_LONG), 1)
 OBJ += libretro-common/compat/compat_getopt.o
@@ -461,17 +471,20 @@ ifeq ($(HAVE_MENU_COMMON), 1)
    else
       PSEUDO_NS :=
    endif
-   OBJ += menu/menu_hash.o \
-          menu/menu_driver.o \
-          menu/menu_content.o \
-          menu/intl/menu_hash_de.o \
+
+ifeq ($(HAVE_LANGEXTRA), 1)
+OBJ +=	 menu/intl/menu_hash_de.o \
           menu/intl/menu_hash_es.o \
           menu/intl/menu_hash_eo.o \
           menu/intl/menu_hash_fr.o \
           menu/intl/menu_hash_it.o \
           menu/intl/menu_hash_nl.o \
           menu/intl/menu_hash_pl.o \
-          menu/intl/menu_hash_pt.o \
+          menu/intl/menu_hash_pt.o
+endif
+   OBJ += menu/menu_hash.o \
+          menu/menu_driver.o \
+          menu/menu_content.o \
           menu/intl/menu_hash_us$(PSEUDO_NS).o \
           menu/menu_input.o \
           menu/menu_entry.o \
@@ -595,18 +608,20 @@ endif
 
 ifeq ($(HAVE_LIBUSB), 1)
 ifeq ($(HAVE_THREADS), 1)
+ifeq ($(HAVE_HID), 1)
    DEFINES += -DHAVE_LIBUSB
    OBJ += input/drivers_hid/libusb_hid.o
    LIBS += -lusb-1.0
-   HAVE_HID = 1
+endif
 endif
 endif
 
 ifeq ($(HAVE_IOHIDMANAGER), 1)
+ifeq ($(HAVE_HID), 1)
    DEFINES += -DHAVE_IOHIDMANAGER
    OBJ += input/drivers_hid/iohidmanager_hid.o
-   HAVE_HID = 1
    LIBS += -framework IOKit
+endif
 endif
 
 ifeq ($(HAVE_CORELOCATION), 1)
@@ -616,7 +631,9 @@ endif
 
 ifeq ($(HAVE_HID), 1)
    DEFINES += -DHAVE_HID
-   OBJ +=      input/connect/joypad_connection.o \
+   OBJ +=      input/input_hid_driver.o \
+					input/drivers_joypad/hid_joypad.o \
+					input/connect/joypad_connection.o \
 					input/connect/connect_ps2adapter.o \
                input/connect/connect_ps3.o \
                input/connect/connect_ps4.o \
@@ -635,7 +652,10 @@ endif
 
 ifneq ($(findstring Win32,$(OS)),)
 OBJ += ui/drivers/ui_win32.o \
-		 ui/drivers/win32/ui_win32_window.o
+		 ui/drivers/win32/ui_win32_window.o \
+		 ui/drivers/win32/ui_win32_browser_window.o \
+		 ui/drivers/win32/ui_win32_msg_window.o \
+		 ui/drivers/win32/ui_win32_application.o
 endif
 
 # Video
@@ -1010,7 +1030,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Netplay
 
    ifeq ($(HAVE_NETPLAY), 1)
-      DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD -DHAVE_NETWORK_GAMEPAD
+      DEFINES += -DHAVE_NETPLAY -DHAVE_NETWORK_CMD
       OBJ += network/netplay/netplay_net.o \
 				 network/netplay/netplay_spectate.o \
 				 network/netplay/netplay_common.o \
@@ -1026,7 +1046,7 @@ ifeq ($(HAVE_NETWORKING), 1)
       endif
    endif
 
-   ifeq ($(HAVE_NETWORK_GAMEPAD), 1)
+   ifeq ($(HAVE_NETWORKGAMEPAD), 1)
       OBJ += input/input_remote.o \
 				 cores/libretro-net-retropad/net_retropad_core.o
    endif
@@ -1072,6 +1092,9 @@ ifeq ($(HAVE_COCOA),1)
                input/drivers_keyboard/keyboard_event_apple.o \
                ui/drivers/ui_cocoa.o \
                ui/drivers/cocoa/ui_cocoa_window.o \
+               ui/drivers/cocoa/ui_cocoa_browser_window.o \
+               ui/drivers/cocoa/ui_cocoa_msg_window.o \
+               ui/drivers/cocoa/ui_cocoa_application.o \
                ui/drivers/cocoa/cocoa_common.o \
                gfx/drivers_context/cocoa_gl_ctx.o
 endif

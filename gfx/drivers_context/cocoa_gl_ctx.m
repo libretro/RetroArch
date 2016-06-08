@@ -89,7 +89,7 @@ static bool g_is_syncing = true;
 static bool g_use_hw_ctx;
 
 #if defined(HAVE_COCOA)
-#include "../../ui/drivers/cocoa/ui_cocoa_window.h"
+#include "../../ui/drivers/ui_cocoa.h"
 static NSOpenGLPixelFormat* g_format;
 
 void *glcontext_get_ptr(void)
@@ -163,7 +163,7 @@ void *get_chosen_screen(void)
 
    if (settings->video.monitor_index >= screens.count)
    {
-      RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.\n");
+      RARCH_WARN("video_monitor_index is greater than the number of connected monitors; using main screen instead.");
 #if __has_feature(objc_arc)
       return (__bridge void*)screens;
 #else

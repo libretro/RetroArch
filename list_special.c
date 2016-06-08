@@ -202,6 +202,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
          }
          break;
       case STRING_LIST_INPUT_HID_DRIVERS:
+#ifdef HAVE_HID
          for (i = 0; hid_driver_find_handle(i); i++)
          {
             const char *opt  = hid_driver_find_ident(i);
@@ -209,6 +210,7 @@ struct string_list *string_list_new_special(enum string_list_type type,
 
             string_list_append(s, opt, attr);
          }
+#endif
          break;
       case STRING_LIST_INPUT_JOYPAD_DRIVERS:
          for (i = 0; joypad_driver_find_handle(i); i++)

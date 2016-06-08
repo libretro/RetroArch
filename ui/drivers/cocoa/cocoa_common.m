@@ -18,8 +18,9 @@
 #include <sys/stat.h>
 #include "cocoa_common.h"
 #ifdef HAVE_COCOA
-#include "ui_cocoa_window.h"
+#include "../ui_cocoa.h"
 #endif
+#include "../../../verbosity.h"
 
 /* Define compatibility symbols and categories. */
 

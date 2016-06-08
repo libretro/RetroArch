@@ -54,7 +54,7 @@
 
 #include "../../gfx/common/gl_common.h"
 #include "../../gfx/common/win32_common.h"
-#include "win32/ui_win32_window.h"
+#include "ui_win32.h"
 
 #define SHADER_DLG_WIDTH                  220
 #define SHADER_DLG_MIN_HEIGHT             200
@@ -729,6 +729,9 @@ const ui_companion_driver_t ui_companion_win32 = {
    NULL,
    NULL,
    NULL,
+   &ui_browser_window_win32,
+   &ui_msg_window_win32,
    &ui_window_win32,
+   &ui_application_win32,
    "win32",
 };

@@ -35,7 +35,7 @@
 
 #ifndef _XBOX
 #include "../../ui/drivers/ui_win32_resource.h"
-#include "../../ui/drivers/win32/ui_win32_window.h"
+#include "../../ui/drivers/ui_win32.h"
 
 extern unsigned g_resize_width;
 extern unsigned g_resize_height;

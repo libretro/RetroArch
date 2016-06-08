@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char *nuklear_vertex_shader = GLSL_330(
+static const char *nuklear_vertex_shader = GLSL_300(
    uniform mat4 ProjMtx;
    in vec2 Position;
    in vec2 TexCoord;

@@ -1054,6 +1054,7 @@ static bool vulkan_load_instance_symbols(gfx_ctx_vulkan_data_t *vk)
    VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceQueueFamilyProperties);
    VK_GET_INSTANCE_PROC_ADDR(CreateDevice);
 
+   VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfacePresentModesKHR);
    VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfaceSupportKHR);
    VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfaceCapabilitiesKHR);
    VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceSurfaceFormatsKHR);
@@ -1504,7 +1505,12 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 
             if (VKFUNC(vkCreateAndroidSurfaceKHR)(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
+            {
+               RARCH_ERR("[Vulkan]: Failed to create Android surface.\n");
                return false;
+            }
+            RARCH_LOG("[Vulkan]: Created Android surface: %llu\n",
+                  (unsigned long long)vk->vk_surface);
          }
 #endif
          break;
@@ -1725,18 +1731,50 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 {
    unsigned i;
    uint32_t format_count;
+   uint32_t present_mode_count;
    uint32_t desired_swapchain_images;
    VkSwapchainCreateInfoKHR info;
    VkSurfaceCapabilitiesKHR surface_properties;
    VkSurfaceFormatKHR formats[256];
+   VkPresentModeKHR present_modes[16];
    VkSurfaceFormatKHR format;
    VkExtent2D swapchain_size;
    VkSwapchainKHR old_swapchain;
    VkSurfaceTransformFlagBitsKHR pre_transform;
+   VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
 
-   /* TODO: Properly query these. */
-   VkPresentModeKHR swapchain_present_mode = swap_interval 
-      ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
+   present_mode_count = 0;
+   VKFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR)(
+         vk->context.gpu, vk->vk_surface,
+         &present_mode_count, NULL);
+   if (present_mode_count < 1 || present_mode_count > 16)
+   {
+      RARCH_ERR("[Vulkan]: Bogus present modes found.\n");
+      return false;
+   }
+   VKFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR)(
+         vk->context.gpu, vk->vk_surface,
+         &present_mode_count, present_modes);
+
+   for (i = 0; i < present_mode_count; i++)
+   {
+      if (!swap_interval && present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+      {
+         swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+         break;
+      }
+      else if (!swap_interval && present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
+      {
+         swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+         break;
+      }
+      else if (swap_interval && present_modes[i] == VK_PRESENT_MODE_FIFO_KHR)
+      {
+         /* Kind of tautological since FIFO must always be present. */
+         swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+         break;
+      }
+   }
 
    RARCH_LOG("[Vulkan]: Creating swapchain with present mode: %u\n",
          (unsigned)swapchain_present_mode);
@@ -1772,6 +1810,9 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    else
       swapchain_size           = surface_properties.currentExtent;
 
+   RARCH_LOG("[Vulkan]: Using swapchain size %u x %u.\n",
+         swapchain_size.width, swapchain_size.height);
+
    desired_swapchain_images = surface_properties.minImageCount + 1;
 
    /* Limit latency. */
@@ -1793,6 +1834,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    old_swapchain               = vk->swapchain;
 
+   memset(&info, 0, sizeof(info));
    info.sType                  = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
    info.surface                = vk->vk_surface;
    info.minImageCount          = desired_swapchain_images;

@@ -26,6 +26,7 @@
 
 #include <retro_inline.h>
 #include <algorithms/mismatch.h>
+#include <compat/intrinsics.h>
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__)
 #define CPU_X86
@@ -38,32 +39,6 @@
 
 #if __SSE2__
 #include <emmintrin.h>
-#endif
-
-#if __SSE2__
-#if defined(__GNUC__)
-static INLINE int compat_ctz(unsigned x)
-{
-   return __builtin_ctz(x);
-}
-#else
-
-/* Only checks at nibble granularity, 
- * because that's what we need. */
-
-static INLINE int compat_ctz(unsigned x)
-{
-   if (x & 0x000f)
-      return 0;
-   if (x & 0x00f0)
-      return 4;
-   if (x & 0x0f00)
-      return 8;
-   if (x & 0xf000)
-      return 12;
-   return 16;
-}
-#endif
 #endif
 
 /* There's no equivalent in libc, you'd think so ...

@@ -19,40 +19,32 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <windows.h>
+
 #include "../../ui_companion_driver.h"
 
-static void ui_window_null_destroy(void *data)
+static bool ui_application_win32_pending_events(void)
 {
+   MSG msg;
+   return PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE);
 }
 
-static void ui_window_null_set_focused(void *data)
+static void ui_application_win32_process_events(void)
 {
+   while (ui_application_win32_pending_events())
+   {
+      MSG msg;
+
+      if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+      {
+         TranslateMessage(&msg);
+         DispatchMessage (&msg);
+      }
+   }
 }
 
-static void ui_window_null_set_visible(void *data,
-        bool set_visible)
-{
-}
-
-static void ui_window_null_set_title(void *data, char *buf)
-{
-}
-
-static void ui_window_null_set_droppable(void *data, bool droppable)
-{
-}
-
-static bool ui_window_null_focused(void *data)
-{
-   return true;
-}
-
-const ui_window_t ui_window_null = {
-   ui_window_null_destroy,
-   ui_window_null_set_focused,
-   ui_window_null_set_visible,
-   ui_window_null_set_title,
-   ui_window_null_set_droppable,
-   ui_window_null_focused,
-   "null"
+const ui_application_t ui_application_win32 = {
+   ui_application_win32_pending_events,
+   ui_application_win32_process_events,
+   "win32"
 };

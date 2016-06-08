@@ -35,7 +35,7 @@
 #include "../../system.h"
 #include "../../tasks/tasks_internal.h"
 
-static id apple_platform;
+id apple_platform;
 
 static void app_terminate(void)
 {
@@ -205,26 +205,15 @@ static char** waiting_argv;
    [self performSelectorOnMainThread:@selector(rarch_main) withObject:nil waitUntilDone:NO];
 }
 
-static void poll_iteration(void)
-{
-    while (1)
-    {
-        NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
-        if (!event)
-           break;
-        [event retain];
-        [NSApp sendEvent: event];
-        [event release];
-    };
-}
-
 - (void) rarch_main
 {
     int ret = 0;
     while (ret != -1)
     {
        unsigned sleep_ms = 0;
-       poll_iteration();
+       const ui_application_t *application = ui_companion_driver_get_application_ptr();
+       if (application)
+          application->process_events();
        ret = runloop_iterate(&sleep_ms);
        if (ret == 1 && sleep_ms > 0)
           retro_sleep(sleep_ms);
@@ -292,139 +281,125 @@ static void poll_iteration(void)
    }
    else
    {
-      apple_display_alert("Cannot open multiple files", "RetroArch");
+      const ui_msg_window_t *msg_window = ui_companion_driver_get_msg_window_ptr();
+      if (msg_window)
+      {
+         ui_msg_window_state msg_window_state;
+         msg_window_state.text  = strdup("Cannot open multiple files");
+         msg_window_state.title = strdup("RetroArch");
+         msg_window->information(&msg_window_state);
+
+         free(msg_window_state.text);
+         free(msg_window_state.title);
+      }
       [sender replyToOpenOrPrint:NSApplicationDelegateReplyFailure];
    }
 }
 
-static void open_core_handler(NSOpenPanel *panel, NSInteger result)
+static void open_core_handler(ui_browser_window_state_t *state, bool result)
 {
-    switch (result)
-    {
-        case 1: /* NSOKButton/NSModalResponseOK */
-            if (panel.URL)
-            {
-                settings_t *settings = config_get_ptr();
-                NSURL *url           = (NSURL*)panel.URL;
-                NSString *__core     = url.path;
+    if (!state)
+        return;
+    if (string_is_empty(state->result))
+        return;
+    if (!result)
+        return;
+
+    settings_t *settings = config_get_ptr();
                 
-                if (!__core)
-                    return;
+    runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)state->result);
+    ui_companion_event_command(CMD_EVENT_LOAD_CORE);
                 
-                runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, (void*)__core.UTF8String);
-                ui_companion_event_command(CMD_EVENT_LOAD_CORE);
-                
-                if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL) 
+    if (menu_driver_ctl(RARCH_MENU_CTL_HAS_LOAD_NO_CONTENT, NULL)
                       && settings->set_supports_no_game_enable)
-                {
-                   content_ctx_info_t content_info = {0};
-                    runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
-                    task_push_content_load_default(
-                             NULL, NULL,
-                             &content_info,
-                             CORE_TYPE_PLAIN,
-                             CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
-                             NULL, NULL);
-                }
-            }
-            break;
-        case 0: /* NSCancelButton/NSModalResponseCancel */
-            break;
+    {
+        content_ctx_info_t content_info = {0};
+        runloop_ctl(RUNLOOP_CTL_CLEAR_CONTENT_PATH, NULL);
+        task_push_content_load_default(
+                NULL, NULL,
+                &content_info,
+                CORE_TYPE_PLAIN,
+                CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                NULL, NULL);
     }
 }
 
-static void open_document_handler(NSOpenPanel *panel, NSInteger result)
+static void open_document_handler(ui_browser_window_state_t *state, bool result)
 {
-    switch (result)
+    if (!state)
+        return;
+    if (string_is_empty(state->result))
+        return;
+    if (!result)
+        return;
+    
+    struct retro_system_info *system = NULL;
+    const char            *core_name = NULL;
+                
+    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
+                
+    if (system)
+        core_name = system->library_name;
+                
+    runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)state->result);
+                
+    if (core_name)
     {
-        case 1: /* NSOKButton/NSModalResponseOK */
-            if (panel.URL)
-            {
-                struct retro_system_info *system = NULL;
-                NSURL                       *url = (NSURL*)panel.URL;
-                NSString                 *__core = url.path;
-                const char            *core_name = NULL;
-                
-                menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
-                
-                if (system)
-                    core_name = system->library_name;
-                
-                runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
-                
-                if (core_name)
-                {
-                   content_ctx_info_t content_info = {0};
-                   task_push_content_load_default(
-                         NULL, NULL,
-                         &content_info,
-                         CORE_TYPE_PLAIN,
-                         CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
-                         NULL, NULL);
-                }
-            }
-            break;
-        case 0: /* NSCancelButton/NSModalResponseCancel */
-            break;
+        content_ctx_info_t content_info = {0};
+        task_push_content_load_default(
+                NULL, NULL,
+                &content_info,
+                CORE_TYPE_PLAIN,
+                CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                NULL, NULL);
     }
 }
 
 - (IBAction)openCore:(id)sender {
-    NSOpenPanel* panel   = (NSOpenPanel*)[NSOpenPanel openPanel];
-    settings_t *settings = config_get_ptr();
-    NSString *startdir   = BOXSTRING(settings->directory.libretro);
-	NSArray *filetypes    = [[NSArray alloc] initWithObjects:BOXSTRING("dylib"), BOXSTRING("Core"), nil];
-	[panel setAllowedFileTypes:filetypes];
-#if defined(MAC_OS_X_VERSION_10_6)
-    [panel setMessage:BOXSTRING("Load Core")];
-    [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
-    [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
-     {
-         [[NSApplication sharedApplication] stopModal];
-         open_core_handler(panel, result);
-     }];
-    [[NSApplication sharedApplication] runModalForWindow:panel];
-#else
-	[panel setTitle:NSLocalizedString(BOXSTRING("Load Core"), BOXSTRING("open panel"))];
-	[panel setDirectory:startdir];
-	[panel setCanChooseDirectories:NO];
-	[panel setCanChooseFiles:YES];
-	[panel setAllowsMultipleSelection:NO];
-	[panel setTreatsFilePackagesAsDirectories:NO];
-	NSInteger result = [panel runModal];
-	if (result == 1)
-       open_core_handler(panel, result);
-#endif
+    const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
+    
+    if (browser)
+    {
+        ui_browser_window_state_t browser_state;
+        settings_t *settings        = config_get_ptr();
+        
+        browser_state.filters       = strdup("dylib");
+        browser_state.filters_title = strdup("Core");
+        browser_state.title         = strdup("Load Core");
+        browser_state.startdir      = strdup(settings->directory.libretro);
+        
+        bool result = browser->open(&browser_state);
+        open_core_handler(&browser_state, result);
+        
+        free(browser_state.filters);
+        free(browser_state.filters_title);
+        free(browser_state.title);
+        free(browser_state.startdir);
+    }
 }
 
 - (void)openDocument:(id)sender
 {
-   NSOpenPanel* panel    = (NSOpenPanel*)[NSOpenPanel openPanel];
+   const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
    settings_t *settings  = config_get_ptr();
    NSString *startdir    = BOXSTRING(settings->directory.menu_content);
     
    if (!startdir.length)
       startdir           = BOXSTRING("/");
-#if defined(MAC_OS_X_VERSION_10_6)
-   [panel setMessage:BOXSTRING("Load Content")];
-   [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
-   [panel beginSheetModalForWindow:self.window completionHandler:^(NSInteger result)
-   {
-      [[NSApplication sharedApplication] stopModal];
-      open_document_handler(panel, result);
-   }];
-   [[NSApplication sharedApplication] runModalForWindow:panel];
-#else
-    [panel setTitle:NSLocalizedString(BOXSTRING("Load Content"), BOXSTRING("open panel"))];
-    [panel setDirectory:startdir];
-    [panel setCanChooseDirectories:NO];
-    [panel setCanChooseFiles:YES];
-    [panel setAllowsMultipleSelection:NO];
-    [panel setTreatsFilePackagesAsDirectories:NO];
-    NSInteger result = [panel runModal];
-    if (result == 1)
-        open_document_handler(panel, result);
-#endif
+    
+    if (browser)
+    {
+        ui_browser_window_state_t browser_state = {0};
+        
+        browser_state.title = strdup("Load Content");
+        browser_state.startdir = strdup([startdir UTF8String]);
+        
+        bool result = browser->open(&browser_state);
+        open_document_handler(&browser_state, result);
+        
+        free(browser_state.startdir);
+        free(browser_state.title);
+    }
 }
 
 - (void)unloadingCore
@@ -515,20 +490,6 @@ int main(int argc, char *argv[])
    return NSApplicationMain(argc, (const char **) argv);
 }
 
-void apple_display_alert(const char *message, const char *title)
-{
-    NSAlert* alert = [[NSAlert new] autorelease];
-    
-    [alert setMessageText:(*title) ? BOXSTRING(title) : BOXSTRING("RetroArch")];
-    [alert setInformativeText:BOXSTRING(message)];
-    [alert setAlertStyle:NSInformationalAlertStyle];
-    [alert beginSheetModalForWindow:((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window
-                      modalDelegate:apple_platform
-                     didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
-                        contextInfo:nil];
-    [[NSApplication sharedApplication] runModalForWindow:[alert window]];
-}
-
 typedef struct ui_companion_cocoa
 {
    void *empty;
@@ -596,6 +557,9 @@ const ui_companion_driver_t ui_companion_cocoa = {
    NULL,
    NULL,
    NULL,
+   &ui_browser_window_cocoa,
+   &ui_msg_window_cocoa,
    &ui_window_cocoa,
+   &ui_application_cocoa,
    "cocoa",
 };

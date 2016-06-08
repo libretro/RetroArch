@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _WIN32_WINDOW_UI
-#define _WIN32_WINDOW_UI
+#ifndef _COCOA_UI
+#define _COCOA_UI
 
 #include <stdint.h>
 #include <stddef.h>
@@ -23,19 +23,21 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
-#ifndef _XBOX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
+#include "cocoa/cocoa_common.h"
 
-#include "../../ui_companion_driver.h"
+#include "../ui_companion_driver.h"
 
 RETRO_BEGIN_DECLS
 
-typedef struct ui_window_win32
+typedef struct ui_application_cocoa
 {
-   HWND hwnd;
-} ui_window_win32_t;
+   void *empty;
+} ui_application_cocoa_t;
+
+typedef struct ui_window_cocoa
+{
+    CocoaView *data;
+} ui_window_cocoa_t;
 
 RETRO_END_DECLS
 

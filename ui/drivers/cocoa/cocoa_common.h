@@ -112,8 +112,6 @@ void get_ios_version(int *major, int *minor);
 
 #endif
 
-extern void apple_display_alert(const char *message, const char *title);
-
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]
 #define BOXINT(x)    [NSNumber numberWithInt:x]
 #define BOXUINT(x)   [NSNumber numberWithUnsignedInt:x]

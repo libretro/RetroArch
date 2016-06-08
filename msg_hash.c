@@ -30,6 +30,7 @@ const char *msg_hash_to_str(uint32_t hash)
    if (!settings)
       goto end;
 
+#ifdef HAVE_LANGEXTRA
    switch (settings->user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
@@ -64,6 +65,7 @@ const char *msg_hash_to_str(uint32_t hash)
       default:
          break;
    }
+#endif
 
    if (ret && !string_is_equal(ret, "null"))
       return ret;

@@ -534,7 +534,8 @@ int main(int argc, char *argv[])
    }
 }
 
-void apple_display_alert(const char *message, const char *title)
+#if 0
+static void apple_display_alert(const char *message, const char *title)
 {
    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:BOXSTRING(title)
                                              message:BOXSTRING(message)
@@ -543,6 +544,7 @@ void apple_display_alert(const char *message, const char *title)
                                              otherButtonTitles:nil];
    [alert show];
 }
+#endif
 
 static void apple_rarch_exited(void)
 {
@@ -687,6 +689,9 @@ const ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_notify_refresh,
    ui_companion_cocoatouch_msg_queue_push,
    ui_companion_cocoatouch_render_messagebox,
+   &ui_browser_window_null,
+   &ui_msg_window_null,
    &ui_window_null,
+   &ui_application_null,
    "cocoatouch",
 };

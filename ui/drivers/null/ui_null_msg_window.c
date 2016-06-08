@@ -21,38 +21,30 @@
 
 #include "../../ui_companion_driver.h"
 
-static void ui_window_null_destroy(void *data)
+static enum ui_msg_window_response ui_msg_window_null_error(ui_msg_window_state *state)
 {
+   return UI_MSG_RESPONSE_CANCEL;
 }
 
-static void ui_window_null_set_focused(void *data)
+static enum ui_msg_window_response ui_msg_window_null_information(ui_msg_window_state *state)
 {
+   return UI_MSG_RESPONSE_CANCEL;
 }
 
-static void ui_window_null_set_visible(void *data,
-        bool set_visible)
+static enum ui_msg_window_response ui_msg_window_null_question(ui_msg_window_state *state)
 {
+   return UI_MSG_RESPONSE_CANCEL;
 }
 
-static void ui_window_null_set_title(void *data, char *buf)
+static enum ui_msg_window_response ui_msg_window_null_warning(ui_msg_window_state *state)
 {
+   return UI_MSG_RESPONSE_CANCEL;
 }
 
-static void ui_window_null_set_droppable(void *data, bool droppable)
-{
-}
-
-static bool ui_window_null_focused(void *data)
-{
-   return true;
-}
-
-const ui_window_t ui_window_null = {
-   ui_window_null_destroy,
-   ui_window_null_set_focused,
-   ui_window_null_set_visible,
-   ui_window_null_set_title,
-   ui_window_null_set_droppable,
-   ui_window_null_focused,
+const ui_msg_window_t ui_msg_window_null = {
+   ui_msg_window_null_error,
+   ui_msg_window_null_information,
+   ui_msg_window_null_question,
+   ui_msg_window_null_warning,
    "null"
 };

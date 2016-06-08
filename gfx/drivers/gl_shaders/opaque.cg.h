@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char *stock_cg_gl_program = GLSL(
+static const char *stock_cg_gl_program = CG(
       struct input
       {
         float2 tex_coord;

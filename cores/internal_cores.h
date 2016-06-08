@@ -184,7 +184,7 @@ size_t libretro_imageviewer_retro_get_memory_size(unsigned id);
 
 #endif
 
-#if defined(HAVE_NETWORK_GAMEPAD) && defined(HAVE_NETPLAY)
+#if defined(HAVE_NETWORKGAMEPAD) && defined(HAVE_NETPLAY)
 /* Internal networked retropad core. */
 
 void libretro_netretropad_retro_init(void);

@@ -777,7 +777,9 @@ static void config_set_defaults(void)
    settings->menu_scroll_down_btn = default_menu_btn_scroll_down;
    settings->menu_scroll_up_btn   = default_menu_btn_scroll_up;
 
+#ifdef HAVE_LANGEXTRA
    settings->user_language = 0;
+#endif
 
    global->console.sound.system_bgm_enable = false;
 
@@ -1739,7 +1741,7 @@ static bool config_load_file(const char *path, bool set_defaults)
    settings->bluetooth_enable = path_file_exists(LAKKA_BLUETOOTH_PATH);
 #endif
 
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
    CONFIG_GET_BOOL_BASE(conf, settings, network_remote_enable, "network_remote_enable");
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -1773,7 +1775,9 @@ static bool config_load_file(const char *path, bool set_defaults)
 
    if (!rarch_ctl(RARCH_CTL_HAS_SET_USERNAME, NULL))
       config_get_path(conf, "netplay_nickname",  settings->username, sizeof(settings->username));
+#ifdef HAVE_LANGEXTRA
    CONFIG_GET_INT_BASE(conf, settings, user_language, "user_language");
+#endif
 #ifdef HAVE_NETPLAY
    if (!global->has_set.netplay_mode)
       CONFIG_GET_BOOL_BASE(conf, global, netplay.is_spectate,
@@ -2895,7 +2899,9 @@ bool config_save_file(const char *path)
    config_set_int(conf, "netplay_delay_frames", global->netplay.sync_frames);
 #endif
    config_set_string(conf, "netplay_nickname", settings->username);
+#ifdef HAVE_LANGEXTRA
    config_set_int(conf, "user_language", settings->user_language);
+#endif
 
    config_set_bool(conf, "custom_bgm_enable",
          global->console.sound.system_bgm_enable);
@@ -2919,7 +2925,7 @@ bool config_save_file(const char *path)
       config_set_int(conf, cfg, settings->input.analog_dpad_mode[i]);
    }
 
-#ifdef HAVE_NETWORK_GAMEPAD
+#ifdef HAVE_NETWORKGAMEPAD
    for (i = 0; i < MAX_USERS; i++)
    {
       char tmp[64] = {0};

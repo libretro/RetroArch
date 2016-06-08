@@ -33,7 +33,9 @@
 #include <string/stdstring.h>
 #include <gfx/scaler/scaler.h>
 
+#ifdef HAVE_RBMP
 #include <formats/rbmp.h>
+#endif
 
 #if defined(HAVE_ZLIB_DEFLATE) && defined(HAVE_RPNG)
 #include <formats/rpng.h>
@@ -112,7 +114,7 @@ static bool screenshot_dump(
          width * 3
          );
    free(out_buffer);
-#else
+#elif defined(HAVE_RBMP)
    enum rbmp_source_type bmp_type = RBMP_SOURCE_TYPE_DONT_CARE;
 
    if (bgr24)
