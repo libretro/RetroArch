@@ -397,6 +397,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
         bool result = browser->open(&browser_state);
         open_document_handler(&browser_state, result);
         
+        free(browser_state.startdir);
         free(browser_state.title);
     }
 }
