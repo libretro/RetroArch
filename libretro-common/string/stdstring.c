@@ -117,3 +117,53 @@ char *string_replace_substring(const char *in,
    
    return out;
 }
+
+/* Remove whitespace from beginning of string */
+void string_trim_whitespace_left(char *string)
+{
+   bool in_whitespace  = true;
+   int32_t si          = 0;;
+   int32_t di          = 0;
+
+   while(string[si])
+   {
+      bool test = in_whitespace && 
+            (string[si] == ' '  || 
+             string[si] == '\r' || 
+             string[si] == '\n' || 
+             string[si] == '\t' || 
+             string[si] == 0x0b);
+
+      if(!test)
+      {
+         in_whitespace = false;
+         string[di]    = string[si];
+         di++;
+      }
+
+      si++;
+   }
+   string[di] = 0;
+}
+
+/* Remove whitespace from end of string */
+void string_trim_whitespace_right(char *string)
+{
+   int32_t len = strlen(string);
+
+   if(len)
+   {
+      int32_t x;
+      for(x = len - 1; x >= 0; x--)
+      {
+         bool test = string[x] == ' '  || string[x] == '\r' 
+            || string[x] == '\n' || string[x] == '\t' 
+            || string[x] == 0x0b;
+
+         if (!test)
+            break;
+
+         string[x] = 0;
+      }
+   }
+}
