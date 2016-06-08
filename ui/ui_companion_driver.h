@@ -50,8 +50,8 @@ enum ui_msg_window_response
 typedef struct ui_msg_window_state
 {
    enum ui_msg_window_buttons buttons;
-   char text[256];
-   char title[256];
+   char *text;
+   char *title;
 } ui_msg_window_state;
 
 typedef struct ui_msg_window
