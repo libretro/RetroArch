@@ -166,6 +166,8 @@ void ui_companion_driver_toggle(void);
 
 void ui_companion_driver_free(void);
 
+const ui_msg_window_t *ui_companion_driver_get_msg_window_ptr(void);
+
 const ui_window_t *ui_companion_driver_get_window_ptr(void);
 
 const ui_application_t *ui_companion_driver_get_application_ptr(void);
