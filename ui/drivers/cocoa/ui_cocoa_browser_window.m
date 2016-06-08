@@ -33,7 +33,7 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
    if ([panel runModalForDirectory:BOXSTRING(state->startdir) file:nil] != 1)
         return false;
 #else
-    [panel setTitle:NSLocalizedString(BOXSTRING(string->title), BOXSTRING("open panel"))];
+    [panel setTitle:NSLocalizedString(BOXSTRING(state->title), BOXSTRING("open panel"))];
     [panel setDirectory:BOXSTRING(state->startdir)];
     [panel setCanChooseDirectories:NO];
     [panel setCanChooseFiles:YES];
