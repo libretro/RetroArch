@@ -42,6 +42,7 @@
 #elif defined(HAVE_COCOA)
 #include "../ui/drivers/ui_cocoa.m"
 #include "../ui/drivers/cocoa/ui_cocoa_window.m"
+#include "../ui/drivers/cocoa/ui_cocoa_msg_window.m"
 #include "../ui/drivers/cocoa/ui_cocoa_application.m"
 #endif
 

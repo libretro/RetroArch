@@ -103,6 +103,8 @@ extern const ui_window_t           ui_window_cocoa;
 extern const ui_window_t           ui_window_win32;
 
 extern const ui_msg_window_t       ui_msg_window_null;
+extern const ui_msg_window_t       ui_msg_window_win32;
+extern const ui_msg_window_t       ui_msg_window_cocoa;
 
 extern const ui_application_t      ui_application_null;
 extern const ui_application_t      ui_application_win32;
