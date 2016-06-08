@@ -117,6 +117,7 @@ OBJ += frontend/frontend.o \
        ui/ui_companion_driver.o \
        ui/drivers/ui_null.o \
 		 ui/drivers/null/ui_null_window.o \
+		 ui/drivers/null/ui_null_browser_window.o \
 		 ui/drivers/null/ui_null_msg_window.o \
 		 ui/drivers/null/ui_null_application.o \
        core_impl.o \

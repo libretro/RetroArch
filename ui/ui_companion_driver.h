@@ -63,6 +63,20 @@ typedef struct ui_msg_window_state
    char *title;
 } ui_msg_window_state;
 
+typedef struct ui_browser_window_state
+{
+   char *filters;
+   char *path;
+   char *title;
+} ui_browser_window_state_t;
+
+typedef struct ui_browser_window
+{
+   bool (*open)(ui_browser_window_state_t *state);
+   bool (*save)(ui_browser_window_state_t *state);
+   const char *ident;
+} ui_browser_window_t;
+
 typedef struct ui_msg_window
 {
    enum ui_msg_window_response (*error      )(ui_msg_window_state *state);
@@ -102,11 +116,14 @@ typedef struct ui_companion_driver
    void (*notify_refresh)(void *data);
    void (*msg_queue_push)(const char *msg, unsigned priority, unsigned duration, bool flush);
    void (*render_messagebox)(const char *msg);
-   const ui_msg_window_t *msg_window;
-   const ui_window_t *window;
-   const ui_application_t *application;
+   const ui_browser_window_t *browser_window;
+   const ui_msg_window_t     *msg_window;
+   const ui_window_t         *window;
+   const ui_application_t    *application;
    const char        *ident;
 } ui_companion_driver_t;
+
+extern const ui_browser_window_t   ui_browser_window_null;
 
 extern const ui_window_t           ui_window_null;
 extern const ui_window_t           ui_window_cocoa;
