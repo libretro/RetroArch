@@ -31,7 +31,6 @@
 #endif
 #endif
 
-#include <compat/apple_compat.h>
 #include <retro_assert.h>
 
 #import "../../ui/drivers/cocoa/cocoa_common.h"
