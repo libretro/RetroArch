@@ -23,6 +23,23 @@
 
 #include "../../ui_companion_driver.h"
 
+static enum ui_msg_window_response ui_msg_window_win32_response(ui_msg_window_state *state, UINT response)
+{
+	switch (response)
+	{
+	   case IDOK:
+		return UI_MSG_RESPONSE_OK;
+	   case IDCANCEL:
+		return UI_MSG_RESPONSE_CANCEL;
+	   case IDYES:
+	    return UI_MSG_RESPONSE_YES;
+	   case IDNO:
+        return UI_MSG_RESPONSE_NO;
+	}
+
+	return UI_MSG_RESPONSE_NA;
+}
+
 static enum ui_msg_window_response ui_msg_window_win32_error(ui_msg_window_state *state)
 {
    return UI_MSG_RESPONSE_CANCEL;
