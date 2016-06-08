@@ -32,8 +32,10 @@
 #include "../../menu_display.h"
 #include "../../../gfx/video_shader_driver.h"
 
+#ifdef HAVE_GLSL
 #include "../../../gfx/drivers/gl_shaders/pipeline_nuklear.glsl.vert.h"
 #include "../../../gfx/drivers/gl_shaders/pipeline_nuklear.glsl.frag.h"
+#endif
 
 struct nk_font *font;
 struct nk_font_atlas atlas;
