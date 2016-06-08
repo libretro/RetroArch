@@ -129,11 +129,7 @@ void string_trim_whitespace_left(char *string)
    while(string[si])
    {
       bool test = in_whitespace && 
-            (string[si] == ' '  || 
-             string[si] == '\r' || 
-             string[si] == '\n' || 
-             string[si] == '\t' || 
-             string[si] == 0x0b);
+            isspace(string[si]);
 
       if(!test)
       {
@@ -144,7 +140,7 @@ void string_trim_whitespace_left(char *string)
 
       si++;
    }
-   string[di] = 0;
+   string[di] = '\0';
 }
 
 /* Remove whitespace from end of string */
@@ -157,14 +153,10 @@ void string_trim_whitespace_right(char *string)
       int32_t x;
       for(x = len - 1; x >= 0; x--)
       {
-         bool test = string[x] == ' '  || string[x] == '\r' 
-            || string[x] == '\n' || string[x] == '\t' 
-            || string[x] == 0x0b;
-
-         if (!test)
+         if (!isspace(string[x]))
             break;
 
-         string[x] = 0;
+         string[x] = '\0';
       }
    }
 }
