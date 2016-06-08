@@ -186,6 +186,14 @@ const ui_window_t *ui_companion_driver_get_window_ptr(void)
    return ui->window;
 }
 
+const ui_browser_window_t *ui_companion_driver_get_browser_window_ptr(void)
+{
+   const ui_companion_driver_t *ui = ui_companion_get_ptr();
+   if (!ui)
+      return NULL;
+   return ui->browser_window;
+}
+
 const ui_application_t *ui_companion_driver_get_application_ptr(void)
 {
    const ui_companion_driver_t *ui = ui_companion_get_ptr();
