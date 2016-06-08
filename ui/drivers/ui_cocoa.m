@@ -324,39 +324,34 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
     }
 }
 
-static void open_document_handler(NSOpenPanel *panel, NSInteger result)
+static void open_document_handler(ui_browser_window_state_t *state, bool result)
 {
-    switch (result)
+    if (!state)
+        return;
+    if (string_is_empty(state->result))
+        return;
+    if (!result)
+        return;
+    
+    struct retro_system_info *system = NULL;
+    const char            *core_name = NULL;
+                
+    menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
+                
+    if (system)
+        core_name = system->library_name;
+                
+    runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)state->result);
+                
+    if (core_name)
     {
-        case 1: /* NSOKButton/NSModalResponseOK */
-            if (panel.URL)
-            {
-                struct retro_system_info *system = NULL;
-                NSURL                       *url = (NSURL*)panel.URL;
-                NSString                 *__core = url.path;
-                const char            *core_name = NULL;
-                
-                menu_driver_ctl(RARCH_MENU_CTL_SYSTEM_INFO_GET, &system);
-                
-                if (system)
-                    core_name = system->library_name;
-                
-                runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, (void*)__core.UTF8String);
-                
-                if (core_name)
-                {
-                   content_ctx_info_t content_info = {0};
-                   task_push_content_load_default(
-                         NULL, NULL,
-                         &content_info,
-                         CORE_TYPE_PLAIN,
-                         CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
-                         NULL, NULL);
-                }
-            }
-            break;
-        case 0: /* NSCancelButton/NSModalResponseCancel */
-            break;
+        content_ctx_info_t content_info = {0};
+        task_push_content_load_default(
+                NULL, NULL,
+                &content_info,
+                CORE_TYPE_PLAIN,
+                CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
+                NULL, NULL);
     }
 }
 
@@ -385,12 +380,26 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
 
 - (void)openDocument:(id)sender
 {
-   NSOpenPanel* panel    = (NSOpenPanel*)[NSOpenPanel openPanel];
+    const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
    settings_t *settings  = config_get_ptr();
-   NSString *startdir    = BOXSTRING(settings->directory.menu_content);
+    NSString *startdir    = BOXSTRING(settings->directory.menu_content);
     
    if (!startdir.length)
       startdir           = BOXSTRING("/");
+    
+    if (browser)
+    {
+        ui_browser_window_state_t browser_state = {0};
+        
+        browser_state.title = strdup("Load Content");
+        browser_state.startdir = strdup([startdir UTF8String]);
+        
+        bool result = browser->open(&browser_state);
+        open_document_handler(&browser_state, result);
+        
+        free(browser_state.title);
+    }
+#if 0
 #if defined(MAC_OS_X_VERSION_10_6)
    [panel setMessage:BOXSTRING("Load Content")];
    [panel setDirectoryURL:[NSURL fileURLWithPath:startdir]];
@@ -410,6 +419,7 @@ static void open_document_handler(NSOpenPanel *panel, NSInteger result)
     NSInteger result = [panel runModal];
     if (result == 1)
         open_document_handler(panel, result);
+#endif
 #endif
 }
 

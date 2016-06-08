@@ -26,7 +26,10 @@
 static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
 {
    NSOpenPanel* panel    = (NSOpenPanel*)[NSOpenPanel openPanel];
-   NSArray *filetypes    = [[NSArray alloc] initWithObjects:BOXSTRING(state->filters), BOXSTRING(state->filters_title), nil];
+    NSArray *filetypes    = NULL;
+    
+    if (state->filters && !string_is_empty(state->filters))
+        filetypes = [[NSArray alloc] initWithObjects:BOXSTRING(state->filters), BOXSTRING(state->filters_title), nil];
    [panel setAllowedFileTypes:filetypes];
 #if defined(MAC_OS_X_VERSION_10_6)
    [panel setMessage:BOXSTRING(state->title)];
