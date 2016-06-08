@@ -281,7 +281,14 @@ static char** waiting_argv;
    }
    else
    {
-      apple_display_alert("Cannot open multiple files", "RetroArch");
+      ui_msg_window_state msg_window_state;
+      const ui_msg_window_t *msg_window = ui_companion_driver_get_msg_window_ptr();
+      if (msg_window)
+      {
+         msg_window_state.text = strdup("Cannot open multiple files");
+         msg_window_state.text = strdup("RetroArch");
+         msg_window->information(&msg_window_state);
+      }
       [sender replyToOpenOrPrint:NSApplicationDelegateReplyFailure];
    }
 }
@@ -502,17 +509,6 @@ int main(int argc, char *argv[])
    waiting_argv = argv;
 
    return NSApplicationMain(argc, (const char **) argv);
-}
-
-void apple_display_alert(const char *message, const char *title)
-{
-    ui_msg_window_state msg_window_state;
-    const ui_msg_window_t *msg_window = ui_companion_driver_get_msg_window_ptr();
-    if (!msg_window)
-        return;
-    msg_window_state.text = strdup(message);
-    msg_window_state.text = (*title) ? strdup(title) : strdup("RetroArch");
-    msg_window->information(&msg_window_state);
 }
 
 typedef struct ui_companion_cocoa

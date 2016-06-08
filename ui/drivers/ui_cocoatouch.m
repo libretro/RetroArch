@@ -534,7 +534,8 @@ int main(int argc, char *argv[])
    }
 }
 
-void apple_display_alert(const char *message, const char *title)
+#if 0
+static void apple_display_alert(const char *message, const char *title)
 {
    UIAlertView* alert = [[UIAlertView alloc] initWithTitle:BOXSTRING(title)
                                              message:BOXSTRING(message)
@@ -543,6 +544,7 @@ void apple_display_alert(const char *message, const char *title)
                                              otherButtonTitles:nil];
    [alert show];
 }
+#endif
 
 static void apple_rarch_exited(void)
 {
