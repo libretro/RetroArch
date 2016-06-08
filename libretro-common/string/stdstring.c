@@ -21,6 +21,7 @@
  */
 
 #include <ctype.h>
+#include <stdint.h>
 
 #include <string/stdstring.h>
 
