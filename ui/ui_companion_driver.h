@@ -124,6 +124,8 @@ typedef struct ui_companion_driver
 } ui_companion_driver_t;
 
 extern const ui_browser_window_t   ui_browser_window_null;
+extern const ui_browser_window_t   ui_browser_window_cocoa;
+extern const ui_browser_window_t   ui_browser_window_win32;
 
 extern const ui_window_t           ui_window_null;
 extern const ui_window_t           ui_window_cocoa;
