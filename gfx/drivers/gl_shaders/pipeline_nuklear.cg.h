@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char *nuklear_shader = GLSL(
+static const char *nuklear_shader = CG(
    struct input
    {
       float time;

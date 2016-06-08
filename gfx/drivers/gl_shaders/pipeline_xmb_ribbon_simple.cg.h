@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char *stock_xmb_simple = GLSL(
+static const char *stock_xmb_simple = CG(
    struct input
    {
       float time;
