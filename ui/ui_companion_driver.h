@@ -41,10 +41,19 @@ enum ui_msg_window_buttons
 
 enum ui_msg_window_response
 {
-   UI_MSG_RESPONSE_OK = 0,
+   UI_MSG_RESPONSE_NA = 0,
+   UI_MSG_RESPONSE_OK,
    UI_MSG_RESPONSE_CANCEL,
    UI_MSG_RESPONSE_YES,
    UI_MSG_RESPONSE_NO
+};
+
+enum ui_msg_window_type
+{
+    UI_MSG_WINDOW_TYPE_ERROR = 0,
+    UI_MSG_WINDOW_TYPE_INFORMATION,
+    UI_MSG_WINDOW_TYPE_QUESTION,
+    UI_MSG_WINDOW_TYPE_WARNING
 };
 
 typedef struct ui_msg_window_state

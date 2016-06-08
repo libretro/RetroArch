@@ -35,7 +35,7 @@
 #include "../../system.h"
 #include "../../tasks/tasks_internal.h"
 
-static id apple_platform;
+id apple_platform;
 
 static void app_terminate(void)
 {
