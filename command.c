@@ -1600,7 +1600,7 @@ static void command_event_undo_save_state(char *s, size_t len)
    if (!content_undo_save_state())
    {
       snprintf(s, len, "%s \"%s\".",
-            msg_hash_to_str(MSG_FAILED_TO_SAVE_UNDO),
+            msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
             "from internal buffer");
    }
 }
@@ -1638,7 +1638,7 @@ static void command_event_undo_load_state(char *s, size_t len)
    if (!content_undo_load_state())
    {
       snprintf(s, len, "%s \"%s\".",
-            msg_hash_to_str(MSG_FAILED_TO_LOAD_UNDO),
+            msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
             "from internal buffer");
    }
 }

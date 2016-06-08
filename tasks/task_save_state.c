@@ -64,6 +64,9 @@ struct sram_block
 
 bool content_undo_load_state()
 {
+   if (old_state_buf.data == NULL)
+      return false;
+
    unsigned i;
    //ssize_t size;
    retro_ctx_serialize_info_t serial_info;
@@ -77,9 +80,6 @@ bool content_undo_load_state()
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),
          "from internal buffer");
-
-   if (old_state_buf.size == 0)
-      return true;
 
    RARCH_LOG("%s: %u %s.\n",
          msg_hash_to_str(MSG_STATE_SIZE),
@@ -165,7 +165,7 @@ bool content_undo_load_state()
 
    if (!ret)   
       RARCH_ERR("%s \"%s\".\n",
-         msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
+         msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
          "from internal buffer");
 
    /* Wipe the old state buffer, it's meant to be one use only */
@@ -193,6 +193,11 @@ bool content_undo_save_state()
 
    old_save_file.data = 0;
 
+   if (!ret)   
+      RARCH_ERR("%s \"%s\".\n",
+         msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
+         "from internal buffer");
+
    return ret;
 }
 
@@ -202,7 +207,7 @@ bool content_undo_save_state()
 /**
  * save_state:
  * @path      : path of saved state that shall be written to.
- *
+ * @save_to_disk: If false, saves the state onto old_state_buf.
  * Save a state from memory to disk.
  *
  * Returns: true if successful, false otherwise.
@@ -278,13 +283,15 @@ bool content_save_state_with_backup(const char *path, bool save_to_disk)
 /**
  * content_load_state:
  * @path      : path that state will be loaded from.
- *
+ * @load_to_backup_buffer: If true, the state will be loaded into old_save_file.
  * Load a state from disk to memory.
  *
  * Returns: true if successful, false otherwise.
+ *
+ *
  **/
 bool content_load_state(const char* path) { content_load_state_with_backup(path, false); }
-bool content_load_state_with_backup(const char *path, bool save_to_backup_buffer)
+bool content_load_state_with_backup(const char *path, bool load_to_backup_buffer)
 {
    unsigned i;
    ssize_t size;
@@ -310,7 +317,7 @@ bool content_load_state_with_backup(const char *path, bool save_to_backup_buffer
 
    /* This means we're backing up the file in memory, so content_undo_save_state()
    can restore it */
-   if (save_to_backup_buffer) {
+   if (load_to_backup_buffer) {
       strcpy(old_save_file.path, path);
 
       /* If we were previously backing up a file, let go of it first */
@@ -381,7 +388,7 @@ bool content_load_state_with_backup(const char *path, bool save_to_backup_buffer
    serial_info.size       = size;
    
    /* Backup the current state so we can undo this load */
-   content_save_state_with_backup(NULL, true);
+   content_save_state_with_backup("internal buffer", false);
    ret                    = core_unserialize(&serial_info);
 
    /* Flush back. */
