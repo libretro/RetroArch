@@ -65,7 +65,9 @@ typedef struct ui_msg_window_state
 
 typedef struct ui_browser_window_state
 {
+   void *window;
    char *filters;
+   char *startdir;
    char *path;
    char *title;
 } ui_browser_window_state_t;

@@ -25,6 +25,25 @@
 
 static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
 {
+   NSOpenPanel* panel   = (NSOpenPanel*)[NSOpenPanel openPanel];
+   NSArray *filetypes    = [[NSArray alloc] initWithObjects:BOXSTRING("dylib"), BOXSTRING("Core"), nil];
+   [panel setAllowedFileTypes:filetypes];
+#if defined(MAC_OS_X_VERSION_10_6)
+   [panel setMessage:BOXSTRING(state->title)];
+   if ([panel runModalForDirectory:BOXSTRING(state->path) file:nil] == 1)
+        return true;
+#else
+    [panel setTitle:NSLocalizedString(BOXSTRING(string->title), BOXSTRING("open panel"))];
+    [panel setDirectory:BOXSTRING(state->startdir)];
+    [panel setCanChooseDirectories:NO];
+    [panel setCanChooseFiles:YES];
+    [panel setAllowsMultipleSelection:NO];
+    [panel setTreatsFilePackagesAsDirectories:NO];
+    NSInteger result = [panel runModal];
+    if (result == 1)
+        return true;
+#endif
+    
    return false;
 }
 
