@@ -88,6 +88,7 @@ const ui_companion_driver_t ui_companion_null = {
    NULL,
    NULL,
    NULL,
+   &ui_msg_window_null,
    &ui_window_null,
    &ui_application_null,
    "null",
