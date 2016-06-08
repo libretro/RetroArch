@@ -31,6 +31,22 @@
 
 RETRO_BEGIN_DECLS
 
+enum ui_message_window_buttons
+{
+   UI_MSG_WINDOW_OK = 0,
+   UI_MSG_WINDOW_OKCANCEL,
+   UI_MSG_WINDOW_YESNO,
+   UI_MSG_WINDOW_YESNOCANCEL
+};
+
+enum ui_message_window_response
+{
+   UI_MSG_RESPONSE_OK = 0,
+   UI_MSG_RESPONSE_CANCEL,
+   UI_MSG_RESPONSE_YES,
+   UI_MSG_RESPONSE_NO
+};
+
 typedef struct ui_application
 {
    bool (*pending_events)(void);
