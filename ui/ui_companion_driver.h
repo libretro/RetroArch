@@ -31,7 +31,7 @@
 
 RETRO_BEGIN_DECLS
 
-enum ui_message_window_buttons
+enum ui_msg_window_buttons
 {
    UI_MSG_WINDOW_OK = 0,
    UI_MSG_WINDOW_OKCANCEL,
@@ -39,13 +39,27 @@ enum ui_message_window_buttons
    UI_MSG_WINDOW_YESNOCANCEL
 };
 
-enum ui_message_window_response
+enum ui_msg_window_response
 {
    UI_MSG_RESPONSE_OK = 0,
    UI_MSG_RESPONSE_CANCEL,
    UI_MSG_RESPONSE_YES,
    UI_MSG_RESPONSE_NO
 };
+
+typedef struct ui_msg_window_state
+{
+   enum ui_msg_window_buttons buttons;
+   char text[256];
+   char title[256];
+} ui_msg_window_state;
+
+typedef struct ui_msg_window
+{
+   enum ui_msg_window_response (*error)(ui_msg_window_state *state);
+   enum ui_msg_window_response (*information)(ui_msg_window_state *state);
+   enum ui_msg_window_response (*question)(ui_msg_window_state *state);
+} ui_msg_window_t;
 
 typedef struct ui_application
 {
