@@ -145,7 +145,7 @@ const ui_companion_driver_t ui_companion_qt = {
    NULL,
    &ui_browser_window_null,
    &ui_msg_window_null,
-   &ui_window_null,
+   &ui_window_qt,
    &ui_application_null,
    "qt",
 };

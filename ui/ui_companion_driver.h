@@ -145,6 +145,7 @@ extern const ui_browser_window_t   ui_browser_window_win32;
 
 extern const ui_window_t           ui_window_null;
 extern const ui_window_t           ui_window_cocoa;
+extern const ui_window_t           ui_window_qt;
 extern const ui_window_t           ui_window_win32;
 
 extern const ui_msg_window_t       ui_msg_window_null;
