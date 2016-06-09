@@ -47,6 +47,15 @@ char *string_ucwords(char* s);
 char *string_replace_substring(const char *in, const char *pattern,
       const char *by);
 
+/* Remove leading whitespaces */
+char *string_trim_whitespace_left(char *const s);
+
+/* Remove trailing whitespaces */
+char *string_trim_whitespace_right(char *const s);
+
+/* Remove leading and trailing whitespaces */
+char *string_trim_whitespace(char *const s);
+
 RETRO_END_DECLS
 
 #endif

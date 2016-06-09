@@ -118,3 +118,52 @@ char *string_replace_substring(const char *in,
    
    return out;
 }
+
+/* Non-GPL licensed versions of whitespace trimming:
+ * http://stackoverflow.com/questions/656542/trim-a-string-in-c
+ */
+
+/* Remove leading whitespaces */
+char *string_trim_whitespace_left(char *const s)
+{
+   if(s && *s)
+   {
+      size_t len = strlen(s);
+      char *cur  = s;
+
+      while(*cur && isspace(*cur))
+         ++cur, --len;
+
+      if(s != cur)
+         memmove(s, cur, len + 1);
+
+   }
+
+   return s;
+}
+
+/* Remove trailing whitespaces */
+char *string_trim_whitespace_right(char *const s)
+{
+   if(s && *s)
+   {
+      size_t len = strlen(s);
+      char  *cur = s + len - 1;
+
+      while(cur != s && isspace(*cur))
+         --cur, --len;
+
+      cur[isspace(*cur) ? 0 : 1] = '\0';
+   }
+
+   return s;
+}
+
+/* Remove leading and trailing whitespaces */
+char *string_trim_whitespace(char *const s)
+{
+   string_trim_whitespace_right(s);  /* order matters */
+   string_trim_whitespace_left(s);
+
+   return s;
+}
