@@ -47,12 +47,6 @@ char *string_ucwords(char* s);
 char *string_replace_substring(const char *in, const char *pattern,
       const char *by);
 
-/* Remove whitespace from beginning of string */
-void string_trim_whitespace_left(char *string);
-
-/* Remove whitespace from end of string */
-void string_trim_whitespace_right(char *string);
-
 RETRO_END_DECLS
 
 #endif
