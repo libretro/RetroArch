@@ -28,30 +28,34 @@
 #include "../../tasks/tasks_internal.h"
 #include "qt/wrapper/wrapper.h"
 
+#ifdef HAVE_QT_WRAPPER
 struct Wimp* wimp;
+#endif
 char* args[] = {""};
-settings_t *settings;
 
 typedef struct ui_companion_qt
 {
+   void *empty;
+#ifdef HAVE_QT_WRAPPER
    volatile bool quit;
    slock_t *lock;
    sthread_t *thread;
+#endif
 } ui_companion_qt_t;
 
+#ifdef HAVE_QT_WRAPPER
 static void qt_thread(void *data)
 {
-
    ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
    wimp = ctrWimp(0, NULL);
    if(wimp)
    {
+      settings_t *settings = config_get_ptr();
       GetSettings(wimp, settings);
       CreateMainWindow(wimp);
    }
-
-   return;
 }
+#endif
 
 static void ui_companion_qt_deinit(void *data)
 {
@@ -60,8 +64,10 @@ static void ui_companion_qt_deinit(void *data)
    if (!handle)
       return;
 
+#ifdef HAVE_QT_WRAPPER
    slock_free(handle->lock);
    sthread_join(handle->thread);
+#endif
 
    free(handle);
 }
@@ -71,15 +77,18 @@ static void *ui_companion_qt_init(void)
    ui_companion_qt_t *handle = (ui_companion_qt_t*)calloc(1, sizeof(*handle));
    if (!handle)
       return NULL;
-   settings = config_get_ptr();
-   handle->lock   = slock_new();
-   handle->thread = sthread_create(qt_thread, handle);
+
+#ifdef HAVE_QT_WRAPPER
+   settings_t *settings = config_get_ptr();
+   handle->lock         = slock_new();
+   handle->thread       = sthread_create(qt_thread, handle);
    if (!handle->thread)
    {
       slock_free(handle->lock);
       free(handle);
       return NULL;
    }
+#endif
 
    return handle;
 }
@@ -108,9 +117,11 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
    if (!handle)
       return;
 
+#ifdef HAVE_QT_WRAPPER
    slock_lock(handle->lock);
    command_event(cmd, NULL);
    slock_unlock(handle->lock);
+#endif
 }
 
 static void ui_companion_qt_notify_list_pushed(void *data, file_list_t *list,
