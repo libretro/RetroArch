@@ -65,8 +65,17 @@ struct sram_block
  **/
 bool content_undo_load_state()
 {
-   if (undo_load_buf.data == NULL || undo_load_buf.size == 0)
-      return false;
+   if (undo_load_buf.data == NULL || undo_load_buf.size == 0) {
+      /* TODO/FIXME - Use msg_hash_to_str in here */
+      /* TODO/FIXME - Should we be using runloop_msg_queue_push in here? */
+
+      RARCH_LOG("%s\n",
+         "No load state to undo.");
+      runloop_msg_queue_push("No load state to undo.", 2, 180, true);
+
+      /* Even though there was no undo, signal this as a success */
+      return true;
+   }
 
    unsigned i;
    //ssize_t size;
@@ -80,7 +89,7 @@ bool content_undo_load_state()
 
    RARCH_LOG("%s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_STATE),
-         "RAM");
+         undo_load_buf.path);
 
    RARCH_LOG("%s: %u %s.\n",
          msg_hash_to_str(MSG_STATE_SIZE),
@@ -178,10 +187,13 @@ bool content_undo_load_state()
       free(blocks[i].data);
    free(blocks);
 
-   if (!ret)   
+   if (!ret) {
       RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
-         "RAM");
+         undo_load_buf.path);
+   } else {
+      runloop_msg_queue_push("Undid load state.", 2, 180, true);
+   }
 
    return ret;
 }
@@ -194,6 +206,15 @@ bool content_undo_load_state()
  **/
 bool content_undo_save_state()
 {
+   if (undo_save_buf.data == NULL || undo_save_buf.size == 0)
+   {
+      /* TODO/FIXME - Use msg_hash_to_str in here */
+      RARCH_LOG("%s\n",
+         "No save state to undo.");
+      runloop_msg_queue_push("No save state to undo.", 2, 180, false);
+      return true;
+   }
+
    bool ret = filestream_write_file(undo_save_buf.path, undo_save_buf.data, undo_save_buf.size);
 
    /* Wipe the save file buffer as it's intended to be one use only */
@@ -205,10 +226,13 @@ bool content_undo_save_state()
 
    undo_save_buf.data = 0;
 
-   if (!ret)   
+   if (!ret) {
       RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
-         "RAM");
+         undo_save_buf.path);
+   } else {
+      runloop_msg_queue_push("Undid save state.", 2, 180, true);
+   }
 
    return ret;
 }
@@ -257,16 +281,22 @@ bool content_save_state(const char *path, bool save_to_disk)
    if (ret) {
       if (save_to_disk) {
          if (path_file_exists(path)) {
+            /* Before overwritting the savestate file, load it into a buffer
+            to allow undo_save_state() to work */
+            /* TODO/FIXME - Use msg_hash_to_str here */
+            RARCH_LOG("%s\n",
+               "File already exists. Saving to backup buffer...");
+
             content_load_state(path, true);
          }
 
          ret = filestream_write_file(path, data, info.size);
       }
-      /* save_to_disk is false, which means we are saving the state
-      in undo_load_buf to allow content_undo_load_state() to restore it */
+      
       else 
       {
-         undo_load_buf.path[0] = '\0';
+         /* save_to_disk is false, which means we are saving the state
+         in undo_load_buf to allow content_undo_load_state() to restore it */
 
          /* If we were holding onto an old state already, clean it up first */
          if (undo_load_buf.data) {
@@ -277,6 +307,7 @@ bool content_save_state(const char *path, bool save_to_disk)
          undo_load_buf.data = malloc(info.size);
          memcpy(undo_load_buf.data, data, info.size);
          undo_load_buf.size = info.size;
+         strcpy(undo_load_buf.path, path);
       }
    }
    else

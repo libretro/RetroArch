@@ -1602,13 +1602,7 @@ static void command_event_undo_save_state(char *s, size_t len)
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
             "RAM");
-
-      return;
    }
-
-   /* TODO/FIXME - use msg_hash_to_str here and there */
-   snprintf(s, len, "%s",
-            "Restored save state.");
 }
 
 /**
@@ -1646,11 +1640,7 @@ static void command_event_undo_load_state(char *s, size_t len)
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
             "RAM");
-      return;
-   }
-   /* TODO/FIXME - use msg_hash_to_str here and there */
-   snprintf(s, len, "%s",
-            "Undid load state.");  
+   } 
 }
 
 static void command_event_main_state(unsigned cmd)
@@ -1789,7 +1779,6 @@ bool command_event(enum event_command cmd, void *data)
 #ifndef HAVE_DYNAMIC
          command_event(CMD_EVENT_QUIT, NULL);
 #endif
-         content_reset_savestate_backups();
          break;
       case CMD_EVENT_LOAD_STATE:
          /* Immutable - disallow savestate load when
@@ -2082,14 +2071,13 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CORE_DEINIT:
          {
+            content_reset_savestate_backups();
             struct retro_hw_render_callback *hwr =
                video_driver_get_hw_context();
             command_event_deinit_core(true);
 
             if (hwr)
                memset(hwr, 0, sizeof(*hwr));
-
-            content_reset_savestate_backups();
 
             break;
          }
