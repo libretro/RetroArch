@@ -130,6 +130,7 @@ UI
 
 #if defined(HAVE_QT)
 #include "../ui/drivers/qt/ui_qt_window.cpp"
+#include "../ui/drivers/qt/ui_qt_application.cpp"
 #endif
 
 /*============================================================
