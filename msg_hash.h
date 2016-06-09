@@ -125,8 +125,8 @@
 #define MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES          0xd50adf46U
 #define MSG_FAILED_TO_LOAD_STATE                      0x91f348ebU
 
-#define MSG_FAILED_TO_LOAD_UNDO                       0xb6e2fc55U
-#define MSG_FAILED_TO_SAVE_UNDO                       0xf2e29478U
+#define MSG_FAILED_TO_UNDO_LOAD_STATE                 0xb6e2fc55U
+#define MSG_FAILED_TO_UNDO_SAVE_STATE                 0xf2e29478U
 
 #define MSG_RESET                                     0x10474288U
 

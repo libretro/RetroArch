@@ -35,6 +35,26 @@
 #include "../verbosity.h"
 #include "tasks_internal.h"
 
+struct save_state_buf
+{
+   void* data;
+   char path[PATH_MAX_LENGTH];
+   size_t size;
+};
+
+/* 
+Holds a savestate which was stored on disk and was lost when 
+content_save_state() wrote over it.
+Can be restored to disk with undo_save_state(). 
+*/
+static struct save_state_buf old_save_file;
+
+/*
+Represents the state which was lost when load_state() was called.
+Can be restored with undo_load_state().
+*/
+static struct save_state_buf old_state_buf;
+
 struct sram_block
 {
    unsigned type;
@@ -42,17 +62,163 @@ struct sram_block
    size_t size;
 };
 
+bool content_undo_load_state()
+{
+   if (old_state_buf.data == NULL || old_state_buf.size == 0)
+      return false;
+
+   unsigned i;
+   //ssize_t size;
+   retro_ctx_serialize_info_t serial_info;
+   unsigned num_blocks       = 0;
+   //void *buf                 = NULL;
+   struct sram_block *blocks = NULL;
+   settings_t *settings      = config_get_ptr();
+   global_t *global          = global_get_ptr();
+   //bool ret                  = filestream_read_file(path, &buf, &size);
+
+   RARCH_LOG("%s: \"%s\".\n",
+         msg_hash_to_str(MSG_LOADING_STATE),
+         "RAM");
+
+   RARCH_LOG("%s: %u %s.\n",
+         msg_hash_to_str(MSG_STATE_SIZE),
+         old_state_buf.size,
+         msg_hash_to_str(MSG_BYTES));
+
+
+   /* TODO/FIXME - This checking of SRAM overwrite, the backing up of it and
+   its flushing could all be in their own functions... */
+   if (settings->block_sram_overwrite && global->savefiles
+         && global->savefiles->size)
+   {
+      RARCH_LOG("%s.\n",
+            msg_hash_to_str(MSG_BLOCKING_SRAM_OVERWRITE));
+      blocks = (struct sram_block*)
+         calloc(global->savefiles->size, sizeof(*blocks));
+
+      if (blocks)
+      {
+         num_blocks = global->savefiles->size;
+         for (i = 0; i < num_blocks; i++)
+            blocks[i].type = global->savefiles->elems[i].attr.i;
+      }
+   }
+
+   for (i = 0; i < num_blocks; i++)
+   {
+      retro_ctx_memory_info_t    mem_info;
+
+      mem_info.id = blocks[i].type;
+      core_get_memory(&mem_info);
+
+      blocks[i].size = mem_info.size;
+   }
+
+   for (i = 0; i < num_blocks; i++)
+      if (blocks[i].size)
+         blocks[i].data = malloc(blocks[i].size);
+
+   /* Backup current SRAM which is overwritten by unserialize. */
+   for (i = 0; i < num_blocks; i++)
+   {
+      if (blocks[i].data)
+      {
+         retro_ctx_memory_info_t    mem_info;
+         const void *ptr = NULL;
+
+         mem_info.id = blocks[i].type;
+
+         core_get_memory(&mem_info);
+
+         ptr = mem_info.data;
+         if (ptr)
+            memcpy(blocks[i].data, ptr, blocks[i].size);
+      }
+   }
+   
+   /* We need to make a temporary copy of the buffer, to allow the swap below */
+   void* temp_data = malloc(old_state_buf.size);
+   size_t temp_data_size = old_state_buf.size;
+   memcpy(temp_data, old_state_buf.data, old_state_buf.size);
+
+   serial_info.data_const = temp_data;
+   serial_info.size       = temp_data_size;
+
+   /* Swap the current state with the backup state. This way, we can undo
+   what we're undoing */
+   content_save_state_with_backup("RAM", false);
+   bool ret               = core_unserialize(&serial_info);
+
+   /* Clean up the temporary copy */
+   free(temp_data);
+   temp_data = NULL;
+   temp_data_size = 0;
+
+   /* Flush back. */
+   for (i = 0; i < num_blocks; i++)
+   {
+      if (blocks[i].data)
+      {
+         retro_ctx_memory_info_t    mem_info;
+         void *ptr = NULL;
+
+         mem_info.id = blocks[i].type;
+
+         core_get_memory(&mem_info);
+
+         ptr = mem_info.data;
+         if (ptr)
+            memcpy(ptr, blocks[i].data, blocks[i].size);
+      }
+   }
+
+   for (i = 0; i < num_blocks; i++)
+      free(blocks[i].data);
+   free(blocks);
+
+   if (!ret)   
+      RARCH_ERR("%s \"%s\".\n",
+         msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
+         "RAM");
+
+   return ret;
+}
+
+bool content_undo_save_state()
+{
+   bool ret = filestream_write_file(old_save_file.path, old_save_file.data, old_save_file.size);
+
+   /* Wipe the save file buffer as it's intended to be one use only */
+   old_save_file.path[0] = '\0';
+   if (old_save_file.data) {
+      free(old_save_file.data);
+      old_save_file.data = NULL;
+   }
+
+   old_save_file.data = 0;
+
+   if (!ret)   
+      RARCH_ERR("%s \"%s\".\n",
+         msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
+         "RAM");
+
+   return ret;
+}
+
+
 /* TODO/FIXME - turn this into actual task */
 
 /**
  * save_state:
  * @path      : path of saved state that shall be written to.
- *
+ * @save_to_disk: If false, saves the state onto old_state_buf.
  * Save a state from memory to disk.
  *
  * Returns: true if successful, false otherwise.
  **/
-bool content_save_state(const char *path)
+bool content_save_state(const char *path) { content_save_state_with_backup(path, true);}
+bool content_save_state_with_backup(const char *path, bool save_to_disk)
 {
    retro_ctx_serialize_info_t serial_info;
    retro_ctx_size_info_t info;
@@ -82,8 +248,31 @@ bool content_save_state(const char *path)
    serial_info.size = info.size;
    ret              = core_serialize(&serial_info);
 
-   if (ret)
-      ret = filestream_write_file(path, data, info.size);
+   if (ret) {
+      if (save_to_disk) {
+         if (path_file_exists(path)) {
+            content_load_state_with_backup(path, true);
+         }
+
+         ret = filestream_write_file(path, data, info.size);
+      }
+      /* save_to_disk is false, which means we are saving the state
+      in old_state_buf to allow content_undo_load_state() to restore it */
+      else 
+      {
+         old_state_buf.path[0] = '\0';
+
+         /* If we were holding onto an old state already, clean it up first */
+         if (old_state_buf.data) {
+            free(old_state_buf.data);
+            old_state_buf.data = NULL;
+         }
+
+         old_state_buf.data = malloc(info.size);
+         memcpy(old_state_buf.data, data, info.size);
+         old_state_buf.size = info.size;
+      }
+   }
    else
    {
       RARCH_ERR("%s \"%s\".\n",
@@ -99,12 +288,15 @@ bool content_save_state(const char *path)
 /**
  * content_load_state:
  * @path      : path that state will be loaded from.
- *
+ * @load_to_backup_buffer: If true, the state will be loaded into old_save_file.
  * Load a state from disk to memory.
  *
  * Returns: true if successful, false otherwise.
+ *
+ *
  **/
-bool content_load_state(const char *path)
+bool content_load_state(const char* path) { content_load_state_with_backup(path, false); }
+bool content_load_state_with_backup(const char *path, bool load_to_backup_buffer)
 {
    unsigned i;
    ssize_t size;
@@ -127,6 +319,26 @@ bool content_load_state(const char *path)
          msg_hash_to_str(MSG_STATE_SIZE),
          (unsigned)size,
          msg_hash_to_str(MSG_BYTES));
+
+   /* This means we're backing up the file in memory, so content_undo_save_state()
+   can restore it */
+   if (load_to_backup_buffer) {
+      strcpy(old_save_file.path, path);
+
+      /* If we were previously backing up a file, let go of it first */
+      if (old_save_file.data) {
+         free(old_save_file.data);
+         old_save_file.data = NULL;
+      }
+
+      old_save_file.data = malloc(size);
+      memcpy(old_save_file.data, buf, size);
+
+      old_save_file.size = size;
+
+      free(buf);
+      return true;
+   }
 
    if (settings->block_sram_overwrite && global->savefiles
          && global->savefiles->size)
@@ -179,6 +391,9 @@ bool content_load_state(const char *path)
 
    serial_info.data_const = buf;
    serial_info.size       = size;
+   
+   /* Backup the current state so we can undo this load */
+   content_save_state_with_backup("RAM", false);
    ret                    = core_unserialize(&serial_info);
 
    /* Flush back. */
@@ -230,4 +445,34 @@ bool content_rename_state(const char *origin, const char *dest)
 
    RARCH_LOG ("Error %d renaming file %s", ret, origin);
    return false;
+}
+
+/*
+* 
+* TODO/FIXME: Figure out when and where this should be called
+*
+*/
+bool content_reset_savestate_backups()
+{
+   printf("Resetting undo buffers.\n");
+
+   if (old_save_file.data)
+   {
+      free(old_save_file.data);
+      old_save_file.data = NULL;
+   }
+
+   old_save_file.path[0] = '\0';
+   old_save_file.size = 0;
+
+   if (old_state_buf.data)
+   {
+      free(old_state_buf.data);
+      old_state_buf.data = NULL;
+   }
+
+   old_state_buf.path[0] = '\0';
+   old_state_buf.size = 0;
+
+   return true;
 }
