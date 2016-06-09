@@ -506,24 +506,28 @@ static bool win32_browser(
       const char *title,
       const char *initial_dir)
 {
-   OPENFILENAME ofn;
+   bool result = false;
+   const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
 
-   memset((void*)&ofn, 0, sizeof(OPENFILENAME));
+   if (browser)
+   {
+      ui_browser_window_state_t browser_state;
 
-   ofn.lStructSize     = sizeof(OPENFILENAME);
-   ofn.hwndOwner       = owner;
-   ofn.lpstrFilter     = extensions;
-   ofn.lpstrFile       = filename;
-   ofn.lpstrTitle      = title;
-   ofn.lpstrInitialDir = TEXT(initial_dir);
-   ofn.lpstrDefExt     = "";
-   ofn.nMaxFile        = PATH_MAX;
-   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
+      browser_state.filters  = strdup(extensions);
+      browser_state.title    = strdup(title);
+      browser_state.startdir = strdup(initial_dir);
+      browser_state.path     = strdup(filename);
+	  browser_state.window   = owner;
 
-   if (!GetOpenFileName(&ofn))
-      return false;
+	  result = browser->open(&browser_state);
 
-   return true;
+      free(browser_state.filters);
+      free(browser_state.title);
+      free(browser_state.startdir);
+      free(browser_state.path);
+   }
+
+   return result;
 }
 
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam)

@@ -25,7 +25,24 @@
 
 static bool ui_browser_window_win32_open(ui_browser_window_state_t *state)
 {
-   return false;
+   OPENFILENAME ofn;
+
+   memset((void*)&ofn, 0, sizeof(OPENFILENAME));
+
+   ofn.lStructSize     = sizeof(OPENFILENAME);
+   ofn.hwndOwner       = (HWND)state->window;
+   ofn.lpstrFilter     = state->filters;
+   ofn.lpstrFile       = state->path;
+   ofn.lpstrTitle      = state->title;
+   ofn.lpstrInitialDir = state->startdir;
+   ofn.lpstrDefExt     = "";
+   ofn.nMaxFile        = PATH_MAX;
+   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
+
+   if (!GetOpenFileName(&ofn))
+	   return false;
+
+   return true;
 }
 
 static bool ui_browser_window_win32_save(ui_browser_window_state_t *state)
