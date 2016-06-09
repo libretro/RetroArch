@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <ctype.h>
 #include <stdint.h>
+#include <ctype.h>
 
 #include <string/stdstring.h>
 
@@ -123,7 +123,7 @@ char *string_replace_substring(const char *in,
 void string_trim_whitespace_left(char *string)
 {
    bool in_whitespace  = true;
-   int32_t si          = 0;;
+   int32_t si          = 0;
    int32_t di          = 0;
 
    while(string[si])
