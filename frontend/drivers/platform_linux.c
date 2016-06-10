@@ -57,11 +57,11 @@
 enum
 {
    /* Internal SDCARD writable */
-   INT_SD_WRITABLE = 1,
+   INTERNAL_STORAGE_WRITABLE = 1,
    /* Internal SDCARD not writable but the private app dir is */
-   INT_SD_APPDIR_WRITABLE,
+   INTERNAL_STORAGE_APPDIR_WRITABLE,
    /* Internal SDCARD not writable at all */
-   INT_SD_NOT_WRITABLE
+   INTERNAL_STORAGE_NOT_WRITABLE
 };
 
 struct android_app *g_android;
@@ -72,8 +72,8 @@ static char screenshot_dir[PATH_MAX_LENGTH];
 static char downloads_dir[PATH_MAX_LENGTH];
 static char apk_dir[PATH_MAX_LENGTH];
 static char app_dir[PATH_MAX_LENGTH];
-static char int_sd_dir[PATH_MAX_LENGTH];
-static char int_sd_app_dir[PATH_MAX_LENGTH];
+static char internal_storage_path[PATH_MAX_LENGTH];
+static char internal_storage_app_path[PATH_MAX_LENGTH];
 #else
 static const char *proc_apm_path                   = "/proc/apm";
 static const char *proc_acpi_battery_path          = "/proc/acpi/battery";
@@ -1298,7 +1298,7 @@ static void frontend_linux_get_env(int *argc,
       }
    }
 
-   /* External Storage */
+   /* Internal Storage */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "SDCARD"));
 
@@ -1306,16 +1306,15 @@ static void frontend_linux_get_env(int *argc,
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      *int_sd_dir = '\0';
+      *internal_storage_path = '\0';
 
       if (argv && *argv)
-         strlcpy(int_sd_dir, argv, sizeof(int_sd_dir));
+         strlcpy(internal_storage_path, argv, sizeof(internal_storage_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*int_sd_dir)
+      if (!string_is_empty(internal_storage_path))
       {
-         RARCH_LOG("External storage location [%s]\n", int_sd_dir);
-         /* TODO base dir handler */
+         RARCH_LOG("Internal storage location [%s]\n", internal_storage_path);
       }
    }
 
@@ -1333,10 +1332,9 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(screenshot_dir, argv, sizeof(screenshot_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*screenshot_dir)
+      if (!string_is_empty(screenshot_dir))
       {
          RARCH_LOG("Picture folder location [%s]\n", screenshot_dir);
-         /* TODO: screenshot handler */
       }
    }
 
@@ -1354,10 +1352,9 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(downloads_dir, argv, sizeof(downloads_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*downloads_dir)
+      if (!string_is_empty(downloads_dir))
       {
          RARCH_LOG("Download folder location [%s].\n", downloads_dir);
-         /* TODO: downloads handler */
       }
    }
 
@@ -1387,15 +1384,15 @@ static void frontend_linux_get_env(int *argc,
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      *int_sd_app_dir = '\0';
+      *internal_storage_app_path = '\0';
 
       if (argv && *argv)
-         strlcpy(int_sd_app_dir, argv, sizeof(int_sd_app_dir));
+         strlcpy(internal_storage_app_path, argv, sizeof(internal_storage_app_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*int_sd_app_dir)
+      if (*internal_storage_app_path)
       {
-         RARCH_LOG("External files location [%s]\n", int_sd_app_dir);
+         RARCH_LOG("External files location [%s]\n", internal_storage_app_path);
       }
    }
 
@@ -1414,22 +1411,22 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(app_dir, argv, sizeof(app_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      //set paths depending on the ability to write to int_sd_dir
+      //set paths depending on the ability to write to internal_storage_path
 
-      if(*int_sd_dir)
+      if(!string_is_empty(internal_storage_path))
       {
-         if(test_permissions(int_sd_dir))
-            perms = INT_SD_WRITABLE;
+         if(test_permissions(internal_storage_path))
+            perms = INTERNAL_STORAGE_WRITABLE;
       }
-      else if(*int_sd_app_dir)
+      else if(!string_is_empty(internal_storage_app_path))
       {
-         if(test_permissions(int_sd_app_dir))
-            perms = INT_SD_APPDIR_WRITABLE;
+         if(test_permissions(internal_storage_app_path))
+            perms = INTERNAL_STORAGE_APPDIR_WRITABLE;
       }
       else
-         perms = INT_SD_NOT_WRITABLE;
+         perms = INTERNAL_STORAGE_NOT_WRITABLE;
 
-      RARCH_LOG("SD permissions: %d",perms);
+      RARCH_LOG("Storage permissions: %d", perms);
 
       if (*app_dir)
       {
@@ -1496,24 +1493,24 @@ static void frontend_linux_get_env(int *argc,
 
             switch (perms)
             {
-               case INT_SD_APPDIR_WRITABLE:
+               case INTERNAL_STORAGE_APPDIR_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
-                        int_sd_app_dir, "saves", sizeof(g_defaults.dir.sram));
+                        internal_storage_app_path, "saves", sizeof(g_defaults.dir.sram));
                   fill_pathname_join(g_defaults.dir.savestate,
-                        int_sd_app_dir, "states", sizeof(g_defaults.dir.savestate));
+                        internal_storage_app_path, "states", sizeof(g_defaults.dir.savestate));
                   fill_pathname_join(g_defaults.dir.system,
-                        int_sd_app_dir, "system", sizeof(g_defaults.dir.system));
+                        internal_storage_app_path, "system", sizeof(g_defaults.dir.system));
 
                   fill_pathname_join(g_defaults.dir.menu_config,
-                        int_sd_app_dir, "config", sizeof(g_defaults.dir.menu_config));
+                        internal_storage_app_path, "config", sizeof(g_defaults.dir.menu_config));
                   fill_pathname_join(g_defaults.dir.remap,
                         g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
                   fill_pathname_join(g_defaults.dir.thumbnails,
-                        int_sd_app_dir, "thumbnails", sizeof(g_defaults.dir.thumbnails));
+                        internal_storage_app_path, "thumbnails", sizeof(g_defaults.dir.thumbnails));
                   fill_pathname_join(g_defaults.dir.playlist,
-                        int_sd_app_dir, "playlists", sizeof(g_defaults.dir.playlist));
+                        internal_storage_app_path, "playlists", sizeof(g_defaults.dir.playlist));
                   fill_pathname_join(g_defaults.dir.cheats,
-                        int_sd_app_dir, "cheats", sizeof(g_defaults.dir.cheats));
+                        internal_storage_app_path, "cheats", sizeof(g_defaults.dir.cheats));
 
                   /* TODO/FIXME - Test if this is needed at all, as far as I know,
                    * every directory we set in g_defaults already gets created if it
@@ -1527,7 +1524,7 @@ static void frontend_linux_get_env(int *argc,
                   path_mkdir(g_defaults.dir.playlist);
                   path_mkdir(g_defaults.dir.cheats);
                   break;
-               case INT_SD_NOT_WRITABLE:
+               case INTERNAL_STORAGE_NOT_WRITABLE:
                   fill_pathname_join(g_defaults.dir.sram,
                         app_dir, "saves", sizeof(g_defaults.dir.sram));
                   fill_pathname_join(g_defaults.dir.savestate,
@@ -1558,17 +1555,17 @@ static void frontend_linux_get_env(int *argc,
                   path_mkdir(g_defaults.dir.playlist);
                   path_mkdir(g_defaults.dir.cheats);
                   break;
-               case INT_SD_WRITABLE:
+               case INTERNAL_STORAGE_WRITABLE:
                   fill_pathname_join(g_defaults.dir.menu_config,
-                        int_sd_dir, "RetroArch/config", sizeof(g_defaults.dir.menu_config));
+                        internal_storage_path, "RetroArch/config", sizeof(g_defaults.dir.menu_config));
                   fill_pathname_join(g_defaults.dir.remap,
                         g_defaults.dir.menu_config, "remaps", sizeof(g_defaults.dir.remap));
                   fill_pathname_join(g_defaults.dir.thumbnails,
-                        int_sd_dir, "RetroArch/thumbnails", sizeof(g_defaults.dir.thumbnails));
+                        internal_storage_path, "RetroArch/thumbnails", sizeof(g_defaults.dir.thumbnails));
                   fill_pathname_join(g_defaults.dir.playlist,
-                        int_sd_dir, "RetroArch/playlists", sizeof(g_defaults.dir.playlist));
+                        internal_storage_path, "RetroArch/playlists", sizeof(g_defaults.dir.playlist));
                   fill_pathname_join(g_defaults.dir.cheats,
-                        int_sd_dir, "RetroArch/cheats", sizeof(g_defaults.dir.cheats));
+                        internal_storage_path, "RetroArch/cheats", sizeof(g_defaults.dir.cheats));
 
                   /* TODO/FIXME - Test if this is needed at all, as far as I know,
                    * every directory we set in g_defaults already gets created if it
@@ -1593,13 +1590,13 @@ static void frontend_linux_get_env(int *argc,
             path_mkdir(buf);
 
             /* create save and system directories in the internal sd too */
-            fill_pathname_join(buf, int_sd_app_dir, "saves", sizeof(buf));
+            fill_pathname_join(buf, internal_storage_app_path, "saves", sizeof(buf));
             path_mkdir(buf);
 
-            fill_pathname_join(buf, int_sd_app_dir, "states", sizeof(buf));
+            fill_pathname_join(buf, internal_storage_app_path, "states", sizeof(buf));
             path_mkdir(buf);
 
-            fill_pathname_join(buf, int_sd_app_dir, "system", sizeof(buf));
+            fill_pathname_join(buf, internal_storage_app_path, "system", sizeof(buf));
             path_mkdir(buf);
 
             RARCH_LOG("Default savefile folder: [%s]",   g_defaults.dir.sram);
@@ -1808,9 +1805,9 @@ static int frontend_android_parse_drive_list(void *data)
    menu_entries_add(list,
          app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
    menu_entries_add(list,
-         int_sd_app_dir, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
+         internal_storage_app_path, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
    menu_entries_add(list,
-         int_sd_dir, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
+         internal_storage_path, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
 
    menu_entries_add(list, "/", "",
          MENU_FILE_DIRECTORY, 0, 0);
