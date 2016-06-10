@@ -1426,8 +1426,6 @@ static void frontend_linux_get_env(int *argc,
       else
          perms = INTERNAL_STORAGE_NOT_WRITABLE;
 
-      RARCH_LOG("Storage permissions: %d", perms);
-
       if (!string_is_empty(app_dir))
       {
          RARCH_LOG("Application location: [%s].\n", app_dir);
@@ -1490,7 +1488,7 @@ static void frontend_linux_get_env(int *argc,
             }
 
             RARCH_LOG("Default screenshot folder: [%s]", g_defaults.dir.screenshot);
-
+            RARCH_LOG("Storage permissions: %d", perms);
             switch (perms)
             {
                case INTERNAL_STORAGE_APPDIR_WRITABLE:
