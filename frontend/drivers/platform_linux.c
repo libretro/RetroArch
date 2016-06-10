@@ -1173,6 +1173,7 @@ static void frontend_linux_get_os(char *s,
 static void frontend_linux_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
+   RARCH_LOG("Configuring platform driver ...\n");
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX] = {0};
@@ -1223,7 +1224,7 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(config_path, argv, sizeof(config_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("Config file: [%s].\n", config_path);
+      RARCH_LOG("[ENV]: config file: [%s]\n", config_path);
       if (args && *config_path)
          args->config_path = config_path;
    }
@@ -1240,7 +1241,7 @@ static void frontend_linux_get_env(int *argc,
             sizeof(android_app->current_ime));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("Current IME: [%s].\n", android_app->current_ime);
+      RARCH_LOG("[ENV]: current IME: [%s]\n", android_app->current_ime);
    }
 
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
@@ -1253,7 +1254,7 @@ static void frontend_linux_get_env(int *argc,
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("USED: [%s].\n", used ? "true" : "false");
+      RARCH_LOG("[ENV]: used: [%s].\n", used ? "true" : "false");
    }
 
    /* LIBRETRO. */
@@ -1270,7 +1271,7 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(core_path, argv, sizeof(core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("Libretro path: [%s]\n", core_path);
+      RARCH_LOG("[ENV]: libretro path: [%s]\n", core_path);
       if (args && *core_path)
          args->libretro_path = core_path;
    }
@@ -1292,7 +1293,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(path))
       {
-         RARCH_LOG("Auto-start game %s.\n", path);
+         RARCH_LOG("[ENV]: auto-start game [%s]\n", path);
          if (args && *path)
             args->content_path = path;
       }
@@ -1314,7 +1315,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(internal_storage_path))
       {
-         RARCH_LOG("Internal storage location [%s]\n", internal_storage_path);
+         RARCH_LOG("[ENV]: internal storage location: [%s]\n", internal_storage_path);
       }
    }
 
@@ -1334,7 +1335,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(screenshot_dir))
       {
-         RARCH_LOG("Picture folder location [%s]\n", screenshot_dir);
+         RARCH_LOG("[ENV]: picture folder location [%s]\n", screenshot_dir);
       }
    }
 
@@ -1354,7 +1355,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(downloads_dir))
       {
-         RARCH_LOG("Download folder location [%s].\n", downloads_dir);
+         RARCH_LOG("[ENV]: download folder location [%s]\n", downloads_dir);
       }
    }
 
@@ -1373,7 +1374,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(apk_dir))
       {
-         RARCH_LOG("APK location [%s].\n", apk_dir);
+         RARCH_LOG("[ENV]: APK location [%s]\n", apk_dir);
       }
    }
 
@@ -1392,7 +1393,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(internal_storage_app_path))
       {
-         RARCH_LOG("External files location [%s]\n", internal_storage_app_path);
+         RARCH_LOG("[ENV]: external files location [%s]\n", internal_storage_app_path);
       }
    }
 
@@ -1428,7 +1429,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(app_dir))
       {
-         RARCH_LOG("Application location: [%s].\n", app_dir);
+         RARCH_LOG("[ENV]: application location: [%s]\n", app_dir);
          if (args && *app_dir)
          {
             char buf[PATH_MAX_LENGTH] = {0};
@@ -1473,7 +1474,7 @@ static void frontend_linux_get_env(int *argc,
                path_mkdir(g_defaults.dir.core_assets);
             }
 
-            RARCH_LOG("Default download folder: [%s]", g_defaults.dir.core_assets);
+            RARCH_LOG("[ENV]: default download folder: [%s]", g_defaults.dir.core_assets);
 
             if(*screenshot_dir && test_permissions(screenshot_dir))
             {
@@ -1487,8 +1488,8 @@ static void frontend_linux_get_env(int *argc,
                path_mkdir(g_defaults.dir.screenshot);
             }
 
-            RARCH_LOG("Default screenshot folder: [%s]", g_defaults.dir.screenshot);
-            RARCH_LOG("Storage permissions: %d", perms);
+            RARCH_LOG("[ENV]: default screenshot folder: [%s]", g_defaults.dir.screenshot);
+
             switch (perms)
             {
                case INTERNAL_STORAGE_APPDIR_WRITABLE:
@@ -1597,9 +1598,9 @@ static void frontend_linux_get_env(int *argc,
             fill_pathname_join(buf, internal_storage_app_path, "system", sizeof(buf));
             path_mkdir(buf);
 
-            RARCH_LOG("Default savefile folder: [%s]",   g_defaults.dir.sram);
-            RARCH_LOG("Default savestate folder: [%s]",  g_defaults.dir.savestate);
-            RARCH_LOG("Default system folder: [%s]",     g_defaults.dir.system);
+            RARCH_LOG("[ENV]: default savefile folder: [%s]",   g_defaults.dir.sram);
+            RARCH_LOG("[ENV]: default savestate folder: [%s]",  g_defaults.dir.savestate);
+            RARCH_LOG("[ENV]: default system folder: [%s]",     g_defaults.dir.system);
          }
       }
    }
