@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <QtWidgets/QFileDialog>
+#include <QtCore/QString>
+
 #include "../../ui_companion_driver.h"
 
 static bool ui_browser_window_qt_open(ui_browser_window_state_t *state)
