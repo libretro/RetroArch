@@ -35,8 +35,8 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("SDCARD", Environment.getExternalStorageDirectory().getAbsolutePath());
 		retro.putExtra("DOWNLOADS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
 		retro.putExtra("SCREENSHOTS", Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
-        String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/com.retroarch/files";
-        retro.putExtra("EXTERNAL", external);
+		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/com.retroarch/files";
+		retro.putExtra("EXTERNAL", external);
 	}
 
 	@Override
@@ -47,29 +47,29 @@ public final class MainMenuActivity extends PreferenceActivity
 		// Bind audio stream to hardware controls.
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
-      UserPreferences.updateConfigFile(this);
-      final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-      Intent retro;
-      
-      if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB))
-      {
-         retro = new Intent(this, RetroActivityFuture.class);
-      }
-      else
-      {
-         retro = new Intent(this, RetroActivityPast.class);
-      }
-      retro.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+		UserPreferences.updateConfigFile(this);
+		final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		Intent retro;
+		
+		if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB))
+		{
+		   retro = new Intent(this, RetroActivityFuture.class);
+		}
+		else
+		{
+		   retro = new Intent(this, RetroActivityPast.class);
+		}
+		retro.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-      startRetroActivity(
-            retro,
-            null,
-            prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
-            UserPreferences.getDefaultConfigPath(this),
-            Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
-            getApplicationInfo().dataDir,
-            getApplicationInfo().sourceDir);
-      startActivity(retro);
-      finish();
+		startRetroActivity(
+				retro,
+				null,
+				prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
+				UserPreferences.getDefaultConfigPath(this),
+				Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD),
+				getApplicationInfo().dataDir,
+				getApplicationInfo().sourceDir);
+		startActivity(retro);
+		finish();
 	}
 }
