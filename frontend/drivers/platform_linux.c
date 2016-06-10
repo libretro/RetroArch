@@ -547,7 +547,7 @@ bool test_permissions(const char *path)
    fill_pathname_join(buf, path, ".retroarch", sizeof(buf));
    ret = path_mkdir(buf);
 
-   RARCH_LOG("Create %s %s\n", buf, ret ? "true" : "false");
+   RARCH_LOG("Create %s in %s %s\n", buf, path, ret ? "true" : "false");
 
    if(ret)
       rmdir(buf);
