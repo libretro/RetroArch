@@ -381,15 +381,15 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
 - (void)openDocument:(id)sender
 {
    const ui_browser_window_t *browser = ui_companion_driver_get_browser_window_ptr();
-   settings_t *settings  = config_get_ptr();
-   NSString *startdir    = BOXSTRING(settings->directory.menu_content);
-    
-   if (!startdir.length)
-      startdir           = BOXSTRING("/");
     
     if (browser)
     {
         ui_browser_window_state_t browser_state = {0};
+        settings_t *settings  = config_get_ptr();
+        NSString *startdir    = BOXSTRING(settings->directory.menu_content);
+        
+        if (!startdir.length)
+            startdir           = BOXSTRING("/");
         
         browser_state.title = strdup("Load Content");
         browser_state.startdir = strdup([startdir UTF8String]);

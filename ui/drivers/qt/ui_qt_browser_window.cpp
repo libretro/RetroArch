@@ -19,25 +19,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <QtWidgets/QFileDialog>
+#include <QtCore/QString>
+
 #include "../../ui_companion_driver.h"
 
-static bool ui_application_null_initialize(void)
+static bool ui_browser_window_qt_open(ui_browser_window_state_t *state)
 {
    return true;
 }
 
-static bool ui_application_null_pending_events(void)
+static bool ui_browser_window_qt_save(ui_browser_window_state_t *state)
 {
-   return true;
+   return false;
 }
 
-static void ui_application_null_process_events(void)
-{
-}
-
-const ui_application_t ui_application_null = {
-   ui_application_null_initialize,
-   ui_application_null_pending_events,
-   ui_application_null_process_events,
-   "null"
+const ui_browser_window_t ui_browser_window_qt = {
+   ui_browser_window_qt_open,
+   ui_browser_window_qt_save,
+   "qt"
 };

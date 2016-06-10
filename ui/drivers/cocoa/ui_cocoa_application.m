@@ -23,6 +23,11 @@
 #include "cocoa_common.h"
 #include "../../ui_companion_driver.h"
 
+static bool ui_application_cocoa_initialize(void)
+{
+   return true;
+}
+
 static bool ui_application_cocoa_pending_events(void)
 {
    NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantPast] inMode:NSDefaultRunLoopMode dequeue:YES];
@@ -45,6 +50,7 @@ static void ui_application_cocoa_process_events(void)
 }
 
 const ui_application_t ui_application_cocoa = {
+   ui_application_cocoa_initialize,
    ui_application_cocoa_pending_events,
    ui_application_cocoa_process_events,
    "cocoa"

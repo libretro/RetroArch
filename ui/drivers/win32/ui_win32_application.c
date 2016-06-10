@@ -23,6 +23,11 @@
 
 #include "../../ui_companion_driver.h"
 
+static bool ui_application_win32_initialize(void)
+{
+   return true;
+}
+
 static bool ui_application_win32_pending_events(void)
 {
    MSG msg;
@@ -44,6 +49,7 @@ static void ui_application_win32_process_events(void)
 }
 
 const ui_application_t ui_application_win32 = {
+   ui_application_win32_initialize,
    ui_application_win32_pending_events,
    ui_application_win32_process_events,
    "win32"

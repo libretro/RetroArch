@@ -19,25 +19,30 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <QtCore/qglobal.h>
+#include <QtWidgets/QApplication>
+
 #include "../../ui_companion_driver.h"
 
-static bool ui_application_null_initialize(void)
+static bool ui_application_qt_initialize(void)
 {
    return true;
 }
 
-static bool ui_application_null_pending_events(void)
+static bool ui_application_qt_pending_events(void)
 {
-   return true;
+  return QApplication::hasPendingEvents();
 }
 
-static void ui_application_null_process_events(void)
+static void ui_application_qt_process_events(void)
 {
+  while(ui_application_qt_pending_events())
+     QApplication::processEvents();
 }
 
-const ui_application_t ui_application_null = {
-   ui_application_null_initialize,
-   ui_application_null_pending_events,
-   ui_application_null_process_events,
-   "null"
+const ui_application_t ui_application_qt = {
+   ui_application_qt_initialize,
+   ui_application_qt_pending_events,
+   ui_application_qt_process_events,
+   "qt"
 };

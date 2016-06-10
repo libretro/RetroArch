@@ -320,8 +320,11 @@ void shader_dlg_params_reload(void)
 
 static void shader_dlg_update_on_top_state(void)
 {
-   bool on_top = SendMessage(g_shader_dlg.on_top_checkbox.hwnd, BM_GETCHECK, 0, 0) == BST_CHECKED;
-   SetWindowPos(g_shader_dlg.window.hwnd, on_top ? HWND_TOPMOST : HWND_NOTOPMOST , 0, 0, 0, 0,
+   bool on_top = SendMessage(g_shader_dlg.on_top_checkbox.hwnd,
+         BM_GETCHECK, 0, 0) == BST_CHECKED;
+
+   SetWindowPos(g_shader_dlg.window.hwnd, on_top 
+         ? HWND_TOPMOST : HWND_NOTOPMOST , 0, 0, 0, 0,
          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
 
@@ -335,7 +338,8 @@ void shader_dlg_show(HWND parent_hwnd)
       {
          RECT parent_rect;
          GetWindowRect(parent_hwnd, &parent_rect);
-         SetWindowPos(g_shader_dlg.window.hwnd, HWND_TOP, parent_rect.right, parent_rect.top,
+         SetWindowPos(g_shader_dlg.window.hwnd, HWND_TOP,
+               parent_rect.right, parent_rect.top,
                0, 0, SWP_NOSIZE | SWP_SHOWWINDOW);
       }
       else
@@ -388,9 +392,11 @@ static LRESULT CALLBACK ShaderDlgWndProc(HWND hwnd, UINT message,
 
          if (SendMessage(g_shader_dlg.controls[i].checkbox.hwnd,
                   BM_GETCHECK, 0, 0) == BST_CHECKED)
-            shader_info.data->parameters[i].current = shader_info.data->parameters[i].maximum;
+            shader_info.data->parameters[i].current = 
+               shader_info.data->parameters[i].maximum;
          else
-            shader_info.data->parameters[i].current = shader_info.data->parameters[i].minimum;
+            shader_info.data->parameters[i].current = 
+               shader_info.data->parameters[i].minimum;
 
          break;
 
@@ -506,24 +512,29 @@ static bool win32_browser(
       const char *title,
       const char *initial_dir)
 {
-   OPENFILENAME ofn;
+   bool result = false;
+   const ui_browser_window_t *browser = 
+      ui_companion_driver_get_browser_window_ptr();
 
-   memset((void*)&ofn, 0, sizeof(OPENFILENAME));
+   if (browser)
+   {
+      ui_browser_window_state_t browser_state;
 
-   ofn.lStructSize     = sizeof(OPENFILENAME);
-   ofn.hwndOwner       = owner;
-   ofn.lpstrFilter     = extensions;
-   ofn.lpstrFile       = filename;
-   ofn.lpstrTitle      = title;
-   ofn.lpstrInitialDir = TEXT(initial_dir);
-   ofn.lpstrDefExt     = "";
-   ofn.nMaxFile        = PATH_MAX;
-   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
+      browser_state.filters  = strdup(extensions);
+      browser_state.title    = strdup(title);
+      browser_state.startdir = strdup(initial_dir);
+      browser_state.path     = strdup(filename);
+      browser_state.window   = owner;
 
-   if (!GetOpenFileName(&ofn))
-      return false;
+      result = browser->open(&browser_state);
 
-   return true;
+      free(browser_state.filters);
+      free(browser_state.title);
+      free(browser_state.startdir);
+      free(browser_state.path);
+   }
+
+   return result;
 }
 
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
@@ -566,18 +577,19 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                   break;
             }
 
-            if (win32_browser(owner, win32_file,
+            if (!win32_browser(owner, win32_file,
                      extensions, title, initial_dir))
-            {
-               content_ctx_info_t content_info = {0};
+               break;
 
-               switch (mode)
-               {
-                  case ID_M_LOAD_CORE:
-                     runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, win32_file);
-                     cmd         = CMD_EVENT_LOAD_CORE;
-                     break;
-                  case ID_M_LOAD_CONTENT:
+            switch (mode)
+            {
+               case ID_M_LOAD_CORE:
+                  runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, win32_file);
+                  cmd         = CMD_EVENT_LOAD_CORE;
+                  break;
+               case ID_M_LOAD_CONTENT:
+                  {
+                     content_ctx_info_t content_info = {0};
                      runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, win32_file);
 
                      do_wm_close = true;
@@ -587,8 +599,8 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                            CORE_TYPE_PLAIN,
                            CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_COMPANION_UI,
                            NULL, NULL);
-                     break;
-               }
+                  }
+                  break;
             }
          }
          break;
