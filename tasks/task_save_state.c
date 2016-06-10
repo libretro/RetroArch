@@ -65,18 +65,6 @@ struct sram_block
  **/
 bool content_undo_load_state()
 {
-   if (undo_load_buf.data == NULL || undo_load_buf.size == 0) {
-      /* TODO/FIXME - Use msg_hash_to_str in here */
-      /* TODO/FIXME - Should we be using runloop_msg_queue_push in here? */
-
-      RARCH_LOG("%s\n",
-         "No load state to undo.");
-      runloop_msg_queue_push("No load state to undo.", 2, 180, true);
-
-      /* Even though there was no undo, signal this as a success */
-      return true;
-   }
-
    unsigned i;
    //ssize_t size;
    retro_ctx_serialize_info_t serial_info;
@@ -191,9 +179,7 @@ bool content_undo_load_state()
       RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
          undo_load_buf.path);
-   } else {
-      runloop_msg_queue_push("Undid load state.", 2, 180, true);
-   }
+   } 
 
    return ret;
 }
@@ -206,15 +192,6 @@ bool content_undo_load_state()
  **/
 bool content_undo_save_state()
 {
-   if (undo_save_buf.data == NULL || undo_save_buf.size == 0)
-   {
-      /* TODO/FIXME - Use msg_hash_to_str in here */
-      RARCH_LOG("%s\n",
-         "No save state to undo.");
-      runloop_msg_queue_push("No save state to undo.", 2, 180, false);
-      return true;
-   }
-
    bool ret = filestream_write_file(undo_save_buf.path, undo_save_buf.data, undo_save_buf.size);
 
    /* Wipe the save file buffer as it's intended to be one use only */
@@ -230,8 +207,6 @@ bool content_undo_save_state()
       RARCH_ERR("%s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
          undo_save_buf.path);
-   } else {
-      runloop_msg_queue_push("Undid save state.", 2, 180, true);
    }
 
    return ret;
@@ -511,4 +486,14 @@ bool content_reset_savestate_backups()
    undo_load_buf.size = 0;
 
    return true;
+}
+
+bool content_undo_load_buf_is_empty()
+{
+   return undo_load_buf.data == NULL || undo_load_buf.size == 0;
+}
+
+bool content_undo_save_buf_is_empty()
+{
+   return undo_save_buf.data == NULL || undo_save_buf.size == 0;
 }

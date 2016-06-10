@@ -79,6 +79,10 @@ bool content_init(void);
 /* Resets the state and savefile backup buffers */
 bool content_reset_savestate_backups();
 
+/* Checks if the buffers are empty */
+bool content_undo_load_buf_is_empty();
+bool content_undo_save_buf_is_empty();
+
 RETRO_END_DECLS
 
 #endif

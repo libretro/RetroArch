@@ -1597,12 +1597,25 @@ static void command_event_save_state(const char *path,
 
 static void command_event_undo_save_state(char *s, size_t len)
 {
+   if (content_undo_save_buf_is_empty())
+   {
+      /* TODO/FIXME - use msg_hash_to_str here */
+      snprintf(s, len, "%s",
+         "No save state has been overwritten yet.");
+      return; 
+   }
+
    if (!content_undo_save_state())
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
             "RAM");
+      return;
    }
+
+      /* TODO/FIXME - use msg_hash_to_str here */
+      snprintf(s, len, "%s",
+         "Restored old save state.");
 }
 
 /**
@@ -1635,12 +1648,26 @@ static void command_event_load_state(const char *path, char *s, size_t len)
 
 static void command_event_undo_load_state(char *s, size_t len)
 {
+   
+   if (content_undo_load_buf_is_empty())
+   {
+      /* TODO/FIXME - use msg_hash_to_str here */
+      snprintf(s, len, "%s",
+         "No state has been loaded yet.");
+      return; 
+   }
+
    if (!content_undo_load_state())
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
             "RAM");
-   } 
+      return;
+   }
+
+   /* TODO/FIXME - use msg_hash_to_str here */
+      snprintf(s, len, "%s",
+         "Undid load state.");
 }
 
 static void command_event_main_state(unsigned cmd)
