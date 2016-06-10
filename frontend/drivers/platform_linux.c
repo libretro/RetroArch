@@ -1428,7 +1428,7 @@ static void frontend_linux_get_env(int *argc,
 
       RARCH_LOG("Storage permissions: %d", perms);
 
-      if (*app_dir)
+      if (!string_is_empty(app_dir))
       {
          RARCH_LOG("Application location: [%s].\n", app_dir);
          if (args && *app_dir)
