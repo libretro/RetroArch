@@ -61,6 +61,7 @@ typedef struct ui_msg_window_state
    enum ui_msg_window_buttons buttons;
    char *text;
    char *title;
+   void *window;
 } ui_msg_window_state;
 
 typedef struct ui_browser_window_state
@@ -141,6 +142,7 @@ typedef struct ui_companion_driver
 
 extern const ui_browser_window_t   ui_browser_window_null;
 extern const ui_browser_window_t   ui_browser_window_cocoa;
+extern const ui_browser_window_t   ui_browser_window_qt;
 extern const ui_browser_window_t   ui_browser_window_win32;
 
 extern const ui_window_t           ui_window_null;
@@ -150,6 +152,7 @@ extern const ui_window_t           ui_window_win32;
 
 extern const ui_msg_window_t       ui_msg_window_null;
 extern const ui_msg_window_t       ui_msg_window_win32;
+extern const ui_msg_window_t       ui_msg_window_qt;
 extern const ui_msg_window_t       ui_msg_window_cocoa;
 
 extern const ui_application_t      ui_application_null;
