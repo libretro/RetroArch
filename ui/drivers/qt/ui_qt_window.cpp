@@ -20,33 +20,49 @@
 #include <string.h>
 
 #include "wrapper/wrapper.h"
+#include "../ui_qt.h"
 
 #include "../../ui_companion_driver.h"
 
 static void ui_window_qt_destroy(void *data)
 {
+   ui_window_qt_t *window = (ui_window_qt_t*)data;
+
+   delete window->qtWindow;
 }
 
 static void ui_window_qt_set_focused(void *data)
 {
+   ui_window_qt_t *window = (ui_window_qt_t*)data;
+
+   window->qtWindow->raise();
+   window->qtWindow->activateWindow();
 }
 
 static void ui_window_qt_set_visible(void *data,
         bool set_visible)
 {
+   /* TODO/FIXME */
 }
 
 static void ui_window_qt_set_title(void *data, char *buf)
 {
+   ui_window_qt_t *window = (ui_window_qt_t*)data;
+
+   window->qtWindow->setWindowTitle(QString::fromUtf8(buf));
 }
 
 static void ui_window_qt_set_droppable(void *data, bool droppable)
 {
+   ui_window_qt_t *window = (ui_window_qt_t*)data;
+
+  window->qtWindow->setAcceptDrops(droppable);
 }
 
 static bool ui_window_qt_focused(void *data)
 {
-   return true;
+   ui_window_qt_t *window = (ui_window_qt_t*)data;
+   return window->qtWindow->isActiveWindow() && !window->qtWindow->isMinimized();
 }
 
 const ui_window_t ui_window_qt = {
