@@ -1290,7 +1290,7 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(path, argv, sizeof(path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*path)
+      if (!string_is_empty(path))
       {
          RARCH_LOG("Auto-start game %s.\n", path);
          if (args && *path)
@@ -1306,7 +1306,7 @@ static void frontend_linux_get_env(int *argc,
    {
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      *internal_storage_path = '\0';
+      internal_storage_path[0] = '\0';
 
       if (argv && *argv)
          strlcpy(internal_storage_path, argv, sizeof(internal_storage_path));
@@ -1371,7 +1371,7 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(apk_dir, argv, sizeof(apk_dir));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*apk_dir)
+      if (!string_is_empty(apk_dir))
       {
          RARCH_LOG("APK location [%s].\n", apk_dir);
       }
@@ -1390,7 +1390,7 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(internal_storage_app_path, argv, sizeof(internal_storage_app_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      if (*internal_storage_app_path)
+      if (!string_is_empty(internal_storage_app_path))
       {
          RARCH_LOG("External files location [%s]\n", internal_storage_app_path);
       }
