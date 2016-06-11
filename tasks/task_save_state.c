@@ -59,7 +59,7 @@ struct sram_block
 
 /**
  * undo_load_state:
-  * Revert to the state before a state was loaded.
+ * Revert to the state before a state was loaded.
  *
  * Returns: true if successful, false otherwise.
  **/
@@ -186,7 +186,7 @@ bool content_undo_load_state()
 
 /**
  * undo_save_state:
-  * Reverts the last save operation
+ * Reverts the last save operation
  *
  * Returns: true if successful, false otherwise.
  **/
@@ -196,12 +196,11 @@ bool content_undo_save_state()
 
    /* Wipe the save file buffer as it's intended to be one use only */
    undo_save_buf.path[0] = '\0';
+   undo_save_buf.size    = 0;
    if (undo_save_buf.data) {
       free(undo_save_buf.data);
       undo_save_buf.data = NULL;
    }
-
-   undo_save_buf.data = 0;
 
    if (!ret) {
       RARCH_ERR("%s \"%s\".\n",
@@ -280,6 +279,11 @@ bool content_save_state(const char *path, bool save_to_disk)
          }
 
          undo_load_buf.data = malloc(info.size);
+         if (!undo_load_buf.data) {
+            free(data);
+            return false;
+         }
+
          memcpy(undo_load_buf.data, data, info.size);
          undo_load_buf.size = info.size;
          strcpy(undo_load_buf.path, path);
@@ -334,8 +338,7 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
    /* This means we're backing up the file in memory, so content_undo_save_state()
    can restore it */
    if (load_to_backup_buffer) {
-      strcpy(undo_save_buf.path, path);
-
+      
       /* If we were previously backing up a file, let go of it first */
       if (undo_save_buf.data) {
          free(undo_save_buf.data);
@@ -343,9 +346,12 @@ bool content_load_state(const char *path, bool load_to_backup_buffer)
       }
 
       undo_save_buf.data = malloc(size);
-      memcpy(undo_save_buf.data, buf, size);
+      if (!undo_save_buf.data)
+         goto error;
 
+      memcpy(undo_save_buf.data, buf, size);
       undo_save_buf.size = size;
+      strcpy(undo_save_buf.path, path);
 
       free(buf);
       return true;
@@ -460,7 +466,8 @@ bool content_rename_state(const char *origin, const char *dest)
 
 /*
 * 
-* TODO/FIXME: Figure out when and where this should be called
+* TODO/FIXME: Figure out when and where this should be called.
+* As it is, when e.g. closing Gambatte, we get the same printf message 4 times.
 *
 */
 bool content_reset_savestate_backups()
