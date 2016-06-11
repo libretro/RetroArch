@@ -1002,14 +1002,13 @@ static void mui_frame(void *data)
    menu_display_unset_viewport();
 }
 
-static void mui_font(void)
+static void mui_font(enum application_special_type type)
 {
    menu_display_ctx_font_t font_info;
    char fontpath[PATH_MAX_LENGTH]  = {0};
    int                   font_size = menu_display_get_font_size();
 
-   fill_pathname_application_special(fontpath, sizeof(fontpath),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT);
+   fill_pathname_application_special(fontpath, sizeof(fontpath), type);
 
    font_info.path = fontpath;
    font_info.size = font_size;
@@ -1051,7 +1050,7 @@ static void mui_layout(mui_handle_t *mui)
    /* we assume the average glyph aspect ratio is close to 3:4 */
    mui->glyph_width = new_font_size * 3/4;
 
-   mui_font();
+   mui_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT);
 
    fb_buf = menu_display_get_font_buffer();
 
