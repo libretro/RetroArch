@@ -383,21 +383,6 @@ static float *xmb_gradient_ident(void)
 }
 #endif
 
-static void xmb_fill_default_background_path(xmb_handle_t *xmb,
-      char *path, size_t size)
-{
-   char iconpath[PATH_MAX_LENGTH]  = {0};
-   settings_t *settings = config_get_ptr();
-
-   fill_pathname_application_special(iconpath, sizeof(iconpath),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
-
-   fill_pathname_join(path, iconpath, "bg.png", size);
-
-   if (*settings->path.menu_wallpaper)
-      strlcpy(path, settings->path.menu_wallpaper, size);
-}
-
 static size_t xmb_list_get_selection(void *data)
 {
    xmb_handle_t *xmb      = (xmb_handle_t*)data;
@@ -1060,7 +1045,8 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       strlcat(path, ".png", sizeof(path));
 
       if (!path_file_exists(path))
-          xmb_fill_default_background_path(xmb, path, sizeof(path));
+         fill_pathname_application_special(path, sizeof(path),
+               APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
        if(!string_is_equal(path, xmb->background_file_path))
        {
@@ -2787,8 +2773,9 @@ static void xmb_context_reset(void *data)
    if (!xmb)
       return;
 
-   xmb_fill_default_background_path(xmb,
-         xmb->background_file_path, sizeof(xmb->background_file_path));
+   fill_pathname_application_special(xmb->background_file_path,
+         sizeof(xmb->background_file_path),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG);
 
    fill_pathname_application_special(iconpath, sizeof(iconpath),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
