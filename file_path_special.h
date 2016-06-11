@@ -25,7 +25,8 @@
 enum application_directory
 {
    APPLICATION_DIRECTORY_NONE = 0,
-   APPLICATION_DIRECTORY_ASSETS_XMB
+   APPLICATION_DIRECTORY_ASSETS_XMB,
+   APPLICATION_DIRECTORY_ASSETS_XMB_ICONS
 };
 
 bool fill_pathname_application_data(char *s, size_t len);

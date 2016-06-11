@@ -269,6 +269,20 @@ void fill_pathname_application_directory(char *s, size_t len, enum application_d
 {
    switch (type)
    {
+      case APPLICATION_DIRECTORY_ASSETS_XMB_ICONS:
+#ifdef HAVE_XMB
+         {
+            char s1[PATH_MAX_LENGTH] = {0};
+            char s2[PATH_MAX_LENGTH] = {0};
+            fill_pathname_application_directory(s1, sizeof(s1),
+                  APPLICATION_DIRECTORY_ASSETS_XMB);
+            fill_pathname_join(s2, s1, "png",
+                  sizeof(s2));
+            fill_pathname_slash(s2, sizeof(s2));
+            strlcpy(s, s2, len);
+         }
+#endif
+         break;
       case APPLICATION_DIRECTORY_ASSETS_XMB:
 #ifdef HAVE_XMB
          {

@@ -194,7 +194,6 @@ typedef struct xmb_handle
          float vertical;
       } spacing;
 
-      char dir[4];
       int size;
    } icon;
 
@@ -387,22 +386,19 @@ static float *xmb_gradient_ident(void)
 static void xmb_fill_default_background_path(xmb_handle_t *xmb,
       char *path, size_t size)
 {
-    char themepath[PATH_MAX_LENGTH] = {0};
-    char iconpath[PATH_MAX_LENGTH]  = {0};
-    settings_t *settings = config_get_ptr();
+   char themepath[PATH_MAX_LENGTH] = {0};
+   char iconpath[PATH_MAX_LENGTH]  = {0};
+   settings_t *settings = config_get_ptr();
 
-    strlcpy(xmb->icon.dir, "png", sizeof(xmb->icon.dir));
+   fill_pathname_application_directory(themepath, sizeof(themepath),
+         APPLICATION_DIRECTORY_ASSETS_XMB);
+   fill_pathname_application_directory(iconpath, sizeof(iconpath),
+         APPLICATION_DIRECTORY_ASSETS_XMB_ICONS);
 
-    fill_pathname_application_directory(themepath, sizeof(themepath),
-          APPLICATION_DIRECTORY_ASSETS_XMB);
+   fill_pathname_join(path, iconpath, "bg.png", size);
 
-    fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
-    fill_pathname_slash(iconpath, sizeof(iconpath));
-
-    fill_pathname_join(path, iconpath, "bg.png", size);
-
-    if (*settings->path.menu_wallpaper)
-        strlcpy(path, settings->path.menu_wallpaper, size);
+   if (*settings->path.menu_wallpaper)
+      strlcpy(path, settings->path.menu_wallpaper, size);
 }
 
 static size_t xmb_list_get_selection(void *data)
@@ -1376,9 +1372,8 @@ static void xmb_context_reset_horizontal_list(
       strlcpy(sysname, path, sizeof(sysname));
       path_remove_extension(sysname);
 
-      fill_pathname_join(iconpath, themepath, xmb->icon.dir,
-            sizeof(iconpath));
-      fill_pathname_slash(iconpath, sizeof(iconpath));
+      fill_pathname_application_directory(iconpath, sizeof(iconpath),
+            APPLICATION_DIRECTORY_ASSETS_XMB_ICONS);
 
       fill_pathname_join(texturepath, iconpath, sysname,
             sizeof(texturepath));
@@ -2803,14 +2798,13 @@ static void xmb_context_reset(void *data)
    if (!xmb)
       return;
 
-   strlcpy(xmb->icon.dir, "png", sizeof(xmb->icon.dir));
    xmb_fill_default_background_path(xmb,
          xmb->background_file_path, sizeof(xmb->background_file_path));
 
    fill_pathname_application_directory(themepath, sizeof(themepath),
          APPLICATION_DIRECTORY_ASSETS_XMB);
-   fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
-   fill_pathname_slash(iconpath, sizeof(iconpath));
+   fill_pathname_application_directory(iconpath, sizeof(iconpath),
+         APPLICATION_DIRECTORY_ASSETS_XMB_ICONS);
 
    xmb_layout(xmb);
    xmb_font(xmb);
