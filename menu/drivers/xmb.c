@@ -386,12 +386,9 @@ static float *xmb_gradient_ident(void)
 static void xmb_fill_default_background_path(xmb_handle_t *xmb,
       char *path, size_t size)
 {
-   char themepath[PATH_MAX_LENGTH] = {0};
    char iconpath[PATH_MAX_LENGTH]  = {0};
    settings_t *settings = config_get_ptr();
 
-   fill_pathname_application_directory(themepath, sizeof(themepath),
-         APPLICATION_DIRECTORY_ASSETS_XMB);
    fill_pathname_application_directory(iconpath, sizeof(iconpath),
          APPLICATION_DIRECTORY_ASSETS_XMB_ICONS);
 
@@ -1330,11 +1327,15 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb)
 }
 
 static void xmb_context_reset_horizontal_list(
-      xmb_handle_t *xmb, const char *themepath)
+      xmb_handle_t *xmb)
 {
    unsigned i;
    int depth; /* keep this integer */
-   size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
+   size_t list_size                = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
+   char themepath[PATH_MAX_LENGTH] = {0};
+
+   fill_pathname_application_directory(themepath, sizeof(themepath),
+         APPLICATION_DIRECTORY_ASSETS_XMB);
 
    xmb->categories.x_pos = xmb->icon.spacing.horizontal *
       -(float)xmb->categories.selection_ptr;
@@ -1406,12 +1407,7 @@ static void xmb_context_reset_horizontal_list(
 
 static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 {
-   char themepath[PATH_MAX_LENGTH] = {0};
-
    settings_t *settings = config_get_ptr();
-
-   fill_pathname_application_directory(themepath, sizeof(themepath),
-         APPLICATION_DIRECTORY_ASSETS_XMB);
 
    xmb_context_destroy_horizontal_list(xmb);
    if (xmb->horizontal_list)
@@ -1421,7 +1417,7 @@ static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
    menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
 
    xmb_init_horizontal_list(xmb);
-   xmb_context_reset_horizontal_list(xmb, themepath);
+   xmb_context_reset_horizontal_list(xmb);
 }
 
 static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
@@ -2791,7 +2787,6 @@ static void xmb_context_reset_background(const char *iconpath)
 
 static void xmb_context_reset(void *data)
 {
-   char themepath[PATH_MAX_LENGTH] = {0};
    char iconpath[PATH_MAX_LENGTH]  = {0};
    settings_t *settings            = config_get_ptr();
    xmb_handle_t *xmb               = (xmb_handle_t*)data;
@@ -2801,8 +2796,6 @@ static void xmb_context_reset(void *data)
    xmb_fill_default_background_path(xmb,
          xmb->background_file_path, sizeof(xmb->background_file_path));
 
-   fill_pathname_application_directory(themepath, sizeof(themepath),
-         APPLICATION_DIRECTORY_ASSETS_XMB);
    fill_pathname_application_directory(iconpath, sizeof(iconpath),
          APPLICATION_DIRECTORY_ASSETS_XMB_ICONS);
 
@@ -2810,7 +2803,7 @@ static void xmb_context_reset(void *data)
    xmb_font(xmb);
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
-   xmb_context_reset_horizontal_list(xmb, themepath);
+   xmb_context_reset_horizontal_list(xmb);
 
    if (!string_is_equal(xmb_thumbnails_ident(), "OFF"))
       xmb_update_thumbnail_image(xmb);
