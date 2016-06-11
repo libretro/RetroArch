@@ -301,16 +301,27 @@ void fill_pathname_application_directory(char *s, size_t len, enum application_d
          }
 #endif
          break;
+      case APPLICATION_DIRECTORY_ASSETS_MATERIALUI:
+#ifdef HAVE_MATERIALUI
+         {
+            settings_t *settings = config_get_ptr();
+
+            fill_pathname_join(
+                  s,
+                  settings->directory.assets,
+                  "glui",
+                  len);
+         }
+#endif
+         break;
       case APPLICATION_DIRECTORY_ASSETS_MATERIALUI_ICONS:
 #ifdef HAVE_MATERIALUI
          {
             char s1[PATH_MAX_LENGTH] = {0};
             settings_t *settings     = config_get_ptr();
-            fill_pathname_join(
-                  s1,
-                  settings->directory.assets,
-                  "glui",
-                  sizeof(s1));
+
+            fill_pathname_application_directory(s1,
+                  sizeof(s1), APPLICATION_DIRECTORY_ASSETS_MATERIALUI);
             fill_pathname_slash(s1, sizeof(s1));
             strlcpy(s, s1, len);
          }

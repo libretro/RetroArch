@@ -1010,8 +1010,8 @@ static void mui_font(void)
    settings_t            *settings = config_get_ptr();
    int                   font_size = menu_display_get_font_size();
 
-   fill_pathname_join(mediapath, settings->directory.assets,
-         "glui", sizeof(mediapath));
+   fill_pathname_application_directory(mediapath, sizeof(mediapath),
+         APPLICATION_DIRECTORY_ASSETS_MATERIALUI);
    fill_pathname_join(fontpath, mediapath,
          "Roboto-Regular.ttf", sizeof(fontpath));
 
