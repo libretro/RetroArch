@@ -1006,7 +1006,6 @@ static void mui_font(void)
 {
    menu_display_ctx_font_t font_info;
    char fontpath[PATH_MAX_LENGTH]  = {0};
-   settings_t            *settings = config_get_ptr();
    int                   font_size = menu_display_get_font_size();
 
    fill_pathname_application_special(fontpath, sizeof(fontpath),

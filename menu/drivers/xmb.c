@@ -1407,8 +1407,6 @@ static void xmb_context_reset_horizontal_list(
 
 static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 {
-   settings_t *settings = config_get_ptr();
-
    xmb_context_destroy_horizontal_list(xmb);
    if (xmb->horizontal_list)
       file_list_free(xmb->horizontal_list);
@@ -2785,7 +2783,6 @@ static void xmb_context_reset_background(const char *iconpath)
 static void xmb_context_reset(void *data)
 {
    char iconpath[PATH_MAX_LENGTH]  = {0};
-   settings_t *settings            = config_get_ptr();
    xmb_handle_t *xmb               = (xmb_handle_t*)data;
    if (!xmb)
       return;
