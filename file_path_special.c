@@ -270,6 +270,34 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
 {
    switch (type)
    {
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_ICONS:
+#ifdef HAVE_ZARCH
+         {
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT:
+#ifdef HAVE_ZARCH
+         {
+            char s1[PATH_MAX_LENGTH] = {0};
+            fill_pathname_application_special(s1, sizeof(s1),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH);
+            fill_pathname_join(s,
+                  s1, "Roboto-Condensed.ttf", len);
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH:
+#ifdef HAVE_ZARCH
+         {
+            settings_t *settings     = config_get_ptr();
+            fill_pathname_join(s, 
+                  settings->directory.assets,
+                  "zarch",
+                  len);
+         }
+#endif
+         break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
 #ifdef HAVE_XMB
          {

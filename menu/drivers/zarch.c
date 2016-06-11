@@ -30,12 +30,14 @@
 #include <formats/image.h>
 #include <compat/strl.h>
 #include <retro_stat.h>
+#include <string/stdstring.h>
 
 #include "menu_generic.h"
 
 #include "../../config.def.h"
 
 #include "../../list_special.h"
+#include "../../file_path_special.h"
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
@@ -170,18 +172,12 @@ static enum zarch_layout_type zarch_layout;
 static void zarch_zui_font(void)
 {
    menu_display_ctx_font_t font_info;
-   char mediapath[PATH_MAX_LENGTH] = {0};
    char fontpath[PATH_MAX_LENGTH]  = {0};
-   settings_t            *settings = config_get_ptr();
    int                   font_size = menu_display_get_font_size();
 
-   fill_pathname_join(
-         mediapath,
-         settings->directory.assets,
-         "zarch",
-         sizeof(mediapath));
-   fill_pathname_join(fontpath,
-         mediapath, "Roboto-Condensed.ttf", sizeof(fontpath));
+   fill_pathname_application_special(
+         fontpath, sizeof(fontpath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT);
 
    font_info.path = fontpath;
    font_info.size = font_size;
