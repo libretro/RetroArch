@@ -1184,7 +1184,6 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    const char *game_name                  = NULL;
    rarch_system_info_t *system            = NULL;
    global_t *global                       = global_get_ptr();
-   settings_t *settings                   = config_get_ptr();
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
