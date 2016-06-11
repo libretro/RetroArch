@@ -44,6 +44,7 @@
 #include "configuration.h"
 #include "file_path_special.h"
 
+#include "runloop.h"
 #include "verbosity.h"
 
 void fill_pathname_expand_special(char *out_path,
@@ -277,6 +278,18 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
                   settings->directory.autoconfig,
                   settings->input.joypad_driver,
                   len);
+         }
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_CONFIG:
+         {
+            settings_t *settings     = config_get_ptr();
+            global_t *global         = global_get_ptr();
+            /* Try config directory setting first,
+             * fallback to the location of the current configuration file. */
+            if (!string_is_empty(settings->directory.menu_config))
+               strlcpy(s, settings->directory.menu_config, len);
+            else if (!string_is_empty(global->path.config))
+               fill_pathname_basedir(s, global->path.config, len);
          }
          break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_ICONS:

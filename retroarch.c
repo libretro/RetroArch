@@ -51,6 +51,7 @@
 #include "dynamic.h"
 #include "msg_hash.h"
 #include "movie.h"
+#include "file_path_special.h"
 #include "verbosity.h"
 
 #include "frontend/frontend_driver.h"
@@ -1195,17 +1196,8 @@ bool retroarch_validate_game_options(char *s, size_t len, bool mkdir)
    if (string_is_empty(core_name) || string_is_empty(game_name))
       return false;
 
-   /* Config directory: config_directory.
-   * Try config directory setting first,
-   * fallback to the location of the current configuration file. */
-   if (!string_is_empty(settings->directory.menu_config))
-      strlcpy(config_directory,
-            settings->directory.menu_config, sizeof(config_directory));
-   else if (!string_is_empty(global->path.config))
-      fill_pathname_basedir(config_directory,
-            global->path.config, sizeof(config_directory));
-   else
-      return false;
+   fill_pathname_application_special(config_directory, sizeof(config_directory),
+         APPLICATION_SPECIAL_DIRECTORY_CONFIG);
 
    /* Concatenate strings into full paths for game_path */
    fill_pathname_join(s,
