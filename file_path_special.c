@@ -327,6 +327,16 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
          }
 #endif
          break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT:
+#ifdef HAVE_MATERIALUI
+         {
+            char s1[PATH_MAX_LENGTH] = {0};
+            fill_pathname_application_special(s1, sizeof(s1),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+            fill_pathname_join(s, s1, "Roboto-Regular.ttf", len);
+         }
+#endif
+         break;
       case APPLICATION_SPECIAL_NONE:
       default:
          break;

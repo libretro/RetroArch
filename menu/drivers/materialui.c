@@ -1005,15 +1005,12 @@ static void mui_frame(void *data)
 static void mui_font(void)
 {
    menu_display_ctx_font_t font_info;
-   char mediapath[PATH_MAX_LENGTH] = {0};
    char fontpath[PATH_MAX_LENGTH]  = {0};
    settings_t            *settings = config_get_ptr();
    int                   font_size = menu_display_get_font_size();
 
-   fill_pathname_application_special(mediapath, sizeof(mediapath),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
-   fill_pathname_join(fontpath, mediapath,
-         "Roboto-Regular.ttf", sizeof(fontpath));
+   fill_pathname_application_special(fontpath, sizeof(fontpath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT);
 
    font_info.path = fontpath;
    font_info.size = font_size;
