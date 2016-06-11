@@ -22,17 +22,17 @@
 
 #include <boolean.h>
 
-enum application_directory
+enum application_special_type
 {
-   APPLICATION_DIRECTORY_NONE = 0,
-   APPLICATION_DIRECTORY_ASSETS_MATERIALUI,
-   APPLICATION_DIRECTORY_ASSETS_MATERIALUI_ICONS,
-   APPLICATION_DIRECTORY_ASSETS_XMB,
-   APPLICATION_DIRECTORY_ASSETS_XMB_ICONS
+   APPLICATION_SPECIAL_NONE = 0,
+   APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI,
+   APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS,
+   APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB,
+   APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS
 };
 
 bool fill_pathname_application_data(char *s, size_t len);
 
-void fill_pathname_application_directory(char *s, size_t len, enum application_directory type);
+void fill_pathname_application_special(char *s, size_t len, enum application_special_type type);
 
 #endif

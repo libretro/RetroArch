@@ -149,8 +149,8 @@ static void mui_context_reset_textures(mui_handle_t *mui)
    unsigned i;
    char iconpath[PATH_MAX_LENGTH] = {0};
 
-   fill_pathname_application_directory(iconpath, sizeof(iconpath),
-         APPLICATION_DIRECTORY_ASSETS_MATERIALUI_ICONS);
+   fill_pathname_application_special(iconpath, sizeof(iconpath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
    {
@@ -1010,8 +1010,8 @@ static void mui_font(void)
    settings_t            *settings = config_get_ptr();
    int                   font_size = menu_display_get_font_size();
 
-   fill_pathname_application_directory(mediapath, sizeof(mediapath),
-         APPLICATION_DIRECTORY_ASSETS_MATERIALUI);
+   fill_pathname_application_special(mediapath, sizeof(mediapath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
    fill_pathname_join(fontpath, mediapath,
          "Roboto-Regular.ttf", sizeof(fontpath));
 

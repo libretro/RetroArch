@@ -265,17 +265,17 @@ void fill_pathname_application_path(char *s, size_t len)
 const char *xmb_theme_ident(void);
 #endif
 
-void fill_pathname_application_directory(char *s, size_t len, enum application_directory type)
+void fill_pathname_application_special(char *s, size_t len, enum application_special_type type)
 {
    switch (type)
    {
-      case APPLICATION_DIRECTORY_ASSETS_XMB_ICONS:
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
 #ifdef HAVE_XMB
          {
             char s1[PATH_MAX_LENGTH] = {0};
             char s2[PATH_MAX_LENGTH] = {0};
-            fill_pathname_application_directory(s1, sizeof(s1),
-                  APPLICATION_DIRECTORY_ASSETS_XMB);
+            fill_pathname_application_special(s1, sizeof(s1),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
             fill_pathname_join(s2, s1, "png",
                   sizeof(s2));
             fill_pathname_slash(s2, sizeof(s2));
@@ -283,7 +283,7 @@ void fill_pathname_application_directory(char *s, size_t len, enum application_d
          }
 #endif
          break;
-      case APPLICATION_DIRECTORY_ASSETS_XMB:
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB:
 #ifdef HAVE_XMB
          {
             char s1[PATH_MAX_LENGTH] = {0};
@@ -301,7 +301,7 @@ void fill_pathname_application_directory(char *s, size_t len, enum application_d
          }
 #endif
          break;
-      case APPLICATION_DIRECTORY_ASSETS_MATERIALUI:
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI:
 #ifdef HAVE_MATERIALUI
          {
             settings_t *settings = config_get_ptr();
@@ -314,20 +314,20 @@ void fill_pathname_application_directory(char *s, size_t len, enum application_d
          }
 #endif
          break;
-      case APPLICATION_DIRECTORY_ASSETS_MATERIALUI_ICONS:
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS:
 #ifdef HAVE_MATERIALUI
          {
             char s1[PATH_MAX_LENGTH] = {0};
             settings_t *settings     = config_get_ptr();
 
-            fill_pathname_application_directory(s1,
-                  sizeof(s1), APPLICATION_DIRECTORY_ASSETS_MATERIALUI);
+            fill_pathname_application_special(s1,
+                  sizeof(s1), APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
             fill_pathname_slash(s1, sizeof(s1));
             strlcpy(s, s1, len);
          }
 #endif
          break;
-      case APPLICATION_DIRECTORY_NONE:
+      case APPLICATION_SPECIAL_NONE:
       default:
          break;
    }

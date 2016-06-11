@@ -389,8 +389,8 @@ static void xmb_fill_default_background_path(xmb_handle_t *xmb,
    char iconpath[PATH_MAX_LENGTH]  = {0};
    settings_t *settings = config_get_ptr();
 
-   fill_pathname_application_directory(iconpath, sizeof(iconpath),
-         APPLICATION_DIRECTORY_ASSETS_XMB_ICONS);
+   fill_pathname_application_special(iconpath, sizeof(iconpath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
    fill_pathname_join(path, iconpath, "bg.png", size);
 
@@ -1334,8 +1334,8 @@ static void xmb_context_reset_horizontal_list(
    size_t list_size                = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
    char themepath[PATH_MAX_LENGTH] = {0};
 
-   fill_pathname_application_directory(themepath, sizeof(themepath),
-         APPLICATION_DIRECTORY_ASSETS_XMB);
+   fill_pathname_application_special(themepath, sizeof(themepath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
 
    xmb->categories.x_pos = xmb->icon.spacing.horizontal *
       -(float)xmb->categories.selection_ptr;
@@ -1373,8 +1373,8 @@ static void xmb_context_reset_horizontal_list(
       strlcpy(sysname, path, sizeof(sysname));
       path_remove_extension(sysname);
 
-      fill_pathname_application_directory(iconpath, sizeof(iconpath),
-            APPLICATION_DIRECTORY_ASSETS_XMB_ICONS);
+      fill_pathname_application_special(iconpath, sizeof(iconpath),
+            APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
       fill_pathname_join(texturepath, iconpath, sysname,
             sizeof(texturepath));
@@ -2280,8 +2280,8 @@ static void xmb_font(xmb_handle_t *xmb)
    settings_t            *settings = config_get_ptr();
    int                   font_size = menu_display_get_font_size();
 
-   fill_pathname_application_directory(themepath, sizeof(themepath),
-         APPLICATION_DIRECTORY_ASSETS_XMB);
+   fill_pathname_application_special(themepath, sizeof(themepath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
 
    if (string_is_empty(settings->menu.xmb_font))
          fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
@@ -2796,8 +2796,8 @@ static void xmb_context_reset(void *data)
    xmb_fill_default_background_path(xmb,
          xmb->background_file_path, sizeof(xmb->background_file_path));
 
-   fill_pathname_application_directory(iconpath, sizeof(iconpath),
-         APPLICATION_DIRECTORY_ASSETS_XMB_ICONS);
+   fill_pathname_application_special(iconpath, sizeof(iconpath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
    xmb_layout(xmb);
    xmb_font(xmb);
