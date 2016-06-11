@@ -144,10 +144,13 @@ static const char *mui_texture_path(unsigned id)
    return NULL;
 }
 
-static void mui_context_reset_textures(mui_handle_t *mui,
-      const char *iconpath)
+static void mui_context_reset_textures(mui_handle_t *mui)
 {
    unsigned i;
+   char iconpath[PATH_MAX_LENGTH] = {0};
+
+   fill_pathname_application_directory(iconpath, sizeof(iconpath),
+         APPLICATION_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
    {
@@ -1234,20 +1237,17 @@ static void mui_populate_entries(
 
 static void mui_context_reset(void *data)
 {
-   char iconpath[PATH_MAX_LENGTH] = {0};
    mui_handle_t *mui              = (mui_handle_t*)data;
    settings_t *settings           = config_get_ptr();
 
    if (!mui || !settings)
       return;
 
-   fill_pathname_application_directory(iconpath, sizeof(iconpath),
-         APPLICATION_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    mui_layout(mui);
    mui_context_bg_destroy(mui);
    menu_display_allocate_white_texture();
-   mui_context_reset_textures(mui, iconpath);
+   mui_context_reset_textures(mui);
 
    task_push_image_load(settings->path.menu_wallpaper, "cb_menu_wallpaper",
          menu_display_handle_wallpaper_upload, NULL);
