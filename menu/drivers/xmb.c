@@ -2255,23 +2255,6 @@ static void xmb_frame(void *data)
    menu_display_unset_viewport();
 }
 
-static void xmb_font(enum application_special_type type)
-{
-   menu_display_ctx_font_t font_info;
-   char fontpath[PATH_MAX_LENGTH]  = {0};
-   settings_t            *settings = config_get_ptr();
-   int                   font_size = menu_display_get_font_size();
-
-   fill_pathname_application_special(fontpath, sizeof(fontpath),
-         type);
-
-   font_info.path = fontpath;
-   font_info.size = font_size;
-
-   if (!menu_display_font_main_init(&font_info))
-      RARCH_WARN("Failed to load font.");
-}
-
 static void xmb_layout_ps3(xmb_handle_t *xmb, int width)
 {
    unsigned new_font_size, new_header_height;
@@ -2530,7 +2513,7 @@ static void *xmb_init(void **userdata)
    menu_display_allocate_white_texture();
 
    xmb_init_horizontal_list(xmb);
-   xmb_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
+   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
    xmb_init_ribbon(xmb);
 
    return menu;
@@ -2777,7 +2760,7 @@ static void xmb_context_reset(void *data)
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
    xmb_layout(xmb);
-   xmb_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
+   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
    xmb_context_reset_textures(xmb, iconpath);
    xmb_context_reset_background(iconpath);
    xmb_context_reset_horizontal_list(xmb);

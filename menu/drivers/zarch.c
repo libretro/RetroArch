@@ -169,21 +169,6 @@ struct zui_tabbed
 
 static enum zarch_layout_type zarch_layout;
 
-static void zarch_zui_font(enum application_special_type type)
-{
-   menu_display_ctx_font_t font_info;
-   char fontpath[PATH_MAX_LENGTH]  = {0};
-   int                   font_size = menu_display_get_font_size();
-
-   fill_pathname_application_special(fontpath, sizeof(fontpath), type);
-
-   font_info.path = fontpath;
-   font_info.size = font_size;
-
-   if (!menu_display_font_main_init(&font_info))
-      RARCH_WARN("Failed to load font.");
-}
-
 static float zarch_zui_strwidth(void *fb_buf, const char *text, float scale)
 {
    return font_driver_get_message_width(fb_buf, text, strlen(text), scale);
@@ -1027,7 +1012,7 @@ static void *zarch_init(void **userdata)
 
    matrix_4x4_ortho(&zui->mvp, 0, 1, 1, 0, 0, 1);
 
-   zarch_zui_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT);
+   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT);
 
    return menu;
 error:
@@ -1112,7 +1097,7 @@ static void zarch_context_reset(void *data)
    menu_display_allocate_white_texture();
 
    menu_display_set_font_size(zui->font_size);
-   zarch_zui_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT);
+   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT);
 }
 
 static int zarch_iterate(void *data, void *userdata, enum menu_action action)

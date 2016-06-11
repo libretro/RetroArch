@@ -23,6 +23,7 @@
 #include <retro_common_api.h>
 #include <gfx/math/matrix_4x4.h>
 
+#include "../file_path_special.h"
 #include "../gfx/video_context_driver.h"
 #include "../gfx/video_coord_array.h"
 
@@ -201,6 +202,8 @@ void menu_display_draw_text(const char *msg, int width, int height,
       struct font_params *params);
 
 void menu_display_set_alpha(float *color, float alpha_value);
+
+bool menu_display_font(enum application_special_type type);
 
 extern uintptr_t menu_display_white_texture;
 
