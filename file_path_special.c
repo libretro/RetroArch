@@ -286,16 +286,17 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG:
 #ifdef HAVE_XMB
          {
-            char s1[PATH_MAX_LENGTH] = {0};
             settings_t *settings     = config_get_ptr();
-
-            fill_pathname_application_special(s1, sizeof(s1),
-                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
 
             if (*settings->path.menu_wallpaper)
                strlcpy(s, settings->path.menu_wallpaper, len);
             else
+            {
+               char s1[PATH_MAX_LENGTH] = {0};
+               fill_pathname_application_special(s1, sizeof(s1),
+                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
                fill_pathname_join(s, s1, "bg.png", len);
+            }
          }
 #endif
          break;
