@@ -45,6 +45,8 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
+#include "../../file_path_special.h"
+
 enum
 {
    MUI_TEXTURE_POINTER = 0,
@@ -1239,12 +1241,8 @@ static void mui_context_reset(void *data)
    if (!mui || !settings)
       return;
 
-   fill_pathname_join(
-         iconpath,
-         settings->directory.assets,
-         "glui",
-         sizeof(iconpath));
-   fill_pathname_slash(iconpath, sizeof(iconpath));
+   fill_pathname_application_directory(iconpath, sizeof(iconpath),
+         APPLICATION_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    mui_layout(mui);
    mui_context_bg_destroy(mui);
