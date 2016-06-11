@@ -22,6 +22,14 @@
 
 #include <boolean.h>
 
+enum application_directory
+{
+   APPLICATION_DIRECTORY_NONE = 0,
+   APPLICATION_DIRECTORY_ASSETS_XMB
+};
+
 bool fill_pathname_application_data(char *s, size_t len);
+
+void fill_pathname_application_directory(char *s, size_t len, enum application_directory type);
 
 #endif

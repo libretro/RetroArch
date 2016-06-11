@@ -40,6 +40,9 @@
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 
+#include "configuration.h"
+#include "file_path_special.h"
+
 #include "verbosity.h"
 
 void fill_pathname_expand_special(char *out_path,
@@ -257,3 +260,35 @@ void fill_pathname_application_path(char *s, size_t len)
 #endif
 }
 #endif
+
+#ifdef HAVE_XMB
+const char *xmb_theme_ident(void);
+#endif
+
+void fill_pathname_application_directory(char *s, size_t len, enum application_directory type)
+{
+   switch (type)
+   {
+      case APPLICATION_DIRECTORY_ASSETS_XMB:
+#ifdef HAVE_XMB
+         {
+            char s1[PATH_MAX_LENGTH] = {0};
+            char s2[PATH_MAX_LENGTH] = {0};
+            settings_t *settings     = config_get_ptr();
+
+            fill_pathname_join(
+                  s1,
+                  settings->directory.assets,
+                  "xmb",
+                  sizeof(s1));
+            fill_pathname_join(s2,
+                  s1, xmb_theme_ident(), sizeof(s2));
+            strlcpy(s, s2, len);
+         }
+#endif
+         break;
+      case APPLICATION_DIRECTORY_NONE:
+      default:
+         break;
+   }
+}

@@ -45,6 +45,7 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../system.h"
+#include "../../file_path_special.h"
 
 #include "../../tasks/tasks_internal.h"
 
@@ -310,7 +311,7 @@ float gradient_dark[16] = {
    0.0, 0.0, 0.0, 1.00,
 };
 
-static const char *xmb_theme_ident(void)
+const char *xmb_theme_ident(void)
 {
    settings_t *settings = config_get_ptr();
    switch (settings->menu.xmb_theme)
@@ -386,16 +387,15 @@ static float *xmb_gradient_ident(void)
 static void xmb_fill_default_background_path(xmb_handle_t *xmb,
       char *path, size_t size)
 {
-    char mediapath[PATH_MAX_LENGTH] = {0};
     char themepath[PATH_MAX_LENGTH] = {0};
     char iconpath[PATH_MAX_LENGTH]  = {0};
     settings_t *settings = config_get_ptr();
 
     strlcpy(xmb->icon.dir, "png", sizeof(xmb->icon.dir));
 
-    fill_pathname_join(mediapath, settings->directory.assets,
-                       "xmb", sizeof(mediapath));
-    fill_pathname_join(themepath, mediapath, xmb_theme_ident(), sizeof(themepath));
+    fill_pathname_application_directory(themepath, sizeof(themepath),
+          APPLICATION_DIRECTORY_ASSETS_XMB);
+
     fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
     fill_pathname_slash(iconpath, sizeof(iconpath));
 
@@ -1411,17 +1411,12 @@ static void xmb_context_reset_horizontal_list(
 
 static void xmb_refresh_horizontal_list(xmb_handle_t *xmb)
 {
-   char mediapath[PATH_MAX_LENGTH] = {0};
    char themepath[PATH_MAX_LENGTH] = {0};
 
    settings_t *settings = config_get_ptr();
 
-   fill_pathname_join(
-         mediapath,
-         settings->directory.assets,
-         "xmb",
-         sizeof(mediapath));
-   fill_pathname_join(themepath, mediapath, xmb_theme_ident(), sizeof(themepath));
+   fill_pathname_application_directory(themepath, sizeof(themepath),
+         APPLICATION_DIRECTORY_ASSETS_XMB);
 
    xmb_context_destroy_horizontal_list(xmb);
    if (xmb->horizontal_list)
@@ -2289,19 +2284,14 @@ static void xmb_frame(void *data)
 static void xmb_font(xmb_handle_t *xmb)
 {
    menu_display_ctx_font_t font_info;
-   char mediapath[PATH_MAX_LENGTH] = {0};
    char themepath[PATH_MAX_LENGTH] = {0};
    char fontpath[PATH_MAX_LENGTH]  = {0};
    settings_t            *settings = config_get_ptr();
    int                   font_size = menu_display_get_font_size();
 
-   fill_pathname_join(
-         mediapath,
-         settings->directory.assets,
-         "xmb",
-         sizeof(mediapath));
-   fill_pathname_join(themepath,
-         mediapath, xmb_theme_ident(), sizeof(themepath));
+   fill_pathname_application_directory(themepath, sizeof(themepath),
+         APPLICATION_DIRECTORY_ASSETS_XMB);
+
    if (string_is_empty(settings->menu.xmb_font))
          fill_pathname_join(fontpath, themepath, "font.ttf", sizeof(fontpath));
    else
@@ -2806,7 +2796,6 @@ static void xmb_context_reset_background(const char *iconpath)
 
 static void xmb_context_reset(void *data)
 {
-   char mediapath[PATH_MAX_LENGTH] = {0};
    char themepath[PATH_MAX_LENGTH] = {0};
    char iconpath[PATH_MAX_LENGTH]  = {0};
    settings_t *settings            = config_get_ptr();
@@ -2818,12 +2807,8 @@ static void xmb_context_reset(void *data)
    xmb_fill_default_background_path(xmb,
          xmb->background_file_path, sizeof(xmb->background_file_path));
 
-   fill_pathname_join(
-         mediapath,
-         settings->directory.assets,
-         "xmb",
-         sizeof(mediapath));
-   fill_pathname_join(themepath, mediapath, xmb_theme_ident(), sizeof(themepath));
+   fill_pathname_application_directory(themepath, sizeof(themepath),
+         APPLICATION_DIRECTORY_ASSETS_XMB);
    fill_pathname_join(iconpath, themepath, xmb->icon.dir, sizeof(iconpath));
    fill_pathname_slash(iconpath, sizeof(iconpath));
 
