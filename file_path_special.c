@@ -34,6 +34,7 @@
 #endif
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -288,7 +289,7 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
          {
             settings_t *settings     = config_get_ptr();
 
-            if (*settings->path.menu_wallpaper)
+            if (!string_is_empty(settings->path.menu_wallpaper))
                strlcpy(s, settings->path.menu_wallpaper, len);
             else
             {
@@ -356,10 +357,15 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
 #ifdef HAVE_XMB
          {
             char s1[PATH_MAX_LENGTH] = {0};
+            settings_t *settings = config_get_ptr();
 
             fill_pathname_application_special(s1, sizeof(s1),
                   APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
-            fill_pathname_join(s, s1, "font.ttf", len);
+
+            if (!string_is_empty(settings->menu.xmb_font))
+               strlcpy(s, settings->menu.xmb_font, len);
+            else
+               fill_pathname_join(s, s1, "font.ttf", len);
          }
 #endif
          break;

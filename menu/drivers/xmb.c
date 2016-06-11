@@ -2266,9 +2266,6 @@ static void xmb_font(xmb_handle_t *xmb)
    fill_pathname_application_special(fontpath, sizeof(fontpath),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
 
-   if (!string_is_empty(settings->menu.xmb_font))
-      strlcpy(fontpath, settings->menu.xmb_font,sizeof(fontpath));
-
    font_info.path = fontpath;
    font_info.size = font_size;
 
