@@ -270,6 +270,15 @@ void fill_pathname_application_special(char *s, size_t len, enum application_spe
 {
    switch (type)
    {
+      case APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG:
+         {
+            settings_t *settings     = config_get_ptr();
+            fill_pathname_join(s,
+                  settings->directory.autoconfig,
+                  settings->input.joypad_driver,
+                  len);
+         }
+         break;
       case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_ICONS:
 #ifdef HAVE_ZARCH
          {
