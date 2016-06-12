@@ -312,7 +312,7 @@ static uint64_t frontend_win32_get_mem_used(void)
 	MEMORYSTATUSEX mem_info;
 	mem_info.dwLength = sizeof(MEMORYSTATUSEX);
 	GlobalMemoryStatusEx(&mem_info);
-	return mem_info.ullAvailPhys;
+	return ((frontend_win32_get_mem_total() - mem_info.ullAvailPhys));
 }
 
 frontend_ctx_driver_t frontend_ctx_win32 = {
