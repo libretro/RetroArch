@@ -37,7 +37,11 @@
 
 id apple_platform;
 
+#ifdef OSX_PPC
+@interface RetroArch_OSX : NSObject
+#else
 @interface RetroArch_OSX : NSObject <NSApplicationDelegate>
+#endif
 {
     NSWindow* _window;
 }
