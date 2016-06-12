@@ -808,18 +808,18 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
             snprintf(tmp, sizeof(tmp),
                   "Memory (in bytes) : %llu/%llu B",
-                  memory_free,
-                  memory_total
+                  (unsigned long long)memory_free,
+                  (unsigned long long)memory_total
                   );
             snprintf(tmp2, sizeof(tmp2),
                   "Memory (in megabytes) : %llu/%llu MB",
-                  bytes_to_mb(memory_free),
-                  bytes_to_mb(memory_total)
+                  (unsigned long long)bytes_to_mb(memory_free),
+                  (unsigned long long)bytes_to_mb(memory_total)
                   );
             snprintf(tmp3, sizeof(tmp3),
                   "Memory (in gigabytes): %llu/%llu GB",
-                  bytes_to_gb(memory_free),
-                  bytes_to_gb(memory_total)
+                  (unsigned long long)bytes_to_gb(memory_free),
+                  (unsigned long long)bytes_to_gb(memory_total)
                   );
 #else
             snprintf(tmp, sizeof(tmp),
