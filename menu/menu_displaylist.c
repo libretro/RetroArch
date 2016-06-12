@@ -784,57 +784,57 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
          char tmp[PATH_MAX_LENGTH]  = {0};
          char tmp2[PATH_MAX_LENGTH] = {0};
          char tmp3[PATH_MAX_LENGTH] = {0};
-         uint64_t memory_free       = frontend_driver_get_free_memory();
+         uint64_t memory_used       = frontend_driver_get_used_memory();
          uint64_t memory_total      = frontend_driver_get_total_memory();
 
-         if (memory_free != 0 && memory_total != 0)
+         if (memory_used != 0 && memory_total != 0)
          {
 #ifdef _WIN32
             snprintf(tmp, sizeof(tmp),
                   "Memory (in bytes): %Iu/%Iu B",
-                  memory_free,
+                  memory_used,
                   memory_total
                   );
             snprintf(tmp2, sizeof(tmp2),
                   "Memory (in megabytes): %Iu/%Iu MB",
-                  bytes_to_mb(memory_free),
+                  bytes_to_mb(memory_used),
                   bytes_to_mb(memory_total)
                   );
             snprintf(tmp3, sizeof(tmp3),
                   "Memory (in gigabytes): %Iu/%Iu GB",
-                  bytes_to_gb(memory_free),
+                  bytes_to_gb(memory_used),
                   bytes_to_gb(memory_total)
                   );
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
             snprintf(tmp, sizeof(tmp),
                   "Memory (in bytes) : %llu/%llu B",
-                  (unsigned long long)memory_free,
+                  (unsigned long long)memory_used,
                   (unsigned long long)memory_total
                   );
             snprintf(tmp2, sizeof(tmp2),
                   "Memory (in megabytes) : %llu/%llu MB",
-                  (unsigned long long)bytes_to_mb(memory_free),
+                  (unsigned long long)bytes_to_mb(memory_used),
                   (unsigned long long)bytes_to_mb(memory_total)
                   );
             snprintf(tmp3, sizeof(tmp3),
                   "Memory (in gigabytes): %llu/%llu GB",
-                  (unsigned long long)bytes_to_gb(memory_free),
+                  (unsigned long long)bytes_to_gb(memory_used),
                   (unsigned long long)bytes_to_gb(memory_total)
                   );
 #else
             snprintf(tmp, sizeof(tmp),
                   "Memory (in bytes): %lu/%lu B",
-                  memory_free,
+                  memory_used,
                   memory_total
                   );
             snprintf(tmp2, sizeof(tmp2),
                   "Memory (in megabytes) : %1u/%1u MB",
-                  bytes_to_mb(memory_free),
+                  bytes_to_mb(memory_used),
                   bytes_to_mb(memory_total)
                   );
             snprintf(tmp3, sizeof(tmp3),
                   "Memory (in gigabytes) : %1u/%1u GB",
-                  bytes_to_gb(memory_free),
+                  bytes_to_gb(memory_used),
                   bytes_to_gb(memory_total)
                   );
 #endif

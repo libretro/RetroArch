@@ -317,11 +317,11 @@ uint64_t frontend_driver_get_total_memory(void)
    return frontend->get_total_mem();
 }
 
-uint64_t frontend_driver_get_free_memory(void)
+uint64_t frontend_driver_get_used_memory(void)
 {
    frontend_ctx_driver_t *frontend = frontend_get_ptr();
-   if (!frontend || !frontend->get_free_mem)
+   if (!frontend || !frontend->get_used_mem)
       return 0;
-   return frontend->get_free_mem();
+   return frontend->get_used_mem();
 }
 #endif

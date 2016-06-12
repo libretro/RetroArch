@@ -681,7 +681,7 @@ static uint64_t frontend_darwin_get_mem_total(void)
 #endif
 }
 
-static uint64_t frontend_darwin_get_mem_free(void)
+static uint64_t frontend_darwin_get_mem_used(void)
 {
 #if defined(OSX) && !defined(OSX_PPC)
     vm_size_t page_size;
@@ -720,6 +720,6 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_powerstate,
    frontend_darwin_parse_drive_list,
    frontend_darwin_get_mem_total,
-   frontend_darwin_get_mem_free,
+   frontend_darwin_get_mem_used,
    "darwin",
 };

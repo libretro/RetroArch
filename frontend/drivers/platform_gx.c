@@ -495,7 +495,7 @@ static uint64_t frontend_gx_get_mem_total(void)
    return total;
 }
 
-static uint64_t frontend_gx_get_mem_free(void)
+static uint64_t frontend_gx_get_mem_used(void)
 {
    uint64_t total = SYSMEM1_SIZE - SYS_GetArena1Size();
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
@@ -525,6 +525,6 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* get_powerstate */
    frontend_gx_parse_drive_list,
    frontend_gx_get_mem_total,
-   frontend_gx_get_mem_free,
+   frontend_gx_get_mem_used,
    "gx",
 };
