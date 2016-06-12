@@ -404,6 +404,7 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_architecture,
    frontend_psp_get_powerstate,
    frontend_psp_parse_drive_list,
+   NULL,                         /* get_mem_total */
 #ifdef VITA
    "vita",
 #else

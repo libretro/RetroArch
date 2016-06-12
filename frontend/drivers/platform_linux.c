@@ -1881,6 +1881,13 @@ static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
 }
 #endif
 
+static uint32_t frontend_linux_get_mem_total(void)
+{
+   long pages     = sysconf(_SC_PHYS_PAGES);
+   long page_size = sysconf(_SC_PAGE_SIZE);
+   return pages * page_size;
+}
+
 frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_env,       /* environment_get */
    frontend_linux_init,          /* init */
@@ -1912,9 +1919,13 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_powerstate,
 #ifdef ANDROID
    frontend_android_parse_drive_list, /* parse_drive_list */
-   "android",
 #else
    NULL,                         /* parse_drive_list */
-   "linux",
+#endif
+   frontend_linux_get_mem_total,
+#ifdef ANDROID
+   "android"
+#else
+   "linux"
 #endif
 };

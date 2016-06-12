@@ -316,5 +316,6 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_get_architecture,
    frontend_win32_get_powerstate,
    frontend_win32_parse_drive_list,
+   NULL,                           /* get_mem_total */
    "win32",
 };
