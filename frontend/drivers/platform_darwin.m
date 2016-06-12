@@ -667,6 +667,7 @@ static int frontend_darwin_parse_drive_list(void *data)
 
 static uint64_t frontend_darwin_get_mem_total(void)
 {
+#if defined(OSX)
     uint64_t size;
     int mib[2]     = { CTL_HW, HW_MEMSIZE };
     u_int namelen  = sizeof(mib) / sizeof(mib[0]);
@@ -675,6 +676,9 @@ static uint64_t frontend_darwin_get_mem_total(void)
     if (sysctl(mib, namelen, &size, &len, NULL, 0) < 0)
         return 0;
     return size;
+#else
+    return 0;
+#endif
 }
 
 frontend_ctx_driver_t frontend_ctx_darwin = {
