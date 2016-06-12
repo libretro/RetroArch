@@ -807,17 +807,17 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
                   );
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
             snprintf(tmp, sizeof(tmp),
-                  "Memory (in bytes) : %zu/%zu B",
+                  "Memory (in bytes) : %llu/%llu B",
                   memory_free,
                   memory_total
                   );
             snprintf(tmp2, sizeof(tmp2),
-                  "Memory (in megabytes) : %zu/%zu MB",
+                  "Memory (in megabytes) : %llu/%llu MB",
                   bytes_to_mb(memory_free),
                   bytes_to_mb(memory_total)
                   );
             snprintf(tmp3, sizeof(tmp3),
-                  "Memory (in gigabytes): %zu/%zu GB",
+                  "Memory (in gigabytes): %llu/%llu GB",
                   bytes_to_gb(memory_free),
                   bytes_to_gb(memory_total)
                   );

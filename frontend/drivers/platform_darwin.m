@@ -665,6 +665,18 @@ static int frontend_darwin_parse_drive_list(void *data)
    return ret;
 }
 
+static uint64_t frontend_darwin_get_mem_total(void)
+{
+    uint64_t size;
+    int mib[2]     = { CTL_HW, HW_MEMSIZE };
+    u_int namelen  = sizeof(mib) / sizeof(mib[0]);
+    size_t len     = sizeof(size);
+    
+    if (sysctl(mib, namelen, &size, &len, NULL, 0) < 0)
+        return 0;
+    return size;
+}
+
 frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_environment_settings,
    NULL,                         /* init */
@@ -681,7 +693,7 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_architecture,
    frontend_darwin_get_powerstate,
    frontend_darwin_parse_drive_list,
-   NULL,                         /* get_mem_total */
+   frontend_darwin_get_mem_total,
    NULL,                         /* get_mem_free */
    "darwin",
 };
