@@ -502,5 +502,6 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* get_powerstate */
    frontend_gx_parse_drive_list,
    NULL,                            /* get_mem_total */
+   NULL,                            /* get_mem_free */
    "gx",
 };

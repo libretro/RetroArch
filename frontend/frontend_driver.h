@@ -81,6 +81,7 @@ typedef struct frontend_ctx_driver
    enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
    int  (*parse_drive_list)(void*);
    uint32_t (*get_total_mem)(void);
+   uint32_t (*get_free_mem)(void);
 
    const char *ident;
 

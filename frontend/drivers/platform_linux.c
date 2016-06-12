@@ -1888,6 +1888,13 @@ static uint32_t frontend_linux_get_mem_total(void)
    return pages * page_size;
 }
 
+static uint32_t frontend_linux_get_mem_free(void)
+{
+   long pages     = sysconf(_SC_AVPHYS_PAGES);
+   long page_size = sysconf(_SC_PAGE_SIZE);
+   return pages * page_size;
+}
+
 frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_env,       /* environment_get */
    frontend_linux_init,          /* init */
@@ -1923,6 +1930,7 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    NULL,                         /* parse_drive_list */
 #endif
    frontend_linux_get_mem_total,
+   frontend_linux_get_mem_free,
 #ifdef ANDROID
    "android"
 #else

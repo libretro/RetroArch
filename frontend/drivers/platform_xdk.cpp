@@ -1407,5 +1407,6 @@ frontend_ctx_driver_t frontend_ctx_xdk = {
    NULL,                         /* get_powerstate */
    frontend_xdk_parse_drive_list,
    NULL,                         /* get_mem_total */
+   NULL,                         /* get_mem_free */
    "xdk",
 };

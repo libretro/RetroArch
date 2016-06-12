@@ -682,5 +682,6 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_powerstate,
    frontend_darwin_parse_drive_list,
    NULL,                         /* get_mem_total */
+   NULL,                         /* get_mem_free */
    "darwin",
 };

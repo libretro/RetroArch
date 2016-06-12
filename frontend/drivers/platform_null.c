@@ -36,5 +36,6 @@ frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* get_powerstate */
    NULL,                         /* parse_drive_list */
    NULL,                         /* get_mem_total */
+   NULL,                         /* get_mem_free */
    "null",
 };
