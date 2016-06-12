@@ -157,6 +157,8 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len);
 
 uint32_t frontend_driver_get_total_memory(void);
 
+uint32_t frontend_driver_get_free_memory(void);
+
 RETRO_END_DECLS
 
 #endif

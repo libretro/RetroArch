@@ -316,4 +316,12 @@ uint32_t frontend_driver_get_total_memory(void)
       return 0;
    return frontend->get_total_mem();
 }
+
+uint32_t frontend_driver_get_free_memory(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->get_free_mem)
+      return 0;
+   return frontend->get_free_mem();
+}
 #endif
