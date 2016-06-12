@@ -1881,14 +1881,14 @@ static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
 }
 #endif
 
-static uint32_t frontend_linux_get_mem_total(void)
+static uint64_t frontend_linux_get_mem_total(void)
 {
    long pages     = sysconf(_SC_PHYS_PAGES);
    long page_size = sysconf(_SC_PAGE_SIZE);
    return pages * page_size;
 }
 
-static uint32_t frontend_linux_get_mem_free(void)
+static uint64_t frontend_linux_get_mem_free(void)
 {
    long pages     = sysconf(_SC_AVPHYS_PAGES);
    long page_size = sysconf(_SC_PAGE_SIZE);
