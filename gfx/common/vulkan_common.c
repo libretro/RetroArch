@@ -1857,6 +1857,12 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    for (i = 0; i < present_mode_count; i++)
    {
+      RARCH_LOG("[Vulkan]: Swapchain supports present mode: %u.\n",
+            present_modes[i]);
+   }
+
+   for (i = 0; i < present_mode_count; i++)
+   {
       if (!swap_interval && present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
       {
          swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
