@@ -2149,9 +2149,7 @@ bool cheevos_load(const void *data)
       if (game_id)
          goto found;
    }
-   
-   runloop_msg_queue_push("This game doesn't feature achievements",
-         0, 5 * 60, false);
+
    RARCH_LOG("CHEEVOS this game doesn't feature achievements\n");
    return false;
    
