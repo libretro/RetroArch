@@ -173,6 +173,7 @@ static void *android_gfx_ctx_init(void *video_driver)
 #ifdef HAVE_VULKAN
          and->width  = ANativeWindow_getWidth(android_app->window);
          and->height = ANativeWindow_getHeight(android_app->window);
+         RARCH_LOG("[Android]: Native window size: %u x %u.\n", and->width, and->height);
          if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
                   NULL, android_app->window, 
                   and->width, and->height, and->swap_interval))
@@ -243,6 +244,8 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
          /* Swapchains are recreated in set_resize as a 
           * central place, so use that to trigger swapchain reinit. */
          *resize = and->vk.need_new_swapchain;
+         new_width = and->width;
+         new_height = and->height;
 #endif
          break;
       case GFX_CTX_NONE:
@@ -295,19 +298,6 @@ static bool android_gfx_ctx_set_video_mode(void *data,
    (void)width;
    (void)height;
    (void)fullscreen;
-
-   switch (android_api)
-   {
-      case GFX_CTX_VULKAN_API:
-#ifdef HAVE_VULKAN
-         and->width  = width;
-         and->height = height;
-#endif
-         break;
-      case GFX_CTX_NONE:
-      default:
-         break;
-   }
 
    return true;
 }
