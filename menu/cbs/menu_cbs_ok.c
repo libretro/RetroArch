@@ -969,6 +969,30 @@ static int action_ok_cheat(const char *path,
    return 0;
 }
 
+static void menu_input_st_string_cb_save_preset(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      rarch_setting_t         *setting = NULL;
+      const char                *label = NULL;
+
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
+
+      if (!string_is_empty(label))
+         setting = menu_setting_find(label);
+
+      if (setting)
+      {
+         menu_setting_set_with_string_representation(setting, str);
+         menu_setting_generic(setting, false);
+      }
+      else if (!string_is_empty(label))
+         menu_shader_manager_save_preset(str, false);
+   }
+
+   menu_input_key_end_line();
+}
+
 static int action_ok_shader_preset_save_as(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -978,11 +1002,35 @@ static int action_ok_shader_preset_save_as(const char *path,
    line.label_setting = label;
    line.type          = type;
    line.idx           = idx;
-   line.cb            = menu_input_st_string_cb;
+   line.cb            = menu_input_st_string_cb_save_preset;
 
    if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
       return -1;
    return 0;
+}
+
+static void menu_input_st_string_cb_cheat_file_save_as(void *userdata, const char *str)
+{
+   if (str && *str)
+   {
+      rarch_setting_t         *setting = NULL;
+      const char                *label = NULL;
+
+      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
+
+      if (!string_is_empty(label))
+         setting = menu_setting_find(label);
+
+      if (setting)
+      {
+         menu_setting_set_with_string_representation(setting, str);
+         menu_setting_generic(setting, false);
+      }
+      else if (!string_is_empty(label))
+         cheat_manager_save(str);
+   }
+
+   menu_input_key_end_line();
 }
 
 static int action_ok_cheat_file_save_as(const char *path,
@@ -994,7 +1042,7 @@ static int action_ok_cheat_file_save_as(const char *path,
    line.label_setting = label;
    line.type          = type;
    line.idx           = idx;
-   line.cb            = menu_input_st_string_cb;
+   line.cb            = menu_input_st_string_cb_cheat_file_save_as;
 
    if (!menu_input_ctl(MENU_INPUT_CTL_START_LINE, &line))
       return -1;

@@ -134,7 +134,7 @@ static menu_input_t *menu_input_get_ptr(void)
    return &menu_input_state;
 }
 
-static void menu_input_key_end_line(void)
+void menu_input_key_end_line(void)
 {
    bool keyboard_display    = false;
 
@@ -198,43 +198,6 @@ void menu_input_st_hex_cb(void *userdata, const char *str)
             str++;
          if (ptr)
             *ptr = strtoul(str, NULL, 16);
-      }
-   }
-
-   menu_input_key_end_line();
-}
-
-
-void menu_input_st_string_cb(void *userdata, const char *str)
-{
-   if (str && *str)
-   {
-      rarch_setting_t         *setting = NULL;
-      const char                *label = NULL;
-
-      menu_input_ctl(MENU_INPUT_CTL_KEYBOARD_LABEL_SETTING, &label);
-
-      if (!string_is_empty(label))
-         setting = menu_setting_find(label);
-
-      if (setting)
-      {
-         menu_setting_set_with_string_representation(setting, str);
-         menu_setting_generic(setting, false);
-      }
-      else if (!string_is_empty(label))
-      {
-         uint32_t hash_label = menu_hash_calculate(label);
-
-         switch (hash_label)
-         {
-            case MENU_LABEL_VIDEO_SHADER_PRESET_SAVE_AS:
-               menu_shader_manager_save_preset(str, false);
-               break;
-            case MENU_LABEL_CHEAT_FILE_SAVE_AS:
-               cheat_manager_save(str);
-               break;
-         }
       }
    }
 
