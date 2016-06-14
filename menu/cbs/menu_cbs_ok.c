@@ -492,7 +492,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    def_info.s          = menu->deferred_path;
    def_info.len        = sizeof(menu->deferred_path);
 
-   if (menu_content_ctl(MENU_CONTENT_CTL_FIND_FIRST_CORE, &def_info))
+   if (menu_content_find_first_core(&def_info, false))
       ret = -1;
 
    if (     !is_carchive && !string_is_empty(path) 
@@ -2208,7 +2208,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    def_info.s          = menu->deferred_path;
    def_info.len        = sizeof(menu->deferred_path);
 
-   if (menu_content_ctl(MENU_CONTENT_CTL_FIND_FIRST_CORE, &def_info))
+   if (menu_content_find_first_core(&def_info, false))
       ret = -1;
 
    fill_pathname_join(detect_content_path, menu_path, content_path,

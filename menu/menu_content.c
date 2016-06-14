@@ -125,18 +125,16 @@ error:
  * selection needs to be made from a list, otherwise
  * returns true and fills in @s with path to core.
  **/
-static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info)
+bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info, bool load_content_with_current_core)
 {
    char new_core_path[PATH_MAX_LENGTH]     = {0};
    const core_info_t *info                 = NULL;
    core_info_list_t *core_info             = NULL;
    const char *default_info_dir            = NULL;
    size_t supported                        = 0;
-   uint32_t menu_label_hash                = 0;
 
    if (def_info)
    {
-      menu_label_hash   = menu_hash_calculate(def_info->menu_label);
       core_info         = (core_info_list_t*)def_info->data;
       default_info_dir  = def_info->dir;
    }
@@ -170,7 +168,7 @@ static bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info
 
    /* We started the menu with 'Load Content', we are 
     * going to use the current core to load this. */
-   if (menu_label_hash == MENU_LABEL_LOAD_CONTENT)
+   if (load_content_with_current_core)
    {
       core_info_get_current_core((core_info_t**)&info);
       if (info)
@@ -201,8 +199,6 @@ bool menu_content_ctl(enum menu_content_ctl_state state, void *data)
 {
    switch (state)
    {
-      case MENU_CONTENT_CTL_FIND_FIRST_CORE:
-         return menu_content_find_first_core((menu_content_ctx_defer_info_t*)data);
       case MENU_CONTENT_CTL_LOAD_PLAYLIST:
          return menu_content_load_from_playlist((menu_content_ctx_playlist_info_t*)data);
       case MENU_CONTENT_CTL_NONE:
