@@ -1833,6 +1833,15 @@ void menu_settings_list_current_add_cmd(
    (*list)[idx].cmd_trigger.idx = values;
 }
 
+static void menu_settings_list_current_add_enum_idx(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      enum menu_hash_enums enum_idx)
+{
+   unsigned idx = list_info->index - 1;
+   (*list)[idx].enum_idx = enum_idx;
+}
+
 
 int menu_setting_generic(rarch_setting_t *setting, bool wraparound)
 {
@@ -3780,6 +3789,7 @@ static bool setting_append_list(
                &group_info,
                &subgroup_info,
                parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_SETTINGS);
 
          CONFIG_ACTION(
                list, list_info,
