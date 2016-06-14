@@ -3533,6 +3533,19 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
          }
          return true;
+      case DISPLAYLIST_SETTING_ENUM:
+         {
+            menu_displaylist_ctx_parse_entry_t *entry  = 
+               (menu_displaylist_ctx_parse_entry_t*)data;
+
+            if (menu_displaylist_parse_settings_enum(entry->data,
+                     entry->info,
+                     entry->enum_idx,
+                     entry->parse_type,
+                     entry->add_empty_entry) == -1)
+               goto error;
+         }
+         return true;
       case DISPLAYLIST_SETTINGS:
          ret = menu_displaylist_parse_settings(menu, info,
                info->label, PARSE_NONE, true);

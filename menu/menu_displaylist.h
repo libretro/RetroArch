@@ -22,6 +22,8 @@
 #include <retro_common_api.h>
 #include <lists/file_list.h>
 
+#include "menu_hash.h"
+
 #ifndef COLLECTION_SIZE
 #define COLLECTION_SIZE 99999
 #endif
@@ -51,6 +53,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_MAIN_MENU,
    DISPLAYLIST_GENERIC,
    DISPLAYLIST_SETTING,
+   DISPLAYLIST_SETTING_ENUM,
    DISPLAYLIST_SETTINGS,
    DISPLAYLIST_SETTINGS_ALL,
    DISPLAYLIST_HORIZONTAL,
@@ -146,6 +149,7 @@ typedef struct menu_displaylist_ctx_parse_entry
    void *data;
    menu_displaylist_info_t *info;
    const char *info_label;
+   enum menu_hash_enums enum_idx;
    enum menu_displaylist_parse_type parse_type;
    bool add_empty_entry;
 } menu_displaylist_ctx_parse_entry_t;
