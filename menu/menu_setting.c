@@ -2040,6 +2040,29 @@ static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting,
    return NULL;
 }
 
+static rarch_setting_t *menu_setting_find_internal_enum(rarch_setting_t *setting, 
+     enum menu_hash_enums enum_idx)
+{
+   for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
+   {
+      const char *name = menu_setting_get_name(setting);
+      const char *short_description = menu_setting_get_short_description(setting);
+
+      if (setting->enum_idx == enum_idx && menu_setting_get_type(setting) <= ST_GROUP)
+      {
+         if (string_is_empty(short_description))
+            return NULL;
+
+         if (setting->read_handler)
+            setting->read_handler(setting);
+
+         return setting;
+      }
+   }
+
+   return NULL;
+}
+
 /**
  * menu_setting_find:
  * @settings           : pointer to settings
@@ -2062,6 +2085,18 @@ rarch_setting_t *menu_setting_find(const char *label)
    needle = menu_hash_calculate(label);
 
    return menu_setting_find_internal(setting, label, needle);
+}
+
+rarch_setting_t *menu_setting_find_enum(enum menu_hash_enums enum_idx)
+{
+   rarch_setting_t *setting = NULL;
+
+   menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
+
+   if (!setting || enum_idx == 0)
+      return NULL;
+
+   return menu_setting_find_internal_enum(setting, enum_idx);
 }
 
 int menu_setting_set_flags(rarch_setting_t *setting)

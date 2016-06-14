@@ -26,6 +26,8 @@
 #include "../command.h"
 #include "../input/input_driver.h"
 
+#include "menu_hash.h"
+
 RETRO_BEGIN_DECLS
 
 enum setting_type
@@ -285,6 +287,8 @@ int menu_setting_set(unsigned type, const char *label,
  * Returns: pointer to setting if found, NULL otherwise.
  **/
 rarch_setting_t *menu_setting_find(const char *label);
+
+rarch_setting_t *menu_setting_find_enum(enum menu_hash_enums enum_idx);
 
 /**
  * setting_set_with_string_representation:
