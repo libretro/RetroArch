@@ -2097,16 +2097,16 @@ static int deferred_push_video_shader_parameters_common(
 }
 #endif
 
-static int menu_displaylist_parse_settings(void *data,
+static int menu_displaylist_parse_settings_internal(void *data,
       menu_displaylist_info_t *info,
-      const char *info_label,
       enum menu_displaylist_parse_type parse_type,
-      bool add_empty_entry)
+      bool add_empty_entry,
+      rarch_setting_t *setting
+      )
 {
    enum setting_type precond;
    size_t             count  = 0;
    settings_t *settings      = config_get_ptr();
-   rarch_setting_t *setting  = menu_setting_find(info_label);
    uint64_t flags            = menu_setting_get_flags(setting);
 
    if (!setting)
@@ -2238,6 +2238,34 @@ loop:
             0, 0, 0);
 
    return 0;
+}
+
+static int menu_displaylist_parse_settings(void *data,
+      menu_displaylist_info_t *info,
+      const char *info_label,
+      enum menu_displaylist_parse_type parse_type,
+      bool add_empty_entry)
+{
+   return menu_displaylist_parse_settings_internal(data,
+         info,
+         parse_type,
+         add_empty_entry,
+         menu_setting_find(info_label)
+         );
+}
+
+static int menu_displaylist_parse_settings_enum(void *data,
+      menu_displaylist_info_t *info,
+      enum menu_hash_enums label,
+      enum menu_displaylist_parse_type parse_type,
+      bool add_empty_entry)
+{
+   return menu_displaylist_parse_settings_internal(data,
+         info,
+         parse_type,
+         add_empty_entry,
+         menu_setting_find_enum(label)
+         );
 }
 
 static int menu_displaylist_sort_playlist(const playlist_entry_t *a,
