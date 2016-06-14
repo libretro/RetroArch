@@ -2331,24 +2331,28 @@ static int menu_displaylist_parse_load_content_settings(
 
       runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
-      menu_entries_add(info->list,
+      menu_entries_add_enum(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_RESUME_CONTENT),
             menu_hash_to_str(MENU_LABEL_RESUME_CONTENT),
+            MENU_ENUM_LABEL_RESUME_CONTENT,
             MENU_SETTING_ACTION_RUN, 0, 0);
 
-      menu_entries_add(info->list,
+      menu_entries_add_enum(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_RESTART_CONTENT),
             menu_hash_to_str(MENU_LABEL_RESTART_CONTENT),
+            MENU_ENUM_LABEL_RESTART_CONTENT,
             MENU_SETTING_ACTION_RUN, 0, 0);
 
-      menu_entries_add(info->list,
+      menu_entries_add_enum(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_CLOSE_CONTENT),
             menu_hash_to_str(MENU_LABEL_CLOSE_CONTENT),
+            MENU_ENUM_LABEL_CLOSE_CONTENT,
             MENU_SETTING_ACTION_CLOSE, 0, 0);
 
-      menu_entries_add(info->list,
+      menu_entries_add_enum(info->list,
             menu_hash_to_str(MENU_LABEL_VALUE_TAKE_SCREENSHOT),
             menu_hash_to_str(MENU_LABEL_TAKE_SCREENSHOT),
+            MENU_ENUM_LABEL_TAKE_SCREENSHOT,
             MENU_SETTING_ACTION_SCREENSHOT, 0, 0);
 
       menu_displaylist_parse_settings(menu, info,

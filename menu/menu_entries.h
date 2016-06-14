@@ -176,6 +176,10 @@ rarch_setting_t *menu_entries_get_setting(uint32_t i);
 void menu_entries_prepend(file_list_t *list, const char *path, const char *label,
       unsigned type, size_t directory_ptr, size_t entry_idx);
 
+void menu_entries_add_enum(file_list_t *list, const char *path, const char *label,
+      enum menu_hash_enums enum_idx,
+      unsigned type, size_t directory_ptr, size_t entry_idx);
+
 bool menu_entries_ctl(enum menu_entries_ctl_state state, void *data);
 
 RETRO_END_DECLS
