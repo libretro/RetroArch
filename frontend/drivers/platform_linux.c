@@ -1173,7 +1173,6 @@ static void frontend_linux_get_os(char *s,
 static void frontend_linux_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
-   char base_path[PATH_MAX] = {0};
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX] = {0};
@@ -1632,6 +1631,7 @@ static void frontend_linux_get_env(int *argc,
       snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
 
 #else
+   char base_path[PATH_MAX] = {0};
    const char *xdg          = getenv("XDG_CONFIG_HOME");
    const char *home         = getenv("HOME");
 
