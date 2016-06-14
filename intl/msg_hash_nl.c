@@ -15,9 +15,9 @@
 
 #include "../msg_hash.h"
 
-const char *msg_hash_to_str_nl(uint32_t hash)
+const char *msg_hash_to_str_nl(enum msg_hash_enums msg)
 {
-   switch (hash)
+   switch (msg)
    {
       case 0:
       default:

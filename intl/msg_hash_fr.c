@@ -28,9 +28,9 @@
 /* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
 extern const char force_iso_8859_1[sizeof("äÄöÖßüÜ")==7+1 ? 1 : -1];
 
-const char *msg_hash_to_str_fr(uint32_t hash)
+const char *msg_hash_to_str_fr(enum msg_hash_enums msg)
 {
-   switch (hash)
+   switch (msg)
    {
       case MSG_PROGRAM:
          return "RetroArch";
