@@ -64,9 +64,6 @@ int menu_cbs_init_bind_refresh(menu_file_list_cbs_t *cbs,
       case MENU_VALUE_MAIN_MENU:
          BIND_ACTION_REFRESH(cbs, NULL);
          break;
-      case MENU_VALUE_PLAYLISTS_TAB:
-         BIND_ACTION_REFRESH(cbs, action_refresh_playlist);
-         break;
       default:
          BIND_ACTION_REFRESH(cbs, action_refresh_default);
          break;
