@@ -570,7 +570,6 @@ static int action_ok_playlist_entry_collection(const char *path,
 {
    size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
-   uint32_t core_name_hash, core_path_hash;
    size_t selection_ptr             = 0;
    playlist_t *playlist             = g_defaults.history;
    bool is_history                  = true;
@@ -612,13 +611,8 @@ static int action_ok_playlist_entry_collection(const char *path,
    RARCH_LOG("playlist file: %s\n", menu->db_playlist_file);
 #endif
 
-   core_path_hash = core_path ? menu_hash_calculate(core_path) : 0;
-   core_name_hash = core_name ? menu_hash_calculate(core_name) : 0;
-
-   if (
-         (core_path_hash == MENU_VALUE_DETECT) &&
-         (core_name_hash == MENU_VALUE_DETECT)
-      )
+   if (     string_is_equal(core_path, "DETECT") 
+         && string_is_equal(core_name, "DETECT"))
    {
       core_info_ctx_find_t core_info;
       char new_core_path[PATH_MAX_LENGTH]    = {0};
@@ -680,7 +674,6 @@ static int action_ok_playlist_entry(const char *path,
 {
    size_t selection;
    menu_content_ctx_playlist_info_t playlist_info;
-   uint32_t core_name_hash, core_path_hash;
    size_t selection_ptr             = 0;
    playlist_t *playlist             = g_defaults.history;
    bool is_history                  = true;
@@ -736,13 +729,8 @@ static int action_ok_playlist_entry(const char *path,
    RARCH_LOG("playlist file: %s\n", menu->db_playlist_file);
 #endif
 
-   core_path_hash = core_path ? menu_hash_calculate(core_path) : 0;
-   core_name_hash = core_name ? menu_hash_calculate(core_name) : 0;
-
-   if (
-         (core_path_hash == MENU_VALUE_DETECT) &&
-         (core_name_hash == MENU_VALUE_DETECT)
-      )
+   if (     string_is_equal(core_path, "DETECT") 
+         && string_is_equal(core_name, "DETECT"))
    {
       core_info_ctx_find_t core_info;
       char new_core_path[PATH_MAX_LENGTH]    = {0};
