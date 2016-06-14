@@ -82,6 +82,7 @@ struct rarch_setting_group_info
 
 struct rarch_setting
 {
+   enum menu_hash_enums enum_idx;
    enum setting_type    type;
 
    uint32_t             size;
