@@ -565,6 +565,116 @@ static int action_ok_file_load_detect_core(const char *path,
    return 0;
 }
 
+static int action_ok_playlist_entry_collection(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   size_t selection;
+   menu_content_ctx_playlist_info_t playlist_info;
+   uint32_t core_name_hash, core_path_hash;
+   size_t selection_ptr             = 0;
+   playlist_t *playlist             = g_defaults.history;
+   bool is_history                  = true;
+   const char *entry_path           = NULL;
+   const char *entry_label          = NULL;
+   const char *core_path            = NULL;
+   const char *core_name            = NULL;
+   playlist_t *tmp_playlist         = NULL;
+   menu_handle_t *menu              = NULL;
+
+   if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
+      return menu_cbs_exit();
+   if (!menu_navigation_ctl(MENU_NAVIGATION_CTL_GET_SELECTION, &selection))
+      return menu_cbs_exit();
+
+   menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+
+   if (!tmp_playlist)
+   {
+      tmp_playlist = playlist_init(
+            menu->db_playlist_file, COLLECTION_SIZE);
+
+      if (!tmp_playlist)
+         return menu_cbs_exit();
+   }
+
+   playlist   = tmp_playlist;
+   is_history = false;
+
+   selection_ptr = entry_idx;
+
+   playlist_get_index(playlist, selection_ptr,
+         &entry_path, &entry_label, &core_path, &core_name, NULL, NULL); 
+
+#if 0
+   RARCH_LOG("path: %s, label: %s, core path: %s, core name: %s, idx: %d\n",
+         entry_path, entry_label,
+         core_path, core_name, selection_ptr);
+   RARCH_LOG("playlist file: %s\n", menu->db_playlist_file);
+#endif
+
+   core_path_hash = core_path ? menu_hash_calculate(core_path) : 0;
+   core_name_hash = core_name ? menu_hash_calculate(core_name) : 0;
+
+   if (
+         (core_path_hash == MENU_VALUE_DETECT) &&
+         (core_name_hash == MENU_VALUE_DETECT)
+      )
+   {
+      core_info_ctx_find_t core_info;
+      char new_core_path[PATH_MAX_LENGTH]    = {0};
+      char new_display_name[PATH_MAX_LENGTH] = {0};
+      const char *entry_path                 = NULL;
+      const char *entry_crc32                = NULL;
+      const char *db_name                    = NULL;
+      const char             *path_base      = path_basename(menu->db_playlist_file);
+      bool        found_associated_core      = menu_playlist_find_associated_core(
+            path_base, new_core_path, sizeof(new_core_path));
+
+      core_info.inf  = NULL;
+      core_info.path = new_core_path;
+
+      if (!core_info_find(&core_info))
+         found_associated_core = false;
+
+      if (!found_associated_core)
+         return action_ok_file_load_with_detect_core(entry_path,
+               label, type, selection_ptr, entry_idx);
+
+      menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &tmp_playlist);
+
+      playlist_get_index(tmp_playlist, selection_ptr,
+            &entry_path, &entry_label, NULL, NULL, &entry_crc32, &db_name);
+
+      strlcpy(new_display_name, core_info.inf->display_name, sizeof(new_display_name));
+      playlist_update(tmp_playlist,
+            selection_ptr,
+            entry_path,
+            entry_label,
+            new_core_path,
+            new_display_name,
+            entry_crc32,
+            db_name);
+      playlist_write_file(tmp_playlist);
+   }
+
+   playlist_info.data = playlist;
+   playlist_info.idx  = selection_ptr;
+
+   menu_content_ctl(MENU_CONTENT_CTL_LOAD_PLAYLIST, &playlist_info);
+
+   if (is_history)
+   {
+      menu_entries_pop_stack(&selection, 0, 1);
+      menu_navigation_ctl(MENU_NAVIGATION_CTL_SET_SELECTION,
+            &selection);
+
+      generic_action_ok_displaylist_push("",
+            "", 0, 0, 0, ACTION_OK_DL_CONTENT_SETTINGS);
+   }
+
+   return menu_cbs_exit();
+}
+
 static int action_ok_playlist_entry(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2677,7 +2787,12 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             BIND_ACTION_OK(cbs, action_ok_push_default);
             break;
          case MENU_FILE_PLAYLIST_ENTRY:
-            BIND_ACTION_OK(cbs, action_ok_playlist_entry);
+            if (label_hash == MENU_LABEL_COLLECTION)
+            {
+               BIND_ACTION_OK(cbs, action_ok_playlist_entry_collection);
+            }
+            else
+               BIND_ACTION_OK(cbs, action_ok_playlist_entry);
             break;
          case MENU_FILE_RPL_ENTRY:
             BIND_ACTION_OK(cbs, action_ok_rpl_entry);
