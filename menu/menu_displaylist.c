@@ -3195,37 +3195,6 @@ static bool menu_displaylist_push_internal(
          if (!menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info))
             break;
          return true;
-      case MENU_VALUE_PLAYLISTS_TAB:
-         info->type = 42;
-         strlcpy(info->exts, "lpl", sizeof(info->exts));
-         strlcpy(info->label,
-               menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
-               sizeof(info->label));
-
-         if (string_is_empty(settings->directory.playlist))
-         {
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-            menu_entries_add(info->list,
-                  menu_hash_to_str(
-                     MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
-                  menu_hash_to_str(
-                     MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
-                  MENU_INFO_MESSAGE, 0, 0);
-            info->need_refresh = true;
-            info->need_push    = true;
-         }
-         else
-         {
-            strlcpy(
-                  info->path,
-                  settings->directory.playlist,
-                  sizeof(info->path));
-
-            if (!menu_displaylist_ctl(
-                     DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, info))
-               break;
-         }
-         return true;
       case MENU_VALUE_HORIZONTAL_MENU:
          if (!menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info))
             break;
@@ -3233,6 +3202,82 @@ static bool menu_displaylist_push_internal(
    }
 
    return false;
+}
+
+static bool menu_displaylist_push_internal_playlist(
+      const char *label,
+      menu_displaylist_ctx_entry_t *entry,
+      menu_displaylist_info_t *info)
+{
+   settings_t *settings         = config_get_ptr();
+
+   info->type = 42;
+   strlcpy(info->exts, "lpl", sizeof(info->exts));
+   strlcpy(info->label,
+         menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
+         sizeof(info->label));
+
+   if (string_is_empty(settings->directory.playlist))
+   {
+      menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+      menu_entries_add(info->list,
+            menu_hash_to_str(
+               MENU_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+            menu_hash_to_str(
+               MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+            MENU_INFO_MESSAGE, 0, 0);
+      info->need_refresh = true;
+      info->need_push    = true;
+   }
+   else
+   {
+      strlcpy(
+            info->path,
+            settings->directory.playlist,
+            sizeof(info->path));
+
+      if (!menu_displaylist_ctl(
+               DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, info))
+         return false;
+   }
+
+   return true;
+}
+
+static bool menu_displaylist_push_playlist(menu_displaylist_ctx_entry_t *entry)
+{
+   menu_file_list_cbs_t *cbs    = NULL;
+   const char *path             = NULL;
+   const char *label            = NULL;
+   unsigned type                = 0;
+   menu_displaylist_info_t info = {0};
+
+   if (!entry)
+      return false;
+
+   menu_entries_get_last_stack(&path, &label, &type, NULL);
+
+   info.list      = entry->list;
+   info.menu_list = entry->stack;
+   info.type      = type;
+   strlcpy(info.path,  path,  sizeof(info.path));
+   strlcpy(info.label, label, sizeof(info.label));
+
+   if (!info.list)
+      return false;
+
+   if (menu_displaylist_push_internal_playlist(label, entry, &info))
+      return menu_displaylist_push_list_process(&info);
+
+   cbs = menu_entries_get_last_stack_actiondata();
+
+   if (cbs && cbs->action_deferred_push)
+   {
+      if (cbs->action_deferred_push(&info) != 0)
+         return -1;
+   }
+
+   return true;
 }
 
 static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
@@ -3288,6 +3333,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
    {
       case DISPLAYLIST_PROCESS:
          return menu_displaylist_push_list_process(info);
+      case DISPLAYLIST_PUSH_PLAYLIST_ONTO_STACK:
+         return menu_displaylist_push_playlist((menu_displaylist_ctx_entry_t*)data);
       case DISPLAYLIST_PUSH_ONTO_STACK:
          return menu_displaylist_push((menu_displaylist_ctx_entry_t*)data);
       default:
