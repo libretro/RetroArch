@@ -3128,11 +3128,11 @@ static int xmb_list_push(void *data, void *userdata,
             menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
          }
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_START_CORE);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_START_NET_RETROPAD);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_START_NET_RETROPAD;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
 #ifndef HAVE_DYNAMIC
          if (frontend_driver_has_fork())
@@ -3171,14 +3171,14 @@ static int xmb_list_push(void *data, void *userdata,
          entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
          menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #if !defined(IOS)
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_SHUTDOWN);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_REBOOT);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_REBOOT;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
          info->need_push    = true;
          ret = 0;
          break;
