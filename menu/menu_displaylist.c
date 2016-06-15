@@ -3525,20 +3525,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                info->label, info->type, info->directory_ptr, 0);
          menu->push_help_screen = false;
          break;
-      case DISPLAYLIST_SETTING:
-         {
-            menu_displaylist_ctx_parse_entry_t *entry  = 
-               (menu_displaylist_ctx_parse_entry_t*)data;
-
-            if (menu_displaylist_parse_settings(entry->data,
-                     entry->info,
-                     entry->info_label,
-                     entry->parse_type,
-                     entry->add_empty_entry) == -1)
-               goto error;
-
-         }
-         return true;
       case DISPLAYLIST_SETTING_ENUM:
          {
             menu_displaylist_ctx_parse_entry_t *entry  = 
