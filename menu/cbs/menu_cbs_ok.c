@@ -863,12 +863,14 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_CORE:
          flush_char = NULL;
          flush_type = MENU_SETTINGS;
-         runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, action_path);
-         if (command_event(CMD_EVENT_LOAD_CORE, NULL))
+         
+         if (task_push_content_load_default(action_path,
+                  NULL, NULL, CORE_TYPE_PLAIN,
+                  CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU,
+                  NULL, NULL))
          {
 #ifndef HAVE_DYNAMIC
-            if (frontend_driver_set_fork(FRONTEND_FORK_CORE))
-               ret = -1;
+            ret = -1;
 #endif
          }
          break;

@@ -1713,6 +1713,7 @@ bool task_push_content_load_default(
    /* First we determine if we are loading from a menu */
    switch (mode)
    {
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
 #if defined(HAVE_NETPLAY) && defined(HAVE_NETWORKGAMEPAD)
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #endif
@@ -1782,6 +1783,7 @@ bool task_push_content_load_default(
    /* Set libretro core path */
    switch (mode)
    {
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
@@ -1822,16 +1824,28 @@ bool task_push_content_load_default(
    /* Load core */
    switch (mode)
    {
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
+#ifdef HAVE_DYNAMIC
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU:
       case CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_COMPANION_UI:
       case CONTENT_MODE_LOAD_CONTENT_FROM_PLAYLIST_FROM_MENU:
-#ifdef HAVE_DYNAMIC
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
+         command_event(CMD_EVENT_LOAD_CORE, NULL);
          break;
       default:
          break;
    }
+
+#ifndef HAVE_DYNAMIC
+   /* Fork core? */
+   switch (mode)
+   {
+      default:
+         if (!frontend_driver_set_fork(FRONTEND_FORK_CORE))
+            return false;
+         break;
+   }
+#endif
 
    /* Preliminary stuff that has to be done before we 
     * load the actual content. Can differ per mode. */
@@ -1897,6 +1911,8 @@ bool task_push_content_load_default(
 #if defined(HAVE_NETPLAY) && defined(HAVE_NETWORKGAMEPAD)
       case CONTENT_MODE_LOAD_NOTHING_WITH_NET_RETROPAD_CORE_FROM_MENU:
 #endif
+         break;
+      case CONTENT_MODE_LOAD_NOTHING_WITH_NEW_CORE_FROM_MENU:
          break;
       default:
 #ifdef HAVE_MENU
