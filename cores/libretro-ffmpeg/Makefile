@@ -232,12 +232,13 @@ ifeq ($(HAVE_SSA), 1)
 endif
 
 LIBRETROCOMM_DIR := ../../libretro-common
+DEPS_DIR         := ../../deps
 
 LIBAVCODEC_SOURCE :=
 LIBAVFORMAT_SOURCE :=
 LIBAVUTIL_SOURCE :=
 LIBRETRO_SOURCE := ffmpeg_core.c \
-						 $(LIBRETROCOMM_DIR)/queues/fifo_buffer.c \
+						 $(LIBRETROCOMM_DIR)/queues/fifo_queue.c \
 						 $(LIBRETROCOMM_DIR)/rthreads/rthreads.c
 DEPS_SOURCE :=
 
@@ -2165,7 +2166,7 @@ else
 	CFLAGS += -DHAVE_INTRINSICS_NEON=0
 endif
 
-CFLAGS += -Ilibretro-common/include 
+CFLAGS += -I$(LIBRETROCOMM_DIR)/include -I$(DEPS_DIR)
 
 OBJECTS := $(DEPS_SOURCE:.c=.o) $(LIBRETRO_SOURCE:.c=.o) $(FFT_SOURCE:.cpp=.o) $(LIBAVUTIL_SOURCE:.c=.o) $(LIBAVFORMAT_SOURCE:.c=.o) $(LIBSWSCALE_SOURCE:.c=.o) $(LIBAVCODEC_SOURCE:.c=.o) $(LIBSWRESAMPLE_SOURCE:.c=.o)
 

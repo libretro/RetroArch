@@ -1,7 +1,7 @@
 #ifndef FFT_H__
 #define FFT_H__
 
-#include "../glsym/glsym.h"
+#include <glsym/glsym.h>
 
 #ifdef __cplusplus
 extern "C" {
