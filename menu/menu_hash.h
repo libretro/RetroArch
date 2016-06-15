@@ -2372,9 +2372,11 @@ const char *menu_hash_to_str_es_label_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_es(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_fr(uint32_t hash);
+const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_fr(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_it(uint32_t hash);
+const char *menu_hash_to_str_it_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_it(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_nl(uint32_t hash);
