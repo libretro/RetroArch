@@ -1158,17 +1158,17 @@ static void setting_get_string_representation_uint_user_language(void *data,
    modes[RETRO_LANGUAGE_ENGLISH]             = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_ENGLISH);
    modes[RETRO_LANGUAGE_JAPANESE]            = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_JAPANESE);
    modes[RETRO_LANGUAGE_FRENCH]              = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_FRENCH);
-   modes[RETRO_LANGUAGE_SPANISH]             = menu_hash_to_str(MENU_VALUE_LANG_SPANISH);
-   modes[RETRO_LANGUAGE_GERMAN]              = menu_hash_to_str(MENU_VALUE_LANG_GERMAN);
-   modes[RETRO_LANGUAGE_ITALIAN]             = menu_hash_to_str(MENU_VALUE_LANG_ITALIAN);
-   modes[RETRO_LANGUAGE_DUTCH]               = menu_hash_to_str(MENU_VALUE_LANG_DUTCH);
-   modes[RETRO_LANGUAGE_PORTUGUESE]          = menu_hash_to_str(MENU_VALUE_LANG_PORTUGUESE);
-   modes[RETRO_LANGUAGE_RUSSIAN]             = menu_hash_to_str(MENU_VALUE_LANG_RUSSIAN);
-   modes[RETRO_LANGUAGE_KOREAN]              = menu_hash_to_str(MENU_VALUE_LANG_KOREAN);
-   modes[RETRO_LANGUAGE_CHINESE_TRADITIONAL] = menu_hash_to_str(MENU_VALUE_LANG_CHINESE_TRADITIONAL);
-   modes[RETRO_LANGUAGE_CHINESE_SIMPLIFIED]  = menu_hash_to_str(MENU_VALUE_LANG_CHINESE_SIMPLIFIED);
-   modes[RETRO_LANGUAGE_ESPERANTO]           = menu_hash_to_str(MENU_VALUE_LANG_ESPERANTO);
-   modes[RETRO_LANGUAGE_POLISH]              = menu_hash_to_str(MENU_VALUE_LANG_POLISH);
+   modes[RETRO_LANGUAGE_SPANISH]             = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_SPANISH);
+   modes[RETRO_LANGUAGE_GERMAN]              = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_GERMAN);
+   modes[RETRO_LANGUAGE_ITALIAN]             = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_ITALIAN);
+   modes[RETRO_LANGUAGE_DUTCH]               = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_DUTCH);
+   modes[RETRO_LANGUAGE_PORTUGUESE]          = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_PORTUGUESE);
+   modes[RETRO_LANGUAGE_RUSSIAN]             = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_RUSSIAN);
+   modes[RETRO_LANGUAGE_KOREAN]              = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_KOREAN);
+   modes[RETRO_LANGUAGE_CHINESE_TRADITIONAL] = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL);
+   modes[RETRO_LANGUAGE_CHINESE_SIMPLIFIED]  = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED);
+   modes[RETRO_LANGUAGE_ESPERANTO]           = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_ESPERANTO);
+   modes[RETRO_LANGUAGE_POLISH]              = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LANG_POLISH);
 
    if (settings)
       strlcpy(s, modes[settings->user_language], len);
@@ -2929,12 +2929,12 @@ static void get_string_representation_bind_device(void * data, char *s,
       else
          snprintf(s, len,
                "%s (%s #%u)",
-               menu_hash_to_str(MENU_VALUE_NOT_AVAILABLE),
-               menu_hash_to_str(MENU_VALUE_PORT),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_PORT),
                map);
    }
    else
-      strlcpy(s, menu_hash_to_str(MENU_VALUE_DISABLED), len);
+      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DISABLED), len);
 }
 
 
@@ -3087,7 +3087,7 @@ void general_write_handler(void *data)
             info.type          = 0; 
             info.directory_ptr = 0;
             strlcpy(info.label,
-                  menu_hash_to_str(MENU_LABEL_HELP), sizeof(info.label));
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_HELP), sizeof(info.label));
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
                menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);
