@@ -150,16 +150,7 @@ static const char fragment_program_heightmap[] =
    "   FragColor = vec4(color, 1.0);\n"
    "}";
 
-static const char vertex_program[] =
-   "#version 300 es\n"
-   "layout(location = 0) in vec2 aVertex;\n"
-   "layout(location = 1) in vec2 aTexCoord;\n"
-   "uniform vec4 uOffsetScale;\n"
-   "out vec2 vTex;\n"
-   "void main() {\n"
-   "   vTex = uOffsetScale.xy + aTexCoord * uOffsetScale.zw;\n"
-   "   gl_Position = vec4(aVertex, 0.0, 1.0);\n"
-   "}";
+#include "gl_shaders/fft_vertex_program.glsl.vert.h"
 
 static const char fragment_program_resolve[] =
    "#version 300 es\n"
@@ -614,10 +605,10 @@ static void fft_init(glfft_t *fft)
    GLushort *window;
    static const GLfloat unity[] = { 0.0f, 0.0f, 1.0f, 1.0f };
 
-   fft->prog_real    = fft_compile_program(fft, vertex_program, fragment_program_real);
-   fft->prog_complex = fft_compile_program(fft, vertex_program, fragment_program_complex);
-   fft->prog_resolve = fft_compile_program(fft, vertex_program, fragment_program_resolve);
-   fft->prog_blur    = fft_compile_program(fft, vertex_program, fragment_program_blur);
+   fft->prog_real    = fft_compile_program(fft, fft_vertex_program, fragment_program_real);
+   fft->prog_complex = fft_compile_program(fft, fft_vertex_program, fragment_program_complex);
+   fft->prog_resolve = fft_compile_program(fft, fft_vertex_program, fragment_program_resolve);
+   fft->prog_blur    = fft_compile_program(fft, fft_vertex_program, fragment_program_blur);
    GL_CHECK_ERROR();
 
    glUseProgram(fft->prog_real);
