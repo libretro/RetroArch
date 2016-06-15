@@ -52,6 +52,7 @@ enum setting_type
 
 enum setting_flags
 {
+   SD_FLAG_NONE           = 0,
    SD_FLAG_PATH_DIR       = (1 << 0),
    SD_FLAG_PATH_FILE      = (1 << 1),
    SD_FLAG_ALLOW_EMPTY    = (1 << 2),
@@ -169,7 +170,10 @@ bool CONFIG_BOOL(
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group,
-      change_handler_t change_handler, change_handler_t read_handler);
+      change_handler_t change_handler,
+      change_handler_t read_handler,
+      enum setting_flags flags
+      );
 
 bool CONFIG_INT(
       rarch_setting_t **list,
