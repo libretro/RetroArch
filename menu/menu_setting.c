@@ -4325,8 +4325,7 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_NONE);
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
+               SD_FLAG_ADVANCED);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE);
 
 #ifdef HAVE_THREADS
@@ -4997,9 +4996,8 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_NONE
+               SD_FLAG_ADVANCED
                );
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_ALLOW_ROTATE);
 
          CONFIG_BOOL(
@@ -5060,9 +5058,8 @@ static bool setting_append_list(
                parent_group,
                general_write_handler,
                general_read_handler,
-               SD_FLAG_NONE
+               SD_FLAG_ADVANCED
                );
-         settings_data_list_current_add_flags(list, list_info, SD_FLAG_ADVANCED);
          menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_ENABLE);
 
          CONFIG_BOOL(
