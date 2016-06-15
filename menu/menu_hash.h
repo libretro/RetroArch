@@ -40,6 +40,19 @@ enum menu_hash_enums
 
    MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
 
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS,
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+
+   MENU_ENUM_LABEL_VALUE_INPUT_BACK_AS_MENU_TOGGLE_ENABLE,
+
    MENU_ENUM_LABEL_MENU_SETTINGS,
    MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
 
@@ -2355,6 +2368,7 @@ const char *menu_hash_to_str_de_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_es(uint32_t hash);
+const char *menu_hash_to_str_es_label_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_es(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_fr(uint32_t hash);
