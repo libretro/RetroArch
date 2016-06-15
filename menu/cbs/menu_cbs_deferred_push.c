@@ -578,12 +578,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       menu_file_list_cbs_t *cbs, 
       const char *label, uint32_t label_hash)
 {
-   if (strstr(label, menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
+   if (strstr(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rdb_entry_detail);
    }
    else if (strstr(label,
-            menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
    {
       BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_rpl_entry_actions);
    }

@@ -38,7 +38,7 @@ static int action_info_default(unsigned type, const char *label)
    info.list          = menu_stack;
    info.directory_ptr = selection;
    strlcpy(info.label,
-         menu_hash_to_str(MENU_LABEL_INFO_SCREEN),
+         menu_hash_to_str_enum(MENU_ENUM_LABEL_INFO_SCREEN),
         sizeof(info.label));
 
    if (!menu_displaylist_ctl(DISPLAYLIST_HELP, &info))

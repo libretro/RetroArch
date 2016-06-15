@@ -249,7 +249,7 @@ static int action_left_shader_filter_default(unsigned type, const char *label,
       bool wraparound)
 {
 #ifdef HAVE_SHADER_MANAGER
-   rarch_setting_t *setting = menu_setting_find(menu_hash_to_str(MENU_LABEL_VIDEO_SMOOTH));
+   rarch_setting_t *setting = menu_setting_find(menu_hash_to_str_enum(MENU_ENUM_LABEL_VIDEO_SMOOTH));
    if (!setting)
       return menu_cbs_exit();
    return menu_action_handle_setting(setting,

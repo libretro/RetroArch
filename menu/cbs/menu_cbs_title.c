@@ -74,7 +74,7 @@ static int action_get_title_remap_file_load(const char *path, const char *label,
 static int action_get_title_help(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   strlcpy(s, menu_hash_to_str(MENU_LABEL_VALUE_HELP_LIST), len);
+   strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_HELP_LIST), len);
    return 0;
 }
 
@@ -87,7 +87,7 @@ static int action_get_title_overlay(const char *path, const char *label,
 static int action_get_title_video_filter(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER), path, len);
+   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER), path, len);
 }
 
 static int action_get_title_cheat_directory(const char *path, const char *label, 
@@ -99,19 +99,19 @@ static int action_get_title_cheat_directory(const char *path, const char *label,
 static int action_get_title_core_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_DIR_PATH), path, len);
+   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH), path, len);
 }
 
 static int action_get_title_core_info_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str(MENU_LABEL_VALUE_LIBRETRO_INFO_PATH), path, len);
+   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH), path, len);
 }
 
 static int action_get_title_audio_filter(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
+   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
 }
 
 static int action_get_title_font_path(const char *path, const char *label, 
@@ -302,28 +302,28 @@ static int action_get_title_group_settings(const char *path, const char *label,
 static int action_get_user_accounts_cheevos_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ACCOUNTS_RETRO_ACHIEVEMENTS), len);
    return 0;
 }
 
 static int action_get_download_core_content_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_DOWNLOAD_CORE_CONTENT), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT), len);
    return 0;
 }
 
 static int action_get_user_accounts_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_ACCOUNTS_LIST), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST), len);
    return 0;
 }
 
 static int action_get_core_information_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFORMATION), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INFORMATION), len);
    return 0;
 }
 
@@ -491,7 +491,7 @@ static int action_get_settings_list(const char *path, const char *label,
 static int action_get_title_information_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_INFORMATION_LIST), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_INFORMATION_LIST), len);
    return 0;
 }
 
@@ -601,31 +601,31 @@ static int action_get_title_recording_output_directory(const char *path, const c
 static int action_get_title_video_shader_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_SHADER_DIR), path, len);
+   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR), path, len);
 }
 
 static int action_get_title_audio_filter_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str(MENU_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
+   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR), path, len);
 }
 
 static int action_get_title_video_filter_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str(MENU_LABEL_VALUE_VIDEO_FILTER_DIR), path, len);
+   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR), path, len);
 }
 
 static int action_get_title_savefile_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str(MENU_LABEL_VALUE_SAVEFILE_DIRECTORY), path, len);
+   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY), path, len);
 }
 
 static int action_get_title_overlay_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str(MENU_LABEL_VALUE_OVERLAY_DIRECTORY), path, len);
+   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY), path, len);
 }
 
 static int action_get_title_system_directory(const char *path, const char *label, 
@@ -637,13 +637,13 @@ static int action_get_title_system_directory(const char *path, const char *label
 static int action_get_title_assets_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str(MENU_LABEL_VALUE_ASSETS_DIRECTORY), path, len);
+   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY), path, len);
 }
 
 static int action_get_title_extraction_directory(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   return fill_title(s, menu_hash_to_str(MENU_LABEL_VALUE_CACHE_DIRECTORY), path, len);
+   return fill_title(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY), path, len);
 }
 
 static int action_get_title_menu(const char *path, const char *label, 
