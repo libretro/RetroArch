@@ -3124,8 +3124,8 @@ static int xmb_list_push(void *data, void *userdata,
 
          if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          {
-            entry.info_label      = menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS);
-            menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+            entry.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
+            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
          }
 
          entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;

@@ -1380,62 +1380,62 @@ static int mui_list_push(void *data, void *userdata,
 
          if (!rarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
          {
-            entry.info_label      = menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS);
-            menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+            entry.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
+            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
          }
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_START_CORE);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_START_CORE;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_START_NET_RETROPAD);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_START_NET_RETROPAD;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
 #ifndef HAVE_DYNAMIC
          if (frontend_driver_has_fork())
 #endif
          {
-            entry.info_label      = menu_hash_to_str(MENU_LABEL_CORE_LIST);
-            menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+            entry.enum_idx      = MENU_ENUM_LABEL_CORE_LIST;
+            menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
          }
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_LIST);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_LIST;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_LOAD_CONTENT_HISTORY);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
 #if defined(HAVE_NETWORKING)
 #if defined(HAVE_LIBRETRODB)
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_ADD_CONTENT_LIST);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_ONLINE_UPDATER);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_ONLINE_UPDATER;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_INFORMATION_LIST);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_INFORMATION_LIST;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #ifndef HAVE_DYNAMIC
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_RESTART_RETROARCH;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_CONFIGURATIONS);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_CONFIGURATIONS;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_SAVE_CURRENT_CONFIG);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_SAVE_NEW_CONFIG;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_HELP_LIST);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_HELP_LIST;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #if !defined(IOS)
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_QUIT_RETROARCH;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
 #if defined(HAVE_LAKKA)
-         entry.info_label      = menu_hash_to_str(MENU_LABEL_SHUTDOWN);
-         menu_displaylist_ctl(DISPLAYLIST_SETTING, &entry);
+         entry.enum_idx      = MENU_ENUM_LABEL_SHUTDOWN;
+         menu_displaylist_ctl(DISPLAYLIST_SETTING_ENUM, &entry);
 #endif
          info->need_push    = true;
          ret = 0;
