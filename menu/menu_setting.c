@@ -3741,8 +3741,8 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_SETTINGS),
-               menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_SETTINGS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SETTINGS),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3750,8 +3750,8 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_INFORMATION_LIST),
-               menu_hash_to_str(MENU_LABEL_VALUE_INFORMATION_LIST),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_INFORMATION_LIST),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_INFORMATION_LIST),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3760,8 +3760,8 @@ static bool setting_append_list(
 #ifndef HAVE_DYNAMIC
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_RESTART_RETROARCH),
-               menu_hash_to_str(MENU_LABEL_VALUE_RESTART_RETROARCH),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_RESTART_RETROARCH),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3771,8 +3771,8 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_CONFIGURATIONS),
-               menu_hash_to_str(MENU_LABEL_VALUE_CONFIGURATIONS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_CONFIGURATIONS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CONFIGURATIONS),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3780,8 +3780,8 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_SAVE_CURRENT_CONFIG),
-               menu_hash_to_str(MENU_LABEL_VALUE_SAVE_CURRENT_CONFIG),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_SAVE_CURRENT_CONFIG),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3790,8 +3790,8 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_SAVE_NEW_CONFIG),
-               menu_hash_to_str(MENU_LABEL_VALUE_SAVE_NEW_CONFIG),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_SAVE_NEW_CONFIG),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3800,8 +3800,8 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_HELP_LIST),
-               menu_hash_to_str(MENU_LABEL_VALUE_HELP_LIST),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_HELP_LIST),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_HELP_LIST),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3811,8 +3811,8 @@ static bool setting_append_list(
          /* Apple rejects iOS apps that lets you forcibly quit an application. */
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_QUIT_RETROARCH),
-               menu_hash_to_str(MENU_LABEL_VALUE_QUIT_RETROARCH),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_QUIT_RETROARCH),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3823,8 +3823,8 @@ static bool setting_append_list(
 #if defined(HAVE_LAKKA)
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_SHUTDOWN),
-               menu_hash_to_str(MENU_LABEL_VALUE_SHUTDOWN),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_SHUTDOWN),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SHUTDOWN),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3833,8 +3833,8 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_REBOOT),
-               menu_hash_to_str(MENU_LABEL_VALUE_REBOOT),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_REBOOT),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_REBOOT),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3844,8 +3844,8 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_INPUT_SETTINGS),
-               menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SETTINGS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_INPUT_SETTINGS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3853,8 +3853,8 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
-               menu_hash_to_str(MENU_LABEL_PLAYLIST_SETTINGS),
-               menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_SETTINGS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLIST_SETTINGS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -3968,8 +3968,8 @@ static bool setting_append_list(
                list, list_info,
                settings->camera.driver,
                sizeof(settings->camera.driver),
-               menu_hash_to_str(MENU_LABEL_CAMERA_DRIVER),
-               menu_hash_to_str(MENU_LABEL_VALUE_CAMERA_DRIVER),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_CAMERA_DRIVER),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER),
                config_get_default_camera(),
                config_get_camera_driver_options(),
                &group_info,
@@ -3986,8 +3986,8 @@ static bool setting_append_list(
                list, list_info,
                settings->location.driver,
                sizeof(settings->location.driver),
-               menu_hash_to_str(MENU_LABEL_LOCATION_DRIVER),
-               menu_hash_to_str(MENU_LABEL_VALUE_LOCATION_DRIVER),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_LOCATION_DRIVER),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER),
                config_get_default_location(),
                config_get_location_driver_options(),
                &group_info,
@@ -4004,8 +4004,8 @@ static bool setting_append_list(
                list, list_info,
                settings->menu.driver,
                sizeof(settings->menu.driver),
-               menu_hash_to_str(MENU_LABEL_MENU_DRIVER),
-               menu_hash_to_str(MENU_LABEL_VALUE_MENU_DRIVER),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_MENU_DRIVER),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MENU_DRIVER),
                config_get_default_menu(),
                config_get_menu_driver_options(),
                &group_info,
@@ -4022,8 +4022,8 @@ static bool setting_append_list(
                list, list_info,
                settings->record.driver,
                sizeof(settings->record.driver),
-               menu_hash_to_str(MENU_LABEL_RECORD_DRIVER),
-               menu_hash_to_str(MENU_LABEL_VALUE_RECORD_DRIVER),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_RECORD_DRIVER),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_RECORD_DRIVER),
                config_get_default_record(),
                config_get_record_driver_options(),
                &group_info,
@@ -4143,11 +4143,11 @@ static bool setting_append_list(
          CONFIG_BOOL(
                list, list_info,
                &settings->game_specific_options,
-               menu_hash_to_str(MENU_LABEL_GAME_SPECIFIC_OPTIONS),
-               menu_hash_to_str(MENU_LABEL_VALUE_GAME_SPECIFIC_OPTIONS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS),
                default_game_specific_options,
-               menu_hash_to_str(MENU_VALUE_OFF),
-               menu_hash_to_str(MENU_VALUE_ON),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_OFF),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ON),
                &group_info,
                &subgroup_info,
                parent_group,
@@ -4159,11 +4159,11 @@ static bool setting_append_list(
          CONFIG_BOOL(
                list, list_info,
                &settings->auto_overrides_enable,
-               menu_hash_to_str(MENU_LABEL_AUTO_OVERRIDES_ENABLE),
-               menu_hash_to_str(MENU_LABEL_VALUE_AUTO_OVERRIDES_ENABLE),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE),
                default_auto_overrides_enable,
-               menu_hash_to_str(MENU_VALUE_OFF),
-               menu_hash_to_str(MENU_VALUE_ON),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_OFF),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ON),
                &group_info,
                &subgroup_info,
                parent_group,
@@ -4175,11 +4175,11 @@ static bool setting_append_list(
          CONFIG_BOOL(
                list, list_info,
                &settings->auto_remaps_enable,
-               menu_hash_to_str(MENU_LABEL_AUTO_REMAPS_ENABLE),
-               menu_hash_to_str(MENU_LABEL_VALUE_AUTO_REMAPS_ENABLE),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE),
                default_auto_remaps_enable,
-               menu_hash_to_str(MENU_VALUE_OFF),
-               menu_hash_to_str(MENU_VALUE_ON),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_OFF),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ON),
                &group_info,
                &subgroup_info,
                parent_group,
