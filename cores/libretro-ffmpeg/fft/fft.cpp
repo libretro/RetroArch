@@ -89,38 +89,12 @@ typedef struct GLFFT
    unsigned depth;
 } glfft_t;
 
-#include "gl_shaders/fft_vertex_program_heightmap.glsl.vert.h"
-#include "gl_shaders/fft_fragment_program_heightmap.glsl.frag.h"
+#include "gl_shaders/fft_heightmap.glsl.vert.h"
+#include "gl_shaders/fft_heightmap.glsl.frag.h"
 #include "gl_shaders/fft_vertex_program.glsl.vert.h"
-
-static const char fragment_program_resolve[] =
-   "#version 300 es\n"
-   "precision mediump float;\n"
-   "precision highp int;\n"
-   "precision highp usampler2D;\n"
-   "precision highp isampler2D;\n"
-   "in vec2 vTex;\n"
-   "out vec4 FragColor;\n"
-   "uniform usampler2D sFFT;\n"
-
-   "vec4 get_heights(highp uvec2 h) {\n"
-   "  vec2 l = unpackHalf2x16(h.x);\n"
-   "  vec2 r = unpackHalf2x16(h.y);\n"
-   "  vec2 channels[4] = vec2[4](\n"
-   "     l, 0.5 * (l + r), r, 0.5 * (l - r));\n"
-   "  vec4 amps;\n"
-   "  for (int i = 0; i < 4; i++)\n"
-   "     amps[i] = dot(channels[i], channels[i]);\n"
-
-   "  return 9.0 * log(amps + 0.0001) - 22.0;\n"  
-   "}\n"
-
-   "void main() {\n"
-   "   uvec2 h = textureLod(sFFT, vTex, 0.0).rg;\n"
-   "   vec4 height = get_heights(h);\n"
-   "   height = (height + 40.0) / 80.0;\n"
-   "   FragColor = height;\n"
-   "}";
+#include "gl_shaders/fft_fragment_program_resolve.glsl.frag.h"
+#include "gl_shaders/fft_fragment_program_real.glsl.frag.h"
+#include "gl_shaders/fft_fragment_program_complex.glsl.frag.h"
 
 static const char fragment_program_blur[] =
    "#version 300 es\n"
@@ -148,76 +122,6 @@ static const char fragment_program_blur[] =
    "   FragColor = res / k;\n"
    "}";
 
-static const char fragment_program_real[] =
-   "#version 300 es\n"
-   "precision mediump float;\n"
-   "precision highp int;\n"
-   "precision highp usampler2D;\n"
-   "precision highp isampler2D;\n"
-
-   "in vec2 vTex;\n"
-   "uniform isampler2D sTexture;\n"
-   "uniform usampler2D sParameterTexture;\n"
-   "uniform usampler2D sWindow;\n"
-   "uniform int uViewportOffset;\n"
-   "out uvec2 FragColor;\n"
-
-   "vec2 compMul(vec2 a, vec2 b) { return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }\n"
-
-   "void main() {\n"
-   "   uvec2 params = texture(sParameterTexture, vec2(vTex.x, 0.5)).rg;\n"
-   "   uvec2 coord  = uvec2((params.x >> 16u) & 0xffffu, params.x & 0xffffu);\n"
-   "   int ycoord   = int(gl_FragCoord.y) - uViewportOffset;\n"
-   "   vec2 twiddle = unpackHalf2x16(params.y);\n"
-
-   "   float window_a = float(texelFetch(sWindow, ivec2(coord.x, 0), 0).r) / float(0x10000);\n"
-   "   float window_b = float(texelFetch(sWindow, ivec2(coord.y, 0), 0).r) / float(0x10000);\n"
-
-   "   vec2 a = window_a * vec2(texelFetch(sTexture, ivec2(int(coord.x), ycoord), 0).rg) / vec2(0x8000);\n"
-   "   vec2 a_l = vec2(a.x, 0.0);\n"
-   "   vec2 a_r = vec2(a.y, 0.0);\n"
-   "   vec2 b = window_b * vec2(texelFetch(sTexture, ivec2(int(coord.y), ycoord), 0).rg) / vec2(0x8000);\n"
-   "   vec2 b_l = vec2(b.x, 0.0);\n"
-   "   vec2 b_r = vec2(b.y, 0.0);\n"
-   "   b_l = compMul(b_l, twiddle);\n"
-   "   b_r = compMul(b_r, twiddle);\n"
-
-   "   vec2 res_l = a_l + b_l;\n"
-   "   vec2 res_r = a_r + b_r;\n"
-   "   FragColor = uvec2(packHalf2x16(res_l), packHalf2x16(res_r));\n"
-   "}";
-
-static const char fragment_program_complex[] =
-   "#version 300 es\n"
-   "precision mediump float;\n"
-   "precision highp int;\n"
-   "precision highp usampler2D;\n"
-   "precision highp isampler2D;\n"
-
-   "in vec2 vTex;\n"
-   "uniform usampler2D sTexture;\n"
-   "uniform usampler2D sParameterTexture;\n"
-   "uniform int uViewportOffset;\n"
-   "out uvec2 FragColor;\n"
-
-   "vec2 compMul(vec2 a, vec2 b) { return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x); }\n"
-
-   "void main() {\n"
-   "   uvec2 params = texture(sParameterTexture, vec2(vTex.x, 0.5)).rg;\n"
-   "   uvec2 coord  = uvec2((params.x >> 16u) & 0xffffu, params.x & 0xffffu);\n"
-   "   int ycoord   = int(gl_FragCoord.y) - uViewportOffset;\n"
-   "   vec2 twiddle = unpackHalf2x16(params.y);\n"
-
-   "   uvec2 x = texelFetch(sTexture, ivec2(int(coord.x), ycoord), 0).rg;\n"
-   "   uvec2 y = texelFetch(sTexture, ivec2(int(coord.y), ycoord), 0).rg;\n"
-   "   vec4 a = vec4(unpackHalf2x16(x.x), unpackHalf2x16(x.y));\n"
-   "   vec4 b = vec4(unpackHalf2x16(y.x), unpackHalf2x16(y.y));\n"
-   "   b.xy = compMul(b.xy, twiddle);\n"
-   "   b.zw = compMul(b.zw, twiddle);\n"
-
-   "   vec4 res = a + b;\n"
-   "   FragColor = uvec2(packHalf2x16(res.xy), packHalf2x16(res.zw));\n"
-   "}";
 
 static GLuint fft_compile_shader(glfft_t *fft, GLenum type, const char *source)
 {
@@ -546,8 +450,8 @@ static void fft_init(glfft_t *fft)
    GLushort *window;
    static const GLfloat unity[] = { 0.0f, 0.0f, 1.0f, 1.0f };
 
-   fft->prog_real    = fft_compile_program(fft, fft_vertex_program, fragment_program_real);
-   fft->prog_complex = fft_compile_program(fft, fft_vertex_program, fragment_program_complex);
+   fft->prog_real    = fft_compile_program(fft, fft_vertex_program, fft_fragment_program_real);
+   fft->prog_complex = fft_compile_program(fft, fft_vertex_program, fft_fragment_program_complex);
    fft->prog_resolve = fft_compile_program(fft, fft_vertex_program, fragment_program_resolve);
    fft->prog_blur    = fft_compile_program(fft, fft_vertex_program, fragment_program_blur);
    GL_CHECK_ERROR();
