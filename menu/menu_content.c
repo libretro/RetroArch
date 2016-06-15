@@ -45,7 +45,7 @@
  *
  * Initializes core and loads content based on playlist entry.
  **/
-static bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info)
+bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info)
 {
    unsigned idx;
    playlist_t *playlist            = NULL;
@@ -187,20 +187,6 @@ bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info,
 
     if (info)
       strlcpy(new_core_path, info->path, len);
-
-   return true;
-}
-
-bool menu_content_ctl(enum menu_content_ctl_state state, void *data)
-{
-   switch (state)
-   {
-      case MENU_CONTENT_CTL_LOAD_PLAYLIST:
-         return menu_content_load_from_playlist((menu_content_ctx_playlist_info_t*)data);
-      case MENU_CONTENT_CTL_NONE:
-      default:
-         break;
-   }
 
    return true;
 }

@@ -24,26 +24,6 @@
 
 RETRO_BEGIN_DECLS
 
-enum menu_content_ctl_state
-{
-   MENU_CONTENT_CTL_NONE = 0,
-
-   /* Initializes core and loads content 
-    * (based on playlist entry). */
-   MENU_CONTENT_CTL_LOAD_PLAYLIST,
-
-   /* Find first core that is compatible with the
-    * content.
-    *
-    * Returns false if there are multiple compatible
-    * cores and a selection needs to be made from
-    * a list. 
-    *
-    * Returns true and fills in @s with path to core.
-    */
-   MENU_CONTENT_CTL_FIND_FIRST_CORE
-};
-
 typedef struct menu_content_ctx_playlist_info
 {
    void *data;
@@ -60,10 +40,17 @@ typedef struct menu_content_ctx_defer_info
    size_t len;
 } menu_content_ctx_defer_info_t;
 
+/**
+ * menu_content_load_from_playlist:
+ * @playlist             : Playlist handle.
+ * @idx                  : Index in playlist.
+ *
+ * Initializes core and loads content based on playlist entry.
+ **/
+bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info);
+
 bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info, bool load_content_with_current_core,
       char *new_core_path, size_t len);
-
-bool menu_content_ctl(enum menu_content_ctl_state state, void *data);
 
 RETRO_END_DECLS
 
