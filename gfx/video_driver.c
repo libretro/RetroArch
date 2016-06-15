@@ -1191,6 +1191,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          group_info,
          subgroup_info,
          parent_group);
+   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_SCREEN_RESOLUTION);
 #endif
 #if defined(__CELLOS_LV2__)
    CONFIG_BOOL(
@@ -1206,6 +1207,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          parent_group,
          general_write_handler,
          general_read_handler);
+   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_PAL60_ENABLE);
 #endif
 #if defined(GEKKO) || defined(_XBOX360)
    CONFIG_UINT(
@@ -1233,6 +1235,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          true);
    settings_data_list_current_add_flags(list, list_info,
          SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
+   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_GAMMA);
 #endif
 #if defined(_XBOX1) || defined(HW_RVL)
    CONFIG_BOOL(
@@ -1252,6 +1255,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          list,
          list_info,
          CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SOFT_FILTER);
 #endif
 #ifdef _XBOX1
    CONFIG_UINT(
@@ -1266,6 +1270,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          general_write_handler,
          general_read_handler);
    menu_settings_list_current_add_range(list, list_info, 0, 5, 1, true, true);
+   menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER);
 #endif
 #endif
 }

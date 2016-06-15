@@ -386,6 +386,11 @@ void settings_data_list_current_add_free_flags(
       rarch_setting_info_t *list_info,
       unsigned values);
 
+void menu_settings_list_current_add_enum_idx(
+      rarch_setting_t **list,
+      rarch_setting_info_t *list_info,
+      enum menu_hash_enums enum_idx);
+
 bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data);
 
 RETRO_END_DECLS
