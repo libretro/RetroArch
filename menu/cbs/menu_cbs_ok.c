@@ -656,7 +656,8 @@ static int action_ok_playlist_entry_collection(const char *path,
    playlist_info.data = playlist;
    playlist_info.idx  = selection_ptr;
 
-   menu_content_load_from_playlist(&playlist_info);
+   if (!menu_content_load_from_playlist(&playlist_info))
+      return menu_cbs_exit();
 
    if (is_history)
    {
@@ -774,7 +775,8 @@ static int action_ok_playlist_entry(const char *path,
    playlist_info.data = playlist;
    playlist_info.idx  = selection_ptr;
 
-   menu_content_load_from_playlist(&playlist_info);
+   if (!menu_content_load_from_playlist(&playlist_info))
+      return menu_cbs_exit();
 
    if (is_history)
    {
