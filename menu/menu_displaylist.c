@@ -4113,7 +4113,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                      default:
                         menu_entries_add_enum(info->list, cores_paths->elems[i].data,
                               menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST_OK),
-                              MENU_LABEL_DETECT_CORE_LIST_OK,
+                              MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,
                               MENU_FILE_CORE, 0, 0);
                         break;
                   }
