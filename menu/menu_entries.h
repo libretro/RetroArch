@@ -61,6 +61,7 @@ enum menu_entries_ctl_state
 typedef struct menu_file_list_cbs
 {
    rarch_setting_t *setting;
+   enum menu_hash_enums enum_idx;
 
    int (*action_iterate)(const char *label, unsigned action);
    const char *action_iterate_ident;
