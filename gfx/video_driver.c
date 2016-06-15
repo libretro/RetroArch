@@ -1206,7 +1206,8 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          subgroup_info,
          parent_group,
          general_write_handler,
-         general_read_handler);
+         general_read_handler,
+         SD_FLAG_NONE);
    menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_PAL60_ENABLE);
 #endif
 #if defined(GEKKO) || defined(_XBOX360)
@@ -1250,7 +1251,8 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
          subgroup_info,
          parent_group,
          general_write_handler,
-         general_read_handler);
+         general_read_handler,
+         SD_FLAG_NONE);
    menu_settings_list_current_add_cmd(
          list,
          list_info,
