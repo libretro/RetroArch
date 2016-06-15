@@ -2367,6 +2367,7 @@ const char *menu_hash_to_str_nl(uint32_t hash);
 int menu_hash_get_help_nl(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_pl(uint32_t hash);
+const char *menu_hash_to_str_pl_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_pl(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_pt(uint32_t hash);
