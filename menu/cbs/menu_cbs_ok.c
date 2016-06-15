@@ -969,7 +969,7 @@ static int action_ok_menu_wallpaper_load(const char *path,
          ACTION_OK_LOAD_WALLPAPER, MENU_SETTINGS);
 }
 
-static int action_ok_core_load(const char *path,
+static int action_ok_load_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok(path, label, type, idx, entry_idx,
@@ -1276,7 +1276,7 @@ static int action_ok_core_deferred_set(const char *path,
    return menu_cbs_exit();
 }
 
-static int action_ok_core_load_deferred(const char *path,
+static int action_ok_load_core_deferred(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    content_ctx_info_t content_info = {0};
@@ -2866,13 +2866,13 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             switch (menu_label_hash)
             {
                case MENU_LABEL_DEFERRED_CORE_LIST:
-                  BIND_ACTION_OK(cbs, action_ok_core_load_deferred);
+                  BIND_ACTION_OK(cbs, action_ok_load_core_deferred);
                   break;
                case MENU_LABEL_DEFERRED_CORE_LIST_SET:
                   BIND_ACTION_OK(cbs, action_ok_core_deferred_set);
                   break;
                case MENU_LABEL_CORE_LIST:
-                  BIND_ACTION_OK(cbs, action_ok_core_load);
+                  BIND_ACTION_OK(cbs, action_ok_load_core);
                   break;
                case MENU_LABEL_CORE_UPDATER_LIST:
                   BIND_ACTION_OK(cbs, action_ok_deferred_list_stub);
