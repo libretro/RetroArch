@@ -2351,6 +2351,7 @@ enum menu_hash_enums
 #define CB_CORE_THUMBNAILS_DOWNLOAD                                            0xc9d6519fU
 
 const char *menu_hash_to_str_de(uint32_t hash);
+const char *menu_hash_to_str_de_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_es(uint32_t hash);
@@ -2372,6 +2373,7 @@ const char *menu_hash_to_str_pt(uint32_t hash);
 int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_eo(uint32_t hash);
+const char *menu_hash_to_str_de_eo_msg(enum menu_hash_enums msg);
 int menu_hash_get_help_eo(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_us(uint32_t hash);

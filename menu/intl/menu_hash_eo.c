@@ -18,6 +18,18 @@
 
 #include "../menu_hash.h"
 
+const char *menu_hash_to_str_de_eo_msg(enum menu_hash_enums msg)
+{
+   switch (msg)
+   {
+      case 0:
+      default:
+         break;
+   }
+
+   return "null";
+}
+
 const char *menu_hash_to_str_eo(uint32_t hash)
 {
    switch (hash)
