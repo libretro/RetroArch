@@ -49,7 +49,8 @@ typedef struct menu_content_ctx_defer_info
  **/
 bool menu_content_load_from_playlist(menu_content_ctx_playlist_info_t *info);
 
-bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info, bool load_content_with_current_core,
+bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info,
+      bool load_content_with_current_core,
       char *new_core_path, size_t len);
 
 RETRO_END_DECLS
