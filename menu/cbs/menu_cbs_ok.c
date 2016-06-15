@@ -511,7 +511,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    switch (ret)
    {
       case -1:
-         task_push_content_load_default(new_core_path, NULL,
+         task_push_content_load_default(new_core_path, def_info.s,
                   &content_info, CORE_TYPE_PLAIN,
                   CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
                   NULL, NULL);
@@ -2368,7 +2368,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    switch (ret)
    {
       case -1:
-         task_push_content_load_default(new_core_path, NULL,
+         task_push_content_load_default(new_core_path, def_info.s,
                   &content_info,
                   CORE_TYPE_PLAIN,
                   CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
