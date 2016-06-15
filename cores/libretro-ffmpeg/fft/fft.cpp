@@ -6,6 +6,9 @@
 #include <glsym/glsym.h>
 #include <libretro.h>
 
+#include <retro_miscellaneous.h>
+#include <filters.h>
+
 #define GLM_SWIZZLE
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -26,16 +29,8 @@ using namespace glm;
 #define GL_CHECK_ERROR()
 #endif
 
-#ifndef MAX
-#define MAX(a, b) ((b > a) ? (b) : (a))
-#endif
-
 #ifndef M_HALF_PI
 #define M_HALF_PI 1.57079632679489661923132169163975144
-#endif
-
-#ifndef M_PI
-#define M_PI      3.14159265359
 #endif
 
 extern retro_log_printf_t log_cb;
@@ -553,40 +548,6 @@ static void fft_init_quad_vao(glfft_t *fft)
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-/* Modified Bessel function of first order.
- * Check Wiki for mathematical definition ... */
-static inline double kaiser_besseli0(double x)
-{
-   unsigned i;
-   double sum = 0.0;
-
-   double factorial = 1.0;
-   double factorial_mult = 0.0;
-   double x_pow = 1.0;
-   double two_div_pow = 1.0;
-   double x_sqr = x * x;
-
-   /* Approximate. This is an infinite sum.
-    * Luckily, it converges rather fast. */
-   for (i = 0; i < 18; i++)
-   {
-      sum            += 
-         x_pow * two_div_pow / (factorial * factorial);
-
-      factorial_mult += 1.0;
-      x_pow          *= x_sqr;
-      two_div_pow    *= 0.25;
-      factorial      *= factorial_mult;
-   }
-
-   return sum;
-}
-
-static inline double kaiser_window(double index, double beta)
-{
-   return kaiser_besseli0(beta * sqrtf(1 - index * index));
-}
-
 static void fft_init_texture(glfft_t *fft, GLuint *tex, GLenum format,
       unsigned width, unsigned height, unsigned levels, GLenum mag, GLenum min)
 {
@@ -667,12 +628,12 @@ static void fft_init(glfft_t *fft)
 
    window = (GLushort*)calloc(fft->size, sizeof(GLushort));
 
-   window_mod = 1.0 / kaiser_window(0.0, KAISER_BETA);
+   window_mod = 1.0 / kaiser_window_function(0.0, KAISER_BETA);
 
    for (i = 0; i < fft->size; i++)
    {
       double phase = (double)(i - int(fft->size) / 2) / (int(fft->size) / 2);
-      double     w = kaiser_window(phase, KAISER_BETA);
+      double     w = kaiser_window_function(phase, KAISER_BETA);
       window[i]    = round(0xffff * w * window_mod);
    }
    glBindTexture(GL_TEXTURE_2D, fft->window_tex);
