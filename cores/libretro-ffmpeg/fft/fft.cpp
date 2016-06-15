@@ -35,15 +35,15 @@ using namespace glm;
 
 extern retro_log_printf_t log_cb;
 
-typedef struct target
+struct target
 {
    GLuint tex;
    GLuint fbo;
-} target_t;
+};
 
 struct Pass
 {
-   target_t target;
+   struct target target;
    GLuint parameter_tex;
 };
 
@@ -68,7 +68,7 @@ typedef struct GLFFT
 
    unsigned output_ptr;
 
-   target_t output, resolve, blur;
+   struct target output, resolve, blur;
 
    struct Block
    {
@@ -413,7 +413,7 @@ static void fft_init_texture(glfft_t *fft, GLuint *tex, GLenum format,
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-static void fft_init_target(glfft_t *fft, target_t *target, GLenum format,
+static void fft_init_target(glfft_t *fft, struct target *target, GLenum format,
       unsigned width, unsigned height, unsigned levels, GLenum mag, GLenum min)
 {
    fft_init_texture(fft, &target->tex, format, width, height, levels, mag, min);
