@@ -728,6 +728,14 @@ ifeq ($(HAVE_GL_CONTEXT), 1)
       endif
    endif
 
+ifeq ($(HAVE_FFMPEG), 1)
+ifneq ($(C89_BUILD), 1)
+ifneq ($(C90_BUILD), 1)
+	OBJ += cores/libretro-ffmpeg/fft/fft.o
+	DEFINES += -Ideps -DHAVE_GL_FFT
+endif
+endif
+endif
 
    ifeq ($(HAVE_GLES), 1)
       LIBS += $(GLES_LIBS)
@@ -1087,6 +1095,8 @@ endif
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
           cores/libretro-ffmpeg/ffmpeg_core.o
+
+
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS)
    DEFINES += $(AVCODEC_CFLAGS) $(AVFORMAT_CFLAGS) $(AVUTIL_CFLAGS) $(SWSCALE_CFLAGS) $(SWRESAMPLE_CFLAGS)
    DEFINES += -Wno-deprecated-declarations -DHAVE_FFMPEG -Iffmpeg
