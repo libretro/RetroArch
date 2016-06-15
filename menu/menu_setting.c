@@ -2045,7 +2045,6 @@ static rarch_setting_t *menu_setting_find_internal_enum(rarch_setting_t *setting
 {
    for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
    {
-      const char *name = menu_setting_get_name(setting);
       const char *short_description = menu_setting_get_short_description(setting);
 
       if (setting->enum_idx == enum_idx && menu_setting_get_type(setting) <= ST_GROUP)
