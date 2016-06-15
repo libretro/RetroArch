@@ -18,7 +18,7 @@
 
 #include "../menu_hash.h"
 
-const char *menu_hash_to_str_de_eo_msg(enum menu_hash_enums msg)
+const char *menu_hash_to_str_eo_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {

@@ -77,7 +77,6 @@ const char *menu_hash_to_str_enum(enum menu_hash_enums msg)
    if (!settings)
       return "null";
 
-#if 0
 #ifdef HAVE_LANGEXTRA
    switch (settings->user_language)
    {
@@ -108,7 +107,6 @@ const char *menu_hash_to_str_enum(enum menu_hash_enums msg)
       default:
          break;
    }
-#endif
 #endif
 
    if (ret && !string_is_equal(ret, "null"))

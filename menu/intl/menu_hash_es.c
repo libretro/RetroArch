@@ -31,7 +31,7 @@
 /* DO NOT REMOVE THIS. If it causes build failure, it's because you saved the file as UTF-8. Read the above comment. */
 extern const char force_iso_8859_1[sizeof("¿ביםֽסף÷ת")==9+1 ? 1 : -1];
 
-const char *menu_hash_to_str_es_label_enum(enum menu_hash_enums msg)
+const char *menu_hash_to_str_es_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
