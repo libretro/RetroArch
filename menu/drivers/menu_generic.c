@@ -134,40 +134,40 @@ static int action_iterate_help(menu_handle_t *menu,
 
                   s2,
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),
+                  menu_hash_to_str_enum(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP),
                   desc[0],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),
+                  menu_hash_to_str_enum(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN),
                   desc[1],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),
+                  menu_hash_to_str_enum(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM),
                   desc[2],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),
+                  menu_hash_to_str_enum(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK),
                   desc[3],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO),
+                  menu_hash_to_str_enum(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO),
                   desc[4],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_START),
+                  menu_hash_to_str_enum(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START),
                   desc[5],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU),
+                  menu_hash_to_str_enum(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU),
                   desc[6],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT),
+                  menu_hash_to_str_enum(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT),
                   desc[7],
 
-                  menu_hash_to_str(
-                        MENU_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD),
+                  menu_hash_to_str_enum(
+                        MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD),
                   desc[8]
 
                   );
@@ -366,7 +366,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
 
             info.list = menu_stack;
             strlcpy(info.label,
-                  menu_hash_to_str(MENU_LABEL_HELP),
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_HELP),
                   sizeof(info.label));
 
             menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
@@ -399,7 +399,7 @@ bool generic_menu_init_list(void *data)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label,
-         menu_hash_to_str(MENU_VALUE_MAIN_MENU), sizeof(info.label));
+         menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU), sizeof(info.label));
 
    menu_entries_add(menu_stack, info.path,
          info.label, info.type, info.flags, 0);
