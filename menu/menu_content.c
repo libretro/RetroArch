@@ -125,9 +125,9 @@ error:
  * selection needs to be made from a list, otherwise
  * returns true and fills in @s with path to core.
  **/
-bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info, bool load_content_with_current_core)
+bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info, bool load_content_with_current_core,
+      char *new_core_path, size_t len)
 {
-   char new_core_path[PATH_MAX_LENGTH]     = {0};
    const core_info_t *info                 = NULL;
    core_info_list_t *core_info             = NULL;
    const char *default_info_dir            = NULL;
@@ -185,12 +185,9 @@ bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info, bool 
       return false;
 
     if (info)
-      strlcpy(new_core_path, info->path, sizeof(new_core_path));
+      strlcpy(new_core_path, info->path, len);
 
    runloop_ctl(RUNLOOP_CTL_SET_CONTENT_PATH, def_info->s);
-
-   if (path_file_exists(new_core_path))
-      runloop_ctl(RUNLOOP_CTL_SET_LIBRETRO_PATH, new_core_path);
 
    return true;
 }

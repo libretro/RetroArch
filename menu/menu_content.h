@@ -60,7 +60,8 @@ typedef struct menu_content_ctx_defer_info
    size_t len;
 } menu_content_ctx_defer_info_t;
 
-bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info, bool load_content_with_current_core);
+bool menu_content_find_first_core(menu_content_ctx_defer_info_t *def_info, bool load_content_with_current_core,
+      char *new_core_path, size_t len);
 
 bool menu_content_ctl(enum menu_content_ctl_state state, void *data);
 

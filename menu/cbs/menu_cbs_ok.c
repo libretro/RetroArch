@@ -461,6 +461,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
 {
    menu_content_ctx_defer_info_t def_info;
    content_ctx_info_t content_info     = {0};
+   char new_core_path[PATH_MAX_LENGTH] = {0};
    char menu_path_new[PATH_MAX_LENGTH] = {0};
    int ret                             = 0;
    const char *menu_path               = NULL;
@@ -494,7 +495,8 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    def_info.s          = menu->deferred_path;
    def_info.len        = sizeof(menu->deferred_path);
 
-   if (menu_content_find_first_core(&def_info, false))
+   if (menu_content_find_first_core(&def_info, false, new_core_path,
+            sizeof(new_core_path)))
       ret = -1;
 
    if (     !is_carchive && !string_is_empty(path) 
@@ -509,9 +511,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    switch (ret)
    {
       case -1:
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
-
-         task_push_content_load_default(NULL, NULL,
+         task_push_content_load_default(new_core_path, NULL,
                   &content_info, CORE_TYPE_PLAIN,
                   CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
                   NULL, NULL);
@@ -2333,12 +2333,13 @@ static int action_ok_load_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_content_ctx_defer_info_t def_info;
-   content_ctx_info_t content_info = {0};
-   int ret                  = 0;
-   core_info_list_t *list   = NULL;
-   menu_handle_t *menu      = NULL;
-   const char *menu_path    = NULL;
-   const char *content_path = NULL;
+   content_ctx_info_t content_info     = {0};
+   char new_core_path[PATH_MAX_LENGTH] = {0};
+   int ret                             = 0;
+   core_info_list_t *list              = NULL;
+   menu_handle_t *menu                 = NULL;
+   const char *menu_path               = NULL;
+   const char *content_path            = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
@@ -2358,7 +2359,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    def_info.s          = menu->deferred_path;
    def_info.len        = sizeof(menu->deferred_path);
 
-   if (menu_content_find_first_core(&def_info, false))
+   if (menu_content_find_first_core(&def_info, false, new_core_path, sizeof(new_core_path)))
       ret = -1;
 
    fill_pathname_join(detect_content_path, menu_path, content_path,
@@ -2367,11 +2368,10 @@ static int action_ok_load_archive_detect_core(const char *path,
    switch (ret)
    {
       case -1:
-         command_event(CMD_EVENT_LOAD_CORE, NULL);
-         task_push_content_load_default(NULL, NULL,
+         task_push_content_load_default(new_core_path, NULL,
                   &content_info,
                   CORE_TYPE_PLAIN,
-                  CONTENT_MODE_LOAD_CONTENT_WITH_CURRENT_CORE_FROM_MENU,
+                  CONTENT_MODE_LOAD_CONTENT_WITH_NEW_CORE_FROM_MENU,
                   NULL, NULL);
          return 0;
       case 0:
