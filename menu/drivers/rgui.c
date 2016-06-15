@@ -545,7 +545,7 @@ static void rgui_render(void *data)
       blit_line(
             RGUI_TERM_START_X(fb_width),
             RGUI_TERM_START_X(fb_width),
-            menu_hash_to_str(MENU_VALUE_BACK),
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_BACK),
             TITLE_COLOR(settings));
 
    strlcpy(title_buf, string_to_upper(title_buf), sizeof(title_buf));

@@ -703,7 +703,7 @@ static int mui_get_core_title(char *s, size_t len)
    }
 
    if (string_is_empty(core_name))
-      core_name    = menu_hash_to_str(MENU_VALUE_NO_CORE);
+      core_name    = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_CORE);
    if (!core_version)
       core_version = "";
 
@@ -1267,19 +1267,19 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
    {
       case MUI_SYSTEM_TAB_MAIN:
          menu_stack->list[stack_size - 1].label = 
-            strdup(menu_hash_to_str(MENU_VALUE_MAIN_MENU));
+            strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU));
          menu_stack->list[stack_size - 1].type = 
             MENU_SETTINGS;
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
          menu_stack->list[stack_size - 1].label = 
-            strdup(menu_hash_to_str(MENU_VALUE_PLAYLISTS_TAB));
+            strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB));
          menu_stack->list[stack_size - 1].type = 
             MENU_PLAYLISTS_TAB;
          break;
       case MUI_SYSTEM_TAB_SETTINGS:
          menu_stack->list[stack_size - 1].label = 
-            strdup(menu_hash_to_str(MENU_VALUE_SETTINGS_TAB));
+            strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SETTINGS_TAB));
          menu_stack->list[stack_size - 1].type = 
             MENU_SETTINGS;
          break;
@@ -1348,8 +1348,8 @@ static int mui_list_push(void *data, void *userdata,
       case DISPLAYLIST_LOAD_CONTENT_LIST:
          menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
          menu_entries_add_enum(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
-               menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_LOAD_CONTENT),
                MENU_ENUM_LABEL_LOAD_CONTENT,
                MENU_SETTING_ACTION, 0, 0);
 
@@ -1357,14 +1357,14 @@ static int mui_list_push(void *data, void *userdata,
          if (core_info_list_num_info_files(list))
          {
             menu_entries_add_enum(info->list,
-                  menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
-                  menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST),
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_DETECT_CORE_LIST),
                   MENU_ENUM_LABEL_DETECT_CORE_LIST,
                   MENU_SETTING_ACTION, 0, 0);
 
             menu_entries_add_enum(info->list,
-                  menu_hash_to_str(MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
-                  menu_hash_to_str(MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
                   MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
                   MENU_SETTING_ACTION, 0, 0);
          }

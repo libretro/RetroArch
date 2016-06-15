@@ -270,7 +270,7 @@ static void menu_displaylist_push_perfcounter(
    if (!counters || num == 0)
    {
       menu_entries_add(info->list,
-            menu_hash_to_str(MENU_LABEL_VALUE_NO_PERFORMANCE_COUNTERS),
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS),
             "", 0, 0, 0);
       return;
    }
@@ -293,15 +293,15 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (!core_info || !core_info->config_data)
    {
       menu_entries_add(info->list,
-            menu_hash_to_str(
-               MENU_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),
+            menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),
             "", 0, 0, 0);
       return 0;
    }
 
    strlcpy(tmp,
-         menu_hash_to_str(
-            MENU_LABEL_VALUE_CORE_INFO_CORE_NAME), sizeof(tmp));
+         menu_hash_to_str_enum(
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME), sizeof(tmp));
    strlcat(tmp, ": ", sizeof(tmp));
    if (core_info->core_name)
       strlcat(tmp, core_info->core_name, sizeof(tmp));
@@ -310,7 +310,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    strlcpy(tmp,
-         menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CORE_LABEL), sizeof(tmp));
+         menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL), sizeof(tmp));
    strlcat(tmp, ": ", sizeof(tmp));
    if (core_info->display_name)
       strlcat(tmp, core_info->display_name, sizeof(tmp));
@@ -320,8 +320,8 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (core_info->systemname)
    {
       strlcpy(tmp,
-            menu_hash_to_str(
-               MENU_LABEL_VALUE_CORE_INFO_SYSTEM_NAME),
+            menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME),
             sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       strlcat(tmp, core_info->systemname, sizeof(tmp));
@@ -332,7 +332,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (core_info->system_manufacturer)
    {
       strlcpy(tmp,
-            menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER),
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER),
             sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       strlcat(tmp, core_info->system_manufacturer, sizeof(tmp));
@@ -342,7 +342,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->categories_list)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CATEGORIES),
+      strlcpy(tmp, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES),
             sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
@@ -353,7 +353,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->authors_list)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_AUTHORS),
+      strlcpy(tmp, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS),
             sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
@@ -364,7 +364,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->permissions_list)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_PERMISSIONS),
+      strlcpy(tmp, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS),
             sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
@@ -375,7 +375,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (core_info->licenses_list)
    {
-      strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_LICENSES),
+      strlcpy(tmp, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
             sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
@@ -387,7 +387,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (core_info->supported_extensions_list)
    {
       strlcpy(tmp,
-            menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS),
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS),
             sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       string_list_join_concat(tmp, sizeof(tmp),
