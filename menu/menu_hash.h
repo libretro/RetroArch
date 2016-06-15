@@ -32,7 +32,16 @@ enum menu_hash_enums
 
    MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,
    MENU_ENUM_LABEL_MENU_WALLPAPER,
+   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
    MENU_ENUM_LABEL_MENU_LINEAR_FILTER,
+   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+
+   MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+
+   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+
+   MENU_ENUM_LABEL_MENU_SETTINGS,
+   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
 
    MENU_ENUM_LABEL_THUMBNAILS_UPDATER_LIST,
    MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST,
@@ -2366,9 +2375,11 @@ const char *menu_hash_to_str_eo(uint32_t hash);
 int menu_hash_get_help_eo(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str_us(uint32_t hash);
+const char *menu_hash_to_str_us_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_us(uint32_t hash, char *s, size_t len);
 
 const char *menu_hash_to_str(uint32_t hash);
+const char *menu_hash_to_str_enum(enum menu_hash_enums msg);
 int menu_hash_get_help(uint32_t hash, char *s, size_t len);
 
 uint32_t menu_hash_calculate(const char *s);
