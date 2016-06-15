@@ -456,7 +456,7 @@ int menu_entries_get_core_title(char *s, size_t len)
    if (string_is_empty(core_name) && info)
       core_name = info->info.library_name;
    if (string_is_empty(core_name))
-      core_name = menu_hash_to_str(MENU_VALUE_NO_CORE);
+      core_name = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_CORE);
 
    if (!core_version && info)
       core_version = info->info.library_version;

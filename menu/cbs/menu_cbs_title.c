@@ -330,161 +330,161 @@ static int action_get_core_information_list(const char *path, const char *label,
 static int action_get_core_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_LIST), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_LIST), len);
    return 0;
 }
 
 static int action_get_online_updater_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_ONLINE_UPDATER), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER), len);
    return 0;
 }
 
 static int action_get_online_thumbnails_updater_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_THUMBNAILS_UPDATER_LIST), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST), len);
    return 0;
 }
 
 static int action_get_core_updater_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_UPDATER_LIST), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST), len);
    return 0;
 }
 
 static int action_get_add_content_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_ADD_CONTENT_LIST), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST), len);
    return 0;
 }
 
 static int action_get_core_options_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_OPTIONS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_OPTIONS), len);
    return 0;
 }
 
 static int action_get_load_recent_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_HISTORY), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY), len);
    return 0;
 }
 
 static int action_get_quick_menu_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS), len);
    return 0;
 }
 
 static int action_get_input_remapping_options_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS), len);
    return 0;
 }
 
 static int action_get_shader_options_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_SHADER_OPTIONS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS), len);
    return 0;
 }
 
 static int action_get_disk_options_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_DISK_OPTIONS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DISK_OPTIONS), len);
    return 0;
 }
 
 static int action_get_frontend_counters_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_FRONTEND_COUNTERS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS), len);
    return 0;
 }
 
 static int action_get_core_counters_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_COUNTERS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_COUNTERS), len);
    return 0;
 }
 
 static int action_get_playlist_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_PLAYLIST_SETTINGS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS), len);
    return 0;
 }
 
 static int action_get_input_hotkey_binds_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_INPUT_HOTKEY_BINDS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS), len);
    return 0;
 }
 
 static int action_get_input_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_INPUT_SETTINGS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS), len);
    return 0;
 }
 
 static int action_get_core_cheat_options_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CORE_CHEAT_OPTIONS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS), len);
    return 0;
 }
 
 static int action_get_load_content_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT_LIST), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST), len);
    return 0;
 }
 
 static int action_get_cursor_manager_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_CURSOR_MANAGER), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER), len);
    return 0;
 }
 
 static int action_get_database_manager_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_DATABASE_MANAGER), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER), len);
    return 0;
 }
 
 static int action_get_system_information_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFORMATION), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION), len);
    return 0;
 }
 
 static int action_get_network_information_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_NETWORK_INFORMATION), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION), len);
    return 0;
 }
 
 static int action_get_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   sanitize_to_string(s, menu_hash_to_str(MENU_LABEL_VALUE_SETTINGS), len);
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SETTINGS), len);
    return 0;
 }
 
