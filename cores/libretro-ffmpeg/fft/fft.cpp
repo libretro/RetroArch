@@ -355,10 +355,14 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
       lookAt(eye, eye + vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 1.0f, 0.0f));
 
    glUseProgram(fft->block.prog);
-   glUniformMatrix4fv(glGetUniformLocation(fft->block.prog, "uMVP"), 1, GL_FALSE, value_ptr(mvp));
-   glUniform2i(glGetUniformLocation(fft->block.prog, "uOffset"), (-int(fft->block_size) + 1) / 2, fft->output_ptr);
-   glUniform4f(glGetUniformLocation(fft->block.prog, "uHeightmapParams"), -(fft->block_size - 1.0f) / 2.0f, 0.0f, 3.0f, 2.0f);
-   glUniform1f(glGetUniformLocation(fft->block.prog, "uAngleScale"), M_PI / ((fft->block_size - 1) / 2));
+   glUniformMatrix4fv(glGetUniformLocation(fft->block.prog, "uMVP"),
+         1, GL_FALSE, value_ptr(mvp));
+   glUniform2i(glGetUniformLocation(fft->block.prog, "uOffset"),
+         (-int(fft->block_size) + 1) / 2, fft->output_ptr);
+   glUniform4f(glGetUniformLocation(fft->block.prog, "uHeightmapParams"),
+         -(fft->block_size - 1.0f) / 2.0f, 0.0f, 3.0f, 2.0f);
+   glUniform1f(glGetUniformLocation(fft->block.prog, "uAngleScale"),
+         M_PI / ((fft->block_size - 1) / 2));
 
    glBindVertexArray(fft->block.vao);
    glBindTexture(GL_TEXTURE_2D, fft->blur.tex);
@@ -370,7 +374,8 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
    {
       glBindFramebuffer(GL_READ_FRAMEBUFFER, fft->ms_fbo);
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, backbuffer);
-      glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+      glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
+            GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
       static const GLenum attachments[] = { GL_COLOR_ATTACHMENT0, GL_DEPTH_STENCIL_ATTACHMENT };
       glBindFramebuffer(GL_FRAMEBUFFER, fft->ms_fbo);
@@ -382,11 +387,12 @@ static void fft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned
    GL_CHECK_ERROR();
 }
 
-static void fft_step(glfft_t *fft, const GLshort *audio_buffer, unsigned frames)
+static void fft_step(glfft_t *fft,
+      const GLshort *audio_buffer, unsigned frames)
 {
    unsigned i;
-   GLshort *buffer;
-   GLshort *slide = (GLshort*)&fft->sliding[0];
+   GLshort *buffer = NULL;
+   GLshort *slide  = (GLshort*)&fft->sliding[0];
 
    glEnable(GL_DEPTH_TEST);
    glEnable(GL_CULL_FACE);
@@ -399,21 +405,25 @@ static void fft_step(glfft_t *fft, const GLshort *audio_buffer, unsigned frames)
    glBindTexture(GL_TEXTURE_2D, fft->input_tex);
    glUseProgram(fft->prog_real);
 
-   memmove(slide, slide + frames * 2, (fft->sliding_size - 2 * frames) * sizeof(GLshort));
-   memcpy(slide + fft->sliding_size - frames * 2, audio_buffer, 2 * frames * sizeof(GLshort));
+   memmove(slide, slide + frames * 2,
+         (fft->sliding_size - 2 * frames) * sizeof(GLshort));
+   memcpy(slide + fft->sliding_size - frames * 2, audio_buffer,
+         2 * frames * sizeof(GLshort));
 
    /* Upload audio data to GPU. */
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, fft->pbo);
 
    buffer = (GLshort*)(glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0,
-            2 * fft->size * sizeof(GLshort), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+            2 * fft->size * sizeof(GLshort),
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
 
    if (buffer)
    {
       memcpy(buffer, slide, fft->sliding_size * sizeof(GLshort));
       glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
    }
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, fft->size, 1, GL_RG_INTEGER, GL_SHORT, NULL);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, fft->size, 1,
+         GL_RG_INTEGER, GL_SHORT, NULL);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
    /* Perform FFT of new block. */
@@ -424,12 +434,15 @@ static void fft_step(glfft_t *fft, const GLshort *audio_buffer, unsigned frames)
       if (i == fft->steps - 1)
       {
          glBindFramebuffer(GL_FRAMEBUFFER, fft->output.fbo);
-         glUniform1i(glGetUniformLocation(i == 0 ? fft->prog_real : fft->prog_complex, "uViewportOffset"), fft->output_ptr);
+         glUniform1i(glGetUniformLocation(i == 0 
+                  ? fft->prog_real : fft->prog_complex, "uViewportOffset"),
+               fft->output_ptr);
          glViewport(0, fft->output_ptr, fft->size, 1);
       }
       else
       {
-         glUniform1i(glGetUniformLocation(i == 0 ? fft->prog_real : fft->prog_complex, "uViewportOffset"), 0);
+         glUniform1i(glGetUniformLocation(i == 0 
+                  ? fft->prog_real : fft->prog_complex, "uViewportOffset"), 0);
          glBindFramebuffer(GL_FRAMEBUFFER, fft->passes[i].target.fbo);
          glClear(GL_COLOR_BUFFER_BIT);
       }
@@ -451,8 +464,10 @@ static void fft_step(glfft_t *fft, const GLshort *audio_buffer, unsigned frames)
    glViewport(0, fft->output_ptr, fft->size, 1);
    glUseProgram(fft->prog_resolve);
    glBindFramebuffer(GL_FRAMEBUFFER, fft->resolve.fbo);
-   const GLfloat resolve_offset[] = { 0.0f, float(fft->output_ptr) / fft->depth, 1.0f, 1.0f / fft->depth };
-   glUniform4fv(glGetUniformLocation(fft->prog_resolve, "uOffsetScale"), 1, resolve_offset);
+   const GLfloat resolve_offset[] = { 0.0f, float(fft->output_ptr) / fft->depth,
+      1.0f, 1.0f / fft->depth };
+   glUniform4fv(glGetUniformLocation(fft->prog_resolve, "uOffsetScale"),
+         1, resolve_offset);
    glBindTexture(GL_TEXTURE_2D, fft->output.tex);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -460,7 +475,8 @@ static void fft_step(glfft_t *fft, const GLshort *audio_buffer, unsigned frames)
    glUseProgram(fft->prog_blur);
    glBindTexture(GL_TEXTURE_2D, fft->resolve.tex);
    glBindFramebuffer(GL_FRAMEBUFFER, fft->blur.fbo);
-   glUniform4fv(glGetUniformLocation(fft->prog_blur, "uOffsetScale"), 1, resolve_offset);
+   glUniform4fv(glGetUniformLocation(fft->prog_blur, "uOffsetScale"),
+         1, resolve_offset);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    /* Mipmap the heightmap. */
@@ -495,7 +511,8 @@ static inline unsigned bitinverse(unsigned x, unsigned size)
    return ret;
 }
 
-void fft_build_params(glfft_t *fft, GLuint *buffer, unsigned step, unsigned size)
+void fft_build_params(glfft_t *fft, GLuint *buffer,
+      unsigned step, unsigned size)
 {
    unsigned i, j;
    unsigned step_size = 1 << step;
@@ -543,7 +560,8 @@ static void fft_init_quad_vao(glfft_t *fft)
    glEnableVertexAttribArray(0);
    glEnableVertexAttribArray(1);
    glVertexAttribPointer(0, 2, GL_BYTE, GL_FALSE, 0, 0);
-   glVertexAttribPointer(1, 2, GL_BYTE, GL_FALSE, 0, reinterpret_cast<const GLvoid*>(uintptr_t(8)));
+   glVertexAttribPointer(1, 2, GL_BYTE, GL_FALSE, 0,
+         reinterpret_cast<const GLvoid*>(uintptr_t(8)));
    glBindVertexArray(0);
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
@@ -623,7 +641,8 @@ static void fft_init(glfft_t *fft)
 
    GL_CHECK_ERROR();
 
-   fft_init_texture(fft, &fft->window_tex, GL_R16UI, fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
+   fft_init_texture(fft, &fft->window_tex, GL_R16UI,
+         fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
    GL_CHECK_ERROR();
 
    window = (GLushort*)calloc(fft->size, sizeof(GLushort));
@@ -637,23 +656,31 @@ static void fft_init(glfft_t *fft)
       window[i]    = round(0xffff * w * window_mod);
    }
    glBindTexture(GL_TEXTURE_2D, fft->window_tex);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, fft->size, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &window[0]);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+         fft->size, 1, GL_RED_INTEGER, GL_UNSIGNED_SHORT, &window[0]);
    glBindTexture(GL_TEXTURE_2D, 0);
 
    GL_CHECK_ERROR();
-   fft_init_texture(fft, &fft->input_tex, GL_RG16I, fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
-   fft_init_target(fft, &fft->output, GL_RG32UI, fft->size, fft->depth, 1, GL_NEAREST, GL_NEAREST);
-   fft_init_target(fft, &fft->resolve, GL_RGBA8, fft->size, fft->depth, 1, GL_NEAREST, GL_NEAREST);
-   fft_init_target(fft, &fft->blur, GL_RGBA8, fft->size, fft->depth,
-         log2i(MAX(fft->size, fft->depth)) + 1, GL_NEAREST, GL_LINEAR_MIPMAP_LINEAR);
+   fft_init_texture(fft, &fft->input_tex, GL_RG16I,
+         fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
+   fft_init_target(fft, &fft->output, GL_RG32UI,
+         fft->size, fft->depth, 1, GL_NEAREST, GL_NEAREST);
+   fft_init_target(fft, &fft->resolve, GL_RGBA8,
+         fft->size, fft->depth, 1, GL_NEAREST, GL_NEAREST);
+   fft_init_target(fft, &fft->blur, GL_RGBA8,
+         fft->size, fft->depth,
+         log2i(MAX(fft->size, fft->depth)) + 1,
+         GL_NEAREST, GL_LINEAR_MIPMAP_LINEAR);
 
    GL_CHECK_ERROR();
 
    for (i = 0; i < fft->steps; i++)
    {
       GLuint *param_buffer = NULL;
-      fft_init_target(fft, &fft->passes[i].target, GL_RG32UI, fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
-      fft_init_texture(fft, &fft->passes[i].parameter_tex, GL_RG32UI, fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
+      fft_init_target(fft, &fft->passes[i].target,
+            GL_RG32UI, fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
+      fft_init_texture(fft, &fft->passes[i].parameter_tex,
+            GL_RG32UI, fft->size, 1, 1, GL_NEAREST, GL_NEAREST);
 
       param_buffer = (GLuint*)calloc(2 * fft->size, sizeof(GLuint));
 
@@ -670,7 +697,8 @@ static void fft_init(glfft_t *fft)
    GL_CHECK_ERROR();
    glGenBuffers(1, &fft->pbo);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, fft->pbo);
-   glBufferData(GL_PIXEL_UNPACK_BUFFER, fft->size * 2 * sizeof(GLshort), 0, GL_DYNAMIC_DRAW);
+   glBufferData(GL_PIXEL_UNPACK_BUFFER,
+         fft->size * 2 * sizeof(GLshort), 0, GL_DYNAMIC_DRAW);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
    free(window);
@@ -686,7 +714,8 @@ static void fft_init_block(glfft_t *fft)
    unsigned block_indices_size;
    int pos    = 0;
 
-   fft->block.prog = fft_compile_program(fft, vertex_program_heightmap, fragment_program_heightmap);
+   fft->block.prog = fft_compile_program(fft,
+         vertex_program_heightmap, fragment_program_heightmap);
    glUseProgram(fft->block.prog);
    glUniform1i(glGetUniformLocation(fft->block.prog, "sHeight"), 0);
 
@@ -703,7 +732,9 @@ static void fft_init_block(glfft_t *fft)
    }
    glGenBuffers(1, &fft->block.vbo);
    glBindBuffer(GL_ARRAY_BUFFER, fft->block.vbo);
-   glBufferData(GL_ARRAY_BUFFER, block_vertices_size * sizeof(GLushort), &block_vertices[0], GL_STATIC_DRAW);
+   glBufferData(GL_ARRAY_BUFFER,
+         block_vertices_size * sizeof(GLushort),
+         &block_vertices[0], GL_STATIC_DRAW);
 
    fft->block.elems = (2 * fft->block_size - 1) * (fft->depth - 1) + 1;
 
@@ -731,7 +762,9 @@ static void fft_init_block(glfft_t *fft)
 
    glGenBuffers(1, &fft->block.ibo);
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, fft->block.ibo);
-   glBufferData(GL_ELEMENT_ARRAY_BUFFER, block_indices_size * sizeof(GLuint), &block_indices[0], GL_STATIC_DRAW);
+   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+         block_indices_size * sizeof(GLuint),
+         &block_indices[0], GL_STATIC_DRAW);
 
    glEnableVertexAttribArray(0);
    glVertexAttribPointer(0, 2, GL_UNSIGNED_SHORT, GL_FALSE, 0, 0);
@@ -812,7 +845,8 @@ error:
    return NULL;
 }
 
-extern "C" void glfft_init_multisample(glfft_t *fft, unsigned width, unsigned height, unsigned samples)
+extern "C" void glfft_init_multisample(glfft_t *fft,
+      unsigned width, unsigned height, unsigned samples)
 {
    if (fft->ms_rb_color)
       glDeleteRenderbuffers(1, &fft->ms_rb_color);
@@ -831,14 +865,18 @@ extern "C" void glfft_init_multisample(glfft_t *fft, unsigned width, unsigned he
       glGenFramebuffers (1, &fft->ms_fbo);
 
       glBindRenderbuffer(GL_RENDERBUFFER, fft->ms_rb_color);
-      glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_RGBA8, width, height);
+      glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,
+            GL_RGBA8, width, height);
       glBindRenderbuffer(GL_RENDERBUFFER, fft->ms_rb_ds);
-      glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH24_STENCIL8, width, height);
+      glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples,
+            GL_DEPTH24_STENCIL8, width, height);
       glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
       glBindFramebuffer(GL_FRAMEBUFFER, fft->ms_fbo);
-      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, fft->ms_rb_color);
-      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, fft->ms_rb_ds);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_RENDERBUFFER, fft->ms_rb_color);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+            GL_RENDERBUFFER, fft->ms_rb_ds);
       if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
          glfft_init_multisample(fft, 0, 0, 0);
    }
@@ -865,12 +903,14 @@ extern "C" void glfft_free(glfft_t *fft)
    fft = NULL;
 }
 
-extern "C" void glfft_step_fft(glfft_t *fft, const GLshort *buffer, unsigned frames)
+extern "C" void glfft_step_fft(glfft_t *fft,
+      const GLshort *buffer, unsigned frames)
 {
    fft_step(fft, buffer, frames);
 }
 
-extern "C" void glfft_render(glfft_t *fft, GLuint backbuffer, unsigned width, unsigned height)
+extern "C" void glfft_render(glfft_t *fft, GLuint backbuffer,
+      unsigned width, unsigned height)
 {
    fft_render(fft, backbuffer, width, height);
 }
