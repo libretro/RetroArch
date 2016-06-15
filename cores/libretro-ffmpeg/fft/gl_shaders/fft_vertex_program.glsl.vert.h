@@ -1,6 +1,7 @@
 #include "shaders_common.h"
 
 static const char *fft_vertex_program = GLSL_300(
+   precision mediump float;
    layout(location = 0) in vec2 aVertex;
    layout(location = 1) in vec2 aTexCoord;
    uniform vec4 uOffsetScale;

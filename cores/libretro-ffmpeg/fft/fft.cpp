@@ -89,67 +89,8 @@ typedef struct GLFFT
    unsigned depth;
 } glfft_t;
 
-static const char vertex_program_heightmap[] =
-   "#version 300 es\n"
-   "layout(location = 0) in vec2 aVertex;\n"
-   "uniform sampler2D sHeight;\n"
-   "uniform mat4 uMVP;\n"
-   "uniform ivec2 uOffset;\n"
-   "uniform vec4 uHeightmapParams;\n"
-   "uniform float uAngleScale;\n"
-   "out vec3 vWorldPos;\n"
-   "out vec3 vHeight;\n"
-
-   "#define PI 3.141592653\n"
-
-   "void main() {\n"
-   "  vec2 tex_coord = vec2(aVertex.x + float(uOffset.x) + 0.5, -aVertex.y + float(uOffset.y) + 0.5) / vec2(textureSize(sHeight, 0));\n"
-
-   "  vec3 world_pos = vec3(aVertex.x, 0.0, aVertex.y);\n"
-   "  world_pos.xz += uHeightmapParams.xy;\n"
-
-   "  float angle = world_pos.x * uAngleScale;\n"
-   "  world_pos.xz *= uHeightmapParams.zw;\n"
-
-   "  float lod = log2(world_pos.z + 1.0) - 6.0;\n"
-   "  vec4 heights = textureLod(sHeight, tex_coord, lod);\n"
-   
-   "  float cangle = cos(angle);\n"
-   "  float sangle = sin(angle);\n"
-
-   "  int c = int(-sign(world_pos.x) + 1.0);\n"
-   "  float height = mix(heights[c], heights[1], abs(angle) / PI);\n"
-   "  height = height * 80.0 - 40.0;\n"
-
-   "  vec3 up = vec3(-sangle, cangle, 0.0);\n"
-
-   "  float base_y = 80.0 - 80.0 * cangle;\n"
-   "  float base_x = 80.0 * sangle;\n"
-   "  world_pos.xy = vec2(base_x, base_y);\n"
-   "  world_pos += up * height;\n"
-
-   "  vWorldPos = world_pos;\n"
-   "  vHeight = vec3(height, heights.yw * 80.0 - 40.0);\n"
-   "  gl_Position = uMVP * vec4(world_pos, 1.0);\n"
-   "}";
-
-static const char fragment_program_heightmap[] =
-   "#version 300 es\n"
-   "precision mediump float;\n"
-   "out vec4 FragColor;\n"
-   "in vec3 vWorldPos;\n"
-   "in vec3 vHeight;\n"
-
-   "vec3 colormap(vec3 height) {\n"
-   "   return 1.0 / (1.0 + exp(-0.08 * height));\n"
-   "}"
-
-   "void main() {\n"
-   "   vec3 color = mix(vec3(1.0, 0.7, 0.7) * colormap(vHeight), vec3(0.1, 0.15, 0.1), clamp(vWorldPos.z / 400.0, 0.0, 1.0));\n"
-   "   color = mix(color, vec3(0.1, 0.15, 0.1), clamp(1.0 - vWorldPos.z / 2.0, 0.0, 1.0));\n"
-   "   FragColor = vec4(color, 1.0);\n"
-   "}";
-
+#include "gl_shaders/fft_vertex_program_heightmap.glsl.vert.h"
+#include "gl_shaders/fft_fragment_program_heightmap.glsl.frag.h"
 #include "gl_shaders/fft_vertex_program.glsl.vert.h"
 
 static const char fragment_program_resolve[] =
@@ -706,7 +647,7 @@ static void fft_init_block(glfft_t *fft)
    int pos    = 0;
 
    fft->block.prog = fft_compile_program(fft,
-         vertex_program_heightmap, fragment_program_heightmap);
+         fft_vertex_program_heightmap, fft_fragment_program_heightmap);
    glUseProgram(fft->block.prog);
    glUniform1i(glGetUniformLocation(fft->block.prog, "sHeight"), 0);
 
