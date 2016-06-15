@@ -3483,33 +3483,39 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_HELP_SCREEN_LIST:
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_HELP_CONTROLS),
                menu_hash_to_str(MENU_LABEL_HELP_CONTROLS),
+               MENU_ENUM_LABEL_HELP_CONTROLS,
                0, 0, 0);
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_HELP_WHAT_IS_A_CORE),
                menu_hash_to_str(MENU_LABEL_HELP_WHAT_IS_A_CORE),
+               MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE,
                0, 0, 0);
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_HELP_LOADING_CONTENT),
                menu_hash_to_str(MENU_LABEL_HELP_LOADING_CONTENT),
+               MENU_ENUM_LABEL_HELP_LOADING_CONTENT,
                0, 0, 0);
 #ifdef HAVE_LIBRETRODB
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_HELP_SCANNING_CONTENT),
                menu_hash_to_str(MENU_LABEL_HELP_SCANNING_CONTENT),
+               MENU_ENUM_LABEL_HELP_SCANNING_CONTENT,
                0, 0, 0);
 #endif
 #ifdef HAVE_OVERLAY
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_HELP_CHANGE_VIRTUAL_GAMEPAD),
                menu_hash_to_str(MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD),
+               MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,
                0, 0, 0);
 #endif
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_HELP_AUDIO_VIDEO_TROUBLESHOOTING),
                menu_hash_to_str(MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING),
+               MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
                0, 0, 0);
          info->need_refresh = true;
          info->need_push    = true;
@@ -3803,30 +3809,34 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_refresh = true;
          break;
       case DISPLAYLIST_LOAD_CONTENT_LIST:
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_LOAD_CONTENT),
                menu_hash_to_str(MENU_LABEL_LOAD_CONTENT),
+               MENU_ENUM_LABEL_LOAD_CONTENT,
                MENU_SETTING_ACTION, 0, 0);
 
          if (core_info_list_num_info_files(list))
          {
-            menu_entries_add(info->list,
+            menu_entries_add_enum(info->list,
                   menu_hash_to_str(MENU_LABEL_VALUE_DETECT_CORE_LIST),
                   menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST),
+                  MENU_ENUM_LABEL_DETECT_CORE_LIST,
                   MENU_SETTING_ACTION, 0, 0);
 
-            menu_entries_add(info->list,
+            menu_entries_add_enum(info->list,
                   menu_hash_to_str(
                      MENU_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
                   menu_hash_to_str(
                      MENU_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST),
+                  MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,
                   MENU_SETTING_ACTION, 0, 0);
          }
 
 #ifdef HAVE_LIBRETRODB
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_COLLECTION_LIST),
                menu_hash_to_str(MENU_LABEL_CONTENT_COLLECTION_LIST),
+               MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST,
                MENU_SETTING_ACTION, 0, 0);
 #endif
 
@@ -4030,17 +4040,20 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_OPTIONS_DISK:
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_INDEX),
                menu_hash_to_str(MENU_LABEL_DISK_INDEX),
+               MENU_ENUM_LABEL_DISK_INDEX,
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX, 0, 0);
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_CYCLE_TRAY_STATUS),
                menu_hash_to_str(MENU_LABEL_DISK_CYCLE_TRAY_STATUS),
+               MENU_ENUM_LABEL_DISK_CYCLE_TRAY_STATUS,
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_CYCLE_TRAY_STATUS, 0, 0);
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_DISK_IMAGE_APPEND),
                menu_hash_to_str(MENU_LABEL_DISK_IMAGE_APPEND),
+               MENU_ENUM_LABEL_DISK_IMAGE_APPEND,
                MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND, 0, 0);
 
          info->need_push    = true;
@@ -4112,8 +4125,9 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
                               MENU_FILE_CORE, 0, 0);
                         break;
                      default:
-                        menu_entries_add(info->list, cores_paths->elems[i].data,
+                        menu_entries_add_enum(info->list, cores_paths->elems[i].data,
                               menu_hash_to_str(MENU_LABEL_DETECT_CORE_LIST_OK),
+                              MENU_LABEL_DETECT_CORE_LIST_OK,
                               MENU_FILE_CORE, 0, 0);
                         break;
                   }
@@ -4184,27 +4198,31 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          break;
       case DISPLAYLIST_ARCHIVE_ACTION:
 #ifdef HAVE_COMPRESSION
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_OPEN_ARCHIVE),
                menu_hash_to_str(MENU_LABEL_OPEN_ARCHIVE),
+               MENU_ENUM_LABEL_OPEN_ARCHIVE,
                0, 0, 0);
 #endif
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_LOAD_ARCHIVE),
                menu_hash_to_str(MENU_LABEL_LOAD_ARCHIVE),
+               MENU_ENUM_LABEL_LOAD_ARCHIVE,
                0, 0, 0);
          info->need_push = true;
          break;
       case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
 #ifdef HAVE_COMPRESSION
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_OPEN_ARCHIVE),
                menu_hash_to_str(MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE),
+               MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE,
                0, 0, 0);
 #endif
-         menu_entries_add(info->list,
+         menu_entries_add_enum(info->list,
                menu_hash_to_str(MENU_LABEL_VALUE_LOAD_ARCHIVE),
                menu_hash_to_str(MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE),
+               MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,
                0, 0, 0);
          info->need_push = true;
          break;
