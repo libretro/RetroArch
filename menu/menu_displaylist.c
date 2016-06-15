@@ -405,7 +405,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
       if (core_info_list_update_missing_firmware(&firmware_info))
       {
-         strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_FIRMWARE),
+         strlcpy(tmp, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
                sizeof(tmp));
          strlcat(tmp, ": ", sizeof(tmp));
          menu_entries_add(info->list, tmp, "",
@@ -419,20 +419,20 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
             if (core_info->firmware[i].desc)
             {
                snprintf(tmp, sizeof(tmp), "	%s: %s",
-                     menu_hash_to_str(MENU_LABEL_VALUE_RDB_ENTRY_NAME),
+                     menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
                      core_info->firmware[i].desc ?
                      core_info->firmware[i].desc : "");
                menu_entries_add(info->list, tmp, "",
                      MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
                snprintf(tmp, sizeof(tmp), "	%s: %s, %s",
-                     menu_hash_to_str(MENU_VALUE_STATUS),
+                     menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_STATUS),
                      core_info->firmware[i].missing ?
-                     menu_hash_to_str(MENU_VALUE_MISSING) :
-                     menu_hash_to_str(MENU_VALUE_PRESENT),
+                     menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MISSING) :
+                     menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_PRESENT),
                      core_info->firmware[i].optional ?
-                     menu_hash_to_str(MENU_VALUE_OPTIONAL) :
-                     menu_hash_to_str(MENU_VALUE_REQUIRED)
+                     menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_OPTIONAL) :
+                     menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_REQUIRED)
                      );
                menu_entries_add(info->list, tmp, "",
                      MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
@@ -444,7 +444,7 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
    if (core_info->notes)
    {
       strlcpy(tmp,
-            menu_hash_to_str(MENU_LABEL_VALUE_CORE_INFO_CORE_NOTES),
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NOTES),
             sizeof(tmp));
       strlcat(tmp, ": ", sizeof(tmp));
       menu_entries_add(info->list, tmp, "",
@@ -625,14 +625,14 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
    settings_t                  *settings = config_get_ptr();
 
    snprintf(tmp, sizeof(tmp), "%s: %s",
-         menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
+         menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE), __DATE__);
    menu_entries_add(info->list, tmp, "",
          MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    (void)tmp_string;
 
 #ifdef HAVE_GIT_VERSION
-   strlcpy(tmp, menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION),
+   strlcpy(tmp, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION),
          sizeof(tmp));
    strlcat(tmp, ": ", sizeof(tmp));
    strlcat(tmp, retroarch_git_version, sizeof(tmp));
@@ -656,7 +656,7 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
       char cpu_str[PATH_MAX_LENGTH] = {0};
 
       strlcpy(cpu_str,
-            menu_hash_to_str(MENU_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
             sizeof(cpu_str));
       strlcat(cpu_str, ": ", sizeof(cpu_str));
 
@@ -4200,14 +4200,14 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE:
 #ifdef HAVE_COMPRESSION
          menu_entries_add_enum(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_OPEN_ARCHIVE),
-               menu_hash_to_str(MENU_LABEL_OPEN_ARCHIVE_DETECT_CORE),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE),
                MENU_ENUM_LABEL_OPEN_ARCHIVE_DETECT_CORE,
                0, 0, 0);
 #endif
          menu_entries_add_enum(info->list,
-               menu_hash_to_str(MENU_LABEL_VALUE_LOAD_ARCHIVE),
-               menu_hash_to_str(MENU_LABEL_LOAD_ARCHIVE_DETECT_CORE),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE),
                MENU_ENUM_LABEL_LOAD_ARCHIVE_DETECT_CORE,
                0, 0, 0);
          info->need_push = true;
