@@ -98,6 +98,12 @@ UI COMMON CONTEXT
 #include "../gfx/drivers_context/wgl_ctx.cpp"
 #endif
 
+#if defined(HAVE_FFMPEG)
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#include "../cores/libretro-ffmpeg/fft/fft.cpp"
+#endif
+#endif
+
 #endif
 
 
