@@ -1032,9 +1032,9 @@ static int action_ok_shader_pass_load(const char *path,
 
 static int  generic_action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
-      unsigned id, enum menu_help_type id2)
+      enum menu_hash_enums id, enum menu_help_type id2)
 {
-   const char               *lbl  = menu_hash_to_str(id);
+   const char               *lbl  = menu_hash_to_str_enum(id);
    menu_handle_t            *menu = NULL;
 
    menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu);
@@ -1054,7 +1054,7 @@ static int action_ok_cheevos(const char *path,
 
    menu->help_screen_id   = new_id;
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_LABEL_CHEEVOS_DESCRIPTION, MENU_HELP_CHEEVOS_DESCRIPTION);
+         MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION, MENU_HELP_CHEEVOS_DESCRIPTION);
 }
 
 static int action_ok_cheat(const char *path,
@@ -2390,7 +2390,7 @@ static int action_ok_help_audio_video_troubleshooting(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
+         MENU_ENUM_LABEL_HELP_AUDIO_VIDEO_TROUBLESHOOTING,
          MENU_HELP_AUDIO_VIDEO_TROUBLESHOOTING);
 }
 
@@ -2398,35 +2398,35 @@ static int action_ok_help(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_LABEL_HELP, MENU_HELP_WELCOME);
+         MENU_ENUM_LABEL_HELP, MENU_HELP_WELCOME);
 }
 
 static int action_ok_help_controls(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_LABEL_HELP_CONTROLS, MENU_HELP_CONTROLS);
+         MENU_ENUM_LABEL_HELP_CONTROLS, MENU_HELP_CONTROLS);
 }
 
 static int action_ok_help_what_is_a_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_LABEL_HELP_WHAT_IS_A_CORE, MENU_HELP_WHAT_IS_A_CORE);
+         MENU_ENUM_LABEL_HELP_WHAT_IS_A_CORE, MENU_HELP_WHAT_IS_A_CORE);
 }
 
 static int action_ok_help_scanning_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_LABEL_HELP_SCANNING_CONTENT, MENU_HELP_SCANNING_CONTENT);
+         MENU_ENUM_LABEL_HELP_SCANNING_CONTENT, MENU_HELP_SCANNING_CONTENT);
 }
 
 static int action_ok_help_change_virtual_gamepad(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,
+         MENU_ENUM_LABEL_HELP_CHANGE_VIRTUAL_GAMEPAD,
          MENU_HELP_CHANGE_VIRTUAL_GAMEPAD);
 }
 
@@ -2434,7 +2434,7 @@ static int action_ok_help_load_content(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    return generic_action_ok_help(path, label, type, idx, entry_idx,
-         MENU_LABEL_HELP_LOADING_CONTENT, MENU_HELP_LOADING_CONTENT);
+         MENU_ENUM_LABEL_HELP_LOADING_CONTENT, MENU_HELP_LOADING_CONTENT);
 }
 
 static int action_ok_video_resolution(const char *path,
