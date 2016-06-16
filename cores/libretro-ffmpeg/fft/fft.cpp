@@ -96,33 +96,7 @@ typedef struct GLFFT
 #include "gl_shaders/fft_fragment_program_resolve.glsl.frag.h"
 #include "gl_shaders/fft_fragment_program_real.glsl.frag.h"
 #include "gl_shaders/fft_fragment_program_complex.glsl.frag.h"
-
-static const char fragment_program_blur[] =
-   "#version 300 es\n"
-   "precision mediump float;\n"
-   "precision highp int;\n"
-   "precision highp usampler2D;\n"
-   "precision highp isampler2D;\n"
-   "in vec2 vTex;\n"
-   "out vec4 FragColor;\n"
-   "uniform sampler2D sHeight;\n"
-   "void main() {\n"
-   "   float k = 0.0;\n"
-   "   float t;\n"
-   "   vec4 res = vec4(0.0);\n"
-   "   #define kernel(x, y) t = exp(-0.35 * float((x) * (x) + (y) * (y))); k += t; res += t * textureLodOffset(sHeight, vTex, 0.0, ivec2(x, y))\n"
-   "   kernel(-1, -2);\n"
-   "   kernel(-1, -1);\n"
-   "   kernel(-1,  0);\n"
-   "   kernel( 0, -2);\n"
-   "   kernel( 0, -1);\n"
-   "   kernel( 0,  0);\n"
-   "   kernel( 1, -2);\n"
-   "   kernel( 1, -1);\n"
-   "   kernel( 1,  0);\n"
-   "   FragColor = res / k;\n"
-   "}";
-
+#include "gl_shaders/fft_fragment_program_blur.glsl.frag.h"
 
 static GLuint fft_compile_shader(glfft_t *fft, GLenum type, const char *source)
 {
@@ -456,8 +430,8 @@ static void fft_init(glfft_t *fft)
 
    fft->prog_real    = fft_compile_program(fft, fft_vertex_program, fft_fragment_program_real);
    fft->prog_complex = fft_compile_program(fft, fft_vertex_program, fft_fragment_program_complex);
-   fft->prog_resolve = fft_compile_program(fft, fft_vertex_program, fragment_program_resolve);
-   fft->prog_blur    = fft_compile_program(fft, fft_vertex_program, fragment_program_blur);
+   fft->prog_resolve = fft_compile_program(fft, fft_vertex_program, fft_fragment_program_resolve);
+   fft->prog_blur    = fft_compile_program(fft, fft_vertex_program, fft_fragment_program_blur);
    GL_CHECK_ERROR();
 
    glUseProgram(fft->prog_real);

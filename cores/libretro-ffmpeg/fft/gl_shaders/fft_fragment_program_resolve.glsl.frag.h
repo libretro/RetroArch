@@ -1,6 +1,6 @@
 #include "shaders_common.h"
 
-static const char *fragment_program_resolve = GLSL_300(
+static const char *fft_fragment_program_resolve = GLSL_300(
    precision mediump float;
    precision highp int;
    precision highp usampler2D;
