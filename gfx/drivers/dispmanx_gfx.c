@@ -327,6 +327,15 @@ static void dispmanx_surface_update(void *data, const void *frame,
    slock_unlock(_dispvars->pending_mutex);
 }
 
+/* Enable/disable bilinear filtering. */
+static void dispmanx_set_scaling (bool bilinear_filter)
+{
+      if (bilinear_filter)
+         vc_gencmd_send( "%s", "scaling_kernel 0 -2 -6 -8 -10 -8 -3 2 18 50 82 119 155 187 213 227 227 213 187 155 119 82 50 18 2 -3 -8 -10 -8 -6 -2 0 0");
+      else
+         vc_gencmd_send( "%s", "scaling_kernel 0 0 0 0 0 0 0 0 1 1 1 1 255 255 255 255 255 255 255 255 1 1 1 1 0 0 0 0 0 0 0 0 1");
+}
+
 static void dispmanx_blank_console (void *data)
 {
    /* Note that a 2-pixels array is needed to accomplish console blanking because with 1-pixel
@@ -394,9 +403,12 @@ static void *dispmanx_gfx_init(const video_info_t *video,
 
    if (input && input_data)
       *input = NULL;
+   
+   /* Enable/disable dispmanx bilinear filtering. */ 
+   settings_t *settings         = config_get_ptr();
+   dispmanx_set_scaling(settings->video.smooth);
 
    dispmanx_blank_console(_dispvars);
-
    return _dispvars;
 }
 
