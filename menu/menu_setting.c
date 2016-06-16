@@ -4360,7 +4360,7 @@ static bool setting_append_list(
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX),
                savestate_auto_index,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_OFF),
-               menu_hash_to_str_enum(MENU_VALUE_ON),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ON),
                &group_info,
                &subgroup_info,
                parent_group,
