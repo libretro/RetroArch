@@ -1613,26 +1613,53 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
    if (!cbs)
       return -1;
 
-   switch (menu_label_hash)
+   if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
    {
-      case MENU_LABEL_LOAD_CONTENT_HISTORY:
-         BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_content_history);
-         return 0;
-      case MENU_LABEL_SYSTEM_INFORMATION:
-         BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_system_information);
-         return 0;
-      case MENU_LABEL_DEBUG_INFORMATION:
-         BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_debug_information);
-         return 0;
-      case MENU_LABEL_ACHIEVEMENT_LIST:
-         BIND_ACTION_GET_VALUE(cbs,
-               menu_action_setting_disp_set_label_achievement_information);
-         return 0;
-      default:
-         break;
+      switch (cbs->enum_idx)
+      {
+         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_content_history);
+            return 0;
+         case MENU_ENUM_LABEL_SYSTEM_INFORMATION:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_system_information);
+            return 0;
+         case MENU_ENUM_LABEL_DEBUG_INFORMATION:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_debug_information);
+            return 0;
+         case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_achievement_information);
+            return 0;
+         default:
+            break;
+      }
+   }
+   else
+   {
+      switch (menu_label_hash)
+      {
+         case MENU_LABEL_LOAD_CONTENT_HISTORY:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_content_history);
+            return 0;
+         case MENU_LABEL_SYSTEM_INFORMATION:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_system_information);
+            return 0;
+         case MENU_LABEL_DEBUG_INFORMATION:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_debug_information);
+            return 0;
+         case MENU_LABEL_ACHIEVEMENT_LIST:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_achievement_information);
+            return 0;
+         default:
+            break;
+      }
    }
 
    if (type >= MENU_SETTINGS_PLAYLIST_ASSOCIATION_START)
