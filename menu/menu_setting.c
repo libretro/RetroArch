@@ -3850,6 +3850,15 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_DRIVER_SETTINGS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
+
+         CONFIG_ACTION(
+               list, list_info,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_INPUT_SETTINGS),
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS),
                &group_info,

@@ -124,6 +124,8 @@ enum menu_hash_enums
    MENU_ENUM_LABEL_INPUT_SETTINGS_BEGIN,
    MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST,
 
+   MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST,
+
    MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST,
 
    MENU_ENUM_LABEL_CHEEVOS_USERNAME,
@@ -956,7 +958,10 @@ enum menu_hash_enums
    MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,
    MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
+
+   MENU_ENUM_LABEL_DRIVER_SETTINGS,
    MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -2394,6 +2399,10 @@ enum menu_hash_enums
 #define MENU_LABEL_VALUE_INPUT_ICADE_ENABLE                                    0x67b18ee2U
 
 #define CB_CORE_THUMBNAILS_DOWNLOAD                                            0xc9d6519fU
+
+#define MENU_LABEL_DRIVER_SETTINGS                                             0x1d9550e1U
+
+#define MENU_LABEL_DEFERRED_DRIVER_SETTINGS_LIST                               0xaa5efefcU
 
 const char *menu_hash_to_str_de_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);

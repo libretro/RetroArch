@@ -41,7 +41,8 @@ enum menu_displaylist_parse_type
    PARSE_ONLY_FLOAT     = (1 << 6),
    PARSE_ONLY_BIND      = (1 << 7),
    PARSE_ONLY_GROUP     = (1 << 8),
-   PARSE_SUB_GROUP      = (1 << 9) 
+   PARSE_ONLY_STRING_OPTIONS = (1 << 9),
+   PARSE_SUB_GROUP           = (1 << 10) 
 };
 
 enum menu_displaylist_ctl_state
@@ -97,6 +98,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_ACHIEVEMENT_LIST,
    DISPLAYLIST_USER_BINDS_LIST,
    DISPLAYLIST_ACCOUNTS_LIST,
+   DISPLAYLIST_DRIVER_SETTINGS_LIST,
    DISPLAYLIST_INPUT_SETTINGS_LIST,
    DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST,
    DISPLAYLIST_PLAYLIST_SETTINGS_LIST,

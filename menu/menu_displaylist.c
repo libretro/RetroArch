@@ -2172,6 +2172,9 @@ static int menu_displaylist_parse_settings_internal(void *data,
       case PARSE_ONLY_FLOAT:
          precond = ST_FLOAT;
          break;
+      case PARSE_ONLY_STRING_OPTIONS:
+         precond = ST_STRING_OPTIONS;
+         break;
       case PARSE_ONLY_GROUP:
       default:
          precond = ST_END_GROUP;
@@ -2231,6 +2234,10 @@ static int menu_displaylist_parse_settings_internal(void *data,
             if (type == ST_FLOAT)
                break;
             goto loop;
+         case PARSE_ONLY_STRING_OPTIONS:
+            if (type == ST_STRING_OPTIONS)
+               break;
+            goto loop;
       }
 
       if (flags & SD_FLAG_ADVANCED &&
@@ -2257,6 +2264,7 @@ loop:
          case PARSE_ONLY_BOOL:
          case PARSE_ONLY_INT:
          case PARSE_ONLY_UINT:
+         case PARSE_ONLY_STRING_OPTIONS:
          case PARSE_ACTION:
             time_to_exit = true;
             break;
@@ -2317,6 +2325,9 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
       case PARSE_ONLY_FLOAT:
          precond = ST_FLOAT;
          break;
+      case PARSE_ONLY_STRING_OPTIONS:
+         precond = ST_STRING_OPTIONS;
+         break;
       case PARSE_ONLY_GROUP:
       default:
          precond = ST_END_GROUP;
@@ -2376,6 +2387,10 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
             if (type == ST_FLOAT)
                break;
             goto loop;
+         case PARSE_ONLY_STRING_OPTIONS:
+            if (type == ST_STRING_OPTIONS)
+               break;
+            goto loop;
       }
 
       if (flags & SD_FLAG_ADVANCED &&
@@ -2402,6 +2417,7 @@ loop:
          case PARSE_ONLY_BOOL:
          case PARSE_ONLY_INT:
          case PARSE_ONLY_UINT:
+         case PARSE_ONLY_STRING_OPTIONS:
          case PARSE_ACTION:
             time_to_exit = true;
             break;
@@ -3631,6 +3647,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL:
       case DISPLAYLIST_VIDEO_FILTERS:
       case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
+      case DISPLAYLIST_DRIVER_SETTINGS_LIST:
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
       case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
       case DISPLAYLIST_AUDIO_FILTERS:
@@ -3884,6 +3901,38 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          info->need_push    = true;
          break;
+      case DISPLAYLIST_DRIVER_SETTINGS_LIST:
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_INPUT_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_JOYPAD_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_VIDEO_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_AUDIO_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CAMERA_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_LOCATION_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_MENU_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_RECORD_DRIVER,
+               PARSE_ONLY_STRING_OPTIONS, false);
+
+         info->need_refresh = true;
+         info->need_push    = true;
+         break;
       case DISPLAYLIST_INPUT_SETTINGS_LIST:
          ret = menu_displaylist_parse_settings_enum(menu, info,
                MENU_ENUM_LABEL_INPUT_MAX_USERS,
@@ -3943,8 +3992,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_SETTINGS_ALL:
-         ret = menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS),          PARSE_ONLY_GROUP, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_DRIVER_SETTINGS,          PARSE_ACTION, false);
          ret = menu_displaylist_parse_settings(menu, info,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),   PARSE_ONLY_GROUP, false);
          ret = menu_displaylist_parse_settings(menu, info,
