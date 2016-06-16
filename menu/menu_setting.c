@@ -2972,48 +2972,51 @@ void general_read_handler(void *data)
 {
    rarch_setting_t *setting  = (rarch_setting_t*)data;
    settings_t      *settings = config_get_ptr();
-   uint32_t hash             = setting ? menu_hash_calculate(setting->name) : 0;
 
    if (!setting)
       return;
 
-
-   switch (hash)
+   if (setting->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
    {
-      case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
-         *setting->value.target.fraction = settings->audio.rate_control_delta;
-         if (*setting->value.target.fraction < 0.0005)
-         {
-            settings->audio.rate_control = false;
-            settings->audio.rate_control_delta = 0.0;
-         }
-         else
-         {
-            settings->audio.rate_control = true;
-            settings->audio.rate_control_delta = *setting->value.target.fraction;
-         }
-         break;
-      case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
-         *setting->value.target.fraction = settings->audio.max_timing_skew;
-         break;
-      case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
-         *setting->value.target.fraction = settings->video.refresh_rate;
-         break;
-      case MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->input.joypad_map[0];
-         break;
-      case MENU_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->input.joypad_map[1];
-         break;
-      case MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->input.joypad_map[2];
-         break;
-      case MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->input.joypad_map[3];
-         break;
-      case MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
-         *setting->value.target.integer = settings->input.joypad_map[4];
-         break;
+      switch (setting->enum_idx)
+      {
+         case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
+            *setting->value.target.fraction = settings->audio.rate_control_delta;
+            if (*setting->value.target.fraction < 0.0005)
+            {
+               settings->audio.rate_control = false;
+               settings->audio.rate_control_delta = 0.0;
+            }
+            else
+            {
+               settings->audio.rate_control = true;
+               settings->audio.rate_control_delta = *setting->value.target.fraction;
+            }
+            break;
+         case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
+            *setting->value.target.fraction = settings->audio.max_timing_skew;
+            break;
+         case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
+            *setting->value.target.fraction = settings->video.refresh_rate;
+            break;
+         case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
+            *setting->value.target.integer = settings->input.joypad_map[0];
+            break;
+         case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
+            *setting->value.target.integer = settings->input.joypad_map[1];
+            break;
+         case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
+            *setting->value.target.integer = settings->input.joypad_map[2];
+            break;
+         case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
+            *setting->value.target.integer = settings->input.joypad_map[3];
+            break;
+         case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
+            *setting->value.target.integer = settings->input.joypad_map[4];
+            break;
+         default:
+            break;
+      }
    }
 }
 
