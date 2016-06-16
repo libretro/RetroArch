@@ -32,17 +32,18 @@ RETRO_BEGIN_DECLS
 
 enum menu_displaylist_parse_type
 {
-   PARSE_NONE           = (1 << 0),
-   PARSE_GROUP          = (1 << 1),
-   PARSE_ACTION         = (1 << 2),
-   PARSE_ONLY_INT       = (1 << 3),
-   PARSE_ONLY_UINT      = (1 << 4),
-   PARSE_ONLY_BOOL      = (1 << 5),
-   PARSE_ONLY_FLOAT     = (1 << 6),
-   PARSE_ONLY_BIND      = (1 << 7),
-   PARSE_ONLY_GROUP     = (1 << 8),
-   PARSE_ONLY_STRING_OPTIONS = (1 << 9),
-   PARSE_SUB_GROUP           = (1 << 10) 
+   PARSE_NONE                = (1 << 0),
+   PARSE_GROUP               = (1 << 1),
+   PARSE_ACTION              = (1 << 2),
+   PARSE_ONLY_INT            = (1 << 3),
+   PARSE_ONLY_UINT           = (1 << 4),
+   PARSE_ONLY_BOOL           = (1 << 5),
+   PARSE_ONLY_FLOAT          = (1 << 6),
+   PARSE_ONLY_BIND           = (1 << 7),
+   PARSE_ONLY_GROUP          = (1 << 8),
+   PARSE_ONLY_STRING         = (1 << 9),
+   PARSE_ONLY_STRING_OPTIONS = (1 << 10),
+   PARSE_SUB_GROUP           = (1 << 11) 
 };
 
 enum menu_displaylist_ctl_state

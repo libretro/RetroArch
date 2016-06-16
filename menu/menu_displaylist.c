@@ -2173,6 +2173,9 @@ static int menu_displaylist_parse_settings_internal(void *data,
       case PARSE_ONLY_FLOAT:
          precond = ST_FLOAT;
          break;
+      case PARSE_ONLY_STRING:
+         precond = ST_STRING;
+         break;
       case PARSE_ONLY_STRING_OPTIONS:
          precond = ST_STRING_OPTIONS;
          break;
@@ -2235,6 +2238,10 @@ static int menu_displaylist_parse_settings_internal(void *data,
             if (type == ST_FLOAT)
                break;
             goto loop;
+         case PARSE_ONLY_STRING:
+            if (type == ST_STRING)
+               break;
+            goto loop;
          case PARSE_ONLY_STRING_OPTIONS:
             if (type == ST_STRING_OPTIONS)
                break;
@@ -2265,6 +2272,7 @@ loop:
          case PARSE_ONLY_BOOL:
          case PARSE_ONLY_INT:
          case PARSE_ONLY_UINT:
+         case PARSE_ONLY_STRING:
          case PARSE_ONLY_STRING_OPTIONS:
          case PARSE_ACTION:
             time_to_exit = true;
@@ -2326,6 +2334,9 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
       case PARSE_ONLY_FLOAT:
          precond = ST_FLOAT;
          break;
+      case PARSE_ONLY_STRING:
+         precond = ST_STRING;
+         break;
       case PARSE_ONLY_STRING_OPTIONS:
          precond = ST_STRING_OPTIONS;
          break;
@@ -2388,6 +2399,10 @@ static int menu_displaylist_parse_settings_internal_enum(void *data,
             if (type == ST_FLOAT)
                break;
             goto loop;
+         case PARSE_ONLY_STRING:
+            if (type == ST_STRING)
+               break;
+            goto loop;
          case PARSE_ONLY_STRING_OPTIONS:
             if (type == ST_STRING_OPTIONS)
                break;
@@ -2418,6 +2433,7 @@ loop:
          case PARSE_ONLY_BOOL:
          case PARSE_ONLY_INT:
          case PARSE_ONLY_UINT:
+         case PARSE_ONLY_STRING:
          case PARSE_ONLY_STRING_OPTIONS:
          case PARSE_ACTION:
             time_to_exit = true;
