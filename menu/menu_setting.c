@@ -7784,7 +7784,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
    {
       ST_NONE
    };
-   const char *root                     = menu_hash_to_str(MENU_VALUE_MAIN_MENU);
+   const char *root                     = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU);
    rarch_setting_t *list                = (rarch_setting_t*)calloc(
          list_info->size, sizeof(*list));
 
