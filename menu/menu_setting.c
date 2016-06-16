@@ -4658,8 +4658,8 @@ static bool setting_append_list(
          CONFIG_INT(
                list, list_info,
                &settings->video_viewport_custom.x,
-               "video_viewport_custom_x",
-               "Custom Viewport X",
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X),
                0,
                &group_info,
                &subgroup_info,
@@ -4671,13 +4671,13 @@ static bool setting_append_list(
                list,
                list_info,
                CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-         /* TODO - add enum idx */
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X);
 
          CONFIG_INT(
                list, list_info,
                &settings->video_viewport_custom.y,
-               "video_viewport_custom_y",
-               "Custom Viewport Y",
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y),
                0,
                &group_info,
                &subgroup_info,
@@ -4689,13 +4689,13 @@ static bool setting_append_list(
                list,
                list_info,
                CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-         /* TODO - add enum idx */
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y);
 
          CONFIG_UINT(
                list, list_info,
                &settings->video_viewport_custom.width,
-               "video_viewport_custom_width",
-               "Custom Viewport Width",
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH),
                0,
                &group_info,
                &subgroup_info,
@@ -4710,13 +4710,13 @@ static bool setting_append_list(
                list,
                list_info,
                CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-         /* TODO - add enum idx */
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH);
 
          CONFIG_UINT(
                list, list_info,
                &settings->video_viewport_custom.height,
-               "video_viewport_custom_height",
-               "Custom Viewport Height",
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT),
                0,
                &group_info,
                &subgroup_info,
@@ -4731,7 +4731,7 @@ static bool setting_append_list(
                list,
                list_info,
                CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-         /* TODO - add enum idx */
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH);
 
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Scaling", &group_info, &subgroup_info, parent_group);
@@ -5409,7 +5409,7 @@ static bool setting_append_list(
                   general_write_handler,
                   general_read_handler);
             menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
-            /* TODO - add enum idx */
+            menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO);
 
             CONFIG_BOOL(
                   list, list_info,

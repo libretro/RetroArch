@@ -26,6 +26,14 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X:
+         return "video_viewport_custom_x";
+      case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y:
+         return "video_viewport_custom_y";
+      case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH:
+         return "video_viewport_custom_width";
+      case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT:
+         return "video_viewport_custom_height";
       case MENU_ENUM_LABEL_NO_CORES_AVAILABLE:
          return "no_cores_available";
       case MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE:
@@ -776,6 +784,14 @@ const char *menu_hash_to_str_us_enum(enum menu_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X:
+         return "Custom Viewport X";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y:
+         return "Custom Viewport Y";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH:
+         return "Custom Viewport Width";
+      case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT:
+         return "Custom Viewport Height";
       case MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY:
          return "No entries to display.";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
