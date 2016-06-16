@@ -1236,7 +1236,7 @@ static void command_event_load_auto_state(void)
    if (!path_file_exists(savestate_name_auto))
       return;
 
-   ret = content_load_state(savestate_name_auto);
+   ret = content_load_state(savestate_name_auto, false);
 
    RARCH_LOG("Found auto savestate in: %s\n", savestate_name_auto);
 
@@ -1408,7 +1408,7 @@ static bool command_event_save_auto_state(void)
    fill_pathname_noext(savestate_name_auto, global->name.savestate,
          ".auto", sizeof(savestate_name_auto));
 
-   ret = content_save_state((const char*)savestate_name_auto);
+   ret = content_save_state((const char*)savestate_name_auto, true);
    RARCH_LOG("Auto save state to \"%s\" %s.\n", savestate_name_auto, ret ?
          "succeeded" : "failed");
 
@@ -1578,27 +1578,8 @@ static void command_event_save_state(const char *path,
       char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
-   char buf[PATH_MAX_LENGTH] = {0};
 
-   /* if a save state already exists rename it to .last before saving 
-    * so it can be recovered */
-   if (path_file_exists(path))
-   {
-      strlcpy(buf, path, sizeof(buf));
-      snprintf(buf, sizeof(buf), "%s", path);
-      path_remove_extension(buf);
-      snprintf(buf, sizeof(buf), "%s.last", buf);
-
-      if (!content_rename_state(path, buf))
-      {
-         snprintf(s, len, "%s \"%s\".",
-               msg_hash_to_str(MSG_FAILED_TO_SAVE_UNDO),
-               path);
-         return;
-      }
-   }
-
-   if (!content_save_state(path))
+   if (!content_save_state(path, true))
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO),
@@ -1614,6 +1595,29 @@ static void command_event_save_state(const char *path,
             settings->state_slot);
 }
 
+static void command_event_undo_save_state(char *s, size_t len)
+{
+   if (content_undo_save_buf_is_empty())
+   {
+      /* TODO/FIXME - use msg_hash_to_str here */
+      snprintf(s, len, "%s",
+         "No save state has been overwritten yet.");
+      return; 
+   }
+
+   if (!content_undo_save_state())
+   {
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_UNDO_SAVE_STATE),
+            "RAM");
+      return;
+   }
+
+      /* TODO/FIXME - use msg_hash_to_str here */
+      snprintf(s, len, "%s",
+         "Restored old save state.");
+}
+
 /**
  * event_load_state
  * @path            : Path to state.
@@ -1622,31 +1626,11 @@ static void command_event_save_state(const char *path,
  *
  * Loads a state with path being @path.
  **/
-static void command_event_load_state(const char *path, char *s, size_t len, bool undo)
+static void command_event_load_state(const char *path, char *s, size_t len)
 {
    settings_t *settings = config_get_ptr();
-   char buf[PATH_MAX_LENGTH] = {0};
 
-   /* save a state before loading (unless it's an undo operation already) 
-    * so the state can be recovered
-    */
-   if (!undo)
-   {
-      strlcpy(buf, path, sizeof(buf));
-      snprintf(buf, sizeof(buf), "%s", path);
-      path_remove_extension(buf);
-      snprintf(buf, sizeof(buf), "%s.undo", buf);
-
-      if (!content_save_state(buf))
-      {
-         snprintf(s, len, "%s \"%s\".",
-               msg_hash_to_str(MSG_FAILED_TO_SAVE_UNDO),
-               path);
-         return;
-      }
-   }
-
-   if (!content_load_state(path))
+   if (!content_load_state(path, false))
    {
       snprintf(s, len, "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
@@ -1657,18 +1641,39 @@ static void command_event_load_state(const char *path, char *s, size_t len, bool
    if (settings->state_slot < 0)
       snprintf(s, len, "%s #-1 (auto).",
             msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
-   else if (!undo)
+   else
       snprintf(s, len, "%s #%d.", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT),
             settings->state_slot);
-   else
-      snprintf(s, len, "%s #-1 (undo).", msg_hash_to_str(MSG_LOADED_STATE_FROM_SLOT));
+}
+
+static void command_event_undo_load_state(char *s, size_t len)
+{
+   
+   if (content_undo_load_buf_is_empty())
+   {
+      /* TODO/FIXME - use msg_hash_to_str here */
+      snprintf(s, len, "%s",
+         "No state has been loaded yet.");
+      return; 
+   }
+
+   if (!content_undo_load_state())
+   {
+      snprintf(s, len, "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_UNDO_LOAD_STATE),
+            "RAM");
+      return;
+   }
+
+   /* TODO/FIXME - use msg_hash_to_str here */
+      snprintf(s, len, "%s",
+         "Undid load state.");
 }
 
 static void command_event_main_state(unsigned cmd)
 {
    retro_ctx_size_info_t info;
    char path[PATH_MAX_LENGTH] = {0};
-   char buf[PATH_MAX_LENGTH]  = {0};
    char msg[128]              = {0};
    global_t *global           = global_get_ptr();
    settings_t *settings       = config_get_ptr();
@@ -1692,33 +1697,13 @@ static void command_event_main_state(unsigned cmd)
             command_event_save_state(path, msg, sizeof(msg));
             break;
          case CMD_EVENT_LOAD_STATE:
-            command_event_load_state(path, msg, sizeof(msg), false);
+            command_event_load_state(path, msg, sizeof(msg));
             break;
          case CMD_EVENT_UNDO_LOAD_STATE:
-            strlcpy(buf, path, sizeof(buf));
-            path_remove_extension(buf);
-            snprintf(buf, sizeof(buf), "%s.undo", buf);
-
-            if (path_file_exists(buf))
-               command_event_load_state(buf, msg, sizeof(msg), true);
-            else
-            {
-               snprintf(msg, sizeof(msg), "%s.",
-                  msg_hash_to_str(MSG_FAILED_TO_LOAD_UNDO));
-            }
+            command_event_undo_load_state(msg, sizeof(msg));
             break;
          case CMD_EVENT_UNDO_SAVE_STATE:
-            strlcpy(buf, path, sizeof(buf));
-            path_remove_extension(buf);
-            snprintf(buf, sizeof(buf), "%s.last", buf);
-
-            if (path_file_exists(buf))
-               command_event_load_state(buf, msg, sizeof(msg), true);
-            else
-            {
-               snprintf(msg, sizeof(msg), "%s.",
-                  msg_hash_to_str(MSG_FAILED_TO_LOAD_UNDO));
-            }
+            command_event_undo_save_state(msg, sizeof(msg));
             break;
       }
    }
@@ -2113,6 +2098,7 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CORE_DEINIT:
          {
+            content_reset_savestate_backups();
             struct retro_hw_render_callback *hwr =
                video_driver_get_hw_context();
             command_event_deinit_core(true);
@@ -2123,6 +2109,7 @@ bool command_event(enum event_command cmd, void *data)
             break;
          }
       case CMD_EVENT_CORE_INIT:
+         content_reset_savestate_backups();
          if (!command_event_init_core((enum rarch_core_type*)data))
             return false;
          break;
