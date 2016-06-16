@@ -1816,6 +1816,24 @@ const char *menu_hash_to_str_us_enum(enum menu_hash_enums msg)
          return "Start Core";
       case MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR:
          return "Poll Type Behavior";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP:
+         return "Scroll Up";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN:
+         return "Scroll Down";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM:
+         return "Confirm";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK:
+         return "Back";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START:
+         return "Start";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO:
+         return "Info";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU:
+         return "Toggle Menu";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT:
+         return "Quit";
+      case MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD:
+         return "Toggle Keyboard";
       default:
          break;
    }
