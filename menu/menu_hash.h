@@ -1864,7 +1864,6 @@ enum menu_hash_enums
 #define MENU_VALUE_RDB                                                         0x0b00f54eU
 #define MENU_VALUE_DIR                                                         0x0af95f55U
 #define MENU_VALUE_NO_CORE                                                     0x7d5472cbU
-#define MENU_VALUE_DETECT                                                      0xab8da89eU
 #define MENU_VALUE_GLSLP                                                       0x0f840c87U
 #define MENU_VALUE_CGP                                                         0x0b8865bfU
 #define MENU_VALUE_GLSL                                                        0x7c976537U

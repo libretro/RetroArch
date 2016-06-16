@@ -1466,7 +1466,6 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
    {
       char fill_buf[PATH_MAX_LENGTH]  = {0};
       char path_copy[PATH_MAX_LENGTH] = {0};
-      uint32_t core_name_hash         = 0;
       const char *core_name           = NULL;
       const char *db_name             = NULL;
       const char *path                = NULL;
@@ -1481,10 +1480,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
             &path, &label, NULL, &core_name, &crc32, &db_name);
 
       if (core_name)
-      {
          strlcpy(fill_buf, core_name, sizeof(fill_buf));
-         core_name_hash = menu_hash_calculate(core_name);
-      }
 
       if (path)
       {
@@ -1498,7 +1494,7 @@ static int menu_displaylist_parse_playlist(menu_displaylist_info_t *info,
 
          if (!string_is_empty(core_name))
          {
-            if (core_name_hash != MENU_VALUE_DETECT)
+            if (!string_is_equal(core_name, "DETECT"))
             {
                char tmp[PATH_MAX_LENGTH] = {0};
                snprintf(tmp, sizeof(tmp), " (%s)", core_name);
