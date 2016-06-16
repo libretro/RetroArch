@@ -146,8 +146,8 @@ int generic_action_ok_displaylist_push(const char *path,
          info.type          = type;
          info.directory_ptr = idx; 
          info_path          = label;
-         info_label         = menu_hash_to_str(
-               MENU_LABEL_DEFERRED_USER_BINDS_LIST);
+         info_label         = menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST);
          break;
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
       case ACTION_OK_DL_OPEN_ARCHIVE:
@@ -163,12 +163,12 @@ int generic_action_ok_displaylist_push(const char *path,
          switch (action_type)
          {
             case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
-               info_label = menu_hash_to_str(
-                     MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE);
+               info_label = menu_hash_to_str_enum(
+                     MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE);
                break;
             case ACTION_OK_DL_OPEN_ARCHIVE:
-               info_label = menu_hash_to_str(
-                     MENU_LABEL_DEFERRED_ARCHIVE_OPEN);
+               info_label = menu_hash_to_str_enum(
+                     MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN);
                break;
          }
          info_path          = path;
@@ -182,14 +182,14 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_RPL_ENTRY:
          strlcpy(menu->deferred_path, label, sizeof(menu->deferred_path));
-         info_label = menu_hash_to_str(MENU_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
+         info_label = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS);
          info.directory_ptr      = idx;
          rpl_entry_selection_ptr = idx;
          break;
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
          info.directory_ptr = idx;
          info_path          = settings->directory.audio_filter;
-         info_label         = menu_hash_to_str(MENU_LABEL_AUDIO_DSP_PLUGIN);
+         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
          break;
       case ACTION_OK_DL_SHADER_PASS:
          info.type          = type;
@@ -279,7 +279,7 @@ int generic_action_ok_displaylist_push(const char *path,
          break;
       case ACTION_OK_DL_RDB_ENTRY:
          fill_pathname_join_delim(tmp,
-               menu_hash_to_str(MENU_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL),
                path, '|', sizeof(tmp));
 
          info.directory_ptr = idx;
@@ -308,12 +308,12 @@ int generic_action_ok_displaylist_push(const char *path,
          switch (action_type)
          {
             case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE:
-               info_label = menu_hash_to_str(
-                     MENU_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE);
+               info_label = menu_hash_to_str_enum(
+                     MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION_DETECT_CORE);
                break;
             case ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH:
-               info_label = menu_hash_to_str(
-                     MENU_LABEL_DEFERRED_ARCHIVE_ACTION);
+               info_label = menu_hash_to_str_enum(
+                     MENU_ENUM_LABEL_DEFERRED_ARCHIVE_ACTION);
                break;
          }
 
@@ -346,8 +346,8 @@ int generic_action_ok_displaylist_push(const char *path,
 
          info.directory_ptr = idx;
          info_path          = tmp;
-         info_label         = menu_hash_to_str(
-               MENU_LABEL_DEFERRED_DATABASE_MANAGER_LIST);
+         info_label         = menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST);
          break;
       case ACTION_OK_DL_CURSOR_MANAGER_LIST:
          fill_pathname_join(tmp, settings->directory.cursor,
@@ -355,87 +355,87 @@ int generic_action_ok_displaylist_push(const char *path,
 
          info.directory_ptr = idx;
          info_path          = tmp;
-         info_label         = menu_hash_to_str(
-               MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST);
+         info_label         = menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST);
          break;
       case ACTION_OK_DL_CORE_UPDATER_LIST:
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str(
-               MENU_LABEL_DEFERRED_CORE_UPDATER_LIST);
+         info_label         = menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST);
          break;
       case ACTION_OK_DL_THUMBNAILS_UPDATER_LIST:
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str(
-               MENU_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST);
+         info_label         = menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_DEFERRED_THUMBNAILS_UPDATER_LIST);
          break;
       case ACTION_OK_DL_CORE_CONTENT_LIST:
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str(
-               MENU_LABEL_DEFERRED_CORE_CONTENT_LIST);
+         info_label         = menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST);
          break;
       case ACTION_OK_DL_LAKKA_LIST:
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          info.type          = type;
          info.directory_ptr = idx;
          info_path          = path;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_LAKKA_LIST);
+         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST);
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST:
          info.directory_ptr = idx;
          info_path          = settings->directory.libretro;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_CORE_LIST);
+         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_CORE_LIST);
          break;
       case ACTION_OK_DL_DEFERRED_CORE_LIST_SET:
          info.directory_ptr                 = idx;
          rdb_entry_start_game_selection_ptr = idx;
          info_path                          = settings->directory.libretro;
-         info_label                         = menu_hash_to_str(
-               MENU_LABEL_DEFERRED_CORE_LIST_SET);
+         info_label                         = menu_hash_to_str_enum(
+               MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET);
          break;
       case ACTION_OK_DL_ACCOUNTS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_ACCOUNTS_LIST);
+         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST);
          break;
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST);
+         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST);
          break;
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST);
+         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST);
          break;
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST);
+         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_SETTINGS_LIST);
          break;
       case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
          info.directory_ptr = idx;
          info.type          = type;
          info_path          = path;
-         info_label         = menu_hash_to_str(MENU_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST);
+         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST);
          break;
       case ACTION_OK_DL_CONTENT_SETTINGS:
          dl_type            = DISPLAYLIST_CONTENT_SETTINGS;
          info.list          = selection_buf;
-         info_path          = menu_hash_to_str(MENU_LABEL_VALUE_CONTENT_SETTINGS);
-         info_label         = menu_hash_to_str(MENU_LABEL_CONTENT_SETTINGS);
+         info_path          = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS);
+         info_label         = menu_hash_to_str_enum(MENU_ENUM_LABEL_CONTENT_SETTINGS);
          menu_entries_add_enum(menu_stack, info_path, info_label,
                MENU_ENUM_LABEL_CONTENT_SETTINGS,
                0, 0, 0);
@@ -478,11 +478,11 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
       strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
 
    if (string_is_equal(menu_label,
-            menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)))
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)))
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
    else if (string_is_equal(menu_label,
-            menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN)))
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN)))
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
             sizeof(menu_path_new));
 
@@ -1381,9 +1381,9 @@ static int action_ok_file_load(const char *path,
 
    if (
          string_is_equal(menu_label,
-            menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)) ||
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_DETECT_CORE)) ||
          string_is_equal(menu_label,
-            menu_hash_to_str(MENU_LABEL_DEFERRED_ARCHIVE_OPEN))
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN))
       )
    {
       fill_pathname_join(menu_path_new, menu->scratch2_buf, menu->scratch_buf,
@@ -2028,7 +2028,7 @@ static int action_ok_rdb_entry_submenu(const char *path,
    strlcpy(new_path, rdb, sizeof(new_path));
 
    fill_pathname_join_delim(new_label, 
-         menu_hash_to_str(MENU_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
+         menu_hash_to_str_enum(MENU_ENUM_LABEL_DEFERRED_CURSOR_MANAGER_LIST),
          str_list->elems[0].data, '_',
          sizeof(new_label));
 
