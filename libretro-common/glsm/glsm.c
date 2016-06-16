@@ -1822,10 +1822,10 @@ void *rglFenceSync(GLenum condition, GLbitfield flags)
  * OpenGL    : 3.2
  * OpenGLES  : 3.0
  */
-void rglWaitSync(void *sync, GLbitfield flags, GLuint64 timeout)
+void rglWaitSync(void *sync, GLbitfield flags, uint64_t timeout)
 {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) && defined(HAVE_OPENGLES3)
-   glWaitSync((GLsync)sync, flags, timeout);
+   glWaitSync((GLsync)sync, flags, (GLuint64)timeout);
 #endif
 }
 
