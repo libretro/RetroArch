@@ -1843,7 +1843,7 @@ bool CONFIG_BOOL(
       const char *parent_group,
       change_handler_t change_handler,
       change_handler_t read_handler,
-      enum setting_flags flags)
+      uint32_t flags)
 {
    rarch_setting_t value = setting_bool_setting  (name, SHORT, target,
          default_value, off, on,
