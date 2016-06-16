@@ -26,6 +26,16 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_NO_CORES_AVAILABLE:
+         return "no_cores_available";
+      case MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE:
+         return "no_core_options_available";
+      case MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE:
+         return "no_core_information_available";
+      case MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS:
+         return "no_performance_counters";
+      case MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY:
+         return "no_entries_to_display";
       case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
          return "cheevos_unlocked_achievements";
       case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ACHIEVEMENTS:
@@ -766,6 +776,8 @@ const char *menu_hash_to_str_us_enum(enum menu_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY:
+         return "No entries to display.";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
          return "Unlocked Achievements:";
       case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:

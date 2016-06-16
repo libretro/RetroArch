@@ -71,7 +71,10 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
 
    if (!buf || !buf_size)
    {
-      menu_entries_add(list, "No entries to display.", "",
+      menu_entries_add_enum(list,
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
             MENU_FILE_NONE, 0, 0);
       return;
    }
@@ -161,7 +164,10 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
 
    if (!buf || !buf_size)
    {
-      menu_entries_add(list, "No entries to display.", "",
+      menu_entries_add_enum(list,
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
+            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
             MENU_FILE_NONE, 0, 0);
       return;
    }
@@ -269,9 +275,11 @@ static void menu_displaylist_push_perfcounter(
    unsigned i;
    if (!counters || num == 0)
    {
-      menu_entries_add(info->list,
+      menu_entries_add_enum(info->list,
             menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS),
-            "", 0, 0, 0);
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS),
+            MENU_ENUM_LABEL_NO_PERFORMANCE_COUNTERS,
+            0, 0, 0);
       return;
    }
 
@@ -292,10 +300,11 @@ static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
 
    if (!core_info || !core_info->config_data)
    {
-      menu_entries_add(info->list,
-            menu_hash_to_str_enum(
-               MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),
-            "", 0, 0, 0);
+      menu_entries_add_enum(info->list,
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE),
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE),
+            MENU_ENUM_LABEL_NO_CORE_INFORMATION_AVAILABLE,
+            0, 0, 0);
       return 0;
    }
 
@@ -4131,9 +4140,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             if (cores_names_size == 0)
             {
-               menu_entries_add(info->list,
+               menu_entries_add_enum(info->list,
                      menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
-                     "",
+                     menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
+                     MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
                      0, 0, 0);
             }
             else
@@ -4195,9 +4205,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             }
             if (opts == 0)
             {
-               menu_entries_add(info->list,
-                     menu_hash_to_str_enum(
-                        MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE), "",
+               menu_entries_add_enum(info->list,
+                     menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE),
+                     menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
+                     MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
                      MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
             }
             else
@@ -4213,8 +4224,10 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             }
          }
          else
-            menu_entries_add(info->list,
-                  menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE), "",
+            menu_entries_add_enum(info->list,
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE),
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE),
+                  MENU_ENUM_LABEL_NO_CORE_OPTIONS_AVAILABLE,
                   MENU_SETTINGS_CORE_OPTION_NONE, 0, 0);
          info->need_push = true;
          break;
