@@ -2364,43 +2364,33 @@ enum menu_hash_enums
 
 #define CB_CORE_THUMBNAILS_DOWNLOAD                                            0xc9d6519fU
 
-const char *menu_hash_to_str_de(uint32_t hash);
 const char *menu_hash_to_str_de_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);
 
-const char *menu_hash_to_str_es(uint32_t hash);
 const char *menu_hash_to_str_es_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_es(uint32_t hash, char *s, size_t len);
 
-const char *menu_hash_to_str_fr(uint32_t hash);
 const char *menu_hash_to_str_fr_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_fr(uint32_t hash, char *s, size_t len);
 
-const char *menu_hash_to_str_it(uint32_t hash);
 const char *menu_hash_to_str_it_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_it(uint32_t hash, char *s, size_t len);
 
-const char *menu_hash_to_str_nl(uint32_t hash);
 const char *menu_hash_to_str_nl_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_nl(uint32_t hash, char *s, size_t len);
 
-const char *menu_hash_to_str_pl(uint32_t hash);
 const char *menu_hash_to_str_pl_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_pl(uint32_t hash, char *s, size_t len);
 
-const char *menu_hash_to_str_pt(uint32_t hash);
 const char *menu_hash_to_str_pt_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_pt(uint32_t hash, char *s, size_t len);
 
-const char *menu_hash_to_str_eo(uint32_t hash);
 const char *menu_hash_to_str_eo_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_eo(uint32_t hash, char *s, size_t len);
 
-const char *menu_hash_to_str_us(uint32_t hash);
 const char *menu_hash_to_str_us_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_us(uint32_t hash, char *s, size_t len);
 
-const char *menu_hash_to_str(uint32_t hash);
 const char *menu_hash_to_str_enum(enum menu_hash_enums msg);
 int menu_hash_get_help(uint32_t hash, char *s, size_t len);
 

@@ -23,52 +23,6 @@
 
 #include "../configuration.h"
 
-const char *menu_hash_to_str(uint32_t hash)
-{
-   const char *ret = NULL;
-   settings_t *settings = config_get_ptr();
-
-   if (!settings)
-      return "null";
-
-#ifdef HAVE_LANGEXTRA
-   switch (settings->user_language)
-   {
-      case RETRO_LANGUAGE_FRENCH:
-         ret = menu_hash_to_str_fr(hash);
-         break;
-      case RETRO_LANGUAGE_GERMAN:
-         ret = menu_hash_to_str_de(hash);
-         break;
-      case RETRO_LANGUAGE_SPANISH:
-         ret = menu_hash_to_str_es(hash);
-         break;
-      case RETRO_LANGUAGE_ITALIAN:
-         ret = menu_hash_to_str_it(hash);
-         break;
-      case RETRO_LANGUAGE_PORTUGUESE:
-         ret = menu_hash_to_str_pt(hash);
-         break;
-      case RETRO_LANGUAGE_DUTCH:
-         ret = menu_hash_to_str_nl(hash);
-         break;
-      case RETRO_LANGUAGE_ESPERANTO:
-         ret = menu_hash_to_str_eo(hash);
-         break;
-      case RETRO_LANGUAGE_POLISH:
-         ret = menu_hash_to_str_pl(hash);
-         break;
-      default:
-         break;
-   }
-#endif
-
-   if (ret && !string_is_equal(ret, "null"))
-      return ret;
-
-   return menu_hash_to_str_us(hash);
-}
-
 const char *menu_hash_to_str_enum(enum menu_hash_enums msg)
 {
    const char *ret = NULL;

@@ -885,13 +885,13 @@ static int generic_action_ok(const char *path,
          break;
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_PRESET:
-         flush_char = menu_hash_to_str(flush_id);
+         flush_char = menu_hash_to_str_enum(flush_id);
          menu_shader_manager_set_preset(shader,
                video_shader_parse_type(action_path, RARCH_SHADER_NONE),
                action_path);
          break;
       case ACTION_OK_LOAD_SHADER_PASS:
-         flush_char = menu_hash_to_str(flush_id);
+         flush_char = menu_hash_to_str_enum(flush_id);
          strlcpy(
                shader->pass[hack_shader_pass].source.path,
                action_path,
@@ -902,7 +902,7 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
          {
             global_t *global = global_get_ptr();
-            flush_char = menu_hash_to_str(flush_id);
+            flush_char = menu_hash_to_str_enum(flush_id);
             strlcpy(global->record.config, action_path,
                   sizeof(global->record.config));
          }
@@ -910,14 +910,14 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_LOAD_REMAPPING_FILE:
          {
             config_file_t *conf = config_file_new(action_path);
-            flush_char = menu_hash_to_str(flush_id);
+            flush_char = menu_hash_to_str_enum(flush_id);
 
             if (conf)
                input_remapping_load_file(conf, action_path);
          }
          break;
       case ACTION_OK_LOAD_CHEAT_FILE:
-         flush_char = menu_hash_to_str(flush_id);
+         flush_char = menu_hash_to_str_enum(flush_id);
          cheat_manager_free();
 
          if (!cheat_manager_load(action_path))
@@ -943,7 +943,7 @@ static int generic_action_ok(const char *path,
          }
          break;
       default:
-         flush_char = menu_hash_to_str(flush_id);
+         flush_char = menu_hash_to_str_enum(flush_id);
          break;
    }
 
