@@ -286,7 +286,7 @@ static void menu_displaylist_push_perfcounter(
    for (i = 0; i < num; i++)
       if (counters[i] && counters[i]->ident)
          menu_entries_add_enum(info->list,
-               counters[i]->ident, "", id + i, MENU_ENUM_LABEL_UNKNOWN, 0, 0);
+               counters[i]->ident, "", (enum menu_hash_enums)(id + i), MENU_ENUM_LABEL_UNKNOWN, 0, 0);
 }
 
 static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
@@ -4019,7 +4019,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             for (user = 0; user < settings->input.max_users; user++)
             {
                menu_displaylist_parse_settings_enum(menu, info,
-                     MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user, PARSE_ACTION, false);
+                     (enum menu_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user),
+                     PARSE_ACTION, false);
             }
          }
 

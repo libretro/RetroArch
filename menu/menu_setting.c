@@ -218,24 +218,48 @@ static rarch_setting_t setting_action_setting(const char* name,
       const char *group, const char *subgroup,
       const char *parent_group)
 {
-   rarch_setting_t result = {ST_NONE};
+   rarch_setting_t result;
 
+   result.enum_idx                  = MENU_ENUM_LABEL_UNKNOWN;
    result.type                      = ST_ACTION;
-   result.name                      = name;
+  
+   result.size                      = 0;
 
+   result.name                      = name;
+   result.name_hash                 = 0;
    result.short_description         = short_description;
-   result.parent_group              = parent_group;
    result.group                     = group;
    result.subgroup                  = subgroup;
+   result.parent_group              = parent_group;
+   result.values                    = NULL;
+
+   result.index                     = 0;
+   result.index_offset              = 0;
+
+   result.min                       = 0.0;
+   result.max                       = 0.0;
+
+   result.flags                     = 0;
+   result.free_flags                = 0;
+
    result.change_handler            = NULL;
    result.read_handler              = NULL;
-   result.get_string_representation = &setting_get_string_representation_default;
    result.action_start              = NULL;
    result.action_left               = NULL;
    result.action_right              = NULL;
+   result.action_up                 = NULL;
+   result.action_down               = NULL;
+   result.action_cancel             = NULL;
    result.action_ok                 = setting_action_action_ok;
    result.action_select             = setting_action_action_ok;
-   result.action_cancel             = NULL;
+   result.get_string_representation = &setting_get_string_representation_default;
+
+   result.bind_type                 = 0;
+   result.browser_selection_type    = ST_NONE;
+   result.step                      = 0.0f;
+   result.rounding_fraction         = NULL;
+   result.enforce_minrange          = false;
+   result.enforce_maxrange          = false;
 
    return result;
 }
@@ -252,14 +276,49 @@ static rarch_setting_t setting_action_setting(const char* name,
 static rarch_setting_t setting_group_setting(enum setting_type type, const char* name,
       const char *parent_group)
 {
-   rarch_setting_t result   = {ST_NONE};
+   rarch_setting_t result;
 
-   result.parent_group      = parent_group;
-   result.type              = type;
-   result.name              = name;
-   result.short_description = name;
+   result.enum_idx                  = MENU_ENUM_LABEL_UNKNOWN;
+   result.type                      = type;
+  
+   result.size                      = 0;
 
-   result.get_string_representation       = &setting_get_string_representation_default;
+   result.name                      = name;
+   result.name_hash                 = 0;
+   result.short_description         = name;
+   result.group                     = NULL;
+   result.subgroup                  = NULL;
+   result.parent_group              = parent_group;
+   result.values                    = NULL;
+
+   result.index                     = 0;
+   result.index_offset              = 0;
+
+   result.min                       = 0.0;
+   result.max                       = 0.0;
+
+   result.flags                     = 0;
+   result.free_flags                = 0;
+
+   result.change_handler            = NULL;
+   result.read_handler              = NULL;
+   result.action_start              = NULL;
+   result.action_left               = NULL;
+   result.action_right              = NULL;
+   result.action_up                 = NULL;
+   result.action_down               = NULL;
+   result.action_cancel             = NULL;
+   result.action_ok                 = NULL;
+   result.action_select             = NULL;
+   result.get_string_representation = &setting_get_string_representation_default;
+
+   result.bind_type                 = 0;
+   result.browser_selection_type    = ST_NONE;
+   result.step                      = 0.0f;
+   result.rounding_fraction         = NULL;
+   result.enforce_minrange          = false;
+   result.enforce_maxrange          = false;
+
 
    return result;
 }
@@ -287,30 +346,52 @@ static rarch_setting_t setting_float_setting(const char* name,
       const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result         = {ST_NONE};
+   rarch_setting_t result;
 
-   result.type                    = ST_FLOAT;
-   result.name                    = name;
-   result.size                    = sizeof(float);
-   result.short_description       = short_description;
-   result.group                   = group;
-   result.subgroup                = subgroup;
-   result.parent_group            = parent_group;
+   result.enum_idx                  = MENU_ENUM_LABEL_UNKNOWN;
+   result.type                      = ST_FLOAT;
+  
+   result.size                      = sizeof(float);
 
-   result.rounding_fraction       = rounding;
-   result.change_handler          = change_handler;
-   result.read_handler            = read_handler;
-   result.value.target.fraction   = target;
-   result.original_value.fraction = *target;
-   result.default_value.fraction  = default_value;
-   result.action_start            = setting_generic_action_start_default;
-   result.action_left             = setting_fraction_action_left_default;
-   result.action_right            = setting_fraction_action_right_default;
-   result.action_ok               = setting_generic_action_ok_default;
-   result.action_select           = setting_generic_action_ok_default;
-   result.action_cancel           = NULL;
+   result.name                      = name;
+   result.name_hash                 = 0;
+   result.short_description         = short_description;
+   result.group                     = group;
+   result.subgroup                  = subgroup;
+   result.parent_group              = parent_group;
+   result.values                    = NULL;
 
-   result.get_string_representation       = &setting_get_string_representation_st_float;
+   result.index                     = 0;
+   result.index_offset              = 0;
+
+   result.min                       = 0.0;
+   result.max                       = 0.0;
+
+   result.flags                     = 0;
+   result.free_flags                = 0;
+
+   result.change_handler            = change_handler;
+   result.read_handler              = read_handler;
+   result.action_start              = setting_generic_action_start_default;
+   result.action_left               = setting_fraction_action_left_default;
+   result.action_right              = setting_fraction_action_right_default;
+   result.action_up                 = NULL;
+   result.action_down               = NULL;
+   result.action_cancel             = NULL;
+   result.action_ok                 = setting_generic_action_ok_default;
+   result.action_select             = setting_generic_action_ok_default;
+   result.get_string_representation = &setting_get_string_representation_st_float;
+
+   result.bind_type                 = 0;
+   result.browser_selection_type    = ST_NONE;
+   result.step                      = 0.0f;
+   result.rounding_fraction         = rounding;
+   result.enforce_minrange          = false;
+   result.enforce_maxrange          = false;
+
+   result.value.target.fraction     = target;
+   result.original_value.fraction   = *target;
+   result.default_value.fraction    = default_value;
 
    return result;
 }
@@ -5576,7 +5657,7 @@ static bool setting_append_list(
                (*list)[list_info->index - 1].index          = user_value;
                (*list)[list_info->index - 1].index_offset   = user;
 
-               menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user);
+               menu_settings_list_current_add_enum_idx(list, list_info, (enum menu_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
             }
 
             END_SUB_GROUP(list, list_info, parent_group);
