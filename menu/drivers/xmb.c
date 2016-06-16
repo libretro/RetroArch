@@ -1606,10 +1606,9 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       size_t current, size_t cat_selection_ptr, float *color,
       unsigned width, unsigned height)
 {
-   menu_display_ctx_rotate_draw_t rotate_draw;
-   menu_animation_ctx_ticker_t ticker;
    size_t i;
    math_matrix_4x4 mymat;
+   menu_display_ctx_rotate_draw_t rotate_draw;
    uint64_t *frame_count       = NULL;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
@@ -1644,6 +1643,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
    {
       menu_entry_t entry;
       float icon_x, icon_y;
+      menu_animation_ctx_ticker_t ticker;
       char name[PATH_MAX_LENGTH]  = {0};
       char value[PATH_MAX_LENGTH] = {0};
       const float half_size       = xmb->icon.size / 2.0f;
