@@ -8031,13 +8031,12 @@ static bool setting_append_list(
    return true;
 }
 
-static bool menu_setting_free(void *data)
+bool menu_setting_free(void *data)
 {
+   unsigned values, n;
    rarch_setting_t *setting = (rarch_setting_t*)data;
-   unsigned values;
-   unsigned n;
 
-   if (!data)
+   if (!setting)
       return false;
 
    /* Free data which was previously tagged */
@@ -8200,8 +8199,6 @@ bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data)
                return false;
          }
          break;
-      case MENU_SETTING_CTL_FREE:
-         return menu_setting_free(data);
       case MENU_SETTING_CTL_NEW:
          {
             rarch_setting_t **setting = (rarch_setting_t**)data;

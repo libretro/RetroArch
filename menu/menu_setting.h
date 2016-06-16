@@ -75,7 +75,6 @@ enum settings_free_flags
 enum menu_setting_ctl_state
 {
    MENU_SETTING_CTL_NONE = 0,
-   MENU_SETTING_CTL_FREE,
    MENU_SETTING_CTL_NEW,
    MENU_SETTING_CTL_IS_OF_PATH_TYPE,
    MENU_SETTING_CTL_ACTION_RIGHT
@@ -394,6 +393,8 @@ void menu_settings_list_current_add_enum_idx(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
       enum menu_hash_enums enum_idx);
+
+bool menu_setting_free(void *data);
 
 bool menu_setting_ctl(enum menu_setting_ctl_state state, void *data);
 
