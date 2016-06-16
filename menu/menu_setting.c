@@ -5561,9 +5561,10 @@ static bool setting_append_list(
             {
                static char binds_list[MAX_USERS][PATH_MAX_LENGTH];
                static char binds_label[MAX_USERS][PATH_MAX_LENGTH];
+               unsigned user_value = user + 1;
 
-               snprintf(binds_list[user],  sizeof(binds_list[user]), "%d_input_binds_list", user + 1);
-               snprintf(binds_label[user], sizeof(binds_label[user]), "Input User %d Binds", user + 1);
+               snprintf(binds_list[user],  sizeof(binds_list[user]), "%d_input_binds_list", user_value);
+               snprintf(binds_label[user], sizeof(binds_label[user]), "Input User %d Binds", user_value);
 
                CONFIG_ACTION(
                      list, list_info,
@@ -5572,9 +5573,10 @@ static bool setting_append_list(
                      &group_info,
                      &subgroup_info,
                      parent_group);
-               (*list)[list_info->index - 1].index          = user + 1;
+               (*list)[list_info->index - 1].index          = user_value;
                (*list)[list_info->index - 1].index_offset   = user;
-               /* add enum_idx */
+
+               menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user);
             }
 
             END_SUB_GROUP(list, list_info, parent_group);

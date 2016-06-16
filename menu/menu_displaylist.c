@@ -4011,10 +4011,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
             unsigned user;
             for (user = 0; user < settings->input.max_users; user++)
             {
-               char binds_list[PATH_MAX_LENGTH] = {0};
-               snprintf(binds_list,  sizeof(binds_list), "%d_input_binds_list", user + 1);
-               menu_displaylist_parse_settings(menu, info,
-                     binds_list, PARSE_ACTION, false);
+               menu_displaylist_parse_settings_enum(menu, info,
+                     MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user, PARSE_ACTION, false);
             }
          }
 

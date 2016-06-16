@@ -26,6 +26,38 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
+         return "1_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
+         return "2_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_3_BINDS:
+         return "3_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_4_BINDS:
+         return "4_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_5_BINDS:
+         return "5_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_6_BINDS:
+         return "6_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_7_BINDS:
+         return "7_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_8_BINDS:
+         return "8_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_9_BINDS:
+         return "9_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_10_BINDS:
+         return "10_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_11_BINDS:
+         return "11_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_12_BINDS:
+         return "12_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_13_BINDS:
+         return "13_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_14_BINDS:
+         return "14_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_15_BINDS:
+         return "15_input_binds_list";
+      case MENU_ENUM_LABEL_INPUT_USER_16_BINDS:
+         return "16_input_binds_list";
       case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_X:
          return "video_viewport_custom_x";
       case MENU_ENUM_LABEL_VIDEO_VIEWPORT_CUSTOM_Y:
