@@ -171,7 +171,7 @@ bool CONFIG_BOOL(
       const char *parent_group,
       change_handler_t change_handler,
       change_handler_t read_handler,
-      enum setting_flags flags
+      uint32_t flags
       );
 
 bool CONFIG_INT(
