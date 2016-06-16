@@ -539,5 +539,7 @@ frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_get_architecture,
    NULL,                         /* get_powerstate */
    frontend_ps3_parse_drive_list,
+   NULL,                         /* get_mem_total */
+   NULL,                         /* get_mem_free */
    "ps3",
 };

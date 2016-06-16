@@ -101,15 +101,6 @@ void get_ios_version(int *major, int *minor);
 
 @end
 
-@interface RetroArch_OSX : NSObject <NSApplicationDelegate>
-{
-   NSWindow* _window;
-}
-
-@property (nonatomic, retain) NSWindow IBOutlet* window;
-
-@end
-
 #endif
 
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]

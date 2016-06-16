@@ -15,9 +15,9 @@
 
 #include "../msg_hash.h"
 
-const char *msg_hash_to_str_pl(uint32_t hash)
+const char *msg_hash_to_str_pl(enum msg_hash_enums msg)
 {
-   switch (hash)
+   switch (msg)
    {
       case MSG_PROGRAM:
          return "RetroArch";

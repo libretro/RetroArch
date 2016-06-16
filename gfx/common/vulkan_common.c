@@ -1045,6 +1045,7 @@ void vulkan_buffer_chain_free(
 
 static bool vulkan_load_instance_symbols(gfx_ctx_vulkan_data_t *vk)
 {
+   VK_GET_INSTANCE_PROC_ADDR(EnumerateDeviceExtensionProperties);
    VK_GET_INSTANCE_PROC_ADDR(GetDeviceProcAddr);
    VK_GET_INSTANCE_PROC_ADDR(DestroyInstance);
    VK_GET_INSTANCE_PROC_ADDR(GetPhysicalDeviceFormatProperties);
@@ -1207,6 +1208,98 @@ static bool vulkan_load_device_symbols(gfx_ctx_vulkan_data_t *vk)
    return true;
 }
 
+static bool vulkan_find_extensions(const char **exts, unsigned num_exts,
+      const VkExtensionProperties *properties, unsigned property_count)
+{
+   unsigned i, ext;
+   bool found;
+   for (ext = 0; ext < num_exts; ext++)
+   {
+      found = false;
+      for (i = 0; i < property_count; i++)
+      {
+         if (!strcmp(exts[ext], properties[i].extensionName))
+         {
+            found = true;
+            break;
+         }
+      }
+
+      if (!found)
+         return false;
+   }
+   return true;
+}
+
+static bool vulkan_find_instance_extensions(const char **exts, unsigned num_exts)
+{
+   bool ret = true;
+   VkExtensionProperties *properties = NULL;
+   uint32_t property_count;
+
+   if (VKFUNC(vkEnumerateInstanceExtensionProperties(NULL, &property_count, NULL)) != VK_SUCCESS)
+      return false;
+
+   properties = (VkExtensionProperties*)malloc(property_count * sizeof(*properties));
+   if (!properties)
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (VKFUNC(vkEnumerateInstanceExtensionProperties(NULL, &property_count, properties)) != VK_SUCCESS)
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (!vulkan_find_extensions(exts, num_exts, properties, property_count))
+   {
+      RARCH_ERR("[Vulkan]: Could not find instance extensions. Will attempt without them.\n");
+      ret = false;
+      goto end;
+   }
+
+end:
+   free(properties);
+   return ret;
+}
+
+static bool vulkan_find_device_extensions(VkPhysicalDevice gpu, const char **exts, unsigned num_exts)
+{
+   bool ret = true;
+   VkExtensionProperties *properties = NULL;
+   uint32_t property_count;
+
+   if (VKFUNC(vkEnumerateDeviceExtensionProperties(gpu, NULL, &property_count, NULL)) != VK_SUCCESS)
+      return false;
+
+   properties = (VkExtensionProperties*)malloc(property_count * sizeof(*properties));
+   if (!properties)
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (VKFUNC(vkEnumerateDeviceExtensionProperties(gpu, NULL, &property_count, properties)) != VK_SUCCESS)
+   {
+      ret = false;
+      goto end;
+   }
+
+   if (!vulkan_find_extensions(exts, num_exts, properties, property_count))
+   {
+      RARCH_ERR("[Vulkan]: Could not find device extensions. Will attempt without them.\n");
+      ret = false;
+      goto end;
+   }
+
+end:
+   free(properties);
+   return ret;
+}
+
+
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type)
 {
@@ -1227,6 +1320,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       "VK_KHR_swapchain",
    };
    static const char *instance_extensions[2];
+   bool use_instance_ext, use_device_ext;
    
    instance_extensions[0] = "VK_KHR_surface";
 
@@ -1271,6 +1365,9 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    RARCH_LOG("Vulkan dynamic library loaded.\n");
    
    VKSYM(vk, GetInstanceProcAddr);
+   VK_GET_INSTANCE_PROC_ADDR(EnumerateInstanceExtensionProperties);
+
+   use_instance_ext = vulkan_find_instance_extensions(instance_extensions, ARRAY_SIZE(instance_extensions));
 
    app.pApplicationName              = "RetroArch";
    app.applicationVersion            = 0;
@@ -1279,8 +1376,8 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    app.apiVersion                    = VK_MAKE_VERSION(1, 0, 6);
 
    info.pApplicationInfo             = &app;
-   info.enabledExtensionCount        = ARRAY_SIZE(instance_extensions);
-   info.ppEnabledExtensionNames      = instance_extensions;
+   info.enabledExtensionCount        = use_instance_ext ? ARRAY_SIZE(instance_extensions) : 0;
+   info.ppEnabledExtensionNames      = use_instance_ext ? instance_extensions : NULL;
 
    if (cached_instance)
    {
@@ -1382,14 +1479,16 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       return false;
    }
 
+   use_device_ext = vulkan_find_device_extensions(vk->context.gpu, device_extensions, ARRAY_SIZE(device_extensions));
+
    queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
    queue_info.queueCount               = 1;
    queue_info.pQueuePriorities         = &one;
 
    device_info.queueCreateInfoCount    = 1;
    device_info.pQueueCreateInfos       = &queue_info;
-   device_info.enabledExtensionCount   = ARRAY_SIZE(device_extensions);
-   device_info.ppEnabledExtensionNames = device_extensions;
+   device_info.enabledExtensionCount   = use_device_ext ? ARRAY_SIZE(device_extensions) : 0;
+   device_info.ppEnabledExtensionNames = use_device_ext ? device_extensions : NULL;
    device_info.pEnabledFeatures        = &features;
 
    if (cached_device)
@@ -1755,6 +1854,12 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    VKFUNC(vkGetPhysicalDeviceSurfacePresentModesKHR)(
          vk->context.gpu, vk->vk_surface,
          &present_mode_count, present_modes);
+
+   for (i = 0; i < present_mode_count; i++)
+   {
+      RARCH_LOG("[Vulkan]: Swapchain supports present mode: %u.\n",
+            present_modes[i]);
+   }
 
    for (i = 0; i < present_mode_count; i++)
    {

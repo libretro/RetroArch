@@ -1173,7 +1173,7 @@ static void frontend_linux_get_os(char *s,
 static void frontend_linux_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
-   RARCH_LOG("Configuring platform driver ...\n");
+   char base_path[PATH_MAX] = {0};
 #ifdef ANDROID
    int32_t major, minor, rel;
    char device_model[PROP_VALUE_MAX] = {0};
@@ -1632,7 +1632,6 @@ static void frontend_linux_get_env(int *argc,
       snprintf(g_defaults.settings.menu, sizeof(g_defaults.settings.menu), "xmb");
 
 #else
-   char base_path[PATH_MAX] = {0};
    const char *xdg          = getenv("XDG_CONFIG_HOME");
    const char *home         = getenv("HOME");
 
@@ -1881,6 +1880,20 @@ static void frontend_linux_exitspawn(char *core_path, size_t core_path_size)
 }
 #endif
 
+static uint64_t frontend_linux_get_mem_total(void)
+{
+   long pages     = sysconf(_SC_PHYS_PAGES);
+   long page_size = sysconf(_SC_PAGE_SIZE);
+   return pages * page_size;
+}
+
+static uint64_t frontend_linux_get_mem_used(void)
+{
+   long pages     = sysconf(_SC_AVPHYS_PAGES);
+   long page_size = sysconf(_SC_PAGE_SIZE);
+   return pages * page_size;
+}
+
 frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_env,       /* environment_get */
    frontend_linux_init,          /* init */
@@ -1912,9 +1925,14 @@ frontend_ctx_driver_t frontend_ctx_linux = {
    frontend_linux_get_powerstate,
 #ifdef ANDROID
    frontend_android_parse_drive_list, /* parse_drive_list */
-   "android",
 #else
    NULL,                         /* parse_drive_list */
-   "linux",
+#endif
+   frontend_linux_get_mem_total,
+   frontend_linux_get_mem_used,
+#ifdef ANDROID
+   "android"
+#else
+   "linux"
 #endif
 };

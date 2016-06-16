@@ -665,6 +665,44 @@ static int frontend_darwin_parse_drive_list(void *data)
    return ret;
 }
 
+static uint64_t frontend_darwin_get_mem_total(void)
+{
+#if defined(OSX)
+    uint64_t size;
+    int mib[2]     = { CTL_HW, HW_MEMSIZE };
+    u_int namelen  = sizeof(mib) / sizeof(mib[0]);
+    size_t len     = sizeof(size);
+    
+    if (sysctl(mib, namelen, &size, &len, NULL, 0) < 0)
+        return 0;
+    return size;
+#else
+    return 0;
+#endif
+}
+
+static uint64_t frontend_darwin_get_mem_used(void)
+{
+#if defined(OSX) && !defined(OSX_PPC)
+    vm_size_t page_size;
+    vm_statistics64_data_t vm_stats;
+    mach_port_t mach_port        = mach_host_self();
+    mach_msg_type_number_t count = sizeof(vm_stats) / sizeof(natural_t);
+    
+    if (KERN_SUCCESS == host_page_size(mach_port, &page_size) &&
+        KERN_SUCCESS == host_statistics64(mach_port, HOST_VM_INFO,
+                                          (host_info64_t)&vm_stats, &count))
+    {
+        
+        long long used_memory = ((int64_t)vm_stats.active_count +
+                                 (int64_t)vm_stats.inactive_count +
+                                 (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
+        return used_memory;
+    }
+#endif
+    return 0;
+}
+
 frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_environment_settings,
    NULL,                         /* init */
@@ -681,5 +719,7 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_architecture,
    frontend_darwin_get_powerstate,
    frontend_darwin_parse_drive_list,
+   frontend_darwin_get_mem_total,
+   frontend_darwin_get_mem_used,
    "darwin",
 };

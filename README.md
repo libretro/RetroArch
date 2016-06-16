@@ -14,7 +14,7 @@ A libretro core written in portable C or C++ can run seamlessly on many platform
 While RetroArch is the reference frontend for libretro, several other projects have used the libretro
 interface to include support for emulators and/or game engines. libretro is completely open and free for anyone to use.
 
-[libretro API header](https://github.com/libretro/RetroArch/blob/master/libretro.h)
+[libretro API header](https://github.com/libretro/RetroArch/blob/master/libretro-common/include/libretro.h)
 
 ## Binaries
 

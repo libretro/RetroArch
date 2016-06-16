@@ -597,6 +597,21 @@ static int menu_displaylist_parse_network_info(menu_displaylist_info_t *info)
 #endif
 #endif
 
+static uint64_t bytes_to_kb(uint64_t bytes)
+{
+   return bytes / 1024;
+}
+
+static uint64_t bytes_to_mb(uint64_t bytes)
+{
+   return bytes / 1024 / 1024;
+}
+
+static uint64_t bytes_to_gb(uint64_t bytes)
+{
+   return bytes_to_kb(bytes) / 1024 / 1024;
+}
+
 static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
 {
    int controller;
@@ -764,6 +779,73 @@ static int menu_displaylist_parse_system_info(menu_displaylist_info_t *info)
             frontend->get_rating ? frontend->get_rating() : -1);
       menu_entries_add(info->list, tmp, "",
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+
+      {
+         char tmp[PATH_MAX_LENGTH]  = {0};
+         char tmp2[PATH_MAX_LENGTH] = {0};
+         char tmp3[PATH_MAX_LENGTH] = {0};
+         uint64_t memory_used       = frontend_driver_get_used_memory();
+         uint64_t memory_total      = frontend_driver_get_total_memory();
+
+         if (memory_used != 0 && memory_total != 0)
+         {
+#ifdef _WIN32
+            snprintf(tmp, sizeof(tmp),
+                  "Memory (in bytes): %Iu/%Iu B",
+                  memory_used,
+                  memory_total
+                  );
+            snprintf(tmp2, sizeof(tmp2),
+                  "Memory (in megabytes): %Iu/%Iu MB",
+                  bytes_to_mb(memory_used),
+                  bytes_to_mb(memory_total)
+                  );
+            snprintf(tmp3, sizeof(tmp3),
+                  "Memory (in gigabytes): %Iu/%Iu GB",
+                  bytes_to_gb(memory_used),
+                  bytes_to_gb(memory_total)
+                  );
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
+            snprintf(tmp, sizeof(tmp),
+                  "Memory (in bytes) : %llu/%llu B",
+                  (unsigned long long)memory_used,
+                  (unsigned long long)memory_total
+                  );
+            snprintf(tmp2, sizeof(tmp2),
+                  "Memory (in megabytes) : %llu/%llu MB",
+                  (unsigned long long)bytes_to_mb(memory_used),
+                  (unsigned long long)bytes_to_mb(memory_total)
+                  );
+            snprintf(tmp3, sizeof(tmp3),
+                  "Memory (in gigabytes): %llu/%llu GB",
+                  (unsigned long long)bytes_to_gb(memory_used),
+                  (unsigned long long)bytes_to_gb(memory_total)
+                  );
+#else
+            snprintf(tmp, sizeof(tmp),
+                  "Memory (in bytes): %lu/%lu B",
+                  memory_used,
+                  memory_total
+                  );
+            snprintf(tmp2, sizeof(tmp2),
+                  "Memory (in megabytes) : %1u/%1u MB",
+                  bytes_to_mb(memory_used),
+                  bytes_to_mb(memory_total)
+                  );
+            snprintf(tmp3, sizeof(tmp3),
+                  "Memory (in gigabytes) : %1u/%1u GB",
+                  bytes_to_gb(memory_used),
+                  bytes_to_gb(memory_total)
+                  );
+#endif
+            menu_entries_add(info->list, tmp, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            menu_entries_add(info->list, tmp2, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+            menu_entries_add(info->list, tmp3, "",
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
+         }
+      }
 
       if (frontend->get_powerstate)
       {

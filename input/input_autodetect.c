@@ -26,6 +26,7 @@
 #include "input_autodetect.h"
 
 #include "../configuration.h"
+#include "../file_path_special.h"
 #include "../list_special.h"
 #include "../runloop.h"
 #include "../verbosity.h"
@@ -213,19 +214,15 @@ static bool input_autoconfigure_joypad_from_conf_dir(
    int current_best           = 0;
    config_file_t *conf        = NULL;
    struct string_list *list   = NULL;
-   settings_t *settings       = config_get_ptr();
 
-   if (!settings)
-      return false;
+   fill_pathname_application_special(path, sizeof(path),
+         APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG);
 
-   fill_pathname_join(path,
-         settings->directory.autoconfig,
-         settings->input.joypad_driver,
-         sizeof(path));
    list = dir_list_new_special(path, DIR_LIST_AUTOCONFIG, "cfg");
 
    if (!list || !list->size)
    {
+      settings_t *settings = config_get_ptr();
       if (list)
          string_list_free(list);
       list = dir_list_new_special(settings->directory.autoconfig,

@@ -37,6 +37,19 @@
 
 id apple_platform;
 
+#ifdef OSX_PPC
+@interface RetroArch_OSX : NSObject
+#else
+@interface RetroArch_OSX : NSObject <NSApplicationDelegate>
+#endif
+{
+    NSWindow* _window;
+}
+
+@property (nonatomic, retain) NSWindow IBOutlet* window;
+
+@end
+
 static void app_terminate(void)
 {
    [[NSApplication sharedApplication] terminate:nil];
@@ -384,7 +397,7 @@ static void open_document_handler(ui_browser_window_state_t *state, bool result)
     
     if (browser)
     {
-        ui_browser_window_state_t browser_state = {0};
+        ui_browser_window_state_t browser_state = {{0}};
         settings_t *settings  = config_get_ptr();
         NSString *startdir    = BOXSTRING(settings->directory.menu_content);
         
@@ -546,6 +559,11 @@ static void ui_companion_cocoa_notify_list_pushed(void *data,
     (void)menu_list;
 }
 
+static void *ui_companion_cocoa_get_main_window(void *data)
+{
+    return ((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
+}
+
 const ui_companion_driver_t ui_companion_cocoa = {
    ui_companion_cocoa_init,
    ui_companion_cocoa_deinit,
@@ -557,6 +575,7 @@ const ui_companion_driver_t ui_companion_cocoa = {
    NULL,
    NULL,
    NULL,
+   ui_companion_cocoa_get_main_window,
    &ui_browser_window_cocoa,
    &ui_msg_window_cocoa,
    &ui_window_cocoa,

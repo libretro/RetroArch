@@ -308,4 +308,20 @@ enum frontend_architecture frontend_driver_get_cpu_architecture(void)
       return FRONTEND_ARCH_NONE;
    return frontend->get_architecture();
 }
+
+uint64_t frontend_driver_get_total_memory(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->get_total_mem)
+      return 0;
+   return frontend->get_total_mem();
+}
+
+uint64_t frontend_driver_get_used_memory(void)
+{
+   frontend_ctx_driver_t *frontend = frontend_get_ptr();
+   if (!frontend || !frontend->get_used_mem)
+      return 0;
+   return frontend->get_used_mem();
+}
 #endif

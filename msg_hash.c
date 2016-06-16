@@ -22,7 +22,7 @@
 
 #include "configuration.h"
 
-const char *msg_hash_to_str(uint32_t hash)
+const char *msg_hash_to_str(enum msg_hash_enums msg)
 {
    const char *ret = NULL;
    settings_t *settings = config_get_ptr();
@@ -34,32 +34,32 @@ const char *msg_hash_to_str(uint32_t hash)
    switch (settings->user_language)
    {
       case RETRO_LANGUAGE_FRENCH:
-         ret = msg_hash_to_str_fr(hash);
+         ret = msg_hash_to_str_fr(msg);
          break;
       case RETRO_LANGUAGE_GERMAN:
-         ret = msg_hash_to_str_de(hash);
+         ret = msg_hash_to_str_de(msg);
          break;
       case RETRO_LANGUAGE_SPANISH:
-         ret = msg_hash_to_str_es(hash);
+         ret = msg_hash_to_str_es(msg);
          break;
       case RETRO_LANGUAGE_ITALIAN:
-         ret = msg_hash_to_str_it(hash);
+         ret = msg_hash_to_str_it(msg);
          break;
       case RETRO_LANGUAGE_PORTUGUESE:
-         ret = msg_hash_to_str_pt(hash);
+         ret = msg_hash_to_str_pt(msg);
          break;
       case RETRO_LANGUAGE_DUTCH:
-         ret = msg_hash_to_str_nl(hash);
+         ret = msg_hash_to_str_nl(msg);
          break;
       case RETRO_LANGUAGE_ESPERANTO:
-         ret = msg_hash_to_str_eo(hash);
+         ret = msg_hash_to_str_eo(msg);
          break;
       case RETRO_LANGUAGE_POLISH:
-         ret = msg_hash_to_str_pl(hash);
+         ret = msg_hash_to_str_pl(msg);
          break;
       case RETRO_LANGUAGE_RUSSIAN:
 #ifdef HAVE_UTF8
-         ret = msg_hash_to_str_ru(hash);
+         ret = msg_hash_to_str_ru(msg);
 #endif
          break;
       default:
@@ -71,7 +71,7 @@ const char *msg_hash_to_str(uint32_t hash)
       return ret;
 
 end:
-   return msg_hash_to_str_us(hash);
+   return msg_hash_to_str_us(msg);
 }
 
 uint32_t msg_hash_calculate(const char *s)

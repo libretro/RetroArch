@@ -84,5 +84,6 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    frontend_xenon_get_architecture,
    NULL,                         /* get_powerstate */
    NULL,                         /* parse_drive_list */
+   NULL,                         /* get_mem_total */
    "xenon",
 };

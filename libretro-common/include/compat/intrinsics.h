@@ -55,7 +55,7 @@ static INLINE unsigned compat_clz_u16(uint16_t val)
 }
 
 /* Count Trailing Zero */
-#if defined(__GNUC__) 
+#if defined(__GNUC__) && !defined(RARCH_CONSOLE)
 static INLINE int compat_ctz(unsigned x)
 {
    return __builtin_ctz(x);

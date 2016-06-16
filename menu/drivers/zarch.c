@@ -30,12 +30,14 @@
 #include <formats/image.h>
 #include <compat/strl.h>
 #include <retro_stat.h>
+#include <string/stdstring.h>
 
 #include "menu_generic.h"
 
 #include "../../config.def.h"
 
 #include "../../list_special.h"
+#include "../../file_path_special.h"
 
 #include "../menu_driver.h"
 #include "../menu_animation.h"
@@ -166,29 +168,6 @@ struct zui_tabbed
 
 
 static enum zarch_layout_type zarch_layout;
-
-static void zarch_zui_font(void)
-{
-   menu_display_ctx_font_t font_info;
-   char mediapath[PATH_MAX_LENGTH] = {0};
-   char fontpath[PATH_MAX_LENGTH]  = {0};
-   settings_t            *settings = config_get_ptr();
-   int                   font_size = menu_display_get_font_size();
-
-   fill_pathname_join(
-         mediapath,
-         settings->directory.assets,
-         "zarch",
-         sizeof(mediapath));
-   fill_pathname_join(fontpath,
-         mediapath, "Roboto-Condensed.ttf", sizeof(fontpath));
-
-   font_info.path = fontpath;
-   font_info.size = font_size;
-
-   if (!menu_display_font_main_init(&font_info))
-      RARCH_WARN("Failed to load font.");
-}
 
 static float zarch_zui_strwidth(void *fb_buf, const char *text, float scale)
 {
@@ -1033,7 +1012,7 @@ static void *zarch_init(void **userdata)
 
    matrix_4x4_ortho(&zui->mvp, 0, 1, 1, 0, 0, 1);
 
-   zarch_zui_font();
+   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT);
 
    return menu;
 error:
@@ -1118,7 +1097,7 @@ static void zarch_context_reset(void *data)
    menu_display_allocate_white_texture();
 
    menu_display_set_font_size(zui->font_size);
-   zarch_zui_font();
+   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT);
 }
 
 static int zarch_iterate(void *data, void *userdata, enum menu_action action)

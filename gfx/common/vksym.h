@@ -82,6 +82,9 @@ typedef struct vulkan_context_fp
    PFN_vkCreateInstance                          vkCreateInstance;
    PFN_vkDestroyInstance                         vkDestroyInstance;
 
+   PFN_vkEnumerateInstanceExtensionProperties    vkEnumerateInstanceExtensionProperties;
+   PFN_vkEnumerateDeviceExtensionProperties      vkEnumerateDeviceExtensionProperties;
+
    /* Device */
    PFN_vkCreateDevice                            vkCreateDevice;
    PFN_vkDestroyDevice                           vkDestroyDevice;

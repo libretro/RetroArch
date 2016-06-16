@@ -45,6 +45,8 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
+#include "../../file_path_special.h"
+
 enum
 {
    MUI_TEXTURE_POINTER = 0,
@@ -142,10 +144,13 @@ static const char *mui_texture_path(unsigned id)
    return NULL;
 }
 
-static void mui_context_reset_textures(mui_handle_t *mui,
-      const char *iconpath)
+static void mui_context_reset_textures(mui_handle_t *mui)
 {
    unsigned i;
+   char iconpath[PATH_MAX_LENGTH] = {0};
+
+   fill_pathname_application_special(iconpath, sizeof(iconpath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS);
 
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
    {
@@ -997,26 +1002,6 @@ static void mui_frame(void *data)
    menu_display_unset_viewport();
 }
 
-static void mui_font(void)
-{
-   menu_display_ctx_font_t font_info;
-   char mediapath[PATH_MAX_LENGTH] = {0};
-   char fontpath[PATH_MAX_LENGTH]  = {0};
-   settings_t            *settings = config_get_ptr();
-   int                   font_size = menu_display_get_font_size();
-
-   fill_pathname_join(mediapath, settings->directory.assets,
-         "glui", sizeof(mediapath));
-   fill_pathname_join(fontpath, mediapath,
-         "Roboto-Regular.ttf", sizeof(fontpath));
-
-   font_info.path = fontpath;
-   font_info.size = font_size;
-
-   if (!menu_display_font_main_init(&font_info))
-      RARCH_WARN("Failed to load font.");
-}
-
 static void mui_layout(mui_handle_t *mui)
 {
    void *fb_buf;
@@ -1050,7 +1035,7 @@ static void mui_layout(mui_handle_t *mui)
    /* we assume the average glyph aspect ratio is close to 3:4 */
    mui->glyph_width = new_font_size * 3/4;
 
-   mui_font();
+   menu_display_font(APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT);
 
    fb_buf = menu_display_get_font_buffer();
 
@@ -1232,24 +1217,17 @@ static void mui_populate_entries(
 
 static void mui_context_reset(void *data)
 {
-   char iconpath[PATH_MAX_LENGTH] = {0};
    mui_handle_t *mui              = (mui_handle_t*)data;
    settings_t *settings           = config_get_ptr();
 
    if (!mui || !settings)
       return;
 
-   fill_pathname_join(
-         iconpath,
-         settings->directory.assets,
-         "glui",
-         sizeof(iconpath));
-   fill_pathname_slash(iconpath, sizeof(iconpath));
 
    mui_layout(mui);
    mui_context_bg_destroy(mui);
    menu_display_allocate_white_texture();
-   mui_context_reset_textures(mui, iconpath);
+   mui_context_reset_textures(mui);
 
    task_push_image_load(settings->path.menu_wallpaper, "cb_menu_wallpaper",
          menu_display_handle_wallpaper_upload, NULL);

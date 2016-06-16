@@ -162,6 +162,26 @@ void menu_display_font_main_deinit(void)
    menu_display_font_size = 0;
 }
 
+bool menu_display_font(enum application_special_type type)
+{
+   menu_display_ctx_font_t font_info;
+   char fontpath[PATH_MAX_LENGTH]  = {0};
+   int                   font_size = menu_display_get_font_size();
+
+   fill_pathname_application_special(fontpath, sizeof(fontpath), type);
+
+   font_info.path = fontpath;
+   font_info.size = font_size;
+
+   if (!menu_display_font_main_init(&font_info))
+   {
+      RARCH_WARN("Failed to load font.");
+      return false;
+   }
+
+   return true;
+}
+
 bool menu_display_font_main_init(menu_display_ctx_font_t *font)
 {
    menu_display_font_main_deinit();

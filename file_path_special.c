@@ -34,12 +34,17 @@
 #endif
 
 #include <file/file_path.h>
+#include <string/stdstring.h>
 
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
 
+#include "configuration.h"
+#include "file_path_special.h"
+
+#include "runloop.h"
 #include "verbosity.h"
 
 void fill_pathname_expand_special(char *out_path,
@@ -257,3 +262,166 @@ void fill_pathname_application_path(char *s, size_t len)
 #endif
 }
 #endif
+
+#ifdef HAVE_XMB
+const char *xmb_theme_ident(void);
+#endif
+
+void fill_pathname_application_special(char *s, size_t len, enum application_special_type type)
+{
+   switch (type)
+   {
+      case APPLICATION_SPECIAL_DIRECTORY_AUTOCONFIG:
+         {
+            settings_t *settings     = config_get_ptr();
+            fill_pathname_join(s,
+                  settings->directory.autoconfig,
+                  settings->input.joypad_driver,
+                  len);
+         }
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_CONFIG:
+         {
+            settings_t *settings     = config_get_ptr();
+            global_t *global         = global_get_ptr();
+            /* Try config directory setting first,
+             * fallback to the location of the current configuration file. */
+            if (!string_is_empty(settings->directory.menu_config))
+               strlcpy(s, settings->directory.menu_config, len);
+            else if (!string_is_empty(global->path.config))
+               fill_pathname_basedir(s, global->path.config, len);
+         }
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_ICONS:
+#ifdef HAVE_ZARCH
+         {
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH_FONT:
+#ifdef HAVE_ZARCH
+         {
+            char s1[PATH_MAX_LENGTH] = {0};
+            fill_pathname_application_special(s1, sizeof(s1),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH);
+            fill_pathname_join(s,
+                  s1, "Roboto-Condensed.ttf", len);
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_ZARCH:
+#ifdef HAVE_ZARCH
+         {
+            settings_t *settings     = config_get_ptr();
+            fill_pathname_join(s, 
+                  settings->directory.assets,
+                  "zarch",
+                  len);
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS:
+#ifdef HAVE_XMB
+         {
+            char s1[PATH_MAX_LENGTH] = {0};
+            char s2[PATH_MAX_LENGTH] = {0};
+            fill_pathname_application_special(s1, sizeof(s1),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
+            fill_pathname_join(s2, s1, "png",
+                  sizeof(s2));
+            fill_pathname_slash(s2, sizeof(s2));
+            strlcpy(s, s2, len);
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_BG:
+#ifdef HAVE_XMB
+         {
+            settings_t *settings     = config_get_ptr();
+
+            if (!string_is_empty(settings->path.menu_wallpaper))
+               strlcpy(s, settings->path.menu_wallpaper, len);
+            else
+            {
+               char s1[PATH_MAX_LENGTH] = {0};
+               fill_pathname_application_special(s1, sizeof(s1),
+                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+               fill_pathname_join(s, s1, "bg.png", len);
+            }
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB:
+#ifdef HAVE_XMB
+         {
+            char s1[PATH_MAX_LENGTH] = {0};
+            char s2[PATH_MAX_LENGTH] = {0};
+            settings_t *settings     = config_get_ptr();
+
+            fill_pathname_join(
+                  s1,
+                  settings->directory.assets,
+                  "xmb",
+                  sizeof(s1));
+            fill_pathname_join(s2,
+                  s1, xmb_theme_ident(), sizeof(s2));
+            strlcpy(s, s2, len);
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI:
+#ifdef HAVE_MATERIALUI
+         {
+            settings_t *settings = config_get_ptr();
+
+            fill_pathname_join(
+                  s,
+                  settings->directory.assets,
+                  "glui",
+                  len);
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_ICONS:
+#ifdef HAVE_MATERIALUI
+         {
+            char s1[PATH_MAX_LENGTH] = {0};
+            fill_pathname_application_special(s1,
+                  sizeof(s1), APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+            fill_pathname_slash(s1, sizeof(s1));
+            strlcpy(s, s1, len);
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI_FONT:
+#ifdef HAVE_MATERIALUI
+         {
+            char s1[PATH_MAX_LENGTH] = {0};
+            fill_pathname_application_special(s1, sizeof(s1),
+                  APPLICATION_SPECIAL_DIRECTORY_ASSETS_MATERIALUI);
+            fill_pathname_join(s, s1, "Roboto-Regular.ttf", len);
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT:
+#ifdef HAVE_XMB
+         {
+            settings_t *settings = config_get_ptr();
+
+            if (!string_is_empty(settings->menu.xmb_font))
+               strlcpy(s, settings->menu.xmb_font, len);
+            else
+            {
+               char s1[PATH_MAX_LENGTH] = {0};
+               fill_pathname_application_special(s1, sizeof(s1),
+                     APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB);
+               fill_pathname_join(s, s1, "font.ttf", len);
+            }
+         }
+#endif
+         break;
+      case APPLICATION_SPECIAL_NONE:
+      default:
+         break;
+   }
+}

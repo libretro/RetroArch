@@ -21,11 +21,16 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <gccore.h>
+#include <ogcsys.h>
+
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
 #include <ogc/mutex.h>
 #include <ogc/cond.h>
 #include "../../memory/wii/mem2_manager.h"
 #endif
+
+#include "../../defines/gx_defines.h"
 
 #include <boolean.h>
 
@@ -481,6 +486,24 @@ static void frontend_gx_shutdown(bool unused)
 #endif
 }
 
+static uint64_t frontend_gx_get_mem_total(void)
+{
+   uint64_t total = SYSMEM1_SIZE;
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
+   total += gx_mem2_total();
+#endif
+   return total;
+}
+
+static uint64_t frontend_gx_get_mem_used(void)
+{
+   uint64_t total = SYSMEM1_SIZE - SYS_GetArena1Size();
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
+   total += gx_mem2_used();
+#endif
+   return total;
+}
+
 frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_environment_settings,
    frontend_gx_init,
@@ -501,5 +524,7 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_architecture,
    NULL,                            /* get_powerstate */
    frontend_gx_parse_drive_list,
+   frontend_gx_get_mem_total,
+   frontend_gx_get_mem_used,
    "gx",
 };

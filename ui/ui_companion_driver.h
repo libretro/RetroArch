@@ -133,6 +133,7 @@ typedef struct ui_companion_driver
    void (*notify_refresh)(void *data);
    void (*msg_queue_push)(const char *msg, unsigned priority, unsigned duration, bool flush);
    void (*render_messagebox)(const char *msg);
+   void *(*get_main_window)(void *data);
    const ui_browser_window_t *browser_window;
    const ui_msg_window_t     *msg_window;
    const ui_window_t         *window;
@@ -214,6 +215,8 @@ const ui_browser_window_t *ui_companion_driver_get_browser_window_ptr(void);
 const ui_window_t *ui_companion_driver_get_window_ptr(void);
 
 const ui_application_t *ui_companion_driver_get_application_ptr(void);
+
+void *ui_companion_driver_get_main_window(void);
 
 RETRO_END_DECLS
 
