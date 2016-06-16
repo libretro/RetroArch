@@ -390,8 +390,9 @@ static bool nk_menu_init_list(void *data)
    strlcpy(info.label,
          menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), sizeof(info.label));
 
-   menu_entries_add(menu_stack,
-         info.path, info.label, info.type, info.flags, 0);
+   menu_entries_add_enum(menu_stack,
+         info.path, info.label, MENU_ENUM_LABEL_UNKNOWN, 
+         info.type, info.flags, 0);
 
    command_event(CMD_EVENT_HISTORY_INIT, NULL);
 
