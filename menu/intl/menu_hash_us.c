@@ -26,6 +26,10 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
+         return "cheevos_unlocked_achievements";
+      case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ACHIEVEMENTS:
+         return "cheevos_locked_achievements";
       case MENU_ENUM_LABEL_MAIN_MENU:
          return "main_menu";
       case MENU_ENUM_LABEL_MENU_LINEAR_FILTER:
@@ -762,6 +766,10 @@ const char *menu_hash_to_str_us_enum(enum menu_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ACHIEVEMENTS:
+         return "Unlocked Achievements:";
+      case MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ACHIEVEMENTS:
+         return "Locked Achievements:";
       case MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD:
          return "Start Remote RetroPad";
       case MENU_ENUM_LABEL_VALUE_THUMBNAILS_UPDATER_LIST:
