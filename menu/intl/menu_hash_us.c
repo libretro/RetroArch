@@ -926,6 +926,8 @@ const char *menu_hash_to_str_us_enum(enum menu_hash_enums msg)
          return "Update Core Info Files";
       case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT:
          return "Download Content";
+      case MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE:
+         return "Download Core...";
       case MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY:
          return "<Scan This Directory>";
       case MENU_ENUM_LABEL_VALUE_SCAN_FILE:

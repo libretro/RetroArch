@@ -508,7 +508,9 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
          MENU_ENUM_LABEL_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if save directory exists */
-   menu_entries_add_enum(info->list, "Savefile Directory", "",
+   menu_entries_add_enum(info->list,
+         menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY),
+         "",
          MENU_ENUM_LABEL_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(global->dir.savefile);
    snprintf(tmp, sizeof(tmp), "- directory name: %s",
@@ -533,7 +535,9 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
          MENU_ENUM_LABEL_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if state directory exists */
-   menu_entries_add_enum(info->list, "Savestate Directory", "",
+   menu_entries_add_enum(info->list,
+         menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY),
+         "",
          MENU_ENUM_LABEL_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(global->dir.savestate);
    snprintf(tmp, sizeof(tmp), "- directory name: %s", global->dir.savestate);
@@ -556,7 +560,9 @@ static int menu_displaylist_parse_debug_info(menu_displaylist_info_t *info)
       MENU_ENUM_LABEL_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
 
    /* Check if system directory exists */
-   menu_entries_add_enum(info->list, "System Directory", "",
+   menu_entries_add_enum(info->list,
+         menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY),
+         "",
          MENU_ENUM_LABEL_UNKNOWN, MENU_SETTINGS_CORE_INFO_NONE, 0, 0);
    ret = path_is_directory(settings->directory.system);
    snprintf(tmp, sizeof(tmp), "- directory name: %s",
@@ -3148,7 +3154,7 @@ static int menu_displaylist_parse_generic(
 #ifdef HAVE_NETWORKING
          if (hash_label == MENU_LABEL_CORE_LIST)
             menu_entries_add_enum(info->list,
-                  "Download Core...",
+                  menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE),
                   menu_hash_to_str_enum(MENU_ENUM_LABEL_CORE_UPDATER_LIST),
                   MENU_ENUM_LABEL_UNKNOWN,
                   MENU_SETTING_ACTION, 0, 0);
