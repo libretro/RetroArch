@@ -3028,17 +3028,14 @@ void general_write_handler(void *data)
    settings_t *settings         = config_get_ptr();
    global_t *global             = global_get_ptr();
    file_list_t *menu_stack      = menu_entries_get_menu_stack_ptr(0);
-   rarch_system_info_t *system  = NULL;
-   uint32_t hash                = setting ? menu_hash_calculate(setting->name) : 0;
-   uint64_t flags               = menu_setting_get_flags(setting);
-
-   runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
    if (!setting)
       return;
 
    if (setting->cmd_trigger.idx != CMD_EVENT_NONE)
    {
+      uint64_t flags = menu_setting_get_flags(setting);
+
       if (flags & SD_FLAG_EXIT)
       {
          if (*setting->value.target.boolean)
@@ -3049,9 +3046,9 @@ void general_write_handler(void *data)
          rarch_cmd = setting->cmd_trigger.idx;
    }
 
-   switch (hash)
+   switch (setting->enum_idx)
    {
-      case MENU_LABEL_VIDEO_THREADED:
+      case MENU_ENUM_LABEL_VIDEO_THREADED:
          {
             if (*setting->value.target.boolean)
                task_queue_ctl(TASK_QUEUE_CTL_SET_THREADED, NULL);
@@ -3059,10 +3056,10 @@ void general_write_handler(void *data)
                task_queue_ctl(TASK_QUEUE_CTL_UNSET_THREADED, NULL);
          }
          break;
-      case MENU_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
+      case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          core_set_poll_type((unsigned int*)setting->value.target.integer);
          break;
-      case MENU_LABEL_VIDEO_SCALE_INTEGER:
+      case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
          {
             video_viewport_t vp;
             struct retro_system_av_info *av_info = video_viewport_get_system_av_info();
@@ -3083,7 +3080,7 @@ void general_write_handler(void *data)
             }
          }
          break;
-      case MENU_LABEL_HELP:
+      case MENU_ENUM_LABEL_HELP:
          if (*setting->value.target.boolean)
          {
             info.list          = menu_stack;
@@ -3097,10 +3094,10 @@ void general_write_handler(void *data)
             menu_setting_set_with_string_representation(setting, "false");
          }
          break;
-      case MENU_LABEL_AUDIO_MAX_TIMING_SKEW:
+      case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
          settings->audio.max_timing_skew = *setting->value.target.fraction;
          break;
-      case MENU_LABEL_AUDIO_RATE_CONTROL_DELTA:
+      case MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA:
          if (*setting->value.target.fraction < 0.0005)
          {
             settings->audio.rate_control = false;
@@ -3112,34 +3109,34 @@ void general_write_handler(void *data)
             settings->audio.rate_control_delta = *setting->value.target.fraction;
          }
          break;
-      case MENU_LABEL_VIDEO_REFRESH_RATE_AUTO:
+      case MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO:
          driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, setting->value.target.fraction);
 
          /* In case refresh rate update forced non-block video. */
          rarch_cmd = CMD_EVENT_VIDEO_SET_BLOCKING_STATE;
          break;
-      case MENU_LABEL_VIDEO_SCALE:
+      case MENU_ENUM_LABEL_VIDEO_SCALE:
          settings->video.scale = roundf(*setting->value.target.fraction);
 
          if (!settings->video.fullscreen)
             rarch_cmd = CMD_EVENT_REINIT;
          break;
-      case MENU_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
+      case MENU_ENUM_LABEL_INPUT_PLAYER1_JOYPAD_INDEX:
          settings->input.joypad_map[0] = *setting->value.target.integer;
          break;
-      case MENU_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
+      case MENU_ENUM_LABEL_INPUT_PLAYER2_JOYPAD_INDEX:
          settings->input.joypad_map[1] = *setting->value.target.integer;
          break;
-      case MENU_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
+      case MENU_ENUM_LABEL_INPUT_PLAYER3_JOYPAD_INDEX:
          settings->input.joypad_map[2] = *setting->value.target.integer;
          break;
-      case MENU_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
+      case MENU_ENUM_LABEL_INPUT_PLAYER4_JOYPAD_INDEX:
          settings->input.joypad_map[3] = *setting->value.target.integer;
          break;
-      case MENU_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
+      case MENU_ENUM_LABEL_INPUT_PLAYER5_JOYPAD_INDEX:
          settings->input.joypad_map[4] = *setting->value.target.integer;
          break;
-      case MENU_LABEL_LOG_VERBOSITY:
+      case MENU_ENUM_LABEL_LOG_VERBOSITY:
          {
             if (setting->value.target.boolean && *setting->value.target.boolean)
                verbosity_enable();
@@ -3149,28 +3146,32 @@ void general_write_handler(void *data)
             global->has_set.verbosity = *setting->value.target.boolean;
          }
          break;
-      case MENU_LABEL_VIDEO_SMOOTH:
+      case MENU_ENUM_LABEL_VIDEO_SMOOTH:
          video_driver_set_filtering(1, settings->video.smooth);
          break;
-      case MENU_LABEL_VIDEO_ROTATION:
-         if (system)
-            video_driver_set_rotation(
-                  (*setting->value.target.unsigned_integer +
-                   system->rotation) % 4);
+      case MENU_ENUM_LABEL_VIDEO_ROTATION:
+         {
+            rarch_system_info_t *system  = NULL;
+            runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
+            if (system)
+               video_driver_set_rotation(
+                     (*setting->value.target.unsigned_integer +
+                      system->rotation) % 4);
+         }
          break;
-      case MENU_LABEL_AUDIO_VOLUME:
+      case MENU_ENUM_LABEL_AUDIO_VOLUME:
          audio_driver_set_volume_gain(db_to_gain(*setting->value.target.fraction));
          break;
-      case MENU_LABEL_AUDIO_LATENCY:
+      case MENU_ENUM_LABEL_AUDIO_LATENCY:
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
-      case MENU_LABEL_PAL60_ENABLE:
+      case MENU_ENUM_LABEL_PAL60_ENABLE:
          if (*setting->value.target.boolean && global->console.screen.pal_enable)
             rarch_cmd = CMD_EVENT_REINIT;
          else
             menu_setting_set_with_string_representation(setting, "false");
          break;
-      case MENU_LABEL_SYSTEM_BGM_ENABLE:
+      case MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE:
          if (*setting->value.target.boolean)
          {
 #if defined(__CELLOS_LV2__) && (CELL_SDK_VERSION > 0x340000)
@@ -3184,28 +3185,30 @@ void general_write_handler(void *data)
 #endif
          }
          break;
-      case MENU_LABEL_NETPLAY_IP_ADDRESS:
+      case MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS:
 #ifdef HAVE_NETPLAY
          global->has_set.netplay_ip_address = (!string_is_empty(setting->value.target.string));
 #endif
          break;
-      case MENU_LABEL_NETPLAY_MODE:
+      case MENU_ENUM_LABEL_NETPLAY_MODE:
 #ifdef HAVE_NETPLAY
          if (!global->netplay.is_client)
             *global->netplay.server = '\0';
          global->has_set.netplay_mode = true;
 #endif
          break;
-      case MENU_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
+      case MENU_ENUM_LABEL_NETPLAY_SPECTATOR_MODE_ENABLE:
 #ifdef HAVE_NETPLAY
          if (global->netplay.is_spectate)
             *global->netplay.server = '\0';
 #endif
          break;
-      case MENU_LABEL_NETPLAY_DELAY_FRAMES:
+      case MENU_ENUM_LABEL_NETPLAY_DELAY_FRAMES:
 #ifdef HAVE_NETPLAY
          global->has_set.netplay_delay_frames = (global->netplay.sync_frames > 0);
 #endif
+         break;
+      default:
          break;
    }
 
