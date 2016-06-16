@@ -102,8 +102,8 @@ static void print_buf_lines(file_list_t *list, char *buf, int buf_size,
       if (line_start[ln] == '\n')
          line_start[ln] = '\0';
 
-      menu_entries_add(list, line_start, "",
-            type, 0, 0);
+      menu_entries_add_enum(list, line_start, "",
+            MENU_ENUM_LABEL_UNKNOWN, type, 0, 0);
 
       switch (type)
       {
@@ -211,8 +211,8 @@ static void print_buf_lines_extended(file_list_t *list, char *buf, int buf_size,
       (void)core_date;
       (void)core_crc;
 
-      menu_entries_add(list, core_pathname, "",
-            type, 0, 0);
+      menu_entries_add_enum(list, core_pathname, "",
+            MENU_ENUM_LABEL_UNKNOWN, type, 0, 0);
 
       switch (type)
       {
@@ -285,8 +285,8 @@ static void menu_displaylist_push_perfcounter(
 
    for (i = 0; i < num; i++)
       if (counters[i] && counters[i]->ident)
-         menu_entries_add(info->list,
-               counters[i]->ident, "", id + i, 0, 0);
+         menu_entries_add_enum(info->list,
+               counters[i]->ident, "", id + i, MENU_ENUM_LABEL_UNKNOWN, 0, 0);
 }
 
 static int menu_displaylist_parse_core_info(menu_displaylist_info_t *info)
