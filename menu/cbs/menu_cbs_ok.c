@@ -877,17 +877,15 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_CONFIG_FILE:
-         {
-            flush_char      = NULL;
-            flush_type      = MENU_SETTINGS;
-            menu_display_set_msg_force(true);
+         flush_char      = NULL;
+         flush_type      = MENU_SETTINGS;
+         menu_display_set_msg_force(true);
 
-            if (config_replace(action_path))
-            {
-               bool pending_push = false;
-               menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
-               ret = -1;
-            }
+         if (config_replace(action_path))
+         {
+            bool pending_push = false;
+            menu_navigation_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
+            ret = -1;
          }
          break;
 #ifdef HAVE_SHADER_MANAGER
