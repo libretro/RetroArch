@@ -490,28 +490,52 @@ static rarch_setting_t setting_hex_setting(const char* name,
       const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result                 = {ST_NONE};
+   rarch_setting_t result;
 
-   result.type                            = ST_HEX;
-   result.name                            = name;
-   result.size                            = sizeof(unsigned int);
-   result.short_description               = short_description;
-   result.group                           = group;
-   result.subgroup                        = subgroup;
-   result.parent_group                    = parent_group;
+   result.enum_idx                  = MENU_ENUM_LABEL_UNKNOWN;
+   result.type                      = ST_HEX;
+  
+   result.size                      = sizeof(unsigned int);
 
-   result.change_handler                  = change_handler;
-   result.read_handler                    = read_handler;
+   result.name                      = name;
+   result.name_hash                 = 0;
+   result.short_description         = short_description;
+   result.group                     = group;
+   result.subgroup                  = subgroup;
+   result.parent_group              = parent_group;
+   result.values                    = NULL;
+
+   result.index                     = 0;
+   result.index_offset              = 0;
+
+   result.min                       = 0.0;
+   result.max                       = 0.0;
+
+   result.flags                     = 0;
+   result.free_flags                = 0;
+
+   result.change_handler            = change_handler;
+   result.read_handler              = read_handler;
+   result.action_start              = setting_generic_action_start_default;
+   result.action_left               = NULL;
+   result.action_right              = NULL;
+   result.action_up                 = NULL;
+   result.action_down               = NULL;
+   result.action_cancel             = NULL;
+   result.action_ok                 = setting_generic_action_ok_default;
+   result.action_select             = setting_generic_action_ok_default;
+   result.get_string_representation = &setting_get_string_representation_hex;
+
+   result.bind_type                 = 0;
+   result.browser_selection_type    = ST_NONE;
+   result.step                      = 0.0f;
+   result.rounding_fraction         = NULL;
+   result.enforce_minrange          = false;
+   result.enforce_maxrange          = false;
+
    result.value.target.unsigned_integer   = target;
    result.original_value.unsigned_integer = *target;
    result.default_value.unsigned_integer  = default_value;
-   result.action_start                    = setting_generic_action_start_default;
-   result.action_left                     = NULL;
-   result.action_right                    = NULL;
-   result.action_ok                       = setting_generic_action_ok_default;
-   result.action_select                   = setting_generic_action_ok_default;
-   result.action_cancel                   = NULL;
-   result.get_string_representation       = &setting_get_string_representation_hex;
 
    return result;
 }
@@ -537,25 +561,51 @@ static rarch_setting_t setting_bind_setting(const char* name,
       const struct retro_keybind* default_value,
       const char *group, const char *subgroup, const char *parent_group)
 {
-   rarch_setting_t result       = {ST_NONE};
+   rarch_setting_t result;
 
-   result.type                  = ST_BIND;
-   result.name                  = name;
-   result.size                  = 0;
-   result.short_description     = short_description;
-   result.group                 = group;
-   result.subgroup              = subgroup;
-   result.parent_group          = parent_group;
+   result.enum_idx                  = MENU_ENUM_LABEL_UNKNOWN;
+   result.type                      = ST_BIND;
+  
+   result.size                      = 0;
 
-   result.value.target.keybind  = target;
-   result.default_value.keybind = default_value;
-   result.index                 = idx;
-   result.index_offset          = idx_offset;
-   result.action_start          = setting_bind_action_start;
-   result.action_ok             = setting_bind_action_ok;
-   result.action_select         = setting_bind_action_ok;
-   result.action_cancel         = NULL;
-   result.get_string_representation       = &setting_get_string_representation_st_bind;
+   result.name                      = name;
+   result.name_hash                 = 0;
+   result.short_description         = short_description;
+   result.group                     = group;
+   result.subgroup                  = subgroup;
+   result.parent_group              = parent_group;
+   result.values                    = NULL;
+
+   result.index                     = idx;
+   result.index_offset              = idx_offset;
+
+   result.min                       = 0.0;
+   result.max                       = 0.0;
+
+   result.flags                     = 0;
+   result.free_flags                = 0;
+
+   result.change_handler            = NULL;
+   result.read_handler              = NULL;
+   result.action_start              = setting_bind_action_start;
+   result.action_left               = NULL;
+   result.action_right              = NULL;
+   result.action_up                 = NULL;
+   result.action_down               = NULL;
+   result.action_cancel             = NULL;
+   result.action_ok                 = setting_bind_action_ok;
+   result.action_select             = setting_bind_action_ok;
+   result.get_string_representation = &setting_get_string_representation_st_bind;
+
+   result.bind_type                 = 0;
+   result.browser_selection_type    = ST_NONE;
+   result.step                      = 0.0f;
+   result.rounding_fraction         = NULL;
+   result.enforce_minrange          = false;
+   result.enforce_maxrange          = false;
+
+   result.value.target.keybind      = target;
+   result.default_value.keybind     = default_value;
 
    return result;
 }
@@ -1466,16 +1516,47 @@ static int setting_generic_action_ok_default(void *data, bool wraparound)
 static rarch_setting_t setting_subgroup_setting(enum setting_type type,
       const char* name, const char *parent_name, const char *parent_group)
 {
-   rarch_setting_t result   = {ST_NONE};
+   rarch_setting_t result;
 
-   result.type              = type;
-   result.name              = name;
+   result.enum_idx                  = MENU_ENUM_LABEL_UNKNOWN;
+   result.type                      = type;
+  
+   result.size                      = 0;
 
-   result.short_description = name;
-   result.group             = parent_name;
-   result.parent_group      = parent_group;
+   result.name                      = name;
+   result.name_hash                 = 0;
+   result.short_description         = name;
+   result.group                     = parent_name;
+   result.parent_group              = parent_group;
+   result.values                    = NULL;
 
-   result.get_string_representation       = &setting_get_string_representation_default;
+   result.index                     = 0;
+   result.index_offset              = 0;
+
+   result.min                       = 0.0;
+   result.max                       = 0.0;
+
+   result.flags                     = 0;
+   result.free_flags                = 0;
+
+   result.change_handler            = NULL;
+   result.read_handler              = NULL;
+   result.action_start              = NULL;
+   result.action_left               = NULL;
+   result.action_right              = NULL;
+   result.action_up                 = NULL;
+   result.action_down               = NULL;
+   result.action_cancel             = NULL;
+   result.action_ok                 = NULL;
+   result.action_select             = NULL;
+   result.get_string_representation = &setting_get_string_representation_default;
+
+   result.bind_type                 = 0;
+   result.browser_selection_type    = ST_NONE;
+   result.step                      = 0.0f;
+   result.rounding_fraction         = NULL;
+   result.enforce_minrange          = false;
+   result.enforce_maxrange          = false;
 
    return result;
 }
@@ -1598,34 +1679,55 @@ static rarch_setting_t setting_bool_setting(const char* name,
       const char *group, const char *subgroup, const char *parent_group,
       change_handler_t change_handler, change_handler_t read_handler)
 {
-   rarch_setting_t result        = {ST_NONE};
+   rarch_setting_t result;
 
-   result.type                   = ST_BOOL;
-   result.name                   = name;
-   result.size                   = sizeof(bool);
-   result.short_description      = short_description;
-   result.group                  = group;
-   result.subgroup               = subgroup;
-   result.parent_group           = parent_group;
+   result.enum_idx                  = MENU_ENUM_LABEL_UNKNOWN;
+   result.type                      = ST_BOOL;
+  
+   result.size                      = sizeof(bool);
 
-   result.change_handler         = change_handler;
-   result.read_handler           = read_handler;
-   result.value.target.boolean   = target;
-   result.original_value.boolean = *target;
-   result.default_value.boolean  = default_value;
-   result.boolean.off_label      = off;
-   result.boolean.on_label       = on;
+   result.name                      = name;
+   result.name_hash                 = name ? menu_hash_calculate(name) : 0;
+   result.short_description         = short_description;
+   result.group                     = group;
+   result.subgroup                  = subgroup;
+   result.parent_group              = parent_group;
+   result.values                    = NULL;
 
-   result.action_start           = setting_generic_action_start_default;
-   result.action_left            = setting_bool_action_toggle_default;
-   result.action_right           = setting_bool_action_toggle_default;
-   result.action_ok              = setting_bool_action_ok_default;
-   result.action_select          = setting_generic_action_ok_default;
-   result.action_cancel          = NULL;
+   result.index                     = 0;
+   result.index_offset              = 0;
 
-   result.get_string_representation       = &setting_get_string_representation_st_bool;
+   result.min                       = 0.0;
+   result.max                       = 0.0;
 
-   result.name_hash              = name ? menu_hash_calculate(name) : 0;
+   result.flags                     = 0;
+   result.free_flags                = 0;
+
+   result.change_handler            = change_handler;
+   result.read_handler              = read_handler;
+   result.action_start              = setting_generic_action_start_default;
+   result.action_left               = setting_bool_action_toggle_default;
+   result.action_right              = setting_bool_action_toggle_default;
+   result.action_up                 = NULL;
+   result.action_down               = NULL;
+   result.action_cancel             = NULL;
+   result.action_ok                 = setting_bool_action_ok_default;
+   result.action_select             = setting_generic_action_ok_default;
+   result.get_string_representation = &setting_get_string_representation_st_bool;
+
+   result.bind_type                 = 0;
+   result.browser_selection_type    = ST_NONE;
+   result.step                      = 0.0f;
+   result.rounding_fraction         = NULL;
+   result.enforce_minrange          = false;
+   result.enforce_maxrange          = false;
+
+   result.value.target.boolean      = target;
+   result.original_value.boolean    = *target;
+   result.default_value.boolean     = default_value;
+   result.boolean.off_label         = off;
+   result.boolean.on_label          = on;
+
    return result;
 }
 
