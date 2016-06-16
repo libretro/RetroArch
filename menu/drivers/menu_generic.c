@@ -401,8 +401,10 @@ bool generic_menu_init_list(void *data)
    strlcpy(info.label,
          menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU), sizeof(info.label));
 
-   menu_entries_add(menu_stack, info.path,
-         info.label, info.type, info.flags, 0);
+   menu_entries_add_enum(menu_stack, info.path,
+         info.label,
+         MENU_ENUM_LABEL_MAIN_MENU,
+         info.type, info.flags, 0);
 
    info.list  = selection_buf;
 

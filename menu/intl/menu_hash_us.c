@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_MAIN_MENU:
+         return "main_menu";
       case MENU_ENUM_LABEL_MENU_LINEAR_FILTER:
          return "menu_linear_filter";
       case MENU_ENUM_LABEL_MENU_ENUM_THROTTLE_FRAMERATE:

@@ -3197,7 +3197,7 @@ static bool xmb_menu_init_list(void *data)
 
    menu_entries_add_enum(menu_stack, info.path,
          info.label,
-         MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+         MENU_ENUM_LABEL_MAIN_MENU,
          info.type, info.flags, 0);
 
    info.list  = selection_buf;
