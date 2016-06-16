@@ -3734,17 +3734,30 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          }
          break;
       case DISPLAYLIST_ACCOUNTS_LIST:
-         ret = menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END),
-               PARSE_NONE, true);
+#ifdef HAVE_CHEEVOS
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
+               PARSE_ACTION, false);
+#else
+         menu_entries_add_enum(info->list,
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+               "",
+               MENU_ENUM_LABEL_UNKNOWN,
+               MENU_SETTING_NO_ITEM, 0, 0);
+         ret = 0;
+#endif
+
          info->need_refresh = true;
          info->need_push    = true;
          break;
       case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
 #ifdef HAVE_CHEEVOS
-         ret = menu_displaylist_parse_settings(menu, info,
-               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_SETTINGS),
-               PARSE_NONE, true);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHEEVOS_USERNAME,
+               PARSE_ONLY_STRING, false);
+         ret = menu_displaylist_parse_settings_enum(menu, info,
+               MENU_ENUM_LABEL_CHEEVOS_PASSWORD,
+               PARSE_ONLY_STRING, false);
 #else
          menu_entries_add_enum(info->list,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
