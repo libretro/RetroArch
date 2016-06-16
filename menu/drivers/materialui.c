@@ -510,7 +510,6 @@ static void mui_render_label_value(mui_handle_t *mui,
    int ticker_limit                = 0;
    uintptr_t texture_switch        = 0;
    bool do_draw_text               = false;
-   uint32_t hash_value             = 0;
    size_t usable_width             = width - (mui->margin * 2);
 
    if (value_len * mui->glyph_width > usable_width / 2)
@@ -535,8 +534,6 @@ static void mui_render_label_value(mui_handle_t *mui,
    mui_draw_text(mui->margin, y + mui->line_height / 2,
          width, height, label_str, color, TEXT_ALIGN_LEFT);
 
-   hash_value = menu_hash_calculate(value);
-
    if (string_is_equal(value, "disabled") || string_is_equal(value, "off"))
    {
       if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
@@ -553,26 +550,19 @@ static void mui_render_label_value(mui_handle_t *mui,
    }
    else
    {
+      uint32_t hash_value = menu_hash_calculate(value);
+
       switch (hash_value)
       {
          case MENU_VALUE_COMP:
-            break;
          case MENU_VALUE_MORE:
-            break;
          case MENU_VALUE_CORE:
-            break;
          case MENU_VALUE_RDB:
-            break;
          case MENU_VALUE_CURSOR:
-            break;
          case MENU_VALUE_FILE:
-            break;
          case MENU_VALUE_DIR:
-            break;
          case MENU_VALUE_MUSIC:
-            break;
          case MENU_VALUE_IMAGE:
-            break;
          case MENU_VALUE_MOVIE:
             break;
          case MENU_VALUE_ON:

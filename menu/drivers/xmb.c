@@ -1606,11 +1606,10 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       size_t current, size_t cat_selection_ptr, float *color,
       unsigned width, unsigned height)
 {
+   menu_display_ctx_rotate_draw_t rotate_draw;
    menu_animation_ctx_ticker_t ticker;
    size_t i;
-   unsigned ticker_limit;
    math_matrix_4x4 mymat;
-   menu_display_ctx_rotate_draw_t rotate_draw;
    uint64_t *frame_count       = NULL;
    xmb_node_t *core_node       = NULL;
    size_t end                  = 0;
@@ -1649,12 +1648,10 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       char value[PATH_MAX_LENGTH] = {0};
       const float half_size       = xmb->icon.size / 2.0f;
       uintptr_t texture_switch    = 0;
-      uintptr_t         icon      = 0;
       xmb_node_t *   node         = (xmb_node_t*)
          menu_entries_get_userdata_at_offset(list, i);
-      uint32_t hash_label         = 0;
-      uint32_t hash_value         = 0;
       bool do_draw_text           = false;
+      unsigned ticker_limit       = 35;
 
       if (!node)
          continue;
@@ -1675,14 +1672,11 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       menu_entry_get(&entry, 0, i, list, true);
 
-      hash_label = menu_hash_calculate(entry.label);
-      hash_value = menu_hash_calculate(entry.value);
 
       if (entry.type == MENU_FILE_CONTENTLIST_ENTRY)
          fill_short_pathname_representation(entry.path, entry.path,
                sizeof(entry.path));
 
-      icon = xmb_icon_get_id(xmb, core_node, node, hash_label, entry.type, (i == current));
 
       if (string_is_equal(entry.value, "disabled") ||
             string_is_equal(entry.value, "off"))
@@ -1702,6 +1696,8 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       }
       else
       {
+         uint32_t hash_value = menu_hash_calculate(entry.value);
+
          switch (hash_value)
          {
             case MENU_VALUE_COMP:
@@ -1733,7 +1729,6 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          }
       }
 
-      ticker_limit = 35;
       if (string_is_empty(entry.value))
       {
          if (!string_is_equal(xmb_thumbnails_ident(), "OFF") && xmb->thumbnail)
@@ -1783,9 +1778,11 @@ static void xmb_draw_items(xmb_handle_t *xmb,
 
       if (color[3] != 0)
       {
-         menu_display_ctx_rotate_draw_t rotate_draw;
          math_matrix_4x4 mymat;
-         uintptr_t texture        = icon;
+         menu_display_ctx_rotate_draw_t rotate_draw;
+         uint32_t hash_label      = menu_hash_calculate(entry.label);
+         uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
+                                    hash_label, entry.type, (i == current));
          float x                  = icon_x;
          float y                  = icon_y;
          float rotation           = 0;
