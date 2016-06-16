@@ -2277,6 +2277,151 @@ loop:
    return 0;
 }
 
+static int menu_displaylist_parse_settings_internal_enum(void *data,
+      menu_displaylist_info_t *info,
+      enum menu_displaylist_parse_type parse_type,
+      bool add_empty_entry,
+      rarch_setting_t *setting,
+      enum menu_hash_enums enum_idx
+      )
+{
+   enum setting_type precond;
+   size_t             count  = 0;
+   settings_t *settings      = config_get_ptr();
+   uint64_t flags            = menu_setting_get_flags(setting);
+
+   if (!setting)
+      return -1;
+
+   switch (parse_type)
+   {
+      case PARSE_GROUP:
+      case PARSE_SUB_GROUP:
+         precond = ST_NONE;
+         break;
+      case PARSE_ACTION:
+         precond = ST_ACTION;
+         break;
+      case PARSE_ONLY_INT:
+         precond = ST_INT;
+         break;
+      case PARSE_ONLY_UINT:
+         precond = ST_UINT;
+         break;
+      case PARSE_ONLY_BIND:
+         precond = ST_BIND;
+         break;
+      case PARSE_ONLY_BOOL:
+         precond = ST_BOOL;
+         break;
+      case PARSE_ONLY_FLOAT:
+         precond = ST_FLOAT;
+         break;
+      case PARSE_ONLY_GROUP:
+      default:
+         precond = ST_END_GROUP;
+         break;
+   }
+
+   for (;;)
+   {
+      bool time_to_exit             = false;
+      const char *short_description = 
+         menu_setting_get_short_description(setting);
+      const char *name              = menu_setting_get_name(setting);
+      enum setting_type type        = menu_setting_get_type(setting);
+
+      switch (parse_type)
+      {
+         case PARSE_NONE:
+            switch (type)
+            {
+               case ST_GROUP:
+               case ST_END_GROUP:
+               case ST_SUB_GROUP:
+               case ST_END_SUB_GROUP:
+                  goto loop;
+               default:
+                  break;
+            }
+            break;
+         case PARSE_GROUP:
+         case PARSE_ONLY_GROUP:
+            if (type == ST_GROUP)
+               break;
+            goto loop;
+         case PARSE_SUB_GROUP:
+            break;
+         case PARSE_ACTION:
+            if (type == ST_ACTION)
+               break;
+            goto loop;
+         case PARSE_ONLY_INT:
+            if (type == ST_INT)
+               break;
+            goto loop;
+         case PARSE_ONLY_UINT:
+            if (type == ST_UINT)
+               break;
+            goto loop;
+         case PARSE_ONLY_BIND:
+            if (type == ST_BIND)
+               break;
+            goto loop;
+         case PARSE_ONLY_BOOL:
+            if (type == ST_BOOL)
+               break;
+            goto loop;
+         case PARSE_ONLY_FLOAT:
+            if (type == ST_FLOAT)
+               break;
+            goto loop;
+      }
+
+      if (flags & SD_FLAG_ADVANCED &&
+            !settings->menu.show_advanced_settings)
+         goto loop;
+
+
+      menu_entries_add_enum(info->list, short_description,
+            name, enum_idx, menu_setting_set_flags(setting), 0, 0);
+      count++;
+
+loop:
+      switch (parse_type)
+      {
+         case PARSE_NONE:
+         case PARSE_GROUP:
+         case PARSE_ONLY_GROUP:
+         case PARSE_SUB_GROUP:
+            if (menu_setting_get_type(setting) == precond)
+               time_to_exit = true;
+            break;
+         case PARSE_ONLY_BIND:
+         case PARSE_ONLY_FLOAT:
+         case PARSE_ONLY_BOOL:
+         case PARSE_ONLY_INT:
+         case PARSE_ONLY_UINT:
+         case PARSE_ACTION:
+            time_to_exit = true;
+            break;
+      }
+
+      if (time_to_exit)
+         break;
+      menu_settings_list_increment(&setting);
+   }
+
+   if (count == 0 && add_empty_entry)
+      menu_entries_add_enum(info->list,
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_SETTINGS_FOUND),
+            MENU_ENUM_LABEL_UNKNOWN,
+            0, 0, 0);
+
+   return 0;
+}
+
 static int menu_displaylist_parse_settings(void *data,
       menu_displaylist_info_t *info,
       const char *info_label,
@@ -2297,11 +2442,12 @@ static int menu_displaylist_parse_settings_enum(void *data,
       enum menu_displaylist_parse_type parse_type,
       bool add_empty_entry)
 {
-   return menu_displaylist_parse_settings_internal(data,
+   return menu_displaylist_parse_settings_internal_enum(data,
          info,
          parse_type,
          add_empty_entry,
-         menu_setting_find_enum(label)
+         menu_setting_find_enum(label),
+         label
          );
 }
 
