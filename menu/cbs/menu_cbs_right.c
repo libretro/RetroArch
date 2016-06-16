@@ -537,36 +537,75 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
    }
    else
    {
-      switch (label_hash)
+#if 0
+      if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
       {
-         case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
-            BIND_ACTION_RIGHT(cbs, action_right_shader_scale_pass);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
-            BIND_ACTION_RIGHT(cbs, action_right_shader_filter_pass);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
-            BIND_ACTION_RIGHT(cbs, action_right_shader_filter_default);
-            break;
-         case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
-            BIND_ACTION_RIGHT(cbs, action_right_shader_num_passes);
-            break;
-         case MENU_LABEL_CHEAT_NUM_PASSES:
-            BIND_ACTION_RIGHT(cbs, action_right_cheat_num_passes);
-            break;
-         case MENU_LABEL_SCREEN_RESOLUTION:
-            BIND_ACTION_RIGHT(cbs, action_right_video_resolution);
-            break;
-         case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
-            switch (menu_label_hash)
-            {
-               case MENU_VALUE_HORIZONTAL_MENU:
-               case MENU_VALUE_MAIN_MENU:
-                  BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
-                  break;
-            }
-         default:
-            return -1;
+         switch (cbs->enum_idx)
+         {
+            case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
+               BIND_ACTION_RIGHT(cbs, action_right_shader_scale_pass);
+               break;
+            case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
+               BIND_ACTION_RIGHT(cbs, action_right_shader_filter_pass);
+               break;
+            case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
+               BIND_ACTION_RIGHT(cbs, action_right_shader_filter_default);
+               break;
+            case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+               BIND_ACTION_RIGHT(cbs, action_right_shader_num_passes);
+               break;
+            case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
+               BIND_ACTION_RIGHT(cbs, action_right_cheat_num_passes);
+               break;
+            case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
+               BIND_ACTION_RIGHT(cbs, action_right_video_resolution);
+               break;
+            case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
+               switch (menu_label_hash)
+               {
+                  case MENU_VALUE_HORIZONTAL_MENU:
+                  case MENU_VALUE_MAIN_MENU:
+                     BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
+                     break;
+               }
+            default:
+               return -1;
+         }
+      }
+      else
+#endif
+      {
+         switch (label_hash)
+         {
+            case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
+               BIND_ACTION_RIGHT(cbs, action_right_shader_scale_pass);
+               break;
+            case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
+               BIND_ACTION_RIGHT(cbs, action_right_shader_filter_pass);
+               break;
+            case MENU_LABEL_VIDEO_SHADER_DEFAULT_FILTER:
+               BIND_ACTION_RIGHT(cbs, action_right_shader_filter_default);
+               break;
+            case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
+               BIND_ACTION_RIGHT(cbs, action_right_shader_num_passes);
+               break;
+            case MENU_LABEL_CHEAT_NUM_PASSES:
+               BIND_ACTION_RIGHT(cbs, action_right_cheat_num_passes);
+               break;
+            case MENU_LABEL_SCREEN_RESOLUTION:
+               BIND_ACTION_RIGHT(cbs, action_right_video_resolution);
+               break;
+            case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
+               switch (menu_label_hash)
+               {
+                  case MENU_VALUE_HORIZONTAL_MENU:
+                  case MENU_VALUE_MAIN_MENU:
+                     BIND_ACTION_RIGHT(cbs, action_right_mainmenu);
+                     break;
+               }
+            default:
+               return -1;
+         }
       }
    }
 

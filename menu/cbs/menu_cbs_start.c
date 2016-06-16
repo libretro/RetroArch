@@ -323,33 +323,69 @@ static int action_start_lookup_setting(unsigned type, const char *label)
 static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs,
       uint32_t hash)
 {
-   switch (hash)
+#if 0
+   if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
    {
-      case MENU_LABEL_REMAP_FILE_LOAD:
-         BIND_ACTION_START(cbs, action_start_remap_file_load);
-         break;
-      case MENU_LABEL_VIDEO_FILTER:
-         BIND_ACTION_START(cbs, action_start_video_filter_file_load);
-         break;
-      case MENU_LABEL_VIDEO_SHADER_PASS:
-         BIND_ACTION_START(cbs, action_start_shader_pass);
-         break;
-      case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
-         BIND_ACTION_START(cbs, action_start_shader_scale_pass);
-         break;
-      case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
-         BIND_ACTION_START(cbs, action_start_shader_filter_pass);
-         break;
-      case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
-         BIND_ACTION_START(cbs, action_start_shader_num_passes);
-         break;
-      case MENU_LABEL_CHEAT_NUM_PASSES:
-         BIND_ACTION_START(cbs, action_start_cheat_num_passes);
-         break;
-      case MENU_LABEL_SCREEN_RESOLUTION:
-         BIND_ACTION_START(cbs, action_start_video_resolution);
-      default:
-         return -1;
+      switch (cbs->enum_idx)
+      {
+         case MENU_ENUM_LABEL_REMAP_FILE_LOAD:
+            BIND_ACTION_START(cbs, action_start_remap_file_load);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_FILTER:
+            BIND_ACTION_START(cbs, action_start_video_filter_file_load);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_PASS:
+            BIND_ACTION_START(cbs, action_start_shader_pass);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS:
+            BIND_ACTION_START(cbs, action_start_shader_scale_pass);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
+            BIND_ACTION_START(cbs, action_start_shader_filter_pass);
+            break;
+         case MENU_ENUM_LABEL_VIDEO_SHADER_NUM_PASSES:
+            BIND_ACTION_START(cbs, action_start_shader_num_passes);
+            break;
+         case MENU_ENUM_LABEL_CHEAT_NUM_PASSES:
+            BIND_ACTION_START(cbs, action_start_cheat_num_passes);
+            break;
+         case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
+            BIND_ACTION_START(cbs, action_start_video_resolution);
+         default:
+            return -1;
+      }
+   }
+   else
+#endif
+   {
+      switch (hash)
+      {
+         case MENU_LABEL_REMAP_FILE_LOAD:
+            BIND_ACTION_START(cbs, action_start_remap_file_load);
+            break;
+         case MENU_LABEL_VIDEO_FILTER:
+            BIND_ACTION_START(cbs, action_start_video_filter_file_load);
+            break;
+         case MENU_LABEL_VIDEO_SHADER_PASS:
+            BIND_ACTION_START(cbs, action_start_shader_pass);
+            break;
+         case MENU_LABEL_VIDEO_SHADER_SCALE_PASS:
+            BIND_ACTION_START(cbs, action_start_shader_scale_pass);
+            break;
+         case MENU_LABEL_VIDEO_SHADER_FILTER_PASS:
+            BIND_ACTION_START(cbs, action_start_shader_filter_pass);
+            break;
+         case MENU_LABEL_VIDEO_SHADER_NUM_PASSES:
+            BIND_ACTION_START(cbs, action_start_shader_num_passes);
+            break;
+         case MENU_LABEL_CHEAT_NUM_PASSES:
+            BIND_ACTION_START(cbs, action_start_cheat_num_passes);
+            break;
+         case MENU_LABEL_SCREEN_RESOLUTION:
+            BIND_ACTION_START(cbs, action_start_video_resolution);
+         default:
+            return -1;
+      }
    }
 
    return 0;
