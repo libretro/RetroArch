@@ -1800,15 +1800,17 @@ static int frontend_android_parse_drive_list(void *data)
    file_list_t *list = (file_list_t*)data;
 
    // MENU_FILE_DIRECTORY is not working with labels, placeholders for now
-   menu_entries_add(list,
-         app_dir, "Application Dir", MENU_FILE_DIRECTORY, 0, 0);
-   menu_entries_add(list,
-         internal_storage_app_path, "External Application Dir", MENU_FILE_DIRECTORY, 0, 0);
-   menu_entries_add(list,
-         internal_storage_path, "Internal Memory", MENU_FILE_DIRECTORY, 0, 0);
-
-   menu_entries_add(list, "/", "",
+   menu_entries_add_enum(list,
+         app_dir, "Application Dir", MENU_ENUM_LABEL_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         internal_storage_app_path, "External Application Dir", MENU_ENUM_LABEL_UNKNOWN,
          MENU_FILE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         internal_storage_path, "Internal Memory",
+         MENU_ENUM_LABEL_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+
+   menu_entries_add_enum(list, "/", "",
+         MENU_ENUM_LABEL_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
 
    return 0;
 }

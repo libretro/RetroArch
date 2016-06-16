@@ -465,15 +465,15 @@ static int frontend_gx_parse_drive_list(void *data)
 #ifndef IS_SALAMANDER
    file_list_t *list = (file_list_t*)data;
 #ifdef HW_RVL
-   menu_entries_add(list,
-         "sd:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_entries_add(list,
-         "usb:/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         "sd:/", "", MENU_ENUM_LABEL_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         "usb:/", "", MENU_ENUM_LABEL_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
 #endif
-   menu_entries_add(list,
-         "carda:/", "", MENU_FILE_DIRECTORY, 0, 0);
-   menu_entries_add(list,
-         "cardb:/", "", MENU_FILE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         "carda:/", "", MENU_ENUM_LABEL_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
+   menu_entries_add_enum(list,
+         "cardb:/", "", MENU_ENUM_LABEL_UNKNOWN, MENU_FILE_DIRECTORY, 0, 0);
 #endif
 
    return 0;

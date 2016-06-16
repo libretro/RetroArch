@@ -3673,8 +3673,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
       case DISPLAYLIST_NONE:
          break;
       case DISPLAYLIST_INFO:
-         menu_entries_add(info->list, info->path,
-               info->label, info->type, info->directory_ptr, 0);
+         menu_entries_add_enum(info->list, info->path,
+               info->label, MENU_ENUM_LABEL_UNKNOWN, info->type, info->directory_ptr, 0);
          break;
       case DISPLAYLIST_GENERIC:
          {
@@ -3685,8 +3685,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
 
-            menu_entries_add(info->list, info->path,
-                  info->label, info->type, info->directory_ptr, 0);
+            menu_entries_add_enum(info->list, info->path,
+                  info->label, MENU_ENUM_LABEL_UNKNOWN, info->type, info->directory_ptr, 0);
 
             info->need_navigation_clear = true;
             info->need_entries_refresh  = true;
@@ -3701,8 +3701,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 
             menu_driver_ctl(RARCH_MENU_CTL_LIST_CACHE, &list_info);
 
-            menu_entries_add(info->list, info->path,
-                  info->label, info->type, info->directory_ptr, 0);
+            menu_entries_add_enum(info->list, info->path,
+                  info->label, MENU_ENUM_LABEL_UNKNOWN, info->type, info->directory_ptr, 0);
             info->need_entries_refresh = true;
          }
          break;
@@ -3779,8 +3779,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          info->need_push    = true;
          break;
       case DISPLAYLIST_HELP:
-         menu_entries_add(info->list, info->path,
-               info->label, info->type, info->directory_ptr, 0);
+         menu_entries_add_enum(info->list, info->path,
+               info->label, MENU_ENUM_LABEL_UNKNOWN, info->type, info->directory_ptr, 0);
          menu->push_help_screen = false;
          break;
       case DISPLAYLIST_SETTING_ENUM:
