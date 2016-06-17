@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_RUN:
+         return "collection";
       case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
          return "1_input_binds_list";
       case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
@@ -820,6 +822,8 @@ const char *menu_hash_to_str_us_enum(enum menu_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VALUE_RUN:
+         return "Run";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X:
          return "Custom Viewport X";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y:

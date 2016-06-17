@@ -2706,8 +2706,10 @@ static int menu_displaylist_parse_horizontal_content_actions(
          && string_is_equal(menu->deferred_path, fullpath))
       menu_displaylist_parse_load_content_settings(info);
    else
-      menu_entries_add_enum(info->list, "Run", "collection",
-            MENU_ENUM_LABEL_UNKNOWN, MENU_FILE_PLAYLIST_ENTRY, 0, idx);
+      menu_entries_add_enum(info->list,
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_RUN),
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_RUN),
+            MENU_ENUM_LABEL_RUN, MENU_FILE_PLAYLIST_ENTRY, 0, idx);
 
    menu_driver_ctl(RARCH_MENU_CTL_PLAYLIST_GET, &playlist);
 
@@ -2817,13 +2819,6 @@ static int menu_displaylist_parse_add_content_list(
          menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SCAN_FILE),
          menu_hash_to_str_enum(MENU_ENUM_LABEL_SCAN_FILE),
          MENU_ENUM_LABEL_SCAN_FILE,
-         MENU_SETTING_ACTION, 0, 0);
-#endif
-
-#if 0
-   menu_entries_prepend(info->list,
-         "Test",
-         "new_test",
          MENU_SETTING_ACTION, 0, 0);
 #endif
 
