@@ -72,8 +72,7 @@ static char screenshot_dir[PATH_MAX_LENGTH];
 static char downloads_dir[PATH_MAX_LENGTH];
 static char apk_dir[PATH_MAX_LENGTH];
 static char app_dir[PATH_MAX_LENGTH];
-static char internal_storage_path[PATH_MAX_LENGTH];
-static char internal_storage_app_path[PATH_MAX_LENGTH];
+
 #else
 static const char *proc_apm_path                   = "/proc/apm";
 static const char *proc_acpi_battery_path          = "/proc/acpi/battery";
