@@ -77,6 +77,11 @@ void menu_cbs_init(void *data,
 
    repr_label = (!string_is_empty(label)) ? label : path;
 
+#ifdef DEBUG_LOG
+   if (cbs && cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
+      RARCH_LOG("\t\t\tenum_idx %d [%s]\n", cbs->enum_idx, menu_hash_to_str_enum(cbs->enum_idx));
+#endif
+
    menu_cbs_init_bind_ok(cbs, path, label, type, idx, elem0, elem1, menu_label, label_hash, menu_label_hash);
 
    menu_cbs_init_log(repr_label, "OK", cbs->action_ok_ident);
