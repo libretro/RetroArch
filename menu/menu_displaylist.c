@@ -3103,7 +3103,7 @@ static int menu_displaylist_parse_generic(
    filter_ext         = 
       settings->menu.navigation.browser.filter.supported_extensions_enable;
 
-   if (hash_label == MENU_LABEL_SCAN_FILE)
+   if (string_is_equal(info->label, menu_hash_to_str_enum(MENU_ENUM_LABEL_SCAN_FILE)))
       filter_ext = false;
 
    if (path_is_compressed)
@@ -3113,7 +3113,7 @@ static int menu_displaylist_parse_generic(
             filter_ext ? info->exts : NULL,
             true, true);
 
-   if (hash_label == MENU_LABEL_SCAN_DIRECTORY)
+   if (string_is_equal(info->label, menu_hash_to_str_enum(MENU_ENUM_LABEL_SCAN_DIRECTORY)))
       menu_entries_prepend(info->list,
             menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
             menu_hash_to_str_enum(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
