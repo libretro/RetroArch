@@ -993,6 +993,12 @@ enum menu_file_type menu_hash_to_file_type(uint32_t hash)
          return MENU_FILE_SHADER_PRESET_HLSLP;
       case MENU_VALUE_SLANGP:
          return MENU_FILE_SHADER_PRESET_SLANGP;
+      case MENU_VALUE_CRC:
+         return MENU_FILE_CRC;
+      case MENU_VALUE_SHA1:
+         return MENU_FILE_SHA1;
+      case MENU_VALUE_MD5:
+         return MENU_FILE_MD5;
       default:
          break;
    }

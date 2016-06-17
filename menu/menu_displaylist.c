@@ -1771,7 +1771,6 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             char elem1[PATH_MAX_LENGTH]      = {0};
             bool match_found                 = false;
             struct string_list *tmp_str_list = NULL;
-            uint32_t hash_value              = 0;
 
             playlist_get_index(playlist, j,
                   NULL, NULL, NULL, NULL,
@@ -1787,21 +1786,21 @@ static int menu_displaylist_parse_database_entry(menu_displaylist_info_t *info)
             if (tmp_str_list->size > 1)
                strlcpy(elem1, tmp_str_list->elems[1].data, sizeof(elem1));
 
-            hash_value = menu_hash_calculate(elem1);
-
-            switch (hash_value)
+            switch (menu_hash_to_file_type(menu_hash_calculate(elem1)))
             {
-               case MENU_VALUE_CRC:
+               case MENU_FILE_CRC:
                   if (string_is_equal(crc_str, elem0))
                      match_found = true;
                   break;
-               case MENU_VALUE_SHA1:
+               case MENU_FILE_SHA1:
                   if (string_is_equal(db_info_entry->sha1, elem0))
                      match_found = true;
                   break;
-               case MENU_VALUE_MD5:
+               case MENU_FILE_MD5:
                   if (string_is_equal(db_info_entry->md5, elem0))
                      match_found = true;
+                  break;
+               default:
                   break;
             }
 
