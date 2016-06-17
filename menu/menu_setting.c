@@ -3700,16 +3700,19 @@ static bool setting_append_list_input_player_options(
    rarch_setting_group_info_t group_info    = {0};
    rarch_setting_group_info_t subgroup_info = {0};
    settings_t *settings = config_get_ptr();
+   const char *temp_value                     = NULL;
    const struct retro_keybind* const defaults =
       (user == 0) ? retro_keybinds_1 : retro_keybinds_rest;
    rarch_system_info_t *system = NULL;
 
    runloop_ctl(RUNLOOP_CTL_SYSTEM_INFO_GET, &system);
 
+   temp_value =menu_hash_to_str_enum((enum menu_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
+
    snprintf(buffer[user],    sizeof(buffer[user]),
          "%s %u", menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_USER), user + 1);
-   snprintf(group_lbl[user], sizeof(group_lbl[user]),
-         menu_hash_to_str_enum(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
+
+   strlcpy(group_lbl[user], temp_value, sizeof(group_lbl[user]));
 
    START_GROUP(list, list_info, &group_info, group_lbl[user], parent_group);
 

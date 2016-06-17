@@ -1782,7 +1782,6 @@ static void xmb_draw_items(xmb_handle_t *xmb,
       {
          math_matrix_4x4 mymat;
          menu_display_ctx_rotate_draw_t rotate_draw;
-         uint32_t hash_label      = menu_hash_calculate(entry.label);
          uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
                                     entry.enum_idx, entry.type, (i == current));
          float x                  = icon_x;

@@ -3756,8 +3756,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
          {
             char lbl[PATH_MAX_LENGTH] = {0};
             unsigned val = atoi(info->path);
-            snprintf(lbl, sizeof(lbl),
-                  menu_hash_to_str_enum(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + (val-1)));
+            const char *temp_val = menu_hash_to_str_enum((enum menu_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + (val-1)));
+            strlcpy(lbl, temp_val, sizeof(lbl));
             ret = menu_displaylist_parse_settings(menu, info,
                   lbl, PARSE_NONE, true);
             info->need_refresh = true;
