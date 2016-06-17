@@ -977,6 +977,22 @@ enum menu_file_type menu_hash_to_file_type(uint32_t hash)
          return MENU_FILE_BOOL_ON;
       case MENU_VALUE_OFF:
          return MENU_FILE_BOOL_OFF;
+      case MENU_VALUE_GLSL:
+         return MENU_FILE_SHADER_GLSL;
+      case MENU_VALUE_HLSL:
+         return MENU_FILE_SHADER_HLSL;
+      case MENU_VALUE_CG:
+         return MENU_FILE_SHADER_HLSL;
+      case MENU_VALUE_SLANG:
+         return MENU_FILE_SHADER_SLANG;
+      case MENU_VALUE_GLSLP:
+         return MENU_FILE_SHADER_PRESET_GLSLP;
+      case MENU_VALUE_HLSLP:
+         return MENU_FILE_SHADER_PRESET_HLSLP;
+      case MENU_VALUE_CGP:
+         return MENU_FILE_SHADER_PRESET_HLSLP;
+      case MENU_VALUE_SLANGP:
+         return MENU_FILE_SHADER_PRESET_SLANGP;
       default:
          break;
    }

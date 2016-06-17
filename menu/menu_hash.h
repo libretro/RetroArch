@@ -1927,6 +1927,8 @@ enum menu_hash_enums
 #define MENU_VALUE_GLSLP                                                       0x0f840c87U
 #define MENU_VALUE_CGP                                                         0x0b8865bfU
 #define MENU_VALUE_GLSL                                                        0x7c976537U
+#define MENU_VALUE_HLSL                                                        0x7c97f198U
+#define MENU_VALUE_HLSLP                                                       0x0f962508U
 #define MENU_VALUE_CG                                                          0x0059776fU
 #define MENU_VALUE_SLANG                                                       0x105ce63aU
 #define MENU_VALUE_SLANGP                                                      0x1bf9adeaU
