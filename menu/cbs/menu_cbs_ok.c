@@ -850,14 +850,10 @@ static int generic_action_ok(const char *path,
    int ret                           = 0;
    const char             *menu_path = NULL;
    const char *flush_char            = NULL;
-   struct video_shader      *shader  = NULL;
    menu_handle_t               *menu = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
-
-   menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET,
-         &shader);
 
    menu_entries_get_last_stack(&menu_path, NULL,
          NULL, NULL);
@@ -907,18 +903,26 @@ static int generic_action_ok(const char *path,
          break;
 #ifdef HAVE_SHADER_MANAGER
       case ACTION_OK_LOAD_PRESET:
-         flush_char = menu_hash_to_str_enum(flush_id);
-         menu_shader_manager_set_preset(shader,
-               video_shader_parse_type(action_path, RARCH_SHADER_NONE),
-               action_path);
+         {
+            struct video_shader      *shader  = NULL;
+            menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET, &shader);
+            flush_char = menu_hash_to_str_enum(flush_id);
+            menu_shader_manager_set_preset(shader,
+                  video_shader_parse_type(action_path, RARCH_SHADER_NONE),
+                  action_path);
+         }
          break;
       case ACTION_OK_LOAD_SHADER_PASS:
-         flush_char = menu_hash_to_str_enum(flush_id);
-         strlcpy(
-               shader->pass[hack_shader_pass].source.path,
-               action_path,
-               sizeof(shader->pass[hack_shader_pass].source.path));
-         video_shader_resolve_parameters(NULL, shader);
+         {
+            struct video_shader      *shader  = NULL;
+            menu_driver_ctl(RARCH_MENU_CTL_SHADER_GET, &shader);
+            flush_char = menu_hash_to_str_enum(flush_id);
+            strlcpy(
+                  shader->pass[hack_shader_pass].source.path,
+                  action_path,
+                  sizeof(shader->pass[hack_shader_pass].source.path));
+            video_shader_resolve_parameters(NULL, shader);
+         }
          break;
 #endif
       case ACTION_OK_LOAD_RECORD_CONFIGFILE:
