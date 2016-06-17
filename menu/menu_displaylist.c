@@ -2693,8 +2693,8 @@ static int menu_displaylist_parse_load_content_settings(
    else
       menu_entries_add_enum(info->list,
             menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-            "",
-            MENU_ENUM_LABEL_UNKNOWN,
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_ITEMS),
+            MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0);
 
    return 0;
@@ -2944,8 +2944,8 @@ static int menu_displaylist_parse_options(
 #else
    menu_entries_add_enum(info->list,
          menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-         "",
-         MENU_ENUM_LABEL_UNKNOWN,
+         menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_ITEMS),
+         MENU_ENUM_LABEL_NO_ITEMS,
          MENU_SETTING_NO_ITEM, 0, 0);
 #endif
 
@@ -3165,8 +3165,8 @@ static int menu_displaylist_parse_generic(
       {
          menu_entries_add_enum(info->list,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-               "",
-               MENU_ENUM_LABEL_UNKNOWN,
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_ITEMS),
+               MENU_ENUM_LABEL_NO_ITEMS,
                MENU_SETTING_NO_ITEM, 0, 0);
 #ifdef HAVE_NETWORKING
          if (hash_label == MENU_LABEL_CORE_LIST)
@@ -3312,8 +3312,8 @@ static int menu_displaylist_parse_generic(
       {
          menu_entries_add_enum(info->list,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-               "",
-               MENU_ENUM_LABEL_UNKNOWN,
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_ITEMS),
+               MENU_ENUM_LABEL_NO_ITEMS,
                MENU_SETTING_NO_ITEM, 0, 0);
       }
 
@@ -3772,8 +3772,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #else
          menu_entries_add_enum(info->list,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-               "",
-               MENU_ENUM_LABEL_UNKNOWN,
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_ITEMS),
+               MENU_ENUM_LABEL_NO_ITEMS,
                MENU_SETTING_NO_ITEM, 0, 0);
          ret = 0;
 #endif
@@ -3792,8 +3792,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type, void *data)
 #else
          menu_entries_add_enum(info->list,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
-               "",
-               MENU_ENUM_LABEL_UNKNOWN,
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_NO_ITEMS),
+               MENU_ENUM_LABEL_NO_ITEMS,
                MENU_SETTING_NO_ITEM, 0, 0);
          ret = 0;
 #endif

@@ -383,7 +383,8 @@ static int bind_left_generic(unsigned type, const char *label,
 }
 
 static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
-      const char *label, uint32_t label_hash, uint32_t menu_label_hash, const char *elem0)
+      const char *label, uint32_t label_hash, const char *menu_label,
+      uint32_t menu_label_hash, const char *elem0)
 {
    unsigned i;
 
@@ -444,13 +445,15 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_SCREEN_RESOLUTION: 
                BIND_ACTION_LEFT(cbs, action_left_video_resolution);
                break;
+            case MENU_ENUM_LABEL_NO_ITEMS:
             case MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
-               switch (menu_label_hash)
+               if (  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU))       ||
+                     string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB))   ||
+                     string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+                  )
                {
-                  case MENU_VALUE_HORIZONTAL_MENU:
-                  case MENU_VALUE_MAIN_MENU:
-                     BIND_ACTION_LEFT(cbs, action_left_mainmenu);
-                     break;
+                  BIND_ACTION_LEFT(cbs, action_left_mainmenu);
+                  break;
                }
             default:
                return -1;
@@ -480,12 +483,13 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
                BIND_ACTION_LEFT(cbs, action_left_video_resolution);
                break;
             case MENU_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE:
-               switch (menu_label_hash)
+               if (  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU))   ||
+                     string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB))   ||
+                     string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HORIZONTAL_MENU))
+                  )
                {
-                  case MENU_VALUE_HORIZONTAL_MENU:
-                  case MENU_VALUE_MAIN_MENU:
-                     BIND_ACTION_LEFT(cbs, action_left_mainmenu);
-                     break;
+                  BIND_ACTION_LEFT(cbs, action_left_mainmenu);
+                  break;
                }
             default:
                return -1;
@@ -614,7 +618,7 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (menu_cbs_init_bind_left_compare_label(cbs, label, label_hash, menu_label_hash, elem0) == 0)
+   if (menu_cbs_init_bind_left_compare_label(cbs, label, label_hash, menu_label, menu_label_hash, elem0) == 0)
       return 0;
 
    if (menu_cbs_init_bind_left_compare_type(cbs, type, label_hash, menu_label, menu_label_hash) == 0)
