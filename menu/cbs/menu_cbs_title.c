@@ -277,32 +277,30 @@ static int action_get_title_group_settings(const char *path, const char *label,
    char elem1[PATH_MAX_LENGTH]    = {0};
    struct string_list *list_label = string_split(label, "|");
 
-   if (list_label)
+   if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU)))
+      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU), len);
+   else
    {
-      if (list_label->size > 0)
+      if (list_label)
       {
-         strlcpy(elem0, list_label->elems[0].data, sizeof(elem0));
-         if (list_label->size > 1)
-            strlcpy(elem1, list_label->elems[1].data, sizeof(elem1));
+         if (list_label->size > 0)
+         {
+            strlcpy(elem0, list_label->elems[0].data, sizeof(elem0));
+            if (list_label->size > 1)
+               strlcpy(elem1, list_label->elems[1].data, sizeof(elem1));
+         }
+         string_list_free(list_label);
       }
-      string_list_free(list_label);
+
+      strlcpy(s, elem0, len);
+
+      if (!string_is_empty(elem1))
+      {
+         strlcat(s, " - ", len);
+         strlcat(s, elem1, len);
+      }
    }
 
-   strlcpy(s, elem0, len);
-
-   if (!string_is_empty(elem1))
-   {
-      strlcat(s, " - ", len);
-      strlcat(s, elem1, len);
-   }
-
-   return 0;
-}
-
-static int action_get_title_main_menu(const char *path, const char *label, 
-      unsigned menu_type, char *s, size_t len)
-{
-   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU), len);
    return 0;
 }
 
@@ -714,7 +712,7 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       switch (cbs->enum_idx)
       {
          case MENU_ENUM_LABEL_MAIN_MENU:
-            BIND_ACTION_GET_TITLE(cbs, action_get_title_main_menu);
+            BIND_ACTION_GET_TITLE(cbs, action_get_title_group_settings);
             break;
          case MENU_ENUM_LABEL_DEFERRED_DATABASE_MANAGER_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_title_deferred_database_manager_list);
