@@ -576,19 +576,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
                BIND_ACTION_LEFT(cbs, action_left_mainmenu);
                break;
             }
-            switch (menu_label_hash)
-            {
-               case MENU_VALUE_HORIZONTAL_MENU:
-               case MENU_VALUE_MAIN_MENU:
-               case MENU_VALUE_HISTORY_TAB:
-               case MENU_VALUE_ADD_TAB:
-               case MENU_VALUE_PLAYLISTS_TAB:
-                  BIND_ACTION_LEFT(cbs, action_left_mainmenu);
-                  break;
-               default:
-                  BIND_ACTION_LEFT(cbs, action_left_scroll);
-                  break;
-            }
+            BIND_ACTION_LEFT(cbs, action_left_scroll);
             break;
          case MENU_SETTING_ACTION:
          case MENU_FILE_CONTENTLIST_ENTRY:
