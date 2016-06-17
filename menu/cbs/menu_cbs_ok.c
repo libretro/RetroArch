@@ -125,6 +125,7 @@ int generic_action_ok_displaylist_push(const char *path,
    const char          *info_label   = NULL;
    const char          *info_path    = NULL;
    menu_handle_t            *menu    = NULL;
+   enum menu_hash_enums enum_idx     = MENU_ENUM_LABEL_UNKNOWN;
    global_t                 *global  = global_get_ptr();
    settings_t            *settings   = config_get_ptr();
    file_list_t        *selection_buf = menu_entries_get_selection_buf_ptr(0);
@@ -133,7 +134,7 @@ int generic_action_ok_displaylist_push(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
    if (path && menu_path)
       fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
@@ -482,6 +483,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    char new_core_path[PATH_MAX_LENGTH] = {0};
    char menu_path_new[PATH_MAX_LENGTH] = {0};
    int ret                             = 0;
+   enum menu_hash_enums enum_idx       = MENU_ENUM_LABEL_UNKNOWN;
    const char *menu_path               = NULL;
    const char *menu_label              = NULL;
    menu_handle_t *menu                 = NULL;
@@ -490,7 +492,7 @@ static int file_load_with_detect_core_wrapper(size_t idx, size_t entry_idx,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
    if (!string_is_empty(menu_path))
       strlcpy(menu_path_new, menu_path, sizeof(menu_path_new));
@@ -848,6 +850,7 @@ static int generic_action_ok(const char *path,
    char action_path[PATH_MAX_LENGTH] = {0};
    unsigned flush_type               = 0;
    int ret                           = 0;
+   enum menu_hash_enums enum_idx     = MENU_ENUM_LABEL_UNKNOWN;
    const char             *menu_path = NULL;
    const char            *menu_label = NULL;
    const char *flush_char            = NULL;
@@ -856,8 +859,7 @@ static int generic_action_ok(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
 
-   menu_entries_get_last_stack(&menu_path, &menu_label,
-         NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
    if (!string_is_empty(path))
       fill_pathname_join(action_path, menu_path, path, sizeof(action_path));

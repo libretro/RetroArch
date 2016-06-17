@@ -44,6 +44,7 @@ int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char fullpath[PATH_MAX_LENGTH] = {0};
+   enum menu_hash_enums enum_idx  = MENU_ENUM_LABEL_UNKNOWN;
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = NULL;
@@ -51,7 +52,7 @@ int action_scan_file(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
    fill_pathname_join(fullpath, menu_path, path, sizeof(fullpath));
 
@@ -64,6 +65,7 @@ int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
    char fullpath[PATH_MAX_LENGTH] = {0};
+   enum menu_hash_enums enum_idx  = MENU_ENUM_LABEL_UNKNOWN;
    const char *menu_label         = NULL;
    const char *menu_path          = NULL;
    menu_handle_t *menu            = NULL;
@@ -71,7 +73,7 @@ int action_scan_directory(const char *path,
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       return menu_cbs_exit();
 
-   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, &enum_idx, NULL);
 
    strlcpy(fullpath, menu_path, sizeof(fullpath));
 

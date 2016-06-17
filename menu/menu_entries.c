@@ -385,13 +385,14 @@ size_t menu_entries_get_end(void)
 /* Get an entry from the top of the menu stack */
 void menu_entries_get(size_t i, menu_entry_t *entry)
 {
-   const char *label          = NULL;
-   const char *path           = NULL;
-   const char *entry_label    = NULL;
-   menu_file_list_cbs_t *cbs  = NULL;
+   const char *label             = NULL;
+   const char *path              = NULL;
+   const char *entry_label       = NULL;
+   menu_file_list_cbs_t *cbs     = NULL;
+   enum menu_hash_enums enum_idx = MENU_ENUM_LABEL_UNKNOWN;
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
-   menu_entries_get_last_stack(NULL, &label, NULL, NULL);
+   menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
 
    entry->path[0] = entry->value[0] = string_is_empty(entry->label);
 
@@ -416,15 +417,16 @@ void menu_entries_get(size_t i, menu_entry_t *entry)
 /* Sets title to what the name of the current menu should be. */
 int menu_entries_get_title(char *s, size_t len)
 {
-   unsigned menu_type        = 0;
-   const char *path          = NULL;
-   const char *label         = NULL;
+   unsigned menu_type            = 0;
+   const char *path              = NULL;
+   const char *label             = NULL;
+   enum menu_hash_enums enum_idx = MENU_ENUM_LABEL_UNKNOWN;
    menu_file_list_cbs_t *cbs = menu_entries_get_last_stack_actiondata();
    
    if (!cbs)
       return -1;
 
-   menu_entries_get_last_stack(&path, &label, &menu_type, NULL);
+   menu_entries_get_last_stack(&path, &label, &menu_type, &enum_idx, NULL);
 
    if (cbs && cbs->action_get_title)
       return cbs->action_get_title(path, label, menu_type, s, len);
@@ -622,13 +624,19 @@ menu_file_list_cbs_t *menu_entries_get_last_stack_actiondata(void)
 }
 
 void menu_entries_get_last_stack(const char **path, const char **label,
-      unsigned *file_type, size_t *entry_idx)
+      unsigned *file_type, enum menu_hash_enums *enum_idx, size_t *entry_idx)
 {
+   menu_file_list_cbs_t *cbs      = NULL;
    menu_list_t *menu_list         = NULL;
    menu_entries_ctl(MENU_ENTRIES_CTL_LIST_GET, &menu_list);
-   if (menu_list)
-      menu_entries_get_last(menu_list->menu_stack[0],
-            path, label, file_type, entry_idx);
+   if (!menu_list)
+      return;
+
+   menu_entries_get_last(menu_list->menu_stack[0],
+         path, label, file_type, entry_idx);
+   cbs = menu_entries_get_last_stack_actiondata();
+   if (cbs)
+      *enum_idx = cbs->enum_idx;
 }
 
 void menu_entries_flush_stack(const char *needle, unsigned final_type)

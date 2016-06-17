@@ -40,21 +40,22 @@ void menu_cbs_init(void *data,
       unsigned type, size_t idx)
 {
    menu_ctx_bind_t bind_info;
-   char elem0[PATH_MAX_LENGTH]  = {0};
-   char elem1[PATH_MAX_LENGTH]  = {0};
-   const char *repr_label       = NULL;
-   struct string_list *str_list = NULL;
-   const char *menu_label       = NULL;
-   uint32_t label_hash          = 0;
-   uint32_t menu_label_hash     = 0;
-   file_list_t *list            = (file_list_t*)data;
+   char elem0[PATH_MAX_LENGTH]   = {0};
+   char elem1[PATH_MAX_LENGTH]   = {0};
+   const char *repr_label        = NULL;
+   struct string_list *str_list  = NULL;
+   const char *menu_label        = NULL;
+   uint32_t label_hash           = 0;
+   uint32_t menu_label_hash      = 0;
+   enum menu_hash_enums enum_idx = MENU_ENUM_LABEL_UNKNOWN;
+   file_list_t *list             = (file_list_t*)data;
    if (!list)
       return;
 
    elem0[0] = '\0';
    elem1[0] = '\0';
 
-   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL);
+   menu_entries_get_last_stack(NULL, &menu_label, NULL, &enum_idx, NULL);
 
    if (label)
       str_list = string_split(label, "|");

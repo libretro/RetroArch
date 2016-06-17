@@ -269,15 +269,16 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
    size_t selection;
    menu_entry_t entry;
    enum action_iterate_type iterate_type;
-   const char *label          = NULL;
-   int ret                    = 0;
-   uint32_t label_hash        = 0;
-   uint32_t hash              = 0;
-   menu_handle_t *menu        = (menu_handle_t*)data;
-   file_list_t *menu_stack    = menu_entries_get_menu_stack_ptr(0);
-   file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
+   const char *label              = NULL;
+   int ret                        = 0;
+   uint32_t label_hash            = 0;
+   uint32_t hash                  = 0;
+   enum menu_hash_enums enum_idx  = MENU_ENUM_LABEL_UNKNOWN;
+   menu_handle_t *menu            = (menu_handle_t*)data;
+   file_list_t *menu_stack        = menu_entries_get_menu_stack_ptr(0);
+   file_list_t *selection_buf     = menu_entries_get_selection_buf_ptr(0);
 
-   menu_entries_get_last_stack(NULL, &label, NULL, NULL);
+   menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
 
    if (!menu)
       return 0;

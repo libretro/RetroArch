@@ -3324,9 +3324,10 @@ static int menu_displaylist_parse_generic(
    {
       case MENU_LABEL_CORE_LIST:
          {
-            const char *dir = NULL;
+            enum menu_hash_enums enum_idx  = MENU_ENUM_LABEL_UNKNOWN;
+            const char *dir                = NULL;
 
-            menu_entries_get_last_stack(&dir, NULL, NULL, NULL);
+            menu_entries_get_last_stack(&dir, NULL, NULL, &enum_idx, NULL);
 
             list_size = file_list_get_size(info->list);
 
@@ -3563,16 +3564,17 @@ static bool menu_displaylist_push_internal(
 
 static bool menu_displaylist_push(menu_displaylist_ctx_entry_t *entry)
 {
-   menu_file_list_cbs_t *cbs    = NULL;
-   const char *path             = NULL;
-   const char *label            = NULL;
-   unsigned type                = 0;
-   menu_displaylist_info_t info = {0};
+   menu_file_list_cbs_t *cbs      = NULL;
+   const char *path               = NULL;
+   const char *label              = NULL;
+   unsigned type                  = 0;
+   enum menu_hash_enums enum_idx  = MENU_ENUM_LABEL_UNKNOWN;
+   menu_displaylist_info_t info   = {0};
 
    if (!entry)
       return false;
 
-   menu_entries_get_last_stack(&path, &label, &type, NULL);
+   menu_entries_get_last_stack(&path, &label, &type, &enum_idx, NULL);
 
    info.list      = entry->list;
    info.menu_list = entry->stack;
