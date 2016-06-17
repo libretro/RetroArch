@@ -280,6 +280,7 @@ static int menu_input_key_bind_set_mode_common(
          info.list                = menu_stack;
          info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr       = selection;
+         info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND;
          strlcpy(info.label,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_CUSTOM_BIND), sizeof(info.label));
 
@@ -295,6 +296,7 @@ static int menu_input_key_bind_set_mode_common(
          info.list                = menu_stack;
          info.type                = MENU_SETTINGS_CUSTOM_BIND_KEYBOARD;
          info.directory_ptr       = selection;
+         info.enum_idx            = MENU_ENUM_LABEL_CUSTOM_BIND_ALL;
          strlcpy(info.label,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_CUSTOM_BIND_ALL),
                sizeof(info.label));

@@ -1274,6 +1274,7 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
    info.type         = 0;
    info.type_default = MENU_FILE_PLAIN;
    info.flags        = SL_FLAG_ALLOW_EMPTY_LIST;
+   info.enum_idx     = MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST;
    strlcpy(info.label,
          menu_hash_to_str_enum(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
          sizeof(info.label));
@@ -3192,6 +3193,7 @@ static bool xmb_menu_init_list(void *data)
 
    strlcpy(info.label,
          menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
+   info.enum_idx = MENU_ENUM_LABEL_MAIN_MENU;
 
    menu_entries_add_enum(menu_stack, info.path,
          info.label,

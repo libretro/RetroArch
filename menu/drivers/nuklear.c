@@ -389,6 +389,7 @@ static bool nk_menu_init_list(void *data)
 
    strlcpy(info.label,
          menu_hash_to_str_enum(MENU_ENUM_LABEL_HISTORY_TAB), sizeof(info.label));
+   info.enum_idx = MENU_ENUM_LABEL_HISTORY_TAB;
 
    menu_entries_add_enum(menu_stack,
          info.path, info.label, MENU_ENUM_LABEL_UNKNOWN, 

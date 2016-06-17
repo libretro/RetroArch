@@ -3396,6 +3396,7 @@ void general_write_handler(void *data)
             info.directory_ptr = 0;
             strlcpy(info.label,
                   menu_hash_to_str_enum(MENU_ENUM_LABEL_HELP), sizeof(info.label));
+            info.enum_idx      = MENU_ENUM_LABEL_HELP;
 
             if (menu_displaylist_ctl(DISPLAYLIST_GENERIC, &info))
                menu_displaylist_ctl(DISPLAYLIST_PROCESS, &info);

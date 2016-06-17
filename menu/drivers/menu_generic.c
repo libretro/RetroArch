@@ -369,6 +369,7 @@ int generic_menu_iterate(void *data, void *userdata, enum menu_action action)
             strlcpy(info.label,
                   menu_hash_to_str_enum(MENU_ENUM_LABEL_HELP),
                   sizeof(info.label));
+            info.enum_idx = MENU_ENUM_LABEL_HELP;
 
             menu_displaylist_ctl(DISPLAYLIST_HELP, &info);
          }
@@ -401,6 +402,7 @@ bool generic_menu_init_list(void *data)
 
    strlcpy(info.label,
          menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
+   info.enum_idx = MENU_ENUM_LABEL_MAIN_MENU;
 
    menu_entries_add_enum(menu_stack, info.path,
          info.label,
