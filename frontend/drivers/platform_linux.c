@@ -541,12 +541,12 @@ bool test_permissions(const char *path)
    char buf[PATH_MAX_LENGTH];
    bool ret;
 
-   RARCH_LOG("Testing permissions for %s\n",path);
+   __android_log_print(ANDROID_LOG_INFO, "RetroArch", "Testing permissions for %s\n",path);
 
    fill_pathname_join(buf, path, ".retroarch", sizeof(buf));
    ret = path_mkdir(buf);
 
-   RARCH_LOG("Create %s in %s %s\n", buf, path, ret ? "true" : "false");
+   __android_log_print(ANDROID_LOG_INFO, "RetroArch", "Create %s in %s %s\n", buf, path, ret ? "true" : "false");
 
    if(ret)
       rmdir(buf);
@@ -1202,12 +1202,12 @@ static void frontend_linux_get_env(int *argc,
 
    frontend_android_get_version(&major, &minor, &rel);
 
-   RARCH_LOG("Android OS version (major : %d, minor : %d, rel : %d)\n",
+   __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV] Android OS version (major : %d, minor : %d, rel : %d)\n",
          major, minor, rel);
 
    CALL_OBJ_METHOD(env, obj, android_app->activity->clazz,
          android_app->getIntent);
-   RARCH_LOG("Checking arguments passed from intent ...\n");
+   __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV] Checking arguments passed from intent ...\n");
 
    /* Config file. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
@@ -1222,7 +1222,7 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(config_path, argv, sizeof(config_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("[ENV]: config file: [%s]\n", config_path);
+      __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: config file: [%s]\n", config_path);
       if (args && *config_path)
          args->config_path = config_path;
    }
@@ -1239,7 +1239,7 @@ static void frontend_linux_get_env(int *argc,
             sizeof(android_app->current_ime));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("[ENV]: current IME: [%s]\n", android_app->current_ime);
+      __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: current IME: [%s]\n", android_app->current_ime);
    }
 
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
@@ -1252,7 +1252,7 @@ static void frontend_linux_get_env(int *argc,
 
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("[ENV]: used: [%s].\n", used ? "true" : "false");
+      __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: used: [%s].\n", used ? "true" : "false");
    }
 
    /* LIBRETRO. */
@@ -1269,7 +1269,7 @@ static void frontend_linux_get_env(int *argc,
          strlcpy(core_path, argv, sizeof(core_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
-      RARCH_LOG("[ENV]: libretro path: [%s]\n", core_path);
+      __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: libretro path: [%s]\n", core_path);
       if (args && *core_path)
          args->libretro_path = core_path;
    }
@@ -1291,7 +1291,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(path))
       {
-         RARCH_LOG("[ENV]: auto-start game [%s]\n", path);
+         __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: auto-start game [%s]\n", path);
          if (args && *path)
             args->content_path = path;
       }
@@ -1313,7 +1313,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(internal_storage_path))
       {
-         RARCH_LOG("[ENV]: internal storage location: [%s]\n", internal_storage_path);
+         __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: internal storage location: [%s]\n", internal_storage_path);
       }
    }
 
@@ -1333,7 +1333,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(screenshot_dir))
       {
-         RARCH_LOG("[ENV]: picture folder location [%s]\n", screenshot_dir);
+         __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: picture folder location [%s]\n", screenshot_dir);
       }
    }
 
@@ -1353,7 +1353,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(downloads_dir))
       {
-         RARCH_LOG("[ENV]: download folder location [%s]\n", downloads_dir);
+         __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: download folder location [%s]\n", downloads_dir);
       }
    }
 
@@ -1372,7 +1372,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(apk_dir))
       {
-         RARCH_LOG("[ENV]: APK location [%s]\n", apk_dir);
+         __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: APK location [%s]\n", apk_dir);
       }
    }
 
@@ -1391,7 +1391,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(internal_storage_app_path))
       {
-         RARCH_LOG("[ENV]: external files location [%s]\n", internal_storage_app_path);
+         __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: external files location [%s]\n", internal_storage_app_path);
       }
    }
 
@@ -1427,7 +1427,7 @@ static void frontend_linux_get_env(int *argc,
 
       if (!string_is_empty(app_dir))
       {
-         RARCH_LOG("[ENV]: application location: [%s]\n", app_dir);
+         __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: application location: [%s]\n", app_dir);
          if (args && *app_dir)
          {
             char buf[PATH_MAX_LENGTH] = {0};
@@ -1472,7 +1472,7 @@ static void frontend_linux_get_env(int *argc,
                path_mkdir(g_defaults.dir.core_assets);
             }
 
-            RARCH_LOG("[ENV]: default download folder: [%s]", g_defaults.dir.core_assets);
+            __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: default download folder: [%s]", g_defaults.dir.core_assets);
 
             if(*screenshot_dir && test_permissions(screenshot_dir))
             {
@@ -1486,7 +1486,7 @@ static void frontend_linux_get_env(int *argc,
                path_mkdir(g_defaults.dir.screenshot);
             }
 
-            RARCH_LOG("[ENV]: default screenshot folder: [%s]", g_defaults.dir.screenshot);
+            __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: default screenshot folder: [%s]", g_defaults.dir.screenshot);
 
             switch (perms)
             {
@@ -1596,9 +1596,9 @@ static void frontend_linux_get_env(int *argc,
             fill_pathname_join(buf, internal_storage_app_path, "system", sizeof(buf));
             path_mkdir(buf);
 
-            RARCH_LOG("[ENV]: default savefile folder: [%s]",   g_defaults.dir.sram);
-            RARCH_LOG("[ENV]: default savestate folder: [%s]",  g_defaults.dir.savestate);
-            RARCH_LOG("[ENV]: default system folder: [%s]",     g_defaults.dir.system);
+            __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: default savefile folder: [%s]",   g_defaults.dir.sram);
+            __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: default savestate folder: [%s]",  g_defaults.dir.savestate);
+            __android_log_print(ANDROID_LOG_INFO, "RetroArch", "[ENV]: default system folder: [%s]",     g_defaults.dir.system);
          }
       }
    }
