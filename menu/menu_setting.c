@@ -2193,7 +2193,7 @@ static int setting_handler(rarch_setting_t *setting, unsigned action)
          break;
       case MENU_ACTION_LEFT:
          if (setting->action_left)
-            return setting->action_left(setting, false);
+            return setting->action_left(setting, true);
          break;
       case MENU_ACTION_RIGHT:
          if (setting->action_right)
@@ -2501,7 +2501,7 @@ int menu_setting_set_with_string_representation(rarch_setting_t* setting,
       const char* value)
 {
    double min, max;
-   uint64_t flags = menu_setting_get_flags(setting);
+   uint64_t flags;
    if (!setting || !value)
       return -1;
 
@@ -2511,6 +2511,7 @@ int menu_setting_set_with_string_representation(rarch_setting_t* setting,
    switch (menu_setting_get_type(setting))
    {
       case ST_INT:
+         flags = menu_setting_get_flags(setting);
          sscanf(value, "%d", setting->value.target.integer);
          if (flags & SD_FLAG_HAS_RANGE)
          {
@@ -2528,6 +2529,7 @@ int menu_setting_set_with_string_representation(rarch_setting_t* setting,
          }
          break;
       case ST_UINT:
+         flags = menu_setting_get_flags(setting);
          sscanf(value, "%u", setting->value.target.unsigned_integer);
          if (flags & SD_FLAG_HAS_RANGE)
          {
@@ -2545,6 +2547,7 @@ int menu_setting_set_with_string_representation(rarch_setting_t* setting,
          }
          break;      
       case ST_FLOAT:
+         flags = menu_setting_get_flags(setting);
          sscanf(value, "%f", setting->value.target.fraction);
          if (flags & SD_FLAG_HAS_RANGE)
          {
