@@ -146,6 +146,7 @@ typedef struct menu_displaylist_info
    unsigned type_default;
    size_t directory_ptr;
    unsigned flags;
+   enum menu_hash_enums enum_idx;
    rarch_setting_t *setting;
 } menu_displaylist_info_t;
 
