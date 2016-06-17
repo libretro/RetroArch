@@ -3501,8 +3501,6 @@ static bool menu_displaylist_push_internal(
       menu_displaylist_ctx_entry_t *entry,
       menu_displaylist_info_t *info)
 {
-   settings_t *settings         = config_get_ptr();
-
    if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HISTORY_TAB)))
    {
       if (!menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
@@ -3517,6 +3515,8 @@ static bool menu_displaylist_push_internal(
    }
    else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
    {
+      settings_t *settings  = config_get_ptr();
+
       info->type = 42;
       strlcpy(info->exts, "lpl", sizeof(info->exts));
       strlcpy(info->label,
@@ -3560,62 +3560,6 @@ static bool menu_displaylist_push_internal(
       if (!menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info))
          return false;
       return true;
-   }
-
-   switch (menu_hash_calculate(label))
-   {
-      case MENU_VALUE_MAIN_MENU:
-         if (!menu_displaylist_ctl(DISPLAYLIST_MAIN_MENU, info))
-            break;
-         return true;
-      case MENU_VALUE_SETTINGS_TAB:
-         if (!menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info))
-            break;
-         return true;
-      case MENU_VALUE_HISTORY_TAB:
-         if (!menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
-            break;
-         return true;
-      case MENU_VALUE_ADD_TAB:
-         if (!menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info))
-            break;
-         return true;
-      case MENU_VALUE_PLAYLISTS_TAB:
-         info->type = 42;
-         strlcpy(info->exts, "lpl", sizeof(info->exts));
-         strlcpy(info->label,
-               menu_hash_to_str_enum(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
-               sizeof(info->label));
-
-         if (string_is_empty(settings->directory.playlist))
-         {
-            menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
-            menu_entries_add_enum(info->list,
-                  menu_hash_to_str_enum(
-                     MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
-                  menu_hash_to_str_enum(
-                     MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
-                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
-                  MENU_INFO_MESSAGE, 0, 0);
-            info->need_refresh = true;
-            info->need_push    = true;
-         }
-         else
-         {
-            strlcpy(
-                  info->path,
-                  settings->directory.playlist,
-                  sizeof(info->path));
-
-            if (!menu_displaylist_ctl(
-                     DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, info))
-               break;
-         }
-         return true;
-      case MENU_VALUE_HORIZONTAL_MENU:
-         if (!menu_displaylist_ctl(DISPLAYLIST_HORIZONTAL, info))
-            break;
-         return true;
    }
 
    return false;
