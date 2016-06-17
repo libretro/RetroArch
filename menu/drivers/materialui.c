@@ -1263,7 +1263,7 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
          break;
       case MUI_SYSTEM_TAB_PLAYLISTS:
          menu_stack->list[stack_size - 1].label = 
-            strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB));
+            strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB));
          menu_stack->list[stack_size - 1].type = 
             MENU_PLAYLISTS_TAB;
          break;

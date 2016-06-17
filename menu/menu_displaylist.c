@@ -3515,6 +3515,40 @@ static bool menu_displaylist_push_internal(
          return false;
       return true;
    }
+   else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+   {
+      info->type = 42;
+      strlcpy(info->exts, "lpl", sizeof(info->exts));
+      strlcpy(info->label,
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_CONTENT_COLLECTION_LIST),
+            sizeof(info->label));
+
+      if (string_is_empty(settings->directory.playlist))
+      {
+         menu_entries_ctl(MENU_ENTRIES_CTL_CLEAR, info->list);
+         menu_entries_add_enum(info->list,
+               menu_hash_to_str_enum(
+                  MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+               menu_hash_to_str_enum(
+                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE),
+               MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
+               MENU_INFO_MESSAGE, 0, 0);
+         info->need_refresh = true;
+         info->need_push    = true;
+      }
+      else
+      {
+         strlcpy(
+               info->path,
+               settings->directory.playlist,
+               sizeof(info->path));
+
+         if (!menu_displaylist_ctl(
+                  DISPLAYLIST_DATABASE_PLAYLISTS_HORIZONTAL, info))
+            return false;
+      }
+      return true;
+   }
 
    switch (menu_hash_calculate(label))
    {

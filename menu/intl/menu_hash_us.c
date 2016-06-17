@@ -983,13 +983,13 @@ const char *menu_hash_to_str_us_enum(enum menu_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
       case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
-         return "Settings tab";
+         return "Settings";
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
-         return "History tab";
+         return "History";
       case MENU_ENUM_LABEL_VALUE_ADD_TAB:
          return "Add tab";
       case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
-         return "Playlists tab";
+         return "Playlists";
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "No settings found.";
       case MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:

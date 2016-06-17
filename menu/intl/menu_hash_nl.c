@@ -104,6 +104,8 @@ const char *menu_hash_to_str_nl_enum(enum menu_hash_enums msg)
          return "Horizontal Menu";
       case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
          return "Instellingen";
+      case MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB:
+         return "Afspeellijsten";
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
          return "Geschiedenis";
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
