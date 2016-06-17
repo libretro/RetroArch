@@ -273,14 +273,16 @@ static int action_get_title_default(const char *path, const char *label,
 static int action_get_title_group_settings(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
-   char elem0[PATH_MAX_LENGTH]    = {0};
-   char elem1[PATH_MAX_LENGTH]    = {0};
-   struct string_list *list_label = string_split(label, "|");
-
    if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU)))
       strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU), len);
+   else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HISTORY_TAB)))
+      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_HISTORY_TAB), len);
    else
    {
+      char elem0[PATH_MAX_LENGTH]    = {0};
+      char elem1[PATH_MAX_LENGTH]    = {0};
+      struct string_list *list_label = string_split(label, "|");
+
       if (list_label)
       {
          if (list_label->size > 0)

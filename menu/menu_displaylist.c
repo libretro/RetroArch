@@ -3503,6 +3503,13 @@ static bool menu_displaylist_push_internal(
 {
    settings_t *settings         = config_get_ptr();
 
+   if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HISTORY_TAB)))
+   {
+      if (!menu_displaylist_ctl(DISPLAYLIST_HISTORY, info))
+         return false;
+      return true;
+   }
+
    switch (menu_hash_calculate(label))
    {
       case MENU_VALUE_MAIN_MENU:
