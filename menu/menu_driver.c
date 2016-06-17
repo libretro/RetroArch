@@ -948,3 +948,38 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 
    return true;
 }
+
+enum menu_file_type menu_hash_to_file_type(uint32_t hash)
+{
+   switch (hash)
+   {
+      case MENU_VALUE_COMP:
+         return MENU_FILE_COMPRESSED;
+      case MENU_VALUE_MORE:
+         return MENU_FILE_MORE;
+      case MENU_VALUE_CORE:
+         return MENU_FILE_CORE;
+      case MENU_VALUE_RDB:
+         return MENU_FILE_RDB;
+      case MENU_VALUE_CURSOR:
+         return MENU_FILE_CURSOR;
+      case MENU_VALUE_FILE:
+         return MENU_FILE_PLAIN;
+      case MENU_VALUE_DIR:
+         return MENU_FILE_DIRECTORY;
+      case MENU_VALUE_MUSIC:
+         return MENU_FILE_MUSIC;
+      case MENU_VALUE_IMAGE:
+         return MENU_FILE_IMAGE;
+      case MENU_VALUE_MOVIE:
+         return MENU_FILE_MOVIE;
+      case MENU_VALUE_ON:
+         return MENU_FILE_BOOL_ON;
+      case MENU_VALUE_OFF:
+         return MENU_FILE_BOOL_OFF;
+      default:
+         break;
+   }
+
+   return MENU_FILE_NONE;
+}

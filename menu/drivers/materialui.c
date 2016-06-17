@@ -550,28 +550,28 @@ static void mui_render_label_value(mui_handle_t *mui,
    }
    else
    {
-      uint32_t hash_value = menu_hash_calculate(value);
+      enum menu_file_type entry_type = menu_hash_to_file_type(menu_hash_calculate(value));
 
-      switch (hash_value)
+      switch (entry_type)
       {
-         case MENU_VALUE_COMP:
-         case MENU_VALUE_MORE:
-         case MENU_VALUE_CORE:
-         case MENU_VALUE_RDB:
-         case MENU_VALUE_CURSOR:
-         case MENU_VALUE_FILE:
-         case MENU_VALUE_DIR:
-         case MENU_VALUE_MUSIC:
-         case MENU_VALUE_IMAGE:
-         case MENU_VALUE_MOVIE:
+         case MENU_FILE_COMPRESSED:
+         case MENU_FILE_MORE:
+         case MENU_FILE_CORE:
+         case MENU_FILE_RDB:
+         case MENU_FILE_CURSOR:
+         case MENU_FILE_PLAIN:
+         case MENU_FILE_DIRECTORY:
+         case MENU_FILE_MUSIC:
+         case MENU_FILE_IMAGE:
+         case MENU_FILE_MOVIE:
             break;
-         case MENU_VALUE_ON:
+         case MENU_FILE_BOOL_ON:
             if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_ON];
             else
                do_draw_text = true;
             break;
-         case MENU_VALUE_OFF:
+         case MENU_FILE_BOOL_OFF:
             if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
                texture_switch = mui->textures.list[MUI_TEXTURE_SWITCH_OFF];
             else

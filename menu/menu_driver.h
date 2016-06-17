@@ -206,6 +206,8 @@ enum menu_file_type
    MENU_FILE_RDB_ENTRY,
    MENU_FILE_RPL_ENTRY,
    MENU_FILE_CURSOR,
+   MENU_FILE_BOOL_ON,
+   MENU_FILE_BOOL_OFF,
    MENU_FILE_RECORD_CONFIG,
    MENU_FILE_PLAYLIST_COLLECTION,
    MENU_FILE_PLAYLIST_ASSOCIATION,
@@ -237,6 +239,8 @@ enum menu_file_type
    MENU_SETTING_HORIZONTAL_MENU,
    MENU_INFO_MESSAGE,
    MENU_FILE_DOWNLOAD_THUMBNAIL,
+   MENU_FILE_MORE,
+   MENU_FILE_COMPRESSED,
    MENU_FILE_TYPE_T_LAST
 };
 
@@ -468,6 +472,8 @@ const char* config_get_menu_driver_options(void);
 
 /* HACK */
 extern unsigned int rdb_entry_start_game_selection_ptr;
+
+enum menu_file_type menu_hash_to_file_type(uint32_t hash);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
