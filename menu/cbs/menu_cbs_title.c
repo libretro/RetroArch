@@ -283,6 +283,8 @@ static int action_get_title_group_settings(const char *path, const char *label,
       strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB), len);
    else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_ADD_TAB)))
       strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ADD_TAB), len);
+   else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
+      strlcpy(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU), len);
    else
    {
       char elem0[PATH_MAX_LENGTH]    = {0};
