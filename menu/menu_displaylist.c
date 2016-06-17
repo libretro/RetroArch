@@ -2998,10 +2998,11 @@ static int menu_displaylist_parse_options_remappings(
    {
       char key_type[PATH_MAX_LENGTH]   = {0};
       char key_analog[PATH_MAX_LENGTH] = {0};
+      unsigned val = p + 1;
       snprintf(key_type, sizeof(key_type),
-               "input_libretro_device_p%u", p + 1);
+            menu_hash_to_str_enum(MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE), val);
       snprintf(key_analog, sizeof(key_analog),
-               "input_player%u_analog_dpad_mode", p + 1);
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE), val);
 
       menu_displaylist_parse_settings(menu, info,
             key_type, PARSE_ONLY_UINT, true);

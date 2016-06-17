@@ -26,6 +26,10 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE:
+         return "input_player%u_analog_dpad_mode";
+      case MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE:
+         return "input_libretro_device_p%u";
       case MENU_ENUM_LABEL_RUN:
          return "collection";
       case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
