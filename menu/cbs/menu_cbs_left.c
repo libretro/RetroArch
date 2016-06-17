@@ -391,9 +391,9 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
    if (cbs->setting)
    {
       const char *parent_group   = menu_setting_get_parent_group(cbs->setting);
-      uint32_t parent_group_hash = menu_hash_calculate(parent_group);
 
-      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && (menu_setting_get_type(cbs->setting) == ST_GROUP))
+      if (string_is_equal(parent_group, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU)) 
+               && (menu_setting_get_type(cbs->setting) == ST_GROUP))
       {
          BIND_ACTION_LEFT(cbs, action_left_mainmenu);
          return 0;
@@ -606,15 +606,16 @@ int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,
 
    if (type == MENU_SETTING_NO_ITEM)
    {
-      switch (menu_label_hash)
+      if (  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HISTORY_TAB))   ||
+            string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
+            string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_ADD_TAB)) ||
+            string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU)) ||
+            string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HORIZONTAL_MENU)) ||
+            string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_SETTINGS_TAB))
+         )
       {
-         case MENU_VALUE_HORIZONTAL_MENU:
-         case MENU_VALUE_MAIN_MENU:
-         case 153956705: /* TODO/FIXME - dehardcode */
             BIND_ACTION_LEFT(cbs, action_left_mainmenu);
             return 0;
-         default:
-            break;
       }
    }
 
