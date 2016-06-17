@@ -102,8 +102,10 @@ const char *menu_hash_to_str_nl_enum(enum menu_hash_enums msg)
          return "Privacy";
       case MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU:
          return "Horizontal Menu";
+      case MENU_ENUM_LABEL_VALUE_SETTINGS_TAB:
+         return "Instellingen";
       case MENU_ENUM_LABEL_VALUE_HISTORY_TAB:
-         return "Geschiedenis tab";
+         return "Geschiedenis";
       case MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND:
          return "Geen instellingen gevonden.";
       case MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS:

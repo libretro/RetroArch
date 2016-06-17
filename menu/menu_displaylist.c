@@ -3509,6 +3509,12 @@ static bool menu_displaylist_push_internal(
          return false;
       return true;
    }
+   else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_SETTINGS_TAB)))
+   {
+      if (!menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info))
+         return false;
+      return true;
+   }
 
    switch (menu_hash_calculate(label))
    {
