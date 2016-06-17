@@ -2075,8 +2075,8 @@ bool cheevos_load(const void *data)
    
    cheevos_locals.loaded = 0;
    
-   /* Just return OK if cheevos are disabled, the core doesn't support cheevos, or info is NULL. */
-   if (!settings->cheevos.enable || !cheevos_locals.core_supports || !info)
+   /* Just return OK if the core doesn't support cheevos, or info is NULL. */
+   if (!cheevos_locals.core_supports || !info)
       return true;
    
    cheevos_locals.meminfo[0].id = RETRO_MEMORY_SYSTEM_RAM;
@@ -2091,8 +2091,11 @@ bool cheevos_load(const void *data)
    cheevos_locals.meminfo[3].id = RETRO_MEMORY_RTC;
    core_get_memory(&cheevos_locals.meminfo[3]);
    
-   /* The the supported extensions as a hint to what method we should use. */
+   /* Bail out if cheevos are disabled. But set the above anyways, command_read_ram needs it. */
+   if (!settings->cheevos.enable)
+      return true;
    
+   /* Use the supported extensions as a hint to what method we should use. */
    core_get_system_info(&sysinfo);
    
    for (i = 0; i < sizeof(finders) / sizeof(finders[0]); i++)

@@ -225,7 +225,6 @@ static bool command_read_ram(const char *arg)
       command_reply(reply, reply_at+strlen(" -1\n") - reply);
    }
 
-
    return true;
 }
 
