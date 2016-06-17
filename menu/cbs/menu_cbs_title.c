@@ -708,9 +708,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
    if (cbs->setting)
    {
       const char *parent_group   = menu_setting_get_parent_group(cbs->setting);
-      uint32_t parent_group_hash = menu_hash_calculate(parent_group);
 
-      if ((parent_group_hash == MENU_VALUE_MAIN_MENU) && menu_setting_get_type(cbs->setting) == ST_GROUP)
+      if (string_is_equal(parent_group, menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU)) 
+            && menu_setting_get_type(cbs->setting) == ST_GROUP)
       {
          BIND_ACTION_GET_TITLE(cbs, action_get_title_group_settings);
          return 0;
