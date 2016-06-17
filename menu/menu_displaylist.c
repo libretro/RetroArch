@@ -3549,6 +3549,12 @@ static bool menu_displaylist_push_internal(
       }
       return true;
    }
+   else if (string_is_equal(label, menu_hash_to_str_enum(MENU_ENUM_LABEL_ADD_TAB)))
+   {
+         if (!menu_displaylist_ctl(DISPLAYLIST_SCAN_DIRECTORY_LIST, info))
+            return false;
+         return true;
+   }
 
    switch (menu_hash_calculate(label))
    {

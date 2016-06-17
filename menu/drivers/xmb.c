@@ -2996,7 +2996,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
                break;
             case XMB_SYSTEM_TAB_ADD:
                menu_stack->list[stack_size - 1].label =
-                  strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_ADD_TAB));
+                  strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_ADD_TAB));
                menu_stack->list[stack_size - 1].type =
                   MENU_ADD_TAB;
                break;

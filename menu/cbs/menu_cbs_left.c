@@ -568,6 +568,7 @@ static int menu_cbs_init_bind_left_compare_type(menu_file_list_cbs_t *cbs,
          case MENU_SETTING_GROUP:
             if (  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_HISTORY_TAB))   ||
                   string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_PLAYLISTS_TAB)) ||
+                  string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_ADD_TAB)) ||
                   string_is_equal(menu_label, menu_hash_to_str_enum(MENU_ENUM_LABEL_SETTINGS_TAB))
                   )
             {
