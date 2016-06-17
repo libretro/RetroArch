@@ -99,6 +99,16 @@ static int deferred_push_driver_settings_list(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_DRIVER_SETTINGS_LIST);
 }
 
+static int deferred_push_video_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_VIDEO_SETTINGS_LIST);
+}
+
+static int deferred_push_audio_settings_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_AUDIO_SETTINGS_LIST);
+}
+
 static int deferred_push_input_settings_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_INPUT_SETTINGS_LIST);
@@ -802,6 +812,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
             case MENU_ENUM_LABEL_CONTENT_HISTORY_PATH:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_content_history_path);
                break;
+            case MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_settings_list);
+               break;
+            case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
+               break;
             case MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST:
             case MENU_ENUM_LABEL_DETECT_CORE_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_detect_core_list);
@@ -823,6 +839,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
                break;
             case MENU_LABEL_DEFERRED_DRIVER_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_driver_settings_list);
+               break;
+            case MENU_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_video_settings_list);
+               break;
+            case MENU_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_audio_settings_list);
                break;
             case MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_input_settings_list);

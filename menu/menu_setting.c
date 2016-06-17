@@ -4166,6 +4166,24 @@ static bool setting_append_list(
 
          CONFIG_ACTION(
                list, list_info,
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VIDEO_SETTINGS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SETTINGS);
+
+         CONFIG_ACTION(
+               list, list_info,
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_AUDIO_SETTINGS),
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS),
+               &group_info,
+               &subgroup_info,
+               parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_SETTINGS);
+
+         CONFIG_ACTION(
+               list, list_info,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_INPUT_SETTINGS),
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS),
                &group_info,
@@ -4784,6 +4802,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_VIDEO:
          START_GROUP(list, list_info, &group_info, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS), parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_VIDEO_SETTINGS);
 
          parent_group = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SETTINGS);
 
@@ -5367,6 +5386,7 @@ static bool setting_append_list(
       case SETTINGS_LIST_AUDIO:
          START_GROUP(list, list_info, &group_info,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS), parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_AUDIO_SETTINGS);
 
          parent_group = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SETTINGS);
 

@@ -132,6 +132,8 @@ enum menu_hash_enums
    MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST,
 
    MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST,
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST,
+   MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST,
 
    MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST,
 
@@ -969,18 +971,21 @@ enum menu_hash_enums
    MENU_ENUM_LABEL_DRIVER_SETTINGS,
    MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
 
+   MENU_ENUM_LABEL_VIDEO_SETTINGS,
+   MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
+
+   MENU_ENUM_LABEL_AUDIO_SETTINGS,
+   MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+
    MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
    MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
    MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
    MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-   MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    MENU_ENUM_LABEL_RECORDING_SETTINGS,
    MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
    MENU_ENUM_LABEL_SHADER_SETTINGS,
    MENU_ENUM_LABEL_FONT_SETTINGS,
-   MENU_ENUM_LABEL_AUDIO_SETTINGS,
-   MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
    MENU_ENUM_LABEL_INPUT_HOTKEY_SETTINGS,
    MENU_ENUM_LABEL_OVERLAY_SETTINGS,
    MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
@@ -2134,7 +2139,7 @@ enum menu_hash_enums
 #define MENU_LABEL_VALUE_RECORDING_SETTINGS                                    0x1a80b313U
 #define MENU_LABEL_SHADER_SETTINGS                                             0xd6657e8dU
 #define MENU_LABEL_FONT_SETTINGS                                               0x67571029U
-#define MENU_LABEL_AUDIO_SETTINGS                                              0x8f74c888U
+#define MENU_LABEL_AUDIO_SETTINGS                                              0x2a566807U
 #define MENU_LABEL_VALUE_AUDIO_SETTINGS                                        0x8f74c888U
 #define MENU_LABEL_VALUE_INPUT_SETTINGS                                        0xddd30846U
 #define MENU_LABEL_INPUT_HOTKEY_SETTINGS                                       0x1cb39c19U
@@ -2410,6 +2415,10 @@ enum menu_hash_enums
 #define MENU_LABEL_DRIVER_SETTINGS                                             0x1d9550e1U
 
 #define MENU_LABEL_DEFERRED_DRIVER_SETTINGS_LIST                               0xaa5efefcU
+#define MENU_LABEL_DEFERRED_VIDEO_SETTINGS_LIST                                0x83c65827U
+#define MENU_LABEL_DEFERRED_AUDIO_SETTINGS_LIST                                0x5bba25e2U
+
+#define MENU_LABEL_VIDEO_SETTINGS                                              0x38b3db2cU
 
 const char *menu_hash_to_str_de_enum(enum menu_hash_enums msg);
 int menu_hash_get_help_de(uint32_t hash, char *s, size_t len);

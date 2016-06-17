@@ -130,6 +130,10 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
          return "deferred_input_settings_list";
       case MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST:
          return "deferred_driver_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
+         return "deferred_audio_settings_list";
+      case MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
+         return "deferred_video_settings_list";
       case MENU_ENUM_LABEL_ACCOUNTS_LIST:
          return "accounts_list";
       case MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST:
@@ -150,6 +154,10 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
          return "input_settings";
       case MENU_ENUM_LABEL_DRIVER_SETTINGS:
          return "driver_settings";
+      case MENU_ENUM_LABEL_VIDEO_SETTINGS:
+         return "video_settings";
+      case MENU_ENUM_LABEL_AUDIO_SETTINGS:
+         return "audio_settings";
       case MENU_ENUM_LABEL_DEBUG_PANEL_ENABLE:
          return "debug_panel_enable";
       case MENU_ENUM_LABEL_HELP_SCANNING_CONTENT:

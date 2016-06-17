@@ -439,6 +439,20 @@ static int action_get_driver_settings_list(const char *path, const char *label,
    return 0;
 }
 
+static int action_get_video_settings_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS), len);
+   return 0;
+}
+
+static int action_get_audio_settings_list(const char *path, const char *label, 
+      unsigned menu_type, char *s, size_t len)
+{
+   sanitize_to_string(s, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS), len);
+   return 0;
+}
+
 static int action_get_input_settings_list(const char *path, const char *label, 
       unsigned menu_type, char *s, size_t len)
 {
@@ -894,6 +908,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_driver_settings_list);
             break;
+         case MENU_ENUM_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_video_settings_list);
+            break;
+         case MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_audio_settings_list);
+            break;
          case MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_input_settings_list);
             break;
@@ -1166,6 +1186,12 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
             break;
          case MENU_LABEL_DEFERRED_DRIVER_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_driver_settings_list);
+            break;
+         case MENU_LABEL_DEFERRED_VIDEO_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_video_settings_list);
+            break;
+         case MENU_LABEL_DEFERRED_AUDIO_SETTINGS_LIST:
+            BIND_ACTION_GET_TITLE(cbs, action_get_audio_settings_list);
             break;
          case MENU_LABEL_DEFERRED_INPUT_SETTINGS_LIST:
             BIND_ACTION_GET_TITLE(cbs, action_get_input_settings_list);
