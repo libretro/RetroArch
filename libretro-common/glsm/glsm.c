@@ -21,6 +21,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <glsym/glsym.h>
 #include <glsm/glsm.h>
 
@@ -28,7 +29,7 @@ struct gl_cached_state
 {
    struct
    {
-      GLuint ids[MAX_TEXTURE];
+      GLuint *ids;
    } bind_textures;
 
 #ifndef HAVE_OPENGLES
@@ -176,6 +177,7 @@ struct gl_cached_state
    int cap_translate[SGL_CAP_MAX];
 };
 
+static GLint glsm_max_textures;
 static struct retro_hw_render_callback hw_render;
 static struct gl_cached_state gl_state;
 
@@ -1853,6 +1855,10 @@ static void glsm_state_setup(void)
    for (i = 0; i < MAX_ATTRIB; i++)
       gl_state.vertex_attrib_pointer.enabled[i] = 0;
 
+   glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &glsm_max_textures);
+
+   gl_state.bind_textures.ids           = (GLuint*)calloc(glsm_max_textures, sizeof(GLuint));
+
    gl_state.framebuf                    = hw_render.get_current_framebuffer();
    gl_state.cullface.mode               = GL_BACK;
    gl_state.frontface.mode              = GL_CCW; 
@@ -1978,7 +1984,7 @@ static void glsm_state_bind(void)
             gl_state.stencilfunc.ref,
             gl_state.stencilfunc.mask);
 
-   for (i = 0; i < MAX_TEXTURE; i ++)
+   for (i = 0; i < glsm_max_textures; i ++)
    {
       glActiveTexture(GL_TEXTURE0 + i);
       glBindTexture(GL_TEXTURE_2D, gl_state.bind_textures.ids[i]);
@@ -2035,7 +2041,7 @@ static void glsm_state_unbind(void)
       glStencilFunc(GL_ALWAYS,0,1);
 
    /* Clear textures */
-   for (i = 0; i < MAX_TEXTURE; i ++)
+   for (i = 0; i < glsm_max_textures; i ++)
    {
       glActiveTexture(GL_TEXTURE0 + i);
       glBindTexture(GL_TEXTURE_2D, 0);
@@ -2046,6 +2052,13 @@ static void glsm_state_unbind(void)
       glDisableVertexAttribArray(i);
 
    glBindFramebuffer(RARCH_GL_FRAMEBUFFER, 0);
+}
+
+static bool glsm_state_ctx_destroy(void *data)
+{
+   if (gl_state.bind_textures.ids)
+      free(gl_state.bind_textures.ids);
+   gl_state.bind_textures.ids = NULL;
 }
 
 static bool glsm_state_ctx_init(void *data)
@@ -2116,6 +2129,9 @@ bool glsm_ctl(enum glsm_state_ctl state, void *data)
          break;
       case GLSM_CTL_STATE_CONTEXT_RESET:
          rglgen_resolve_symbols(hw_render.get_proc_address);
+         break;
+      case GLSM_CTL_STATE_CONTEXT_DESTROY:
+         glsm_state_ctx_destroy(data);
          break;
       case GLSM_CTL_STATE_CONTEXT_INIT:
          return glsm_state_ctx_init(data);

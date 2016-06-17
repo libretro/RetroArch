@@ -85,7 +85,6 @@ typedef GLclampf GLclampd;
 #endif
 
 #define MAX_ATTRIB 8
-#define MAX_TEXTURE 32
 
 enum
 {
@@ -117,6 +116,7 @@ enum glsm_state_ctl
    GLSM_CTL_STATE_BIND,
    GLSM_CTL_STATE_UNBIND,
    GLSM_CTL_STATE_CONTEXT_RESET,
+   GLSM_CTL_STATE_CONTEXT_DESTROY,
    GLSM_CTL_STATE_CONTEXT_INIT,
    GLSM_CTL_IS_IMM_VBO,
    GLSM_CTL_SET_IMM_VBO,
