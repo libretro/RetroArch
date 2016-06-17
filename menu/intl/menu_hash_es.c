@@ -580,8 +580,8 @@ const char *menu_hash_to_str_es_enum(enum menu_hash_enums msg)
          return "Gestor de bases de datos";
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Gestor de cursores";
-      case MENU_ENUM_LABEL_VALUE_MAIN_MENU: /* Don't change. Breaks everything. (Would be: "Menú principal") */
-         return "Main Menu"; 
+      case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
+         return "Menú principal"; 
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Ajustes";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:

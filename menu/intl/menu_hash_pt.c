@@ -467,7 +467,7 @@ const char *menu_hash_to_str_pt_enum(enum menu_hash_enums msg)
          return "Gerenciador de Databases";
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Gerenciador de Cursores";
-      case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
+      case MENU_ENUM_LABEL_VALUE_MAIN_MENU: /* TODO/FIXME - translate */
          return "Main Menu";
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Definições";

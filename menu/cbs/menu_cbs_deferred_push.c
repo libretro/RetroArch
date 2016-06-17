@@ -84,6 +84,11 @@ static int deferred_push_rdb_collection(menu_displaylist_info_t *info)
    return deferred_push_dlist(info, DISPLAYLIST_PLAYLIST_COLLECTION);
 }
 
+static int deferred_main_menu_list(menu_displaylist_info_t *info)
+{
+   return deferred_push_dlist(info, DISPLAYLIST_MAIN_MENU);
+}
+
 static int deferred_user_binds_list(menu_displaylist_info_t *info)
 {
    return deferred_push_dlist(info, DISPLAYLIST_USER_BINDS_LIST);
@@ -608,6 +613,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {
          switch (cbs->enum_idx)
          {
+            case MENU_ENUM_LABEL_MAIN_MENU:
+               BIND_ACTION_DEFERRED_PUSH(cbs, deferred_main_menu_list);
+               break;
             case MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST:
                BIND_ACTION_DEFERRED_PUSH(cbs, deferred_user_binds_list);
                break;

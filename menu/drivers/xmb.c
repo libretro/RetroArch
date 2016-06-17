@@ -2978,7 +2978,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type, unsigned action
          {
             case XMB_SYSTEM_TAB_MAIN:
                menu_stack->list[stack_size - 1].label =
-                  strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU));
+                  strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU));
                menu_stack->list[stack_size - 1].type =
                   MENU_SETTINGS;
                break;
@@ -3190,7 +3190,7 @@ static bool xmb_menu_init_list(void *data)
    file_list_t *selection_buf = menu_entries_get_selection_buf_ptr(0);
 
    strlcpy(info.label,
-         menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU), sizeof(info.label));
+         menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU), sizeof(info.label));
 
    menu_entries_add_enum(menu_stack, info.path,
          info.label,

@@ -503,7 +503,7 @@ const char *menu_hash_to_str_nl_enum(enum menu_hash_enums msg)
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Cursorbeheer";
       case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
-         return "Main Menu";
+         return "Hoofdmenu";
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Instellingen";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:

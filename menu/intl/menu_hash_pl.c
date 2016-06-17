@@ -468,8 +468,8 @@ const char *menu_hash_to_str_pl_enum(enum menu_hash_enums msg)
          return "Mened¿er bazy danych";
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Mened¿er kursorów";
-      case MENU_ENUM_LABEL_VALUE_MAIN_MENU: /* Don't change. Breaks everything. (Would be: "Menu g³ówne") */
-         return "Main Menu"; 
+      case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
+         return "Menu g³ówne"; 
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Ustawienia";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:

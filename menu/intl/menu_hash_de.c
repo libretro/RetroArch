@@ -458,8 +458,8 @@ const char *menu_hash_to_str_de_enum(enum menu_hash_enums msg)
          return "Datenbankmanager";
       case MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER:
          return "Cursormanager";
-      case MENU_ENUM_LABEL_VALUE_MAIN_MENU: /* Don't change. Breaks everything. (Would be: "Hauptmenü") */
-         return "Main Menu"; 
+      case MENU_ENUM_LABEL_VALUE_MAIN_MENU:
+         return "Hauptmenü"; 
       case MENU_ENUM_LABEL_VALUE_SETTINGS:
          return "Einstellungen";
       case MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH:

@@ -1257,7 +1257,7 @@ static void mui_preswitch_tabs(mui_handle_t *mui, unsigned action)
    {
       case MUI_SYSTEM_TAB_MAIN:
          menu_stack->list[stack_size - 1].label = 
-            strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU));
+            strdup(menu_hash_to_str_enum(MENU_ENUM_LABEL_MAIN_MENU));
          menu_stack->list[stack_size - 1].type = 
             MENU_SETTINGS;
          break;
