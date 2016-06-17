@@ -862,7 +862,10 @@ static int generic_action_ok(const char *path,
    menu_entries_get_last_stack(&menu_path, NULL,
          NULL, NULL);
 
-   fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
+   if (!string_is_empty(path))
+      fill_pathname_join(action_path, menu_path, path, sizeof(action_path));
+   else
+      strlcpy(action_path, menu_path, sizeof(action_path));
 
    switch (id)
    {
@@ -1241,7 +1244,7 @@ static int action_ok_remap_file_save_game(const char *path,
 int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return generic_action_ok(path, label, type, idx, entry_idx,
+   return generic_action_ok(NULL, label, type, idx, entry_idx,
          ACTION_OK_SET_DIRECTORY, MENU_ENUM_LABEL_UNKNOWN);
 }
 
