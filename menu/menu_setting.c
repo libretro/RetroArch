@@ -2329,8 +2329,10 @@ uint32_t menu_setting_get_index(rarch_setting_t *setting)
 }
 
 static rarch_setting_t *menu_setting_find_internal(rarch_setting_t *setting, 
-      const char *label, uint32_t needle)
+      const char *label)
 {
+   uint32_t needle = menu_hash_calculate(label);
+
    for (; menu_setting_get_type(setting) != ST_NONE; menu_settings_list_increment(&setting))
    {
       if (needle == setting->name_hash && menu_setting_get_type(setting) <= ST_GROUP)
@@ -2387,16 +2389,13 @@ static rarch_setting_t *menu_setting_find_internal_enum(rarch_setting_t *setting
 rarch_setting_t *menu_setting_find(const char *label)
 {
    rarch_setting_t *setting = NULL;
-   uint32_t needle          = 0;
 
    menu_entries_ctl(MENU_ENTRIES_CTL_SETTINGS_GET, &setting);
 
    if (!setting || !label)
       return NULL;
 
-   needle = menu_hash_calculate(label);
-
-   return menu_setting_find_internal(setting, label, needle);
+   return menu_setting_find_internal(setting, label);
 }
 
 rarch_setting_t *menu_setting_find_enum(enum menu_hash_enums enum_idx)
