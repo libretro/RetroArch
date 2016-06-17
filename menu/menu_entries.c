@@ -576,6 +576,7 @@ void menu_entries_add_enum(file_list_t *list, const char *path, const char *labe
 }
 
 void menu_entries_prepend(file_list_t *list, const char *path, const char *label,
+      enum menu_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx)
 {
    menu_ctx_list_t list_info;
@@ -604,10 +605,8 @@ void menu_entries_prepend(file_list_t *list, const char *path, const char *label
 
    file_list_set_actiondata(list, idx, cbs);
 
-   if (cbs->enum_idx == MENU_ENUM_LABEL_UNKNOWN)
-      cbs->setting = menu_setting_find(label);
-   else
-      cbs->setting = menu_setting_find_enum(cbs->enum_idx);
+   cbs->enum_idx = enum_idx;
+   cbs->setting  = menu_setting_find_enum(cbs->enum_idx);
 
    menu_cbs_init(list, cbs, path, label, type, idx);
 }

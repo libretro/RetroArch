@@ -3117,12 +3117,14 @@ static int menu_displaylist_parse_generic(
       menu_entries_prepend(info->list,
             menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY),
             menu_hash_to_str_enum(MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY),
+            MENU_ENUM_LABEL_SCAN_THIS_DIRECTORY,
             MENU_FILE_SCAN_DIRECTORY, 0 ,0);
 
    if (push_dir)
       menu_entries_prepend(info->list,
             menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY),
             menu_hash_to_str_enum(MENU_ENUM_LABEL_USE_THIS_DIRECTORY),
+            MENU_ENUM_LABEL_USE_THIS_DIRECTORY,
             MENU_FILE_USE_DIRECTORY, 0 ,0);
 
    if (!horizontal && hash_label != MENU_LABEL_CORE_LIST)
@@ -3132,7 +3134,10 @@ static int menu_displaylist_parse_generic(
 
       if (!string_is_empty(out_dir))
       {
-         menu_entries_prepend(info->list, "..", info->path,
+         menu_entries_prepend(info->list,
+               menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
+               info->path,
+               MENU_ENUM_LABEL_PARENT_DIRECTORY,
                MENU_FILE_PARENT_DIRECTORY, 0, 0);
       }
    }

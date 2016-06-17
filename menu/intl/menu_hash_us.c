@@ -26,6 +26,8 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_PARENT_DIRECTORY:
+         return "parent_directory";
       case MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE:
          return "input_player%u_analog_dpad_mode";
       case MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE:
@@ -834,6 +836,8 @@ const char *menu_hash_to_str_us_enum(enum menu_hash_enums msg)
 
    switch (msg)
    {
+      case MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY:
+         return "..";
       case MENU_ENUM_LABEL_VALUE_RUN:
          return "Run";
       case MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X:

@@ -175,6 +175,7 @@ void menu_entries_set_alt_at_offset(file_list_t *list, size_t idx,
 rarch_setting_t *menu_entries_get_setting(uint32_t i);
 
 void menu_entries_prepend(file_list_t *list, const char *path, const char *label,
+      enum menu_hash_enums enum_idx,
       unsigned type, size_t directory_ptr, size_t entry_idx);
 
 void menu_entries_add_enum(file_list_t *list, const char *path, const char *label,
