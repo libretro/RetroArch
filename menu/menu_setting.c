@@ -3937,6 +3937,7 @@ static bool setting_append_list(
    {
       case SETTINGS_LIST_MAIN_MENU:
          START_GROUP(list, list_info, &group_info, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MAIN_MENU), parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MAIN_MENU);
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
          CONFIG_INT(
