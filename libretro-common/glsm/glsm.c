@@ -2059,6 +2059,7 @@ static bool glsm_state_ctx_destroy(void *data)
    if (gl_state.bind_textures.ids)
       free(gl_state.bind_textures.ids);
    gl_state.bind_textures.ids = NULL;
+   return true;
 }
 
 static bool glsm_state_ctx_init(void *data)
