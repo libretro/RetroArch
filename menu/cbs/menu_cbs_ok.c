@@ -1588,7 +1588,6 @@ static void cb_generic_download(void *task_data,
 
    fill_pathname_join(output_path, dir_path,
          transf->path, sizeof(output_path));
-   RARCH_LOG("output_path: %s\n", output_path);
 
    /* Make sure the directory exists */
    path_basedir(output_path);
@@ -2587,16 +2586,16 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_CUSTOM_BIND_ALL:
             BIND_ACTION_OK(cbs, action_ok_lookup_setting);
             break;
-         case MENU_ENUM_LABEL_SAVESTATE:
+         case MENU_ENUM_LABEL_SAVE_STATE:
             BIND_ACTION_OK(cbs, action_ok_save_state);
             break;
-         case MENU_ENUM_LABEL_LOADSTATE:
+         case MENU_ENUM_LABEL_LOAD_STATE:
             BIND_ACTION_OK(cbs, action_ok_load_state);
             break;
-         case MENU_ENUM_LABEL_UNDOLOADSTATE:
+         case MENU_ENUM_LABEL_UNDO_LOAD_STATE:
             BIND_ACTION_OK(cbs, action_ok_undo_load_state);
             break;
-         case MENU_ENUM_LABEL_UNDOSAVESTATE:
+         case MENU_ENUM_LABEL_UNDO_SAVE_STATE:
             BIND_ACTION_OK(cbs, action_ok_undo_save_state);
             break;
          case MENU_ENUM_LABEL_RESUME_CONTENT:
@@ -2832,10 +2831,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          case MENU_LABEL_LOADSTATE:
             BIND_ACTION_OK(cbs, action_ok_load_state);
             break;
-         case MENU_LABEL_UNDOLOADSTATE:
+         case MENU_LABEL_UNDO_LOAD_STATE:
             BIND_ACTION_OK(cbs, action_ok_undo_load_state);
             break;
-         case MENU_LABEL_UNDOSAVESTATE:
+         case MENU_LABEL_UNDO_SAVE_STATE:
             BIND_ACTION_OK(cbs, action_ok_undo_save_state);
             break;
          case MENU_LABEL_RESUME_CONTENT:
