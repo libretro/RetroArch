@@ -288,17 +288,22 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
    cbs = menu_entries_get_actiondata_at_offset(list, i);
 
-   if (cbs && cbs->action_get_value && use_representation)
+   if (cbs)
    {
-      enum menu_hash_enums enum_idx = MENU_ENUM_LABEL_UNKNOWN;
-      const char *label             = NULL;
-      menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
+      entry->enum_idx    = cbs->enum_idx;
 
-      cbs->action_get_value(list,
-            &entry->spacing, entry->type, i, label,
-            entry->value,  sizeof(entry->value), 
-            entry_label, path,
-            entry->path, sizeof(entry->path));
+      if (cbs->action_get_value && use_representation)
+      {
+         enum menu_hash_enums enum_idx = MENU_ENUM_LABEL_UNKNOWN;
+         const char *label             = NULL;
+         menu_entries_get_last_stack(NULL, &label, NULL, &enum_idx, NULL);
+
+         cbs->action_get_value(list,
+               &entry->spacing, entry->type, i, label,
+               entry->value,  sizeof(entry->value), 
+               entry_label, path,
+               entry->path, sizeof(entry->path));
+      }
    }
 
    entry->idx         = i;
