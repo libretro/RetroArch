@@ -837,7 +837,8 @@ enum
    ACTION_OK_LOAD_CONFIG_FILE,
    ACTION_OK_LOAD_CORE,
    ACTION_OK_LOAD_WALLPAPER,
-   ACTION_OK_SET_PATH
+   ACTION_OK_SET_PATH,
+   ACTION_OK_SET_DIRECTORY
 };
 
 static int generic_action_ok(const char *path,
@@ -946,6 +947,7 @@ static int generic_action_ok(const char *path,
          command_event(CMD_EVENT_DISK_APPEND_IMAGE, action_path);
          command_event(CMD_EVENT_RESUME, NULL);
          break;
+      case ACTION_OK_SET_DIRECTORY:
       case ACTION_OK_SET_PATH:
          flush_type = 49;
          {
@@ -1239,10 +1241,8 @@ static int action_ok_remap_file_save_game(const char *path,
 int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   const char *menu_path = NULL;
-
-   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL);
-   return menu_entry_pathdir_set_value(0, menu_path);
+   return generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_SET_DIRECTORY, MENU_ENUM_LABEL_UNKNOWN);
 }
 
 #ifdef HAVE_LIBRETRODB

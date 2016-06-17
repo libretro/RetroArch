@@ -214,24 +214,6 @@ void menu_entry_pathdir_get_value(uint32_t i, char *s, size_t len)
    strlcpy(s, entry.value, len);
 }
 
-int menu_entry_pathdir_set_value(uint32_t i, const char *s)
-{
-   menu_file_list_cbs_t *cbs = menu_entries_get_last_stack_actiondata();
-
-   if (!cbs || !cbs->setting)
-      return -1;
-
-   if (menu_setting_get_type(cbs->setting) != ST_DIR)
-      return -1;
-
-   menu_setting_set_with_string_representation(cbs->setting, s);
-   menu_setting_generic(cbs->setting, false);
-
-   menu_entries_flush_stack(NULL, 49);
-
-   return 0;
-}
-
 void menu_entry_pathdir_extensions(uint32_t i, char *s, size_t len)
 {
    rarch_setting_t *setting = menu_entries_get_setting(i);
