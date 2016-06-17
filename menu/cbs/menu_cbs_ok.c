@@ -849,13 +849,14 @@ static int generic_action_ok(const char *path,
    unsigned flush_type               = 0;
    int ret                           = 0;
    const char             *menu_path = NULL;
+   const char            *menu_label = NULL;
    const char *flush_char            = NULL;
    menu_handle_t               *menu = NULL;
 
    if (!menu_driver_ctl(RARCH_MENU_CTL_DRIVER_DATA_GET, &menu))
       goto error;
 
-   menu_entries_get_last_stack(&menu_path, NULL,
+   menu_entries_get_last_stack(&menu_path, &menu_label,
          NULL, NULL);
 
    if (!string_is_empty(path))
@@ -958,14 +959,13 @@ static int generic_action_ok(const char *path,
       case ACTION_OK_SET_PATH:
          flush_type = 49;
          {
-            menu_file_list_cbs_t *cbs = 
-               menu_entries_get_last_stack_actiondata();
+            rarch_setting_t *setting = menu_setting_find(menu_label);
 
-            if (cbs)
+            if (setting)
             {
                menu_setting_set_with_string_representation(
-                     cbs->setting, action_path);
-               ret = menu_setting_generic(cbs->setting, false);
+                     setting, action_path);
+               ret = menu_setting_generic(setting, false);
             }
          }
          break;
