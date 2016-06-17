@@ -1239,7 +1239,10 @@ static int action_ok_remap_file_save_game(const char *path,
 int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   return menu_entry_pathdir_set_value(0, NULL);
+   const char *menu_path = NULL;
+
+   menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL);
+   return menu_entry_pathdir_set_value(0, menu_path);
 }
 
 #ifdef HAVE_LIBRETRODB
