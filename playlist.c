@@ -182,13 +182,31 @@ void playlist_update(playlist_t *playlist, size_t idx,
       return;
 
    entry            = &playlist->entries[idx];
-   
-   entry->path      = path ?  strdup(path)          : entry->path;
-   entry->label     = label ? strdup(label)         : entry->label;
-   entry->core_path = core_path ? strdup(core_path) : entry->core_path;
-   entry->core_name = core_name ? strdup(core_name) : entry->core_name;
-   entry->db_name   = db_name ? strdup(db_name)     : entry->db_name;
-   entry->crc32     = crc32 ? strdup(crc32)         : entry->crc32;
+
+   if (path && (path != entry->path)) {
+      free(entry->path);
+      entry->path = strdup(path);
+   }
+   if (label && (label != entry->label)) {
+      free(entry->label);
+      entry->label = strdup(label);
+   }
+   if (core_path && (core_path != entry->core_path)) {
+      free(entry->core_path);
+      entry->core_path = strdup(core_path);
+   }
+   if (core_name && (core_name != entry->core_name)) {
+      free(entry->core_name);
+      entry->core_name = strdup(core_name);
+   }
+   if (db_name && (db_name != entry->db_name)) {
+      free(entry->db_name);
+      entry->db_name = strdup(db_name);
+   }
+   if (crc32 && (crc32 != entry->crc32)) {
+      free(entry->crc32);
+      entry->crc32 = strdup(crc32);
+   }
 }
 
 /**
