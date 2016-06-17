@@ -26,6 +26,14 @@ static const char *menu_hash_to_str_us_label_enum(enum menu_hash_enums msg)
 {
    switch (msg)
    {
+      case MENU_ENUM_LABEL_SETTINGS_TAB:
+         return "settings_tab";
+      case MENU_ENUM_LABEL_HISTORY_TAB:
+         return "history_tab";
+      case MENU_ENUM_LABEL_ADD_TAB:
+         return "add_tab";
+      case MENU_ENUM_LABEL_PLAYLISTS_TAB:
+         return "playlists_tab";
       case MENU_ENUM_LABEL_PARENT_DIRECTORY:
          return "parent_directory";
       case MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE:
