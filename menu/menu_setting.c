@@ -733,13 +733,13 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
    switch (type)
    {
       case ST_DIR:
-         result.action_start           = setting_string_action_start_generic;
-         result.browser_selection_type = ST_DIR;
+         result.action_start              = setting_string_action_start_generic;
+         result.browser_selection_type    = ST_DIR;
          result.get_string_representation = &setting_get_string_representation_st_dir;
          break;
       case ST_PATH:
-         result.action_start           = setting_string_action_start_generic;
-         result.browser_selection_type = ST_PATH;
+         result.action_start              = setting_string_action_start_generic;
+         result.browser_selection_type    = ST_PATH;
          result.get_string_representation = &setting_get_string_representation_st_path;
          break;
       default:
@@ -7588,6 +7588,7 @@ static bool setting_append_list(
          START_GROUP(list, list_info, &group_info,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS),
                parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DIRECTORY_SETTINGS);
 
          parent_group = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SETTINGS);
 
