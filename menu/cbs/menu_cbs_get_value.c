@@ -1355,7 +1355,6 @@ static void menu_action_setting_disp_set_label(file_list_t* list,
 static int menu_cbs_init_bind_get_string_representation_compare_label(
       menu_file_list_cbs_t *cbs, uint32_t label_hash)
 {
-#if 0
    if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
    {
       switch (cbs->enum_idx)
@@ -1380,7 +1379,7 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_thumbnails);
             break;
-         case MENU_ENUM_LABEL_INPUT_MENU_TOGGLE_GAMEPAD_COMBO:
+         case MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_menu_toggle_gamepad_combo);
             break;
@@ -1467,7 +1466,6 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
       }
    }
    else
-#endif
    {
       switch (label_hash)
       {

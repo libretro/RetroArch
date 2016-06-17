@@ -537,7 +537,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
    }
    else
    {
-#if 0
       if (cbs->enum_idx != MENU_ENUM_LABEL_UNKNOWN)
       {
          switch (cbs->enum_idx)
@@ -573,7 +572,6 @@ static int menu_cbs_init_bind_right_compare_label(menu_file_list_cbs_t *cbs,
          }
       }
       else
-#endif
       {
          switch (label_hash)
          {
