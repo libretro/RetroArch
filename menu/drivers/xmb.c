@@ -1510,32 +1510,34 @@ static void xmb_populate_entries(void *data,
 
 static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       xmb_node_t *core_node, xmb_node_t *node, 
-      uint32_t hash, unsigned type, bool active)
+      enum menu_hash_enums enum_idx, unsigned type, bool active)
 {
-   switch (hash)
+   switch (enum_idx)
    {
-      case MENU_LABEL_CORE_OPTIONS:
+      case MENU_ENUM_LABEL_CORE_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_CORE_OPTIONS];
-      case MENU_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
+      case MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_INPUT_REMAPPING_OPTIONS];
-      case MENU_LABEL_CORE_CHEAT_OPTIONS:
+      case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_CHEAT_OPTIONS];
-      case MENU_LABEL_DISK_OPTIONS:
+      case MENU_ENUM_LABEL_DISK_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_DISK_OPTIONS];
-      case MENU_LABEL_SHADER_OPTIONS:
+      case MENU_ENUM_LABEL_SHADER_OPTIONS:
          return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
-      case MENU_LABEL_ACHIEVEMENT_LIST:
+      case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
          return xmb->textures.list[XMB_TEXTURE_ACHIEVEMENT_LIST];
-      case MENU_LABEL_SAVESTATE:
+      case MENU_ENUM_LABEL_SAVESTATE:
          return xmb->textures.list[XMB_TEXTURE_SAVESTATE];
-      case MENU_LABEL_LOADSTATE:
+      case MENU_ENUM_LABEL_LOADSTATE:
          return xmb->textures.list[XMB_TEXTURE_LOADSTATE];
-      case MENU_LABEL_TAKE_SCREENSHOT:
+      case MENU_ENUM_LABEL_TAKE_SCREENSHOT:
          return xmb->textures.list[XMB_TEXTURE_SCREENSHOT];
-      case MENU_LABEL_RESTART_CONTENT:
+      case MENU_ENUM_LABEL_RESTART_CONTENT:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
-      case MENU_LABEL_RESUME_CONTENT:
+      case MENU_ENUM_LABEL_RESUME_CONTENT:
          return xmb->textures.list[XMB_TEXTURE_RESUME];
+      default:
+         break;
    }
 
    switch(type)
@@ -1782,7 +1784,7 @@ static void xmb_draw_items(xmb_handle_t *xmb,
          menu_display_ctx_rotate_draw_t rotate_draw;
          uint32_t hash_label      = menu_hash_calculate(entry.label);
          uintptr_t texture        = xmb_icon_get_id(xmb, core_node, node,
-                                    hash_label, entry.type, (i == current));
+                                    entry.enum_idx, entry.type, (i == current));
          float x                  = icon_x;
          float y                  = icon_y;
          float rotation           = 0;
