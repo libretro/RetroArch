@@ -4190,6 +4190,7 @@ static bool setting_append_list(
          break;
       case SETTINGS_LIST_DRIVERS:
          START_GROUP(list, list_info, &group_info, menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
 
          parent_group = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SETTINGS);
 
@@ -6349,6 +6350,7 @@ static bool setting_append_list(
          START_GROUP(list, list_info, &group_info,
                menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS),
                parent_group);
+         menu_settings_list_current_add_enum_idx(list, list_info, MENU_ENUM_LABEL_MENU_SETTINGS);
 
          parent_group = menu_hash_to_str_enum(MENU_ENUM_LABEL_VALUE_SETTINGS);
 
